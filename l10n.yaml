@@ -1,0 +1,18 @@
+# Erzeugung der Oberflächentexte (flutter gen-l10n).
+#
+# Deutsch ist die Vorlage, nicht Englisch: Hier liegt die Quelle der
+# Wahrheit, jeder neue Text entsteht zuerst auf Deutsch. Englisch ist die
+# Übersetzung davon.
+arb-dir: lib/l10n
+template-arb-file: app_de.arb
+output-localization-file: app_localizations.dart
+output-class: AppTexte
+
+# Die einzige verlässliche Antwort auf "sind wir fertig?". Die Datei wird
+# bei jedem Lauf neu geschrieben und listet alles, was auf Deutsch da ist,
+# auf Englisch aber fehlt.
+untranslated-messages-file: lib/l10n/fehlende_uebersetzungen.txt
+
+# Ohne dies verschluckt gen-l10n fehlende Übersetzungen stillschweigend
+# und setzt den deutschen Text ein – man merkte es erst im Betrieb.
+nullable-getter: false

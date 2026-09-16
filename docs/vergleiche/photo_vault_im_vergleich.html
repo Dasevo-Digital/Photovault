@@ -1,0 +1,925 @@
+<title>Photo Vault im Vergleich</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #F6F1E7;
+    --surface: #FFFEFA;
+    --surface-2: #EFE7D6;
+    --ink: #241E15;
+    --ink-soft: #6B6153;
+    --ink-faint: #9A9080;
+    --border: #E2D6BE;
+    --border-strong: #CBB98F;
+    --accent: #B25A28;
+    --accent-ink: #7A3C17;
+    --accent-soft: #F1DEC2;
+    --accent-soft-strong: #E7C89D;
+    --good: #3E7A57;
+    --good-bg: #E1EEE1;
+    --partial: #9C7A1F;
+    --partial-bg: #F1E7C7;
+    --gap: #A5402F;
+    --gap-bg: #F3DFD8;
+    --up: #2F6E8A;
+    --up-bg: #DEEAF0;
+    --shadow: 0 1px 2px rgba(50, 36, 15, 0.06), 0 8px 24px -12px rgba(50, 36, 15, 0.18);
+    --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16130E;
+      --surface: #1D1811;
+      --surface-2: #262019;
+      --ink: #F1E8D8;
+      --ink-soft: #B6A98F;
+      --ink-faint: #7C7261;
+      --border: #362D20;
+      --border-strong: #4A3D28;
+      --accent: #E08A4C;
+      --accent-ink: #F4B27E;
+      --accent-soft: #382513;
+      --accent-soft-strong: #4A331B;
+      --good: #74BF95;
+      --good-bg: #1D2E24;
+      --partial: #D8B25C;
+      --partial-bg: #362C14;
+      --gap: #E1897A;
+      --gap-bg: #362119;
+      --up: #7FC3E0;
+      --up-bg: #17313D;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -12px rgba(0, 0, 0, 0.55);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #16130E;
+    --surface: #1D1811;
+    --surface-2: #262019;
+    --ink: #F1E8D8;
+    --ink-soft: #B6A98F;
+    --ink-faint: #7C7261;
+    --border: #362D20;
+    --border-strong: #4A3D28;
+    --accent: #E08A4C;
+    --accent-ink: #F4B27E;
+    --accent-soft: #382513;
+    --accent-soft-strong: #4A331B;
+    --good: #74BF95;
+    --good-bg: #1D2E24;
+    --partial: #D8B25C;
+    --partial-bg: #362C14;
+    --gap: #E1897A;
+    --gap-bg: #362119;
+    --up: #7FC3E0;
+    --up-bg: #17313D;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -12px rgba(0, 0, 0, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  .page {
+    max-width: 1220px;
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 72px) clamp(18px, 4vw, 48px) 96px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 18px;
+    font-weight: 600;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(34px, 5.2vw, 54px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .lede {
+    font-size: 18px;
+    max-width: 68ch;
+    color: var(--ink-soft);
+    margin: 0 0 22px;
+  }
+  .tags-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tag-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    padding: 5px 11px;
+    border-radius: 100px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border: 1px solid var(--accent-soft-strong);
+  }
+
+  /* ---------- Update banner ---------- */
+  .update-banner {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--up-bg);
+    border: 1px solid var(--up);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 48px;
+  }
+  .update-banner .num {
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 500;
+    color: var(--up);
+    line-height: 1;
+    flex: none;
+  }
+  .update-banner p { margin: 0; font-size: 14.5px; color: var(--ink-soft); max-width: 72ch; }
+  .update-banner strong { color: var(--ink); }
+
+  /* ---------- Section scaffolding ---------- */
+  section { margin-bottom: 64px; }
+  section:last-of-type { margin-bottom: 40px; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(24px, 3vw, 30px);
+    margin: 0;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  .section-sub {
+    color: var(--ink-faint);
+    font-size: 14px;
+    font-family: var(--font-mono);
+    max-width: 34ch;
+    text-align: right;
+  }
+  p.intro {
+    color: var(--ink-soft);
+    font-size: 16px;
+    max-width: 74ch;
+    margin: -6px 0 24px;
+  }
+
+  /* ---------- Matrix table ---------- */
+  .table-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1220px;
+    font-size: 13.5px;
+  }
+  thead th {
+    text-align: left;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink);
+    padding: 14px 13px;
+    border-bottom: 1px solid var(--border-strong);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    background: var(--surface-2);
+    z-index: 2;
+  }
+  thead th.row-label-head {
+    left: 0;
+    z-index: 3;
+    min-width: 190px;
+  }
+  thead th.pv-col {
+    background: var(--accent-soft-strong);
+    color: var(--accent-ink);
+  }
+  tbody th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    padding: 12px 13px;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+  }
+  tbody tr.new-row th { color: var(--accent-ink); font-weight: 600; }
+  tbody tr:nth-child(even) th,
+  tbody tr:nth-child(even) td { background-color: var(--surface-2); }
+  tbody tr:nth-child(even) td.pv-col { background-color: var(--accent-soft); }
+  tbody td {
+    padding: 12px 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+  td.pv-col {
+    background: var(--accent-soft);
+    font-weight: 600;
+    border-left: 1px solid var(--border-strong);
+    border-right: 1px solid var(--border-strong);
+  }
+  .cell {
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+    line-height: 1.35;
+  }
+  .dot {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+  .dot.good { background: var(--good-bg); color: var(--good); }
+  .dot.partial { background: var(--partial-bg); color: var(--partial); }
+  .dot.gap { background: var(--gap-bg); color: var(--gap); }
+  .cell-text { color: var(--ink); }
+  .cell-text.muted { color: var(--ink-soft); font-weight: 400; }
+  .up-flag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    padding: 1px 6px;
+    border-radius: 100px;
+    background: var(--up-bg);
+    color: var(--up);
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+
+  .table-footnote {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    max-width: 88ch;
+    margin: 14px 2px 0;
+    line-height: 1.5;
+  }
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 16px 2px 0;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ---------- Card grids ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 20px 18px;
+    box-shadow: var(--shadow);
+  }
+  .card .kicker {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  .strengths .card .kicker { color: var(--good); }
+  .gaps .card .kicker { color: var(--gap); }
+  .card h3 {
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  /* ---------- Specialists strip ---------- */
+  .specialists {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .specialist {
+    flex: 1 1 260px;
+    background: var(--surface);
+    border: 1px dashed var(--border-strong);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .specialist strong { color: var(--ink); font-size: 14px; }
+  .specialist p { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- Verdict / prose ---------- */
+  .verdict-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .verdict-grid { grid-template-columns: 1fr; }
+  }
+  .verdict-grid p { color: var(--ink-soft); font-size: 15.5px; margin: 0 0 14px; }
+  .verdict-grid p:last-child { margin-bottom: 0; }
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .callout .kicker {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 8px;
+  }
+  .callout p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 10px; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: var(--ink); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  footer a { color: var(--ink-faint); }
+  footer ul { margin: 0; padding: 0; list-style: none; display: flex; gap: 14px; flex-wrap: wrap; }
+
+  ::selection { background: var(--accent-soft-strong); color: var(--accent-ink); }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Wettbewerbsanalyse · Dritte Auflage · Version 0.4.0</p>
+    <h1>Wo Photo Vault jetzt steht</h1>
+    <p class="lede">
+      Dritte Auflage, zur Version 0.4.0. Photo Vault gegen acht etablierte Foto-Verwaltungen — von
+      Apple&nbsp;Photos bis Adobe&nbsp;Lightroom — anhand von 18 Kriterien. Neu bewertet ist allein
+      die eigene Spalte: Dazwischen liegen fünfzig Commits, fünf Prüfrunden und der Sprung von
+      0.1.0 auf 0.4.0. Die Einstufungen der Wettbewerber sind unverändert übernommen.
+    </p>
+    <div class="tags-line">
+      <span class="tag-chip">Version 0.4.0</span>
+      <span class="tag-chip">privates Archiv</span>
+      <span class="tag-chip">lokale KI</span>
+      <span class="tag-chip">kein Server</span>
+      <span class="tag-chip">nur macOS</span>
+      <span class="tag-chip">kostenlos</span>
+    </div>
+  </header>
+
+  <div class="update-banner">
+    <span class="num">4→1</span>
+    <p>
+      <strong>Von den sechs Lücken der zweiten Auflage sind vier geschlossen.</strong> Das feste
+      Schlagwort-Vokabular ist frei bearbeitbar geworden, XMP kann jetzt auch <em>lesen</em>, neben
+      den KI-Masken stehen editierbare Vektorformen, und mehrere Bibliotheken lassen sich
+      nebeneinander führen. Geblieben sind: kein Sync, keine mobile App, Bildbeschreibung nur auf
+      Englisch — und weiterhin nur macOS.
+    </p>
+  </div>
+
+  <section class="matrix-section">
+    <div class="section-head">
+      <h2>Der Gesamtvergleich</h2>
+      <p class="section-sub">18 Kriterien · 9 Programme</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="row-label-head">Kriterium</th>
+            <th class="pv-col">Photo Vault</th>
+            <th>digiKam</th>
+            <th>Immich</th>
+            <th>PhotoPrism</th>
+            <th>Apple Photos</th>
+            <th>Mylio</th>
+            <th>Excire Foto</th>
+            <th>Peakto</th>
+            <th>Lightroom</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <th>Preismodell</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kostenlos</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kostenlos</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kostenlos*</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kostenlos* (Plus optional)</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kostenlos</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Abo, ab $50/Monat (Familie)</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Einmalkauf (~$219)</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Abo</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Abo</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Plattformen</th>
+            <td class="pv-col"><div class="cell"><span class="cell-text">macOS</span></div></td>
+            <td><div class="cell"><span class="cell-text">Win / Mac / Linux</span></div></td>
+            <td><div class="cell"><span class="cell-text">Server + Mobil + Web</span></div></td>
+            <td><div class="cell"><span class="cell-text">Server + Mobil + Web</span></div></td>
+            <td><div class="cell"><span class="cell-text">Nur Apple-Geräte</span></div></td>
+            <td><div class="cell"><span class="cell-text">Win / Mac / Mobil</span></div></td>
+            <td><div class="cell"><span class="cell-text">macOS / Windows</span></div></td>
+            <td><div class="cell"><span class="cell-text">macOS</span></div></td>
+            <td><div class="cell"><span class="cell-text">Win / Mac / Mobil / Web</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>Mehrere Bibliotheken nebeneinander<span class="up-flag">neu in 0.4.0</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Wechsel ohne Datenbewegung</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Mehrere Sammlungen</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Eine Instanz, ein Bestand</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Ein Index je Instanz</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Mehrere Mediatheken (Wahltaste)</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Eine Bibliothek über viele Geräte</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Mehrere Datenbanken</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Mehrere Kataloge</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Mehrere Kataloge</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Sync über mehrere Geräte</th>
+            <td class="pv-col"><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Keiner (bewusst)</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Keiner</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Auto-Upload</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Auto-Upload</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">iCloud</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">P2P + Cloud</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Keiner</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Keiner</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Cloud</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Lokale KI (ohne Cloud-Aufruf)</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig, offene Modelle</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig (+ optional Ollama)</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Laut Hersteller</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig ("private AI")</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Cloud-KI (Sensei/Firefly)</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>Automatisches Gesichts-Clustering<span class="up-flag">jetzt ✓</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">SFace-Embeddings, Union-Find, Schwellenwert einstellbar</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Trainierbar</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Ab ~5.000 Fotos/Person gut</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">+ Emotionserkennung</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Batch-Erkennung</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">(Classic)</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Semantische Bildsuche (Text → Bild)</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">CLIP, mit 12+ Filtern kombinierbar (Person, Kamera, ISO/Blende/Brennweite, Unschärfe …)</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Nur Ähnlichkeitssuche</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">CLIP-basiert</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">+ Objekt/Szene/Label-Operatoren</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Eingeschränkt</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">+ Objekt/Szene + OCR-Text (2027)</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vereinheitlichte Suchleiste</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Sensei / Firefly</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>KI-Bildbeschreibung (Freitext-Caption)<span class="up-flag">neues Kriterium</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">ViT-GPT2, lokal – nur Englisch</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Nur als Feature-Wunsch offen</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Via Ollama, mehrsprachig möglich</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Nur Vokabular-Tags, kein Freitext</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>RAW-Formatbreite<span class="up-flag">jetzt ✓</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">25 Endungen, praktisch alle Hersteller</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Breit (libraw)</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Eingeschränkt</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Über ImageMagick, eingeschränkt</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Breit</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Breit</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">20+ Formate</span></div></td>
+            <td><div class="cell"><span class="cell-text muted">Von Quell-App abhängig</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Nahezu alle</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>RAW-Entwicklung / Bildbearbeitung<span class="up-flag">jetzt ✓</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Nicht-destruktiv, Verlauf, Vorher/Nachher, KI-Objektmasken</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Basis (oft + darktable)</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Reine Bibliothek</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Basis-Anpassungen</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Reine Leitzentrale</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span><span class="cell-text">Reine Aggregation</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vollständig, non-destruktiv</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>Objektbezogene lokale Anpassungen (Masken)<span class="up-flag">erweitert</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">SAM-Punkt-Prompt <em>plus</em> editierbare Vektorformen</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Auswahlwerkzeuge + KI-Maske</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Echte Verschlüsselung (privater Bereich)</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">AES-256-GCM + Argon2id, PIN 8-10-stellig</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Nur Auth-Sperre</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Backup-Vault verschlüsselt</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Duplikaterkennung</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">LSH + CLIP-Embeddings</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Hashing</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Konfigurierbar</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Über gesamte Katalog-Aggregation</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>Serien-/Burst-Stapelung<span class="up-flag">neues Kriterium</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Getrennt von Duplikatsuche, umkehrbar</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Namensgebende Funktion</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Serienbild-Erkennung</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Mobile App</th>
+            <td class="pv-col"><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">iOS / Android</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">iOS / Android</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Web-Zugriff</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>Video-Werkzeuge<span class="up-flag">verbessert</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Nicht-destruktiver Zuschnitt, Thumbnails, Live-Photo-Verknüpfung</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Transcoding, HLS-Streaming</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Transcoding (Vulkan-beschleunigt)</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Einfaches Trimmen</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Vorschnitt für Premiere/FCP</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Basis + Kurven für Video</span></div></td>
+          </tr>
+
+          <tr>
+            <th>Statistik / Analyse</th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Jahr, Monat, Kamera, Speicher, Favoriten, Vault-Bestand</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Server-Dashboard</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span><span class="cell-text">Server-Dashboard</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+          </tr>
+
+          <tr class="new-row">
+            <th>XMP-Interoperabilität<span class="up-flag">jetzt ✓</span></th>
+            <td class="pv-col"><div class="cell"><span class="dot good">✓</span><span class="cell-text">Export <em>und</em> Import (eigener Dialog)</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Import + Export</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Import (GPS, Gesichter) + Export</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot gap">✗</span></div></td>
+            <td><div class="cell"><span class="dot partial">◐</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Kernfunktion (Katalog-Sync)</span></div></td>
+            <td><div class="cell"><span class="dot good">✓</span><span class="cell-text">Import + Export</span></div></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><span class="dot good" style="margin-top:0">✓</span> vorhanden / stark</span>
+      <span><span class="dot partial" style="margin-top:0">◐</span> teilweise / eingeschränkt</span>
+      <span><span class="dot gap" style="margin-top:0">✗</span> nicht vorhanden</span>
+      <span><span class="up-flag" style="margin-left:0">markiert</span> seit der ersten Auflage verändert</span>
+    </div>
+    <p class="table-footnote">
+      * Immich und PhotoPrism sind selbst kostenlos/quelloffen, verlangen aber eigene Serverhardware
+      (Docker/NAS) im Dauerbetrieb; PhotoPrism bietet zusätzlich eine optionale, kostenpflichtige
+      "Plus"-Mitgliedschaft für Server-Support/Beta-Features. Die Angaben zu den acht Wettbewerbern
+      stammen von öffentlichen Produktseiten, Release Notes und aktuellen Reviews (Stand August 2026),
+      nicht aus eigenem Praxistest; sie sind gegenüber der zweiten Auflage unverändert übernommen. Die
+      Photo-Vault-Spalte ist direkt aus dem Quellcode der Version 0.4.0 (Schema-Version 31, 424 Tests)
+      abgeleitet. darktable und Photo Mechanic fehlen in dieser Matrix bewusst — siehe
+      "Spezialisierte Werkzeuge" unten, warum ein direkter Zeilenvergleich dort irreführend wäre.
+    </p>
+  </section>
+
+  <section class="cards-section">
+    <div class="section-head">
+      <h2>Spezialisierte Werkzeuge, kein direkter Vergleich</h2>
+    </div>
+    <p class="intro">
+      Zwei der ursprünglich recherchierten Programme sind keine Bibliotheks-Verwaltungen wie die neun
+      oben — sie decken jeweils nur einen Ausschnitt ab, den Photo Vault als Teilfunktion mitbringt.
+    </p>
+    <div class="specialists">
+      <div class="specialist">
+        <strong>darktable</strong>
+        <p>Reines RAW-Entwicklungswerkzeug ohne Bibliothek/Suche/Gesichtserkennung. Version 5.6
+        (Juni 2026) brachte SAM2.1-basierte KI-Objektmasken (Vektor, nicht Raster) und ein "Neural
+        Restore"-Modul für ML-Entrauschen/-Hochskalieren — beides über Photo Vaults heutigen
+        Masken-Stand hinaus, siehe Fahrplan.</p>
+      </div>
+      <div class="specialist">
+        <strong>Photo Mechanic</strong>
+        <p>Reines Sichtungs-/Ingest-Werkzeug ohne jegliche KI — laut aktuellen Tests (Stand Mai 2026)
+        weiterhin ohne KI-Sichtung, Unschärfe- oder Augen-geschlossen-Erkennung. Photo Vaults
+        Sichtungs-Modus liegt hier bereits vorn (Unschärfe-Score als Sichtungshilfe vorhanden).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="verdict-section">
+    <div class="section-head">
+      <h2>Was die Tabelle nicht zeigt</h2>
+    </div>
+    <div class="verdict-grid">
+      <div>
+        <p>
+          Die erste Auflage dieses Vergleichs verlor die meisten Zeilen mit rotem Punkt an die
+          RAW-/Bearbeitungs-/Clustering-Lücke. Vier davon sind jetzt geschlossen, zwei davon
+          (RAW-Entwicklung, RAW-Formatbreite) nicht nur geschlossen, sondern gehören inzwischen zu den
+          eher stärkeren Zeilen der Tabelle — Photo Vault entwickelt jetzt nicht-destruktiv, mit
+          Verlauf und KI-Objektmasken, während Peakto, Excire Foto und Mylio dort weiterhin komplett
+          passen (reine Kataloge/Leitzentralen ohne Entwicklungsmodul).
+        </p>
+        <p>
+          Was gleich geblieben ist: <strong>Sync, Mobile-App und Server-Betrieb</strong> bleiben
+          bewusste Nicht-Ziele, keine übersehenen Lücken. Und in den beiden Zeilen, die Photo Vault von
+          Anfang an anführte — echte Verschlüsselung und kombinierbare KI-Suche — hat sich der Vorsprung
+          eher vergrößert: die Suche kombiniert inzwischen zwölf statt vier Filterarten, und mit der
+          KI-Bildbeschreibung (lokal, ViT-GPT2) hat Photo Vault ein Feature, das außer PhotoPrism
+          (via Ollama) keines der acht Vergleichsprogramme anbietet — Excire Foto, Peakto und Lightroom
+          erkennen zwar Objekte/Szenen, erzeugen aber keine freien Bildunterschriften.
+        </p>
+      </div>
+      <div class="callout">
+        <p class="kicker">Kurz gesagt</p>
+        <p>Der erste Vergleich endete mit der Einordnung "kein Lightroom-Ersatz, kein
+        Mylio-Ersatz" — <strong>das gilt für Sync/Mobile weiterhin</strong>, aber bei RAW-Entwicklung
+        tritt Photo Vault jetzt tatsächlich gegen Lightroom an, nicht mehr nur gegen digiKam/Immich.</p>
+        <p>Die einzige Zeile, in der sich die Einstufung <em>verschlechtert</em> hätte, gibt es nicht —
+        jede Veränderung seit der ersten Auflage ist eine Verbesserung. Die verbliebenen roten Punkte
+        (Sync, Mobile, KI-Tag-Vokabular, XMP-Import) sind entweder bewusste Entscheidungen oder bereits
+        im neuen Fahrplan berücksichtigt.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cards-section strengths">
+    <div class="section-head">
+      <h2>Stärken</h2>
+      <p class="section-sub">Konkret, nicht nur "hat KI"</p>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <p class="kicker">Privatsphäre</p>
+        <h3>Echte Verschlüsselung statt Anzeige-Filter</h3>
+        <p>AES-256-GCM pro Datei, Argon2id-Schlüsselableitung, 8–10-stellige PIN ohne Wiederherstellung
+        — inzwischen auch für Video-Zuschnitte und KI-Objektmasken lückenlos mitverschlüsselt.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Suche</p>
+        <h3>Zwölf Filterarten in einer Abfrage</h3>
+        <p>CLIP-Textsuche, OCR-Text, KI-Bildbeschreibung, Person, Kamera, Objektiv, Ort, Zeitraum,
+        Bewertung, Farbmarkierung, ISO/Blende/Brennweite und Unschärfe-Score kombinieren sich frei.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Bearbeitung</p>
+        <h3>Non-destruktive Entwicklung mit KI-Masken</h3>
+        <p>Verlaufsstapel, Vorher/Nachher-Vergleich und SAM-basierte, punktgesteuerte Objektmasken für
+        gezielte lokale Anpassungen — eine Kombination, die sonst nur Lightroom und darktable bieten.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Formate</p>
+        <h3>25 RAW-Herstellerendungen</h3>
+        <p>Von Canon über Hasselblad bis DxO, über macOS' native CIRAWFilter-Pipeline — ohne
+        zusätzliche Bibliothek wie libraw, mit derselben Dekodierung wie Fotos.app.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Betrieb</p>
+        <h3>Kein Server, kein Setup</h3>
+        <p>Anders als Immich und PhotoPrism (Docker/NAS im Dauerbetrieb) reicht eine einzige App auf
+        einem Mac.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Kosten</p>
+        <h3>Kostenlos ohne Abo-Falle</h3>
+        <p>Gegen Mylio, Peakto und Lightroom (alle im Abo) und selbst gegen Excire Foto (Einmalkauf)
+        steht hier: kein laufender Preis, keine Funktionssperre nach Vertragsende.</p>
+            <div class="card">
+        <p class="kicker">Stärke</p>
+        <h3>Mehrere Bibliotheken ohne Umzug</h3>
+        <p>
+          Beliebig viele Bibliotheken nebeneinander, der Wechsel biegt nur einen Zeiger um und bewegt
+          keine Daten. Damit zieht Photo Vault mit den Katalogprogrammen gleich und liegt vor den
+          serverbasierten Immich und PhotoPrism, die je Instanz einen einzigen Bestand führen.
+        </p>
+      </div>
+      <div class="card">
+        <p class="kicker">Stärke</p>
+        <h3>Sparsam im Leerlauf</h3>
+        <p>
+          Die KI-Modelle werden erst bei Gebrauch geladen und nach Leerlauf wieder freigegeben: rund
+          210 MB nach dem Start statt der 1538 MB, die alle Modelle zusammen belegen. Für ein Programm,
+          das neben Lightroom offen bleiben soll, ist das keine Nebensache.
+        </p>
+      </div>
+</div>
+    </div>
+  </section>
+
+  <section class="cards-section gaps">
+    <div class="section-head">
+      <h2>Verbliebene Lücken</h2>
+      <p class="section-sub">Ehrlich benannt, nicht schöngeredet</p>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <p class="kicker">Geräte</p>
+        <h3>Kein Sync, keine Mobile-App</h3>
+        <p>Bewusste Architektur-Entscheidung, kein Versäumnis — die Bibliothek existiert nur auf einem
+        Mac, ohne Server-Abhängigkeit.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Sprache</p>
+        <h3>KI-Bildbeschreibung nur Englisch</h3>
+        <p>Einzige real verfügbare, klein genug gebündelte Option (siehe Umsetzung) — im Gegensatz zu
+        PhotoPrisms Ollama-Anbindung, die je nach gewähltem Modell mehrsprachig arbeiten kann.</p>
+      </div>
+      <div class="card">
+        <p class="kicker">Reife</p>
+        <h3>Einzelprojekt, jetzt v0.4.0</h3>
+        <p>Fünf Prüfrunden und über vierhundert Tests ändern nichts daran, dass hinter digiKam eine Gemeinschaft und hinter Lightroom ein Konzern steht. Wer eine Bibliothek über zwanzig Jahre führen will, sollte das mitbedenken — wobei die Fotos als gewöhnliche Dateien im Dateisystem liegen und XMP inzwischen in beide Richtungen geht, ein Ausstieg also offensteht.</p>
+      </div>
+    
+      <div class="card">
+        <p class="kicker">Lücke</p>
+        <h3>Nur macOS</h3>
+        <p>Alle Abhängigkeiten sind seit dem Umstieg auf media_kit plattformfähig, und die Ordnerauswahl liegt hinter einer Abstraktion. Was fehlt, sind die sechs nativen Bildfunktionen, die heute über Core Image laufen. Ein Linux-Bau ist vorbereitet, aber nicht ausgeliefert — digiKam und darktable laufen überall.</p>
+      </div>
+</div>
+  </section>
+
+  <section class="conclusion">
+    <div class="section-head">
+      <h2>Einordnung</h2>
+    </div>
+    <p class="intro">
+      Gegen digiKam und Immich — die beiden anderen kostenlosen, lokal-KI-basierten Optionen mit
+      vergleichbarer Philosophie — hat Photo Vault seinen Vorsprung von "gewinnt bei zwei Zeilen,
+      verliert bei zweien" zu "gewinnt bei den meisten neuen Zeilen, verliert nur noch bei Sync/Mobile"
+      ausgebaut. Gegen die kommerziellen Vollprofis tritt es nicht mehr nur auf der Vertrauensfrage an:
+      bei RAW-Entwicklung mit lokalen KI-Masken steht es inzwischen näher bei Lightroom als bei den
+      reinen Katalog-Werkzeugen Peakto und Excire Foto. Die verbliebenen Lücken sind kleiner und
+      konkreter geworden — und, anders als beim ersten Vergleich, bereits Gegenstand eines neuen
+      Fahrplans statt einer offenen Frage.
+    </p>
+  
+      <p>
+        Gegenüber der zweiten Auflage hat sich der Charakter der offenen Punkte verschoben. Es fehlen
+        keine Grundfunktionen mehr — was bleibt, sind Architekturentscheidungen: kein Server, also kein
+        Sync; macOS-native Bildverarbeitung, also vorerst keine anderen Plattformen; ein englisches
+        Beschreibungsmodell. Das ist die angenehmere Sorte offener Punkte, weil sie bewusst getroffen
+        wurden und nicht übersehen.
+      </p>
+</section>
+
+  <footer>
+    <span>Photo Vault · interne Wettbewerbsanalyse, 2. Auflage</span>
+    <ul>
+      <li>digiKam</li><li>Immich</li><li>PhotoPrism</li><li>Apple Photos</li><li>Mylio</li>
+      <li>Excire Foto</li><li>Peakto</li><li>Adobe Lightroom</li><li>darktable</li><li>Photo Mechanic</li>
+    </ul>
+  </footer>
+
+</div>
+

@@ -1,0 +1,90 @@
+
+Filename: /home/test/EOS_R10.CR3
+Timestamp: Fri Aug 19 19:19:28 2022
+Camera: Canon EOS R10 ID: 0x80000465
+Normalized Make/Model: =Canon/EOS R10= CamMaker ID: 8
+Body#: 022031004996 Lens#: 0000130987
+EXIF:
+	MinFocal: 50.0 mm
+	MaxFocal: 50.0 mm
+	MaxAp @MinFocal: f/0.0
+	MaxAp @MaxFocal: f/0.0
+	CurFocal: 50.0 mm
+	MaxAperture @CurFocal: f/0.0
+	FocalLengthIn35mmFormat: 0 mm
+	LensMake: 
+	Lens: EF50mm f/1.8 STM
+
+
+Makernotes:
+	DriveMode: 0
+	FocusMode: 256
+	MeteringMode: 1
+	AFPoint: 0
+	ExposureMode: 4
+	ExposureProgram: -1
+	ImageStabilization: 257
+	Lens: EF 50mm f/1.8 STM
+	LensFormat: 2, 	LensMount: 5, 	FocalType: 1, Prime lens
+	LensFeatures_pre: EF
+	LensFeatures_suf: 
+	MinFocal: 50.0 mm
+	MaxFocal: 50.0 mm
+	MaxAp @MinFocal: f/0.0
+	MaxAp @MaxFocal: f/0.0
+	MinAp @MinFocal: f/0.0
+	MinAp @MaxFocal: f/0.0
+	MaxAp: f/1.8
+	MinAp: f/22.6
+	CurFocal: 50.0 mm
+	CurAp: f/1.8
+	MaxAp @CurFocal: f/0.0
+	MinAp @CurFocal: f/0.0
+	TeleconverterID: 0
+	Teleconverter: 
+	AdapterID: 0
+	Adapter: 
+	AttachmentID: 0
+	Attachment: 
+
+ISO speed: 1600
+real ISO speed: 1600
+Shutter: 1/100.0
+Aperture: f/1.8
+Focal length: 50.0 mm
+Camera temperature:  34.00° C
+Flash exposure compensation: 0.00 EV
+Embedded ICC profile: no
+Number of raw images: 1
+Thumb size:  6000 x 4000
+Full size:   6192 x 4060
+Raw inset, width x height: 6000 x 4000 left: 168 top: 52
+Image size:  6000 x 4000
+Output size: 6000 x 4000
+Image flip: 0
+Raw colors: 3
+Filter pattern: RGGBRGGBRGGBRGGB
+Highlight linearity limits: 14338 14338 14338 14338
+Makernotes WB data:               coeffs                  EVs
+  As shot                   1830 1024 1711 1024    0.84  0.00  0.74  0.00
+  Daylight                  1768 1024 1745 1024    0.79  0.00  0.77  0.00
+  Tungsten (Incandescent)   1253 1024 2485 1024    0.29  0.00  1.28  0.00
+  Flash                     1920 1024 1618 1024    0.91  0.00  0.66  0.00
+  Cloudy                    1903 1024 1621 1024    0.89  0.00  0.66  0.00
+  Shade                     2044 1024 1509 1024    1.00  0.00  0.56  0.00
+  Cool White Fluorescent    1487 1024 2325 1024    0.54  0.00  1.18  0.00
+  Illuminant A              1253 1024 2485 1024    0.29  0.00  1.28  0.00
+  Camera Measured           1830 1024 1711 1024    0.84  0.00  0.74  0.00
+  Camera Auto               1830 1024 1711 1024    0.84  0.00  0.74  0.00
+
+Camera2RGB matrix (mode: 1):
+1.7700	-0.8400	0.0700
+-0.2088	1.8068	-0.5979
+-0.0314	-0.6653	1.6967
+
+XYZ->CamRGB matrix:
+0.9269	-0.2012	-0.1107
+-0.3990	1.1762	0.2527
+-0.0569	0.2093	0.4913
+
+Derived D65 multipliers: 1.788086 0.932740 1.448938

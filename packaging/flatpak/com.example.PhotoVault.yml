@@ -1,0 +1,277 @@
+# Flatpak-Bauplan für Photo Vault.
+#
+# Warum überhaupt: Unter Linux greift die App für HEIC, RAW und Video auf
+# Kommandozeilenwerkzeuge zurück (lib/services/platform/linux_image_tools.dart).
+# Welche davon installiert sind, entscheidet sonst die Distribution – und
+# Ubuntu bringt von Haus aus nicht einmal einen HEVC-Dekoder für libheif mit.
+# Im Flatpak sind sie alle dabei, in bekannten Fassungen.
+#
+# Die Kennung com.example.PhotoVault stammt aus der Vorlage und muss vor
+# einer öffentlichen Verteilung durch eine eigene Domäne ersetzt werden.
+# Sie steht an vier Stellen: hier, in der .desktop-Datei, in der
+# metainfo.xml und im Namen des Symbols.
+app-id: com.example.PhotoVault
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+command: photo_vault
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Videoton über media_kit.
+  - --socket=pulseaudio
+  # Nachladen der KI-Modelle und der Geodaten aus den öffentlichen Quellen
+  # des Katalogs.
+  - --share=network
+  # Der Bibliotheksordner ist frei wählbar und wird fortlaufend durchsucht.
+  # Über das Dateiportal ginge nur die Auswahl, nicht das spätere Lesen
+  # tausender Dateien – deshalb der ganze Heimatordner. Wechseldatenträger
+  # ausdrücklich dazu, weil Fotoarchive oft dort liegen.
+  - --filesystem=home
+  - --filesystem=/media
+  - --filesystem=/run/media
+  # Liegt die Bibliothek auf einer Netzfreigabe, die der Dateimanager
+  # eingehängt hat (Samba, NFS, MTP), führt der Weg dorthin über gvfs.
+  # Ohne diese beiden Zeilen ist ein solcher Ordner im Sandkasten schlicht
+  # nicht vorhanden – Shotwell und Rawtherapee führen sie aus demselben
+  # Grund.
+  - --filesystem=xdg-run/gvfs
+  - --filesystem=xdg-run/gvfsd
+  # Der Heimatordner muss offen sein, Zugangsdaten darin nicht. Eine
+  # Fotoverwaltung hat in .ssh, .gnupg und dem Schlüsselbund nichts zu
+  # suchen – und die Bildparser, die hier fremde Dateien auspacken
+  # (libheif, libde265, LibRaw), sind ein beliebtes Ziel. Nachgemessen:
+  # ~/.ssh verschwindet, ~/Bilder bleibt lesbar.
+  - --nofilesystem=home/.ssh
+  - --nofilesystem=home/.gnupg
+  - --nofilesystem=home/.local/share/keyrings
+  # Dasselbe Argument, nur weitergedacht (Prüfrunde 12): Wo sonst noch
+  # Zugangsdaten im Heimatordner liegen, hat eine Fotoverwaltung genauso
+  # wenig zu suchen. ~/.var/app ist der wichtigste davon – dort liegen die
+  # privaten Daten aller anderen Flatpaks, Passwortspeicher inbegriffen.
+  # Die App selbst braucht keinen dieser Pfade: Ihre eigenen Daten liegen
+  # unter ~/.var/app/com.example.PhotoVault, das die Sandbox ohnehin
+  # einhängt und was eine Ausnahme auf ~/.var/app nicht berührt.
+  - --nofilesystem=home/.var/app
+  - --nofilesystem=home/.config
+  - --nofilesystem=home/.pki
+  - --nofilesystem=home/.aws
+  - --nofilesystem=home/.kube
+  - --nofilesystem=home/.docker
+  - --nofilesystem=home/.mozilla
+  - --nofilesystem=home/.thunderbird
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /lib/cmake
+  - /share/man
+  - /share/doc
+  - '*.a'
+  - '*.la'
+
+modules:
+  # --- HEVC-Dekoder ------------------------------------------------------
+  # Der Kern der Sache. Ohne ihn öffnet libheif zwar die Datei, kann den
+  # Bildinhalt aber nicht auspacken: „No decoder plugin found for this
+  # format". Genau daran ist der erste Versuch auf echter Hardware
+  # gescheitert – die Distribution liefert libheif ohne Dekoder aus.
+  - name: libde265
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=ON
+      - -DENABLE_SDL=OFF
+    # dec265 ist libde265s eigenes Beispielprogramm. Der Eintrag gehört
+    # hierher und nicht zu libheif: Aufräumen wirkt nur auf Dateien, die
+    # dasselbe Modul abgelegt hat.
+    cleanup:
+      - /bin/dec265
+    sources:
+      - type: archive
+        url: https://github.com/strukturag/libde265/releases/download/v1.1.1/libde265-1.1.1.tar.gz
+        sha256: fd48a927e94ed74fc7ce8829d222b9d8599fcbfe8b6448ba66705babc56ab219
+
+  - name: libheif
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+      # Der Dekoder wird fest einkompiliert statt als nachladbares Plugin.
+      # Ein Plugin müsste zur Laufzeit gefunden werden; einkompiliert kann
+      # es nicht fehlen.
+      - -DENABLE_PLUGIN_LOADING=OFF
+      - -DWITH_LIBDE265=ON
+      # Kodieren braucht die App nicht, und x265 zöge eine weitere
+      # Abhängigkeit samt Lizenzfrage nach sich.
+      - -DWITH_X265=OFF
+      # AOM bleibt ganz aussen vor: Das SDK liefert eine AOMConfig.cmake,
+      # die auf Dateien zeigt, die es nicht mitinstalliert – daran bricht
+      # die Konfiguration ab. Für AVIF genügt dav1d, und das liegt sauber
+      # als pkg-config-Modul bereit.
+      - -DWITH_AOM_DECODER=OFF
+      - -DWITH_AOM_ENCODER=OFF
+      # .avif und .avifs stehen in der Liste der lesbaren Formate
+      # (lib/services/asset_format.dart), also braucht es einen AV1-Dekoder.
+      - -DWITH_DAV1D=ON
+      # heif-convert steckt in den Beispielen – das ist das Werkzeug, das
+      # die App aufruft.
+      - -DWITH_EXAMPLES=ON
+    # Gebraucht wird genau eines der Beispiele. Der Rest sind Betrachter
+    # und Kodierer, die im Paket nur Platz belegen.
+    #
+    # heif-dec bleibt drin: heif-convert ist seit libheif 1.23 nur noch ein
+    # Verweis darauf. Nimmt man heif-dec weg, bleibt ein toter Verweis
+    # zurück – und das Paket kann keine HEIC-Fotos mehr öffnen, ohne dass
+    # irgendetwas fehlt aussieht. (So passiert.)
+    cleanup:
+      - /bin/heif-enc
+      - /bin/heif-info
+      - /bin/heif-thumbnailer
+      - /bin/heif-view
+    sources:
+      - type: archive
+        url: https://github.com/strukturag/libheif/releases/download/v1.23.1/libheif-1.23.1.tar.gz
+        sha256: 0de0327f60fcd47de90d5654c6fe152232738d60d84fe084ec3e0f35e03b166a
+
+  # --- RAW ---------------------------------------------------------------
+  - name: libraw
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+      - --enable-jpeg
+    # dcraw_emu ist ein Beispielprogramm und wird von `make install` nicht
+    # mitgenommen – die App ruft aber genau dieses auf.
+    #
+    # Über libtool und nicht mit `install`: bin/dcraw_emu ist nur das
+    # Hüllskript, das echte Programm liegt in bin/.libs/. Kopiert man das
+    # Skript, landet ein Programm im Paket, das beim Aufruf versucht, sich
+    # selbst zu übersetzen – und an einem schreibgeschützten /app scheitert.
+    # (So gesehen im ersten Bau.) libtool --mode=install bindet das Programm
+    # neu gegen /app/lib und legt es richtig ab.
+    post-install:
+      - ./libtool --mode=install /usr/bin/install -m755 bin/dcraw_emu /app/bin/dcraw_emu
+      # raw-identify liest Kamera, Objektiv und Aufnahmezeitpunkt aus
+      # RAW-Dateien. Gebraucht wird es, weil package:exif nur TIFF/JPEG
+      # kann: Canons CR3 ist ein ISO-BMFF-Container wie MP4 und liefert
+      # dort NULL Tags - weder Kamera noch Objektiv noch das Datum kamen
+      # an, und das Datum fiel auf den Zeitstempel der Datei zurueck.
+      # Stand vorher in der Aufraeumliste unten, zusammen mit den echten
+      # Messprogrammen. Das war fuer alle anderen richtig und fuer dieses
+      # eine falsch.
+      - ./libtool --mode=install /usr/bin/install -m755 bin/raw-identify /app/bin/raw-identify
+    # LibRaw legt bei `make install` seine sämtlichen Beispiel- und
+    # Messprogramme ab. Ein Fotoverwalter, der einen
+    # postprocessing_benchmark mitliefert, hat schlicht nicht aufgeräumt.
+    cleanup:
+      - /bin/4channels
+      - /bin/dcraw_half
+      - /bin/half_mt
+      - /bin/mem_image
+      - /bin/multirender_test
+      - /bin/postprocessing_benchmark
+      - /bin/rawtextdump
+      - /bin/simple_dcraw
+      - /bin/unprocessed_raw
+    sources:
+      - type: archive
+        url: https://www.libraw.org/data/LibRaw-0.22.2.tar.gz
+        sha256: de86b035655accff8d4010f1a221fdf50d353cb7b1422ba26f14a0db92612cfa
+
+  # --- Video -------------------------------------------------------------
+  # Kein eigener ffmpeg-Bau: Die GNOME-Laufzeit 49 liefert ffmpeg und
+  # ffprobe samt HEVC- und H.264-Dekoder mit. Nachgemessen im Sandkasten,
+  # nicht angenommen – die verbreitete Annahme, Flatpak-Laufzeiten liessen
+  # diese Dekoder aus Patentgründen weg, trifft hier nicht zu.
+  #
+  # libmpv ist die Grundlage von media_kit; ohne sie bleibt die
+  # Videowiedergabe stumm. Sie zieht zwei Bibliotheken nach, die die
+  # Laufzeit nicht hat.
+  - name: libass
+    buildsystem: autotools
+    config-opts:
+      - --disable-static
+    sources:
+      - type: archive
+        url: https://github.com/libass/libass/releases/download/0.17.5/libass-0.17.5.tar.gz
+        sha256: caab4b993dd7be6187c55623b789ed75dddefea6e65938af134637c732fe094a
+
+  # Seit mpv 0.36 Pflicht. Ohne Vulkan und ohne GLSL-Übersetzer gebaut –
+  # für die Wiedergabe über OpenGL braucht es beides nicht, und es spart
+  # die ganze shaderc-Kette.
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dvulkan=disabled
+      - -Dshaderc=disabled
+      - -Ddemos=false
+      - -Dtests=false
+    sources:
+      - type: git
+        url: https://code.videolan.org/videolan/libplacebo.git
+        tag: v7.360.1
+
+  - name: mpv
+    buildsystem: meson
+    config-opts:
+      - -Dlibmpv=true
+      - -Dcplayer=false
+      - -Dvulkan=disabled
+      - -Dmanpage-build=disabled
+    sources:
+      - type: archive
+        url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.41.0.tar.gz
+        sha256: ee21092a5ee427353392360929dc64645c54479aefdb5babc5cfbb5fad626209
+
+  # --- Dateiauswahl ------------------------------------------------------
+  # file_picker startet unter Linux zenity als eigenen Prozess. Fehlt es,
+  # lässt sich kein Bibliotheksordner wählen – und ohne den tut die App
+  # nichts.
+  - name: zenity
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/zenity/4.2/zenity-4.2.2.tar.xz
+        sha256: 019186a996096ef4fc356e21577b5673f5baa3a29ac8e3d608b753371c18018d
+
+  # --- Die Anwendung selbst ----------------------------------------------
+  # Der Flutter-Bau läuft VOR flatpak-builder (tool/flatpak_bauen.sh):
+  # flatpak-builder baut ohne Netz, `flutter build` braucht aber Pakete.
+  - name: photo-vault
+    buildsystem: simple
+    build-commands:
+      - install -d /app/photo_vault
+      - cp -a bundle/. /app/photo_vault/
+      # ONNX Runtime landet NICHT im Flutter-Bündel: dort liegt nur ein
+      # Verweis ins Leere (libonnxruntime.so → libonnxruntime.so.1, das es
+      # nicht gibt). Auf dem Baurechner fällt das nicht auf, weil das
+      # Plugin eine RUNPATH ins Bauverzeichnis trägt und der Heimatordner
+      # freigegeben ist – auf jedem anderen Rechner fielen sämtliche
+      # KI-Funktionen aus. Die echte Datei muss also mit hinein.
+      - install -Dm644 $(find ort -name 'libonnxruntime.so.*' -type f | head -1)
+        /app/photo_vault/lib/libonnxruntime.so.1
+      - install -Dm755 photo_vault.sh /app/bin/photo_vault
+      - install -Dm644 app_icon.png /app/share/icons/hicolor/256x256/apps/com.example.PhotoVault.png
+      - install -Dm644 app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.example.PhotoVault.png
+      - install -Dm644 com.example.PhotoVault.desktop /app/share/applications/com.example.PhotoVault.desktop
+      - install -Dm644 com.example.PhotoVault.metainfo.xml /app/share/metainfo/com.example.PhotoVault.metainfo.xml
+    sources:
+      - type: dir
+        path: ../../build/linux/x64/release/bundle
+        dest: bundle
+      - type: dir
+        path: ../../build/linux/x64/release/plugins/flutter_onnxruntime/onnxruntime
+        dest: ort
+      - type: file
+        path: photo_vault.sh
+      - type: file
+        path: ../../assets/icon/app_icon.png
+      - type: file
+        path: ../../assets/icon/app_icon_512.png
+      - type: file
+        path: com.example.PhotoVault.desktop
+      - type: file
+        path: com.example.PhotoVault.metainfo.xml

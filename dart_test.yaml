@@ -1,0 +1,13 @@
+# Marken, die NICHT in der normalen Suite mitlaufen sollen.
+#
+# `netz` markiert Tests, die echte Dateien aus dem Internet holen. Ohne
+# diesen Eintrag liefe die Modell-Sonde bei jedem `flutter test` mit und
+# zöge dabei 1,4 GB — auf jedem Rechner, bei jedem Lauf. Die
+# Geländesonde ist mit ihren paar Kacheln harmloser, gehört aber aus
+# demselben Grund nicht in einen Lauf ohne Verbindung.
+#
+# Gezielt aufrufen mit:
+#   flutter test --tags netz --run-skipped test/modell_download_probe_test.dart
+tags:
+  netz:
+    skip: "holt echte Dateien aus dem Netz – mit --tags netz --run-skipped aufrufen"

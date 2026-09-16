@@ -1,0 +1,75 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Von Xcode lokal neu erzeugte Swift-Package-Manager-Metadaten für das
+# iOS-Target – wird von dieser App (reines macOS-Desktop-Projekt) nicht
+# genutzt, taucht aber bei jedem Öffnen des Xcode-Workspace neu auf.
+# Das Pendant unter macos/ bleibt bewusst getrackt (dort tatsächlich in
+# Gebrauch), daher hier gezielt nur auf ios/ beschränkt statt über die
+# allgemeine .swiftpm/-Regel oben oder einer weiter gefassten Variante.
+ios/**/xcshareddata/swiftpm/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Lokale Editor-/Werkzeugeinstellungen mit maschinenspezifischen absoluten
+# Pfaden – auf anderen Rechnern wertlos bis falsch.
+.vscode/
+.idea/
+*.code-workspace
+
+# Entwicklungsprotokolle / Sitzungsmitschriften (enthalten lokale Pfade)
+*chatverlauf*.json
+*_transcript.json
+
+# Heruntergeladene Kamera-Beispieldateien (tool/fetch_format_samples.sh) –
+# groß und je Datei unterschiedlich lizenziert, daher bewusst nicht versioniert.
+test/fixtures/samples/
+
+# Ausgabe von gen-l10n: wird bei jedem Lauf neu geschrieben und ist nur ein
+# Prüfmittel, kein Quelltext (siehe test/uebersetzungen_vollstaendig_test.dart).
+lib/l10n/fehlende_uebersetzungen.txt
+
+# Vergleichsbilder eines fehlgeschlagenen Golden-Tests – Zwischenstand,
+# kein Quelltext (entsteht bei jedem Fehlschlag neu).
+test/failures/

@@ -1,0 +1,367 @@
+<title>Photo Vault Feature-Fahrplan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #F6F1E7;
+    --surface: #FFFEFA;
+    --surface-2: #EFE7D6;
+    --ink: #241E15;
+    --ink-soft: #6B6153;
+    --ink-faint: #9A9080;
+    --border: #E2D6BE;
+    --border-strong: #CBB98F;
+    --accent: #B25A28;
+    --accent-ink: #7A3C17;
+    --accent-soft: #F1DEC2;
+    --accent-soft-strong: #E7C89D;
+    --good: #3E7A57;
+    --good-bg: #E1EEE1;
+    --partial: #9C7A1F;
+    --partial-bg: #F1E7C7;
+    --gap: #A5402F;
+    --gap-bg: #F3DFD8;
+    --tier1: #3E7A57;
+    --tier1-bg: #E1EEE1;
+    --tier2: #9C7A1F;
+    --tier2-bg: #F1E7C7;
+    --tier3: #6B4A9C;
+    --tier3-bg: #E9E1F3;
+    --shadow: 0 1px 2px rgba(50, 36, 15, 0.06), 0 8px 24px -12px rgba(50, 36, 15, 0.18);
+    --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16130E;
+      --surface: #1D1811;
+      --surface-2: #262019;
+      --ink: #F1E8D8;
+      --ink-soft: #B6A98F;
+      --ink-faint: #7C7261;
+      --border: #362D20;
+      --border-strong: #4A3D28;
+      --accent: #E08A4C;
+      --accent-ink: #F4B27E;
+      --accent-soft: #382513;
+      --accent-soft-strong: #4A331B;
+      --good: #74BF95;
+      --good-bg: #1D2E24;
+      --partial: #D8B25C;
+      --partial-bg: #362C14;
+      --gap: #E1897A;
+      --gap-bg: #362119;
+      --tier1: #74BF95;
+      --tier1-bg: #1D2E24;
+      --tier2: #D8B25C;
+      --tier2-bg: #362C14;
+      --tier3: #B49CDD;
+      --tier3-bg: #2A2036;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -12px rgba(0, 0, 0, 0.55);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #16130E;
+    --surface: #1D1811;
+    --surface-2: #262019;
+    --ink: #F1E8D8;
+    --ink-soft: #B6A98F;
+    --ink-faint: #7C7261;
+    --border: #362D20;
+    --border-strong: #4A3D28;
+    --accent: #E08A4C;
+    --accent-ink: #F4B27E;
+    --accent-soft: #382513;
+    --accent-soft-strong: #4A331B;
+    --good: #74BF95;
+    --good-bg: #1D2E24;
+    --partial: #D8B25C;
+    --partial-bg: #362C14;
+    --gap: #E1897A;
+    --gap-bg: #362119;
+    --tier1: #74BF95;
+    --tier1-bg: #1D2E24;
+    --tier2: #D8B25C;
+    --tier2-bg: #362C14;
+    --tier3: #B49CDD;
+    --tier3-bg: #2A2036;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 28px -12px rgba(0, 0, 0, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.55;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 72px) clamp(18px, 4vw, 48px) 96px;
+  }
+
+  .hero { padding-bottom: 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--accent-ink); margin: 0 0 18px; font-weight: 600;
+  }
+  h1 {
+    font-family: var(--font-display); font-weight: 500; font-size: clamp(32px, 5vw, 50px);
+    line-height: 1.1; letter-spacing: -0.01em; margin: 0 0 18px; text-wrap: balance; color: var(--ink);
+  }
+  .lede { font-size: 17.5px; max-width: 68ch; color: var(--ink-soft); margin: 0; }
+
+  .done-block {
+    margin-top: 28px;
+    background: var(--tier1-bg);
+    border: 1px solid var(--tier1);
+    border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .done-block .done-head {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px;
+  }
+  .done-block .done-head strong { color: var(--tier1); font-size: 15px; }
+  .done-block .done-head span { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+  .done-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+  .done-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; padding: 5px 11px 5px 9px; border-radius: 100px;
+    background: var(--surface); color: var(--ink-soft); border: 1px solid var(--tier1);
+  }
+  .done-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tier1); flex: none; }
+
+  section { margin-bottom: 52px; }
+  .tier-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tier-badge {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 6px; font-weight: 700;
+  }
+  .tier-badge.t1 { background: var(--tier1-bg); color: var(--tier1); }
+  .tier-badge.t2 { background: var(--tier2-bg); color: var(--tier2); }
+  .tier-badge.t3 { background: var(--tier3-bg); color: var(--tier3); }
+  h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(22px, 3vw, 27px); margin: 0; text-wrap: balance; }
+  .tier-sub { color: var(--ink-faint); font-size: 14.5px; max-width: 74ch; margin: 6px 0 22px; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px 20px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  }
+  .card-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+  .card p + p { margin-top: 8px; }
+  .inspired {
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--accent-ink);
+  }
+  .inspired::before { content: "↳"; opacity: 0.7; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .free-badge {
+    align-self: flex-start; font-size: 11.5px; font-family: var(--font-mono);
+    padding: 3px 9px; border-radius: 100px; background: var(--tier1-bg); color: var(--tier1); border: 1px solid var(--tier1);
+  }
+  .effort-badge {
+    align-self: flex-start; font-size: 11.5px; font-family: var(--font-mono);
+    padding: 3px 9px; border-radius: 100px; background: var(--gap-bg); color: var(--gap); border: 1px solid var(--gap);
+  }
+
+  footer {
+    border-top: 1px solid var(--border); padding-top: 22px; font-size: 12.5px; color: var(--ink-faint);
+  }
+  ::selection { background: var(--accent-soft-strong); color: var(--accent-ink); }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Feature-Fahrplan · 3. Auflage · Version 0.4.0</p>
+    <h1>Was als Nächstes sinnvoll wäre</h1>
+    <p class="lede">
+      Auch die zweite Auflage ist vollständig abgearbeitet — alle sieben Vorschläge sind umgesetzt,
+      der aufwändigste (Vektormasken und ML-Restaurierung) gleich doppelt. Diese Auflage benennt,
+      was danach übrig bleibt: geprüft am Quellstand der Version 0.4.0, nicht geraten.
+    </p>
+    <div class="done-block">
+      <div class="done-head">
+        <strong>Zweite Auflage: 7/7 umgesetzt</strong>
+        <span>zwischen 0.1.0 und 0.4.0</span>
+      </div>
+      <div class="done-strip">
+        <span class="done-chip"><span class="dot"></span>Bibliotheks-Integritätsprüfung</span>
+        <span class="done-chip"><span class="dot"></span>Fokus-Peaking</span>
+        <span class="done-chip"><span class="dot"></span>Vokabular bearbeitbar</span>
+        <span class="done-chip"><span class="dot"></span>Geschlossene-Augen-Erkennung</span>
+        <span class="done-chip"><span class="dot"></span>XMP-Import</span>
+        <span class="done-chip"><span class="dot"></span>360°-Kugelansicht</span>
+        <span class="done-chip"><span class="dot"></span>Vektormasken</span>
+        <span class="done-chip"><span class="dot"></span>ML-Restaurierung</span>
+      </div>
+    </div>
+    <div class="done-block" style="background:var(--surface);border-color:var(--border)">
+      <div class="done-head">
+        <strong style="color:var(--accent-ink)">Ausserdem seit der letzten Auflage entstanden</strong>
+        <span>nicht aus dem Fahrplan</span>
+      </div>
+      <div class="done-strip">
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>Mehrere Bibliotheken</span>
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>Automatisierungsregeln</span>
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>Zweite Bibliothek vergleichen</span>
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>AVIF</span>
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>Hintergrundaufgaben-Übersicht</span>
+        <span class="done-chip" style="border-color:var(--border)"><span class="dot" style="background:var(--accent)"></span>Modelle erst bei Gebrauch laden</span>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t1">Stufe 1</span>
+      <h2>Klein, hoher Nutzen</h2>
+    </div>
+    <p class="tier-sub">Nutzt Bausteine, die schon da sind — Import-Pfad, Export-Dienst, Entwicklungsverlauf. Keine neue Architektur, kein neues Modell.</p>
+    <div class="card-grid">
+
+      <div class="card">
+        <span class="inspired">digiKam, Lightroom, Immich</span>
+        <h3 class="card-title">Überwachte Ordner</h3>
+        <p>Einen Ordner benennen, der laufend beobachtet wird: Was dort auftaucht, wandert von selbst
+        in die Bibliothek. Heute ist jeder Import ein bewusster Griff — bei einer Kamera, die in denselben
+        Ordner entlädt, ist das unnötige Handarbeit.</p>
+        <p>Der Import-Pfad samt Dublettenprüfung und Automatisierungsregeln existiert vollständig; es
+        fehlt nur die Beobachtung des Ordners und eine Entscheidung, was bei Namenskollisionen gilt.</p>
+        <span class="free-badge">keine neue Abhängigkeit</span>
+      </div>
+
+      <div class="card">
+        <span class="inspired">Lightroom, Capture One, digiKam</span>
+        <h3 class="card-title">Export-Voreinstellungen</h3>
+        <p>Der Export kopiert heute ausschliesslich die Originaldatei. Was fehlt, ist der häufigste
+        Fall: „dieselben zwanzig Fotos, aber 2000 px lange Kante, JPEG, Qualität 85“ — zum Verschicken
+        oder Hochladen, ohne den Umweg über ein zweites Programm.</p>
+        <p>Die native Bildkonvertierung kann Grösse und Format bereits (sie erzeugt damit die
+        Vorschauen); es braucht die Voreinstellungen und ihre Verwaltung.</p>
+        <span class="free-badge">Konvertierung vorhanden</span>
+      </div>
+
+      <div class="card">
+        <span class="inspired">Lightroom („Einstellungen synchronisieren“)</span>
+        <h3 class="card-title">Entwicklung auf andere Fotos übertragen</h3>
+        <p>Eine Belichtungs- und Weissabgleich-Korrektur, die für ein Foto einer Serie stimmt, stimmt
+        meist für die ganze Serie. Heute muss jedes Foto einzeln nachgezogen werden.</p>
+        <p>Die Einstellungen liegen bereits als eigener Datensatz je Foto vor, mitsamt Verlauf — sie
+        auf eine Auswahl zu übertragen ist im Kern ein Kopiervorgang, kein neuer Rechenweg.</p>
+        <span class="free-badge">Datenmodell vorhanden</span>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t2">Stufe 2</span>
+      <h2>Mittlerer Aufwand</h2>
+    </div>
+    <p class="tier-sub">Ein neues Modell oder ein spürbarer Ausbau bestehender Werkzeuge — überschaubar, aber kein Nachmittag.</p>
+    <div class="card-grid">
+
+      <div class="card">
+        <span class="inspired">Lightroom, darktable, Capture One</span>
+        <h3 class="card-title">Tonwertkurve und Farbmischer</h3>
+        <p>Die grösste verbliebene Lücke im Entwickeln. Belichtung, Kontrast, Schatten und Weissabgleich
+        sind da; was fehlt, ist die gezielte Arbeit an einzelnen Tonwertbereichen und Farben — genau das,
+        wofür man sonst doch wieder Lightroom öffnet.</p>
+        <p>Der Fragment-Shader für die Live-Vorschau existiert bereits und rechnet im linearen Farbraum;
+        eine Kurve käme als weitere Stufe hinzu, kein neuer Unterbau.</p>
+        <span class="effort-badge">Shader + native Seite doppelt zu pflegen</span>
+      </div>
+
+      <div class="card">
+        <span class="inspired">PhotoPrism (mehrsprachig über Ollama)</span>
+        <h3 class="card-title">Bildbeschreibung in der eigenen Sprache</h3>
+        <p>Das Beschreibungsmodell erzeugt englische Sätze, die Suche danach verlangt also englische
+        Begriffe — in einer deutschsprachigen Oberfläche ein Bruch, der bei jeder Benutzung auffällt.</p>
+        <p>Der Modellkatalog samt Download, Prüfsummenkontrolle und bedarfsweisem Laden trägt bereits
+        alles Nötige; auszutauschen ist das Modell selbst. Abzuwägen: mehrsprachige Modelle sind
+        deutlich grösser, und der Ordner liegt schon bei gut einem Gigabyte.</p>
+        <span class="effort-badge">grösserer Download</span>
+      </div>
+
+      <div class="card">
+        <span class="inspired">digiKam (trainierbare Gesichtserkennung)</span>
+        <h3 class="card-title">Gesichtserkennung, die dazulernt</h3>
+        <p>Zuordnungen werden heute übernommen, aber nicht ausgewertet: Wer ein vorgeschlagenes Gesicht
+        ablehnt, korrigiert einmal — beim nächsten Lauf schlägt dasselbe Modell dasselbe wieder vor.</p>
+        <p>Bestätigungen und Ablehnungen festzuhalten und die Schwelle je Person daraus abzuleiten,
+        wäre der kleine Schritt; ein echtes Nachtrainieren der Einbettungen der grosse.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t3">Stufe 3</span>
+      <h2>Großes, eigenständiges Unterfangen</h2>
+    </div>
+    <p class="tier-sub">Verändert die Reichweite des Programms, nicht nur seinen Funktionsumfang.</p>
+    <div class="card-grid">
+
+      <div class="card">
+        <span class="inspired">digiKam, darktable (überall lauffähig)</span>
+        <h3 class="card-title">Die Linux-Fassung fertigstellen</h3>
+        <p>Die grösste Einschränkung im Vergleich, und die einzige der drei verbliebenen, die sich ohne
+        Bruch mit der Grundhaltung beheben lässt — anders als Sync und mobile App, die einen Server
+        verlangen würden.</p>
+        <p>Die Vorarbeit steht: Alle Abhängigkeiten sind plattformfähig, die Ordnerauswahl liegt hinter
+        einer Abstraktion, die Entwicklungsregler laufen als Shader auf jeder Plattform gleich. Was
+        bleibt, sind die nativen Bildfunktionen, die heute über Core Image gehen — Bildkonvertierung,
+        RAW-Entwicklung, Texterkennung. Für jede gibt es eine offene Entsprechung, aber jede ist
+        einzeln zu prüfen und gegen die macOS-Fassung abzugleichen.</p>
+        <span class="effort-badge">sechs native Funktionen zu ersetzen</span>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t3" style="background:var(--gap-bg);color:var(--gap)">Bewusst nicht</span>
+      <h2>Was nicht auf den Fahrplan gehört</h2>
+    </div>
+    <p class="tier-sub">Vollständigkeitshalber genannt, damit die Auslassung als Entscheidung erkennbar ist und nicht als Vergessen.</p>
+    <div class="card-grid">
+      <div class="card">
+        <h3 class="card-title">Sync und mobile App</h3>
+        <p>Der grösste Abstand zu Immich und Lightroom — und der einzige, der die Grundhaltung des
+        Programms umkehren würde. Kein Server, keine Cloud, alles auf einem Rechner: Daraus folgt die
+        Verschlüsselung ebenso wie die Unabhängigkeit von einem Anbieter. Wer Sync braucht, ist bei
+        Immich richtig; das ist keine Schwäche, sondern eine andere Antwort auf dieselbe Frage.</p>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Cloud-KI für bessere Erkennung</h3>
+        <p>Grössere Modelle über eine Programmierschnittstelle würden Beschreibung und Verschlagwortung
+        spürbar verbessern. Sie würden aber jedes Foto an einen fremden Rechner senden — bei einem
+        Programm, dessen Kern ein verschlüsselter privater Bereich ist, ein Widerspruch.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Photo Vault · Feature-Fahrplan, 3. Auflage zur Version 0.4.0 · Fortsetzung von „Photo Vault im Vergleich“ ·
+    Der Stand der eigenen Funktionen ist am Quellcode geprüft, die Einordnung der Vergleichsprogramme
+    stammt aus der Recherche zur zweiten Auflage.
+  </footer>
+
+</div>

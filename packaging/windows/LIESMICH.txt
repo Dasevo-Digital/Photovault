@@ -1,0 +1,69 @@
+Photo Vault fuer Windows
+========================
+
+Dieser Ordner IST das Programm
+------------------------------
+
+Photo Vault wird nicht installiert. Es gibt kein Installationspaket, keinen
+Eintrag unter "Apps & Features" und von sich aus keine Verknuepfung im
+Startmenue. Auspacken, photo_vault.exe starten, fertig.
+
+Der Grund: Ein Installationspaket (MSIX) muesste signiert sein. Ohne ein
+gekauftes Zertifikat muesste man erst ein selbst erzeugtes in den eigenen
+Stammspeicher aufnehmen - eine hoehere Huerde als die SmartScreen-Meldung,
+die ohnehin kommt. Ein Ordner zum Auspacken ist ehrlicher.
+
+Alles, was das Programm braucht, liegt in diesem Ordner - auch die
+Visual-C++-Laufzeit (msvcp140.dll und die drei anderen). Es ist also
+nichts nachzuinstallieren, kein "Microsoft Visual C++ Redistributable".
+
+Daraus folgt: WIRD DIESER ORDNER GELOESCHT, IST DAS PROGRAMM WEG. Es gibt
+keine zweite Kopie an anderer Stelle.
+
+Verschieben ist dagegen unproblematisch - der Ordner laeuft von jedem Ort,
+auch von einem USB-Stick.
+
+
+Wo die eigenen Daten liegen
+---------------------------
+
+NICHT in diesem Ordner, sondern hier:
+
+    %APPDATA%\com.example\photo_vault\PhotoVault\
+
+    library.sqlite   die Datenbank der Bibliothek
+    library\         Originale, Vorschaubilder, Gesichtsausschnitte
+    models\          die KI-Modelle (bis etwa 1,4 GB)
+    geodata\         Ortsnamen fuer die Karte (etwa 30 MB)
+
+Das ist Absicht: Ein neues Paket wird ausgepackt und findet alles wieder.
+
+Umgekehrt heisst es aber auch: Beim Loeschen dieses Ordners bleibt jener
+zurueck. Wer Photo Vault endgueltig entfernen will, loescht ihn von Hand.
+Vorher pruefen, ob die Fotobibliothek darin liegt - sie kann auch anderswo
+liegen, wenn beim Einrichten ein eigener Ordner gewaehlt wurde.
+
+
+Eintrag im Startmenue
+---------------------
+
+Verknuepfung-anlegen.cmd doppelklicken. Sie legt eine einzige Verknuepfung
+im Startmenue an, die auf die photo_vault.exe in diesem Ordner zeigt, und
+aendert sonst nichts. Zum Entfernen die Verknuepfung im Startmenue loeschen.
+
+
+Beim ersten Start
+-----------------
+
+Windows meldet sich mit SmartScreen, weil das Programm nicht mit einem
+gekauften Zertifikat signiert ist. Ueber "Weitere Informationen" ->
+"Trotzdem ausfuehren" startet es.
+
+Die KI-Modelle sind NICHT im Paket - sie waeren groesser als das Programm
+selbst. Sie werden in den Einstellungen einzeln nachgeladen, jeweils aus
+ihrer oeffentlichen Quelle (GitHub, Hugging Face) und mit Pruefsumme.
+Ohne sie funktioniert alles ausser den KI-Funktionen.
+
+Die Werkzeuge fuer iPhone-Fotos (HEIC), RAW-Dateien und Video liegen dagegen
+im Unterordner tools und sind sofort einsatzbereit. Es muss nichts
+nachinstalliert werden, insbesondere keine HEVC-Erweiterung aus dem Store.

@@ -1,0 +1,3834 @@
+{
+  "@@locale": "en",
+  "allgAbbrechen": "Cancel",
+  "allgSpeichern": "Save",
+  "allgSchliessen": "Close",
+  "allgErstellen": "Create",
+  "allgStarten": "Start",
+  "allgName": "Name",
+  "allgMehr": "More",
+  "allgAlleAnzeigen": "Show all",
+  "navTimeline": "Timeline",
+  "navErkunden": "Explore",
+  "navKalender": "Calendar",
+  "navReisen": "Trips",
+  "kuerzelReisenOhne": "Trips have no shortcut – all ten digits were taken, and renumbering would have moved every shortcut you already know.",
+  "navKarte": "Map",
+  "navSuche": "Search",
+  "navPersonen": "People",
+  "navAlben": "Albums",
+  "navWerkzeuge": "Tools",
+  "navEinstellungen": "Settings",
+  "importierenTooltip": "Import photos and videos",
+  "geoeffneteBibliothek": "Open library: {name}",
+  "restaurierungWirdVorbereitet": "Preparing restoration …",
+  "restaurierungWartend": "{anzahl, plural, =1{1 photo queued for restoration} other{{anzahl} photos queued for restoration}}",
+  "analyseLaeuft": "Computing {stufe} (step {nummer} of {gesamt}{fortschritt})",
+  "kuerzelTitel": "Keyboard shortcuts",
+  "kuerzelRaster": "Grid (timeline, calendar, album, search)",
+  "kuerzelUmschaltKlick": "Shift-click",
+  "kuerzelStrgKlick": "Ctrl/⌘-click",
+  "kuerzelUmschaltPfeil": "Shift + arrow",
+  "kuerzelBereichWaehlen": "Add everything up to here",
+  "kuerzelEinzelnWaehlen": "Toggle a single tile",
+  "kuerzelRahmenBewegen": "Move the frame through the grid",
+  "kuerzelAuswahlZiehen": "Extend the selection along",
+  "kuerzelFarbmarkeSetzen": "Set colour label",
+  "kuerzelAuswahlLeeren": "Clear the selection",
+  "kuerzelFotoOeffnen": "Open the photo",
+  "kuerzelWirktAuf": "The keys act on the selection. If there is none, they act on the tile the frame is on.",
+  "einstBeschrKuerzel": "Every keyboard shortcut at a glance",
+  "kuerzelNavigation": "Navigation",
+  "kuerzelVollbild": "Full screen",
+  "kuerzelSichtung": "Culling mode",
+  "kuerzelBereicheWechseln": "Switch between the main sections",
+  "kuerzelUebersichtOeffnen": "Open this list",
+  "kuerzelVorherigesNaechstes": "Previous / next photo",
+  "kuerzelLeertaste": "Space",
+  "kuerzelNaechstesFoto": "Next photo",
+  "kuerzelBewertungSetzen": "Set star rating",
+  "kuerzelFavoritUmschalten": "Toggle favourite",
+  "kuerzelPapierkorbMitBestaetigung": "Move to trash (asks first)",
+  "kuerzelSofortAblehnen": "Reject and move on (no confirmation)",
+  "kuerzelZoomWischen": "⌘/Ctrl + swipe",
+  "kuerzelZoomImBild": "Zoom into and out of the photo (works with a Magic Mouse too)",
+  "timelineLeer": "No photos in this library yet.",
+  "loeschenTitel": "{anzahl, plural, =1{Delete photo?} other{Delete {anzahl} photos?}}",
+  "loeschenHinweis": "{anzahl, plural, =1{It will be moved to the trash.} other{They will be moved to the trash.}}",
+  "albumNeu": "New album",
+  "albumName": "Album name",
+  "albenLeer": "No albums yet.",
+  "albenIntelligente": "Smart albums",
+  "albenGewoehnliche": "Albums",
+  "albumIntelligentLoeschen": "Delete smart album",
+  "albumIntelligentLoeschenFrage": "Remove “{name}”? The photos stay; only the saved search disappears.",
+  "@albumIntelligentLoeschenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "albenIntelligentWoher": "A smart album is a saved search: it does not collect photos, it shows whatever currently matches. You create one in Search, via the bookmark next to the search field.",
+  "erkundenPersonen": "People",
+  "erkundenOrte": "Places",
+  "erkundenLetzteAlben": "Recently added albums",
+  "erkundenLetzteFotos": "Recently added photos",
+  "erkundenErinnerungen": "Memories",
+  "ohneOrtLeer": "No photos with a known location yet.",
+  "karteTitel": "Map",
+  "karteAnsicht": "Map view",
+  "karteTexturNachweis": "Earth/star textures: Solar System Scope (CC BY 4.0)",
+  "kalenderLeer": "Not enough photos for a year overview yet.",
+  "kalenderJahrLeer": "No photos in this year.",
+  "kalenderAnzahlFotos": "{anzahl, plural, =1{{anzahl} photo/video} other{{anzahl} photos/videos}}",
+  "sucheSpeichernTitel": "Save search",
+  "sucheModellFehlt": "Context search needs the image search model. You can download it in Settings under “AI models”.",
+  "sucheModellLaedt": "Loading the image search model …",
+  "sucheOhneEmbeddings": "No photo has been analysed for AI image search yet. The run is under Tools → Tasks (“CLIP embeddings”).",
+  "sucheOhneTexterkennung": "No text has been recognised on any photo yet. The run is under Tools → Tasks (“Recognise text (OCR)”).",
+  "sucheModellUnbrauchbar": "The model {datei} is on disk but cannot be opened. Download it again under Settings - AI models; search and AI tags need it.",
+  "@sucheModellUnbrauchbar": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "sucheFehlgeschlagen": "Search failed: {fehler}",
+  "suchePlatzhalterKontext": "e.g. “sunset over the sea”, “dog in the snow” …",
+  "suchePlatzhalterDateiname": "File name …",
+  "suchePlatzhalterBeschreibung": "Description …",
+  "suchePlatzhalterText": "Text in the photo …",
+  "suchePlatzhalterBildunterschrift": "e.g. “dog”, “sunset” …",
+  "werkzStaubText": "Examines a sample of one camera's shots for a dark speck that keeps sitting in the same place.",
+  "staubTitel": "Find sensor dust",
+  "staubErklaerung": "Sensor dust sits in the same spot on every shot from the same camera. That is exactly how it is recognised: the app examines a sample spread across the whole period and reports only what keeps appearing in the same place. A single dark speck can be anything.",
+  "staubKeineKameras": "No camera is recorded in this library.",
+  "staubSuchen": "Search",
+  "staubFortschritt": "{erledigt} of {gesamt} shots examined",
+  "@staubFortschritt": {
+    "placeholders": {
+      "erledigt": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "staubNichtsGefunden": "{anzahl, plural, =1{No sensor dust was found on the examined shot.} other{No sensor dust was found on {anzahl} examined shots.}}",
+  "@staubNichtsGefunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "staubGefunden": "{anzahl, plural, =1{1 spot that keeps appearing} other{{anzahl} spots that keep appearing}}",
+  "@staubGefunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "staubAufWievielen": "on {treffer} of {gesamt} examined shots",
+  "@staubAufWievielen": {
+    "placeholders": {
+      "treffer": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "staubUebersprungen": "{anzahl} of {gesamt} photos could not be read and were skipped.",
+  "@staubUebersprungen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "staubImEditorOeffnen": "Open an affected shot in the image editor",
+  "allgKamera": "Camera",
+  "sucheSatzVerwerfen": "Undo interpretation and search literally",
+  "sucheOptionen": "Search options",
+  "sucheAusloesen": "Search",
+  "sucheAnleitung": "Type something to search for, or pick search options.",
+  "sucheKeineTreffer": "Nothing found.",
+  "viewerInfo": "Info",
+  "viewerTeilen": "Share",
+  "viewerExportieren": "Export",
+  "viewerEntwickeln": "Develop",
+  "viewerBearbeiten": "Edit",
+  "viewerZuschneiden": "Trim",
+  "viewerDiaschauStarten": "Start slideshow",
+  "viewerDiaschauStoppen": "Stop slideshow",
+  "viewerFavoritSetzen": "Mark as favourite (F)",
+  "viewerFavoritEntfernen": "Remove from favourites (F)",
+  "viewerInGesperrtenOrdner": "Move to the locked folder (encrypted)",
+  "viewerInPapierkorb": "Move to trash (⌫)",
+  "viewerVorherigesFoto": "Previous photo",
+  "viewerNaechstesFoto": "Next photo",
+  "viewerInTimelineZeigen": "Show this photo in the timeline",
+  "viewerAehnlicheZeigen": "Show similar photos",
+  "viewerMetadatenBearbeiten": "Edit metadata",
+  "viewerGesichterBearbeiten": "Edit faces",
+  "viewerGesichterZeigen": "Show faces",
+  "viewerGesichterVerbergen": "Hide faces",
+  "viewerKeineGesichter": "No face detected in this photo.",
+  "viewerGesichtBenennen": "Name this face",
+  "viewerEntwicklungAnwenden": "Paste develop settings",
+  "viewerEntwicklungAnwendenLang": "Paste the copied develop settings onto this photo",
+  "viewerFokusPeaking": "Focus peaking (highlight sharp edges)",
+  "viewerGesichtUnscharf": "Even the sharpest face is soft",
+  "viewerTextZeigen": "Highlight recognised text",
+  "viewerTextVerbergen": "Hide text highlighting",
+  "viewerKeinText": "No text was recognised in this photo.",
+  "viewerTextNochNicht": "No text areas stored for this photo yet – a text recognition run will add them.",
+  "viewerZeileKopiert": "“{text}” copied",
+  "@viewerZeileKopiert": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerFlachesSchwenken": "Pan flat instead of on a sphere",
+  "viewerFlacheVorschau": "Flat preview instead of 360° view",
+  "viewerExportZielordner": "Choose a folder to export to",
+  "viewerExportiert": "Exported: {dateien}",
+  "viewerExportFehlgeschlagen": "Export failed: {fehler}",
+  "viewerTeilenFehlgeschlagen": "Sharing failed: {fehler}",
+  "personenTab": "People",
+  "personenUnbenannteTab": "Unnamed faces",
+  "personenLeer": "No people yet. Switch to the “Unnamed faces” tab, pick a few faces and assign them to a new person.",
+  "personenLangeDruecken": "press and hold: merge",
+  "personenKeineUnbenannten": "No unnamed faces (left). New ones appear here automatically as you import more photos or run another face scan. You can also mark individual ones yourself: open a photo, right-click → “Edit faces”, then use “Add face manually” at the top right.",
+  "personenOhneGesichtsmodell": "Without a face-detection model Photo Vault cannot find any faces.",
+  "personenNochNichtDurchsucht": "{offen, plural, =1{One photo has not been scanned for faces yet.} other{{offen} photos have not been scanned for faces yet.}} Until that is done, nothing can appear here.",
+  "@personenNochNichtDurchsucht": {
+    "placeholders": {
+      "offen": {
+        "type": "int"
+      }
+    }
+  },
+  "personenJetztSuchen": "Scan for faces now",
+  "personenSucheLaeuft": "The face scan is running. The first results will appear here once it is done.",
+  "personenSchwellenHinweis": "The similarity threshold lives in Tools → Face recognition.",
+  "personenDoppelklickHinweis": "Double-click a face to open the whole photo and check it.",
+  "personenAutomatischGruppieren": "Group automatically",
+  "personenAehnlicheAuswaehlen": "Also select similar",
+  "personenAehnlicheAbwaehlen": "Deselect similar",
+  "personenZuordnen": "{anzahl, plural, =1{Assign face} other{Assign {anzahl} faces}}",
+  "personenModellFehlt": "Finding similar faces needs the SFace model (see Settings → Models).",
+  "personenKeineAehnlichen": "No faces found above the {schwelle} similarity threshold.",
+  "personenZuWenigeFuerClustering": "Not enough unnamed faces with an embedding to group them.",
+  "personenKeineGruppen": "No similar groups found.",
+  "personenDauertTitel": "This may take a while",
+  "personenDauertText": "Found {anzahl} unnamed faces. Grouping compares every face with every other one, which takes a while at this many (the app stays usable meanwhile). Start anyway?",
+  "personenZusammenfuehrenMit": "Merge “{name}” into …",
+  "personenZusammenfuehrenTitel": "Confirm merge",
+  "personenZusammenfuehrenText": "Every photo of “{quelle}” will be assigned to “{ziel}”. “{quelle}” is then deleted. This cannot be undone.",
+  "personenZusammenfuehren": "Merge",
+  "spracheTitel": "Language",
+  "spracheSystem": "System language",
+  "spracheDeutsch": "Deutsch",
+  "spracheEnglisch": "English",
+  "spracheHinweis": "Affects the interface only. Your albums, tags and people's names stay as they are.",
+  "spracheVokabularTitel": "Translate the tag vocabulary too?",
+  "spracheVokabularText": "{bekannt} of the {gesamt} terms come from the vocabulary shipped with the app and can be translated reliably. Tags you have already assigned come along; nothing is lost.",
+  "spracheVokabularSelbstAngelegt": "{anzahl, plural, =0{} =1{One term you added yourself stays unchanged.} other{{anzahl} terms you added yourself stay unchanged.}}",
+  "spracheVokabularUebersetzen": "Translate",
+  "spracheVokabularBehalten": "Leave unchanged",
+  "spracheVokabularFertig": "{anzahl, plural, =1{One term translated.} other{{anzahl} terms translated.}}",
+  "erkundenKeineOrte": "No places resolved yet (see Tools → Places).",
+  "erkundenKeineFotos": "No photos imported yet.",
+  "karteKeineOrteLang": "No photos with a known location yet.\n\nLocations come from a photo's GPS data during import, if it has any. You can also set one by hand in a photo's info panel (full screen → ⓘ).",
+  "einstOrdnerNichtGeoeffnet": "Could not open the folder: {pfad}",
+  "einstBibWechselnTitel": "Switch to “{name}”?",
+  "einstBibWechselnText": "The app closes afterwards and opens the chosen library on the next start.\n\nNo photos are moved or deleted – both libraries stay exactly where they are.",
+  "einstBibGewechselt": "The library has been switched. Nothing was moved. The app is closing now – please open it again.",
+  "einstBibHinzufuegenAuswahl": "Pick the folder of an existing library – or an empty folder for a new one. Nothing is moved.",
+  "einstBibBestehendHinzugefuegt": "Existing library added.",
+  "einstBibLeerHinzugefuegt": "Empty folder added – switching to it creates a new, empty library.",
+  "einstBibEntfernenTitel": "Remove “{name}” from the list?",
+  "einstBibEntfernenText": "The library only disappears from this list. Photos, database and folder stay untouched, and you can add it back at any time.",
+  "einstBibNichtEntfernbar": "This entry cannot be removed.",
+  "einstBibListe": "Libraries",
+  "einstBibHinzufuegen": "Add library…",
+  "einstBibAusListeEntfernen": "Remove from the list (deletes no photos)",
+  "einstBibNichtGefunden": "Folder not found – is the drive connected?",
+  "einstBibWechselHinweis": "Switching only changes which library opens – no photos are moved. To move the current library somewhere else, use “Change location” further down.",
+  "einstSpeicherortTitel": "Location of the active library",
+  "einstSpeicherortWaehlen": "Photos, videos, thumbnails and the database move into this folder. Pick a folder that already exists (create it in Finder first if needed).",
+  "einstSpeicherortZuruecksetzenTitel": "Reset the location?",
+  "einstSpeicherortZuruecksetzenText": "The library moves back into the standard app support folder. The app closes afterwards – please open it again.",
+  "einstSpeicherortZuruecksetzenLaeuft": "Resetting the location …",
+  "einstSpeicherortGeaendert": "The location has changed. The app is closing now – please open it again so it loads the library from its new place.",
+  "einstImFinderAnzeigen": "Show in Finder",
+  "einstAendern": "Change…",
+  "einstZuruecksetzen": "Reset",
+  "einstWirdBerechnet": "calculating …",
+  "einstUeberwachtTitel": "Watched folder",
+  "einstUeberwachtKeiner": "No folder set up",
+  "einstUeberwachtErklaerung": "Anything that turns up in a chosen folder is taken into the library by itself – every five minutes and on every start.",
+  "einstUeberwachtAktiv": "Checked every five minutes. The files stay where they are.",
+  "einstUeberwachtWaehlen": "Choose folder…",
+  "einstUeberwachtAndererWaehlen": "Choose another folder…",
+  "einstUeberwachtBeenden": "Stop watching",
+  "einstUeberwachtAuswahl": "Choose a folder to keep an eye on for new photos. The files stay there; they are only added to the library as well.",
+  "einstUeberwachtUebernommen": "{anzahl, plural, =1{Took 1 new photo from the folder.} other{Took {anzahl} new photos from the folder.}}",
+  "einstKiHinweis": "As in digiKam, every AI feature runs offline on this machine. The model files are not bundled with the app but downloaded on demand from official open-source sources – once, after which everything works offline.",
+  "einstAutoAnalyseTitel": "Run AI analysis automatically after importing",
+  "einstAutoAnalyseText": "Importing only files the photos away, which keeps it fast. Faces, text recognition, image search and descriptions follow in the background. Switched off, you can start them by hand under Tools at any time.",
+  "einstNurErkennung": "Detection only (recognition still needs the SFace model)",
+  "einstAufgabenTitel": "Task overview",
+  "einstAufgabenText": "Every analysis with the number of photos still waiting, each one startable on its own",
+  "einstModellLoeschen": "Delete model",
+  "einstModellNichtGeladen": "{beschreibung}\n\nThe model this needs is not downloaded yet.",
+  "einstVokabularText": "Terms the image search model (CLIP) applies automatically to newly imported photos. Changes here only affect future photos – to apply them to the existing library, see Tools → “Compute AI tags” → “All photos”.",
+  "einstBegriffHinzufuegenFeld": "Add a term …",
+  "einstBegriffHinzufuegen": "Add term",
+  "einstOrteText": "Turns a photo's GPS position into country, state or province and city – entirely locally, via the nearest known city (GeoNames data), without asking an online map service. Needed for the country, state and city filters in the search options.",
+  "einstGeoTitel": "GeoNames – cities, countries, states",
+  "einstGeoText": "Cities from 1000 inhabitants worldwide (~10 MB). Licence: {lizenz}.",
+  "einstGeoLoeschen": "Delete the GeoNames data",
+  "einstGesperrtText": "Encrypts private photos with AES-256 – real encryption, not just a display filter – and hides them everywhere else (timeline, search, albums, people, map, backup). Without the PIN there is no way back.",
+  "einstGesperrtEntsperrt": "PIN set up – already unlocked for this session.",
+  "einstGesperrtOeffnen": "Open",
+  "einstPinAendern": "Change PIN",
+  "einstGesperrtAufloesenText": "Every photo in the locked folder is decrypted and becomes visible again everywhere (timeline, search, albums, people, map, backup). This cannot be undone.",
+  "einstBackupVerschluesselungTitel": "Backup encryption",
+  "einstBackupVerschluesselungText": "Lets you encrypt manual and automatic backups with AES-256. Its own passphrase, separate from the locked folder's PIN – a backup often ends up elsewhere and has to be decryptable without this machine.",
+  "einstBackupEntsperrt": "Set up – already unlocked for this session.",
+  "einstBackupGesperrt": "Set up – you will be asked at the next backup.",
+  "einstBackupAendern": "Change",
+  "einstBackupNieGesichert": "Never backed up.",
+  "einstBackupVerschluesseln": "Encrypt backup",
+  "einstBackupPassphraseAbfrage": "Asks for the backup passphrase above when needed.",
+  "einstBackupZielWaehlen": "Choose a backup destination (e.g. your Dropbox or Google Drive folder)",
+  "einstBackupOrdnerWaehlen": "Choose the backup folder (the one containing “PhotoVault-Backup” or “originals”)",
+  "einstBackupEntschluesselnTitel": "Turn off backup encryption?",
+  "einstBackupEntschluesselnText": "New backups will no longer be encrypted. Encrypted backups already at the destination stay as they are and remain decryptable only with the previous passphrase.",
+  "einstBackupLaeuft": "Automatic backup running …",
+  "einstBackupKeineNeuen": "No new files – refreshing the database snapshot.",
+  "einstBackupZielHinweis": "Point this at your local Dropbox or Google Drive folder, for instance – that provider's desktop app then uploads the files to the cloud for you.",
+  "einstBackupAutoHinweis": "Runs only while the app is open (there is no background service) – it checks at start-up and every 30 minutes afterwards whether the interval has elapsed. Always encrypted, and alongside the original files it saves a snapshot of the whole database (faces, places, tags, albums, favourites, …) so the complete state can be restored after data loss. It never deletes anything at the destination – local deletions are deliberately not mirrored.",
+  "einstBackupZuerstZiel": "Choose a destination folder first.",
+  "einstBackupKeinOrdner": "No folder chosen.",
+  "einstBackupAutoZielWaehlen": "Choose the destination for automatic backups",
+  "einstWaehlen": "Choose…",
+  "einstStuendlich": "Hourly",
+  "einstTaeglich": "Daily",
+  "einstWoechentlich": "Weekly",
+  "einstBackupGrenzeText": "Caps how much each run writes to the destination. Worth setting for cloud folders: otherwise the upload falls behind for days. The rest follows at the next interval.",
+  "einstNieAusgefuehrt": "Never run.",
+  "einstBackupPassphraseGesperrt": "The backup passphrase still needs unlocking for this session before the automatic backup can run – via “Sync now”, for instance.",
+  "einstPapierkorbText": "Permanently deletes photos and videos once the chosen period has passed since they went to the trash – irreversibly, including from the locked folder's PIN-protected trash. Off by default.",
+  "einstPapierkorbAus": "Trash expiry is switched off by default.",
+  "einstResetText": "Irreversibly deletes ALL photos, videos and the entire database of this library, then starts over with an empty one. Downloaded AI models and geo data are kept, so nothing needs downloading again.",
+  "einstResetTitel": "Reset the database",
+  "einstResetKurz": "Deletes all media and metadata – cannot be undone.",
+  "einstResetKnopf": "Reset…",
+  "einstResetBestaetigenTitel": "Really reset the database?",
+  "einstResetBestaetigenText": "IRREVERSIBLY deletes all photos, videos, thumbnails and the entire database of this library (albums, people, tags, places, favourites, locked folder, trash, saved searches, …). Downloaded AI models and geo data are kept. Make a backup first if you are unsure – this CANNOT be undone.",
+  "einstResetWort": "RESET",
+  "einstResetEndgueltig": "Reset for good",
+  "einstResetLaeuft": "Deleting the library …",
+  "einstResetFertig": "The library has been deleted completely. The app is closing now – please open it again to start with an empty library.",
+  "einstResetFehlgeschlagen": "Reset failed",
+  "einstUeberTitel": "About this app",
+  "einstKeineModelle": "No AI models downloaded",
+  "einstModelleGeladen": "{geladen} of {gesamt} AI models downloaded",
+  "einstModelleUnbenutzt": "The AI features stay unused without them.",
+  "einstAktualisierungHinweis": "The check asks the public release list once for the latest version number. Nothing about your library is sent, and it happens only when you press this button – never on its own.",
+  "einstAktualisierungNeuer": "A newer version is available: {version}",
+  "einstAktualisierungAktuell": "This version is up to date.",
+  "einstAktualisierungFehler": "Check failed: {fehler}",
+  "einstVerschiebenFehlgeschlagen": "Moving failed",
+  "einstWechselnFehlgeschlagen": "Switching failed",
+  "einstNeustartTitel": "Restart required",
+  "einstUebersetzeBeschreibungTitel": "Translate image descriptions into the interface language",
+  "einstUebersetzeBeschreibungText": "The description model only produces English, and there is no comparably small German one. With the “Translation English → German” model downloaded, every new description is translated as well. The English original is kept, and search finds both.",
+  "einstUebersetzeSucheTitel": "Translate search terms and tags",
+  "einstUebersetzeSucheText": "The text side of the image search model only understands English, while the tag vocabulary is German. Switched on, search terms and vocabulary go through the translation first. Measured across 103 photos it is more precise for 33 of 56 terms and worse for 19 – and it assigns noticeably fewer tags. Worth trying, not worth defaulting to.",
+  "allgEntfernen": "Remove",
+  "allgEinrichten": "Set up",
+  "allgHerunterladen": "Download",
+  "allgAktiv": "On",
+  "einstAbschnittErscheinungsbild": "Appearance",
+  "einstAbschnittModelle": "AI models (local & open source)",
+  "einstAbschnittHintergrund": "Background tasks",
+  "einstAbschnittVokabular": "AI tagging vocabulary",
+  "einstAbschnittStandortdaten": "Location data (local & open source)",
+  "einstAbschnittGesperrterOrdner": "Locked folder",
+  "einstAbschnittManuellesBackup": "Manual cloud backup",
+  "einstAbschnittAutoBackup": "Automatic backup",
+  "einstAbschnittPapierkorb": "Trash",
+  "einstAbschnittGefahrenzone": "Danger zone",
+  "einstDesign": "Theme",
+  "einstDesignHell": "Light",
+  "einstDesignDunkel": "Dark",
+  "einstDesignSystem": "System",
+  "einstUeberwachtNichtsNeues": "Folder set up – nothing new found.",
+  "einstBibWechselnAktion": "Switch",
+  "einstBibWechselnLaeuft": "Switching library …",
+  "einstBibAktiv": "open",
+  "einstBibImmerVorhanden": "always present",
+  "einstSpeicherort": "Storage location",
+  "einstSpeicherortVerschiebenLaeuft": "Moving library …",
+  "einstSpeicherortFortschritt": "{kopiert} of {gesamt} · {dateien} of {dateienGesamt} files",
+  "@einstSpeicherortFortschritt": {"placeholders": {"kopiert": {"type": "String"}, "gesamt": {"type": "String"}, "dateien": {"type": "int"}, "dateienGesamt": {"type": "int"}}},
+  "einstSpeicherbedarf": "Space used",
+  "belegung_originals": "Originals",
+  "belegung_previews": "Previews",
+  "belegung_thumbnails": "Thumbnails",
+  "belegung_developed": "Developed versions",
+  "belegung_restored": "Restored versions",
+  "belegung_trimmed": "Trimmed videos",
+  "belegung_masks": "Masks",
+  "belegung_faces": "Face crops",
+  "belegung_luts": "Colour tables",
+  "belegung_trash": "Trash",
+  "belegung_datenbank": "Database",
+  "belegung_sonstiges": "Other",
+  "einstModellLaedt": "Downloading “{titel}” …",
+  "einstModellePruefenTitel": "Verify models",
+  "einstModellePruefenText": "Recomputes the checksum of every installed model file and compares it with the catalogue. Takes a few seconds. Finds files that changed after they were downloaded – the download itself is always checked.",
+  "einstModellePruefenLaeuft": "Verifying: {datei}",
+  "@einstModellePruefenLaeuft": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "einstModellePruefenAlleGut": "{anzahl, plural, =1{One model file checked, it matches.} other{{anzahl} model files checked, all match.}}",
+  "@einstModellePruefenAlleGut": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "einstModellePruefenNichtsDa": "No model is installed.",
+  "einstModellePruefenBefundTitel": "Model files that stand out",
+  "einstModellePruefenBefundText": "These files are not the ones the catalogue names. Delete the affected model and download it again – only then is what it produces trustworthy.",
+  "einstModellZustandFehlt": "missing",
+  "einstModellZustandZuKurz": "wrong length",
+  "einstModellZustandWeichtAb": "content differs",
+  "einstModelleBelegterPlatz": "Space used by all models: {groesse}",
+  "einstModellLizenzZeile": "Licence: {lizenz}",
+  "einstGesichtserkennungAktiv": "Face detection active",
+  "einstGesichtserkennungBeides": "Detection + recognition embeddings active",
+  "einstGesichtserkennungInaktiv": "Inactive – download the YuNet model above",
+  "einstGeoLaedt": "Downloading location data …",
+  "einstPinEinrichten": "Set up a PIN",
+  "einstGesperrterOrdner": "Locked folder",
+  "einstPinEingerichtet": "PIN is set.",
+  "einstPinEntfernen": "Remove PIN",
+  "einstGesperrtAufloesenTitel": "Remove PIN protection?",
+  "einstSitzungSperren": "Lock this session now",
+  "einstPassphraseEinrichten": "Set up a passphrase",
+  "einstBackupPassphrase": "Backup passphrase",
+  "einstBackupPassphraseEingeben": "Enter the backup passphrase",
+  "einstBackupSichertLaeuft": "Backing up the library …",
+  "einstBackupWiederherstellenLaeuft": "Restoring the library …",
+  "einstLetztesBackup": "Last backup",
+  "einstBackupZusammenfassung": "{datum} – {anzahl} file(s) to {ziel}",
+  "einstJetztSichern": "Back up now",
+  "einstWiederherstellen": "Restore",
+  "einstBackupPruefen": "Verify backup",
+  "einstBackupPruefungLaeuft": "Checking recoverability …",
+  "einstBackupPruefungErfolgreich": "{anzahl} file(s) can be fully restored.",
+  "@einstBackupPruefungErfolgreich": {"placeholders": {"anzahl": {"type": "int"}}},
+  "einstBackupPruefungFehler": "{gueltig} valid, {fehlend} missing, {beschaedigt} corrupted.",
+  "@einstBackupPruefungFehler": {"placeholders": {"gueltig": {"type": "int"}, "fehlend": {"type": "int"}, "beschaedigt": {"type": "int"}}},
+  "einstZielordner": "Destination folder",
+  "einstIntervall": "Interval",
+  "einstIntervallSechsStunden": "Every 6 hours",
+  "einstMengeJeLauf": "Amount per run",
+  "einstUnbegrenzt": "Unlimited",
+  "einstLetzterLauf": "Last run",
+  "einstJetztSynchronisieren": "Synchronise now",
+  "einstNachTagen": "After",
+  "einstTageDropdown": "{tage} days",
+  "einstDatenbank": "Database",
+  "einstDatenbankStand": "Version {version}",
+  "einstBauZeile": "Build {bau} · {system} {systemversion}",
+  "einstLizenzen": "Licences",
+  "einstLizenzenText": "The licences of the bundled fonts and of every library in use.",
+  "einstNachAktualisierungSuchen": "Check for updates",
+  "modellYunetTitel": "Face detection – YuNet",
+  "modellYunetText": "Finds faces (bounding boxes) in photos. A lightweight CNN, part of the OpenCV Zoo.",
+  "modellYunetLizenz": "Apache-2.0",
+  "modellSfaceTitel": "Face recognition – SFace",
+  "modellSfaceText": "Computes one embedding per face so that similar or identical faces group together while you assign them by hand. Part of the OpenCV Zoo.",
+  "modellSfaceLizenz": "Apache-2.0",
+  "modellClipTitel": "AI image search – CLIP ViT-B/32",
+  "einstAlleModelleLaden": "Download all missing ({anzahl})",
+  "@einstAlleModelleLaden": { "placeholders": { "anzahl": { "type": "int" } } },
+  "einstAlleModelleDa": "All models are ready",
+  "einstAlleModelleLaeuft": "Model {nummer} of {gesamt}",
+  "@einstAlleModelleLaeuft": { "placeholders": { "nummer": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "modellClipText": "Lets you search for photos in plain language (for example “sunset over the sea”). Original OpenAI weights, exported as separate image and text encoder ONNX graphs.",
+  "modellClipLizenz": "MIT (weights: OpenAI CLIP, see source)",
+  "modellSamTitel": "AI object masks – SAM ViT-Base",
+  "modellSamText": "Lets you adjust one chosen area instead of the whole picture in the develop screen – brightening only the sky, say. You place foreground and background points, and a promptable segmentation model proposes the matching mask.",
+  "modellSamLizenz": "Apache-2.0 (weights: Meta Segment Anything, see source)",
+  "modellCaptionTitel": "AI image captions – Florence-2 (English)",
+  "modellCaptionText": "Generates a caption for each photo – for search and as a quick overview. It also reads text in the image, such as shop signs or place names. Output is English; the app can translate it into your language with a separate model. There is no comparably small multilingual model – the multilingual ones are gigabytes in size.",
+  "modellCaptionLizenz": "MIT (base: microsoft/Florence-2-base-ft, ONNX port: onnx-community)",
+  "modellOcecTitel": "Closed-eye detection – OCEC",
+  "modellOcecText": "Marks faces with closed eyes while you cull – a quicker way to weed out blinks from portrait and group series.",
+  "modellOcecLizenz": "MIT",
+  "modellEsrganTitel": "AI restoration – Real-ESRGAN x4",
+  "modellEsrganText": "Scales a photo up by a factor of four and removes noise along the way. Runs as a background queue (Settings/Develop) and takes several minutes depending on the size of the photo.",
+  "modellEsrganLizenz": "BSD-3-Clause (original Real-ESRGAN weights)",
+  "modellEnDeTitel": "Translation English → German – OPUS-MT",
+  "modellEnDeText": "Translates the automatically generated captions into German. The captioning model itself only produces English, so without this you have to search in English for what you see in German. About 100 MB.",
+  "modellEnDeLizenz": "Apache-2.0 (base: Helsinki-NLP/opus-mt-en-de, ONNX port: Xenova)",
+  "modellDeEnTitel": "Translation German → English – OPUS-MT",
+  "modellDeEnText": "Translates German search terms and tags before they reach the AI image search, whose text encoder only understands English. About 100 MB.",
+  "modellDeEnLizenz": "Apache-2.0 (base: Helsinki-NLP/opus-mt-de-en, ONNX port: Xenova)",
+  "werkzKeineUnbewerteten": "No unrated photos found.",
+  "werkzKeinePassenden": "No matching photos found.",
+  "werkzGesichterScannenTitel": "Scan for faces",
+  "werkzScanneNeue": "Scanning new photos …",
+  "werkzScanneAlle": "Scanning all photos again …",
+  "werkzErstelleFehlende": "Creating the missing previews …",
+  "werkzErstelleAlle": "Rebuilding all previews …",
+  "werkzRendereNeu": "Re-rendering developed photos …",
+  "werkzKeineEntwickelten": "No developed photos found.",
+  "werkzPruefeLivePhotos": "Looking for Live Photo pairs …",
+  "werkzKeineUnverknuepften": "No unlinked photos found.",
+  "werkzBerechneEmbeddings": "Computing CLIP embeddings …",
+  "werkzAlleHabenEmbedding": "Every photo already has an embedding.",
+  "werkzBerechneKiTags": "Computing AI tags …",
+  "werkzLeseOrte": "Reading locations from photos …",
+  "werkzAlleHabenOrt": "Every photo already has a location (or no EXIF GPS data).",
+  "werkzLoeseOrteAuf": "Resolving country/region/city …",
+  "werkzAlleAufgeloest": "Every photo with a known location has already been resolved.",
+  "werkzLeseKameradaten": "Reading camera data from photos …",
+  "werkzAlleHabenKameradaten": "Every photo already has camera data (or no matching EXIF data).",
+  "werkzSchreibeXmp": "Writing XMP sidecars …",
+  "werkzKeineFotosGesperrt": "No photos found (locked photos are skipped).",
+  "werkzErkenneText": "Recognising text in photos …",
+  "werkzAlleTextDurchsucht": "Every photo has already been searched for text.",
+  "werkzErzeugeBeschreibungen": "Generating image captions …",
+  "werkzAlleHabenBeschreibung": "Every photo already has an AI caption.",
+  "werkzBerechneUnschaerfe": "Computing blur scores …",
+  "werkzAlleHabenUnschaerfe": "A blur score has already been computed for every photo.",
+  "werkzAbschnittStatistik": "Statistics",
+  "werkzAnalyseseiteTitel": "Analysis page",
+  "werkzAnalyseseiteText": "Number of photos and videos, disk space, shots per year and month, most-used cameras",
+  "werkzAbschnittGesichtserkennung": "Face detection",
+  "werkzSchwelleLabel": "Similarity threshold for\n\"Select similar as well\"",
+  "werkzSchwelleErklaerung": "Higher values mean a stricter match: fewer hits, but safer ones. It applies to the \"Select similar as well\" button under \"Unnamed faces\" in the People tab.",
+  "werkzAbschnittVorschau": "Previews",
+  "werkzHeicTitel": "HEIC/HEIF & RAW support",
+  "werkzHeicAktiv": "Active – iPhone photos (HEIC) and RAW files (DNG, CR2/CR3, NEF, ARW, RAF, ORF, RW2 and the rest) go through native macOS image conversion.",
+  "werkzHeicInaktiv": "Inactive – the native Swift file still has to be added to the Xcode project (see the README). JPG/PNG/WebP/GIF/BMP/TIFF work without it.",
+  "werkzHeicWerkzeugeAktiv": "Active – iPhone photos (HEIC) and RAW files (DNG, CR2/CR3, NEF, ARW, RAF, ORF, RW2 and the rest) go through the bundled tools.",
+  "werkzHeicWerkzeugeFehlen": "Limited – missing: {namen}. The formats that depend on them stay without a preview; JPG/PNG/WebP/GIF/BMP/TIFF keep working.",
+  "werkzNeuRendernTitel": "Re-render developed photos",
+  "werkzAbschnittOrte": "Locations",
+  "werkzOrteAufloesenTitel": "Resolve country/region/city",
+  "werkzAbschnittKamera": "Camera",
+  "werkzPresetsTitel": "Manage camera presets",
+  "werkzPresetsText": "Automatically put photos from a particular camera into an album or tag, or mark them as favourites, as they are imported – digiKam's \"preset the camera for import\" by another name.",
+  "werkzRegelnTitel": "Manage automation rules",
+  "werkzRegelnText": "Automatically put photos into an album or tag, or mark them as favourites, based on location, AI tag or capture date – like camera presets, but for other conditions.",
+  "werkzAllesNachholenTitel": "Catch up on all analysis now",
+  "werkzAllesNachholenText": "Starts every expensive step one after another in the background: blur, faces, text recognition, image search, tags and captions. Each step skips what it already has, and the app stays usable throughout.",
+  "werkzAbschnittBibliothek": "Library",
+  "werkzSichtenTitel": "Cull unrated photos",
+  "werkzSichtenText": "Opens every photo and video that is still unrated in full-screen culling mode, for going through and rating them quickly.",
+  "werkzDuplikateTitel": "Find duplicates & similar photos",
+  "werkzDuplikateText": "Based on the CLIP image embeddings",
+  "werkzStapelTitel": "Group burst shots",
+  "werkzStapelText": "Finds similar photos taken close together in time – burst shots, typically – and, if you want, collapses them into one stack with a cover image.",
+  "werkzIntegritaetTitel": "Library integrity check",
+  "werkzIntegritaetText": "Compares the database against the files actually on disk: missing files, orphaned files and, if you like, checksum mismatches.",
+  "werkzAbschnittInterop": "Interoperability",
+  "werkzXmpSchreibenTitel": "Write XMP sidecars",
+  "werkzXmpLesenTitel": "Read XMP sidecars",
+  "werkzXmpLesenText": "Reads existing .xmp files – edited externally in Lightroom, darktable or digiKam, say – and shows where they differ from the database: rating, colour label, description, tags, location.",
+  "sichtungHilfeleiste": "{aktuell} / {gesamt}   ·   0–5 rating   ·   ⌫ reject   ·   ← → next",
+  "ansicht360": "360° view",
+  "personenZuordnenKnopf": "Assign {anzahl}",
+  "aufgStatus": "Status",
+  "aufgBereit": "Ready",
+  "aufgLaeuft": "Analysis is running in the background.",
+  "aufgJetztStarten": "Start now",
+  "aufgWartend": "Waiting",
+  "aufgWenigerGleichzeitig": "One fewer",
+  "aufgMehrGleichzeitig": "One more",
+  "aufgBetrifft": "Affects",
+  "aufgStufe": "{stufe} ({erledigt}/{gesamt}) – step {nummer} of {stufenGesamt}",
+  "aufgModellNoetig": "This needs {modell} first ({wo}).",
+  "aufgYunetModell": "the YuNet model",
+  "aufgClipModell": "the CLIP model",
+  "aufgBeschreibungsmodell": "the image captioning model",
+  "aufgGeoDatensatz": "the GeoNames dataset",
+  "aufgWoModelle": "Settings → AI models",
+  "aufgWoStandortdaten": "Settings → Location data",
+  "aufgGesichterText": "Finds faces and assigns them, as long as the YuNet model is installed.",
+  "aufgVorschauText": "Creates thumbnails and previews for photos and videos. For a video this produces a still frame from the first second – only then can it be analysed at all (description, tags, faces, text). A pass over the other tasks pays off afterwards.",
+  "aufgFehlende": "Missing",
+  "aufgGesichtsschaerfeTitel": "Face sharpness",
+  "aufgGesichtsschaerfeText": "Measures how sharp each recognised face is – on the crop that is already stored, without decoding the photos again. When culling, the app then warns if even the sharpest face in a shot is soft.",
+  "werkzBerechneGesichtsschaerfe": "Measure face sharpness",
+  "aufgOcrTitel": "Recognise text (OCR)",
+  "aufgOcrText": "Finds visible text in photos, entirely locally through Apple's Vision framework.",
+  "aufgBeschreibungenTitel": "Image captions",
+  "aufgBeschreibungenText": "Writes one short English AI caption per photo.",
+  "aufgEmbeddingsTitel": "CLIP embeddings",
+  "aufgEmbeddingsText": "The basis for AI image search and duplicate detection.",
+  "aufgKiTagsTitel": "AI tags",
+  "aufgKiTagsText": "Automatically assigns photos fitting tags from the vocabulary, using CLIP.",
+  "aufgUnschaerfeTitel": "Blur",
+  "aufgUnschaerfeText": "What the \"Show blurry photos only\" search filter needs.",
+  "aufgOrteTitel": "Read locations",
+  "aufgOrteText": "Reads EXIF GPS data from photos after the fact. The number counts photographs without a place; how many carry one in the file only the run itself can tell.",
+  "aufgOrteAufloesenText": "Works out the country, state or province and city behind a photo's GPS position.",
+  "aufgKameraTitel": "Read camera data",
+  "aufgKameraText": "Reads camera, lens, focal length, aperture, ISO and shutter speed from the metadata - from EXIF for photographs, from the container for videos. The number counts items without a camera; those carrying no metadata at all stay in it.",
+  "aufgDateiartTitel": "Check file kinds",
+  "aufgDateiartText": "Some stills arrive under a video name. Treated as a video they drop out of every analysis, get no thumbnail and no location. This run looks at the bytes and corrects the kind. A pass over the other tasks pays off afterwards.",
+  "werkzPruefeDateiarten": "Checking file kinds …",
+  "werkzAlleArtenStimmen": "Every photo is filed correctly.",
+  "aufgLivePhotoTitel": "Check Live Photo pairs",
+  "aufgLivePhotoText": "Links HEIC/JPG stills with MOV videos of the same name. The number counts photographs without a partner; most have none and never will.",
+  "aufgRendernText": "Renders photos with saved develop adjustments again, unchanged.",
+  "aufgXmpText": "Puts an .xmp file next to every photo for Lightroom, darktable or digiKam.",
+  "auswAufheben": "Clear selection",
+  "auswAnzahl": "{anzahl} selected",
+  "auswFavorisieren": "Mark as favourite",
+  "auswZuAlbum": "Add to album",
+  "auswTagHinzufuegen": "Add a tag",
+  "auswBewertungSetzen": "Set rating",
+  "auswFarbeSetzen": "Set colour label",
+  "auswMetadaten": "Edit metadata",
+  "auswEntwicklungUebertragen": "Paste copied develop settings",
+  "auswExportieren": "Export",
+  "allgLoeschen": "Delete",
+  "allgHinzufuegen": "Add",
+  "allgWaehlen": "Choose",
+  "auswBewertungTitel": "Rating for {anzahl} photo(s)",
+  "auswKeineBewertung": "No rating",
+  "auswFarbeTitel": "Colour label for {anzahl} photo(s)",
+  "auswKeineFarbe": "No colour",
+  "auswMetadatenTitel": "Edit metadata for {anzahl} photo(s)",
+  "auswBeschreibungFeld": "Description (overwrites existing ones)",
+  "auswDatumUnveraendert": "Leave the date unchanged",
+  "auswDatumGesetzt": "Date: {datum}",
+  "auswOrtHinweis": "Location (to leave it unchanged, do not tap)",
+  "auswOrtEntfernen": "Remove location",
+  "auswTagTitel": "Add a tag to {anzahl} photo(s)",
+  "auswTagFeld": "Tag",
+  "auswExportTitel": "Export {anzahl} photo(s)",
+  "auswVorgabeAnwenden": "Apply preset",
+  "auswVorgabeAnwendenTitel": "Apply preset to {anzahl} photo(s)",
+  "auswUebertragenTitel": "Paste develop settings onto {anzahl} photo(s)?",
+  "auswUebertragenText": "The copied values for exposure, white balance, contrast and shadows are applied, and each photo is re-rendered.\n\nMasks are not carried over. Each photo's previous state stays in its history.",
+  "auswUebertragen": "Paste",
+  "auswUebertrageLaeuft": "Pasting develop settings …",
+  "auswKeineGeeigneten": "No suitable photos – locked photos and videos are left out.",
+  "auswZielordner": "Choose a destination folder for {anzahl} photo(s)",
+  "auswExportiereLaeuft": "Exporting … ({erledigt} / {gesamt})",
+  "auswExportFertig": "Exported {erledigt} of {gesamt} photo(s) to {ziel}",
+  "exportOriginal": "Original",
+  "exportGross": "Large – 4096 px",
+  "exportWeb": "Web – 2048 px",
+  "exportEmail": "E-mail – 1024 px",
+  "exportUnveraendert": "File unchanged, with an XMP file alongside",
+  "exportJpegKante": "As JPEG, long edge at most {kante} px",
+  "allgUebernehmen": "Apply",
+  "allgAlle": "All",
+  "suchoptTagsWaehlen": "Choose tags",
+  "suchoptTagsFiltern": "Filter tags …",
+  "suchoptKeineTags": "No tags found.",
+  "suchoptTitel": "Search options",
+  "suchoptKeineTreffer": "No photos found – this combination of filters returns 0 results.",
+  "suchoptAllesLeeren": "Clear everything",
+  "suchoptSuchen": "Search",
+  "suchoptPersonenFiltern": "Filter people",
+  "suchoptKeinePersonenBenannt": "No one has been named yet.",
+  "suchoptKeinePersonenGefunden": "No people found.",
+  "suchoptTypTitel": "Search by type",
+  "suchoptTypKontext": "Context",
+  "suchoptTypDateiname": "File name",
+  "suchoptTypBeschreibung": "Description",
+  "suchoptTypOcr": "Text in the photo (OCR)",
+  "suchoptTypCaption": "AI caption (English)",
+  "suchoptNachKontext": "Search by context",
+  "suchoptNachDateiname": "Search by file name",
+  "suchoptNachBeschreibung": "Search by description",
+  "suchoptNachOcr": "Search text recognised in the photo",
+  "suchoptNachCaption": "Search by AI caption (English)",
+  "suchoptHintKontext": "e.g. \"sunrise on the beach\", \"dog in the snow\" …",
+  "suchoptHintDateiname": "File name …",
+  "suchoptHintBeschreibung": "Description …",
+  "suchoptHintOcr": "Text in the photo …",
+  "suchoptHintCaption": "e.g. \"dog\", \"sunset\" …",
+  "suchoptClipFehlt": "AI image search is unavailable – the model is missing (see Settings → AI models).",
+  "suchoptCaptionFehlt": "AI captions are unavailable – the model is missing (see Settings → AI models).",
+  "suchoptTagsTitel": "Tags",
+  "suchoptTagsHint": "Search for tags …",
+  "suchoptOhneTag": "Without a tag",
+  "suchoptMindestbewertung": "Minimum rating",
+  "suchoptFarbmarkierung": "Colour label",
+  "suchoptDateiformat": "File format",
+  "suchoptNurRaw": "RAW only",
+  "farbeRot": "Red",
+  "farbeGelb": "Yellow",
+  "farbeGruen": "Green",
+  "farbeBlau": "Blue",
+  "farbeLila": "Purple",
+  "suchoptAufnahmewerte": "Capture settings",
+  "suchoptIsoVon": "ISO from",
+  "suchoptIsoBis": "ISO to",
+  "suchoptBlendeVon": "Aperture from (f/…)",
+  "suchoptBlendeBis": "Aperture to (f/…)",
+  "suchoptBrennweiteVon": "Focal length from (mm)",
+  "suchoptBrennweiteBis": "Focal length to (mm)",
+  "suchoptNurUnscharfe": "Show blurry photos only",
+  "suchoptMarke": "Make",
+  "suchoptModell": "Model",
+  "suchoptObjektiv": "Lens",
+  "suchoptOrtTitel": "Location",
+  "suchoptLand": "Country",
+  "suchoptBundesland": "State/province",
+  "suchoptStadt": "City",
+  "suchoptGeoFehlt": "No locations resolved yet – download the GeoNames dataset and resolve your photos (see Settings → Location data, Tools → Locations).",
+  "suchoptAnfangsdatum": "Start date",
+  "suchoptEnddatum": "End date",
+  "suchoptDatumEntfernen": "Clear the date",
+  "suchoptDatumPlatzhalter": "dd/mm/yyyy",
+  "suchoptMedientyp": "Media type",
+  "suchoptBild": "Image",
+  "suchoptVideo": "Video",
+  "suchoptAnzeigeoptionen": "Display options",
+  "suchoptInKeinemAlbum": "In no album",
+  "suchoptFavoriten": "Favourites",
+  "entwTitel": "Develop",
+  "entwVerlaufSitzung": "This session",
+  "entwVerlaufGespeichert": "Saved",
+  "entwVerlaufAusgangsstand": "State when opened",
+  "entwVerlaufOhneAenderung": "No change",
+  "entwVerlaufJetzt": "Current state",
+  "entwWerkzBelichtung": "Exposure",
+  "entwWerkzWeissabgleich": "White balance",
+  "entwWerkzTemperatur": "Temperature",
+  "entwWerkzTint": "Tint",
+  "entwWerkzKontrast": "Contrast",
+  "entwWerkzLichter": "Highlights",
+  "entwWerkzSchatten": "Shadows",
+  "entwWerkzSchaerfe": "Sharpness",
+  "entwWerkzRauschen": "Noise reduction",
+  "entwWerkzKlarheit": "Clarity",
+  "entwWerkzVignettierung": "Vignette",
+  "entwWerkzKurve": "Tone curve",
+  "entwWerkzFarbmischer": "Colour mixer",
+  "entwWerkzFarbtabelle": "Colour table",
+  "entwWerkzObjektiv": "Lens correction",
+  "entwKeinVerlauf": "No history yet – an entry appears once you save again after a first adjustment.",
+  "entwKopiert": "Settings copied. You can now paste them onto other photos, even without saving this one.",
+  "entwEingesetzt": "Copied settings applied – not saved yet.",
+  "entwSpeichernFehlgeschlagen": "Saving failed: the image could not be rendered.",
+  "entwRestaurierungLaeuft": "AI restoration",
+  "entwRestaurierungEingereiht": "Added to the AI restoration queue.",
+  "entwRestaurierungFehler": "Could not be added to the queue: {fehler}",
+  "entwKiAuswahlLadefehler": "AI selection could not be loaded: {fehler}",
+  "entwVorschauNichtDekodiert": "The preview image could not be decoded for masking.",
+  "entwKiAuswahlFehler": "AI selection failed: {fehler}",
+  "entwMaskeNummer": "Mask {nummer}",
+  "entwAufloesungUnbekannt": "Image resolution unknown – the mask cannot be saved.",
+  "entwRestaurierungEntfernen": "Remove AI restoration",
+  "entwRestaurierungModellFehlt": "Needs the restoration model (Settings → AI models)",
+  "entwRestaurierungAnwenden": "Apply AI restoration (runs in the background, takes several minutes)",
+  "entwMaskeHinzufuegen": "Add a mask",
+  "entwVerlauf": "History",
+  "entwEinstellungenKopieren": "Copy settings (to paste onto other photos)",
+  "entwEinstellungenEinsetzen": "Put the copied settings into the sliders",
+  "entwOriginal": "Original",
+  "entwVergleichen": "Press and hold to compare",
+  "entwVorher": "Before",
+  "entwNachher": "After",
+  "entwTrennstrich": "Before and after side by side (drag the divider)",
+  "entwTrennstrichWartet": "The unedited image is still being rendered – one moment.",
+  "entwMaskeErstellen": "Create a mask",
+  "entwFormKi": "AI",
+  "entwFormKiFehlt": "Needs the segmentation model (Settings → AI models)",
+  "entwFormPinsel": "Brush",
+  "entwFormEllipse": "Ellipse",
+  "entwFormVerlauf": "Gradient",
+  "allgFertig": "Done",
+  "entwKiHinweis": "Tap the area you want to adjust. Several taps refine the selection.",
+  "entwPunktHinzufuegen": "Add",
+  "entwPunktEntfernen": "Remove",
+  "entwLetztenPunktEntfernen": "Remove the last point",
+  "entwPinselHinweis": "Drag across the area you want to adjust.",
+  "entwNeuZeichnen": "Draw again",
+  "entwEllipseHinweis": "Drag across the area to pull open the ellipse.",
+  "entwVerlaufHinweis": "Drag from one edge to the other to set the gradient.",
+  "entwAnpassungFuer": "Adjusting",
+  "entwGanzesBild": "The whole image",
+  "entwFormBearbeiten": "Edit the shape",
+  "entwAutoWeissabgleich": "Automatic white balance",
+  "entwObjektivkorrektur": "Lens correction",
+  "entwObjektivkorrekturHinweis": "Only takes effect on RAW photos whose camera and lens are supported.",
+  "entwMaskenHinweis": "These adjustments apply only inside the selected mask.",
+  "entwBelichtung": "Exposure",
+  "entwTemperatur": "Temperature (K)",
+  "entwTint": "Tint",
+  "entwKontrast": "Contrast",
+  "entwBeschneidungWarnung": "Show clipping (red = blown, blue = crushed)",
+  "entwBeschneidungMitMasken": "Clipping cannot be shown while masks are on the photo – the marks come from the shader preview, and it cannot draw masks.",
+  "entwBeschneidungVorschauHinweis": "Clipping preview – sharpness, noise, clarity and vignette are not shown here",
+  "entwVorgabeSichern": "Save as preset",
+  "entwVorgabeAnwenden": "Apply preset",
+  "entwVorgabeWaehlen": "Choose a preset",
+  "entwVorgabeName": "Preset name",
+  "entwKeineVorgaben": "There is no develop preset yet.",
+  "entwVorgabeGesichert": "Preset “{name}” saved",
+  "entwVorgabeNameVergeben": "A preset named “{name}” already exists.",
+  "entwAutomatisch": "Auto exposure and contrast",
+  "entwAutomatikOhneHistogramm": "No histogram yet – one moment.",
+  "entwTiefenmaske": "Mask from depth map",
+  "entwTiefenmaskeName": "Depth",
+  "entwTiefenKeine": "This photo carries no depth map. Only portrait shots from newer iPhones do.",
+  "entwTiefenNichtLesbar": "The depth map could not be evaluated.",
+  "entwTiefenNurMacos": "This photo may carry a depth map – only the macOS build can read it. There the depth data comes from Apple's ImageIO; on Linux and Windows the path runs through LibRaw and libheif, which do not expose the auxiliary image.",
+  "entwLichter": "Highlights",
+  "entwSchatten": "Shadows",
+  "entwSchaerfe": "Sharpness",
+  "entwRauschunterdrueckung": "Noise reduction",
+  "entwStrichbreite": "Stroke width",
+  "entwRotation": "Rotation (°)",
+  "entwWeichzeichnung": "Feather",
+  "entwGesperrt": "Develop is not available for photos in the locked folder.",
+  "entwVorschauFehlt": "The preview could not be created – is native image conversion unavailable?",
+  "entwModellLaedt": "Loading the model for AI selection …",
+  "entwBildWirdVorbereitet": "Preparing the image for masking …",
+  "allgOder": "— or —",
+  "albumBestehendes": "Existing album",
+  "albumNeuAnlegen": "Create a new album",
+  "personZuordnenTitel": "Assign a person",
+  "personAktuell": "Currently: {name}",
+  "personZuordnenAktion": "Assign",
+  "bestaetigEndgueltigLoeschen": "Delete permanently",
+  "bestaetigTippeVor": "Type ",
+  "bestaetigTippeNach": " to confirm:",
+  "fortschrittFehlgeschlagen": "Failed: {fehler}",
+  "sterneStern": "Star {nummer} of 5",
+  "sterneSternVoll": "Star {nummer} of 5, filled",
+  "sterneSetzen": "Set a rating of {nummer} out of 5 stars",
+  "sterneBewertungAnzeige": "Rated {nummer} out of 5 stars",
+  "scrubberTooltip": "Jump to a date",
+  "farbeViolett": "Violet",
+  "farbeAusgewaehlt": "{farbe}, selected",
+  "farbeSetzen": "Set the {farbe} colour label",
+  "histogrammTitel": "Histogram",
+  "histogrammKeineVorschau": "No preview yet",
+  "histogrammHelligkeit": "Luminance",
+  "livePhotoHalten": "Press and hold to play",
+  "metaBelichtungBeispiel": "e.g. 1/125 or 0.5",
+  "karteTippenFuerOrt": "Tap to set a location",
+  "rasterFotoNichtGefunden": "That photo is not in the timeline.",
+  "kameraImportTitel": "Import from a camera or SD card",
+  "kameraKeinDatentraeger": "No volume with photos or videos found. Plug in a camera or SD card over USB – the list updates by itself as soon as one is recognised.",
+  "mischerTitel": "Colour mixer",
+  "mischerFarbton": "Hue",
+  "mischerSaettigung": "Saturation",
+  "mischerHelligkeit": "Luminance",
+  "mischerHinweis": "Only affects coloured areas – greys are left untouched.",
+  "bandRot": "Red",
+  "bandOrange": "Orange",
+  "bandGelb": "Yellow",
+  "bandGruen": "Green",
+  "bandAqua": "Aqua",
+  "bandBlau": "Blue",
+  "bandViolett": "Violet",
+  "bandMagenta": "Magenta",
+  "kurveTitel": "Tone curve",
+  "kurveHinweis": "Drag to place or move a point; press and hold to remove one.",
+  "pinFeld": "PIN",
+  "pinFestlegenTitel": "Set a PIN",
+  "pinNeuFeld": "New PIN (8-10 digits)",
+  "pinWiederholen": "Repeat the PIN",
+  "pinWarnung": "Important: photos in the locked folder are genuinely encrypted (AES-256). Without this PIN there is NO way to get them back – not even by resetting the app.",
+  "pinZiffernFehler": "The PIN has to be 8 to 10 digits.",
+  "pinUngleich": "The PINs do not match.",
+  "allgFestlegen": "Set",
+  "pinEingebenTitel": "Enter your PIN",
+  "pinFalsch": "Wrong PIN.",
+  "passphraseFeld": "Passphrase",
+  "passphraseFestlegenTitel": "Set a backup passphrase",
+  "passphraseNeuFeld": "New passphrase (at least 8 characters)",
+  "passphraseWiederholen": "Repeat the passphrase",
+  "passphraseWarnung": "Important: backups are genuinely encrypted (AES-256). Without this passphrase there is NO way to restore them – not even on another machine. Best write it down somewhere safe as well.",
+  "passphraseUngleich": "The passphrases do not match.",
+  "passphraseFalsch": "Wrong passphrase.",
+  "allgFoto": "Photo",
+  "allgVideo": "Video",
+  "kachelFavorisiert": "favourite",
+  "kachelBeschreibung": "{typ} {name}, {datum}",
+  "albumFotosLoeschenTitel": "Delete {anzahl} photo(s)?",
+  "albumFotosLoeschenText": "These photos are removed from the album and moved to the trash.",
+  "albumZielordner": "Choose a destination folder for \"{album}\"",
+  "albumExportieren": "Export the album",
+  "albumLeer": "This album has no photos in it yet.",
+  "albumFotosHinzufuegen": "Add photos",
+  "albumTitelbildSetzen": "Use as cover",
+  "albumTitelbildGesetzt": "Cover set",
+  "albumFotosWaehlenTitel": "Photos for “{album}”",
+  "@albumFotosWaehlenTitel": { "placeholders": { "album": { "type": "String" } } },
+  "regelLoeschenTitel": "Delete the rule?",
+  "regelLoeschenText": "Really delete the rule \"{name}\"? Actions it has already applied are kept.",
+  "regelOrtUnvollstaendig": "Location: not fully configured",
+  "regelDatumUnvollstaendig": "Date range: not fully configured",
+  "regelTitel": "Automation rules",
+  "regelNeu": "New rule",
+  "regelLeer": "No automation rules yet.\n\nCreate a rule to put photos into an album or tag automatically, or mark them as favourites, based on location, AI tag or capture date – like camera presets, but for other conditions.",
+  "allgBearbeiten": "Edit",
+  "regelNameNoetig": "The rule needs a name.",
+  "regelKoordinatenUngueltig": "Latitude and longitude have to be valid numbers.",
+  "regelBreitengradBereich": "Latitude has to be between -90 and 90.",
+  "regelLaengengradBereich": "Longitude has to be between -180 and 180.",
+  "regelTagWaehlen": "Please choose an AI tag term.",
+  "regelDatumWaehlen": "Please choose a start and an end date.",
+  "regelDatumReihenfolge": "The start date has to come before the end date.",
+  "regelBreitengrad": "Latitude",
+  "regelLaengengrad": "Longitude",
+  "regelKeinVokabular": "There is no AI tag vocabulary (Settings → AI tagging vocabulary).",
+  "regelTagBegriff": "AI tag term",
+  "regelNameFeld": "Name (e.g. \"Holiday in Italy\")",
+  "regelBedingung": "Condition",
+  "presetZielalbum": "Destination album (optional)",
+  "presetKeinAlbum": "No album",
+  "presetNeuesAlbum": "or: create a new album",
+  "presetFavorisieren": "Mark as favourite automatically",
+  "presetTagsWaehlenPlatzhalter": "Choose tags …",
+  "presetKeineTags": "There are no tags.",
+  "presetLoeschenTitel": "Delete the preset?",
+  "presetLoeschenText": "Really delete the camera preset for \"{kamera}\"? Photos already imported stay as they are.",
+  "presetTitel": "Camera presets",
+  "presetNeu": "New preset",
+  "presetLeer": "No camera presets yet.\n\nCreate a preset for a particular camera to put its future imports into an album or tag automatically – even before the first photo from that camera has arrived.",
+  "presetHerstellerModellNoetig": "Both make and model are required.",
+  "presetBekannteKamera": "Use a known camera (optional)",
+  "presetHersteller": "Make (e.g. Canon, Apple)",
+  "presetModell": "Model (e.g. EOS R5, iPhone 15 Pro)",
+  "allgClipNoetigKurz": "Needs the CLIP model (Settings → AI models).",
+  "duplNichtsLoeschbar": "Nothing can be deleted automatically: every group has more than one photo marked as a favourite or rated – please go through those by hand.",
+  "duplNichtsZuLoeschen": "Nothing to delete.",
+  "duplPapierkorbTitel": "Move the copies to the trash?",
+  "duplPapierkorbAnzahl": "{fotos} photo(s) from {gruppen} group(s) will be moved to the trash.",
+  "duplBehaltenRegel": "Kept in each group: the favourite, otherwise the highest rating, otherwise the sharpest, otherwise the one with the highest resolution.",
+  "duplUebersprungen": "{anzahl} group(s) are left untouched, because more than one photo there is a favourite or rated.",
+  "duplRueckgaengig": "Undo: they can be restored from the trash.",
+  "duplInPapierkorb": "Move to trash",
+  "duplVerschoben": "{anzahl} photo(s) moved to the trash.",
+  "duplTitel": "Duplicates & similar photos",
+  "duplZweiteBibliothek": "Second library",
+  "duplAlleKopienLoeschen": "Delete all copies",
+  "duplAehnlichkeit": "Similarity:",
+  "duplSchwelleHinweis": "Higher values mean only very similar photos are recognised as a group. Lower values find more, but less certain, matches.",
+  "duplKeineGruppen": "No groups of similar photos found.",
+  "duplVerschiebenTooltip": "Move to the trash",
+  "duplZusammenfuehren": "Merge",
+  "duplZusammenfuehrenTitel": "Merge similar photos",
+  "duplZusammenfuehrenText": "Metadata from all {anzahl} photos is transferred to the selected photo. The remaining photos go to the trash and can be restored there.",
+  "@duplZusammenfuehrenText": {"placeholders": {"anzahl": {"type": "int"}}},
+  "duplBehaltenAuswahl": "Keep this photo",
+  "duplBehaltenDetails": "{sterne} stars · {favorit} favourite(s)",
+  "@duplBehaltenDetails": {"placeholders": {"sterne": {"type": "int"}, "favorit": {"type": "int"}}},
+  "duplBeschreibungenVerbinden": "Combine distinct descriptions",
+  "duplZusammengefuehrt": "Merged {anzahl} photo(s) and moved them to trash.",
+  "@duplZusammengefuehrt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "clusterTitel": "Review suggestions",
+  "clusterFertig": "All suggestions have been reviewed.",
+  "clusterAehnlichZu": "Similar to: {name}",
+  "clusterUeberspringen": "Skip",
+  "gesichtUmbenennen": "Rename or change the person",
+  "gesichtNeuBenennen": "Name a new face",
+  "gesichtGesperrt": "Editing faces is not available for photos in the locked folder.",
+  "gesichtManuellHinzufuegen": "Add a face by hand",
+  "gesichtHinzufuegenBeenden": "Stop adding",
+  "gesichtRechteckHinweis": "Drag a rectangle over a face to mark it by hand.",
+  "bearbBildNichtLesbar": "The image could not be read.",
+  "bearbBildNichtLesbarFehler": "The image could not be read: {fehler}",
+  "bearbSpeichernTitel": "Save your changes?",
+  "bearbSpeichernText": "The original file is replaced by the edited version. This cannot be undone.",
+  "bearbNichtFinalisiert": "The image could not be finalised.",
+  "bearbZuschneidenAnwenden": "Apply the crop",
+  "bearbTitel": "Edit",
+  "importWasTitel": "What would you like to import?",
+  "importWasText": "Pick individual photos and videos, import a whole folder including its subfolders, or import straight from a connected camera or SD card.",
+  "importEinzelneDateien": "Choose individual files",
+  "importGanzerOrdner": "Choose a whole folder",
+  "importVonKamera": "From a camera or SD card",
+  "importOrdnerWaehlen": "Choose a folder to import",
+  "importNichtsImOrdner": "No supported photos or videos found in that folder.",
+  "importNichtsAufDatentraeger": "No supported photos or videos found on that volume.",
+  "importAbgeschlossen": "Import finished",
+  "importBilanzNeu": "{anzahl, plural, =1{1 added} other{{anzahl} added}}",
+  "@importBilanzNeu": { "placeholders": { "anzahl": { "type": "int" } } },
+  "importBilanzDuplikate": "{anzahl, plural, =1{1 was already in the library and was skipped} other{{anzahl} were already in the library and were skipped}}",
+  "@importBilanzDuplikate": { "placeholders": { "anzahl": { "type": "int" } } },
+  "importBilanzFehler": "{anzahl, plural, =1{1 did not come in} other{{anzahl} did not come in}}",
+  "@importBilanzFehler": { "placeholders": { "anzahl": { "type": "int" } } },
+  "importLaeuft": "Importing photos & videos …",
+  "importJetztSichten": "Cull them now",
+  "integPruefungFehlgeschlagen": "The check failed: {fehler}",
+  "integOriginalFehlt": "The original is missing from disk – the whole photo or video is removed from the library.",
+  "integMaskeFehlt": "The mask file is missing – the mask entry is removed.",
+  "integCropFehlt": "The face crop is missing – only the preview is removed; the person it belongs to is kept.",
+  "integPfadEntfernt": "The file path is removed from the database – the file can be recreated through \"Tools → Rebuild previews\".",
+  "integDateiLoeschenTitel": "Delete the file?",
+  "integDateiLoeschenText": "{pfad} will be deleted from disk for good.",
+  "integErneutPruefen": "Check again",
+  "integPruefsummen": "Check checksums",
+  "integPruefsummenHinweis": "Reads every original file in full and compares it against the checksum stored at import – noticeably slower on a large library than checking only for missing and orphaned files.",
+  "integKeineProbleme": "No problems found ({anzahl} files checked).",
+  "integAusDbEntfernen": "Remove from the database",
+  "integDateiLoeschen": "Delete the file",
+  "integAbweichungen": "Checksum mismatches ({anzahl})",
+  "integInhaltGeaendert": "The contents have changed since import",
+  "integAnsehen": "View",
+  "integVorschauTitel": "Preview",
+  "integKeineVorschau": "No preview can be shown for this file.",
+  "integVorschauVerschluesselt": "The photo is locked – its preview is encrypted along with it.",
+  "integFotoOeffnen": "Open the photo",
+  "integHeaderProbleme": "Encrypted files with an invalid header ({anzahl})",
+  "integBeschaedigt": "The file may be damaged – not a valid encrypted file",
+  "gesperrtLeer": "No locked photos. In a photo's full-screen view, the lock icon in the top right moves it here and encrypts it on the way.",
+  "gesperrtEntfernen": "Take out of the locked folder (decrypt)",
+  "gesperrtEndgueltigTitel": "Delete permanently?",
+  "gesperrtEndgueltigText": "The file will be deleted for good – there is no recovery afterwards, not even with the right PIN.",
+  "gesperrtPapierkorbLeer": "The locked trash is empty.\n\nPhotos deleted from the locked folder land here rather than in the normal, unprotected trash.",
+  "gesperrtWiederherstellen": "Restore (stays locked)",
+  "personKeineGesichter": "There are no faces for this person.",
+  "personProfilbildWaehlen": "Choose a profile picture",
+  "personProfilbildAendern": "Change the profile picture",
+  "personKeineFotos": "No photos for this person yet.",
+  "personDoppelklickHinweis": "Double-clicking a photo opens it for review with every face that was found.",
+  "personGelerntesVerworfen": "What was learned has been discarded – the general threshold applies again.",
+  "personSchwelleAngepasst": "adjusted to {schwelle} instead of {allgemein}",
+  "personSchwelleWiderspruch": "still {allgemein} – the decisions contradict each other; a rejected face was more similar than a confirmed one",
+  "personSchwelleWirdAngepasst": "adjusted from {anzahl} decisions onwards",
+  "personVerwerfen": "Discard",
+  "restaurWartet": "Waiting in the queue",
+  "restaurProzentLaeuft": "AI restoration running – {prozent}%",
+  "@restaurProzentLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurProzentMitRest": "AI restoration running – {prozent}%, about {rest} left",
+  "@restaurProzentMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
+  "restaurProzentMitWarteschlange": "AI restoration running – {prozent}%, {wartend} queued",
+  "@restaurProzentMitWarteschlange": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "wartend": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurZeileLaeuft": "Running – {prozent}%",
+  "@restaurZeileLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurZeileMitRest": "Running – {prozent}%, about {rest} left",
+  "@restaurZeileMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
+  "restaurDauerMinuten": "{anzahl, plural, =1{one minute} other{{anzahl} minutes}}",
+  "@restaurDauerMinuten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurDauerSekunden": "{anzahl, plural, =1{one second} other{{anzahl} seconds}}",
+  "@restaurDauerSekunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurWasPassiert": "Real-ESRGAN scales the photo to four times its edge length and smooths noise and compression artefacts along the way. The original is untouched; the result sits beside it and can be removed at any time.",
+  "restaurTitel": "AI restoration – queue",
+  "restaurLeer": "There are no restoration jobs.\nYou can start an AI restoration from a photo's develop screen.",
+  "restaurAusListe": "Remove from the list",
+  "restaurFehlgeschlagen": "Failed: {grund}",
+  "restaurFehlgeschlagenKurz": "Failed",
+  "zweitOrdnerWaehlen": "Choose the folder of the second PhotoVault library",
+  "zweitTitel": "Compare against a second library",
+  "allgErneutVersuchen": "Try again",
+  "zweitErklaerung": "Compares your own library against a second, independent PhotoVault library – on an external drive or an old machine, say – by AI image similarity, and finds photos that are already there before you import them again.\n\nLocked photos in the second library are never included, and its PIN is never needed.",
+  "zweitOrdnerKnopf": "Choose the second library's folder",
+  "zweitSchwelleHinweis": "Higher values mean only very similar photos count as a match.",
+  "zweitKeineTreffer": "No similar photos found in the second library.",
+  "zweitTreffer": "{anzahl} possible match(es)",
+  "zweitAndererOrdner": "A different folder",
+  "zweitAehnlichProzent": "{prozent} % similar",
+  "zweitBibliothek": "second library",
+  "aehnlTitel": "Similar photos",
+  "aehnlClipFehlt": "AI image search is unavailable – the CLIP model is missing (see Settings → AI models).",
+  "aehnlKeineTreffer": "There is no AI embedding for this photo yet (see Tools → AI image search → Compute CLIP embeddings), or there are no similar photos in the library.",
+  "stapelErklaerung": "Photos that look alike AND were taken within a few seconds of each other are suggested here as a series. \"Apply\" collapses a group into one stack – only the cover image stays visible in the overview, and nothing is deleted.",
+  "stapelAlleUebernehmen": "Accept all {anzahl}",
+  "@stapelAlleUebernehmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "stapelAlleFrageTitel": "Accept all series?",
+  "stapelAlleFrage": "{anzahl} groups will be combined into stacks. The sharpest photo becomes the cover. Nothing is lost – “Ungroup series” in the info sheet undoes any grouping.",
+  "@stapelAlleFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "werkzStapelGefunden": "{anzahl, plural, =0{No series found} =1{1 series is waiting} other{{anzahl} series are waiting}}",
+  "@werkzStapelGefunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "serienvergleichTitel": "Compare series",
+  "serienvergleichErklaerung": "The same faces side by side. On a whole photo you cannot see who blinked – on the crops you can, at once. The frame marks the shot with the sharpest face; that is a suggestion, not a decision.",
+  "serienvergleichOhneGesichter": "No face was detected in these shots – only the images themselves are compared.",
+  "serienvergleichSchaerfstes": "Sharpest face of the series",
+  "serienvergleichSchaerfe": "Sharpness {wert}",
+  "@serienvergleichSchaerfe": {
+    "placeholders": {
+      "wert": {
+        "type": "int"
+      }
+    }
+  },
+  "serienvergleichAugen": "Eyes open: {prozent} %",
+  "@serienvergleichAugen": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "serienvergleichOhneWert": "Sharpness not measured yet",
+  "serienvergleichOeffnen": "Compare faces",
+  "serienvergleichZuKurz": "Comparing needs at least two shots.",
+  "stapelKeine": "No burst series found.",
+  "allgVerwerfen": "Discard",
+  "statTitel": "Statistics",
+  "allgAktualisieren": "Refresh",
+  "statLeer": "No photos or videos in the library yet.",
+  "statProJahr": "Photos & videos per year",
+  "statSaisonalitaet": "Seasonality – shots per month",
+  "statKameras": "Most-used cameras",
+  "statInsgesamt": "Items in total",
+  "statFotos": "Photos",
+  "statVideos": "Videos",
+  "statSpeicherplatz": "Disk space",
+  "statImPapierkorb": "In the trash",
+  "statDiagrammJahr": "Bar chart, photos and videos per year: {werte}",
+  "statDiagrammMonat": "Bar chart, seasonality per month: {werte}",
+  "papierkorbTitel": "Trash",
+  "papierkorbEndgueltigTitel": "Delete permanently?",
+  "papierkorbEndgueltigText": "Delete {anzahl} file(s) for good.",
+  "papierkorbAnzahl": "{anzahl, plural, =1{one photo} other{{anzahl} photos}}",
+  "@papierkorbAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "papierkorbUmfang": "{anzahl, plural, =1{one photo} other{{anzahl} photos}} · {platz}",
+  "@papierkorbUmfang": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "platz": {
+        "type": "String"
+      }
+    }
+  },
+  "papierkorbLeer": "The trash is empty.",
+  "videoNichtGeoeffnet": "The video could not be opened.",
+  "videoZuschneidenFehler": "Trimming failed.",
+  "videoZuschneiden": "Trim",
+  "xmpAlleUebernehmen": "Apply all",
+  "xmpErneutEinlesen": "Read again",
+  "xmpKeineAbweichungen": "{anzahl} sidecar(s) checked – no differences from the database found.",
+  "restaurWirdGestartet": "Starting …",
+  "restaurAbgebrochen": "Cancelled",
+  "restaurGrundModellLaedtNicht": "The restoration model could not be loaded.",
+  "restaurGrundModellWeg": "The model is no longer available.",
+  "restaurGrundFotoWeg": "The photo has been deleted in the meantime.",
+  "restaurGrundGesperrt": "AI restoration is not available for locked photos.",
+  "restaurGrundAufloesung": "Image resolution unknown.",
+  "restaurGrundNichtGerendert": "The image could not be rendered.",
+  "restaurGrundNichtDekodiert": "The rendered image could not be decoded.",
+  "restaurNichtVerfuegbar": "AI restoration is not available – the model is not installed.",
+  "personSchwelleWieAllgemein": "still {allgemein}",
+  "personWiedererkennung": "Recognition: {erklaerung}. From {bestaetigt, plural, =1{one confirmation} other{{bestaetigt} confirmations}} and {abgelehnt, plural, =1{one correction} other{{abgelehnt} corrections}}.",
+  "infoKeineUnbenannten": "No unnamed faces found on this photo – if face detection has not run yet, see Tools → Scan for faces.",
+  "infoTitel": "Info",
+  "infoVideoStandbild": "Analysed on a single frame from the first second – not on the whole clip.",
+  "infoBeschreibungHinzufuegen": "Add a description",
+  "infoKiBeschreibung": "AI caption",
+  "infoErkannterText": "Recognised text",
+  "infoTextKopieren": "Copy text",
+  "infoTextKopiert": "Text copied to the clipboard",
+  "infoTextStellen": "{anzahl, plural, =1{1 text area in the photo} other{{anzahl} text areas in the photo}}",
+  "@infoTextStellen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "infoBewertung": "Rating",
+  "infoNiemandZugeordnet": "Nobody assigned yet.",
+  "infoDetails": "Details",
+  "infoStandortBekannt": "Location known",
+  "infoOrtNichtAufgeloest": "Location not resolved yet (Tools → Locations)",
+  "infoOrtEntfernen": "Clear the location",
+  "infoBearbeitet": "Edited",
+  "infoBearbeitetEntwickelt": "developed",
+  "infoBearbeitetRestauriert": "restored",
+  "infoBearbeitetZugeschnitten": "trimmed",
+  "infoOriginalUnberuehrt": "{arten} – the original file is unchanged",
+  "@infoOriginalUnberuehrt": {
+    "placeholders": {
+      "arten": {
+        "type": "String"
+      }
+    }
+  },
+  "infoOriginalHerstellen": "Restore original",
+  "infoOriginalHerstellenFrage": "Undo every edit on this photo? The derived files are deleted; the original stays as it is.",
+  "infoOriginalHergestellt": "Original restored.",
+  "infoSerie": "Series: {anzahl} photos",
+  "infoNurTitelbild": "Only the cover image is visible in the overview",
+  "infoSerieAufloesen": "Break up the series",
+  "infoTagHinzufuegenPlatzhalter": "Add a tag …",
+  "stufeBildanalyse": "Image analysis",
+  "stufeTexterkennung": "Text recognition",
+  "stufeSchlagwoerter": "Tags",
+  "stufeBildbeschreibung": "Captions",
+  "aktualisierungKeineVeroeffentlichungen": "No releases found.",
+  "aktualisierungKeineVersion": "No version number in the response.",
+  "backupGrenzeErreicht": "Limit reached – {anzahl} file(s) follow on the next run",
+  "backupUebernommen": "{anzahl} entries taken from the database snapshot (people, family tree, trips, activities …)",
+  "@backupUebernommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "backupAusschnitteNeu": "Redrawing face crops …",
+  "einstBackupManuellHinweis": "A backup with a passphrase also carries an encrypted snapshot of the database – people, family tree, trips, activities and saved searches come back when you restore. Without a passphrase the backup holds only the originals and the sidecars beside them (description, stars, colour label, location, tags, albums); everything else could not be restored afterwards.",
+  "backupNichtGesichert": "{anzahl} file(s) could not be backed up – they will be retried on the next run",
+  "backupPassphraseNoetig": "This backup is encrypted – a passphrase is needed.",
+  "backupOrdnerFehlt": "The selected folder does not contain a backup.",
+  "downloadPruefsummeFehler": "The checksum of {datei} does not match the expected SHA-256 (got {erhalten}, expected {erwartet}) – the download was discarded. The file on the server may have changed, or it was altered in transit.",
+  "downloadFehlgeschlagen": "Downloading {datei} failed: {fehler}",
+  "downloadEntpackenFehler": "Unpacking {datei} failed: {fehler}",
+  "downloadNichtImZip": "{datei} was not found in the zip.",
+  "regelAusloeserOrt": "Location (radius)",
+  "regelAusloeserTag": "AI tag",
+  "regelAusloeserDatum": "Date range",
+  "regelUmkreisUm": "Within {km} km of {breite}, {laenge}",
+  "regelTagWert": "AI tag: {begriff}",
+  "regelDatumBereich": "{von} – {bis}",
+  "regelUmkreis": "Radius: {km} km",
+  "regelAlbumTeil": "Album: {name}",
+  "regelTagsTeil": "Tags: {namen}",
+  "duplGruppe": "Group {nummer} · {anzahl} photos",
+  "stapelSerie": "Series {nummer} · {anzahl} photos",
+  "clusterGesichterZuordnen": "Assign {anzahl} faces",
+  "clusterGesichterAnzahl": "{anzahl} faces",
+  "gesichtEmbeddingFehler": "The recognition embedding failed: {fehler}",
+  "bearbSpeichernFehler": "Saving failed: {fehler}",
+  "integFehlendeDateien": "Missing files ({anzahl})",
+  "integVerwaisteDateien": "Orphaned files ({anzahl})",
+  "viewerKugelSchwenken": "3D sphere instead of flat panning",
+  "regelNeuTitel": "New automation rule",
+  "regelBearbeitenTitel": "Edit rule",
+  "presetZeileAlbum": "Album: {album}",
+  "presetZeileTags": "Tags: {tags}",
+  "presetKeineAktion": "No action configured",
+  "presetNeuTitel": "New camera preset",
+  "presetBearbeitenTitel": "Edit camera preset",
+  "allgSucheFehlgeschlagen": "Search failed: {fehler}",
+  "allgUnbekannterFehler": "Unknown error",
+  "erkundenVorJahren": "{jahre, plural, =1{1 year ago} other{{jahre} years ago}}",
+  "erkundenImMonatVorJahren": "In {monat}, {jahre} years ago",
+  "@erkundenImMonatVorJahren": {"placeholders": {"monat": {"type": "String"}, "jahre": {"type": "int"}}},
+  "gesichtBenennen": "Name face",
+  "gesichtUnbenannt": "Unnamed",
+  "bearbZuschneiden": "Crop",
+  "bearbLinksDrehen": "Rotate left",
+  "bearbRechtsDrehen": "Rotate right",
+  "bearbHorizontalSpiegeln": "Flip horizontally",
+  "bearbVertikalSpiegeln": "Flip vertically",
+  "integAusDbEntfernenTitel": "Remove from database?",
+  "integArtOriginal": "Original",
+  "integArtThumbnail": "Thumbnail",
+  "integArtVorschau": "Preview",
+  "integArtEntwickelt": "Developed image",
+  "integArtRestauriert": "AI-restored image",
+  "integArtVideoZuschnitt": "Trimmed video",
+  "integArtGesichtsCrop": "Face crop",
+  "integArtMaske": "AI mask",
+  "integAlleVerwaistenLoeschen": "Delete all",
+  "integAlleVerwaistenTitel": "Delete all orphaned files?",
+  "integAlleVerwaistenText": "{anzahl} files totalling {groesse} will be permanently deleted from disk. No database row refers to them, so the library loses nothing it could have shown.",
+  "@integAlleVerwaistenText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "groesse": {
+        "type": "String"
+      }
+    }
+  },
+  "integVerwaisteGeloescht": "Deleted {anzahl} orphaned files.",
+  "@integVerwaisteGeloescht": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "integWeitereEintraege": "… and {anzahl} more. The list shows only the first {gezeigt}; “Delete all” clears the rest too.",
+  "@integWeitereEintraege": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "gezeigt": {
+        "type": "int"
+      }
+    }
+  },
+  "gesperrtTabFotos": "Photos",
+  "gesperrtTabPapierkorb": "Trash",
+  "karteHell": "Light",
+  "karteDunkel": "Dark",
+  "karteTopografie": "Topographic",
+  "karteGlobus": "Globe",
+  "zweitVergleichFehlgeschlagen": "Comparison failed: {fehler}",
+  "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
+  "xmpFeldBewertung": "Rating",
+  "xmpFeldFarbmarkierung": "Colour label",
+  "xmpFeldBeschreibung": "Description",
+  "xmpFeldNeueTags": "New tags",
+  "xmpFeldStandort": "Location",
+  "xmpFeldGesichter": "Names for recognised faces",
+  "xmpGesichterOhneNamen": "{anzahl, plural, =1{1 face without a name} other{{anzahl} faces without a name}}",
+  "@xmpGesichterOhneNamen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "xmpKeineSidecars": "No XMP sidecars found.",
+  "liveWiedergabeStoppen": "Stop playback",
+  "liveDauerschleife": "Play on a loop",
+  "metaHersteller": "Camera make",
+  "metaModell": "Camera model",
+  "metaObjektiv": "Lens",
+  "metaBrennweite": "Focal length (mm)",
+  "metaBlende": "Aperture (f/…)",
+  "metaBelichtungszeit": "Shutter speed",
+  "passphraseZuKurz": "The passphrase must be at least 8 characters long.",
+  "exportVorgabenTitel": "Export presets",
+  "exportVorgabenLeer": "No presets yet. A preset remembers size, quality and file naming – for everything you export more than once.",
+  "exportVorgabeNeu": "New preset",
+  "exportVorgabeNeuTitel": "New export preset",
+  "exportVorgabeBearbeitenTitel": "Edit preset",
+  "exportVorgabeName": "Name",
+  "exportVorgabeNameNoetig": "Please give the preset a name.",
+  "exportVorgabeNachJpeg": "Render to JPEG",
+  "exportVorgabeNachJpegHinweis": "Without this the file is copied unchanged – the only way that leaves RAW files and videos untouched.",
+  "exportVorgabeKante": "Longer edge (pixels)",
+  "exportVorgabeKanteLeer": "empty = full resolution",
+  "exportVorgabeKanteUngueltig": "The edge length must be between 64 and 20000.",
+  "exportVorgabeQualitaet": "JPEG quality: {prozent}%",
+  "exportVorgabeMuster": "File name pattern",
+  "exportVorgabeMusterNoetig": "The file name pattern must not be empty.",
+  "exportVorgabeMusterHinweis": "The extension is always added automatically. The running number counts within one export run and is padded to four digits.",
+  "exportVorgabeXmp": "Write an XMP sidecar",
+  "exportVorgabeXmpHinweis": "Rating, keywords and location for other programs – as a separate file next to the photo.",
+  "exportVorgabeJpegVoll": "JPEG, full resolution, {prozent}%",
+  "exportVorgabeJpegKante": "JPEG, longer edge {kante} px, {prozent}%",
+  "exportVorgabeOhneXmp": "no XMP",
+  "exportVorgabeLoeschenTitel": "Delete preset?",
+  "exportVorgabeLoeschenText": "“{name}” will be removed. Files you have already exported are not affected.",
+  "exportEigeneVorgaben": "Your presets",
+  "exportVorgabenVerwalten": "Manage presets …",
+  "werkzExportVorgabenTitel": "Export presets",
+  "werkzExportVorgabenText": "Named output settings for exporting: size, JPEG quality, file naming and whether an XMP sidecar is written.",
+  "exportVorgabeNameVergeben": "That name is already taken.",
+  "entwObjektivkorrekturKeinRaw": "Not a RAW file – the camera has already corrected distortion and vignetting.",
+  "entwObjektivkorrekturVerfuegbar": "Camera and lens are known: distortion and vignetting are corrected.",
+  "entwObjektivkorrekturUnbekanntesObjektiv": "There is no profile for this camera. With ProRAW that is no loss – the correction is already baked into the file.",
+  "entwObjektivkorrekturNichtLesbar": "The RAW data in this file cannot be opened. The other sliders therefore only affect the embedded preview.",
+  "einstSuche": "Search settings",
+  "einstNichtsGefunden": "No setting matches that search.",
+  "einstBeschrErscheinungsbild": "Light, dark, or follow the system",
+  "einstBeschrSprache": "Language of the interface and of the keywords",
+  "einstBeschrUeberwacht": "Folders that new photos come in from on their own",
+  "einstBeschrBibliotheken": "Switch between several libraries",
+  "einstBeschrSpeicherort": "Where the library lives and how much room it takes",
+  "einstBeschrModelle": "Download and remove the local models",
+  "einstBeschrHintergrund": "Whether analysis starts automatically after an import",
+  "einstBeschrVokabular": "The terms photos are tagged with",
+  "einstAbschnittKarte": "Map",
+  "einstBeschrKarte": "Tile source for the dark map",
+  "einstKartenNetzHinweis": "The map fetches its tiles as you look at it – from OpenStreetMap, OpenTopoMap, Esri and, for terrain, AWS Open Data. Those servers learn which section you are viewing, and with it roughly where your photographs were taken. Without the map nothing of this leaves the machine: country, region and town for a GPS position are looked up in the downloaded place directory.",
+  "einstCartoText": "By default the dark map draws recoloured OpenStreetMap tiles – no sign-up, no key. For CARTO's finer cartography, enter a key here.",
+  "einstCartoAktiv": "CARTO Dark Matter, up to zoom level 20.",
+  "einstCartoOhne": "Recoloured OpenStreetMap tiles, up to zoom level 19.",
+  "einstCartoFeld": "CARTO key",
+  "einstCartoFeldHinweis": "Leave empty for OpenStreetMap",
+  "einstCartoQuelle": "Free and without an account at carto.com/basemaps/apikey. CARTO states its raster tiles are being retired – without a key the map is unaffected.",
+  "einstCartoGespeichert": "CARTO key saved",
+  "einstCartoEntfernt": "CARTO key removed – the map uses OpenStreetMap again",
+  "einstBeschrStandortdaten": "Place names for GPS coordinates, offline",
+  "einstBeschrGesperrt": "PIN, encryption and what is kept inside",
+  "einstBeschrBackupSchluessel": "Passphrase for encrypted backups",
+  "einstBeschrBackupManuell": "Start a backup by hand",
+  "einstBeschrBackupAuto": "Back up regularly without having to think about it",
+  "einstBeschrPapierkorb": "View deleted photos, restore them, remove them for good",
+  "einstBeschrGefahr": "Steps that cannot be undone",
+  "einstBeschrUeber": "Version, licences and updates",
+  "allgRueckgaengig": "Undo",
+  "personenIgnoriertTab": "Ignored",
+  "tabMitZahl": "{beschriftung} ({anzahl})",
+  "@tabMitZahl": {
+    "placeholders": {
+      "beschriftung": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "personenIgnorierenTooltip": "Ignore selected faces",
+  "personenZugeordnetMeldung": "{anzahl, plural, =1{One face assigned to “{name}”.} other{{anzahl} faces assigned to “{name}”.}}",
+  "personenIgnoriertMeldung": "{anzahl, plural, =1{One face ignored.} other{{anzahl} faces ignored.}}",
+  "@personenIgnoriertMeldung": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "personenIgnoriertLeer": "No ignored faces. Whatever you set aside under “Unnamed faces” – posters, reflections, statues – collects here and can be brought back at any time.",
+  "personenIgnoriertHinweis": "Ignored faces no longer appear in the grid and are left out of grouping. Double-click opens the whole photo.",
+  "personenIgnoriertTeilHinweis": "{gezeigt} of {gesamt} ignored faces. Double-click opens the whole photo.",
+  "@personenIgnoriertTeilHinweis": {
+    "placeholders": {
+      "gezeigt": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "personenZurueckholenKnopf": "Bring back {anzahl}",
+  "@personenZurueckholenKnopf": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "clusterPhaseLaden": "Loading faces …",
+  "clusterPhaseVergleichen": "Comparing faces …",
+  "clusterPhaseVorschlaege": "Preparing suggestions …",
+  "clusterOhneProzent": "Working …",
+  "clusterFehlgeschlagen": "Automatic grouping failed: {fehler}",
+  "@clusterFehlgeschlagen": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "clusterIgnorierenTooltip": "Ignore the whole group",
+  "gesichtIgnorieren": "Ignore",
+  "gesichtIgnoriert": "Ignored",
+  "gesichtZurueckgeholt": "This face counts again.",
+  "gesichtPosition": "{nummer} of {gesamt}",
+  "@gesichtPosition": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "gesichtVoriges": "Previous photo (left arrow)",
+  "gesichtNaechstes": "Next photo (right arrow)",
+  "clusterUnerwartetBeendet": "Automatic grouping ended unexpectedly.",
+  "aufgAktiv": "Active",
+  "aufgStufeKurz": "Step {nummer}/{gesamt}",
+  "@aufgStufeKurz": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "personenAlleIgnorieren": "Ignore all unnamed faces",
+  "personenAlleIgnorierenHinweis": "{anzahl, plural, =0{Nothing left} =1{One face moves to “Ignored”} other{{anzahl} faces move to “Ignored”}}",
+  "@personenAlleIgnorierenHinweis": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "personenAlleIgnoriertMeldung": "{anzahl, plural, =0{There was nothing to ignore.} =1{One face ignored. Bring individual ones back under “Ignored”.} other{{anzahl} faces ignored. Bring individual ones back under “Ignored”.}}",
+  "@personenAlleIgnoriertMeldung": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "personenAlleErkennungenLoeschen": "Delete all unnamed detections",
+  "personenAlleErkennungenLoeschenHinweis": "Frees space, but comes back on the next scan",
+  "personenErkennungenLoeschenTitel": "Really delete the detections?",
+  "personenErkennungenLoeschenText": "All unnamed detections and their crops are deleted from disk – including the ones already ignored. Named people are left untouched.\n\nThis is not permanent: the next face scan finds the same spots again. To be rid of them for good, use “Ignore all unnamed faces” instead – that survives another scan.",
+  "personenErkennungenGeloeschtMeldung": "{anzahl, plural, =0{There were no detections to delete.} =1{One detection deleted.} other{{anzahl} detections deleted.}}",
+  "@personenErkennungenGeloeschtMeldung": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gesichtZuordnungLoesen": "Remove assignment",
+  "gesichtNichtMehrIgnorieren": "Stop ignoring",
+  "gesichtFotoLoeschen": "Delete photo",
+  "zeitraumName": "Name",
+  "zeitraumArt": "Kind",
+  "zeitraumZaehlt": "Counting photos …",
+  "zeitraumFotos": "{n, plural, =0{No photo in this period} =1{1 photo in this period} other{{n} photos in this period}}",
+  "@zeitraumFotos": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reisenSelbstAnlegen": "Add a trip by hand",
+  "reisenSelbstAngelegt": "Trip \"{name}\" created.",
+  "@reisenSelbstAngelegt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aktivitaetenSelbstAnlegen": "Add an activity by hand",
+  "aktivitaetenSelbstAngelegt": "Activity \"{name}\" created.",
+  "@aktivitaetenSelbstAngelegt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "infoOrtSuchen": "Find place",
+  "infoOrtSuchenBeispiel": "e.g. Goslar",
+  "infoOrtKeinVerzeichnis": "The place directory is missing. You can download it under Settings → Location data.",
+  "infoOrtNichtGefunden": "No place called \"{name}\" in the directory.",
+  "@infoOrtNichtGefunden": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "infoOrtGesetzt": "Location set to {ort}.",
+  "@infoOrtGesetzt": {
+    "placeholders": {
+      "ort": {
+        "type": "String"
+      }
+    }
+  },
+  "infoOrtGesetztMehrdeutig": "Location set to {ort} - there are {weitere} more of the same name.",
+  "@infoOrtGesetztMehrdeutig": {
+    "placeholders": {
+      "ort": {
+        "type": "String"
+      },
+      "weitere": {
+        "type": "int"
+      }
+    }
+  },
+  "gesichtNichtMehrDurchsuchen": "Stop scanning for faces",
+  "gesichtWiederDurchsuchen": "Scan for faces again",
+  "gesichtNichtMehrDurchsuchtHinweis": "This photo will be skipped when scanning again. Faces already found remain.",
+  "gesichtWiederDurchsuchtHinweis": "This photo will be scanned again.",
+  "gesichtInGesperrtemOrdner": "The photo is now in the locked folder.",
+  "gesichtFavoritGesetzt": "Marked as favourite.",
+  "gesichtFavoritEntfernt": "Favourite removed.",
+  "gesichtSperrenFehlgeschlagen": "The photo could not be moved to the locked folder.",
+  "gesichtErkennungLoeschen": "Delete detection",
+  "gesichtAlleUnbenanntenIgnorieren": "{anzahl, plural, =0{No unnamed faces} =1{Ignore unnamed face} other{Ignore {anzahl} unnamed faces}}",
+  "@gesichtAlleUnbenanntenIgnorieren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "personWeitereFotosSuchen": "Find more photos",
+  "vorschlagTitel": "Suggestions for {name}",
+  "@vorschlagTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vorschlagHinweis": "Everything is selected. Take out what is wrong – the recognition learns from that too: a rejection raises this person's threshold.",
+  "vorschlagAlleWaehlen": "Select all",
+  "vorschlagKeineWaehlen": "Select none",
+  "vorschlagUebernehmen": "{anzahl, plural, =0{Nothing selected} =1{Assign one face} other{Assign {anzahl} faces}}",
+  "@vorschlagUebernehmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "vorschlagUebernommenMeldung": "{anzahl, plural, =0{Nothing taken over – the feedback was still saved.} =1{One photo added.} other{{anzahl} photos added.}}",
+  "@vorschlagUebernommenMeldung": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "vorschlagKeineEmbeddings": "There is no recognition data for this person yet. It is created during the face scan once the SFace model is installed.",
+  "vorschlagKeineKandidaten": "There are no unnamed faces that could be suggested.",
+  "vorschlagNichtsGefunden": "No unnamed face is above this person's threshold of {schwelle}.",
+  "@vorschlagNichtsGefunden": {
+    "placeholders": {
+      "schwelle": {
+        "type": "String"
+      }
+    }
+  },
+  "gesichtRahmenAusblenden": "Hide boxes",
+  "gesichtRahmenEinblenden": "Show boxes",
+  "entwKlarheit": "Clarity",
+  "entwVignettierung": "Vignette",
+  "entwLutKeine": "No colour table",
+  "entwLutWaehlen": "Choose colour table (.cube)",
+  "entwLutEntfernen": "Remove colour table",
+  "entwLutStaerke": "Strength",
+  "entwLutFehlt": "The colour table “{name}” can no longer be read and was removed.",
+  "@entwLutFehlt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "entwLutNichtLesbar": "The file cannot be read: {fehler}",
+  "@entwLutNichtLesbar": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "entwLutEindimensional": "This is a one-dimensional table – it describes a curve, not a colour space. Use the tone curve for that.",
+  "entwLutOhneGroesse": "The file is missing the LUT_3D_SIZE entry.",
+  "entwLutGroesse": "The edge length in line {zeile} is outside the allowed range (2 to 256).",
+  "@entwLutGroesse": {
+    "placeholders": {
+      "zeile": {
+        "type": "int"
+      }
+    }
+  },
+  "entwLutZeilenzahl": "The file does not contain as many values as its edge length requires.",
+  "entwLutZeile": "Line {zeile} cannot be read.",
+  "@entwLutZeile": {
+    "placeholders": {
+      "zeile": {
+        "type": "int"
+      }
+    }
+  },
+  "histogrammWaveform": "Waveform",
+  "histogrammParade": "Parade",
+  "entwFormRechteck": "Rectangle",
+  "entwFormFarbe": "Colour",
+  "entwRechteckHinweis": "Drag out a rectangle. Rotation and soft edge are set below.",
+  "entwFarbauswahlHinweis": "Tap a colour in the photo. Everything close enough to it is selected – lighter and darker too, because colour counts for more than brightness.",
+  "entwFarbeAufgenommen": "R {rot} · G {gruen} · B {blau}",
+  "@entwFarbeAufgenommen": {
+    "placeholders": {
+      "rot": {
+        "type": "int"
+      },
+      "gruen": {
+        "type": "int"
+      },
+      "blau": {
+        "type": "int"
+      }
+    }
+  },
+  "entwToleranz": "Tolerance",
+  "vergleichTitel": "Compare two photos",
+  "vergleichNebeneinander": "Side by side",
+  "vergleichUebereinander": "Stacked",
+  "vergleichKoppeln": "Link views",
+  "vergleichEntkoppeln": "Unlink views",
+  "vergleichZuruecksetzen": "Reset zoom",
+  "auswVergleichen": "Compare the two selected photos",
+  "listeOhneKamera": "No camera information",
+  "zeitleisteGroesser": "Larger tiles",
+  "zeitleisteKleiner": "Smaller tiles – more months at once",
+  "zeitleisteFormReihen": "Justified rows – every photo in its own shape",
+  "zeitleisteFormQuadrate": "Square grid",
+  "listeSpalten": "Columns",
+  "listeSpalteDateiname": "File name",
+  "listeSpalteDatum": "Taken",
+  "listeSpalteKamera": "Camera",
+  "listeSpalteObjektiv": "Lens",
+  "listeSpalteBelichtung": "Exposure",
+  "listeSpalteBewertung": "Rating",
+  "listeSpalteFarbe": "Colour",
+  "listeSpalteMasse": "Dimensions",
+  "listeSpalteGroesse": "File size",
+  "listeSpalteArt": "Kind",
+  "listeSpalteOrt": "Place",
+  "listeSpalteBreiteAendern": "Change width",
+  "ansichtRaster": "Grid",
+  "ansichtListe": "List",
+  "gruppeMonat": "By month",
+  "gruppeKamera": "By camera",
+  "gruppeKeine": "No grouping",
+  "sortReihenfolge": "Sort order",
+  "sortAufnahmeNeu": "Date taken, newest first",
+  "sortAufnahmeAlt": "Date taken, oldest first",
+  "sortImportNeu": "Recently added",
+  "sortName": "File name, A–Z",
+  "sortBewertung": "Rating, best first",
+  "sortGroesse": "File size, largest first",
+  "sortFundreihenfolge": "Match order",
+  "bearbGeradeziehen": "Straighten",
+  "bearbPerspektive": "Perspective",
+  "bearbPerspektiveAnwenden": "Correct",
+  "modellLamaTitel": "Object removal (LaMa)",
+  "modellLamaText": "Fills a marked area from its surroundings – for dust spots, passers-by or the bin at the edge of the frame. At 208 MB the largest model here; one pass takes about a second.",
+  "modellLamaLizenz": "Apache 2.0 (Samsung Research), ONNX export by Carve",
+  "bearbRetusche": "Remove object",
+  "aufgLamaModell": "the LaMa model",
+  "bearbRetuscheNichtsMarkiert": "Nothing marked – paint over whatever should disappear.",
+  "bearbRetuscheAnwenden": "Remove",
+  "bearbRetuscheZurueck": "Undo last stroke",
+  "bearbPinselbreite": "Brush width",
+  "bearbRetuscheFehler": "Removal failed: {fehler}",
+  "@bearbRetuscheFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumTitel": "Family tree",
+  "stammbaumTitelVon": "Family tree: {name}",
+  "@stammbaumTitelVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumElternteilHinzufuegen": "Add parent",
+  "stammbaumPartnerHinzufuegen": "Add partner",
+  "stammbaumKindHinzufuegen": "Add child",
+  "stammbaumInDieMitte": "Move to centre",
+  "stammbaumLebensdaten": "Life dates …",
+  "stammbaumFotosZeigen": "Photos of this person",
+  "stammbaumVerbindungEntfernen": "Remove connection",
+  "stammbaumVerbindungEntfernenFrage": "The relationship between {eine} and {andere} will be removed. Both people and their photos stay.",
+  "@stammbaumVerbindungEntfernenFrage": {
+    "placeholders": {
+      "eine": {
+        "type": "String"
+      },
+      "andere": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehlerSelbst": "A person cannot be related to themselves.",
+  "stammbaumFehlerKreis": "That would run in a circle: this person already appears further down the same branch.",
+  "stammbaumFehlerVorhanden": "This relationship is already recorded.",
+  "stammbaumZuVieleHaushalte": "{anzahl, plural, =1{One more household does not fit the picture.} other{{anzahl} more households do not fit the picture.}}",
+  "@stammbaumZuVieleHaushalte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "stammbaumLeer": "No relatives recorded for this person yet. Use the buttons at the top right to add parents, a partner or children – either from the people you have already named, or as a new name, even without a single photo.",
+  "stammbaumPersonFehlt": "This person no longer exists.",
+  "stammbaumGeboren": "Born",
+  "stammbaumGestorben": "Died",
+  "stammbaumUnbekannt": "unknown",
+  "stammbaumNurJahrHinweis": "If only the year is known, pick any day within it – only the year is shown anyway.",
+  "gradSelbst": "this person",
+  "gradEltern": "{geschlecht, select, w{Mother} m{Father} other{Parent}}",
+  "@gradEltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradGrosseltern": "{geschlecht, select, w{Grandmother} m{Grandfather} other{Grandparent}}",
+  "@gradGrosseltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradUrgrosseltern": "{geschlecht, select, w{Great-grandmother} m{Great-grandfather} other{Great-grandparent}}",
+  "@gradUrgrosseltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradUrurgrosseltern": "{geschlecht, select, w{Great-great-grandmother} m{Great-great-grandfather} other{Great-great-grandparent}}",
+  "@gradUrurgrosseltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradVorfahreN": "Ancestor, {stufe} generations up",
+  "@gradVorfahreN": {
+    "placeholders": {
+      "stufe": {
+        "type": "int"
+      }
+    }
+  },
+  "gradKind": "{geschlecht, select, w{Daughter} m{Son} other{Child}}",
+  "@gradKind": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradEnkel": "{geschlecht, select, w{Granddaughter} m{Grandson} other{Grandchild}}",
+  "@gradEnkel": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradUrenkel": "{geschlecht, select, w{Great-granddaughter} m{Great-grandson} other{Great-grandchild}}",
+  "@gradUrenkel": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradUrurenkel": "{geschlecht, select, w{Great-great-granddaughter} m{Great-great-grandson} other{Great-great-grandchild}}",
+  "@gradUrurenkel": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradNachkommeN": "Descendant, {stufe} generations down",
+  "@gradNachkommeN": {
+    "placeholders": {
+      "stufe": {
+        "type": "int"
+      }
+    }
+  },
+  "gradGeschwister": "{geschlecht, select, w{Sister} m{Brother} other{Sibling}}",
+  "@gradGeschwister": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradHalbgeschwister": "{geschlecht, select, w{Half-sister} m{Half-brother} other{Half-sibling}}",
+  "@gradHalbgeschwister": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradNeffeNichte": "{geschlecht, select, w{Niece} m{Nephew} other{Sibling’s child}}",
+  "@gradNeffeNichte": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradGrossneffeNichte": "{geschlecht, select, w{Great-niece} m{Great-nephew} other{Sibling’s grandchild}}",
+  "@gradGrossneffeNichte": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradGeschwisterNachkommeN": "Descendant of a sibling, {stufe} steps down",
+  "@gradGeschwisterNachkommeN": {
+    "placeholders": {
+      "stufe": {
+        "type": "int"
+      }
+    }
+  },
+  "gradOnkelTante": "{geschlecht, select, w{Aunt} m{Uncle} other{Parent’s sibling}}",
+  "@gradOnkelTante": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradGrossonkelTante": "{geschlecht, select, w{Great-aunt} m{Great-uncle} other{Grandparent’s sibling}}",
+  "@gradGrossonkelTante": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradVorfahrengeschwisterN": "Sibling of an ancestor, {stufe} generations up",
+  "@gradVorfahrengeschwisterN": {
+    "placeholders": {
+      "stufe": {
+        "type": "int"
+      }
+    }
+  },
+  "gradCousin": "{geschlecht, select, other{{stufe, plural, =1{First} =2{Second} other{Degree-{stufe}}} cousin}}",
+  "@gradCousin": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      },
+      "stufe": {
+        "type": "int"
+      }
+    }
+  },
+  "gradEntfernt": "{bezeichnung}, {stufe} times removed",
+  "@gradEntfernt": {
+    "placeholders": {
+      "stufe": {
+        "type": "int"
+      },
+      "bezeichnung": {
+        "type": "String"
+      }
+    }
+  },
+  "gradPartner": "{geschlecht, select, w{Partner} m{Partner} other{Partner}}",
+  "@gradPartner": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradSchwager": "{geschlecht, select, w{Sister-in-law} m{Brother-in-law} other{Sibling-in-law}}",
+  "@gradSchwager": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradSchwiegereltern": "{geschlecht, select, w{Mother-in-law} m{Father-in-law} other{Parent-in-law}}",
+  "@gradSchwiegereltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradSchwiegerkind": "{geschlecht, select, w{Daughter-in-law} m{Son-in-law} other{Child-in-law}}",
+  "@gradSchwiegerkind": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradStiefeltern": "{geschlecht, select, w{Stepmother} m{Stepfather} other{Stepparent}}",
+  "@gradStiefeltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradStiefkind": "{geschlecht, select, w{Stepdaughter} m{Stepson} other{Stepchild}}",
+  "@gradStiefkind": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradStiefgeschwister": "{geschlecht, select, w{Stepsister} m{Stepbrother} other{Stepsibling}}",
+  "@gradStiefgeschwister": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradAngeheiratet": "related by marriage",
+  "gradUeberWeg": "{schritt} of {bezug} {name}",
+  "@gradUeberWeg": {
+    "description": "For relatives with no word of their own - \"mother of brother-in-law Michael\". schritt is the relation to the intermediate person, bezug that person's relation to the one at the centre.",
+    "placeholders": {
+      "schritt": {
+        "type": "String"
+      },
+      "bezug": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gradKeine": "not related",
+  "navStammbaum": "Family tree",
+  "stammbaumAndereWaehlen": "Put another person at the centre",
+  "stammbaumAnsichtBaum": "Tree",
+  "stammbaumAnsichtListe": "Relatives",
+  "stammbaumListeKopf": "{anzahl, plural, =1{One person is related to {name}.} other{{anzahl} people are related to {name} – closest relatives first.}}",
+  "@stammbaumListeKopf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "stammbaumKeinePersonen": "No people yet. Name a few faces under “People”, or add someone here via “Put another person at the centre”.",
+  "stammbaumGeschlecht": "Gender",
+  "stammbaumGeschlechtWeiblich": "female",
+  "stammbaumGeschlechtMaennlich": "male",
+  "stammbaumGeschlechtDivers": "non-binary",
+  "stammbaumGeschlechtOffen": "not stated",
+  "stammbaumGeschlechtHinweis": "Used only for the relationship labels – without it you get “sibling” instead of “sister”.",
+  "stammbaumAngaben": "Person details",
+  "stammbaumAnsichtFaecher": "Fan",
+  "stammbaumAnsichtNachfahren": "Descendants",
+  "stammbaumKeineVorfahren": "No ancestors recorded for this person yet. The fan shows parents, grandparents and great-grandparents – add a parent at the top right and it fills from the inside out.",
+  "stammbaumKeineNachfahren": "No children recorded for this person yet. The outline shows all descendants, indented by generation.",
+  "stammbaumFamilienfotos": "Photos of this family",
+  "stammbaumFamilienfotosVon": "Photos of {name}’s family",
+  "@stammbaumFamilienfotosVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumGedcomImport": "Import GEDCOM …",
+  "gedcomImportTitel": "The file contains",
+  "gedcomImportGefunden": "{personen} people, {kanten} relationships and {ereignisse} events.",
+  "@gedcomImportGefunden": {
+    "placeholders": {
+      "personen": {
+        "type": "int"
+      },
+      "kanten": {
+        "type": "int"
+      },
+      "ereignisse": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomImportNeuHinweis": "All of them are created anew. Nothing existing is changed or merged.",
+  "gedcomImportUebernehmen": "Import",
+  "gedcomImportFertig": "{anzahl, plural, =1{One person imported.} other{{anzahl} people imported.}}",
+  "@gedcomImportFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomFehlerTitel": "File cannot be read",
+  "gedcomFehlerKeinKopf": "The file does not begin with a GEDCOM header. It is probably not a GEDCOM file.",
+  "gedcomFehlerKodierung": "The file is written in {kodierung}. That encoding cannot be deciphered reliably, and half-deciphered names would be worse than an honest no. Please export it again as UTF-8 from the program it came from.",
+  "@gedcomFehlerKodierung": {
+    "placeholders": {
+      "kodierung": {
+        "type": "String"
+      }
+    }
+  },
+  "gedcomFehlerKeinePersonen": "The file does not contain a single person.",
+  "gedcomBerichtTitel": "What came up while reading",
+  "gedcomBerichtSauber": "Nothing to report.",
+  "gedcomBerichtDoppelte": "{anzahl, plural, =1{One person may already exist.} other{{anzahl} people may already exist.}}",
+  "@gedcomBerichtDoppelte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomBerichtDoppelteHinweis": "Nothing was merged. Who really is the same person is yours to decide, on the people screen.",
+  "gedcomBerichtUngenaueDaten": "{anzahl, plural, =1{One date was given only approximately and was left empty.} other{{anzahl} dates were given only approximately and were left empty.}}",
+  "@gedcomBerichtUngenaueDaten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomBerichtUebersprungen": "{anzahl, plural, =1{One entry belongs to something this app does not keep.} other{{anzahl} entries belong to something this app does not keep.}}",
+  "@gedcomBerichtUebersprungen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomBerichtKreise": "{anzahl, plural, =1{One relationship would have closed a loop and was left out.} other{{anzahl} relationships would have closed a loop and were left out.}}",
+  "@gedcomBerichtKreise": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomBerichtOhneNamen": "{anzahl, plural, =1{One person had no name in the file.} other{{anzahl} people had no name in the file.}}",
+  "@gedcomBerichtOhneNamen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gedcomOrtGeburt": "Place of birth",
+  "gedcomOrtTod": "Place of death",
+  "gedcomOrtTaufe": "Baptism",
+  "gedcomOrtBestattung": "Burial",
+  "gedcomOhneNamen": "Unnamed",
+  "stammbaumZeitleisteOhneDaten": "Nothing on the timeline yet: no date is recorded for anyone in this family.",
+  "stammbaumAnsichtZeitleiste": "Timeline",
+  "zeitleisteOhneDatum": "no date known",
+  "zeitleisteEreignisse": "{anzahl, plural, =1{one event} other{{anzahl} events}}",
+  "@zeitleisteEreignisse": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "stammbaumFamilienstatistik": "Family statistics",
+  "famstatAufFotos": "In the photos",
+  "famstatAusLebensdaten": "From the life dates",
+  "famstatAufnahmenGesamt": "Photos",
+  "famstatImBild": "In the picture",
+  "famstatZeitraum": "Period",
+  "famstatOhneBild": "{anzahl, plural, =1{One person is in no photo} other{{anzahl} people are in no photo}}",
+  "@famstatOhneBild": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatAufnahmenJeJahr": "Photos per year",
+  "famstatOftZusammen": "Often pictured together",
+  "famstatVonBis": "{von} to {bis}",
+  "@famstatVonBis": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
+  "famstatAlterVonBis": "aged {von} to {bis}",
+  "@famstatAlterVonBis": {
+    "placeholders": {
+      "von": {
+        "type": "int"
+      },
+      "bis": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatInJahren": "{anzahl, plural, =1{in one year} other{across {anzahl} years}}",
+  "@famstatInJahren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatFehlendeLebensdaten": "Age at death, age at marriage and age per generation appear once death and marriage dates are entered. Photo Vault does not estimate them.",
+  "famstatKeineFotos": "Nobody from this family has been recognised in a photo yet.",
+  "famstatLeer": "No one is recorded for this family.",
+  "famstatPersonen": "People",
+  "famstatLebensalter": "Age at death",
+  "famstatHeiratsalter": "Age at marriage",
+  "famstatHaeufigsterName": "Most common surname",
+  "famstatJahre": "{jahre} years",
+  "@famstatJahre": {
+    "placeholders": {
+      "jahre": {
+        "type": "String"
+      }
+    }
+  },
+  "famstatSpanne": "{von} to {bis} years",
+  "@famstatSpanne": {
+    "placeholders": {
+      "von": {
+        "type": "int"
+      },
+      "bis": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatOhneWert": "not known",
+  "famstatEingerechnet": "{anzahl, plural, =1{one person counted} other{{anzahl} people counted}}",
+  "@famstatEingerechnet": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatOhneSterbedatum": "{anzahl, plural, =1{One person without a date of death is not counted.} other{{anzahl} people without a date of death are not counted.}}",
+  "@famstatOhneSterbedatum": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatWarumOhneSterbedatum": "Anyone still living has no date of death. Counted as “zero years”, the average would look plausible and be badly wrong.",
+  "famstatOhneGeburtsdatum": "{anzahl, plural, =1{One marriage has no date of birth to go with it and is not counted.} other{{anzahl} marriages have no date of birth to go with them and are not counted.}}",
+  "@famstatOhneGeburtsdatum": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatAlterJeGeneration": "Age at death across the generations",
+  "famstatGeneration": "Generation {nummer}",
+  "@famstatGeneration": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatGenerationKurz": "{nummer}",
+  "@famstatGenerationKurz": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatGenerationHinweis": "The first is the oldest one in this family. Generations in which no one has died are missing.",
+  "famstatKinderzahl": "Children per person",
+  "famstatKinderHinweis": "A distribution, not an average: the youngest generation sits at zero because its children are still ahead of it. Only children who are part of this family are counted.",
+  "famstatKinderAchse": "{anzahl, plural, =0{no children} =1{one child} other{{anzahl} children}}",
+  "@famstatKinderAchse": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "famstatNachnamen": "Surnames",
+  "famstatVornamen": "Given names",
+  "famstatDiagrammGenerationen": "Age at death across the generations: {inhalt}",
+  "@famstatDiagrammGenerationen": {
+    "placeholders": {
+      "inhalt": {
+        "type": "String"
+      }
+    }
+  },
+  "famstatDiagrammKinder": "Children per person: {inhalt}",
+  "@famstatDiagrammKinder": {
+    "placeholders": {
+      "inhalt": {
+        "type": "String"
+      }
+    }
+  },
+  "erkundenReisen": "Trips",
+  "erkundenAktivitaeten": "Activities",
+  "gelaendeKarte": "Map on the landscape",
+  "kalenderGanzesJahr": "Whole year",
+  "einstSchwebeVorschauTitel": "Play videos on hover",
+  "einstSchwebeVorschauText": "When the mouse rests on a video or a live photo for a moment, it starts playing right in the tile - muted and looping, until the pointer moves on. Only ever one at a time. Locked items stay still: playing them would mean decrypting them in passing. Switched off, the tiles remain stills.",
+  "gelaendeStimmung": "Time of day",
+  "stimmungMorgen": "Morning",
+  "stimmungMittag": "Midday",
+  "stimmungAbend": "Evening",
+  "stimmungBlaueStunde": "Blue hour",
+  "einstKarteScharfTitel": "Map at double resolution",
+  "einstKarteScharfText": "On a display with double pixel density the map fetches four tiles of the next deeper level and places them where one would go: four times the pixels, house numbers and shop names become legible. The price is about two and a half times as many tiles per screen - on a slower machine zooming stutters noticeably. Switched off, the map draws as it did before.",
+  "routeVergroessern": "Enlarge the map",
+  "routeVerkleinern": "Shrink the map",
+  "reisenTitel": "Trips",
+  "reisenLeer": "No trip yet. Photo Vault does not have you type them in, it recognises them: as soon as enough located photos from far away are together, a suggestion appears here for you to confirm.",
+  "reisenSuchtNoch": "Looking for trips …",
+  "reisenVorschlaege": "Suggestions",
+  "reisenBestaetigte": "Your trips",
+  "reisenIstEineReise": "That was a trip",
+  "reisenKeineReise": "Not a trip",
+  "reisenBenennen": "Name the trip",
+  "reisenName": "Name",
+  "reisenNotiz": "Note",
+  "reisenTagesnotiz": "Note for this day",
+  "reisenTagesnotizTitel": "{datum}",
+  "@reisenTagesnotizTitel": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "reisenTagesnotizSchreiben": "Write a note for this day",
+  "reisenTagesnotizAendern": "Edit the note for this day",
+  "reisenUmbenennen": "Rename",
+  "reisenLoeschen": "Remove trip",
+  "reisenLoeschenFrage": "Remove “{name}”? The photos stay where they are.",
+  "@reisenLoeschenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reisenOhneOrt": "Unknown parts",
+  "reisenSpanne": "{von} to {bis}",
+  "@reisenSpanne": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
+  "reisenNaechte": "{anzahl, plural, =1{one night} other{{anzahl} nights}}",
+  "@reisenNaechte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "reisenAnzahl": "{anzahl, plural, =0{no trips} =1{one trip} other{{anzahl} trips}}",
+  "@reisenAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "ortsbezugOrte": "{anzahl, plural, =1{one place} other{{anzahl} places}}",
+  "@ortsbezugOrte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "ortsbezugWeitere": "{anzahl, plural, =1{one more place} other{{anzahl} more places}}",
+  "@ortsbezugWeitere": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenAnzahl": "{anzahl, plural, =0{no activities} =1{one activity} other{{anzahl} activities}}",
+  "@aktivitaetenAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenMitReise": "{anzahl, plural, =1{one on a trip} other{{anzahl} on trips}}",
+  "@aktivitaetenMitReise": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenOhneReiseZahl": "{anzahl, plural, =1{one standalone} other{{anzahl} standalone}}",
+  "@aktivitaetenOhneReiseZahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "reisenAufnahmen": "{anzahl, plural, =1{one photo} other{{anzahl} photos}}",
+  "@reisenAufnahmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "reisenOrte": "Places visited",
+  "reisenAktualisieren": "Look again",
+  "reisenRoute": "Route",
+  "reisenKeineRoute": "Without a located photo there is no route.",
+  "reisenAlsTitelbild": "Use as cover",
+  "reisenTitelbildGesetzt": "Cover set.",
+  "reisenTag": "{datum}",
+  "@reisenTag": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "fortschrittLaender": "{besucht} of {gesamt} countries",
+  "@fortschrittLaender": {
+    "placeholders": {
+      "besucht": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "fortschrittRegionen": "{anzahl, plural, =1{one region} other{{anzahl} regions}}",
+  "@fortschrittRegionen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "fortschrittOrte": "{anzahl, plural, =1{one place} other{{anzahl} places}}",
+  "@fortschrittOrte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "fortschrittOhneGeodaten": "Without the GeoNames data no photo can be assigned to a country. It is downloaded under “Tools”.",
+  "fortschrittHinweis": "Counted against the {gesamt} countries and territories in the GeoNames data – overseas territories included, not just the 195 sovereign states. A curated list of our own would be a second truth beside the one the photos are actually sorted by.",
+  "@fortschrittHinweis": {
+    "placeholders": {
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "weltkarteTitel": "World map",
+  "weltkarteEbenen": "Layers",
+  "weltkarteLaender": "Countries",
+  "weltkarteRegionen": "Regions",
+  "weltkarteOrte": "Places",
+  "weltkarteKeinOrt": "The data set knows no place at this spot.",
+  "weltkarteMarkeGesetzt": "“{name}” is marked.",
+  "@weltkarteMarkeGesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weltkarteOeffnen": "World map",
+  "laenderTitel": "Countries",
+  "laenderKopf": "{gesamt} countries · {besucht} visited · {teilweise} partial",
+  "@laenderKopf": {
+    "placeholders": {
+      "gesamt": {
+        "type": "int"
+      },
+      "besucht": {
+        "type": "int"
+      },
+      "teilweise": {
+        "type": "int"
+      }
+    }
+  },
+  "laenderSuchen": "Search country or capital",
+  "laenderFilter": "Filter by",
+  "laenderAlle": "All",
+  "laenderLegende": "Key",
+  "laenderAusFotos": "Backed by photos",
+  "laenderNurVonHand": "Marked by hand",
+  "laenderVollstaendig": "Complete",
+  "laenderTeilweise": "Partial",
+  "laenderNichtBesucht": "Not visited",
+  "laenderBesucht": "Visited",
+  "laenderGeplant": "Planned",
+  "laenderVerbleibend": "Remaining",
+  "laenderRegionen": "{besucht} of {gesamt} regions",
+  "@laenderRegionen": {
+    "placeholders": {
+      "besucht": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "laenderOhneRegionen": "No regions on record",
+  "laenderAufnahmen": "{anzahl, plural, =0{no photos} =1{one photo} other{{anzahl} photos}}",
+  "@laenderAufnahmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "laenderNichtsGefunden": "No country matches your search.",
+  "laenderMarkeBesucht": "Mark as visited",
+  "laenderMarkeGeplant": "Mark as planned",
+  "laenderMarkeWeg": "Remove mark",
+  "laenderVonHand": "by hand",
+  "laenderOhneGeodaten": "Without the GeoNames data set there is no country directory. It is downloaded under “Tools”.",
+  "laenderHinweisMarke": "What your photos prove appears here on its own. Mark by hand what no photo shows – the trip before your first digital camera, or next year's destination.",
+  "erdteilEU": "Europe",
+  "erdteilAS": "Asia",
+  "erdteilNA": "North America",
+  "erdteilSA": "South America",
+  "erdteilAF": "Africa",
+  "erdteilOC": "Oceania",
+  "erdteilAN": "Antarctica",
+  "erdteilUnbekannt": "No continent",
+  "werkzGpxTitel": "Locate photos from a GPX track",
+  "werkzGpxText": "A recording carries timestamps. That gives photos from cameras without GPS a location too.",
+  "gpxTitel": "Locate from GPX",
+  "gpxDateiWaehlen": "Choose a GPX file …",
+  "gpxErklaerung": "Choose a recording. Photo Vault lays your photos' capture times against the track and fills in the coordinates – only for photos that do not have one yet.",
+  "gpxSpur": "{punkte} points · {von} to {bis}",
+  "@gpxSpur": {
+    "placeholders": {
+      "punkte": {
+        "type": "int"
+      },
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
+  "gpxVersatz": "Time offset",
+  "gpxVersatzHinweis": "EXIF writes the capture time without a time zone, GPX writes UTC. The suggestion is the offset at which the most photos fall on the track – it also catches a camera clock that runs wrong.",
+  "gpxTreffer": "{anzahl, plural, =0{No photo falls on the track.} =1{One photo gets a location.} other{{anzahl} photos get a location.}}",
+  "@gpxTreffer": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gpxVerorten": "Locate",
+  "gpxFertig": "{anzahl, plural, =1{One photo located.} other{{anzahl} photos located.}}",
+  "@gpxFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gpxKeineKandidaten": "Every photo within this track's time span already has a location.",
+  "gpxFehlerKeinGpx": "This is not a GPX file.",
+  "gpxFehlerOhneZeit": "Not a single point in this track has a timestamp. Without a time nothing can be matched.",
+  "gpxFehlerLeer": "The file contains no points at all.",
+  "stammbaumKeineFamilienfotos": "Nobody from this family has been recognised in a photo yet.",
+  "stammbaumGedcomExport": "Export as GEDCOM …",
+  "stammbaumGedcomFertig": "{anzahl, plural, =1{One person exported.} other{{anzahl} people exported.}}",
+  "@stammbaumGedcomFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "gradAdoptiveltern": "{geschlecht, select, w{Adoptive mother} m{Adoptive father} other{Adoptive parent}}",
+  "@gradAdoptiveltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradPflegeeltern": "{geschlecht, select, w{Foster mother} m{Foster father} other{Foster parent}}",
+  "@gradPflegeeltern": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradAdoptivkind": "{geschlecht, select, w{Adopted daughter} m{Adopted son} other{Adopted child}}",
+  "@gradAdoptivkind": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "gradPflegekind": "{geschlecht, select, w{Foster daughter} m{Foster son} other{Foster child}}",
+  "@gradPflegekind": {
+    "placeholders": {
+      "geschlecht": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumLeiblich": "Biological",
+  "stammbaumAdoptiv": "Adoptive",
+  "stammbaumPflege": "Foster",
+  "stammbaumAnsichtSanduhr": "Hourglass",
+  "stammbaumSeitenlinien": "Collateral line",
+  "stammbaumSeitenlinienHinweis": "Siblings beside the person, their children below – this is what makes nephews, nieces and in-laws visible.",
+  "lebenslaufVon": "Life story: {name}",
+  "@lebenslaufVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lebenslaufHinzufuegen": "Add event",
+  "lebenslaufLeer": "Nothing recorded for this person yet. Birth and death live with the person details; weddings, moves, jobs and everything else go here.",
+  "lebenslaufGeburt": "Born",
+  "lebenslaufTod": "Died",
+  "lebenslaufHochzeit": "Marriage",
+  "lebenslaufUmzug": "Move",
+  "lebenslaufBeruf": "Work",
+  "lebenslaufAusbildung": "Education",
+  "lebenslaufSonstiges": "Other",
+  "lebenslaufOhneDatum": "no date",
+  "lebenslaufOrtAufKarte": "Place on the map",
+  "lebenslaufOrtErkannt": "Found on the map – tap to correct the point.",
+  "lebenslaufOrtUnbekannt": "This place is not in the gazetteer. Tap the map to set it yourself.",
+  "lebenslaufOrtEntfernen": "Remove location",
+  "lebenslaufOrtOhneVerzeichnis": "Without the gazetteer, places cannot be found automatically. A point can still be set by hand.",
+  "lebenslaufOrt": "Place",
+  "lebenslaufNotiz": "Note",
+  "stammbaumLebenslauf": "Life story …",
+  "orteIch": "This person",
+  "orteVorfahren": "Ancestors",
+  "orteNachkommen": "Descendants",
+  "orteSeitenlinie": "Collateral line",
+  "orteAngeheiratet": "By marriage",
+  "orteEreignisse": "Life events",
+  "orteNichtsGewaehlt": "No group selected.",
+  "stammbaumFamilienorte": "Places of this family",
+  "stammbaumMenue": "More about this person",
+  "stammbaumVerbindungsart": "Kind of connection …",
+  "stammbaumVerbindungsartTitel": "How is {kind} connected to {elternteil}?",
+  "@stammbaumVerbindungsartTitel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "elternteil": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungsartHinweis": "Adoptive and foster parents count as parents everywhere – only the term and the dashed line tell them apart.",
+  "stammbaumNichtsEntfernt": "That connection was already removed.",
+  "stammbaumWeitereVerwandte": "More relatives",
+  "stammbaumVerwandtenHinzufuegen": "Add a relative …",
+  "stammbaumGruppeVorfahren": "Ancestors",
+  "stammbaumGruppeNachkommen": "Descendants",
+  "stammbaumGruppeSeitenlinie": "Collateral line",
+  "stammbaumGruppeAngeheiratet": "By marriage",
+  "stammbaumGradGrosselternteil": "Grandparent",
+  "stammbaumGradUrgrosselternteil": "Great-grandparent",
+  "stammbaumGradEnkelkind": "Grandchild",
+  "stammbaumGradUrenkelkind": "Great-grandchild",
+  "stammbaumGradGeschwisterkind": "Sibling",
+  "stammbaumGradHalbgeschwisterkind": "Half-sibling",
+  "stammbaumGradOnkelTante": "Uncle or aunt",
+  "stammbaumGradNeffeNichte": "Nephew or niece",
+  "stammbaumGradCousin": "Cousin",
+  "stammbaumGradSchwiegerelternteil": "Parent-in-law",
+  "stammbaumGradSchwiegerkind": "Child-in-law",
+  "stammbaumGradSchwager": "Brother- or sister-in-law",
+  "stammbaumGradStiefelternteil": "Step-parent",
+  "stammbaumGradStiefkind": "Stepchild",
+  "stammbaumFehltElternteil": "{name} needs a parent first.",
+  "@stammbaumFehltElternteil": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltGrosselternteil": "{name} needs grandparents first.",
+  "@stammbaumFehltGrosselternteil": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltKind": "{name} needs a child first.",
+  "@stammbaumFehltKind": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltEnkelkind": "{name} needs a grandchild first.",
+  "@stammbaumFehltEnkelkind": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltGeschwister": "{name} needs a sibling first.",
+  "@stammbaumFehltGeschwister": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltOnkelTante": "{name} needs an uncle or aunt first.",
+  "@stammbaumFehltOnkelTante": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltPartner": "{name} needs a partner first.",
+  "@stammbaumFehltPartner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFehltGeschwisterOderPartner": "{name} needs a sibling or a partner first.",
+  "@stammbaumFehltGeschwisterOderPartner": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumUeberWen": "{grad} – through whom?",
+  "@stammbaumUeberWen": {
+    "placeholders": {
+      "grad": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerwandterEingetragen": "{name} has been added – {bezeichnung}.",
+  "@stammbaumVerwandterEingetragen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "bezeichnung": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumNurEintragbares": "Shown is what can be added for {name}. Greyed out means an intermediate person is still missing.",
+  "@stammbaumNurEintragbares": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumFamilienorteVon": "Places of {name}’s family",
+  "@stammbaumFamilienorteVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumKeineFamilienorte": "No photo from this family has a location.",
+  "stammbaumZierbaumDrucken": "Ornamental tree as PDF",
+  "stammbaumTafelDrucken": "Chart as PDF …",
+  "stammbaumTafelFertig": "The chart has been written.",
+  "aufgWirdErmittelt": "Working out what is left …",
+  "aufgAbgebrochenBei": "Cancelled at {erledigt} of {gesamt}",
+  "aufgFertigMit": "Done – {gesamt} processed",
+  "beendenTitel": "Still analysing",
+  "beendenText": "Quitting loses the file currently being worked on; everything already analysed stays. Still running:",
+  "beendenTrotzdem": "Quit anyway",
+  "beendenWeiterlaufen": "Keep running",
+  "aufgUebersetzenTitel": "Translate captions",
+  "aufgUebersetzenText": "Turns the existing English AI captions into German – without running the captioning model again.",
+  "aufgUebersetzungsmodell": "the English → German translation model",
+  "werkzUebersetzeBeschreibungen": "Translating captions …",
+  "werkzAlleUebersetzt": "Every caption has been translated.",
+  "aufgLaeuftSchon": "This analysis is already running.",
+  "infoKiBeschreibungVonHand": "AI caption, edited by hand",
+  "infoKiVonHandHinweis": "Survives “All photos”. Clear the field to have it computed again.",
+  "infoSpracheDe": "DE",
+  "infoSpracheEn": "EN",
+  "infoKiPlatzhalterDe": "Write the German version",
+  "infoKiPlatzhalterEn": "Write the English version",
+  "duplGefunden": "{gruppen} groups with {fotos} photos",
+  "duplNichtsGefunden": "No groups found",
+  "duplGruppeIgnorieren": "Skip",
+  "duplGruppeIgnoriert": "{anzahl} photos will be skipped by the duplicate search from now on.",
+  "duplAusnahmenZahl": "{anzahl} skipped",
+  "duplAusnahmenTitel": "Show skipped ones again",
+  "duplAusnahmenFrage": "{anzahl} pairs are excluded from the search. Should all of them be considered again?",
+  "duplAusnahmenLoeschen": "Show all again",
+  "entwNurMitCoreImage": "Sharpening, noise reduction, clarity and vignetting need processing steps that only exist on macOS. Every other slider works fully here.",
+  "modellOcrTitel": "Text recognition (PaddleOCR)",
+  "modellOcrText": "Finds text in photos and reads it – two models, 13.7 MB together. Covers the Latin alphabet including umlauts and ß. Not needed on macOS: Apple's Vision framework does it there without a download.",
+  "modellOcrLizenz": "Apache 2.0 (PaddleOCR)",
+  "aufgOcrModell": "the text recognition model",
+  "werkzDatumTitel": "Read capture date from RAW photos and videos",
+  "werkzDatumFrageTitel": "Correct the capture date?",
+  "werkzDatumFrage": "Photos whose capture date came from the file timestamp will get the real date from the RAW file. They move to the right place in the timeline and calendar, and on disk into the matching month folder.\n\nThe photos themselves are not modified. The run cannot be undone.",
+  "werkzDatumStarten": "Correct",
+  "werkzKorrigiereDatum": "Reading capture data from RAW photos and videos ...",
+  "werkzKeineRawFotos": "No RAW photographs and no videos in the library.",
+  "karteGlobusZoomHinweis": "Zooming in further shows no extra detail – the Earth texture is a single image. Tap a pin to switch to the map at that spot.",
+  "karteHineinzoomen": "Zoom in",
+  "karteHerauszoomen": "Zoom out",
+  "zoomEinpassen": "Fit to window",
+  "karteEreignisseEinblenden": "Show life events",
+  "karteEreignisseAusblenden": "Hide life events",
+  "karteStandortZeigen": "My location",
+  "karteStandortNichtErmittelbar": "Could not determine your location. Check System Settings → Privacy & Security → Location Services to see whether Photo Vault may ask.",
+  "karteStandortSuche": "Determining location …",
+  "weltkarteKlickMarkiert": "A click marks",
+  "weltkarteMarkeWeggenommen": "“{name}” is no longer marked.",
+  "@weltkarteMarkeWeggenommen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weltkarteSchonBelegt": "“{name}” is already covered by your photos.",
+  "@weltkarteSchonBelegt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weltkarteLegende": "Where a mark comes from",
+  "weltkarteLegendeFotos": "Filled, solid outline: evidenced by located photos.",
+  "weltkarteLegendeHand": "Pale, dotted outline: marked by hand, without a photo.",
+  "weltkarteLegendeGeplant": "Nearly empty, dashed outline: planned – does not count as visited.",
+  "weltkarteOhneUmriss": "Small territories such as the Vatican have no outline; they stay a dot.",
+  "ortRegionen": "Regions · {besucht} of {gesamt}",
+  "@ortRegionen": {
+    "placeholders": {
+      "besucht": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "ortOrte": "Places · {besucht} of {gesamt}",
+  "@ortOrte": {
+    "placeholders": {
+      "besucht": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "ortFotos": "{anzahl, plural, =1{One photo} other{{anzahl} photos}}",
+  "@ortFotos": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "ortNichtsHier": "Nothing from here yet – no photo, and the dataset knows no further level below.",
+  "meldungenTitel": "Notifications",
+  "meldungenKeine": "Nothing to report yet.",
+  "meldungenGlocke": "Show notifications",
+  "meldungSchliessen": "Dismiss notification",
+  "meldungenAlleSchliessen": "Hide all",
+  "meldungenVerlaufLeeren": "Clear history",
+  "meldungWiederholt": "{anzahl}×",
+  "@meldungWiederholt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "meldungArtHinweis": "Note",
+  "meldungArtErfolg": "Done",
+  "meldungArtWarnung": "Warning",
+  "meldungArtFehler": "Error",
+  "aktivitaetenTitel": "Activities",
+  "aktivitaetenOeffnen": "Show activities",
+  "aktivitaetenVorschlaege": "Suggestions",
+  "aktivitaetenBestaetigte": "On trips",
+  "aktivitaetenOhneReise": "On their own",
+  "aktivitaetenLeer": "No activity yet. Hikes, bike rides and outings are detected from a day's photos – a handful of located pictures spanning at least three quarters of an hour are needed.",
+  "aktivitaetenSuchtNoch": "Looking for outings …",
+  "aktivitaetenBenennen": "Name activity",
+  "aktivitaetenUmbenennen": "Rename",
+  "aktivitaetenName": "Name",
+  "aktivitaetenLoeschen": "Delete activity",
+  "aktivitaetenLoeschenFrage": "Remove “{name}” from the list? The photos stay where they are.",
+  "@aktivitaetenLoeschenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aktivitaetenNotiz": "Note",
+  "aktivitaetenArtAendern": "Change type",
+  "aktivitaetenStrecke": "{km} km",
+  "@aktivitaetenStrecke": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "aktivitaetenDauer": "{stunden} h {minuten} min",
+  "@aktivitaetenDauer": {
+    "placeholders": {
+      "stunden": {
+        "type": "int"
+      },
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenDauerKurz": "{minuten} min",
+  "@aktivitaetenDauerKurz": {
+    "placeholders": {
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenAufnahmen": "{anzahl, plural, =1{One photo} other{{anzahl} photos}}",
+  "@aktivitaetenAufnahmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenOhneOrt": "Out and about",
+  "aktivitaetenZuReise": "Part of: {reise}",
+  "@aktivitaetenZuReise": {
+    "placeholders": {
+      "reise": {
+        "type": "String"
+      }
+    }
+  },
+  "aktivitaetenKeineRoute": "Too few located photos for a route.",
+  "aktivitaetenInDieserReise": "Outings",
+  "reiseartReise": "Trip",
+  "reisenZusammenfuehren": "Merge",
+  "reisenZusammenfuehrenAllein": "There is no second trip to merge this one with.",
+  "reisenZusammenfuehrenTitel": "Add to “{name}”",
+  "@reisenZusammenfuehrenTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reisenZusammenfuehrenHinweis": "The selected trips are absorbed into “{name}”: photos, outings, tracks and daily notes come along, and the selected names disappear.",
+  "@reisenZusammenfuehrenHinweis": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reisenZusammengefuehrt": "{anzahl, plural, one{One trip was} other{{anzahl} trips were}} merged into “{name}”.",
+  "@reisenZusammengefuehrt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "reiseartUnternehmung": "Deployment",
+  "reiseartGeschaeftlich": "Business",
+  "reiseartBesuch": "Visit",
+  "reiseartSonstiges": "Other",
+  "reisenArtAendern": "Kind of trip",
+  "reisenAktivitaetAnlegen": "Add outing",
+  "reisenOhneAktivitaeten": "None yet – “Add outing” turns the whole trip, or a stretch of it, into one.",
+  "reisenAktivitaetLeer": "No photo of this trip falls in that period.",
+  "reisenAktivitaetAngelegt": "Outing “{name}” created with {anzahl} photos.",
+  "@reisenAktivitaetAngelegt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aktivitaetenAngelegt": "“{name}” recorded.",
+  "@aktivitaetenAngelegt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aktivitaetenEntfernt": "“{name}” removed.",
+  "@aktivitaetenEntfernt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aufnahmenWahlTitelAktivitaet": "Photos of this activity",
+  "aufnahmenWahlTitelReise": "Photos of this journey",
+  "aufnahmenWahlZeitraum": "Period ({von} – {bis})",
+  "aufnahmenWahlAlle": "All photos",
+  "aufnahmenWahlGewaehlt": "{anzahl, plural, =0{nothing selected} =1{1 photo selected} other{{anzahl} photos selected}}",
+  "aufnahmenWahlAusserhalb": "{anzahl, plural, =1{1 of them outside this view} other{{anzahl} of them outside this view}}",
+  "aufnahmenWahlLeer": "There is no photo in this period. Use “All photos” to pick one from outside it.",
+  "aufnahmenWahlGeaendert": "{dazu, plural, =0{} =1{1 photo added} other{{dazu} photos added}}{weg, plural, =0{} =1{, 1 removed} other{, {weg} removed}}",
+  "aufnahmenWahlUnveraendert": "Nothing changed.",
+  "aktivitaetenArtNeu": "New type …",
+  "aktivitaetenArtNeuFrage": "What should the type be called?",
+  "aktArtSpaziergang": "Walk",
+  "aktArtWanderung": "Hike",
+  "aktArtRadtour": "Bike ride",
+  "aktArtAusflug": "Outing",
+  "aktArtBesichtigung": "Sightseeing",
+  "aktArtBootsfahrt": "Boat trip",
+  "aktArtSonstiges": "Other",
+  "aktivitaetenIstEine": "Yes, an outing",
+  "aktivitaetenKeine": "Not an outing",
+  "spurHinzufuegen": "Add GPX track",
+  "spurEntfernen": "Remove track",
+  "spurEntferntMeldung": "Track removed.",
+  "spurHinzugefuegtMeldung": "Track “{name}” added: {km} km.",
+  "@spurHinzugefuegtMeldung": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "spurTitel": "Recorded track",
+    "spurKm": "{km} km",
+  "spurKm": "{km} km",
+  "@spurKm": {"placeholders": {"km": {"type": "String"}}},
+  "spurKennzahlen": "{km} km · ▲ {auf} m · ▼ {ab} m",
+  "@spurKennzahlen": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "auf": {
+        "type": "int"
+      },
+      "ab": {
+        "type": "int"
+      }
+    }
+  },
+  "spurKennzahlenOhneHoehe": "{km} km · no elevation data",
+  "@spurKennzahlenOhneHoehe": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "spurPunkte": "{anzahl} points",
+  "@spurPunkte": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "spurHoehenprofil": "Elevation profile",
+  "spurOhneHoehen": "This file carries no elevations – without them there is no profile.",
+  "spurProfilBeschreibung": "Elevation profile over {km} km, from {tief} to {hoch} metres, {auf} metres of ascent.",
+  "@spurProfilBeschreibung": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "tief": {
+        "type": "int"
+      },
+      "hoch": {
+        "type": "int"
+      },
+      "auf": {
+        "type": "int"
+      }
+    }
+  },
+  "spurStelle": "{km} km · {hoehe} m",
+  "@spurStelle": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "hoehe": {
+        "type": "int"
+      }
+    }
+  },
+  "spurSchonDa": "This activity already has a track.",
+  "flugStarten": "Start flight",
+  "flugAnhalten": "Pause",
+  "flugWeiter": "Continue",
+  "flugNochmal": "Again",
+  "flugBeenden": "Back to overview",
+  "flugFortschritt": "Position along the track",
+  "flugHoehe": "Elevation",
+  "flugTempo": "Speed",
+  "flugSteigung": "Gradient",
+  "flugVideo": "Export as video",
+  "flugVideoAbbrechen": "Cancel export",
+  "flugVideoFertig": "Video saved: {datei}",
+  "@flugVideoFertig": {"placeholders": {"datei": {"type": "String"}}},
+  "flugVideoAbgebrochen": "Export cancelled",
+  "flugVideoKeinWerkzeug": "Video export is unavailable – the video encoder is missing. macOS provides it, Linux and Windows ship it in the package; if you see this, the installation is incomplete.",
+    "flugVideoLaeuft": "Writing video – {prozent} %",
+  "flugVideoLaeuft": "Writing video – {prozent} %",
+  "@flugVideoLaeuft": {"placeholders": {"prozent": {"type": "int"}}},
+  "flugVideoLaeuftMitRest": "Writing video – {prozent} %, about {rest} left",
+  "@flugVideoLaeuftMitRest": {"placeholders": {"prozent": {"type": "int"}, "rest": {"type": "String"}}},
+  "flugVideoEinstellungen": "Export video",
+  "flugVideoAufloesung": "Resolution",
+  "flugVideoDauer": "Length",
+  "flugVideoDauerWert": "{sekunden} seconds",
+  "@flugVideoDauerWert": {"placeholders": {"sekunden": {"type": "int"}}},
+  "flugVideoBilder": "{bilder} frames",
+  "@flugVideoBilder": {"placeholders": {"bilder": {"type": "int"}}},
+  "flugVideoWeiter": "Save as …",
+  "flugVideoWaehrenddessen": "The frames are rendered off screen – the flight is not played for it. This view has to stay open until it is done.",
+  "flugVideoFehler": "Video export failed: {grund}",
+  "@flugVideoFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "flugAufstieg": "Ascent",
+  "flugUnterwegs": "elapsed",
+  "flugOhneZeit": "The track carries no timestamps – without them there is no speed.",
+  "flugProfilBeschreibung": "Elevation profile of the track with the point the flight has reached.",
+  "flugMeterProfil": "{meter} m",
+  "@flugMeterProfil": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugKmH": "{wert} km/h",
+  "@flugKmH": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugProzent": "{wert} %",
+  "@flugProzent": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugKm": "{wert} km",
+  "@flugKm": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "gelaendeTitel": "Terrain",
+  "gelaendeOeffnen": "Show terrain",
+  "gelaendeLaedt": "Fetching elevations …",
+  "gelaendeNichts": "No elevation data arrived for this area. The tiles live on the network; without a connection there is no landscape.",
+  "gelaendeBedienung": "Drag to rotate and tilt · scroll to zoom",
+  "gelaendeUeberhoeht": "Elevation exaggerated {faktor}×",
+  "@gelaendeUeberhoeht": {
+    "placeholders": {
+      "faktor": {
+        "type": "String"
+      }
+    }
+  },
+  "gelaendeNamensnennung": "Elevation: Tilezen / AWS Open Data",
+  "karteLuftbild": "Aerial imagery",
+  "gelaendeEbeneWege": "Hiking routes",
+  "gelaendeEbeneBeschriftung": "Roads and place names",
+  "gelaendeEbeneHoehenlinien": "Contour lines",
+  "gelaendeEbeneWanderobjekte": "Peaks, huts, springs",
+  "gelaendeErneut": "Try again",
+  "einstKiTagsZurueck": "Take back AI tags",
+  "einstKiTagsZurueckText": "Counting …",
+  "einstKiTagsZurueckAnzahl": "{anzahl} assigned by image recognition – hand-made ones stay",
+  "@einstKiTagsZurueckAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "einstKiTagsZurueckFrage": "{anzahl} tags from image recognition will be removed. Tags you set yourself stay untouched. Image recognition will then assign them again under the new rule.",
+  "@einstKiTagsZurueckFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "einstKiTagsZurueckJetzt": "Take back",
+  "einstKiTagsZurueckFertig": "{anzahl} tags taken back.",
+  "@einstKiTagsZurueckFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "papierkorbAusgewaehlt": "{anzahl} selected",
+  "@papierkorbAusgewaehlt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "papierkorbHinweis": "Tap the arrow on a photo to restore it. Press and hold to select several.",
+  "aktivitaetenWeitere": "+{anzahl} more",
+  "@aktivitaetenWeitere": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "einstVorladenTitel": "Preload map areas",
+  "einstVorladenText": "Fetches the tiles for your own photo areas to disk – the map then needs no network there",
+  "einstVorladenKeineOrte": "There are no located photos yet.",
+  "einstVorladenFrage": "{gebiete} areas, {kacheln} tiles, about {mb} MB. This takes a while and keeps running as long as settings stay open.",
+  "@einstVorladenFrage": {
+    "placeholders": {
+      "gebiete": {
+        "type": "int"
+      },
+      "kacheln": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
+  "einstVorladenStarten": "Preload",
+  "einstVorladenStand": "{fertig} of {gesamt}",
+  "@einstVorladenStand": {
+    "placeholders": {
+      "fertig": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "einstVorladenFertig": "{geladen} tiles loaded, {fehler} unreachable.",
+  "@einstVorladenFertig": {
+    "placeholders": {
+      "geladen": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      }
+    }
+  },
+  "mitschnittTitel": "Tile log",
+  "mitschnittErklaerung": "Records what the network really returns for every map tile: status code, exception, duration, and whether the server keeps the connection open. Tiles served from the map cache never appear here – they never reach the network.",
+  "mitschnittStarten": "Start recording",
+  "mitschnittAnhalten": "Stop",
+  "mitschnittLeeren": "Clear",
+  "mitschnittLaeuft": "Recording. Open the map now and keep zooming until the grey tiles show up.",
+  "mitschnittAus": "Stopped.",
+  "mitschnittNochNichts": "Nothing recorded yet.",
+  "mitschnittVerbJeAbruf": "Connections per request",
+  "mitschnittAbrufeJeKachel": "Requests per tile",
+  "mitschnittAbrufe": "Requests",
+  "mitschnittVerbindungen": "Connections",
+  "mitschnittKacheln": "distinct tiles",
+  "mitschnittGeglueckt": "succeeded",
+  "mitschnittFehlgeschlagen": "failed",
+  "mitschnittAbgebrochen": "cancelled",
+  "mitschnittWiederholte": "fetched more than once",
+  "mitschnittOhneDauer": "server closed the connection",
+  "mitschnittStatusTitel": "Status codes",
+  "mitschnittFehlerTitel": "Errors",
+  "mitschnittLetzteTitel": "Most recent requests",
+  "mitschnittKopieren": "Copy report",
+  "mitschnittKopiert": "The report is on the clipboard.",
+  "einstMitschnittTitel": "Tile log",
+  "einstMitschnittText": "Record what actually happens while the map loads.",
+  "mitschnittDauer": "Average {ms} ms, longest {max} ms",
+  "@mitschnittDauer": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "mitschnittDaten": "{mb} MB downloaded",
+  "@mitschnittDaten": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      }
+    }
+  },
+  "mitschnittVerworfen": "{anzahl} older entries were dropped at the limit.",
+  "@mitschnittVerworfen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "mitschnittMalGeholt": "{anzahl}x",
+  "@mitschnittMalGeholt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aufgTitel": "Jobs",
+  "aufgModusAlle": "All",
+  "aufgErstellen": "Create job",
+  "aufgErstellenText": "Queue several jobs at once. They run one after another - how many run side by side is set under \"Manage concurrency\".",
+  "aufgEinreihen": "Queue",
+  "aufgGleichzeitigTitel": "Manage concurrency",
+  "aufgGleichzeitigText": "How many compute-heavy jobs may run side by side. Each keeps an AI model in memory and reads the same photographs off the disk again - more is not always faster. Jobs without a model start straight away regardless.",
+  "aufgDatumText": "Reads the capture date back out of RAW files and videos and moves them to the right place on the timeline. Rewrites data and moves files - hence the confirmation.",
+  "aufgAblageTitel": "Sort storage by date",
+  "aufgAblageText": "Moves photos into the folder of the month they were taken if they are not there, and puts stray .xmp sidecars back next to their photo. Changes no date – only the location on disk. Moves files, hence the confirmation.",
+  "werkzOrdneAblage": "Sorting the storage ...",
+  "werkzAblageStimmt": "Every item sits in the folder of its date.",
+  "werkzAblageBilanz": "{verschoben} of {gesamt} moved",
+  "@werkzAblageBilanz": { "placeholders": { "verschoben": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "werkzAblageFrageTitel": "Sort the storage?",
+  "werkzAblageFrage": "Items whose folder does not match their capture date are moved into the right month folder. The capture dates themselves stay untouched. Nothing visible changes inside the app - but the library's folder structure on disk does.",
+  "werkzAblageStarten": "Sort storage",
+  "aufgOffeneFotos": "{anzahl} photographs outstanding",
+  "@aufgOffeneFotos": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aufgEingereiht": "{anzahl} jobs queued.",
+  "@aufgEingereiht": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "werkzZuAufgabenText": "Faces, thumbnails, text recognition, places, keywords and everything else that starts a pass over the library. They live there and nowhere else.",
+  "aufgVorschauTitel": "Generate thumbnails",
+  "sperreTitel": "This library is already open",
+  "sperreText": "Another Photo Vault window is working with the same data right now. Two windows on one library show different states and run background tasks twice.\n\nNothing is broken – this library simply will not be opened a second time.",
+  "sperreOrt": "Location",
+  "sperreErneut": "Try again",
+  "sperreNochBelegt": "It is still open.",
+  "sperreAndere": "Open another library",
+  "sperreBeenden": "Quit Photo Vault",
+  "sperreAuswahlTitel": "Open another library",
+  "sperreAuswahlLeer": "No other library is listed.",
+  "personVorschlag": "Suggested by recognition",
+  "personSuchenOderAnlegen": "Search for a person or add a new one",
+  "allgLeeren": "Clear",
+  "personNochKeine": "There is no person yet. Type a name to add the first one.",
+  "personKeinTreffer": "No person is called “{suche}”. The button adds them.",
+  "@personKeinTreffer": {
+    "placeholders": {
+      "suche": {
+        "type": "String"
+      }
+    }
+  },
+  "personAnlegenAktion": "Add “{name}”",
+  "@personAnlegenAktion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerGesichtAufziehen": "Add a missing face – drag a frame",
+  "viewerGesichtAufziehenEnde": "Stop adding",
+  "viewerGesichtNachtragen": "Name the added face",
+  "viewerRahmenZuKlein": "That frame is too small. Drag a box around the face.",
+  "viewerRahmenNichtLesbar": "The photograph could not be read – no face was added.",
+  "viewerAufziehenHinweis": "Drag a frame around the missing face.",
+  "karteEigene": "Custom map",
+  "einstEigeneKarteTitel": "Custom map source",
+  "einstEigeneKarteText": "The bundled maps stop early: OpenStreetMap serves real tiles up to level 19, OpenTopoMap up to 17. If you need house numbers, building outlines or aerial imagery, enter your own source here. It then appears as a fourth entry in the map menu.",
+  "einstEigeneKarteAktiv": "{name} is set up",
+  "@einstEigeneKarteAktiv": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteOhne": "No custom source set up",
+  "einstEigeneKarteVorlage": "Use a template",
+  "einstEigeneKarteVorlageGemessen": "up to level {stufe}, measured",
+  "@einstEigeneKarteVorlageGemessen": {
+    "placeholders": {
+      "stufe": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteVorlageLautAnbieter": "up to level {stufe}, per the provider",
+  "@einstEigeneKarteVorlageLautAnbieter": {
+    "placeholders": {
+      "stufe": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteName": "Name",
+  "einstEigeneKarteAdresse": "Tile URL",
+  "einstEigeneKarteAdresseHinweis": "https://…/{muster}.png",
+  "einstEigeneKarteNennung": "Attribution",
+  "einstEigeneKarteNennungHinweis": "© provider, © OpenStreetMap contributors",
+  "einstEigeneKarteStufe": "Highest zoom level",
+  "einstEigeneKarteSchluesselHinweis": "The key belongs in the URL – replace {marke} with your own.",
+  "@einstEigeneKarteSchluesselHinweis": {
+    "placeholders": {
+      "marke": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteWoher": "Keys are available at {quelle}",
+  "@einstEigeneKarteWoher": {
+    "placeholders": {
+      "quelle": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteSitzung": "Get Google session",
+  "einstEigeneKarteSitzungText": "Google only serves tiles once a session token exists. Put your key into the URL and fetch one here; it lasts about two weeks.",
+  "einstEigeneKarteSitzungOk": "Session fetched and inserted into the URL",
+  "einstEigeneKarteSitzungFehler": "Google returned no session: {fehler}",
+  "@einstEigeneKarteSitzungFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteSitzungOhneSchluessel": "The URL still has no key in it",
+  "einstEigeneKarteEntfernen": "Remove source",
+  "einstEigeneKarteGespeichert": "Custom map source saved",
+  "einstEigeneKarteEntfernt": "Custom map source removed",
+  "einstEigeneKarteFehlerLeer": "A URL is required",
+  "einstEigeneKarteFehlerHttp": "The URL must start with http:// or https://",
+  "einstEigeneKarteFehlerPlatzhalter": "The URL is missing {teile}",
+  "einstEigeneKarteFehlerUnbekannt": "The URL contains a placeholder in braces that the map does not know – only {teile} are allowed",
+  "einstEigeneKarteFehlerNennung": "Attribution is a licence requirement and must not be empty",
+  "einstEigeneKarteWarnungTitel": "Before you switch on a third-party map source",
+  "einstEigeneKarteWarnungUebermittlung": "Every tile is a request to that provider. It reveals which part of the world you are looking at, how far you zoom in and how long you stay. With the bundled maps the other end is a donated server without an account – here it is a key issued to you.",
+  "einstEigeneKarteWarnungOffline": "Tiles you have looked at stay on disk and remain available without a network; pre-loading whole areas works for this source too. Without pre-loading, anything you have never looked at stays grey when offline.",
+  "einstEigeneKarteWarnungBedingungen": "How far a provider permits caching is set out in its terms – some allow it for a limited time, some not at all, and Google explicitly forbids offline use. That is exactly what this app does: keep tiles and show them again without a network. Whether that is permitted for your provider is not something the app can decide for you.",
+  "einstEigeneKarteWarnungAnnehmen": "Understood, switch on",
+  "@einstEigeneKarteAdresseHinweis": {
+    "placeholders": {
+      "muster": {
+        "type": "String"
+      }
+    }
+  },
+  "@einstEigeneKarteFehlerPlatzhalter": {
+    "placeholders": {
+      "teile": {
+        "type": "String"
+      }
+    }
+  },
+  "@einstEigeneKarteFehlerUnbekannt": {
+    "placeholders": {
+      "teile": {
+        "type": "String"
+      }
+    }
+  },
+  "einstEigeneKarteFehlerSchluessel": "The URL still contains the template's placeholder – put your own key there",
+  "aufnahmenHinzufuegen": "Add photos",
+  "aufnahmenAusAktivitaetEntfernen": "Remove from activity",
+  "aufnahmenAusReiseEntfernen": "Remove from trip",
+  "aufnahmenEntferntAktivitaet": "Removed {anzahl} photo(s) from the activity",
+  "@aufnahmenEntferntAktivitaet": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "aufnahmenEntferntReise": "Removed {anzahl} photo(s) from the trip",
+  "@aufnahmenEntferntReise": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "auswAuswaehlen": "Select",
+  "einstKartenquellenTitel": "Available map sources",
+  "einstKartenquellenText": "How deep a map goes is up to the provider - beyond that the app only enlarges. The figure in metres is the width of a hundred screen points at mid latitudes; at 300 m you make out streets, at 20 m individual houses.",
+  "einstKartenquellenMitgeliefert": "bundled",
+  "einstKartenquellenVorlage": "template",
+  "einstKartenquellenTiefe": "to level {stufe} · about {meter}",
+  "@einstKartenquellenTiefe": {
+    "placeholders": {
+      "stufe": {
+        "type": "String"
+      },
+      "meter": {
+        "type": "String"
+      }
+    }
+  },
+  "einstKartenquellenGemessen": "measured",
+  "einstKartenquellenLautAnbieter": "per the provider",
+  "einstKartenquellenSchluessel": "key required",
+  "einstKartenquellenHochaufloesend": "serves double resolution",
+  "einstKartenquellenSimuliert": "double resolution is simulated",
+  "einstKartenquellenKnoepfe": "The button on the right makes a map the default view - for a template without a key it also switches it on. The preload further down then fills the cache for exactly that map.",
+  "einstKartenquellenSeite": "Open the provider's page",
+  "einstKartenquellenSeiteFehler": "The page could not be opened: {adresse}",
+  "@einstKartenquellenSeiteFehler": {
+    "placeholders": {
+      "adresse": {
+        "type": "String"
+      }
+    }
+  },
+  "einstKartenquellenStandard": "default",
+  "einstKartenquellenAlsStandard": "Make default",
+  "einstKartenquellenAlsStandardHinweis": "Show this map the next time the map view is opened",
+  "einstKartenquellenStandardGesetzt": "{name} will be the default view from the next time the map is opened.",
+  "@einstKartenquellenStandardGesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "einstKartenquellenUebernehmen": "Use this",
+  "einstKartenquellenUebernehmenHinweis": "Turn this source on as your own map and make it the default",
+  "einstKartenquellenUebernommen": "{name} is switched on and will be the default view from the next time the map is opened.",
+  "@einstKartenquellenUebernommen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "einstKartenquellenEintragen": "Fill in",
+  "einstKartenquellenEintragenHinweis": "Write this template into the form below - the key will still be missing",
+  "einstKartenquellenEingetragen": "{name} is in the form below. Enter your key and save.",
+  "@einstKartenquellenEingetragen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aufgDatumsherkunftTitel": "Where capture dates come from",
+  "aufgDatumsherkunftText": "Looks inside every file for an actual capture date. Where there is none, the date comes from the file system – from the last copy, not from the shutter. Those photos are marked and kept out of memories and bursts. The same pass reads the time-zone offset that every fourth file carries.",
+  "werkzPruefeDatumsherkunft": "Checking where capture dates come from …",
+  "werkzAlleDatumGeprueft": "Every photo has already been checked.",
+  "infoDatumGeschaetzt": "Date is a guess – the file carries none",
+  "infoDatumGeschaetztKurz": "estimated",
+  "sucheDatumGeschaetzt": "Only with an estimated date",
+  "ortVorschlagTitel": "Places from neighbours",
+  "ortVorschlagErklaerung": "These photos carry no place – but the ones taken just before and after do, and they agree. Places taken over are marked as inherited: they are a reasoned guess, not a measurement.",
+  "ortVorschlagKeine": "No photo can be placed from its neighbours.",
+  "ortVorschlagAnzahl": "{n, plural, =1{1 photo} other{{n} photos}}",
+  "@ortVorschlagAnzahl": {"placeholders": {"n": {"type": "int"}}},
+  "ortVorschlagBegruendung": "{nachbarn, plural, =1{1 placed neighbour} other{{nachbarn} placed neighbours}}, at most {minuten} minutes away",
+  "@ortVorschlagBegruendung": {"placeholders": {"nachbarn": {"type": "int"}, "minuten": {"type": "int"}}},
+  "ortVorschlagAlleUebernehmen": "Take all {n}",
+  "@ortVorschlagAlleUebernehmen": {"placeholders": {"n": {"type": "int"}}},
+  "ortVorschlagAlleFrageTitel": "Take all suggestions?",
+  "ortVorschlagAlleFrage": "{gruppen} groups with {aufnahmen} photos in total will get the place of their neighbours. The place stays marked as inherited and can be removed individually.",
+  "@ortVorschlagAlleFrage": {"placeholders": {"gruppen": {"type": "int"}, "aufnahmen": {"type": "int"}}},
+  "ortVorschlagWerkzTitel": "Inherit places from neighbours",
+  "ortVorschlagWerkzText": "Photos without a place whose neighbours in time were all at the same spot.",
+  "infoOrtGeerbt": "Inherited from neighbouring photos",
+  "aufgVideobilderTitel": "Videos: more than one still",
+  "aufgVideobilderText": "A video used to be analysed from a single still frame. From ten seconds of runtime, up to five frames spread over its length are analysed – for search, tags and faces. The frames are not kept.",
+  "werkzVideobilder": "Analysing further stills …",
+  "werkzAlleVideobilder": "Every video has already been checked.",
+  "suchoptIso": "ISO",
+  "startFehlerTitel": "The library could not be opened",
+  "startFehlerText": "Photo Vault encountered an error during startup. The technical details can help diagnose it.",
+  "startFehlerErneut": "Try again",
+  "befehlspaletteTitel": "Find a command",
+  "befehlspaletteHinweis": "Enter a section or tool",
+  "befehlspaletteLeer": "No matching command",
+  "kuerzelBefehlspalette": "Open the command palette",
+  "gesundheitTitel": "Library health",
+  "gesundheitWerkzeugText": "Check backups, database, storage and local models together.",
+  "gesundheitEinleitung": "These checks show whether the library is complete, backed up and ready to work.",
+  "gesundheitAktualisieren": "Refresh health",
+  "gesundheitDatenbank": "Database",
+  "gesundheitDatenbankOk": "SQLite reports no structural errors.",
+  "gesundheitDatenbankFehler": "SQLite reported a structural error.",
+  "gesundheitIntegritaetOeffnen": "Check all files",
+  "gesundheitSicherung": "Automatic backup",
+  "gesundheitSicherungAus": "Automatic backup is turned off.",
+  "gesundheitSicherungNie": "Automatic backup is configured but has never completed successfully.",
+  "gesundheitLetzteSicherung": "Last successful run: {datum}",
+  "@gesundheitLetzteSicherung": {"placeholders": {"datum": {"type": "String"}}},
+  "gesundheitSicherungOffen": "{anzahl, plural, =0{All current photos are backed up.} =1{1 photo is waiting for backup.} other{{anzahl} photos are waiting for backup.}}",
+  "@gesundheitSicherungOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitSpeicher": "Storage use",
+  "gesundheitSpeicherWirdGezaehlt": "counting …",
+  "gesundheitMedien": "{fotos} photos, {videos} videos",
+  "@gesundheitMedien": {"placeholders": {"fotos": {"type": "int"}, "videos": {"type": "int"}}},
+  "gesundheitModelle": "Local features",
+  "gesundheitModelleStand": "{bereit} of {gesamt} local data and AI features are ready.",
+  "gesundheitOrteTitel": "Places to inherit",
+  "gesundheitOrteOffen": "{anzahl} item(s) without a place have a located neighbour close in time.",
+  "@gesundheitOrteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitOrteAnsehen": "Review suggestions",
+  "gesundheitGesichterTitel": "Faces without a person",
+  "gesundheitGesichterOffen": "{anzahl} detected face(s) belong to nobody yet. Under People they can be assigned in groups.",
+  "@gesundheitGesichterOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitGesichterZuordnen": "Go to People",
+  "gesundheitDatumTitel": "Questionable capture dates",
+  "gesundheitDatumOffen": "{anzahl} item(s) carry a timestamp on the full hour – with a real shutter time about two would. The run looks into the file for what is actually there.",
+  "@gesundheitDatumOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitDatumPruefen": "Check date origin",
+  "gesundheitVideobilderTitel": "Videos judged from one frame",
+  "gesundheitVideobilderOffen": "{anzahl} video(s) run longer than ten seconds and are still searched by their first frame alone.",
+  "@gesundheitVideobilderOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitVideobilderHolen": "Fetch more frames",
+  "stufeWiedererkennung": "Recognition",
+  "aufgWiedererkennungTitel": "Who might this be?",
+  "aufgWiedererkennungText": "Compares unnamed faces with the named people and suggests who might be shown. Nothing is assigned – that stays your decision.",
+  "werkzWiedererkennung": "Compare faces",
+  "werkzAlleVerglichen": "All faces have already been compared.",
+  "gesundheitVorschlaegeTitel": "Recognised faces are waiting",
+  "gesundheitVorschlaegeOffen": "{anzahl} unnamed face(s) resemble a named person closely enough for a suggestion.",
+  "@gesundheitVorschlaegeOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitVorschlaegeAnsehen": "Review suggestions",
+  "vorschlaegeTitel": "Who might this be?",
+  "vorschlaegeEinleitung": "Suggested, not assigned. You see per person what recognition found, and you decide.",
+  "vorschlaegeAnzahl": "{anzahl} suggestion(s)",
+  "@vorschlaegeAnzahl": {"placeholders": {"anzahl": {"type": "int"}}},
+  "vorschlaegeKeine": "There are no suggestions at the moment.",
+  "vorschlaegeBeiseite": "Include set-aside faces",
+  "vorschlaegeBeiseiteHinweis": "You set these faces aside once – back then some of today's people did not exist yet. This is what recognition finds among them now.",
+  "vorschlaegeBeiseiteLeer": "Recognition finds nothing among the set-aside faces.",
+  "vorschlaegeLaufHinweis": "Nothing compared yet. The run \\u201cWho might this be?\\u201d fills this list.",
+  "gesundheitBeiseiteTitel": "Set-aside faces, never compared",
+  "gesundheitBeiseiteOffen": "{anzahl} set-aside face(s) have never been compared with your named people – they were set aside before those people existed.",
+  "@gesundheitBeiseiteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "gesundheitBeiseiteAnsehen": "Take a look",
+  "vorschlaegeJetztVergleichen": "Compare now",
+  "vorschlaegeBeiseiteNieVerglichen": "{anzahl} set-aside face(s) have never been compared. The pass changes nothing – it only says which of them might belong to a named person.",
+  "@vorschlaegeBeiseiteNieVerglichen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "vorschlaegeLaeuft": "The pass is running …",
+  "@gesundheitModelleStand": {"placeholders": {"bereit": {"type": "int"}, "gesamt": {"type": "int"}}},
+  "datenschutzExportTitel": "Privacy export",
+  "datenschutzExportText": "JPEG up to 2048 pixels without EXIF, GPS or XMP; known faces and detected license plates are obscured locally.",
+  "datenschutzAusgelassen": "{anzahl} item(s) left out: videos and images that cannot be re-rendered cannot be stripped of their metadata.",
+  "@datenschutzAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "sicherTeilenTitel": "Encrypted sharing package",
+  "sicherTeilenText": "Share originals and file names in one password-protected .pvshare file.",
+  "sicherTeilenZiel": "Save sharing package",
+  "sicherTeilenDateiname": "PhotoVault-Share.pvshare",
+  "sicherTeilenFertig": "Encrypted sharing package saved: {pfad}",
+  "@sicherTeilenFertig": {"placeholders": {"pfad": {"type": "String"}}},
+  "sicherTeilenFehler": "Could not create the sharing package: {fehler}",
+  "@sicherTeilenFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "einstPrivateMetadatenTitel": "Protect private metadata",
+  "einstPrivateMetadatenText": "Removes file names, dates, locations, descriptions, tags, and album assignments for newly locked items from the readable database. The values are encrypted with the vault key and restored when the item is permanently unlocked.",
+  "gesundheitBereinigen": "Clean temporary files",
+  "gesundheitBereinigt": "{anzahl, plural, =0{No temporary leftovers found.} =1{Removed 1 temporary file ({groesse}).} other{Removed {anzahl} temporary files ({groesse}).}}",
+  "@gesundheitBereinigt": {"placeholders": {"anzahl": {"type": "int"}, "groesse": {"type": "String"}}},
+  "sicherTeilenImportTitel": "Open sharing package",
+  "sicherTeilenImportText": "Verify, decrypt, and import a password-protected .pvshare file into this library.",
+  "sicherTeilenImportPassphrase": "Sharing package passphrase",
+  "sicherTeilenImportFertig": "Imported {importiert} items and skipped {duplikate} duplicates.",
+  "@sicherTeilenImportFertig": {"placeholders": {"importiert": {"type": "int"}, "duplikate": {"type": "int"}}},
+  "sicherTeilenImportFehler": "Could not open sharing package: {fehler}",
+  "@sicherTeilenImportFehler": {"placeholders": {"fehler": {"type": "String"}}}
+}

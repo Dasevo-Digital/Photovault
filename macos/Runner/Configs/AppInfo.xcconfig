@@ -1,0 +1,44 @@
+// Application-level settings for the Runner target.
+//
+// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
+// future. If not, the values below would default to using the project name when this becomes a
+// 'flutter create' template.
+
+// The application's name. By default this is also the title of the Flutter window.
+PRODUCT_NAME = Photo Vault
+// Der Testbau heißt anders, damit im Dock und im Programme-Ordner auf den
+// ersten Blick erkennbar ist, welche der beiden Fassungen offen ist.
+PRODUCT_NAME[config=Debug] = Photo Vault (Test)
+// Profile teilt sich die Kennung mit Debug (siehe unten) und braucht
+// deshalb denselben eigenen Namen: Zwei Bundles namens "Photo Vault"
+// im Programme-Ordner waeren nicht auseinanderzuhalten.
+PRODUCT_NAME[config=Profile] = Photo Vault (Test)
+
+// The application's bundle identifier
+//
+// Debug-Bauten bekommen bewusst eine EIGENE Kennung. macOS vergibt den
+// Sandbox-Container anhand dieser Kennung – mit derselben Kennung greift
+// ein `flutter run` auf dieselbe Bibliothek zu wie die installierte App,
+// und ein Fehler im Testlauf träfe die echten Fotos. Mit eigener Kennung
+// bekommt der Testbau einen vollständig getrennten Container: eigene
+// Bibliothek, eigene Einstellungen, eigener Papierkorb.
+//
+// Preis: Auch der Modellordner ist getrennt (er liegt im Container, siehe
+// LibraryState.initialize). Wer im Testbau KI-Funktionen braucht, lädt die
+// Modelle dort einmal separat.
+//
+// Profile gehört aus demselben Grund dazu wie Debug: Ein Profile-Bau dient
+// dem Messen, und messen heisst starten. Ohne eigene Kennung liefe er im
+// Container der produktiven App – genau das, was die Trennung verhindern
+// soll. Aufgefallen in Prüfrunde 12, als für macOS keine Laufzeitmessung
+// möglich war: Release ist tabu, Debug misst wegen JIT etwas anderes, und
+// Profile hätte die echten Fotos angefasst.
+PRODUCT_BUNDLE_IDENTIFIER = com.example.photoVault
+PRODUCT_BUNDLE_IDENTIFIER[config=Debug] = com.example.photoVault.test
+PRODUCT_BUNDLE_IDENTIFIER[config=Profile] = com.example.photoVault.test
+
+// The copyright displayed in application information
+// Steht im Finder unter „Informationen". „com.example" stammt aus der
+// Vorlage und gehört durch den eigenen Namen ersetzt, sobald die Kennung
+// gewechselt wird.
+PRODUCT_COPYRIGHT = Copyright © 2026 Photo Vault. All rights reserved.

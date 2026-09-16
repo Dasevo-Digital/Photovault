@@ -1,0 +1,468 @@
+<title>Photo Vault: Optik &amp; Usability</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #F6F1E7;
+    --surface: #FFFEFA;
+    --surface-2: #EFE7D6;
+    --ink: #241E15;
+    --ink-soft: #6B6153;
+    --ink-faint: #9A9080;
+    --border: #E2D6BE;
+    --border-strong: #CBB98F;
+    --accent: #B25A28;
+    --accent-ink: #7A3C17;
+    --accent-soft: #F1DEC2;
+    --accent-soft-strong: #E7C89D;
+    --good: #3E7A57;
+    --good-bg: #E1EEE1;
+    --partial: #9C7A1F;
+    --partial-bg: #F1E7C7;
+    --gap: #A5402F;
+    --gap-bg: #F3DFD8;
+    --tier1: #3E7A57;
+    --tier1-bg: #E1EEE1;
+    --tier2: #9C7A1F;
+    --tier2-bg: #F1E7C7;
+    --tier3: #6B4A9C;
+    --tier3-bg: #E9E1F3;
+    --shadow: 0 1px 2px rgba(50, 36, 15, 0.06), 0 8px 24px -12px rgba(50, 36, 15, 0.18);
+    --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16130E; --surface: #1D1811; --surface-2: #262019;
+      --ink: #F1E8D8; --ink-soft: #B6A98F; --ink-faint: #7C7261;
+      --border: #362D20; --border-strong: #4A3D28;
+      --accent: #E08A4C; --accent-ink: #F4B27E; --accent-soft: #382513; --accent-soft-strong: #4A331B;
+      --good: #74BF95; --good-bg: #1D2E24;
+      --partial: #D8B25C; --partial-bg: #362C14;
+      --gap: #E1897A; --gap-bg: #362119;
+      --tier1: #74BF95; --tier1-bg: #1D2E24;
+      --tier2: #D8B25C; --tier2-bg: #362C14;
+      --tier3: #B49CDD; --tier3-bg: #2A2036;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px -12px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16130E; --surface: #1D1811; --surface-2: #262019;
+    --ink: #F1E8D8; --ink-soft: #B6A98F; --ink-faint: #7C7261;
+    --border: #362D20; --border-strong: #4A3D28;
+    --accent: #E08A4C; --accent-ink: #F4B27E; --accent-soft: #382513; --accent-soft-strong: #4A331B;
+    --good: #74BF95; --good-bg: #1D2E24;
+    --partial: #D8B25C; --partial-bg: #362C14;
+    --gap: #E1897A; --gap-bg: #362119;
+    --tier1: #74BF95; --tier1-bg: #1D2E24;
+    --tier2: #D8B25C; --tier2-bg: #362C14;
+    --tier3: #B49CDD; --tier3-bg: #2A2036;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px -12px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.55; }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+  .page { max-width: 1080px; margin: 0 auto; padding: clamp(28px,5vw,72px) clamp(18px,4vw,48px) 96px; }
+
+  .hero { padding-bottom: 36px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 18px; font-weight: 600; }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(32px,5vw,50px); line-height: 1.1; letter-spacing: -.01em; margin: 0 0 18px; text-wrap: balance; }
+  .lede { font-size: 17.5px; max-width: 68ch; color: var(--ink-soft); margin: 0 0 22px; }
+  .tags-line { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-chip { font-family: var(--font-mono); font-size: 12px; padding: 5px 11px; border-radius: 100px; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--accent-soft-strong); }
+
+  .method-note {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px; margin-top: 28px; font-size: 13.5px; color: var(--ink-soft);
+  }
+  .method-note strong { color: var(--ink); }
+
+  section { margin-bottom: 56px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+  h2 { font-family: var(--font-display); font-weight: 500; font-size: clamp(24px,3vw,30px); margin: 0; text-wrap: balance; }
+  .section-sub { color: var(--ink-faint); font-size: 14px; font-family: var(--font-mono); max-width: 34ch; text-align: right; }
+  p.intro { color: var(--ink-soft); font-size: 16px; max-width: 74ch; margin: 6px 0 22px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+  .col-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+  .col-head.strong-col { color: var(--good); }
+  .col-head.weak-col { color: var(--gap); }
+  .point-list { display: flex; flex-direction: column; gap: 10px; }
+  .point {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px 16px; box-shadow: var(--shadow); font-size: 14px;
+  }
+  .point strong { display: block; color: var(--ink); font-size: 14.5px; margin-bottom: 3px; }
+  .point span { color: var(--ink-soft); }
+  .point code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; color: var(--accent-ink); }
+
+  /* comparison table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 13.5px; }
+  thead th { text-align: left; font-weight: 600; font-size: 13px; color: var(--ink); padding: 13px; border-bottom: 1px solid var(--border-strong); white-space: nowrap; background: var(--surface-2); }
+  thead th.row-label-head { min-width: 220px; }
+  thead th.pv-col { background: var(--accent-soft-strong); color: var(--accent-ink); }
+  tbody th { text-align: left; font-weight: 500; font-size: 13.5px; color: var(--ink-soft); padding: 12px 13px; white-space: nowrap; border-right: 1px solid var(--border); }
+  tbody tr:nth-child(even) th, tbody tr:nth-child(even) td { background-color: var(--surface-2); }
+  tbody tr:nth-child(even) td.pv-col { background-color: var(--accent-soft); }
+  tbody td { padding: 12px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: none; }
+  td.pv-col { background: var(--accent-soft); font-weight: 600; border-left: 1px solid var(--border-strong); border-right: 1px solid var(--border-strong); }
+  .cell-text { color: var(--ink); }
+  .cell-text.muted { color: var(--ink-soft); font-weight: 400; }
+
+  /* roadmap-style cards */
+  .tier-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tier-badge { font-family: var(--font-mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
+  .tier-badge.t1 { background: var(--tier1-bg); color: var(--tier1); }
+  .tier-badge.t2 { background: var(--tier2-bg); color: var(--tier2); }
+  .tier-badge.t3 { background: var(--tier3-bg); color: var(--tier3); }
+  .tier-sub { color: var(--ink-faint); font-size: 14.5px; max-width: 74ch; margin: 6px 0 22px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px 20px; box-shadow: var(--shadow); }
+  .card-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+  .card p + p { margin-top: 8px; }
+  .inspired { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; font-family: var(--font-mono); font-size: 11.5px; color: var(--accent-ink); }
+  .inspired::before { content: "↳"; opacity: .7; }
+
+  .verdict-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: start; }
+  @media (max-width: 760px) { .verdict-grid { grid-template-columns: 1fr; } }
+  .verdict-grid p { color: var(--ink-soft); font-size: 15.5px; margin: 0 0 14px; }
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .callout .kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 8px; }
+  .callout p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 10px; }
+  .callout strong { color: var(--ink); }
+
+  footer { border-top: 1px solid var(--border); padding-top: 22px; font-size: 12.5px; color: var(--ink-faint); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer ul { margin: 0; padding: 0; list-style: none; display: flex; gap: 14px; flex-wrap: wrap; }
+  ::selection { background: var(--accent-soft-strong); color: var(--accent-ink); }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">Design- &amp; Usability-Audit · August 2026</p>
+    <h1>Optik und Bedienbarkeit im Vergleich</h1>
+    <p class="lede">
+      Dritte Auflage der Vergleichsreihe, diesmal nicht "was kann die App", sondern "wie fühlt sie sich
+      an" — visuelles Design und Bedienbarkeit gegen dieselben Programme wie zuvor: Apple&nbsp;Photos,
+      Lightroom, digiKam, Immich, Photo&nbsp;Mechanic und darktable als Referenzpunkte für gute (und
+      weniger gute) Konventionen.
+    </p>
+    <div class="tags-line">
+      <span class="tag-chip">Flutter / Material 3</span>
+      <span class="tag-chip">nur Dark Mode</span>
+      <span class="tag-chip">macOS-nativ verpackt</span>
+    </div>
+    <div class="method-note">
+      <span>🔍</span>
+      <p>
+        <strong>Methode:</strong> ein echter Screenshot des laufenden Timeline-Screens plus eine
+        vollständige Durchsicht von Theme-Definition, Navigationsstruktur, den zentralen
+        Interaktions-Screens (Vollbildansicht, Suche, Werkzeuge) und der Tastaturkürzel-/Barrierefreiheits-
+        Implementierung im Quellcode. Weiterführende Klick-Navigation durch die App ließ sich in dieser
+        Umgebung nicht zuverlässig automatisieren (verschachtelte virtuelle Anzeige, siehe frühere
+        Sitzungsnotizen) — die Bewertung der übrigen Screens stützt sich daher auf Code, nicht auf
+        weitere Screenshots.
+      </p>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>Optik</h2>
+      <p class="section-sub">Was der Screenshot zeigt, was der Code dahinter verrät</p>
+    </div>
+    <p class="intro">
+      Der Timeline-Screen macht auf den ersten Blick einen kompetenten Eindruck: dunkles, ruhiges
+      Foto-Raster mit Format-Badges (JPG/HEIC/DNG), Video-Dauer-Markern und Standort-Pins pro Kachel,
+      Monats-Überschriften und ein rechter Jahres-Scrubber im Stil von Apple Fotos' Schnellsprung-Leiste.
+      Das ist erkennbar an guten Vorbildern orientiert. Der Blick in den Code zeigt aber, dass dieser
+      erste Eindruck von einer sehr knappen Theme-Definition trägt — buchstäblich eine Zeile
+      (<code>ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal, brightness: Brightness.dark)</code>)
+      statt eines kuratierten Design-Systems.
+    </p>
+    <div class="split">
+      <div>
+        <div class="col-head strong-col">✓ Stärken</div>
+        <div class="point-list">
+          <div class="point"><strong>Eigenes App-Icon</strong><span>Vollständiger Icon-Satz (16px–1024px), kein Flutter-Standardicon — auch als Branding-Element in der Sidebar selbst wiederverwendet.</span></div>
+          <div class="point"><strong>Vertraute Bildraster-Sprache</strong><span>Format-Badges, Video-Dauer, Standort-Pin, Jahres-Scrubber — direkt wiedererkennbar für jeden, der Apple Fotos kennt.</span></div>
+          <div class="point"><strong>Material 3 statt Material 2</strong><span>Modernere Grundlage als viele ältere Foto-Tools (digiKam/darktable nutzen klassische Qt-Widget-Optik).</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="col-head weak-col">✗ Schwächen</div>
+        <div class="point-list">
+          <div class="point"><strong>Kein Light Mode</strong><span><code>brightness: Brightness.dark</code> fest verdrahtet, kein <code>ThemeMode</code> gesetzt — jedes Vergleichsprogramm außer darktable bietet beides.</span></div>
+          <div class="point"><strong>Keine native Typografie</strong><span>Kein eigenes <code>fontFamily</code>/<code>TextTheme</code> — läuft auf Flutters M3-Standard (Roboto-Fallback), nicht SF&nbsp;Pro. Fühlt sich dadurch nie ganz "macOS-nativ" an, anders als Apple Photos.</span></div>
+          <div class="point"><strong>Kein Spacing-/Radien-Tokensystem</strong><span>Abstände liegen meist nahe 8/16/24px, aber uneinheitlich gewählt; Eckenradien streuen über 3/4/6/8/12/20/32/100 ohne erkennbares Muster — Spuren von neun Feature-Runden ohne konsolidierenden Politur-Durchgang.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Usability</h2>
+      <p class="section-sub">Navigation, Feedback, Tastatur, Barrierefreiheit</p>
+    </div>
+    <p class="intro">
+      Die Grundstruktur ist solide und macOS-typisch (NavigationRail/-Bar mit Umschaltpunkt bei 700px
+      Fensterbreite, prominenter Import-Button). Die Lücken liegen weniger in der großen Architektur als
+      in vielen kleinen, an einzelnen Stellen fehlenden Details — genau die Art von Politur, die bei
+      einem stetig um neue Features erweiterten Einzelentwickler-Projekt typischerweise zuletzt kommt.
+    </p>
+    <div class="split">
+      <div>
+        <div class="col-head strong-col">✓ Stärken</div>
+        <div class="point-list">
+          <div class="point"><strong>Sinnvolle Vollbild-Tastaturkürzel</strong><span>Pfeiltasten zum Blättern, Ziffern 0–5 für Bewertung, ⌫ zum Ablehnen im Sichtungs-Modus — folgt derselben Konvention wie Lightroom/Photo&nbsp;Mechanic.</span></div>
+          <div class="point"><strong>Einheitliches Fortschritts-Muster</strong><span>Praktisch jedes lang laufende Werkzeug im Tools-Screen nutzt denselben <code>ProgressDialog</code> mit Streaming-Fortschritt — kein Screen fühlt sich "eingefroren" an.</span></div>
+          <div class="point"><strong>Bestätigung bei Mehrfachauswahl-Löschung</strong><span>Batch-Löschen fragt konsequent über <code>confirmDialog</code> nach, in allen geprüften Screens.</span></div>
+          <div class="point"><strong>Klare Sichtungs-Hinweiszeile</strong><span>Der Culling-Modus ist der einzige Ort, an dem Tastaturkürzel dem Nutzer aktiv erklärt werden ("0–5 Bewertung · ⌫ Ablehnen · ← → weiter") — genau richtig für den Einstieg.</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="col-head weak-col">✗ Schwächen</div>
+        <div class="point-list">
+          <div class="point"><strong>Einzel-Löschen ohne Rückfrage</strong><span>Der Löschen-Button in der Vollbildansicht verschiebt sofort in den Papierkorb, ohne Bestätigung — inkonsistent zur Mehrfachauswahl, die sehr wohl nachfragt (reversibel, aber überraschend).</span></div>
+          <div class="point"><strong>Tastaturkürzel nur in einem einzigen Screen</strong><span>Sämtliche Shortcuts existieren ausschließlich in der Vollbildansicht — Timeline-Raster, Suche, Tools: keine. Kein zentrales Cheat-Sheet, das die Kürzel überhaupt auflistet.</span></div>
+          <div class="point"><strong>Keine Cmd+Zahl-Navigation</strong><span>Die 9 Sidebar-Ziele lassen sich nur per Maus wechseln — anders als die native macOS-Konvention (Mail, Notizen, Systemeinstellungen).</span></div>
+          <div class="point"><strong>Nackte Leerzustände</strong><span>13 geprüfte Stellen (Papierkorb, Kalender, Duplikate, Karte …) zeigen ausschließlich zentrierten Text, kein Icon, kein Aktions-Button — konsistent, aber auf niedrigem Gestaltungsniveau.</span></div>
+          <div class="point"><strong>Keine <code>Semantics</code>-Labels</strong><span>Null Treffer im gesamten Code — VoiceOver-Nutzer bekommen nur Flutters implizite Defaults. Selbst <code>tooltip:</code> (45 Treffer bei 49 IconButtons) fehlt ausgerechnet bei Löschen/Favorit in der Vollbildansicht.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Konkrete Konventionen im Vergleich</h2>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="row-label-head">Konvention</th>
+            <th class="pv-col">Photo Vault</th>
+            <th>Apple Photos</th>
+            <th>Lightroom</th>
+            <th>digiKam</th>
+            <th>Immich</th>
+            <th>Photo Mechanic</th>
+            <th>darktable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Light + Dark Mode</th>
+            <td class="pv-col"><span class="cell-text">Nur Dark</span></td>
+            <td><span class="cell-text">Beide</span></td>
+            <td><span class="cell-text">Beide</span></td>
+            <td><span class="cell-text">Beide</span></td>
+            <td><span class="cell-text">Beide</span></td>
+            <td><span class="cell-text">Beide</span></td>
+            <td><span class="cell-text muted">Nur Dark (Branche üblich)</span></td>
+          </tr>
+          <tr>
+            <th>Sternebewertung (0–5)</th>
+            <td class="pv-col"><span class="cell-text">✓ nativ</span></td>
+            <td><span class="cell-text muted">✗ nur Herz/Favorit</span></td>
+            <td><span class="cell-text">✓</span></td>
+            <td><span class="cell-text">✓</span></td>
+            <td><span class="cell-text muted">✗</span></td>
+            <td><span class="cell-text">✓</span></td>
+            <td><span class="cell-text">✓</span></td>
+          </tr>
+          <tr>
+            <th>Ein-Tasten-Sichtung (Keep/Reject)</th>
+            <td class="pv-col"><span class="cell-text">Nur im Culling-Modus</span></td>
+            <td><span class="cell-text muted">✗ (Drittanbieter-Apps füllen die Lücke)</span></td>
+            <td><span class="cell-text">✓ P/X, durchgängig</span></td>
+            <td><span class="cell-text">◐ eingeschränkt</span></td>
+            <td><span class="cell-text muted">✗</span></td>
+            <td><span class="cell-text">✓ Kernfunktion</span></td>
+            <td><span class="cell-text muted">✗ (kein Culling-Fokus)</span></td>
+          </tr>
+          <tr>
+            <th>Cmd+Zahl Sidebar-Navigation</th>
+            <td class="pv-col"><span class="cell-text muted">✗</span></td>
+            <td><span class="cell-text">✓</span></td>
+            <td><span class="cell-text">✓ (Panels)</span></td>
+            <td><span class="cell-text muted">◐</span></td>
+            <td><span class="cell-text muted">✗ (Web)</span></td>
+            <td><span class="cell-text muted">◐</span></td>
+            <td><span class="cell-text">✓ (Module)</span></td>
+          </tr>
+          <tr>
+            <th>Sichtbare Tastaturkürzel-Übersicht</th>
+            <td class="pv-col"><span class="cell-text muted">✗ nirgends</span></td>
+            <td><span class="cell-text">✓ Menüleiste</span></td>
+            <td><span class="cell-text">✓ Menüleiste + Hilfe</span></td>
+            <td><span class="cell-text">✓ Menüleiste</span></td>
+            <td><span class="cell-text muted">◐</span></td>
+            <td><span class="cell-text">✓ zentrales Cheat-Sheet</span></td>
+            <td><span class="cell-text">✓ Menüleiste</span></td>
+          </tr>
+          <tr>
+            <th>Gelernte Komplexität</th>
+            <td class="pv-col"><span class="cell-text">Niedrig-mittel</span></td>
+            <td><span class="cell-text">Niedrig</span></td>
+            <td><span class="cell-text">Hoch</span></td>
+            <td><span class="cell-text muted">Hoch ("Frankenstein"-Kritik)</span></td>
+            <td><span class="cell-text">Niedrig-mittel</span></td>
+            <td><span class="cell-text">Mittel</span></td>
+            <td><span class="cell-text muted">Sehr hoch</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-footnote" style="font-size:12.5px;color:var(--ink-faint);max-width:82ch;margin:14px 2px 0;">
+      digiKams "Frankenstein"-Kritik und Apple Photos' fehlende Sternebewertung sind real dokumentierte,
+      aktuelle Nutzerkritiken (Stand 2026), keine Vermutungen — siehe Quellen unten. Photo Vaults eigene
+      Werte stammen aus dem Quellcode dieser Sitzung.
+    </p>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t1">Stufe 1</span>
+      <h2>Kleine Politur, hoher Nutzen</h2>
+    </div>
+    <p class="tier-sub">Kein neues Modell, keine neue Architektur — gezielte Ergänzungen an bereits vorhandenen Stellen.</p>
+    <div class="card-grid">
+      <div class="card">
+        <span class="inspired">Konsistenz-Lücke im eigenen Code</span>
+        <h3 class="card-title">Bestätigungsdialog vor Einzel-Löschen</h3>
+        <p>Der Löschen-Button in der Vollbildansicht auf denselben <code>confirmDialog</code> umstellen,
+        den die Mehrfachauswahl bereits nutzt — eine Zeile Inkonsistenz, kein Konzept-Problem.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Apple Photos / macOS-Konvention</span>
+        <h3 class="card-title">Escape schließt, Leertaste blättert</h3>
+        <p>Die Vollbildansicht hat bereits einen Tastatur-Handler (Pfeiltasten, Ziffern) — Escape und
+        Leertaste sind eine kleine Ergänzung an derselben Stelle.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Barrierefreiheit</span>
+        <h3 class="card-title">Fehlende Tooltips nachrüsten</h3>
+        <p>Gezielt die ~10 identifizierten IconButtons ohne <code>tooltip:</code> ergänzen — allen voran
+        Löschen/Favorit in der Vollbildansicht, wo sie am wichtigsten wären.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Suchoptionen-Sheet</span>
+        <h3 class="card-title">"0 Ergebnisse"-Hinweis im Sheet selbst</h3>
+        <p>Statt das Feedback dem aufrufenden Screen zu überlassen, direkt im Sheet anzeigen, wenn die
+        aktuelle Filterkombination keine Treffer hätte — vermeidet das verwirrende "Sheet schließt sich,
+        Liste ist leer, warum?".</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t2">Stufe 2</span>
+      <h2>Mittlerer Aufwand</h2>
+    </div>
+    <p class="tier-sub">Berührt mehrere Screens oder eine kleine neue Komponente — überschaubar, aber kein Nachmittagsprojekt.</p>
+    <div class="card-grid">
+      <div class="card">
+        <span class="inspired">Photo Mechanic (zentrales Cheat-Sheet)</span>
+        <h3 class="card-title">Tastaturkürzel-Übersicht (z.B. "?")</h3>
+        <p>Ein einziges Overlay, das alle vorhandenen Kürzel auflistet — macht die bereits gute
+        Vollbild-Tastaturbedienung erst wirklich auffindbar, statt nur der Culling-Hinweiszeile.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Lightroom / Photo Mechanic</span>
+        <h3 class="card-title">Buchstaben-Shortcuts außerhalb des Culling-Modus</h3>
+        <p><code>F</code> für Favorit, <code>⌫</code> mit Bestätigung für Löschen auch im normalen
+        Vollbild-Browsing — nicht nur im dedizierten Sichtungs-Modus.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Apple Photos / Immich (Empty States)</span>
+        <h3 class="card-title">Empty States mit Icon + Aktion</h3>
+        <p>Zumindest für die am häufigsten gesehenen Leerzustände (Timeline, Papierkorb) einen Icon+Text+
+        Aktions-Button statt reinem Fließtext — die aktuelle Konsistenz bleibt erhalten, das Niveau steigt.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">macOS-Konvention</span>
+        <h3 class="card-title">Cmd+1…9 für die Sidebar</h3>
+        <p>Direkte Tastatur-Navigation zwischen den 9 Hauptbereichen, wie bei Mail/Notizen/System­einstellungen üblich.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="tier-head">
+      <span class="tier-badge t3">Stufe 3</span>
+      <h2>Grundlegende Design-System-Arbeit</h2>
+    </div>
+    <p class="tier-sub">Betrifft die Theme-Architektur selbst — für sich genommen kein neues Feature, aber ein eigenständiges Projekt.</p>
+    <div class="card-grid">
+      <div class="card">
+        <span class="inspired">Alle sieben Vergleichsprogramme außer darktable</span>
+        <h3 class="card-title">Light Mode</h3>
+        <p>Erfordert einen vollständigen zweiten Farb-Token-Satz plus <code>ThemeMode</code>-Umschalter
+        in den Einstellungen — die aktuelle Ein-Zeilen-Theme-Definition müsste durch ein echtes,
+        zweigleisiges Farbsystem ersetzt werden.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Apple Photos (natives Gefühl)</span>
+        <h3 class="card-title">Design-Token-System + native Typografie</h3>
+        <p>Ein zentrales Spacing-/Radien-/Farb-Tokenset, konsequent in allen Screens verwendet, plus
+        SF-Pro-Typografie statt M3-Standard — der größte Hebel, um sich weniger "generisch Flutter" und
+        mehr "natives macOS" anzufühlen.</p>
+      </div>
+      <div class="card">
+        <span class="inspired">Barrierefreiheit allgemein</span>
+        <h3 class="card-title">VoiceOver-Durchgang (<code>Semantics</code>)</h3>
+        <p>Systematische Ergänzung von <code>Semantics</code>-Labels für Icon-only-Elemente und Bilder —
+        aktuell null Treffer im gesamten Code, reine Flutter-Defaults.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="verdict-section">
+    <div class="section-head"><h2>Einordnung</h2></div>
+    <div class="verdict-grid">
+      <div>
+        <p>
+          Photo Vault liegt bei "gelernter Komplexität" genau dort, wo eine private Ein-Personen-Bibliothek
+          hinwill: deutlich zugänglicher als digiKam oder darktable, aber mit mehr Tiefe (Sternebewertung,
+          Bereichsfilter, Culling-Modus) als Apple Photos. Das ist die richtige Zielscheibe.
+        </p>
+        <p>
+          Was fehlt, ist weniger ein großes Redesign als ein <strong>Politur-Durchgang</strong>: viele
+          der gefundenen Lücken (fehlende Tooltips, keine Escape-Taste, uneinheitliche Abstände) sind
+          genau die Art von Detail, die bei einem Projekt entsteht, das sich neun Feature-Runden lang auf
+          Funktionsumfang statt auf einen abschließenden Konsistenz-Pass konzentriert hat — nicht
+          überraschend, und mit der Stufe-1-Liste oben in wenigen Sitzungen behebbar.
+        </p>
+      </div>
+      <div class="callout">
+        <p class="kicker">Kurz gesagt</p>
+        <p><strong>Solide Grundstruktur, sichtbare Politur-Lücken.</strong> Die Navigationsarchitektur
+        und das grundlegende Interaktionsmuster (Rail/Bar-Umschaltpunkt, Fortschritts-Dialoge,
+        Culling-Tastenkürzel) sind bereits richtig entschieden. Die größten Einzelhebel sind ein
+        Light Mode und eine durchgängigere Tastaturbedienung — beides bewusste Lücken, keine Zufälle.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Photo Vault · Design- &amp; Usability-Audit, 3. Auflage der Vergleichsreihe</span>
+    <ul>
+      <li>Apple Photos</li><li>Adobe Lightroom</li><li>digiKam</li><li>Immich</li>
+      <li>Photo Mechanic</li><li>darktable</li>
+    </ul>
+  </footer>
+
+</div>

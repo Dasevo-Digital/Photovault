@@ -1,0 +1,20 @@
+# Hier entstehen beim Messen Dateien, die echte Bibliotheksdaten tragen –
+# eine Kopie der Datenbank, Einbettungen samt Dateipfaden, Kontaktabzuege
+# echter Fotos. Sie gehoeren in kein Repository und erst recht nicht in den
+# oeffentlichen Spiegel.
+#
+# Bis zur 21. Pruefrunde stand hier nichts: Dass die Messdateien draussen
+# blieben, hing allein daran, dass jemand `git add` mit einzelnen Namen
+# aufrief. Ein `git add -A` haette die komplette Bibliotheksdatenbank
+# eingecheckt.
+*.sqlite
+*.sqlite-*
+*.npz
+*.png
+*.jpg
+
+# Heruntergeladene Modellfassungen (hunderte MB) und die Messumgebung.
+venv/
+siglip/
+clipq/
+slim/

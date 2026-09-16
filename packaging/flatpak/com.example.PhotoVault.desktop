@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Photo Vault
+GenericName=Photo Manager
+GenericName[de]=Fotoverwaltung
+Comment=Manage, search and develop your photos entirely on your own machine
+Comment[de]=Fotos verwalten, durchsuchen und entwickeln – vollständig auf dem eigenen Rechner
+Exec=photo_vault
+Icon=com.example.PhotoVault
+Terminal=false
+Categories=Graphics;Photography;Viewer;
+Keywords=photo;image;raw;library;
+Keywords[de]=Foto;Bild;RAW;Bibliothek;
+StartupNotify=true
+StartupWMClass=com.example.photo_vault
