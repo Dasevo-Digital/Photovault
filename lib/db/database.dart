@@ -4409,9 +4409,9 @@ class AppDatabase extends _$AppDatabase {
   /// **149 Aufnahmen auf voller Stunde, die der Lauf bestaetigt hat** –
   /// 148 davon am 27. August. Sie danach weiter auszuschliessen hiesse,
   /// eine Vermutung ueber einen Beleg zu stellen.
-  Expression<bool> _nichtAufVollerStunde() => CustomExpression<bool>(
-      '(datum_geprueft = 1 OR (file_created_at + '
-      '${DateTime.now().timeZoneOffset.inSeconds}) % 3600 <> 0)');
+  Expression<bool> _nichtAufVollerStunde() =>
+      CustomExpression<bool>('(datum_geprueft = 1 OR (file_created_at + '
+          '${DateTime.now().timeZoneOffset.inSeconds}) % 3600 <> 0)');
 
   Future<int> countAuffaelligeAufnahmedaten() => _countWhere(
         _datumOffen(false) &
@@ -4650,8 +4650,17 @@ class AppDatabase extends _$AppDatabase {
   /// Datenbank nichts zu suchen. Bisher fehlte dieser Filter (Audit-Fund) –
   /// folgenlos nur deshalb, weil die mitverschlüsselte Vorschau ohnehin
   /// nicht dekodierbar ist; verlassen sollte sich darauf niemand.
-  Future<List<AssetData>> assetsForOcrBackfill() =>
-      (select(assets)..where(_ocrOffen)).get();
+  /// [alle] liest auch bereits durchsuchte Aufnahmen erneut. Das wird nur
+  /// nach einem Modellwechsel angeboten; sonst bleibt der reguläre Lauf
+  /// inkrementell und spart unnötige lokale Inferenz.
+  Future<List<AssetData>> assetsForOcrBackfill({bool alle = false}) =>
+      (select(assets)
+            ..where((t) => alle
+                ? _auswertbar(t) &
+                    t.isTrashed.equals(false) &
+                    t.isLocked.equals(false)
+                : _ocrOffen(t)))
+          .get();
 
   /// Zählvariante von [assetsForOcrBackfill], siehe [countLocationBackfill].
   Future<int> countOcrBackfill() => _countWhere(_ocrOffen(assets));
@@ -7411,8 +7420,8 @@ class AppDatabase extends _$AppDatabase {
   /// bekommen koennten. [countVorschlaege] meldet davon nichts: Ohne
   /// Durchgang gibt es keinen Vorschlag, und ohne Vorschlag keine Karte –
   /// die Funktion waere genau dort unsichtbar, wo sie gebraucht wird.
-  Future<int> countBeiseiteNieVerglichen() => _zaehleGesichter(
-      faces.personId.isNull() &
+  Future<int> countBeiseiteNieVerglichen() =>
+      _zaehleGesichter(faces.personId.isNull() &
           faces.isIgnored.equals(true) &
           faces.embedding.isNotNull() &
           faces.vorschlagGeprueftAm.isNull());
@@ -7517,7 +7526,10 @@ class AppDatabase extends _$AppDatabase {
         .get();
     final liste = [
       for (final z in zeilen)
-        (gesicht: z.readTable(faces), aehnlichkeit: z.readTable(faces).vorschlagWert ?? 0),
+        (
+          gesicht: z.readTable(faces),
+          aehnlichkeit: z.readTable(faces).vorschlagWert ?? 0
+        ),
     ]..sort((a, b) => b.aehnlichkeit.compareTo(a.aehnlichkeit));
     return liste;
   }
@@ -7539,8 +7551,8 @@ class AppDatabase extends _$AppDatabase {
     // Wer einem beiseitegelegten Gesicht einen Namen gibt, hat es damit
     // zurückgeholt – sonst verschwände es unmittelbar nach dem Benennen
     // wieder aus der Personenansicht.
-    await (update(faces)..where((t) => t.id.isIn(faceIds))).write(
-        FacesCompanion(
+    await (update(faces)..where((t) => t.id.isIn(faceIds)))
+        .write(FacesCompanion(
             personId: Value(personId),
             isIgnored: const Value(false),
             // Der Vorschlag ist erledigt, sobald er angenommen wurde – er
@@ -7610,8 +7622,8 @@ class AppDatabase extends _$AppDatabase {
         // ein leerer Name in der Liste stehen.
         await (delete(people)..where((t) => t.id.equals(personId))).go();
       } else {
-        await (update(people)..where((t) => t.id.equals(personId))).write(
-            PeopleCompanion(coverFaceCropPath: Value(titelbildVorher)));
+        await (update(people)..where((t) => t.id.equals(personId)))
+            .write(PeopleCompanion(coverFaceCropPath: Value(titelbildVorher)));
         await _aktualisiereSchwelle(personId, allgemeineSchwelle);
       }
     });
@@ -9407,6 +9419,43 @@ class AppDatabase extends _$AppDatabase {
       out[z.rawData.read<String>('image_embeddings.asset_id')] =
           floatsFromEmbeddingBlob(
               z.rawData.read<Uint8List>('image_embeddings.vector'));
+    }
+    return out;
+  }
+
+  /// Die Kennungen der aktuell suchbaren Einbettungen. Diese schlanke
+  /// Abfrage validiert den persistenten ANN-Index ohne die Vektor-Blobs aus
+  /// SQLite zu laden.
+  Future<List<String>> embeddingAssetIds() async {
+    final query = selectOnly(imageEmbeddings).join([
+      innerJoin(assets, assets.id.equalsExp(imageEmbeddings.assetId)),
+    ])
+      ..addColumns([imageEmbeddings.assetId])
+      ..where(assets.isTrashed.equals(false) & assets.isLocked.equals(false))
+      ..orderBy([OrderingTerm.asc(imageEmbeddings.assetId)]);
+    return [
+      for (final row in await query.get()) row.read(imageEmbeddings.assetId)!
+    ];
+  }
+
+  /// Lädt nur die vom ANN-Vorfilter benannten Vektoren. Die Rangfolge bleibt
+  /// damit exakt, ohne den gesamten Embedding-Bestand materialisieren zu
+  /// müssen.
+  Future<Map<String, Float32List>> embeddingsForAssetIds(
+      Iterable<String> ids) async {
+    final wanted = ids.toSet();
+    if (wanted.isEmpty) return const {};
+    final query = selectOnly(imageEmbeddings).join([
+      innerJoin(assets, assets.id.equalsExp(imageEmbeddings.assetId)),
+    ])
+      ..addColumns([imageEmbeddings.assetId, imageEmbeddings.vector])
+      ..where(assets.isTrashed.equals(false) &
+          assets.isLocked.equals(false) &
+          imageEmbeddings.assetId.isIn(wanted));
+    final out = <String, Float32List>{};
+    for (final row in await query.get()) {
+      out[row.read(imageEmbeddings.assetId)!] =
+          floatsFromEmbeddingBlob(row.read(imageEmbeddings.vector)!);
     }
     return out;
   }

@@ -12,6 +12,7 @@ import 'namens_dialog.dart' show MitTextsteuerung;
 import '../screens/photo_compare_screen.dart';
 import '../screens/export_presets_screen.dart';
 import '../services/export_service.dart';
+import '../services/contact_sheet_service.dart';
 import '../services/secure_share_service.dart';
 import 'pin_dialogs.dart';
 import 'progress_dialog.dart';
@@ -534,6 +535,10 @@ class _WahlSicherTeilen extends _Exportwahl {
   const _WahlSicherTeilen();
 }
 
+class _WahlKontaktblatt extends _Exportwahl {
+  const _WahlKontaktblatt();
+}
+
 /// Fragt die Ausgabe ab: die vier festen Grössen und, sofern angelegt, die
 /// eigenen Voreinstellungen. `null` bedeutet Abbruch.
 Future<_Exportwahl?> _frageExportgroesse(
@@ -555,6 +560,15 @@ Future<_Exportwahl?> _frageExportgroesse(
               leading: const Icon(Icons.enhanced_encryption_outlined),
               title: Text(t.sicherTeilenTitel),
               subtitle: Text(t.sicherTeilenText),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, const _WahlKontaktblatt()),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.grid_view_outlined),
+              title: Text(t.kontaktblattTitel),
+              subtitle: Text(t.kontaktblattText),
             ),
           ),
           SimpleDialogOption(
@@ -729,6 +743,41 @@ Future<void> runBatchExport(
   if (wahl is _WahlSicherTeilen) {
     final passphrase = await showSetPassphraseDialog(context);
     if (passphrase == null || !context.mounted) return;
+    final begrenzen = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppTexte.of(dialogContext).sicherTeilenAblaufTitel),
+        content: Text(AppTexte.of(dialogContext).sicherTeilenAblaufText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(AppTexte.of(dialogContext).allgAbbrechen),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(AppTexte.of(dialogContext).sicherTeilenOhneAblauf),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(AppTexte.of(dialogContext).sicherTeilenAblaufSetzen),
+          ),
+        ],
+      ),
+    );
+    if (begrenzen == null || !context.mounted) return;
+    DateTime? expiresAt;
+    if (begrenzen) {
+      final datum = await showDatePicker(
+        context: context,
+        firstDate: DateTime.now().add(const Duration(days: 1)),
+        lastDate: DateTime.now().add(const Duration(days: 3650)),
+        initialDate: DateTime.now().add(const Duration(days: 30)),
+        helpText: AppTexte.of(context).sicherTeilenAblaufDatum,
+      );
+      if (datum == null || !context.mounted) return;
+      // Die Freigabe bleibt am ausgewählten Tag bis Mitternacht UTC gültig.
+      expiresAt = DateTime.utc(datum.year, datum.month, datum.day + 1);
+    }
     final texte = AppTexte.of(context);
     final defaultName = texte.sicherTeilenDateiname;
     final extension = p.extension(defaultName);
@@ -744,13 +793,45 @@ Future<void> runBatchExport(
         : '$selected$extension';
     try {
       await SecureShareService(ExportService(library.paths, library: library))
-          .createPackage(assets, File(path), passphrase);
+          .createPackage(assets, File(path), passphrase, expiresAt: expiresAt);
       if (context.mounted) {
         melde.erfolg(AppTexte.of(context).sicherTeilenFertig(path));
       }
     } catch (error) {
       if (context.mounted) {
         melde.fehler(AppTexte.of(context).sicherTeilenFehler('$error'));
+      }
+    }
+    return;
+  }
+  if (wahl is _WahlKontaktblatt) {
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: AppTexte.of(context).kontaktblattZiel,
+      fileName: AppTexte.of(context).kontaktblattDateiname,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    if (path == null || !context.mounted) return;
+    final ziel = path.toLowerCase().endsWith('.pdf') ? path : '$path.pdf';
+    try {
+      final result = await ContactSheetService(
+        library.paths,
+        ExportService(library.paths, library: library),
+      ).create(assets);
+      if (result.included == 0) {
+        if (context.mounted) {
+          melde.warnung(AppTexte.of(context).kontaktblattLeer);
+        }
+        return;
+      }
+      await File(ziel).writeAsBytes(result.bytes, flush: true);
+      if (context.mounted) {
+        melde.erfolg(AppTexte.of(context)
+            .kontaktblattFertig(result.included, result.skipped));
+      }
+    } catch (error) {
+      if (context.mounted) {
+        melde.fehler(AppTexte.of(context).kontaktblattFehler('$error'));
       }
     }
     return;

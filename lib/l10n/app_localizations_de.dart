@@ -2563,7 +2563,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get entwTiefenNurMacos =>
-      'Dieses Foto könnte eine Tiefenkarte mitbringen – lesen kann sie nur die macOS-Fassung. Dort kommen die Tiefendaten aus Apples ImageIO; unter Linux und Windows läuft der Weg über LibRaw und libheif, und die geben das Hilfsbild nicht heraus.';
+      'Dieses Foto könnte eine Tiefenkarte mitbringen, aber das installierte Bildwerkzeug kann ihre Hilfsebene nicht lesen. Aktualisiere die mitgelieferte libheif-Werkzeugschicht.';
 
   @override
   String get entwLichter => 'Lichter';
@@ -8221,5 +8221,96 @@ class AppTexteDe extends AppTexte {
   @override
   String sicherTeilenImportFehler(String fehler) {
     return 'Austauschpaket konnte nicht geöffnet werden: $fehler';
+  }
+
+  @override
+  String get gesundheitModellwechselTitel => 'KI-Ergebnisse aktualisieren';
+
+  @override
+  String gesundheitModellwechselText(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Verarbeitungen stammen von älteren Modellfassungen.',
+      one: 'Eine Verarbeitung stammt von einer älteren Modellfassung.',
+    );
+    return '$_temp0 Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.';
+  }
+
+  @override
+  String get gesundheitModellwechselAufgaben => 'Aufgaben öffnen';
+
+  @override
+  String get einstBackupGenerationenTitel => 'Wiederherstellungspunkte';
+
+  @override
+  String get einstBackupGenerationenText =>
+      'Das automatische Backup bewahrt die sieben jüngsten verschlüsselten Datenbankstände auf. Originale liegen weiterhin nur einmal im gemeinsamen verschlüsselten Datenbestand.';
+
+  @override
+  String get einstBackupWiederherstellungspunktTitel =>
+      'Wiederherstellungspunkt wählen';
+
+  @override
+  String get einstBackupAktuellerStand => 'Aktueller Stand';
+
+  @override
+  String get einstBackupAktuellerStandText =>
+      'Den neuesten Datenbankstand des Backups wiederherstellen.';
+
+  @override
+  String einstBackupGenerationZeit(String datum) {
+    return 'Gesichert am $datum';
+  }
+
+  @override
+  String get einstBackupGenerationText =>
+      'Datenbankstand; die verschlüsselten Originale werden gemeinsam verwendet.';
+
+  @override
+  String get sicherTeilenAblaufTitel => 'Freigabe begrenzen?';
+
+  @override
+  String get sicherTeilenAblaufText =>
+      'Optional kann dieses Austauschpaket nach einem Datum nicht mehr importiert werden.';
+
+  @override
+  String get sicherTeilenAblaufSetzen => 'Datum festlegen';
+
+  @override
+  String get sicherTeilenOhneAblauf => 'Ohne Ablauf';
+
+  @override
+  String get sicherTeilenAblaufDatum => 'Ablaufdatum auswählen';
+
+  @override
+  String get sicherTeilenImportAbgelaufen =>
+      'Dieses Austauschpaket ist abgelaufen und wurde nicht importiert.';
+
+  @override
+  String get kontaktblattTitel => 'Kontaktblatt als PDF';
+
+  @override
+  String get kontaktblattText =>
+      'Druckbare Übersicht mit Vorschaubildern und Aufnahmedatum erstellen.';
+
+  @override
+  String get kontaktblattZiel => 'Kontaktblatt speichern';
+
+  @override
+  String get kontaktblattDateiname => 'PhotoVault-Kontaktblatt.pdf';
+
+  @override
+  String get kontaktblattLeer =>
+      'Keine ausgewählte Aufnahme lässt sich für ein Kontaktblatt darstellen.';
+
+  @override
+  String kontaktblattFertig(int enthalten, int ausgelassen) {
+    return 'Kontaktblatt gespeichert: $enthalten Aufnahmen, $ausgelassen ausgelassen.';
+  }
+
+  @override
+  String kontaktblattFehler(String fehler) {
+    return 'Kontaktblatt konnte nicht erstellt werden: $fehler';
   }
 }

@@ -2933,31 +2933,22 @@ class _DevelopScreenState extends State<DevelopScreen> {
         _slider(AppTexte.of(context).entwKontrast, _contrast, -1, 1, (v) => setState(() => _contrast = v)),
         _slider(AppTexte.of(context).entwLichter, _highlights, -1, 1, (v) => setState(() => _highlights = v)),
         _slider(AppTexte.of(context).entwSchatten, _shadows, -1, 1, (v) => setState(() => _shadows = v)),
-        // Diese vier kennt nur Core Image. Wo der Shader das gespeicherte
-        // Ergebnis erzeugt (siehe DevelopRender), tun sie nichts – dann
-        // lassen sie sich auch nicht bedienen, statt sich bewegen zu lassen
-        // und wirkungslos zu bleiben. Der Hinweis darunter sagt, warum.
-        //
-        // `imShader: false` heisst: waehrend des Ziehens wird nativ
-        // gerechnet. Vorher wurde waehrenddessen gar nichts gerechnet –
-        // der Regler bewegte sich, das Bild nicht.
+        // Die vier Nachbarpixel-Regler folgen im Desktop-Renderer nach dem
+        // Shader. Während des Ziehens wird deshalb ein gedrosselter Render
+        // angefordert; gespeichert wirken sie auf allen Desktop-Systemen.
         _slider(AppTexte.of(context).entwSchaerfe, _sharpness, 0, 1,
             (v) => setState(() => _sharpness = v),
-            imShader: _shaderIstGenau,
-            enabled: !DevelopRender.istMassgeblich),
+            imShader: _shaderIstGenau),
         _slider(AppTexte.of(context).entwRauschunterdrueckung, _noiseReduction, 0, 1,
             (v) => setState(() => _noiseReduction = v),
-            imShader: _shaderIstGenau,
-            enabled: !DevelopRender.istMassgeblich),
+            imShader: _shaderIstGenau),
         _slider(AppTexte.of(context).entwKlarheit, _clarity, -1, 1,
             (v) => setState(() => _clarity = v),
-            imShader: _shaderIstGenau,
-            enabled: !DevelopRender.istMassgeblich),
+            imShader: _shaderIstGenau),
         _slider(AppTexte.of(context).entwVignettierung, _vignette, -1, 1,
             (v) => setState(() => _vignette = v),
-            imShader: _shaderIstGenau,
-            enabled: !DevelopRender.istMassgeblich),
-        if (DevelopRender.istMassgeblich)
+            imShader: _shaderIstGenau),
+        if (DevelopRender.ohneWirkung.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 4),
             child: Text(

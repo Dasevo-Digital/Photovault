@@ -57,6 +57,7 @@ class _SearchScreenState extends State<SearchScreen>
   final _queryCtrl = TextEditingController();
   SearchFilters _filters = const SearchFilters();
   bool _loading = false;
+
   /// Erklärt eine ungewöhnlich lange Wartezeit – bisher nur das
   /// einmalige Laden des Bildsuche-Modells. Null, solange es nichts
   /// zu erklären gibt.
@@ -170,7 +171,8 @@ class _SearchScreenState extends State<SearchScreen>
         paths: widget.library.paths,
         db: widget.library.db,
         library: widget.library,
-        onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
+        onToggleFavorite: (a) =>
+            widget.library.db.setFavorite(a.id, !a.isFavorite),
         onDelete: (a) => widget.library.db.moveToTrash([a.id]),
         onLock: (a) async {
           if (await ensureVaultUnlocked(context, widget.library)) {
@@ -202,20 +204,26 @@ class _SearchScreenState extends State<SearchScreen>
       context: context,
       builder: (context) => MitTextsteuerung(
           builder: (context, ctrl) => AlertDialog(
-        title: Text(AppTexte.of(context).sucheSpeichernTitel),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: InputDecoration(labelText: AppTexte.of(context).allgName),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
-          FilledButton(onPressed: () => Navigator.pop(context, ctrl.text.trim()), child: Text(AppTexte.of(context).allgSpeichern)),
+                title: Text(AppTexte.of(context).sucheSpeichernTitel),
+                content: TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration:
+                      InputDecoration(labelText: AppTexte.of(context).allgName),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(AppTexte.of(context).allgAbbrechen)),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+                      child: Text(AppTexte.of(context).allgSpeichern)),
                 ],
               )),
     );
     if (name == null || name.isEmpty) return;
-    await widget.library.db.createSavedSearch(const Uuid().v4(), name, _filters);
+    await widget.library.db
+        .createSavedSearch(const Uuid().v4(), name, _filters);
   }
 
   Future<void> _loadSavedSearch(SearchFilters filters) async {
@@ -231,8 +239,10 @@ class _SearchScreenState extends State<SearchScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => SearchOptionsSheet(library: widget.library, initialFilters: _filters),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) =>
+          SearchOptionsSheet(library: widget.library, initialFilters: _filters),
     );
     if (result == null || !mounted) return;
     setState(() {
@@ -304,7 +314,8 @@ class _SearchScreenState extends State<SearchScreen>
   Future<void> _satzVerwerfen(String urspruenglich) async {
     setState(() {
       _satzfunde = const [];
-      _filters = SearchFilters(textMode: _filters.textMode, query: urspruenglich);
+      _filters =
+          SearchFilters(textMode: _filters.textMode, query: urspruenglich);
       _queryCtrl.text = urspruenglich;
     });
     await _runSearch();
@@ -330,7 +341,8 @@ class _SearchScreenState extends State<SearchScreen>
     try {
       final query = _filters.query.trim();
       List<AssetData> results;
-      final kontextSuche = _filters.textMode == SearchTextMode.context && query.isNotEmpty;
+      final kontextSuche =
+          _filters.textMode == SearchTextMode.context && query.isNotEmpty;
 
       Float32List? queryVector;
       if (kontextSuche) {
@@ -360,19 +372,6 @@ class _SearchScreenState extends State<SearchScreen>
       }
 
       if (queryVector != null) {
-        // Bei Videos sind hier auch die weiteren Standbilder dabei –
-        // ein Video ist nicht mehr ein einziges Bild (siehe
-        // [LibraryState.suchkandidaten]).
-        final embeddings = await widget.library.suchkandidaten();
-        if (embeddings.isEmpty) {
-          if (!mounted) return;
-          setState(() {
-            _zeigeFunde(const []);
-            _leerGrund = AppTexte.of(context).sucheOhneEmbeddings;
-          });
-          return;
-        }
-
         // Reihenfolge ist entscheidend: ERST die übrigen Filter anwenden,
         // DANN innerhalb dieser Treffermenge nach Ähnlichkeit ranken.
         // Andersherum (Audit-Fund) entschied das bibliotheksweite Top-200
@@ -388,13 +387,21 @@ class _SearchScreenState extends State<SearchScreen>
         // 81 ms je Suche. Die Kennungen kosten 4,3 ms; die 200 Zeilen,
         // die am Ende wirklich gezeigt werden, holt `assetsByIds`
         // danach für 2,6 ms.
-        final erlaubt = (await widget.library.db.searchAssetIds(_filters)).toSet();
-        final kandidaten = <String, Float32List>{
-          for (final e in embeddings.entries)
-            if (erlaubt.contains(
-                LibraryState.aufnahmeAusSuchschluessel(e.key)))
-              e.key: e.value,
-        };
+        final erlaubt =
+            (await widget.library.db.searchAssetIds(_filters)).toSet();
+        final kandidaten = await widget.library.textSimilarityCandidates(
+          queryVector,
+          erlaubt,
+          minimum: 200,
+        );
+        if (kandidaten.isEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _zeigeFunde(const []);
+            _leerGrund = AppTexte.of(context).sucheOhneEmbeddings;
+          });
+          return;
+        }
         // Etwas mehr als die 200, die am Ende stehen sollen: Ein Video
         // kann mit mehreren Standbildern in der Rangfolge auftauchen, und
         // die fallen gleich wieder zusammen.
@@ -486,11 +493,15 @@ class _SearchScreenState extends State<SearchScreen>
             controller: _queryCtrl,
             decoration: InputDecoration(
               hintText: switch (_filters.textMode) {
-                SearchTextMode.context => AppTexte.of(context).suchePlatzhalterKontext,
-                SearchTextMode.filename => AppTexte.of(context).suchePlatzhalterDateiname,
-                SearchTextMode.description => AppTexte.of(context).suchePlatzhalterBeschreibung,
+                SearchTextMode.context =>
+                  AppTexte.of(context).suchePlatzhalterKontext,
+                SearchTextMode.filename =>
+                  AppTexte.of(context).suchePlatzhalterDateiname,
+                SearchTextMode.description =>
+                  AppTexte.of(context).suchePlatzhalterBeschreibung,
                 SearchTextMode.ocr => AppTexte.of(context).suchePlatzhalterText,
-                SearchTextMode.caption => AppTexte.of(context).suchePlatzhalterBildunterschrift,
+                SearchTextMode.caption =>
+                  AppTexte.of(context).suchePlatzhalterBildunterschrift,
               },
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
@@ -504,7 +515,9 @@ class _SearchScreenState extends State<SearchScreen>
                       onPressed: _saveCurrentSearch,
                     ),
                   IconButton(
-                    icon: Badge(isLabelVisible: !_filters.isEmpty, child: const Icon(Icons.tune)),
+                    icon: Badge(
+                        isLabelVisible: !_filters.isEmpty,
+                        child: const Icon(Icons.tune)),
                     tooltip: AppTexte.of(context).sucheOptionen,
                     onPressed: _openSearchOptions,
                   ),
@@ -516,18 +529,23 @@ class _SearchScreenState extends State<SearchScreen>
                 ],
               ),
             ),
-            onChanged: (v) => setState(() => _filters = _filters.copyWith(query: v)),
+            onChanged: (v) =>
+                setState(() => _filters = _filters.copyWith(query: v)),
             onSubmitted: (_) => _satzSuche(),
           ),
         ),
-        if (_satzfunde.isNotEmpty) _Satzmarken(funde: _satzfunde, beiVerwerfen: _satzVerwerfen),
+        if (_satzfunde.isNotEmpty)
+          _Satzmarken(funde: _satzfunde, beiVerwerfen: _satzVerwerfen),
         StreamBuilder<List<SavedSearchData>>(
           stream: widget.library.db.watchSavedSearches(),
           builder: (context, snapshot) {
             final saved = snapshot.data ?? [];
             if (saved.isEmpty) return const SizedBox.shrink();
             return Padding(
-              padding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.md),
+              padding: const EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  bottom: AppSpacing.md),
               child: SizedBox(
                 height: 32,
                 child: ListView.separated(
@@ -539,8 +557,10 @@ class _SearchScreenState extends State<SearchScreen>
                     return InputChip(
                       avatar: const Icon(Icons.bookmark, size: 18),
                       label: Text(entry.name),
-                      onPressed: () => _loadSavedSearch(widget.library.db.decodeSavedSearchFilters(entry.filtersJson)),
-                      onDeleted: () => widget.library.db.deleteSavedSearch(entry.id),
+                      onPressed: () => _loadSavedSearch(widget.library.db
+                          .decodeSavedSearchFilters(entry.filtersJson)),
+                      onDeleted: () =>
+                          widget.library.db.deleteSavedSearch(entry.id),
                     );
                   },
                 ),
@@ -560,7 +580,10 @@ class _SearchScreenState extends State<SearchScreen>
                   ),
             ),
           ),
-        if (_error != null) Padding(padding: const EdgeInsets.all(AppSpacing.sm), child: Text(_error!)),
+        if (_error != null)
+          Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Text(_error!)),
         // Die Reihenfolge erscheint erst mit Treffern: ein Knopf ueber
         // einer leeren Flaeche haette nichts zu ordnen.
         if (_searched && _results.isNotEmpty)
@@ -598,7 +621,8 @@ class _SearchScreenState extends State<SearchScreen>
                               seitenpolster: AppSpacing.md * 2);
                           return GridView.builder(
                             padding: const EdgeInsets.all(AppSpacing.md),
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: 160,
                               mainAxisSpacing: 4,
                               crossAxisSpacing: 4,
@@ -623,48 +647,55 @@ class _SearchScreenState extends State<SearchScreen>
                           SelectionActionBar(
                             count: _selected.length,
                             onClear: () => setState(_selected.clear),
-                            onCompare: vergleichsAktion(context, widget.library, _selected.toList()),
+                            onCompare: vergleichsAktion(
+                                context, widget.library, _selected.toList()),
+                            onPasteDevelop:
+                                widget.library.hatKopierteEntwicklung
+                                    ? () async {
+                                        await runBatchPasteDevelop(context,
+                                            widget.library, _selected.toList());
 
-                            onPasteDevelop: widget.library.hatKopierteEntwicklung
-
-                                ? () async {
-
-                                    await runBatchPasteDevelop(context, widget.library, _selected.toList());
-
-                                    if (mounted) setState(_selected.clear);
-
-                                  }
-
-                                : null,
-                            onApplyPreset: () =>
-                                runBatchApplyPreset(context, widget.library, _selected.toList()),
+                                        if (mounted) setState(_selected.clear);
+                                      }
+                                    : null,
+                            onApplyPreset: () => runBatchApplyPreset(
+                                context, widget.library, _selected.toList()),
                             onFavorite: () async {
-                              await runBatchFavorite(widget.library, _selected.toList());
+                              await runBatchFavorite(
+                                  widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onAddToAlbum: () async {
-                              await runBatchAddToAlbumDialog(context, widget.library, _selected.toList());
+                              await runBatchAddToAlbumDialog(
+                                  context, widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onTag: () async {
-                              await runBatchTagDialog(context, widget.library, _selected.toList());
+                              await runBatchTagDialog(
+                                  context, widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onSetRating: () async {
-                              await runBatchSetRating(context, widget.library, _selected.toList());
+                              await runBatchSetRating(
+                                  context, widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onSetColorLabel: () async {
-                              await runBatchSetColorLabel(context, widget.library, _selected.toList());
+                              await runBatchSetColorLabel(
+                                  context, widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onEditMetadata: () async {
-                              await runBatchEditMetadataDialog(context, widget.library, _selected.toList());
+                              await runBatchEditMetadataDialog(
+                                  context, widget.library, _selected.toList());
                               if (mounted) setState(_selected.clear);
                             },
                             onExport: () async {
-                              final selectedAssets = _results.where((a) => _selected.contains(a.id)).toList();
-                              await runBatchExport(context, widget.library, selectedAssets);
+                              final selectedAssets = _results
+                                  .where((a) => _selected.contains(a.id))
+                                  .toList();
+                              await runBatchExport(
+                                  context, widget.library, selectedAssets);
                               if (mounted) setState(_selected.clear);
                             },
                             onDelete: _deleteSelected,

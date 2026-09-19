@@ -4,10 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/native_image_converter.dart';
 
-/// Die Tiefenmaske gibt es nur unter macOS. Diese Tests halten fest, was
-/// die App auf den anderen Plattformen SAGT – denn das ist der eigentliche
-/// Entwurf: Ein Foto, das die Funktion auf einem anderen Rechner hätte,
-/// soll das auch sagen, statt den Eintrag stillschweigend wegzulassen.
+/// Tiefenmasken laufen auf macOS über ImageIO und auf den anderen
+/// Desktop-Systemen über libheif. Fehlt eine Auxiliary-Ebene, bleibt der
+/// Zustand erklärbar statt eine leere Maske anzulegen.
 void main() {
   late Directory temp;
 
@@ -26,11 +25,13 @@ void main() {
     expect(e.png, isNull);
   });
 
-  test('bei HEIC ausserhalb von macOS wird die Plattform genannt', () async {
+  test('bei HEIC ohne lesbare Auxiliary-Ebene bleibt der Zustand erklärbar',
+      () async {
     if (Platform.isMacOS) return; // dort wird wirklich nachgesehen
     final e = await NativeImageConverter.tiefenmaske(lege('portraet.heic'));
     expect(e.stand, Tiefenmaskenstand.nichtAufDieserPlattform,
-        reason: 'sonst hiesse es faelschlich "keine Tiefendaten"');
+        reason:
+            'die Datei könnte Tiefendaten tragen; das Werkzeug las aber keine');
     expect(e.png, isNull);
   });
 

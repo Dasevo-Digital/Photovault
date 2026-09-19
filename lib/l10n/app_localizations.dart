@@ -4405,7 +4405,7 @@ abstract class AppTexte {
   /// No description provided for @entwTiefenNurMacos.
   ///
   /// In de, this message translates to:
-  /// **'Dieses Foto könnte eine Tiefenkarte mitbringen – lesen kann sie nur die macOS-Fassung. Dort kommen die Tiefendaten aus Apples ImageIO; unter Linux und Windows läuft der Weg über LibRaw und libheif, und die geben das Hilfsbild nicht heraus.'**
+  /// **'Dieses Foto könnte eine Tiefenkarte mitbringen, aber das installierte Bildwerkzeug kann ihre Hilfsebene nicht lesen. Aktualisiere die mitgelieferte libheif-Werkzeugschicht.'**
   String get entwTiefenNurMacos;
 
   /// No description provided for @entwLichter.
@@ -12683,6 +12683,144 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Austauschpaket konnte nicht geöffnet werden: {fehler}'**
   String sicherTeilenImportFehler(String fehler);
+
+  /// No description provided for @gesundheitModellwechselTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Ergebnisse aktualisieren'**
+  String get gesundheitModellwechselTitel;
+
+  /// No description provided for @gesundheitModellwechselText.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Modellfassung.} other{{anzahl} Verarbeitungen stammen von älteren Modellfassungen.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.'**
+  String gesundheitModellwechselText(int anzahl);
+
+  /// No description provided for @gesundheitModellwechselAufgaben.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufgaben öffnen'**
+  String get gesundheitModellwechselAufgaben;
+
+  /// No description provided for @einstBackupGenerationenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellungspunkte'**
+  String get einstBackupGenerationenTitel;
+
+  /// No description provided for @einstBackupGenerationenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das automatische Backup bewahrt die sieben jüngsten verschlüsselten Datenbankstände auf. Originale liegen weiterhin nur einmal im gemeinsamen verschlüsselten Datenbestand.'**
+  String get einstBackupGenerationenText;
+
+  /// No description provided for @einstBackupWiederherstellungspunktTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellungspunkt wählen'**
+  String get einstBackupWiederherstellungspunktTitel;
+
+  /// No description provided for @einstBackupAktuellerStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktueller Stand'**
+  String get einstBackupAktuellerStand;
+
+  /// No description provided for @einstBackupAktuellerStandText.
+  ///
+  /// In de, this message translates to:
+  /// **'Den neuesten Datenbankstand des Backups wiederherstellen.'**
+  String get einstBackupAktuellerStandText;
+
+  /// No description provided for @einstBackupGenerationZeit.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesichert am {datum}'**
+  String einstBackupGenerationZeit(String datum);
+
+  /// No description provided for @einstBackupGenerationText.
+  ///
+  /// In de, this message translates to:
+  /// **'Datenbankstand; die verschlüsselten Originale werden gemeinsam verwendet.'**
+  String get einstBackupGenerationText;
+
+  /// No description provided for @sicherTeilenAblaufTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Freigabe begrenzen?'**
+  String get sicherTeilenAblaufTitel;
+
+  /// No description provided for @sicherTeilenAblaufText.
+  ///
+  /// In de, this message translates to:
+  /// **'Optional kann dieses Austauschpaket nach einem Datum nicht mehr importiert werden.'**
+  String get sicherTeilenAblaufText;
+
+  /// No description provided for @sicherTeilenAblaufSetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum festlegen'**
+  String get sicherTeilenAblaufSetzen;
+
+  /// No description provided for @sicherTeilenOhneAblauf.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Ablauf'**
+  String get sicherTeilenOhneAblauf;
+
+  /// No description provided for @sicherTeilenAblaufDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablaufdatum auswählen'**
+  String get sicherTeilenAblaufDatum;
+
+  /// No description provided for @sicherTeilenImportAbgelaufen.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Austauschpaket ist abgelaufen und wurde nicht importiert.'**
+  String get sicherTeilenImportAbgelaufen;
+
+  /// No description provided for @kontaktblattTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontaktblatt als PDF'**
+  String get kontaktblattTitel;
+
+  /// No description provided for @kontaktblattText.
+  ///
+  /// In de, this message translates to:
+  /// **'Druckbare Übersicht mit Vorschaubildern und Aufnahmedatum erstellen.'**
+  String get kontaktblattText;
+
+  /// No description provided for @kontaktblattZiel.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontaktblatt speichern'**
+  String get kontaktblattZiel;
+
+  /// No description provided for @kontaktblattDateiname.
+  ///
+  /// In de, this message translates to:
+  /// **'PhotoVault-Kontaktblatt.pdf'**
+  String get kontaktblattDateiname;
+
+  /// No description provided for @kontaktblattLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine ausgewählte Aufnahme lässt sich für ein Kontaktblatt darstellen.'**
+  String get kontaktblattLeer;
+
+  /// No description provided for @kontaktblattFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontaktblatt gespeichert: {enthalten} Aufnahmen, {ausgelassen} ausgelassen.'**
+  String kontaktblattFertig(int enthalten, int ausgelassen);
+
+  /// No description provided for @kontaktblattFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontaktblatt konnte nicht erstellt werden: {fehler}'**
+  String kontaktblattFehler(String fehler);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

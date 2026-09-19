@@ -1,4 +1,4 @@
-package com.example.photo_vault
+package de.photo_vault.app
 
 import io.flutter.embedding.android.FlutterActivity
 

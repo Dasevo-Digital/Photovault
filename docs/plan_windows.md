@@ -30,8 +30,8 @@ Linux-Portierung sie plattformneutral gebaut hat:
 1. **Entwickeln.** `lib/services/develop_render.dart` rendert über den
    Fragment-Shader und gilt für *alles ausser macOS*
    (`istMassgeblich => !Platform.isMacOS`). Windows bekommt damit sofort
-   den vollen Regler-Satz bis auf die vier bekannten Ausnahmen (Schärfe,
-   Rauschunterdrückung, Klarheit, Vignettierung).
+   den vollständigen Regler-Satz; die vier nachbarpixelabhängigen Schritte
+   folgen nach dem Shader im Hintergrund-Isolate.
 2. **Texterkennung.** `OcrService` läuft über nachladbare ONNX-Modelle,
    nicht über eine Systemschnittstelle – einschliesslich des
    `HardSwish`-Umbaus, der die Modelldatei beim ersten Laden umschreibt.

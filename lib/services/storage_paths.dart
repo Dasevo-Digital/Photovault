@@ -89,6 +89,16 @@ class StoragePaths {
       Directory(p.join(root.path, 'vault_metadata'));
   Directory get trashDir => Directory(p.join(root.path, 'trash'));
 
+  /// Lokaler Suchindex für CLIP-Ähnlichkeiten. Er enthält nur anonyme
+  /// Asset-Kennungen und Hash-Buckets, keine Bilddaten oder Klartexttitel.
+  File get embeddingAnnIndexFile =>
+      File(p.join(root.path, 'embedding_ann_v1.json'));
+
+  /// Lokaler Stand, welche KI-Modellfassungen die gespeicherten Ergebnisse
+  /// erzeugt haben. Enthält nur Katalog-Prüfsummen und Pipeline-Kennungen.
+  File get modelProcessingStateFile =>
+      File(p.join(root.path, 'model_processing_v1.json'));
+
   String originalRelativePath(
       DateTime fileCreatedAt, String assetId, String extension) {
     final yyyy = fileCreatedAt.year.toString().padLeft(4, '0');

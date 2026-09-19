@@ -1,3 +1,20 @@
+import java.util.Properties
+
+val releaseProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+val storeFilePath = releaseProperties.getProperty("storeFile")
+val storePassword = releaseProperties.getProperty("storePassword")
+val keyAlias = releaseProperties.getProperty("keyAlias")
+val keyPassword = releaseProperties.getProperty("keyPassword")
+val hasConfiguredReleaseSigning = listOf(
+    storeFilePath,
+    storePassword,
+    keyAlias,
+    keyPassword,
+).all { !it.isNullOrBlank() }
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -5,7 +22,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.photo_vault"
+    namespace = "de.photo_vault.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +32,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.photo_vault"
+        applicationId = "de.photo_vault.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -25,11 +41,32 @@ android {
         versionName = flutter.versionName
     }
 
+    val releaseSigning = if (hasConfiguredReleaseSigning) {
+        signingConfigs.create("release") {
+            storeFile = file(storeFilePath)
+            this.storePassword = storePassword
+            this.keyAlias = keyAlias
+            this.keyPassword = keyPassword
+        }
+    } else null
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Nie mit dem Debug-Schlüssel veröffentlichen. Die lokale,
+            // gitignorierte Datei android/keystore.properties liefert die
+            // vier nötigen Werte; ohne sie entsteht kein signierter Release.
+            signingConfig = releaseSigning
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == "packageRelease" || name == "signReleaseBundle") {
+        doFirst {
+            check(hasConfiguredReleaseSigning) {
+                "Für einen Android-Release muss android/keystore.properties " +
+                    "vollständig eingerichtet sein. Siehe keystore.properties.example."
+            }
         }
     }
 }

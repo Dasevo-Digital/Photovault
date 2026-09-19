@@ -140,6 +140,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
         melde.erfolg(AppTexte.of(context)
             .sicherTeilenImportFertig(imported.imported, imported.duplicates));
       }
+    } on SharePackageExpired catch (_) {
+      if (mounted) {
+        melde.warnung(AppTexte.of(context).sicherTeilenImportAbgelaufen);
+      }
     } catch (error) {
       if (mounted) {
         melde.warnung(

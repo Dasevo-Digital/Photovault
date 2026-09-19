@@ -54,7 +54,8 @@ void main() {
     expect(mittlereHelligkeit(bytes!), closeTo(128, 3));
   });
 
-  test('Belichtung hellt auf, und zwar in der richtigen Grössenordnung', () async {
+  test('Belichtung hellt auf, und zwar in der richtigen Grössenordnung',
+      () async {
     final quelle = legeGrau('grau.png');
 
     final neutral = await DevelopRender.rendere(quelle,
@@ -81,11 +82,31 @@ void main() {
     final quelle = legeGrau('gross.png', kante: 640);
 
     final bytes = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments(contrast: 0.3), maxDimension: 320);
+        adjustments: const DevelopAdjustments(contrast: 0.3),
+        maxDimension: 320);
 
     final bild = img.decodeImage(bytes!)!;
     expect(bild.width, 320);
     expect(bild.height, 320);
+  });
+
+  test('Desktop-Filter verändern Kanten und Vignette auch ohne Core Image', () {
+    final bild = img.Image(width: 40, height: 40, numChannels: 4);
+    img.fill(bild, color: img.ColorRgba8(140, 140, 140, 255));
+    img.fillRect(bild,
+        x1: 14,
+        y1: 14,
+        x2: 25,
+        y2: 25,
+        color: img.ColorRgba8(220, 220, 220, 255));
+    final beforeEdge = bild.getPixel(13, 20).luminance;
+    final beforeCorner = bild.getPixel(0, 0).luminance;
+
+    wendeDesktopDevelopFilterAn(bild,
+        sharpness: 0.7, noiseReduction: 0.2, clarity: 0.5, vignette: 0.8);
+
+    expect(bild.getPixel(0, 0).luminance, lessThan(beforeCorner));
+    expect(bild.getPixel(13, 20).luminance, isNot(beforeEdge));
   });
 
   test('eine Maske wirkt nur dort, wo sie deckt', () async {
@@ -95,7 +116,11 @@ void main() {
     final maske = img.Image(width: 200, height: 200, numChannels: 4);
     img.fill(maske, color: img.ColorRgba8(0, 0, 0, 0));
     img.fillRect(maske,
-        x1: 0, y1: 0, x2: 99, y2: 199, color: img.ColorRgba8(255, 255, 255, 255));
+        x1: 0,
+        y1: 0,
+        x2: 99,
+        y2: 199,
+        color: img.ColorRgba8(255, 255, 255, 255));
     final maskeDatei = File(p.join(temp.path, 'maske.png'))
       ..writeAsBytesSync(img.encodePng(maske));
 
@@ -183,8 +208,8 @@ void main() {
     // bzw. blau sein.
     final bild = img.Image(width: 128, height: 128);
     img.fill(bild, color: img.ColorRgb8(255, 255, 255));
-    img.fillRect(bild, x1: 0, y1: 0, x2: 63, y2: 127,
-        color: img.ColorRgb8(0, 0, 0));
+    img.fillRect(bild,
+        x1: 0, y1: 0, x2: 63, y2: 127, color: img.ColorRgb8(0, 0, 0));
     final quelle = File(p.join(temp.path, 'extrem.png'))
       ..writeAsBytesSync(img.encodePng(bild));
 
@@ -234,22 +259,11 @@ void main() {
     expect(img.decodeJpg(raus!)!.width, 256);
   });
 
-  test('sagt, welche Regler dieser Weg nicht umsetzt', () {
-    // Ein Regler, der sich bewegen lässt und nichts tut, ist die
-    // unangenehmste Art von Fehler – deshalb benennt der Dienst sie, statt
-    // sie zu nähern.
-    expect(DevelopRender.ohneWirkung, contains(Entwicklungsregler.schaerfe));
-    expect(DevelopRender.ohneWirkung, contains(Entwicklungsregler.vignettierung));
-
-    expect(DevelopRender.gesetztOhneWirkung(const DevelopAdjustments()), isEmpty);
-    expect(
-        DevelopRender.gesetztOhneWirkung(
-            const DevelopAdjustments(exposure: 1, contrast: 0.5)),
-        isEmpty,
-        reason: 'diese beiden setzt der Shader sehr wohl um');
+  test('setzt jeden angebotenen Desktop-Regler um', () {
+    expect(DevelopRender.ohneWirkung, isEmpty);
     expect(
         DevelopRender.gesetztOhneWirkung(
             const DevelopAdjustments(sharpness: 0.5, vignette: -0.3)),
-        [Entwicklungsregler.schaerfe, Entwicklungsregler.vignettierung]);
+        isEmpty);
   });
 }

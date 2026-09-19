@@ -243,7 +243,9 @@ class DesktopImageTools {
     // in /app/bin und damit ohnehin im PATH.
     try {
       final neben = p.dirname(Platform.resolvedExecutable);
-      ordner..add(neben)..add(p.join(neben, 'tools'));
+      ordner
+        ..add(neben)
+        ..add(p.join(neben, 'tools'));
     } catch (_) {
       // Kein Programmpfad ermittelbar – dann eben nur der PATH.
     }
@@ -366,8 +368,8 @@ class DesktopImageTools {
       final rohBytes = await File(ziel).readAsBytes();
       // await ist wichtig: ohne würde das Future erst NACH dem catch
       // abgeschlossen und ein Fehler im Isolate entkäme der Fehlerbehandlung.
-      return await compute(
-          _skaliereUndKodiere, _SkalierAuftrag(rohBytes, maxDimension, quality));
+      return await compute(_skaliereUndKodiere,
+          _SkalierAuftrag(rohBytes, maxDimension, quality));
     } catch (_) {
       return null;
     } finally {
@@ -376,6 +378,88 @@ class DesktopImageTools {
         await temp?.delete(recursive: true);
       } catch (_) {}
     }
+  }
+
+  /// Holt die Tiefen-Hilfsebene aus einer HEIC/HEIF-Datei.
+  ///
+  /// libheif schreibt mit `--with-aux` das Hauptbild und jedes Auxiliary
+  /// Image. iPhone-Porträts legen die Distanzkarte genau dort ab. Der
+  /// Dateiname ist zwischen libheif-Fassungen nicht stabil, deshalb wählen
+  /// wir ein zusätzlich erzeugtes, als Bild dekodierbares Ergebnis aus und
+  /// normalisieren es zu der Grauwertmaske, die [DevelopMasks] erwartet.
+  static Future<Uint8List?> tiefenmaske(File datei) async {
+    if (!libheifEndungen.contains(p.extension(datei.path).toLowerCase())) {
+      return null;
+    }
+    final werkzeug = await aufruf('heif-dec');
+    if (werkzeug == null) return null;
+    Directory? temp;
+    try {
+      temp = await Directory.systemTemp.createTemp('pv_depth_');
+      final hauptbild = p.join(temp.path, 'primary.png');
+      final result =
+          await Process.run(werkzeug, ['--with-aux', datei.path, hauptbild]);
+      if (result.exitCode != 0) return null;
+      final kandidaten = temp
+          .listSync()
+          .whereType<File>()
+          .where((f) => p.normalize(f.path) != p.normalize(hauptbild))
+          .toList()
+        ..sort((a, b) {
+          final aDepth = _istTiefenname(a.path);
+          final bDepth = _istTiefenname(b.path);
+          if (aDepth != bDepth) return aDepth ? -1 : 1;
+          return a.path.compareTo(b.path);
+        });
+      for (final kandidat in kandidaten) {
+        final decoded = img.decodeImage(await kandidat.readAsBytes());
+        if (decoded == null) continue;
+        final png = _normalisiereTiefenbild(decoded);
+        if (png != null) return png;
+      }
+      return null;
+    } on ProcessException {
+      return null;
+    } catch (_) {
+      return null;
+    } finally {
+      try {
+        await temp?.delete(recursive: true);
+      } catch (_) {}
+    }
+  }
+
+  @visibleForTesting
+  static bool istTiefenname(String pfad) => _istTiefenname(pfad);
+
+  static bool _istTiefenname(String pfad) {
+    final name = p.basenameWithoutExtension(pfad).toLowerCase();
+    return name.contains('depth') || name.contains('aux');
+  }
+
+  static Uint8List? _normalisiereTiefenbild(img.Image source) {
+    var min = 255.0;
+    var max = 0.0;
+    for (final pixel in source) {
+      final luminanz = pixel.luminance.toDouble();
+      if (luminanz < min) min = luminanz;
+      if (luminanz > max) max = luminanz;
+    }
+    // Eine einfarbige Hilfsebene kann keine Auswahl beschreiben; sie ist
+    // z.B. ein Alpha-Bild oder eine leere Hersteller-Metadatenebene.
+    if (max - min < 2) return null;
+    final target =
+        img.Image(width: source.width, height: source.height, numChannels: 4);
+    for (var y = 0; y < source.height; y++) {
+      for (var x = 0; x < source.width; x++) {
+        final wert =
+            ((source.getPixel(x, y).luminance - min) * 255 / (max - min))
+                .round()
+                .clamp(0, 255);
+        target.setPixelRgba(x, y, wert, wert, wert, 255);
+      }
+    }
+    return Uint8List.fromList(img.encodePng(target));
   }
 
   /// Extrahiert ein Vorschaubild aus einem Video plus dessen Länge.
@@ -401,9 +485,15 @@ class DesktopImageTools {
       // vielen Videos schwarz.
       Future<bool> greifeFrame(String position) async {
         final r = await Process.run(werkzeug, [
-          '-y', '-ss', position, '-i', datei.path,
-          '-frames:v', '1',
-          '-vf', "scale='min($maxDimension,iw)':-2",
+          '-y',
+          '-ss',
+          position,
+          '-i',
+          datei.path,
+          '-frames:v',
+          '1',
+          '-vf',
+          "scale='min($maxDimension,iw)':-2",
           ziel,
         ]);
         return r.exitCode == 0 && await File(ziel).exists();
@@ -440,9 +530,12 @@ class DesktopImageTools {
     if (werkzeug == null) return null;
     try {
       final r = await Process.run(werkzeug, [
-        '-v', 'error',
-        '-show_entries', 'format=duration',
-        '-of', 'default=noprint_wrappers=1:nokey=1',
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration',
+        '-of',
+        'default=noprint_wrappers=1:nokey=1',
         datei.path,
       ]);
       if (r.exitCode != 0) return null;
@@ -468,10 +561,14 @@ class DesktopImageTools {
     try {
       final r = await Process.run(werkzeug, [
         '-y',
-        '-ss', startSekunden.toStringAsFixed(3),
-        '-to', endSekunden.toStringAsFixed(3),
-        '-i', datei.path,
-        '-c', 'copy',
+        '-ss',
+        startSekunden.toStringAsFixed(3),
+        '-to',
+        endSekunden.toStringAsFixed(3),
+        '-i',
+        datei.path,
+        '-c',
+        'copy',
         zielPfad,
       ]);
       return r.exitCode == 0 && await File(zielPfad).exists();

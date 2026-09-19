@@ -10,20 +10,38 @@ import 'export_service.dart';
 import 'import_service.dart';
 import 'vault_crypto.dart';
 
+/// Ein Paket wurde mit einer abgelaufenen Freigabefrist geöffnet.
+///
+/// Die Frist ist Teil des verschlüsselten Manifests. Sie verrät außerhalb des
+/// Pakets weder Auswahl noch Namen und wird geprüft, bevor Klartextdateien
+/// für den Import entstehen.
+class SharePackageExpired implements Exception {
+  const SharePackageExpired(this.expiresAt);
+
+  final DateTime expiresAt;
+}
+
 /// Erstellt ein einzelnes, portables und passwortgeschütztes Austauschpaket.
 /// Dateinamen und Manifest sind ebenso verschlüsselt wie die Medien selbst.
 class SecureShareService {
-  SecureShareService(this._exporter);
+  SecureShareService(this._exporter, {DateTime Function()? now})
+      : _now = now ?? DateTime.now;
 
   final ExportService _exporter;
+  final DateTime Function() _now;
   Future<void> createPackage(
     List<AssetData> assets,
     File destination,
-    String passphrase,
-  ) async {
+    String passphrase, {
+    DateTime? expiresAt,
+  }) async {
     if (assets.isEmpty) throw ArgumentError('Keine Aufnahmen ausgewählt');
     if (passphrase.trim().length < 10) {
       throw ArgumentError('Die Passphrase muss mindestens 10 Zeichen haben.');
+    }
+    final expiresAtUtc = expiresAt?.toUtc();
+    if (expiresAtUtc != null && !expiresAtUtc.isAfter(_now().toUtc())) {
+      throw ArgumentError('Der Ablaufzeitpunkt muss in der Zukunft liegen.');
     }
 
     final temp = await Directory.systemTemp.createTemp('pv_share_');
@@ -49,11 +67,13 @@ class SecureShareService {
       }
 
       final manifestEncrypted = File(p.join(temp.path, 'manifest.pve'));
-      final manifestBytes = utf8.encode(jsonEncode({
+      final manifestPayload = <String, Object?>{
         'format': 1,
-        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'createdAt': _now().toUtc().toIso8601String(),
         'assets': manifest,
-      }));
+        if (expiresAtUtc != null) 'expiresAt': expiresAtUtc.toIso8601String(),
+      };
+      final manifestBytes = utf8.encode(jsonEncode(manifestPayload));
       await manifestEncrypted.writeAsBytes(await VaultCrypto.encryptBytes(
           manifestBytes, wrapped.masterKey,
           aad: utf8.encode('photo-vault-share-manifest')));
@@ -138,6 +158,19 @@ class SecureShareService {
       final manifest = jsonDecode(utf8.decode(manifestClear)) as Map;
       if (manifest['format'] != 1 || manifest['assets'] is! List) {
         throw const FormatException('Ungültiges Austauschmanifest.');
+      }
+      final rawExpiresAt = manifest['expiresAt'];
+      if (rawExpiresAt != null) {
+        if (rawExpiresAt is! String) {
+          throw const FormatException('Ungültiger Ablaufzeitpunkt im Paket.');
+        }
+        final expiresAt = DateTime.tryParse(rawExpiresAt);
+        if (expiresAt == null) {
+          throw const FormatException('Ungültiger Ablaufzeitpunkt im Paket.');
+        }
+        if (!_now().toUtc().isBefore(expiresAt.toUtc())) {
+          throw SharePackageExpired(expiresAt.toUtc());
+        }
       }
 
       var imported = 0;

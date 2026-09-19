@@ -11,6 +11,7 @@ set -euo pipefail
 wurzel="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:-$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' "$wurzel/pubspec.yaml")}"
 aktuell="/Applications/Photo Vault.app"
+test_app="/Applications/Photo Vault (Test).app"
 archiv="$HOME/Desktop/PhotoVault-Vorversionen.noindex"
 
 [ -n "$version" ] || { echo "Version nicht ermittelbar." >&2; exit 1; }
@@ -23,11 +24,19 @@ if [ "$installierte_version" != "$version" ]; then
   exit 1
 fi
 
+test_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+  "$test_app/Contents/Info.plist" 2>/dev/null || true)"
+if [ "$test_version" != "$version" ]; then
+  echo "Aktuelle Test-App ist ${test_version:-nicht installiert}, erwartet wird $version." >&2
+  exit 1
+fi
+
 mkdir -p "$archiv"
 
 anzahl=0
 while IFS= read -r -d '' app; do
   [ "$app" = "$aktuell" ] && continue
+  [ "$app" = "$test_app" ] && continue
   name="$(basename "$app")"
   ziel="$archiv/$name"
   if [ -e "$ziel" ]; then

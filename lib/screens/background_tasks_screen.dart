@@ -111,7 +111,8 @@ class _Laufanzeige extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(lauf.titel, style: TextStyle(fontSize: 13, color: farben.onSurface)),
+        Text(lauf.titel,
+            style: TextStyle(fontSize: 13, color: farben.onSurface)),
         const SizedBox(height: AppSpacing.sm),
         // Ein Balken auch im beendeten Zustand, damit die Karte nicht in der
         // Höhe springt, sobald der Vorgang durch ist.
@@ -165,17 +166,23 @@ class _Zahlenfeld extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     // Die Paare aus dem Farbschema statt eigener Werte: Sie sind auf
     // ausreichenden Kontrast ausgelegt und gelten in beiden Helligkeiten.
-    final grund = hervorgehoben ? farben.primaryContainer : farben.surfaceContainerHighest;
-    final schrift = hervorgehoben ? farben.onPrimaryContainer : farben.onSurfaceVariant;
+    final grund = hervorgehoben
+        ? farben.primaryContainer
+        : farben.surfaceContainerHighest;
+    final schrift =
+        hervorgehoben ? farben.onPrimaryContainer : farben.onSurfaceVariant;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-      decoration: BoxDecoration(color: grund, borderRadius: BorderRadius.circular(10)),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+      decoration:
+          BoxDecoration(color: grund, borderRadius: BorderRadius.circular(10)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
             child: Text(beschriftung,
-                overflow: TextOverflow.ellipsis, style: TextStyle(color: schrift)),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: schrift)),
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(wert,
@@ -210,11 +217,14 @@ class _Zahlenreihe extends StatelessWidget {
       children: [
         Expanded(
           child: _Zahlenfeld(
-              beschriftung: linksBeschriftung, wert: linksWert, hervorgehoben: true),
+              beschriftung: linksBeschriftung,
+              wert: linksWert,
+              hervorgehoben: true),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: _Zahlenfeld(beschriftung: rechtsBeschriftung, wert: rechtsWert),
+          child:
+              _Zahlenfeld(beschriftung: rechtsBeschriftung, wert: rechtsWert),
         ),
       ],
     );
@@ -262,7 +272,8 @@ class _Aktionsleiste extends StatelessWidget {
       child: Column(
         children: [
           for (var i = 0; i < knoepfe.length; i++) ...[
-            if (i > 0) Divider(height: 1, thickness: 1, color: farben.outlineVariant),
+            if (i > 0)
+              Divider(height: 1, thickness: 1, color: farben.outlineVariant),
             Expanded(
               child: InkWell(
                 onTap: bedienbar ? knoepfe[i].onTap : null,
@@ -274,7 +285,9 @@ class _Aktionsleiste extends StatelessWidget {
                     children: [
                       Icon(knoepfe[i].icon,
                           size: 26,
-                          color: bedienbar ? farben.onSurface : farben.onSurface.withValues(alpha: 0.38)),
+                          color: bedienbar
+                              ? farben.onSurface
+                              : farben.onSurface.withValues(alpha: 0.38)),
                       const SizedBox(height: 6),
                       Text(
                         knoepfe[i].label,
@@ -364,7 +377,8 @@ class _Aufgabenrahmen extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(beschreibung,
-                        style: TextStyle(fontSize: 13, color: farben.onSurfaceVariant)),
+                        style: TextStyle(
+                            fontSize: 13, color: farben.onSurfaceVariant)),
                     const SizedBox(height: AppSpacing.md),
                     inhalt,
                   ],
@@ -442,8 +456,8 @@ class Aufgabe {
   /// schreiben" gibt es nur „Alle", und diese Aufgabe deshalb aus einer
   /// Sammelauswahl herauszulassen wäre schwerer zu verstehen als sie
   /// mitlaufen zu lassen.
-  Aufgabenaktion aktionFuer(Aufgabenmodus modus) =>
-      aktionen.firstWhere((a) => a.modus == modus, orElse: () => aktionen.first);
+  Aufgabenaktion aktionFuer(Aufgabenmodus modus) => aktionen
+      .firstWhere((a) => a.modus == modus, orElse: () => aktionen.first);
 }
 
 /// Eine Aufgaben-Karte: Symbol und Titel, Kurzbeschreibung, die Zahlen
@@ -551,8 +565,8 @@ class _TaskCardState extends State<_TaskCard> {
         // Aktiv: der eigene Lauf, und die Analyse, wenn sie gerade genau
         // diese Stufe abarbeitet. Beides sind Aufgaben, die diese Arbeit
         // tun – die Karte, die nur die eine zählte, log die andere weg.
-        final aktiv = (lauf?.laeuft ?? false ? 1 : 0) +
-            (_analyseOffen() > 0 ? 1 : 0);
+        final aktiv =
+            (lauf?.laeuft ?? false ? 1 : 0) + (_analyseOffen() > 0 ? 1 : 0);
         final wartend = (lauf?.wartet ?? false) ? 1 : 0;
 
         // Während ein Lauf offen ist, tritt die Aktionsleiste hinter einen
@@ -599,7 +613,8 @@ class _TaskCardState extends State<_TaskCard> {
           bedienbar: _a.bedienbar,
           inhalt: _a.nichtVerfuegbar != null
               ? Text(_a.nichtVerfuegbar!,
-                  style: TextStyle(fontSize: 12, color: context.semantik.warnung))
+                  style:
+                      TextStyle(fontSize: 12, color: context.semantik.warnung))
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -623,7 +638,8 @@ class _TaskCardState extends State<_TaskCard> {
                               : '…',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -670,7 +686,9 @@ class _CombinedAnalysisCard extends StatelessWidget {
         final t = AppTexte.of(context);
         final analyse = library.analyse;
         final laeuft = library.analyseLaeuft;
-        final offen = analyse == null ? 0 : (analyse.gesamt - analyse.erledigt).clamp(0, 1 << 31);
+        final offen = analyse == null
+            ? 0
+            : (analyse.gesamt - analyse.erledigt).clamp(0, 1 << 31);
 
         return _Aufgabenrahmen(
           icon: Icons.auto_awesome_outlined,
@@ -711,10 +729,15 @@ class _CombinedAnalysisCard extends StatelessWidget {
               if (laeuft && analyse != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  t.aufgStufe(analysestufeName(t, analyse.stufe), analyse.erledigt,
-                      analyse.gesamt, analyse.stufeNummer, analyse.stufenGesamt),
+                  t.aufgStufe(
+                      analysestufeName(t, analyse.stufe),
+                      analyse.erledigt,
+                      analyse.gesamt,
+                      analyse.stufeNummer,
+                      analyse.stufenGesamt),
                   style: TextStyle(
-                      fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ],
@@ -743,8 +766,8 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         titel: t.werkzGesichterScannenTitel,
         beschreibung: t.aufgGesichterText,
         offeneZahl: () => library.db.countFaceScan(onlyNew: true),
-        nichtVerfuegbar: _modelHint(
-            t, library.faceDetectionAvailable, t.aufgYunetModell, t.aufgWoModelle),
+        nichtVerfuegbar: _modelHint(t, library.faceDetectionAvailable,
+            t.aufgYunetModell, t.aufgWoModelle),
         aktionen: [
           Aufgabenaktion(
             modus: Aufgabenmodus.alle,
@@ -820,9 +843,15 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         offeneZahl: () => library.db.countOcrBackfill(),
         // Auf macOS immer verfügbar (Vision-Framework), sonst erst mit
         // den beiden nachgeladenen Modellen.
-        nichtVerfuegbar:
-            _modelHint(t, library.ocrAvailable, t.aufgOcrModell, t.aufgWoModelle),
+        nichtVerfuegbar: _modelHint(
+            t, library.ocrAvailable, t.aufgOcrModell, t.aufgWoModelle),
         aktionen: [
+          Aufgabenaktion(
+            modus: Aufgabenmodus.alle,
+            laufTitel: t.werkzErkenneText,
+            emptyMessage: t.werkzKeinePassenden,
+            stream: () => library.backfillOcrText(alle: true),
+          ),
           Aufgabenaktion(
             modus: Aufgabenmodus.fehlende,
             laufTitel: t.werkzErkenneText,
@@ -839,8 +868,8 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         stufe: Analysestufe.bildbeschreibung,
         beschreibung: t.aufgBeschreibungenText,
         offeneZahl: () => library.db.countCaptionBackfill(),
-        nichtVerfuegbar: _modelHint(
-            t, library.captioningAvailable, t.aufgBeschreibungsmodell, t.aufgWoModelle),
+        nichtVerfuegbar: _modelHint(t, library.captioningAvailable,
+            t.aufgBeschreibungsmodell, t.aufgWoModelle),
         aktionen: [
           // Nach dem Modellwechsel der eigentlich sinnvolle Weg: Die
           // vorhandenen Sätze stammen vom abgelösten Modell.
@@ -910,8 +939,8 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         stufe: Analysestufe.bildanalyse,
         beschreibung: t.aufgEmbeddingsText,
         offeneZahl: () => library.db.countEmbeddingBackfill(),
-        nichtVerfuegbar:
-            _modelHint(t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
+        nichtVerfuegbar: _modelHint(
+            t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
         aktionen: [
           // Nach der Umstellung der Bildvorverarbeitung der eigentlich
           // sinnvolle Weg: Die gespeicherten Vektoren stammen noch vom
@@ -938,8 +967,8 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         stufe: Analysestufe.schlagwoerter,
         beschreibung: t.aufgKiTagsText,
         offeneZahl: () => library.db.countAiTagging(onlyUntagged: true),
-        nichtVerfuegbar:
-            _modelHint(t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
+        nichtVerfuegbar: _modelHint(
+            t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
         aktionen: [
           Aufgabenaktion(
             modus: Aufgabenmodus.alle,
@@ -1052,8 +1081,8 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
         titel: t.werkzOrteAufloesenTitel,
         beschreibung: t.aufgOrteAufloesenText,
         offeneZahl: () => library.db.countLocationNameBackfill(),
-        nichtVerfuegbar: _modelHint(
-            t, library.geoDataAvailable, t.aufgGeoDatensatz, t.aufgWoStandortdaten),
+        nichtVerfuegbar: _modelHint(t, library.geoDataAvailable,
+            t.aufgGeoDatensatz, t.aufgWoStandortdaten),
         aktionen: [
           Aufgabenaktion(
             modus: Aufgabenmodus.fehlende,
@@ -1201,7 +1230,8 @@ Future<bool> _frageDatumskorrektur(BuildContext context) async {
       content: Text(t.werkzDatumFrage),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.allgAbbrechen)),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(t.werkzDatumStarten),
@@ -1222,7 +1252,8 @@ Future<bool> _frageAblage(BuildContext context) async {
       content: Text(t.werkzAblageFrage),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.allgAbbrechen)),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(t.werkzAblageStarten),
@@ -1286,7 +1317,8 @@ class BackgroundTasksScreen extends StatelessWidget {
           _Kopfknopf(
             symbol: Icons.add,
             beschriftung: t.aufgErstellen,
-            beiKlick: () => unawaited(_zeigeSammeldialog(context, library, aufgaben)),
+            beiKlick: () =>
+                unawaited(_zeigeSammeldialog(context, library, aufgaben)),
           ),
           _Kopfknopf(
             symbol: Icons.settings_outlined,
@@ -1393,7 +1425,9 @@ Future<void> _zeigeSammeldialog(
                 segments: [
                   for (final m in Aufgabenmodus.values)
                     ButtonSegment(
-                        value: m, label: Text(modusName(t, m)), icon: Icon(modusSymbol(m))),
+                        value: m,
+                        label: Text(modusName(t, m)),
+                        icon: Icon(modusSymbol(m))),
                 ],
                 selected: {modus},
                 onSelectionChanged: (auswahl) =>
@@ -1410,8 +1444,9 @@ Future<void> _zeigeSammeldialog(
                         value: gewaehlt.contains(a.schluessel),
                         title: Text(a.titel),
                         secondary: Icon(a.icon),
-                        onChanged: (an) => setzeZustand(() =>
-                            an == true ? gewaehlt.add(a.schluessel) : gewaehlt.remove(a.schluessel)),
+                        onChanged: (an) => setzeZustand(() => an == true
+                            ? gewaehlt.add(a.schluessel)
+                            : gewaehlt.remove(a.schluessel)),
                       ),
                   ],
                 ),
@@ -1426,7 +1461,8 @@ Future<void> _zeigeSammeldialog(
           FilledButton(
             // Abgeschaltet statt mit einer Meldung quittiert: Ein Knopf,
             // der nichts tun kann, soll das vorher zeigen.
-            onPressed: gewaehlt.isEmpty ? null : () => Navigator.pop(context, true),
+            onPressed:
+                gewaehlt.isEmpty ? null : () => Navigator.pop(context, true),
             child: Text(t.aufgEinreihen),
           ),
         ],
@@ -1449,7 +1485,8 @@ Future<void> _zeigeSammeldialog(
 }
 
 /// Wie viele schwere Aufgaben nebeneinander laufen dürfen.
-Future<void> _zeigeGleichzeitig(BuildContext context, LibraryState library) async {
+Future<void> _zeigeGleichzeitig(
+    BuildContext context, LibraryState library) async {
   final t = AppTexte.of(context);
   var wert = library.maxGleichzeitig;
   final neu = await showDialog<int>(
@@ -1474,7 +1511,8 @@ Future<void> _zeigeGleichzeitig(BuildContext context, LibraryState library) asyn
                   // Ohne Kurzhinweis liest die Sprachausgabe hier zwei
                   // namenlose Knoepfe um eine nackte Zahl vor.
                   tooltip: t.aufgWenigerGleichzeitig,
-                  onPressed: wert <= 1 ? null : () => setzeZustand(() => wert--),
+                  onPressed:
+                      wert <= 1 ? null : () => setzeZustand(() => wert--),
                 ),
                 SizedBox(
                   width: 56,
@@ -1490,7 +1528,8 @@ Future<void> _zeigeGleichzeitig(BuildContext context, LibraryState library) asyn
                   // im Speicher (CLIP-Bild 335 MB, Bildbeschreibung
                   // 235 MB, gemessen) und dekodiert dieselben Fotos noch
                   // einmal.
-                  onPressed: wert >= 4 ? null : () => setzeZustand(() => wert++),
+                  onPressed:
+                      wert >= 4 ? null : () => setzeZustand(() => wert++),
                 ),
               ],
             ),
@@ -1498,7 +1537,8 @@ Future<void> _zeigeGleichzeitig(BuildContext context, LibraryState library) asyn
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: Text(t.allgAbbrechen)),
+              onPressed: () => Navigator.pop(context),
+              child: Text(t.allgAbbrechen)),
           FilledButton(
               onPressed: () => Navigator.pop(context, wert),
               child: Text(t.allgSpeichern)),

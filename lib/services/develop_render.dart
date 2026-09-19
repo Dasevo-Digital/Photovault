@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show compute, debugPrint, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show compute, debugPrint, visibleForTesting;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
@@ -25,11 +27,10 @@ import 'native_image_converter.dart';
 /// Nachschlagetabellen wie auf macOS (`develop_color.dart`) – nur eben mit
 /// der vollen Kantenlänge [colorCubeSize] statt der gröberen der Vorschau.
 ///
-/// **Was fehlt:** Schärfe und Rauschunterdrückung. Beide brauchen
-/// Nachbarpixel, die ein Fragment-Shader so nicht sieht; sie bleiben
-/// vorerst wirkungslos, statt genähert zu werden. [fehlendeWerkzeuge] sagt
-/// für gegebene Anpassungen, was davon betroffen ist – die Oberfläche kann
-/// das anzeigen, statt den Nutzer im Glauben zu lassen, er habe geschärft.
+/// Die vier Regler, die Nachbarpixel brauchen, folgen nach dem Shader in
+/// derselben Hintergrundarbeit: lokale Kontrastanhebung, Unsharp-Mask,
+/// Rauschminderung und Vignette. Damit ist das gespeicherte Ergebnis auf
+/// Linux und Windows vollständig und nicht nur die Live-Vorschau.
 class DevelopRender {
   DevelopRender._();
 
@@ -43,26 +44,14 @@ class DevelopRender {
   /// Regler, die dieser Weg nicht umsetzt – unabhängig davon, ob sie
   /// gerade gesetzt sind.
   ///
-  /// Schärfe und Rauschunterdrückung brauchen Nachbarpixel, die ein
-  /// Fragment-Shader so nicht sieht; Klarheit und Vignettierung sind reine
-  /// Core-Image-Filter. Sie zu nähern wäre schlechter, als sie zu benennen:
-  /// Ein Regler, der sich bewegen lässt und nichts tut, ist die
-  /// unangenehmste Art von Fehler.
-  static const ohneWirkung = <Entwicklungsregler>[
-    Entwicklungsregler.schaerfe,
-    Entwicklungsregler.rauschunterdrueckung,
-    Entwicklungsregler.klarheit,
-    Entwicklungsregler.vignettierung,
-  ];
+  /// Alle sichtbaren Regler werden auch in das gespeicherte Ergebnis
+  /// gerechnet. Die Konstante bleibt als Diagnosevertrag bestehen.
+  static const ohneWirkung = <Entwicklungsregler>[];
 
   /// Welche davon in [a] tatsächlich gesetzt sind – für einen Hinweis, der
   /// nur dann erscheint, wenn er jemanden betrifft.
-  static List<Entwicklungsregler> gesetztOhneWirkung(DevelopAdjustments a) => [
-        if (a.sharpness != 0) Entwicklungsregler.schaerfe,
-        if (a.noiseReduction != 0) Entwicklungsregler.rauschunterdrueckung,
-        if (a.clarity != 0) Entwicklungsregler.klarheit,
-        if (a.vignette != 0) Entwicklungsregler.vignettierung,
-      ];
+  static List<Entwicklungsregler> gesetztOhneWirkung(DevelopAdjustments a) =>
+      const [];
 
   /// Rendert [datei] und gibt JPEG-Bytes zurück, oder `null`, wenn schon
   /// das Bild nicht zu lesen war.
@@ -102,7 +91,16 @@ class DevelopRender {
       // Muster wie beim Thumbnail-Pfad in import_service.dart.
       return await compute(
         _kodiereJpeg,
-        _KodierAuftrag(roh.buffer.asUint8List(), ergebnis.width, ergebnis.height, quality),
+        _KodierAuftrag(
+          roh.buffer.asUint8List(),
+          ergebnis.width,
+          ergebnis.height,
+          quality,
+          sharpness: adjustments.sharpness,
+          noiseReduction: adjustments.noiseReduction,
+          clarity: adjustments.clarity,
+          vignette: adjustments.vignette,
+        ),
       );
     } catch (e) {
       debugPrint('Entwickeln über den Shader fehlgeschlagen: $e');
@@ -198,9 +196,11 @@ class DevelopRender {
   }) async {
     final aufnahme = ui.PictureRecorder();
     final leinwand = ui.Canvas(aufnahme);
-    final flaeche = ui.Rect.fromLTWH(0, 0, basis.width.toDouble(), basis.height.toDouble());
+    final flaeche =
+        ui.Rect.fromLTWH(0, 0, basis.width.toDouble(), basis.height.toDouble());
 
-    await _zeichneSchicht(shader, leinwand, basis, adjustments, flaeche, aufraeumen);
+    await _zeichneSchicht(
+        shader, leinwand, basis, adjustments, flaeche, aufraeumen);
 
     for (final schicht in masks) {
       final maske = await _ladeMaske(schicht.maskFilePath);
@@ -237,7 +237,8 @@ class DevelopRender {
   ) async {
     // Volle Kantenlänge statt der gröberen Vorschau-Auflösung: Hier
     // entsteht das Ergebnis, das bleibt.
-    final platzhalter = await texturVonBytes(Uint8List.fromList([0, 0, 0, 255]), 1, 1);
+    final platzhalter =
+        await texturVonBytes(Uint8List.fromList([0, 0, 0, 255]), 1, 1);
     aufraeumen.add(platzhalter);
 
     ui.Image kurve = platzhalter;
@@ -292,7 +293,20 @@ class _KodierAuftrag {
   final int breite;
   final int hoehe;
   final int quality;
-  const _KodierAuftrag(this.rgba, this.breite, this.hoehe, this.quality);
+  final double sharpness;
+  final double noiseReduction;
+  final double clarity;
+  final double vignette;
+  const _KodierAuftrag(
+    this.rgba,
+    this.breite,
+    this.hoehe,
+    this.quality, {
+    required this.sharpness,
+    required this.noiseReduction,
+    required this.clarity,
+    required this.vignette,
+  });
 }
 
 Uint8List _kodiereJpeg(_KodierAuftrag a) {
@@ -303,7 +317,97 @@ Uint8List _kodiereJpeg(_KodierAuftrag a) {
     numChannels: 4,
     order: img.ChannelOrder.rgba,
   );
+  _wendeNachbarfilterAn(
+    bild,
+    sharpness: a.sharpness,
+    noiseReduction: a.noiseReduction,
+    clarity: a.clarity,
+    vignette: a.vignette,
+  );
   return Uint8List.fromList(img.encodeJpg(bild, quality: a.quality));
+}
+
+/// Der nicht-shaderbare Anteil der Entwicklung. Der Code läuft innerhalb
+/// von [_kodiereJpeg] im Hintergrund-Isolate und blockiert somit weder die
+/// Regler noch das Scrollen der Bildansicht.
+@visibleForTesting
+void wendeDesktopDevelopFilterAn(
+  img.Image bild, {
+  required double sharpness,
+  required double noiseReduction,
+  required double clarity,
+  required double vignette,
+}) =>
+    _wendeNachbarfilterAn(
+      bild,
+      sharpness: sharpness,
+      noiseReduction: noiseReduction,
+      clarity: clarity,
+      vignette: vignette,
+    );
+
+void _wendeNachbarfilterAn(
+  img.Image bild, {
+  required double sharpness,
+  required double noiseReduction,
+  required double clarity,
+  required double vignette,
+}) {
+  if (bild.width == 0 || bild.height == 0) return;
+
+  void mischeMit(img.Image other, double amount, {double detail = 0}) {
+    final alpha = amount.clamp(0.0, 1.0);
+    for (var y = 0; y < bild.height; y++) {
+      for (var x = 0; x < bild.width; x++) {
+        final base = bild.getPixel(x, y);
+        final soft = other.getPixel(x, y);
+        int channel(num value, num reference) =>
+            value.round().clamp(0, 255).toInt();
+        base
+          ..r = channel(
+              base.r * (1 - alpha) +
+                  soft.r * alpha +
+                  detail * (base.r - soft.r),
+              base.r)
+          ..g = channel(
+              base.g * (1 - alpha) +
+                  soft.g * alpha +
+                  detail * (base.g - soft.g),
+              base.g)
+          ..b = channel(
+              base.b * (1 - alpha) +
+                  soft.b * alpha +
+                  detail * (base.b - soft.b),
+              base.b);
+      }
+    }
+  }
+
+  if (noiseReduction > 0 || clarity != 0 || sharpness > 0) {
+    final fein = img.Image.from(bild);
+    img.gaussianBlur(fein, radius: noiseReduction > 0.45 ? 2 : 1);
+    if (noiseReduction > 0) mischeMit(fein, noiseReduction * 0.7);
+    if (clarity != 0) mischeMit(fein, 0, detail: clarity * 0.55);
+    if (sharpness > 0) mischeMit(fein, 0, detail: sharpness * 1.2);
+  }
+
+  if (vignette != 0) {
+    final maxRadius = math.sqrt(0.5);
+    for (var y = 0; y < bild.height; y++) {
+      final ny = (y / math.max(1, bild.height - 1)) * 2 - 1;
+      for (var x = 0; x < bild.width; x++) {
+        final nx = (x / math.max(1, bild.width - 1)) * 2 - 1;
+        final edge =
+            math.pow(math.sqrt(nx * nx + ny * ny) / maxRadius, 2.2).toDouble();
+        final factor = (1 - vignette * edge * 0.65).clamp(0.0, 2.0);
+        final pixel = bild.getPixel(x, y);
+        pixel
+          ..r = (pixel.r * factor).round().clamp(0, 255)
+          ..g = (pixel.g * factor).round().clamp(0, 255)
+          ..b = (pixel.b * factor).round().clamp(0, 255);
+      }
+    }
+  }
 }
 
 /// Die Regler des Entwickeln-Bedienfelds, soweit sie hier eine Rolle
@@ -312,4 +416,9 @@ Uint8List _kodiereJpeg(_KodierAuftrag a) {
 /// Eine Aufzählung statt fertiger Namen: Dieser Dienst kennt keine
 /// Oberflächensprache – dasselbe Muster wie `Analysestufe` und
 /// `Startabweisung`.
-enum Entwicklungsregler { schaerfe, rauschunterdrueckung, klarheit, vignettierung }
+enum Entwicklungsregler {
+  schaerfe,
+  rauschunterdrueckung,
+  klarheit,
+  vignettierung
+}

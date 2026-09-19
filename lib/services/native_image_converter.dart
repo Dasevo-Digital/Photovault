@@ -18,7 +18,13 @@ import 'raw_formats.dart';
 /// versucht, über [NativeImageConverter] eine JPEG-Vorschau zu erzeugen,
 /// unabhängig davon, ob ein direkter Dekodierversuch zufällig teilweise
 /// klappen würde.
-const heicAndRawExtensions = {'.heic', '.heif', '.avif', '.avifs', ...rawImageExtensions};
+const heicAndRawExtensions = {
+  '.heic',
+  '.heif',
+  '.avif',
+  '.avifs',
+  ...rawImageExtensions
+};
 
 /// Was sich für ein Foto an Tiefendaten holen lässt.
 ///
@@ -38,13 +44,9 @@ enum Tiefenmaskenstand {
   /// Vorhanden und ausgewertet – die Maske liegt bereit.
   verfuegbar,
 
-  /// Die Datei könnte eine tragen, aber diese Plattform liest sie nicht.
-  ///
-  /// Unter macOS kommen die Tiefendaten aus Apples ImageIO. Unter Linux
-  /// und Windows läuft der Weg über LibRaw und libheif, und die geben das
-  /// Hilfsbild nicht heraus. Deshalb wird der Eintrag dort **gezeigt und
-  /// erklärt**, statt zu fehlen: Ein Foto, das die Funktion auf einem
-  /// anderen Rechner hätte, soll das auch sagen.
+  /// Die Datei könnte eine tragen, aber der installierte Bildwerkzeugweg
+  /// kann sie nicht lesen. Das ist etwa bei einer alten libheif-Fassung
+  /// ohne `--with-aux` möglich.
   nichtAufDieserPlattform,
 
   /// Tiefenkarte vorhanden, Auswertung gescheitert – etwa weil alle Werte
@@ -126,7 +128,9 @@ class NativeImageConverter {
   /// UI ehrlich anzuzeigen, was fehlt. Leere Map = alles über den nativen
   /// Kanal (macOS).
   static Future<Map<String, bool>> verfuegbareWerkzeuge() async =>
-      _ueberWerkzeuge ? await DesktopImageTools.pruefeWerkzeuge() : const <String, bool>{};
+      _ueberWerkzeuge
+          ? await DesktopImageTools.pruefeWerkzeuge()
+          : const <String, bool>{};
 
   /// Ob die Bildumwandlung hier arbeiten kann – und was ihr gegebenenfalls
   /// fehlt.
@@ -159,10 +163,12 @@ class NativeImageConverter {
   /// Korrektur steckt bereits in der Datei –, bei einer nicht lesbaren
   /// RAW-Datei dagegen schon.
   static Future<Objektivkorrekturstand> lensCorrectionStatus(File file) async {
-    if (_ueberWerkzeuge || !await isSupported()) return Objektivkorrekturstand.unbekannt;
+    if (_ueberWerkzeuge || !await isSupported()) {
+      return Objektivkorrekturstand.unbekannt;
+    }
     try {
-      final antwort = await _channel.invokeMethod<String>(
-          'lensCorrectionStatus', {'path': file.path});
+      final antwort = await _channel
+          .invokeMethod<String>('lensCorrectionStatus', {'path': file.path});
       return switch (antwort) {
         'keinRaw' => Objektivkorrekturstand.keinRaw,
         'verfuegbar' => Objektivkorrekturstand.verfuegbar,
@@ -189,22 +195,23 @@ class NativeImageConverter {
 
   /// Die Tiefenkarte eines Fotos als Maske.
   ///
-  /// Nur unter macOS auswertbar (siehe [Tiefenmaskenstand]); anderswo
-  /// kommt [Tiefenmaskenstand.nichtAufDieserPlattform] zurück, wenn die
-  /// Datei überhaupt eine tragen könnte, sonst
-  /// [Tiefenmaskenstand.keineTiefendaten].
+  /// macOS liest über ImageIO, Linux und Windows über die mitgelieferte
+  /// libheif-Werkzeugschicht. Beide Wege ergeben dieselbe Grauwertmaske.
   ///
   /// Das Ergebnis ist ein Graustufen-PNG, wie es `DevelopMasks` ohnehin
   /// erwartet – hell ist nah. Es entsteht also keine neue Maskenart, nur
   /// eine neue Quelle für dieselbe.
   static Future<Tiefenmaske> tiefenmaske(File file) async {
     final endung = p.extension(file.path).toLowerCase();
-    if (!Platform.isMacOS || _ueberWerkzeuge) {
+    if (_ueberWerkzeuge) {
+      final png = await DesktopImageTools.tiefenmaske(file);
       return (
-        stand: tiefenFaehigeEndungen.contains(endung)
-            ? Tiefenmaskenstand.nichtAufDieserPlattform
-            : Tiefenmaskenstand.keineTiefendaten,
-        png: null,
+        stand: png != null
+            ? Tiefenmaskenstand.verfuegbar
+            : (tiefenFaehigeEndungen.contains(endung)
+                ? Tiefenmaskenstand.nichtAufDieserPlattform
+                : Tiefenmaskenstand.keineTiefendaten),
+        png: png,
       );
     }
     if (!await isSupported()) {
@@ -249,8 +256,8 @@ class NativeImageConverter {
     if (_ueberWerkzeuge) return DesktopImageTools.leseAufnahmedaten(file);
     if (!await isSupported()) return Aufnahmedaten.leer;
     try {
-      final antwort = await _channel
-          .invokeMapMethod<String, dynamic>('cameraMetadata', {'path': file.path});
+      final antwort = await _channel.invokeMapMethod<String, dynamic>(
+          'cameraMetadata', {'path': file.path});
       if (antwort == null) return Aufnahmedaten.leer;
       return _ausImageIo(antwort);
     } on PlatformException {
@@ -441,7 +448,8 @@ class NativeImageConverter {
     }
     if (!await isSupported()) return null;
     try {
-      final result = await _channel.invokeMethod<Map<Object?, Object?>>('videoThumbnail', {
+      final result =
+          await _channel.invokeMethod<Map<Object?, Object?>>('videoThumbnail', {
         'path': file.path,
         'maxDimension': maxDimension,
         if (anteil != null) 'anteil': anteil,
@@ -450,7 +458,8 @@ class NativeImageConverter {
       final jpeg = result['jpeg'] as Uint8List?;
       if (jpeg == null) return null;
       final duration = (result['durationSeconds'] as num?)?.toDouble();
-      return VideoThumbnailResult(jpeg, (duration != null && duration > 0) ? duration : null);
+      return VideoThumbnailResult(
+          jpeg, (duration != null && duration > 0) ? duration : null);
     } on PlatformException {
       return null;
     } on MissingPluginException {
@@ -469,8 +478,8 @@ class NativeImageConverter {
   static Future<List<Textstelle>?> recognizeText(File file) async {
     if (!await isSupported()) return null;
     try {
-      final roh = await _channel
-          .invokeMapMethod<String, Object?>('recognizeText', {'path': file.path});
+      final roh = await _channel.invokeMapMethod<String, Object?>(
+          'recognizeText', {'path': file.path});
       if (roh == null) return null;
       final stellen = roh['stellen'];
       if (stellen is! List) return const [];
@@ -496,7 +505,9 @@ class NativeImageConverter {
   }) async {
     if (_ueberWerkzeuge) {
       return DesktopImageTools.trimVideo(file,
-          startSekunden: startSeconds, endSekunden: endSeconds, zielPfad: outputPath);
+          startSekunden: startSeconds,
+          endSekunden: endSeconds,
+          zielPfad: outputPath);
     }
     if (!await isSupported()) return false;
     try {
@@ -667,7 +678,8 @@ class MaskAdjustmentLayer {
   final String maskFilePath;
   final DevelopAdjustments adjustments;
 
-  const MaskAdjustmentLayer({required this.maskFilePath, required this.adjustments});
+  const MaskAdjustmentLayer(
+      {required this.maskFilePath, required this.adjustments});
 
   Map<String, Object?> toChannelMap() => {
         'path': maskFilePath,

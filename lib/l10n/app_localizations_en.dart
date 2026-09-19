@@ -2543,7 +2543,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get entwTiefenNurMacos =>
-      'This photo may carry a depth map – only the macOS build can read it. There the depth data comes from Apple\'s ImageIO; on Linux and Windows the path runs through LibRaw and libheif, which do not expose the auxiliary image.';
+      'This photo may carry a depth map, but the installed image tool cannot read its auxiliary image. Update the bundled libheif toolchain.';
 
   @override
   String get entwLichter => 'Highlights';
@@ -8175,5 +8175,95 @@ class AppTexteEn extends AppTexte {
   @override
   String sicherTeilenImportFehler(String fehler) {
     return 'Could not open sharing package: $fehler';
+  }
+
+  @override
+  String get gesundheitModellwechselTitel => 'Update AI results';
+
+  @override
+  String gesundheitModellwechselText(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl processing results come from older model versions.',
+      one: 'One processing result comes from an older model version.',
+    );
+    return '$_temp0 Existing results remain visible until you run the corresponding task completely again.';
+  }
+
+  @override
+  String get gesundheitModellwechselAufgaben => 'Open tasks';
+
+  @override
+  String get einstBackupGenerationenTitel => 'Recovery points';
+
+  @override
+  String get einstBackupGenerationenText =>
+      'Automatic backup retains the seven latest encrypted database states. Originals remain stored only once in the shared encrypted data store.';
+
+  @override
+  String get einstBackupWiederherstellungspunktTitel => 'Choose recovery point';
+
+  @override
+  String get einstBackupAktuellerStand => 'Current state';
+
+  @override
+  String get einstBackupAktuellerStandText =>
+      'Restore the latest database state from this backup.';
+
+  @override
+  String einstBackupGenerationZeit(String datum) {
+    return 'Saved on $datum';
+  }
+
+  @override
+  String get einstBackupGenerationText =>
+      'Database state; encrypted originals are shared between recovery points.';
+
+  @override
+  String get sicherTeilenAblaufTitel => 'Limit this share?';
+
+  @override
+  String get sicherTeilenAblaufText =>
+      'Optionally, this sharing package can no longer be imported after a chosen date.';
+
+  @override
+  String get sicherTeilenAblaufSetzen => 'Choose date';
+
+  @override
+  String get sicherTeilenOhneAblauf => 'No expiry';
+
+  @override
+  String get sicherTeilenAblaufDatum => 'Choose expiry date';
+
+  @override
+  String get sicherTeilenImportAbgelaufen =>
+      'This sharing package has expired and was not imported.';
+
+  @override
+  String get kontaktblattTitel => 'PDF contact sheet';
+
+  @override
+  String get kontaktblattText =>
+      'Create a printable overview with thumbnails and capture dates.';
+
+  @override
+  String get kontaktblattZiel => 'Save contact sheet';
+
+  @override
+  String get kontaktblattDateiname => 'PhotoVault-Contact-Sheet.pdf';
+
+  @override
+  String get kontaktblattLeer =>
+      'None of the selected items can be rendered for a contact sheet.';
+
+  @override
+  String kontaktblattFertig(int enthalten, int ausgelassen) {
+    return 'Contact sheet saved: $enthalten items, $ausgelassen skipped.';
+  }
+
+  @override
+  String kontaktblattFehler(String fehler) {
+    return 'Could not create contact sheet: $fehler';
   }
 }

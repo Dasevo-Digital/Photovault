@@ -25,6 +25,7 @@ import '../services/develop_color.dart';
 import '../services/speicher_rueckgabe.dart';
 import '../services/translation_service.dart';
 import '../services/embedding_codec.dart';
+import '../services/embedding_ann_index.dart';
 import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/face_postprocess.dart';
@@ -34,6 +35,7 @@ import '../services/raw_formats.dart';
 import '../services/library_location.dart';
 import '../services/model_catalog.dart';
 import '../services/model_download_service.dart';
+import '../services/model_processing_state.dart';
 import '../services/ocr_service.dart';
 import '../services/personenvorschlag.dart';
 import '../services/ortsvorschlag.dart';
@@ -152,8 +154,16 @@ class LibraryState extends ChangeNotifier {
   late ImportService importService;
   late BackupService backupService;
   late ModelDownloadService modelDownloadService;
+  ModelProcessingState? modelProcessingState;
   late GeoDataDownloadService geoDataDownloadService;
   late RestoreQueueService restoreQueue;
+
+  Set<String> _outdatedModelPipelines = const {};
+
+  /// KI-Ergebnisse, die zu einer anderen Modellfassung gehören. Die
+  /// bestehenden Treffer bleiben sichtbar, bis die entsprechende Aufgabe
+  /// bewusst vollständig neu ausgeführt wurde.
+  Set<String> get outdatedModelPipelines => _outdatedModelPipelines;
 
   // Jedes KI-Modell wird erst beim ersten Gebrauch geladen und nach einer
   // Weile Leerlauf wieder freigegeben (siehe ModellHalter, _sweepIdleModels) –
@@ -278,6 +288,9 @@ class LibraryState extends ChangeNotifier {
   Map<String, Float32List>? _embeddingsCache;
   int? _embeddingsCacheGeneration;
 
+  EmbeddingAnnIndex? _embeddingAnnIndex;
+  int? _embeddingAnnIndexGeneration;
+
   Future<Map<String, Float32List>> cachedEmbeddings() async {
     if (_embeddingsCache != null &&
         _embeddingsCacheGeneration == db.embeddingsGeneration) {
@@ -287,6 +300,67 @@ class LibraryState extends ChangeNotifier {
     _embeddingsCache = result;
     _embeddingsCacheGeneration = db.embeddingsGeneration;
     return result;
+  }
+
+  /// Exakte Rangfolge auf einer persistent vorgefilterten Kandidatenmenge.
+  /// Für kleine Bestände oder einen zu dünnen Bucket-Vorrat fällt die Methode
+  /// bewusst auf die vollständige Suche zurück – Annäherung darf nie weniger
+  /// Ergebnisse liefern als die Oberfläche verlangt.
+  Future<Map<String, Float32List>> similarityCandidates(Float32List query,
+      {required int minimum}) async {
+    final ids = await db.embeddingAssetIds();
+    EmbeddingAnnIndex? index = _embeddingAnnIndex;
+    if (index == null ||
+        _embeddingAnnIndexGeneration != db.embeddingsGeneration) {
+      index = await EmbeddingAnnIndex.load(paths.embeddingAnnIndexFile, ids);
+      if (index == null) {
+        index = EmbeddingAnnIndex.build(await cachedEmbeddings());
+        await index.save(paths.embeddingAnnIndexFile);
+      }
+      _embeddingAnnIndex = index;
+      _embeddingAnnIndexGeneration = db.embeddingsGeneration;
+    }
+    final candidateIds = index.candidates(query, minimum: minimum);
+    if (candidateIds.length < minimum || candidateIds.length >= ids.length) {
+      return cachedEmbeddings();
+    }
+    return db.embeddingsForAssetIds(candidateIds);
+  }
+
+  /// Kandidaten für die semantische Textsuche. Der persistente Index deckt
+  /// die Hauptbilder ab; zusätzliche Video-Standbilder kommen vollständig
+  /// dazu, damit eine Szene in der Mitte eines Videos nicht verlorengeht.
+  /// Nach einem engen UI-Filter fällt der Weg auf die exakte Menge zurück,
+  /// sobald der ANN-Vorrat zu wenige zugelassene Aufnahmen enthält.
+  Future<Map<String, Float32List>> textSimilarityCandidates(
+    Float32List query,
+    Set<String> allowedAssetIds, {
+    required int minimum,
+  }) async {
+    final primary = await similarityCandidates(query, minimum: minimum);
+    final out = <String, Float32List>{
+      for (final entry in primary.entries)
+        if (allowedAssetIds.contains(entry.key)) entry.key: entry.value,
+    };
+    final videos = await cachedVideoEinbettungen();
+    for (final entry in videos.entries) {
+      if (!allowedAssetIds.contains(entry.key)) continue;
+      for (var i = 0; i < entry.value.length; i++) {
+        out['${entry.key}#$i'] = entry.value[i];
+      }
+    }
+    final distinctAssets = {
+      for (final key in out.keys) aufnahmeAusSuchschluessel(key),
+    };
+    if (distinctAssets.length >= minimum || allowedAssetIds.length <= minimum) {
+      return out;
+    }
+    final exact = await suchkandidaten();
+    return {
+      for (final entry in exact.entries)
+        if (allowedAssetIds.contains(aufnahmeAusSuchschluessel(entry.key)))
+          entry.key: entry.value,
+    };
   }
 
   /// Die zusätzlichen Einbettungen der Video-Standbilder – **nur für die
@@ -695,6 +769,10 @@ class LibraryState extends ChangeNotifier {
     db = await AppDatabase.open();
     _datenbankGeoeffnet = true;
     paths = await StoragePaths.instance();
+    modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);
+    _outdatedModelPipelines = await modelProcessingState!.initialize(
+      ModelProcessingState.currentFingerprints(),
+    );
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
     restoreQueue = RestoreQueueService(db, paths);
@@ -1867,18 +1945,25 @@ class LibraryState extends ChangeNotifier {
       yield ImportProgress(0, 0);
       return;
     }
+    var failed = false;
     try {
       final eyeState = await eyeStateHalter.leihen();
       try {
         var done = 0;
         yield ImportProgress(0, assets.length);
         for (final asset in assets) {
-          await _scanFacesForAsset(
-            asset,
-            engine: engine,
-            eyeState: eyeState,
-            deleteExistingUnassigned: !onlyNewPhotos,
-          );
+          try {
+            await _scanFacesForAsset(
+              asset,
+              engine: engine,
+              eyeState: eyeState,
+              deleteExistingUnassigned: !onlyNewPhotos,
+            );
+          } catch (e) {
+            failed = true;
+            debugPrint('Gesichtserkennung fehlgeschlagen für '
+                '${asset.originalFileName}: $e');
+          }
           done++;
           yield ImportProgress(done, assets.length,
               currentFile: asset.originalFileName);
@@ -1888,6 +1973,9 @@ class LibraryState extends ChangeNotifier {
       }
     } finally {
       faceEngineHalter.zurueckgeben();
+    }
+    if (!onlyNewPhotos && !failed) {
+      await _markModelPipelineCurrent('faces');
     }
   }
 
@@ -3064,8 +3152,8 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  Stream<ImportProgress> backfillOcrText() async* {
-    final assets = await db.assetsForOcrBackfill();
+  Stream<ImportProgress> backfillOcrText({bool alle = false}) async* {
+    final assets = await db.assetsForOcrBackfill(alle: alle);
     if (assets.isEmpty) {
       yield ImportProgress(0, 0);
       return;
@@ -3085,6 +3173,7 @@ class LibraryState extends ChangeNotifier {
       }
     }
 
+    var failed = false;
     try {
       var done = 0;
       yield ImportProgress(0, assets.length);
@@ -3118,7 +3207,9 @@ class LibraryState extends ChangeNotifier {
           // drankommen. Es bleibt offen, der Lauf geht weiter.
           debugPrint('Texterkennung: ${e.stellen} Stellen mit Schrift in '
               '${asset.originalFileName}, keine lesbar – Foto bleibt offen.');
+          failed = true;
         } catch (e) {
+          failed = true;
           debugPrint(
               'Texterkennung fehlgeschlagen für ${asset.originalFileName}: $e');
         }
@@ -3129,6 +3220,7 @@ class LibraryState extends ChangeNotifier {
     } finally {
       if (!ueberSystem) ocrHalter.zurueckgeben();
     }
+    if (alle && !failed) await _markModelPipelineCurrent('ocr');
   }
 
   /// Erzeugt KI-Bildbeschreibungen nachträglich für Fotos, die vor
@@ -3160,6 +3252,7 @@ class LibraryState extends ChangeNotifier {
         ? await uebersetzungEnDeHalter.leihen()
         : null;
 
+    var failed = false;
     try {
       var done = 0;
       yield ImportProgress(0, assets.length);
@@ -3183,6 +3276,7 @@ class LibraryState extends ChangeNotifier {
           }
           await db.setAiCaption(asset.id, caption, deutsch: deutsch);
         } catch (e) {
+          failed = true;
           debugPrint(
               'KI-Bildbeschreibung fehlgeschlagen für ${asset.originalFileName}: $e');
         }
@@ -3194,6 +3288,7 @@ class LibraryState extends ChangeNotifier {
       if (uebersetzer != null) uebersetzungEnDeHalter.zurueckgeben();
       captioningHalter.zurueckgeben();
     }
+    if (alle && !failed) await _markModelPipelineCurrent('captions');
   }
 
   /// Übersetzt vorhandene englische Bildunterschriften ins Deutsche, ohne
@@ -3527,6 +3622,7 @@ class LibraryState extends ChangeNotifier {
       yield ImportProgress(0, 0);
       return;
     }
+    var failed = false;
     try {
       var done = 0;
       yield ImportProgress(0, assets.length);
@@ -3539,6 +3635,7 @@ class LibraryState extends ChangeNotifier {
           final embedding = await service.embedImage(decoded);
           await db.saveEmbedding(asset.id, embedding);
         } catch (e) {
+          failed = true;
           debugPrint(
               'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e');
         }
@@ -3549,6 +3646,19 @@ class LibraryState extends ChangeNotifier {
     } finally {
       clipBildHalter.zurueckgeben();
     }
+    if (alle && !failed) await _markModelPipelineCurrent('clip');
+  }
+
+  Future<void> _markModelPipelineCurrent(String pipeline) async {
+    final state = modelProcessingState;
+    if (state == null) return;
+    final fingerprint = ModelProcessingState.currentFingerprints()[pipeline];
+    if (fingerprint == null) return;
+    await state.markCurrent(pipeline, fingerprint);
+    _outdatedModelPipelines = {
+      ..._outdatedModelPipelines,
+    }..remove(pipeline);
+    notifyListeners();
   }
 
   /// Berechnet automatische KI-Tags nachträglich (siehe [AiTaggingService])

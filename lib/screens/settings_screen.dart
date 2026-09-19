@@ -1019,7 +1019,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (passphrase == null) return;
     }
 
+    final generationen =
+        await widget.library.backupService.autoBackupGenerations(wurzel);
     if (!mounted) return;
+    final generation = await _waehleWiederherstellungspunkt(generationen);
+    if (!mounted) return;
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -1033,12 +1038,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
           fehlerText: (e) => _fehlertext(dialogContext, e),
           stream: widget.library.backupService
               .restoreFromBackup(wurzel, widget.library.importService,
-                  passphrase: passphrase)
+                  passphrase: passphrase,
+                  generationSnapshotPath: generation?.snapshotPath)
               .map((p) => _wiederherstellZeile(t, p)),
         );
       },
     );
     _refresh();
+  }
+
+  /// Gibt `null` für den aktuellen Datenbankstand zurück. Bei manuellen
+  /// Backups existieren keine Generationen; dann bleibt der zusätzliche
+  /// Dialog bewusst aus dem Weg.
+  Future<BackupGeneration?> _waehleWiederherstellungspunkt(
+      List<BackupGeneration> generationen) async {
+    if (generationen.isEmpty) return null;
+    final t = AppTexte.of(context);
+    return showModalBottomSheet<BackupGeneration?>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+              child: Text(t.einstBackupWiederherstellungspunktTitel,
+                  style: Theme.of(sheetContext).textTheme.titleLarge),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore),
+              title: Text(t.einstBackupAktuellerStand),
+              subtitle: Text(t.einstBackupAktuellerStandText),
+              onTap: () => Navigator.pop(sheetContext),
+            ),
+            const Divider(),
+            for (final generation in generationen)
+              ListTile(
+                leading: const Icon(Icons.history),
+                title: Text(t.einstBackupGenerationZeit(
+                    _datumZeit(generation.createdAt))),
+                subtitle: Text(t.einstBackupGenerationText),
+                onTap: () => Navigator.pop(sheetContext, generation),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _pruefeBackup() async {
@@ -2609,6 +2656,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (mounted) _reloadBackupSettings();
                       },
                     ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.history_outlined),
+                    title:
+                        Text(AppTexte.of(context).einstBackupGenerationenTitel),
+                    subtitle: Text(
+                      AppTexte.of(context).einstBackupGenerationenText,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    isThreeLine: true,
                   ),
                   const Divider(height: 1),
                   ListTile(

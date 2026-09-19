@@ -31,6 +31,7 @@ class _LibraryHealthState {
     required this.videoCount,
     required this.modelsReady,
     required this.modelsTotal,
+    required this.outdatedModelPipelines,
     required this.ortsvorschlaege,
     required this.offeneGesichter,
     required this.auffaelligeDaten,
@@ -46,6 +47,7 @@ class _LibraryHealthState {
   final int videoCount;
   final int modelsReady;
   final int modelsTotal;
+  final int outdatedModelPipelines;
 
   /// Was an Arbeit bereitliegt, ohne dass jemand danach fragen muss.
   final int ortsvorschlaege;
@@ -103,6 +105,7 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
       videoCount: values[4] as int,
       modelsReady: models.where((ready) => ready).length,
       modelsTotal: models.length,
+      outdatedModelPipelines: widget.library.outdatedModelPipelines.length,
       ortsvorschlaege: values[5] as int,
       offeneGesichter: values[6] as int,
       auffaelligeDaten: values[7] as int,
@@ -256,12 +259,12 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                         '${part.name}: ${_bytes(part.bytes)}',
                   ],
                   action: FilledButton.tonalIcon(
-                  onPressed: _cleaning ? null : _cleanTemporaryFiles,
-                  icon: _cleaning
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                    onPressed: _cleaning ? null : _cleanTemporaryFiles,
+                    icon: _cleaning
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.cleaning_services_outlined),
                     label: Text(t.gesundheitBereinigen),
                   ),
@@ -397,6 +400,20 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                 text: t.gesundheitModelleStand(
                     state.modelsReady, state.modelsTotal),
               ),
+              if (state.outdatedModelPipelines > 0)
+                _StatusCard(
+                  icon: Icons.update_outlined,
+                  color: context.semantik.warnung,
+                  title: t.gesundheitModellwechselTitel,
+                  text: t.gesundheitModellwechselText(
+                      state.outdatedModelPipelines),
+                  action: FilledButton.tonalIcon(
+                    onPressed: () =>
+                        widget.library.zeigeBereich(Hauptbereich.werkzeuge),
+                    icon: const Icon(Icons.arrow_forward),
+                    label: Text(t.gesundheitModellwechselAufgaben),
+                  ),
+                ),
             ],
           );
         },

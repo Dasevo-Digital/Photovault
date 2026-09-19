@@ -246,13 +246,11 @@ also genauer als das, was beim Ziehen zu sehen war, nicht ungenauer.
 für Vorschau und Ergebnis gemeinsam. Zwei Fassungen davon wären die
 naheliegendste Art, dass beides auseinanderläuft, ohne dass es auffällt.
 
-**Vier Regler bleiben ohne Wirkung** – Schärfe, Rauschunterdrückung,
-Klarheit, Vignettierung. Die ersten beiden brauchen Nachbarpixel, die ein
-Fragment-Shader so nicht sieht; die anderen beiden sind reine
-Core-Image-Filter. Sie zu nähern wäre schlechter, als sie zu benennen: Im
-Entwickeln-Bedienfeld sind sie ausserhalb von macOS **abgeschaltet**, mit
-einer Zeile darunter, die den Grund nennt. Ein Regler, der sich bewegen
-lässt und nichts tut, ist die unangenehmste Art von Fehler.
+**Alle Regler wirken auch außerhalb von macOS.** Schärfe,
+Rauschunterdrückung, Klarheit und Vignettierung folgen nach dem Shader im
+Hintergrund-Isolate. Damit bleibt der schnelle Shader für die Grundrechnung
+zuständig, während die nachbarpixelabhängigen Schritte im gespeicherten
+JPEG vollständig erhalten bleiben.
 
 **Was noch offen ist:** Die Abweichung des Shaders vom nativen Render ist
 für die Live-Vorschau gemessen (Tabelle unten) – für den gespeicherten
@@ -297,10 +295,8 @@ Nachbarpixel bzw. echte Entrauschung) sowie Masken – bei vorhandenen
 Masken bleibt es beim nativen Render, da die neutrale Basis keine
 Maskenwirkung enthält.
 
-**Für Linux bleibt zu tun:** den Shader vom Vorschau- zum maßgeblichen
-Renderpfad machen (dort gibt es kein Core Image), inklusive Schärfe,
-Rauschunterdrückung und Maskenkomposition, gespeist aus einem per LibRaw
-dekodierten Bild (Phase 2).
+**Erledigt:** Der Shader ist unter Linux der maßgebliche Renderpfad,
+einschließlich Maskenkomposition und der nachbarpixelabhängigen Regler.
 
 ### Phase 4 – Video-Vorschaubild und -Zuschnitt — **AUF LINUX VERIFIZIERT**
 

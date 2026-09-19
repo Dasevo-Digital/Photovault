@@ -24,6 +24,22 @@ class BackupBrauchtPassphrase implements Exception {
   const BackupBrauchtPassphrase();
 }
 
+/// Ein unveränderlicher Datenbankstand eines automatischen Backups.
+///
+/// Die verschlüsselten Originale bleiben im gemeinsamen Datenbestand des
+/// Backups liegen. Eine Generation enthält deshalb nur den zugehörigen,
+/// verschlüsselten Datenbank-Schnappschuss.
+class BackupGeneration {
+  const BackupGeneration({
+    required this.id,
+    required this.createdAt,
+    required this.snapshotPath,
+  });
+
+  final String id;
+  final DateTime createdAt;
+  final String snapshotPath;
+}
 
 class BackupProgress {
   final int done;
@@ -93,6 +109,7 @@ class BackupService {
   /// vorgibt, räumt es auch weg.
   final Directory? _festesZwischenlager;
   final _uuid = const Uuid();
+  int _autoGenerationSerial = 0;
 
   static const _backupFolderName = 'PhotoVault-Backup';
 
@@ -139,8 +156,8 @@ class BackupService {
     required int quellGroesse,
     required Future<void> Function(File zwischen) schreibe,
   }) async {
-    final vermutlichZuGross = _zwischenlagerGrenze != null &&
-        quellGroesse >= _zwischenlagerGrenze!;
+    final vermutlichZuGross =
+        _zwischenlagerGrenze != null && quellGroesse >= _zwischenlagerGrenze!;
 
     if (!vermutlichZuGross) {
       final zwischen = File(p.join(zwischenlager.path, 'teil'));
@@ -209,7 +226,8 @@ class BackupService {
     SecretKey? encryptionKey,
     int maxBytesPerRun = 0,
   }) async* {
-    final backupRoot = Directory(p.join(destinationRootPath, _backupFolderName));
+    final backupRoot =
+        Directory(p.join(destinationRootPath, _backupFolderName));
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
 
@@ -247,7 +265,8 @@ class BackupService {
     // Backup (encryptionKey != null) würde eine im Klartext danebenliegende
     // .xmp-Datei genau die Vertraulichkeit unterlaufen, die der Nutzer mit der
     // Backup-Passphrase gerade herstellen wollte.
-    final tagsByAssetId = encryptionKey == null ? await _db.allTagNamesByAssetId() : null;
+    final tagsByAssetId =
+        encryptionKey == null ? await _db.allTagNamesByAssetId() : null;
     // Aus demselben Grund: Ein Name neben einem verschlüsselten Foto sagt
     // mehr aus als das Foto selbst.
     final gesichterByAssetId =
@@ -275,10 +294,15 @@ class BackupService {
             // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
             // sich so ein Backup auch ohne die App durchsehen lässt.
             final target = encryptionKey != null
-                ? File(p.join(backupRoot.path, VerschluesselteNamen.ordner,
-                    await VerschluesselteNamen.fuerPruefsumme(asset.checksum, encryptionKey)))
-                : File(p.join(originalsOut.path,
-                    asset.relativePath.replaceFirst('originals${Platform.pathSeparator}', '')));
+                ? File(p.join(
+                    backupRoot.path,
+                    VerschluesselteNamen.ordner,
+                    await VerschluesselteNamen.fuerPruefsumme(
+                        asset.checksum, encryptionKey)))
+                : File(p.join(
+                    originalsOut.path,
+                    asset.relativePath.replaceFirst(
+                        'originals${Platform.pathSeparator}', '')));
             await target.parent.create(recursive: true);
 
             final quellGroesse = await source.length();
@@ -288,7 +312,8 @@ class BackupService {
               quellGroesse: quellGroesse,
               schreibe: (zwischen) async {
                 if (encryptionKey != null) {
-                  await VaultCrypto.encryptFile(source, zwischen, encryptionKey);
+                  await VaultCrypto.encryptFile(
+                      source, zwischen, encryptionKey);
                 } else {
                   await source.copy(zwischen.path);
                 }
@@ -317,7 +342,8 @@ class BackupService {
               'fehlgeschlagen: $e');
         }
         done++;
-        yield BackupProgress(done, pending.length, currentFile: asset.originalFileName);
+        yield BackupProgress(done, pending.length,
+            currentFile: asset.originalFileName);
       }
     } finally {
       // Reste immer wegräumen, auch bei Fehlern – aber nur das selbst
@@ -368,7 +394,8 @@ class BackupService {
     // Nach der Mengenmeldung, damit sie das letzte Wort hat: Ausgelassene
     // Dateien sind die wichtigere Nachricht.
     if (fehlgeschlagen > 0) {
-      yield BackupProgress(done, pending.length, fehlgeschlagen: fehlgeschlagen);
+      yield BackupProgress(done, pending.length,
+          fehlgeschlagen: fehlgeschlagen);
     }
   }
 
@@ -413,7 +440,8 @@ class BackupService {
   /// **Was eine frühere Sicherung enthält, ändert sich dadurch nicht.**
   /// Wer ein Foto sperrt, nachdem es gesichert wurde, findet es weiter im
   /// Sicherungsziel: Dort wird nie gelöscht, und das ist Absicht.
-  Future<void> _writeMetadataExport(Directory backupRoot, {SecretKey? encryptionKey}) async {
+  Future<void> _writeMetadataExport(Directory backupRoot,
+      {SecretKey? encryptionKey}) async {
     final allAssets = await _db.assetsFuerMetadatenexport();
     final albums = await _db.select(_db.albums).get();
     // Eine einzige Abfrage für alle Tags statt einer pro Foto (N+1-Problem
@@ -476,7 +504,8 @@ class BackupService {
     };
 
     final file = File(p.join(backupRoot.path, 'metadata.json'));
-    final jsonBytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(export));
+    final jsonBytes =
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(export));
 
     if (encryptionKey == null) {
       await file.writeAsBytes(jsonBytes);
@@ -536,6 +565,7 @@ class BackupService {
     String backupRootPath,
     ImportService importService, {
     String? passphrase,
+    String? generationSnapshotPath,
   }) async* {
     final keyFile = File(p.join(backupRootPath, 'vault.key'));
     SecretKey? decryptionKey;
@@ -543,7 +573,8 @@ class BackupService {
       if (passphrase == null) {
         throw const BackupBrauchtPassphrase();
       }
-      final envelope = jsonDecode(await keyFile.readAsString()) as Map<String, dynamic>;
+      final envelope =
+          jsonDecode(await keyFile.readAsString()) as Map<String, dynamic>;
       decryptionKey = await VaultCrypto.unwrapMasterKey(
         passphrase,
         kdfSalt: base64Decode(envelope['kdfSalt'] as String),
@@ -572,14 +603,17 @@ class BackupService {
       if (await metadataFile.exists()) {
         File zuLesen = metadataFile;
         if (decryptionKey != null) {
-          entschluesselteMetadaten = File(
-              p.join(Directory.systemTemp.path, 'photovault_restore_${_uuid.v4()}.json'));
-          await VaultCrypto.decryptFile(metadataFile, entschluesselteMetadaten, decryptionKey);
+          entschluesselteMetadaten = File(p.join(Directory.systemTemp.path,
+              'photovault_restore_${_uuid.v4()}.json'));
+          await VaultCrypto.decryptFile(
+              metadataFile, entschluesselteMetadaten, decryptionKey);
           zuLesen = entschluesselteMetadaten;
         }
         try {
-          final inhalt = jsonDecode(await zuLesen.readAsString()) as Map<String, dynamic>;
-          metaAssets = (inhalt['assets'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+          final inhalt =
+              jsonDecode(await zuLesen.readAsString()) as Map<String, dynamic>;
+          metaAssets = (inhalt['assets'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>();
         } catch (e) {
           // Beschädigte Metadaten dürfen den Restore NICHT abbrechen: Beim
           // alten Format werden die Dateien ohnehin über ihre Endung
@@ -587,7 +621,8 @@ class BackupService {
           // Favoriten/Tags). Beim neuen, namenlosen Format sind sie die
           // einzige Quelle – dann bleibt die Liste eben leer, statt zu
           // scheitern.
-          debugPrint('metadata.json unlesbar, Restore läuft ohne Metadaten weiter: $e');
+          debugPrint(
+              'metadata.json unlesbar, Restore läuft ohne Metadaten weiter: $e');
         }
       }
 
@@ -595,7 +630,8 @@ class BackupService {
       // im Original hatte (beim neuen Format steckt sie nicht mehr im Namen).
       final files = <({String pfad, String endung})>[];
 
-      final datenOrdner = Directory(p.join(backupRootPath, VerschluesselteNamen.ordner));
+      final datenOrdner =
+          Directory(p.join(backupRootPath, VerschluesselteNamen.ordner));
       final originalsIn = Directory(p.join(backupRootPath, 'originals'));
 
       if (await datenOrdner.exists() && decryptionKey != null) {
@@ -605,12 +641,14 @@ class BackupService {
         for (final eintrag in metaAssets) {
           final pruefsumme = eintrag['checksum'] as String?;
           if (pruefsumme == null) continue;
-          final name = await VerschluesselteNamen.fuerPruefsumme(pruefsumme, decryptionKey);
+          final name = await VerschluesselteNamen.fuerPruefsumme(
+              pruefsumme, decryptionKey);
           final datei = File(p.join(datenOrdner.path, name));
           if (await datei.exists()) {
             files.add((
               pfad: datei.path,
-              endung: p.extension((eintrag['originalFileName'] as String?) ?? '.jpg'),
+              endung: p.extension(
+                  (eintrag['originalFileName'] as String?) ?? '.jpg'),
             ));
           }
         }
@@ -618,14 +656,16 @@ class BackupService {
         // Altes Format: nach Endung durchsuchen. Bei verschlüsselten Backups
         // sind die Bytes zwar Chiffretext, die Endung im Pfad blieb aber die
         // des Originals.
-        await for (final entity in originalsIn.list(recursive: true, followLinks: false)) {
+        await for (final entity
+            in originalsIn.list(recursive: true, followLinks: false)) {
           if (entity is File && importService.isSupported(entity.path)) {
             files.add((pfad: entity.path, endung: p.extension(entity.path)));
           }
         }
       } else {
         // Fallback: falls direkt der "originals"-Ordner selbst ausgewählt wurde.
-        for (final f in await importService.collectSupportedFilesInFolder(backupRootPath)) {
+        for (final f in await importService
+            .collectSupportedFilesInFolder(backupRootPath)) {
           files.add((pfad: f, endung: p.extension(f)));
         }
       }
@@ -649,14 +689,16 @@ class BackupService {
             'photovault_restore_${_uuid.v4()}${eintrag.endung}',
           ));
           try {
-            await VaultCrypto.decryptFile(File(filePath), tempFile, decryptionKey);
+            await VaultCrypto.decryptFile(
+                File(filePath), tempFile, decryptionKey);
             await importService.importFile(tempFile.path);
           } finally {
             if (await tempFile.exists()) await tempFile.delete();
           }
         }
         done++;
-        yield BackupProgress(done, files.length, currentFile: p.basename(filePath));
+        yield BackupProgress(done, files.length,
+            currentFile: p.basename(filePath));
       }
 
       // Metadaten anwenden – die Datei wurde oben bereits (ggf. entschlüsselt)
@@ -670,7 +712,10 @@ class BackupService {
       // Suchen. Die automatische Sicherung legt dafür seit jeher einen
       // verschlüsselten Schnappschuss der Datenbank ab – bis zur
       // 19. Prüfrunde las ihn nur der Prüfstand.
-      final schnappschuss = File(p.join(backupRootPath, 'library.sqlite.enc'));
+      final schnappschuss = await _restoreSnapshot(
+        backupRootPath,
+        generationSnapshotPath,
+      );
       if (decryptionKey != null && await schnappschuss.exists()) {
         // Dieselbe Sorgfalt wie bei den Metadaten oben: Ab hier liegt eine
         // vollständige Klartext-Datenbank im Temp-Verzeichnis, und die muss
@@ -695,7 +740,8 @@ class BackupService {
         }
       }
     } finally {
-      if (entschluesselteMetadaten != null && await entschluesselteMetadaten.exists()) {
+      if (entschluesselteMetadaten != null &&
+          await entschluesselteMetadaten.exists()) {
         await entschluesselteMetadaten.delete();
       }
       if (entschluesselterSchnappschuss != null &&
@@ -799,71 +845,71 @@ class BackupService {
       // nimmt eine gescheiterte Anweisung für sich zurück, die Klammer
       // steht danach unverändert offen.
       await _db.transaction(() async {
-      for (final tabelle in uebernommeneTabellen) {
-        final erlaubt = zielSpalten[tabelle];
-        if (erlaubt == null) continue;
-        final vorhanden = quelle.select(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            [tabelle]);
-        if (vorhanden.isEmpty) continue;
+        for (final tabelle in uebernommeneTabellen) {
+          final erlaubt = zielSpalten[tabelle];
+          if (erlaubt == null) continue;
+          final vorhanden = quelle.select(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+              [tabelle]);
+          if (vorhanden.isEmpty) continue;
 
-        // Nur Spalten, die es hier UND dort gibt – eine ältere Sicherung
-        // hat weniger, eine neuere könnte mehr haben.
-        final spalten = [
-          for (final z in quelle.select('PRAGMA table_info("$tabelle")'))
-            if (erlaubt.contains(z['name'] as String)) z['name'] as String,
-        ];
-        if (spalten.isEmpty) continue;
-        final hatAssetId = spalten.contains('asset_id');
+          // Nur Spalten, die es hier UND dort gibt – eine ältere Sicherung
+          // hat weniger, eine neuere könnte mehr haben.
+          final spalten = [
+            for (final z in quelle.select('PRAGMA table_info("$tabelle")'))
+              if (erlaubt.contains(z['name'] as String)) z['name'] as String,
+          ];
+          if (spalten.isEmpty) continue;
+          final hatAssetId = spalten.contains('asset_id');
 
-        final liste = spalten.map((s) => '"$s"').join(', ');
-        final platzhalter = List.filled(spalten.length, '?').join(', ');
-        final befehl =
-            'INSERT OR IGNORE INTO "$tabelle" ($liste) VALUES ($platzhalter)';
+          final liste = spalten.map((s) => '"$s"').join(', ');
+          final platzhalter = List.filled(spalten.length, '?').join(', ');
+          final befehl =
+              'INSERT OR IGNORE INTO "$tabelle" ($liste) VALUES ($platzhalter)';
 
-        for (final zeile in quelle.select('SELECT * FROM "$tabelle"')) {
-          final werte = <Object?>[];
-          var ueberspringen = false;
-          for (final spalte in spalten) {
-            var wert = zeile[spalte];
-            if (spalte == 'asset_id' && hatAssetId) {
-              wert = assetZuordnung[wert];
-              if (wert == null) {
-                ueberspringen = true;
-                break;
+          for (final zeile in quelle.select('SELECT * FROM "$tabelle"')) {
+            final werte = <Object?>[];
+            var ueberspringen = false;
+            for (final spalte in spalten) {
+              var wert = zeile[spalte];
+              if (spalte == 'asset_id' && hatAssetId) {
+                wert = assetZuordnung[wert];
+                if (wert == null) {
+                  ueberspringen = true;
+                  break;
+                }
               }
+              werte.add(wert);
             }
-            werte.add(wert);
-          }
-          if (ueberspringen) continue;
-          try {
-            await _db.customInsert(befehl,
-                variables: [for (final w in werte) Variable(w)]);
-            uebernommen++;
-          } catch (e) {
-            // Je Zeile abgesichert – eine Zeile, die hier nicht hineinpasst
-            // (ein Fremdschlüssel auf eine ausgelassene Aufnahme etwa), darf
-            // die Wiederherstellung nicht abbrechen.
-            debugPrint('Zeile aus $tabelle nicht übernommen: $e');
+            if (ueberspringen) continue;
+            try {
+              await _db.customInsert(befehl,
+                  variables: [for (final w in werte) Variable(w)]);
+              uebernommen++;
+            } catch (e) {
+              // Je Zeile abgesichert – eine Zeile, die hier nicht hineinpasst
+              // (ein Fremdschlüssel auf eine ausgelassene Aufnahme etwa), darf
+              // die Wiederherstellung nicht abbrechen.
+              debugPrint('Zeile aus $tabelle nicht übernommen: $e');
+            }
           }
         }
-      }
-      // Und die Marke „schon nach Gesichtern durchsucht" mit.
-      //
-      // Ohne sie liefe die Hintergrundanalyse über genau die Aufnahmen, für
-      // die gerade Gesichter zurückgekommen sind, fände dieselben Köpfe
-      // erneut und legte sie ein zweites Mal an – diesmal ohne Namen. Die
-      // Marke steht im Schnappschuss und wird deshalb von dort genommen,
-      // nicht geraten: Eine Aufnahme, die dort nie durchsucht wurde, soll
-      // auch hier noch durchsucht werden.
-      // `markFacesScanned` nimmt eine Liste - hier stand sie je Aufnahme
-      // einzeln da, also achttausend Anweisungen für eine einzige.
-      final durchsucht = [
-        for (final z in quelle.select(
-            'SELECT id, faces_scanned FROM assets WHERE faces_scanned = 1'))
-          if (assetZuordnung[z['id'] as String] case final neueId?) neueId,
-      ];
-      if (durchsucht.isNotEmpty) await _db.markFacesScanned(durchsucht);
+        // Und die Marke „schon nach Gesichtern durchsucht" mit.
+        //
+        // Ohne sie liefe die Hintergrundanalyse über genau die Aufnahmen, für
+        // die gerade Gesichter zurückgekommen sind, fände dieselben Köpfe
+        // erneut und legte sie ein zweites Mal an – diesmal ohne Namen. Die
+        // Marke steht im Schnappschuss und wird deshalb von dort genommen,
+        // nicht geraten: Eine Aufnahme, die dort nie durchsucht wurde, soll
+        // auch hier noch durchsucht werden.
+        // `markFacesScanned` nimmt eine Liste - hier stand sie je Aufnahme
+        // einzeln da, also achttausend Anweisungen für eine einzige.
+        final durchsucht = [
+          for (final z in quelle.select(
+              'SELECT id, faces_scanned FROM assets WHERE faces_scanned = 1'))
+            if (assetZuordnung[z['id'] as String] case final neueId?) neueId,
+        ];
+        if (durchsucht.isNotEmpty) await _db.markFacesScanned(durchsucht);
       });
 
       return uebernommen;
@@ -906,8 +952,8 @@ class BackupService {
       try {
         final asset = await _db.assetById(eintrag.key);
         if (asset != null) {
-          final datei = _paths
-              .absolute(asset.previewRelativePath ?? asset.relativePath);
+          final datei =
+              _paths.absolute(asset.previewRelativePath ?? asset.relativePath);
           if (await datei.exists()) {
             final bild = await compute(_dekodiere, await datei.readAsBytes());
             if (bild != null) {
@@ -943,13 +989,16 @@ class BackupService {
   Future<void> _applyMetadataExport(File metadataFile) async {
     final Map<String, dynamic> content;
     try {
-      content = jsonDecode(await metadataFile.readAsString()) as Map<String, dynamic>;
+      content =
+          jsonDecode(await metadataFile.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('metadata.json konnte nicht gelesen werden, überspringe Metadaten-Import: $e');
+      debugPrint(
+          'metadata.json konnte nicht gelesen werden, überspringe Metadaten-Import: $e');
       return;
     }
 
-    final assetsJson = (content['assets'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final assetsJson = (content['assets'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
 
     final byChecksum = <String, String>{}; // checksum -> assetId in dieser DB
     for (final row in await _db.select(_db.assets).get()) {
@@ -960,83 +1009,94 @@ class BackupService {
     // je Schlagwort zwei weitere. An 1000 Aufnahmen gemessen: 4,1 s
     // ohne, 0,4 s mit.
     await _db.transaction(() async {
-    for (final entry in assetsJson) {
-      try {
-        final checksum = entry['checksum'] as String?;
-        final assetId = checksum != null ? byChecksum[checksum] : null;
-        if (assetId == null) continue;
-        // Der Reimport aus dem Backup-Ordner kennt nur den Pfad
-        // originals/{yyyy}/{mm}/{assetId}.ext und übernimmt dessen Basename
-        // (also die Asset-UUID) als originalFileName – hier den echten,
-        // von Menschen lesbaren Namen aus metadata.json wiederherstellen.
-        // p.basename() schützt vor einer präparierten metadata.json (z.B.
-        // aus einem fremden/geteilten Backup-Ordner), die einen Namen mit
-        // Pfad-Traversal ("../../...") enthält – der wiederhergestellte Name
-        // wird später beim Exportieren 1:1 als Ziel-Dateiname verwendet
-        // (siehe ExportService).
-        final originalFileName = entry['originalFileName'] as String?;
-        if (originalFileName != null && originalFileName.isNotEmpty) {
-          await _db.setOriginalFileName(assetId, p.basename(originalFileName));
+      for (final entry in assetsJson) {
+        try {
+          final checksum = entry['checksum'] as String?;
+          final assetId = checksum != null ? byChecksum[checksum] : null;
+          if (assetId == null) continue;
+          // Der Reimport aus dem Backup-Ordner kennt nur den Pfad
+          // originals/{yyyy}/{mm}/{assetId}.ext und übernimmt dessen Basename
+          // (also die Asset-UUID) als originalFileName – hier den echten,
+          // von Menschen lesbaren Namen aus metadata.json wiederherstellen.
+          // p.basename() schützt vor einer präparierten metadata.json (z.B.
+          // aus einem fremden/geteilten Backup-Ordner), die einen Namen mit
+          // Pfad-Traversal ("../../...") enthält – der wiederhergestellte Name
+          // wird später beim Exportieren 1:1 als Ziel-Dateiname verwendet
+          // (siehe ExportService).
+          final originalFileName = entry['originalFileName'] as String?;
+          if (originalFileName != null && originalFileName.isNotEmpty) {
+            await _db.setOriginalFileName(
+                assetId, p.basename(originalFileName));
+          }
+          if (entry['isFavorite'] == true) {
+            await _db.setFavorite(assetId, true);
+          }
+          if (entry['description'] is String &&
+              (entry['description'] as String).isNotEmpty) {
+            await _db.setDescription(assetId, entry['description'] as String);
+          }
+          // Fehlen die Felder (Sicherung vor Fassung 2.3.0), bleibt es beim
+          // Vorgabewert - eine ältere Sicherung setzt also keine Null
+          // über etwas, das im Ziel schon steht.
+          if (entry['rating'] is int && entry['rating'] as int > 0) {
+            await _db.setRating(assetId, entry['rating'] as int);
+          }
+          if (entry['colorLabel'] is String) {
+            await _db.setColorLabel(assetId, entry['colorLabel'] as String);
+          }
+          // Beides zusammen oder gar nicht: Eine Koordinate ohne die andere
+          // ist kein Ort, sondern eine halbe Zahl.
+          if (entry['latitude'] is num && entry['longitude'] is num) {
+            await _db.setLocation(
+                assetId,
+                (entry['latitude'] as num).toDouble(),
+                (entry['longitude'] as num).toDouble());
+          }
+          if (entry['locationCity'] is String) {
+            await _db.setLocationNames(
+              assetId,
+              country: entry['locationCountry'] as String?,
+              state: entry['locationState'] as String?,
+              city: entry['locationCity'] as String,
+            );
+          }
+          // Fehlt 'kiTags' (Sicherung vor Fassung 56), bleibt die Menge
+          // leer und alles kommt als Handvergabe zurück: Lieber ein
+          // Schlagwort zu viel behalten als eines zu Unrecht löschbar
+          // machen.
+          final kiTags = {
+            for (final t in (entry['kiTags'] as List<dynamic>? ?? []))
+              if (t is String) t,
+          };
+          for (final tag in (entry['tags'] as List<dynamic>? ?? [])) {
+            await _db.tagAsset(assetId, tag as String,
+                quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand);
+          }
+        } catch (e) {
+          debugPrint(
+              'Metadaten-Eintrag konnte nicht angewendet werden, überspringe: $e');
         }
-        if (entry['isFavorite'] == true) {
-          await _db.setFavorite(assetId, true);
-        }
-        if (entry['description'] is String && (entry['description'] as String).isNotEmpty) {
-          await _db.setDescription(assetId, entry['description'] as String);
-        }
-        // Fehlen die Felder (Sicherung vor Fassung 2.3.0), bleibt es beim
-        // Vorgabewert - eine ältere Sicherung setzt also keine Null
-        // über etwas, das im Ziel schon steht.
-        if (entry['rating'] is int && entry['rating'] as int > 0) {
-          await _db.setRating(assetId, entry['rating'] as int);
-        }
-        if (entry['colorLabel'] is String) {
-          await _db.setColorLabel(assetId, entry['colorLabel'] as String);
-        }
-        // Beides zusammen oder gar nicht: Eine Koordinate ohne die andere
-        // ist kein Ort, sondern eine halbe Zahl.
-        if (entry['latitude'] is num && entry['longitude'] is num) {
-          await _db.setLocation(assetId, (entry['latitude'] as num).toDouble(),
-              (entry['longitude'] as num).toDouble());
-        }
-        if (entry['locationCity'] is String) {
-          await _db.setLocationNames(
-            assetId,
-            country: entry['locationCountry'] as String?,
-            state: entry['locationState'] as String?,
-            city: entry['locationCity'] as String,
-          );
-        }
-        // Fehlt 'kiTags' (Sicherung vor Fassung 56), bleibt die Menge
-        // leer und alles kommt als Handvergabe zurück: Lieber ein
-        // Schlagwort zu viel behalten als eines zu Unrecht löschbar
-        // machen.
-        final kiTags = {
-          for (final t in (entry['kiTags'] as List<dynamic>? ?? []))
-            if (t is String) t,
-        };
-        for (final tag in (entry['tags'] as List<dynamic>? ?? [])) {
-          await _db.tagAsset(assetId, tag as String,
-              quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand);
-        }
-      } catch (e) {
-        debugPrint('Metadaten-Eintrag konnte nicht angewendet werden, überspringe: $e');
       }
-    }
     });
 
-    final albumsJson = (content['albums'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final albumsJson = (content['albums'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>();
     for (final albumEntry in albumsJson) {
       try {
-        final name = albumEntry['name'] as String? ?? 'Wiederhergestelltes Album';
-        final checksums = (albumEntry['assetChecksums'] as List<dynamic>? ?? []).cast<String>();
-        final assetIds = checksums.map((c) => byChecksum[c]).whereType<String>().toList();
+        final name =
+            albumEntry['name'] as String? ?? 'Wiederhergestelltes Album';
+        final checksums = (albumEntry['assetChecksums'] as List<dynamic>? ?? [])
+            .cast<String>();
+        final assetIds =
+            checksums.map((c) => byChecksum[c]).whereType<String>().toList();
         if (assetIds.isEmpty) continue;
         final albumId = const Uuid().v4();
-        await _db.createAlbum(AlbumsCompanion.insert(id: albumId, name: name, createdAt: DateTime.now()));
+        await _db.createAlbum(AlbumsCompanion.insert(
+            id: albumId, name: name, createdAt: DateTime.now()));
         await _db.addAssetsToAlbum(albumId, assetIds);
       } catch (e) {
-        debugPrint('Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e');
+        debugPrint(
+            'Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e');
       }
     }
   }
@@ -1046,6 +1106,72 @@ class BackupService {
   // -----------------------------------------------------------------------
 
   static const _autoBackupFolderName = 'PhotoVault-AutoBackup';
+  static const _autoBackupGenerationsFolder = 'generations';
+
+  /// Liest die vollständigen, intakten Wiederherstellungspunkte eines
+  /// automatischen Backups. Unvollständige Ordner (etwa nach einem Abbruch)
+  /// werden nicht angeboten und können daher nicht versehentlich gewählt
+  /// werden.
+  Future<List<BackupGeneration>> autoBackupGenerations(
+      String backupRootPath) async {
+    final root = Directory(backupRootPath);
+    final generations =
+        Directory(p.join(root.path, _autoBackupGenerationsFolder));
+    if (!await generations.exists()) return const [];
+
+    final result = <BackupGeneration>[];
+    await for (final entry in generations.list(followLinks: false)) {
+      if (entry is! Directory) continue;
+      final manifest = File(p.join(entry.path, 'generation.json'));
+      final snapshot = File(p.join(entry.path, 'library.sqlite.enc'));
+      if (!await manifest.exists() || !await snapshot.exists()) continue;
+      try {
+        final value = jsonDecode(await manifest.readAsString()) as Map;
+        if (value['format'] != 1 || value['createdAt'] is! String) continue;
+        final createdAt = DateTime.tryParse(value['createdAt'] as String);
+        if (createdAt == null) continue;
+        result.add(BackupGeneration(
+          id: p.basename(entry.path),
+          createdAt: createdAt.toLocal(),
+          snapshotPath: snapshot.path,
+        ));
+      } on FormatException {
+        // Ein fremder oder unvollständiger Ordner ist keine Generation.
+      }
+    }
+    result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return result;
+  }
+
+  /// Liefert entweder den aktuellen Stand oder einen validierten Punkt aus
+  /// genau diesem Auto-Backup. Der öffentliche Parameter darf niemals zum
+  /// Lesen einer beliebigen Datei außerhalb des gewählten Backup-Ordners
+  /// führen.
+  Future<File> _restoreSnapshot(
+      String backupRootPath, String? generationSnapshotPath) async {
+    if (generationSnapshotPath == null) {
+      return File(p.join(backupRootPath, 'library.sqlite.enc'));
+    }
+    final root = p.normalize(p.absolute(backupRootPath));
+    final generations = p.normalize(p.join(root, _autoBackupGenerationsFolder));
+    final candidate = p.normalize(p.absolute(generationSnapshotPath));
+    final generation = p.dirname(candidate);
+    if (p.basename(candidate) != 'library.sqlite.enc' ||
+        !p.isWithin(generations, candidate) ||
+        p.dirname(generation) != generations ||
+        !await File(p.join(generation, 'generation.json')).exists() ||
+        !await File(candidate).exists()) {
+      throw const FormatException('Ungültiger Wiederherstellungspunkt.');
+    }
+    return File(candidate);
+  }
+
+  /// Sieben Generationen decken bei täglichem Standardintervall eine Woche
+  /// ab, ohne die (potenziell große) Datenbank auf Dauer unbeschränkt zu
+  /// vervielfachen. Die Originale selbst liegen weiterhin genau einmal im
+  /// inhaltsadressierten verschlüsselten Datenspeicher.
+  @visibleForTesting
+  static const autoBackupGenerationsToKeep = 7;
 
   /// Automatisches, verschlüsseltes Backup – läuft nur, während die App
   /// offen ist (kein Hintergrunddienst, siehe LibraryState.runAutoBackupIfDue).
@@ -1061,9 +1187,10 @@ class BackupService {
   /// WICHTIG: löscht am Zielort NIE etwas. Ein automatisches Backup, das
   /// lokale Löschungen nachvollzieht, wäre kein verlässliches Sicherheitsnetz
   /// mehr (eine versehentliche oder böswillige lokale Löschung würde sonst
-  /// das Backup mitreißen). Dateien werden nur ergänzt, der DB-Schnappschuss
-  /// nur ersetzt (er beschreibt ohnehin immer den kompletten aktuellen
-  /// Zustand, nicht nur eine Differenz).
+  /// das Backup mitreißen). Dateien werden nur ergänzt. Neben dem aktuellen
+  /// Datenbank-Schnappschuss bleiben die sieben jüngsten verschlüsselten
+  /// Generationen erhalten; aufgeräumt werden ausschließlich ältere,
+  /// von Photo Vault selbst markierte Schnappschuss-Verzeichnisse.
   /// [maxBytesPerRun] siehe [performBackup] – hier besonders wichtig, weil
   /// das automatische Backup typischerweise auf einen Cloud-Sync-Ordner
   /// zeigt und ungefragt im Hintergrund läuft.
@@ -1072,11 +1199,13 @@ class BackupService {
     SecretKey encryptionKey, {
     int maxBytesPerRun = 0,
   }) async* {
-    final backupRoot = Directory(p.join(destinationRootPath, _autoBackupFolderName));
+    final backupRoot =
+        Directory(p.join(destinationRootPath, _autoBackupFolderName));
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
 
     await _writeEncryptedDatabaseSnapshot(backupRoot, encryptionKey);
+    await _archiveAutoBackupGeneration(backupRoot);
     await _writeKeyEnvelope(backupRoot);
 
     final staging = _festesZwischenlager ??
@@ -1103,8 +1232,11 @@ class BackupService {
           if (await source.exists()) {
             // Automatische Backups sind immer verschlüsselt – daher stets die
             // flache, namenlose Ablage (siehe VerschluesselteNamen).
-            final target = File(p.join(backupRoot.path, VerschluesselteNamen.ordner,
-                await VerschluesselteNamen.fuerPruefsumme(asset.checksum, encryptionKey)));
+            final target = File(p.join(
+                backupRoot.path,
+                VerschluesselteNamen.ordner,
+                await VerschluesselteNamen.fuerPruefsumme(
+                    asset.checksum, encryptionKey)));
             await target.parent.create(recursive: true);
             await _ueberZwischendatei(
               zwischenlager: staging,
@@ -1122,7 +1254,8 @@ class BackupService {
               'fehlgeschlagen: $e');
         }
         done++;
-        yield BackupProgress(done, pending.length, currentFile: asset.originalFileName);
+        yield BackupProgress(done, pending.length,
+            currentFile: asset.originalFileName);
       }
     } finally {
       if (_festesZwischenlager == null) {
@@ -1148,7 +1281,8 @@ class BackupService {
           grenzeOffen: pending.length - done);
     }
     if (fehlgeschlagen > 0) {
-      yield BackupProgress(done, pending.length, fehlgeschlagen: fehlgeschlagen);
+      yield BackupProgress(done, pending.length,
+          fehlgeschlagen: fehlgeschlagen);
     }
   }
 
@@ -1157,7 +1291,8 @@ class BackupService {
   /// gleichzeitig weiterschreibt, anders als ein simples Kopieren der
   /// `.sqlite`-Datei, das einen halbgeschriebenen Zustand einfangen könnte)
   /// und verschlüsselt ihn anschließend.
-  Future<void> _writeEncryptedDatabaseSnapshot(Directory backupRoot, SecretKey encryptionKey) async {
+  Future<void> _writeEncryptedDatabaseSnapshot(
+      Directory backupRoot, SecretKey encryptionKey) async {
     final snapshotPath = p.join(
       Directory.systemTemp.path,
       'photovault_db_snapshot_${_uuid.v4()}.sqlite',
@@ -1170,6 +1305,46 @@ class BackupService {
       await VaultCrypto.encryptFile(snapshotFile, target, encryptionKey);
     } finally {
       if (await snapshotFile.exists()) await snapshotFile.delete();
+    }
+  }
+
+  /// Bewahrt den gerade geschriebenen, vollständigen Datenbankstand als
+  /// Generation auf. Die verschlüsselten Originale werden nicht dupliziert:
+  /// sie ändern sich nie und liegen bereits im gemeinsamen `data/`-Ordner.
+  /// Eine Generation besteht daher nur aus dem Datenbank-Schnappschuss und
+  /// verweist logisch auf diesen gemeinsamen, inhaltsadressierten Bestand.
+  Future<void> _archiveAutoBackupGeneration(Directory backupRoot) async {
+    final current = File(p.join(backupRoot.path, 'library.sqlite.enc'));
+    if (!await current.exists()) return;
+
+    final generations =
+        Directory(p.join(backupRoot.path, _autoBackupGenerationsFolder));
+    final generation = Directory(p.join(
+      generations.path,
+      '${DateTime.now().toUtc().toIso8601String().replaceAll(':', '')}_'
+      '${(++_autoGenerationSerial).toString().padLeft(8, '0')}_${_uuid.v4()}',
+    ));
+    await generation.create(recursive: true);
+    await current.copy(p.join(generation.path, 'library.sqlite.enc'));
+    await File(p.join(generation.path, 'generation.json')).writeAsString(
+      jsonEncode({
+        'format': 1,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'usesSharedEncryptedOriginals': true,
+      }),
+    );
+
+    final ownGenerations = <Directory>[];
+    await for (final entry in generations.list(followLinks: false)) {
+      if (entry is Directory &&
+          await File(p.join(entry.path, 'generation.json')).exists()) {
+        ownGenerations.add(entry);
+      }
+    }
+    ownGenerations.sort((a, b) => a.path.compareTo(b.path));
+    while (ownGenerations.length > autoBackupGenerationsToKeep) {
+      final oldest = ownGenerations.removeAt(0);
+      await oldest.delete(recursive: true);
     }
   }
 }
@@ -1192,7 +1367,8 @@ class VerschluesselteNamen {
   /// Unterordner für die verschlüsselten Dateien.
   static const ordner = 'data';
 
-  static Future<String> fuerPruefsumme(String pruefsumme, SecretKey schluessel) async {
+  static Future<String> fuerPruefsumme(
+      String pruefsumme, SecretKey schluessel) async {
     final mac = await Hmac.sha256().calculateMac(
       utf8.encode(pruefsumme),
       secretKey: schluessel,

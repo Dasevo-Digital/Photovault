@@ -17,14 +17,18 @@ import 'package:photo_vault/state/library_state.dart';
 /// Datenbank-Schnappschuss, kopiert nur neue Dateien und löscht am Zielort
 /// nie etwas.
 void main() {
-  test('verschlüsseltes manuelles Backup lässt sich nur mit der Passphrase wiederherstellen', () async {
-    final tempRoot = Directory.systemTemp.createTempSync('photo_vault_backup_encryption_test_');
+  test(
+      'verschlüsseltes manuelles Backup lässt sich nur mit der Passphrase wiederherstellen',
+      () async {
+    final tempRoot = Directory.systemTemp
+        .createTempSync('photo_vault_backup_encryption_test_');
     addTearDown(() => tempRoot.deleteSync(recursive: true));
 
     // --- Quell-Bibliothek mit eingerichteter Backup-Passphrase ---
     final sourceDb = AppDatabase(NativeDatabase.memory());
     addTearDown(sourceDb.close);
-    final sourcePaths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'source_library')));
+    final sourcePaths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'source_library')));
     final sourceImport = ImportService(sourceDb, sourcePaths);
     final sourceLibrary = LibraryState()
       ..db = sourceDb
@@ -32,14 +36,17 @@ void main() {
       ..backupService = BackupService(sourceDb, sourcePaths);
 
     final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync();
-    final photo = File(p.join(incoming.path, 'privat.jpg'))..writeAsBytesSync(List.generate(5000, (i) => i % 256));
+    final photo = File(p.join(incoming.path, 'privat.jpg'))
+      ..writeAsBytesSync(List.generate(5000, (i) => i % 256));
     final result = await sourceImport.importFile(photo.path);
     expect(result.outcome, ImportOutcome.imported);
 
     await sourceLibrary.setupBackupPassphrase('korrektes-passwort');
 
     final backupDestination = Directory(p.join(tempRoot.path, 'backup_target'));
-    await sourceLibrary.runManualBackup(backupDestination.path, encrypt: true).drain<void>();
+    await sourceLibrary
+        .runManualBackup(backupDestination.path, encrypt: true)
+        .drain<void>();
 
     final backupRoot = p.join(backupDestination.path, 'PhotoVault-Backup');
     final keyFile = File(p.join(backupRoot, 'vault.key'));
@@ -50,44 +57,58 @@ void main() {
     // endungslosen Namen (siehe VerschluesselteNamen) – gesucht wird deshalb
     // dort statt unter originals/.
     final datenDir = Directory(p.join(backupRoot, 'data'));
-    final backedUpFiles = await datenDir.list(recursive: true).where((e) => e is File).toList();
+    final backedUpFiles =
+        await datenDir.list(recursive: true).where((e) => e is File).toList();
     expect(backedUpFiles, hasLength(1));
     final backedUpBytes = await File(backedUpFiles.single.path).readAsBytes();
     expect(backedUpBytes, isNot(equals(await photo.readAsBytes())));
     // metadata.json ist ebenfalls kein lesbares JSON mehr.
-    final metadataBytes = await File(p.join(backupRoot, 'metadata.json')).readAsBytes();
+    final metadataBytes =
+        await File(p.join(backupRoot, 'metadata.json')).readAsBytes();
     expect(String.fromCharCodes(metadataBytes.take(1)), isNot('{'));
 
     // --- Restore auf einem KOMPLETT anderen "Rechner": frische, leere DB,
     // kein Zugriff auf sourceDb/sourceLibrary, nur Backup-Ordner + Passphrase.
     final targetDb = AppDatabase(NativeDatabase.memory());
     addTearDown(targetDb.close);
-    final targetPaths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'target_library')));
+    final targetPaths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'target_library')));
     final targetImport = ImportService(targetDb, targetPaths);
     final targetBackup = BackupService(targetDb, targetPaths);
 
     // Falscher Passphrase schlägt fehl.
     await expectLater(
-      targetBackup.restoreFromBackup(backupRoot, targetImport, passphrase: 'falsches-passwort').drain<void>(),
+      targetBackup
+          .restoreFromBackup(backupRoot, targetImport,
+              passphrase: 'falsches-passwort')
+          .drain<void>(),
       throwsA(anything),
     );
     expect(await targetDb.select(targetDb.assets).get(), isEmpty);
 
     // Richtige Passphrase stellt die Originaldatei unverändert wieder her.
-    await targetBackup.restoreFromBackup(backupRoot, targetImport, passphrase: 'korrektes-passwort').drain<void>();
+    await targetBackup
+        .restoreFromBackup(backupRoot, targetImport,
+            passphrase: 'korrektes-passwort')
+        .drain<void>();
     final restoredAssets = await targetDb.select(targetDb.assets).get();
     expect(restoredAssets, hasLength(1));
-    final restoredFile = targetPaths.absolute(restoredAssets.single.relativePath);
+    final restoredFile =
+        targetPaths.absolute(restoredAssets.single.relativePath);
     expect(await restoredFile.readAsBytes(), equals(await photo.readAsBytes()));
   });
 
-  test('automatisches Backup sichert einen konsistenten DB-Schnappschuss, kopiert nur Neues und löscht nie', () async {
-    final tempRoot = Directory.systemTemp.createTempSync('photo_vault_auto_backup_test_');
+  test(
+      'automatisches Backup sichert einen konsistenten DB-Schnappschuss, kopiert nur Neues und löscht nie',
+      () async {
+    final tempRoot =
+        Directory.systemTemp.createTempSync('photo_vault_auto_backup_test_');
     addTearDown(() => tempRoot.deleteSync(recursive: true));
 
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'library')));
     final importService = ImportService(db, paths);
     final library = LibraryState()
       ..db = db
@@ -95,7 +116,8 @@ void main() {
       ..backupService = BackupService(db, paths);
 
     final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync();
-    final photo1 = File(p.join(incoming.path, 'a.jpg'))..writeAsBytesSync([1, 2, 3]);
+    final photo1 = File(p.join(incoming.path, 'a.jpg'))
+      ..writeAsBytesSync([1, 2, 3]);
     await importService.importFile(photo1.path);
 
     await library.setupBackupPassphrase('auto-backup-passwort');
@@ -103,7 +125,8 @@ void main() {
 
     await library.runAutoBackupNow(destination.path).drain<void>();
 
-    final backupRoot = Directory(p.join(destination.path, 'PhotoVault-AutoBackup'));
+    final backupRoot =
+        Directory(p.join(destination.path, 'PhotoVault-AutoBackup'));
     final dbSnapshotEnc = File(p.join(backupRoot.path, 'library.sqlite.enc'));
     expect(await dbSnapshotEnc.exists(), isTrue);
 
@@ -115,7 +138,8 @@ void main() {
       nonce: (await db.backupSettingsRow())!.wrappedMasterKeyNonce!,
       wrapped: (await db.backupSettingsRow())!.wrappedMasterKey!,
     );
-    final decryptedSnapshot = File(p.join(tempRoot.path, 'decrypted_snapshot.sqlite'));
+    final decryptedSnapshot =
+        File(p.join(tempRoot.path, 'decrypted_snapshot.sqlite'));
     await VaultCrypto.decryptFile(dbSnapshotEnc, decryptedSnapshot, key);
     final snapshotDb = AppDatabase(NativeDatabase(decryptedSnapshot));
     final snapshotAssets = await snapshotDb.select(snapshotDb.assets).get();
@@ -139,7 +163,8 @@ void main() {
 
     // Ein neu importiertes Foto wird beim nächsten Lauf ergänzt, das erste
     // wird nicht erneut kopiert (eigenes Tracking-Flag: autoBackedUp).
-    final photo2 = File(p.join(incoming.path, 'b.jpg'))..writeAsBytesSync([4, 5, 6]);
+    final photo2 = File(p.join(incoming.path, 'b.jpg'))
+      ..writeAsBytesSync([4, 5, 6]);
     await importService.importFile(photo2.path);
     var thirdRunTotal = 0;
     await for (final p in library.runAutoBackupNow(destination.path)) {
@@ -147,20 +172,71 @@ void main() {
     }
     expect(thirdRunTotal, 1);
     expect(await canary.exists(), isTrue);
+
+    final generations = Directory(p.join(backupRoot.path, 'generations'));
+    final snapshots = await generations
+        .list()
+        .where((entry) => entry is Directory)
+        .cast<Directory>()
+        .toList();
+    expect(snapshots, hasLength(3));
+    for (final generation in snapshots) {
+      expect(await File(p.join(generation.path, 'library.sqlite.enc')).exists(),
+          isTrue);
+      expect(await File(p.join(generation.path, 'generation.json')).exists(),
+          isTrue);
+    }
+    final auswaehlbar = await library.backupService
+        .autoBackupGenerations(backupRoot.path);
+    expect(auswaehlbar, hasLength(3));
+    expect(auswaehlbar.map((p) => p.createdAt), orderedEquals(
+        auswaehlbar.map((p) => p.createdAt).toList()
+          ..sort((a, b) => b.compareTo(a))));
+    expect(File(auswaehlbar.first.snapshotPath).exists(), completion(isTrue));
+
+    // Ein Pfad außerhalb der Generationen wird nie als Schnappschuss
+    // akzeptiert, auch wenn er auf eine existierende Datei zeigt.
+    await expectLater(
+      library.backupService
+          .restoreFromBackup(backupRoot.path, importService,
+              passphrase: 'auto-backup-passwort',
+              generationSnapshotPath: photo1.path)
+          .drain<void>(),
+      throwsA(isA<FormatException>()),
+    );
+
+    // Die Generationen sind begrenzt, doch ausschließlich innerhalb des
+    // von Photo Vault selbst markierten Schnappschuss-Ordners. Der fremde
+    // Wächter im gemeinsamen Originalspeicher bleibt dabei unangetastet.
+    for (var i = 0; i < 5; i++) {
+      await library.runAutoBackupNow(destination.path).drain<void>();
+    }
+    final retained = await generations
+        .list()
+        .where((entry) => entry is Directory)
+        .cast<Directory>()
+        .toList();
+    expect(retained, hasLength(BackupService.autoBackupGenerationsToKeep));
+    expect(await canary.exists(), isTrue);
   });
 
-  test('manuelles und automatisches Backup stören sich nicht gegenseitig (getrennte Tracking-Flags)', () async {
-    final tempRoot = Directory.systemTemp.createTempSync('photo_vault_backup_flags_test_');
+  test(
+      'manuelles und automatisches Backup stören sich nicht gegenseitig (getrennte Tracking-Flags)',
+      () async {
+    final tempRoot =
+        Directory.systemTemp.createTempSync('photo_vault_backup_flags_test_');
     addTearDown(() => tempRoot.deleteSync(recursive: true));
 
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'library')));
     final importService = ImportService(db, paths);
     final backupService = BackupService(db, paths);
 
     final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync();
-    final photo = File(p.join(incoming.path, 'a.jpg'))..writeAsBytesSync([1, 2, 3]);
+    final photo = File(p.join(incoming.path, 'a.jpg'))
+      ..writeAsBytesSync([1, 2, 3]);
     await importService.importFile(photo.path);
 
     final manualDestination = Directory(p.join(tempRoot.path, 'manual_target'));
