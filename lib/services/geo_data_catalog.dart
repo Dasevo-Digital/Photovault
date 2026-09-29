@@ -17,7 +17,12 @@
 class GeoDataFile {
   final String fileName;
   final String url;
-  const GeoDataFile(this.fileName, this.url);
+
+  /// Harte Obergrenze gegen einen fehlerhaften oder missbräuchlich großen
+  /// Download. Der Datensatz darf wachsen; die Grenzen liegen deshalb weit
+  /// über den heutigen Größen, begrenzen aber Platte und Arbeitsspeicher.
+  final int maxBytes;
+  const GeoDataFile(this.fileName, this.url, this.maxBytes);
 }
 
 class GeoDataCatalog {
@@ -30,9 +35,18 @@ class GeoDataCatalog {
   /// Zuordnung "nächstgelegene Stadt" ausreichend genau und mit ca. 10 MB
   /// entpackt deutlich kleiner als der volle Datensatz (alle Orte).
   static const files = [
-    GeoDataFile(citiesZipFileName, 'https://download.geonames.org/export/dump/cities1000.zip'),
-    GeoDataFile(admin1FileName, 'https://download.geonames.org/export/dump/admin1CodesASCII.txt'),
-    GeoDataFile(countryFileName, 'https://download.geonames.org/export/dump/countryInfo.txt'),
+    GeoDataFile(
+        citiesZipFileName,
+        'https://download.geonames.org/export/dump/cities1000.zip',
+        32 * 1024 * 1024),
+    GeoDataFile(
+        admin1FileName,
+        'https://download.geonames.org/export/dump/admin1CodesASCII.txt',
+        8 * 1024 * 1024),
+    GeoDataFile(
+        countryFileName,
+        'https://download.geonames.org/export/dump/countryInfo.txt',
+        4 * 1024 * 1024),
   ];
 
   static const license = 'CC BY 4.0';

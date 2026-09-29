@@ -5931,6 +5931,17 @@ class AppDatabase extends _$AppDatabase {
             tilesDone: Value(tilesDone), tilesTotal: Value(tilesTotal)),
       );
 
+  /// Setzt einen durch neue Benutzereingabe angehaltenen Auftrag an den
+  /// Anfang seines nächsten vollständigen Durchgangs zurück. Teilkacheln
+  /// sind bewusst nicht wiederverwendbar: Erst das gesamte Bild ist ein
+  /// gültiges Restaurierungsergebnis.
+  Future<void> requeueRestoreJob(String id) async {
+    await transaction(() async {
+      await markRestoreJobStatus(id, 'queued');
+      await updateRestoreJobProgress(id, 0, 0);
+    });
+  }
+
   Future<void> markRestoreJobStatus(String id, String status,
           {String? errorMessage}) =>
       (update(restoreJobs)..where((t) => t.id.equals(id))).write(
@@ -9423,42 +9434,7 @@ class AppDatabase extends _$AppDatabase {
     return out;
   }
 
-  /// Die Kennungen der aktuell suchbaren Einbettungen. Diese schlanke
-  /// Abfrage validiert den persistenten ANN-Index ohne die Vektor-Blobs aus
-  /// SQLite zu laden.
-  Future<List<String>> embeddingAssetIds() async {
-    final query = selectOnly(imageEmbeddings).join([
-      innerJoin(assets, assets.id.equalsExp(imageEmbeddings.assetId)),
-    ])
-      ..addColumns([imageEmbeddings.assetId])
-      ..where(assets.isTrashed.equals(false) & assets.isLocked.equals(false))
-      ..orderBy([OrderingTerm.asc(imageEmbeddings.assetId)]);
-    return [
-      for (final row in await query.get()) row.read(imageEmbeddings.assetId)!
-    ];
-  }
 
-  /// Lädt nur die vom ANN-Vorfilter benannten Vektoren. Die Rangfolge bleibt
-  /// damit exakt, ohne den gesamten Embedding-Bestand materialisieren zu
-  /// müssen.
-  Future<Map<String, Float32List>> embeddingsForAssetIds(
-      Iterable<String> ids) async {
-    final wanted = ids.toSet();
-    if (wanted.isEmpty) return const {};
-    final query = selectOnly(imageEmbeddings).join([
-      innerJoin(assets, assets.id.equalsExp(imageEmbeddings.assetId)),
-    ])
-      ..addColumns([imageEmbeddings.assetId, imageEmbeddings.vector])
-      ..where(assets.isTrashed.equals(false) &
-          assets.isLocked.equals(false) &
-          imageEmbeddings.assetId.isIn(wanted));
-    final out = <String, Float32List>{};
-    for (final row in await query.get()) {
-      out[row.read(imageEmbeddings.assetId)!] =
-          floatsFromEmbeddingBlob(row.read(imageEmbeddings.vector)!);
-    }
-    return out;
-  }
 
   // -----------------------------------------------------------------------
   // Backup

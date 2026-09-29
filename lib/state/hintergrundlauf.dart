@@ -176,6 +176,11 @@ class Hintergrundlauf {
   /// Arbeit weg.
   bool get offen => !beendet;
 
+  /// Nur ein vollständig und ohne Fehler beendeter Lauf darf die bisherige
+  /// offene Zahl als abgearbeitet quittieren. Abbruch und Fehler behalten
+  /// die Restmenge sichtbar, damit keine Arbeit still verschwindet.
+  bool get erfolgreich => beendet && !abgebrochen && fehler == null;
+
   /// Anteil 0..1, oder `null` solange die Gesamtzahl noch nicht feststeht –
   /// dann zeigt die Oberfläche einen unbestimmten Balken statt eines
   /// Balkens, der bei 0 klebt.

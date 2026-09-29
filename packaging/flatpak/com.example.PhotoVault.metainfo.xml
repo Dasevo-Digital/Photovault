@@ -68,6 +68,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.18.0" date="2026-09-24">
+      <description>
+        <p>Contact sheets no longer carry the EXIF of the photos they show. The visible sheet only ever listed number and date, but the embedded images still held camera, model and GPS coordinates - on a grown library 892 of 8144 previews carry GPS, and a contact sheet is made to be printed and handed on.</p>
+        <p>An expiry on a shared package now uses its own package format, so a version that does not know the deadline refuses the package instead of ignoring it. The dialog also says what the deadline is worth: it stops an honest recipient, not someone who keeps the package and sets their clock back.</p>
+        <p>Similarity search is exact again. An approximate prefilter returned only 39-59 percent of the true best matches while the result list still looked full; it could not be tuned to both high recall and a small candidate set, so it is gone.</p>
+        <p>Restore points: an automatic backup keeps seven encrypted database states, and a restore can pick one of them instead of only the newest.</p>
+        <p>A printable PDF contact sheet, a year overview as an entry point into the timeline, a hint when AI model weights changed, and a family tree that keeps the two family lines on separate sides of the couple in the middle.</p>
+      </description>
+    </release>
     <release version="3.15.0" date="2026-09-15">
       <description>
         <p>Map tiles are fetched for the rounded zoom level, so a swipe across ten levels asked for ten full screens of tiles - measured 4252 loads for the ~150 that end up visible, with the one tile you want queued behind thousands nobody wants any more. Tile loading is now throttled to five times a second while zooming; panning is unchanged.</p>

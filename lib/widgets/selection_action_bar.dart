@@ -809,10 +809,15 @@ Future<void> runBatchExport(
       dialogTitle: AppTexte.of(context).kontaktblattZiel,
       fileName: AppTexte.of(context).kontaktblattDateiname,
       type: FileType.custom,
-      allowedExtensions: const ['pdf'],
+      allowedExtensions: const [kontaktblattFormat],
     );
     if (path == null || !context.mounted) return;
-    final ziel = path.toLowerCase().endsWith('.pdf') ? path : '$path.pdf';
+    // Über `p.setExtension` statt zusammengesetzt: Das hängt die Endung
+    // nicht ein zweites Mal an, wenn der Dialog sie schon gesetzt hat,
+    // und behandelt einen Namen, der selbst einen Punkt enthält, richtig.
+    final ziel = p.extension(path).toLowerCase() == kontaktblattEndung
+        ? path
+        : p.setExtension(path, kontaktblattEndung);
     try {
       final result = await ContactSheetService(
         library.paths,

@@ -197,6 +197,11 @@ void main() {
 
       // „7 Gruppen" allein sagt nicht, ob dahinter 14 oder 60 Fotos stehen.
       expect(find.text('1 Gruppen mit 3 Fotos'), findsOneWidget);
+      // **Vor dem Abbau des Baums.** Der Einbettungsspeicher gibt sich
+      // nach drei Minuten Ruhe selbst frei, und an jeder Nutzung haengt
+      // dafuer eine Uhr. Der Pruefstand sieht nach dem Testkoerper nach
+      // stehengebliebenen Uhren – frueher als jedes `addTearDown`.
+      library.clearEmbeddingCaches();
     });
 
     testWidgets('„Übergehen" blendet die Gruppe aus und merkt sich das', (tester) async {
@@ -220,6 +225,11 @@ void main() {
       // ging es.
       await zeige(tester);
       expect(find.text('Keine Gruppen gefunden'), findsOneWidget);
+      // **Vor dem Abbau des Baums.** Der Einbettungsspeicher gibt sich
+      // nach drei Minuten Ruhe selbst frei, und an jeder Nutzung haengt
+      // dafuer eine Uhr. Der Pruefstand sieht nach dem Testkoerper nach
+      // stehengebliebenen Uhren – frueher als jedes `addTearDown`.
+      library.clearEmbeddingCaches();
     });
 
     testWidgets('die Meldung dazu verschwindet von selbst', (tester) async {
@@ -247,6 +257,11 @@ void main() {
       expect(melde.sichtbare, isEmpty);
       // Nachlesbar bleibt sie – das ist der Unterschied zur SnackBar.
       expect(melde.verlauf, hasLength(1));
+      // **Vor dem Abbau des Baums.** Der Einbettungsspeicher gibt sich
+      // nach drei Minuten Ruhe selbst frei, und an jeder Nutzung haengt
+      // dafuer eine Uhr. Der Pruefstand sieht nach dem Testkoerper nach
+      // stehengebliebenen Uhren – frueher als jedes `addTearDown`.
+      library.clearEmbeddingCaches();
     });
   });
 }

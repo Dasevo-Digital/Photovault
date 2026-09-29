@@ -222,7 +222,6 @@ void main() {
     // „Ungetaggte", „Starten", „Alle erneut", „Alle neu", „Alle Fotos" –
     // und welches wo, war von Karte zu Karte verschieden.
     const nurFehlende = [
-      'Text erkennen (OCR)',
       'Unschärfe',
       'Land/Bundesland/Stadt auflösen',
       'Kameradaten einlesen',
@@ -241,6 +240,7 @@ void main() {
       'Bildbeschreibungen',
       'CLIP-Embeddings',
       'KI-Tags',
+      'Text erkennen (OCR)',
       'Orte einlesen',
     ];
 

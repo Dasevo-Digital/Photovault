@@ -8,6 +8,14 @@ import '../db/database.dart';
 import 'export_service.dart';
 import 'storage_paths.dart';
 
+/// Das Dateiformat eines Kontaktblatts – als Kürzel und als Endung.
+///
+/// Hier und nicht im Bedienbaustein: Dort zählt jede Zeichenkette mit
+/// lesbaren Buchstaben als Oberflächentext, der übersetzt gehört
+/// (`keine_festen_texte_test`). Eine Dateiendung ist keiner.
+const kontaktblattFormat = 'pdf';
+const kontaktblattEndung = '.$kontaktblattFormat';
+
 /// Baut ein schlichtes, druckbares Kontaktblatt aus einer Auswahl.
 ///
 /// Es nutzt vorhandene JPEG-Vorschaubilder; bei fehlender Vorschau wird die
@@ -80,6 +88,25 @@ class ContactSheetService {
       final bytes = await bytesFuture;
       final decoded = img.decodeImage(bytes);
       if (decoded != null) {
+        // **Die Beipackzettel müssen weg, bevor das Bild ins PDF geht.**
+        //
+        // `decodeImage` liest die EXIF-Blöcke mit, `encodeJpg` schreibt
+        // sie wieder hinaus – das eingebettete JPEG war deshalb Byte für
+        // Byte so gross wie die Quelle und trug alles mit, was darin
+        // stand. Aus einem erzeugten Kontaktblatt liess sich das Bild
+        // herausschneiden und darin standen Kamera, Modell und die
+        // **GPS-Koordinaten der Aufnahme**.
+        //
+        // Das ist kein Randfall des Rückfalls auf die Originaldatei: An
+        // einer gewachsenen Bibliothek tragen **892 von 8144
+        // Vorschaubildern GPS** und 5538 eine Kameraangabe. Und ein
+        // Kontaktblatt ist genau das Blatt, das man ausdruckt und
+        // weitergibt – sichtbar stehen darauf nur Nummer und Datum.
+        //
+        // Eine frische [img.ExifData] statt `clear()`: Der Anhang kann
+        // ein eigenes Vorschaubild enthalten (`thumbnailData`), und das
+        // hinge sonst weiter daran.
+        decoded.exif = img.ExifData();
         return pw.MemoryImage(Uint8List.fromList(img.encodeJpg(decoded)));
       }
     } catch (_) {

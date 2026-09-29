@@ -32,7 +32,8 @@ import '../widgets/metadata_editor_dialog.dart';
 import '../widgets/panorama_360_view.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/video_playback.dart';
-import '../widgets/selection_action_bar.dart' show confirmDialog, runBatchPasteDevelop;
+import '../widgets/selection_action_bar.dart'
+    show confirmDialog, runBatchPasteDevelop;
 import 'develop_screen.dart';
 import 'face_review_screen.dart';
 import 'person_detail_screen.dart';
@@ -42,7 +43,14 @@ import 'video_trim_screen.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
 import '../services/meldungsdienst.dart';
 
-enum _ContextMenuAction { showInTimeline, showSimilar, editMetadata, faceReview, entwicklungEinfuegen, originalHerstellen }
+enum _ContextMenuAction {
+  showInTimeline,
+  showSimilar,
+  editMetadata,
+  faceReview,
+  entwicklungEinfuegen,
+  originalHerstellen
+}
 
 /// Obergrenze für die Dekodierauflösung (längste Kante) in der
 /// Vollbildansicht. Ohne diese Grenze dekodiert `Image`/`PhotoView` ein Foto
@@ -109,6 +117,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// sich an einem Referenz-Rechteck ausrichtet, statt einfach zentriert zu
   /// erscheinen.
   final GlobalKey _shareButtonKey = GlobalKey();
+
+  /// Der Kontext einer rechten Maustaste ist das sichtbare Foto, nicht das
+  /// ganze Fenster mitsamt AppBar und optionalem Informationspanel.
+  final GlobalKey _bildbereichKey = GlobalKey();
 
   /// Lokale, veränderliche Kopie von [AssetViewerScreen.assets] – nötig,
   /// damit Bearbeitungen in der Info-Ansicht (Datum/Ort/Beschreibung) und
@@ -245,12 +257,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
   }
 
-  void _toggleSlideshow() => _slideshowActive ? _stopSlideshow() : _startSlideshow();
+  void _toggleSlideshow() =>
+      _slideshowActive ? _stopSlideshow() : _startSlideshow();
 
   void _startSlideshow() {
     _slideshowTimer?.cancel();
     setState(() => _slideshowActive = true);
-    _slideshowTimer = Timer.periodic(_slideshowInterval, (_) => _advanceSlideshow());
+    _slideshowTimer =
+        Timer.periodic(_slideshowInterval, (_) => _advanceSlideshow());
   }
 
   void _stopSlideshow() {
@@ -264,9 +278,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Am Ende der Liste angekommen: von vorn beginnen statt abzubrechen.
   void _advanceSlideshow() {
     if (_hasNext) {
-      _controller.nextPage(duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      _controller.nextPage(
+          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
     } else {
-      _controller.animateToPage(0, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      _controller.animateToPage(0,
+          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
     }
   }
 
@@ -297,7 +313,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       _setColorLabel(farbe);
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.backspace || event.logicalKey == LogicalKeyboardKey.delete) {
+    if (event.logicalKey == LogicalKeyboardKey.backspace ||
+        event.logicalKey == LogicalKeyboardKey.delete) {
       if (widget.cullingMode) {
         _rejectCurrent();
       } else if (widget.onDelete != null) {
@@ -305,7 +322,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       }
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.keyF && widget.onToggleFavorite != null) {
+    if (event.logicalKey == LogicalKeyboardKey.keyF &&
+        widget.onToggleFavorite != null) {
       _toggleFavorite();
       return KeyEventResult.handled;
     }
@@ -349,7 +367,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// schließen – anders als der Maus-Lösch-Knopf, der bewusst schließt (eine
   /// gezielte Einzelaktion statt eines schnellen Tastatur-Durchlaufs).
   Future<void> _confirmAndDeleteCurrent() async {
-    final confirmed = await confirmDialog(context, AppTexte.of(context).loeschenTitel(1), AppTexte.of(context).loeschenHinweis(1));
+    final confirmed = await confirmDialog(
+        context,
+        AppTexte.of(context).loeschenTitel(1),
+        AppTexte.of(context).loeschenHinweis(1));
     if (!confirmed) return;
     await _removeCurrentAndAdvance();
   }
@@ -362,7 +383,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _confirmAndDelete() async {
     if (widget.onDelete == null) return;
-    final confirmed = await confirmDialog(context, AppTexte.of(context).loeschenTitel(1), AppTexte.of(context).loeschenHinweis(1));
+    final confirmed = await confirmDialog(
+        context,
+        AppTexte.of(context).loeschenTitel(1),
+        AppTexte.of(context).loeschenHinweis(1));
     if (!confirmed) return;
     await widget.onDelete!(_currentAsset);
   }
@@ -409,10 +433,24 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _showContextMenu(Offset globalPosition) async {
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final bildbereich =
+        _bildbereichKey.currentContext?.findRenderObject() as RenderBox?;
+    // `showMenu` erwartet Koordinaten des Overlays. Globale Koordinaten
+    // funktionierten zufällig im Vollfenster, lagen aber bei Panels und
+    // verschobenen Navigatoren unter anderen Bedienelementen.
+    final fotoRechteck = bildbereich == null
+        ? Offset.zero & overlay.size
+        : bildbereich.localToGlobal(Offset.zero, ancestor: overlay) &
+            bildbereich.size;
+    final lokal = overlay.globalToLocal(globalPosition);
+    final anker = Offset(
+      lokal.dx.clamp(fotoRechteck.left + 4, fotoRechteck.right - 4),
+      lokal.dy.clamp(fotoRechteck.top + 4, fotoRechteck.bottom - 4),
+    );
     final selected = await showMenu<_ContextMenuAction>(
       context: context,
       position: RelativeRect.fromRect(
-        globalPosition & const Size(1, 1),
+        anker & const Size(1, 1),
         Offset.zero & overlay.size,
       ),
       items: [
@@ -471,7 +509,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         // zu kennen – analog zum Ausschluss in ImageEditorScreen/
         // DevelopScreen) und nur, wenn eine LibraryState-Instanz vorliegt
         // (FaceReviewScreen braucht sie zwingend, siehe dessen Konstruktor).
-        if (widget.library != null && _currentAsset.type == 'IMAGE' && !_currentAsset.isLocked)
+        if (widget.library != null &&
+            _currentAsset.type == 'IMAGE' &&
+            !_currentAsset.isLocked)
           PopupMenuItem(
             value: _ContextMenuAction.faceReview,
             child: Row(children: [
@@ -493,7 +533,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       case _ContextMenuAction.faceReview:
         await _openFaceReview();
       case _ContextMenuAction.entwicklungEinfuegen:
-        await runBatchPasteDevelop(context, widget.library!, [_currentAsset.id]);
+        await runBatchPasteDevelop(
+            context, widget.library!, [_currentAsset.id]);
         await _refreshCurrentAsset();
       case _ContextMenuAction.originalHerstellen:
         await _originalWiederherstellen();
@@ -520,14 +561,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _editAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(MaterialPageRoute(
-      builder: (_) =>
-          ImageEditorScreen(
-            asset: asset,
-            db: widget.db,
-            paths: widget.paths,
-            modelsDir: widget.library?.modelsDir,
-          ),
+    final saved = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(MaterialPageRoute(
+      builder: (_) => ImageEditorScreen(
+        asset: asset,
+        db: widget.db,
+        paths: widget.paths,
+        modelsDir: widget.library?.modelsDir,
+      ),
     ));
     if (saved == true) await _refreshCurrentAsset();
   }
@@ -542,13 +583,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// denselben Kreis in der Palette.
   Future<void> _setColorLabel(String farbe) async {
     final aktuell = _currentAsset.colorLabel;
-    await widget.db.setColorLabel(_currentAsset.id, aktuell == farbe ? null : farbe);
+    await widget.db
+        .setColorLabel(_currentAsset.id, aktuell == farbe ? null : farbe);
     await _refreshCurrentAsset();
   }
 
   Future<void> _developAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(MaterialPageRoute(
+    final saved = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(MaterialPageRoute(
       builder: (_) => DevelopScreen(
         asset: asset,
         db: widget.db,
@@ -564,7 +607,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _trimVideoAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(MaterialPageRoute(
+    final saved = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(MaterialPageRoute(
       builder: (_) =>
           VideoTrimScreen(asset: asset, db: widget.db, paths: widget.paths),
     ));
@@ -588,7 +632,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         }
       }
       if (mounted) {
-        melde.erfolg(AppTexte.of(context).viewerExportiert(exported.join(', ')));
+        melde
+            .erfolg(AppTexte.of(context).viewerExportiert(exported.join(', ')));
       }
     } catch (e) {
       if (mounted) {
@@ -607,7 +652,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     final asset = _currentAsset;
     try {
       final exporter = ExportService(widget.paths, library: widget.library);
-      final files = <XFile>[XFile((await exporter.resolveSourceFile(asset)).path)];
+      final files = <XFile>[
+        XFile((await exporter.resolveSourceFile(asset)).path)
+      ];
       final names = <String>[asset.originalFileName];
       if (asset.linkedAssetId != null) {
         final partner = await widget.db.assetById(asset.linkedAssetId!);
@@ -616,8 +663,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           names.add(partner.originalFileName);
         }
       }
-      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-      final origin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
+      final box =
+          _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final origin =
+          box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
       await SharePlus.instance.share(ShareParams(
         files: files,
         fileNameOverrides: names,
@@ -670,8 +719,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           actions: [
             if (_assets.length > 1)
               IconButton(
-                icon: Icon(_slideshowActive ? Icons.pause_circle_outline : Icons.slideshow_outlined),
-                tooltip: _slideshowActive ? AppTexte.of(context).viewerDiaschauStoppen : AppTexte.of(context).viewerDiaschauStarten,
+                icon: Icon(_slideshowActive
+                    ? Icons.pause_circle_outline
+                    : Icons.slideshow_outlined),
+                tooltip: _slideshowActive
+                    ? AppTexte.of(context).viewerDiaschauStoppen
+                    : AppTexte.of(context).viewerDiaschauStarten,
                 onPressed: _toggleSlideshow,
               ),
             IconButton(
@@ -755,7 +808,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 icon: const Icon(Icons.auto_fix_high_outlined),
                 tooltip: AppTexte.of(context).viewerEntwicklungAnwendenLang,
                 onPressed: () async {
-                  await runBatchPasteDevelop(context, widget.library!, [asset.id]);
+                  await runBatchPasteDevelop(
+                      context, widget.library!, [asset.id]);
                   await _refreshCurrentAsset();
                 },
               ),
@@ -809,6 +863,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                     child: Stack(
                       children: [
                         GestureDetector(
+                          key: _bildbereichKey,
                           onSecondaryTapDown: (details) =>
                               _showContextMenu(details.globalPosition),
                           child: PageView.builder(
@@ -827,8 +882,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                                   library: widget.library,
                                   isCurrent: index == _currentIndex,
                                   gesichterZeigen: _gesichterZeigen,
-                                  gesichtAufziehen:
-                                      _gesichtAufziehen && index == _currentIndex,
+                                  gesichtAufziehen: _gesichtAufziehen &&
+                                      index == _currentIndex,
                                   beiGesichtAngelegt: () =>
                                       setState(() => _gesichtAufziehen = false),
                                   textZeigen: _textZeigen,
@@ -844,7 +899,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                             child: Center(
                                 child: _NavArrowButton(
                                     icon: Icons.chevron_left,
-                                    tooltip: AppTexte.of(context).viewerVorherigesFoto,
+                                    tooltip: AppTexte.of(context)
+                                        .viewerVorherigesFoto,
                                     onPressed: _goToPrevious)),
                           ),
                         if (_hasNext)
@@ -855,7 +911,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                             child: Center(
                                 child: _NavArrowButton(
                                     icon: Icons.chevron_right,
-                                    tooltip: AppTexte.of(context).viewerNaechstesFoto,
+                                    tooltip: AppTexte.of(context)
+                                        .viewerNaechstesFoto,
                                     onPressed: _goToNext)),
                           ),
                       ],
@@ -887,7 +944,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 current: _currentIndex + 1,
                 total: _assets.length,
                 focusPeakingEnabled: _focusPeakingEnabled,
-                onToggleFocusPeaking: () => setState(() => _focusPeakingEnabled = !_focusPeakingEnabled),
+                onToggleFocusPeaking: () => setState(
+                    () => _focusPeakingEnabled = !_focusPeakingEnabled),
                 gesichterUnscharf: _currentGesichterUnscharf,
               ),
             ] else if (_assets.length > 1) ...[
@@ -976,7 +1034,9 @@ class _CullingHintBar extends StatelessWidget {
               icon: Icon(
                 Icons.center_focus_strong,
                 size: 20,
-                color: focusPeakingEnabled ? Theme.of(context).colorScheme.primary : Colors.white70,
+                color: focusPeakingEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.white70,
               ),
               tooltip: AppTexte.of(context).viewerFokusPeaking,
               onPressed: onToggleFocusPeaking,
@@ -995,7 +1055,8 @@ class _NavArrowButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final String tooltip;
-  const _NavArrowButton({required this.icon, required this.onPressed, required this.tooltip});
+  const _NavArrowButton(
+      {required this.icon, required this.onPressed, required this.tooltip});
 
   @override
   Widget build(BuildContext context) {
@@ -1084,7 +1145,8 @@ class _FilmstripState extends State<_Filmstrip> {
       child: ListView.separated(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         itemCount: widget.assets.length,
         separatorBuilder: (_, __) => const SizedBox(width: _itemSpacing),
         itemBuilder: (context, index) {
@@ -1212,7 +1274,8 @@ class _AssetPageState extends State<_AssetPage> {
 
   /// Die gelesenen Textstellen dieses Fotos. Anders als die Gesichter
   /// kostet das keine Abfrage – sie stehen in der Asset-Zeile selbst.
-  late final List<Textstelle> _stellen = textstellenAusJson(widget.asset.ocrBoxen);
+  late final List<Textstelle> _stellen =
+      textstellenAusJson(widget.asset.ocrBoxen);
 
   /// Die Masse des angezeigten Bildes. Gebraucht, weil die Kästen als
   /// Anteile davon gespeichert sind – ohne sie liegt jeder Rahmen falsch.
@@ -1374,7 +1437,8 @@ class _AssetPageState extends State<_AssetPage> {
         suggestedPerson: vorschlag,
         title: AppTexte.of(context).viewerGesichtBenennen);
     if (wahl == null) return;
-    final id = wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
+    final id =
+        wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
     if (wahl.newName != null) {
       await widget.db
           .createPerson(PeopleCompanion.insert(id: id, name: wahl.newName!));
@@ -1411,10 +1475,11 @@ class _AssetPageState extends State<_AssetPage> {
         title: AppTexte.of(context).viewerGesichtNachtragen);
     if (wahl == null || !mounted) return;
 
-    final personId = wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
+    final personId =
+        wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
     if (wahl.newName != null) {
-      await widget.db
-          .createPerson(PeopleCompanion.insert(id: personId, name: wahl.newName!));
+      await widget.db.createPerson(
+          PeopleCompanion.insert(id: personId, name: wahl.newName!));
     }
 
     final datei = await _fileFuture;
@@ -1425,7 +1490,9 @@ class _AssetPageState extends State<_AssetPage> {
       kasten: kasten,
       personId: personId,
       beiEinbettungsfehler: (e) {
-        if (mounted) melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+        if (mounted) {
+          melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+        }
       },
     );
     if (!mounted) return;
@@ -1450,7 +1517,8 @@ class _AssetPageState extends State<_AssetPage> {
       return;
     }
     _focusPeakingDebounce?.cancel();
-    _focusPeakingDebounce = Timer(const Duration(milliseconds: 200), _computeFocusPeaking);
+    _focusPeakingDebounce =
+        Timer(const Duration(milliseconds: 200), _computeFocusPeaking);
   }
 
   Future<void> _computeFocusPeaking() async {
@@ -1459,7 +1527,11 @@ class _AssetPageState extends State<_AssetPage> {
       final file = await _fileFuture;
       final bytes = await file.readAsBytes();
       final overlay = await compute(computeFocusPeakingOverlay, bytes);
-      if (!mounted || widget.asset.id != requestedAssetId || !widget.focusPeakingEnabled) return;
+      if (!mounted ||
+          widget.asset.id != requestedAssetId ||
+          !widget.focusPeakingEnabled) {
+        return;
+      }
       setState(() => _focusPeakingOverlay = overlay);
     } catch (_) {
       // Overlay ist rein visuelles Extra – ein Fehler hier darf die
@@ -1502,13 +1574,16 @@ class _AssetPageState extends State<_AssetPage> {
                 child: Row(
                   children: [
                     _NavArrowButton(
-                      icon: isSphere ? Icons.panorama_horizontal : Icons.threed_rotation,
+                      icon: isSphere
+                          ? Icons.panorama_horizontal
+                          : Icons.threed_rotation,
                       tooltip: isSphere
                           ? AppTexte.of(context).viewerFlachesSchwenken
                           : AppTexte.of(context).viewerKugelSchwenken,
                       onPressed: () => setState(() {
-                        _panoramaMode =
-                            isSphere ? Panorama360Mode.flat : Panorama360Mode.sphere;
+                        _panoramaMode = isSphere
+                            ? Panorama360Mode.flat
+                            : Panorama360Mode.sphere;
                       }),
                     ),
                     const SizedBox(width: AppSpacing.xs),
@@ -1546,9 +1621,12 @@ class _AssetPageState extends State<_AssetPage> {
                 child: PhotoView(
                   imageProvider: begrenztesBild(file),
                   controller: _zoomsteuerung,
-                  backgroundDecoration: const BoxDecoration(color: Colors.black),
-                  initialScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
-                  minScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+                  backgroundDecoration:
+                      const BoxDecoration(color: Colors.black),
+                  initialScale:
+                      isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+                  minScale:
+                      isPanorama(asset) ? PhotoViewComputedScale.covered : null,
                 ),
               ),
               // Im Malmodus sagt die Fahne, was zu tun ist. Sie ersetzt die
@@ -1559,16 +1637,18 @@ class _AssetPageState extends State<_AssetPage> {
                   left: 0,
                   right: 0,
                   bottom: AppSpacing.md,
-                  child: Center(child: _Hinweisfahne(
-                      text: AppTexte.of(context).viewerAufziehenHinweis)),
+                  child: Center(
+                      child: _Hinweisfahne(
+                          text: AppTexte.of(context).viewerAufziehenHinweis)),
                 )
               else if (widget.gesichterZeigen && _gesichter.isEmpty)
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: AppSpacing.md,
-                  child: Center(child: _Hinweisfahne(
-                      text: AppTexte.of(context).viewerKeineGesichter)),
+                  child: Center(
+                      child: _Hinweisfahne(
+                          text: AppTexte.of(context).viewerKeineGesichter)),
                 ),
               // Zwei verschiedene Auskünfte, und der Unterschied trägt:
               // „kein Text im Bild" ist ein Ergebnis, „noch keine Stellen
@@ -1578,7 +1658,9 @@ class _AssetPageState extends State<_AssetPage> {
                 Positioned(
                   left: AppSpacing.md,
                   right: AppSpacing.md,
-                  bottom: widget.gesichterZeigen && _gesichter.isEmpty ? 56 : AppSpacing.md,
+                  bottom: widget.gesichterZeigen && _gesichter.isEmpty
+                      ? 56
+                      : AppSpacing.md,
                   child: Center(
                     child: _Hinweisfahne(
                       text: (widget.asset.ocrText ?? '').trim().isEmpty
@@ -1603,85 +1685,90 @@ class _AssetPageState extends State<_AssetPage> {
         return BildZoomGesten(
           steuerung: _zoomsteuerung,
           child: PhotoView.customChild(
-          controller: _zoomsteuerung,
-          backgroundDecoration: const BoxDecoration(color: Colors.black),
-          // Mit Rahmen ist das Kind genau das Bild – nur dann liegt ein
-          // Kasten bei 0,3 auch auf drei Zehnteln des Fotos und nicht auf
-          // drei Zehnteln des Fensters samt seiner schwarzen Ränder.
-          childSize: ueberlagert ? masse : null,
-          // Ohne das verschöbe der Zug das Bild, statt einen Rahmen zu
-          // malen: PhotoView greift dieselbe Geste ab.
-          disableGestures: malen,
-          initialScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
-          minScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
-          child: GestureDetector(
-            // `opaque` nur im Malmodus: Sonst schluckte diese Fläche die
-            // Tipps auf die Gesichtsrahmen darunter.
-            behavior: malen ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
-            onPanStart: malen
-                ? (d) => setState(() {
-                      _zugAnfang = d.localPosition;
-                      _zugJetzt = d.localPosition;
-                    })
-                : null,
-            onPanUpdate:
-                malen ? (d) => setState(() => _zugJetzt = d.localPosition) : null,
-            onPanEnd: malen
-                ? (_) {
-                    final a = _zugAnfang, b = _zugJetzt;
-                    if (a == null || b == null) return;
-                    // Die Umrechnung steht in [kastenAusZug] und nicht
-                    // hier: Sie ist die Umkehrung dessen, was
-                    // [Gesichtsrahmen] rechnet, und das gehört geprüft.
-                    unawaited(_rahmenFertig(kastenAusZug(a, b, masse)));
-                  }
-                : null,
-            child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Derselbe Deckel wie im Zweig ohne Überlagerung. Er
-              // fehlte hier: Die Fokus-Hervorhebung einzuschalten hob
-              // dasselbe Foto von 4096 Punkten auf seine volle Grösse –
-              // bei der breitesten Aufnahme der Prüfbibliothek von 64 MB
-              // auf 317 MB. Das Overlay selbst ist ohnehin begrenzt
-              // (siehe computeFocusPeakingOverlay).
-              Image(image: begrenztesBild(file), fit: BoxFit.contain),
-              if (overlay != null) Image.memory(overlay, fit: BoxFit.contain),
-              if (rahmen)
-                for (final gesicht in _gesichter)
-                  if (!gesicht.isIgnored)
-                    Gesichtsrahmen(
-                      gesicht: gesicht,
-                      personName: _gesichtsnamen[gesicht.personId],
-                      flaeche: masse,
-                      beiTipp: () => _gesichtAngetippt(gesicht),
-                    ),
-              if (textkaesten)
-                for (final stelle in _stellen)
-                  Textrahmen(
-                    stelle: stelle,
-                    flaeche: masse,
-                    beiTipp: _zeileKopieren,
-                  ),
-              // Der Rahmen, der gerade gezogen wird. Ohne ihn zöge man
-              // blind und sähe erst nach dem Loslassen, was man getroffen
-              // hat.
-              if (malen && _zugAnfang != null && _zugJetzt != null)
-                Positioned.fromRect(
-                  rect: Rect.fromPoints(_zugAnfang!, _zugJetzt!),
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.orangeAccent, width: 2),
-                        color: Colors.orangeAccent.withValues(alpha: 0.15),
+            controller: _zoomsteuerung,
+            backgroundDecoration: const BoxDecoration(color: Colors.black),
+            // Mit Rahmen ist das Kind genau das Bild – nur dann liegt ein
+            // Kasten bei 0,3 auch auf drei Zehnteln des Fotos und nicht auf
+            // drei Zehnteln des Fensters samt seiner schwarzen Ränder.
+            childSize: ueberlagert ? masse : null,
+            // Ohne das verschöbe der Zug das Bild, statt einen Rahmen zu
+            // malen: PhotoView greift dieselbe Geste ab.
+            disableGestures: malen,
+            initialScale:
+                isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+            minScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+            child: GestureDetector(
+              // `opaque` nur im Malmodus: Sonst schluckte diese Fläche die
+              // Tipps auf die Gesichtsrahmen darunter.
+              behavior:
+                  malen ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+              onPanStart: malen
+                  ? (d) => setState(() {
+                        _zugAnfang = d.localPosition;
+                        _zugJetzt = d.localPosition;
+                      })
+                  : null,
+              onPanUpdate: malen
+                  ? (d) => setState(() => _zugJetzt = d.localPosition)
+                  : null,
+              onPanEnd: malen
+                  ? (_) {
+                      final a = _zugAnfang, b = _zugJetzt;
+                      if (a == null || b == null) return;
+                      // Die Umrechnung steht in [kastenAusZug] und nicht
+                      // hier: Sie ist die Umkehrung dessen, was
+                      // [Gesichtsrahmen] rechnet, und das gehört geprüft.
+                      unawaited(_rahmenFertig(kastenAusZug(a, b, masse)));
+                    }
+                  : null,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Derselbe Deckel wie im Zweig ohne Überlagerung. Er
+                  // fehlte hier: Die Fokus-Hervorhebung einzuschalten hob
+                  // dasselbe Foto von 4096 Punkten auf seine volle Grösse –
+                  // bei der breitesten Aufnahme der Prüfbibliothek von 64 MB
+                  // auf 317 MB. Das Overlay selbst ist ohnehin begrenzt
+                  // (siehe computeFocusPeakingOverlay).
+                  Image(image: begrenztesBild(file), fit: BoxFit.contain),
+                  if (overlay != null)
+                    Image.memory(overlay, fit: BoxFit.contain),
+                  if (rahmen)
+                    for (final gesicht in _gesichter)
+                      if (!gesicht.isIgnored)
+                        Gesichtsrahmen(
+                          gesicht: gesicht,
+                          personName: _gesichtsnamen[gesicht.personId],
+                          flaeche: masse,
+                          beiTipp: () => _gesichtAngetippt(gesicht),
+                        ),
+                  if (textkaesten)
+                    for (final stelle in _stellen)
+                      Textrahmen(
+                        stelle: stelle,
+                        flaeche: masse,
+                        beiTipp: _zeileKopieren,
+                      ),
+                  // Der Rahmen, der gerade gezogen wird. Ohne ihn zöge man
+                  // blind und sähe erst nach dem Loslassen, was man getroffen
+                  // hat.
+                  if (malen && _zugAnfang != null && _zugJetzt != null)
+                    Positioned.fromRect(
+                      rect: begrenzterZug(_zugAnfang!, _zugJetzt!, masse),
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: Colors.orangeAccent, width: 2),
+                            color: Colors.orangeAccent.withValues(alpha: 0.15),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
             ),
           ),
-        ),
         );
       },
     );
@@ -1746,7 +1833,6 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
     _zoomsteuerung.dispose();
     super.dispose();
   }
-
 
   late final Future<AssetData?> _videoAssetFuture =
       widget.db.assetById(widget.videoAssetId);

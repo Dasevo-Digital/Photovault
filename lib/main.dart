@@ -149,10 +149,23 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 // zeigt: Eine Meldung, die beim Bildschirmwechsel
                 // verschwände, wäre keine – und ein Blatt, das sie
                 // verdeckte, auch nicht.
-                builder: (context, kind) => mitMeldungen(kind),
+                builder: (context, kind) => Listener(
+                  // Die Restaurierungswarteschlange läuft nur, wenn die
+                  // App wirklich unbenutzt ist. Pointer-Signale decken das
+                  // Mausrad/Trackpad ab; Bewegung deckt Ziehen und Scrollen
+                  // ab, ohne für jede Geste eigene Spezialwege zu brauchen.
+                  onPointerDown: (_) =>
+                      library.restoreQueue.noteUserInteraction(),
+                  onPointerMove: (_) =>
+                      library.restoreQueue.noteUserInteraction(),
+                  onPointerSignal: (_) =>
+                      library.restoreQueue.noteUserInteraction(),
+                  child: mitMeldungen(kind),
+                ),
                 theme: buildLightTheme(),
                 darkTheme: buildDarkTheme(),
-                themeMode: themeModeFromString(settingsSnapshot.data?.themeMode),
+                themeMode:
+                    themeModeFromString(settingsSnapshot.data?.themeMode),
                 // null = Systemsprache, siehe localeFromString.
                 locale: localeFromString(settingsSnapshot.data?.sprache),
                 supportedLocales: AppTexte.supportedLocales,
@@ -173,18 +186,19 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                             fehler: library.initialisierungsfehler!,
                             erneutVersuchen: library.initialize,
                           )
-                    : !library.isReady
-                        ? const Scaffold(
-                            body: Center(child: CircularProgressIndicator()))
-                        // Der Bereich fuer die Schwebe-Vorschau liegt
-                        // ueber allem, was Kacheln zeigt - und es gibt
-                        // genau einen davon, weil es genau einen
-                        // Abspieler geben soll.
-                        : SchwebevorschauBereich(
-                            db: library.db,
-                            paths: library.paths,
-                            child: HomeShell(library: library),
-                          ),
+                        : !library.isReady
+                            ? const Scaffold(
+                                body:
+                                    Center(child: CircularProgressIndicator()))
+                            // Der Bereich fuer die Schwebe-Vorschau liegt
+                            // ueber allem, was Kacheln zeigt - und es gibt
+                            // genau einen davon, weil es genau einen
+                            // Abspieler geben soll.
+                            : SchwebevorschauBereich(
+                                db: library.db,
+                                paths: library.paths,
+                                child: HomeShell(library: library),
+                              ),
               );
             },
           );

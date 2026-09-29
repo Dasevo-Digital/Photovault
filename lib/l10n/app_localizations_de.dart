@@ -187,6 +187,12 @@ class AppTexteDe extends AppTexte {
   String get timelineLeer => 'Noch keine Fotos in der Bibliothek.';
 
   @override
+  String get timelineJahre => 'Jahre';
+
+  @override
+  String get timelineDetails => 'Details';
+
+  @override
   String loeschenTitel(int anzahl) {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,
@@ -3841,6 +3847,11 @@ class AppTexteDe extends AppTexte {
   @override
   String downloadEntpackenFehler(String datei, String fehler) {
     return 'Entpacken von $datei fehlgeschlagen: $fehler';
+  }
+
+  @override
+  String downloadZuGross(String datei, int grenze) {
+    return '$datei überschreitet die erlaubte Größe von $grenze Byte.';
   }
 
   @override
@@ -8272,7 +8283,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sicherTeilenAblaufText =>
-      'Optional kann dieses Austauschpaket nach einem Datum nicht mehr importiert werden.';
+      'Optional lehnt Photo Vault dieses Austauschpaket nach einem Datum ab. Die Frist steht verschlüsselt im Paket; sie hält einen ehrlichen Empfänger davon ab, es später noch einzuspielen – gegen jemanden, der das Paket samt Passphrase behält und seine Uhr stellt, schützt sie nicht.';
 
   @override
   String get sicherTeilenAblaufSetzen => 'Datum festlegen';

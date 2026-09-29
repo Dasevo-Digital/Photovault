@@ -25,7 +25,6 @@ import '../services/develop_color.dart';
 import '../services/speicher_rueckgabe.dart';
 import '../services/translation_service.dart';
 import '../services/embedding_codec.dart';
-import '../services/embedding_ann_index.dart';
 import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/face_postprocess.dart';
@@ -287,11 +286,34 @@ class LibraryState extends ChangeNotifier {
   // günstig geprüft, ob sich seitdem überhaupt etwas Relevantes geändert hat.
   Map<String, Float32List>? _embeddingsCache;
   int? _embeddingsCacheGeneration;
+  Timer? _embeddingCacheTimer;
 
-  EmbeddingAnnIndex? _embeddingAnnIndex;
-  int? _embeddingAnnIndexGeneration;
+  // Exakte Suche darf große Bibliotheken vollständig im Speicher halten,
+  // aber nicht bis zum Programmende, wenn die betreffenden Ansichten längst
+  // geschlossen sind. Jede Nutzung verschiebt die Freigabe.
+  static const _embeddingCacheIdleTime = Duration(minutes: 3);
+
+  void _planeEmbeddingCacheFreigabe() {
+    _embeddingCacheTimer?.cancel();
+    _embeddingCacheTimer = Timer(_embeddingCacheIdleTime, () {
+      _embeddingsCache = null;
+      _embeddingsCacheGeneration = null;
+      _videoEinbettungenCache = null;
+      _videoEinbettungenGeneration = null;
+    });
+  }
+
+  @visibleForTesting
+  void clearEmbeddingCaches() {
+    _embeddingCacheTimer?.cancel();
+    _embeddingsCache = null;
+    _embeddingsCacheGeneration = null;
+    _videoEinbettungenCache = null;
+    _videoEinbettungenGeneration = null;
+  }
 
   Future<Map<String, Float32List>> cachedEmbeddings() async {
+    _planeEmbeddingCacheFreigabe();
     if (_embeddingsCache != null &&
         _embeddingsCacheGeneration == db.embeddingsGeneration) {
       return _embeddingsCache!;
@@ -302,66 +324,52 @@ class LibraryState extends ChangeNotifier {
     return result;
   }
 
-  /// Exakte Rangfolge auf einer persistent vorgefilterten Kandidatenmenge.
-  /// Für kleine Bestände oder einen zu dünnen Bucket-Vorrat fällt die Methode
-  /// bewusst auf die vollständige Suche zurück – Annäherung darf nie weniger
-  /// Ergebnisse liefern als die Oberfläche verlangt.
-  Future<Map<String, Float32List>> similarityCandidates(Float32List query,
-      {required int minimum}) async {
-    final ids = await db.embeddingAssetIds();
-    EmbeddingAnnIndex? index = _embeddingAnnIndex;
-    if (index == null ||
-        _embeddingAnnIndexGeneration != db.embeddingsGeneration) {
-      index = await EmbeddingAnnIndex.load(paths.embeddingAnnIndexFile, ids);
-      if (index == null) {
-        index = EmbeddingAnnIndex.build(await cachedEmbeddings());
-        await index.save(paths.embeddingAnnIndexFile);
-      }
-      _embeddingAnnIndex = index;
-      _embeddingAnnIndexGeneration = db.embeddingsGeneration;
-    }
-    final candidateIds = index.candidates(query, minimum: minimum);
-    if (candidateIds.length < minimum || candidateIds.length >= ids.length) {
-      return cachedEmbeddings();
-    }
-    return db.embeddingsForAssetIds(candidateIds);
-  }
-
-  /// Kandidaten für die semantische Textsuche. Der persistente Index deckt
-  /// die Hauptbilder ab; zusätzliche Video-Standbilder kommen vollständig
-  /// dazu, damit eine Szene in der Mitte eines Videos nicht verlorengeht.
-  /// Nach einem engen UI-Filter fällt der Weg auf die exakte Menge zurück,
-  /// sobald der ANN-Vorrat zu wenige zugelassene Aufnahmen enthält.
-  Future<Map<String, Float32List>> textSimilarityCandidates(
-    Float32List query,
-    Set<String> allowedAssetIds, {
-    required int minimum,
-  }) async {
-    final primary = await similarityCandidates(query, minimum: minimum);
-    final out = <String, Float32List>{
-      for (final entry in primary.entries)
-        if (allowedAssetIds.contains(entry.key)) entry.key: entry.value,
-    };
-    final videos = await cachedVideoEinbettungen();
-    for (final entry in videos.entries) {
-      if (!allowedAssetIds.contains(entry.key)) continue;
-      for (var i = 0; i < entry.value.length; i++) {
-        out['${entry.key}#$i'] = entry.value[i];
-      }
-    }
-    final distinctAssets = {
-      for (final key in out.keys) aufnahmeAusSuchschluessel(key),
-    };
-    if (distinctAssets.length >= minimum || allowedAssetIds.length <= minimum) {
-      return out;
-    }
-    final exact = await suchkandidaten();
-    return {
-      for (final entry in exact.entries)
-        if (allowedAssetIds.contains(aufnahmeAusSuchschluessel(entry.key)))
-          entry.key: entry.value,
-    };
-  }
+  /// Exakte Rangfolge auf allen Einbettungen – und warum hier kein
+  /// Vorfilter steht.
+  ///
+  /// Zwischen 3.16.0 und 3.18.0 lag hier ein persistenter SimHash-Index
+  /// (`EmbeddingAnnIndex`), der die Rangfolge auf rund 12 % der
+  /// Bibliothek einschränkte. An 7489 echten CLIP-Vektoren gemessen,
+  /// gegen die exakte Kosinus-Rangfolge:
+  ///
+  /// ```
+  /// Ähnliche Fotos (60 gezeigt)   58,6 % Trefferquote, schlechteste 23 %
+  /// KI-Suche (200 gereiht)        39,7 % Trefferquote, schlechteste 14 %
+  /// ```
+  ///
+  /// Der nächste Nachbar fehlte in 3 von 25 bzw. 8 von 25 Abfragen. Die
+  /// Liste war trotzdem voll – nur falsch besetzt, und **genau deshalb
+  /// fällt es niemandem auf**. Der eingebaute Rückfall griff nie: Die
+  /// Kandidatenmenge lag bei 484…1802, also stets über dem verlangten
+  /// Mindestmass.
+  ///
+  /// **Es liess sich nicht nachbessern.** CLIP-Vektoren liegen in einem
+  /// engen Kegel, in dem Vorzeichen-Hashes kaum trennen. Gemessener
+  /// Durchlauf der Stellschrauben
+  /// (`tool/messe_ann_stellschrauben_test.dart`):
+  ///
+  /// ```
+  /// Tabellen x Bits   Kandidaten   Trefferquote
+  ///   8 x 8 (wie war)     11 %         52,6 %
+  ///   8 x 8 + Nachbarn    50 %         93,4 %
+  ///  16 x 8 + Nachbarn    72 %         99,4 %
+  ///  32 x 6              66 %         97,9 %
+  ///  64 x 6              88 %        100,0 %
+  /// ```
+  ///
+  /// Es gibt keinen Punkt mit hoher Trefferquote UND kleiner
+  /// Kandidatenmenge: Wer 99 % will, muss drei Viertel der Bibliothek
+  /// laden – und spart damit nichts mehr.
+  ///
+  /// **Und der Handel lohnte ohnehin nicht.** Gespart wurden 27 ms
+  /// **einmal** und 14,6 MB (der alte Kommentar sprach von „mehreren
+  /// hundert MB"; gemessen sind es 2 kB je Aufnahme). Gekostet wurden je
+  /// Suche 5–6 ms für die Kennungsabfrage – die lief unbedingt, auch bei
+  /// längst geladenem Index – plus 3 ms für die Teilmenge. Ab der dritten
+  /// Suche war die Bilanz negativ.
+  ///
+  /// [cachedEmbeddings] lädt einmal und liegt danach im Speicher; das ist
+  /// der ganze Vorteil, den es hier zu holen gibt.
 
   /// Die zusätzlichen Einbettungen der Video-Standbilder – **nur für die
   /// Suche** (siehe [Videoeinbettungen]).
@@ -372,6 +380,7 @@ class LibraryState extends ChangeNotifier {
   int? _videoEinbettungenGeneration;
 
   Future<Map<String, List<Float32List>>> cachedVideoEinbettungen() async {
+    _planeEmbeddingCacheFreigabe();
     if (_videoEinbettungenCache != null &&
         _videoEinbettungenGeneration == db.embeddingsGeneration) {
       return _videoEinbettungenCache!;
@@ -734,6 +743,7 @@ class LibraryState extends ChangeNotifier {
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();
+    _embeddingCacheTimer?.cancel();
     _autoBackupTimer = null;
     _trashPurgeTimer = null;
     _ordnerTimer = null;
@@ -775,7 +785,7 @@ class LibraryState extends ChangeNotifier {
     );
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
-    restoreQueue = RestoreQueueService(db, paths);
+    restoreQueue = RestoreQueueService(db, paths, waitForIdle: true);
 
     // Nicht mehr selbst aus dem App-Support-Ordner gebaut: Unter Windows
     // liegt der Datenordner im MSIX-Paket woanders als in der
@@ -837,7 +847,7 @@ class LibraryState extends ChangeNotifier {
     // abgestürzt), zurück auf "queued" setzen und die Warteschlange dann
     // fortsetzen – siehe AppDatabase.resetStuckRunningRestoreJobs.
     await db.resetStuckRunningRestoreJobs();
-    unawaited(restoreQueue.resume());
+    unawaited(restoreQueue.resumeWhenIdle());
 
     // Automatisches Backup läuft nur, während die App offen ist (kein
     // Hintergrunddienst) – einmal direkt beim Start prüfen (falls das
@@ -1012,7 +1022,7 @@ class LibraryState extends ChangeNotifier {
   Future<void> reloadModels() async {
     await _loadModelsIfPresent();
     notifyListeners();
-    unawaited(restoreQueue.resume());
+    unawaited(restoreQueue.resumeWhenIdle());
   }
 
   /// Lädt den GeoNames-Datensatz (falls bereits heruntergeladen) in den
@@ -4464,6 +4474,12 @@ class LibraryState extends ChangeNotifier {
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();
+    // Ohne diese Zeile tickt nach jedem Abbau noch drei Minuten eine Uhr
+    // weiter – und sie haelt ueber ihren Abschluss genau den
+    // Einbettungsspeicher am Leben, den sie freigeben soll. In der
+    // Pruefung fiel es als „A Timer is still pending even after the
+    // widget tree was disposed" auf (drei Tests).
+    _embeddingCacheTimer?.cancel();
     super.dispose();
   }
 }

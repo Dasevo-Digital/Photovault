@@ -416,6 +416,18 @@ abstract class AppTexte {
   /// **'Noch keine Fotos in der Bibliothek.'**
   String get timelineLeer;
 
+  /// No description provided for @timelineJahre.
+  ///
+  /// In de, this message translates to:
+  /// **'Jahre'**
+  String get timelineJahre;
+
+  /// No description provided for @timelineDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Details'**
+  String get timelineDetails;
+
   /// No description provided for @loeschenTitel.
   ///
   /// In de, this message translates to:
@@ -6425,6 +6437,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Entpacken von {datei} fehlgeschlagen: {fehler}'**
   String downloadEntpackenFehler(String datei, String fehler);
+
+  /// No description provided for @downloadZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'{datei} überschreitet die erlaubte Größe von {grenze} Byte.'**
+  String downloadZuGross(String datei, int grenze);
 
   /// No description provided for @downloadNichtImZip.
   ///
@@ -12753,7 +12771,7 @@ abstract class AppTexte {
   /// No description provided for @sicherTeilenAblaufText.
   ///
   /// In de, this message translates to:
-  /// **'Optional kann dieses Austauschpaket nach einem Datum nicht mehr importiert werden.'**
+  /// **'Optional lehnt Photo Vault dieses Austauschpaket nach einem Datum ab. Die Frist steht verschlüsselt im Paket; sie hält einen ehrlichen Empfänger davon ab, es später noch einzuspielen – gegen jemanden, der das Paket samt Passphrase behält und seine Uhr stellt, schützt sie nicht.'**
   String get sicherTeilenAblaufText;
 
   /// No description provided for @sicherTeilenAblaufSetzen.

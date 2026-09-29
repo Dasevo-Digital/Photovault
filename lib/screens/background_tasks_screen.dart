@@ -500,6 +500,12 @@ class _TaskCardState extends State<_TaskCard> {
   /// durchläuft, und nicht bei jedem der tausenden Fortschritts-Bescheide.
   bool _warBeendet = true;
 
+  /// Nach einem vollständigen Lauf bleibt die Karte bei null, bis ihre
+  /// Datenquelle erneut Arbeit meldet. Die Schlussbilanz steht darüber;
+  /// dieselbe alte Zahl darunter wäre widersprüchlich und suggerierte, der
+  /// Lauf habe nichts bewirkt.
+  bool _alsErledigtQuittiert = false;
+
   @override
   void initState() {
     super.initState();
@@ -515,7 +521,11 @@ class _TaskCardState extends State<_TaskCard> {
   void _aufLaufwechsel() {
     final lauf = widget.library.lauf(_a.schluessel);
     final beendet = lauf == null || lauf.beendet;
-    if (beendet && !_warBeendet) _refreshCount();
+    if (!beendet) _alsErledigtQuittiert = false;
+    if (beendet && !_warBeendet) {
+      _alsErledigtQuittiert = lauf?.erfolgreich ?? false;
+      if (!_alsErledigtQuittiert) _refreshCount();
+    }
     _warBeendet = beendet;
   }
 
@@ -597,8 +607,13 @@ class _TaskCardState extends State<_TaskCard> {
               label: t.allgSchliessen,
               icon: Icons.check,
               onTap: () {
+                if (lauf.erfolgreich) {
+                  setState(() {
+                    _countFuture = Future<int>.value(0);
+                  });
+                }
                 widget.library.verwerfeLauf(_a.schluessel);
-                _refreshCount();
+                if (!lauf.erfolgreich) _refreshCount();
               },
             ),
           ];
@@ -629,7 +644,9 @@ class _TaskCardState extends State<_TaskCard> {
                       _Laufanzeige(lauf: lauf)
                     else
                       FutureBuilder<int>(
-                        future: _countFuture,
+                        future: _alsErledigtQuittiert
+                            ? Future<int>.value(0)
+                            : _countFuture,
                         builder: (context, snapshot) => Text(
                           snapshot.hasData
                               ? (_a.offenLabel == null

@@ -28,9 +28,11 @@ void main() {
     var nextByte = 0;
 
     setUp(() async {
-      tempRoot = Directory.systemTemp.createTempSync('photo_vault_embeddings_cache_test_');
+      tempRoot = Directory.systemTemp
+          .createTempSync('photo_vault_embeddings_cache_test_');
       db = AppDatabase(NativeDatabase.memory());
-      final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+      final paths = await StoragePaths.forTesting(
+          Directory(p.join(tempRoot.path, 'library')));
       import = ImportService(db, paths);
     });
 
@@ -40,14 +42,18 @@ void main() {
     });
 
     Future<AssetData> importPhoto(String name) async {
-      final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-      final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+      final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+        ..createSync(recursive: true);
+      final file = File(p.join(incoming.path, name))
+        ..writeAsBytesSync([1, 2, 3, nextByte++]);
       final result = await import.importFile(file.path);
       expect(result.outcome, ImportOutcome.imported);
       return (await db.assetById(result.assetId!))!;
     }
 
-    test('erhöht sich bei saveEmbedding, moveToTrash, restoreFromTrash, setAssetsLocked, deleteAssetRows', () async {
+    test(
+        'erhöht sich bei saveEmbedding, moveToTrash, restoreFromTrash, setAssetsLocked, deleteAssetRows',
+        () async {
       final asset = await importPhoto('a.jpg');
       final before = db.embeddingsGeneration;
 
@@ -71,7 +77,8 @@ void main() {
       expect(db.embeddingsGeneration, greaterThan(afterLock));
     });
 
-    test('bleibt bei unrelated Mutationen (Favorit, Beschreibung) unverändert', () async {
+    test('bleibt bei unrelated Mutationen (Favorit, Beschreibung) unverändert',
+        () async {
       final asset = await importPhoto('b.jpg');
       final before = db.embeddingsGeneration;
 
@@ -90,9 +97,11 @@ void main() {
     var nextByte = 0;
 
     setUp(() async {
-      tempRoot = Directory.systemTemp.createTempSync('photo_vault_embeddings_cache_libstate_test_');
+      tempRoot = Directory.systemTemp
+          .createTempSync('photo_vault_embeddings_cache_libstate_test_');
       db = AppDatabase(NativeDatabase.memory());
-      final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+      final paths = await StoragePaths.forTesting(
+          Directory(p.join(tempRoot.path, 'library')));
       import = ImportService(db, paths);
       library = LibraryState()
         ..db = db
@@ -105,14 +114,18 @@ void main() {
     });
 
     Future<AssetData> importPhoto(String name) async {
-      final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-      final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+      final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+        ..createSync(recursive: true);
+      final file = File(p.join(incoming.path, name))
+        ..writeAsBytesSync([1, 2, 3, nextByte++]);
       final result = await import.importFile(file.path);
       expect(result.outcome, ImportOutcome.imported);
       return (await db.assetById(result.assetId!))!;
     }
 
-    test('liefert bei unverändertem embeddingsGeneration dasselbe gecachte Ergebnis', () async {
+    test(
+        'liefert bei unverändertem embeddingsGeneration dasselbe gecachte Ergebnis',
+        () async {
       final asset = await importPhoto('a.jpg');
       await db.saveEmbedding(asset.id, Float32List.fromList([1.0, 0.0]));
 
@@ -125,7 +138,9 @@ void main() {
       expect(first.keys, contains(asset.id));
     });
 
-    test('lädt neu, sobald sich embeddingsGeneration durch eine Mutation geändert hat', () async {
+    test(
+        'lädt neu, sobald sich embeddingsGeneration durch eine Mutation geändert hat',
+        () async {
       final assetA = await importPhoto('a.jpg');
       await db.saveEmbedding(assetA.id, Float32List.fromList([1.0, 0.0]));
 
@@ -140,13 +155,28 @@ void main() {
       expect(second.keys, {assetA.id, assetB.id});
     });
 
-    test('gibt getrashte/gesperrte Assets nach Cache-Invalidierung korrekt nicht mehr zurück', () async {
+    test('gibt ungenutzte Einbettungen gezielt wieder frei', () async {
+      final asset = await importPhoto('cache.jpg');
+      await db.saveEmbedding(asset.id, Float32List.fromList([1.0, 0.0]));
+
+      final first = await library.cachedEmbeddings();
+      library.clearEmbeddingCaches();
+      final second = await library.cachedEmbeddings();
+
+      expect(identical(first, second), isFalse);
+      expect(second.keys, contains(asset.id));
+    });
+
+    test(
+        'gibt getrashte/gesperrte Assets nach Cache-Invalidierung korrekt nicht mehr zurück',
+        () async {
       final asset = await importPhoto('a.jpg');
       await db.saveEmbedding(asset.id, Float32List.fromList([1.0, 0.0]));
       expect((await library.cachedEmbeddings()).keys, contains(asset.id));
 
       await db.moveToTrash([asset.id]);
-      expect((await library.cachedEmbeddings()).keys, isNot(contains(asset.id)));
+      expect(
+          (await library.cachedEmbeddings()).keys, isNot(contains(asset.id)));
     });
   });
 }
