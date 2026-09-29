@@ -21,6 +21,7 @@ import '../widgets/rasterbedienung.dart';
 import '../widgets/selection_action_bar.dart';
 import '../widgets/sortierungswahl.dart';
 import 'asset_viewer_screen.dart';
+import 'timeline_year_overview.dart';
 import 'import_progress_sheet.dart';
 import '../widgets/stromhalter.dart';
 
@@ -45,7 +46,8 @@ class TimelineScreen extends StatefulWidget {
   State<TimelineScreen> createState() => _TimelineScreenState();
 }
 
-class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<TimelineScreen, Rasterzeile> {
+class _TimelineScreenState extends State<TimelineScreen>
+    with Rasterbedienung<TimelineScreen, Rasterzeile> {
   // Wachsendes Ladefenster statt auf einen Schlag die komplette Bibliothek zu
   // laden: `watchRasterzeilen(limit: _windowSize)` bleibt dank
   // `idx_assets_trashed_locked_created` auch für ein großes Fenster ein
@@ -58,6 +60,11 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
   static const _windowGrowth = 600;
   int _windowSize = _initialWindowSize;
   bool _resolvingHighlight = false;
+
+  /// Die Timeline startet als Jahreslandkarte. Die bisherige, detaillierte
+  /// Monatsansicht bleibt mit einem Klick erreichbar und wird für einen
+  /// direkten Sprung zu einem Foto automatisch gewählt.
+  bool _jahresuebersicht = false;
 
   final Set<String> _selected = {};
 
@@ -109,9 +116,16 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
     // Ohne Gliederung ist alles eine Gruppe – die Tastatur muss dieselbe
     // Einteilung sehen wie das Raster, sonst springt der Zeiger woanders
     // hin als der Rahmen.
-    if (_alsListe || !_gliedert) return [[for (final a in _geladen) a.id]];
-    final m = monatsgruppen(_geladen, absteigend: sortierungAbsteigend(_sortierung));
-    return [for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id]];
+    if (_alsListe || !_gliedert) {
+      return [
+        [for (final a in _geladen) a.id]
+      ];
+    }
+    final m =
+        monatsgruppen(_geladen, absteigend: sortierungAbsteigend(_sortierung));
+    return [
+      for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id]
+    ];
   }
 
   /// Bei bündigen Reihen stehen mal drei und mal dreizehn Fotos
@@ -119,9 +133,7 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
   /// „nach unten" hinführt.
   @override
   List<List<int>>? get rasterReihenlaengen {
-    if (_alsListe ||
-        _form != Zeitleistenform.reihen ||
-        _rasterbreite <= 0) {
+    if (_alsListe || _form != Zeitleistenform.reihen || _rasterbreite <= 0) {
       return null;
     }
     // Dieselbe Einteilung wie [rasterGruppen] – sonst zählt die eine
@@ -196,7 +208,10 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
     super.initState();
     _ladeKachelstufe();
     final id = widget.highlightAssetId;
-    if (id != null) _resolveHighlight(id);
+    if (id != null) {
+      _jahresuebersicht = false;
+      _resolveHighlight(id);
+    }
   }
 
   Future<void> _ladeKachelstufe() async {
@@ -271,7 +286,9 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
     final rank = await widget.library.db.timelineRankOfAsset(assetId);
     if (!mounted) return;
     setState(() {
-      if (rank != null) _windowSize = math.max(_windowSize, rank + 1 + _windowGrowth);
+      if (rank != null) {
+        _windowSize = math.max(_windowSize, rank + 1 + _windowGrowth);
+      }
       _resolvingHighlight = false;
     });
   }
@@ -308,8 +325,7 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
   Future<void> _openViewer(List<Rasterzeile> zeilen, Rasterzeile zeile) async {
     final viewerAssets = (zeile.isStackCover && zeile.stackId != null)
         ? await widget.library.db.assetsInStack(zeile.stackId!)
-        : await widget.library.db
-            .assetsByIds([for (final z in zeilen) z.id]);
+        : await widget.library.db.assetsByIds([for (final z in zeilen) z.id]);
     if (!mounted) return;
     final initialIndex = viewerAssets.indexWhere((a) => a.id == zeile.id);
     Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
@@ -319,7 +335,8 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
         paths: widget.library.paths,
         db: widget.library.db,
         library: widget.library,
-        onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
+        onToggleFavorite: (a) =>
+            widget.library.db.setFavorite(a.id, !a.isFavorite),
         onDelete: (a) => widget.library.db.moveToTrash([a.id]),
         onLock: (a) async {
           if (await ensureVaultUnlocked(context, widget.library)) {
@@ -342,8 +359,6 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
     if (mounted) setState(_selected.clear);
   }
 
-
-
   /// Die schmale Leiste über der Ansicht: Raster oder Liste, und – nur bei
   /// der Liste – wonach gegliedert wird.
   ///
@@ -353,9 +368,17 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
   Widget _ansichtsLeiste(BuildContext context) {
     final t = AppTexte.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, 0),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.xs, AppSpacing.md, 0),
       child: Row(
         children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: t.timelineJahre,
+            icon: const Icon(Icons.calendar_view_month_outlined, size: 18),
+            onPressed: () => setState(() => _jahresuebersicht = true),
+          ),
+          const SizedBox(width: AppSpacing.xs),
           SegmentedButton<bool>(
             style: const ButtonStyle(
               visualDensity: VisualDensity.compact,
@@ -387,19 +410,19 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
                 DropdownMenuItem(
                     value: ListenGruppierung.monat, child: Text(t.gruppeMonat)),
                 DropdownMenuItem(
-                    value: ListenGruppierung.kamera, child: Text(t.gruppeKamera)),
+                    value: ListenGruppierung.kamera,
+                    child: Text(t.gruppeKamera)),
                 DropdownMenuItem(
                     value: ListenGruppierung.keine, child: Text(t.gruppeKeine)),
               ],
-              onChanged: (wahl) =>
-                  setState(() => _gruppierung = wahl ?? ListenGruppierung.monat),
+              onChanged: (wahl) => setState(
+                  () => _gruppierung = wahl ?? ListenGruppierung.monat),
             ),
           ],
           const Spacer(),
           // Die Reihenfolge gilt fuer beide Ansichten, steht also vor der
           // Trennung in Raster und Liste.
-          Sortierungswahl(
-              gewaehlt: _sortierung, beiWahl: _setzeSortierung),
+          Sortierungswahl(gewaehlt: _sortierung, beiWahl: _setzeSortierung),
           // Kleiner heisst mehr Fotos und damit mehr Monate auf einmal.
           // Nur im Raster: In der Liste steht ohnehin alles
           // untereinander, und ein Knopf, der nichts bewirkt, waere
@@ -443,7 +466,9 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
 
   @override
   Widget build(BuildContext context) {
-    if (_resolvingHighlight) return const Center(child: CircularProgressIndicator());
+    if (_resolvingHighlight) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return _alsListe ? _mitVollenZeilen() : _mitSchmalenZeilen();
   }
 
@@ -452,10 +477,12 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
     return StreamBuilder<List<Rasterzeile>>(
       stream: _zeitleiste.hole(
           (_windowSize, _sortierung),
-          () => widget.library.db.watchRasterzeilen(
-              limit: _windowSize, sortierung: _sortierung)),
+          () => widget.library.db
+              .watchRasterzeilen(limit: _windowSize, sortierung: _sortierung)),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return _inhalt(context, snapshot.data!, null);
       },
     );
@@ -473,7 +500,9 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
           () => widget.library.db
               .watchTimeline(limit: _windowSize, sortierung: _sortierung)),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final voll = snapshot.data!;
         if (!identical(voll, _volleQuelle)) {
           _volleQuelle = voll;
@@ -498,6 +527,34 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
             message: AppTexte.of(context).timelineLeer,
             actionLabel: AppTexte.of(context).importierenTooltip,
             onAction: () => showImportSheet(context, widget.library),
+          );
+        }
+
+        if (_jahresuebersicht && widget.highlightAssetId == null) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppTexte.of(context).timelineJahre,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          setState(() => _jahresuebersicht = false),
+                      icon: const Icon(Icons.view_timeline_outlined),
+                      label: Text(AppTexte.of(context).timelineDetails),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: TimelineYearOverview(library: widget.library)),
+            ],
           );
         }
 
@@ -540,8 +597,8 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
                             // Die Liste haelt volle Zeilen, die Auswahl
                             // arbeitet mit schmalen - umgesetzt wird ueber
                             // die Kennung, nicht ueber das Objekt.
-                            onTap: (asset) => rasterKlick(
-                                Rasterzeile.aus(asset)),
+                            onTap: (asset) =>
+                                rasterKlick(Rasterzeile.aus(asset)),
                           )
                         : MonthGroupedAssetGrid(
                             assets: assets,
@@ -557,7 +614,8 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
                             form: _form,
                             gliedern: _gliedert,
                             absteigend: sortierungAbsteigend(_sortierung),
-                            onScrollNearEnd: () => _maybeGrowWindow(assets.length),
+                            onScrollNearEnd: () =>
+                                _maybeGrowWindow(assets.length),
                           );
                   }),
                 ),
@@ -567,47 +625,54 @@ class _TimelineScreenState extends State<TimelineScreen> with Rasterbedienung<Ti
               SelectionActionBar(
                 count: _selected.length,
                 onClear: () => setState(_selected.clear),
-                onCompare: vergleichsAktion(context, widget.library, _selected.toList()),
+                onCompare: vergleichsAktion(
+                    context, widget.library, _selected.toList()),
                 // Nur sichtbar, wenn tatsächlich Einstellungen kopiert
                 // wurden – ein Knopf, der meistens nichts tun kann, wäre
                 // in einer Leiste mit neun Symbolen nur Rauschen.
                 onPasteDevelop: widget.library.hatKopierteEntwicklung
                     ? () async {
-                        await runBatchPasteDevelop(context, widget.library, _selected.toList());
+                        await runBatchPasteDevelop(
+                            context, widget.library, _selected.toList());
                         if (mounted) setState(_selected.clear);
                       }
                     : null,
-                onApplyPreset: () =>
-                    runBatchApplyPreset(context, widget.library, _selected.toList()),
+                onApplyPreset: () => runBatchApplyPreset(
+                    context, widget.library, _selected.toList()),
                 onFavorite: () async {
                   await runBatchFavorite(widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onAddToAlbum: () async {
-                  await runBatchAddToAlbumDialog(context, widget.library, _selected.toList());
+                  await runBatchAddToAlbumDialog(
+                      context, widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onTag: () async {
-                  await runBatchTagDialog(context, widget.library, _selected.toList());
+                  await runBatchTagDialog(
+                      context, widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onSetRating: () async {
-                  await runBatchSetRating(context, widget.library, _selected.toList());
+                  await runBatchSetRating(
+                      context, widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onSetColorLabel: () async {
-                  await runBatchSetColorLabel(context, widget.library, _selected.toList());
+                  await runBatchSetColorLabel(
+                      context, widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onEditMetadata: () async {
-                  await runBatchEditMetadataDialog(context, widget.library, _selected.toList());
+                  await runBatchEditMetadataDialog(
+                      context, widget.library, _selected.toList());
                   if (mounted) setState(_selected.clear);
                 },
                 onExport: () async {
                   // Die Ausfuhr schreibt Beipackzettel und braucht dafuer
                   // die ganze Zeile - hier nachgeholt statt vorgehalten.
-                  final selectedAssets = await widget.library.db
-                      .assetsByIds(_selected.toList());
+                  final selectedAssets =
+                      await widget.library.db.assetsByIds(_selected.toList());
                   if (!context.mounted) return;
                   await runBatchExport(context, widget.library, selectedAssets);
                   if (mounted) setState(_selected.clear);

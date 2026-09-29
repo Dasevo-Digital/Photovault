@@ -53,8 +53,8 @@ Future<String?> gesichtVonHandAnlegen({
   final bild = gelesen;
 
   final gesichtId = const Uuid().v4();
-  final box = DetectedFace(
-      kasten.left, kasten.top, kasten.width, kasten.height, 1.0);
+  final box =
+      DetectedFace(kasten.left, kasten.top, kasten.width, kasten.height, 1.0);
 
   final ausschnittPfad = library.paths.faceRelativePath(gesichtId);
   await FaceEngineService.saveFaceCrop(
@@ -106,6 +106,20 @@ Future<String?> gesichtVonHandAnlegen({
 bool rahmenGrossGenug(Rect kasten) =>
     kasten.width >= 0.01 && kasten.height >= 0.01;
 
+/// Begrenzt den sichtbaren Zug auf das Foto. Die Vorschau und der beim
+/// Loslassen gespeicherte Rahmen verwenden damit dieselben Kanten; ein Zug
+/// über den Bildrand kann nicht erst beim Speichern kleiner springen.
+Rect begrenzterZug(Offset von, Offset bis, Size flaeche) {
+  if (flaeche.width <= 0 || flaeche.height <= 0) return Rect.zero;
+  final r = Rect.fromPoints(von, bis);
+  return Rect.fromLTRB(
+    r.left.clamp(0.0, flaeche.width),
+    r.top.clamp(0.0, flaeche.height),
+    r.right.clamp(0.0, flaeche.width),
+    r.bottom.clamp(0.0, flaeche.height),
+  );
+}
+
 /// Rechnet einen Zug über dem Foto in einen Kasten in **Anteilen** um.
 ///
 /// [von] und [bis] sind Punkte der Fotofläche, nicht des Fensters – in der
@@ -123,7 +137,7 @@ bool rahmenGrossGenug(Rect kasten) =>
 /// abgeschnitten – wer darüber hinauszieht, meint den Rand.
 Rect kastenAusZug(Offset von, Offset bis, Size flaeche) {
   if (flaeche.width <= 0 || flaeche.height <= 0) return Rect.zero;
-  final r = Rect.fromPoints(von, bis);
+  final r = begrenzterZug(von, bis, flaeche);
   return Rect.fromLTRB(
     (r.left / flaeche.width).clamp(0.0, 1.0),
     (r.top / flaeche.height).clamp(0.0, 1.0),

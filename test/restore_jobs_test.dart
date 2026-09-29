@@ -32,12 +32,18 @@ void main() {
     return id;
   }
 
-  RestoreJobsCompanion job({required String id, required String assetId, required DateTime createdAt}) =>
-      RestoreJobsCompanion.insert(id: id, assetId: assetId, status: 'queued', createdAt: createdAt);
+  RestoreJobsCompanion job(
+          {required String id,
+          required String assetId,
+          required DateTime createdAt}) =>
+      RestoreJobsCompanion.insert(
+          id: id, assetId: assetId, status: 'queued', createdAt: createdAt);
 
-  test('createRestoreJob legt einen Auftrag mit tilesDone/tilesTotal=0 an', () async {
+  test('createRestoreJob legt einen Auftrag mit tilesDone/tilesTotal=0 an',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     final jobs = await db.watchRestoreJobs().first;
     expect(jobs, hasLength(1));
@@ -46,26 +52,34 @@ void main() {
     expect(jobs.single.tilesTotal, 0);
   });
 
-  test('activeRestoreJobForAsset findet einen wartenden Auftrag desselben Assets', () async {
+  test(
+      'activeRestoreJobForAsset findet einen wartenden Auftrag desselben Assets',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     final active = await db.activeRestoreJobForAsset(assetId);
     expect(active?.id, 'job1');
   });
 
-  test('activeRestoreJobForAsset findet auch einen laufenden Auftrag', () async {
+  test('activeRestoreJobForAsset findet auch einen laufenden Auftrag',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
     await db.markRestoreJobStatus('job1', 'running');
 
     final active = await db.activeRestoreJobForAsset(assetId);
     expect(active?.id, 'job1');
   });
 
-  test('activeRestoreJobForAsset ignoriert abgeschlossene Aufträge desselben Assets', () async {
+  test(
+      'activeRestoreJobForAsset ignoriert abgeschlossene Aufträge desselben Assets',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
     await db.markRestoreJobStatus('job1', 'done');
 
     final active = await db.activeRestoreJobForAsset(assetId);
@@ -75,24 +89,30 @@ void main() {
   test('activeRestoreJobForAsset ignoriert Aufträge anderer Assets', () async {
     final assetA = await insertAsset('a');
     final assetB = await insertAsset('b');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetA, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetA, createdAt: DateTime(2024, 1, 1)));
 
     final active = await db.activeRestoreJobForAsset(assetB);
     expect(active, isNull);
   });
 
-  test('nextQueuedRestoreJob liefert den ältesten wartenden Auftrag (FIFO)', () async {
+  test('nextQueuedRestoreJob liefert den ältesten wartenden Auftrag (FIFO)',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'later', assetId: assetId, createdAt: DateTime(2024, 1, 2)));
-    await db.createRestoreJob(job(id: 'earlier', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'later', assetId: assetId, createdAt: DateTime(2024, 1, 2)));
+    await db.createRestoreJob(
+        job(id: 'earlier', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     final next = await db.nextQueuedRestoreJob();
     expect(next?.id, 'earlier');
   });
 
-  test('nextQueuedRestoreJob ignoriert bereits laufende/fertige Aufträge', () async {
+  test('nextQueuedRestoreJob ignoriert bereits laufende/fertige Aufträge',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'running', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'running', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
     await db.markRestoreJobStatus('running', 'running');
 
     final next = await db.nextQueuedRestoreJob();
@@ -101,7 +121,8 @@ void main() {
 
   test('updateRestoreJobProgress aktualisiert tilesDone/tilesTotal', () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     await db.updateRestoreJobProgress('job1', 12, 63);
 
@@ -110,9 +131,29 @@ void main() {
     expect(updated.tilesTotal, 63);
   });
 
-  test('markRestoreJobStatus setzt completedAt bei einem Endstatus, nicht bei queued/running', () async {
+  test('requeueRestoreJob verwirft Teilfortschritt und wartet erneut',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.markRestoreJobStatus('job1', 'running');
+    await db.updateRestoreJobProgress('job1', 12, 63);
+
+    await db.requeueRestoreJob('job1');
+
+    final requeued = (await db.watchRestoreJobs().first).single;
+    expect(requeued.status, 'queued');
+    expect(requeued.tilesDone, 0);
+    expect(requeued.tilesTotal, 0);
+    expect(requeued.startedAt, isNull);
+  });
+
+  test(
+      'markRestoreJobStatus setzt completedAt bei einem Endstatus, nicht bei queued/running',
+      () async {
+    final assetId = await insertAsset('a');
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     await db.markRestoreJobStatus('job1', 'running');
     var updated = (await db.watchRestoreJobs().first).single;
@@ -125,9 +166,12 @@ void main() {
     expect(updated.completedAt, isNotNull);
   });
 
-  test('completeRestoreJob setzt Assets.restoredRelativePath und den Job-Status transaktional', () async {
+  test(
+      'completeRestoreJob setzt Assets.restoredRelativePath und den Job-Status transaktional',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
 
     await db.completeRestoreJob('job1', assetId, 'restored/a.jpg');
 
@@ -140,8 +184,10 @@ void main() {
 
   test('deleteRestoreJob entfernt nur den angegebenen Auftrag', () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'keep', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
-    await db.createRestoreJob(job(id: 'remove', assetId: assetId, createdAt: DateTime(2024, 1, 2)));
+    await db.createRestoreJob(
+        job(id: 'keep', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'remove', assetId: assetId, createdAt: DateTime(2024, 1, 2)));
 
     await db.deleteRestoreJob('remove');
 
@@ -149,14 +195,21 @@ void main() {
     expect(jobs.map((j) => j.id), ['keep']);
   });
 
-  test('resetStuckRunningRestoreJobs setzt nur "running" auf "queued" zurück, mit tilesDone=0', () async {
+  test(
+      'resetStuckRunningRestoreJobs setzt nur "running" auf "queued" zurück, mit tilesDone=0',
+      () async {
     final assetId = await insertAsset('a');
-    await db.createRestoreJob(job(id: 'stuck', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
+    await db.createRestoreJob(
+        job(id: 'stuck', assetId: assetId, createdAt: DateTime(2024, 1, 1)));
     await db.markRestoreJobStatus('stuck', 'running');
     await db.updateRestoreJobProgress('stuck', 30, 63);
 
-    await db.createRestoreJob(job(id: 'already-queued', assetId: assetId, createdAt: DateTime(2024, 1, 2)));
-    await db.createRestoreJob(job(id: 'already-done', assetId: assetId, createdAt: DateTime(2024, 1, 3)));
+    await db.createRestoreJob(job(
+        id: 'already-queued',
+        assetId: assetId,
+        createdAt: DateTime(2024, 1, 2)));
+    await db.createRestoreJob(job(
+        id: 'already-done', assetId: assetId, createdAt: DateTime(2024, 1, 3)));
     await db.markRestoreJobStatus('already-done', 'done');
 
     await db.resetStuckRunningRestoreJobs();

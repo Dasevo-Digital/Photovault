@@ -37,10 +37,7 @@ class _SimilarPhotosScreenState extends State<SimilarPhotosScreen> {
     final sourceEmbedding =
         await widget.library.db.embeddingForAsset(widget.sourceAsset.id);
     if (sourceEmbedding == null) return [];
-    final embeddings = await widget.library.similarityCandidates(
-      sourceEmbedding,
-      minimum: _maxResults * 3,
-    );
+    final embeddings = await widget.library.cachedEmbeddings();
     final ranked = ClipService.rankBySimilarity(sourceEmbedding, embeddings,
         topK: _maxResults + 1);
     final ids = ranked

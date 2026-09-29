@@ -24,6 +24,33 @@ class SharePackageExpired implements Exception {
 /// Erstellt ein einzelnes, portables und passwortgeschütztes Austauschpaket.
 /// Dateinamen und Manifest sind ebenso verschlüsselt wie die Medien selbst.
 class SecureShareService {
+  /// Ein Paket ohne Frist. Jede Fassung dieser App kann es öffnen.
+  static const formatOhneFrist = 1;
+
+  /// Ein Paket **mit** Frist – und deshalb eine eigene Fassungsnummer.
+  ///
+  /// **Sonst ist die Frist keine.** Sie kam als zusätzliches Feld in ein
+  /// Manifest, das weiterhin `format: 1` trug. Ältere Fassungen kennen das
+  /// Feld nicht, überlesen es und importieren. Vorgeführt an einem Paket,
+  /// dessen Frist ein Jahr zurücklag:
+  ///
+  /// ```
+  /// heutige Fassung   SharePackageExpired, nichts importiert
+  /// 3.15.0            importiert 1 Aufnahme
+  /// ```
+  ///
+  /// 3.15.0 steht auf beiden Freigabeseiten zum Herunterladen; es war also
+  /// kein Umbau nötig, nur ein älterer Download. Mit einer eigenen
+  /// Fassungsnummer weist jede Fassung, die die Frist nicht kennt, das
+  /// Paket ab, statt sie zu übergehen.
+  ///
+  /// **Was die Frist trotzdem nicht ist:** ein Schutz gegen den
+  /// Empfänger. Wer das Paket und die Passphrase hat, kann seine Uhr
+  /// stellen. Sie hält einen ehrlichen Empfänger davon ab, ein altes Paket
+  /// weiterzuverwenden – mehr kann eine Frist, die im Paket selbst steht,
+  /// nicht leisten. Der Oberflächentext sagt das inzwischen auch.
+  static const formatMitFrist = 2;
+
   SecureShareService(this._exporter, {DateTime Function()? now})
       : _now = now ?? DateTime.now;
 
@@ -68,7 +95,7 @@ class SecureShareService {
 
       final manifestEncrypted = File(p.join(temp.path, 'manifest.pve'));
       final manifestPayload = <String, Object?>{
-        'format': 1,
+        'format': expiresAtUtc == null ? formatOhneFrist : formatMitFrist,
         'createdAt': _now().toUtc().toIso8601String(),
         'assets': manifest,
         if (expiresAtUtc != null) 'expiresAt': expiresAtUtc.toIso8601String(),
@@ -156,10 +183,18 @@ class SecureShareService {
           encryptedManifest, key,
           aad: utf8.encode('photo-vault-share-manifest'));
       final manifest = jsonDecode(utf8.decode(manifestClear)) as Map;
-      if (manifest['format'] != 1 || manifest['assets'] is! List) {
+      final format = manifest['format'];
+      if ((format != formatOhneFrist && format != formatMitFrist) ||
+          manifest['assets'] is! List) {
         throw const FormatException('Ungültiges Austauschmanifest.');
       }
       final rawExpiresAt = manifest['expiresAt'];
+      // Eine Frist in einem Paket der Fassung 1 wäre genau die Lücke, die
+      // die eigene Fassung schliesst: Sie käme von einem Absender, der die
+      // Frist meinte, und von einem Leser, der sie nicht garantiert sieht.
+      if ((format == formatMitFrist) != (rawExpiresAt != null)) {
+        throw const FormatException('Ungültiges Austauschmanifest.');
+      }
       if (rawExpiresAt != null) {
         if (rawExpiresAt is! String) {
           throw const FormatException('Ungültiger Ablaufzeitpunkt im Paket.');

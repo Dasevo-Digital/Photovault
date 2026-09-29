@@ -73,7 +73,6 @@ class RestaurierungNichtVerfuegbar implements Exception {
   const RestaurierungNichtVerfuegbar();
 }
 
-
 /// Persistierte Hintergrund-Warteschlange für KI-Restaurierung (siehe
 /// RestoreService, RestoreJobs) – ein Auftrag läuft oft mehrere Minuten
 /// (echt gemessen: ~5 Min. bei 12 MP mit CoreML), daher bewusst NICHT als
@@ -83,10 +82,15 @@ class RestaurierungNichtVerfuegbar implements Exception {
 /// CPU/GPU streiten. Lebt auf [LibraryState] wie `importService`/
 /// `backupService`.
 class RestoreQueueService {
-  RestoreQueueService(this._db, this._paths);
+  RestoreQueueService(this._db, this._paths, {this.waitForIdle = false});
 
   final AppDatabase _db;
   final StoragePaths _paths;
+
+  /// Die Produktionsinstanz wartet auf Leerlauf. Der Standard bleibt für
+  /// gezielte Dienst-Aufrufe sofortig, damit ein explizites `enqueue()` in
+  /// einem Kommando oder Test genau die bisherige Semantik behält.
+  final bool waitForIdle;
 
   /// Von außen gesetzt, sobald bekannt ist, ob das Modell installiert ist
   /// (Muster: LibraryState._loadModelsIfPresent, analog zu
@@ -99,6 +103,14 @@ class RestoreQueueService {
   bool _processing = false;
   String? _activeJobId;
   final Set<String> _cancelRequested = {};
+  final Set<String> _pauseRequested = {};
+  Timer? _idleTimer;
+
+  /// Eine Restaurierung belegt CPU, GPU und mehrere grosse Bildpuffer. Sie
+  /// beginnt deshalb erst nach einer kurzen ruhigen Phase und gibt die
+  /// Rechenzeit bei neuer Eingabe zwischen zwei Modellkacheln wieder frei.
+  static const idleDelay = Duration(seconds: 20);
+  bool _idle = false;
 
   /// Ob gerade ein Auftrag verarbeitet wird – für die Duplikat-Prüfung in
   /// [enqueue]/[cancel]. Ein Ersetzen von [restoreHalter] durch
@@ -130,7 +142,12 @@ class RestoreQueueService {
       status: 'queued',
       createdAt: DateTime.now(),
     ));
-    unawaited(_maybeStartNext());
+    if (waitForIdle) {
+      _warteAufLeerlauf();
+    } else {
+      _idle = true;
+      unawaited(_maybeStartNext());
+    }
     return id;
   }
 
@@ -146,11 +163,53 @@ class RestoreQueueService {
     }
   }
 
+  /// Wird von der App-Hülle für Zeigen, Scrollen und Tippen aufgerufen.
+  /// Ein laufendes Modell beendet seine aktuelle Kachel sauber und reiht den
+  /// Auftrag danach wieder ein; es entstehen weder Teilbilder noch verlorene
+  /// Aufträge.
+  void noteUserInteraction() {
+    _idle = false;
+    _idleTimer?.cancel();
+    final active = _activeJobId;
+    if (active != null) _pauseRequested.add(active);
+    _idleTimer = Timer(idleDelay, () {
+      _idle = true;
+      unawaited(_maybeStartNext());
+    });
+  }
+
   /// Stößt die Verarbeitung an, falls Aufträge warten und gerade nichts
   /// läuft – aufgerufen beim App-Start (nach [AppDatabase.resetStuckRunningRestoreJobs],
   /// siehe LibraryState.initialize) für Aufträge, die aus der letzten
   /// Sitzung noch offen sind.
-  Future<void> resume() => _maybeStartNext();
+  /// Startet ausdrücklich sofort, etwa nach einem manuellen Fortsetzen.
+  /// Der App-Start verwendet dagegen [resumeWhenIdle], damit eine beim
+  /// Beenden unterbrochene Restaurierung nicht gleich beim nächsten Öffnen
+  /// wieder die Bedienung belegt.
+  Future<void> resume() {
+    _idle = true;
+    return _maybeStartNext();
+  }
+
+  Future<void> resumeWhenIdle() {
+    _warteAufLeerlauf();
+    return Future<void>.value();
+  }
+
+  void _warteAufLeerlauf() {
+    // Ein neu angelegter Auftrag muss nicht zwingend eine weitere Eingabe
+    // abwarten, wenn die App schon lange still ist. Beim Start gilt die
+    // gleiche Regel trotzdem: Erst nach [idleDelay] darf Rechenarbeit los.
+    if (_idle) {
+      unawaited(_maybeStartNext());
+      return;
+    }
+    _idleTimer?.cancel();
+    _idleTimer = Timer(idleDelay, () {
+      _idle = true;
+      unawaited(_maybeStartNext());
+    });
+  }
 
   Future<void> _maybeStartNext() async {
     // _processing wird bewusst VOR dem ersten await gesetzt (statt erst
@@ -160,7 +219,7 @@ class RestoreQueueService {
     // beiden _processing setzt, und so zwei Aufträge parallel verarbeiten
     // (verdoppelte CPU/GPU-Last, doppelter Speicherbedarf für die
     // Kachel-Puffer) statt der vorgesehenen Ein-Auftrag-gleichzeitig-Regel.
-    if (_processing) return;
+    if (_processing || !_idle) return;
     _processing = true;
     try {
       final next = await _db.nextQueuedRestoreJob();
@@ -170,12 +229,13 @@ class RestoreQueueService {
         await _process(next);
       } finally {
         _cancelRequested.remove(next.id);
+        _pauseRequested.remove(next.id);
         _activeJobId = null;
       }
     } finally {
       _processing = false;
     }
-    unawaited(_maybeStartNext());
+    if (_idle) unawaited(_maybeStartNext());
   }
 
   Future<void> _process(RestoreJobData job) async {
@@ -201,7 +261,8 @@ class RestoreQueueService {
       return;
     }
     if (service == null) {
-      await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: RestaurierungsGrund.modellWeg.name);
+      await _db.markRestoreJobStatus(job.id, 'failed',
+          errorMessage: RestaurierungsGrund.modellWeg.name);
       return;
     }
     await _db.markRestoreJobStatus(job.id, 'running');
@@ -209,7 +270,8 @@ class RestoreQueueService {
     try {
       final asset = await _db.assetById(job.assetId);
       if (asset == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: RestaurierungsGrund.fotoWeg.name);
+        await _db.markRestoreJobStatus(job.id, 'failed',
+            errorMessage: RestaurierungsGrund.fotoWeg.name);
         return;
       }
       if (asset.isLocked) {
@@ -220,7 +282,8 @@ class RestoreQueueService {
       final targetWidth = asset.widthPx;
       final targetHeight = asset.heightPx;
       if (targetWidth == null || targetHeight == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name);
+        await _db.markRestoreJobStatus(job.id, 'failed',
+            errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name);
         return;
       }
 
@@ -268,12 +331,14 @@ class RestoreQueueService {
         quality: 0.95,
       );
       if (jpegBytes == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: RestaurierungsGrund.nichtGerendert.name);
+        await _db.markRestoreJobStatus(job.id, 'failed',
+            errorMessage: RestaurierungsGrund.nichtGerendert.name);
         return;
       }
       final decoded = img.decodeJpg(jpegBytes);
       if (decoded == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: RestaurierungsGrund.nichtDekodiert.name);
+        await _db.markRestoreJobStatus(job.id, 'failed',
+            errorMessage: RestaurierungsGrund.nichtDekodiert.name);
         return;
       }
 
@@ -283,13 +348,18 @@ class RestoreQueueService {
         // nicht ausbremsen) – catchError statt eines unbehandelten
         // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
         // fehlschlägt.
-        onProgress: (done, total) =>
-            unawaited(_db.updateRestoreJobProgress(job.id, done, total).catchError((_) {})),
+        onProgress: (done, total) => unawaited(_db
+            .updateRestoreJobProgress(job.id, done, total)
+            .catchError((_) {})),
         isCancelled: () => _cancelRequested.contains(job.id),
       );
 
       if (_cancelRequested.contains(job.id)) {
         await _db.markRestoreJobStatus(job.id, 'cancelled');
+        return;
+      }
+      if (_pauseRequested.contains(job.id)) {
+        await _db.requeueRestoreJob(job.id);
         return;
       }
 
@@ -304,7 +374,8 @@ class RestoreQueueService {
       vergissAlleBilder();
       await _db.completeRestoreJob(job.id, job.assetId, relativePath);
     } catch (e) {
-      await _db.markRestoreJobStatus(job.id, 'failed', errorMessage: e.toString());
+      await _db.markRestoreJobStatus(job.id, 'failed',
+          errorMessage: e.toString());
     } finally {
       halter!.zurueckgeben();
     }

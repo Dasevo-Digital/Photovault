@@ -75,31 +75,39 @@ class Gesichtsrahmen extends StatelessWidget {
         // ab – ohne diese Zeile bekäme man auf einem Gesicht das Menü
         // der freien Fläche.
         beiMenue: beiMenue,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: farbeFuer(gesicht), width: 2),
-          ),
-          alignment: Alignment.bottomLeft,
-          child: Container(
-            color: Colors.black54,
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs, vertical: 2),
-            child: Text(
-              beschriftung,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                // Gedämpft, aber lesbar: „Ignoriert" ist eine Angabe,
-                // die man liest, kein abgeschaltetes Bedienelement.
-                // white38 wäre hier zu wenig.
-                color: gesicht.isIgnored
-                    ? DunkleFlaeche.zweitText
-                    : DunkleFlaeche.text,
-                fontSize: 11,
+        child: LayoutBuilder(builder: (context, constraints) {
+          // Der Rahmen wird mit dem Foto skaliert. Eine feste 11-Punkt-
+          // Schrift blieb auf grossen Vollbildfotos praktisch unlesbar.
+          final fontSize =
+              (constraints.biggest.shortestSide * 0.16).clamp(12.0, 22.0);
+          return Semantics(
+            label: beschriftung,
+            button: beiTipp != null,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: farbeFuer(gesicht), width: 2),
+              ),
+              alignment: Alignment.bottomLeft,
+              child: Container(
+                color: Colors.black87,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs, vertical: 2),
+                child: Text(
+                  beschriftung,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: gesicht.isIgnored
+                        ? DunkleFlaeche.zweitText
+                        : DunkleFlaeche.text,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        }),
       ),
     );
   }

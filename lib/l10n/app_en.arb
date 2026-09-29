@@ -53,6 +53,8 @@
   "kuerzelZoomWischen": "⌘/Ctrl + swipe",
   "kuerzelZoomImBild": "Zoom into and out of the photo (works with a Magic Mouse too)",
   "timelineLeer": "No photos in this library yet.",
+  "timelineJahre": "Years",
+  "timelineDetails": "Details",
   "loeschenTitel": "{anzahl, plural, =1{Delete photo?} other{Delete {anzahl} photos?}}",
   "loeschenHinweis": "{anzahl, plural, =1{It will be moved to the trash.} other{They will be moved to the trash.}}",
   "albumNeu": "New album",
@@ -1283,6 +1285,10 @@
   "downloadPruefsummeFehler": "The checksum of {datei} does not match the expected SHA-256 (got {erhalten}, expected {erwartet}) – the download was discarded. The file on the server may have changed, or it was altered in transit.",
   "downloadFehlgeschlagen": "Downloading {datei} failed: {fehler}",
   "downloadEntpackenFehler": "Unpacking {datei} failed: {fehler}",
+  "downloadZuGross": "{datei} exceeds the permitted size of {grenze} bytes.",
+  "@downloadZuGross": {
+    "placeholders": {"datei": {"type": "String"}, "grenze": {"type": "int"}}
+  },
   "downloadNichtImZip": "{datei} was not found in the zip.",
   "regelAusloeserOrt": "Location (radius)",
   "regelAusloeserTag": "AI tag",
@@ -3844,7 +3850,7 @@
   "@einstBackupGenerationZeit": {"placeholders": {"datum": {"type": "String"}}},
   "einstBackupGenerationText": "Database state; encrypted originals are shared between recovery points.",
   "sicherTeilenAblaufTitel": "Limit this share?",
-  "sicherTeilenAblaufText": "Optionally, this sharing package can no longer be imported after a chosen date.",
+  "sicherTeilenAblaufText": "Optionally, Photo Vault refuses this sharing package after a chosen date. The deadline is stored encrypted inside the package; it keeps an honest recipient from importing it later - it does not protect against someone who keeps the package and passphrase and sets their clock back.",
   "sicherTeilenAblaufSetzen": "Choose date",
   "sicherTeilenOhneAblauf": "No expiry",
   "sicherTeilenAblaufDatum": "Choose expiry date",

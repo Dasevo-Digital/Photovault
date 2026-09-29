@@ -88,6 +88,8 @@
   "kuerzelZoomWischen": "⌘/Strg + Wischen",
   "kuerzelZoomImBild": "Ins Bild hinein- und herauszoomen (auch mit einer Magic Mouse)",
   "timelineLeer": "Noch keine Fotos in der Bibliothek.",
+  "timelineJahre": "Jahre",
+  "timelineDetails": "Details",
   "loeschenTitel": "{anzahl, plural, =1{Foto löschen?} other{{anzahl} Fotos löschen?}}",
   "@loeschenTitel": {
     "placeholders": {
@@ -2072,6 +2074,10 @@
         "type": "String"
       }
     }
+  },
+  "downloadZuGross": "{datei} überschreitet die erlaubte Größe von {grenze} Byte.",
+  "@downloadZuGross": {
+    "placeholders": {"datei": {"type": "String"}, "grenze": {"type": "int"}}
   },
   "downloadNichtImZip": "{datei} nicht im Zip gefunden.",
   "@downloadNichtImZip": {
@@ -4924,7 +4930,7 @@
   "@einstBackupGenerationZeit": {"placeholders": {"datum": {"type": "String"}}},
   "einstBackupGenerationText": "Datenbankstand; die verschlüsselten Originale werden gemeinsam verwendet.",
   "sicherTeilenAblaufTitel": "Freigabe begrenzen?",
-  "sicherTeilenAblaufText": "Optional kann dieses Austauschpaket nach einem Datum nicht mehr importiert werden.",
+  "sicherTeilenAblaufText": "Optional lehnt Photo Vault dieses Austauschpaket nach einem Datum ab. Die Frist steht verschlüsselt im Paket; sie hält einen ehrlichen Empfänger davon ab, es später noch einzuspielen – gegen jemanden, der das Paket samt Passphrase behält und seine Uhr stellt, schützt sie nicht.",
   "sicherTeilenAblaufSetzen": "Datum festlegen",
   "sicherTeilenOhneAblauf": "Ohne Ablauf",
   "sicherTeilenAblaufDatum": "Ablaufdatum auswählen",

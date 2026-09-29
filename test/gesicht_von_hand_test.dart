@@ -33,7 +33,8 @@ void main() {
   setUp(() async {
     ordner = Directory.systemTemp.createTempSync('pv_gesicht_hand_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(ordner.path, 'library')));
+    paths = await StoragePaths.forTesting(
+        Directory(p.join(ordner.path, 'library')));
     library = LibraryState()
       ..db = db
       ..paths = paths;
@@ -99,7 +100,8 @@ void main() {
       kasten: const Rect.fromLTWH(0.1, 0.1, 0.2, 0.2),
       personId: 'p1',
     );
-    final erstes = (await (db.select(db.people)..where((t) => t.id.equals('p1')))
+    final erstes = (await (db.select(db.people)
+              ..where((t) => t.id.equals('p1')))
             .getSingle())
         .coverFaceCropPath;
 
@@ -110,7 +112,8 @@ void main() {
       kasten: const Rect.fromLTWH(0.5, 0.5, 0.2, 0.2),
       personId: 'p1',
     );
-    final zweites = (await (db.select(db.people)..where((t) => t.id.equals('p1')))
+    final zweites = (await (db.select(db.people)
+              ..where((t) => t.id.equals('p1')))
             .getSingle())
         .coverFaceCropPath;
 
@@ -166,12 +169,13 @@ void main() {
   group('Wie gross ein Rahmen sein muss', () {
     test('ein Tipp ist kein Rahmen', () {
       expect(rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0, 0)), isFalse);
-      expect(
-          rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0.004, 0.004)), isFalse);
+      expect(rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0.004, 0.004)),
+          isFalse);
     });
 
     test('ein deutlich gezogener Rahmen genügt', () {
-      expect(rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.05, 0.05)), isTrue);
+      expect(
+          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.05, 0.05)), isTrue);
       // Genau auf der Grenze wird nichts zugesichert: Rect speichert die
       // Kanten, und 0,11 minus 0,1 sind 0,009999999999999995. Für „Zug oder
       // Tipp?" ist das ohne Belang – aber es hier zu behaupten wäre eine
@@ -181,8 +185,10 @@ void main() {
     test('ein flacher Strich zählt nicht', () {
       // Beide Kanten müssen reichen. Ein waagerechter Wisch über das halbe
       // Bild ergäbe sonst einen „Rahmen" ohne Höhe.
-      expect(rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.5, 0.002)), isFalse);
-      expect(rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.002, 0.5)), isFalse);
+      expect(
+          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.5, 0.002)), isFalse);
+      expect(
+          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.002, 0.5)), isFalse);
     });
   });
 
@@ -196,8 +202,8 @@ void main() {
     const flaeche = Size(800, 600);
 
     test('was hingezogen wurde, kommt dort wieder heraus', () {
-      final kasten = kastenAusZug(
-          const Offset(200, 150), const Offset(400, 450), flaeche);
+      final kasten =
+          kastenAusZug(const Offset(200, 150), const Offset(400, 450), flaeche);
       expect(kasten.left, closeTo(0.25, 1e-9));
       expect(kasten.top, closeTo(0.25, 1e-9));
       expect(kasten.right, closeTo(0.5, 1e-9));
@@ -222,10 +228,10 @@ void main() {
     });
 
     test('die Richtung des Zuges ist egal', () {
-      final hin = kastenAusZug(
-          const Offset(200, 150), const Offset(400, 450), flaeche);
-      final zurueck = kastenAusZug(
-          const Offset(400, 450), const Offset(200, 150), flaeche);
+      final hin =
+          kastenAusZug(const Offset(200, 150), const Offset(400, 450), flaeche);
+      final zurueck =
+          kastenAusZug(const Offset(400, 450), const Offset(200, 150), flaeche);
       expect(zurueck, hin,
           reason: 'von rechts unten nach links oben ist derselbe Kasten');
     });
@@ -236,6 +242,18 @@ void main() {
       expect(kasten, const Rect.fromLTRB(0, 0, 1, 1),
           reason: 'ein Anteil über 1 stünde in der Datenbank und läge '
               'in jeder Ansicht ausserhalb des Bildes');
+    });
+
+    test('Vorschau und gespeicherter Rahmen haben am Rand dieselben Kanten',
+        () {
+      const masse = Size(100, 80);
+      final vorschau =
+          begrenzterZug(const Offset(-20, 15), const Offset(120, 100), masse);
+      final gespeichert =
+          kastenAusZug(const Offset(-20, 15), const Offset(120, 100), masse);
+
+      expect(vorschau, const Rect.fromLTRB(0, 15, 100, 80));
+      expect(gespeichert, const Rect.fromLTRB(0, 15 / 80, 1, 1));
     });
 
     test('ohne Fläche gibt es keinen Kasten statt einer Division durch null',

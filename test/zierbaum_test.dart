@@ -31,8 +31,18 @@ void main() {
       ]);
 
   const alle = [
-    'opa', 'oma', 'schwagersVater', 'schwagersMutter', 'vater', 'mutter',
-    'ich', 'anna', 'bruno', 'schwager', 'schwagersBruder', 'neffe',
+    'opa',
+    'oma',
+    'schwagersVater',
+    'schwagersMutter',
+    'vater',
+    'mutter',
+    'ich',
+    'anna',
+    'bruno',
+    'schwager',
+    'schwagersBruder',
+    'neffe',
   ];
 
   Zierbaumplan plan([String fokus = 'ich']) =>
@@ -60,8 +70,8 @@ void main() {
         kanten.add(kante('g$i', 'vater', Verwandtschaft.elternteil));
         ids.add('g$i');
       }
-      final p = zierbaumplan(
-          geflechtUm(Verwandtschaftsnetz(kanten), 'ich', ids));
+      final p =
+          zierbaumplan(geflechtUm(Verwandtschaftsnetz(kanten), 'ich', ids));
       for (var i = 0; i < p.schilder.length; i++) {
         for (var j = i + 1; j < p.schilder.length; j++) {
           expect(p.schilder[i].ueberschneidet(p.schilder[j]), isFalse);
@@ -101,13 +111,17 @@ void main() {
       final schwagersAst = p.aeste.firstWhere((a) => a.personId == 'schwager');
       expect(annasAst.nachX, isNot(closeTo(schwagersAst.nachX, 1)));
       // Annas Ast endet über dem Elternhaus, der des Schwagers über seinem.
-      expect(annasAst.nachX, closeTo(
-          (schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2, 0.001));
-      expect(schwagersAst.nachX, closeTo(
-          (schild(p, 'schwagersVater').mitteX +
-                  schild(p, 'schwagersMutter').mitteX) /
-              2,
-          0.001));
+      expect(
+          annasAst.nachX,
+          closeTo((schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2,
+              0.001));
+      expect(
+          schwagersAst.nachX,
+          closeTo(
+              (schild(p, 'schwagersVater').mitteX +
+                      schild(p, 'schwagersMutter').mitteX) /
+                  2,
+              0.001));
     });
 
     test('ein Ast beginnt am Schild und endet am Elternhaus', () {
@@ -165,6 +179,71 @@ void main() {
   });
 
   group('das Ganze', () {
+    test('Herkunftsfamilien liegen auf der äußeren Seite des Paares', () {
+      // Der Fokus steht rechts neben seinem Partner. Seine Eltern,
+      // Schwester und deren Partner wachsen deshalb nach rechts; die
+      // Familie des Partners nach links. Ohne diese Zuordnung wirkte der
+      // Baum zwar symmetrisch, trennte aber die beiden Familienlinien.
+      final netz = Verwandtschaftsnetz([
+        partnerKanteFuer('ich', 'partner'),
+        kante('ich', 'meinVater', Verwandtschaft.elternteil),
+        kante('ich', 'meineMutter', Verwandtschaft.elternteil),
+        partnerKanteFuer('meinVater', 'meineMutter'),
+        kante('meineSchwester', 'meinVater', Verwandtschaft.elternteil),
+        kante('meineSchwester', 'meineMutter', Verwandtschaft.elternteil),
+        partnerKanteFuer('meineSchwester', 'meinSchwager'),
+        kante('partner', 'partnerVater', Verwandtschaft.elternteil),
+        kante('partner', 'partnerMutter', Verwandtschaft.elternteil),
+        partnerKanteFuer('partnerVater', 'partnerMutter'),
+        kante('partnerSchwester', 'partnerVater', Verwandtschaft.elternteil),
+        kante('partnerSchwester', 'partnerMutter', Verwandtschaft.elternteil),
+        partnerKanteFuer('partnerSchwester', 'partnerSchwager'),
+      ]);
+      const ids = [
+        'partnerVater',
+        'partnerMutter',
+        'meinVater',
+        'meineMutter',
+        'partner',
+        'ich',
+        'partnerSchwester',
+        'partnerSchwager',
+        'meineSchwester',
+        'meinSchwager',
+      ];
+      final p = zierbaumplan(geflechtUm(netz, 'ich', ids));
+      final ich = schild(p, 'ich').mitteX;
+      final partner = schild(p, 'partner').mitteX;
+
+      expect(partner, lessThan(ich), reason: 'der Partner steht links');
+      for (final person in [
+        'meinVater',
+        'meineMutter',
+        'meineSchwester',
+        'meinSchwager',
+      ]) {
+        expect(schild(p, person).mitteX, greaterThan(ich),
+            reason: '$person gehört zur rechten Fokusfamilie');
+      }
+      for (final person in [
+        'partnerVater',
+        'partnerMutter',
+        'partnerSchwester',
+        'partnerSchwager',
+      ]) {
+        expect(schild(p, person).mitteX, lessThan(partner),
+            reason: '$person gehört zur linken Partnerfamilie');
+      }
+    });
+
+    test('der Fokus hat Geschwister auf beiden Seiten', () {
+      final p = plan();
+      final mitte = schild(p, 'ich').mitteX;
+      final geschwister = [schild(p, 'anna').mitteX, schild(p, 'bruno').mitteX];
+      expect(geschwister.any((x) => x < mitte), isTrue);
+      expect(geschwister.any((x) => x > mitte), isTrue);
+    });
+
     test('alles liegt im sichtbaren Bereich', () {
       final p = plan();
       for (final s in p.schilder) {
@@ -177,7 +256,8 @@ void main() {
 
     test('unter dem untersten Schild bleibt Platz für den Namen', () {
       final p = plan();
-      final tiefstes = p.schilder.map((s) => s.unten).reduce((a, b) => a > b ? a : b);
+      final tiefstes =
+          p.schilder.map((s) => s.unten).reduce((a, b) => a > b ? a : b);
       expect(p.hoehe - tiefstes, greaterThan(100));
     });
 
@@ -232,11 +312,11 @@ void main() {
       final anna = schild(p, 'anna').mitteX;
       final schwiegerfamilie = schild(p, 'schwagersBruder').mitteX;
 
-      expect(schwiegerfamilie, greaterThan(anna),
-          reason: 'die angeheiratete Familie liegt auf einer Seite');
-      expect(bruno, greaterThan(ich));
-      expect(bruno, lessThan(anna),
-          reason: 'Bruno gehoert zwischen seine Geschwister, nicht an den Rand');
+      expect(schwiegerfamilie, lessThan(anna),
+          reason: 'die angeheiratete Familie bleibt ein eigener Seitenzweig');
+      expect(bruno, lessThan(ich));
+      expect(anna, greaterThan(ich),
+          reason: 'Geschwister teilen sich links und rechts des Fokus auf');
     });
 
     test('die Eltern stehen ueber der Mitte ihrer Kinder', () {

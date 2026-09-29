@@ -184,6 +184,12 @@ class AppTexteEn extends AppTexte {
   String get timelineLeer => 'No photos in this library yet.';
 
   @override
+  String get timelineJahre => 'Years';
+
+  @override
+  String get timelineDetails => 'Details';
+
+  @override
   String loeschenTitel(int anzahl) {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,
@@ -3812,6 +3818,11 @@ class AppTexteEn extends AppTexte {
   @override
   String downloadEntpackenFehler(String datei, String fehler) {
     return 'Unpacking $datei failed: $fehler';
+  }
+
+  @override
+  String downloadZuGross(String datei, int grenze) {
+    return '$datei exceeds the permitted size of $grenze bytes.';
   }
 
   @override
@@ -8225,7 +8236,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sicherTeilenAblaufText =>
-      'Optionally, this sharing package can no longer be imported after a chosen date.';
+      'Optionally, Photo Vault refuses this sharing package after a chosen date. The deadline is stored encrypted inside the package; it keeps an honest recipient from importing it later - it does not protect against someone who keeps the package and passphrase and sets their clock back.';
 
   @override
   String get sicherTeilenAblaufSetzen => 'Choose date';

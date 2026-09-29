@@ -30,8 +30,14 @@ else
   fehler=1
 fi
 
+# `grep -E` und nicht `rg`: Mit ripgrep meldete diese Pruefung
+# "bestanden", obwohl sie gar nicht lief. Fehlt das Werkzeug, endet der
+# Aufruf mit "command not found" und damit ungleich null - die
+# Bedingung ist dann falsch, der Zweig wird uebersprungen, und die
+# Zusicherung am Ende steht trotzdem da. Eine Pruefung, die ohne ihr
+# Werkzeug still durchwinkt, ist schlimmer als keine.
 if git log --all --format='%B' | \
-    rg -n '[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9.-]*\.[A-Za-z]{2,}' >/dev/null; then
+    grep -qE '[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9.-]*\.[A-Za-z]{2,}'; then
   echo 'E-Mail-Adresse in einer Commit-Nachricht gefunden.' >&2
   fehler=1
 fi

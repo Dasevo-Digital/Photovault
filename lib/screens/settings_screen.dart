@@ -311,6 +311,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         t.downloadPruefsummeFehler(datei, erhalten, erwartet),
       ModellDownloadFehler(:final datei, :final ursache) =>
         t.downloadFehlgeschlagen(datei, ursache ?? ''),
+      GeoDownloadFehler(:final datei, groessengrenze: final grenze?) =>
+        t.downloadZuGross(datei, grenze),
       GeoDownloadFehler(:final datei, ursache: null, beimEntpacken: true) =>
         t.downloadNichtImZip(datei),
       GeoDownloadFehler(:final datei, :final ursache, beimEntpacken: true) =>

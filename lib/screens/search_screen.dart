@@ -372,6 +372,18 @@ class _SearchScreenState extends State<SearchScreen>
       }
 
       if (queryVector != null) {
+        // Bei Videos sind hier auch die weiteren Standbilder dabei – ein
+        // Video ist nicht mehr ein einziges Bild (siehe
+        // [LibraryState.suchkandidaten]).
+        final embeddings = await widget.library.suchkandidaten();
+        if (embeddings.isEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _zeigeFunde(const []);
+            _leerGrund = AppTexte.of(context).sucheOhneEmbeddings;
+          });
+          return;
+        }
         // Reihenfolge ist entscheidend: ERST die übrigen Filter anwenden,
         // DANN innerhalb dieser Treffermenge nach Ähnlichkeit ranken.
         // Andersherum (Audit-Fund) entschied das bibliotheksweite Top-200
@@ -389,11 +401,12 @@ class _SearchScreenState extends State<SearchScreen>
         // danach für 2,6 ms.
         final erlaubt =
             (await widget.library.db.searchAssetIds(_filters)).toSet();
-        final kandidaten = await widget.library.textSimilarityCandidates(
-          queryVector,
-          erlaubt,
-          minimum: 200,
-        );
+        final kandidaten = <String, Float32List>{
+          for (final e in embeddings.entries)
+            if (erlaubt
+                .contains(LibraryState.aufnahmeAusSuchschluessel(e.key)))
+              e.key: e.value,
+        };
         if (kandidaten.isEmpty) {
           if (!mounted) return;
           setState(() {
