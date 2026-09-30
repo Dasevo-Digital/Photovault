@@ -30,6 +30,7 @@ class GeoDownloadFehler implements Exception {
       : ursache = null,
         beimEntpacken = true,
         groessengrenze = null;
+
   /// **Die Grenze als Zahl, nicht als fertiger Satz.** Vorher stand hier
   /// ein deutscher Satz, der ueber `ursache` unveraendert in die
   /// Oberflaeche lief – auch in die englische. Wer den Text setzt, ist
@@ -83,8 +84,13 @@ class GeoDataDownloadService {
   Stream<GeoDataDownloadProgress> download() {
     late StreamController<GeoDataDownloadProgress> controller;
     controller = StreamController<GeoDataDownloadProgress>(onListen: () async {
-      final staging = Directory(p.join(
-          geoDataDir, '.download-${DateTime.now().microsecondsSinceEpoch}'));
+      // Als Geschwister anlegen, nicht IN `geoDataDir`: Nur so können wir
+      // den geprüften Satz danach per Verzeichniswechsel aktivieren. Ein
+      // teilweises Ersetzen einzelner Dateien ließe bei vollem Datenträger
+      // oder einem I/O-Fehler eine gemischte Ortsdatenbank zurück.
+      final staging = Directory(
+          '$geoDataDir.download-${DateTime.now().microsecondsSinceEpoch}');
+      await Directory(geoDataDir).parent.create(recursive: true);
       await staging.create(recursive: true);
       try {
         for (final file in GeoDataCatalog.files) {
@@ -130,8 +136,8 @@ class GeoDataDownloadService {
           if (!await source.exists() || await source.length() == 0) {
             throw GeoDownloadFehler.nichtImZip(name);
           }
-          await source.rename(p.join(geoDataDir, name));
         }
+        await _aktiviereStagingAtomar(staging);
         await controller.close();
       } catch (e) {
         controller.addError(e is GeoDownloadFehler
@@ -143,6 +149,39 @@ class GeoDataDownloadService {
       }
     });
     return controller.stream;
+  }
+
+  /// Aktiviert den kompletten, bereits validierten Satz mit zwei Umbenennungen
+  /// im selben Elternordner. Scheitert die zweite, wird der bisherige Satz
+  /// zurückbenannt. Dadurch sieht der Offline-Geocoder nie eine Mischung aus
+  /// alten und neuen Dateien.
+  Future<void> _aktiviereStagingAtomar(Directory staging) async {
+    final active = Directory(geoDataDir);
+    final previous = Directory(
+        '$geoDataDir.previous-${DateTime.now().microsecondsSinceEpoch}');
+    final hadActive = await active.exists();
+    var oldParked = false;
+    try {
+      if (hadActive) {
+        await active.rename(previous.path);
+        oldParked = true;
+      }
+      await staging.rename(active.path);
+    } catch (_) {
+      if (oldParked && !await active.exists() && await previous.exists()) {
+        await previous.rename(active.path);
+      }
+      rethrow;
+    }
+    if (await previous.exists()) {
+      try {
+        await previous.delete(recursive: true);
+      } catch (_) {
+        // Der neue Satz ist bereits aktiv. Eine liegengebliebene, private
+        // Rückfallkopie ist sicherer als einen erfolgreichen Download als
+        // Fehler zu melden.
+      }
+    }
   }
 
   /// Entpackt `cities1000.txt` aus dem heruntergeladenen Zip und löscht das
