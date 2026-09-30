@@ -59,22 +59,32 @@ Quell-URLs stehen in `lib/services/model_catalog.dart`.
 | SFace | Gesichts-Wiedererkennung | Apache-2.0 | [OpenCV Zoo](https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface) |
 | CLIP ViT-B/32 | KI-Bildsuche | MIT (OpenAI-Gewichte) | [Xenova/HuggingFace](https://huggingface.co/Xenova/clip-vit-base-patch32) |
 | SAM ViT-Base | KI-Objektmasken | Apache-2.0 (Meta Segment Anything) | [Xenova/HuggingFace](https://huggingface.co/Xenova/sam-vit-base) |
-| ViT-GPT2 | Bildbeschreibung | Apache-2.0 | [Xenova/HuggingFace](https://huggingface.co/Xenova/vit-gpt2-image-captioning) |
+| Florence-2 base-ft | Bildbeschreibung | MIT | [onnx-community/HuggingFace](https://huggingface.co/onnx-community/Florence-2-base-ft) |
 | OCEC | Geschlossene Augen | MIT | [PINTO0309/OCEC](https://github.com/PINTO0309/OCEC) |
 | Real-ESRGAN x4 | KI-Restaurierung | BSD-3-Clause | [SceneWorks/HuggingFace](https://huggingface.co/SceneWorks/real-esrgan-onnx) |
+| LaMa | Objektentfernung | Apache-2.0 | [Carve/HuggingFace](https://huggingface.co/Carve/LaMa-ONNX) |
+| PaddleOCR | Texterkennung | Apache-2.0 | [PaddlePaddle/HuggingFace](https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx) |
+| OPUS-MT en→de / de→en | Übersetzung | Apache-2.0 | [Xenova/HuggingFace](https://huggingface.co/Xenova) |
 
 ### Geodaten
 
 Die Umkehr-Geokodierung nutzt den [GeoNames](https://www.geonames.org/)-
 Datensatz `cities1000` (CC BY 4.0), ebenfalls erst auf Anforderung geladen.
 
-### Kartenkacheln
+### Karten-, Gelände- und Wanderinformationen
 
-Die flache Kartenansicht lädt Kacheln von
-[OpenStreetMap](https://www.openstreetmap.org/copyright) – Kartendaten
-© OpenStreetMap-Mitwirkende, ODbL. Bei öffentlicher Nutzung ist die
+Die Kartenansichten können Daten beziehungsweise Kacheln von OpenStreetMap
+(ODbL-1.0), OpenTopoMap, CyclOSM, CARTO, Esri/ArcGIS, Mapbox, MapTiler,
+Thunderforest und Google Maps laden. Es gelten die Bedingungen und
+Namensnennung des jeweils ausgewählten Anbieters. Bei OpenStreetMap ist
+zusätzlich die
 [Tile-Usage-Policy](https://operations.osmfoundation.org/policies/tiles/)
 zu beachten.
+
+Geländeansichten verwenden Höhendaten von AWS Open Data sowie Wanderwege von
+Waymarked Trails. Wanderobjekte werden über die Overpass API aus
+OpenStreetMap-Daten abgefragt. Die erforderlichen Quellenhinweise werden in
+der jeweiligen Ansicht angezeigt.
 
 ### Testdateien
 

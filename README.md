@@ -15,12 +15,13 @@ der App herunterlädst. Ausgeliefert wird kein einziges Modell mit.
 Keine Cloud · Keine Telemetrie · Keine Registrierung · Alles offline
 ```
 
-Die App macht genau drei Arten von Netzwerkaufrufen: den Download der
-KI-Modelle bzw. Geodaten, den du selbst anstößt; das Laden der
-Kartenkacheln in der Karten- und der Geländeansicht; und – nur wenn du
-den Überflug über eine Aktivität öffnest – eine Abfrage nach Gipfeln,
-Hütten und Quellen im gezeigten Ausschnitt. Nichts davon trägt ein Foto,
-ein Konto oder eine Kennung mit.
+Netzwerkaufrufe entstehen beim ausdrücklich angestoßenen Download von
+KI-Modellen und Geodaten, beim Laden von Karten- und Geländedaten, bei der
+Abfrage von Wanderobjekten sowie bei einer manuell gestarteten
+Aktualisierungsprüfung. Nichts davon überträgt ein Foto, ein Konto oder eine
+eigene Gerätekennung. Welche Anbieter dabei IP-Adresse und räumliche
+Anfrageparameter erhalten, steht in den Datenschutzinformationen auf
+[Deutsch](docs/datenschutz.md) und [Englisch](docs/privacy.md).
 
 ## Bildschirmfotos
 
