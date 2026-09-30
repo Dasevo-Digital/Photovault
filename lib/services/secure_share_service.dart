@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
@@ -19,6 +20,66 @@ class SharePackageExpired implements Exception {
   const SharePackageExpired(this.expiresAt);
 
   final DateTime expiresAt;
+}
+
+/// Schreibt einen ZIP-Eintrag auf Platte, ohne sich auf dessen Größenangabe
+/// blind zu verlassen. ZIP-Metadaten sind nicht authentifiziert: Ein
+/// manipuliertes Archiv könnte eine kleine Größe behaupten und beim
+/// Dekomprimieren weit mehr liefern. Der Zähler bricht dann *während* des
+/// Entpackens ab, bevor Platte oder Arbeitsspeicher unkontrolliert wachsen.
+class _BegrenzterDateiAusgabestrom extends OutputStream {
+  _BegrenzterDateiAusgabestrom(String path, this.maxBytes)
+      : _delegate = OutputFileStream(path),
+        super(byteOrder: ByteOrder.littleEndian);
+
+  final OutputFileStream _delegate;
+  final int maxBytes;
+
+  void _pruefe(int bytes) {
+    if (bytes < 0 || length + bytes > maxBytes) {
+      throw const FormatException('Unplausible Paketgröße.');
+    }
+  }
+
+  @override
+  int get length => _delegate.length;
+
+  @override
+  bool get isOpen => _delegate.isOpen;
+
+  @override
+  Future<void> close() => _delegate.close();
+
+  @override
+  void closeSync() => _delegate.closeSync();
+
+  @override
+  void clear() => _delegate.clear();
+
+  @override
+  void flush() => _delegate.flush();
+
+  @override
+  Uint8List subset(int start, [int? end]) => _delegate.subset(start, end);
+
+  @override
+  void writeByte(int value) {
+    _pruefe(1);
+    _delegate.writeByte(value);
+  }
+
+  @override
+  void writeBytes(List<int> bytes, {int? length}) {
+    final count = length ?? bytes.length;
+    _pruefe(count);
+    _delegate.writeBytes(bytes, length: count);
+  }
+
+  @override
+  void writeStream(InputStream stream) {
+    _pruefe(stream.length);
+    _delegate.writeStream(stream);
+  }
 }
 
 /// Erstellt ein einzelnes, portables und passwortgeschütztes Austauschpaket.
@@ -137,27 +198,45 @@ class SecureShareService {
         await Process.run('chmod', ['700', temp.path]);
       }
       input = InputFileStream(package.path);
-      final archive = ZipDecoder().decodeStream(input, verify: true);
       final allowed = RegExp(r'^(key\.json|manifest\.pve|data/[0-9]{6}\.pve)$');
-      var total = 0;
       final packageBytes = await package.length();
-      for (final entry in archive) {
+      final maxExpandedBytes = packageBytes * 3 + 10 * 1024 * 1024;
+      var declaredTotal = 0;
+      final names = <String>{};
+
+      // Die Callback-Prüfung läuft nach dem Lesen des Zentralverzeichnisses
+      // und VOR dem ersten Entpacken. Damit wird eine ZIP-Bombe schon anhand
+      // ihrer deklarierten Größen abgewiesen. Der begrenzte Ausgabestrom
+      // unten kontrolliert zusätzlich jede tatsächlich ausgegebene Bytezahl,
+      // falls jemand die Größenangabe im Archiv manipuliert hat.
+      final archive =
+          ZipDecoder().decodeStream(input, verify: true, callback: (entry) {
         final name = entry.name.replaceAll('\\', '/');
-        if (entry.isDirectory && name == 'data/') continue;
+        if (entry.isDirectory && name == 'data/') return;
         if (entry.isDirectory ||
             entry.isSymbolicLink ||
             !allowed.hasMatch(name)) {
           throw const FormatException('Unerlaubter Eintrag im Austauschpaket.');
         }
-        total += entry.size;
-        if (total > packageBytes * 3 + 10 * 1024 * 1024) {
+        if (!names.add(name) || entry.size < 0) {
+          throw const FormatException('Ungültige Paketstruktur.');
+        }
+        declaredTotal += entry.size;
+        if (entry.size > maxExpandedBytes || declaredTotal > maxExpandedBytes) {
           throw const FormatException('Unplausible Paketgröße.');
         }
+      });
+      for (final entry in archive) {
+        final name = entry.name.replaceAll('\\', '/');
+        if (entry.isDirectory && name == 'data/') continue;
         final target = File(p.joinAll([temp.path, ...name.split('/')]));
         await target.parent.create(recursive: true);
-        final output = OutputFileStream(target.path);
+        final output = _BegrenzterDateiAusgabestrom(target.path, entry.size);
         try {
           entry.writeContent(output);
+          if (output.length != entry.size) {
+            throw const FormatException('Unplausible Paketgröße.');
+          }
         } finally {
           await output.close();
         }

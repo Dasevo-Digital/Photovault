@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,31 @@ import 'package:photo_vault/services/secure_share_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 
 void main() {
+  test('weist eine ZIP-Bombe vor dem Entpacken ab', () async {
+    final temp = Directory.systemTemp.createTempSync('pv_share_bombe_');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final source = Directory(p.join(temp.path, 'quelle'))..createSync();
+    final data = Directory(p.join(source.path, 'data'))..createSync();
+    // Stark komprimierbar, aber deutlich größer als die für das kleine
+    // Containerpaket erlaubte entpackte Menge. Die Prüfung muss vor dem
+    // Schreiben der Datei auslösen.
+    File(p.join(data.path, '000001.pve'))
+        .writeAsBytesSync(List<int>.filled(12 * 1024 * 1024, 0));
+    final package = File(p.join(temp.path, 'bombe.pvshare'));
+    await ZipFileEncoder().zipDirectory(source, filename: package.path);
+    expect(await package.length(), lessThan(100 * 1024));
+
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final paths = await StoragePaths.forTesting(
+        Directory(p.join(temp.path, 'zielbibliothek')));
+    await expectLater(
+      SecureShareService(ExportService(paths)).importPackage(
+          package, 'eine-lange-passphrase', ImportService(db, paths)),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('Austauschpaket enthält weder Klartextdateiname noch Klartextinhalt',
       () async {
     final temp = Directory.systemTemp.createTempSync('pv_share_test_');
