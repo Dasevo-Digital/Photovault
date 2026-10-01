@@ -68,6 +68,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.19.0" date="2026-10-01">
+      <description>
+        <p>The timeline can be grouped by day, as in Immich. Every day gets its own heading - Today, Yesterday, otherwise weekday and date - and tapping it selects the whole day.</p>
+        <p>Small days sit side by side: a day that fits into a single row shares it with the next one, a larger day keeps its own heading across the full width. In a grown library with 534 days, 179 days hold a single photo and 146 more two or three; one row per day would be mostly headings and half-empty rows.</p>
+        <p>Works with the square grid and the justified rows, the scrubber stays on years and months, and the choice is remembered. The list view can also be grouped by day.</p>
+        <p>Fixed: the scrubber of the calendar month view labelled every day with the same number, such as 202609, instead of the day.</p>
+        <p>From 3.18.1: shared packages are checked against their declared sizes before anything is unpacked, and newly downloaded place data is switched in as a whole, so a full disk can no longer leave a mix of old and new files.</p>
+      </description>
+    </release>
     <release version="3.18.0" date="2026-09-24">
       <description>
         <p>Contact sheets no longer carry the EXIF of the photos they show. The visible sheet only ever listed number and date, but the embedded images still held camera, model and GPS coordinates - on a grown library 892 of 8144 previews carry GPS, and a contact sheet is made to be printed and handed on.</p>
