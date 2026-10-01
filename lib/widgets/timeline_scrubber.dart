@@ -120,6 +120,11 @@ class TimelineScrubber extends StatefulWidget {
   /// Tage, so viele davon, wie nebeneinander Platz haben.
   final bool tageweise;
 
+  /// Ob das Raster innerhalb der Monate nach Tagen gliedert (siehe
+  /// [MonthGroupedAssetGrid.mitTagen]). Die Gruppen bleiben Monate, aber
+  /// jede ist anders hoch – Tagesüberschriften, Tage nebeneinander.
+  final bool mitTagen;
+
   /// Die eingestellte Kachelbreite (siehe [zeitleisteKachelstufen]) – der
   /// Sprung rechnet sonst mit einer anderen Zeilenhöhe als das Raster
   /// zeichnet und landet neben dem Monat, den er anpeilt.
@@ -138,6 +143,7 @@ class TimelineScrubber extends StatefulWidget {
     required this.controller,
     required this.gridWidth,
     this.tageweise = false,
+    this.mitTagen = false,
     this.kachelbreite = timelineGridMaxCrossAxisExtent,
     this.form = zeitleisteFormVorgabe,
   });
@@ -209,7 +215,9 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
 
   double _monthHeight(int key) =>
       timelineMonthGroupHeight(widget.groups[key]!, widget.gridWidth,
-          kachelbreite: widget.kachelbreite, form: widget.form);
+          kachelbreite: widget.kachelbreite,
+          form: widget.form,
+          mitTagen: widget.mitTagen);
 
   /// Kumulierte Pixel-Offsets für den Start jedes Monats (gleiche
   /// Reihenfolge wie [orderedKeys]), letzter Eintrag = geschätzte
@@ -244,6 +252,18 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
     return widget.tageweise
         ? DateFormat.MMMd(sprache).format(wann)
         : DateFormat.yMMM(sprache).format(wann);
+  }
+
+  /// Die stehende Beschriftung an einem Punkt: das Jahr, im Tagesbetrieb
+  /// der Tag des Monats.
+  ///
+  /// Hier stand für beide Fälle `schluessel ~/ 100`. Über Monate
+  /// (Jahr*100+Monat) ist das das Jahr; über Tage (Jahr*10000+Monat*100+Tag)
+  /// kam „202609" heraus – an jedem beschrifteten Tag dieselbe Zahl.
+  String _festeBeschriftung(int index) {
+    if (!widget.tageweise) return '${widget.orderedKeys[index] ~/ 100}';
+    return DateFormat.d(Localizations.localeOf(context).toString())
+        .format(widget.groups[widget.orderedKeys[index]]!.first.fileCreatedAt);
   }
 
   @override
@@ -346,7 +366,7 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
                           right: _punktSpalte + 8,
                           top: (y - _zeilenhoehe / 2).clamp(0.0, trackHeight - _zeilenhoehe),
                           child: Text(
-                            '${widget.orderedKeys[i] ~/ 100}',
+                            _festeBeschriftung(i),
                             style: TextStyle(
                               fontSize: 11 + nah,
                               height: 1.1,

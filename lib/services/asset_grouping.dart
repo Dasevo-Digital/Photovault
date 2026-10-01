@@ -12,6 +12,10 @@ enum ListenGruppierung {
   /// Wie das Raster: ein Abschnitt je Monat, neueste zuerst.
   monat,
 
+  /// Ein Abschnitt je Tag – die Liste kennt keine Monatsüberschrift
+  /// darüber, der Abschnitt nennt deshalb das volle Datum.
+  tag,
+
   /// Ein Abschnitt je Kameramodell – die Arbeitsweise, wenn man eine
   /// Reihe mit zwei Gehäusen fotografiert hat und beide getrennt
   /// durchsehen will.
@@ -24,6 +28,7 @@ enum ListenGruppierung {
 /// Ein Abschnitt der Liste.
 class Assetgruppe {
   /// Bei [ListenGruppierung.monat] `jahr*100+monat`, bei
+  /// [ListenGruppierung.tag] `jahr*10000+monat*100+tag`, bei
   /// [ListenGruppierung.kamera] die Modellbezeichnung, sonst leer.
   ///
   /// Unformatiert: Wie daraus „März 2026" wird, weiss nur die Oberfläche –
@@ -49,6 +54,8 @@ String? kamerabezeichnung(AssetData asset) {
   return '$hersteller $modell';
 }
 
+int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
 /// Gliedert [assets] nach [art].
 ///
 /// [assets] kommt bereits nach Datum sortiert (neueste zuerst) – innerhalb
@@ -70,6 +77,7 @@ List<Assetgruppe> gruppiereAssets(List<AssetData> assets, ListenGruppierung art,
     final schluessel = switch (art) {
       ListenGruppierung.monat =>
         '${asset.fileCreatedAt.year * 100 + asset.fileCreatedAt.month}',
+      ListenGruppierung.tag => '${_tagesschluessel(asset.fileCreatedAt)}',
       ListenGruppierung.kamera => kamerabezeichnung(asset) ?? '',
       ListenGruppierung.keine => '',
     };
@@ -79,6 +87,7 @@ List<Assetgruppe> gruppiereAssets(List<AssetData> assets, ListenGruppierung art,
   final schluessel = nachSchluessel.keys.toList();
   switch (art) {
     case ListenGruppierung.monat:
+    case ListenGruppierung.tag:
       // In dieselbe Richtung wie die Aufnahmen darin – wie im Raster.
       schluessel.sort((a, b) => absteigend
           ? int.parse(b).compareTo(int.parse(a))

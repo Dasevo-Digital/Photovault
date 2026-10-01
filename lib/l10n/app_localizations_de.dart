@@ -4867,6 +4867,22 @@ class AppTexteDe extends AppTexte {
   String get gruppeMonat => 'Nach Monat';
 
   @override
+  String get gruppeTag => 'Nach Tag';
+
+  @override
+  String get zeitleisteNachTagen =>
+      'Nach Tagen gliedern – kleine Tage nebeneinander';
+
+  @override
+  String get zeitleisteNachMonaten => 'Nur nach Monaten gliedern';
+
+  @override
+  String get tagHeute => 'Heute';
+
+  @override
+  String get tagGestern => 'Gestern';
+
+  @override
   String get gruppeKamera => 'Nach Kamera';
 
   @override

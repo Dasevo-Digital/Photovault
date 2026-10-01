@@ -7992,6 +7992,36 @@ abstract class AppTexte {
   /// **'Nach Monat'**
   String get gruppeMonat;
 
+  /// No description provided for @gruppeTag.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Tag'**
+  String get gruppeTag;
+
+  /// No description provided for @zeitleisteNachTagen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Tagen gliedern – kleine Tage nebeneinander'**
+  String get zeitleisteNachTagen;
+
+  /// No description provided for @zeitleisteNachMonaten.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur nach Monaten gliedern'**
+  String get zeitleisteNachMonaten;
+
+  /// No description provided for @tagHeute.
+  ///
+  /// In de, this message translates to:
+  /// **'Heute'**
+  String get tagHeute;
+
+  /// No description provided for @tagGestern.
+  ///
+  /// In de, this message translates to:
+  /// **'Gestern'**
+  String get tagGestern;
+
   /// No description provided for @gruppeKamera.
   ///
   /// In de, this message translates to:

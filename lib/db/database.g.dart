@@ -11703,6 +11703,16 @@ class $AppSettingsTable extends AppSettings
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: Constant(rastersortierungVorgabe.index));
+  static const VerificationMeta _zeitleisteMitTagenMeta =
+      const VerificationMeta('zeitleisteMitTagen');
+  @override
+  late final GeneratedColumn<bool> zeitleisteMitTagen = GeneratedColumn<bool>(
+      'zeitleiste_mit_tagen', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("zeitleiste_mit_tagen" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _listenspaltenMeta =
       const VerificationMeta('listenspalten');
   @override
@@ -11766,6 +11776,7 @@ class $AppSettingsTable extends AppSettings
         zeitleisteKachelstufe,
         zeitleisteFormNr,
         zeitleisteSortierungNr,
+        zeitleisteMitTagen,
         listenspalten,
         maxGleichzeitig,
         translateCaptions,
@@ -11937,6 +11948,12 @@ class $AppSettingsTable extends AppSettings
           zeitleisteSortierungNr.isAcceptableOrUnknown(
               data['zeitleiste_sortierung_nr']!, _zeitleisteSortierungNrMeta));
     }
+    if (data.containsKey('zeitleiste_mit_tagen')) {
+      context.handle(
+          _zeitleisteMitTagenMeta,
+          zeitleisteMitTagen.isAcceptableOrUnknown(
+              data['zeitleiste_mit_tagen']!, _zeitleisteMitTagenMeta));
+    }
     if (data.containsKey('listenspalten')) {
       context.handle(
           _listenspaltenMeta,
@@ -12028,6 +12045,8 @@ class $AppSettingsTable extends AppSettings
       zeitleisteSortierungNr: attachedDatabase.typeMapping.read(
           DriftSqlType.int,
           data['${effectivePrefix}zeitleiste_sortierung_nr'])!,
+      zeitleisteMitTagen: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}zeitleiste_mit_tagen'])!,
       listenspalten: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}listenspalten']),
       maxGleichzeitig: attachedDatabase.typeMapping
@@ -12286,6 +12305,15 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
   /// mehr gibt.
   final int zeitleisteSortierungNr;
 
+  /// Ob die Zeitleiste innerhalb der Monate nach Tagen gliedert – mit
+  /// kleinen Tagen nebeneinander (siehe `zeitleisteTageszeilen`).
+  ///
+  /// Gemerkt aus demselben Grund wie Form und Kachelgroesse: Es ist keine
+  /// Wahl, die man im Lauf einer Sichtung umlegt, sondern wie man seine
+  /// Bibliothek ansieht. Vorgabe aus – wer nichts umstellt, sieht das
+  /// Bisherige.
+  final bool zeitleisteMitTagen;
+
   /// Welche Spalten die Listenansicht zeigt und wie breit sie sind –
   /// als Text, siehe [Listenspaltenwahl.alsText].
   ///
@@ -12350,6 +12378,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       required this.zeitleisteKachelstufe,
       required this.zeitleisteFormNr,
       required this.zeitleisteSortierungNr,
+      required this.zeitleisteMitTagen,
       this.listenspalten,
       required this.maxGleichzeitig,
       required this.translateCaptions,
@@ -12403,6 +12432,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     map['zeitleiste_kachelstufe'] = Variable<int>(zeitleisteKachelstufe);
     map['zeitleiste_form_nr'] = Variable<int>(zeitleisteFormNr);
     map['zeitleiste_sortierung_nr'] = Variable<int>(zeitleisteSortierungNr);
+    map['zeitleiste_mit_tagen'] = Variable<bool>(zeitleisteMitTagen);
     if (!nullToAbsent || listenspalten != null) {
       map['listenspalten'] = Variable<String>(listenspalten);
     }
@@ -12459,6 +12489,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       zeitleisteKachelstufe: Value(zeitleisteKachelstufe),
       zeitleisteFormNr: Value(zeitleisteFormNr),
       zeitleisteSortierungNr: Value(zeitleisteSortierungNr),
+      zeitleisteMitTagen: Value(zeitleisteMitTagen),
       listenspalten: listenspalten == null && nullToAbsent
           ? const Value.absent()
           : Value(listenspalten),
@@ -12511,6 +12542,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       zeitleisteFormNr: serializer.fromJson<int>(json['zeitleisteFormNr']),
       zeitleisteSortierungNr:
           serializer.fromJson<int>(json['zeitleisteSortierungNr']),
+      zeitleisteMitTagen: serializer.fromJson<bool>(json['zeitleisteMitTagen']),
       listenspalten: serializer.fromJson<String?>(json['listenspalten']),
       maxGleichzeitig: serializer.fromJson<int>(json['maxGleichzeitig']),
       translateCaptions: serializer.fromJson<bool>(json['translateCaptions']),
@@ -12550,6 +12582,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       'zeitleisteKachelstufe': serializer.toJson<int>(zeitleisteKachelstufe),
       'zeitleisteFormNr': serializer.toJson<int>(zeitleisteFormNr),
       'zeitleisteSortierungNr': serializer.toJson<int>(zeitleisteSortierungNr),
+      'zeitleisteMitTagen': serializer.toJson<bool>(zeitleisteMitTagen),
       'listenspalten': serializer.toJson<String?>(listenspalten),
       'maxGleichzeitig': serializer.toJson<int>(maxGleichzeitig),
       'translateCaptions': serializer.toJson<bool>(translateCaptions),
@@ -12585,6 +12618,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           int? zeitleisteKachelstufe,
           int? zeitleisteFormNr,
           int? zeitleisteSortierungNr,
+          bool? zeitleisteMitTagen,
           Value<String?> listenspalten = const Value.absent(),
           int? maxGleichzeitig,
           bool? translateCaptions,
@@ -12640,6 +12674,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
         zeitleisteFormNr: zeitleisteFormNr ?? this.zeitleisteFormNr,
         zeitleisteSortierungNr:
             zeitleisteSortierungNr ?? this.zeitleisteSortierungNr,
+        zeitleisteMitTagen: zeitleisteMitTagen ?? this.zeitleisteMitTagen,
         listenspalten:
             listenspalten.present ? listenspalten.value : this.listenspalten,
         maxGleichzeitig: maxGleichzeitig ?? this.maxGleichzeitig,
@@ -12724,6 +12759,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       zeitleisteSortierungNr: data.zeitleisteSortierungNr.present
           ? data.zeitleisteSortierungNr.value
           : this.zeitleisteSortierungNr,
+      zeitleisteMitTagen: data.zeitleisteMitTagen.present
+          ? data.zeitleisteMitTagen.value
+          : this.zeitleisteMitTagen,
       listenspalten: data.listenspalten.present
           ? data.listenspalten.value
           : this.listenspalten,
@@ -12769,6 +12807,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ..write('zeitleisteKachelstufe: $zeitleisteKachelstufe, ')
           ..write('zeitleisteFormNr: $zeitleisteFormNr, ')
           ..write('zeitleisteSortierungNr: $zeitleisteSortierungNr, ')
+          ..write('zeitleisteMitTagen: $zeitleisteMitTagen, ')
           ..write('listenspalten: $listenspalten, ')
           ..write('maxGleichzeitig: $maxGleichzeitig, ')
           ..write('translateCaptions: $translateCaptions, ')
@@ -12806,6 +12845,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
         zeitleisteKachelstufe,
         zeitleisteFormNr,
         zeitleisteSortierungNr,
+        zeitleisteMitTagen,
         listenspalten,
         maxGleichzeitig,
         translateCaptions,
@@ -12842,6 +12882,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           other.zeitleisteKachelstufe == this.zeitleisteKachelstufe &&
           other.zeitleisteFormNr == this.zeitleisteFormNr &&
           other.zeitleisteSortierungNr == this.zeitleisteSortierungNr &&
+          other.zeitleisteMitTagen == this.zeitleisteMitTagen &&
           other.listenspalten == this.listenspalten &&
           other.maxGleichzeitig == this.maxGleichzeitig &&
           other.translateCaptions == this.translateCaptions &&
@@ -12876,6 +12917,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
   final Value<int> zeitleisteKachelstufe;
   final Value<int> zeitleisteFormNr;
   final Value<int> zeitleisteSortierungNr;
+  final Value<bool> zeitleisteMitTagen;
   final Value<String?> listenspalten;
   final Value<int> maxGleichzeitig;
   final Value<bool> translateCaptions;
@@ -12908,6 +12950,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.zeitleisteKachelstufe = const Value.absent(),
     this.zeitleisteFormNr = const Value.absent(),
     this.zeitleisteSortierungNr = const Value.absent(),
+    this.zeitleisteMitTagen = const Value.absent(),
     this.listenspalten = const Value.absent(),
     this.maxGleichzeitig = const Value.absent(),
     this.translateCaptions = const Value.absent(),
@@ -12941,6 +12984,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.zeitleisteKachelstufe = const Value.absent(),
     this.zeitleisteFormNr = const Value.absent(),
     this.zeitleisteSortierungNr = const Value.absent(),
+    this.zeitleisteMitTagen = const Value.absent(),
     this.listenspalten = const Value.absent(),
     this.maxGleichzeitig = const Value.absent(),
     this.translateCaptions = const Value.absent(),
@@ -12974,6 +13018,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Expression<int>? zeitleisteKachelstufe,
     Expression<int>? zeitleisteFormNr,
     Expression<int>? zeitleisteSortierungNr,
+    Expression<bool>? zeitleisteMitTagen,
     Expression<String>? listenspalten,
     Expression<int>? maxGleichzeitig,
     Expression<bool>? translateCaptions,
@@ -13019,6 +13064,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       if (zeitleisteFormNr != null) 'zeitleiste_form_nr': zeitleisteFormNr,
       if (zeitleisteSortierungNr != null)
         'zeitleiste_sortierung_nr': zeitleisteSortierungNr,
+      if (zeitleisteMitTagen != null)
+        'zeitleiste_mit_tagen': zeitleisteMitTagen,
       if (listenspalten != null) 'listenspalten': listenspalten,
       if (maxGleichzeitig != null) 'max_gleichzeitig': maxGleichzeitig,
       if (translateCaptions != null) 'translate_captions': translateCaptions,
@@ -13055,6 +13102,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       Value<int>? zeitleisteKachelstufe,
       Value<int>? zeitleisteFormNr,
       Value<int>? zeitleisteSortierungNr,
+      Value<bool>? zeitleisteMitTagen,
       Value<String?>? listenspalten,
       Value<int>? maxGleichzeitig,
       Value<bool>? translateCaptions,
@@ -13093,6 +13141,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       zeitleisteFormNr: zeitleisteFormNr ?? this.zeitleisteFormNr,
       zeitleisteSortierungNr:
           zeitleisteSortierungNr ?? this.zeitleisteSortierungNr,
+      zeitleisteMitTagen: zeitleisteMitTagen ?? this.zeitleisteMitTagen,
       listenspalten: listenspalten ?? this.listenspalten,
       maxGleichzeitig: maxGleichzeitig ?? this.maxGleichzeitig,
       translateCaptions: translateCaptions ?? this.translateCaptions,
@@ -13191,6 +13240,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       map['zeitleiste_sortierung_nr'] =
           Variable<int>(zeitleisteSortierungNr.value);
     }
+    if (zeitleisteMitTagen.present) {
+      map['zeitleiste_mit_tagen'] = Variable<bool>(zeitleisteMitTagen.value);
+    }
     if (listenspalten.present) {
       map['listenspalten'] = Variable<String>(listenspalten.value);
     }
@@ -13237,6 +13289,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
           ..write('zeitleisteKachelstufe: $zeitleisteKachelstufe, ')
           ..write('zeitleisteFormNr: $zeitleisteFormNr, ')
           ..write('zeitleisteSortierungNr: $zeitleisteSortierungNr, ')
+          ..write('zeitleisteMitTagen: $zeitleisteMitTagen, ')
           ..write('listenspalten: $listenspalten, ')
           ..write('maxGleichzeitig: $maxGleichzeitig, ')
           ..write('translateCaptions: $translateCaptions, ')
@@ -26193,6 +26246,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder = AppSettingsCompanion
   Value<int> zeitleisteKachelstufe,
   Value<int> zeitleisteFormNr,
   Value<int> zeitleisteSortierungNr,
+  Value<bool> zeitleisteMitTagen,
   Value<String?> listenspalten,
   Value<int> maxGleichzeitig,
   Value<bool> translateCaptions,
@@ -26227,6 +26281,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder = AppSettingsCompanion
   Value<int> zeitleisteKachelstufe,
   Value<int> zeitleisteFormNr,
   Value<int> zeitleisteSortierungNr,
+  Value<bool> zeitleisteMitTagen,
   Value<String?> listenspalten,
   Value<int> maxGleichzeitig,
   Value<bool> translateCaptions,
@@ -26343,6 +26398,10 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<int> get zeitleisteSortierungNr => $composableBuilder(
       column: $table.zeitleisteSortierungNr,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get zeitleisteMitTagen => $composableBuilder(
+      column: $table.zeitleisteMitTagen,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get listenspalten => $composableBuilder(
@@ -26475,6 +26534,10 @@ class $$AppSettingsTableOrderingComposer
       column: $table.zeitleisteSortierungNr,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get zeitleisteMitTagen => $composableBuilder(
+      column: $table.zeitleisteMitTagen,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get listenspalten => $composableBuilder(
       column: $table.listenspalten,
       builder: (column) => ColumnOrderings(column));
@@ -26582,6 +26645,9 @@ class $$AppSettingsTableAnnotationComposer
   GeneratedColumn<int> get zeitleisteSortierungNr => $composableBuilder(
       column: $table.zeitleisteSortierungNr, builder: (column) => column);
 
+  GeneratedColumn<bool> get zeitleisteMitTagen => $composableBuilder(
+      column: $table.zeitleisteMitTagen, builder: (column) => column);
+
   GeneratedColumn<String> get listenspalten => $composableBuilder(
       column: $table.listenspalten, builder: (column) => column);
 
@@ -26648,6 +26714,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             Value<int> zeitleisteKachelstufe = const Value.absent(),
             Value<int> zeitleisteFormNr = const Value.absent(),
             Value<int> zeitleisteSortierungNr = const Value.absent(),
+            Value<bool> zeitleisteMitTagen = const Value.absent(),
             Value<String?> listenspalten = const Value.absent(),
             Value<int> maxGleichzeitig = const Value.absent(),
             Value<bool> translateCaptions = const Value.absent(),
@@ -26681,6 +26748,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             zeitleisteKachelstufe: zeitleisteKachelstufe,
             zeitleisteFormNr: zeitleisteFormNr,
             zeitleisteSortierungNr: zeitleisteSortierungNr,
+            zeitleisteMitTagen: zeitleisteMitTagen,
             listenspalten: listenspalten,
             maxGleichzeitig: maxGleichzeitig,
             translateCaptions: translateCaptions,
@@ -26714,6 +26782,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             Value<int> zeitleisteKachelstufe = const Value.absent(),
             Value<int> zeitleisteFormNr = const Value.absent(),
             Value<int> zeitleisteSortierungNr = const Value.absent(),
+            Value<bool> zeitleisteMitTagen = const Value.absent(),
             Value<String?> listenspalten = const Value.absent(),
             Value<int> maxGleichzeitig = const Value.absent(),
             Value<bool> translateCaptions = const Value.absent(),
@@ -26747,6 +26816,7 @@ class $$AppSettingsTableTableManager extends RootTableManager<
             zeitleisteKachelstufe: zeitleisteKachelstufe,
             zeitleisteFormNr: zeitleisteFormNr,
             zeitleisteSortierungNr: zeitleisteSortierungNr,
+            zeitleisteMitTagen: zeitleisteMitTagen,
             listenspalten: listenspalten,
             maxGleichzeitig: maxGleichzeitig,
             translateCaptions: translateCaptions,
