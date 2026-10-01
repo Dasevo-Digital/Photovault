@@ -133,9 +133,21 @@ class _TimelineScreenState extends State<TimelineScreen>
   /// „nach unten" hinführt.
   @override
   List<List<int>>? get rasterReihenlaengen {
-    if (_alsListe || _form != Zeitleistenform.reihen || _rasterbreite <= 0) {
-      return null;
+    if (_alsListe || _rasterbreite <= 0) return null;
+    // Nach Tagen gegliedert sind die Zeilen auch bei Quadraten nicht mehr
+    // voll: Neben einem Tag mit zwei Fotos steht einer mit dreien. Die
+    // Gruppen bleiben Monate, eine Zeile sind alle Fotos nebeneinander -
+    // über die Tagesgrenzen hinweg, so wie das Auge sie liest.
+    if (_wirksamMitTagen) {
+      final m = monatsgruppen(_geladen,
+          absteigend: sortierungAbsteigend(_sortierung));
+      return [
+        for (final k in m.schluessel)
+          tageszeilenLaengen(zeitleisteTageszeilen(m.gruppen[k]!, _rasterbreite,
+              kachelbreite: _kachelbreite, form: _form)),
+      ];
     }
+    if (_form != Zeitleistenform.reihen) return null;
     // Dieselbe Einteilung wie [rasterGruppen] – sonst zählt die eine
     // Rechnung Reihen in Gruppen, die die andere gar nicht kennt.
     final gruppen = _gliedert
@@ -184,6 +196,13 @@ class _TimelineScreenState extends State<TimelineScreen>
   /// mehrfach umlegt, sondern wie man seine Bibliothek ansieht.
   Zeitleistenform _form = zeitleisteFormVorgabe;
 
+  /// Ob innerhalb der Monate nach Tagen gegliedert wird – siehe
+  /// [MonthGroupedAssetGrid.mitTagen]. Gemerkt wie die Form.
+  bool _mitTagen = false;
+
+  /// Nur mit Zeitbezug – dieselbe Regel wie bei der Monatsgliederung.
+  bool get _wirksamMitTagen => _mitTagen && _gliedert;
+
   /// Welche Spalten die Listenansicht zeigt und wie breit sie sind.
   /// Ebenfalls gemerkt: Wer sich seine Spalten einrichtet, richtet sie
   /// einmal ein.
@@ -219,8 +238,10 @@ class _TimelineScreenState extends State<TimelineScreen>
     final spalten = await widget.library.db.listenspaltenWahl();
     final form = await widget.library.db.zeitleisteFormWert();
     final sortierung = await widget.library.db.zeitleisteSortierungWert();
+    final mitTagen = await widget.library.db.zeitleisteMitTagenWert();
     if (mounted) {
       setState(() {
+        _mitTagen = mitTagen;
         _kachelstufe = stufe;
         _listenspalten = spalten;
         _form = form;
@@ -251,6 +272,15 @@ class _TimelineScreenState extends State<TimelineScreen>
     // Ohne `await`, aus demselben Grund wie bei der Kachelgroesse: Wer
     // umschaltet, soll nicht auf die Platte warten.
     unawaited(widget.library.db.setzeZeitleisteForm(neue));
+  }
+
+  void _wechsleTage() {
+    setState(() {
+      _mitTagen = !_mitTagen;
+      // Die Kachel bleibt dieselbe, steht aber woanders; der Rahmen darf
+      // bleiben, das Raster scrollt ihn beim nächsten Tastendruck heran.
+    });
+    unawaited(widget.library.db.setzeZeitleisteMitTagen(_mitTagen));
   }
 
   void _setzeSpalten(Listenspaltenwahl wahl) {
@@ -410,6 +440,8 @@ class _TimelineScreenState extends State<TimelineScreen>
                 DropdownMenuItem(
                     value: ListenGruppierung.monat, child: Text(t.gruppeMonat)),
                 DropdownMenuItem(
+                    value: ListenGruppierung.tag, child: Text(t.gruppeTag)),
+                DropdownMenuItem(
                     value: ListenGruppierung.kamera,
                     child: Text(t.gruppeKamera)),
                 DropdownMenuItem(
@@ -428,6 +460,19 @@ class _TimelineScreenState extends State<TimelineScreen>
           // untereinander, und ein Knopf, der nichts bewirkt, waere
           // irrefuehrend - dieselbe Regel wie bei der Gliederung.
           if (!_alsListe) ...[
+            // Nur mit Zeitbezug: Nach Dateigroesse geordnet gibt es keine
+            // Tage, die man gliedern koennte.
+            if (_gliedert)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: _mitTagen
+                    ? t.zeitleisteNachMonaten
+                    : t.zeitleisteNachTagen,
+                isSelected: _mitTagen,
+                icon: const Icon(Icons.calendar_view_day_outlined, size: 20),
+                selectedIcon: const Icon(Icons.calendar_view_day, size: 20),
+                onPressed: _wechsleTage,
+              ),
             // Die Form vor der Groesse: Sie entscheidet, was die beiden
             // Zoomknoepfe daneben ueberhaupt bedeuten - Kachelbreite bei
             // Quadraten, Reihenhoehe bei Reihen.
@@ -613,6 +658,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                             kachelbreite: _kachelbreite,
                             form: _form,
                             gliedern: _gliedert,
+                            mitTagen: _wirksamMitTagen,
                             absteigend: sortierungAbsteigend(_sortierung),
                             onScrollNearEnd: () =>
                                 _maybeGrowWindow(assets.length),

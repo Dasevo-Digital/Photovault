@@ -1798,6 +1798,16 @@ class AppSettings extends Table {
   IntColumn get zeitleisteSortierungNr =>
       integer().withDefault(Constant(rastersortierungVorgabe.index))();
 
+  /// Ob die Zeitleiste innerhalb der Monate nach Tagen gliedert – mit
+  /// kleinen Tagen nebeneinander (siehe `zeitleisteTageszeilen`).
+  ///
+  /// Gemerkt aus demselben Grund wie Form und Kachelgroesse: Es ist keine
+  /// Wahl, die man im Lauf einer Sichtung umlegt, sondern wie man seine
+  /// Bibliothek ansieht. Vorgabe aus – wer nichts umstellt, sieht das
+  /// Bisherige.
+  BoolColumn get zeitleisteMitTagen =>
+      boolean().withDefault(const Constant(false))();
+
   /// Welche Spalten die Listenansicht zeigt und wie breit sie sind –
   /// als Text, siehe [Listenspaltenwahl.alsText].
   ///
@@ -2011,7 +2021,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 85;
+  int get schemaVersion => 86;
 
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
@@ -2950,6 +2960,15 @@ class AppDatabase extends _$AppDatabase {
             ]) {
               await _addColumnIfMissing(m, faces, spalte, 'faces', name);
             }
+          }
+          if (from < 86) {
+            // Vorgabe aus, also genau das bisherige Bild.
+            await _addColumnIfMissing(
+                m,
+                appSettings,
+                appSettings.zeitleisteMitTagen,
+                'app_settings',
+                'zeitleiste_mit_tagen');
           }
         },
       );
@@ -4933,6 +4952,19 @@ class AppDatabase extends _$AppDatabase {
       into(appSettings).insertOnConflictUpdate(AppSettingsCompanion.insert(
         id: const Value(0),
         zeitleisteSortierungNr: Value(s.index),
+      ));
+
+  /// Ob die Zeitleiste nach Tagen gliedert – siehe die Spalte.
+  Future<bool> zeitleisteMitTagenWert() async {
+    final row = await (select(appSettings)..where((t) => t.id.equals(0)))
+        .getSingleOrNull();
+    return row?.zeitleisteMitTagen ?? false;
+  }
+
+  Future<void> setzeZeitleisteMitTagen(bool an) =>
+      into(appSettings).insertOnConflictUpdate(AppSettingsCompanion.insert(
+        id: const Value(0),
+        zeitleisteMitTagen: Value(an),
       ));
 
   /// Die gemerkte Stammbaum-Ansicht und die Person darin (siehe die

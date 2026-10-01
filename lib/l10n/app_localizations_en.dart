@@ -4831,6 +4831,21 @@ class AppTexteEn extends AppTexte {
   String get gruppeMonat => 'By month';
 
   @override
+  String get gruppeTag => 'By day';
+
+  @override
+  String get zeitleisteNachTagen => 'Group by day – small days side by side';
+
+  @override
+  String get zeitleisteNachMonaten => 'Group by month only';
+
+  @override
+  String get tagHeute => 'Today';
+
+  @override
+  String get tagGestern => 'Yesterday';
+
+  @override
   String get gruppeKamera => 'By camera';
 
   @override

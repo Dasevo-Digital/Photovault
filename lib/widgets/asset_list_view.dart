@@ -76,8 +76,13 @@ class AssetListView extends StatefulWidget {
     }
     final zahl = int.tryParse(schluessel);
     if (zahl == null) return schluessel;
+    final sprache = Localizations.localeOf(context).toString();
+    if (gruppierung == ListenGruppierung.tag) {
+      final datum = DateTime(zahl ~/ 10000, zahl ~/ 100 % 100, zahl % 100);
+      return DateFormat.yMMMMEEEEd(sprache).format(datum);
+    }
     final datum = DateTime(zahl ~/ 100, zahl % 100);
-    return DateFormat.yMMMM(Localizations.localeOf(context).toString()).format(datum);
+    return DateFormat.yMMMM(sprache).format(datum);
   }
 
   @override

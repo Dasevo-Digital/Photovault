@@ -29,7 +29,8 @@ const double _scrubberWidth = 64.0;
 /// `watchTimeline()` die komplette Liste neu, wodurch diese Gruppierung bei
 /// großen Bibliotheken sonst unnötig oft (kostspielig) neu läuft.
 ({List<int> schluessel, Map<int, List<Rasterzeile>> gruppen}) monatsgruppen(
-    List<Rasterzeile> assets, {bool absteigend = true}) {
+    List<Rasterzeile> assets,
+    {bool absteigend = true}) {
   final gruppen = <int, List<Rasterzeile>>{};
   for (final a in assets) {
     final key = a.fileCreatedAt.year * 100 + a.fileCreatedAt.month;
@@ -50,17 +51,41 @@ const double _scrubberWidth = 64.0;
 /// mangels zweiter Gruppe weg. Der Schlüssel ist wieder ein günstiger
 /// Integer (Jahr*10000 + Monat*100 + Tag), aus demselben Grund wie oben.
 ({List<int> schluessel, Map<int, List<Rasterzeile>> gruppen}) tagesgruppen(
-    List<Rasterzeile> assets, {bool absteigend = true}) {
+    List<Rasterzeile> assets,
+    {bool absteigend = true}) {
   final gruppen = <int, List<Rasterzeile>>{};
   for (final a in assets) {
     final d = a.fileCreatedAt;
-    gruppen.putIfAbsent(d.year * 10000 + d.month * 100 + d.day, () => [])
+    gruppen
+        .putIfAbsent(d.year * 10000 + d.month * 100 + d.day, () => [])
         .add(a);
   }
   final schluessel = gruppen.keys.toList()
     ..sort((a, b) => absteigend ? b.compareTo(a) : a.compareTo(b));
   return (schluessel: schluessel, gruppen: gruppen);
 }
+
+/// Die Überschrift eines Tages innerhalb eines Monats.
+///
+/// „Heute" und „Gestern" wie bei Immich; sonst Wochentag und Datum, ohne
+/// Jahr – das steht schon in der Monatsüberschrift darüber. [knapp] lässt
+/// den Wochentag weg: Ein Tag mit einem einzigen Foto ist bei kleinen
+/// Kacheln keine hundert Punkte breit.
+String tagesbeschriftung(DateTime tag, AppTexte t, String sprache,
+    {required DateTime heute, bool knapp = false}) {
+  final d = DateTime(tag.year, tag.month, tag.day);
+  final h = DateTime(heute.year, heute.month, heute.day);
+  if (d == h) return t.tagHeute;
+  // Über die Kalendertage und nicht über 24 Stunden: Bei der Umstellung
+  // auf Sommerzeit hat ein Tag 23 davon.
+  if (d == DateTime(h.year, h.month, h.day - 1)) return t.tagGestern;
+  return (knapp ? DateFormat.MMMd(sprache) : DateFormat.MMMEd(sprache))
+      .format(d);
+}
+
+/// Unter dieser Blockbreite steht der Tag ohne Wochentag – siehe
+/// [tagesbeschriftung].
+const double _knappeTagesbreite = 150;
 
 /// Ob neben dem Raster der Zeitstrahl steht – erst ab zwei Gruppen.
 bool rasterMitZeitstrahl(int gruppenAnzahl) => gruppenAnzahl > 1;
@@ -146,6 +171,14 @@ class MonthGroupedAssetGrid extends StatefulWidget {
   /// Nach Tagen gliedern statt nach Monaten (siehe [tagesgruppen]).
   final bool nachTag;
 
+  /// Innerhalb jedes Monats nach Tagen gliedern, kleine Tage nebeneinander
+  /// (siehe [zeitleisteTageszeilen]).
+  ///
+  /// Anders als [nachTag] bleiben die Gruppen Monate: Monatsüberschrift,
+  /// Zeitstrahl und Tastatur laufen weiter über Monate, nur die Zeilen
+  /// darin gliedern sich nach Tagen.
+  final bool mitTagen;
+
   /// Wie breit eine Kachel höchstens wird – siehe
   /// [zeitleisteKachelstufen]. Kleiner heisst mehr Fotos und damit mehr
   /// Monate auf einmal im Bild.
@@ -185,6 +218,7 @@ class MonthGroupedAssetGrid extends StatefulWidget {
     this.onScrollNearEnd,
     this.nachObenSignal,
     this.nachTag = false,
+    this.mitTagen = false,
     this.kachelbreite = timelineGridMaxCrossAxisExtent,
     this.form = zeitleisteFormVorgabe,
     this.gliedern = true,
@@ -197,6 +231,10 @@ class MonthGroupedAssetGrid extends StatefulWidget {
 
 class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
   final _scrollController = ScrollController();
+
+  /// Ob die Tagesgliederung wirklich greift – nur mit Zeitbezug und nicht
+  /// zusätzlich zu Tagesgruppen.
+  bool get _mitTagen => widget.mitTagen && widget.gliedern && !widget.nachTag;
   String? _handledHighlightId;
   String? _flashingAssetId;
 
@@ -222,9 +260,11 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
   void didUpdateWidget(covariant MonthGroupedAssetGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
     _maybeHandleHighlight();
-    if (widget.aktiveKachelId != null && widget.aktiveKachelId != oldWidget.aktiveKachelId) {
+    if (widget.aktiveKachelId != null &&
+        widget.aktiveKachelId != oldWidget.aktiveKachelId) {
       final ziel = widget.aktiveKachelId!;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _zeigeAktiveKachel(ziel));
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _zeigeAktiveKachel(ziel));
     }
     if (oldWidget.nachObenSignal != widget.nachObenSignal) {
       oldWidget.nachObenSignal?.removeListener(_nachOben);
@@ -267,27 +307,39 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
     final targetId = widget.highlightAssetId;
     if (targetId == null || targetId == _handledHighlightId) return;
     _handledHighlightId = targetId;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToAndFlash(targetId));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _scrollToAndFlash(targetId));
   }
 
   void _scrollToAndFlash(String assetId) {
     final gridWidth = _lastGridWidth;
     final groups = _lastGroups;
     final orderedKeys = _lastOrderedKeys;
-    if (!mounted || !_scrollController.hasClients || gridWidth == null || groups == null || orderedKeys == null) {
+    if (!mounted ||
+        !_scrollController.hasClients ||
+        gridWidth == null ||
+        groups == null ||
+        orderedKeys == null) {
       return;
     }
-    final offset = timelineOffsetForAsset(orderedKeys, groups, gridWidth, assetId,
-        kachelbreite: widget.kachelbreite, form: widget.form);
+    final offset = timelineOffsetForAsset(
+        orderedKeys, groups, gridWidth, assetId,
+        kachelbreite: widget.kachelbreite,
+        form: widget.form,
+        mitTagen: _mitTagen);
     if (offset == null) {
       melde.warnung(AppTexte.of(context).rasterFotoNichtGefunden);
       return;
     }
-    final clamped = offset.clamp(0.0, _scrollController.position.maxScrollExtent);
-    _scrollController.animateTo(clamped, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    final clamped =
+        offset.clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(clamped,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     setState(() => _flashingAssetId = assetId);
     Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted && _flashingAssetId == assetId) setState(() => _flashingAssetId = null);
+      if (mounted && _flashingAssetId == assetId) {
+        setState(() => _flashingAssetId = null);
+      }
     });
   }
 
@@ -301,19 +353,29 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
     final gridWidth = _lastGridWidth;
     final groups = _lastGroups;
     final orderedKeys = _lastOrderedKeys;
-    if (!mounted || !_scrollController.hasClients || gridWidth == null || groups == null || orderedKeys == null) {
+    if (!mounted ||
+        !_scrollController.hasClients ||
+        gridWidth == null ||
+        groups == null ||
+        orderedKeys == null) {
       return;
     }
-    final offset = timelineOffsetForAsset(orderedKeys, groups, gridWidth, assetId,
-        kachelbreite: widget.kachelbreite, form: widget.form);
+    final offset = timelineOffsetForAsset(
+        orderedKeys, groups, gridWidth, assetId,
+        kachelbreite: widget.kachelbreite,
+        form: widget.form,
+        mitTagen: _mitTagen);
     if (offset == null) return;
     final position = _scrollController.position;
     // Bei Reihen ist die Zeilenhöhe nicht fest; die eingestellte Stufe ist
     // ihre Obergrenze und damit das richtige Mass für den Sicherheitsrand.
-    final zeilenhoehe = widget.form == Zeitleistenform.reihen
-        ? widget.kachelbreite + timelineGridSpacing
-        : timelineRowHeightForWidth(gridWidth,
-            kachelbreite: widget.kachelbreite);
+    final zeilenhoehe = (widget.form == Zeitleistenform.reihen
+            ? widget.kachelbreite + timelineGridSpacing
+            : timelineRowHeightForWidth(gridWidth,
+                kachelbreite: widget.kachelbreite)) +
+        // Bei nebeneinanderstehenden Tagen beginnt die Zeile mit deren
+        // Überschrift; das Foto steht darunter.
+        (_mitTagen ? timelineTagesKopfHoehe : 0);
     final oben = position.pixels;
     final unten = oben + position.viewportDimension;
     // Etwas Luft, damit die Kachel nicht genau abgeschnitten am Rand klebt.
@@ -325,7 +387,8 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
       );
     } else if (offset + zeilenhoehe > unten) {
       _scrollController.animateTo(
-        (offset + zeilenhoehe * 1.5 - position.viewportDimension).clamp(0.0, position.maxScrollExtent),
+        (offset + zeilenhoehe * 1.5 - position.viewportDimension)
+            .clamp(0.0, position.maxScrollExtent),
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
       );
@@ -367,6 +430,91 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
         selectedIds: widget.selectedIds,
         onTap: widget.onHeaderTap,
       );
+
+  /// Die Überschrift eines Tages – quer über die Breite bei einem grossen
+  /// Tag, auf [breite] beschränkt bei einem kleinen.
+  Widget _tagesUeberschrift(
+      BuildContext context, List<Rasterzeile> tag, double breite) {
+    return _TagesHeader(
+      label: tagesbeschriftung(tag.first.fileCreatedAt, AppTexte.of(context),
+          Localizations.localeOf(context).toString(),
+          heute: DateTime.now(), knapp: breite < _knappeTagesbreite),
+      groupAssets: tag,
+      selectedIds: widget.selectedIds,
+      onTap: widget.onHeaderTap,
+    );
+  }
+
+  /// Eine Reihe von Kacheln, linksbündig. Die Indizes zählen in [gruppe].
+  Widget _bildreihe(List<Rasterzeile> gruppe, Bildreihe reihe) {
+    final kinder = <Widget>[];
+    for (var i = 0; i < reihe.plaetze.length; i++) {
+      if (i > 0) kinder.add(const SizedBox(width: timelineGridSpacing));
+      kinder.add(SizedBox(
+        width: reihe.plaetze[i].breite,
+        height: reihe.hoehe,
+        child: _kachel(gruppe[reihe.plaetze[i].index]),
+      ));
+    }
+    return Row(children: kinder);
+  }
+
+  /// Eine Monatsgruppe nach Tagen gegliedert – wie [_gruppenSliver] ein
+  /// einziger Sliver, Monatsüberschrift als Kind 0, und aus denselben
+  /// Gründen. Ein Sliver je Tag wären an der echten Bibliothek 534 statt
+  /// 83, und jeder davon baute beim Auslegen sein erstes Kind.
+  Widget _tagesSliver(
+      List<Rasterzeile> gruppe, double gridWidth, Widget ueberschrift) {
+    final zeilen = zeitleisteTageszeilen(gruppe, gridWidth,
+        kachelbreite: widget.kachelbreite, form: widget.form);
+
+    Widget zeileBauen(BuildContext context, int z) {
+      final zeile = zeilen[z];
+      final Widget inhalt = switch (zeile) {
+        TageskopfZeile(:final von, :final bis) => _tagesUeberschrift(
+            context, gruppe.sublist(von, bis + 1), double.infinity),
+        TagesbildZeile(:final reihe) => _bildreihe(gruppe, reihe),
+        TagesblockZeile(:final bloecke) => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < bloecke.length; i++) ...[
+                if (i > 0) const SizedBox(width: timelineTagesabstand),
+                SizedBox(
+                  width: bloecke[i].breite,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _tagesUeberschrift(
+                          context,
+                          gruppe.sublist(bloecke[i].von, bloecke[i].bis + 1),
+                          bloecke[i].breite),
+                      _bildreihe(gruppe, bloecke[i].reihe),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+      };
+      return Padding(
+        padding: EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            bottom: z == zeilen.length - 1 ? 0 : timelineGridSpacing),
+        child: inhalt,
+      );
+    }
+
+    return SliverList(
+      delegate: _ReihenDelegate(
+        gesamthoehe: timelineHeaderHeight + tageszeilenHoehe(zeilen),
+        anzahl: zeilen.length + 1,
+        bauen: (context, index) =>
+            index == 0 ? ueberschrift : zeileBauen(context, index - 1),
+      ),
+    );
+  }
 
   /// Eine Monatsgruppe als ein einziger Sliver – **Überschrift, dann
   /// Reihe für Reihe**, in beiden Rasterformen.
@@ -441,8 +589,7 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
         : timelineRowHeightForWidth(gridWidth,
                 kachelbreite: widget.kachelbreite) -
             timelineGridSpacing;
-    final anzahl =
-        buendig ? reihen.length : (gruppe.length / spalten).ceil();
+    final anzahl = buendig ? reihen.length : (gruppe.length / spalten).ceil();
 
     Widget reiheBauen(int r) {
       final kinder = <Widget>[];
@@ -569,7 +716,9 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final gridWidth = showScrubber ? constraints.maxWidth - _scrubberWidth : constraints.maxWidth;
+        final gridWidth = showScrubber
+            ? constraints.maxWidth - _scrubberWidth
+            : constraints.maxWidth;
         _lastGridWidth = gridWidth;
         return Stack(
           children: [
@@ -587,18 +736,23 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
               // wo man sich in der Liste befindet.
               child: ScrollConfiguration(
                 behavior: showScrubber
-                    ? ScrollConfiguration.of(context).copyWith(scrollbars: false)
+                    ? ScrollConfiguration.of(context)
+                        .copyWith(scrollbars: false)
                     : ScrollConfiguration.of(context),
                 child: CustomScrollView(
                   controller: _scrollController,
                   slivers: [
                     for (final key in orderedKeys) ...[
-                      _gruppenSliver(
-                          groups[key]!,
-                          gridWidth,
-                          widget.gliedern
-                              ? _ueberschrift(context, groups[key]!)
-                              : const SizedBox.shrink()),
+                      if (_mitTagen)
+                        _tagesSliver(groups[key]!, gridWidth,
+                            _ueberschrift(context, groups[key]!))
+                      else
+                        _gruppenSliver(
+                            groups[key]!,
+                            gridWidth,
+                            widget.gliedern
+                                ? _ueberschrift(context, groups[key]!)
+                                : const SizedBox.shrink()),
                     ],
                     const SliverToBoxAdapter(child: SizedBox(height: 40)),
                   ],
@@ -619,6 +773,7 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
                   kachelbreite: widget.kachelbreite,
                   form: widget.form,
                   tageweise: widget.nachTag,
+                  mitTagen: _mitTagen,
                 ),
               ),
           ],
@@ -671,12 +826,15 @@ class _MonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ids = selectedIds;
-    final allSelected = ids != null && ids.isNotEmpty && groupAssets.every((a) => ids.contains(a.id));
+    final allSelected = ids != null &&
+        ids.isNotEmpty &&
+        groupAssets.every((a) => ids.contains(a.id));
 
     return InkWell(
       onTap: onTap == null ? null : () => onTap!(groupAssets),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -698,6 +856,89 @@ class _MonthHeader extends StatelessWidget {
   }
 }
 
+/// Überschrift eines Tages innerhalb eines Monats – kleiner als die
+/// Monatsüberschrift, und antippbar wie sie: wählt den Tag an oder ab.
+///
+/// Der Auswahlkreis erscheint erst beim Darüberfahren oder sobald eine
+/// Auswahl besteht. Ständig gezeigt nähme er einem Tag mit einem einzigen
+/// Foto ein Viertel seiner Breite; antippen lässt sich die Überschrift
+/// auch ohne ihn.
+class _TagesHeader extends StatefulWidget {
+  final String label;
+  final List<Rasterzeile> groupAssets;
+  final Set<String>? selectedIds;
+  final void Function(List<Rasterzeile> groupAssets)? onTap;
+
+  const _TagesHeader({
+    required this.label,
+    required this.groupAssets,
+    required this.selectedIds,
+    required this.onTap,
+  });
+
+  @override
+  State<_TagesHeader> createState() => _TagesHeaderState();
+}
+
+class _TagesHeaderState extends State<_TagesHeader> {
+  bool _darueber = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ids = widget.selectedIds;
+    final allSelected = ids != null &&
+        ids.isNotEmpty &&
+        widget.groupAssets.every((a) => ids.contains(a.id));
+    final kreis =
+        widget.onTap != null && (_darueber || (ids != null && ids.isNotEmpty));
+    final farben = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _darueber = true),
+      onExit: (_) => setState(() => _darueber = false),
+      child: InkWell(
+        onTap: widget.onTap == null
+            ? null
+            : () => widget.onTap!(widget.groupAssets),
+        child: Padding(
+          padding:
+              const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+          // Natürliche Höhe, aus demselben Grund wie bei der
+          // Monatsüberschrift: Bei grösserer Systemschrift wächst sie mit.
+          // Der Kreis ist kleiner als die Zeile, sein Erscheinen ändert die
+          // Höhe also nicht.
+          child: Row(
+            children: [
+              if (kreis) ...[
+                Icon(
+                  allSelected
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  size: 16,
+                  color: allSelected ? farben.primary : farben.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelLarge
+                      ?.copyWith(color: farben.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Kurz ausklingender, farbiger Rahmen um eine Kachel – zeigt "hier ist das
 /// gesuchte Foto", nachdem "Foto in der Timeline anzeigen" dorthin
 /// gescrollt hat.
@@ -713,7 +954,8 @@ class _FlashHighlight extends StatelessWidget {
       curve: Curves.easeOut,
       builder: (context, value, child) => Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.tealAccent.withValues(alpha: value), width: 3),
+          border: Border.all(
+              color: Colors.tealAccent.withValues(alpha: value), width: 3),
           borderRadius: BorderRadius.circular(AppRadius.xs),
         ),
         child: child,
