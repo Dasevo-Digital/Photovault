@@ -36,8 +36,14 @@ fi
 # Bedingung ist dann falsch, der Zweig wird uebersprungen, und die
 # Zusicherung am Ende steht trotzdem da. Eine Pruefung, die ohne ihr
 # Werkzeug still durchwinkt, ist schlimmer als keine.
+#
+# Und kein `grep -q`: Es hoert beim ersten Treffer auf zu lesen, `git log`
+# stirbt daran mit SIGPIPE (141), und `pipefail` macht aus dem ganzen
+# Ausdruck einen Fehlschlag - also genau dann "kein Treffer", wenn es
+# einen gibt. So lief es durch, obwohl zwei Commits eine Adresse trugen.
+# Ohne `-q` liest `grep` bis zum Ende.
 if git log --all --format='%B' | \
-    grep -qE '[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9.-]*\.[A-Za-z]{2,}'; then
+    grep -E '[A-Za-z0-9._%+-]+@[A-Za-z][A-Za-z0-9.-]*\.[A-Za-z]{2,}' >/dev/null; then
   echo 'E-Mail-Adresse in einer Commit-Nachricht gefunden.' >&2
   fehler=1
 fi
