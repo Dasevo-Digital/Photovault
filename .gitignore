@@ -76,3 +76,6 @@ lib/l10n/fehlende_uebersetzungen.txt
 # Vergleichsbilder eines fehlgeschlagenen Golden-Tests – Zwischenstand,
 # kein Quelltext (entsteht bei jedem Fehlschlag neu).
 test/failures/
+
+# Lokale Arbeitsanweisungen, nicht veröffentlichen
+/AGENTS.md
