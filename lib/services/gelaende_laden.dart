@@ -23,6 +23,7 @@ import '../widgets/mini_location_map.dart'
 import 'gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'hoehenlinien.dart';
+import 'netzkennung.dart';
 
 /// Wie lange auf eine einzelne Kachel gewartet wird.
 ///
@@ -310,7 +311,7 @@ Future<ui.Image?> _holeKartenkachel(http.Client netz,
       kacheladresse(z, x, y, vorlage: ebene.urlVorlage),
       // Die Anbieter bitten ausdrücklich um eine aussagekräftige Kennung
       // statt der Vorgabe der Bibliothek.
-      kopf: const {'User-Agent': 'com.example.photoVault'},
+      kopf: const {'User-Agent': netzkennung},
     );
     if (roh == null) return null;
     final codec = await ui.instantiateImageCodec(roh);

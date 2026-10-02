@@ -40,6 +40,7 @@ import 'gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'gelaendetextur.dart';
 import 'hoehenlinien.dart';
+import 'netzkennung.dart';
 
 /// Was ein Block braucht – vom Maler her gesehen.
 typedef Blockwunsch = ({Texturblock block, int stufe, double entfernung});
@@ -492,7 +493,7 @@ class Blocktexturlader {
         kacheladresse(z, x, y, vorlage: ebene.urlVorlage),
         // Die Anbieter bitten ausdrücklich um eine aussagekräftige
         // Kennung statt der Vorgabe der Bibliothek.
-        kopf: const {'User-Agent': 'com.example.photoVault'},
+        kopf: const {'User-Agent': netzkennung},
       );
       if (roh == null) return null;
       return await _bildAus(roh);

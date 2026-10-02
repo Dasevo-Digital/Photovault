@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart';
 
 import '../widgets/mini_location_map.dart';
+import 'netzkennung.dart';
 
 /// Ein rechteckiger Kartenausschnitt in Grad.
 typedef Gebiet = ({double sued, double west, double nord, double ost});
@@ -238,7 +239,7 @@ Stream<Vorratsstand> ladeVorrat(
         }
       }
       final antwort = await client.get(Uri.parse(url),
-          headers: const {'User-Agent': 'flutter_map (com.example.photoVault)'});
+          headers: const {'User-Agent': kartenNetzkennung});
       if (antwort.statusCode == 200 && antwort.bodyBytes.isNotEmpty) {
         if (lager.isSupported) {
           await lager.putTile(
