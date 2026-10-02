@@ -15,6 +15,18 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+// file_picker 8 still compiles against Android 34, while its dependency
+// flutter_plugin_android_lifecycle requires 36. Only the SDK the plugins are
+// compiled against changes; minSdk and targetSdk stay as they are.
+subprojects {
+    afterEvaluate {
+        if (plugins.hasPlugin("com.android.library")) {
+            extensions.findByName("android")?.withGroovyBuilder {
+                "compileSdkVersion"(36)
+            }
+        }
+    }
+}
 subprojects {
     project.evaluationDependsOn(":app")
 }
