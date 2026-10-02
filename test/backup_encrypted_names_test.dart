@@ -9,6 +9,8 @@ import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Ein verschlüsseltes Backup soll im Zielordner nichts über den Inhalt
 /// verraten – auch nicht über Ordnernamen, Dateiendungen oder Prüfsummen
 /// im Dateinamen. Zugleich muss es sich vollständig wiederherstellen
@@ -19,8 +21,10 @@ void main() {
   setUp(() => tempRoot = Directory.systemTemp.createTempSync('pv_encnames_'));
   tearDown(() => tempRoot.deleteSync(recursive: true));
 
-  Future<LibraryState> bibliothek(String name) async {
-    final db = AppDatabase(NativeDatabase.memory());
+  Future<LibraryState> bibliothek(String name, {bool daneben = false}) async {
+    final db = daneben
+        ? ZweiteDatenbank(NativeDatabase.memory())
+        : AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, name)));
     return LibraryState()
@@ -90,7 +94,7 @@ void main() {
     await quelle.runManualBackup(ziel.path, encrypt: true).drain<void>();
 
     // Frische Bibliothek, nur mit Passphrase und Backup-Ordner.
-    final neu = await bibliothek('wiederhergestellt');
+    final neu = await bibliothek('wiederhergestellt', daneben: true);
     final neuImport = ImportService(neu.db, neu.paths);
     await neu.backupService
         .restoreFromBackup(p.join(ziel.path, 'PhotoVault-Backup'), neuImport,
@@ -158,7 +162,7 @@ void main() {
     Directory(p.join(backupRoot.path, 'data')).deleteSync(recursive: true);
 
     // Wiederherstellen wie von einem älteren Backup.
-    final neu = await bibliothek('alt_wiederhergestellt');
+    final neu = await bibliothek('alt_wiederhergestellt', daneben: true);
     final neuImport = ImportService(neu.db, neu.paths);
     await neu.backupService
         .restoreFromBackup(backupRoot.path, neuImport, passphrase: 'altes-passwort')

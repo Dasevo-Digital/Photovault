@@ -10,6 +10,8 @@ import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Prüft den vollen Backup->Restore-Rundtrip in eine frische, leere
 /// "zweite Bibliothek" (simuliert einen neuen Rechner) sowie die
 /// Fehlertoleranz von [BackupService.restoreFromBackup]/
@@ -55,7 +57,7 @@ void main() {
     expect(await File(p.join(backupRoot, 'metadata.json')).exists(), isTrue);
 
     // --- Restore in eine zweite, komplett leere Bibliothek ---
-    final targetDb = AppDatabase(NativeDatabase.memory());
+    final targetDb = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(targetDb.close);
     final targetPaths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'target_library')));
     final targetImport = ImportService(targetDb, targetPaths);

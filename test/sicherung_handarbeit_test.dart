@@ -13,6 +13,8 @@ import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/services/stammbaum.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// **Was von der Handarbeit einen Rundlauf übersteht.**
 ///
 /// Der vorhandene Rundlauftest setzt Favorit, Beschreibung, Schlagwörter
@@ -96,7 +98,7 @@ void main() {
         .runManualBackup(ziel.path, encrypt: true)
         .drain<void>();
 
-    final neu = AppDatabase(NativeDatabase.memory());
+    final neu = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(neu.close);
     final neuPfade =
         await StoragePaths.forTesting(Directory(p.join(temp.path, 'neu')));
@@ -191,7 +193,7 @@ void main() {
     final ziel = Directory(p.join(temp.path, 'ziel2'));
     await zustand.runManualBackup(ziel.path, encrypt: true).drain<void>();
 
-    final neu = AppDatabase(NativeDatabase.memory());
+    final neu = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(neu.close);
     final neuPfade =
         await StoragePaths.forTesting(Directory(p.join(temp.path, 'neu2')));

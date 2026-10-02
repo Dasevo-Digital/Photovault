@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
+import 'hilfen/datenbanken.dart';
+
 /// Das Beiseitelegen von Gesichtern.
 ///
 /// Der Sinn der Sache ist, dass eine Fehlerkennung – ein Plakat, eine
@@ -169,7 +171,7 @@ void main() {
 
     // Vollständige Datenbank anlegen, mit Daten füllen, dann auf den Stand
     // vor der Änderung zurückversetzen: Spalte weg, Version zurückgestempelt.
-    var alt = AppDatabase(NativeDatabase(datei));
+    var alt = ZweiteDatenbank(NativeDatabase(datei));
     await alt.into(alt.assets).insert(AssetsCompanion.insert(
           id: 'a1',
           originalFileName: 'a1.jpg',
@@ -197,7 +199,7 @@ void main() {
     roh.close();
 
     // Öffnen löst die Migration auf 38 aus.
-    final neu = AppDatabase(NativeDatabase(datei));
+    final neu = ZweiteDatenbank(NativeDatabase(datei));
     final vorher = await neu.facesForAsset('a1');
     await neu.setFacesIgnored(['f1'], true);
     final anzahl = await neu.ignoredFacesCount();
@@ -218,7 +220,7 @@ void main() {
 
     // Eine echte Abfrage, nicht nur öffnen und schliessen: Ohne sie legt
     // drift das Schema noch gar nicht an, und der Aufbau prüfte nichts.
-    var alt = AppDatabase(NativeDatabase(datei));
+    var alt = ZweiteDatenbank(NativeDatabase(datei));
     await alt.ignoredFacesCount();
     await alt.close();
 
@@ -228,7 +230,7 @@ void main() {
     roh.execute('PRAGMA user_version = 37;');
     roh.close();
 
-    final neu = AppDatabase(NativeDatabase(datei));
+    final neu = ZweiteDatenbank(NativeDatabase(datei));
     await neu.ignoredFacesCount();
     await neu.close();
 
