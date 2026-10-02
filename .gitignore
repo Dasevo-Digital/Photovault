@@ -79,3 +79,8 @@ test/failures/
 
 # Lokale Arbeitsanweisungen, nicht veröffentlichen
 /AGENTS.md
+
+# Sperrliste der Datenschutzprüfung: Echtnamen und eigene Hostnamen. Sie
+# darf nie ins Repo, sonst stünde öffentlich, was sie fernhalten soll
+# (siehe tool/pruefe_repository_datenschutz.sh).
+/tool/datenschutz_sperrliste.txt
