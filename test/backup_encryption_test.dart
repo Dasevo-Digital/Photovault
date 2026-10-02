@@ -10,6 +10,8 @@ import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/services/vault_crypto.dart';
 import 'package:photo_vault/state/library_state.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Prüft die Backup-Verschlüsselung: ein verschlüsseltes manuelles Backup
 /// lässt sich ausschließlich mit der Passphrase auf einem KOMPLETT anderen
 /// Rechner wiederherstellen (kein Zugriff auf die Quell-Datenbank nötig),
@@ -69,7 +71,7 @@ void main() {
 
     // --- Restore auf einem KOMPLETT anderen "Rechner": frische, leere DB,
     // kein Zugriff auf sourceDb/sourceLibrary, nur Backup-Ordner + Passphrase.
-    final targetDb = AppDatabase(NativeDatabase.memory());
+    final targetDb = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(targetDb.close);
     final targetPaths = await StoragePaths.forTesting(
         Directory(p.join(tempRoot.path, 'target_library')));
@@ -141,7 +143,7 @@ void main() {
     final decryptedSnapshot =
         File(p.join(tempRoot.path, 'decrypted_snapshot.sqlite'));
     await VaultCrypto.decryptFile(dbSnapshotEnc, decryptedSnapshot, key);
-    final snapshotDb = AppDatabase(NativeDatabase(decryptedSnapshot));
+    final snapshotDb = ZweiteDatenbank(NativeDatabase(decryptedSnapshot));
     final snapshotAssets = await snapshotDb.select(snapshotDb.assets).get();
     expect(snapshotAssets, hasLength(1));
     expect(snapshotAssets.single.originalFileName, 'a.jpg');

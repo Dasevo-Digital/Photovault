@@ -9,6 +9,8 @@ import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Was die Sicherung mitnimmt – und was sie nicht verraten darf.
 ///
 /// **Zwei Befunde der 16. Prüfrunde stehen hier fest.**
@@ -136,7 +138,7 @@ void main() {
       final ziel = Directory(p.join(temp.path, 'ziel'));
       await backup.performBackup(ziel.path).drain<void>();
 
-      final zielDb = AppDatabase(NativeDatabase.memory());
+      final zielDb = ZweiteDatenbank(NativeDatabase.memory());
       addTearDown(zielDb.close);
       final zielPaths =
           await StoragePaths.forTesting(Directory(p.join(temp.path, 'ziel_lib')));

@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Ein Foto von der Gesichtssuche ausnehmen.
 ///
 /// **Warum das nicht dasselbe ist wie ein ignoriertes Gesicht:** Ein
@@ -13,22 +15,6 @@ import 'package:photo_vault/db/database.dart';
 /// Durchlauf dieselbe Stelle findet. Auf einer Gemäldewand, einem
 /// Zeitungsfoto oder einem Plakat findet er jedes Mal andere – und legt
 /// sie als neue, unbenannte Gesichter ab.
-/// Die Fassung, auf die diese App migriert – aus einer frisch angelegten
-/// Datenbank abgelesen statt als Zahl hingeschrieben.
-///
-/// Eine feste Nummer im Test bricht bei jedem Schemaschritt, und zwar an
-/// einer Stelle, die mit dem Schritt nichts zu tun hat (so geschehen bei
-/// 56 -> 57).
-Future<int> aktuelleFassung() async {
-  final frisch = AppDatabase(NativeDatabase.memory());
-  final v = await frisch
-      .customSelect('PRAGMA user_version')
-      .map((r) => r.read<int>('user_version'))
-      .getSingle();
-  await frisch.close();
-  return v;
-}
-
 void main() {
   late Directory temp;
   late AppDatabase db;
@@ -111,7 +97,7 @@ void main() {
 
   test('Migration 56 auf 57 an einer bestehenden Datenbank', () async {
     final datei = File(p.join(temp.path, 'library.sqlite'));
-    var alt = AppDatabase(NativeDatabase(datei));
+    var alt = ZweiteDatenbank(NativeDatabase(datei));
     await alt.insertAsset(AssetsCompanion.insert(
       id: 'a', relativePath: 'o/a.jpg', originalFileName: 'a.jpg',
       type: 'IMAGE', checksum: 'a',
@@ -121,10 +107,12 @@ void main() {
     await alt.customStatement('PRAGMA user_version = 56');
     await alt.close();
 
-    final neu = AppDatabase(NativeDatabase(datei));
+    // Vorher ablesen: Die Abfrage öffnet selbst eine [ZweiteDatenbank].
+    final erwartet = await aktuelleFassung();
+    final neu = ZweiteDatenbank(NativeDatabase(datei));
     final fassung = await neu.customSelect('PRAGMA user_version')
         .map((r) => r.read<int>('user_version')).getSingle();
-    expect(fassung, await aktuelleFassung());
+    expect(fassung, erwartet);
     expect((await neu.assetById('a'))!.faceScanExcluded, isFalse,
         reason: 'vorhandene Fotos bleiben in der Suche – die Ausnahme ist '
             'eine Entscheidung, keine Vorgabe');

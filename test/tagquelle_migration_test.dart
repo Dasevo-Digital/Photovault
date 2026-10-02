@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Die Migration 55 → 56: Wer hat die vorhandenen Schlagwörter vergeben?
 ///
 /// Rückwirkend steht es nirgends, es lässt sich nur erschliessen. Diese
@@ -15,22 +17,6 @@ import 'package:photo_vault/db/database.dart';
 /// Geprüft wird an einer echten Fassung-55-Datenbank: Die Spalte wird
 /// wieder entfernt und der Stempel zurückgesetzt, dann läuft die
 /// Migration beim nächsten Öffnen von selbst.
-/// Die Fassung, auf die diese App migriert – aus einer frisch angelegten
-/// Datenbank abgelesen statt als Zahl hingeschrieben.
-///
-/// Eine feste Nummer im Test bricht bei jedem Schemaschritt, und zwar an
-/// einer Stelle, die mit dem Schritt nichts zu tun hat (so geschehen bei
-/// 56 -> 57).
-Future<int> aktuelleFassung() async {
-  final frisch = AppDatabase(NativeDatabase.memory());
-  final v = await frisch
-      .customSelect('PRAGMA user_version')
-      .map((r) => r.read<int>('user_version'))
-      .getSingle();
-  await frisch.close();
-  return v;
-}
-
 void main() {
   late Directory temp;
   late File datei;

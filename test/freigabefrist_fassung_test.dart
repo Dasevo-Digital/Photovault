@@ -150,14 +150,20 @@ void main() {
       null,
       DateTime.now().toUtc().add(const Duration(days: 3)),
     ]) {
+      // Je Durchgang schliessen, nicht erst im tearDown: Sonst ist die
+      // Datenbank des ersten Durchgangs noch offen, wenn der zweite seine
+      // anlegt, und drift warnt vor zwei Instanzen derselben Klasse.
       final db = AppDatabase(NativeDatabase.memory());
-      addTearDown(db.close);
-      final zielPaths = await StoragePaths.forTesting(
-          Directory(p.join(temp.path, 'ziel${frist?.year ?? 0}')));
-      final ergebnis = await SecureShareService(ExportService(paths))
-          .importPackage(await paket(frist: frist), passphrase,
-              ImportService(db, zielPaths));
-      expect(ergebnis.imported, 1, reason: 'Frist: $frist');
+      try {
+        final zielPaths = await StoragePaths.forTesting(
+            Directory(p.join(temp.path, 'ziel${frist?.year ?? 0}')));
+        final ergebnis = await SecureShareService(ExportService(paths))
+            .importPackage(await paket(frist: frist), passphrase,
+                ImportService(db, zielPaths));
+        expect(ergebnis.imported, 1, reason: 'Frist: $frist');
+      } finally {
+        await db.close();
+      }
     }
   });
 }

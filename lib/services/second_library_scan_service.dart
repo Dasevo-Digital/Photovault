@@ -84,7 +84,7 @@ Future<ExternalLibrary> loadExternalLibrary(Directory secondLibraryRoot) async {
   try {
     final tempDbFile = File(p.join(tempDir.path, 'library.sqlite'));
     await dbFile.copy(tempDbFile.path);
-    secondDb = AppDatabase(NativeDatabase.createInBackground(tempDbFile));
+    secondDb = _FremdeBibliothek(NativeDatabase.createInBackground(tempDbFile));
 
     final embeddings = await secondDb.allEmbeddings();
     final assets = await secondDb.assetsByIds(embeddings.keys.toList());
@@ -164,4 +164,15 @@ Future<List<ExternalDuplicateMatch>> matchAgainstExternalLibrary({
           externalThumbnail: File(p.join(external.root.path, 'library', 'thumbnails', '$externalId.jpg')),
         ),
   ];
+}
+
+/// Die Kopie der zweiten Bibliothek, offen NEBEN der eigenen.
+///
+/// drift zählt offene Datenbanken je Klasse und warnt in Debug-Builds, sobald
+/// eine zweite `AppDatabase` entsteht, bevor die erste zu ist – zu Recht, wenn
+/// beide denselben Executor teilen. Hier liegt die Kopie in einer eigenen
+/// Datei mit eigenem Executor; die eigene Klasse gibt ihr einen eigenen
+/// Zähler, statt die Warnung für alle abzuschalten.
+class _FremdeBibliothek extends AppDatabase {
+  _FremdeBibliothek(super.executor);
 }

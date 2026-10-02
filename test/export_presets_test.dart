@@ -10,6 +10,8 @@ import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
+import 'hilfen/datenbanken.dart';
+
 /// Export-Voreinstellungen: die gespeicherte Vorgabe selbst (Schema 37) und
 /// dass ein Export-Lauf sie tatsächlich befolgt.
 void main() {
@@ -187,7 +189,7 @@ void main() {
 
     // Vollständige Datenbank anlegen, dann auf den Stand vor der Änderung
     // zurückversetzen: Tabelle weg, Version zurückgestempelt.
-    var alt = AppDatabase(NativeDatabase(datei));
+    var alt = ZweiteDatenbank(NativeDatabase(datei));
     await alt.setThemeMode('dark');
     await alt.close();
 
@@ -197,7 +199,7 @@ void main() {
     roh.close();
 
     // Öffnen löst die Migration auf 37 aus.
-    final neu = AppDatabase(NativeDatabase(datei));
+    final neu = ZweiteDatenbank(NativeDatabase(datei));
     await neu.upsertExportPreset(vorgabe(name: 'nach der Migration'));
     final alle = await neu.alleExportPresets();
     final einstellungen = await neu.watchAppSettings().first;

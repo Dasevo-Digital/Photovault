@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// **Die Videohälfte eines Live Photos ist keine eigene Aufnahme.**
 ///
 /// Überall in der App gilt das schon (`_isPrimaryGridEntry`) – in der
@@ -30,16 +32,6 @@ import 'package:photo_vault/db/database.dart';
 /// Und der Schaden davor: 19 Zuordnungen zeigten auf eine Videohälfte,
 /// nur 5 der zugehörigen Fotos waren ebenfalls zugeordnet. Zwei
 /// Aktivitäten bestanden aus sieben Videoschnipseln und keinem Foto.
-Future<int> aktuelleFassung() async {
-  final frisch = AppDatabase(NativeDatabase.memory());
-  final v = await frisch
-      .customSelect('PRAGMA user_version')
-      .map((r) => r.read<int>('user_version'))
-      .getSingle();
-  await frisch.close();
-  return v;
-}
-
 void main() {
   late Directory temp;
   late File datei;

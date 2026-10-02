@@ -11,6 +11,8 @@ import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
+import 'hilfen/datenbanken.dart';
+
 /// Sichert die Befunde eines Audits ab, damit sie nicht zurückkehren:
 /// keine entschlüsselten Metadaten im Temp-Verzeichnis, keine gesperrten
 /// Fotos in den Analysestufen.
@@ -20,8 +22,10 @@ void main() {
   setUp(() => tempRoot = Directory.systemTemp.createTempSync('pv_audit_'));
   tearDown(() => tempRoot.deleteSync(recursive: true));
 
-  Future<LibraryState> bibliothek(String name) async {
-    final db = AppDatabase(NativeDatabase.memory());
+  Future<LibraryState> bibliothek(String name, {bool daneben = false}) async {
+    final db = daneben
+        ? ZweiteDatenbank(NativeDatabase.memory())
+        : AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, name)));
     return LibraryState()
@@ -76,7 +80,7 @@ void main() {
 
       // Restore starten und nach dem ersten Fortschritt abbrechen – genau
       // das, was passiert, wenn der Nutzer die Wiederherstellung abbricht.
-      final neu = await bibliothek('ziel_lib');
+      final neu = await bibliothek('ziel_lib', daneben: true);
       final neuImport = ImportService(neu.db, neu.paths);
       final stream = neu.backupService.restoreFromBackup(
           p.join(ziel.path, 'PhotoVault-Backup'), neuImport,
@@ -112,7 +116,7 @@ void main() {
 
       final vorher = uebrigeMetadatenDateien().map((f) => f.path).toSet();
 
-      final neu = await bibliothek('ziel_lib2');
+      final neu = await bibliothek('ziel_lib2', daneben: true);
       final neuImport = ImportService(neu.db, neu.paths);
       await neu.backupService
           .restoreFromBackup(p.join(ziel.path, 'PhotoVault-Backup'), neuImport,
