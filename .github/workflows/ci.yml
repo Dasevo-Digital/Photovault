@@ -21,6 +21,10 @@ jobs:
           fetch-depth: 0 # Die Datenschutzprüfung liest die ganze Historie.
       - name: Datenschutz
         run: tool/pruefe_repository_datenschutz.sh
+        env:
+          # Echtnamen und eigene Hostnamen, ein Begriff je Zeile. Steht
+          # nicht im Repo; fehlt das Secret, prüft das Skript ohne Liste.
+          DATENSCHUTZ_SPERRLISTE: ${{ secrets.DATENSCHUTZ_SPERRLISTE }}
       - uses: subosito/flutter-action@1508160852fb97248640997f7cfb38da241df0ba # v2.9.1
         with:
           flutter-version: "3.44.8"
@@ -29,8 +33,10 @@ jobs:
         run: flutter pub get && flutter analyze && flutter test
 
   # Kompiliert die nativen Teile, damit ein kaputter Plattform-Build vor dem
-  # Release auffällt. Windows fehlt noch: dafür braucht es libheif und die
-  # Werkzeuge aus tool/windows_*.ps1.
+  # Release auffällt. Unter Windows reicht dafür `flutter build windows`:
+  # libheif, ffmpeg und die übrigen Werkzeuge aus tool/windows_*.ps1 werden
+  # erst beim Verpacken neben das fertige Bündel gelegt und nicht gelinkt.
+  # Ob sie im Paket starten, prüft weiter tool/windows_bauen.ps1 -Pruefen.
   native:
     if: github.event_name != 'pull_request'
     strategy:
@@ -43,6 +49,8 @@ jobs:
             runner: ubuntu-24.04
           - target: apple
             runner: macos-latest
+          - target: windows
+            runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -64,6 +72,8 @@ jobs:
         run: flutter build apk --debug
       - if: matrix.target == 'linux'
         run: flutter build linux --debug
+      - if: matrix.target == 'windows'
+        run: flutter build windows --debug
       - name: macOS und iOS
         if: matrix.target == 'apple'
         run: |
