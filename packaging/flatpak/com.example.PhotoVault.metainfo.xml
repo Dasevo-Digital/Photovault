@@ -68,6 +68,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.19.1" date="2026-10-02">
+      <description>
+        <p>Map tiles are now requested with the application name PhotoVault instead of the placeholder of the Flutter template, which countless sample apps send as well and which tile servers may block.</p>
+        <p>The project code is now licensed under the PolyForm Strict License 1.0.0. No change in how the app works and no database migration.</p>
+      </description>
+    </release>
     <release version="3.19.0" date="2026-10-01">
       <description>
         <p>The timeline can be grouped by day, as in Immich. Every day gets its own heading - Today, Yesterday, otherwise weekday and date - and tapping it selects the whole day.</p>
