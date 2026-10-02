@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import 'package:photo_vault/services/netzkennung.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
 
 /// Zaehlt, was wirklich geladen wird.
@@ -126,6 +127,7 @@ void main() {
                       urlTemplate: Kartenstil.hell.kachelUrl,
                       tileProvider: zaehler,
                       maxNativeZoom: 19,
+                      userAgentPackageName: netzkennung,
                       retinaMode: RetinaMode.isHighDensity(context),
                     )),
         ],
@@ -205,6 +207,7 @@ void main() {
                         urlTemplate: Kartenstil.hell.kachelUrl,
                         tileProvider: zaehler,
                         maxNativeZoom: 19,
+                        userAgentPackageName: netzkennung,
                         retinaMode: RetinaMode.isHighDensity(context),
                       )),
           ],

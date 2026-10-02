@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 import 'package:photo_vault/services/eigenkarte.dart';
+import 'package:photo_vault/services/netzkennung.dart';
 
 /// Sonde: Stimmen die Zoomgrenzen der mitgelieferten Vorlagen noch?
 ///
@@ -45,9 +46,7 @@ void main() {
       final groessen = <int, int>{};
       for (final z in [v.stufe - 1, v.stufe, v.stufe + 1]) {
         final antwort = await client.get(Uri.parse(_adresse(v.url, z)),
-            headers: const {
-              'User-Agent': 'flutter_map (com.example.photoVault)'
-            });
+            headers: const {'User-Agent': kartenNetzkennung});
         groessen[z] = antwort.statusCode == 200 ? antwort.bodyBytes.length : -1;
         zeile.write('z$z:${antwort.statusCode}/${groessen[z]}B  ');
       }

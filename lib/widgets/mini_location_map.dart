@@ -13,6 +13,7 @@ import 'package:latlong2/latlong.dart' as ll;
 
 import '../services/eigenkarte.dart';
 import '../services/kachelmitschnitt.dart';
+import '../services/netzkennung.dart';
 import '../theme/app_spacing.dart';
 import 'wisch_zoom.dart';
 
@@ -1220,8 +1221,8 @@ TileLayer buildMapTileLayer(
     retinaMode:
         _karteHochaufloesend && RetinaMode.isHighDensity(context),
     // OpenTopoMap bittet ausdrücklich um einen aussagekräftigen
-    // User-Agent statt der Vorgabe der Bibliothek.
-    userAgentPackageName: 'com.example.photoVault',
+    // User-Agent statt der Vorgabe der Bibliothek (siehe [netzkennung]).
+    userAgentPackageName: netzkennung,
     tileProvider: anbieter,
     // Die dunkle Karte ohne CARTO-Schlüssel bekommt helle OSM-Kacheln
     // geliefert und dreht sie hier um (siehe [Kartenstil.dunkel]).

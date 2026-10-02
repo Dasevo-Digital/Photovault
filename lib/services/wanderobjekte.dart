@@ -39,6 +39,7 @@ library;
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'netzkennung.dart';
 
 /// Wofür ein Punkt steht.
 enum Wanderart {
@@ -226,7 +227,7 @@ Future<List<Wanderobjekt>?> holeWanderobjekte({
         .post(
           Uri.parse(adresse),
           headers: const {
-            'User-Agent': 'com.example.photoVault',
+            'User-Agent': netzkennung,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
