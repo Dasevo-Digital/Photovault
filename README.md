@@ -1092,7 +1092,10 @@ flutter test --tags netz --run-skipped test/modell_download_probe_test.dart
 
 ## Lizenz
 
-Der Projektcode steht unter der Lizenz in [LICENSE](LICENSE). Herkunft und
+Der Projektcode steht unter der [PolyForm Strict License 1.0.0](LICENSE) (© 2026 Dasevo Digital
+und superkuh). Erlaubt sind die nichtkommerzielle Nutzung der App und das
+Prüfen des Quellcodes; Kopieren, Ändern, Weitergeben und jede kommerzielle
+Nutzung sind ohne gesonderte schriftliche Genehmigung nicht gestattet. Herkunft und
 Lizenzen aller Drittinhalte – insbesondere die Namensnennung für die
 Globus-Texturen (CC BY 4.0), die nachladbaren KI-Modelle, GeoNames und
 OpenStreetMap – stehen in [NOTICE.md](NOTICE.md).
