@@ -94,6 +94,42 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
     return zeigeBeendenFrage(kontext, library);
   }
 
+  /// Was zuletzt an die Kartenschicht und die Kachelwand ging – damit ein
+  /// Neuaufbau ohne geänderte Einstellungen nichts erneut setzt.
+  AppSettingsData? _weitergegeben;
+  bool _schonWeitergegeben = false;
+
+  /// Reicht die Einstellungen, die ausserhalb des Widget-Baums gelten, an
+  /// ihre Stellen weiter.
+  ///
+  /// Das geschieht im Aufbau und nicht in einem eigenen Abo, weil dies die
+  /// einzige Stelle ist, die IMMER von einer Änderung erfährt, und zwar
+  /// **bevor** die Karten darunter neu gebaut werden: Die Einstellungen
+  /// schreiben in dieselbe Zeile, die der Strom beobachtet. Es sind reine
+  /// Zuweisungen ohne Rückwirkung auf den Aufbau, und sie laufen nur, wenn
+  /// sich die Zeile wirklich geändert hat.
+  void _einstellungenWeitergeben(AppSettingsData? e) {
+    if (_schonWeitergegeben && e == _weitergegeben) return;
+    _schonWeitergegeben = true;
+    _weitergegeben = e;
+    // Der CARTO-Schlüssel für die dunkle Karte.
+    setzeCartoSchluessel(e?.cartoSchluessel);
+    // Die doppelte Auflösung: Wer sie umlegt, soll die Karte danach sofort
+    // anders sehen und nicht erst nach einem Neustart.
+    setzeKarteHochaufloesend(e?.karteHochaufloesend ?? true);
+    // Die Schwebe-Vorschau: Wer sie abschaltet, soll die Kachelwand danach
+    // sofort still haben.
+    setzeSchwebevorschau(e?.schwebeVorschau ?? true);
+    // Die eigene Kartenquelle.
+    setzeEigeneKarte(Eigenkarte.aus(
+      name: e?.eigeneKarteName,
+      url: e?.eigeneKarteUrl,
+      nennung: e?.eigeneKarteNennung,
+      stufe: e?.eigeneKarteStufe,
+      zugestimmt: e?.eigeneKarteZugestimmt ?? false,
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -113,34 +149,7 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 ? _einstellungen.hole(true, () => library.db.watchAppSettings())
                 : null,
             builder: (context, settingsSnapshot) {
-              // Der CARTO-Schlüssel geht hier an die Kartenschicht, weil
-              // dies die einzige Stelle ist, die IMMER von einer Änderung
-              // erfährt: Die Einstellungen schreiben in dieselbe Zeile,
-              // die dieser Strom beobachtet, und der Neuaufbau erfasst
-              // jede Karte darunter. Eine reine Zuweisung ohne
-              // Rückwirkung auf den Aufbau - sie stösst keinen zweiten
-              // Durchgang an.
-              setzeCartoSchluessel(settingsSnapshot.data?.cartoSchluessel);
-              // Und die doppelte Auflösung, aus demselben Grund: Wer sie
-              // in den Einstellungen umlegt, soll die Karte danach sofort
-              // anders sehen und nicht erst nach einem Neustart.
-              setzeKarteHochaufloesend(
-                  settingsSnapshot.data?.karteHochaufloesend ?? true);
-              // Und die Schwebe-Vorschau, aus demselben Grund: Wer sie in
-              // den Einstellungen abschaltet, soll die Kachelwand danach
-              // sofort still haben.
-              setzeSchwebevorschau(
-                  settingsSnapshot.data?.schwebeVorschau ?? true);
-              // Dieselbe Stelle, derselbe Grund: Die eigene Kartenquelle
-              // steht in derselben Zeile der Einstellungen.
-              setzeEigeneKarte(Eigenkarte.aus(
-                name: settingsSnapshot.data?.eigeneKarteName,
-                url: settingsSnapshot.data?.eigeneKarteUrl,
-                nennung: settingsSnapshot.data?.eigeneKarteNennung,
-                stufe: settingsSnapshot.data?.eigeneKarteStufe,
-                zugestimmt:
-                    settingsSnapshot.data?.eigeneKarteZugestimmt ?? false,
-              ));
+              _einstellungenWeitergeben(settingsSnapshot.data);
               return MaterialApp(
                 title: 'Photo Vault',
                 navigatorKey: _navigator,
