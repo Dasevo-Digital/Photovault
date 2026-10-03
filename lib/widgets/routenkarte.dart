@@ -323,7 +323,7 @@ class _Ortsbild extends StatelessWidget {
     final pfad = bild.thumbnailRelativePath;
     return Tooltip(
       message: [
-        if (name case final n?) n,
+        ?name,
         t.reisenAufnahmen(anzahl),
       ].join(' · '),
       child: GestureDetector(
@@ -355,7 +355,7 @@ class _Ortsbild extends StatelessWidget {
                         // der Platte ist 400. Ohne diese Grenze läge bei
                         // zwanzig Orten das Zwanzigfache im Speicher.
                         cacheWidth: 132,
-                        errorBuilder: (_, __, ___) => Icon(
+                        errorBuilder: (_, _, _) => Icon(
                             Icons.image_not_supported_outlined,
                             size: 18,
                             color: farben.onSurfaceVariant),

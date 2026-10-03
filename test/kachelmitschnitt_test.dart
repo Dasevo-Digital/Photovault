@@ -281,7 +281,7 @@ void main() {
       // ist trotzdem nichts.
       final m = Kachelmitschnitt()..starte();
       final client = MitschnittClient(
-        MockClient.streaming((_, __) async => StreamedResponse(
+        MockClient.streaming((_, _) async => StreamedResponse(
               // Ein Strom, der nie fertig wird.
               StreamController<List<int>>().stream,
               200,

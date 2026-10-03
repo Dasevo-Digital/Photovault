@@ -627,7 +627,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _peopleFaces.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                separatorBuilder: (_, _) => const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final item = _peopleFaces[index];
                                   return GestureDetector(

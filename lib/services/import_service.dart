@@ -250,7 +250,7 @@ class ImportService {
 
   Future<void> _raeumeImportresteAuf(String assetId, File? original) async {
     final kandidaten = <File>{
-      if (original != null) original,
+      ?original,
       _paths.absolute(_paths.thumbnailRelativePath(assetId)),
       _paths.absolute(_paths.previewRelativePath(assetId)),
     };

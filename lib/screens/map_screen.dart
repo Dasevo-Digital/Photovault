@@ -888,7 +888,7 @@ class _MapThumbMarker extends StatelessWidget {
                     // stauchten das Bild, siehe [deckendeDekodiermasse].
                     cacheWidth: masse.breite,
                     cacheHeight: masse.hoehe,
-                    errorBuilder: (_, __, ___) => _fallbackIcon(),
+                    errorBuilder: (_, _, _) => _fallbackIcon(),
                   )
                 : _fallbackIcon(),
           ),

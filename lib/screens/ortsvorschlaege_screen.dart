@@ -63,7 +63,7 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
         ..clear()
         ..addEntries(buendel.map((b) => MapEntry(b.schluessel, [
               for (final v in b.vorschlaege)
-                if (nachId[v.assetId] case final a?) a,
+                ?nachId[v.assetId],
             ])));
       _laedt = false;
     });
@@ -210,7 +210,7 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: aufnahmen.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, k) => SizedBox(
                     width: 110,
                     child: ClipRRect(

@@ -658,13 +658,12 @@ eigenständig.
 Dieser Abschnitt richtet sich an alle, die die App selbst bauen oder
 weiterentwickeln möchten. Voraussetzung dafür:
 [Flutter SDK](https://docs.flutter.dev/get-started/install)
-(stabiler Kanal, ≥ 3.19).
+(stabiler Kanal, ≥ 3.44; Dart ≥ 3.12). Die Plattformordner liegen
+angepasst im Repo – `flutter create` ist nicht nötig und würde dort
+ungefragt Dateien anlegen.
 
 ```bash
 cd photo_vault
-
-# Plattformordner generieren (überschreibt NICHT den vorhandenen lib/-Ordner)
-flutter create --platforms=macos,linux,windows,ios,android .
 
 # Abhängigkeiten installieren
 flutter pub get
@@ -755,8 +754,7 @@ Wanderobjekte für den Überflug. Alles andere ist rein lokal.
 Damit die (sandboxte) macOS-App Ordner importieren und Backups an frei
 gewählte Orte schreiben darf, müssen in
 `macos/Runner/DebugProfile.entitlements` und `Release.entitlements`
-folgende Einträge vorhanden sein (bei `flutter create` meist schon per
-Default gesetzt):
+folgende Einträge vorhanden sein (im Repo bereits gesetzt):
 
 ```xml
 <key>com.apple.security.files.user-selected.read-write</key>

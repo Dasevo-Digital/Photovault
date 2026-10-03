@@ -76,7 +76,7 @@ class Altersauswertung {
   bool get istLeer => anzahl == 0;
 
   factory Altersauswertung.aus(Iterable<int?> werte) {
-    final gute = [for (final w in werte) if (w != null) w]..sort();
+    final gute = [for (final w in werte) ?w]..sort();
     return Altersauswertung(
       anzahl: gute.length,
       nichtGezaehlt: werte.length - gute.length,

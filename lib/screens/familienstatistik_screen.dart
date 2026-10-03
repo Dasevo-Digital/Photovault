@@ -391,7 +391,7 @@ class _GenerationenDiagramm extends StatelessWidget {
               borderData: FlBorderData(show: false),
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (gruppe, _, stab, __) => BarTooltipItem(
+                  getTooltipItem: (gruppe, _, stab, _) => BarTooltipItem(
                     '${t.famstatGeneration(stufen[gruppe.x.toInt()])}\n'
                     '${stab.toY.round()}',
                     const TextStyle(
@@ -478,7 +478,7 @@ class _KinderDiagramm extends StatelessWidget {
               borderData: FlBorderData(show: false),
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (gruppe, _, stab, __) => BarTooltipItem(
+                  getTooltipItem: (gruppe, _, stab, _) => BarTooltipItem(
                     '${t.famstatKinderAchse(stufen[gruppe.x.toInt()])}\n'
                     '${stab.toY.round()}',
                     const TextStyle(
@@ -634,7 +634,7 @@ class _Jahresdiagramm extends StatelessWidget {
           maxY: hoechst * 1.15,
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (gruppe, _, __, ___) => BarTooltipItem(
+              getTooltipItem: (gruppe, _, _, _) => BarTooltipItem(
                 '${jahre[gruppe.x]}\n${werte[jahre[gruppe.x]] ?? 0}',
                 TextStyle(color: farben.onInverseSurface, fontSize: 12),
               ),

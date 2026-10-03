@@ -52,7 +52,7 @@ void main() {
         () => OneFrameImageStreamCompleter(
             Future.value(ImageInfo(image: bild))))!;
     late ImageStreamListener horcher;
-    horcher = ImageStreamListener((_, __) {
+    horcher = ImageStreamListener((_, _) {
       if (!fertig.isCompleted) fertig.complete();
     });
     strom.addListener(horcher);

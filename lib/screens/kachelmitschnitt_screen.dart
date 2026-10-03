@@ -27,8 +27,7 @@ import '../theme/app_theme.dart';
 /// Statuscode, Ausnahme und Dauer. Beim nächsten Mal muss niemand mehr
 /// raten.
 class KachelmitschnittScreen extends StatefulWidget {
-  const KachelmitschnittScreen({super.key, Kachelmitschnitt? mitschnitt})
-      : _mitschnitt = mitschnitt;
+  const KachelmitschnittScreen({super.key, this._mitschnitt});
 
   /// Nur für den Prüfstand – sonst der eine, den die Karten benutzen.
   final Kachelmitschnitt? _mitschnitt;

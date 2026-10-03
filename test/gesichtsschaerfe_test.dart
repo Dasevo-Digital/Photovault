@@ -80,7 +80,7 @@ void main() {
     /// fast immer jemand weich, und das ist kein Grund, die Aufnahme
     /// wegzuwerfen.
     bool alleUnscharf(List<double?> werte) {
-      final gemessen = [for (final w in werte) if (w != null) w];
+      final gemessen = [for (final w in werte) ?w];
       return gemessen.isNotEmpty &&
           gemessen.reduce(math.max) < gesichtUnscharfSchwelle;
     }

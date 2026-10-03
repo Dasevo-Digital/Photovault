@@ -135,7 +135,7 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
                       return ListView.separated(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         itemCount: presets.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final preset = presets[index];
                           return _CameraPresetTile(

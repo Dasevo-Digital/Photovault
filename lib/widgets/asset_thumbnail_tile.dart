@@ -173,7 +173,7 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
                   fit: BoxFit.cover,
                   cacheWidth: masse.breite,
                   cacheHeight: masse.hoehe,
-                  errorBuilder: (_, __, ___) => _placeholder(),
+                  errorBuilder: (_, _, _) => _placeholder(),
                 );
               },
             )
@@ -335,7 +335,7 @@ class LocalImageTile extends StatelessWidget {
             cacheWidth: (_ausschnittKante *
                     MediaQuery.devicePixelRatioOf(context))
                 .round(),
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               color: Colors.grey.shade900,
               child: const Icon(Icons.face_outlined, color: Colors.white24),
             ),

@@ -187,10 +187,10 @@ Hoehenlinien hoehenlinien(
             : null;
 
         final punkte = [
-          if (oben != null) oben,
-          if (rechts != null) rechts,
-          if (unten != null) unten,
-          if (links != null) links,
+          ?oben,
+          ?rechts,
+          ?unten,
+          ?links,
         ];
         // Zwei Schnittpunkte sind der Regelfall. Vier bedeuten einen
         // Sattel – dann werden sie paarweise verbunden, wie sie in der

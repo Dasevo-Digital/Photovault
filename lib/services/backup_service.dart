@@ -907,7 +907,7 @@ class BackupService {
         final durchsucht = [
           for (final z in quelle.select(
               'SELECT id, faces_scanned FROM assets WHERE faces_scanned = 1'))
-            if (assetZuordnung[z['id'] as String] case final neueId?) neueId,
+            ?assetZuordnung[z['id'] as String],
         ];
         if (durchsucht.isNotEmpty) await _db.markFacesScanned(durchsucht);
       });

@@ -87,7 +87,7 @@ Future<void> _ladeSchrift(WidgetTester tester) async {
     await nimm('Zierschrift Gross', ['assets/fonts/GreatVibes-Regular.ttf']);
 
     final symbolschrift = _sucheSymbolschrift();
-    await nimm('MaterialIcons', [if (symbolschrift != null) symbolschrift]);
+    await nimm('MaterialIcons', [?symbolschrift]);
   });
 }
 

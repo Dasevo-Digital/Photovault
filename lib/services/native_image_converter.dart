@@ -452,7 +452,7 @@ class NativeImageConverter {
           await _channel.invokeMethod<Map<Object?, Object?>>('videoThumbnail', {
         'path': file.path,
         'maxDimension': maxDimension,
-        if (anteil != null) 'anteil': anteil,
+        'anteil': ?anteil,
       });
       if (result == null) return null;
       final jpeg = result['jpeg'] as Uint8List?;

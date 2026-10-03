@@ -72,12 +72,11 @@ class Blocktexturlader {
     required this.grundstufe,
     this.hoehen,
     http.Client? netz,
-    MapCachingProvider? speicher,
+    this._speicher,
     this.hoechstensBytes = blocktexturSpeicher,
     this.beiAenderung,
   })  : _netz = netz,
-        _eigenerKlient = netz == null,
-        _speicher = speicher {
+        _eigenerKlient = netz == null {
     _vorrat = Blockvorrat<ui.Image>(
       hoechstensBytes: hoechstensBytes,
       freigeben: (bild) => bild.dispose(),

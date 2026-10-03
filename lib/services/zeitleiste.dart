@@ -44,7 +44,7 @@ class Zeitzeile {
   /// verschöbe die ganze Leiste.
   DateTime? get frueheste {
     DateTime? f = geburt;
-    for (final m in [if (tod != null) tod!, for (final m in marken) m.datum]) {
+    for (final m in [?tod, for (final m in marken) m.datum]) {
       if (f == null || m.isBefore(f)) f = m;
     }
     return f;

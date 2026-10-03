@@ -87,7 +87,7 @@ List<Textstelle> textstellenAusJson(String? json) {
     if (roh is! List) return const [];
     return [
       for (final eintrag in roh)
-        if (Textstelle._ausJson(eintrag) case final s?) s,
+        ?Textstelle._ausJson(eintrag),
     ];
   } on FormatException {
     return const [];

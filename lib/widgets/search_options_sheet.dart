@@ -463,7 +463,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final person = filtered[index];
                     final selected = _personIds.contains(person.id);

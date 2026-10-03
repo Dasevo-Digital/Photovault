@@ -203,7 +203,7 @@ List<double> geglaetteteHoehen(List<double> hoehen, {int fenster = hoehenGlaettu
 }) {
   final vorhanden = [
     for (final h in hoehen)
-      if (h != null) h,
+      ?h,
   ];
   final reihe = geglaetteteHoehen(vorhanden, fenster: glaettung);
   if (reihe.isEmpty) return (aufstieg: 0, abstieg: 0);
@@ -274,7 +274,7 @@ typedef Spurkennzahlen = ({
 Spurkennzahlen spurkennzahlen(List<Rohpunkt> punkte) {
   final zeiten = [
     for (final p in punkte)
-      if (p.zeit case final z?) z,
+      ?p.zeit,
   ]..sort();
   final mitHoehe = punkte.any((p) => p.hoehe != null);
   final bilanz =

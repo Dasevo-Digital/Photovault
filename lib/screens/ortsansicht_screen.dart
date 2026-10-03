@@ -286,7 +286,7 @@ class _Kopf extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     final flagge = land == null ? null : flaggeAus(land!.iso);
     final zeile = [
-      if (land?.hauptstadt case final h?) h,
+      ?land?.hauptstadt,
       if (stand.aufnahmen > 0) t.laenderAufnahmen(stand.aufnahmen),
       if (stand.marke == Markenart.besucht) t.laenderVonHand,
       if (stand.marke == Markenart.geplant) t.laenderGeplant,

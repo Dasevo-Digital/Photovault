@@ -418,7 +418,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   void _ortOeffnen(Aufenthaltsort ort) {
     final bilder = [
       for (final id in ort.aufnahmeIds)
-        if (_nachId[id] case final a?) a,
+        ?_nachId[id],
     ];
     if (bilder.isEmpty) return;
     Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
