@@ -506,6 +506,12 @@ class _TaskCardState extends State<_TaskCard> {
   /// Lauf habe nichts bewirkt.
   bool _alsErledigtQuittiert = false;
 
+  /// Beginn und Ende eines Laufs melden sich über den Zustand, die Zahlen
+  /// dazwischen über [LibraryState.fortschritt]. Einmal gebaut, damit der
+  /// ListenableBuilder nicht bei jedem Aufbau neu abonniert.
+  late final Listenable _zuhoeren =
+      Listenable.merge([widget.library, widget.library.fortschritt]);
+
   @override
   void initState() {
     super.initState();
@@ -567,7 +573,7 @@ class _TaskCardState extends State<_TaskCard> {
     // Auf LibraryState hören, damit die Zahlen mitlaufen – auch während die
     // Hintergrundanalyse arbeitet, und für den eigenen Lauf dieser Karte.
     return ListenableBuilder(
-      listenable: widget.library,
+      listenable: _zuhoeren,
       builder: (context, _) {
         final t = AppTexte.of(context);
         final lauf = widget.library.lauf(_a.schluessel);
@@ -698,7 +704,9 @@ class _CombinedAnalysisCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: library,
+      // Beginn und Ende über den Zustand, die Zahlen dazwischen über
+      // [LibraryState.fortschritt].
+      listenable: Listenable.merge([library, library.fortschritt]),
       builder: (context, _) {
         final t = AppTexte.of(context);
         final analyse = library.analyse;

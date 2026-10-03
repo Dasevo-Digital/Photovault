@@ -370,4 +370,38 @@ void main() {
     // Stattdessen steht dort der Weg dorthin.
     expect(find.text('Aufgaben'), findsOneWidget);
   });
+
+  test('Zwischenstände gehen an den Fortschritt, nicht an den ganzen Zustand',
+      () async {
+    // An LibraryState hängt über den Consumer in main.dart die ganze App.
+    // Eine Zahl, die weiterzählt, darf deshalb nur die Anzeigen wecken,
+    // die sie zeigen – Beginn und Ende dagegen gehen an alle.
+    var zustand = 0;
+    var fortschritt = 0;
+    library.addListener(() => zustand++);
+    library.fortschritt.addListener(() => fortschritt++);
+
+    final regler = StreamController<ImportProgress>();
+    library.reiheAufgabeEin(
+      schluessel: 'orte',
+      titel: 'Lese Orte aus Fotos ein …',
+      leermeldung: 'Alle Fotos haben bereits einen Ort.',
+      strom: () => regler.stream,
+    );
+    await Future<void>.delayed(Duration.zero);
+    final nachBeginn = zustand;
+    expect(nachBeginn, greaterThan(0), reason: 'der Beginn geht an alle');
+
+    regler.add(ImportProgress(1, 10));
+    await Future<void>.delayed(Duration.zero);
+    expect(fortschritt, 1);
+    expect(zustand, nachBeginn,
+        reason: 'ein Zwischenstand baut nicht die ganze App neu auf');
+    expect(library.lauf('orte')!.erledigt, 1);
+
+    await regler.close();
+    await library.lauf('orte')!.abschluss;
+    await Future<void>.delayed(Duration.zero);
+    expect(zustand, greaterThan(nachBeginn), reason: 'das Ende geht an alle');
+  });
 }

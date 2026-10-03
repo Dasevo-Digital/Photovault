@@ -157,6 +157,15 @@ class _AnalyseBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Die Zahlen zählen über [LibraryState.fortschritt] weiter, ohne dass
+    // dafür die ganze App neu aufgebaut wird.
+    return ListenableBuilder(
+      listenable: library.fortschritt,
+      builder: (context, _) => _baue(context),
+    );
+  }
+
+  Widget _baue(BuildContext context) {
     final t = AppTexte.of(context);
     final a = library.analyse;
     final laeufe = library.laufendeAufgaben.toList();
