@@ -135,7 +135,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
         width: 40,
         height: 40,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Icon(ersatz, color: farbe),
+        errorBuilder: (_, _, _) => Icon(ersatz, color: farbe),
       ),
     );
   }
@@ -164,7 +164,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                     image: begrenztesBild(
                         widget.library.paths.absolute(pfad), kante: 840),
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Text(t.integKeineVorschau),
+                    errorBuilder: (_, _, _) => Text(t.integKeineVorschau),
                   ),
                 ),
               const SizedBox(height: AppSpacing.md),
@@ -201,7 +201,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
         image: begrenztesBild(widget.library.paths.absolute(pfad), kante: 440),
         height: 220,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
   }
@@ -439,7 +439,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (knopf != null) knopf,
+                        ?knopf,
                         TextButton(
                           onPressed: () => _removeMissingFromDb(issue),
                           child: Text(AppTexte.of(context).integAusDbEntfernen),
@@ -476,7 +476,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (knopf != null) knopf,
+                        ?knopf,
                         TextButton(
                           onPressed: () => _deleteOrphanedFile(issue),
                           child: Text(AppTexte.of(context).integDateiLoeschen),
@@ -565,7 +565,7 @@ class _Section extends StatelessWidget {
                   child: Text(title,
                       style: Theme.of(context).textTheme.titleSmall),
                 ),
-                if (aktion != null) aktion!,
+                ?aktion,
               ],
             ),
           ),

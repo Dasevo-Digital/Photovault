@@ -185,21 +185,15 @@ enum Kartenstil {
   );
 
   const Kartenstil({
-    required String kachelUrl,
-    required String namensnennung,
-    String? seite,
-    List<String> unterbereiche = const <String>[],
-    int? hoechsteEchteStufe,
-  })  : _kachelUrl = kachelUrl,
-        _namensnennung = namensnennung,
-        _seite = seite,
-        _unterbereiche = unterbereiche,
-        _hoechsteEchteStufe = hoechsteEchteStufe;
+    required this._kachelUrl,
+    required this._namensnennung,
+    this._seite,
+    this._hoechsteEchteStufe,
+  });
 
   final String _kachelUrl;
   final String _namensnennung;
   final String? _seite;
-  final List<String> _unterbereiche;
   final int? _hoechsteEchteStufe;
 
   /// Ob dieser Stil gerade auf CARTO zeigt – also nur die dunkle Karte,
@@ -236,8 +230,10 @@ enum Kartenstil {
     return _ueberCarto ? _cartoSeite : _seite;
   }
 
+  /// Nur CARTO verteilt seine Kacheln auf Unterbereiche; alle übrigen
+  /// Quellen haben eine einzige Adresse.
   List<String> get unterbereiche =>
-      _ueberCarto ? _cartoUnterbereiche : _unterbereiche;
+      _ueberCarto ? _cartoUnterbereiche : const <String>[];
 
   /// Ob die Kacheln beim Zeichnen invertiert werden müssen.
   ///
@@ -1172,7 +1168,7 @@ TileLayer buildMapTileLayer(
     // [Nachfassanbieter].
     errorTileCallback: beiFehler == null
         ? null
-        : (kachel, __, ___) {
+        : (kachel, _, _) {
             if (anbieter is Nachfassanbieter) {
               anbieter.merkeFehlschlag(kachel.coordinates);
             }

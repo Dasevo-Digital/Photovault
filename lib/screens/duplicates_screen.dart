@@ -440,7 +440,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: group.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final asset = group[index];
                     return SizedBox(

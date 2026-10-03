@@ -150,8 +150,7 @@ class DatenschutzNichtMoeglich implements Exception {
 /// GESAMTE Bibliothek (inkl. Metadaten-Export, Delta-Abgleich), ein Export
 /// legt gezielt einzelne Original-Dateien an einem frei gewählten Ort ab.
 class ExportService {
-  const ExportService(this._paths, {LibraryState? library})
-      : _library = library;
+  const ExportService(this._paths, {this._library});
 
   final StoragePaths _paths;
   final LibraryState? _library;

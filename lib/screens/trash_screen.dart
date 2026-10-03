@@ -222,7 +222,7 @@ class _TrashScreenState extends State<TrashScreen> {
                             cacheWidth: (_kachelBreite *
                                     MediaQuery.devicePixelRatioOf(context))
                                 .round(),
-                            errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade900),
+                            errorBuilder: (_, _, _) => Container(color: Colors.grey.shade900),
                           )
                         : Container(
                             color: Colors.grey.shade900,

@@ -559,7 +559,7 @@ class _Zeile extends StatelessWidget {
                           paths.absolute(thumb),
                           fit: BoxFit.cover,
                           cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context)).round(),
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               Icon(Icons.broken_image_outlined, size: 18, color: farben.outline),
                         ),
                       ),

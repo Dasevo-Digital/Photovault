@@ -227,7 +227,7 @@ class _LaenderlisteScreenState extends State<LaenderlisteScreen> {
     }
     return ListView.separated(
       itemCount: gezeigt.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, i) => _Landzeile(
         land: gezeigt[i],
         // Ein Klick führt jetzt hinein statt in ein Menü: Was in einem
@@ -413,7 +413,7 @@ class _Landzeile extends StatelessWidget {
 
     final unterzeile = [
       erdteilName(t, land.kontinent),
-      if (land.hauptstadt case final h?) h,
+      ?land.hauptstadt,
       if (land.aufnahmen > 0) t.laenderAufnahmen(land.aufnahmen),
       // Nur, wo für den Haken KEIN Foto spricht. Vorher stand „von Hand"
       // an jedem Land mit einer Marke – auch an denen, die längst durch

@@ -625,7 +625,7 @@ class _AktivitaetskachelState extends State<Aktivitaetskachel> {
     // Kachel höher, ohne mehr zu sagen. Bleibt beides leer, entfällt die
     // Zeile ganz - siehe [ortszeile].
     final unterzeile = [
-      if (widget.ort case final o?) o,
+      ?widget.ort,
       if (widget.reisename case final r?) t.aktivitaetenZuReise(r),
     ].join(' · ');
     return FutureBuilder<AssetData?>(

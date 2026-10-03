@@ -295,7 +295,7 @@ class _ReisenScreenState extends State<ReisenScreen> {
   List<String> _kopfzahlen(AppTexte t) {
     final orte = <String>{
       for (final b in _orte.values)
-        if (b.ort case final o?) o,
+        ?b.ort,
     };
     final aufnahmen =
         _orte.values.fold<int>(0, (summe, b) => summe + b.aufnahmen);

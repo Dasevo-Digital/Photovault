@@ -218,7 +218,7 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       itemCount: _matches.length,
-      separatorBuilder: (_, __) => const Divider(height: AppSpacing.xxl),
+      separatorBuilder: (_, _) => const Divider(height: AppSpacing.xxl),
       itemBuilder: (context, index) {
         final match = _matches[index];
         return SizedBox(

@@ -122,7 +122,7 @@ class _YearCardState extends State<_YearCard> {
                   cacheWidth: (_kachelKante *
                           MediaQuery.devicePixelRatioOf(context))
                       .round(),
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 );
               },
             ),

@@ -340,7 +340,7 @@ class _StreifenabschnittState<T> extends State<_Streifenabschnitt<T>> {
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: gezeigt.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               SizedBox(width: widget.abstand),
                           itemBuilder: (context, index) =>
                               widget.kachel(context, gezeigt, index),
@@ -634,7 +634,7 @@ class _LocationGroupsStripState extends State<_LocationGroupsStrip> {
           return ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: groups.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) =>
                 _LocationGroupTile(library: widget.library, group: groups[index]),
           );
@@ -695,7 +695,7 @@ class _LocationGroupTile extends StatelessWidget {
                           cacheWidth: (_kartenKante *
                                   MediaQuery.devicePixelRatioOf(context))
                               .round(),
-                          errorBuilder: (_, __, ___) => const Icon(Icons.location_city_outlined, size: 32),
+                          errorBuilder: (_, _, _) => const Icon(Icons.location_city_outlined, size: 32),
                         )
                       : const Center(child: Icon(Icons.location_city_outlined, size: 32)),
                 ),
@@ -860,7 +860,7 @@ class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
                               cacheWidth: (_kartenKante *
                                       MediaQuery.devicePixelRatioOf(context))
                                   .round(),
-                              errorBuilder: (_, __, ___) => const Icon(Icons.photo_album_outlined, size: 32),
+                              errorBuilder: (_, _, _) => const Icon(Icons.photo_album_outlined, size: 32),
                             )
                           : const Center(child: Icon(Icons.photo_album_outlined, size: 32)),
                     );
@@ -972,7 +972,7 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: gruppe.dinge.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final asset = gruppe.dinge[index];
                     return SizedBox(

@@ -117,7 +117,7 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: jobs.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final job = jobs[index];
               final isActive = job.status == 'queued' || job.status == 'running';

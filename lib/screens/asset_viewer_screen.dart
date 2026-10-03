@@ -1148,7 +1148,7 @@ class _FilmstripState extends State<_Filmstrip> {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         itemCount: widget.assets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: _itemSpacing),
+        separatorBuilder: (_, _) => const SizedBox(width: _itemSpacing),
         itemBuilder: (context, index) {
           final asset = widget.assets[index];
           final selected = index == widget.currentIndex;
@@ -1182,7 +1182,7 @@ class _FilmstripState extends State<_Filmstrip> {
                         fit: BoxFit.cover,
                         cacheWidth: masse.breite,
                         cacheHeight: masse.hoehe,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, _) =>
                             Container(color: Colors.grey.shade900),
                       );
                     })
@@ -1396,7 +1396,7 @@ class _AssetPageState extends State<_AssetPage> {
         info.dispose();
         strom.removeListener(horcher);
       },
-      onError: (_, __) {
+      onError: (_, _) {
         if (!fertig.isCompleted) fertig.complete(null);
         strom.removeListener(horcher);
       },

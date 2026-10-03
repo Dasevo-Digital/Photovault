@@ -28,10 +28,9 @@ class ModellHalter<T> {
   ModellHalter({
     required this.name,
     required this.installiert,
-    required Future<T> Function() laden,
-    required Future<void> Function(T) entsorgen,
-  })  : _laden = laden,
-        _entsorgen = entsorgen;
+    required this._laden,
+    required this._entsorgen,
+  });
 
   /// Für Protokollausgaben – z.B. "CLIP-Bild".
   final String name;

@@ -332,7 +332,7 @@ class _DecryptedThumbnailState extends State<_DecryptedThumbnail> {
           // Pixel ist eines weniger im Speicher.
           cacheWidth:
               (_kachelBreite * MediaQuery.devicePixelRatioOf(context)).round(),
-          errorBuilder: (_, __, ___) => Container(
+          errorBuilder: (_, _, _) => Container(
             color: Colors.grey.shade900,
             child: const Icon(Icons.broken_image_outlined, color: Colors.white24),
           ),

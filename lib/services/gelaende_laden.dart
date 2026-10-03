@@ -153,7 +153,7 @@ Future<Hoehengitter?> ladeHoehengitter({
   ]);
   final da = [
     for (final b in bilder)
-      if (b != null) b,
+      ?b,
   ];
   if (da.isEmpty) return null;
 

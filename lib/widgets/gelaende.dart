@@ -1910,7 +1910,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         info.dispose();
         strom.removeListener(horcher);
       },
-      onError: (_, __) {
+      onError: (_, _) {
         // Ein Bild, das nicht kommt, nimmt das Video nicht mit.
         if (!fertig.isCompleted) fertig.complete(null);
         strom.removeListener(horcher);
@@ -2926,7 +2926,7 @@ class _Flugbild extends StatelessWidget {
                           height: kante * 0.75,
                           // Ein Bild, das nicht kommt, darf keinen roten
                           // Kasten in die Landschaft setzen.
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               const SizedBox(width: kante, height: 1),
                         ),
                       ),
