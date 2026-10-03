@@ -1,0 +1,13 @@
+# Schema-Stände der Datenbank für `dart run drift_dev make-migrations`.
+# Bei jedem Schemawechsel einmal aufrufen: Der Befehl legt den neuen Stand
+# unter drift_schemas/ ab und erzeugt Tests, die jede Migration zwischen
+# zwei abgelegten Ständen an einer echten Datenbank nachprüfen.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            default: lib/db/database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/
