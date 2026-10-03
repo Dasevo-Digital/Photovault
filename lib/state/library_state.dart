@@ -1313,6 +1313,18 @@ class LibraryState extends ChangeNotifier {
   /// [HomeShell].
   AnalyseFortschritt? _analyse;
   AnalyseFortschritt? get analyse => _analyse;
+
+  /// Tickt bei jedem gemeldeten Zwischenstand laufender Arbeit – der
+  /// Hintergrundanalyse ([analyse]) und der Aufgaben ([lauf]).
+  ///
+  /// **Getrennt von diesem ChangeNotifier**, weil an dem über den Consumer
+  /// in `main.dart` die ganze App hängt: Jede Zahl, die weiterzählt, baute
+  /// sonst alles neu auf, was auf dem Bildschirm steht. Hier hören nur die
+  /// Anzeigen zu, die die Zahl wirklich zeigen. Beginn und Ende einer
+  /// Arbeit melden weiter über [notifyListeners] – davon hängt ab, welche
+  /// Knöpfe und Hinweise überhaupt zu sehen sind.
+  Listenable get fortschritt => _fortschritt;
+  final _fortschritt = ValueNotifier<int>(0);
   bool get analyseLaeuft => _analyse != null;
   bool _analyseAbbruch = false;
 
@@ -1341,7 +1353,7 @@ class LibraryState extends ChangeNotifier {
   /// dekodierten Bild ohnehin nichts.
   /// Wie oft der Fortschritt einer Hintergrundstufe gemeldet wird.
   ///
-  /// Nicht öfter, weil jede Meldung den ganzen sichtbaren Baum neu aufbaut;
+  /// Nicht öfter, weil jede Meldung die Fortschrittsanzeigen neu aufbaut;
   /// nicht seltener, weil eine Anzeige, die nur alle paar Sekunden springt,
   /// wie ein Stillstand aussieht.
   @visibleForTesting
@@ -1396,16 +1408,18 @@ class LibraryState extends ChangeNotifier {
         // die Stufen 2-6 stillschweigend ausfallen (Audit-Fund).
         try {
           // **Der Stand wird immer gesetzt, gemeldet wird er zehnmal die
-          // Sekunde.** Jede Meldung baut den gesamten Baum unter dem
-          // `Consumer<LibraryState>` in `main.dart` neu auf – und das ist
-          // alles, was auf dem Bildschirm steht. Über 8000 Aufnahmen und
-          // vier Stufen wären das 32.000 Anlässe dazu, für eine Anzeige,
-          // die kein Bildschirm öfter als sechzigmal die Sekunde zeigt.
-          // Wer den Stand liest, ohne auf eine Meldung zu warten (das
-          // Aufgabenblatt beim Öffnen), sieht trotzdem den aktuellen.
+          // Sekunde**, und zwar über [fortschritt], nicht über den ganzen
+          // Zustand: Über 8000 Aufnahmen und vier Stufen wären das sonst
+          // 32.000 Neuaufbauten der ganzen App. Wer den Stand liest, ohne
+          // auf eine Meldung zu warten (das Aufgabenblatt beim Öffnen),
+          // sieht trotzdem den aktuellen.
           var zuletztGemeldet = DateTime.now();
           await for (final p in stufe.lauf()) {
             if (_analyseAbbruch) break;
+            // Der erste Stand heisst „die Analyse läuft" – und davon
+            // hängt mehr ab als eine Zahl (Knöpfe, Hinweise, die
+            // Rückfrage beim Beenden). Der geht an alle.
+            final beginnt = _analyse == null;
             _analyse = AnalyseFortschritt(
               stufe: stufe.name,
               stufeNummer: i + 1,
@@ -1413,15 +1427,16 @@ class LibraryState extends ChangeNotifier {
               erledigt: p.done,
               gesamt: p.total,
             );
+            if (beginnt) notifyListeners();
             final jetzt = DateTime.now();
             if (jetzt.difference(zuletztGemeldet) >= meldeabstand) {
               zuletztGemeldet = jetzt;
-              notifyListeners();
+              _fortschritt.value++;
             }
           }
           // Der letzte Stand einer Stufe muss ankommen – sonst bliebe die
           // Anzeige bei „7994 von 8096" stehen.
-          notifyListeners();
+          _fortschritt.value++;
         } catch (e) {
           debugPrint('Analysestufe "${stufe.name.name}" fehlgeschlagen, '
               'weiter mit der nächsten: $e');
@@ -1617,11 +1632,9 @@ class LibraryState extends ChangeNotifier {
     // Der Lauf muss von aussen abbrechbar sein, und ein gekündigtes
     // Abonnement meldet kein `onDone` mehr – ein `await for` bliebe dann
     // für immer stehen.
-    // Gedrosselt melden. Ein Lauf über 8000 Fotos meldet 8000 Fortschritte,
-    // und an diesem ChangeNotifier hängt über den Consumer in main.dart der
-    // gesamte Widget-Baum – jede Meldung baut also die ganze App neu auf.
-    // Fünf Aktualisierungen je Sekunde sind für eine Zahl, die ein Mensch
-    // liest, reichlich.
+    // Gedrosselt melden, und nur an [fortschritt]. Ein Lauf über 8000 Fotos
+    // meldet 8000 Fortschritte; fünf Aktualisierungen je Sekunde sind für
+    // eine Zahl, die ein Mensch liest, reichlich.
     var letzteMeldung = DateTime.fromMillisecondsSinceEpoch(0);
     const drosselMs = 200;
 
@@ -1640,7 +1653,7 @@ class LibraryState extends ChangeNotifier {
           if (p.done >= p.total ||
               jetzt.difference(letzteMeldung).inMilliseconds >= drosselMs) {
             letzteMeldung = jetzt;
-            notifyListeners();
+            _fortschritt.value++;
           }
         },
         onError: (Object e) {
@@ -4480,6 +4493,7 @@ class LibraryState extends ChangeNotifier {
     // Pruefung fiel es als „A Timer is still pending even after the
     // widget tree was disposed" auf (drei Tests).
     _embeddingCacheTimer?.cancel();
+    _fortschritt.dispose();
     super.dispose();
   }
 }

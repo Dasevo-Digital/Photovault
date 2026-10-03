@@ -3,9 +3,9 @@ import 'package:photo_vault/state/library_state.dart';
 
 /// **Der Fortschritt wird zehnmal die Sekunde gemeldet, nicht achttausendmal.**
 ///
-/// Jede Meldung des Bibliothekszustands baut den gesamten Baum unter dem
-/// `Consumer<LibraryState>` in `main.dart` neu auf – und darunter liegt
-/// alles, was auf dem Bildschirm steht. Die Hintergrundanalyse meldete
+/// Die Zwischenstände gehen an `LibraryState.fortschritt` und wecken dort
+/// nur die Fortschrittsanzeigen (bis 3.19.1 baute jede Meldung die ganze
+/// App neu auf, siehe aufgaben_lauf_test.dart). Die Hintergrundanalyse meldete
 /// nach **jeder einzelnen Aufnahme**: über 8000 Fotos und vier Stufen
 /// 32.000 Anlässe für eine Anzeige, die kein Bildschirm öfter als
 /// sechzigmal die Sekunde zeigt.
