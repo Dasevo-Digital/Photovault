@@ -28,10 +28,13 @@
 # tool/datenschutz_sperrliste.txt (in .gitignore; ein Begriff je Zeile,
 # `#` leitet Kommentare ein) oder kommt in der CI aus der Variablen
 # DATENSCHUTZ_SPERRLISTE (ein Begriff je Zeile, als Secret hinterlegt).
-# Fehlt beides, wird dieser eine Teil übersprungen und das gemeldet. Bei
-# Treffern der Sperrliste nennt die Ausgabe nur Fundort und Commit, nie
-# den Begriff oder die Zeile: Ein CI-Protokoll ist so öffentlich wie das
-# Repo.
+# Fehlt beides, wird dieser eine Teil übersprungen und das gemeldet.
+#
+# **Die Ausgabe nennt nur Art, Fundort und Commit, nie den Inhalt.** Ein
+# CI-Protokoll ist so öffentlich wie das Repo: Stünde dort die Fundzeile,
+# stünde dort genau das Token, der Schlüssel oder die Adresse, die diese
+# Prüfung fernhalten soll. Den Inhalt zeigt `git show <commit>` bzw. die
+# genannte Datei und Zeile - auf dem eigenen Rechner.
 #
 # Das Werkzeug behandelt weder Produkttexte wie „E-Mail-Export" noch
 # technische @-Zeichen als Kontaktangaben. Es findet ausschließlich
@@ -110,9 +113,10 @@ treffer_in() {
     { grep -a -v -E -e "$erlaubt" || true; }
 }
 
+# [orte] sind Fundorte (Pfad:Zeile, Commit), nie Fundzeilen - siehe Kopf.
 melde() {
-  local was="$1" wo="$2" funde="$3"
-  printf '%s\n' "$funde" | sed 's/^/  /' | cut -c1-240
+  local was="$1" wo="$2" orte="$3"
+  printf '%s\n' "$orte" | sort -u | sed 's/^/  /' | cut -c1-240
   echo "$was in $wo gefunden." >&2
   fehler=1
 }
@@ -151,8 +155,10 @@ git grep -I -n -e '' HEAD -- . ':!assets/fonts/**' > "$quellstand" || true
 
 for eintrag in "${muster[@]}"; do
   IFS='|' read -r was schalter regex <<< "$eintrag"
-  funde="$(treffer_in "$schalter" "$regex" "$quellstand" | cut -d: -f2-)"
-  [ -z "$funde" ] || melde "$was" "getracktem Quellstand" "$funde"
+  # `Nr:HEAD:Pfad:Zeile:Inhalt` (grep -n stellt die Nummer voran) - weiter
+  # geht nur Pfad:Zeile.
+  orte="$(treffer_in "$schalter" "$regex" "$quellstand" | cut -d: -f3,4)"
+  [ -z "$orte" ] || melde "$was" "getracktem Quellstand" "$orte"
 done
 zeilen="$(sperrtreffer_in "$quellstand")"
 if [ -n "$zeilen" ]; then
@@ -172,27 +178,29 @@ historie="$arbeit/historie"
   git for-each-ref refs/tags --format='commit %(refname:short)%n%(contents)'
 } > "$historie"
 
-# Ordnet Zeilennummern der Historie ihrem Commit zu.
-commit_von() {
+# Ordnet Zeilennummern der Historie Commit und Datei zu - als Fundort
+# ohne den Inhalt der Zeile.
+fundorte_in_historie() {
   awk -v ziele="$1" '
     BEGIN { n = split(ziele, z, " "); for (i = 1; i <= n; i++) suche[z[i]] = 1 }
-    /^commit / { aktuell = substr($2, 1, 12) }
-    (NR in suche) { print aktuell }
-  ' "$historie" | sort -u | tr '\n' ' '
+    /^commit / { aktuell = substr($2, 1, 12); datei = "(Nachricht)" }
+    /^diff --git / { datei = $NF; sub(/^b\//, "", datei) }
+    (NR in suche) { print aktuell " " datei }
+  ' "$historie" | sort -u
 }
 
 for eintrag in "${muster[@]}"; do
   IFS='|' read -r was schalter regex <<< "$eintrag"
-  funde="$(treffer_in "$schalter" "$regex" "$historie")"
+  funde="$(treffer_in "$schalter" "$regex" "$historie" | cut -d: -f1)"
   if [ -n "$funde" ]; then
-    commits="$(commit_von "$(printf '%s\n' "$funde" | cut -d: -f1 | tr '\n' ' ')")"
-    melde "$was" "der Historie (Commits: $commits)" "$(printf '%s\n' "$funde" | cut -d: -f2-)"
+    melde "$was" "der Historie" \
+      "$(fundorte_in_historie "$(printf '%s\n' "$funde" | tr '\n' ' ')")"
   fi
 done
 zeilen="$(sperrtreffer_in "$historie")"
 if [ -n "$zeilen" ]; then
   melde "Begriff der Sperrliste" "der Historie" \
-    "Commits: $(commit_von "$(printf '%s\n' "$zeilen" | tr '\n' ' ')")"
+    "$(fundorte_in_historie "$(printf '%s\n' "$zeilen" | tr '\n' ' ')")"
 fi
 
 if git log --all --format='%an%x09%ae%x09%cn%x09%ce' | \
@@ -272,8 +280,9 @@ for datei in ${texte[@]+"${texte[@]}"}; do
   case "$datei" in "$arbeit"/*) name="Release ${name#freigabe_}"; name="${name%.md}" ;; esac
   for eintrag in "${muster[@]}"; do
     IFS='|' read -r was schalter regex <<< "$eintrag"
-    funde="$(treffer_in "$schalter" "$regex" "$datei")"
-    [ -z "$funde" ] || melde "$was" "$name" "$funde"
+    zeilen="$(treffer_in "$schalter" "$regex" "$datei" | cut -d: -f1)"
+    [ -z "$zeilen" ] || melde "$was" "$name" \
+      "Zeilen: $(printf '%s\n' "$zeilen" | tr '\n' ' ')"
   done
   zeilen="$(sperrtreffer_in "$datei")"
   [ -z "$zeilen" ] || melde "Begriff der Sperrliste" "$name" \
