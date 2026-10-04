@@ -3868,5 +3868,11 @@
   "kontaktblattFertig": "Contact sheet saved: {enthalten} items, {ausgelassen} skipped.",
   "@kontaktblattFertig": {"placeholders": {"enthalten": {"type": "int"}, "ausgelassen": {"type": "int"}}},
   "kontaktblattFehler": "Could not create contact sheet: {fehler}",
-  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}}
+  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "unerreichbarTitel": "Library not available",
+  "unerreichbarText": "Photo Vault cannot open the library “{name}” right now. Is the drive connected?\n\nOn macOS, the folder also has to be granted access once after the switch to the new app identifier. Nothing is changed by this – only the access is renewed.",
+  "unerreichbarFreigeben": "Grant access to folder …",
+  "unerreichbarDialog": "Choose the folder of the library “{name}”",
+  "unerreichbarStandard": "Open default library",
+  "unerreichbarNochImmer": "The library is still not available."
 }

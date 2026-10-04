@@ -4,8 +4,8 @@ import numpy as np, onnxruntime as ort
 from PIL import Image
 from tokenizers import Tokenizer
 
-MODELLE = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                             'Application Support/com.example.photoVault/PhotoVault/models')
+MODELLE = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                             'Application Support/de.dasevo.photovault/PhotoVault/models')
 LIB = os.path.expanduser('~/Pictures/Photo_Vault_Productive/library')
 opt = ort.SessionOptions(); opt.log_severity_level = 3
 

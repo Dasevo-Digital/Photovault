@@ -127,11 +127,11 @@ class LibraryLocation {
   /// einen zweiten Fall, seit es die App auch als MSIX-Paket gibt:
   /// Windows meldet einem Paket einen anderen App-Support-Ordner. Aus
   ///
-  ///     C:\Users\X\AppData\Roaming\com.example\photo_vault
+  ///     C:\Users\X\AppData\Roaming\de.dasevo\photovault
   ///
   /// wird dann
   ///
-  ///     C:\Users\X\AppData\Local\Packages\<Paket>\LocalCache\Roaming\com.example\photo_vault
+  ///     C:\Users\X\AppData\Local\Packages\<Paket>\LocalCache\Roaming\de.dasevo\photovault
   ///
   /// Wer bisher das Zip benutzt hat und auf die Paketfassung wechselt,
   /// stünde sonst vor einer leeren App, während seine Bibliothek
@@ -156,10 +156,126 @@ class LibraryLocation {
     }
     final support = await getApplicationSupportDirectory();
     final alt = klassischerDatenordner(support.path);
+    final neu = Directory(p.join(support.path, 'PhotoVault'));
+    // Wo die Daten unter der früheren Kennung lagen – im Paket und
+    // ausserhalb, siehe [fruehererSupportordner].
+    final frueher = <Directory>[
+      for (final ort in [support.path, ?alt])
+        if (fruehererSupportordner(ort, plattform: Platform.operatingSystem)
+            case final f?)
+          Directory(p.join(f, 'PhotoVault')),
+    ];
+    final gewaehlt = await uebernimmFruehereKennung(neu, frueher,
+        // Im MSIX-Paket nicht: Was ein Paket ausserhalb seines Behälters
+        // neu anlegt, leitet Windows in den Behälter um. Ein Umbenennen
+        // dorthin landete also nicht da, wo es hin soll.
+        umbenennen: alt == null);
+    if (gewaehlt.path != neu.path) return gewaehlt;
     return waehleDatenordner(
-      Directory(p.join(support.path, 'PhotoVault')),
+      neu,
       alt == null ? null : Directory(p.join(alt, 'PhotoVault')),
     );
+  }
+
+  /// Die Kennung, unter der die App bis 3.19 lief, je Plattform.
+  ///
+  /// Seit 3.20 heisst sie überall `de.dasevo.photovault` (die
+  /// Testvariante `de.dasevo.photovault.test`). Vorher stand dort der
+  /// Platzhalter aus der Flutter-Vorlage – und an der Kennung hängt der
+  /// Datenordner:
+  ///
+  /// - macOS: der Container `~/Library/Containers/<Kennung>/…`
+  /// - Windows: `%APPDATA%\<CompanyName>\<ProductName>`
+  /// - Linux: `~/.local/share/<GTK-Kennung>`, im Flatpak zusätzlich
+  ///   `~/.var/app/<Flatpak-Kennung>/…`
+  ///
+  /// Liefert den Support-Ordner, den die frühere Kennung an derselben
+  /// Stelle hatte, oder `null`, wenn [supportPfad] nicht nach der neuen
+  /// Kennung aussieht. Reine Zeichenkettenarbeit, damit sie für alle drei
+  /// Plattformen auf einem Rechner prüfbar ist.
+  @visibleForTesting
+  static String? fruehererSupportordner(String supportPfad,
+      {required String plattform}) {
+    final windows = plattform == 'windows';
+    final trenner = windows ? r'\' : '/';
+    final teile = supportPfad.split(trenner);
+    String? frueher(int i) {
+      final teil = teile[i];
+      switch (plattform) {
+        case 'macos':
+          const kennungen = {
+            'de.dasevo.photovault': 'com.example.photoVault',
+            'de.dasevo.photovault.test': 'com.example.photoVault.test',
+          };
+          return kennungen[teil];
+        case 'linux':
+          if (teil != 'de.dasevo.photovault') return null;
+          // Im Flatpak hiess der Behälter anders als das Programm.
+          final imFlatpak = i >= 2 && teile[i - 1] == 'app' &&
+              teile[i - 2] == '.var';
+          return imFlatpak ? 'com.example.PhotoVault' : 'com.example.photo_vault';
+        case 'windows':
+          // Zwei Teile: <CompanyName>\<ProductName>.
+          final klein = teil.toLowerCase();
+          if (klein == 'de.dasevo' &&
+              i + 1 < teile.length &&
+              teile[i + 1].toLowerCase() == 'photovault') {
+            return 'com.example';
+          }
+          if (klein == 'photovault' &&
+              i > 0 &&
+              teile[i - 1].toLowerCase() == 'de.dasevo') {
+            return 'photo_vault';
+          }
+          return null;
+      }
+      return null;
+    }
+
+    final ergebnis = [
+      for (var i = 0; i < teile.length; i++) frueher(i) ?? teile[i],
+    ];
+    final geaendert = [
+      for (var i = 0; i < teile.length; i++) ergebnis[i] != teile[i],
+    ].contains(true);
+    return geaendert ? ergebnis.join(trenner) : null;
+  }
+
+  /// Holt die Daten der früheren Kennung an den neuen Ort.
+  ///
+  /// Liegen unter [neu] schon Daten, bleibt alles, wie es ist. Sonst wird
+  /// der erste Kandidat aus [frueher], der nach Daten aussieht,
+  /// **umbenannt** – nicht kopiert: Der Ordner kann die ganze Bibliothek
+  /// enthalten, und ein Umbenennen auf demselben Laufwerk kostet keine
+  /// Sekunde und kein Byte. Gelöscht wird nichts.
+  ///
+  /// Geht das Umbenennen nicht (anderes Laufwerk, Datei offen, Sandbox,
+  /// oder [umbenennen] ist aus), arbeitet die App einfach am alten Ort
+  /// weiter – dieselbe Lösung wie beim MSIX-Paket. Dann liefert die
+  /// Funktion den alten Ordner.
+  @visibleForTesting
+  static Future<Directory> uebernimmFruehereKennung(
+      Directory neu, List<Directory> frueher,
+      {bool umbenennen = true}) async {
+    if (await _siehtNachDatenAus(neu)) return neu;
+    for (final alt in frueher) {
+      if (!await _siehtNachDatenAus(alt)) continue;
+      if (!umbenennen) return alt;
+      try {
+        // Ein leerer neuer Ordner (etwa von einem abgebrochenen Start)
+        // stünde dem Umbenennen im Weg. Ein nicht leerer wird nicht
+        // angefasst – `delete` ohne `recursive` scheitert dann, und die
+        // App bleibt beim alten Ort.
+        if (await neu.exists()) await neu.delete();
+        await neu.parent.create(recursive: true);
+        await alt.rename(neu.path);
+        return neu;
+      } catch (e) {
+        debugPrint('Daten der früheren Kennung bleiben unter ${alt.path}: $e');
+        return alt;
+      }
+    }
+    return neu;
   }
 
   /// Die Entscheidung selbst, getrennt davon, *wo* die beiden Orte
@@ -308,22 +424,41 @@ class LibraryLocation {
   /// Zugriff darauf wieder her: unter macOS über das gespeicherte
   /// Security-Scoped-Bookmark (die Sandbox entzieht ihn sonst bei jedem
   /// Neustart), unter Linux/Windows über den gespeicherten Pfad.
-  static Future<Directory> currentRoot() async {
+  static Future<Directory> currentRoot() async =>
+      (await wurzelMitBefund()).wurzel;
+
+  /// Wie [currentRoot], sagt aber zusätzlich, ob die eingestellte
+  /// Bibliothek gerade **nicht** erreichbar war.
+  ///
+  /// [unerreichbar] ist dann der Eintrag, und [wurzel] der Standardordner,
+  /// auf den zurückgefallen wurde. Der Start fragt in diesem Fall nach
+  /// (siehe `BibliothekUnerreichbarScreen`), statt still eine andere
+  /// Bibliothek zu öffnen: Wer seine Fotos auf einer externen Platte hat
+  /// und sie vergessen hat anzuschliessen, sähe sonst eine leere oder
+  /// fremde Übersicht. Und unter macOS gilt ein Security-Scoped-Bookmark
+  /// nur für die App, die es angelegt hat – nach dem Wechsel der Kennung
+  /// muss jeder externe Ordner einmal neu freigegeben werden.
+  static Future<({Directory wurzel, Bibliothekseintrag? unerreichbar})>
+      wurzelMitBefund() async {
     final konfig = await _leseKonfig();
     final aktiv = konfig.aktiv;
-    if (aktiv == null) return _anchorDir();
+    if (aktiv == null) return (wurzel: await _anchorDir(), unerreichbar: null);
 
     final eintrag =
         konfig.liste.where((e) => p.equals(e.path, aktiv)).firstOrNull;
-    if (eintrag == null) return _anchorDir();
+    if (eintrag == null) {
+      return (wurzel: await _anchorDir(), unerreichbar: null);
+    }
 
     final resolved =
         await _access.resolveRoot(path: eintrag.path, token: eintrag.token);
     // Ordner nicht mehr erreichbar (gelöscht/umbenannt, Laufwerk nicht
     // eingebunden, Bookmark ungültig) – auf den Standardordner
     // zurückfallen, statt die App gar nicht erst starten zu lassen.
-    if (resolved == null) return _anchorDir();
-    return Directory(resolved);
+    if (resolved == null) {
+      return (wurzel: await _anchorDir(), unerreichbar: eintrag);
+    }
+    return (wurzel: Directory(resolved), unerreichbar: null);
   }
 
   /// Alle bekannten Bibliotheken samt Auskunft, ob sie gerade erreichbar

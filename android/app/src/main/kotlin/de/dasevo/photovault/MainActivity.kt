@@ -1,4 +1,4 @@
-package de.photo_vault.app
+package de.dasevo.photovault
 
 import io.flutter.embedding.android.FlutterActivity
 

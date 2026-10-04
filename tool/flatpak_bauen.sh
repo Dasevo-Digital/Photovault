@@ -22,8 +22,8 @@ set -uo pipefail
 ROT=$'\033[31m'; GRUEN=$'\033[32m'; GELB=$'\033[33m'; AUS=$'\033[0m'
 
 WURZEL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BAUPLAN="$WURZEL/packaging/flatpak/com.example.PhotoVault.yml"
-KENNUNG="com.example.PhotoVault"
+BAUPLAN="$WURZEL/packaging/flatpak/de.dasevo.photovault.yml"
+KENNUNG="de.dasevo.photovault"
 LAUFZEIT="org.gnome.Platform"
 LAUFZEIT_FASSUNG="49"
 BAUORT="$WURZEL/build/flatpak"

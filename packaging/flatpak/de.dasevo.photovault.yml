@@ -6,11 +6,10 @@
 # Ubuntu bringt von Haus aus nicht einmal einen HEVC-Dekoder für libheif mit.
 # Im Flatpak sind sie alle dabei, in bekannten Fassungen.
 #
-# Die Kennung com.example.PhotoVault stammt aus der Vorlage und muss vor
-# einer öffentlichen Verteilung durch eine eigene Domäne ersetzt werden.
-# Sie steht an vier Stellen: hier, in der .desktop-Datei, in der
-# metainfo.xml und im Namen des Symbols.
-app-id: com.example.PhotoVault
+# Die Kennung steht an vier Stellen: hier, in der .desktop-Datei, in der
+# metainfo.xml und im Namen des Symbols. Bis 3.19 lautete sie
+# com.example.PhotoVault (Platzhalter aus der Vorlage).
+app-id: de.dasevo.photovault
 runtime: org.gnome.Platform
 runtime-version: '49'
 sdk: org.gnome.Sdk
@@ -53,9 +52,17 @@ finish-args:
   # wenig zu suchen. ~/.var/app ist der wichtigste davon – dort liegen die
   # privaten Daten aller anderen Flatpaks, Passwortspeicher inbegriffen.
   # Die App selbst braucht keinen dieser Pfade: Ihre eigenen Daten liegen
-  # unter ~/.var/app/com.example.PhotoVault, das die Sandbox ohnehin
+  # unter ~/.var/app/de.dasevo.photovault, das die Sandbox ohnehin
   # einhängt und was eine Ausnahme auf ~/.var/app nicht berührt.
   - --nofilesystem=home/.var/app
+  # Mit einer Ausnahme: der Behälter der früheren Kennung. Beim ersten
+  # Start holt die App ihre Daten von dort (LibraryLocation.
+  # uebernimmFruehereKennung). Ein Umbenennen über die Grenze zweier
+  # Einhängepunkte hinweg geht nicht, also arbeitet sie danach am alten
+  # Ort weiter – deshalb Schreibrecht, und deshalb auf Dauer.
+  # Nachgemessen: Eine ausdrückliche Freigabe macht einen fremden
+  # Behälter sichtbar, ohne sie ist er nicht vorhanden.
+  - --filesystem=~/.var/app/com.example.PhotoVault
   - --nofilesystem=home/.config
   - --nofilesystem=home/.pki
   - --nofilesystem=home/.aws
@@ -254,10 +261,10 @@ modules:
       - install -Dm644 $(find ort -name 'libonnxruntime.so.*' -type f | head -1)
         /app/photo_vault/lib/libonnxruntime.so.1
       - install -Dm755 photo_vault.sh /app/bin/photo_vault
-      - install -Dm644 app_icon.png /app/share/icons/hicolor/256x256/apps/com.example.PhotoVault.png
-      - install -Dm644 app_icon_512.png /app/share/icons/hicolor/512x512/apps/com.example.PhotoVault.png
-      - install -Dm644 com.example.PhotoVault.desktop /app/share/applications/com.example.PhotoVault.desktop
-      - install -Dm644 com.example.PhotoVault.metainfo.xml /app/share/metainfo/com.example.PhotoVault.metainfo.xml
+      - install -Dm644 app_icon.png /app/share/icons/hicolor/256x256/apps/de.dasevo.photovault.png
+      - install -Dm644 app_icon_512.png /app/share/icons/hicolor/512x512/apps/de.dasevo.photovault.png
+      - install -Dm644 de.dasevo.photovault.desktop /app/share/applications/de.dasevo.photovault.desktop
+      - install -Dm644 de.dasevo.photovault.metainfo.xml /app/share/metainfo/de.dasevo.photovault.metainfo.xml
     sources:
       - type: dir
         path: ../../build/linux/x64/release/bundle
@@ -272,6 +279,6 @@ modules:
       - type: file
         path: ../../assets/icon/app_icon_512.png
       - type: file
-        path: com.example.PhotoVault.desktop
+        path: de.dasevo.photovault.desktop
       - type: file
-        path: com.example.PhotoVault.metainfo.xml
+        path: de.dasevo.photovault.metainfo.xml

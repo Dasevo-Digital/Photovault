@@ -82,7 +82,7 @@ Einzelfunktionen ab, wo eine Schnittstelle fehlt.
 flatpak remote-add --if-not-exists --user flathub \
     https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install --user PhotoVault-*-x86_64.flatpak
-flatpak run com.example.PhotoVault
+flatpak run de.dasevo.photovault
 ```
 
 Die GNOME-Laufzeit zieht Flatpak beim ersten Mal selbst nach. Das Bündel
@@ -1033,9 +1033,18 @@ Einstellungen auf einen beliebigen anderen Ordner verlegbar:
 
 | Plattform | Ort |
 |---|---|
-| macOS | `~/Library/Containers/com.example.photoVault/Data/Library/Application Support/com.example.photoVault/PhotoVault/` |
-| Linux (Flatpak) | `~/.var/app/com.example.PhotoVault/data/com.example.photo_vault/PhotoVault/` |
-| Windows | `%APPDATA%\com.example\photo_vault\PhotoVault\` |
+| macOS | `~/Library/Containers/de.dasevo.photovault/Data/Library/Application Support/de.dasevo.photovault/PhotoVault/` |
+| Linux (Flatpak) | `~/.var/app/de.dasevo.photovault/data/de.dasevo.photovault/PhotoVault/` |
+| Windows | `%APPDATA%\de.dasevo\photovault\PhotoVault\` |
+
+Bis 3.19 trug die App den Platzhalter `com.example` aus der
+Flutter-Vorlage in ihrer Kennung, und die Ordner hiessen entsprechend
+(`com.example.photoVault`, `com.example.PhotoVault`,
+`com.example\photo_vault`). Beim ersten Start unter der neuen Kennung holt
+die App die Daten von dort, ohne etwas zu löschen. Unter macOS muss eine
+Bibliothek ausserhalb des Programmordners danach einmal neu freigegeben
+werden: Die Freigabe gilt nur für die Kennung, die sie angelegt hat. Die
+App fragt beim Start danach.
 
 Der Sandbox-Container unter macOS und der Flatpak-Datenordner unter Linux
 sind keine Willkür: Beide entstehen aus der Bundle-Kennung, und beide

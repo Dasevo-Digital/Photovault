@@ -20,8 +20,8 @@ anderen Abrufe benötigen eine ausdrückliche Handlung.
 Ordner, den Sie selbst wählen. Ohne eigene Wahl liegt sie im Datenordner
 der App:
 
-- Windows (ausgepackte Fassung): `%APPDATA%\com.example\photo_vault\`
-- Windows (Fassung aus dem Store): `%LOCALAPPDATA%\Packages\…\LocalCache\Roaming\com.example\photo_vault\`
+- Windows (ausgepackte Fassung): `%APPDATA%\de.dasevo\photovault\`
+- Windows (Fassung aus dem Store): `%LOCALAPPDATA%\Packages\…\LocalCache\Roaming\de.dasevo\photovault\`
 - macOS: `~/Library/Containers/…/PhotoVault/`
 - Linux: `~/.var/app/…/PhotoVault/`
 

@@ -270,6 +270,22 @@ class LibraryState extends ChangeNotifier {
   bool _bibliothekBelegt = false;
   bool get bibliothekBelegt => _bibliothekBelegt;
 
+  /// Die eingestellte Bibliothek, wenn sie sich beim Start nicht öffnen
+  /// liess (siehe [LibraryLocation.wurzelMitBefund]). Solange gesetzt,
+  /// bleibt [isReady] falsch, und der Start fragt nach.
+  Bibliothekseintrag? _unerreichbar;
+  Bibliothekseintrag? get unerreichbar => _unerreichbar;
+
+  /// Für diese Sitzung bewusst den Standardordner nehmen, obwohl die
+  /// eingestellte Bibliothek nicht erreichbar ist. Beim nächsten Start
+  /// wird wieder gefragt – das Laufwerk kann bis dahin angeschlossen sein.
+  bool _standardordnerHingenommen = false;
+
+  Future<void> oeffneStandardordner() {
+    _standardordnerHingenommen = true;
+    return initialize();
+  }
+
   /// Der Ort, an dem es klemmt – für die Meldung, damit erkennbar ist, um
   /// WELCHE Bibliothek es geht, wenn mehrere in der Liste stehen.
   String? _belegterOrt;
@@ -731,6 +747,7 @@ class LibraryState extends ChangeNotifier {
       await _raeumeFehlgeschlagenenStartAuf();
       _bibliothekBelegt = false;
       _belegterOrt = null;
+      _unerreichbar = null;
       _initialisierungsfehler = e.toString();
       notifyListeners();
     } finally {
@@ -765,7 +782,14 @@ class LibraryState extends ChangeNotifier {
     // Hintergrundaufgaben doppelt laufen und schreiben abwechselnd
     // übereinander. Die Wartezeit aus AppDatabase.sperrwartezeitMs wendet
     // den Schaden ab, nicht die Verwirrung.
-    final wurzel = await LibraryLocation.currentRoot();
+    final ort = await LibraryLocation.wurzelMitBefund();
+    if (ort.unerreichbar != null && !_standardordnerHingenommen) {
+      _unerreichbar = ort.unerreichbar;
+      notifyListeners();
+      return;
+    }
+    _unerreichbar = null;
+    final wurzel = ort.wurzel;
     final befund = await Bibliothekssperre.nimm(wurzel);
     if (befund.zustand == Sperrzustand.belegt) {
       _bibliothekBelegt = true;

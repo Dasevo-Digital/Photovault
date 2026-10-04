@@ -13,21 +13,22 @@ import 'package:flutter_test/flutter_test.dart';
 /// die Fensterklasse an die Flatpak-Kennung anzugleichen. Die Zuordnung
 /// von Fenster und Starter gehört in `StartupWMClass`, nicht hierher.
 void main() {
-  const erwarteteKennung = 'com.example.photo_vault';
+  const erwarteteKennung = 'de.dasevo.photovault';
 
-  test('die GTK-Kennung ist unverändert – sie bestimmt den Ablageort', () {
+  test('die GTK-Kennung ist die eigene – sie bestimmt den Ablageort', () {
     final cmake = File('linux/CMakeLists.txt').readAsStringSync();
     expect(
       cmake,
       contains('set(APPLICATION_ID "$erwarteteKennung")'),
       reason: 'Eine Änderung verschiebt den Datenordner bestehender '
-          'Installationen. Nur zusammen mit einer Umzugslogik ändern.',
+          'Installationen. Nur zusammen mit einer Umzugslogik ändern '
+          '(siehe LibraryLocation.fruehererSupportordner).',
     );
   });
 
   test('der Starter zeigt auf genau diese Fensterklasse', () {
     final desktop =
-        File('packaging/flatpak/com.example.PhotoVault.desktop').readAsStringSync();
+        File('packaging/flatpak/de.dasevo.photovault.desktop').readAsStringSync();
     expect(
       desktop,
       contains('StartupWMClass=$erwarteteKennung'),

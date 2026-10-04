@@ -63,7 +63,7 @@ import 'app_localizations_en.dart';
 /// property.
 abstract class AppTexte {
   AppTexte(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -85,16 +85,16 @@ abstract class AppTexte {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('de'),
-    Locale('en')
+    Locale('en'),
   ];
 
   /// Verwirft einen Dialog, ohne etwas zu ändern.
@@ -240,7 +240,11 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{stufe} wird berechnet (Schritt {nummer} von {gesamt}{fortschritt})'**
   String analyseLaeuft(
-      String stufe, int nummer, int gesamt, String fortschritt);
+    String stufe,
+    int nummer,
+    int gesamt,
+    String fortschritt,
+  );
 
   /// No description provided for @kuerzelTitel.
   ///
@@ -1993,7 +1997,11 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{kopiert} von {gesamt} · {dateien} von {dateienGesamt} Dateien'**
   String einstSpeicherortFortschritt(
-      String kopiert, String gesamt, int dateien, int dateienGesamt);
+    String kopiert,
+    String gesamt,
+    int dateien,
+    int dateienGesamt,
+  );
 
   /// No description provided for @einstSpeicherbedarf.
   ///
@@ -3008,7 +3016,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{stufe} ({erledigt}/{gesamt}) – Stufe {nummer}/{stufenGesamt}'**
   String aufgStufe(
-      String stufe, int erledigt, int gesamt, int nummer, int stufenGesamt);
+    String stufe,
+    int erledigt,
+    int gesamt,
+    int nummer,
+    int stufenGesamt,
+  );
 
   /// No description provided for @aufgModellNoetig.
   ///
@@ -6177,7 +6190,10 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Wiedererkennung: {erklaerung}. Aus {bestaetigt, plural, =1{einer Bestätigung} other{{bestaetigt} Bestätigungen}} und {abgelehnt, plural, =1{einer Korrektur} other{{abgelehnt} Korrekturen}}.'**
   String personWiedererkennung(
-      String erklaerung, int bestaetigt, int abgelehnt);
+    String erklaerung,
+    int bestaetigt,
+    int abgelehnt,
+  );
 
   /// No description provided for @infoKeineUnbenannten.
   ///
@@ -6424,7 +6440,10 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Prüfsumme von {datei} stimmt nicht mit der erwarteten SHA-256 überein (erhalten {erhalten}, erwartet {erwartet}) – Download verworfen. Die Datei am Server hat sich möglicherweise geändert oder wurde beim Transfer verändert.'**
   String downloadPruefsummeFehler(
-      String datei, String erhalten, String erwartet);
+    String datei,
+    String erhalten,
+    String erwartet,
+  );
 
   /// No description provided for @downloadFehlgeschlagen.
   ///
@@ -12869,6 +12888,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Kontaktblatt konnte nicht erstellt werden: {fehler}'**
   String kontaktblattFehler(String fehler);
+
+  /// No description provided for @unerreichbarTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek nicht erreichbar'**
+  String get unerreichbarTitel;
+
+  /// No description provided for @unerreichbarText.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault kann die Bibliothek „{name}“ gerade nicht öffnen. Ist das Laufwerk angeschlossen?\n\nUnter macOS muss der Ordner nach dem Wechsel auf die neue Programmkennung außerdem einmal neu freigegeben werden. Dabei bleibt alles, wie es ist – es wird nur der Zugriff erneuert.'**
+  String unerreichbarText(String name);
+
+  /// No description provided for @unerreichbarFreigeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner freigeben …'**
+  String get unerreichbarFreigeben;
+
+  /// No description provided for @unerreichbarDialog.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner der Bibliothek „{name}“ wählen'**
+  String unerreichbarDialog(String name);
+
+  /// No description provided for @unerreichbarStandard.
+  ///
+  /// In de, this message translates to:
+  /// **'Standardbibliothek öffnen'**
+  String get unerreichbarStandard;
+
+  /// No description provided for @unerreichbarNochImmer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek ist weiterhin nicht erreichbar.'**
+  String get unerreichbarNochImmer;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
@@ -12897,8 +12952,9 @@ AppTexte lookupAppTexte(Locale locale) {
   }
 
   throw FlutterError(
-      'AppTexte.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppTexte.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

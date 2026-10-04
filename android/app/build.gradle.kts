@@ -22,7 +22,7 @@ plugins {
 }
 
 android {
-    namespace = "de.photo_vault.app"
+    namespace = "de.dasevo.photovault"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,7 +32,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "de.photo_vault.app"
+        applicationId = "de.dasevo.photovault"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -19,8 +19,8 @@ requires an explicit action on your part.
 folder you choose. Without a choice of your own it lives in the app's
 data folder:
 
-- Windows (unpacked build): `%APPDATA%\com.example\photo_vault\`
-- Windows (Store build): `%LOCALAPPDATA%\Packages\…\LocalCache\Roaming\com.example\photo_vault\`
+- Windows (unpacked build): `%APPDATA%\de.dasevo\photovault\`
+- Windows (Store build): `%LOCALAPPDATA%\Packages\…\LocalCache\Roaming\de.dasevo\photovault\`
 - macOS: `~/Library/Containers/…/PhotoVault/`
 - Linux: `~/.var/app/…/PhotoVault/`
 

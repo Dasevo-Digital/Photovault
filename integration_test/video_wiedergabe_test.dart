@@ -16,7 +16,7 @@ library;
 //
 // **Nicht unter macOS**, und zwar nicht, weil es dort nicht ginge: Die
 // Testfassung läuft im Sandkasten, ihr Arbeitsverzeichnis zeigt nach
-// `~/Library/Containers/com.example.photoVault.test/Data/`, und die
+// `~/Library/Containers/de.dasevo.photovault.test/Data/`, und die
 // Vorlage aus dem Projektordner ist für sie schlicht nicht vorhanden.
 // Ausprobiert – die Textur wird dort übrigens ebenso angelegt
 // (`NativeVideoController: Texture ID: …`), nur eben ohne Datei. Diese

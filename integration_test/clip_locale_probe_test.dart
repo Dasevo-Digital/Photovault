@@ -20,8 +20,8 @@ void main() {
 
   test('CLIP-Text-Embedding ausgeben', () async {
     final ordner = Platform.environment['PV_MODELLE'] ??
-        '${Platform.environment['HOME']}/.var/app/com.example.PhotoVault/data'
-            '/com.example.photo_vault/PhotoVault/models';
+        '${Platform.environment['HOME']}/.var/app/de.dasevo.photovault/data'
+            '/de.dasevo.photovault/PhotoVault/models';
 
     if (!ClipService.isAvailable(ordner)) {
       markTestSkipped('CLIP nicht installiert in $ordner');

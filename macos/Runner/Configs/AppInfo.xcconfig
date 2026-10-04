@@ -33,12 +33,15 @@ PRODUCT_NAME[config=Profile] = Photo Vault (Test)
 // soll. Aufgefallen in Prüfrunde 12, als für macOS keine Laufzeitmessung
 // möglich war: Release ist tabu, Debug misst wegen JIT etwas anderes, und
 // Profile hätte die echten Fotos angefasst.
-PRODUCT_BUNDLE_IDENTIFIER = com.example.photoVault
-PRODUCT_BUNDLE_IDENTIFIER[config=Debug] = com.example.photoVault.test
-PRODUCT_BUNDLE_IDENTIFIER[config=Profile] = com.example.photoVault.test
+//
+// Bis 3.19 stand hier der Platzhalter `com.example.photoVault` (bzw.
+// `.test`). Beim ersten Start unter der neuen Kennung holt
+// LibraryLocation.uebernimmFruehereKennung die Daten aus dem alten
+// Container; dafür tragen beide Entitlements eine Ausnahme für genau
+// diesen Ordner.
+PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault
+PRODUCT_BUNDLE_IDENTIFIER[config=Debug] = de.dasevo.photovault.test
+PRODUCT_BUNDLE_IDENTIFIER[config=Profile] = de.dasevo.photovault.test
 
 // The copyright displayed in application information
-// Steht im Finder unter „Informationen". „com.example" stammt aus der
-// Vorlage und gehört durch den eigenen Namen ersetzt, sobald die Kennung
-// gewechselt wird.
 PRODUCT_COPYRIGHT = Copyright © 2026 Photo Vault. All rights reserved.

@@ -2,8 +2,8 @@ import os, sqlite3, random, time
 import numpy as np, onnxruntime as ort
 from PIL import Image
 from tokenizers import Tokenizer
-MODELLE = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                             'Application Support/com.example.photoVault/PhotoVault/models')
+MODELLE = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                             'Application Support/de.dasevo.photovault/PhotoVault/models')
 LIB = os.path.expanduser('~/Pictures/Photo_Vault_Productive/library')
 MEAN = np.array([0.48145466,0.4578275,0.40821073],dtype=np.float32)
 STD  = np.array([0.26862954,0.26130258,0.27577711],dtype=np.float32)

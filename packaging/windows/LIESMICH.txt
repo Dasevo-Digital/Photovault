@@ -29,7 +29,7 @@ Wo die eigenen Daten liegen
 
 NICHT in diesem Ordner, sondern hier:
 
-    %APPDATA%\com.example\photo_vault\PhotoVault\
+    %APPDATA%\de.dasevo\photovault\PhotoVault\
 
     library.sqlite   die Datenbank der Bibliothek
     library\         Originale, Vorschaubilder, Gesichtsausschnitte

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.example.PhotoVault</id>
+  <id>de.dasevo.photovault</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
 
@@ -42,13 +42,20 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">com.example.PhotoVault.desktop</launchable>
+  <launchable type="desktop-id">de.dasevo.photovault.desktop</launchable>
 
-  <!-- Platzhalter, wie die Kennung selbst: vor einer öffentlichen
-       Verteilung durch die eigene Domäne ersetzen. -->
-  <url type="homepage">https://example.com/photo-vault</url>
-  <developer id="com.example">
-    <name>Photo Vault</name>
+  <!-- Bis 3.19 hiess die App com.example.PhotoVault (Platzhalter aus der
+       Vorlage). So erkennen Softwarecenter beide als dieselbe App. -->
+  <replaces>
+    <id>com.example.PhotoVault</id>
+  </replaces>
+  <provides>
+    <id>com.example.PhotoVault</id>
+  </provides>
+
+  <url type="homepage">https://github.com/Dasevo-Digital/Photovault</url>
+  <developer id="de.dasevo">
+    <name>Dasevo Digital</name>
   </developer>
 
   <categories>

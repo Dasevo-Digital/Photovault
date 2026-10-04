@@ -4948,5 +4948,13 @@
   "kontaktblattFertig": "Kontaktblatt gespeichert: {enthalten} Aufnahmen, {ausgelassen} ausgelassen.",
   "@kontaktblattFertig": {"placeholders": {"enthalten": {"type": "int"}, "ausgelassen": {"type": "int"}}},
   "kontaktblattFehler": "Kontaktblatt konnte nicht erstellt werden: {fehler}",
-  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}}
+  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "unerreichbarTitel": "Bibliothek nicht erreichbar",
+  "unerreichbarText": "Photo Vault kann die Bibliothek „{name}“ gerade nicht öffnen. Ist das Laufwerk angeschlossen?\n\nUnter macOS muss der Ordner nach dem Wechsel auf die neue Programmkennung außerdem einmal neu freigegeben werden. Dabei bleibt alles, wie es ist – es wird nur der Zugriff erneuert.",
+  "@unerreichbarText": {"placeholders": {"name": {"type": "String"}}},
+  "unerreichbarFreigeben": "Ordner freigeben …",
+  "unerreichbarDialog": "Ordner der Bibliothek „{name}“ wählen",
+  "@unerreichbarDialog": {"placeholders": {"name": {"type": "String"}}},
+  "unerreichbarStandard": "Standardbibliothek öffnen",
+  "unerreichbarNochImmer": "Die Bibliothek ist weiterhin nicht erreichbar."
 }

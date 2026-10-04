@@ -1,8 +1,8 @@
 import os, time, numpy as np, onnxruntime as ort
 from PIL import Image
 print('Anbieter:', ort.get_available_providers())
-M = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                       'Application Support/com.example.photoVault/PhotoVault/models')
+M = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                       'Application Support/de.dasevo.photovault/PhotoVault/models')
 MEAN=np.array([0.48145466,0.4578275,0.40821073],dtype=np.float32)
 STD =np.array([0.26862954,0.26130258,0.27577711],dtype=np.float32)
 x = np.random.rand(1,3,224,224).astype(np.float32)

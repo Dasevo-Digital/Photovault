@@ -48,8 +48,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   final ordner = Platform.environment['PV_MODELLE'] ??
-      '${Platform.environment['HOME']}/.var/app/com.example.PhotoVault/data'
-          '/com.example.photo_vault/PhotoVault/models';
+      '${Platform.environment['HOME']}/.var/app/de.dasevo.photovault/data'
+          '/de.dasevo.photovault/PhotoVault/models';
 
   test('Fingerabdruecke der Modelle', () async {
     print('LC_NUMERIC=${Platform.environment['LC_NUMERIC'] ?? '(nicht gesetzt)'}');

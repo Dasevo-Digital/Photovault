@@ -1,6 +1,6 @@
 import os, time, numpy as np, onnxruntime as ort
-M = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                       'Application Support/com.example.photoVault/PhotoVault/models')
+M = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                       'Application Support/de.dasevo.photovault/PhotoVault/models')
 opt=ort.SessionOptions(); opt.log_severity_level=3
 ids=np.random.randint(0,49000,(1,77)).astype(np.int64)
 for name,p in [('Text fp32', f'{M}/clip_text_encoder.onnx'),

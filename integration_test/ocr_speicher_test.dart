@@ -42,7 +42,7 @@ String? modellOrdner() {
   final heim = Platform.environment['HOME'];
   for (final kandidat in [
     '$heim/ocr_modelle',
-    '$heim/.var/app/com.example.PhotoVault/data/com.example.photo_vault/PhotoVault/models',
+    '$heim/.var/app/de.dasevo.photovault/data/de.dasevo.photovault/PhotoVault/models',
   ]) {
     if (OcrService.isAvailable(kandidat)) return kandidat;
   }

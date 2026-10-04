@@ -14,14 +14,14 @@ import 'package:photo_vault/services/native_image_converter.dart';
 /// gebauten Programm ist zu sehen, ob die Weiche wirklich greift.
 ///
 /// **Und warum mit `--dart-define`.** Der Testbau ist
-/// `com.example.photoVault.test` und sandkastet: Er liest weder
+/// `de.dasevo.photovault.test` und sandkastet: Er liest weder
 /// `~/Pictures` noch den Container der echten App. Die Datei wird deshalb
 /// vorher in seinen eigenen Container gelegt und der Pfad hineingereicht.
 /// `Platform.environment` greift dort nicht – der Test läuft im gebauten
 /// Programm, nicht in der Werkzeugkette.
 ///
 /// ```
-/// T=~/Library/Containers/com.example.photoVault.test/Data/Documents/messung
+/// T=~/Library/Containers/de.dasevo.photovault.test/Data/Documents/messung
 /// cp <die Datei> "$T/heisst-jpg-ist-heic.jpg"
 /// flutter test integration_test/dateikennung_messung_test.dart -d macos \
 ///   --dart-define=PV_HEIC="$T/heisst-jpg-ist-heic.jpg"

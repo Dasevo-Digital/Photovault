@@ -12,8 +12,8 @@ import os, sqlite3, time
 import numpy as np, onnxruntime as ort
 from PIL import Image, ImageDraw
 
-M = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                       'Application Support/com.example.photoVault/PhotoVault/models')
+M = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                       'Application Support/de.dasevo.photovault/PhotoVault/models')
 LIB = os.path.expanduser('~/Pictures/Photo_Vault_Productive/library')
 AUS = os.path.expanduser('~/Desktop/pv_slimsam')
 os.makedirs(AUS, exist_ok=True)

@@ -11,6 +11,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'db/database.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/bibliothek_belegt_screen.dart';
+import 'screens/bibliothek_unerreichbar_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/initialisierungsfehler_screen.dart';
 import 'services/bilddekodierung.dart';
@@ -190,6 +191,8 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 // dreht (siehe LibraryState.initialize).
                 home: library.bibliothekBelegt
                     ? BibliothekBelegtScreen(library: library)
+                    : library.unerreichbar != null
+                        ? BibliothekUnerreichbarScreen(library: library)
                     : library.initialisierungsfehler != null
                         ? InitialisierungsfehlerScreen(
                             fehler: library.initialisierungsfehler!,

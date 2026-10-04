@@ -13,7 +13,7 @@ set(BINARY_NAME "photo_vault")
 # benutzten Installation verschwinden – der Startbildschirm käme wieder,
 # als wäre die App neu. Die Zuordnung von Fenster und Starter läuft
 # stattdessen über StartupWMClass in der .desktop-Datei.
-set(APPLICATION_ID "com.example.photo_vault")
+set(APPLICATION_ID "de.dasevo.photovault")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

@@ -92,21 +92,18 @@ BEGIN
             // ACHTUNG: CompanyName und ProductName bestimmen, WO die Daten
             // liegen. path_provider liest beide aus dieser Ressource und
             // baut daraus %APPDATA%\<CompanyName>\<ProductName>\ - hier
-            // steht heute die Bibliothek unter
-            // %APPDATA%\com.example\photo_vault\PhotoVault\.
-            // Werden sie geaendert, sucht eine bereits benutzte
-            // Installation an einer neuen Stelle und begruesst den Nutzer
-            // mit dem Startbildschirm, als waere sie frisch. Nur zusammen
-            // mit einer Umzugslogik aendern. Dasselbe gilt unter Linux fuer
-            // APPLICATION_ID; dort ist es einmal passiert.
-            VALUE "CompanyName", "com.example" "\0"
+            // %APPDATA%\de.dasevo\photovault\PhotoVault\.
+            // Bis 3.19 standen hier com.example und photo_vault; die Daten
+            // von dort holt LibraryLocation.uebernimmFruehereKennung beim
+            // ersten Start. Nie ohne eine solche Umzugslogik aendern.
+            VALUE "CompanyName", "de.dasevo" "\0"
             // Der sichtbare Name in Explorer und Task-Manager. Der darf.
             VALUE "FileDescription", "Photo Vault" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "photo_vault" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Photo Vault. All rights reserved." "\0"
             VALUE "OriginalFilename", "photo_vault.exe" "\0"
-            VALUE "ProductName", "photo_vault" "\0"
+            VALUE "ProductName", "photovault" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

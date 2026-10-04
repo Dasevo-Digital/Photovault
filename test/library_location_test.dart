@@ -217,6 +217,41 @@ void main() {
     expect(p.equals(root.path, anker.path), isTrue,
         reason: 'die App muss starten können, auch wenn die Platte fehlt');
   });
+
+  test('der Rückfall wird gemeldet, damit der Start nachfragen kann',
+      () async {
+    // Bisher fiel die App still auf den Standardordner zurück und zeigte
+    // eine andere Bibliothek. Unter macOS trifft das nach dem Wechsel der
+    // Kennung jede externe Bibliothek: Ihre Freigabe gilt nicht mehr.
+    final weg = Directory(p.join(tempRoot.path, 'platte'))..createSync();
+    await LibraryLocation.fuegeHinzu(PickedFolder(weg.path, 'alt'),
+        name: 'Fotos');
+    await LibraryLocation.wechsleZu(
+        Bibliothekseintrag(path: weg.path, token: 'alt', name: 'Fotos'));
+    weg.deleteSync();
+
+    final befund = await LibraryLocation.wurzelMitBefund();
+    expect(p.equals(befund.wurzel.path, anker.path), isTrue);
+    expect(befund.unerreichbar?.name, 'Fotos');
+
+    // Neu freigegeben: derselbe Pfad, neues Token, der Name bleibt.
+    weg.createSync();
+    final neu = await LibraryLocation.fuegeHinzu(
+        PickedFolder(weg.path, 'neu'),
+        name: 'Fotos');
+    await LibraryLocation.wechsleZu(neu);
+    final danach = await LibraryLocation.wurzelMitBefund();
+    expect(danach.unerreichbar, isNull);
+    expect(p.equals(danach.wurzel.path, weg.path), isTrue);
+    final liste = await LibraryLocation.bekannte();
+    expect(liste.where((e) => p.equals(e.eintrag.path, weg.path)), hasLength(1),
+        reason: 'die Freigabe ersetzt den Eintrag, statt einen zweiten anzulegen');
+  });
+
+  test('ohne Konfiguration gibt es keinen Befund', () async {
+    final befund = await LibraryLocation.wurzelMitBefund();
+    expect(befund.unerreichbar, isNull);
+  });
 }
 
 /// Ersetzt den Sandbox-Zugriff: Ein Ordner gilt als erreichbar, wenn es ihn

@@ -14,5 +14,13 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Nur für den Umzug von der früheren Kennung (bis 3.19): Der
+	     erste Start unter der neuen Kennung holt die Daten aus dem alten
+	     Container. Vor einer Store-Fassung entfernen; siehe
+	     LibraryLocation.uebernimmFruehereKennung. -->
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<string>/Library/Containers/com.example.photoVault.test/</string>
+	</array>
 </dict>
 </plist>

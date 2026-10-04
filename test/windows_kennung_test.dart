@@ -7,7 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// beide mit `GetFileVersionInfo` aus der eigenen .exe und setzt daraus
 /// `%APPDATA%\<CompanyName>\<ProductName>\` zusammen (nachgelesen in
 /// `path_provider_windows_real.dart`, gemessen in Phase 0: die Bibliothek
-/// liegt unter `%APPDATA%\com.example\photo_vault\PhotoVault\`).
+/// lag bis 3.19 unter `%APPDATA%\com.example\photo_vault\PhotoVault\`,
+/// seither unter `%APPDATA%\de.dasevo\photovault\PhotoVault\`).
 ///
 /// Werden sie geändert, sucht eine bereits benutzte Installation an einer
 /// neuen Stelle – und begrüsst den Nutzer mit dem Startbildschirm, als
@@ -22,20 +23,21 @@ void main() {
 
   setUp(() => rc = File('windows/runner/Runner.rc').readAsStringSync());
 
-  test('CompanyName ist unverändert – er bestimmt den Ablageort', () {
+  test('CompanyName ist der eigene – er bestimmt den Ablageort', () {
     expect(
       rc,
-      contains(r'VALUE "CompanyName", "com.example" "\0"'),
+      contains(r'VALUE "CompanyName", "de.dasevo" "\0"'),
       reason: 'Eine Änderung verschiebt %APPDATA%\\<CompanyName>\\… und '
           'damit die Bibliothek bestehender Installationen. Nur zusammen '
-          'mit einer Umzugslogik ändern.',
+          'mit einer Umzugslogik ändern (siehe '
+          'LibraryLocation.fruehererSupportordner).',
     );
   });
 
-  test('ProductName ist unverändert – er bestimmt den Ablageort', () {
+  test('ProductName ist der eigene – er bestimmt den Ablageort', () {
     expect(
       rc,
-      contains(r'VALUE "ProductName", "photo_vault" "\0"'),
+      contains(r'VALUE "ProductName", "photovault" "\0"'),
       reason: 'Trotz des technisch aussehenden Namens: Er ist Teil des '
           'Pfades. Der sichtbare Name steht in FileDescription.',
     );

@@ -13,13 +13,13 @@
 // Prüfung auf Vorhandensein genügt nicht – ob ein Modell lädt, weiss man
 // erst, wenn man es lädt.
 //
-//   PV_MODELLE="$HOME/Library/Containers/com.example.photoVault.test/Data/\
-//   Library/Application Support/com.example.photoVault.test/PhotoVault/models" \
+//   PV_MODELLE="$HOME/Library/Containers/de.dasevo.photovault.test/Data/\
+//   Library/Application Support/de.dasevo.photovault.test/PhotoVault/models" \
 //   flutter test integration_test/clip_modelle_laden_test.dart -d macos
 //
 // **Auf den Container der ausgelieferten App zeigen geht nicht**, so
 // verlockend es wäre: Der Testbau trägt eine eigene Kennung
-// (`com.example.photoVault.test`) und damit einen eigenen Sandkasten. Er
+// (`de.dasevo.photovault.test`) und damit einen eigenen Sandkasten. Er
 // bekommt von dort `system error number 1` – EPERM –, und das sähe
 // genauso aus wie ein Modell, das nicht lädt. Am 02.09.2026 beim
 // Einspielen von 3.3.0 gemessen, die Anweisung darüber stand vorher

@@ -2,8 +2,8 @@
 import os, sqlite3, random, time
 import numpy as np, onnxruntime as ort
 from PIL import Image
-M = os.path.expanduser('~/Library/Containers/com.example.photoVault/Data/Library/'
-                       'Application Support/com.example.photoVault/PhotoVault/models')
+M = os.path.expanduser('~/Library/Containers/de.dasevo.photovault/Data/Library/'
+                       'Application Support/de.dasevo.photovault/PhotoVault/models')
 LIB = os.path.expanduser('~/Pictures/Photo_Vault_Productive/library')
 MEAN=np.array([0.485,0.456,0.406],dtype=np.float32); STD=np.array([0.229,0.224,0.225],dtype=np.float32)
 opt=ort.SessionOptions(); opt.log_severity_level=3

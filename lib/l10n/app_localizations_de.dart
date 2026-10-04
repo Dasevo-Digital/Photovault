@@ -91,7 +91,11 @@ class AppTexteDe extends AppTexte {
 
   @override
   String analyseLaeuft(
-      String stufe, int nummer, int gesamt, String fortschritt) {
+    String stufe,
+    int nummer,
+    int gesamt,
+    String fortschritt,
+  ) {
     return '$stufe wird berechnet (Schritt $nummer von $gesamt$fortschritt)';
   }
 
@@ -1182,7 +1186,11 @@ class AppTexteDe extends AppTexte {
 
   @override
   String einstSpeicherortFortschritt(
-      String kopiert, String gesamt, int dateien, int dateienGesamt) {
+    String kopiert,
+    String gesamt,
+    int dateien,
+    int dateienGesamt,
+  ) {
     return '$kopiert von $gesamt · $dateien von $dateienGesamt Dateien';
   }
 
@@ -1772,7 +1780,12 @@ class AppTexteDe extends AppTexte {
 
   @override
   String aufgStufe(
-      String stufe, int erledigt, int gesamt, int nummer, int stufenGesamt) {
+    String stufe,
+    int erledigt,
+    int gesamt,
+    int nummer,
+    int stufenGesamt,
+  ) {
     return '$stufe ($erledigt/$gesamt) – Stufe $nummer/$stufenGesamt';
   }
 
@@ -3669,7 +3682,10 @@ class AppTexteDe extends AppTexte {
 
   @override
   String personWiedererkennung(
-      String erklaerung, int bestaetigt, int abgelehnt) {
+    String erklaerung,
+    int bestaetigt,
+    int abgelehnt,
+  ) {
     String _temp0 = intl.Intl.pluralLogic(
       bestaetigt,
       locale: localeName,
@@ -3835,7 +3851,10 @@ class AppTexteDe extends AppTexte {
 
   @override
   String downloadPruefsummeFehler(
-      String datei, String erhalten, String erwartet) {
+    String datei,
+    String erhalten,
+    String erwartet,
+  ) {
     return 'Prüfsumme von $datei stimmt nicht mit der erwarteten SHA-256 überein (erhalten $erhalten, erwartet $erwartet) – Download verworfen. Die Datei am Server hat sich möglicherweise geändert oder wurde beim Transfer verändert.';
   }
 
@@ -5038,53 +5057,41 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradEltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Mutter',
-        'm': 'Vater',
-        'other': 'Elternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Mutter',
+      'm': 'Vater',
+      'other': 'Elternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradGrosseltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Großmutter',
-        'm': 'Großvater',
-        'other': 'Großelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Großmutter',
+      'm': 'Großvater',
+      'other': 'Großelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradUrgrosseltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Urgroßmutter',
-        'm': 'Urgroßvater',
-        'other': 'Urgroßelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Urgroßmutter',
+      'm': 'Urgroßvater',
+      'other': 'Urgroßelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradUrurgrosseltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Ururgroßmutter',
-        'm': 'Ururgroßvater',
-        'other': 'Ururgroßelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Ururgroßmutter',
+      'm': 'Ururgroßvater',
+      'other': 'Ururgroßelternteil',
+    });
     return '$_temp0';
   }
 
@@ -5095,53 +5102,41 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradKind(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Tochter',
-        'm': 'Sohn',
-        'other': 'Kind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Tochter',
+      'm': 'Sohn',
+      'other': 'Kind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradEnkel(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Enkelin',
-        'm': 'Enkel',
-        'other': 'Enkelkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Enkelin',
+      'm': 'Enkel',
+      'other': 'Enkelkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradUrenkel(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Urenkelin',
-        'm': 'Urenkel',
-        'other': 'Urenkelkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Urenkelin',
+      'm': 'Urenkel',
+      'other': 'Urenkelkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradUrurenkel(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Ururenkelin',
-        'm': 'Ururenkel',
-        'other': 'Ururenkelkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Ururenkelin',
+      'm': 'Ururenkel',
+      'other': 'Ururenkelkind',
+    });
     return '$_temp0';
   }
 
@@ -5152,53 +5147,41 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradGeschwister(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Schwester',
-        'm': 'Bruder',
-        'other': 'Geschwister',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Schwester',
+      'm': 'Bruder',
+      'other': 'Geschwister',
+    });
     return '$_temp0';
   }
 
   @override
   String gradHalbgeschwister(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Halbschwester',
-        'm': 'Halbbruder',
-        'other': 'Halbgeschwister',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Halbschwester',
+      'm': 'Halbbruder',
+      'other': 'Halbgeschwister',
+    });
     return '$_temp0';
   }
 
   @override
   String gradNeffeNichte(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Nichte',
-        'm': 'Neffe',
-        'other': 'Geschwisterkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Nichte',
+      'm': 'Neffe',
+      'other': 'Geschwisterkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradGrossneffeNichte(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Großnichte',
-        'm': 'Großneffe',
-        'other': 'Großgeschwisterkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Großnichte',
+      'm': 'Großneffe',
+      'other': 'Großgeschwisterkind',
+    });
     return '$_temp0';
   }
 
@@ -5209,27 +5192,21 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradOnkelTante(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Tante',
-        'm': 'Onkel',
-        'other': 'Elterngeschwister',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Tante',
+      'm': 'Onkel',
+      'other': 'Elterngeschwister',
+    });
     return '$_temp0';
   }
 
   @override
   String gradGrossonkelTante(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Großtante',
-        'm': 'Großonkel',
-        'other': 'Großelterngeschwister',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Großtante',
+      'm': 'Großonkel',
+      'other': 'Großelterngeschwister',
+    });
     return '$_temp0';
   }
 
@@ -5240,14 +5217,11 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradCousin(String geschlecht, int stufe) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Cousine',
-        'm': 'Cousin',
-        'other': 'Cousin/Cousine',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Cousine',
+      'm': 'Cousin',
+      'other': 'Cousin/Cousine',
+    });
     return '$_temp0 $stufe. Grades';
   }
 
@@ -5258,92 +5232,71 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradPartner(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Partnerin',
-        'm': 'Partner',
-        'other': 'Partner',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Partnerin',
+      'm': 'Partner',
+      'other': 'Partner',
+    });
     return '$_temp0';
   }
 
   @override
   String gradSchwager(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Schwägerin',
-        'm': 'Schwager',
-        'other': 'Schwager/Schwägerin',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Schwägerin',
+      'm': 'Schwager',
+      'other': 'Schwager/Schwägerin',
+    });
     return '$_temp0';
   }
 
   @override
   String gradSchwiegereltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Schwiegermutter',
-        'm': 'Schwiegervater',
-        'other': 'Schwiegerelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Schwiegermutter',
+      'm': 'Schwiegervater',
+      'other': 'Schwiegerelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradSchwiegerkind(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Schwiegertochter',
-        'm': 'Schwiegersohn',
-        'other': 'Schwiegerkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Schwiegertochter',
+      'm': 'Schwiegersohn',
+      'other': 'Schwiegerkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradStiefeltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Stiefmutter',
-        'm': 'Stiefvater',
-        'other': 'Stiefelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Stiefmutter',
+      'm': 'Stiefvater',
+      'other': 'Stiefelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradStiefkind(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Stieftochter',
-        'm': 'Stiefsohn',
-        'other': 'Stiefkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Stieftochter',
+      'm': 'Stiefsohn',
+      'other': 'Stiefkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradStiefgeschwister(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Stiefschwester',
-        'm': 'Stiefbruder',
-        'other': 'Stiefgeschwister',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Stiefschwester',
+      'm': 'Stiefbruder',
+      'other': 'Stiefgeschwister',
+    });
     return '$_temp0';
   }
 
@@ -6249,53 +6202,41 @@ class AppTexteDe extends AppTexte {
 
   @override
   String gradAdoptiveltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Adoptivmutter',
-        'm': 'Adoptivvater',
-        'other': 'Adoptivelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Adoptivmutter',
+      'm': 'Adoptivvater',
+      'other': 'Adoptivelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradPflegeeltern(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Pflegemutter',
-        'm': 'Pflegevater',
-        'other': 'Pflegeelternteil',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Pflegemutter',
+      'm': 'Pflegevater',
+      'other': 'Pflegeelternteil',
+    });
     return '$_temp0';
   }
 
   @override
   String gradAdoptivkind(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Adoptivtochter',
-        'm': 'Adoptivsohn',
-        'other': 'Adoptivkind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Adoptivtochter',
+      'm': 'Adoptivsohn',
+      'other': 'Adoptivkind',
+    });
     return '$_temp0';
   }
 
   @override
   String gradPflegekind(String geschlecht) {
-    String _temp0 = intl.Intl.selectLogic(
-      geschlecht,
-      {
-        'w': 'Pflegetochter',
-        'm': 'Pflegesohn',
-        'other': 'Pflegekind',
-      },
-    );
+    String _temp0 = intl.Intl.selectLogic(geschlecht, {
+      'w': 'Pflegetochter',
+      'm': 'Pflegesohn',
+      'other': 'Pflegekind',
+    });
     return '$_temp0';
   }
 
@@ -8340,4 +8281,27 @@ class AppTexteDe extends AppTexte {
   String kontaktblattFehler(String fehler) {
     return 'Kontaktblatt konnte nicht erstellt werden: $fehler';
   }
+
+  @override
+  String get unerreichbarTitel => 'Bibliothek nicht erreichbar';
+
+  @override
+  String unerreichbarText(String name) {
+    return 'Photo Vault kann die Bibliothek „$name“ gerade nicht öffnen. Ist das Laufwerk angeschlossen?\n\nUnter macOS muss der Ordner nach dem Wechsel auf die neue Programmkennung außerdem einmal neu freigegeben werden. Dabei bleibt alles, wie es ist – es wird nur der Zugriff erneuert.';
+  }
+
+  @override
+  String get unerreichbarFreigeben => 'Ordner freigeben …';
+
+  @override
+  String unerreichbarDialog(String name) {
+    return 'Ordner der Bibliothek „$name“ wählen';
+  }
+
+  @override
+  String get unerreichbarStandard => 'Standardbibliothek öffnen';
+
+  @override
+  String get unerreichbarNochImmer =>
+      'Die Bibliothek ist weiterhin nicht erreichbar.';
 }
