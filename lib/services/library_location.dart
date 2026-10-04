@@ -114,6 +114,7 @@ class LibraryLocation {
   @visibleForTesting
   static void zuruecksetzenFuerTests() {
     _ankerFuerTests = null;
+    _datenordner = null;
     _access = FolderAccess.forCurrentPlatform();
   }
 
@@ -154,6 +155,22 @@ class LibraryLocation {
       await vorgabe.create(recursive: true);
       return vorgabe;
     }
+    // Einmal je Programmlauf entschieden: Der Ordner wird bei jedem Lesen
+    // der Konfiguration erfragt, und ein gescheiterter Umzug (im Flatpak
+    // immer, siehe [uebernimmFruehereKennung]) würde sonst jedes Mal neu
+    // versucht. Ein Fehler wird nicht festgehalten.
+    final entscheidung = _datenordner ??= _bestimmeDatenordner();
+    try {
+      return await entscheidung;
+    } catch (_) {
+      if (identical(_datenordner, entscheidung)) _datenordner = null;
+      rethrow;
+    }
+  }
+
+  static Future<Directory>? _datenordner;
+
+  static Future<Directory> _bestimmeDatenordner() async {
     final support = await getApplicationSupportDirectory();
     final alt = klassischerDatenordner(support.path);
     final neu = Directory(p.join(support.path, 'PhotoVault'));
