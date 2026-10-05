@@ -29,6 +29,8 @@ jobs:
         with:
           flutter-version: "3.44.8"
           channel: stable
+      - name: Formatierung
+        run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs
       - name: Analyse und Tests
         run: flutter pub get && flutter analyze && flutter test
 
