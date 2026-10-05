@@ -137,6 +137,23 @@ void main() {
       zeile.contains('ClientException(') ||
       zeile.contains('assert(');
 
+  /// Ob die Zeile [zeile] (ab 1 gezählt) zu einer Anweisung gehört, die nur
+  /// Entwickler lesen – sie selbst oder eine der Zeilen darüber bis zum Ende
+  /// der vorigen Anweisung.
+  bool inEntwicklerAnweisung(List<String> zeilen, int zeile) {
+    for (var i = zeile - 1; i >= 0 && i >= zeile - 8; i--) {
+      final text = zeilen[i];
+      if (nurFuerEntwickler(text)) return true;
+      // Weiter oben beginnt eine andere Anweisung.
+      final rumpf = text.trimRight();
+      if (i < zeile - 1 &&
+          (rumpf.endsWith(';') || rumpf.endsWith('{') || rumpf.endsWith('}'))) {
+        return false;
+      }
+    }
+    return false;
+  }
+
   /// Stellen, an denen diese App sichtbaren Text übergibt.
   const benennungen = [
     'title',
@@ -278,11 +295,11 @@ void main() {
       for (final (zeile, text) in alleLiterale(quelltext)) {
         // Ein mehrzeiliges debugPrint oder throw erkennt man an seiner
         // ERSTEN Zeile – die Fortsetzung darunter sieht für sich genommen
-        // harmlos aus. Deshalb zählt auch die Zeile davor.
-        if (nurFuerEntwickler(zeilen[zeile - 1]) ||
-            (zeile > 1 && nurFuerEntwickler(zeilen[zeile - 2]))) {
-          continue;
-        }
+        // harmlos aus. Deshalb zählen die Zeilen davor bis zum Anfang der
+        // Anweisung: dart format setzt jedes Argument auf eine eigene
+        // Zeile, und bei `assert(bedingung, 'text')` steht der Text dann
+        // zwei Zeilen unter dem `assert(`.
+        if (inEntwicklerAnweisung(zeilen, zeile)) continue;
         // Eingesetzte Ausdrücke sind Quelltext, kein Text für den Nutzer –
         // `${_conditionSummary(rule)}` ist deutsch benannt, aber nichts,
         // was jemand liest.
