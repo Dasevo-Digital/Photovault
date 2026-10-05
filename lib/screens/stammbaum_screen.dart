@@ -23,11 +23,14 @@ import '../services/familienstatistik.dart';
 import '../services/fotostatistik.dart';
 import '../services/gedcom_export.dart';
 import '../services/gedcom_import.dart';
+import '../services/lebensbaum.dart';
 import '../services/lebenslauf.dart';
 import '../services/zeitleiste.dart';
 import '../services/tafel_pdf.dart';
 import '../services/sanduhr.dart';
 import '../widgets/faecher_ansicht.dart';
+import '../widgets/lebensbaum_ansicht.dart';
+import '../widgets/lebensbaum_maler.dart';
 import '../widgets/familien_zeitleiste.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/sanduhr_ansicht.dart';
@@ -97,6 +100,12 @@ enum _Ansicht {
   /// auf, für die im Baum kein Platz ist – Urgroßvater, Cousine zweiten
   /// Grades, Schwägerin.
   liste,
+
+  /// Der Lebensbaum: eine Linie über mehrere Generationen als gemalter
+  /// Baum – wahlweise die Vorfahren oder die Nachkommen. Eine Wahl neben
+  /// dem Zierbaum, für die Wand und für das Auge (siehe
+  /// `services/lebensbaum.dart`).
+  lebensbaum,
 
   /// Die Zeitleiste: eine Zeile je Person auf einer gemeinsamen Achse.
   /// Die einzige Ansicht, die **Gleichzeitigkeit** zeigt – wer sich
@@ -170,6 +179,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// den Ausschnitt behalten, in dem sie gerade zufällig lag.
   ({String fokus, Size fenster})? _eingepasstAuf;
 
+  /// Der Lebensbaum: Richtung, Stil, Tiefe und eigener Ausschnitt. Ein
+  /// eigener [TransformationController], weil der Zierbaum seinen
+  /// Ausschnitt behalten soll, wenn man zwischen beiden wechselt.
+  Lebensbaumrichtung _lebensRichtung = Lebensbaumrichtung.vorfahren;
+  Lebensbaumstil _lebensStil = Lebensbaumstil.pergament;
+  int _lebensGenerationen = 4;
+  final TransformationController _lebensBlick = TransformationController();
+  String? _lebensEingepasst;
+
   @override
   void initState() {
     super.initState();
@@ -179,6 +197,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   @override
   void dispose() {
     _blick.dispose();
+    _lebensBlick.dispose();
     super.dispose();
   }
 
@@ -1515,6 +1534,261 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
   }
 
+  /// Der Lebensbaum – siehe [LebensbaumAnsicht].
+  Widget _lebensbaum(BuildContext context, PersonData fokus) {
+    final t = AppTexte.of(context);
+    // Wie beim Zierbaum: Der Baum wächst mit der Systemschrift, statt
+    // dass die Schrift über die Schilder läuft.
+    final schriftfaktor = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final masse = const Lebensbaummasse().mal(schriftfaktor);
+    final plan = _lebensbaumplan(fokus.id, masse);
+    final farben = Lebensbaumfarben.fuer(_lebensStil);
+
+    final steuerung = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Wrap(
+        spacing: AppSpacing.md,
+        runSpacing: AppSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SegmentedButton<Lebensbaumrichtung>(
+            segments: [
+              ButtonSegment(
+                value: Lebensbaumrichtung.vorfahren,
+                label: Text(t.lebensbaumVorfahren),
+              ),
+              ButtonSegment(
+                value: Lebensbaumrichtung.nachkommen,
+                label: Text(t.lebensbaumNachkommen),
+              ),
+            ],
+            selected: {_lebensRichtung},
+            showSelectedIcon: false,
+            onSelectionChanged: (w) =>
+                setState(() => _lebensRichtung = w.first),
+          ),
+          DropdownButton<Lebensbaumstil>(
+            value: _lebensStil,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (final (stil, name) in [
+                (Lebensbaumstil.pergament, t.lebensbaumStilPergament),
+                (Lebensbaumstil.landschaft, t.lebensbaumStilLandschaft),
+                (Lebensbaumstil.wappen, t.lebensbaumStilWappen),
+              ])
+                DropdownMenuItem(value: stil, child: Text(name)),
+            ],
+            onChanged: (w) {
+              if (w != null) setState(() => _lebensStil = w);
+            },
+          ),
+          DropdownButton<int>(
+            value: _lebensGenerationen,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (
+                var g = lebensbaumMinGenerationen + 1;
+                g <= lebensbaumMaxGenerationen;
+                g++
+              )
+                DropdownMenuItem(
+                  value: g,
+                  // Die Person am Stamm zählt mit: „4 Generationen" heisst
+                  // sie selbst und drei darüber.
+                  child: Text(t.lebensbaumGenerationen(g + 1)),
+                ),
+            ],
+            onChanged: (w) {
+              if (w != null) setState(() => _lebensGenerationen = w);
+            },
+          ),
+          IconButton(
+            tooltip: t.lebensbaumDrucken,
+            icon: const Icon(Icons.print_outlined),
+            onPressed: plan.knoten.length <= 1
+                ? null
+                : () => _lebensbaumDrucken(fokus.id),
+          ),
+        ],
+      ),
+    );
+
+    // Ein Stamm ohne einen einzigen Ast ist kein Baum – auch dann nicht,
+    // wenn am Stamm ein Paar steht.
+    if (plan.knoten.length <= 1) {
+      return Column(
+        children: [
+          steuerung,
+          Expanded(
+            child: _hinweis(
+              context,
+              _lebensRichtung == Lebensbaumrichtung.vorfahren
+                  ? t.lebensbaumKeineVorfahren
+                  : t.lebensbaumKeineNachkommen,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        steuerung,
+        if (plan.verschwiegen > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              t.lebensbaumAusgelassen(plan.verschwiegen),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, platz) {
+              final fenster = Size(platz.maxWidth, platz.maxHeight);
+              // Ganz zeigen, sobald ein anderer Baum davorsteht. Anders
+              // als beim Zierbaum ist der Lebensbaum ein Bild, das man als
+              // Ganzes ansieht – und erst dann hineinzoomt.
+              final schluessel =
+                  '${fokus.id}|$_lebensRichtung|$_lebensGenerationen|'
+                  '${fenster.width.round()}x${fenster.height.round()}';
+              if (_lebensEingepasst != schluessel) {
+                _lebensEingepasst = schluessel;
+                _lebensBlick.value = baumEingepasst(
+                  Size(plan.breite, plan.hoehe),
+                  fenster,
+                );
+              }
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: Theme.of(context).colorScheme.surfaceContainer,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: InteractiveViewer(
+                      transformationController: _lebensBlick,
+                      constrained: false,
+                      minScale: kleinsterBaumzoom,
+                      maxScale: groessterBaumzoom,
+                      boundaryMargin: EdgeInsets.symmetric(
+                        horizontal: platz.maxWidth,
+                        vertical: platz.maxHeight,
+                      ),
+                      trackpadScrollCausesScale: true,
+                      child: MediaQuery.withNoTextScaling(
+                        child: LebensbaumAnsicht(
+                          plan: plan,
+                          masse: masse,
+                          farben: farben,
+                          beschriftung: _lebensbaumschild,
+                          titel: _lebensbaumtitel(t, plan),
+                          beiTipp: _ruecke,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: AppSpacing.sm,
+                    bottom: AppSpacing.sm,
+                    child: Zoomsteuerung(
+                      beiNaeher: () => _lebensBlick.value = baumGezoomt(
+                        _lebensBlick.value,
+                        baumZoomschritt,
+                        Offset(fenster.width / 2, fenster.height / 2),
+                      ),
+                      beiWeiter: () => _lebensBlick.value = baumGezoomt(
+                        _lebensBlick.value,
+                        1 / baumZoomschritt,
+                        Offset(fenster.width / 2, fenster.height / 2),
+                      ),
+                      beiEinpassen: () => _lebensBlick.value = baumEingepasst(
+                        Size(plan.breite, plan.hoehe),
+                        fenster,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Lebensbaumplan _lebensbaumplan(String fokus, Lebensbaummasse masse) {
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
+    return lebensbaumplan(
+      _netz,
+      fokus,
+      (id) => rang[id] ?? 1 << 30,
+      richtung: _lebensRichtung,
+      generationen: _lebensGenerationen,
+      masse: masse,
+    );
+  }
+
+  Lebensbaumschild _lebensbaumschild(String id) {
+    final person = _nachId[id]!;
+    return (
+      name: person.name,
+      lebensspanne: lebensspanne(person.geburtsdatum, person.sterbedatum),
+    );
+  }
+
+  /// Die Zeile auf dem Spruchband: der Familienname, der im Bild am
+  /// häufigsten vorkommt – oder schlicht „Stammbaum", wenn es keinen
+  /// gibt, statt einen beliebigen Namen zur Familie zu erklären.
+  String _lebensbaumtitel(AppTexte t, Lebensbaumplan plan) {
+    final name = haeufigsterNachname([
+      for (final k in plan.knoten)
+        for (final id in k.personen) _nachId[id]!.name,
+    ]);
+    return name == null ? t.lebensbaumTitelOhneName : t.lebensbaumTitel(name);
+  }
+
+  /// Schreibt den Lebensbaum als PDF – das Blatt an die Wand.
+  Future<void> _lebensbaumDrucken(String fokus) async {
+    final t = AppTexte.of(context);
+    final richtung = Directionality.of(context);
+    final titel = _lebensbaumtitel(
+      t,
+      _lebensbaumplan(fokus, const Lebensbaummasse()),
+    );
+    final ziel = await FilePicker.platform.saveFile(
+      dialogTitle: t.lebensbaumDrucken,
+      fileName: lebensbaumDateiname,
+      type: FileType.custom,
+      allowedExtensions: const [tafelEndungOhnePunkt],
+    );
+    if (ziel == null || !mounted) return;
+    final bytes = await baueLebensbaumPdf(
+      plan: (masse) => _lebensbaumplan(fokus, masse),
+      farben: Lebensbaumfarben.fuer(_lebensStil),
+      beschriftung: _lebensbaumschild,
+      titel: titel,
+      textRichtung: richtung,
+    );
+    await File(mitTafelEndung(ziel)).writeAsBytes(bytes);
+    if (!mounted) return;
+    melde.erfolg(t.stammbaumTafelFertig);
+  }
+
   Widget _hinweis(BuildContext context, String text) => Center(
     child: Padding(
       padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -1818,6 +2092,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                           value: _Ansicht.zeitleiste,
                           label: Text(t.stammbaumAnsichtZeitleiste),
                         ),
+                        ButtonSegment(
+                          value: _Ansicht.lebensbaum,
+                          label: Text(t.stammbaumAnsichtLebensbaum),
+                        ),
                       ],
                       selected: {_ansicht},
                       showSelectedIcon: false,
@@ -1944,6 +2222,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 _Ansicht.sanduhr => _sanduhr(context, fokus),
                 _Ansicht.nachfahren => _nachfahrenTafel(context, fokus),
                 _Ansicht.liste => _verwandtenListe(context, fokus),
+                _Ansicht.lebensbaum => _lebensbaum(context, fokus),
                 _Ansicht.zeitleiste => _zeitleiste(context, fokus),
               },
       ),

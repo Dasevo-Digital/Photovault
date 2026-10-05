@@ -8259,4 +8259,51 @@ class AppTexteEn extends AppTexte {
   @override
   String get unerreichbarKeineBibliothek =>
       'This folder holds no library (no library.sqlite). Please choose the folder the library is in – not the one above or below it.';
+
+  @override
+  String get stammbaumAnsichtLebensbaum => 'Tree of life';
+
+  @override
+  String get lebensbaumVorfahren => 'Ancestors';
+
+  @override
+  String get lebensbaumNachkommen => 'Descendants';
+
+  @override
+  String get lebensbaumStilPergament => 'Parchment';
+
+  @override
+  String get lebensbaumStilLandschaft => 'Landscape';
+
+  @override
+  String get lebensbaumStilWappen => 'Heraldic';
+
+  @override
+  String lebensbaumGenerationen(int anzahl) {
+    return '$anzahl generations';
+  }
+
+  @override
+  String get lebensbaumDrucken => 'Tree of life as PDF';
+
+  @override
+  String lebensbaumTitel(String name) {
+    return 'The $name family tree';
+  }
+
+  @override
+  String get lebensbaumTitelOhneName => 'Family tree';
+
+  @override
+  String get lebensbaumKeineVorfahren =>
+      'No ancestors have been entered for this person yet. The tree of life grows upwards from them – add a parent at the top right.';
+
+  @override
+  String get lebensbaumKeineNachkommen =>
+      'No children have been entered for this person yet. The tree of life grows upwards from them – add a child at the top right.';
+
+  @override
+  String lebensbaumAusgelassen(int anzahl) {
+    return '$anzahl more people do not fit in the picture. Show fewer generations, or tap a person further up to move them to the trunk.';
+  }
 }

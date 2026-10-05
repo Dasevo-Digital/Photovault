@@ -4957,5 +4957,21 @@
   "@unerreichbarDialog": {"placeholders": {"name": {"type": "String"}}},
   "unerreichbarStandard": "Standardbibliothek öffnen",
   "unerreichbarNochImmer": "Die Bibliothek ist weiterhin nicht erreichbar.",
-  "unerreichbarKeineBibliothek": "In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter."
+  "unerreichbarKeineBibliothek": "In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter.",
+  "stammbaumAnsichtLebensbaum": "Lebensbaum",
+  "lebensbaumVorfahren": "Vorfahren",
+  "lebensbaumNachkommen": "Nachkommen",
+  "lebensbaumStilPergament": "Pergament",
+  "lebensbaumStilLandschaft": "Landschaft",
+  "lebensbaumStilWappen": "Wappen",
+  "lebensbaumGenerationen": "{anzahl} Generationen",
+  "@lebensbaumGenerationen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "lebensbaumDrucken": "Lebensbaum als PDF",
+  "lebensbaumTitel": "Stammbaum der Familie {name}",
+  "@lebensbaumTitel": {"placeholders": {"name": {"type": "String"}}},
+  "lebensbaumTitelOhneName": "Stammbaum",
+  "lebensbaumKeineVorfahren": "Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.",
+  "lebensbaumKeineNachkommen": "Für diese Person sind noch keine Kinder eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts ein Kind hinzu.",
+  "lebensbaumAusgelassen": "{anzahl} weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.",
+  "@lebensbaumAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}}
 }

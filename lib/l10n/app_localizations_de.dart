@@ -8308,4 +8308,51 @@ class AppTexteDe extends AppTexte {
   @override
   String get unerreichbarKeineBibliothek =>
       'In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter.';
+
+  @override
+  String get stammbaumAnsichtLebensbaum => 'Lebensbaum';
+
+  @override
+  String get lebensbaumVorfahren => 'Vorfahren';
+
+  @override
+  String get lebensbaumNachkommen => 'Nachkommen';
+
+  @override
+  String get lebensbaumStilPergament => 'Pergament';
+
+  @override
+  String get lebensbaumStilLandschaft => 'Landschaft';
+
+  @override
+  String get lebensbaumStilWappen => 'Wappen';
+
+  @override
+  String lebensbaumGenerationen(int anzahl) {
+    return '$anzahl Generationen';
+  }
+
+  @override
+  String get lebensbaumDrucken => 'Lebensbaum als PDF';
+
+  @override
+  String lebensbaumTitel(String name) {
+    return 'Stammbaum der Familie $name';
+  }
+
+  @override
+  String get lebensbaumTitelOhneName => 'Stammbaum';
+
+  @override
+  String get lebensbaumKeineVorfahren =>
+      'Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.';
+
+  @override
+  String get lebensbaumKeineNachkommen =>
+      'Für diese Person sind noch keine Kinder eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts ein Kind hinzu.';
+
+  @override
+  String lebensbaumAusgelassen(int anzahl) {
+    return '$anzahl weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.';
+  }
 }

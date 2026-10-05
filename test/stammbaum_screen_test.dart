@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/familienstatistik_screen.dart';
@@ -752,6 +753,82 @@ void main() {
     await tester.tap(find.text('Zeitleiste'));
     await tester.pumpAndSettle();
   }
+
+  /// Öffnet den Lebensbaum – den letzten Abschnitt der Ansichtsauswahl,
+  /// deshalb mit breitem Fenster wie die Zeitleiste.
+  Future<void> zeigeLebensbaum(WidgetTester tester, String start) async {
+    tester.view.physicalSize = const Size(1300, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await zeige(tester, start);
+    await tester.tap(find.text('Lebensbaum'));
+    await tester.pumpAndSettle();
+  }
+
+  Finder schild(String name) => find.bySemanticsLabel(RegExp('^$name(,|\$)'));
+
+  testWidgets('der Lebensbaum zeigt die Vorfahren über der Person', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'kind');
+    for (final name in ['Kind', 'Vater', 'Mutter', 'Opa', 'Uropa']) {
+      expect(schild(name), findsOneWidget, reason: name);
+    }
+    // Die Vorfahren stehen über dem Stamm.
+    expect(
+      tester.getCenter(schild('Opa')).dy,
+      lessThan(tester.getCenter(schild('Vater')).dy),
+    );
+    expect(
+      tester.getCenter(schild('Vater')).dy,
+      lessThan(tester.getCenter(schild('Kind')).dy),
+    );
+  });
+
+  testWidgets('die Nachkommen wachsen aus der Person nach oben', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'opa');
+    await tester.tap(find.text('Nachkommen'));
+    await tester.pumpAndSettle();
+    expect(schild('Uropa'), findsNothing, reason: 'nur eine Richtung');
+    expect(
+      tester.getCenter(schild('Kind')).dy,
+      lessThan(tester.getCenter(schild('Opa')).dy),
+    );
+  });
+
+  testWidgets('ein Tipp auf ein Schild rückt die Person an den Stamm', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'kind');
+    await tester.tap(schild('Opa'));
+    await tester.pumpAndSettle();
+    expect(schild('Kind'), findsNothing);
+    expect(schild('Opa'), findsOneWidget);
+  });
+
+  testWidgets('ohne Kinder sagt der Lebensbaum, was ihm fehlt', (tester) async {
+    await zeigeLebensbaum(tester, 'kind');
+    await tester.tap(find.text('Nachkommen'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('noch keine Kinder eingetragen'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('jeder Stil lässt sich wählen', (tester) async {
+    await zeigeLebensbaum(tester, 'kind');
+    for (final stil in ['Landschaft', 'Wappen', 'Pergament']) {
+      await tester.tap(find.byType(DropdownButton<Lebensbaumstil>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(stil).last);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: stil);
+      expect(schild('Opa'), findsOneWidget);
+    }
+  });
 
   testWidgets('die Zeitleiste ordnet die Zeilen nach der Zeit', (tester) async {
     // Das, was keine der anderen vier Ansichten zeigt: Gleichzeitigkeit.

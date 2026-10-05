@@ -11,6 +11,7 @@
 /// gedruckten Blatt auf.
 library;
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -21,8 +22,10 @@ import 'package:pdf/widgets.dart' as pw;
 import '../db/database.dart';
 import '../theme/zierbaum_farben.dart';
 import '../widgets/faecher_ansicht.dart';
+import '../widgets/lebensbaum_maler.dart';
 import '../widgets/zierbaum_maler.dart';
 import 'faechertafel.dart';
+import 'lebensbaum.dart';
 import 'stammbaum.dart';
 import 'zierbaum.dart';
 
@@ -30,6 +33,7 @@ const tafelEndung = '.pdf';
 const tafelEndungOhnePunkt = 'pdf';
 const tafelDateiname = 'stammbaum-tafel$tafelEndung';
 const zierbaumDateiname = 'stammbaum-zierbaum$tafelEndung';
+const lebensbaumDateiname = 'stammbaum-lebensbaum$tafelEndung';
 
 String mitTafelEndung(String pfad) =>
     pfad.toLowerCase().endsWith(tafelEndung) ? pfad : '$pfad$tafelEndung';
@@ -219,4 +223,66 @@ Future<Uint8List> baueZierbaumPdf({
     ),
   );
   return dokument.save();
+}
+
+/// Schreibt den Lebensbaum als PDF – dieselbe Zeichnung wie auf dem
+/// Schirm, dreifach vergrössert wie beim Zierbaum.
+///
+/// [plan] wird mit den vergrösserten Massen gerufen: Der Plan hängt an
+/// den Massen, und ein hochgerechnetes Bild des kleinen Plans wäre
+/// unscharf.
+Future<Uint8List> baueLebensbaumPdf({
+  required Lebensbaumplan Function(Lebensbaummasse masse) plan,
+  required Lebensbaumfarben farben,
+  required Lebensbaumschild Function(String personId) beschriftung,
+  required String titel,
+  required TextDirection textRichtung,
+}) async {
+  final masse = const Lebensbaummasse().mal(zierbaumTafelFaktor);
+  final p = plan(masse);
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, p.breite, p.hoehe));
+  LebensbaumMaler(
+    plan: p,
+    masse: masse,
+    farben: farben,
+    beschriftung: beschriftung,
+    titel: titel,
+    textRichtung: textRichtung,
+  ).paint(canvas, Size(p.breite, p.hoehe));
+  final bild = await recorder.endRecording().toImage(
+    p.breite.round(),
+    p.hoehe.round(),
+  );
+  final png = await bild.toByteData(format: ui.ImageByteFormat.png);
+  bild.dispose();
+
+  final dokument = pw.Document();
+  final grafik = pw.MemoryImage(png!.buffer.asUint8List());
+  dokument.addPage(
+    pw.Page(
+      // Randlos und genau im Seitenverhältnis des Bildes: Der Lebensbaum
+      // hat seinen eigenen, gemalten Grund. Auf ein festes A3 gesetzt,
+      // stünden daneben weisse Streifen; als Rand darum wäre es ein
+      // Passepartout, das keiner bestellt hat. Höchstens A3 gross.
+      pageFormat: _seiteFuer(p.breite, p.hoehe),
+      margin: pw.EdgeInsets.zero,
+      build: (kontext) => pw.Image(grafik, fit: pw.BoxFit.fill),
+    ),
+  );
+  return dokument.save();
+}
+
+/// Eine Seite im Seitenverhältnis [breite] zu [hoehe], die in A3 passt.
+PdfPageFormat _seiteFuer(double breite, double hoehe) {
+  const a3 = PdfPageFormat.a3;
+  final quer = breite >= hoehe;
+  final lang = a3.height;
+  final kurz = a3.width;
+  var b = quer ? lang : lang * breite / hoehe;
+  var h = quer ? lang * hoehe / breite : lang;
+  final ueber = math.max((quer ? h : b) / kurz, 1.0);
+  b /= ueber;
+  h /= ueber;
+  return PdfPageFormat(b, h, marginAll: 0);
 }

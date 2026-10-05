@@ -12930,6 +12930,84 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter.'**
   String get unerreichbarKeineBibliothek;
+
+  /// No description provided for @stammbaumAnsichtLebensbaum.
+  ///
+  /// In de, this message translates to:
+  /// **'Lebensbaum'**
+  String get stammbaumAnsichtLebensbaum;
+
+  /// No description provided for @lebensbaumVorfahren.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorfahren'**
+  String get lebensbaumVorfahren;
+
+  /// No description provided for @lebensbaumNachkommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachkommen'**
+  String get lebensbaumNachkommen;
+
+  /// No description provided for @lebensbaumStilPergament.
+  ///
+  /// In de, this message translates to:
+  /// **'Pergament'**
+  String get lebensbaumStilPergament;
+
+  /// No description provided for @lebensbaumStilLandschaft.
+  ///
+  /// In de, this message translates to:
+  /// **'Landschaft'**
+  String get lebensbaumStilLandschaft;
+
+  /// No description provided for @lebensbaumStilWappen.
+  ///
+  /// In de, this message translates to:
+  /// **'Wappen'**
+  String get lebensbaumStilWappen;
+
+  /// No description provided for @lebensbaumGenerationen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Generationen'**
+  String lebensbaumGenerationen(int anzahl);
+
+  /// No description provided for @lebensbaumDrucken.
+  ///
+  /// In de, this message translates to:
+  /// **'Lebensbaum als PDF'**
+  String get lebensbaumDrucken;
+
+  /// No description provided for @lebensbaumTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Stammbaum der Familie {name}'**
+  String lebensbaumTitel(String name);
+
+  /// No description provided for @lebensbaumTitelOhneName.
+  ///
+  /// In de, this message translates to:
+  /// **'Stammbaum'**
+  String get lebensbaumTitelOhneName;
+
+  /// No description provided for @lebensbaumKeineVorfahren.
+  ///
+  /// In de, this message translates to:
+  /// **'Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.'**
+  String get lebensbaumKeineVorfahren;
+
+  /// No description provided for @lebensbaumKeineNachkommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Für diese Person sind noch keine Kinder eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts ein Kind hinzu.'**
+  String get lebensbaumKeineNachkommen;
+
+  /// No description provided for @lebensbaumAusgelassen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.'**
+  String lebensbaumAusgelassen(int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
