@@ -1766,6 +1766,14 @@ class AppSettings extends Table {
   TextColumn get stammbaumAnsicht => text().nullable()();
   TextColumn get stammbaumPerson => text().nullable()();
 
+  /// Wie der Lebensbaum zuletzt aussah: Richtung und Stil als Name, die
+  /// Generationen als Zahl. Nullbar und als Text aus demselben Grund wie
+  /// [stammbaumAnsicht] – ein Name, den es nicht mehr gibt, fällt beim
+  /// Lesen auf die Vorgabe zurück.
+  TextColumn get lebensbaumRichtung => text().nullable()();
+  TextColumn get lebensbaumStil => text().nullable()();
+  IntColumn get lebensbaumGenerationen => integer().nullable()();
+
   /// Wie gross die Kacheln der Zeitleiste sind – als Stufe, siehe
   /// [zeitleisteKachelstufen].
   ///
@@ -2030,7 +2038,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 86;
+  int get schemaVersion => 87;
 
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
@@ -3235,6 +3243,30 @@ class AppDatabase extends _$AppDatabase {
           appSettings.zeitleisteMitTagen,
           'app_settings',
           'zeitleiste_mit_tagen',
+        );
+      }
+      if (from < 87) {
+        // Alle drei leer = die Vorgabe des Lebensbaums.
+        await _addColumnIfMissing(
+          m,
+          appSettings,
+          appSettings.lebensbaumRichtung,
+          'app_settings',
+          'lebensbaum_richtung',
+        );
+        await _addColumnIfMissing(
+          m,
+          appSettings,
+          appSettings.lebensbaumStil,
+          'app_settings',
+          'lebensbaum_stil',
+        );
+        await _addColumnIfMissing(
+          m,
+          appSettings,
+          appSettings.lebensbaumGenerationen,
+          'app_settings',
+          'lebensbaum_generationen',
         );
       }
     },
@@ -5406,6 +5438,33 @@ class AppDatabase extends _$AppDatabase {
       id: const Value(0),
       stammbaumAnsicht: Value(ansicht),
       stammbaumPerson: Value(person),
+    ),
+  );
+
+  /// Wie der Lebensbaum zuletzt aussah – siehe die Spalten. Alles `null`,
+  /// solange niemand etwas umgestellt hat.
+  Future<({String? richtung, String? stil, int? generationen})>
+  lebensbaumZuletzt() async {
+    final row = await (select(
+      appSettings,
+    )..where((t) => t.id.equals(0))).getSingleOrNull();
+    return (
+      richtung: row?.lebensbaumRichtung,
+      stil: row?.lebensbaumStil,
+      generationen: row?.lebensbaumGenerationen,
+    );
+  }
+
+  Future<void> setzeLebensbaum({
+    required String richtung,
+    required String stil,
+    required int generationen,
+  }) => into(appSettings).insertOnConflictUpdate(
+    AppSettingsCompanion.insert(
+      id: const Value(0),
+      lebensbaumRichtung: Value(richtung),
+      lebensbaumStil: Value(stil),
+      lebensbaumGenerationen: Value(generationen),
     ),
   );
 

@@ -208,6 +208,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final zeilen = await widget.library.db.alleBeziehungen();
     final ereignisse = await widget.library.db.alleEreignisse();
     final zuletzt = await widget.library.db.stammbaumZuletzt();
+    final lebens = await widget.library.db.lebensbaumZuletzt();
     if (!mounted) return;
     final nachPerson = <String, List<LebensereignisseData>>{};
     for (final e in ereignisse) {
@@ -230,6 +231,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         // geloescht wurde, fallen still auf die bisherige Wahl zurueck.
         final gemerkt = _ansichtAusText(zuletzt.ansicht);
         if (gemerkt != null) _ansicht = gemerkt;
+        // Dieselbe Regel: Was es nicht mehr gibt, fällt auf die Vorgabe.
+        for (final r in Lebensbaumrichtung.values) {
+          if (r.name == lebens.richtung) _lebensRichtung = r;
+        }
+        for (final st in Lebensbaumstil.values) {
+          if (st.name == lebens.stil) _lebensStil = st;
+        }
+        final generationen = lebens.generationen;
+        if (generationen != null &&
+            generationen > lebensbaumMinGenerationen &&
+            generationen <= lebensbaumMaxGenerationen) {
+          _lebensGenerationen = generationen;
+        }
         final person = zuletzt.person;
         _fokusId ??=
             widget.startPersonId ??
@@ -255,6 +269,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       widget.library.db.setzeStammbaumZuletzt(
         ansicht: _ansicht.name,
         person: _fokusId,
+      ),
+    );
+  }
+
+  /// Hält Richtung, Stil und Generationen des Lebensbaums fest – wie
+  /// [_merken] ohne `await`.
+  void _lebensbaumMerken() {
+    if (!_standGelesen) return;
+    unawaited(
+      widget.library.db.setzeLebensbaum(
+        richtung: _lebensRichtung.name,
+        stil: _lebensStil.name,
+        generationen: _lebensGenerationen,
       ),
     );
   }
@@ -1567,8 +1594,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             ],
             selected: {_lebensRichtung},
             showSelectedIcon: false,
-            onSelectionChanged: (w) =>
-                setState(() => _lebensRichtung = w.first),
+            onSelectionChanged: (w) {
+              setState(() => _lebensRichtung = w.first);
+              _lebensbaumMerken();
+            },
           ),
           DropdownButton<Lebensbaumstil>(
             value: _lebensStil,
@@ -1582,7 +1611,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 DropdownMenuItem(value: stil, child: Text(name)),
             ],
             onChanged: (w) {
-              if (w != null) setState(() => _lebensStil = w);
+              if (w == null) return;
+              setState(() => _lebensStil = w);
+              _lebensbaumMerken();
             },
           ),
           DropdownButton<int>(
@@ -1602,7 +1633,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 ),
             ],
             onChanged: (w) {
-              if (w != null) setState(() => _lebensGenerationen = w);
+              if (w == null) return;
+              setState(() => _lebensGenerationen = w);
+              _lebensbaumMerken();
             },
           ),
           IconButton(

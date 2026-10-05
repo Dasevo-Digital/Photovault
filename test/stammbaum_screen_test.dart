@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/services/lebensbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
@@ -815,6 +816,47 @@ void main() {
     expect(
       find.textContaining('noch keine Kinder eingetragen'),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('Richtung, Stil und Generationen bleiben gemerkt', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'opa');
+    await tester.tap(find.text('Nachkommen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButton<Lebensbaumstil>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wappen').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButton<int>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3 Generationen').last);
+    await tester.pumpAndSettle();
+    // Geschrieben wird ohne Warten; vor dem Neuöffnen ankommen lassen.
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+
+    // Neu geöffnet, mit einem frischen Bildschirm.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await zeige(tester, 'opa');
+    await tester.pumpAndSettle();
+    final richtung = tester.widget<SegmentedButton<Lebensbaumrichtung>>(
+      find.byType(SegmentedButton<Lebensbaumrichtung>),
+    );
+    expect(richtung.selected, {Lebensbaumrichtung.nachkommen});
+    expect(
+      tester
+          .widget<DropdownButton<Lebensbaumstil>>(
+            find.byType(DropdownButton<Lebensbaumstil>),
+          )
+          .value,
+      Lebensbaumstil.wappen,
+    );
+    expect(
+      tester
+          .widget<DropdownButton<int>>(find.byType(DropdownButton<int>))
+          .value,
+      2,
     );
   });
 

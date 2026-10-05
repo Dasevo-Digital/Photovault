@@ -1,7 +1,14 @@
 # Schema-Stände der Datenbank für `dart run drift_dev make-migrations`.
 # Bei jedem Schemawechsel einmal aufrufen: Der Befehl legt den neuen Stand
-# unter drift_schemas/ ab und erzeugt Tests, die jede Migration zwischen
-# zwei abgelegten Ständen an einer echten Datenbank nachprüfen.
+# unter drift_schemas/ ab (test/schemastand_abgelegt_test.dart prüft das).
+#
+# Die Tests und lib/db/database.steps.dart, die er zusätzlich erzeugt,
+# sind NICHT brauchbar und werden gelöscht: drift kann die Datenbank für
+# den Export nicht ausserhalb von Flutter starten, liest das Schema nur
+# statisch und schreibt Vorgabewerte als Dart-Ausdrücke ab
+# (lichtstimmungVorgabe …), die in den erzeugten Dateien unbekannt sind.
+# Die Migration wird stattdessen von Hand geprüft, siehe
+# test/migration_86_87_test.dart als Muster.
 targets:
   $default:
     builders:
