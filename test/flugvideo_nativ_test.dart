@@ -27,21 +27,19 @@ void main() {
 
   /// Setzt den gestellten Kanal auf. [stolpert] darf für einen
   /// Methodennamen eine Ausnahme werfen.
-  void kanalStellen({
-    Object? Function(MethodCall ruf)? stolpert,
-  }) {
+  void kanalStellen({Object? Function(MethodCall ruf)? stolpert}) {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(NativerVideoschreiber.kanal, (ruf) async {
-      rufe.add(ruf);
-      if (ruf.method == 'videoBild') {
-        final punkte = (ruf.arguments as Map)['rgba'] as Uint8List;
-        bildgroessen.add(punkte.length);
-      }
-      final stolper = stolpert?.call(ruf);
-      if (stolper is Exception) throw stolper;
-      if (ruf.method == 'videoNativ') return true;
-      return null;
-    });
+          rufe.add(ruf);
+          if (ruf.method == 'videoBild') {
+            final punkte = (ruf.arguments as Map)['rgba'] as Uint8List;
+            bildgroessen.add(punkte.length);
+          }
+          final stolper = stolpert?.call(ruf);
+          if (stolper is Exception) throw stolper;
+          if (ruf.method == 'videoNativ') return true;
+          return null;
+        });
   }
 
   setUp(() {
@@ -67,8 +65,9 @@ void main() {
 
   List<String> nurNamen() => [for (final r in rufe) r.method];
 
-  testWidgets('so viele Bilder wie gerechnet, und die Groesse geht mit',
-      (tester) async {
+  testWidgets('so viele Bilder wie gerechnet, und die Groesse geht mit', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       kanalStellen();
       final e = await schreibeFlugvideo(
@@ -159,8 +158,9 @@ void main() {
     });
   });
 
-  testWidgets('beschwert sich AVFoundation beim Start, kommt es an',
-      (tester) async {
+  testWidgets('beschwert sich AVFoundation beim Start, kommt es an', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       kanalStellen(
         stolpert: (r) => r.method == 'videoStart'
@@ -182,17 +182,20 @@ void main() {
     });
   });
 
-  testWidgets('bricht es mitten im Lauf ab, bleibt keine halbe Datei',
-      (tester) async {
+  testWidgets('bricht es mitten im Lauf ab, bleibt keine halbe Datei', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       var bilder = 0;
-      kanalStellen(stolpert: (r) {
-        if (r.method != 'videoBild') return null;
-        bilder++;
-        return bilder == 3
-            ? PlatformException(code: 'video', message: 'vImage 1')
-            : null;
-      });
+      kanalStellen(
+        stolpert: (r) {
+          if (r.method != 'videoBild') return null;
+          bilder++;
+          return bilder == 3
+              ? PlatformException(code: 'video', message: 'vImage 1')
+              : null;
+        },
+      );
       final e = await schreibeFlugvideo(
         ziel: File('${ordner.path}/flug.mp4'),
         breite: 32,
@@ -209,14 +212,16 @@ void main() {
     });
   });
 
-  testWidgets('schlaegt der Abschluss fehl, ist es ein Fehler',
-      (tester) async {
+  testWidgets('schlaegt der Abschluss fehl, ist es ein Fehler', (tester) async {
     // AVAssetWriter meldet das meiste erst beim Abschliessen - dort
     // faellt auf, ob die Datei ueberhaupt geschrieben wurde.
     await tester.runAsync(() async {
       kanalStellen(
         stolpert: (r) => r.method == 'videoFertig'
-            ? PlatformException(code: 'video', message: 'Session unvollstaendig')
+            ? PlatformException(
+                code: 'video',
+                message: 'Session unvollstaendig',
+              )
             : null,
       );
       final e = await schreibeFlugvideo(
@@ -233,15 +238,17 @@ void main() {
     });
   });
 
-  testWidgets('kennt der Bau den Schreiber nicht, ist es keinWerkzeug',
-      (tester) async {
+  testWidgets('kennt der Bau den Schreiber nicht, ist es keinWerkzeug', (
+    tester,
+  ) async {
     // Eine aeltere Fassung ohne die Swift-Seite: Dann ist es kein Fehler,
     // sondern eine fehlende Faehigkeit - und die Oberflaeche sagt einen
     // anderen Satz.
     await tester.runAsync(() async {
       kanalStellen(
-          stolpert: (r) =>
-              r.method == 'videoStart' ? MissingPluginException('weg') : null);
+        stolpert: (r) =>
+            r.method == 'videoStart' ? MissingPluginException('weg') : null,
+      );
       final e = await schreibeFlugvideo(
         ziel: File('${ordner.path}/flug.mp4'),
         breite: 32,
@@ -258,16 +265,20 @@ void main() {
   test('ohne Kanal ist nichts verfuegbar', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(NativerVideoschreiber.kanal, (_) async {
-      throw MissingPluginException('kein Kanal');
-    });
+          throw MissingPluginException('kein Kanal');
+        });
     expect(await NativerVideoschreiber.verfuegbar(), isFalse);
   });
 
   test('mit Kanal ist er verfuegbar - aber nur unter macOS', () async {
     kanalStellen();
-    expect(await NativerVideoschreiber.verfuegbar(), Platform.isMacOS,
-        reason: 'unter Linux und Windows gibt es AVFoundation nicht, '
-            'egal was ein gestellter Kanal antwortet');
+    expect(
+      await NativerVideoschreiber.verfuegbar(),
+      Platform.isMacOS,
+      reason:
+          'unter Linux und Windows gibt es AVFoundation nicht, '
+          'egal was ein gestellter Kanal antwortet',
+    );
   });
 
   testWidgets('ohne Vorgabe entscheidet die Plattform', (tester) async {
@@ -292,8 +303,9 @@ void main() {
     });
   });
 
-  testWidgets('die Oberflaeche fragt nicht mehr nach ffmpeg allein',
-      (tester) async {
+  testWidgets('die Oberflaeche fragt nicht mehr nach ffmpeg allein', (
+    tester,
+  ) async {
     if (!Platform.isMacOS) {
       markTestSkipped('nur unter macOS');
       return;
@@ -306,8 +318,11 @@ void main() {
     addTearDown(DesktopImageTools.vergissWerkzeuge);
     expect(await ffmpegPfad(), isNull, reason: 'die Stellung greift nicht');
     kanalStellen();
-    expect(await videoausgabeMoeglich(), isTrue,
-        reason: 'ohne ffmpeg muss der native Weg allein genuegen');
+    expect(
+      await videoausgabeMoeglich(),
+      isTrue,
+      reason: 'ohne ffmpeg muss der native Weg allein genuegen',
+    );
   });
 
   test('ohne beides ist die Ausgabe unmoeglich', () async {
@@ -317,8 +332,8 @@ void main() {
     addTearDown(DesktopImageTools.vergissWerkzeuge);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(NativerVideoschreiber.kanal, (_) async {
-      throw MissingPluginException('kein Kanal');
-    });
+          throw MissingPluginException('kein Kanal');
+        });
     expect(await videoausgabeMoeglich(), isFalse);
   });
 }

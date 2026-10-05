@@ -42,11 +42,16 @@ class _Waage extends TileProvider {
 
   @override
   ImageProvider getImageWithCancelLoadingSupport(
-      TileCoordinates c, TileLayer o, Future<void> abbruch) {
+    TileCoordinates c,
+    TileLayer o,
+    Future<void> abbruch,
+  ) {
     angelegt++;
-    unawaited(abbruch.then((_) {
-      if (laeuft) abgebrochen++;
-    }));
+    unawaited(
+      abbruch.then((_) {
+        if (laeuft) abgebrochen++;
+      }),
+    );
     return _Sofort(pixel, '$lauf:${c.z}/${c.x}/${c.y}', () {
       geladenGesamt++;
       jeStufe[c.z] = (jeStufe[c.z] ?? 0) + 1;
@@ -70,7 +75,8 @@ class _Sofort extends ImageProvider<_Sofort> {
   ImageStreamCompleter loadImage(_Sofort key, ImageDecoderCallback decode) {
     melde();
     return OneFrameImageStreamCompleter(
-        SynchronousFuture(ImageInfo(image: pixel.clone())));
+      SynchronousFuture(ImageInfo(image: pixel.clone())),
+    );
   }
 
   @override
@@ -110,24 +116,29 @@ void main() {
       final steuer = MapController();
       PaintingBinding.instance.imageCache.clear();
 
-      await tester.pumpWidget(MaterialApp(
-        home: FlutterMap(
-          mapController: steuer,
-          options: const MapOptions(
-              initialCenter: mitte, initialZoom: 6, maxZoom: 21),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://example.invalid/{z}/{x}/{y}.png',
-              tileProvider: waage,
-              retinaMode: retina,
-              maxNativeZoom: 19,
-              tileDisplay: anzeige,
-              panBuffer: randpuffer,
-              tileUpdateTransformer: umformer,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterMap(
+            mapController: steuer,
+            options: const MapOptions(
+              initialCenter: mitte,
+              initialZoom: 6,
+              maxZoom: 21,
             ),
-          ],
+            children: [
+              TileLayer(
+                urlTemplate: 'https://example.invalid/{z}/{x}/{y}.png',
+                tileProvider: waage,
+                retinaMode: retina,
+                maxNativeZoom: 19,
+                tileDisplay: anzeige,
+                panBuffer: randpuffer,
+                tileUpdateTransformer: umformer,
+              ),
+            ],
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       final beimStart = waage.geladenGesamt;
 
@@ -164,9 +175,11 @@ void main() {
           .map((z) => '$z:${waage.jeStufe[z]}')
           .join(' ');
       debugPrint('--- $name');
-      debugPrint('    geladen ${waage.geladenGesamt} (Start $beimStart), '
-          'verschieden ${waage.verschieden.length}, '
-          'angelegt ${waage.angelegt}, abgebrochen ${waage.abgebrochen}');
+      debugPrint(
+        '    geladen ${waage.geladenGesamt} (Start $beimStart), '
+        'verschieden ${waage.verschieden.length}, '
+        'angelegt ${waage.angelegt}, abgebrochen ${waage.abgebrochen}',
+      );
       debugPrint('    Rechenzeit ${uhr.elapsedMilliseconds} ms');
       debugPrint('    je Stufe: $stufen');
     }
@@ -175,27 +188,37 @@ void main() {
       debugPrint('===== Zoom 6 -> 16 -> 6 in ${schritte * 15} ms je Richtung');
       await lauf('wie heute', schritte: schritte);
       for (final ms in [100, 150, 200, 300, 500]) {
-        await lauf('throttle $ms ms',
-            umformer:
-                TileUpdateTransformers.throttle(Duration(milliseconds: ms)),
-            schritte: schritte);
+        await lauf(
+          'throttle $ms ms',
+          umformer: TileUpdateTransformers.throttle(Duration(milliseconds: ms)),
+          schritte: schritte,
+        );
       }
     }
     debugPrint('===== Randpuffer =====');
     await lauf('wie heute, panBuffer 0', randpuffer: 0);
-    await lauf('throttle 150 ms, panBuffer 0',
-        umformer:
-            TileUpdateTransformers.throttle(const Duration(milliseconds: 150)),
-        randpuffer: 0);
+    await lauf(
+      'throttle 150 ms, panBuffer 0',
+      umformer: TileUpdateTransformers.throttle(
+        const Duration(milliseconds: 150),
+      ),
+      randpuffer: 0,
+    );
     debugPrint('===== Schieben auf Stufe 13 =====');
     await lauf('wie heute', schieben: true);
-    await lauf('throttle 150 ms',
-        umformer:
-            TileUpdateTransformers.throttle(const Duration(milliseconds: 150)),
-        schieben: true);
-    await lauf('throttle 500 ms',
-        umformer:
-            TileUpdateTransformers.throttle(const Duration(milliseconds: 500)),
-        schieben: true);
+    await lauf(
+      'throttle 150 ms',
+      umformer: TileUpdateTransformers.throttle(
+        const Duration(milliseconds: 150),
+      ),
+      schieben: true,
+    );
+    await lauf(
+      'throttle 500 ms',
+      umformer: TileUpdateTransformers.throttle(
+        const Duration(milliseconds: 500),
+      ),
+      schieben: true,
+    );
   });
 }

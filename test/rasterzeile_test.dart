@@ -18,47 +18,54 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> lege(String id, DateTime wann,
-      {String type = 'IMAGE',
-      bool favorit = false,
-      bool gesperrt = false,
-      int bewertung = 0,
-      String? farbe,
-      String? verknuepft,
-      int? breite,
-      int? hoehe,
-      double? dauer,
-      double? lat,
-      double? lon,
-      String? kamera,
-      String? stapel,
-      bool titelbild = false,
-      int? stapelgroesse,
-      String? vorschau}) {
-    return db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'o/$id.jpg',
-          checksum: 'c$id',
-          type: type,
-          fileCreatedAt: wann,
-          importedAt: DateTime(2026),
-          isFavorite: Value(favorit),
-          isLocked: Value(gesperrt),
-          rating: Value(bewertung),
-          colorLabel: Value(farbe),
-          linkedAssetId: Value(verknuepft),
-          widthPx: Value(breite),
-          heightPx: Value(hoehe),
-          durationSeconds: Value(dauer),
-          latitude: Value(lat),
-          longitude: Value(lon),
-          cameraMake: Value(kamera),
-          stackId: Value(stapel),
-          isStackCover: Value(titelbild),
-          stackSize: Value(stapelgroesse),
-          thumbnailRelativePath: Value(vorschau),
-        ));
+  Future<void> lege(
+    String id,
+    DateTime wann, {
+    String type = 'IMAGE',
+    bool favorit = false,
+    bool gesperrt = false,
+    int bewertung = 0,
+    String? farbe,
+    String? verknuepft,
+    int? breite,
+    int? hoehe,
+    double? dauer,
+    double? lat,
+    double? lon,
+    String? kamera,
+    String? stapel,
+    bool titelbild = false,
+    int? stapelgroesse,
+    String? vorschau,
+  }) {
+    return db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'o/$id.jpg',
+            checksum: 'c$id',
+            type: type,
+            fileCreatedAt: wann,
+            importedAt: DateTime(2026),
+            isFavorite: Value(favorit),
+            isLocked: Value(gesperrt),
+            rating: Value(bewertung),
+            colorLabel: Value(farbe),
+            linkedAssetId: Value(verknuepft),
+            widthPx: Value(breite),
+            heightPx: Value(hoehe),
+            durationSeconds: Value(dauer),
+            latitude: Value(lat),
+            longitude: Value(lon),
+            cameraMake: Value(kamera),
+            stackId: Value(stapel),
+            isStackCover: Value(titelbild),
+            stackSize: Value(stapelgroesse),
+            thumbnailRelativePath: Value(vorschau),
+          ),
+        );
   }
 
   test('jedes Feld kommt so an wie über den Abfragebauer', () async {
@@ -68,21 +75,24 @@ void main() {
     // Ein Live-Photo-Standbild: Es traegt eine Verknuepfung UND kommt
     // durch den Filter. Eine Videohaelfte taete das nicht - siehe den
     // Test weiter unten.
-    await lege('a1', wann,
-        favorit: true,
-        bewertung: 4,
-        farbe: 'rot',
-        verknuepft: 'b9',
-        breite: 4032,
-        hoehe: 3024,
-        dauer: 12.5,
-        lat: 51.87,
-        lon: 10.68,
-        kamera: 'Apple',
-        stapel: 's1',
-        titelbild: true,
-        stapelgroesse: 7,
-        vorschau: 't/a1.jpg');
+    await lege(
+      'a1',
+      wann,
+      favorit: true,
+      bewertung: 4,
+      farbe: 'rot',
+      verknuepft: 'b9',
+      breite: 4032,
+      hoehe: 3024,
+      dauer: 12.5,
+      lat: 51.87,
+      lon: 10.68,
+      kamera: 'Apple',
+      stapel: 's1',
+      titelbild: true,
+      stapelgroesse: 7,
+      vorschau: 't/a1.jpg',
+    );
 
     final voll = (await db.watchTimeline().first).single;
     final schmal = (await db.watchRasterzeilen().first).single;
@@ -93,14 +103,23 @@ void main() {
 
     gleich('id', schmal.id, abgeleitet.id);
     gleich('type', schmal.type, abgeleitet.type);
-    gleich('originalFileName', schmal.originalFileName,
-        abgeleitet.originalFileName);
+    gleich(
+      'originalFileName',
+      schmal.originalFileName,
+      abgeleitet.originalFileName,
+    );
     gleich('relativePath', schmal.relativePath, abgeleitet.relativePath);
-    gleich('thumbnailRelativePath', schmal.thumbnailRelativePath,
-        abgeleitet.thumbnailRelativePath);
+    gleich(
+      'thumbnailRelativePath',
+      schmal.thumbnailRelativePath,
+      abgeleitet.thumbnailRelativePath,
+    );
     gleich('fileCreatedAt', schmal.fileCreatedAt, abgeleitet.fileCreatedAt);
-    gleich('durationSeconds', schmal.durationSeconds,
-        abgeleitet.durationSeconds);
+    gleich(
+      'durationSeconds',
+      schmal.durationSeconds,
+      abgeleitet.durationSeconds,
+    );
     gleich('isFavorite', schmal.isFavorite, abgeleitet.isFavorite);
     gleich('isStackCover', schmal.isStackCover, abgeleitet.isStackCover);
     gleich('stackId', schmal.stackId, abgeleitet.stackId);
@@ -134,8 +153,7 @@ void main() {
     }
   });
 
-  test('leere Felder bleiben leer statt zu Platzhaltern zu werden',
-      () async {
+  test('leere Felder bleiben leer statt zu Platzhaltern zu werden', () async {
     await lege('a1', DateTime(2026, 3, 12));
     final schmal = (await db.watchRasterzeilen().first).single;
     expect(schmal.thumbnailRelativePath, isNull);
@@ -164,27 +182,36 @@ void main() {
 
     test('die Videohälfte eines Live Photos bleibt draussen', () async {
       await lege('foto', DateTime(2026, 3, 3), verknuepft: 'video');
-      await lege('video', DateTime(2026, 3, 3),
-          type: 'VIDEO', verknuepft: 'foto');
+      await lege(
+        'video',
+        DateTime(2026, 3, 3),
+        type: 'VIDEO',
+        verknuepft: 'foto',
+      );
       final schmal = await db.watchRasterzeilen().first;
       final voll = await db.watchTimeline().first;
       expect(schmal.map((z) => z.id), voll.map((a) => a.id));
       expect(schmal.map((z) => z.id), ['foto']);
     });
 
-    test('Reihenfolge, Grenze und Favoritenfilter stimmen überein',
-        () async {
+    test('Reihenfolge, Grenze und Favoritenfilter stimmen überein', () async {
       for (var i = 0; i < 6; i++) {
         await lege('a$i', DateTime(2026, 3, 1 + i), favorit: i.isEven);
       }
-      expect((await db.watchRasterzeilen().first).map((z) => z.id),
-          (await db.watchTimeline().first).map((a) => a.id));
-      expect((await db.watchRasterzeilen(limit: 3).first).map((z) => z.id),
-          (await db.watchTimeline(limit: 3).first).map((a) => a.id));
       expect(
-          (await db.watchRasterzeilen(favoritesOnly: true).first)
-              .map((z) => z.id),
-          (await db.watchTimeline(favoritesOnly: true).first).map((a) => a.id));
+        (await db.watchRasterzeilen().first).map((z) => z.id),
+        (await db.watchTimeline().first).map((a) => a.id),
+      );
+      expect(
+        (await db.watchRasterzeilen(limit: 3).first).map((z) => z.id),
+        (await db.watchTimeline(limit: 3).first).map((a) => a.id),
+      );
+      expect(
+        (await db.watchRasterzeilen(favoritesOnly: true).first).map(
+          (z) => z.id,
+        ),
+        (await db.watchTimeline(favoritesOnly: true).first).map((a) => a.id),
+      );
     });
 
     test('der Strom meldet sich, wenn sich etwas ändert', () async {
@@ -193,9 +220,11 @@ void main() {
       expect((await strom.first).length, 1);
       await lege('a2', DateTime(2026, 3, 2));
       await expectLater(
-          strom.firstWhere((z) => z.length == 2).timeout(
-              const Duration(seconds: 5)),
-          completes);
+        strom
+            .firstWhere((z) => z.length == 2)
+            .timeout(const Duration(seconds: 5)),
+        completes,
+      );
     });
   });
 }

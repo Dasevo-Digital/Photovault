@@ -76,15 +76,20 @@ class _LockedFolderScreenState extends State<LockedFolderScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(AppTexte.of(context).einstGesperrterOrdner),
-          bottom: TabBar(tabs: [
-            Tab(text: AppTexte.of(context).gesperrtTabFotos),
-            Tab(text: AppTexte.of(context).gesperrtTabPapierkorb),
-          ]),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: AppTexte.of(context).gesperrtTabFotos),
+              Tab(text: AppTexte.of(context).gesperrtTabPapierkorb),
+            ],
+          ),
         ),
         body: TabBarView(
           children: [
             _LockedAssetsGrid(library: library),
-            _LockedTrashGrid(library: library, onPermanentlyDelete: _permanentlyDelete),
+            _LockedTrashGrid(
+              library: library,
+              onPermanentlyDelete: _permanentlyDelete,
+            ),
           ],
         ),
       ),
@@ -129,17 +134,21 @@ class _LockedAssetsGrid extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                   child: GestureDetector(
-                    onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                      builder: (_) => AssetViewerScreen(
-                        assets: assets,
-                        initialIndex: index,
-                        paths: library.paths,
-                        db: library.db,
-                        library: library,
-                        onToggleFavorite: (a) => library.db.setFavorite(a.id, !a.isFavorite),
-                        onDelete: (a) => library.db.moveToTrash([a.id]),
-                      ),
-                    )),
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(
+                            builder: (_) => AssetViewerScreen(
+                              assets: assets,
+                              initialIndex: index,
+                              paths: library.paths,
+                              db: library.db,
+                              library: library,
+                              onToggleFavorite: (a) =>
+                                  library.db.setFavorite(a.id, !a.isFavorite),
+                              onDelete: (a) => library.db.moveToTrash([a.id]),
+                            ),
+                          ),
+                        ),
                     child: _DecryptedThumbnail(asset: asset, library: library),
                   ),
                 ),
@@ -150,7 +159,11 @@ class _LockedAssetsGrid extends StatelessWidget {
                     color: Colors.black54,
                     shape: const CircleBorder(),
                     child: IconButton(
-                      icon: const Icon(Icons.lock_open, color: Colors.white, size: 18),
+                      icon: const Icon(
+                        Icons.lock_open,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       tooltip: AppTexte.of(context).gesperrtEntfernen,
                       onPressed: () => library.unlockAsset(asset),
                     ),
@@ -168,18 +181,22 @@ class _LockedAssetsGrid extends StatelessWidget {
 class _LockedTrashGrid extends StatelessWidget {
   final LibraryState library;
   final Future<void> Function(AssetData asset) onPermanentlyDelete;
-  const _LockedTrashGrid({required this.library, required this.onPermanentlyDelete});
+  const _LockedTrashGrid({
+    required this.library,
+    required this.onPermanentlyDelete,
+  });
 
   Future<bool?> _confirmDelete(BuildContext context) {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppTexte.of(context).gesperrtEndgueltigTitel),
-        content: Text(
-          AppTexte.of(context).gesperrtEndgueltigText,
-        ),
+        content: Text(AppTexte.of(context).gesperrtEndgueltigText),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppTexte.of(context).allgAbbrechen)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
@@ -223,15 +240,18 @@ class _LockedTrashGrid extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                   child: GestureDetector(
-                    onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                      builder: (_) => AssetViewerScreen(
-                        assets: assets,
-                        initialIndex: index,
-                        paths: library.paths,
-                        db: library.db,
-                        library: library,
-                      ),
-                    )),
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(
+                            builder: (_) => AssetViewerScreen(
+                              assets: assets,
+                              initialIndex: index,
+                              paths: library.paths,
+                              db: library.db,
+                              library: library,
+                            ),
+                          ),
+                        ),
                     child: _DecryptedThumbnail(asset: asset, library: library),
                   ),
                 ),
@@ -242,7 +262,11 @@ class _LockedTrashGrid extends StatelessWidget {
                     color: Colors.black54,
                     shape: const CircleBorder(),
                     child: IconButton(
-                      icon: const Icon(Icons.delete_forever_outlined, color: Colors.white, size: 18),
+                      icon: const Icon(
+                        Icons.delete_forever_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       tooltip: AppTexte.of(context).bestaetigEndgueltigLoeschen,
                       onPressed: () async {
                         final confirm = await _confirmDelete(context);
@@ -258,7 +282,11 @@ class _LockedTrashGrid extends StatelessWidget {
                     color: Colors.black54,
                     shape: const CircleBorder(),
                     child: IconButton(
-                      icon: const Icon(Icons.restore_from_trash_outlined, color: Colors.white, size: 18),
+                      icon: const Icon(
+                        Icons.restore_from_trash_outlined,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       tooltip: AppTexte.of(context).gesperrtWiederherstellen,
                       onPressed: () => library.ausPapierkorbHolen([asset.id]),
                     ),
@@ -296,7 +324,9 @@ class _DecryptedThumbnailState extends State<_DecryptedThumbnail> {
   void initState() {
     super.initState();
     final thumbPath = widget.asset.thumbnailRelativePath;
-    if (thumbPath != null) _decryptedFuture = widget.library.decryptForViewing(thumbPath);
+    if (thumbPath != null) {
+      _decryptedFuture = widget.library.decryptForViewing(thumbPath);
+    }
   }
 
   @override
@@ -307,7 +337,9 @@ class _DecryptedThumbnailState extends State<_DecryptedThumbnail> {
       return Container(
         color: Colors.grey.shade900,
         child: Icon(
-          asset.type == 'VIDEO' ? Icons.videocam_outlined : Icons.image_outlined,
+          asset.type == 'VIDEO'
+              ? Icons.videocam_outlined
+              : Icons.image_outlined,
           color: Colors.white24,
         ),
       );
@@ -319,7 +351,11 @@ class _DecryptedThumbnailState extends State<_DecryptedThumbnail> {
           return Container(
             color: Colors.grey.shade900,
             child: const Center(
-              child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
           );
         }
@@ -330,11 +366,14 @@ class _DecryptedThumbnailState extends State<_DecryptedThumbnail> {
           // volle Vorschaugröße (Prüfrunde 8). Hier zählt es doppelt: Die
           // Datei kommt frisch aus der Entschlüsselung, jedes gesparte
           // Pixel ist eines weniger im Speicher.
-          cacheWidth:
-              (_kachelBreite * MediaQuery.devicePixelRatioOf(context)).round(),
+          cacheWidth: (_kachelBreite * MediaQuery.devicePixelRatioOf(context))
+              .round(),
           errorBuilder: (_, _, _) => Container(
             color: Colors.grey.shade900,
-            child: const Icon(Icons.broken_image_outlined, color: Colors.white24),
+            child: const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white24,
+            ),
           ),
         );
       },

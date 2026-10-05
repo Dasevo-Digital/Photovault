@@ -20,19 +20,22 @@ void main() {
     expect(
       cmake,
       contains('set(APPLICATION_ID "$erwarteteKennung")'),
-      reason: 'Eine Änderung verschiebt den Datenordner bestehender '
+      reason:
+          'Eine Änderung verschiebt den Datenordner bestehender '
           'Installationen. Nur zusammen mit einer Umzugslogik ändern '
           '(siehe LibraryLocation.fruehererSupportordner).',
     );
   });
 
   test('der Starter zeigt auf genau diese Fensterklasse', () {
-    final desktop =
-        File('packaging/flatpak/de.dasevo.photovault.desktop').readAsStringSync();
+    final desktop = File(
+      'packaging/flatpak/de.dasevo.photovault.desktop',
+    ).readAsStringSync();
     expect(
       desktop,
       contains('StartupWMClass=$erwarteteKennung'),
-      reason: 'Stimmt die Klasse nicht, ordnet die Arbeitsumgebung das '
+      reason:
+          'Stimmt die Klasse nicht, ordnet die Arbeitsumgebung das '
           'Fenster keinem Starter zu: kein Symbol, kein Name in der Leiste.',
     );
   });

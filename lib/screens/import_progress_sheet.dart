@@ -21,9 +21,7 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     context: context,
     builder: (context) => AlertDialog(
       title: Text(AppTexte.of(context).importWasTitel),
-      content: Text(
-        AppTexte.of(context).importWasText,
-      ),
+      content: Text(AppTexte.of(context).importWasText),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, _ImportMode.files),
@@ -49,9 +47,23 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: [
-        'jpg', 'jpeg', 'png', 'heic', 'heif', 'avif', 'avifs', 'webp', 'gif', 'bmp', 'tiff',
+        'jpg',
+        'jpeg',
+        'png',
+        'heic',
+        'heif',
+        'avif',
+        'avifs',
+        'webp',
+        'gif',
+        'bmp',
+        'tiff',
         for (final ext in rawImageExtensions) ext.substring(1),
-        'mp4', 'mov', 'avi', 'mkv', 'm4v',
+        'mp4',
+        'mov',
+        'avi',
+        'mkv',
+        'm4v',
       ],
     );
     if (result == null || result.files.isEmpty) return;
@@ -88,7 +100,8 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     context: context,
     isDismissible: false,
     enableDrag: false,
-    builder: (context) => _ImportProgressSheet(library: library, filePaths: paths),
+    builder: (context) =>
+        _ImportProgressSheet(library: library, filePaths: paths),
   );
 }
 
@@ -175,16 +188,18 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
     }
     if (!mounted || assets.isEmpty) return;
     Navigator.of(context).pop();
-    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: assets,
-        initialIndex: 0,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        cullingMode: true,
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: assets,
+          initialIndex: 0,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          cullingMode: true,
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -198,23 +213,30 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _finished ? AppTexte.of(context).importAbgeschlossen : AppTexte.of(context).importLaeuft,
+              _finished
+                  ? AppTexte.of(context).importAbgeschlossen
+                  : AppTexte.of(context).importLaeuft,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             LinearProgressIndicator(value: progress),
             const SizedBox(height: 8),
-            Text('$_done / $_total${_currentFile != null ? ' — $_currentFile' : ''}'),
+            Text(
+              '$_done / $_total${_currentFile != null ? ' — $_currentFile' : ''}',
+            ),
             const SizedBox(height: 16),
             // Die Bilanz steht nur da, wenn es etwas zu sagen gibt -
             // "0 uebersprungen" ist keine Nachricht.
             if (_finished && (_duplikate > 0 || _fehler > 0)) ...[
               Text(
                 [
-                  AppTexte.of(context).importBilanzNeu(_importedAssetIds.length),
+                  AppTexte.of(
+                    context,
+                  ).importBilanzNeu(_importedAssetIds.length),
                   if (_duplikate > 0)
                     AppTexte.of(context).importBilanzDuplikate(_duplikate),
-                  if (_fehler > 0) AppTexte.of(context).importBilanzFehler(_fehler),
+                  if (_fehler > 0)
+                    AppTexte.of(context).importBilanzFehler(_fehler),
                 ].join(' · '),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -229,7 +251,10 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
                 ),
                 const SizedBox(height: 8),
               ],
-              OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: Text(AppTexte.of(context).allgFertig)),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(AppTexte.of(context).allgFertig),
+              ),
             ],
           ],
         ),

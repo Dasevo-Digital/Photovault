@@ -45,8 +45,18 @@ typedef GedcomPerson = ({
 /// Die Monatskürzel, die GEDCOM vorschreibt – englisch und dreistellig,
 /// unabhängig von der Oberflächensprache.
 const _monate = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
 ];
 
 String _datum(DateTime d) => '${d.day} ${_monate[d.month - 1]} ${d.year}';
@@ -54,10 +64,10 @@ String _datum(DateTime d) => '${d.day} ${_monate[d.month - 1]} ${d.year}';
 /// Der GEDCOM-Wert für eine Elternart – `null` für die leibliche, die
 /// im Format die Voreinstellung ist und deshalb nicht dasteht.
 String? _pedi(Verwandtschaft? art) => switch (art) {
-      Verwandtschaft.adoptivelternteil => 'adopted',
-      Verwandtschaft.pflegeelternteil => 'foster',
-      _ => null,
-    };
+  Verwandtschaft.adoptivelternteil => 'adopted',
+  Verwandtschaft.pflegeelternteil => 'foster',
+  _ => null,
+};
 
 /// Zerlegt einen Namen in die GEDCOM-Form `Vorname /Nachname/`.
 ///
@@ -89,10 +99,7 @@ class GedcomFamilie {
 }
 
 /// Stellt die Familien aus dem Verwandtschaftsnetz zusammen.
-List<GedcomFamilie> familien(
-  Verwandtschaftsnetz netz,
-  List<String> personen,
-) {
+List<GedcomFamilie> familien(Verwandtschaftsnetz netz, List<String> personen) {
   final nachEltern = <String, List<String>>{};
   final elternMengen = <String, List<String>>{};
 
@@ -200,9 +207,7 @@ String schreibeGedcom(
       // beiden adoptiert wurde, lässt sich im Format nicht ausdrücken;
       // dann bleibt die Zeile weg, statt eine Hälfte zur ganzen Wahrheit
       // zu erklären.
-      final arten = {
-        for (final e in fam[i].eltern) netz.elternArt(p.id, e),
-      };
+      final arten = {for (final e in fam[i].eltern) netz.elternArt(p.id, e)};
       final pedi = arten.length == 1 ? _pedi(arten.first) : null;
       if (pedi != null) zeilen.add('2 PEDI $pedi');
     }

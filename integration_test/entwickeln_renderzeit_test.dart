@@ -31,29 +31,45 @@ void main() {
       final bild = img.Image(width: 6000, height: 4000);
       for (var y = 0; y < 4000; y += 1) {
         for (var x = 0; x < 6000; x += 1) {
-          bild.setPixelRgb(x, y, (x * 255) ~/ 6000, (y * 255) ~/ 4000,
-              ((x + y) * 255) ~/ 10000);
+          bild.setPixelRgb(
+            x,
+            y,
+            (x * 255) ~/ 6000,
+            (y * 255) ~/ 4000,
+            ((x + y) * 255) ~/ 10000,
+          );
         }
       }
       final quelle = File(p.join(temp.path, 'gross.jpg'))
         ..writeAsBytesSync(img.encodeJpg(bild, quality: 92));
-      print('Quelle: ${(quelle.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB, 6000x4000');
+      print(
+        'Quelle: ${(quelle.lengthSync() / 1024 / 1024).toStringAsFixed(1)} MB, 6000x4000',
+      );
 
       for (final kante in [1200, 1600, 2048]) {
         final zeiten = <int>[];
         for (var i = 0; i < 5; i++) {
           final werte = DevelopAdjustments(
-              exposure: 0.1 * i, temperature: 5000 + i * 200.0, tint: 0);
+            exposure: 0.1 * i,
+            temperature: 5000 + i * 200.0,
+            tint: 0,
+          );
           final uhr = Stopwatch()..start();
-          final bytes = await NativeImageConverter.developImage(quelle,
-              adjustments: werte, maxDimension: kante, quality: 0.85);
+          final bytes = await NativeImageConverter.developImage(
+            quelle,
+            adjustments: werte,
+            maxDimension: kante,
+            quality: 0.85,
+          );
           uhr.stop();
           expect(bytes, isNotNull);
           zeiten.add(uhr.elapsedMilliseconds);
         }
         zeiten.sort();
-        print('Kante $kante: ${zeiten.join(", ")} ms   Mittelwert '
-            '${(zeiten.reduce((a, b) => a + b) / zeiten.length).round()} ms');
+        print(
+          'Kante $kante: ${zeiten.join(", ")} ms   Mittelwert '
+          '${(zeiten.reduce((a, b) => a + b) / zeiten.length).round()} ms',
+        );
       }
     } finally {
       temp.deleteSync(recursive: true);

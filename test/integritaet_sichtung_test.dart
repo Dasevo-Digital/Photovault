@@ -107,8 +107,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_integ_');
     db = AppDatabase(NativeDatabase.memory());
-    paths =
-        await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths;
@@ -128,48 +129,57 @@ void main() {
     final datei = paths.absolute(relativ);
     datei.parent.createSync(recursive: true);
     datei.writeAsBytesSync(einPixel);
-    datei
-        .setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 2)));
+    datei.setLastModifiedSync(
+      DateTime.now().subtract(const Duration(hours: 2)),
+    );
   }
 
   Future<void> zeige(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1400, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: IntegrityCheckScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: IntegrityCheckScreen(library: library),
+      ),
+    );
     // Die Pruefung laeuft in einem **eigenen Isolate**. Dessen Antwort
     // kommt in echter Zeit; die Uhr des Pruefstands ist gestellt. Ohne
     // runAsync wartet man mit einer angehaltenen Uhr auf etwas, das nur
     // die laufende kennt. pumpAndSettle ginge ohnehin nicht, solange
     // sich der Ladering dreht.
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 800)));
+      () => Future<void>.delayed(const Duration(milliseconds: 800)),
+    );
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 20));
     }
   }
 
-  Future<void> aufnahme(String id,
-          {required String original,
-          String? vorschau,
-          bool gesperrt = false}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: original,
-            checksum: 'c$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 3, 5),
-            importedAt: DateTime(2026),
-            thumbnailRelativePath: Value(vorschau),
-            isLocked: Value(gesperrt),
-          ));
+  Future<void> aufnahme(
+    String id, {
+    required String original,
+    String? vorschau,
+    bool gesperrt = false,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: original,
+          checksum: 'c$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026, 3, 5),
+          importedAt: DateTime(2026),
+          thumbnailRelativePath: Value(vorschau),
+          isLocked: Value(gesperrt),
+        ),
+      );
 
   testWidgets('eine verwaiste Datei zeigt sich selbst', (tester) async {
     lege('thumbnails/verwaist.png');
@@ -185,12 +195,16 @@ void main() {
     expect(find.byType(Image), findsWidgets);
   });
 
-  testWidgets('eine fehlende Datei zeigt das Vorschaubild ihrer Aufnahme',
-      (tester) async {
+  testWidgets('eine fehlende Datei zeigt das Vorschaubild ihrer Aufnahme', (
+    tester,
+  ) async {
     // Die Datei fehlt, die Zeile steht - und mit ihr das Vorschaubild.
     lege('thumbnails/da.png');
-    await aufnahme('a1',
-        original: 'originals/weg.jpg', vorschau: 'thumbnails/da.png');
+    await aufnahme(
+      'a1',
+      original: 'originals/weg.jpg',
+      vorschau: 'thumbnails/da.png',
+    );
     await zeige(tester);
 
     expect(find.text('originals/weg.jpg'), findsOneWidget);
@@ -204,23 +218,27 @@ void main() {
     expect(find.text('Ansehen'), findsNothing);
   });
 
-  testWidgets('bei einer gesperrten Aufnahme gibt es nichts zu sehen',
-      (tester) async {
+  testWidgets('bei einer gesperrten Aufnahme gibt es nichts zu sehen', (
+    tester,
+  ) async {
     // Das Vorschaubild ist mitverschluesselt; ein Bild, das sich nicht
     // dekodieren laesst, waere ein leeres Feld - und das sagt weniger
     // als kein Feld.
     lege('thumbnails/gesperrt.png');
-    await aufnahme('a1',
-        original: 'originals/weg.jpg',
-        vorschau: 'thumbnails/gesperrt.png',
-        gesperrt: true);
+    await aufnahme(
+      'a1',
+      original: 'originals/weg.jpg',
+      vorschau: 'thumbnails/gesperrt.png',
+      gesperrt: true,
+    );
     await zeige(tester);
     expect(find.text('originals/weg.jpg'), findsOneWidget);
     expect(find.text('Ansehen'), findsNothing);
   });
 
-  testWidgets('ein Format, das Flutter nicht dekodiert, bekommt keinen Knopf',
-      (tester) async {
+  testWidgets('ein Format, das Flutter nicht dekodiert, bekommt keinen Knopf', (
+    tester,
+  ) async {
     // HEIC und RAW kann Flutter nicht - dort bliebe ein leeres Feld.
     lege('originals/verwaist.heic');
     await zeige(tester);
@@ -236,8 +254,12 @@ void main() {
     await tester.tap(find.text('Datei löschen'));
     await tester.pumpAndSettle();
     expect(find.text('Datei löschen?'), findsWidgets);
-    final bilder = tester.widgetList<Image>(find.descendant(
-        of: find.byType(AlertDialog), matching: find.byType(Image)));
+    final bilder = tester.widgetList<Image>(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(Image),
+      ),
+    );
     expect(bilder, isNotEmpty);
   });
 }

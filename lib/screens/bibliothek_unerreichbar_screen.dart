@@ -64,14 +64,18 @@ class _BibliothekUnerreichbarScreenState
   Future<void> _freigeben(Bibliothekseintrag eintrag) async {
     final texte = AppTexte.of(context);
     final gewaehlt = await LibraryLocation.pickFolder(
-        dialogMessage: texte.unerreichbarDialog(eintrag.name));
+      dialogMessage: texte.unerreichbarDialog(eintrag.name),
+    );
     if (gewaehlt == null || !mounted) return;
     if (!await enthaeltBibliothek(gewaehlt.path)) {
       if (mounted) setState(() => _keineBibliothek = true);
       return;
     }
     await _lauf(() async {
-      final neu = await LibraryLocation.fuegeHinzu(gewaehlt, name: eintrag.name);
+      final neu = await LibraryLocation.fuegeHinzu(
+        gewaehlt,
+        name: eintrag.name,
+      );
       await LibraryLocation.wechsleZu(neu);
       await widget.library.initialize();
     });
@@ -94,8 +98,11 @@ class _BibliothekUnerreichbarScreenState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.folder_off_outlined,
-                    size: 48, color: farben.onSurfaceVariant),
+                Icon(
+                  Icons.folder_off_outlined,
+                  size: 48,
+                  color: farben.onSurfaceVariant,
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   texte.unerreichbarTitel,
@@ -118,11 +125,15 @@ class _BibliothekUnerreichbarScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(texte.sperreOrt,
-                          style: Theme.of(context).textTheme.labelSmall),
+                      Text(
+                        texte.sperreOrt,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
                       const SizedBox(height: AppSpacing.xs),
-                      SelectableText(eintrag.path,
-                          style: Theme.of(context).textTheme.bodySmall),
+                      SelectableText(
+                        eintrag.path,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ],
                   ),
                 ),
@@ -131,10 +142,9 @@ class _BibliothekUnerreichbarScreenState
                   Text(
                     texte.unerreichbarKeineBibliothek,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: farben.error),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: farben.error),
                   ),
                 ],
                 if (_nochImmer) ...[
@@ -142,10 +152,9 @@ class _BibliothekUnerreichbarScreenState
                   Text(
                     texte.unerreichbarNochImmer,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: farben.error),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: farben.error),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.xxl),
@@ -162,8 +171,9 @@ class _BibliothekUnerreichbarScreenState
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
-                  onPressed:
-                      _laeuft ? null : () => _lauf(widget.library.initialize),
+                  onPressed: _laeuft
+                      ? null
+                      : () => _lauf(widget.library.initialize),
                   icon: const Icon(Icons.refresh),
                   label: Text(texte.sperreErneut),
                 ),

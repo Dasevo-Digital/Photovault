@@ -17,7 +17,8 @@ sealed class MaskShapeDefinition {
 
   Map<String, dynamic> toJson();
 
-  static MaskShapeDefinition fromJson(Map<String, dynamic> json) => switch (json['type']) {
+  static MaskShapeDefinition fromJson(Map<String, dynamic> json) =>
+      switch (json['type']) {
         'freehand' => FreehandShape.fromJson(json),
         'ellipse' => EllipseShape.fromJson(json),
         'gradient' => GradientShape.fromJson(json),
@@ -50,18 +51,20 @@ class FreehandShape extends MaskShapeDefinition {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'freehand',
-        'points': [for (final p in points) [p.dx, p.dy]],
-        'strokeWidth': strokeWidth,
-      };
+    'type': 'freehand',
+    'points': [
+      for (final p in points) [p.dx, p.dy],
+    ],
+    'strokeWidth': strokeWidth,
+  };
 
   factory FreehandShape.fromJson(Map<String, dynamic> json) => FreehandShape(
-        points: [
-          for (final p in json['points'] as List<dynamic>)
-            Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
-        ],
-        strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0.03,
-      );
+    points: [
+      for (final p in json['points'] as List<dynamic>)
+        Offset((p[0] as num).toDouble(), (p[1] as num).toDouble()),
+    ],
+    strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0.03,
+  );
 }
 
 /// Ellipse/Kreis mit optionaler Rotation und Randweichzeichnung – klassisch
@@ -90,23 +93,23 @@ class EllipseShape extends MaskShapeDefinition {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'ellipse',
-        'cx': centerX,
-        'cy': centerY,
-        'rx': radiusX,
-        'ry': radiusY,
-        'rotation': rotation,
-        'feather': feather,
-      };
+    'type': 'ellipse',
+    'cx': centerX,
+    'cy': centerY,
+    'rx': radiusX,
+    'ry': radiusY,
+    'rotation': rotation,
+    'feather': feather,
+  };
 
   factory EllipseShape.fromJson(Map<String, dynamic> json) => EllipseShape(
-        centerX: (json['cx'] as num).toDouble(),
-        centerY: (json['cy'] as num).toDouble(),
-        radiusX: (json['rx'] as num).toDouble(),
-        radiusY: (json['ry'] as num).toDouble(),
-        rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
-        feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
-      );
+    centerX: (json['cx'] as num).toDouble(),
+    centerY: (json['cy'] as num).toDouble(),
+    radiusX: (json['rx'] as num).toDouble(),
+    radiusY: (json['ry'] as num).toDouble(),
+    rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
+    feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
+  );
 }
 
 /// Rechteck mit optionaler Rotation und Randweichzeichnung.
@@ -148,23 +151,23 @@ class RectangleShape extends MaskShapeDefinition {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'rectangle',
-        'cx': centerX,
-        'cy': centerY,
-        'hw': halfWidth,
-        'hh': halfHeight,
-        'rotation': rotation,
-        'feather': feather,
-      };
+    'type': 'rectangle',
+    'cx': centerX,
+    'cy': centerY,
+    'hw': halfWidth,
+    'hh': halfHeight,
+    'rotation': rotation,
+    'feather': feather,
+  };
 
   factory RectangleShape.fromJson(Map<String, dynamic> json) => RectangleShape(
-        centerX: (json['cx'] as num).toDouble(),
-        centerY: (json['cy'] as num).toDouble(),
-        halfWidth: (json['hw'] as num).toDouble(),
-        halfHeight: (json['hh'] as num).toDouble(),
-        rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
-        feather: ((json['feather'] as num?)?.toDouble() ?? 0.2).clamp(0.0, 1.0),
-      );
+    centerX: (json['cx'] as num).toDouble(),
+    centerY: (json['cy'] as num).toDouble(),
+    halfWidth: (json['hw'] as num).toDouble(),
+    halfHeight: (json['hh'] as num).toDouble(),
+    rotation: (json['rotation'] as num?)?.toDouble() ?? 0,
+    feather: ((json['feather'] as num?)?.toDouble() ?? 0.2).clamp(0.0, 1.0),
+  );
 }
 
 /// Auswahl nach Farbähnlichkeit – „alles, was so aussieht wie hier".
@@ -205,23 +208,27 @@ class ColorRangeShape extends MaskShapeDefinition {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'colorRange',
-        'px': pointX,
-        'py': pointY,
-        'r': red,
-        'g': green,
-        'b': blue,
-        'tolerance': tolerance,
-        'feather': feather,
-      };
+    'type': 'colorRange',
+    'px': pointX,
+    'py': pointY,
+    'r': red,
+    'g': green,
+    'b': blue,
+    'tolerance': tolerance,
+    'feather': feather,
+  };
 
-  factory ColorRangeShape.fromJson(Map<String, dynamic> json) => ColorRangeShape(
+  factory ColorRangeShape.fromJson(Map<String, dynamic> json) =>
+      ColorRangeShape(
         pointX: (json['px'] as num).toDouble(),
         pointY: (json['py'] as num).toDouble(),
         red: (json['r'] as num).toInt(),
         green: (json['g'] as num).toInt(),
         blue: (json['b'] as num).toInt(),
-        tolerance: ((json['tolerance'] as num?)?.toDouble() ?? 0.25).clamp(0.0, 1.0),
+        tolerance: ((json['tolerance'] as num?)?.toDouble() ?? 0.25).clamp(
+          0.0,
+          1.0,
+        ),
         feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
       );
 }
@@ -248,21 +255,21 @@ class GradientShape extends MaskShapeDefinition {
 
   @override
   Map<String, dynamic> toJson() => {
-        'type': 'gradient',
-        'x1': startX,
-        'y1': startY,
-        'x2': endX,
-        'y2': endY,
-        'feather': feather,
-      };
+    'type': 'gradient',
+    'x1': startX,
+    'y1': startY,
+    'x2': endX,
+    'y2': endY,
+    'feather': feather,
+  };
 
   factory GradientShape.fromJson(Map<String, dynamic> json) => GradientShape(
-        startX: (json['x1'] as num).toDouble(),
-        startY: (json['y1'] as num).toDouble(),
-        endX: (json['x2'] as num).toDouble(),
-        endY: (json['y2'] as num).toDouble(),
-        feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
-      );
+    startX: (json['x1'] as num).toDouble(),
+    startY: (json['y1'] as num).toDouble(),
+    endX: (json['x2'] as num).toDouble(),
+    endY: (json['y2'] as num).toDouble(),
+    feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
+  );
 }
 
 double _smoothstep(double t) {
@@ -284,7 +291,8 @@ double _smoothstep(double t) {
 /// Foto über die Isolatgrenze zu schicken hiesse, es zu kopieren, und bei
 /// einem 24-Megapixel-Bild sind das rund 100 MB.
 Uint8List rasterizeMaskShapeToPngBytes(
-    (MaskShapeDefinition shape, int width, int height, String? quellPfad) args) {
+  (MaskShapeDefinition shape, int width, int height, String? quellPfad) args,
+) {
   final (shape, width, height, quellPfad) = args;
   img.Image? quelle;
   if (shape is ColorRangeShape && quellPfad != null) {
@@ -295,7 +303,8 @@ Uint8List rasterizeMaskShapeToPngBytes(
     }
   }
   return Uint8List.fromList(
-      img.encodePng(rasterizeMaskShape(shape, width, height, quelle: quelle)));
+    img.encodePng(rasterizeMaskShape(shape, width, height, quelle: quelle)),
+  );
 }
 
 /// Rasterisiert eine [MaskShapeDefinition] als Graustufen-Alphamaske (weiß =
@@ -305,8 +314,12 @@ Uint8List rasterizeMaskShapeToPngBytes(
 /// dieselbe Rasterisierung sowohl für die native Kompositierung
 /// (DevelopMasks.maskRelativePath) als auch für das Live-Overlay im
 /// Entwickeln-Screen genutzt wird.
-img.Image rasterizeMaskShape(MaskShapeDefinition shape, int width, int height,
-    {img.Image? quelle}) {
+img.Image rasterizeMaskShape(
+  MaskShapeDefinition shape,
+  int width,
+  int height, {
+  img.Image? quelle,
+}) {
   final mask = img.Image(width: width, height: height);
   switch (shape) {
     case FreehandShape():
@@ -320,7 +333,9 @@ img.Image rasterizeMaskShape(MaskShapeDefinition shape, int width, int height,
     case ColorRangeShape():
       // Ohne Quelle bleibt die Maske schwarz. Eine Farbauswahl ohne Bild zu
       // raten wäre schlimmer als nichts: Sie sähe nach einer Auswahl aus.
-      if (quelle != null) _rasterizeColorRange(mask, shape, width, height, quelle);
+      if (quelle != null) {
+        _rasterizeColorRange(mask, shape, width, height, quelle);
+      }
   }
   return mask;
 }
@@ -329,12 +344,19 @@ img.Image rasterizeMaskShape(MaskShapeDefinition shape, int width, int height,
 /// erweiterten) Bounding-Box statt über das komplette Bild zu iterieren –
 /// bei einem einzelnen langen Pinselstrich auf einem hochauflösenden Foto
 /// macht das den Unterschied zwischen Millisekunden und mehreren Sekunden.
-void _rasterizeFreehand(img.Image mask, FreehandShape shape, int width, int height) {
+void _rasterizeFreehand(
+  img.Image mask,
+  FreehandShape shape,
+  int width,
+  int height,
+) {
   if (shape.points.isEmpty) return;
   final longerEdge = math.max(width, height).toDouble();
   final radius = (shape.strokeWidth * longerEdge / 2).clamp(0.5, longerEdge);
   final radiusSq = radius * radius;
-  final pixelPoints = [for (final p in shape.points) Offset(p.dx * width, p.dy * height)];
+  final pixelPoints = [
+    for (final p in shape.points) Offset(p.dx * width, p.dy * height),
+  ];
 
   void paintDisc(Offset c) {
     final x0 = math.max(0, (c.dx - radius).floor());
@@ -345,7 +367,9 @@ void _rasterizeFreehand(img.Image mask, FreehandShape shape, int width, int heig
       for (var x = x0; x <= x1; x++) {
         final dx = x + 0.5 - c.dx;
         final dy = y + 0.5 - c.dy;
-        if (dx * dx + dy * dy <= radiusSq) mask.setPixelRgb(x, y, 255, 255, 255);
+        if (dx * dx + dy * dy <= radiusSq) {
+          mask.setPixelRgb(x, y, 255, 255, 255);
+        }
       }
     }
   }
@@ -362,12 +386,16 @@ void _rasterizeFreehand(img.Image mask, FreehandShape shape, int width, int heig
       for (var x = x0; x <= x1; x++) {
         final px = x + 0.5 - a.dx;
         final py = y + 0.5 - a.dy;
-        final t = abLenSq == 0 ? 0.0 : ((px * abx + py * aby) / abLenSq).clamp(0.0, 1.0);
+        final t = abLenSq == 0
+            ? 0.0
+            : ((px * abx + py * aby) / abLenSq).clamp(0.0, 1.0);
         final closestX = a.dx + t * abx;
         final closestY = a.dy + t * aby;
         final dx = (x + 0.5) - closestX;
         final dy = (y + 0.5) - closestY;
-        if (dx * dx + dy * dy <= radiusSq) mask.setPixelRgb(x, y, 255, 255, 255);
+        if (dx * dx + dy * dy <= radiusSq) {
+          mask.setPixelRgb(x, y, 255, 255, 255);
+        }
       }
     }
   }
@@ -381,7 +409,12 @@ void _rasterizeFreehand(img.Image mask, FreehandShape shape, int width, int heig
   }
 }
 
-void _rasterizeEllipse(img.Image mask, EllipseShape shape, int width, int height) {
+void _rasterizeEllipse(
+  img.Image mask,
+  EllipseShape shape,
+  int width,
+  int height,
+) {
   final cx = shape.centerX * width;
   final cy = shape.centerY * height;
   final rx = math.max(1.0, shape.radiusX * width);
@@ -415,7 +448,12 @@ void _rasterizeEllipse(img.Image mask, EllipseShape shape, int width, int height
 /// Wie [_rasterizeEllipse], nur mit der Chebyshev-Norm statt der
 /// euklidischen: Statt „wie weit vom Mittelpunkt" zählt „wie weit auf der
 /// grösseren der beiden Achsen" – und genau das ergibt ein Rechteck.
-void _rasterizeRectangle(img.Image mask, RectangleShape shape, int width, int height) {
+void _rasterizeRectangle(
+  img.Image mask,
+  RectangleShape shape,
+  int width,
+  int height,
+) {
   final cx = shape.centerX * width;
   final cy = shape.centerY * height;
   final hw = math.max(1.0, shape.halfWidth * width);
@@ -460,15 +498,23 @@ void _rasterizeRectangle(img.Image mask, RectangleShape shape, int width, int he
 /// wird über die anteilige Position. Eine Vorschau als Quelle macht die
 /// Farbkanten eine Spur weicher und spart das Dekodieren des Originals.
 void _rasterizeColorRange(
-    img.Image mask, ColorRangeShape shape, int width, int height, img.Image quelle) {
+  img.Image mask,
+  ColorRangeShape shape,
+  int width,
+  int height,
+  img.Image quelle,
+) {
   // Rec.-601-Zerlegung, dieselbe Gewichtung wie im Histogramm.
   (double, double, double) zerlege(double r, double g, double b) {
     final y = 0.299 * r + 0.587 * g + 0.114 * b;
     return (y, b - y, r - y);
   }
 
-  final (zielY, zielCb, zielCr) =
-      zerlege(shape.red.toDouble(), shape.green.toDouble(), shape.blue.toDouble());
+  final (zielY, zielCb, zielCr) = zerlege(
+    shape.red.toDouble(),
+    shape.green.toDouble(),
+    shape.blue.toDouble(),
+  );
 
   // Der Abstand wird auf 0..1 gebracht: 255 ist der grösstmögliche
   // Einzelabstand in jedem der drei Anteile.
@@ -496,7 +542,10 @@ void _rasterizeColorRange(
       final maxWert = pixel.maxChannelValue;
       final faktor = maxWert > 0 ? 255.0 / maxWert : 1.0;
       final (py, pcb, pcr) = zerlege(
-          pixel.r * faktor, pixel.g * faktor, pixel.b * faktor);
+        pixel.r * faktor,
+        pixel.g * faktor,
+        pixel.b * faktor,
+      );
 
       final dy2 = (py - zielY) * (py - zielY) * helligkeitsAnteil;
       final dcb = pcb - zielCb;
@@ -517,7 +566,12 @@ void _rasterizeColorRange(
   }
 }
 
-void _rasterizeGradient(img.Image mask, GradientShape shape, int width, int height) {
+void _rasterizeGradient(
+  img.Image mask,
+  GradientShape shape,
+  int width,
+  int height,
+) {
   final startX = shape.startX * width;
   final startY = shape.startY * height;
   final dirX = shape.endX * width - startX;

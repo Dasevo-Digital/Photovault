@@ -122,13 +122,15 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
     // sofort still haben.
     setzeSchwebevorschau(e?.schwebeVorschau ?? true);
     // Die eigene Kartenquelle.
-    setzeEigeneKarte(Eigenkarte.aus(
-      name: e?.eigeneKarteName,
-      url: e?.eigeneKarteUrl,
-      nennung: e?.eigeneKarteNennung,
-      stufe: e?.eigeneKarteStufe,
-      zugestimmt: e?.eigeneKarteZugestimmt ?? false,
-    ));
+    setzeEigeneKarte(
+      Eigenkarte.aus(
+        name: e?.eigeneKarteName,
+        url: e?.eigeneKarteUrl,
+        nennung: e?.eigeneKarteNennung,
+        stufe: e?.eigeneKarteStufe,
+        zugestimmt: e?.eigeneKarteZugestimmt ?? false,
+      ),
+    );
   }
 
   @override
@@ -174,8 +176,9 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 ),
                 theme: buildLightTheme(),
                 darkTheme: buildDarkTheme(),
-                themeMode:
-                    themeModeFromString(settingsSnapshot.data?.themeMode),
+                themeMode: themeModeFromString(
+                  settingsSnapshot.data?.themeMode,
+                ),
                 // null = Systemsprache, siehe localeFromString.
                 locale: localeFromString(settingsSnapshot.data?.sprache),
                 supportedLocales: AppTexte.supportedLocales,
@@ -192,25 +195,25 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 home: library.bibliothekBelegt
                     ? BibliothekBelegtScreen(library: library)
                     : library.unerreichbar != null
-                        ? BibliothekUnerreichbarScreen(library: library)
+                    ? BibliothekUnerreichbarScreen(library: library)
                     : library.initialisierungsfehler != null
-                        ? InitialisierungsfehlerScreen(
-                            fehler: library.initialisierungsfehler!,
-                            erneutVersuchen: library.initialize,
-                          )
-                        : !library.isReady
-                            ? const Scaffold(
-                                body:
-                                    Center(child: CircularProgressIndicator()))
-                            // Der Bereich fuer die Schwebe-Vorschau liegt
-                            // ueber allem, was Kacheln zeigt - und es gibt
-                            // genau einen davon, weil es genau einen
-                            // Abspieler geben soll.
-                            : SchwebevorschauBereich(
-                                db: library.db,
-                                paths: library.paths,
-                                child: HomeShell(library: library),
-                              ),
+                    ? InitialisierungsfehlerScreen(
+                        fehler: library.initialisierungsfehler!,
+                        erneutVersuchen: library.initialize,
+                      )
+                    : !library.isReady
+                    ? const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      )
+                    // Der Bereich fuer die Schwebe-Vorschau liegt
+                    // ueber allem, was Kacheln zeigt - und es gibt
+                    // genau einen davon, weil es genau einen
+                    // Abspieler geben soll.
+                    : SchwebevorschauBereich(
+                        db: library.db,
+                        paths: library.paths,
+                        child: HomeShell(library: library),
+                      ),
               );
             },
           );

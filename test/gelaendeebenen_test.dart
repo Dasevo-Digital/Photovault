@@ -18,8 +18,11 @@ void main() {
         beschriftung: true,
       ).ebenen) {
         for (final platz in ['{z}', '{x}', '{y}']) {
-          expect(e.urlVorlage, contains(platz),
-              reason: '${e.name} kennt $platz nicht');
+          expect(
+            e.urlVorlage,
+            contains(platz),
+            reason: '${e.name} kennt $platz nicht',
+          );
         }
       }
       // Und keine unaufgelösten Reste - ein `{s}` in der Adresse ergibt
@@ -38,12 +41,18 @@ void main() {
       luftbildEbene,
       wanderwegeEbene,
       strassenEbene,
-      orteEbene
+      orteEbene,
     ]) {
-      expect(e.hoechsteStufe, lessThanOrEqualTo(texturHoechsteStufe),
-          reason: e.name);
-      expect(e.hoechsteStufe, greaterThanOrEqualTo(texturGrundstufe),
-          reason: '${e.name} bliebe unter der Blockgroesse');
+      expect(
+        e.hoechsteStufe,
+        lessThanOrEqualTo(texturHoechsteStufe),
+        reason: e.name,
+      );
+      expect(
+        e.hoechsteStufe,
+        greaterThanOrEqualTo(texturGrundstufe),
+        reason: '${e.name} bliebe unter der Blockgroesse',
+      );
     }
   });
 
@@ -52,21 +61,28 @@ void main() {
     // 18 beruehrte ein Ueberflug sechzehnmal so viele Kacheln wie bei
     // 16. Eine Linienzeichnung vertraegt das Hochskalieren, ein Luftbild
     // nicht.
-    expect(wanderwegeEbene.hoechsteStufe,
-        lessThan(luftbildEbene.hoechsteStufe));
+    expect(
+      wanderwegeEbene.hoechsteStufe,
+      lessThan(luftbildEbene.hoechsteStufe),
+    );
   });
 
   test('OpenTopoMap bekommt weniger zugemutet als Esri', () {
     // Gemessen: OpenTopoMap rendert bei Bedarf, ein Ueberflug wollte 88
     // Bloecke auf Stufe 17 und bekam in zwei Minuten 31 davon.
-    expect(Gelaendegrund.wanderkarte.hoechsteStufe,
-        lessThan(Gelaendegrund.luftbild.hoechsteStufe));
+    expect(
+      Gelaendegrund.wanderkarte.hoechsteStufe,
+      lessThan(Gelaendegrund.luftbild.hoechsteStufe),
+    );
   });
 
   group('Die Namensnennung', () {
     test('nennt jede beteiligte Quelle genau einmal', () {
       const karte = Gelaendekarte(
-          grund: Gelaendegrund.luftbild, wege: true, beschriftung: true);
+        grund: Gelaendegrund.luftbild,
+        wege: true,
+        beschriftung: true,
+      );
       final n = karte.nennung;
       expect(n, contains('Esri'));
       expect(n, contains('waymarkedtrails'));
@@ -79,8 +95,7 @@ void main() {
     test('nennt nichts, was nicht im Bild steht', () {
       const nurLuft = Gelaendekarte(grund: Gelaendegrund.luftbild);
       expect(nurLuft.nennung, isNot(contains('waymarkedtrails')));
-      const mitWegen =
-          Gelaendekarte(grund: Gelaendegrund.luftbild, wege: true);
+      const mitWegen = Gelaendekarte(grund: Gelaendegrund.luftbild, wege: true);
       expect(mitWegen.nennung, contains('waymarkedtrails'));
     });
 
@@ -91,15 +106,17 @@ void main() {
     });
   });
 
-  test('eine Nummer ausserhalb der Reihe faellt auf die Wanderkarte zurueck',
-      () {
-    // Der Grund, warum in der Datenbank eine Zahl steht und kein Name:
-    // Ein Name aus einer aelteren Fassung koennte einer sein, den es
-    // nicht mehr gibt.
-    expect(gelaendegrundAus(-1), Gelaendegrund.wanderkarte);
-    expect(gelaendegrundAus(99), Gelaendegrund.wanderkarte);
-    for (var i = 0; i < Gelaendegrund.values.length; i++) {
-      expect(gelaendegrundAus(i), Gelaendegrund.values[i]);
-    }
-  });
+  test(
+    'eine Nummer ausserhalb der Reihe faellt auf die Wanderkarte zurueck',
+    () {
+      // Der Grund, warum in der Datenbank eine Zahl steht und kein Name:
+      // Ein Name aus einer aelteren Fassung koennte einer sein, den es
+      // nicht mehr gibt.
+      expect(gelaendegrundAus(-1), Gelaendegrund.wanderkarte);
+      expect(gelaendegrundAus(99), Gelaendegrund.wanderkarte);
+      for (var i = 0; i < Gelaendegrund.values.length; i++) {
+        expect(gelaendegrundAus(i), Gelaendegrund.values[i]);
+      }
+    },
+  );
 }

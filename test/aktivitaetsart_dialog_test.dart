@@ -17,55 +17,63 @@ void main() {
   tearDown(() => db.close());
 
   Future<void> aktivitaet(String id, String art) => db.aktivitaetAnlegen(
-        AktivitaetenCompanion.insert(
-          id: id,
-          name: id,
-          art: art,
-          von: DateTime(2026, 6, 1, 9),
-          bis: DateTime(2026, 6, 1, 12),
-          angelegtAm: DateTime(2026),
-        ),
-        const [],
-      );
+    AktivitaetenCompanion.insert(
+      id: id,
+      name: id,
+      art: art,
+      von: DateTime(2026, 6, 1, 9),
+      bis: DateTime(2026, 6, 1, 12),
+      angelegtAm: DateTime(2026),
+    ),
+    const [],
+  );
 
   /// Öffnet das Fenster und legt das Ergebnis in [ergebnisse] ab.
   final ergebnisse = <String, String?>{};
 
   Future<void> zeige(WidgetTester tester, {String? aktuell}) async {
     ergebnisse.clear();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                ergebnisse['art'] =
-                    await frageAktivitaetsart(context, db: db, aktuell: aktuell);
-              },
-              child: const Text('auf'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  ergebnisse['art'] = await frageAktivitaetsart(
+                    context,
+                    db: db,
+                    aktuell: aktuell,
+                  );
+                },
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('die mitgelieferten Arten stehen darin, Spaziergang zuerst',
-      (tester) async {
+  testWidgets('die mitgelieferten Arten stehen darin, Spaziergang zuerst', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.text('Spaziergang'), findsOneWidget);
     expect(find.text('Wanderung'), findsOneWidget);
     expect(find.text('Sonstiges'), findsOneWidget);
     // Der Spaziergang steht über der Wanderung – vom Kürzeren zum
     // Längeren, so wie die Aufzählung sie führt.
-    expect(tester.getTopLeft(find.text('Spaziergang')).dy,
-        lessThan(tester.getTopLeft(find.text('Wanderung')).dy));
+    expect(
+      tester.getTopLeft(find.text('Spaziergang')).dy,
+      lessThan(tester.getTopLeft(find.text('Wanderung')).dy),
+    );
   });
 
   testWidgets('eine gewählte Art kommt zurück', (tester) async {
@@ -94,8 +102,9 @@ void main() {
     expect(ergebnisse['art'], 'Konzert', reason: 'ohne Leerzeichen ringsum');
   });
 
-  testWidgets('wer eine mitgelieferte eintippt, bekommt die mitgelieferte',
-      (tester) async {
+  testWidgets('wer eine mitgelieferte eintippt, bekommt die mitgelieferte', (
+    tester,
+  ) async {
     // Sonst stünden zwei Einträge namens „Wanderung" nebeneinander,
     // einer davon ohne Symbol und ohne Übersetzung.
     await zeige(tester);

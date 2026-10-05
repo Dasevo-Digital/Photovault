@@ -10,7 +10,8 @@ import 'modellthreads.dart';
 
 export 'face_postprocess.dart' show DetectedFace;
 
-const int _yunetInputSize = 640; // entspricht der im ONNX-Graph fest hinterlegten Größe
+const int _yunetInputSize =
+    640; // entspricht der im ONNX-Graph fest hinterlegten Größe
 const List<int> _yunetStrides = [8, 16, 32];
 const int _sfaceInputSize = 112;
 
@@ -57,12 +58,16 @@ class FaceEngineService {
   static Future<FaceEngineService?> load(String modelsDir) async {
     if (!isDetectionAvailable(modelsDir)) return null;
     final ort = OnnxRuntime();
-    final detector = await ort.createSession('$modelsDir/face_detection_yunet.onnx',
-        options: modelloptionen());
+    final detector = await ort.createSession(
+      '$modelsDir/face_detection_yunet.onnx',
+      options: modelloptionen(),
+    );
     OrtSession? recognizer;
     if (isRecognitionAvailable(modelsDir)) {
-      recognizer = await ort.createSession('$modelsDir/face_recognition_sface.onnx',
-          options: modelloptionen());
+      recognizer = await ort.createSession(
+        '$modelsDir/face_recognition_sface.onnx',
+        options: modelloptionen(),
+      );
     }
     return FaceEngineService._(detector, recognizer);
   }
@@ -79,8 +84,15 @@ class FaceEngineService {
   /// zusätzlich für Gesichts-Crops und die CLIP-Einbettung – das (teure)
   /// Dekodieren einer großen JPEG/HEIC-Vorschau mehrfach zu wiederholen wäre
   /// verschwendete Rechenzeit.
-  Future<List<DetectedFace>> detectFaces(img.Image decoded, {double scoreThreshold = 0.7}) async {
-    final resized = img.copyResize(decoded, width: _yunetInputSize, height: _yunetInputSize);
+  Future<List<DetectedFace>> detectFaces(
+    img.Image decoded, {
+    double scoreThreshold = 0.7,
+  }) async {
+    final resized = img.copyResize(
+      decoded,
+      width: _yunetInputSize,
+      height: _yunetInputSize,
+    );
 
     // YuNet (Teil der OpenCV-DNN-Familie) erwartet BGR-Kanalreihenfolge, kein RGB.
     final chw = Float32List(3 * _yunetInputSize * _yunetInputSize);
@@ -95,7 +107,12 @@ class FaceEngineService {
       }
     }
 
-    final inputTensor = await OrtValue.fromList(chw, [1, 3, _yunetInputSize, _yunetInputSize]);
+    final inputTensor = await OrtValue.fromList(chw, [
+      1,
+      3,
+      _yunetInputSize,
+      _yunetInputSize,
+    ]);
     // Freigeben gehört ins finally, nicht dahinter: Wirft run() oder das
     // Auspacken der Ausgabezweige, bliebe der Eingabetensor als nativer
     // Speicher liegen, den der Dart-Sammler nie zurückholt. Dieser Pfad
@@ -121,7 +138,10 @@ class FaceEngineService {
           for (var c = 0; c < gridSize; c++) {
             final cellIdx = r * gridSize + c;
             if (cellIdx >= cls.length || cellIdx >= obj.length) continue;
-            final score = FacePostprocess.combinedScore(cls[cellIdx], obj[cellIdx]);
+            final score = FacePostprocess.combinedScore(
+              cls[cellIdx],
+              obj[cellIdx],
+            );
             if (score < scoreThreshold) continue;
 
             final bboxOffset = cellIdx * 4;
@@ -141,18 +161,20 @@ class FaceEngineService {
               }
             }
 
-            candidates.add(FacePostprocess.decodeBox(
-              row: r,
-              col: c,
-              stride: stride,
-              dx: bbox[bboxOffset],
-              dy: bbox[bboxOffset + 1],
-              dw: bbox[bboxOffset + 2],
-              dh: bbox[bboxOffset + 3],
-              inputSize: _yunetInputSize,
-              score: score,
-              landmarks: landmarks,
-            ));
+            candidates.add(
+              FacePostprocess.decodeBox(
+                row: r,
+                col: c,
+                stride: stride,
+                dx: bbox[bboxOffset],
+                dy: bbox[bboxOffset + 1],
+                dw: bbox[bboxOffset + 2],
+                dh: bbox[bboxOffset + 3],
+                inputSize: _yunetInputSize,
+                score: score,
+                landmarks: landmarks,
+              ),
+            );
           }
         }
       }
@@ -185,7 +207,11 @@ class FaceEngineService {
   Future<Float32List?> _embedPreparedFace(img.Image prepared) async {
     final recognizer = _recognizer;
     if (recognizer == null) return null;
-    final resized = img.copyResize(prepared, width: _sfaceInputSize, height: _sfaceInputSize);
+    final resized = img.copyResize(
+      prepared,
+      width: _sfaceInputSize,
+      height: _sfaceInputSize,
+    );
 
     final chw = Float32List(3 * _sfaceInputSize * _sfaceInputSize);
     var idx = 0;
@@ -199,10 +225,17 @@ class FaceEngineService {
       }
     }
 
-    final inputTensor = await OrtValue.fromList(chw, [1, 3, _sfaceInputSize, _sfaceInputSize]);
+    final inputTensor = await OrtValue.fromList(chw, [
+      1,
+      3,
+      _sfaceInputSize,
+      _sfaceInputSize,
+    ]);
     Map<String, OrtValue>? outputs;
     try {
-      outputs = await recognizer.run({recognizer.inputNames.first: inputTensor});
+      outputs = await recognizer.run({
+        recognizer.inputNames.first: inputTensor,
+      });
       final raw = await _asDoubleList(outputs.values.first);
       if (raw == null) return null;
       return _l2Normalize(Float32List.fromList(raw));
@@ -219,11 +252,16 @@ class FaceEngineService {
   /// `FaceRecognizerSF::alignCrop`-Referenzpunkten (bzw. dem gleichen
   /// ArcFace-Standard-Template).
   static const List<double> _sfaceTemplate = [
-    38.2946, 51.6963,
-    73.5318, 51.5014,
-    56.0252, 71.7366,
-    41.5493, 92.3655,
-    70.7299, 92.2041,
+    38.2946,
+    51.6963,
+    73.5318,
+    51.5014,
+    56.0252,
+    71.7366,
+    41.5493,
+    92.3655,
+    70.7299,
+    92.2041,
   ];
 
   /// Richtet ein erkanntes Gesicht anhand seiner 5 Landmarks per
@@ -259,7 +297,11 @@ class FaceEngineService {
   /// transformation i.A. auf Zwischenpixel-Koordinaten im Quellbild abbildet.
   /// Koordinaten außerhalb des Bildes werden geklemmt (Rand wird wiederholt)
   /// statt schwarze Ränder zu erzeugen.
-  static (double, double, double) _bilinearSample(img.Image src, double x, double y) {
+  static (double, double, double) _bilinearSample(
+    img.Image src,
+    double x,
+    double y,
+  ) {
     final maxX = src.width - 1, maxY = src.height - 1;
     final cx = x.clamp(0.0, maxX.toDouble());
     final cy = y.clamp(0.0, maxY.toDouble());
@@ -279,9 +321,24 @@ class FaceEngineService {
     }
 
     return (
-      lerp2(p00.r.toDouble(), p10.r.toDouble(), p01.r.toDouble(), p11.r.toDouble()),
-      lerp2(p00.g.toDouble(), p10.g.toDouble(), p01.g.toDouble(), p11.g.toDouble()),
-      lerp2(p00.b.toDouble(), p10.b.toDouble(), p01.b.toDouble(), p11.b.toDouble()),
+      lerp2(
+        p00.r.toDouble(),
+        p10.r.toDouble(),
+        p01.r.toDouble(),
+        p11.r.toDouble(),
+      ),
+      lerp2(
+        p00.g.toDouble(),
+        p10.g.toDouble(),
+        p01.g.toDouble(),
+        p11.g.toDouble(),
+      ),
+      lerp2(
+        p00.b.toDouble(),
+        p10.b.toDouble(),
+        p01.b.toDouble(),
+        p11.b.toDouble(),
+      ),
     );
   }
 
@@ -323,16 +380,27 @@ class FaceEngineService {
   /// der Platte einzulesen.
   static img.Image cropFaceImage(img.Image decoded, DetectedFace box) {
     const pad = 0.15;
-    final x = ((box.x - box.width * pad) * decoded.width).clamp(0, decoded.width - 1).toInt();
-    final y = ((box.y - box.height * pad) * decoded.height).clamp(0, decoded.height - 1).toInt();
-    final w = ((box.width * (1 + 2 * pad)) * decoded.width).clamp(1, decoded.width - x).toInt();
-    final h = ((box.height * (1 + 2 * pad)) * decoded.height).clamp(1, decoded.height - y).toInt();
+    final x = ((box.x - box.width * pad) * decoded.width)
+        .clamp(0, decoded.width - 1)
+        .toInt();
+    final y = ((box.y - box.height * pad) * decoded.height)
+        .clamp(0, decoded.height - 1)
+        .toInt();
+    final w = ((box.width * (1 + 2 * pad)) * decoded.width)
+        .clamp(1, decoded.width - x)
+        .toInt();
+    final h = ((box.height * (1 + 2 * pad)) * decoded.height)
+        .clamp(1, decoded.height - y)
+        .toInt();
 
     final cropped = img.copyCrop(decoded, x: x, y: y, width: w, height: h);
     return img.copyResize(cropped, width: 160, height: 160);
   }
 
-  static Future<File> saveFaceCrop(img.Image croppedThumb, File targetFile) async {
+  static Future<File> saveFaceCrop(
+    img.Image croppedThumb,
+    File targetFile,
+  ) async {
     await targetFile.create(recursive: true);
     await targetFile.writeAsBytes(img.encodeJpg(croppedThumb, quality: 85));
     return targetFile;

@@ -38,9 +38,9 @@ enum Aktivitaetsart {
   /// [sonstiges] – eine Zeile aus einer neueren Fassung soll nicht die
   /// ganze Liste zum Absturz bringen.
   static Aktivitaetsart aus(String s) => Aktivitaetsart.values.firstWhere(
-        (a) => a.name == s,
-        orElse: () => Aktivitaetsart.sonstiges,
-      );
+    (a) => a.name == s,
+    orElse: () => Aktivitaetsart.sonstiges,
+  );
 }
 
 /// Ob diese Kennung eine der mitgelieferten Arten ist.
@@ -65,7 +65,10 @@ bool istBekannteArt(String kennung) =>
 /// Übersetzung. [bekannteNamen] sind die übersetzten Namen der
 /// mitgelieferten Arten, hereingegeben, damit dieser Dienst ohne
 /// Übersetzungsapparat auskommt.
-String? eigeneArtKennung(String eingabe, Map<Aktivitaetsart, String> bekannteNamen) {
+String? eigeneArtKennung(
+  String eingabe,
+  Map<Aktivitaetsart, String> bekannteNamen,
+) {
   final sauber = eingabe.trim();
   if (sauber.isEmpty) return null;
   final klein = sauber.toLowerCase();
@@ -168,15 +171,21 @@ class Aktivitaetsvorschlag {
 /// von einigen hundert Metern, ohne dass jemand aufgestanden wäre. Was
 /// näher als [_wegGlaettungKm] am zuletzt gezählten Punkt liegt, ist
 /// derselbe Punkt.
-double strecke(Iterable<({double breite, double laenge, DateTime zeit})> punkte,
-    {double glaettungKm = _wegGlaettungKm}) {
+double strecke(
+  Iterable<({double breite, double laenge, DateTime zeit})> punkte, {
+  double glaettungKm = _wegGlaettungKm,
+}) {
   final sortiert = punkte.toList()..sort((a, b) => a.zeit.compareTo(b.zeit));
   if (sortiert.length < 2) return 0;
   var summe = 0.0;
   var letzter = sortiert.first;
   for (final p in sortiert.skip(1)) {
     final d = ReverseGeocoder.haversineKm(
-        letzter.breite, letzter.laenge, p.breite, p.laenge);
+      letzter.breite,
+      letzter.laenge,
+      p.breite,
+      p.laenge,
+    );
     if (d < glaettungKm) continue;
     summe += d;
     letzter = p;
@@ -255,11 +264,18 @@ List<Aktivitaetsvorschlag> erkenneAktivitaeten(
       for (final a in gruppe)
         (breite: a.breite, laenge: a.laenge, zeit: a.zeit),
     ]);
-    final weitWeg = wohnort != null &&
-        gruppe.any((a) =>
-            ReverseGeocoder.haversineKm(
-                a.breite, a.laenge, wohnort.breite, wohnort.laenge) >=
-            mindestentfernungKm);
+    final weitWeg =
+        wohnort != null &&
+        gruppe.any(
+          (a) =>
+              ReverseGeocoder.haversineKm(
+                a.breite,
+                a.laenge,
+                wohnort.breite,
+                wohnort.laenge,
+              ) >=
+              mindestentfernungKm,
+        );
     // Bewegung ODER Entfernung: Beides heisst „losgegangen", nur auf
     // verschiedene Weise. Beides zu verlangen striche die Fahrt zum
     // Wildpark; keines von beidem zu verlangen machte jeden Tag im
@@ -283,7 +299,8 @@ List<Aktivitaetsvorschlag> erkenneAktivitaeten(
       // Der Kalendertag trennt zusätzlich zur Lücke: „Am 4. Juni" ist
       // die Überschrift, unter der man eine Unternehmung sucht, und
       // eine, die über Mitternacht läuft, stünde unter keiner.
-      final anderertag = a.zeit.day != letzte.day ||
+      final anderertag =
+          a.zeit.day != letzte.day ||
           a.zeit.month != letzte.month ||
           a.zeit.year != letzte.year;
       if (anderertag || a.zeit.difference(letzte).inMinutes > lueckeMinuten) {

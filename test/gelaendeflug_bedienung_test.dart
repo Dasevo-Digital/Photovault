@@ -26,15 +26,17 @@ void main() {
             400 + 200 * math.sin(x / n * math.pi) * math.sin(y / n * math.pi);
       }
     }
-    return baueNetz(Hoehengitter(
-      spalten: n,
-      zeilen: n,
-      hoehen: hoehen,
-      nord: 50.63,
-      sued: 50.60,
-      west: 9.85,
-      ost: 9.91,
-    ));
+    return baueNetz(
+      Hoehengitter(
+        spalten: n,
+        zeilen: n,
+        hoehen: hoehen,
+        nord: 50.63,
+        sued: 50.60,
+        west: 9.85,
+        ost: 9.91,
+      ),
+    );
   }
 
   /// Eine Spur quer über den Hügel, 2 km lang, gleichmässig in 20
@@ -79,8 +81,11 @@ void main() {
   testWidgets('ohne Spur gibt es keine Flugleiste', (tester) async {
     await tester.pumpWidget(bildschirm(mitSpur: false));
     await tester.pump();
-    expect(find.byType(Flugleiste), findsNothing,
-        reason: 'ein Flug über nichts wäre ein Knopf, der nichts tut');
+    expect(
+      find.byType(Flugleiste),
+      findsNothing,
+      reason: 'ein Flug über nichts wäre ein Knopf, der nichts tut',
+    );
   });
 
   testWidgets('mit Spur steht der Startknopf da', (tester) async {
@@ -129,18 +134,20 @@ void main() {
         .where((s) => s.contains('km/h'))
         .toList();
     expect(tempotexte, hasLength(1));
-    final zahl = double.parse(RegExp(r'[0-9]+[.,][0-9]+')
-        .firstMatch(tempotexte.single)!
-        .group(0)!
-        .replaceAll(',', '.'));
+    final zahl = double.parse(
+      RegExp(
+        r'[0-9]+[.,][0-9]+',
+      ).firstMatch(tempotexte.single)!.group(0)!.replaceAll(',', '.'),
+    );
     expect(zahl, closeTo(6.1, 0.3), reason: 'km/h, nicht m/s');
 
     await tester.tap(find.byIcon(Icons.pause_circle_outline));
     await tester.pump();
   });
 
-  testWidgets('ohne Zeitstempel sagt die Leiste das, statt zu schweigen',
-      (tester) async {
+  testWidgets('ohne Zeitstempel sagt die Leiste das, statt zu schweigen', (
+    tester,
+  ) async {
     await tester.pumpWidget(bildschirm(mitZeit: false));
     await tester.pump();
     final t = texte(tester);
@@ -151,8 +158,11 @@ void main() {
     // und der Grund für die Lücke ebenfalls.
     expect(find.text(t.flugTempo), findsNothing);
     expect(find.text(t.flugHoehe), findsOneWidget);
-    expect(find.text(t.flugOhneZeit), findsNothing,
-        reason: 'der Hinweis gilt nur, wenn gar keine Zahl übrig bleibt');
+    expect(
+      find.text(t.flugOhneZeit),
+      findsNothing,
+      reason: 'der Hinweis gilt nur, wenn gar keine Zahl übrig bleibt',
+    );
 
     await tester.tap(find.byIcon(Icons.pause_circle_outline));
     await tester.pump();
@@ -173,16 +183,21 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.pause_circle_outline));
     await tester.pump(const Duration(seconds: 2));
-    expect(tester.widget<Slider>(find.byType(Slider)).value, unterwegs,
-        reason: 'angehalten heisst angehalten');
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      unterwegs,
+      reason: 'angehalten heisst angehalten',
+    );
 
     // Und der Knopf bietet jetzt das Weiterfliegen an, nicht den Start.
     expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
     await tester.tap(find.byIcon(Icons.play_circle_outline));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(tester.widget<Slider>(find.byType(Slider)).value,
-        greaterThan(unterwegs));
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      greaterThan(unterwegs),
+    );
 
     await tester.tap(find.byIcon(Icons.pause_circle_outline));
     await tester.pump();
@@ -198,15 +213,20 @@ void main() {
     final leiste = tester.widget<Slider>(find.byType(Slider));
     leiste.onChanged!(0.8);
     await tester.pump();
-    expect(tester.widget<Slider>(find.byType(Slider)).value, closeTo(0.8, 1e-9));
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      closeTo(0.8, 1e-9),
+    );
     // Spulen hält an – sonst liefe der Flug unter der Hand weiter,
     // während jemand eine Stelle sucht.
     await tester.pump(const Duration(seconds: 2));
-    expect(tester.widget<Slider>(find.byType(Slider)).value, closeTo(0.8, 1e-9));
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      closeTo(0.8, 1e-9),
+    );
   });
 
-  testWidgets('am Ende bietet der Knopf einen zweiten Lauf an',
-      (tester) async {
+  testWidgets('am Ende bietet der Knopf einen zweiten Lauf an', (tester) async {
     await tester.pumpWidget(bildschirm());
     await tester.pump();
     await tester.tap(find.byIcon(Icons.flight_takeoff));
@@ -214,8 +234,11 @@ void main() {
     tester.widget<Slider>(find.byType(Slider)).onChanged!(1.0);
     await tester.pump();
 
-    expect(find.byIcon(Icons.replay), findsOneWidget,
-        reason: 'am Ende stehen bleiben, aber den Weg zurück anbieten');
+    expect(
+      find.byIcon(Icons.replay),
+      findsOneWidget,
+      reason: 'am Ende stehen bleiben, aber den Weg zurück anbieten',
+    );
   });
 
   testWidgets('„Zur Übersicht" beendet den Flug', (tester) async {
@@ -254,24 +277,27 @@ void main() {
     // genau den Knopf, der den Flug startet.
     const marke = Key('fussnote-links');
     List<Widget> zettel() => const [
-          KeyedSubtree(key: marke, child: Text('Ziehen dreht')),
-          Text('Kartendaten'),
-        ];
+      KeyedSubtree(key: marke, child: Text('Ziehen dreht')),
+      Text('Kartendaten'),
+    ];
 
-    testWidgets('die Fussnote endet oberhalb des Startknopfs',
-        (tester) async {
+    testWidgets('die Fussnote endet oberhalb des Startknopfs', (tester) async {
       await tester.pumpWidget(bildschirm(fussnoten: zettel()));
       await tester.pump();
 
       final fuss = tester.getRect(find.byKey(marke));
       final knopf = tester.getRect(find.byIcon(Icons.flight_takeoff));
-      expect(fuss.bottom, lessThanOrEqualTo(knopf.top),
-          reason: 'die Erklaerung darf den Startknopf nicht beruehren');
+      expect(
+        fuss.bottom,
+        lessThanOrEqualTo(knopf.top),
+        reason: 'die Erklaerung darf den Startknopf nicht beruehren',
+      );
       expect(fuss.overlaps(knopf), isFalse);
     });
 
-    testWidgets('auch waehrend des Fluges, wenn die Leiste hoeher wird',
-        (tester) async {
+    testWidgets('auch waehrend des Fluges, wenn die Leiste hoeher wird', (
+      tester,
+    ) async {
       // Im Flug wachsen Messwerte und Hoehenprofil in die Leiste hinein.
       // Eine fest gewaehlte Hoehe waere hier wieder falsch.
       await tester.pumpWidget(bildschirm(fussnoten: zettel()));
@@ -286,16 +312,19 @@ void main() {
       expect(fuss.overlaps(leiste), isFalse);
     });
 
-    testWidgets('ohne Spur stehen sie trotzdem am unteren Rand',
-        (tester) async {
-      await tester.pumpWidget(
-          bildschirm(mitSpur: false, fussnoten: zettel()));
+    testWidgets('ohne Spur stehen sie trotzdem am unteren Rand', (
+      tester,
+    ) async {
+      await tester.pumpWidget(bildschirm(mitSpur: false, fussnoten: zettel()));
       await tester.pump();
       final fuss = tester.getRect(find.byKey(marke));
       final ganz = tester.getRect(find.byType(Gelaendeansicht));
       expect(fuss.bottom, lessThanOrEqualTo(ganz.bottom));
-      expect(ganz.bottom - fuss.bottom, lessThan(40),
-          reason: 'ohne Flugleiste gehoeren sie nach unten');
+      expect(
+        ganz.bottom - fuss.bottom,
+        lessThan(40),
+        reason: 'ohne Flugleiste gehoeren sie nach unten',
+      );
     });
   });
 }

@@ -21,23 +21,26 @@ double bildWischZoom({
   required double wischWegY,
   required double kleinster,
   required double groesster,
-}) =>
-    (startZoom * math.exp(-wischWegY * bildWischFaktor))
-        .clamp(kleinster, groesster);
+}) => (startZoom * math.exp(-wischWegY * bildWischFaktor)).clamp(
+  kleinster,
+  groesster,
+);
 
 /// Ob diese Tastenkombination den Zoom auslösen soll.
 ///
 /// Command (macOS) oder Strg (Linux/Windows) – beide werden überall
 /// angenommen, wie schon bei der Rasterauswahl: Eine externe Tastatur an
 /// einem Mac meldet je nach Belegung das eine oder das andere.
-bool zoomtaste(Set<LogicalKeyboardKey> gedrueckt) => gedrueckt.any({
-      LogicalKeyboardKey.meta,
-      LogicalKeyboardKey.metaLeft,
-      LogicalKeyboardKey.metaRight,
-      LogicalKeyboardKey.control,
-      LogicalKeyboardKey.controlLeft,
-      LogicalKeyboardKey.controlRight,
-    }.contains);
+bool zoomtaste(Set<LogicalKeyboardKey> gedrueckt) => gedrueckt.any(
+  {
+    LogicalKeyboardKey.meta,
+    LogicalKeyboardKey.metaLeft,
+    LogicalKeyboardKey.metaRight,
+    LogicalKeyboardKey.control,
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.controlRight,
+  }.contains,
+);
 
 /// Legt Zoom per Wischgeste über eine [PhotoView].
 ///
@@ -81,25 +84,25 @@ class _BildZoomGestenState extends State<BildZoomGesten> {
 
   @override
   Widget build(BuildContext context) => Listener(
-        onPointerPanZoomStart: (_) {
-          _start = zoomtaste(HardwareKeyboard.instance.logicalKeysPressed)
-              ? (widget.steuerung.scale ?? 1)
-              : null;
-        },
-        onPointerPanZoomUpdate: (e) {
-          final start = _start;
-          if (start == null) return;
-          // Ein echtes Kneifen kann PhotoView selbst – da darf nicht
-          // dazwischengefunkt werden.
-          if (!istWischen(e.scale)) return;
-          widget.steuerung.scale = bildWischZoom(
-            startZoom: start,
-            wischWegY: e.pan.dy,
-            kleinster: widget.kleinster,
-            groesster: widget.groesster,
-          );
-        },
-        onPointerPanZoomEnd: (_) => _start = null,
-        child: widget.child,
+    onPointerPanZoomStart: (_) {
+      _start = zoomtaste(HardwareKeyboard.instance.logicalKeysPressed)
+          ? (widget.steuerung.scale ?? 1)
+          : null;
+    },
+    onPointerPanZoomUpdate: (e) {
+      final start = _start;
+      if (start == null) return;
+      // Ein echtes Kneifen kann PhotoView selbst – da darf nicht
+      // dazwischengefunkt werden.
+      if (!istWischen(e.scale)) return;
+      widget.steuerung.scale = bildWischZoom(
+        startZoom: start,
+        wischWegY: e.pan.dy,
+        kleinster: widget.kleinster,
+        groesster: widget.groesster,
       );
+    },
+    onPointerPanZoomEnd: (_) => _start = null,
+    child: widget.child,
+  );
 }

@@ -15,7 +15,8 @@ import 'package:photo_vault/services/asset_grouping.dart';
 ///
 /// Die Reihenfolge der Gruppen ist die eigentliche Entscheidung – und die
 /// sieht man einer Liste erst an, wenn man sie benutzt.
-AssetData _foto(String id, DateTime wann, {String? marke, String? modell}) => AssetData(
+AssetData _foto(String id, DateTime wann, {String? marke, String? modell}) =>
+    AssetData(
       id: id,
       relativePath: 'originals/$id.jpg',
       originalFileName: '$id.jpg',
@@ -51,24 +52,39 @@ void main() {
     test('Hersteller und Modell werden nicht doppelt geschrieben', () {
       // Canon steht in beiden EXIF-Feldern.
       expect(
-          kamerabezeichnung(_foto('a', DateTime(2026), marke: 'Canon', modell: 'Canon EOS R10')),
-          'Canon EOS R10');
+        kamerabezeichnung(
+          _foto('a', DateTime(2026), marke: 'Canon', modell: 'Canon EOS R10'),
+        ),
+        'Canon EOS R10',
+      );
     });
 
     test('nur eines von beiden reicht', () {
-      expect(kamerabezeichnung(_foto('a', DateTime(2026), marke: 'SONY')), 'SONY');
-      expect(kamerabezeichnung(_foto('a', DateTime(2026), modell: 'X100V')), 'X100V');
+      expect(
+        kamerabezeichnung(_foto('a', DateTime(2026), marke: 'SONY')),
+        'SONY',
+      );
+      expect(
+        kamerabezeichnung(_foto('a', DateTime(2026), modell: 'X100V')),
+        'X100V',
+      );
     });
 
     test('beides zusammen, wenn sie verschieden sind', () {
       expect(
-          kamerabezeichnung(_foto('a', DateTime(2026), marke: 'SONY', modell: 'ILCE-6300')),
-          'SONY ILCE-6300');
+        kamerabezeichnung(
+          _foto('a', DateTime(2026), marke: 'SONY', modell: 'ILCE-6300'),
+        ),
+        'SONY ILCE-6300',
+      );
     });
 
     test('ohne Angabe kommt null', () {
       expect(kamerabezeichnung(_foto('a', DateTime(2026))), isNull);
-      expect(kamerabezeichnung(_foto('a', DateTime(2026), marke: '  ')), isNull);
+      expect(
+        kamerabezeichnung(_foto('a', DateTime(2026), marke: '  ')),
+        isNull,
+      );
     });
   });
 
@@ -107,9 +123,16 @@ void main() {
         _foto('e', DateTime(2026, 3, 1)),
       ], ListenGruppierung.kamera);
 
-      expect(gruppen.map((g) => g.schluessel), ['Canon EOS R10', 'Nikon Z6', '']);
-      expect(gruppen.last.assets.map((a) => a.id), ['b', 'e'],
-          reason: 'ohne Kamera, in der Reihenfolge der Liste');
+      expect(gruppen.map((g) => g.schluessel), [
+        'Canon EOS R10',
+        'Nikon Z6',
+        '',
+      ]);
+      expect(
+        gruppen.last.assets.map((a) => a.id),
+        ['b', 'e'],
+        reason: 'ohne Kamera, in der Reihenfolge der Liste',
+      );
     });
 
     test('Gross- und Kleinschreibung entscheidet die Reihenfolge nicht', () {
@@ -152,12 +175,17 @@ void main() {
     // Der Fehler, der am leichtesten passiert und am spätesten auffällt.
     final assets = [
       for (var i = 0; i < 40; i++)
-        _foto('f$i', DateTime(2020 + i % 5, 1 + i % 12, 1 + i % 28),
-            modell: i % 3 == 0 ? null : 'Kamera ${i % 4}'),
+        _foto(
+          'f$i',
+          DateTime(2020 + i % 5, 1 + i % 12, 1 + i % 28),
+          modell: i % 3 == 0 ? null : 'Kamera ${i % 4}',
+        ),
     ];
     for (final art in ListenGruppierung.values) {
-      final summe =
-          gruppiereAssets(assets, art).fold<int>(0, (a, g) => a + g.assets.length);
+      final summe = gruppiereAssets(
+        assets,
+        art,
+      ).fold<int>(0, (a, g) => a + g.assets.length);
       expect(summe, assets.length, reason: '$art');
     }
   });
@@ -168,7 +196,9 @@ void main() {
 
     setUp(() async {
       tempRoot = Directory.systemTemp.createTempSync('pv_liste_');
-      paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+      paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'library')),
+      );
     });
     tearDown(() => tempRoot.deleteSync(recursive: true));
 
@@ -177,29 +207,34 @@ void main() {
       _foto('winter', DateTime(2026, 1, 9), modell: 'Canon EOS R10'),
     ];
 
-    Future<void> zeige(WidgetTester tester, double breite,
-        {ListenGruppierung art = ListenGruppierung.monat}) async {
+    Future<void> zeige(
+      WidgetTester tester,
+      double breite, {
+      ListenGruppierung art = ListenGruppierung.monat,
+    }) async {
       tester.view.physicalSize = Size(breite, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: Scaffold(
-          body: AssetListView(
-            assets: assets,
-            paths: paths,
-            gruppierung: art,
-            selectedIds: const {},
-            onTap: (_) {},
-            onLongPress: (_) {},
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: Scaffold(
+            body: AssetListView(
+              assets: assets,
+              paths: paths,
+              gruppierung: art,
+              selectedIds: const {},
+              onTap: (_) {},
+              onLongPress: (_) {},
               spalten: Listenspaltenwahl.vorgabe,
               onSpalten: (_) {},
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
     }
 
@@ -210,8 +245,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('im schmalen Fenster verschwindet nichts, es rollt zur Seite',
-        (tester) async {
+    testWidgets('im schmalen Fenster verschwindet nichts, es rollt zur Seite', (
+      tester,
+    ) async {
       // **Die Regel hat sich geändert.** Vorher fielen Spalten still weg,
       // sobald das Fenster unter 620, 860 bzw. 1040 Punkte kam – wer die
       // Kamera brauchte, musste das Fenster breiter ziehen und wusste
@@ -230,12 +266,14 @@ void main() {
       expect(find.text('Januar 2026'), findsOneWidget);
     });
 
-    testWidgets('nach Kamera gegliedert steht die Bezeichnung als Überschrift',
-        (tester) async {
-      await zeige(tester, 1200, art: ListenGruppierung.kamera);
-      expect(find.text('Canon EOS R10'), findsWidgets);
-      expect(find.text('März 2026'), findsNothing);
-    });
+    testWidgets(
+      'nach Kamera gegliedert steht die Bezeichnung als Überschrift',
+      (tester) async {
+        await zeige(tester, 1200, art: ListenGruppierung.kamera);
+        expect(find.text('Canon EOS R10'), findsWidgets);
+        expect(find.text('März 2026'), findsNothing);
+      },
+    );
 
     testWidgets('ohne Gliederung gibt es keine Überschriften', (tester) async {
       await zeige(tester, 1200, art: ListenGruppierung.keine);

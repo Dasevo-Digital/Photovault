@@ -12,10 +12,13 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  test('ist standardmäßig eingeschaltet, auch ohne gespeicherte Zeile', () async {
-    // Frische Bibliothek: In app_settings steht noch gar nichts.
-    expect(await db.autoAnalyzeAfterImportEnabled(), isTrue);
-  });
+  test(
+    'ist standardmäßig eingeschaltet, auch ohne gespeicherte Zeile',
+    () async {
+      // Frische Bibliothek: In app_settings steht noch gar nichts.
+      expect(await db.autoAnalyzeAfterImportEnabled(), isTrue);
+    },
+  );
 
   test('lässt sich ausschalten und bleibt aus', () async {
     await db.setAutoAnalyzeAfterImport(false);
@@ -28,18 +31,29 @@ void main() {
     expect(await db.autoAnalyzeAfterImportEnabled(), isTrue);
   });
 
-  test('teilt sich die Zeile mit dem Erscheinungsbild, ohne es zu überschreiben', () async {
-    // Beide schreiben auf id = 0 per insertOnConflictUpdate – ohne
-    // Rücksicht aufeinander würde das eine das andere zurücksetzen.
-    await db.setThemeMode('dark');
-    await db.setAutoAnalyzeAfterImport(false);
+  test(
+    'teilt sich die Zeile mit dem Erscheinungsbild, ohne es zu überschreiben',
+    () async {
+      // Beide schreiben auf id = 0 per insertOnConflictUpdate – ohne
+      // Rücksicht aufeinander würde das eine das andere zurücksetzen.
+      await db.setThemeMode('dark');
+      await db.setAutoAnalyzeAfterImport(false);
 
-    final row = await db.watchAppSettings().first;
-    expect(row?.themeMode, 'dark', reason: 'Erscheinungsbild darf nicht verlorengehen');
-    expect(row?.autoAnalyzeAfterImport, isFalse);
+      final row = await db.watchAppSettings().first;
+      expect(
+        row?.themeMode,
+        'dark',
+        reason: 'Erscheinungsbild darf nicht verlorengehen',
+      );
+      expect(row?.autoAnalyzeAfterImport, isFalse);
 
-    await db.setThemeMode('light');
-    expect(await db.autoAnalyzeAfterImportEnabled(), isFalse,
-        reason: 'Schalter darf durch einen Theme-Wechsel nicht zurückgesetzt werden');
-  });
+      await db.setThemeMode('light');
+      expect(
+        await db.autoAnalyzeAfterImportEnabled(),
+        isFalse,
+        reason:
+            'Schalter darf durch einen Theme-Wechsel nicht zurückgesetzt werden',
+      );
+    },
+  );
 }

@@ -31,15 +31,17 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
   Future<void> _openAsset(BuildContext context, String assetId) async {
     final asset = await library.db.assetById(assetId);
     if (asset == null || !context.mounted) return;
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: [asset],
-        initialIndex: 0,
-        paths: library.paths,
-        db: library.db,
-        library: library,
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: [asset],
+          initialIndex: 0,
+          paths: library.paths,
+          db: library.db,
+          library: library,
+        ),
       ),
-    ));
+    );
   }
 
   String _statusLabel(BuildContext context, RestoreJobData job) {
@@ -49,13 +51,13 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
       'running' => restaurLaufText(t, job),
       'done' => t.allgFertig,
       'cancelled' => t.restaurAbgebrochen,
-      'failed' => job.errorMessage == null
-          ? t.restaurFehlgeschlagenKurz
-          : t.restaurFehlgeschlagen(_grundText(t, job.errorMessage!)),
+      'failed' =>
+        job.errorMessage == null
+            ? t.restaurFehlgeschlagenKurz
+            : t.restaurFehlgeschlagen(_grundText(t, job.errorMessage!)),
       _ => job.status,
     };
   }
-
 
   /// Der Dienst legt die Kennung des Grundes ab (siehe
   /// [RestaurierungsGrund]), bei einem Ladefehler gefolgt von der Ursache.
@@ -74,15 +76,15 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
   }
 
   String? _kennung(AppTexte t, String gespeichert) => switch (gespeichert) {
-        'modellLaedtNicht' => t.restaurGrundModellLaedtNicht,
-        'modellWeg' => t.restaurGrundModellWeg,
-        'fotoWeg' => t.restaurGrundFotoWeg,
-        'gesperrt' => t.restaurGrundGesperrt,
-        'aufloesungUnbekannt' => t.restaurGrundAufloesung,
-        'nichtGerendert' => t.restaurGrundNichtGerendert,
-        'nichtDekodiert' => t.restaurGrundNichtDekodiert,
-        _ => null,
-      };
+    'modellLaedtNicht' => t.restaurGrundModellLaedtNicht,
+    'modellWeg' => t.restaurGrundModellWeg,
+    'fotoWeg' => t.restaurGrundFotoWeg,
+    'gesperrt' => t.restaurGrundGesperrt,
+    'aufloesungUnbekannt' => t.restaurGrundAufloesung,
+    'nichtGerendert' => t.restaurGrundNichtGerendert,
+    'nichtDekodiert' => t.restaurGrundNichtDekodiert,
+    _ => null,
+  };
 
   /// Gemerkte Auftrags-Fotos. Ein Auftrag zeigt immer dasselbe Foto, die
   /// Abfrage muss also genau einmal laufen.
@@ -92,13 +94,13 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
       _assets.putIfAbsent(assetId, () => library.db.assetById(assetId));
 
   IconData _statusIcon(String status) => switch (status) {
-        'queued' => Icons.schedule_outlined,
-        'running' => Icons.auto_awesome_outlined,
-        'done' => Icons.check_circle_outline,
-        'cancelled' => Icons.cancel_outlined,
-        'failed' => Icons.error_outline,
-        _ => Icons.help_outline,
-      };
+    'queued' => Icons.schedule_outlined,
+    'running' => Icons.auto_awesome_outlined,
+    'done' => Icons.check_circle_outline,
+    'cancelled' => Icons.cancel_outlined,
+    'failed' => Icons.error_outline,
+    _ => Icons.help_outline,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +122,8 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final job = jobs[index];
-              final isActive = job.status == 'queued' || job.status == 'running';
+              final isActive =
+                  job.status == 'queued' || job.status == 'running';
               return FutureBuilder<AssetData?>(
                 // Nicht `library.db.assetById(...)` direkt: Dieser
                 // Bildschirm baut bei jeder fertigen Kachel neu, und der
@@ -133,17 +136,21 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
                     leading: Icon(_statusIcon(job.status)),
                     title: Text(asset?.originalFileName ?? job.assetId),
                     subtitle: Text(_statusLabel(context, job)),
-                    onTap: job.status == 'done' ? () => _openAsset(context, job.assetId) : null,
+                    onTap: job.status == 'done'
+                        ? () => _openAsset(context, job.assetId)
+                        : null,
                     trailing: isActive
                         ? IconButton(
                             icon: const Icon(Icons.close),
                             tooltip: AppTexte.of(context).allgAbbrechen,
-                            onPressed: () => library.restoreQueue.cancel(job.id),
+                            onPressed: () =>
+                                library.restoreQueue.cancel(job.id),
                           )
                         : IconButton(
                             icon: const Icon(Icons.delete_outline),
                             tooltip: AppTexte.of(context).restaurAusListe,
-                            onPressed: () => library.db.deleteRestoreJob(job.id),
+                            onPressed: () =>
+                                library.db.deleteRestoreJob(job.id),
                           ),
                   );
                 },

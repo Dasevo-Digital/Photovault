@@ -17,14 +17,14 @@ import 'package:photo_vault/theme/app_theme.dart';
 /// enthält und dass die Dateiendung stimmt.
 void main() {
   PersonData person(String id, String name, {int? jahr}) => PersonData(
-        id: id,
-        name: name,
-        coverFaceCropPath: null,
-        similarityThreshold: null,
-        geburtsdatum: jahr == null ? null : DateTime(jahr),
-        sterbedatum: null,
-        geschlecht: null,
-      );
+    id: id,
+    name: name,
+    coverFaceCropPath: null,
+    similarityThreshold: null,
+    geburtsdatum: jahr == null ? null : DateTime(jahr),
+    sterbedatum: null,
+    geschlecht: null,
+  );
 
   // Ein Name mit Umlaut ist kein Zufall: Die eingebauten PDF-Schriften
   // können kein Unicode, deshalb wird alle Schrift ins Bild gezeichnet.
@@ -41,12 +41,16 @@ void main() {
   ]);
 
   Future<Uint8List> tafel() => baueTafelPdf(
-        plaetze: faechertafel(netz, 'ich', (id) => personen.keys.toList().indexOf(id)),
-        personen: personen,
-        titel: 'Lena Müller',
-        farben: buildDarkTheme().colorScheme,
-        textRichtung: TextDirection.ltr,
-      );
+    plaetze: faechertafel(
+      netz,
+      'ich',
+      (id) => personen.keys.toList().indexOf(id),
+    ),
+    personen: personen,
+    titel: 'Lena Müller',
+    farben: buildDarkTheme().colorScheme,
+    textRichtung: TextDirection.ltr,
+  );
 
   group('Dateiendung', () {
     test('wird angehängt, wenn sie fehlt', () {
@@ -73,12 +77,16 @@ void main() {
     // Die Zeichnung ist als Bild eingebettet; ohne sie wäre die Datei
     // ein leeres Blatt mit Überschrift.
     expect(inhalt, contains('/Image'));
-    expect(bytes.length, greaterThan(20000),
-        reason: 'ein paar Kilobyte wären eine leere Seite');
+    expect(
+      bytes.length,
+      greaterThan(20000),
+      reason: 'ein paar Kilobyte wären eine leere Seite',
+    );
   });
 
-  testWidgets('die Datei lässt sich schreiben und wieder lesen',
-      (tester) async {
+  testWidgets('die Datei lässt sich schreiben und wieder lesen', (
+    tester,
+  ) async {
     final ordner = Directory.systemTemp.createTempSync('pv_tafel_');
     final datei = File(mitTafelEndung('${ordner.path}/stammbaum'));
     await tester.runAsync(() async {

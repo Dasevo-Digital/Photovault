@@ -33,23 +33,23 @@ enum Ortsgruppe {
 
 /// Ordnet einen Verwandtschaftsgrad einer Gruppe zu.
 Ortsgruppe gruppeFuer(Grad grad) => switch (grad.art) {
-      Gradart.selbst => Ortsgruppe.ich,
-      Gradart.vorfahre || Gradart.vorfahrengeschwister => Ortsgruppe.vorfahren,
-      Gradart.nachkomme || Gradart.geschwisterkind => Ortsgruppe.nachkommen,
-      Gradart.geschwister || Gradart.cousin => Ortsgruppe.seitenlinie,
-      _ => Ortsgruppe.angeheiratet,
-    };
+  Gradart.selbst => Ortsgruppe.ich,
+  Gradart.vorfahre || Gradart.vorfahrengeschwister => Ortsgruppe.vorfahren,
+  Gradart.nachkomme || Gradart.geschwisterkind => Ortsgruppe.nachkommen,
+  Gradart.geschwister || Gradart.cousin => Ortsgruppe.seitenlinie,
+  _ => Ortsgruppe.angeheiratet,
+};
 
 /// Wie eng eine Gruppe an der gewählten Person hängt – kleiner heißt
 /// näher. Bestimmt, welche Farbe gewinnt, wenn mehrere Verwandte auf
 /// einem Foto stehen.
 int _rang(Ortsgruppe g) => switch (g) {
-      Ortsgruppe.ich => 0,
-      Ortsgruppe.nachkommen => 1,
-      Ortsgruppe.vorfahren => 2,
-      Ortsgruppe.seitenlinie => 3,
-      Ortsgruppe.angeheiratet => 4,
-    };
+  Ortsgruppe.ich => 0,
+  Ortsgruppe.nachkommen => 1,
+  Ortsgruppe.vorfahren => 2,
+  Ortsgruppe.seitenlinie => 3,
+  Ortsgruppe.angeheiratet => 4,
+};
 
 /// Die Gruppe eines Fotos, auf dem [personen] erkannt wurden.
 ///
@@ -59,8 +59,11 @@ int _rang(Ortsgruppe g) => switch (g) {
 /// Marker exakt übereinander und der obere verdeckte den unteren.
 ///
 /// `null`, wenn niemand aus der Familie darauf erkannt wurde.
-Ortsgruppe? gruppeFuerFoto(Iterable<String> personen, Map<String, Grad> grade,
-    {required String fokus}) {
+Ortsgruppe? gruppeFuerFoto(
+  Iterable<String> personen,
+  Map<String, Grad> grade, {
+  required String fokus,
+}) {
   Ortsgruppe? beste;
   for (final id in personen) {
     Ortsgruppe? gruppe;

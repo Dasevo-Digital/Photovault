@@ -17,23 +17,25 @@ void main() {
 
   Future<void> aufnahme(String id, {bool durchgesehen = true}) => db
       .into(db.assets)
-      .insert(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id.jpg',
-        originalFileName: '$id.jpg',
-        type: 'IMAGE',
-        checksum: 'pruef-$id',
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024),
-        aiTagsScanned: Value(durchgesehen),
-      ));
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          relativePath: 'originals/$id.jpg',
+          originalFileName: '$id.jpg',
+          type: 'IMAGE',
+          checksum: 'pruef-$id',
+          fileCreatedAt: DateTime(2024),
+          importedAt: DateTime(2024),
+          aiTagsScanned: Value(durchgesehen),
+        ),
+      );
 
   test('nimmt die KI-Schlagwörter und lässt die eigenen stehen', () async {
     await aufnahme('a');
     await aufnahme('b');
     await db.tagAsset('a', 'Strand', quelle: Tagquelle.ki);
     await db.tagAsset('a', 'Hochzeit', quelle: Tagquelle.ki);
-    await db.tagAsset('a', 'Oma');            // von Hand
+    await db.tagAsset('a', 'Oma'); // von Hand
     await db.tagAsset('b', 'Bildschirmfoto', quelle: Tagquelle.ki);
 
     expect(await db.kiTagAnzahl(), 3);
@@ -60,10 +62,14 @@ void main() {
     await aufnahme('a');
     await db.tagAsset('a', 'Strand', quelle: Tagquelle.ki);
     await db.nimmKiTagsZurueck();
-    final a = await (db.select(db.assets)..where((t) => t.id.equals('a')))
-        .getSingle();
-    expect(a.aiTagsScanned, isFalse,
-        reason: 'mit dem Vermerk überspringt die Bilderkennung das Foto');
+    final a = await (db.select(
+      db.assets,
+    )..where((t) => t.id.equals('a'))).getSingle();
+    expect(
+      a.aiTagsScanned,
+      isFalse,
+      reason: 'mit dem Vermerk überspringt die Bilderkennung das Foto',
+    );
   });
 
   test('räumt Schlagwörter weg, an denen nichts mehr hängt', () async {
@@ -72,8 +78,9 @@ void main() {
     await db.tagAsset('a', 'Oma');
     await db.nimmKiTagsZurueck();
     final namen = [for (final t in await db.select(db.tags).get()) t.name];
-    expect(namen, ['Oma'],
-        reason: 'sonst stünde die Suchliste voll leerer Begriffe');
+    expect(namen, [
+      'Oma',
+    ], reason: 'sonst stünde die Suchliste voll leerer Begriffe');
   });
 
   test('auf einer leeren Bibliothek passiert nichts Schlimmes', () async {

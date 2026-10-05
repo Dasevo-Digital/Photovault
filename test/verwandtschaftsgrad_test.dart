@@ -24,23 +24,23 @@ void main() {
   ///        |
   ///     enkelin
   Verwandtschaftsnetz sippe() => Verwandtschaftsnetz([
-        kante('opa', 'urgrossvater', Verwandtschaft.elternteil),
-        kante('opasBruder', 'urgrossvater', Verwandtschaft.elternteil),
-        partnerKanteFuer('opa', 'oma'),
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-        kante('vater', 'oma', Verwandtschaft.elternteil),
-        partnerKanteFuer('vater', 'mutter'),
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('schwester', 'vater', Verwandtschaft.elternteil),
-        kante('schwester', 'mutter', Verwandtschaft.elternteil),
-        kante('tochter', 'ich', Verwandtschaft.elternteil),
-        kante('enkelin', 'tochter', Verwandtschaft.elternteil),
-        kante('cousine1Elternteil', 'opasBruder', Verwandtschaft.elternteil),
-        kante('cousine', 'cousine1Elternteil', Verwandtschaft.elternteil),
-        partnerKanteFuer('ich', 'gatte'),
-        kante('schwiegervater', 'niemand', Verwandtschaft.elternteil),
-      ]);
+    kante('opa', 'urgrossvater', Verwandtschaft.elternteil),
+    kante('opasBruder', 'urgrossvater', Verwandtschaft.elternteil),
+    partnerKanteFuer('opa', 'oma'),
+    kante('vater', 'opa', Verwandtschaft.elternteil),
+    kante('vater', 'oma', Verwandtschaft.elternteil),
+    partnerKanteFuer('vater', 'mutter'),
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('schwester', 'vater', Verwandtschaft.elternteil),
+    kante('schwester', 'mutter', Verwandtschaft.elternteil),
+    kante('tochter', 'ich', Verwandtschaft.elternteil),
+    kante('enkelin', 'tochter', Verwandtschaft.elternteil),
+    kante('cousine1Elternteil', 'opasBruder', Verwandtschaft.elternteil),
+    kante('cousine', 'cousine1Elternteil', Verwandtschaft.elternteil),
+    partnerKanteFuer('ich', 'gatte'),
+    kante('schwiegervater', 'niemand', Verwandtschaft.elternteil),
+  ]);
 
   Grad grad(String andere, [String ich = 'ich']) =>
       bestimmeGrad(sippe(), ich, andere);
@@ -49,25 +49,40 @@ void main() {
     test('Eltern, Großeltern, Urgroßeltern', () {
       // Eine unmittelbare Elternschaft trägt ihre Art mit – hier die
       // leibliche.
-      expect(grad('vater'),
-          const Grad(Gradart.vorfahre,
-              aufwaerts: 1, elternArt: Verwandtschaft.elternteil));
+      expect(
+        grad('vater'),
+        const Grad(
+          Gradart.vorfahre,
+          aufwaerts: 1,
+          elternArt: Verwandtschaft.elternteil,
+        ),
+      );
       expect(grad('opa'), const Grad(Gradart.vorfahre, aufwaerts: 2));
       expect(grad('urgrossvater'), const Grad(Gradart.vorfahre, aufwaerts: 3));
     });
 
     test('Kind, Enkel', () {
-      expect(grad('tochter'),
-          const Grad(Gradart.nachkomme,
-              abwaerts: 1, elternArt: Verwandtschaft.elternteil));
+      expect(
+        grad('tochter'),
+        const Grad(
+          Gradart.nachkomme,
+          abwaerts: 1,
+          elternArt: Verwandtschaft.elternteil,
+        ),
+      );
       expect(grad('enkelin'), const Grad(Gradart.nachkomme, abwaerts: 2));
     });
 
     test('die Richtung stimmt auch umgekehrt', () {
       // Der häufigste denkbare Fehler: oben und unten vertauscht.
-      expect(grad('ich', 'urgrossvater'),
-          const Grad(Gradart.nachkomme, abwaerts: 3));
-      expect(grad('ich', 'enkelin'), const Grad(Gradart.vorfahre, aufwaerts: 2));
+      expect(
+        grad('ich', 'urgrossvater'),
+        const Grad(Gradart.nachkomme, abwaerts: 3),
+      );
+      expect(
+        grad('ich', 'enkelin'),
+        const Grad(Gradart.vorfahre, aufwaerts: 2),
+      );
     });
   });
 
@@ -81,8 +96,10 @@ void main() {
       // Der Bruder des Großvaters: drei Stufen hinauf zum gemeinsamen
       // Urgroßvater, eine hinab. Zwei hinauf wäre der Bruder eines
       // Elternteils – also der Onkel.
-      expect(grad('opasBruder'),
-          const Grad(Gradart.vorfahrengeschwister, aufwaerts: 3, abwaerts: 1));
+      expect(
+        grad('opasBruder'),
+        const Grad(Gradart.vorfahrengeschwister, aufwaerts: 3, abwaerts: 1),
+      );
     });
 
     test('der Cousin des Vaters ist kein Onkel', () {
@@ -102,10 +119,14 @@ void main() {
         kante('neffe', 'bruder', Verwandtschaft.elternteil),
         kante('grossneffe', 'neffe', Verwandtschaft.elternteil),
       ]);
-      expect(bestimmeGrad(netz, 'ich', 'neffe'),
-          const Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: 2));
-      expect(bestimmeGrad(netz, 'ich', 'grossneffe'),
-          const Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: 3));
+      expect(
+        bestimmeGrad(netz, 'ich', 'neffe'),
+        const Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: 2),
+      );
+      expect(
+        bestimmeGrad(netz, 'ich', 'grossneffe'),
+        const Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: 3),
+      );
     });
 
     test('Cousine ersten Grades, einmal entfernt', () {
@@ -181,7 +202,10 @@ void main() {
         kante('sohn', 'ich', Verwandtschaft.elternteil),
         partnerKanteFuer('sohn', 'seineFrau'),
       ]);
-      expect(bestimmeGrad(netz, 'ich', 'ihrVater').art, Gradart.schwiegerelternteil);
+      expect(
+        bestimmeGrad(netz, 'ich', 'ihrVater').art,
+        Gradart.schwiegerelternteil,
+      );
       expect(bestimmeGrad(netz, 'ich', 'seineFrau').art, Gradart.schwiegerkind);
     });
 
@@ -193,8 +217,14 @@ void main() {
         partnerKanteFuer('ich', 'gattin'),
         kante('ihrKind', 'gattin', Verwandtschaft.elternteil),
       ]);
-      expect(bestimmeGrad(netz, 'ich', 'stiefvater').art, Gradart.stiefelternteil);
-      expect(bestimmeGrad(netz, 'ich', 'stiefbruder').art, Gradart.stiefgeschwister);
+      expect(
+        bestimmeGrad(netz, 'ich', 'stiefvater').art,
+        Gradart.stiefelternteil,
+      );
+      expect(
+        bestimmeGrad(netz, 'ich', 'stiefbruder').art,
+        Gradart.stiefgeschwister,
+      );
       expect(bestimmeGrad(netz, 'ich', 'ihrKind').art, Gradart.stiefkind);
     });
 
@@ -214,11 +244,11 @@ void main() {
 
   group('Adoption und Pflege', () {
     Verwandtschaftsnetz netz() => Verwandtschaftsnetz([
-          kante('ich', 'leiblich', Verwandtschaft.elternteil),
-          kante('ich', 'adoptiv', Verwandtschaft.adoptivelternteil),
-          kante('ich', 'pflege', Verwandtschaft.pflegeelternteil),
-          kante('adoptiv', 'adoptivOpa', Verwandtschaft.elternteil),
-        ]);
+      kante('ich', 'leiblich', Verwandtschaft.elternteil),
+      kante('ich', 'adoptiv', Verwandtschaft.adoptivelternteil),
+      kante('ich', 'pflege', Verwandtschaft.pflegeelternteil),
+      kante('adoptiv', 'adoptivOpa', Verwandtschaft.elternteil),
+    ]);
 
     test('zählen überall als Eltern', () {
       expect(netz().eltern('ich'), {'leiblich', 'adoptiv', 'pflege'});
@@ -226,12 +256,18 @@ void main() {
     });
 
     test('unterscheiden sich in der Bezeichnung', () {
-      expect(bestimmeGrad(netz(), 'ich', 'leiblich').elternArt,
-          Verwandtschaft.elternteil);
-      expect(bestimmeGrad(netz(), 'ich', 'adoptiv').elternArt,
-          Verwandtschaft.adoptivelternteil);
-      expect(bestimmeGrad(netz(), 'ich', 'pflege').elternArt,
-          Verwandtschaft.pflegeelternteil);
+      expect(
+        bestimmeGrad(netz(), 'ich', 'leiblich').elternArt,
+        Verwandtschaft.elternteil,
+      );
+      expect(
+        bestimmeGrad(netz(), 'ich', 'adoptiv').elternArt,
+        Verwandtschaft.adoptivelternteil,
+      );
+      expect(
+        bestimmeGrad(netz(), 'ich', 'pflege').elternArt,
+        Verwandtschaft.pflegeelternteil,
+      );
     });
 
     test('auch in der Gegenrichtung', () {
@@ -253,17 +289,27 @@ void main() {
         'auslösen', () {
       expect(netz().istVorfahreVon('adoptivOpa', 'ich'), isTrue);
       expect(
-          pruefeBeziehung(netz(), 'adoptivOpa', 'ich',
-              Verwandtschaft.adoptivelternteil),
-          Beziehungsfehler.kreis);
+        pruefeBeziehung(
+          netz(),
+          'adoptivOpa',
+          'ich',
+          Verwandtschaft.adoptivelternteil,
+        ),
+        Beziehungsfehler.kreis,
+      );
     });
 
     test('wer schon leiblicher Elternteil ist, wird nicht zusätzlich '
         'Adoptivelternteil', () {
       expect(
-          pruefeBeziehung(netz(), 'ich', 'leiblich',
-              Verwandtschaft.adoptivelternteil),
-          Beziehungsfehler.schonVorhanden);
+        pruefeBeziehung(
+          netz(),
+          'ich',
+          'leiblich',
+          Verwandtschaft.adoptivelternteil,
+        ),
+        Beziehungsfehler.schonVorhanden,
+      );
     });
 
     test('Geschwister über einen Adoptivelternteil zählen als Geschwister', () {
@@ -295,8 +341,13 @@ void main() {
 
   group('alleGrade und Reihenfolge', () {
     test('lässt Unverwandte weg', () {
-      final alle = alleGrade(sippe(), 'ich',
-          ['vater', 'schwester', 'gatte', 'schwiegervater', 'ich']);
+      final alle = alleGrade(sippe(), 'ich', [
+        'vater',
+        'schwester',
+        'gatte',
+        'schwiegervater',
+        'ich',
+      ]);
       expect(alle.keys, containsAll(['vater', 'schwester', 'gatte']));
       expect(alle.containsKey('schwiegervater'), isFalse);
       expect(alle.containsKey('ich'), isFalse, reason: 'sich selbst nicht');
@@ -349,17 +400,17 @@ void main() {
     ///              |
     ///            neffe
     Verwandtschaftsnetz schwippschaft() => Verwandtschaftsnetz([
-          kante('ich', 'vater', Verwandtschaft.elternteil),
-          kante('schwester', 'vater', Verwandtschaft.elternteil),
-          partnerKanteFuer('schwester', 'schwager'),
-          kante('neffe', 'schwester', Verwandtschaft.elternteil),
-          kante('neffe', 'schwager', Verwandtschaft.elternteil),
-          kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
-          kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
-          kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
-          kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
-          partnerKanteFuer('schwagersVater', 'schwagersMutter'),
-        ]);
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('schwester', 'vater', Verwandtschaft.elternteil),
+      partnerKanteFuer('schwester', 'schwager'),
+      kante('neffe', 'schwester', Verwandtschaft.elternteil),
+      kante('neffe', 'schwager', Verwandtschaft.elternteil),
+      kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
+      kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
+      kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
+      kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
+      partnerKanteFuer('schwagersVater', 'schwagersMutter'),
+    ]);
 
     test('was ein Wort hat, braucht keinen Umweg', () {
       final netz = schwippschaft();
@@ -375,8 +426,10 @@ void main() {
       // Vorher stand hier „angeheiratet" – dieselbe Auskunft, die auch
       // der Vetter der zweiten Frau des Onkels bekäme.
       final netz = schwippschaft();
-      expect(bestimmeGrad(netz, 'ich', 'schwagersVater').art,
-          Gradart.angeheiratet);
+      expect(
+        bestimmeGrad(netz, 'ich', 'schwagersVater').art,
+        Gradart.angeheiratet,
+      );
 
       final umweg = umwegZu(netz, 'ich', 'schwagersVater');
       expect(umweg, isNotNull);
@@ -399,13 +452,24 @@ void main() {
       // bleibt der Schwager. Der Fall, der wirklich zwei Wege hat:
       // schwagersMutter hängt am Schwager und an schwagersVater.
       final netz = schwippschaft();
-      final a = umwegZu(netz, 'ich', 'schwagersMutter',
-          reihenfolge: (id) => ['schwager', 'schwagersVater'].indexOf(id));
-      final b = umwegZu(netz, 'ich', 'schwagersMutter',
-          reihenfolge: (id) => ['schwager', 'schwagersVater'].indexOf(id));
+      final a = umwegZu(
+        netz,
+        'ich',
+        'schwagersMutter',
+        reihenfolge: (id) => ['schwager', 'schwagersVater'].indexOf(id),
+      );
+      final b = umwegZu(
+        netz,
+        'ich',
+        'schwagersMutter',
+        reihenfolge: (id) => ['schwager', 'schwagersVater'].indexOf(id),
+      );
       expect(a, b, reason: 'zweimal gefragt, zweimal dieselbe Antwort');
-      expect(a!.ueber, 'schwager',
-          reason: 'der Schwager hat ein Wort, sein Vater nicht');
+      expect(
+        a!.ueber,
+        'schwager',
+        reason: 'der Schwager hat ein Wort, sein Vater nicht',
+      );
     });
 
     test('mehr als ein Schritt bleibt „angeheiratet"', () {
@@ -418,8 +482,10 @@ void main() {
         kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
         kante('schwagersVater', 'schwagersOpa', Verwandtschaft.elternteil),
       ]);
-      expect(bestimmeGrad(netz, 'ich', 'schwagersOpa').art,
-          Gradart.angeheiratet);
+      expect(
+        bestimmeGrad(netz, 'ich', 'schwagersOpa').art,
+        Gradart.angeheiratet,
+      );
       expect(umwegZu(netz, 'ich', 'schwagersOpa'), isNull);
     });
 

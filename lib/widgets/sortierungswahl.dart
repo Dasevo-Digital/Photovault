@@ -5,23 +5,23 @@ import '../services/sortierung.dart';
 
 /// Der Name einer Reihenfolge in der Sprache der Oberfläche.
 String sortierungName(AppTexte t, Rastersortierung s) => switch (s) {
-      Rastersortierung.aufnahmeNeu => t.sortAufnahmeNeu,
-      Rastersortierung.aufnahmeAlt => t.sortAufnahmeAlt,
-      Rastersortierung.importNeu => t.sortImportNeu,
-      Rastersortierung.name => t.sortName,
-      Rastersortierung.bewertung => t.sortBewertung,
-      Rastersortierung.groesse => t.sortGroesse,
-    };
+  Rastersortierung.aufnahmeNeu => t.sortAufnahmeNeu,
+  Rastersortierung.aufnahmeAlt => t.sortAufnahmeAlt,
+  Rastersortierung.importNeu => t.sortImportNeu,
+  Rastersortierung.name => t.sortName,
+  Rastersortierung.bewertung => t.sortBewertung,
+  Rastersortierung.groesse => t.sortGroesse,
+};
 
 /// Das Symbol zu einer Reihenfolge.
 IconData sortierungSymbol(Rastersortierung s) => switch (s) {
-      Rastersortierung.aufnahmeNeu => Icons.south,
-      Rastersortierung.aufnahmeAlt => Icons.north,
-      Rastersortierung.importNeu => Icons.file_download_outlined,
-      Rastersortierung.name => Icons.sort_by_alpha,
-      Rastersortierung.bewertung => Icons.star_outline,
-      Rastersortierung.groesse => Icons.data_usage_outlined,
-    };
+  Rastersortierung.aufnahmeNeu => Icons.south,
+  Rastersortierung.aufnahmeAlt => Icons.north,
+  Rastersortierung.importNeu => Icons.file_download_outlined,
+  Rastersortierung.name => Icons.sort_by_alpha,
+  Rastersortierung.bewertung => Icons.star_outline,
+  Rastersortierung.groesse => Icons.data_usage_outlined,
+};
 
 /// Der Menüwert für „Fundreihenfolge".
 ///
@@ -59,8 +59,9 @@ class Sortierungswahl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    final gewaehltesSymbol =
-        gewaehlt == null ? Icons.sort : sortierungSymbol(gewaehlt!);
+    final gewaehltesSymbol = gewaehlt == null
+        ? Icons.sort
+        : sortierungSymbol(gewaehlt!);
     return PopupMenuButton<Object>(
       tooltip: t.sortReihenfolge,
       // Zwei Symbole nebeneinander: das allgemeine „Sortieren" sagt, was
@@ -73,8 +74,7 @@ class Sortierungswahl extends StatelessWidget {
           Icon(gewaehltesSymbol, size: 14),
         ],
       ),
-      onSelected: (wert) =>
-          beiWahl(wert is Rastersortierung ? wert : null),
+      onSelected: (wert) => beiWahl(wert is Rastersortierung ? wert : null),
       itemBuilder: (context) => [
         if (mitFundreihenfolge)
           CheckedPopupMenuItem<Object>(

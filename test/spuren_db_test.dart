@@ -17,22 +17,24 @@ void main() {
   tearDown(() => db.close());
 
   Future<void> aktivitaet(String id) => db.aktivitaetAnlegen(
-        AktivitaetenCompanion.insert(
-          id: id,
-          name: 'Brocken',
-          art: Aktivitaetsart.wanderung.kennung,
-          von: DateTime(2024, 6, 3, 9),
-          bis: DateTime(2024, 6, 3, 14),
-          angelegtAm: DateTime(2024, 7, 1),
-        ),
-        const [],
-      );
+    AktivitaetenCompanion.insert(
+      id: id,
+      name: 'Brocken',
+      art: Aktivitaetsart.wanderung.kennung,
+      von: DateTime(2024, 6, 3, 9),
+      bis: DateTime(2024, 6, 3, 14),
+      angelegtAm: DateTime(2024, 7, 1),
+    ),
+    const [],
+  );
 
-  Future<void> spur(String id,
-      {String? aktivitaetId,
-      String? reiseId,
-      int punkte = 5,
-      bool hoehen = true}) {
+  Future<void> spur(
+    String id, {
+    String? aktivitaetId,
+    String? reiseId,
+    int punkte = 5,
+    bool hoehen = true,
+  }) {
     final roh = <Rohpunkt>[
       for (var i = 0; i < punkte; i++)
         (
@@ -72,28 +74,38 @@ void main() {
     );
   }
 
-  test('die Datenbank steht auf der Fassung, die der Quelltext angibt',
-      () async {
-    final fassung = await db
-        .customSelect('PRAGMA user_version')
-        .map((r) => r.read<int>('user_version'))
-        .getSingle();
-    expect(fassung, db.schemaVersion);
-    expect(fassung, greaterThanOrEqualTo(55),
-        reason: 'Die Spur-Tabellen kamen mit Fassung 55.');
-  });
+  test(
+    'die Datenbank steht auf der Fassung, die der Quelltext angibt',
+    () async {
+      final fassung = await db
+          .customSelect('PRAGMA user_version')
+          .map((r) => r.read<int>('user_version'))
+          .getSingle();
+      expect(fassung, db.schemaVersion);
+      expect(
+        fassung,
+        greaterThanOrEqualTo(55),
+        reason: 'Die Spur-Tabellen kamen mit Fassung 55.',
+      );
+    },
+  );
 
-  test('die Indizes der Fassung 55 stehen auf einer frischen Datenbank',
-      () async {
-    final namen = {
-      for (final z in await db
-          .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
-          .get())
-        z.data['name'] as String
-    };
-    expect(namen, contains('idx_spurpunkte_spur'));
-    expect(namen, contains('idx_spuren_aktivitaet'));
-  });
+  test(
+    'die Indizes der Fassung 55 stehen auf einer frischen Datenbank',
+    () async {
+      final namen = {
+        for (final z
+            in await db
+                .customSelect(
+                  "SELECT name FROM sqlite_master WHERE type = 'index'",
+                )
+                .get())
+          z.data['name'] as String,
+      };
+      expect(namen, contains('idx_spurpunkte_spur'));
+      expect(namen, contains('idx_spuren_aktivitaet'));
+    },
+  );
 
   test('eine Spur entsteht samt ihren Punkten', () async {
     await spur('s1');
@@ -118,8 +130,7 @@ void main() {
     await spur('frei');
     await spur('gebunden', aktivitaetId: 'k1');
 
-    expect((await db.spurenDerAktivitaet('k1')).map((s) => s.id),
-        ['gebunden']);
+    expect((await db.spurenDerAktivitaet('k1')).map((s) => s.id), ['gebunden']);
     expect(await db.alleSpuren(), hasLength(2));
   });
 
@@ -184,9 +195,17 @@ void main() {
         ),
         [
           SpurpunkteCompanion.insert(
-              spurId: 's1', nummer: 0, breite: 52.0, laenge: 9.0),
+            spurId: 's1',
+            nummer: 0,
+            breite: 52.0,
+            laenge: 9.0,
+          ),
           SpurpunkteCompanion.insert(
-              spurId: 's1', nummer: 0, breite: 52.1, laenge: 9.1),
+            spurId: 's1',
+            nummer: 0,
+            breite: 52.1,
+            laenge: 9.1,
+          ),
         ],
       ),
       throwsA(anything),
@@ -196,15 +215,15 @@ void main() {
 
   group('Eine Spur an einer Reise', () {
     Future<void> reise(String id) => db.reiseAnlegen(
-          ReisenCompanion.insert(
-            id: id,
-            name: 'Harz',
-            von: DateTime(2024, 6, 1),
-            bis: DateTime(2024, 6, 8),
-            angelegtAm: DateTime(2024, 7, 1),
-          ),
-          const [],
-        );
+      ReisenCompanion.insert(
+        id: id,
+        name: 'Harz',
+        von: DateTime(2024, 6, 1),
+        bis: DateTime(2024, 6, 8),
+        angelegtAm: DateTime(2024, 7, 1),
+      ),
+      const [],
+    );
 
     test('sie haengt an der Reise und nicht an einer Aktivitaet', () async {
       await reise('r1');

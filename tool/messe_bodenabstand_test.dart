@@ -55,21 +55,22 @@ void main() {
     final sued = breiten.reduce(math.min);
     final ost = laengen.reduce(math.max);
     final west = laengen.reduce(math.min);
-    final mittlereHoehe =
-        hoehen.reduce((a, b) => a + b) / hoehen.length;
+    final mittlereHoehe = hoehen.reduce((a, b) => a + b) / hoehen.length;
     final breiteMeter = (ost - west) * meterJeGradLaenge((nord + sued) / 2);
     final hoeheMeter = (nord - sued) * meterJeGradBreite;
     final ausdehnung = math.max(breiteMeter, hoeheMeter);
     // Wie am Bildschirm: kurze Fensterkante 900, Faktor 1,1.
     const brennweite = 900 * 1.1;
     final entfernung = Gelaendeflug.flugabstand(
-        ausdehnung: ausdehnung, kante: 96, brennweite: brennweite);
+      ausdehnung: ausdehnung,
+      kante: 96,
+      brennweite: brennweite,
+    );
 
     // Meter entlang der Spur, damit „hinter mir" eine Strecke ist.
     final bisHier = <double>[0];
     for (var i = 1; i < breiten.length; i++) {
-      final dx = (laengen[i] - laengen[i - 1]) *
-          meterJeGradLaenge(breiten[i]);
+      final dx = (laengen[i] - laengen[i - 1]) * meterJeGradLaenge(breiten[i]);
       final dy = (breiten[i] - breiten[i - 1]) * meterJeGradBreite;
       bisHier.add(bisHier.last + math.sqrt(dx * dx + dy * dy));
     }
@@ -112,12 +113,16 @@ void main() {
         if (frei < gelaendeBodenabstand) drunter++;
         tiefste = math.min(tiefste, frei);
       }
-      print('Neigung ${neigung.toStringAsFixed(2)}: '
-          '$drunter von ${schritte + 1} Bildern unter dem Boden, '
-          'schlimmstenfalls ${tiefste.toStringAsFixed(0)} m Abstand');
+      print(
+        'Neigung ${neigung.toStringAsFixed(2)}: '
+        '$drunter von ${schritte + 1} Bildern unter dem Boden, '
+        'schlimmstenfalls ${tiefste.toStringAsFixed(0)} m Abstand',
+      );
     }
-    print('Flugabstand: ${entfernung.toStringAsFixed(0)} m, '
-        'Ausdehnung ${ausdehnung.toStringAsFixed(0)} m, '
-        'Strecke ${(gesamt / 1000).toStringAsFixed(1)} km');
+    print(
+      'Flugabstand: ${entfernung.toStringAsFixed(0)} m, '
+      'Ausdehnung ${ausdehnung.toStringAsFixed(0)} m, '
+      'Strecke ${(gesamt / 1000).toStringAsFixed(1)} km',
+    );
   });
 }

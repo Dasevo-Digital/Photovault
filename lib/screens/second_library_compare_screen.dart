@@ -40,10 +40,12 @@ class SecondLibraryCompareScreen extends StatefulWidget {
   const SecondLibraryCompareScreen({super.key, required this.library});
 
   @override
-  State<SecondLibraryCompareScreen> createState() => _SecondLibraryCompareScreenState();
+  State<SecondLibraryCompareScreen> createState() =>
+      _SecondLibraryCompareScreenState();
 }
 
-class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen> {
+class _SecondLibraryCompareScreenState
+    extends State<SecondLibraryCompareScreen> {
   _Phase _phase = _Phase.idle;
   String? _error;
   double _threshold = 0.92;
@@ -57,8 +59,9 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
       return;
     }
 
-    final picked = await FolderAccess.forCurrentPlatform()
-        .pickFolder(message: AppTexte.of(context).zweitOrdnerWaehlen);
+    final picked = await FolderAccess.forCurrentPlatform().pickFolder(
+      message: AppTexte.of(context).zweitOrdnerWaehlen,
+    );
     if (picked == null || !mounted) return;
 
     setState(() {
@@ -72,7 +75,9 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppTexte.of(context).zweitVergleichFehlgeschlagen(_describeError(e));
+        _error = AppTexte.of(
+          context,
+        ).zweitVergleichFehlgeschlagen(_describeError(e));
         _phase = _Phase.error;
       });
     }
@@ -99,7 +104,9 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppTexte.of(context).zweitVergleichFehlgeschlagen(_describeError(e));
+        _error = AppTexte.of(
+          context,
+        ).zweitVergleichFehlgeschlagen(_describeError(e));
         _phase = _Phase.error;
       });
     }
@@ -126,10 +133,15 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_error ?? AppTexte.of(context).allgUnbekannterFehler,
-                    textAlign: TextAlign.center),
+                Text(
+                  _error ?? AppTexte.of(context).allgUnbekannterFehler,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: AppSpacing.lg),
-                OutlinedButton(onPressed: _pickAndScan, child: Text(AppTexte.of(context).allgErneutVersuchen)),
+                OutlinedButton(
+                  onPressed: _pickAndScan,
+                  child: Text(AppTexte.of(context).allgErneutVersuchen),
+                ),
               ],
             ),
           ),
@@ -166,7 +178,12 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            0,
+          ),
           child: Row(
             children: [
               Text(AppTexte.of(context).duplAehnlichkeit),
@@ -189,7 +206,10 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text(
             AppTexte.of(context).zweitSchwelleHinweis,
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const Divider(height: 16),
@@ -205,18 +225,26 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              TextButton(onPressed: _pickAndScan, child: Text(AppTexte.of(context).zweitAndererOrdner)),
+              TextButton(
+                onPressed: _pickAndScan,
+                child: Text(AppTexte.of(context).zweitAndererOrdner),
+              ),
             ],
           ),
         ),
-        Expanded(child: _matches.isEmpty ? const SizedBox.shrink() : _buildMatchList()),
+        Expanded(
+          child: _matches.isEmpty ? const SizedBox.shrink() : _buildMatchList(),
+        ),
       ],
     );
   }
 
   Widget _buildMatchList() {
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       itemCount: _matches.length,
       separatorBuilder: (_, _) => const Divider(height: AppSpacing.xxl),
       itemBuilder: (context, index) {
@@ -227,9 +255,14 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                AppTexte.of(context).zweitAehnlichProzent((match.similarity * 100).toStringAsFixed(0)),
+                AppTexte.of(context).zweitAehnlichProzent(
+                  (match.similarity * 100).toStringAsFixed(0),
+                ),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 4),
               Expanded(
@@ -241,21 +274,28 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
                         child: AssetThumbnailTile(
                           asset: Rasterzeile.aus(match.ownAsset),
                           paths: widget.library.paths,
-                          onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                            builder: (_) => AssetViewerScreen(
-                              assets: [match.ownAsset],
-                              initialIndex: 0,
-                              paths: widget.library.paths,
-                              db: widget.library.db,
-                              library: widget.library,
-                              onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
-                            ),
-                          )),
+                          onTap: () =>
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AssetViewerScreen(
+                                    assets: [match.ownAsset],
+                                    initialIndex: 0,
+                                    paths: widget.library.paths,
+                                    db: widget.library.db,
+                                    library: widget.library,
+                                    onToggleFavorite: (a) => widget.library.db
+                                        .setFavorite(a.id, !a.isFavorite),
+                                  ),
+                                ),
+                              ),
                         ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Icon(Icons.compare_arrows, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    Icon(
+                      Icons.compare_arrows,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
@@ -268,14 +308,18 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
                                   ? Image.file(
                                       match.externalThumbnail,
                                       fit: BoxFit.cover,
-                                      cacheWidth: (_zeilenHoehe *
-                                              MediaQuery.devicePixelRatioOf(
-                                                  context))
-                                          .round(),
+                                      cacheWidth:
+                                          (_zeilenHoehe *
+                                                  MediaQuery.devicePixelRatioOf(
+                                                    context,
+                                                  ))
+                                              .round(),
                                     )
                                   : Container(
                                       color: Colors.black26,
-                                      child: const Icon(Icons.image_not_supported_outlined),
+                                      child: const Icon(
+                                        Icons.image_not_supported_outlined,
+                                      ),
                                     ),
                             ),
                           ),
@@ -286,8 +330,15 @@ class _SecondLibraryCompareScreenState extends State<SecondLibraryCompareScreen>
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
-                          Text(AppTexte.of(context).zweitBibliothek,
-                              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          Text(
+                            AppTexte.of(context).zweitBibliothek,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ],
                       ),
                     ),

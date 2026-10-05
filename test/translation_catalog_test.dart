@@ -50,10 +50,17 @@ void main() {
   });
 
   test('jede Datei hat eine Prüfsumme und eine Quelle', () {
-    for (final eintrag in [ModelCatalog.translationEnDe, ModelCatalog.translationDeEn]) {
+    for (final eintrag in [
+      ModelCatalog.translationEnDe,
+      ModelCatalog.translationDeEn,
+    ]) {
       expect(eintrag.files, hasLength(3), reason: eintrag.id);
       for (final datei in eintrag.files) {
-        expect(datei.sha256, hasLength(64), reason: '${eintrag.id}/${datei.fileName}');
+        expect(
+          datei.sha256,
+          hasLength(64),
+          reason: '${eintrag.id}/${datei.fileName}',
+        );
         expect(datei.url, startsWith('https://huggingface.co/'));
       }
     }
@@ -64,8 +71,12 @@ void main() {
     // (geprüft) – OPUS-MT nutzt für ein Sprachpaar ein gemeinsames
     // SentencePiece-Wörterbuch. Derselbe Zielname sorgt dafür, dass es
     // nur einmal geladen wird, egal welche Richtung zuerst kommt.
-    final enDe = ModelCatalog.translationEnDe.files.firstWhere((f) => f.fileName.endsWith('.json'));
-    final deEn = ModelCatalog.translationDeEn.files.firstWhere((f) => f.fileName.endsWith('.json'));
+    final enDe = ModelCatalog.translationEnDe.files.firstWhere(
+      (f) => f.fileName.endsWith('.json'),
+    );
+    final deEn = ModelCatalog.translationDeEn.files.firstWhere(
+      (f) => f.fileName.endsWith('.json'),
+    );
     expect(enDe.fileName, deEn.fileName);
     expect(enDe.sha256, deEn.sha256);
   });
@@ -94,7 +105,11 @@ void main() {
   group('Verfügbarkeit', () {
     test('ohne Dateien ist keine Richtung verfügbar', () {
       for (final r in Uebersetzungsrichtung.values) {
-        expect(TranslationService.isAvailable(dir.path, r), isFalse, reason: r.name);
+        expect(
+          TranslationService.isAvailable(dir.path, r),
+          isFalse,
+          reason: r.name,
+        );
       }
     });
 
@@ -103,15 +118,24 @@ void main() {
       lege('translate_en_de_encoder.onnx');
       lege('translate_en_de_decoder.onnx');
 
-      expect(TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.enDe), isTrue);
-      expect(TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.deEn), isFalse,
-          reason: 'die Gegenrichtung braucht ihre eigenen Gewichte');
+      expect(
+        TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.enDe),
+        isTrue,
+      );
+      expect(
+        TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.deEn),
+        isFalse,
+        reason: 'die Gegenrichtung braucht ihre eigenen Gewichte',
+      );
     });
 
     test('ohne Wörterbuch nützen die Gewichte nichts', () {
       lege('translate_en_de_encoder.onnx');
       lege('translate_en_de_decoder.onnx');
-      expect(TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.enDe), isFalse);
+      expect(
+        TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.enDe),
+        isFalse,
+      );
     });
 
     test('der Katalogeintrag und der Dienst meinen dieselben Dateien', () {
@@ -121,7 +145,10 @@ void main() {
         lege(datei.fileName);
       }
       expect(dienst.isEntryInstalled(ModelCatalog.translationDeEn), isTrue);
-      expect(TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.deEn), isTrue);
+      expect(
+        TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.deEn),
+        isTrue,
+      );
     });
   });
 }

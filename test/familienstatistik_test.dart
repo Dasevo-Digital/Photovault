@@ -31,8 +31,7 @@ void main() {
       expect(alterInJahren(null, null), isNull);
     });
 
-    test('ein Tod vor der Geburt liefert null statt eines negativen Werts',
-        () {
+    test('ein Tod vor der Geburt liefert null statt eines negativen Werts', () {
       // Sonst zöge ein Tippfehler den Durchschnitt nach unten, und
       // niemand fände die Ursache.
       expect(alterInJahren(DateTime(1980), DateTime(1900)), isNull);
@@ -47,8 +46,11 @@ void main() {
       final stat = Altersauswertung.aus([80, 90, null, null]);
       expect(stat.durchschnitt, 85);
       expect(stat.anzahl, 2);
-      expect(stat.nichtGezaehlt, 2,
-          reason: 'die Zahl der Ausgeschlossenen gehoert neben das Ergebnis');
+      expect(
+        stat.nichtGezaehlt,
+        2,
+        reason: 'die Zahl der Ausgeschlossenen gehoert neben das Ergebnis',
+      );
     });
 
     test('nennt die Spanne', () {
@@ -81,8 +83,11 @@ void main() {
       expect(g['vater'], 0);
       expect(g['opa'], -1);
       expect(g['kind'], 1);
-      expect(g['uropa'], -2,
-          reason: 'eine Adoptivkante zaehlt wie jede andere Elternkante');
+      expect(
+        g['uropa'],
+        -2,
+        reason: 'eine Adoptivkante zaehlt wie jede andere Elternkante',
+      );
     });
 
     test('ein Partner bekommt die Generation seines Partners', () {
@@ -111,8 +116,10 @@ void main() {
     test('das letzte Wort gilt als Nachname', () {
       // Dieselbe Vermutung wie im GEDCOM-Export – sonst zaehlte die
       // Auswertung anders, als die ausgegebene Datei aussieht.
-      expect(namensteile('Anna Maria Meier'),
-          (vorname: 'Anna', nachname: 'Meier'));
+      expect(namensteile('Anna Maria Meier'), (
+        vorname: 'Anna',
+        nachname: 'Meier',
+      ));
     });
 
     test('ein einzelner Name hat keinen Nachnamen', () {
@@ -120,16 +127,23 @@ void main() {
     });
 
     test('haeufigste zuerst, bei Gleichstand alphabetisch', () {
-      final h = haeufigkeiten(
-          ['Meier', 'Meier', 'Schulz', 'Abel', 'Schulz', null, '']);
+      final h = haeufigkeiten([
+        'Meier',
+        'Meier',
+        'Schulz',
+        'Abel',
+        'Schulz',
+        null,
+        '',
+      ]);
       expect(h.map((x) => x.name), ['Meier', 'Schulz', 'Abel']);
       expect(h.first.anzahl, 2);
     });
 
     test('die Liste wird gekuerzt', () {
-      final h = haeufigkeiten(
-          [for (var i = 0; i < 20; i++) 'Name$i'],
-          hoechstens: 3);
+      final h = haeufigkeiten([
+        for (var i = 0; i < 20; i++) 'Name$i',
+      ], hoechstens: 3);
       expect(h, hasLength(3));
     });
   });
@@ -147,8 +161,18 @@ void main() {
     ]);
 
     final personen = [
-      p('opa', 'Hans Meier', geb: DateTime(1901, 5, 2), tod: DateTime(1981, 6, 3)),
-      p('oma', 'Grete Meier', geb: DateTime(1903, 2, 1), tod: DateTime(1993, 1, 9)),
+      p(
+        'opa',
+        'Hans Meier',
+        geb: DateTime(1901, 5, 2),
+        tod: DateTime(1981, 6, 3),
+      ),
+      p(
+        'oma',
+        'Grete Meier',
+        geb: DateTime(1903, 2, 1),
+        tod: DateTime(1993, 1, 9),
+      ),
       p('vater', 'Karl Meier', geb: DateTime(1931, 4, 4)),
       p('mutter', 'Eva Schulz', geb: DateTime(1934, 8, 8)),
       p('kind', 'Lena Meier', geb: DateTime(1962, 3, 3)),
@@ -195,19 +219,23 @@ void main() {
     test('das Heiratsalter nimmt die erste Ehe', () {
       // Ein Wiederverheirateter mit sechzig verschöbe den Wert, ohne dass
       // es jemand am Ergebnis sähe.
-      final stat = rechne(ereignisse: [
-        hochzeit('vater', DateTime(1958, 6, 21)),
-        hochzeit('vater', DateTime(1991, 6, 21)),
-        hochzeit('mutter', DateTime(1958, 6, 21)),
-      ]).heiratsalter;
+      final stat = rechne(
+        ereignisse: [
+          hochzeit('vater', DateTime(1958, 6, 21)),
+          hochzeit('vater', DateTime(1991, 6, 21)),
+          hochzeit('mutter', DateTime(1958, 6, 21)),
+        ],
+      ).heiratsalter;
       expect(stat.anzahl, 2);
       expect(stat.kleinstes, 23, reason: 'Eva Schulz, geboren 1934');
       expect(stat.groesstes, 27, reason: 'Karl Meier, geboren 1931');
     });
 
     test('eine Hochzeit ohne Datum zaehlt nicht', () {
-      expect(rechne(ereignisse: [hochzeit('opa', null)]).heiratsalter.istLeer,
-          isTrue);
+      expect(
+        rechne(ereignisse: [hochzeit('opa', null)]).heiratsalter.istLeer,
+        isTrue,
+      );
     });
 
     test('die Kinderzahl kommt als Verteilung, nicht als Durchschnitt', () {
@@ -235,8 +263,10 @@ void main() {
     test('zaehlt Vor- und Nachnamen', () {
       final stat = rechne();
       expect(stat.nachnamen.first, (name: 'Meier', anzahl: 5));
-      expect(stat.vornamen.map((x) => x.name),
-          containsAll(['Eva', 'Grete', 'Hans', 'Karl', 'Lena', 'Nina']));
+      expect(
+        stat.vornamen.map((x) => x.name),
+        containsAll(['Eva', 'Grete', 'Hans', 'Karl', 'Lena', 'Nina']),
+      );
     });
 
     test('ohne Personen ist die Auswertung leer', () {

@@ -91,8 +91,9 @@ Future<Uint8List?> holeKachelRoh(
 
   for (var versuch = 0; versuch < 2; versuch++) {
     try {
-      final antwort =
-          await netz.get(Uri.parse(url), headers: kopf).timeout(gelaendeZeitgrenze);
+      final antwort = await netz
+          .get(Uri.parse(url), headers: kopf)
+          .timeout(gelaendeZeitgrenze);
       if (antwort.statusCode == 200) {
         if (speicher.isSupported) {
           try {
@@ -151,10 +152,7 @@ Future<Hoehengitter?> ladeHoehengitter({
   final bilder = await Future.wait([
     for (final a in adressen) _holeKachel(netz, sp, a.z, a.x, a.y),
   ]);
-  final da = [
-    for (final b in bilder)
-      ?b,
-  ];
+  final da = [for (final b in bilder) ?b];
   if (da.isEmpty) return null;
 
   return gitterAusKacheln(
@@ -168,7 +166,12 @@ Future<Hoehengitter?> ladeHoehengitter({
 }
 
 Future<Kachelbild?> _holeKachel(
-    http.Client netz, MapCachingProvider speicher, int z, int x, int y) async {
+  http.Client netz,
+  MapCachingProvider speicher,
+  int z,
+  int x,
+  int y,
+) async {
   try {
     final roh = await holeKachelRoh(netz, speicher, kacheladresse(z, x, y));
     if (roh == null) return null;
@@ -186,8 +189,7 @@ Future<Uint8List?> _nachRgba(Uint8List png) async {
   try {
     final bild = (await codec.getNextFrame()).image;
     try {
-      final daten =
-          await bild.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final daten = await bild.toByteData(format: ui.ImageByteFormat.rawRgba);
       return daten?.buffer.asUint8List();
     } finally {
       bild.dispose();
@@ -264,7 +266,11 @@ Future<ui.Image?> ladeKartenbild({
         bild,
         ui.Rect.fromLTWH(0, 0, bild.width.toDouble(), bild.height.toDouble()),
         ui.Rect.fromLTWH(
-            sx, sy, kachelKante.toDouble(), kachelKante.toDouble()),
+          sx,
+          sy,
+          kachelKante.toDouble(),
+          kachelKante.toDouble(),
+        ),
         ui.Paint(),
       );
       bild.dispose();
@@ -294,16 +300,23 @@ Future<ui.Image?> ladeKartenbild({
   }
 
   final bild = grundDa
-      ? await sammler
-          .endRecording()
-          .toImage(spalten * kachelKante, zeilen * kachelKante)
+      ? await sammler.endRecording().toImage(
+          spalten * kachelKante,
+          zeilen * kachelKante,
+        )
       : null;
   if (!grundDa) sammler.endRecording().dispose();
   return bild;
 }
 
-Future<ui.Image?> _holeKartenkachel(http.Client netz,
-    MapCachingProvider speicher, Kartenebene ebene, int z, int x, int y) async {
+Future<ui.Image?> _holeKartenkachel(
+  http.Client netz,
+  MapCachingProvider speicher,
+  Kartenebene ebene,
+  int z,
+  int x,
+  int y,
+) async {
   try {
     final roh = await holeKachelRoh(
       netz,

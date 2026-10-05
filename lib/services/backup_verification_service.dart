@@ -68,8 +68,9 @@ class BackupPruefdienst {
     if (await File(p.join(direkt.path, 'metadata.json')).exists() ||
         await File(p.join(direkt.path, 'vault.key')).exists() ||
         await Directory(p.join(direkt.path, 'originals')).exists() ||
-        await Directory(p.join(direkt.path, VerschluesselteNamen.ordner))
-            .exists()) {
+        await Directory(
+          p.join(direkt.path, VerschluesselteNamen.ordner),
+        ).exists()) {
       return direkt.path;
     }
     final darunter = Directory(p.join(direkt.path, _backupOrdner));
@@ -113,7 +114,8 @@ class BackupPruefdienst {
       };
       if (erwartet.isEmpty) {
         throw const FormatException(
-            'Das Backup enthält kein lesbares Dateimanifest.');
+          'Das Backup enthält kein lesbares Dateimanifest.',
+        );
       }
 
       var erledigt = 0;
@@ -131,8 +133,9 @@ class BackupPruefdienst {
       // Das aktuelle verschlüsselte Format leitet den Dateinamen aus der
       // Prüfsumme ab. So kann jede erwartete Datei direkt gefunden werden,
       // ohne den gesamten Sicherungsdatenträger erst komplett zu hashen.
-      final verschluesselteDaten =
-          Directory(p.join(wurzel, VerschluesselteNamen.ordner));
+      final verschluesselteDaten = Directory(
+        p.join(wurzel, VerschluesselteNamen.ordner),
+      );
       final istVerschluesselt = schluessel != null;
       final alteDateien = istVerschluesselt
           ? const <String, File>{}
@@ -142,12 +145,16 @@ class BackupPruefdienst {
         final checksum = eintrag.key;
         File? datei;
         if (istVerschluesselt && await verschluesselteDaten.exists()) {
-          final name =
-              await VerschluesselteNamen.fuerPruefsumme(checksum, schluessel);
+          final name = await VerschluesselteNamen.fuerPruefsumme(
+            checksum,
+            schluessel,
+          );
           datei = File(p.join(verschluesselteDaten.path, name));
         } else if (eintrag.value != null) {
-          final relativ =
-              eintrag.value!.replaceFirst(RegExp(r'^originals[\\/]'), '');
+          final relativ = eintrag.value!.replaceFirst(
+            RegExp(r'^originals[\\/]'),
+            '',
+          );
           datei = File(p.join(wurzel, 'originals', relativ));
         } else {
           datei = alteDateien[checksum];
@@ -160,8 +167,8 @@ class BackupPruefdienst {
             final zuPruefen = istVerschluesselt
                 ? await _entschluessleKurz(datei, schluessel, temp, erledigt)
                 : datei;
-            final erhalten =
-                (await sha256.bind(zuPruefen.openRead()).first).toString();
+            final erhalten = (await sha256.bind(zuPruefen.openRead()).first)
+                .toString();
             if (erhalten == checksum) {
               gueltig++;
             } else {
@@ -206,7 +213,10 @@ class BackupPruefdienst {
   }
 
   Future<Map<String, dynamic>> _leseManifest(
-      String wurzel, SecretKey? schluessel, Directory temp) async {
+    String wurzel,
+    SecretKey? schluessel,
+    Directory temp,
+  ) async {
     final quelle = File(p.join(wurzel, 'metadata.json'));
     if (!await quelle.exists()) {
       throw const FormatException('metadata.json fehlt im Backup.');
@@ -227,15 +237,17 @@ class BackupPruefdienst {
     final originals = Directory(p.join(wurzel, 'originals'));
     if (!await originals.exists()) return const {};
     final ergebnis = <String, File>{};
-    await for (final eintrag
-        in originals.list(recursive: true, followLinks: false)) {
+    await for (final eintrag in originals.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (eintrag is! File ||
           p.extension(eintrag.path).toLowerCase() == '.xmp') {
         continue;
       }
       try {
-        final checksum =
-            (await sha256.bind(eintrag.openRead()).first).toString();
+        final checksum = (await sha256.bind(eintrag.openRead()).first)
+            .toString();
         ergebnis.putIfAbsent(checksum, () => eintrag);
       } catch (_) {
         // Nicht lesbare Dateien können keinem Manifest-Eintrag genügen.
@@ -246,7 +258,11 @@ class BackupPruefdienst {
   }
 
   Future<File> _entschluessleKurz(
-      File quelle, SecretKey schluessel, Directory temp, int nummer) async {
+    File quelle,
+    SecretKey schluessel,
+    Directory temp,
+    int nummer,
+  ) async {
     final ziel = File(p.join(temp.path, '${_uuid.v4()}_$nummer'));
     await VaultCrypto.decryptFile(quelle, ziel, schluessel);
     return ziel;

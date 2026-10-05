@@ -20,10 +20,10 @@ enum Bearbeitungsart {
 
 /// Was an dieser Aufnahme bearbeitet ist – leer heisst „unverändert".
 Set<Bearbeitungsart> bearbeitungsarten(AssetData a) => {
-      if (a.developedRelativePath != null) Bearbeitungsart.entwickelt,
-      if (a.restoredRelativePath != null) Bearbeitungsart.restauriert,
-      if (a.trimmedRelativePath != null) Bearbeitungsart.zugeschnitten,
-    };
+  if (a.developedRelativePath != null) Bearbeitungsart.entwickelt,
+  if (a.restoredRelativePath != null) Bearbeitungsart.restauriert,
+  if (a.trimmedRelativePath != null) Bearbeitungsart.zugeschnitten,
+};
 
 /// Nimmt **jede** Bearbeitung einer Aufnahme zurück.
 ///

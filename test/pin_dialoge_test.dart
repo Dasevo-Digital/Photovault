@@ -20,29 +20,32 @@ void main() {
     Future<String?> Function(BuildContext) oeffnen,
   ) async {
     String? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async => ergebnis = await oeffnen(context),
-              child: const Text('auf'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async => ergebnis = await oeffnen(context),
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     await tester.pumpAndSettle();
     return ergebnis;
   }
 
-  testWidgets('die PIN-Eingabe gibt zurueck, was eingetippt wurde',
-      (tester) async {
+  testWidgets('die PIN-Eingabe gibt zurueck, was eingetippt wurde', (
+    tester,
+  ) async {
     await zeige(tester, showEnterPinDialog);
     await tester.enterText(find.byType(TextField), '12345678');
     await tester.tap(find.text('OK'));
@@ -54,8 +57,10 @@ void main() {
   testWidgets('die PIN wird verdeckt eingegeben', (tester) async {
     // Eine PIN, die jemand von der Seite mitlesen kann, ist keine.
     await zeige(tester, showEnterPinDialog);
-    expect(tester.widget<TextField>(find.byType(TextField)).obscureText,
-        isTrue);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).obscureText,
+      isTrue,
+    );
   });
 
   testWidgets('eine zu kurze PIN wird abgelehnt', (tester) async {
@@ -68,8 +73,11 @@ void main() {
     await tester.enterText(felder.at(1), '1234');
     await tester.tap(find.text('Festlegen'));
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget,
-        reason: 'das Fenster bleibt offen');
+    expect(
+      find.byType(AlertDialog),
+      findsOneWidget,
+      reason: 'das Fenster bleibt offen',
+    );
     // „Ziffern" steht auch in der Feldbeschriftung – gemeint ist die
     // Fehlermeldung darunter.
     expect(find.text('PIN muss aus 8-10 Ziffern bestehen.'), findsOneWidget);
@@ -85,20 +93,23 @@ void main() {
     expect(find.byType(AlertDialog), findsOneWidget);
   });
 
-  testWidgets('eine gueltige PIN kommt durch und das Fenster schliesst sauber',
-      (tester) async {
-    await zeige(tester, showSetPinDialog);
-    final felder = find.byType(TextField);
-    await tester.enterText(felder.at(0), '12345678');
-    await tester.enterText(felder.at(1), '12345678');
-    await tester.tap(find.text('Festlegen'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'eine gueltige PIN kommt durch und das Fenster schliesst sauber',
+    (tester) async {
+      await zeige(tester, showSetPinDialog);
+      final felder = find.byType(TextField);
+      await tester.enterText(felder.at(0), '12345678');
+      await tester.enterText(felder.at(1), '12345678');
+      await tester.tap(find.text('Festlegen'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('die Passphrase hat keine Laengenbegrenzung nach oben',
-      (tester) async {
+  testWidgets('die Passphrase hat keine Laengenbegrenzung nach oben', (
+    tester,
+  ) async {
     // Ein Sicherungsarchiv liegt oft langfristig extern; eine kurze PIN
     // waere dafuer zu schwach, deshalb ist es hier ein freier Text.
     await zeige(tester, (c) => showEnterPassphraseDialog(c));

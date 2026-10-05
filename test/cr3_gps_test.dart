@@ -10,11 +10,14 @@ import 'cr3_bauen.dart';
 void main() {
   group('gpsAusTiffIfd', () {
     test('Grad, Minuten und Sekunden werden zu einer Dezimalzahl', () {
-      final ort = gpsAusTiffIfd(gpsVerzeichnis(
+      final ort = gpsAusTiffIfd(
+        gpsVerzeichnis(
           breite: beispielBreite,
           breiteRef: 'N',
           laenge: beispielLaenge,
-          laengeRef: 'E'));
+          laengeRef: 'E',
+        ),
+      );
       expect(ort, isNotNull);
       expect(ort!.breite, closeTo(52 + 14 / 60 + 35.2 / 3600, 1e-9));
       expect(ort.laenge, closeTo(10 + 35 / 60 + 7.0 / 3600, 1e-9));
@@ -23,11 +26,14 @@ void main() {
     test('Süd und West kehren das Vorzeichen um', () {
       // Ohne diese Umkehr läge jeder Ort auf der Nordhalbkugel und
       // östlich von Greenwich – und zwar plausibel aussehend.
-      final ort = gpsAusTiffIfd(gpsVerzeichnis(
+      final ort = gpsAusTiffIfd(
+        gpsVerzeichnis(
           breite: beispielBreite,
           breiteRef: 'S',
           laenge: beispielLaenge,
-          laengeRef: 'W'));
+          laengeRef: 'W',
+        ),
+      );
       expect(ort!.breite, lessThan(0));
       expect(ort.laenge, lessThan(0));
       expect(ort.breite, closeTo(-(52 + 14 / 60 + 35.2 / 3600), 1e-9));
@@ -35,21 +41,26 @@ void main() {
 
     test('fehlt die Länge, kommt kein halber Ort heraus', () {
       expect(
-          gpsAusTiffIfd(gpsVerzeichnis(
-              breite: beispielBreite,
-              breiteRef: 'N',
-              laenge: beispielLaenge,
-              laengeRef: 'E',
-              ohneLaenge: true)),
-          isNull);
+        gpsAusTiffIfd(
+          gpsVerzeichnis(
+            breite: beispielBreite,
+            breiteRef: 'N',
+            laenge: beispielLaenge,
+            laengeRef: 'E',
+            ohneLaenge: true,
+          ),
+        ),
+        isNull,
+      );
     });
 
     test('ohne Bytereihenfolge-Zeichen kein Ergebnis', () {
       final kaputt = gpsVerzeichnis(
-          breite: beispielBreite,
-          breiteRef: 'N',
-          laenge: beispielLaenge,
-          laengeRef: 'E');
+        breite: beispielBreite,
+        breiteRef: 'N',
+        laenge: beispielLaenge,
+        laengeRef: 'E',
+      );
       kaputt[0] = 0x00;
       expect(gpsAusTiffIfd(kaputt), isNull);
     });
@@ -57,19 +68,22 @@ void main() {
     test('ein Nenner von null gibt nicht NaN, sondern null Grad', () {
       // 0/0 kommt in leeren GPS-Blöcken tatsächlich vor. Ohne die
       // Behandlung käme NaN heraus und liefe als Koordinate weiter.
-      final ort = gpsAusTiffIfd(gpsVerzeichnis(
+      final ort = gpsAusTiffIfd(
+        gpsVerzeichnis(
           breite: [
             [0, 0],
             [0, 0],
-            [0, 0]
+            [0, 0],
           ],
           breiteRef: 'N',
           laenge: [
             [0, 0],
             [0, 0],
-            [0, 0]
+            [0, 0],
           ],
-          laengeRef: 'E'));
+          laengeRef: 'E',
+        ),
+      );
       expect(ort!.breite, 0.0);
       expect(ort.laenge, 0.0);
     });
@@ -129,37 +143,50 @@ void main() {
       // ein Vielfaches der Arbeit – gemessen an der Bibliothek, für die
       // es diesen Weg gibt.
       final datei = schreibe(
-          'mit_ort.cr3',
-          cr3Mit(
-              gpsVerzeichnis(
-                  breite: beispielBreite,
-                  breiteRef: 'N',
-                  laenge: beispielLaenge,
-                  laengeRef: 'E'),
-              mdatBytes: 8 * 1024 * 1024));
+        'mit_ort.cr3',
+        cr3Mit(
+          gpsVerzeichnis(
+            breite: beispielBreite,
+            breiteRef: 'N',
+            laenge: beispielLaenge,
+            laengeRef: 'E',
+          ),
+          mdatBytes: 8 * 1024 * 1024,
+        ),
+      );
       final ort = await leseCr3Gps(datei);
       expect(ort, isNotNull);
       expect(ort!.breite, closeTo(52.2431111, 1e-6));
       expect(ort.laenge, closeTo(10.5852778, 1e-6));
     });
 
-    test('ein JPEG ist keine CR3 und liefert null statt eines Fehlers',
-        () async {
-      final datei =
-          schreibe('foto.jpg', [0xFF, 0xD8, 0xFF, 0xE0, ...List.filled(64, 0)]);
-      expect(await leseCr3Gps(datei), isNull);
-    });
+    test(
+      'ein JPEG ist keine CR3 und liefert null statt eines Fehlers',
+      () async {
+        final datei = schreibe('foto.jpg', [
+          0xFF,
+          0xD8,
+          0xFF,
+          0xE0,
+          ...List.filled(64, 0),
+        ]);
+        expect(await leseCr3Gps(datei), isNull);
+      },
+    );
 
     test('eine fehlende Datei wirft nicht', () async {
       expect(await leseCr3Gps(File('${tempDir.path}/gibtsnicht.cr3')), isNull);
     });
 
     test('ein abgeschnittenes moov wirft nicht', () async {
-      final ganz = cr3Mit(gpsVerzeichnis(
+      final ganz = cr3Mit(
+        gpsVerzeichnis(
           breite: beispielBreite,
           breiteRef: 'N',
           laenge: beispielLaenge,
-          laengeRef: 'E'));
+          laengeRef: 'E',
+        ),
+      );
       final datei = schreibe('halb.cr3', ganz.sublist(0, 40));
       expect(await leseCr3Gps(datei), isNull);
     });

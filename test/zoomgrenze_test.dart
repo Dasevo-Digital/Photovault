@@ -29,17 +29,29 @@ void main() {
     tearDown(() => setzeCartoSchluessel(null));
 
     test('jede Quelle kennt ihre letzte echte Stufe', () {
-      expect(Kartenstil.hell.hoechsteEchteStufe, 19,
-          reason: 'ab 20 antwortet OSM mit 400');
+      expect(
+        Kartenstil.hell.hoechsteEchteStufe,
+        19,
+        reason: 'ab 20 antwortet OSM mit 400',
+      );
       // Ohne Schluessel zeichnet die dunkle Karte OSM-Kacheln - und
       // erbt damit deren Grenze, nicht die von CARTO.
-      expect(Kartenstil.dunkel.hoechsteEchteStufe, 19,
-          reason: 'ohne Schluessel sind es OSM-Kacheln');
+      expect(
+        Kartenstil.dunkel.hoechsteEchteStufe,
+        19,
+        reason: 'ohne Schluessel sind es OSM-Kacheln',
+      );
       setzeCartoSchluessel('probe');
-      expect(Kartenstil.dunkel.hoechsteEchteStufe, 20,
-          reason: 'CARTO traegt eine Stufe weiter');
-      expect(Kartenstil.topo.hoechsteEchteStufe, 17,
-          reason: 'darueber kommt eine einfarbige Kachel');
+      expect(
+        Kartenstil.dunkel.hoechsteEchteStufe,
+        20,
+        reason: 'CARTO traegt eine Stufe weiter',
+      );
+      expect(
+        Kartenstil.topo.hoechsteEchteStufe,
+        17,
+        reason: 'darueber kommt eine einfarbige Kachel',
+      );
     });
 
     test('die Grenze zieht mit dem Schluessel mit', () {
@@ -57,8 +69,11 @@ void main() {
       // dabei vierfach vergroessert, also unschaerfer, aber sie ist DA.
       // Ein hartes Ende fuehlte sich wie ein Defekt an.
       for (final stil in Kartenstil.values) {
-        expect(stil.hoechsteAnzeigeStufe, stil.hoechsteEchteStufe! + 2,
-            reason: stil.name);
+        expect(
+          stil.hoechsteAnzeigeStufe,
+          stil.hoechsteEchteStufe! + 2,
+          reason: stil.name,
+        );
       }
     });
 
@@ -66,8 +81,11 @@ void main() {
       // Der eigentliche Fehler. Oberhalb von rund 22 wird die skalierte
       // Kachel groesser als jede Textur, die gezeichnet werden kann.
       for (final stil in Kartenstil.values) {
-        expect(stil.hoechsteAnzeigeStufe, lessThanOrEqualTo(22),
-            reason: stil.name);
+        expect(
+          stil.hoechsteAnzeigeStufe,
+          lessThanOrEqualTo(22),
+          reason: stil.name,
+        );
       }
     });
 
@@ -76,58 +94,71 @@ void main() {
       // keine_festen_texte_test.dart. Eine Karte OHNE Grenze faellt
       // sonst niemandem auf - bis jemand weit hineinzoomt.
       final karten = [
-        for (final f in Directory('lib')
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.dart')))
-          if (f.readAsStringSync().contains('MapOptions(')) f.path
+        for (final f
+            in Directory('lib')
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart')))
+          if (f.readAsStringSync().contains('MapOptions(')) f.path,
       ];
       expect(karten, isNotEmpty, reason: 'sonst prueft der Test nichts');
       for (final pfad in karten) {
-        expect(File(pfad).readAsStringSync(), contains('maxZoom:'),
-            reason: '$pfad baut eine Karte ohne Zoomgrenze');
+        expect(
+          File(pfad).readAsStringSync(),
+          contains('maxZoom:'),
+          reason: '$pfad baut eine Karte ohne Zoomgrenze',
+        );
       }
     });
   });
 
   group('An der echten Karte', () {
-    Future<MapController> karte(WidgetTester tester,
-        {required double grenze}) async {
+    Future<MapController> karte(
+      WidgetTester tester, {
+      required double grenze,
+    }) async {
       final steuerung = MapController();
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 800,
-            height: 500,
-            child: WischZoom(
-              steuerung: steuerung,
-              groesserZoom: grenze,
-              child: FlutterMap(
-                mapController: steuerung,
-                options: MapOptions(
-                  initialCenter: const LatLng(52.5163, 13.3777),
-                  initialZoom: 15,
-                  maxZoom: grenze,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 800,
+              height: 500,
+              child: WischZoom(
+                steuerung: steuerung,
+                groesserZoom: grenze,
+                child: FlutterMap(
+                  mapController: steuerung,
+                  options: MapOptions(
+                    initialCenter: const LatLng(52.5163, 13.3777),
+                    initialZoom: 15,
+                    maxZoom: grenze,
+                  ),
+                  children: const [],
                 ),
-                children: const [],
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       return steuerung;
     }
 
-    testWidgets('ein sehr langer Wisch bleibt an der Grenze stehen',
-        (tester) async {
+    testWidgets('ein sehr langer Wisch bleibt an der Grenze stehen', (
+      tester,
+    ) async {
       final steuerung = await karte(tester, grenze: 19);
-      final geste = await tester.createGesture(kind: PointerDeviceKind.trackpad);
+      final geste = await tester.createGesture(
+        kind: PointerDeviceKind.trackpad,
+      );
       await geste.panZoomStart(const Offset(400, 250));
       // 3000 Punkte nach oben waeren ohne Grenze Stufe 45.
       for (var i = 1; i <= 10; i++) {
-        await geste.panZoomUpdate(const Offset(400, 250),
-            pan: Offset(0, -300.0 * i));
+        await geste.panZoomUpdate(
+          const Offset(400, 250),
+          pan: Offset(0, -300.0 * i),
+        );
         await tester.pump(const Duration(milliseconds: 16));
       }
       await geste.panZoomEnd();
@@ -145,15 +176,19 @@ void main() {
       expect(steuerung.camera.zoom, lessThanOrEqualTo(19.0));
     });
 
-    testWidgets('ohne Grenze zoomt es ins Nichts - der Ausgangsbefund',
-        (tester) async {
+    testWidgets('ohne Grenze zoomt es ins Nichts - der Ausgangsbefund', (
+      tester,
+    ) async {
       // Die Gegenprobe. Ohne sie belegten die Tests darueber nur, dass
       // eine Grenze eingehalten wird - nicht, dass es vorher keine gab.
       final steuerung = await karte(tester, grenze: double.infinity);
       steuerung.move(const LatLng(52.5163, 13.3777), 30);
       await tester.pumpAndSettle();
-      expect(steuerung.camera.zoom, 30.0,
-          reason: 'so weit liess sich die Karte vorher treiben');
+      expect(
+        steuerung.camera.zoom,
+        30.0,
+        reason: 'so weit liess sich die Karte vorher treiben',
+      );
     });
   });
 }

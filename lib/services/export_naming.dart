@@ -58,19 +58,18 @@ final _randmuell = RegExp(r'^[.\s]+|[.\s]+$');
 /// lauter Platzhaltern, die für dieses Foto alle leer sind –, greift der
 /// ursprüngliche Dateiname. Ein Export darf nicht an einem unglücklichen
 /// Muster scheitern.
-String namenAusMuster(
-  String muster,
-  AssetData asset, {
-  required int nummer,
-}) {
+String namenAusMuster(String muster, AssetData asset, {required int nummer}) {
   final zeitpunkt = asset.fileCreatedAt;
   String zwei(int wert) => wert.toString().padLeft(2, '0');
 
   final werte = <String, String>{
-    Namensbaustein.name.muster: p.basenameWithoutExtension(asset.originalFileName),
+    Namensbaustein.name.muster: p.basenameWithoutExtension(
+      asset.originalFileName,
+    ),
     Namensbaustein.datum.muster:
         '${zeitpunkt.year}-${zwei(zeitpunkt.month)}-${zwei(zeitpunkt.day)}',
-    Namensbaustein.zeit.muster: '${zwei(zeitpunkt.hour)}${zwei(zeitpunkt.minute)}',
+    Namensbaustein.zeit.muster:
+        '${zwei(zeitpunkt.hour)}${zwei(zeitpunkt.minute)}',
     Namensbaustein.jahr.muster: '${zeitpunkt.year}',
     Namensbaustein.monat.muster: zwei(zeitpunkt.month),
     Namensbaustein.tag.muster: zwei(zeitpunkt.day),
@@ -79,7 +78,9 @@ String namenAusMuster(
   };
 
   var name = muster;
-  werte.forEach((platzhalter, wert) => name = name.replaceAll(platzhalter, wert));
+  werte.forEach(
+    (platzhalter, wert) => name = name.replaceAll(platzhalter, wert),
+  );
 
   name = name.replaceAll(_verboten, '_').replaceAll(_randmuell, '');
   if (name.isEmpty) {
@@ -120,8 +121,7 @@ String dateiname(
   AssetData asset, {
   required int nummer,
   required String endung,
-}) =>
-    '${namenAusMuster(muster, asset, nummer: nummer)}$endung';
+}) => '${namenAusMuster(muster, asset, nummer: nummer)}$endung';
 
 /// Hersteller und Modell zu einem Wort, ohne Doppelung.
 ///

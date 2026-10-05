@@ -186,14 +186,16 @@ List<Wanderobjekt> ausOverpass(String rumpf) {
     if (art == null) continue;
 
     final name = marken['name'];
-    aus.add(Wanderobjekt(
-      osmId: id,
-      art: art,
-      breite: breite.toDouble(),
-      laenge: laenge.toDouble(),
-      name: name is String && name.trim().isNotEmpty ? name.trim() : null,
-      hoehe: _hoehe(marken['ele']),
-    ));
+    aus.add(
+      Wanderobjekt(
+        osmId: id,
+        art: art,
+        breite: breite.toDouble(),
+        laenge: laenge.toDouble(),
+        name: name is String && name.trim().isNotEmpty ? name.trim() : null,
+        hoehe: _hoehe(marken['ele']),
+      ),
+    );
   }
   return aus;
 }
@@ -231,8 +233,12 @@ Future<List<Wanderobjekt>?> holeWanderobjekte({
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
-            'data':
-                overpassAbfrage(sued: sued, west: west, nord: nord, ost: ost)
+            'data': overpassAbfrage(
+              sued: sued,
+              west: west,
+              nord: nord,
+              ost: ost,
+            ),
           },
         )
         .timeout(overpassZeitgrenze);

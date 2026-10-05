@@ -22,8 +22,11 @@ void main() {
     test('eine Rasterzelle ist genau so breit wie ein Marker', () {
       // Die eigentliche Behauptung der Funktion.
       for (final z in [0.0, 6.0, 12.0, 18.0]) {
-        expect(rasterFuerZoom(z) / gradJePunkt(z), closeTo(markerGroesse, 1e-9),
-            reason: 'bei Zoom $z');
+        expect(
+          rasterFuerZoom(z) / gradJePunkt(z),
+          closeTo(markerGroesse, 1e-9),
+          reason: 'bei Zoom $z',
+        );
       }
     });
   });
@@ -53,7 +56,11 @@ void main() {
       // Der Marker zeigt das Vorschaubild des ersten Eintrags. Ginge die
       // Reihenfolge verloren, zeigte er ein beliebiges Foto der Gruppe
       // statt des jüngsten.
-      final punkte = [ort(52.0, 10.0), ort(52.0001, 10.0001), ort(52.0002, 10.0)];
+      final punkte = [
+        ort(52.0, 10.0),
+        ort(52.0001, 10.0001),
+        ort(52.0002, 10.0),
+      ];
       final gruppe = gruppiereFuerKarte(punkte, 6, (o) => o).values.single;
       expect(gruppe, equals(punkte));
     });
@@ -64,8 +71,11 @@ void main() {
       ];
       for (final z in [4.0, 8.0, 12.0, 16.0]) {
         final gruppen = gruppiereFuerKarte(punkte, z, (o) => o);
-        expect(gruppen.values.fold(0, (n, g) => n + g.length), punkte.length,
-            reason: 'bei Zoom $z');
+        expect(
+          gruppen.values.fold(0, (n, g) => n + g.length),
+          punkte.length,
+          reason: 'bei Zoom $z',
+        );
       }
     });
 
@@ -77,7 +87,10 @@ void main() {
       final raster = rasterFuerZoom(zoom);
       final punkte = [
         for (var i = 0; i < 2000; i++)
-          ort(52 + (i % 40) * raster * 2 / 40, 10 + (i ~/ 40) * raster * 2 / 50),
+          ort(
+            52 + (i % 40) * raster * 2 / 40,
+            10 + (i ~/ 40) * raster * 2 / 50,
+          ),
       ];
       final gruppen = gruppiereFuerKarte(punkte, zoom, (o) => o);
       // Zwei mal zwei Zellen, durch das Runden je eine Randzelle mehr.
@@ -121,7 +134,7 @@ void main() {
 
     test('der Schwerpunkt liegt innerhalb der Hülle der Gruppe', () {
       final gruppe = [
-        for (var i = 0; i < 20; i++) ort(47 + i * 0.31, 6 + i * 0.17)
+        for (var i = 0; i < 20; i++) ort(47 + i * 0.31, 6 + i * 0.17),
       ];
       final s = schwerpunktVon(gruppe, (o) => o);
       expect(s.breite, greaterThanOrEqualTo(47));
@@ -136,7 +149,10 @@ void main() {
       // die Gruppierung beiderseits von ±180 verschiedene Zellen bildet.
       // Dieser Test hält diese Voraussetzung fest.
       final gruppen = gruppiereFuerKarte(
-          [ort(0, 179.99), ort(0, -179.99)], 4.0, (o) => o);
+        [ort(0, 179.99), ort(0, -179.99)],
+        4.0,
+        (o) => o,
+      );
       expect(gruppen.length, 2);
     });
 
@@ -147,8 +163,7 @@ void main() {
       final punkte = [ort(53.50, 9.95), ort(53.52, 10.01), ort(40.0, -3.7)];
       final gruppen = gruppiereFuerKarte(punkte, 8.0, (o) => o);
       expect(gruppen.length, 2);
-      final hamburg =
-          gruppen.values.firstWhere((g) => g.length == 2);
+      final hamburg = gruppen.values.firstWhere((g) => g.length == 2);
       final s = schwerpunktVon(hamburg, (o) => o);
       expect(s.breite, closeTo(53.51, 1e-9));
       expect(s.laenge, closeTo(9.98, 1e-9));

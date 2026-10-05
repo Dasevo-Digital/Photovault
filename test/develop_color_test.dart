@@ -11,8 +11,10 @@ void main() {
   group('Tonwertkurve', () {
     test('die Gerade lässt jeden Wert unverändert', () {
       for (final x in [0.0, 0.25, 0.5, 0.75, 1.0]) {
-        expect(evaluateCurve(const [CurvePoint(0, 0), CurvePoint(1, 1)], x),
-            closeTo(x, 1e-9));
+        expect(
+          evaluateCurve(const [CurvePoint(0, 0), CurvePoint(1, 1)], x),
+          closeTo(x, 1e-9),
+        );
       }
     });
 
@@ -47,8 +49,11 @@ void main() {
       var vorher = -1.0;
       for (var i = 0; i < 1000; i++) {
         final wert = evaluateCurve(punkte, i / 999);
-        expect(wert, greaterThanOrEqualTo(vorher),
-            reason: 'bei x=${i / 999} läuft die Kurve zurück');
+        expect(
+          wert,
+          greaterThanOrEqualTo(vorher),
+          reason: 'bei x=${i / 999} läuft die Kurve zurück',
+        );
         vorher = wert;
       }
     });
@@ -85,7 +90,10 @@ void main() {
 
     test('unbrauchbare Punktfolgen liefern die Identität', () {
       expect(evaluateCurve(const [], 0.42), closeTo(0.42, 1e-9));
-      expect(evaluateCurve(const [CurvePoint(0.5, 0.9)], 0.42), closeTo(0.42, 1e-9));
+      expect(
+        evaluateCurve(const [CurvePoint(0.5, 0.9)], 0.42),
+        closeTo(0.42, 1e-9),
+      );
     });
 
     test('der Farbkanal wirkt vor dem Zusammen-Kanal', () {
@@ -94,7 +102,9 @@ void main() {
       // 0,5·2·0,5 – der Test hält die festgelegte Reihenfolge fest.
       const rot = [CurvePoint(0, 0), CurvePoint(0.5, 1), CurvePoint(1, 1)];
       const zusammen = [CurvePoint(0, 0), CurvePoint(1, 0.5)];
-      final tabelle = buildCurveLut(const ToneCurve(rot: rot, zusammen: zusammen));
+      final tabelle = buildCurveLut(
+        const ToneCurve(rot: rot, zusammen: zusammen),
+      );
 
       const mitte = (curveLutSize - 1) ~/ 2; // Eingang ≈ 0,5
       // Rot: 0,5 → 1,0; danach Zusammen: 1,0 → 0,5.
@@ -114,7 +124,8 @@ void main() {
           zusammen: [CurvePoint(0, 0), CurvePoint(0.5, 0.5), CurvePoint(1, 1)],
         ).istNeutral,
         isFalse,
-        reason: 'ein zusätzlicher Punkt auf der Geraden ändert nichts am '
+        reason:
+            'ein zusätzlicher Punkt auf der Geraden ändert nichts am '
             'Bild, aber die Tabelle wird trotzdem gebraucht, sobald der '
             'Nutzer ihn verschiebt',
       );
@@ -186,7 +197,12 @@ void main() {
         [0.0, 0.0, 0.0],
         [1.0, 1.0, 1.0],
       ]) {
-        final aus = applyColorMixer(ColorMixer.neutral, farbe[0], farbe[1], farbe[2]);
+        final aus = applyColorMixer(
+          ColorMixer.neutral,
+          farbe[0],
+          farbe[1],
+          farbe[2],
+        );
         for (var i = 0; i < 3; i++) {
           expect(aus[i], closeTo(farbe[i], 1e-9), reason: '$farbe');
         }
@@ -198,7 +214,11 @@ void main() {
       // Sättigungssperre würde ein Farbton-Regler grauen Flächen und
       // Rauschen eine Farbe geben.
       const mixer = ColorMixer({
-        ColorBand.rot: BandAnpassung(farbton: 1, saettigung: 1, helligkeit: 0.5),
+        ColorBand.rot: BandAnpassung(
+          farbton: 1,
+          saettigung: 1,
+          helligkeit: 0.5,
+        ),
         ColorBand.blau: BandAnpassung(farbton: -1, saettigung: 1),
       });
       for (final grau in [0.0, 0.25, 0.5, 0.75, 1.0]) {
@@ -231,21 +251,33 @@ void main() {
     test('Helligkeit läuft nach Weiss und nach Schwarz, ohne zu kippen', () {
       final hell = applyColorMixer(
         const ColorMixer({ColorBand.rot: BandAnpassung(helligkeit: 1)}),
-        1.0, 0.0, 0.0,
+        1.0,
+        0.0,
+        0.0,
       );
       expect(hell.every((k) => k > 0.99), isTrue, reason: 'nach Weiss: $hell');
 
       final dunkel = applyColorMixer(
         const ColorMixer({ColorBand.rot: BandAnpassung(helligkeit: -1)}),
-        1.0, 0.0, 0.0,
+        1.0,
+        0.0,
+        0.0,
       );
-      expect(dunkel.every((k) => k < 0.01), isTrue, reason: 'nach Schwarz: $dunkel');
+      expect(
+        dunkel.every((k) => k < 0.01),
+        isTrue,
+        reason: 'nach Schwarz: $dunkel',
+      );
     });
 
     test('jede Ausgabe bleibt im Bereich 0..1', () {
       const mixer = ColorMixer({
         ColorBand.rot: BandAnpassung(farbton: 1, saettigung: 1, helligkeit: 1),
-        ColorBand.aqua: BandAnpassung(farbton: -1, saettigung: 1, helligkeit: -1),
+        ColorBand.aqua: BandAnpassung(
+          farbton: -1,
+          saettigung: 1,
+          helligkeit: -1,
+        ),
         ColorBand.gelb: BandAnpassung(saettigung: 1, helligkeit: 1),
       });
       for (var i = 0; i <= 10; i++) {
@@ -331,17 +363,25 @@ void main() {
       // Genau 256 Tripel – CIColorCurves rechnet die Länge gegen seinen
       // Wertebereich, eine andere Länge ergäbe eine falsche Gradation.
       expect(karte['toneCurveLut'], hasLength(curveLutSize * 3));
-      expect(karte.containsKey('colorCube'), isFalse,
-          reason: 'ein neutraler Mischer bleibt zu Hause');
+      expect(
+        karte.containsKey('colorCube'),
+        isFalse,
+        reason: 'ein neutraler Mischer bleibt zu Hause',
+      );
     });
 
     test('ein gesetzter Mischer schickt Würfel UND Kantenlänge', () {
       const mischer = ColorMixer({ColorBand.gelb: BandAnpassung(farbton: 0.3)});
-      final karte = const DevelopAdjustments(colorMixer: mischer).toChannelMap();
+      final karte = const DevelopAdjustments(
+        colorMixer: mischer,
+      ).toChannelMap();
 
       expect(karte['colorCubeSize'], colorCubeSize);
-      expect(karte['colorCube'], hasLength(colorCubeSize * colorCubeSize * colorCubeSize * 4),
-          reason: 'ohne passende Länge lehnt die native Seite den Filter ab');
+      expect(
+        karte['colorCube'],
+        hasLength(colorCubeSize * colorCubeSize * colorCubeSize * 4),
+        reason: 'ohne passende Länge lehnt die native Seite den Filter ab',
+      );
     });
 
     test('Masken tragen weder Kurve noch Mischer', () {

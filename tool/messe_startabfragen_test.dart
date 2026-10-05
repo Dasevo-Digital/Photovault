@@ -12,8 +12,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/db/database.dart';
 
-Future<double> misst(String name, Future<void> Function() was,
-    {int laeufe = 20}) async {
+Future<double> misst(
+  String name,
+  Future<void> Function() was, {
+  int laeufe = 20,
+}) async {
   for (var i = 0; i < 3; i++) {
     await was();
   }
@@ -45,22 +48,39 @@ void main() {
     await db.customSelect('SELECT 1 AS n').getSingle();
     auf.stop();
     addTearDown(db.close);
-    print('oeffnen + wandern (Schema 78 -> ${db.schemaVersion}): '
-        '${auf.elapsedMilliseconds} ms\n');
+    print(
+      'oeffnen + wandern (Schema 78 -> ${db.schemaVersion}): '
+      '${auf.elapsedMilliseconds} ms\n',
+    );
 
     var summe = 0.0;
-    summe += await misst('faceSimilarityThresholdWert', () => db.faceSimilarityThresholdWert());
+    summe += await misst(
+      'faceSimilarityThresholdWert',
+      () => db.faceSimilarityThresholdWert(),
+    );
     summe += await misst('cartoSchluesselWert', () => db.cartoSchluesselWert());
     summe += await misst('eigeneKarteWert', () => db.eigeneKarteWert());
-    summe += await misst('karteHochaufloesendWert', () => db.karteHochaufloesendWert());
-    summe += await misst('maxGleichzeitigeAufgaben', () => db.maxGleichzeitigeAufgaben());
-    summe += await misst('autoAnalyzeAfterImportEnabled',
-        () => db.autoAnalyzeAfterImportEnabled());
-    summe += await misst('resetStuckRunningRestoreJobs',
-        () => db.resetStuckRunningRestoreJobs());
+    summe += await misst(
+      'karteHochaufloesendWert',
+      () => db.karteHochaufloesendWert(),
+    );
+    summe += await misst(
+      'maxGleichzeitigeAufgaben',
+      () => db.maxGleichzeitigeAufgaben(),
+    );
+    summe += await misst(
+      'autoAnalyzeAfterImportEnabled',
+      () => db.autoAnalyzeAfterImportEnabled(),
+    );
+    summe += await misst(
+      'resetStuckRunningRestoreJobs',
+      () => db.resetStuckRunningRestoreJobs(),
+    );
     print('\nSumme der Einzelabfragen: ${summe.toStringAsFixed(3)} ms');
 
-    await misst('EINE Zeile app_settings, alles darin',
-        () async => db.watchAppSettings().first);
+    await misst(
+      'EINE Zeile app_settings, alles darin',
+      () async => db.watchAppSettings().first,
+    );
   }, timeout: const Timeout(Duration(minutes: 10)));
 }

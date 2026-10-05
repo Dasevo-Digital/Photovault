@@ -50,7 +50,8 @@ class SpeicherRueckgabe {
     try {
       _trim = DynamicLibrary.process()
           .lookupFunction<Int32 Function(IntPtr), int Function(int)>(
-              'malloc_trim');
+            'malloc_trim',
+          );
     } on ArgumentError {
       // Kein glibc (musl) – dann bleibt es beim Normalverhalten.
       _trim = null;
@@ -70,8 +71,10 @@ class SpeicherRueckgabe {
     final etwasFrei = f(0) != 0;
     uhr.stop();
     if (kDebugMode) {
-      debugPrint('malloc_trim: ${etwasFrei ? "etwas" : "nichts"} '
-          'zurueckgegeben in ${uhr.elapsedMilliseconds} ms');
+      debugPrint(
+        'malloc_trim: ${etwasFrei ? "etwas" : "nichts"} '
+        'zurueckgegeben in ${uhr.elapsedMilliseconds} ms',
+      );
     }
     return etwasFrei;
   }

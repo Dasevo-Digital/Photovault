@@ -13,8 +13,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/db/database.dart';
 
-Future<double> misst(String name, Future<void> Function() was,
-    {int laeufe = 10}) async {
+Future<double> misst(
+  String name,
+  Future<void> Function() was, {
+  int laeufe = 10,
+}) async {
   for (var i = 0; i < 2; i++) {
     await was();
   }
@@ -49,15 +52,41 @@ void main() {
     var summe = 0.0;
     summe += await misst('databaseQuickCheck', () => db.databaseQuickCheck());
     summe += await misst('backupSettingsRow', () => db.backupSettingsRow());
-    summe += await misst('countNotAutoBackedUp', () => db.countNotAutoBackedUp());
-    summe += await misst("countAssetsOfType('IMAGE')", () => db.countAssetsOfType('IMAGE'));
-    summe += await misst("countAssetsOfType('VIDEO')", () => db.countAssetsOfType('VIDEO'));
-    summe += await misst('countOrtsvorschlagskandidaten', () => db.countOrtsvorschlagskandidaten());
-    summe += await misst('countOffeneGesichter', () => db.countOffeneGesichter());
-    summe += await misst('countAuffaelligeAufnahmedaten  (neu)', () => db.countAuffaelligeAufnahmedaten());
-    summe += await misst('countVideoZweitblick  (neu)', () => db.countVideoZweitblick());
-    summe += await misst('countVorschlaege  (neu)', () => db.countVorschlaege());
-    print('${'Summe der Abfragen'.padRight(46)} ${summe.toStringAsFixed(1).padLeft(8)} ms');
+    summe += await misst(
+      'countNotAutoBackedUp',
+      () => db.countNotAutoBackedUp(),
+    );
+    summe += await misst(
+      "countAssetsOfType('IMAGE')",
+      () => db.countAssetsOfType('IMAGE'),
+    );
+    summe += await misst(
+      "countAssetsOfType('VIDEO')",
+      () => db.countAssetsOfType('VIDEO'),
+    );
+    summe += await misst(
+      'countOrtsvorschlagskandidaten',
+      () => db.countOrtsvorschlagskandidaten(),
+    );
+    summe += await misst(
+      'countOffeneGesichter',
+      () => db.countOffeneGesichter(),
+    );
+    summe += await misst(
+      'countAuffaelligeAufnahmedaten  (neu)',
+      () => db.countAuffaelligeAufnahmedaten(),
+    );
+    summe += await misst(
+      'countVideoZweitblick  (neu)',
+      () => db.countVideoZweitblick(),
+    );
+    summe += await misst(
+      'countVorschlaege  (neu)',
+      () => db.countVorschlaege(),
+    );
+    print(
+      '${'Summe der Abfragen'.padRight(46)} ${summe.toStringAsFixed(1).padLeft(8)} ms',
+    );
 
     print('\n--- nebenlaeufig, so wie der Bildschirm es tut');
     await misst('alle elf zusammen (Future.wait)', () async {
@@ -80,19 +109,30 @@ void main() {
     if (pfad == null) return;
     print('\n--- Erkunden, oberster Abschnitt');
     // Ein Tag mit Treffern und einer ohne - der zweite ist der teure.
-    await misst('assetsOnThisDay (Tag mit Treffern)',
-        () => db.assetsOnThisDay(DateTime(2026, 8, 15)));
-    await misst('assetsOnThisDay (leerer Tag)',
-        () => db.assetsOnThisDay(DateTime(2026, 9, 12)));
-    await misst('assetsInDiesemMonat (Rueckfall)',
-        () => db.assetsInDiesemMonat(DateTime(2026, 9, 12)));
+    await misst(
+      'assetsOnThisDay (Tag mit Treffern)',
+      () => db.assetsOnThisDay(DateTime(2026, 8, 15)),
+    );
+    await misst(
+      'assetsOnThisDay (leerer Tag)',
+      () => db.assetsOnThisDay(DateTime(2026, 9, 12)),
+    );
+    await misst(
+      'assetsInDiesemMonat (Rueckfall)',
+      () => db.assetsInDiesemMonat(DateTime(2026, 9, 12)),
+    );
 
     print('\n--- die uebrigen Streifen');
     await misst('watchPeople().first', () => db.watchPeople().first);
     await misst('watchReisen().first', () => db.watchReisen().first);
-    await misst('watchAktivitaeten().first', () => db.watchAktivitaeten().first);
+    await misst(
+      'watchAktivitaeten().first',
+      () => db.watchAktivitaeten().first,
+    );
     await misst('watchAlbums().first', () => db.watchAlbums().first);
-    await misst('watchTimeline(limit: 40).first',
-        () => db.watchTimeline(limit: 40).first);
+    await misst(
+      'watchTimeline(limit: 40).first',
+      () => db.watchTimeline(limit: 40).first,
+    );
   }, timeout: const Timeout(Duration(minutes: 15)));
 }

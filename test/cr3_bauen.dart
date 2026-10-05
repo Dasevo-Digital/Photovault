@@ -73,18 +73,21 @@ Uint8List gpsVerzeichnis({
   b.add((ByteData(2)..setUint16(0, 42, Endian.little)).buffer.asUint8List());
   b.add((ByteData(4)..setUint32(0, 8, Endian.little)).buffer.asUint8List());
   b.add(
-      (ByteData(2)..setUint16(0, anzahl, Endian.little)).buffer.asUint8List());
+    (ByteData(2)..setUint16(0, anzahl, Endian.little)).buffer.asUint8List(),
+  );
   for (final e in eintraege) {
     b.add(e);
   }
   b.add(List.filled(4, 0)); // kein weiteres Verzeichnis
   for (final brueche in [breite, if (!ohneLaenge) laenge]) {
     for (final bruch in brueche) {
-      b.add((ByteData(8)
-            ..setUint32(0, bruch[0], Endian.little)
-            ..setUint32(4, bruch[1], Endian.little))
-          .buffer
-          .asUint8List());
+      b.add(
+        (ByteData(8)
+              ..setUint32(0, bruch[0], Endian.little)
+              ..setUint32(4, bruch[1], Endian.little))
+            .buffer
+            .asUint8List(),
+      );
     }
   }
   return b.toBytes();
@@ -95,14 +98,18 @@ Uint8List gpsVerzeichnis({
 /// der Leser beweisen muss, dass er es überspringt.
 Uint8List cr3Mit(Uint8List cmt4Inhalt, {int mdatBytes = 4096}) {
   final b = BytesBuilder();
-  b.add(kasten(
-      'ftyp', [...'crx '.codeUnits, 0, 0, 0, 1, ...'crx isom'.codeUnits]));
-  b.add(kasten(
+  b.add(
+    kasten('ftyp', [...'crx '.codeUnits, 0, 0, 0, 1, ...'crx isom'.codeUnits]),
+  );
+  b.add(
+    kasten(
       'moov',
       uuidKasten([
         ...kasten('CMT1', List.filled(8, 0)),
         ...kasten('CMT4', cmt4Inhalt),
-      ])));
+      ]),
+    ),
+  );
   b.add(kasten('mdat', List.filled(mdatBytes, 0x7F)));
   return b.toBytes();
 }
@@ -114,10 +121,10 @@ Uint8List cr3Mit(Uint8List cmt4Inhalt, {int mdatBytes = 4096}) {
 final beispielBreite = [
   [52, 1],
   [14, 1],
-  [352, 10]
+  [352, 10],
 ];
 final beispielLaenge = [
   [10, 1],
   [35, 1],
-  [70, 10]
+  [70, 10],
 ];

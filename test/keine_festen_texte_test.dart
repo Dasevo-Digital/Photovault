@@ -139,14 +139,31 @@ void main() {
 
   /// Stellen, an denen diese App sichtbaren Text übergibt.
   const benennungen = [
-    'title', 'subtitle', 'content', 'label', 'labelText', 'hintText',
-    'helperText', 'tooltip', 'message', 'loadingText', 'errorPrefix',
-    'restartMessage', 'semanticLabel', 'confirmLabel', 'dialogTitle',
-    'dialogMessage', 'description', 'emptyMessage', 'unavailableReason',
+    'title',
+    'subtitle',
+    'content',
+    'label',
+    'labelText',
+    'hintText',
+    'helperText',
+    'tooltip',
+    'message',
+    'loadingText',
+    'errorPrefix',
+    'restartMessage',
+    'semanticLabel',
+    'confirmLabel',
+    'dialogTitle',
+    'dialogMessage',
+    'description',
+    'emptyMessage',
+    'unavailableReason',
     'pendingLabel',
   ];
 
-  final anfang = RegExp(r"\bText\(\s*(?=')|\b(?:" + benennungen.join('|') + r"):\s*(?=')");
+  final anfang = RegExp(
+    r"\bText\(\s*(?=')|\b(?:" + benennungen.join('|') + r"):\s*(?=')",
+  );
   final literal = RegExp(r"'((?:[^'\\\n]|\\.)*)'");
 
   /// Liefert die Literale an sichtbaren Stellen, mit Zeilennummer.
@@ -160,7 +177,8 @@ void main() {
     final gefunden = <(int, String)>[];
     for (final treffer in anfang.allMatches(ohneKommentare)) {
       var pos = treffer.end;
-      final zeile = '\n'.allMatches(ohneKommentare.substring(0, pos)).length + 1;
+      final zeile =
+          '\n'.allMatches(ohneKommentare.substring(0, pos)).length + 1;
       final teile = <String>[];
       // Dart klebt benachbarte Literale aneinander; für die Beurteilung
       // zählt der ganze Satz, nicht die einzelne Quelltextzeile.
@@ -195,7 +213,8 @@ void main() {
     while (true) {
       final m = literal.allMatches(ohneKommentare, pos).firstOrNull;
       if (m == null) break;
-      final zeile = '\n'.allMatches(ohneKommentare.substring(0, m.start)).length + 1;
+      final zeile =
+          '\n'.allMatches(ohneKommentare.substring(0, m.start)).length + 1;
       final teile = <String>[m.group(1)!];
       var ende = m.end;
       while (true) {
@@ -227,7 +246,8 @@ void main() {
       .replaceAll(RegExp(r'\$\w+'), '')
       .replaceAll(RegExp(r'\$\{.*', dotAll: true), '');
 
-  bool traegtText(String s) => RegExp(r'[A-Za-zÄÖÜäöüß]{3,}').hasMatch(ohneCode(s));
+  bool traegtText(String s) =>
+      RegExp(r'[A-Za-zÄÖÜäöüß]{3,}').hasMatch(ohneCode(s));
 
   test('in den fertigen Dateien steht kein sichtbarer Text mehr fest', () {
     final reste = <String>[];
@@ -238,8 +258,7 @@ void main() {
         reste.add('$pfad:$zeile  „$text"');
       }
     }
-    expect(reste, isEmpty,
-        reason: 'nicht übersetzt:\n${reste.join('\n')}');
+    expect(reste, isEmpty, reason: 'nicht übersetzt:\n${reste.join('\n')}');
   });
 
   test('nirgends in den fertigen Dateien steht noch ein deutscher Satz', () {
@@ -248,9 +267,10 @@ void main() {
     // `_modelHint(true, 'das CLIP-Modell', …)`. Die findet man nur an der
     // Sprache selbst: Umlaute, ß, oder ein deutsches Funktionswort.
     final deutsch = RegExp(
-        r'[äöüÄÖÜß]|\b(der|die|das|und|nicht|kein|keine|für|von|wird|werden'
-        r'|sind|eine|einen|auf|aus|noch|nur|zum|zur|beim|dem|den|des|oder'
-        r'|wie|nach|bei|mit|dass|sich|schon|bereits|wurde|wurden)\b');
+      r'[äöüÄÖÜß]|\b(der|die|das|und|nicht|kein|keine|für|von|wird|werden'
+      r'|sind|eine|einen|auf|aus|noch|nur|zum|zur|beim|dem|den|des|oder'
+      r'|wie|nach|bei|mit|dass|sich|schon|bereits|wurde|wurden)\b',
+    );
     final reste = <String>[];
     for (final pfad in fertig) {
       final quelltext = File(pfad).readAsStringSync();
@@ -290,8 +310,21 @@ void main() {
     // Unter `lib/services/` und `lib/db/` sind Zeichenketten normal – SQL,
     // Pfade, Spaltennamen –, dort wäre dieselbe Regel nur Lärm.
     final endungen = [
-      '.dart', '.png', '.jpg', '.jpeg', '.json', '.onnx', '.zip',
-      '.sqlite', '.txt', '.md', '.xmp', '.mp4', '.heic', '.svg', '.csv',
+      '.dart',
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.json',
+      '.onnx',
+      '.zip',
+      '.sqlite',
+      '.txt',
+      '.md',
+      '.xmp',
+      '.mp4',
+      '.heic',
+      '.svg',
+      '.csv',
     ];
     final bezeichner = RegExp(r'^[a-z][A-Za-z0-9_]*$');
     final schreimodus = RegExp(r'^[A-Z0-9_+.\-]{1,10}$');
@@ -316,7 +349,8 @@ void main() {
 
     final reste = <String>[];
     for (final pfad in fertig) {
-      if (!pfad.startsWith('lib/screens/') && !pfad.startsWith('lib/widgets/')) {
+      if (!pfad.startsWith('lib/screens/') &&
+          !pfad.startsWith('lib/widgets/')) {
         continue;
       }
       final quelltext = File(pfad).readAsStringSync();
@@ -336,15 +370,22 @@ void main() {
         reste.add('$pfad:$zeile  „$text"');
       }
     }
-    expect(reste, isEmpty,
-        reason: 'lesbarer Text fest im Quelltext:\n${reste.join('\n')}');
+    expect(
+      reste,
+      isEmpty,
+      reason: 'lesbarer Text fest im Quelltext:\n${reste.join('\n')}',
+    );
   });
 
   test('die ausgenommenen Dateien gibt es noch', () {
     // Eine Ausnahme für eine Datei, die es nicht mehr gibt, verdeckt beim
     // nächsten Umbenennen stillschweigend eine echte Lücke.
     for (final pfad in ausgenommen) {
-      expect(File(pfad).existsSync(), isTrue, reason: '$pfad gibt es nicht mehr');
+      expect(
+        File(pfad).existsSync(),
+        isTrue,
+        reason: '$pfad gibt es nicht mehr',
+      );
     }
   });
 
@@ -353,8 +394,11 @@ void main() {
     // den nächsten Text, der zufällig genauso lautet.
     final aller = fertig.map((p) => File(p).readAsStringSync()).join('\n');
     for (final ausnahme in unbedenklich) {
-      expect(aller.contains(ausnahme), isTrue,
-          reason: 'Ausnahme „$ausnahme" wird nicht mehr gebraucht');
+      expect(
+        aller.contains(ausnahme),
+        isTrue,
+        reason: 'Ausnahme „$ausnahme" wird nicht mehr gebraucht',
+      );
     }
   });
 
@@ -362,12 +406,15 @@ void main() {
     // Ein Schlüssel, den niemand aufruft, heißt fast immer: Er wurde
     // angelegt, aber die Stelle im Quelltext nie umgestellt. Genau so sind
     // drei Texte deutsch geblieben, obwohl ihre Übersetzung längst dastand.
-    final arb = jsonDecode(File('lib/l10n/app_de.arb').readAsStringSync())
-        as Map<String, dynamic>;
+    final arb =
+        jsonDecode(File('lib/l10n/app_de.arb').readAsStringSync())
+            as Map<String, dynamic>;
     final quelltext = StringBuffer();
     for (final e in Directory('lib').listSync(recursive: true)) {
       if (e is! File || !e.path.endsWith('.dart')) continue;
-      if (e.path.replaceAll(r'\', '/').contains('/l10n/')) continue; // die Erzeugnisse selbst
+      if (e.path.replaceAll(r'\', '/').contains('/l10n/')) {
+        continue; // die Erzeugnisse selbst
+      }
       quelltext.write(e.readAsStringSync());
     }
     final text = quelltext.toString();
@@ -376,7 +423,10 @@ void main() {
         .where((k) => !k.startsWith('@'))
         .where((k) => !text.contains('.$k'))
         .toList();
-    expect(ungenutzt, isEmpty,
-        reason: 'diese Texte ruft niemand ab: ${ungenutzt.join(', ')}');
+    expect(
+      ungenutzt,
+      isEmpty,
+      reason: 'diese Texte ruft niemand ab: ${ungenutzt.join(', ')}',
+    );
   });
 }

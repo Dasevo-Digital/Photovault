@@ -211,23 +211,22 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
   }
 
   List<AktivitaetenData> get _ohneReise => [
-        for (final k in _aktivitaeten)
-          if (k.reiseId == null) k
-      ];
+    for (final k in _aktivitaeten)
+      if (k.reiseId == null) k,
+  ];
 
   List<AktivitaetenData> get _mitReise => [
-        for (final k in _aktivitaeten)
-          if (k.reiseId != null) k
-      ];
+    for (final k in _aktivitaeten)
+      if (k.reiseId != null) k,
+  ];
 
   /// Die Zahlen im Kopf – wie bei den Reisen, und nach derselben Regel:
   /// Was null wäre, fällt weg.
   List<String> _kopfzahlen(AppTexte t) => [
-        t.aktivitaetenAnzahl(_aktivitaeten.length),
-        if (_mitReise.isNotEmpty) t.aktivitaetenMitReise(_mitReise.length),
-        if (_ohneReise.isNotEmpty)
-          t.aktivitaetenOhneReiseZahl(_ohneReise.length),
-      ];
+    t.aktivitaetenAnzahl(_aktivitaeten.length),
+    if (_mitReise.isNotEmpty) t.aktivitaetenMitReise(_mitReise.length),
+    if (_ohneReise.isNotEmpty) t.aktivitaetenOhneReiseZahl(_ohneReise.length),
+  ];
 
   Future<void> _umbenennen(AktivitaetenData k) async {
     final t = AppTexte.of(context);
@@ -238,8 +237,10 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       vorgabe: k.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db
-        .aktivitaetAendern(k.id, AktivitaetenCompanion(name: Value(sauber)));
+    await widget.library.db.aktivitaetAendern(
+      k.id,
+      AktivitaetenCompanion(name: Value(sauber)),
+    );
     await _laden();
   }
 
@@ -252,11 +253,13 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
         content: Text(t.aktivitaetenLoeschenFrage(k.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgEntfernen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgEntfernen),
+          ),
         ],
       ),
     );
@@ -266,38 +269,45 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
   }
 
   /// Die Kacheln einer der beiden Listen.
-  List<Widget> _kacheln(AppTexte t, List<AktivitaetenData> welche,
-          {required bool mitReisename}) =>
-      [
-        for (final k in welche)
-          Aktivitaetskachel(
-            key: ValueKey(k.id),
-            aktivitaet: k,
-            library: widget.library,
-            reisename: mitReisename ? _reisenamen[k.reiseId] : null,
-            ort: ortszeile(t, _orte[k.id],
-                sprache: Localizations.localeOf(context).languageCode),
-            onTippen: () => _oeffnen(k),
-            befehle: [
-              (
-                symbol: Icons.drive_file_rename_outline,
-                text: t.aktivitaetenUmbenennen,
-                tun: () => _umbenennen(k),
-              ),
-              (
-                symbol: Icons.delete_outline,
-                text: t.aktivitaetenLoeschen,
-                tun: () => _loeschen(k),
-              ),
-            ],
+  List<Widget> _kacheln(
+    AppTexte t,
+    List<AktivitaetenData> welche, {
+    required bool mitReisename,
+  }) => [
+    for (final k in welche)
+      Aktivitaetskachel(
+        key: ValueKey(k.id),
+        aktivitaet: k,
+        library: widget.library,
+        reisename: mitReisename ? _reisenamen[k.reiseId] : null,
+        ort: ortszeile(
+          t,
+          _orte[k.id],
+          sprache: Localizations.localeOf(context).languageCode,
+        ),
+        onTippen: () => _oeffnen(k),
+        befehle: [
+          (
+            symbol: Icons.drive_file_rename_outline,
+            text: t.aktivitaetenUmbenennen,
+            tun: () => _umbenennen(k),
           ),
-      ];
+          (
+            symbol: Icons.delete_outline,
+            text: t.aktivitaetenLoeschen,
+            tun: () => _loeschen(k),
+          ),
+        ],
+      ),
+  ];
 
   Future<void> _oeffnen(AktivitaetenData k) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) =>
-          AktivitaetDetailScreen(library: widget.library, aktivitaet: k),
-    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            AktivitaetDetailScreen(library: widget.library, aktivitaet: k),
+      ),
+    );
     if (mounted) await _laden();
   }
 
@@ -328,91 +338,101 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(t.aktivitaetenSuchtNoch,
-                      style: TextStyle(color: farben.onSurfaceVariant)),
+                  Text(
+                    t.aktivitaetenSuchtNoch,
+                    style: TextStyle(color: farben.onSurfaceVariant),
+                  ),
                 ],
               ),
             )
           : _aktivitaeten.isEmpty && _vorschlaege.isEmpty
-              ? SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: Center(
-                    child: SizedBox(
-                      width: 440,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(t.aktivitaetenLeer, textAlign: TextAlign.center),
-                          // Ohne den Datensatz weiss die App nicht, wo
-                          // etwas aufgenommen wurde – dann ist „noch
-                          // keine Aktivität" nur die halbe Auskunft.
-                          if (widget.library.geocoder == null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              t.fortschrittOhneGeodaten,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: farben.onSurfaceVariant),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              : CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      sliver: SliverList.list(children: [
-                        Uebersichtskopf(
-                          symbol: Icons.hiking,
-                          titel: t.aktivitaetenTitel,
-                          zahlen: _kopfzahlen(t),
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Center(
+                child: SizedBox(
+                  width: 440,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(t.aktivitaetenLeer, textAlign: TextAlign.center),
+                      // Ohne den Datensatz weiss die App nicht, wo
+                      // etwas aufgenommen wurde – dann ist „noch
+                      // keine Aktivität" nur die halbe Auskunft.
+                      if (widget.library.geocoder == null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          t.fortschrittOhneGeodaten,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: farben.onSurfaceVariant),
                         ),
-                        if (_vorschlaege.isNotEmpty) ...[
-                          _Ueberschrift(t.aktivitaetenVorschlaege),
-                          for (final v in _vorschlaege)
-                            _Vorschlagskarte(
-                              library: widget.library,
-                              vorschlag: v,
-                              onJa: () => _bestaetigen(v),
-                              onNein: () => _verwerfen(v),
-                            ),
-                          const SizedBox(height: AppSpacing.xl),
-                        ],
-                        // Zwei Listen und nicht eine: Die Sonntagswanderung
-                        // vor der Haustür sucht man anders als die Wanderung
-                        // im Südtirol-Urlaub – die eine über das Datum, die
-                        // andere über die Reise.
-                        if (_ohneReise.isNotEmpty)
-                          _Ueberschrift(t.aktivitaetenOhneReise),
-                      ]),
-                    ),
-                    SliverPadding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      sliver: Kachelraster(
-                          kacheln:
-                              _kacheln(t, _ohneReise, mitReisename: false)),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      sliver: SliverList.list(children: [
-                        if (_mitReise.isNotEmpty)
-                          _Ueberschrift(t.aktivitaetenBestaetigte),
-                      ]),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-                      sliver: Kachelraster(
-                          kacheln: _kacheln(t, _mitReise, mitReisename: true)),
-                    ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
+              ),
+            )
+          : CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverList.list(
+                    children: [
+                      Uebersichtskopf(
+                        symbol: Icons.hiking,
+                        titel: t.aktivitaetenTitel,
+                        zahlen: _kopfzahlen(t),
+                      ),
+                      if (_vorschlaege.isNotEmpty) ...[
+                        _Ueberschrift(t.aktivitaetenVorschlaege),
+                        for (final v in _vorschlaege)
+                          _Vorschlagskarte(
+                            library: widget.library,
+                            vorschlag: v,
+                            onJa: () => _bestaetigen(v),
+                            onNein: () => _verwerfen(v),
+                          ),
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
+                      // Zwei Listen und nicht eine: Die Sonntagswanderung
+                      // vor der Haustür sucht man anders als die Wanderung
+                      // im Südtirol-Urlaub – die eine über das Datum, die
+                      // andere über die Reise.
+                      if (_ohneReise.isNotEmpty)
+                        _Ueberschrift(t.aktivitaetenOhneReise),
+                    ],
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  sliver: Kachelraster(
+                    kacheln: _kacheln(t, _ohneReise, mitReisename: false),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverList.list(
+                    children: [
+                      if (_mitReise.isNotEmpty)
+                        _Ueberschrift(t.aktivitaetenBestaetigte),
+                    ],
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  sliver: Kachelraster(
+                    kacheln: _kacheln(t, _mitReise, mitReisename: true),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -423,9 +443,9 @@ class _Ueberschrift extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
+    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 class _Vorschlagskarte extends StatelessWidget {
@@ -464,8 +484,10 @@ class _Vorschlagskarte extends StatelessWidget {
                 Icon(symbolFuerArt(vorschlag.art), color: farben.primary),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Text(vorschlag.name,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    vorschlag.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -494,7 +516,9 @@ class _Vorschlagskarte extends StatelessWidget {
                 TextButton(onPressed: onNein, child: Text(t.aktivitaetenKeine)),
                 const SizedBox(width: AppSpacing.sm),
                 FilledButton(
-                    onPressed: onJa, child: Text(t.aktivitaetenIstEine)),
+                  onPressed: onJa,
+                  child: Text(t.aktivitaetenIstEine),
+                ),
               ],
             ),
           ],
@@ -517,8 +541,9 @@ class _Vorschaureihe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gezeigt =
-        vorschlag.aufnahmeIds.take(_Vorschlagskarte._bilder).toList();
+    final gezeigt = vorschlag.aufnahmeIds
+        .take(_Vorschlagskarte._bilder)
+        .toList();
     if (gezeigt.isEmpty) return const SizedBox.shrink();
     final weitere = vorschlag.anzahl - gezeigt.length;
     return SizedBox(
@@ -547,16 +572,16 @@ class _Vorschaureihe extends StatelessWidget {
                           paths: library.paths,
                           onTap: () =>
                               Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute(
-                              builder: (_) => AssetViewerScreen(
-                                assets: aufnahmen,
-                                initialIndex: aufnahmen.indexOf(a),
-                                paths: library.paths,
-                                db: library.db,
-                                library: library,
+                                MaterialPageRoute(
+                                  builder: (_) => AssetViewerScreen(
+                                    assets: aufnahmen,
+                                    initialIndex: aufnahmen.indexOf(a),
+                                    paths: library.paths,
+                                    db: library.db,
+                                    library: library,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
                         ),
                       ),
                     ),
@@ -565,8 +590,9 @@ class _Vorschaureihe extends StatelessWidget {
                 Text(
                   AppTexte.of(context).aktivitaetenWeitere(weitere),
                   style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
             ],
           );
@@ -612,8 +638,8 @@ class Aktivitaetskachel extends StatefulWidget {
 class _AktivitaetskachelState extends State<Aktivitaetskachel> {
   /// Einmal beim Anlegen geholt und nicht in `build` – sonst liefe die
   /// Abfrage bei jedem Neuaufbau erneut.
-  late final Future<AssetData?> _bild =
-      widget.library.db.ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+  late final Future<AssetData?> _bild = widget.library.db
+      .ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
 
   @override
   Widget build(BuildContext context) {
@@ -674,8 +700,8 @@ class Aktivitaetszeile extends StatefulWidget {
 class _AktivitaetszeileState extends State<Aktivitaetszeile> {
   /// Einmal beim Anlegen der Zeile geholt und nicht in `build` – sonst
   /// liefe die Abfrage bei jedem Neuaufbau erneut.
-  late final Future<AssetData?> _bild =
-      widget.library.db.ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+  late final Future<AssetData?> _bild = widget.library.db
+      .ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
 
   @override
   Widget build(BuildContext context) {
@@ -709,19 +735,23 @@ class _AktivitaetszeileState extends State<Aktivitaetszeile> {
         ),
         title: Row(
           children: [
-            Icon(symbolFuerKennung(art),
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              symbolFuerKennung(art),
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: AppSpacing.xs),
             Expanded(child: Text(widget.aktivitaet.name)),
           ],
         ),
-        subtitle: Text([
-          nameFuerKennung(t, art),
-          DateFormat.yMMMd(locale.toString()).format(widget.aktivitaet.von),
-          dauertext(t, dauer),
-          if (widget.reisename case final r?) t.aktivitaetenZuReise(r),
-        ].join(' · ')),
+        subtitle: Text(
+          [
+            nameFuerKennung(t, art),
+            DateFormat.yMMMd(locale.toString()).format(widget.aktivitaet.von),
+            dauertext(t, dauer),
+            if (widget.reisename case final r?) t.aktivitaetenZuReise(r),
+          ].join(' · '),
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: widget.onTippen,
       ),

@@ -121,8 +121,10 @@ class DevelopRender {
   static Future<ui.Image?> _ladeBild(File datei, int maxDimension) async {
     Uint8List? bytes;
     if (heicAndRawExtensions.contains(p.extension(datei.path).toLowerCase())) {
-      bytes = await NativeImageConverter.convertToJpegBytes(datei,
-          maxDimension: maxDimension);
+      bytes = await NativeImageConverter.convertToJpegBytes(
+        datei,
+        maxDimension: maxDimension,
+      );
     } else {
       bytes = await datei.readAsBytes();
     }
@@ -149,11 +151,8 @@ class DevelopRender {
     // Den Puffer gibt `instantiateImageCodecWithSize` selbst wieder frei.
     final codec = await ui.instantiateImageCodecWithSize(
       puffer,
-      getTargetSize: (breite, hoehe) => zielGroesse(
-        breite: breite,
-        hoehe: hoehe,
-        maxKante: maxDimension,
-      ),
+      getTargetSize: (breite, hoehe) =>
+          zielGroesse(breite: breite, hoehe: hoehe, maxKante: maxDimension),
     );
     try {
       return (await codec.getNextFrame()).image;
@@ -196,11 +195,21 @@ class DevelopRender {
   }) async {
     final aufnahme = ui.PictureRecorder();
     final leinwand = ui.Canvas(aufnahme);
-    final flaeche =
-        ui.Rect.fromLTWH(0, 0, basis.width.toDouble(), basis.height.toDouble());
+    final flaeche = ui.Rect.fromLTWH(
+      0,
+      0,
+      basis.width.toDouble(),
+      basis.height.toDouble(),
+    );
 
     await _zeichneSchicht(
-        shader, leinwand, basis, adjustments, flaeche, aufraeumen);
+      shader,
+      leinwand,
+      basis,
+      adjustments,
+      flaeche,
+      aufraeumen,
+    );
 
     for (final schicht in masks) {
       final maske = await _ladeMaske(schicht.maskFilePath);
@@ -214,7 +223,13 @@ class DevelopRender {
       // Mitteln der Leinwand statt mit Core Image.
       leinwand.saveLayer(flaeche, ui.Paint());
       await _zeichneSchicht(
-          shader, leinwand, basis, schicht.adjustments, flaeche, aufraeumen);
+        shader,
+        leinwand,
+        basis,
+        schicht.adjustments,
+        flaeche,
+        aufraeumen,
+      );
       leinwand.drawImageRect(
         maske,
         ui.Rect.fromLTWH(0, 0, maske.width.toDouble(), maske.height.toDouble()),
@@ -237,22 +252,29 @@ class DevelopRender {
   ) async {
     // Volle Kantenlänge statt der gröberen Vorschau-Auflösung: Hier
     // entsteht das Ergebnis, das bleibt.
-    final platzhalter =
-        await texturVonBytes(Uint8List.fromList([0, 0, 0, 255]), 1, 1);
+    final platzhalter = await texturVonBytes(
+      Uint8List.fromList([0, 0, 0, 255]),
+      1,
+      1,
+    );
     aufraeumen.add(platzhalter);
 
     ui.Image kurve = platzhalter;
     if (!a.toneCurve.istNeutral) {
       kurve = await texturVonBytes(
-          packCurveLutForTexture(buildCurveLut(a.toneCurve)), curveLutSize, 1);
+        packCurveLutForTexture(buildCurveLut(a.toneCurve)),
+        curveLutSize,
+        1,
+      );
       aufraeumen.add(kurve);
     }
     ui.Image wuerfel = platzhalter;
     if (!a.colorMixer.istNeutral) {
       wuerfel = await texturVonBytes(
         packColorCubeForTexture(
-            buildColorCube(a.colorMixer, size: colorCubeSize),
-            size: colorCubeSize),
+          buildColorCube(a.colorMixer, size: colorCubeSize),
+          size: colorCubeSize,
+        ),
         colorCubeStripWidth(colorCubeSize),
         colorCubeSize,
       );
@@ -337,14 +359,13 @@ void wendeDesktopDevelopFilterAn(
   required double noiseReduction,
   required double clarity,
   required double vignette,
-}) =>
-    _wendeNachbarfilterAn(
-      bild,
-      sharpness: sharpness,
-      noiseReduction: noiseReduction,
-      clarity: clarity,
-      vignette: vignette,
-    );
+}) => _wendeNachbarfilterAn(
+  bild,
+  sharpness: sharpness,
+  noiseReduction: noiseReduction,
+  clarity: clarity,
+  vignette: vignette,
+);
 
 void _wendeNachbarfilterAn(
   img.Image bild, {
@@ -365,20 +386,17 @@ void _wendeNachbarfilterAn(
             value.round().clamp(0, 255).toInt();
         base
           ..r = channel(
-              base.r * (1 - alpha) +
-                  soft.r * alpha +
-                  detail * (base.r - soft.r),
-              base.r)
+            base.r * (1 - alpha) + soft.r * alpha + detail * (base.r - soft.r),
+            base.r,
+          )
           ..g = channel(
-              base.g * (1 - alpha) +
-                  soft.g * alpha +
-                  detail * (base.g - soft.g),
-              base.g)
+            base.g * (1 - alpha) + soft.g * alpha + detail * (base.g - soft.g),
+            base.g,
+          )
           ..b = channel(
-              base.b * (1 - alpha) +
-                  soft.b * alpha +
-                  detail * (base.b - soft.b),
-              base.b);
+            base.b * (1 - alpha) + soft.b * alpha + detail * (base.b - soft.b),
+            base.b,
+          );
       }
     }
   }
@@ -397,8 +415,9 @@ void _wendeNachbarfilterAn(
       final ny = (y / math.max(1, bild.height - 1)) * 2 - 1;
       for (var x = 0; x < bild.width; x++) {
         final nx = (x / math.max(1, bild.width - 1)) * 2 - 1;
-        final edge =
-            math.pow(math.sqrt(nx * nx + ny * ny) / maxRadius, 2.2).toDouble();
+        final edge = math
+            .pow(math.sqrt(nx * nx + ny * ny) / maxRadius, 2.2)
+            .toDouble();
         final factor = (1 - vignette * edge * 0.65).clamp(0.0, 2.0);
         final pixel = bild.getPixel(x, y);
         pixel
@@ -420,5 +439,5 @@ enum Entwicklungsregler {
   schaerfe,
   rauschunterdrueckung,
   klarheit,
-  vignettierung
+  vignettierung,
 }

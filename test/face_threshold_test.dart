@@ -11,8 +11,10 @@ import 'package:photo_vault/services/face_threshold.dart';
 void main() {
   const allgemein = 0.363;
 
-  GesichtsRueckmeldung ja(double s) => GesichtsRueckmeldung(bestaetigt: true, aehnlichkeit: s);
-  GesichtsRueckmeldung nein(double s) => GesichtsRueckmeldung(bestaetigt: false, aehnlichkeit: s);
+  GesichtsRueckmeldung ja(double s) =>
+      GesichtsRueckmeldung(bestaetigt: true, aehnlichkeit: s);
+  GesichtsRueckmeldung nein(double s) =>
+      GesichtsRueckmeldung(bestaetigt: false, aehnlichkeit: s);
 
   group('Wann überhaupt abgewichen wird', () {
     test('ohne Rückmeldungen gilt die allgemeine Schwelle', () {
@@ -45,10 +47,15 @@ void main() {
       // sind die schwächste bestätigte und die stärkste abgelehnte.
       final wenige = [ja(0.5), ja(0.7), nein(0.4)];
       final viele = [
-        ja(0.5), ja(0.7), nein(0.4),
+        ja(0.5),
+        ja(0.7),
+        nein(0.4),
         for (var i = 0; i < 10; i++) ja(0.6),
       ];
-      expect(leiteSchwelleAb(viele, allgemein), leiteSchwelleAb(wenige, allgemein));
+      expect(
+        leiteSchwelleAb(viele, allgemein),
+        leiteSchwelleAb(wenige, allgemein),
+      );
     });
   });
 
@@ -69,17 +76,23 @@ void main() {
   });
 
   group('Nur eine Sorte Rückmeldung', () {
-    test('nur Bestätigungen senken die Schwelle knapp unter die schwächste', () {
-      final r = [ja(0.32), ja(0.5), ja(0.6)];
-      expect(leiteSchwelleAb(r, allgemein), closeTo(0.31, 1e-9));
-    });
+    test(
+      'nur Bestätigungen senken die Schwelle knapp unter die schwächste',
+      () {
+        final r = [ja(0.32), ja(0.5), ja(0.6)];
+        expect(leiteSchwelleAb(r, allgemein), closeTo(0.31, 1e-9));
+      },
+    );
 
-    test('liegen alle Bestätigungen darüber, bleibt die Schwelle, wo sie war', () {
-      // Sie zu senken gäbe es keinen Anlass – es hat ja nichts gefehlt.
-      final r = [ja(0.5), ja(0.6), ja(0.7)];
-      expect(leiteSchwelleAb(r, allgemein), allgemein);
-      expect(herkunft(r, allgemein), SchwellenHerkunft.wieAllgemein);
-    });
+    test(
+      'liegen alle Bestätigungen darüber, bleibt die Schwelle, wo sie war',
+      () {
+        // Sie zu senken gäbe es keinen Anlass – es hat ja nichts gefehlt.
+        final r = [ja(0.5), ja(0.6), ja(0.7)];
+        expect(leiteSchwelleAb(r, allgemein), allgemein);
+        expect(herkunft(r, allgemein), SchwellenHerkunft.wieAllgemein);
+      },
+    );
 
     test('nur Ablehnungen heben die Schwelle knapp über die stärkste', () {
       final r = [nein(0.4), nein(0.38), nein(0.2)];
@@ -97,17 +110,26 @@ void main() {
       // Ohne Deckel läge die Schwelle bei knapp 1,0 – diese Person käme in
       // keinem Vorschlag mehr vor, und niemand fände den Grund.
       final r = [nein(0.99), nein(0.2), nein(0.1)];
-      expect(leiteSchwelleAb(r, allgemein), closeTo(allgemein + maximaleAbweichung, 1e-9));
+      expect(
+        leiteSchwelleAb(r, allgemein),
+        closeTo(allgemein + maximaleAbweichung, 1e-9),
+      );
     });
 
     test('und nach unten wird ebenso begrenzt', () {
       final r = [ja(0.02), ja(0.9), ja(0.95)];
-      expect(leiteSchwelleAb(r, allgemein), closeTo(allgemein - maximaleAbweichung, 1e-9));
+      expect(
+        leiteSchwelleAb(r, allgemein),
+        closeTo(allgemein - maximaleAbweichung, 1e-9),
+      );
     });
 
     test('auch die saubere Trennung wird gedeckelt', () {
       final r = [ja(0.95), ja(0.97), nein(0.9)];
-      expect(leiteSchwelleAb(r, allgemein), closeTo(allgemein + maximaleAbweichung, 1e-9));
+      expect(
+        leiteSchwelleAb(r, allgemein),
+        closeTo(allgemein + maximaleAbweichung, 1e-9),
+      );
     });
   });
 

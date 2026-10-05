@@ -51,8 +51,9 @@ void main() {
     setUp(() async {
       tempRoot = Directory.systemTemp.createTempSync('pv_format_');
       db = AppDatabase(NativeDatabase.memory());
-      final paths =
-          await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+      final paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'lib')),
+      );
       import = ImportService(db, paths);
     });
 
@@ -62,7 +63,8 @@ void main() {
     });
 
     Future<void> importiere(String name) async {
-      final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
+      final inc = Directory(p.join(tempRoot.path, 'in'))
+        ..createSync(recursive: true);
       final f = File(p.join(inc.path, name))
         ..writeAsBytesSync([1, 2, 3, naechstesByte++]);
       final r = await import.importFile(f.path);
@@ -77,8 +79,11 @@ void main() {
     test('der Import traegt das Format ein', () async {
       await importiere('a.DNG');
       final alle = await db.searchAssets(const SearchFilters());
-      expect(alle.single.dateiformat, 'dng',
-          reason: 'kleingeschrieben, ohne Punkt');
+      expect(
+        alle.single.dateiformat,
+        'dng',
+        reason: 'kleingeschrieben, ohne Punkt',
+      );
     });
 
     test('ein Format filtert genau dieses heraus', () async {
@@ -113,8 +118,10 @@ void main() {
       await importiere('b.jpg');
       await importiere('c.dng');
 
-      expect(await db.distinctDateiformate(), ['dng', 'jpg'],
-          reason: 'ohne Wiederholung, alphabetisch');
+      expect(await db.distinctDateiformate(), [
+        'dng',
+        'jpg',
+      ], reason: 'ohne Wiederholung, alphabetisch');
     });
 
     test('gespeicherte Suchen verlieren den Formatfilter nicht', () async {

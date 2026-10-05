@@ -36,8 +36,11 @@ void main() {
         ['Strand', 'Meer', 'Sommer', 'Wasser'],
         [0.30, 0.299, 0.298, 0.297],
       );
-      expect(gewaehlt.length, greaterThan(1),
-          reason: 'wo nichts heraussticht, darf auch nichts alleine stehen');
+      expect(
+        gewaehlt.length,
+        greaterThan(1),
+        reason: 'wo nichts heraussticht, darf auch nichts alleine stehen',
+      );
     });
 
     test('passt gar nichts, gibt es nichts', () {
@@ -78,11 +81,13 @@ void main() {
       final naehe = [for (var i = 0; i < 20; i++) 0.30 - i * 0.001];
       final alt = [
         for (var i = 0; i < 20; i++)
-          if (naehe[i] >= 0.24) begriffe[i]
+          if (naehe[i] >= 0.24) begriffe[i],
       ];
       expect(alt.length, 20, reason: 'so sah es vorher aus');
-      expect(waehleTags(begriffe, naehe).length,
-          lessThanOrEqualTo(kiTagsHoechstens));
+      expect(
+        waehleTags(begriffe, naehe).length,
+        lessThanOrEqualTo(kiTagsHoechstens),
+      );
     });
   });
 }

@@ -40,8 +40,9 @@ void main() {
   /// libmpv unter Windows weder Dauer noch Fehler, es geschah schlicht
   /// nichts. `File.existsSync()` war dabei die ganze Zeit `true` – Dart
   /// löst relativ zum Arbeitsverzeichnis auf, die native Bibliothek nicht.
-  final probe =
-      File(p.join('test', 'fixtures', 'werkzeuge', 'probe.mp4')).absolute;
+  final probe = File(
+    p.join('test', 'fixtures', 'werkzeuge', 'probe.mp4'),
+  ).absolute;
 
   /// Baut die Bildfläche in den Baum, BEVOR geöffnet wird.
   ///
@@ -54,24 +55,30 @@ void main() {
     final steuerung = VideoPlaybackController();
     addTearDown(steuerung.dispose);
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 320,
-            height: 240,
-            child: VideoSurface(controller: steuerung),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 320,
+              height: 240,
+              child: VideoSurface(controller: steuerung),
+            ),
           ),
         ),
       ),
-    ));
+    );
 
     // runAsync, weil das Öffnen echte Zeit braucht: Der Testrahmen hält
     // sonst die Uhr an, und libmpv kommt nie zum Zug.
     final offen = await tester.runAsync(() => steuerung.open(probe));
-    expect(offen, isTrue,
-        reason: 'libmpv hat die Datei nicht angenommen – genau der Zustand, '
-            'in dem unter Linux jedes Video schwarz blieb');
+    expect(
+      offen,
+      isTrue,
+      reason:
+          'libmpv hat die Datei nicht angenommen – genau der Zustand, '
+          'in dem unter Linux jedes Video schwarz blieb',
+    );
     await tester.pump(const Duration(milliseconds: 300));
     return steuerung;
   }
@@ -95,8 +102,11 @@ void main() {
     // 320x240 sind 4:3. Der Rückfallwert von 16:9 gälte auch dann, wenn
     // die Maße nie angekommen wären – deshalb auf den echten Wert prüfen
     // und nicht bloss auf „grösser als null".
-    expect(steuerung.aspectRatio, closeTo(4 / 3, 0.01),
-        reason: '16/9 hiesse: die Bildmaße sind nie angekommen');
+    expect(
+      steuerung.aspectRatio,
+      closeTo(4 / 3, 0.01),
+      reason: '16/9 hiesse: die Bildmaße sind nie angekommen',
+    );
 
     await tester.runAsync(() async {
       await steuerung.play();
@@ -107,8 +117,11 @@ void main() {
     final position = steuerung.position;
     print('Position nach 1,2 s: ${position.inMilliseconds} ms');
 
-    expect(position.inMilliseconds, greaterThan(200),
-        reason: 'die Datei war offen, aber es wurde nichts abgespielt');
+    expect(
+      position.inMilliseconds,
+      greaterThan(200),
+      reason: 'die Datei war offen, aber es wurde nichts abgespielt',
+    );
     expect(steuerung.isPlaying, isTrue);
 
     await tester.runAsync(() async {
@@ -117,10 +130,13 @@ void main() {
     });
     final angehalten = steuerung.position;
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 400)));
-    expect(steuerung.position.inMilliseconds,
-        closeTo(angehalten.inMilliseconds.toDouble(), 150),
-        reason: 'nach pause() lief es weiter');
+      () => Future<void>.delayed(const Duration(milliseconds: 400)),
+    );
+    expect(
+      steuerung.position.inMilliseconds,
+      closeTo(angehalten.inMilliseconds.toDouble(), 150),
+      reason: 'nach pause() lief es weiter',
+    );
   });
 
   testWidgets('die Bildfläche bekommt eine Textur', (tester) async {
@@ -131,8 +147,7 @@ void main() {
     // die Fläche schwarz, ohne dass irgendetwas einen Fehler meldet.
     final id = steuerung.videoController.id.value;
     print('Textur: $id');
-    expect(id, isNotNull,
-        reason: 'ohne Textur bleibt die Videofläche schwarz');
+    expect(id, isNotNull, reason: 'ohne Textur bleibt die Videofläche schwarz');
 
     expect(find.byType(VideoSurface), findsOneWidget);
     expect(tester.takeException(), isNull);

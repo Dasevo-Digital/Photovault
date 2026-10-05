@@ -27,16 +27,15 @@ void main() {
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_person_picker_');
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
   });
 
   tearDown(() => tempRoot.deleteSync(recursive: true));
 
-  PersonData person(String id, String name, {String? bild}) => PersonData(
-        id: id,
-        name: name,
-        coverFaceCropPath: bild,
-      );
+  PersonData person(String id, String name, {String? bild}) =>
+      PersonData(id: id, name: name, coverFaceCropPath: bild);
 
   /// Legt eine echte Bilddatei an – FileImage schlägt sonst beim Laden fehl,
   /// und der Test prüfte nur, dass ein Widget existiert, nicht dass es ein
@@ -67,33 +66,37 @@ void main() {
     String? currentName,
   }) async {
     PersonChoice? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () async {
-              ergebnis = await showPersonPickerDialog(
-                context,
-                leute,
-                paths: paths,
-                erlaubtIgnorieren: erlaubtIgnorieren,
-                currentName: currentName,
-              );
-            },
-            child: const Text('los'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                ergebnis = await showPersonPickerDialog(
+                  context,
+                  leute,
+                  paths: paths,
+                  erlaubtIgnorieren: erlaubtIgnorieren,
+                  currentName: currentName,
+                );
+              },
+              child: const Text('los'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('los'));
     await tester.pumpAndSettle();
     return ergebnis;
   }
 
-  testWidgets('bestehende Personen erscheinen mit ihrem Profilbild', (tester) async {
+  testWidgets('bestehende Personen erscheinen mit ihrem Profilbild', (
+    tester,
+  ) async {
     final leute = [
       person('p1', 'Anna', bild: bilddatei('f1')),
       person('p2', 'Bernd', bild: bilddatei('f2')),
@@ -111,8 +114,11 @@ void main() {
         .map((a) => a.backgroundImage)
         .whereType<ResizeImage>()
         .toList();
-    expect(bilder, isNotEmpty,
-        reason: 'ohne backgroundImage bliebe nur der graue Platzhalter');
+    expect(
+      bilder,
+      isNotEmpty,
+      reason: 'ohne backgroundImage bliebe nur der graue Platzhalter',
+    );
     // Seit der 17. Prüfrunde geht das Bild durch [begrenztesBild]: Ein
     // roher FileImage dekodierte die Datei in voller Grösse, und das an
     // neun gleichlautenden Stellen.
@@ -120,7 +126,9 @@ void main() {
     expect(bilder.first.policy, ResizeImagePolicy.fit);
   });
 
-  testWidgets('eine Person ohne Profilbild bekommt ein Platzhaltersymbol', (tester) async {
+  testWidgets('eine Person ohne Profilbild bekommt ein Platzhaltersymbol', (
+    tester,
+  ) async {
     // Der Fall tritt auf, bevor das erste Gesicht zugeordnet ist. Ein
     // FileImage auf einen nicht vorhandenen Pfad brächte eine rote
     // Fehlerbox mitten in die Liste.
@@ -130,12 +138,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('ohne bestehende Personen bleibt nur das Namensfeld', (tester) async {
+  testWidgets('ohne bestehende Personen bleibt nur das Namensfeld', (
+    tester,
+  ) async {
     await zeige(tester, []);
     expect(find.byType(TextField), findsOneWidget);
     expect(find.byType(ListTile), findsNothing);
-    expect(find.textContaining('noch keine Person'), findsOneWidget,
-        reason: 'ein leerer Kasten sähe aus, als lade er noch');
+    expect(
+      find.textContaining('noch keine Person'),
+      findsOneWidget,
+      reason: 'ein leerer Kasten sähe aus, als lade er noch',
+    );
   });
 
   testWidgets('die Eingabe filtert die Liste', (tester) async {
@@ -165,23 +178,25 @@ void main() {
 
   testWidgets('ein neuer Name legt an, und der Knopf sagt es', (tester) async {
     PersonChoice? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () async {
-              ergebnis = await showPersonPickerDialog(
-                  context, [person('p1', 'Anna')],
-                  paths: paths);
-            },
-            child: const Text('los'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                ergebnis = await showPersonPickerDialog(context, [
+                  person('p1', 'Anna'),
+                ], paths: paths);
+              },
+              child: const Text('los'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('los'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Zoe');
@@ -189,8 +204,11 @@ void main() {
 
     // Genau der Knopftext, nicht „irgendwo steht anlegen": Die
     // Beschriftung des Suchfeldes enthält das Wort auch.
-    expect(find.text('\u201eZoe\u201c anlegen'), findsOneWidget,
-        reason: 'der Knopf muss sagen, dass er eine NEUE Person anlegt');
+    expect(
+      find.text('\u201eZoe\u201c anlegen'),
+      findsOneWidget,
+      reason: 'der Knopf muss sagen, dass er eine NEUE Person anlegt',
+    );
     await tester.tap(find.text('\u201eZoe\u201c anlegen'));
     await tester.pumpAndSettle();
 
@@ -202,30 +220,35 @@ void main() {
     // Der teuerste Fehler dieses Dialogs: eine zweite „Anna" neben der
     // ersten. Gross-/Kleinschreibung zählt dabei nicht.
     PersonChoice? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () async {
-              ergebnis = await showPersonPickerDialog(
-                  context, [person('p1', 'Anna')],
-                  paths: paths);
-            },
-            child: const Text('los'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                ergebnis = await showPersonPickerDialog(context, [
+                  person('p1', 'Anna'),
+                ], paths: paths);
+              },
+              child: const Text('los'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('los'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'anna');
     await tester.pumpAndSettle();
 
-    expect(find.text('\u201eanna\u201c anlegen'), findsNothing,
-        reason: 'sonst entstünde eine zweite Anna neben der ersten');
+    expect(
+      find.text('\u201eanna\u201c anlegen'),
+      findsNothing,
+      reason: 'sonst entstünde eine zweite Anna neben der ersten',
+    );
     await tester.tap(find.text('Zuordnen'));
     await tester.pumpAndSettle();
 
@@ -237,28 +260,37 @@ void main() {
     PersonChoice? ergebnis;
     final anna = person('p1', 'Anna');
     final zoe = person('p9', 'Zoe');
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () async {
-              ergebnis = await showPersonPickerDialog(context, [anna, zoe],
-                  paths: paths, suggestedPerson: zoe);
-            },
-            child: const Text('los'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                ergebnis = await showPersonPickerDialog(
+                  context,
+                  [anna, zoe],
+                  paths: paths,
+                  suggestedPerson: zoe,
+                );
+              },
+              child: const Text('los'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('los'));
     await tester.pumpAndSettle();
 
     final zeilen = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
-    expect((zeilen.first.title! as Text).data, 'Zoe',
-        reason: 'der Vorschlag steht vor dem Alphabet');
+    expect(
+      (zeilen.first.title! as Text).data,
+      'Zoe',
+      reason: 'der Vorschlag steht vor dem Alphabet',
+    );
     expect(zeilen.first.selected, isTrue);
 
     // Vorausgewählt, aber NICHT bestätigt: Ein Vorschlag, der sich selbst
@@ -269,33 +301,39 @@ void main() {
     expect(ergebnis!.existingPersonId, 'p9');
   });
 
-  testWidgets('„Ignorieren" erscheint nur, wenn es angeboten wird', (tester) async {
+  testWidgets('„Ignorieren" erscheint nur, wenn es angeboten wird', (
+    tester,
+  ) async {
     await zeige(tester, [person('p1', 'Anna')]);
     expect(find.text('Ignorieren'), findsNothing);
   });
 
-  testWidgets('„Ignorieren" liefert die entsprechende Entscheidung', (tester) async {
+  testWidgets('„Ignorieren" liefert die entsprechende Entscheidung', (
+    tester,
+  ) async {
     PersonChoice? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: ElevatedButton(
-            onPressed: () async {
-              ergebnis = await showPersonPickerDialog(
-                context,
-                [person('p1', 'Anna')],
-                paths: paths,
-                erlaubtIgnorieren: true,
-              );
-            },
-            child: const Text('los'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                ergebnis = await showPersonPickerDialog(
+                  context,
+                  [person('p1', 'Anna')],
+                  paths: paths,
+                  erlaubtIgnorieren: true,
+                );
+              },
+              child: const Text('los'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('los'));
     await tester.pumpAndSettle();
 
@@ -310,14 +348,14 @@ void main() {
 
   group('Die Reihe für die Pfeiltasten', () {
     FaceData g(String id, String assetId) => FaceData(
-          id: id,
-          assetId: assetId,
-          boxX: 0,
-          boxY: 0,
-          boxW: 0.1,
-          boxH: 0.1,
-          isIgnored: false,
-        );
+      id: id,
+      assetId: assetId,
+      boxX: 0,
+      boxY: 0,
+      boxW: 0.1,
+      boxH: 0.1,
+      isIgnored: false,
+    );
 
     test('behält die Reihenfolge des Rasters bei', () {
       // Sonst spränge die Pfeiltaste scheinbar wahllos durch die Bibliothek,
@@ -332,7 +370,12 @@ void main() {
       // Drei unbenannte Gesichter auf einem Foto sind drei Rasterkacheln,
       // aber ein einziges Foto zum Durchblättern.
       expect(
-        assetReiheFuerGesichter([g('f1', 'a'), g('f2', 'a'), g('f3', 'b'), g('f4', 'a')]),
+        assetReiheFuerGesichter([
+          g('f1', 'a'),
+          g('f2', 'a'),
+          g('f3', 'b'),
+          g('f4', 'a'),
+        ]),
         ['a', 'b'],
       );
     });

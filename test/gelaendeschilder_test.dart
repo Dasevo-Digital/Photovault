@@ -27,22 +27,25 @@ void main() {
 
     test('freie Sicht ueber ebenes Gelaende', () {
       expect(
-          sichtfrei((x: -1000, y: 0, z: 50), (x: -500, y: 0, z: 20), grat),
-          isTrue);
+        sichtfrei((x: -1000, y: 0, z: 50), (x: -500, y: 0, z: 20), grat),
+        isTrue,
+      );
     });
 
     test('ein Grat dazwischen verdeckt', () {
       // Von weit westlich nach weit oestlich, beide auf 20 Metern: Der
       // Grat bei x = 0 steht mit 300 Metern im Weg.
       expect(
-          sichtfrei((x: -1000, y: 0, z: 20), (x: 1000, y: 0, z: 20), grat),
-          isFalse);
+        sichtfrei((x: -1000, y: 0, z: 20), (x: 1000, y: 0, z: 20), grat),
+        isFalse,
+      );
     });
 
     test('ueber den Grat hinweg ist frei', () {
       expect(
-          sichtfrei((x: -1000, y: 0, z: 800), (x: 1000, y: 0, z: 700), grat),
-          isTrue);
+        sichtfrei((x: -1000, y: 0, z: 800), (x: 1000, y: 0, z: 700), grat),
+        isTrue,
+      );
     });
 
     test('ein Punkt auf dem Grat selbst ist sichtbar', () {
@@ -51,32 +54,43 @@ void main() {
       // waere es damit immer verdeckt. Deshalb sitzt es
       // [schildHoeheMeter] darueber.
       expect(
-          sichtfrei((x: -1000, y: 0, z: 400),
-              (x: 0, y: 0, z: 300 + schildHoeheMeter), grat),
-          isTrue);
+        sichtfrei(
+          (x: -1000, y: 0, z: 400),
+          (x: 0, y: 0, z: 300 + schildHoeheMeter),
+          grat,
+        ),
+        isTrue,
+      );
     });
 
     test('unbekannte Hoehen verdecken nichts', () {
       // Ein Loch im Gitter ist kein Berg. Ohne diese Regel verschwaenden
       // alle Schilder hinter einer fehlenden Kachel.
       expect(
-          sichtfrei((x: -1000, y: 0, z: 20), (x: 1000, y: 0, z: 20),
-              (x, y) => null),
-          isTrue);
+        sichtfrei(
+          (x: -1000, y: 0, z: 20),
+          (x: 1000, y: 0, z: 20),
+          (x, y) => null,
+        ),
+        isTrue,
+      );
     });
   });
 
   group('Was gezeichnet wird', () {
     /// Zaehlt die Bildpunkte, die weder Hintergrund noch durchsichtig
     /// sind – ein grobes Mass dafuer, wie viel im Bild steht.
-    Future<int> gemalt(List<Gelaendeschild> schilder,
-        {double? Function(double, double)? hoeheBei}) async {
+    Future<int> gemalt(
+      List<Gelaendeschild> schilder, {
+      double? Function(double, double)? hoeheBei,
+    }) async {
       const flaeche = ui.Size(600, 400);
       final sammler = ui.PictureRecorder();
       final leinwand = ui.Canvas(sammler);
       leinwand.drawRect(
-          const ui.Rect.fromLTWH(0, 0, 600, 400),
-          ui.Paint()..color = const Color(0xFF000000));
+        const ui.Rect.fromLTWH(0, 0, 600, 400),
+        ui.Paint()..color = const Color(0xFF000000),
+      );
       zeichneSchilder(
         leinwand,
         flaeche,
@@ -101,40 +115,42 @@ void main() {
       return n;
     }
 
-    testWidgets('ein Schild mit Namen malt mehr als eines ohne',
-        (tester) async {
+    testWidgets('ein Schild mit Namen malt mehr als eines ohne', (
+      tester,
+    ) async {
       await tester.runAsync(() async {
         final ohne = await gemalt([
-          Gelaendeschild(
-              ort: (x: 0, y: 0, z: 100), art: Wanderart.gipfel),
+          Gelaendeschild(ort: (x: 0, y: 0, z: 100), art: Wanderart.gipfel),
         ]);
         final mit = await gemalt([
           Gelaendeschild(
-              ort: (x: 0, y: 0, z: 100),
-              art: Wanderart.gipfel,
-              beschriftung: 'Rohnberg  564 m'),
+            ort: (x: 0, y: 0, z: 100),
+            art: Wanderart.gipfel,
+            beschriftung: 'Rohnberg  564 m',
+          ),
         ]);
         expect(ohne, greaterThan(0), reason: 'das Zeichen fehlt');
-        expect(mit, greaterThan(ohne * 3),
-            reason: 'der Name kommt nicht an');
+        expect(mit, greaterThan(ohne * 3), reason: 'der Name kommt nicht an');
       });
     });
 
-    testWidgets('was verdeckt ist, wird gar nicht erst gemalt',
-        (tester) async {
+    testWidgets('was verdeckt ist, wird gar nicht erst gemalt', (tester) async {
       await tester.runAsync(() async {
         final schild = [
           Gelaendeschild(
-              ort: (x: 0, y: 0, z: 100),
-              art: Wanderart.gipfel,
-              beschriftung: 'Rohnberg'),
+            ort: (x: 0, y: 0, z: 100),
+            art: Wanderart.gipfel,
+            beschriftung: 'Rohnberg',
+          ),
         ];
         final frei = await gemalt(schild, hoeheBei: (x, y) => 0);
-        final verdeckt =
-            await gemalt(schild, hoeheBei: (x, y) => 5000);
+        final verdeckt = await gemalt(schild, hoeheBei: (x, y) => 5000);
         expect(frei, greaterThan(0));
-        expect(verdeckt, 0,
-            reason: 'ohne Sichtpruefung schwebt der Name durch den Berg');
+        expect(
+          verdeckt,
+          0,
+          reason: 'ohne Sichtpruefung schwebt der Name durch den Berg',
+        );
       });
     });
 
@@ -175,8 +191,11 @@ void main() {
       ];
       final gemalt = male(viele);
       expect(gemalt, greaterThan(0), reason: 'gar nichts waere auch falsch');
-      expect(gemalt, lessThanOrEqualTo(hoechstensBeschriftet),
-          reason: 'die Deckelung greift nicht: $gemalt Kaestchen');
+      expect(
+        gemalt,
+        lessThanOrEqualTo(hoechstensBeschriftet),
+        reason: 'die Deckelung greift nicht: $gemalt Kaestchen',
+      );
       // Und dicht an dicht bleibt noch weniger uebrig als die Deckelung
       // erlaubt - der Ueberdeckungsschutz.
       final dichtAnDicht = [
@@ -187,8 +206,11 @@ void main() {
             beschriftung: 'Berg Nummer $i',
           ),
       ];
-      expect(male(dichtAnDicht), lessThan(hoechstensBeschriftet),
-          reason: 'der Ueberdeckungsschutz greift nicht');
+      expect(
+        male(dichtAnDicht),
+        lessThan(hoechstensBeschriftet),
+        reason: 'der Ueberdeckungsschutz greift nicht',
+      );
     });
 
     test('die Deckelung greift auch, wo nichts einander ueberdeckt', () {
@@ -215,7 +237,7 @@ void main() {
                 ort: (
                   x: -3000 + spalte * 1500.0,
                   y: -3000 + zeile * 900.0,
-                  z: 0
+                  z: 0,
                 ),
                 art: Wanderart.gipfel,
                 beschriftung: 'B$zeile$spalte',
@@ -223,9 +245,13 @@ void main() {
         ],
       );
       sammler.endRecording().dispose();
-      expect(gemalt, hoechstensBeschriftet,
-          reason: 'weit auseinander muessen genau so viele stehen, wie die '
-              'Deckelung erlaubt - es sind $gemalt');
+      expect(
+        gemalt,
+        hoechstensBeschriftet,
+        reason:
+            'weit auseinander muessen genau so viele stehen, wie die '
+            'Deckelung erlaubt - es sind $gemalt',
+      );
     });
   });
 
@@ -242,8 +268,14 @@ void main() {
       }
     }
     final g = Hoehengitter(
-        spalten: n, zeilen: n, hoehen: h,
-        nord: 51.84, sued: 51.83, west: 10.63, ost: 10.65);
+      spalten: n,
+      zeilen: n,
+      hoehen: h,
+      nord: 51.84,
+      sued: 51.83,
+      west: 10.63,
+      ost: 10.65,
+    );
     // Im Westen 400, im Osten 500 - und die Gitterspalte 0 liegt im
     // Westen.
     expect(g.anOrt(51.835, 10.63), closeTo(400, 0.5));

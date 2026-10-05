@@ -57,8 +57,10 @@ void main() {
       expect(laendernamenDe.containsKey('AN'), isFalse);
       expect(laendernamenDe.containsKey('CS'), isFalse);
       expect(landAnzeige('Netherlands Antilles', 'de'), 'Netherlands Antilles');
-      expect(landAnzeige('Serbia and Montenegro', 'de'),
-          'Serbia and Montenegro');
+      expect(
+        landAnzeige('Serbia and Montenegro', 'de'),
+        'Serbia and Montenegro',
+      );
     });
 
     test('kein deutscher Name steht fuer zwei Laender', () {
@@ -72,9 +74,18 @@ void main() {
   group('Der Katalog', () {
     /// Zwei Zeilen im Format von `countryInfo.txt` – 19 Spalten, davon
     /// zählen 0 (ISO), 4 (Name), 5 (Hauptstadt) und 8 (Erdteil).
-    String zeile(String iso, String name, String hauptstadt) =>
-        [iso, '', '', '', name, hauptstadt, '', '', 'EU', ...List.filled(10, '')]
-            .join('\t');
+    String zeile(String iso, String name, String hauptstadt) => [
+      iso,
+      '',
+      '',
+      '',
+      name,
+      hauptstadt,
+      '',
+      '',
+      'EU',
+      ...List.filled(10, ''),
+    ].join('\t');
 
     test('jeder Eintrag traegt beide Namen', () {
       final k = Laenderkatalog.aus(

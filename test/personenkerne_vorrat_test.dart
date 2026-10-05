@@ -32,8 +32,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'l')),
+      );
   });
 
   tearDown(() async {
@@ -45,7 +46,9 @@ void main() {
   Uint8List vektor(List<double> werte) =>
       blobFromEmbeddingFloats(Float32List.fromList(werte));
 
-  Future<void> foto(String id) => db.into(db.assets).insert(
+  Future<void> foto(String id) => db
+      .into(db.assets)
+      .insert(
         AssetsCompanion.insert(
           id: id,
           originalFileName: '$id.jpg',
@@ -57,27 +60,32 @@ void main() {
         ),
       );
 
-  Future<String> gesicht(String assetId, List<double> einbettung,
-      {String? personId}) async {
+  Future<String> gesicht(
+    String assetId,
+    List<double> einbettung, {
+    String? personId,
+  }) async {
     final id = 'g${laufend++}';
-    await db.into(db.faces).insert(FacesCompanion.insert(
-          id: id,
-          assetId: assetId,
-          boxX: 0,
-          boxY: 0,
-          boxW: 1,
-          boxH: 1,
-          personId: Value(personId),
-          embedding: Value(vektor(einbettung)),
-        ));
+    await db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: id,
+            assetId: assetId,
+            boxX: 0,
+            boxY: 0,
+            boxW: 1,
+            boxH: 1,
+            personId: Value(personId),
+            embedding: Value(vektor(einbettung)),
+          ),
+        );
     return id;
   }
 
   Future<String> person(String name) async {
     final id = 'p_$name';
-    await db
-        .into(db.people)
-        .insert(PeopleCompanion.insert(id: id, name: name));
+    await db.into(db.people).insert(PeopleCompanion.insert(id: id, name: name));
     return id;
   }
 
@@ -103,37 +111,48 @@ void main() {
     expect(vorschlag?.id, anna);
   });
 
-  test('eine weggenommene Zuordnung verschwindet auch aus den Kernen',
-      () async {
-    final anna = await person('Anna');
-    await foto('a');
-    final eines = await gesicht('a', [1, 0, 0], personId: anna);
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+  test(
+    'eine weggenommene Zuordnung verschwindet auch aus den Kernen',
+    () async {
+      final anna = await person('Anna');
+      await foto('a');
+      final eines = await gesicht('a', [1, 0, 0], personId: anna);
+      expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
 
-    await (db.update(db.faces)..where((t) => t.id.equals(eines)))
-        .write(const FacesCompanion(personId: Value(null)));
+      await (db.update(db.faces)..where((t) => t.id.equals(eines))).write(
+        const FacesCompanion(personId: Value(null)),
+      );
 
-    expect(await library.personenvorschlag(vektor([1, 0, 0])), isNull,
-        reason: 'ohne Einbettung gibt es keinen Kern mehr');
-  });
+      expect(
+        await library.personenvorschlag(vektor([1, 0, 0])),
+        isNull,
+        reason: 'ohne Einbettung gibt es keinen Kern mehr',
+      );
+    },
+  );
 
-  test('ein umgehaengtes Gesicht aendert die Zahl nicht – und wird bemerkt',
-      () async {
-    final anna = await person('Anna');
-    final berta = await person('Berta');
-    await foto('a');
-    final eines = await gesicht('a', [1, 0, 0], personId: anna);
-    await gesicht('a', [0, 0, 1], personId: berta);
+  test(
+    'ein umgehaengtes Gesicht aendert die Zahl nicht – und wird bemerkt',
+    () async {
+      final anna = await person('Anna');
+      final berta = await person('Berta');
+      await foto('a');
+      final eines = await gesicht('a', [1, 0, 0], personId: anna);
+      await gesicht('a', [0, 0, 1], personId: berta);
 
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+      expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
 
-    // Dieselbe Anzahl zugeordneter Gesichter, dieselben Zeilen – nur
-    // gehoert das eine jetzt jemand anderem.
-    await db.assignFacesToPerson([eines], berta);
+      // Dieselbe Anzahl zugeordneter Gesichter, dieselben Zeilen – nur
+      // gehoert das eine jetzt jemand anderem.
+      await db.assignFacesToPerson([eines], berta);
 
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, berta,
-        reason: 'der Vorrat haette das Umhaengen sonst verschlafen');
-  });
+      expect(
+        (await library.personenvorschlag(vektor([1, 0, 0])))?.id,
+        berta,
+        reason: 'der Vorrat haette das Umhaengen sonst verschlafen',
+      );
+    },
+  );
 
   test('eine verschobene Schwelle wird bemerkt, ohne dass ein Gesicht '
       'angefasst wird', () async {
@@ -146,11 +165,15 @@ void main() {
 
     // Eine Ablehnung schiebt die persoenliche Schwelle hoch – und
     // ruehrt dabei kein einziges Gesicht an.
-    await (db.update(db.people)..where((t) => t.id.equals(anna)))
-        .write(const PeopleCompanion(similarityThreshold: Value(0.95)));
+    await (db.update(db.people)..where((t) => t.id.equals(anna))).write(
+      const PeopleCompanion(similarityThreshold: Value(0.95)),
+    );
 
-    expect(await library.personenvorschlag(vektor([0.8, 0.6, 0])), isNull,
-        reason: 'die neue Schwelle muss sofort gelten');
+    expect(
+      await library.personenvorschlag(vektor([0.8, 0.6, 0])),
+      isNull,
+      reason: 'die neue Schwelle muss sofort gelten',
+    );
   });
 
   test('ein umbenannter Vorschlag traegt den neuen Namen', () async {
@@ -159,28 +182,34 @@ void main() {
     await gesicht('a', [1, 0, 0], personId: anna);
     expect((await library.personenvorschlag(vektor([1, 0, 0])))?.name, 'Anna');
 
-    await (db.update(db.people)..where((t) => t.id.equals(anna)))
-        .write(const PeopleCompanion(name: Value('Anna Meier')));
+    await (db.update(db.people)..where((t) => t.id.equals(anna))).write(
+      const PeopleCompanion(name: Value('Anna Meier')),
+    );
 
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.name,
-        'Anna Meier',
-        reason: 'der Name gehoert nicht in den Vorrat');
+    expect(
+      (await library.personenvorschlag(vektor([1, 0, 0])))?.name,
+      'Anna Meier',
+      reason: 'der Name gehoert nicht in den Vorrat',
+    );
   });
 
-  test('[ausser] laesst genau eine Person aus, ohne den Vorrat zu leeren',
-      () async {
-    final anna = await person('Anna');
-    final berta = await person('Berta');
-    await foto('a');
-    await gesicht('a', [1, 0, 0], personId: anna);
-    await gesicht('a', [0, 1, 0], personId: berta);
+  test(
+    '[ausser] laesst genau eine Person aus, ohne den Vorrat zu leeren',
+    () async {
+      final anna = await person('Anna');
+      final berta = await person('Berta');
+      await foto('a');
+      await gesicht('a', [1, 0, 0], personId: anna);
+      await gesicht('a', [0, 1, 0], personId: berta);
 
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
-    expect(
+      expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+      expect(
         await library.personenvorschlag(vektor([1, 0, 0]), ausser: anna),
         isNull,
-        reason: 'Berta ist nicht aehnlich genug');
-    // Und danach gilt der Vorrat unveraendert weiter.
-    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
-  });
+        reason: 'Berta ist nicht aehnlich genug',
+      );
+      // Und danach gilt der Vorrat unveraendert weiter.
+      expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+    },
+  );
 }

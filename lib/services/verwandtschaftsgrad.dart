@@ -16,17 +16,17 @@ import 'stammbaum.dart';
 enum Geschlecht { weiblich, maennlich, divers }
 
 String geschlechtZuText(Geschlecht g) => switch (g) {
-      Geschlecht.weiblich => 'w',
-      Geschlecht.maennlich => 'm',
-      Geschlecht.divers => 'd',
-    };
+  Geschlecht.weiblich => 'w',
+  Geschlecht.maennlich => 'm',
+  Geschlecht.divers => 'd',
+};
 
 Geschlecht? geschlechtAusText(String? text) => switch (text) {
-      'w' => Geschlecht.weiblich,
-      'm' => Geschlecht.maennlich,
-      'd' => Geschlecht.divers,
-      _ => null,
-    };
+  'w' => Geschlecht.weiblich,
+  'm' => Geschlecht.maennlich,
+  'd' => Geschlecht.divers,
+  _ => null,
+};
 
 /// Der ICU-Auswahlwert für die Textbausteine: `w`, `m` oder `other`.
 ///
@@ -36,10 +36,10 @@ Geschlecht? geschlechtAusText(String? text) => switch (text) {
 /// die deutsche wie die englische Verwandtschaftssprache für beide keine
 /// eigene Form bereithält.
 String auswahlwert(Geschlecht? g) => switch (g) {
-      Geschlecht.weiblich => 'w',
-      Geschlecht.maennlich => 'm',
-      _ => 'other',
-    };
+  Geschlecht.weiblich => 'w',
+  Geschlecht.maennlich => 'm',
+  _ => 'other',
+};
 
 /// Die Art der Verwandtschaft. [Grad] hält zusätzlich die Abstände.
 enum Gradart {
@@ -114,16 +114,17 @@ class Grad {
   /// sie nicht mehr macht.
   final Verwandtschaft? elternArt;
 
-  const Grad(this.art,
-      {this.aufwaerts = 0,
-      this.abwaerts = 0,
-      this.halb = false,
-      this.elternArt});
+  const Grad(
+    this.art, {
+    this.aufwaerts = 0,
+    this.abwaerts = 0,
+    this.halb = false,
+    this.elternArt,
+  });
 
   /// Der Cousin-Grad nach üblicher Zählung: Kinder von Geschwistern sind
   /// Cousins ersten Grades.
-  int get cousinGrad =>
-      (aufwaerts < abwaerts ? aufwaerts : abwaerts) - 1;
+  int get cousinGrad => (aufwaerts < abwaerts ? aufwaerts : abwaerts) - 1;
 
   /// Wie viele Generationen die beiden auseinanderliegen („einmal
   /// entfernt").
@@ -193,7 +194,11 @@ Grad bestimmeGrad(Verwandtschaftsnetz netz, String ich, String andere) {
   return _angeheiratet(netz, ich, andere);
 }
 
-Grad? _blutsverwandtschaft(Verwandtschaftsnetz netz, String ich, String andere) {
+Grad? _blutsverwandtschaft(
+  Verwandtschaftsnetz netz,
+  String ich,
+  String andere,
+) {
   final meine = vorfahrenMitAbstand(netz, ich);
   final ihre = vorfahrenMitAbstand(netz, andere);
 
@@ -211,21 +216,33 @@ Grad? _blutsverwandtschaft(Verwandtschaftsnetz netz, String ich, String andere) 
   final auf = bestesAuf, ab = bestesAb!;
 
   if (auf == 0) {
-    return Grad(Gradart.nachkomme,
-        abwaerts: ab,
-        elternArt: ab == 1 ? netz.elternArt(andere, ich) : null);
+    return Grad(
+      Gradart.nachkomme,
+      abwaerts: ab,
+      elternArt: ab == 1 ? netz.elternArt(andere, ich) : null,
+    );
   }
   if (ab == 0) {
-    return Grad(Gradart.vorfahre,
-        aufwaerts: auf,
-        elternArt: auf == 1 ? netz.elternArt(ich, andere) : null);
+    return Grad(
+      Gradart.vorfahre,
+      aufwaerts: auf,
+      elternArt: auf == 1 ? netz.elternArt(ich, andere) : null,
+    );
   }
   if (auf == 1 && ab == 1) {
-    return Grad(Gradart.geschwister,
-        aufwaerts: 1, abwaerts: 1, halb: _istHalbgeschwister(netz, ich, andere));
+    return Grad(
+      Gradart.geschwister,
+      aufwaerts: 1,
+      abwaerts: 1,
+      halb: _istHalbgeschwister(netz, ich, andere),
+    );
   }
-  if (auf == 1) return Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: ab);
-  if (ab == 1) return Grad(Gradart.vorfahrengeschwister, aufwaerts: auf, abwaerts: 1);
+  if (auf == 1) {
+    return Grad(Gradart.geschwisterkind, aufwaerts: 1, abwaerts: ab);
+  }
+  if (ab == 1) {
+    return Grad(Gradart.vorfahrengeschwister, aufwaerts: auf, abwaerts: 1);
+  }
   return Grad(Gradart.cousin, aufwaerts: auf, abwaerts: ab);
 }
 
@@ -249,7 +266,9 @@ Grad _angeheiratet(Verwandtschaftsnetz netz, String ich, String andere) {
 
   // Schwager/Schwägerin – von beiden Seiten aus dieselbe Bezeichnung.
   for (final p in netz.partner(ich)) {
-    if (netz.geschwister(p).contains(andere)) return const Grad(Gradart.schwager);
+    if (netz.geschwister(p).contains(andere)) {
+      return const Grad(Gradart.schwager);
+    }
   }
   for (final g in netz.geschwister(ich)) {
     if (netz.partner(g).contains(andere)) return const Grad(Gradart.schwager);
@@ -261,13 +280,17 @@ Grad _angeheiratet(Verwandtschaftsnetz netz, String ich, String andere) {
     }
   }
   for (final k in netz.kinder(ich)) {
-    if (netz.partner(k).contains(andere)) return const Grad(Gradart.schwiegerkind);
+    if (netz.partner(k).contains(andere)) {
+      return const Grad(Gradart.schwiegerkind);
+    }
   }
 
   // Stiefverwandtschaft. Die Prüfung „nicht schon blutsverwandt" ist oben
   // erledigt: Hierher kommt nur, wer keinen gemeinsamen Vorfahren hat.
   for (final e in netz.eltern(ich)) {
-    if (netz.partner(e).contains(andere)) return const Grad(Gradart.stiefelternteil);
+    if (netz.partner(e).contains(andere)) {
+      return const Grad(Gradart.stiefelternteil);
+    }
     for (final stief in netz.partner(e)) {
       if (netz.kinder(stief).contains(andere)) {
         return const Grad(Gradart.stiefgeschwister);
@@ -288,7 +311,11 @@ Grad _angeheiratet(Verwandtschaftsnetz netz, String ich, String andere) {
 
 /// Ob sich [andere] von [ich] aus über Eltern-, Kind- und Partnerkanten
 /// überhaupt erreichen lässt.
-bool _ueberPartnerErreichbar(Verwandtschaftsnetz netz, String ich, String andere) {
+bool _ueberPartnerErreichbar(
+  Verwandtschaftsnetz netz,
+  String ich,
+  String andere,
+) {
   final gesehen = <String>{ich};
   var rand = <String>{ich};
   for (var tiefe = 0; tiefe < _maxTiefe && rand.isNotEmpty; tiefe++) {
@@ -342,7 +369,8 @@ class Umweg {
   int get hashCode => Object.hash(ueber, ueberGrad, schritt);
 
   @override
-  String toString() => 'Umweg($ueber ${ueberGrad.art.name}/${schritt.art.name})';
+  String toString() =>
+      'Umweg($ueber ${ueberGrad.art.name}/${schritt.art.name})';
 }
 
 /// Nur diese Schritte taugen für den zweiten Teil des Satzes.
@@ -351,11 +379,11 @@ class Umweg {
 /// Grossvater des Bruders des Schwagers" erklärt weniger als
 /// „angeheiratet", weil man ihn beim Lesen zurückverfolgen muss.
 bool _einSchritt(Grad grad) => switch (grad.art) {
-      Gradart.vorfahre => grad.aufwaerts == 1,
-      Gradart.nachkomme => grad.abwaerts == 1,
-      Gradart.geschwister || Gradart.partner => true,
-      _ => false,
-    };
+  Gradart.vorfahre => grad.aufwaerts == 1,
+  Gradart.nachkomme => grad.abwaerts == 1,
+  Gradart.geschwister || Gradart.partner => true,
+  _ => false,
+};
 
 /// Ob es für diesen Grad ein Wort gibt, das für sich steht.
 bool _hatEigenesWort(Grad grad) =>
@@ -424,7 +452,11 @@ Umweg? umwegZu(
 ///
 /// Ohne die Ausgangsperson selbst und ohne die Fälle ohne Verbindung; wer
 /// gar nicht verwandt ist, gehört nicht in eine Verwandtenliste.
-Map<String, Grad> alleGrade(Verwandtschaftsnetz netz, String ich, Iterable<String> personen) {
+Map<String, Grad> alleGrade(
+  Verwandtschaftsnetz netz,
+  String ich,
+  Iterable<String> personen,
+) {
   final ergebnis = <String, Grad>{};
   for (final andere in personen) {
     if (andere == ich) continue;
@@ -443,20 +475,20 @@ Map<String, Grad> alleGrade(Verwandtschaftsnetz netz, String ich, Iterable<Strin
 /// Anfang, ein Urgroßvater drei Stufen und ein Cousin vier – aber der
 /// Urgroßvater ist der nähere Angehörige.
 int naeheRang(Grad grad) => switch (grad.art) {
-      Gradart.selbst => 0,
-      Gradart.partner => 1,
-      Gradart.vorfahre => 10 + grad.aufwaerts,
-      Gradart.nachkomme => 20 + grad.abwaerts,
-      Gradart.geschwister => 5,
-      Gradart.geschwisterkind => 30 + grad.abwaerts,
-      Gradart.vorfahrengeschwister => 40 + grad.aufwaerts,
-      Gradart.cousin => 50 + grad.cousinGrad * 2 + grad.entfernung,
-      Gradart.schwiegerelternteil => 60,
-      Gradart.schwiegerkind => 61,
-      Gradart.schwager => 62,
-      Gradart.stiefelternteil => 63,
-      Gradart.stiefkind => 64,
-      Gradart.stiefgeschwister => 65,
-      Gradart.angeheiratet => 70,
-      Gradart.keine => 99,
-    };
+  Gradart.selbst => 0,
+  Gradart.partner => 1,
+  Gradart.vorfahre => 10 + grad.aufwaerts,
+  Gradart.nachkomme => 20 + grad.abwaerts,
+  Gradart.geschwister => 5,
+  Gradart.geschwisterkind => 30 + grad.abwaerts,
+  Gradart.vorfahrengeschwister => 40 + grad.aufwaerts,
+  Gradart.cousin => 50 + grad.cousinGrad * 2 + grad.entfernung,
+  Gradart.schwiegerelternteil => 60,
+  Gradart.schwiegerkind => 61,
+  Gradart.schwager => 62,
+  Gradart.stiefelternteil => 63,
+  Gradart.stiefkind => 64,
+  Gradart.stiefgeschwister => 65,
+  Gradart.angeheiratet => 70,
+  Gradart.keine => 99,
+};

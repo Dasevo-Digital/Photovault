@@ -27,7 +27,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('photo_vault_xmp_test_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -37,8 +39,10 @@ void main() {
   });
 
   Future<AssetData> importPhoto(String name) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-    final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
+    final file = File(p.join(incoming.path, name))
+      ..writeAsBytesSync([1, 2, 3, nextByte++]);
     final result = await import.importFile(file.path);
     expect(result.outcome, ImportOutcome.imported);
     return (await db.assetById(result.assetId!))!;
@@ -53,28 +57,42 @@ void main() {
         ..paths = paths;
     });
 
-    test('schreibt eine .xmp-Datei neben jedes (nicht gesperrte) Original', () async {
-      final a = await importPhoto('a.jpg');
-      await db.setRating(a.id, 5);
-      await db.tagAsset(a.id, 'urlaub');
+    test(
+      'schreibt eine .xmp-Datei neben jedes (nicht gesperrte) Original',
+      () async {
+        final a = await importPhoto('a.jpg');
+        await db.setRating(a.id, 5);
+        await db.tagAsset(a.id, 'urlaub');
 
-      await library.writeXmpSidecars().drain<void>();
+        await library.writeXmpSidecars().drain<void>();
 
-      final sidecar = paths.absolute(paths.xmpSidecarPath(a.relativePath));
-      expect(await sidecar.exists(), isTrue);
-      final doc = XmlDocument.parse(await sidecar.readAsString());
-      expect(doc.findAllElements('rdf:Description').single.getAttribute('xmp:Rating'), '5');
-    });
+        final sidecar = paths.absolute(paths.xmpSidecarPath(a.relativePath));
+        expect(await sidecar.exists(), isTrue);
+        final doc = XmlDocument.parse(await sidecar.readAsString());
+        expect(
+          doc
+              .findAllElements('rdf:Description')
+              .single
+              .getAttribute('xmp:Rating'),
+          '5',
+        );
+      },
+    );
 
-    test('überspringt gesperrte Assets (kein Klartext-Sidecar neben verschlüsseltem Original)', () async {
-      final locked = await importPhoto('locked.jpg');
-      await db.setAssetsLocked([locked.id], true);
+    test(
+      'überspringt gesperrte Assets (kein Klartext-Sidecar neben verschlüsseltem Original)',
+      () async {
+        final locked = await importPhoto('locked.jpg');
+        await db.setAssetsLocked([locked.id], true);
 
-      await library.writeXmpSidecars().drain<void>();
+        await library.writeXmpSidecars().drain<void>();
 
-      final sidecar = paths.absolute(paths.xmpSidecarPath(locked.relativePath));
-      expect(await sidecar.exists(), isFalse);
-    });
+        final sidecar = paths.absolute(
+          paths.xmpSidecarPath(locked.relativePath),
+        );
+        expect(await sidecar.exists(), isFalse);
+      },
+    );
   });
 
   group('ExportService.exportAsset', () {
@@ -83,33 +101,53 @@ void main() {
       await db.setDescription(a.id, 'Am Strand');
       await db.tagAsset(a.id, 'strand');
 
-      final exporter = ExportService(paths, library: LibraryState()..db = db..paths = paths);
-      final destination = Directory(p.join(tempRoot.path, 'export'))..createSync();
+      final exporter = ExportService(
+        paths,
+        library: LibraryState()
+          ..db = db
+          ..paths = paths,
+      );
+      final destination = Directory(p.join(tempRoot.path, 'export'))
+        ..createSync();
       final exportedName = await exporter.exportAsset(a, destination.path);
 
-      final sidecar = File(p.join(destination.path, p.setExtension(exportedName, '.xmp')));
+      final sidecar = File(
+        p.join(destination.path, p.setExtension(exportedName, '.xmp')),
+      );
       expect(await sidecar.exists(), isTrue);
       final doc = XmlDocument.parse(await sidecar.readAsString());
-      final tags = doc.findAllElements('dc:subject').single.findAllElements('rdf:li').map((e) => e.innerText);
+      final tags = doc
+          .findAllElements('dc:subject')
+          .single
+          .findAllElements('rdf:li')
+          .map((e) => e.innerText);
       expect(tags, ['strand']);
     });
 
-    test('exportiert auch für gesperrte Assets eine Sidecar-Datei (Nutzer hat Export aktiv angestoßen)',
-        () async {
-      final a = await importPhoto('geheim.jpg');
-      await db.setAssetsLocked([a.id], true);
-      final locked = (await db.assetById(a.id))!;
+    test(
+      'exportiert auch für gesperrte Assets eine Sidecar-Datei (Nutzer hat Export aktiv angestoßen)',
+      () async {
+        final a = await importPhoto('geheim.jpg');
+        await db.setAssetsLocked([a.id], true);
+        final locked = (await db.assetById(a.id))!;
 
-      // Ohne `library:` (kein Entschlüsseln nötig, da die Originaldatei im
-      // Test-Setup ohnehin nicht tatsächlich verschlüsselt wird) – die
-      // Sidecar-Erzeugung selbst hängt nicht am Sperrstatus.
-      final exporter = ExportService(paths);
-      final destination = Directory(p.join(tempRoot.path, 'export'))..createSync();
-      final exportedName = await exporter.exportAsset(locked, destination.path);
+        // Ohne `library:` (kein Entschlüsseln nötig, da die Originaldatei im
+        // Test-Setup ohnehin nicht tatsächlich verschlüsselt wird) – die
+        // Sidecar-Erzeugung selbst hängt nicht am Sperrstatus.
+        final exporter = ExportService(paths);
+        final destination = Directory(p.join(tempRoot.path, 'export'))
+          ..createSync();
+        final exportedName = await exporter.exportAsset(
+          locked,
+          destination.path,
+        );
 
-      final sidecar = File(p.join(destination.path, p.setExtension(exportedName, '.xmp')));
-      expect(await sidecar.exists(), isTrue);
-    });
+        final sidecar = File(
+          p.join(destination.path, p.setExtension(exportedName, '.xmp')),
+        );
+        expect(await sidecar.exists(), isTrue);
+      },
+    );
   });
 
   group('BackupService.performBackup', () {
@@ -137,16 +175,26 @@ void main() {
       // hier keine Rolle – ein beliebiger 32-Byte-Schlüssel genügt, um den
       // verschlüsselten Zweig auszulösen.
       final key = SecretKey(List<int>.generate(32, (i) => i));
-      await backup.performBackup(destination.path, encryptionKey: key).drain<void>();
+      await backup
+          .performBackup(destination.path, encryptionKey: key)
+          .drain<void>();
 
       // Verschlüsselte Backups liegen flach unter data/ mit abgeleiteten
       // Namen (siehe VerschluesselteNamen) – deshalb nicht mehr über den
       // ursprünglichen relativen Pfad gesucht, sondern über den Ordner.
-      final backupRoot = Directory(p.join(destination.path, 'PhotoVault-Backup'));
-      final alleDateien = backupRoot.listSync(recursive: true).whereType<File>().toList();
+      final backupRoot = Directory(
+        p.join(destination.path, 'PhotoVault-Backup'),
+      );
+      final alleDateien = backupRoot
+          .listSync(recursive: true)
+          .whereType<File>()
+          .toList();
 
-      expect(alleDateien.where((f) => p.dirname(f.path).endsWith('data')), hasLength(1),
-          reason: 'die verschlüsselte Datei muss vorhanden sein');
+      expect(
+        alleDateien.where((f) => p.dirname(f.path).endsWith('data')),
+        hasLength(1),
+        reason: 'die verschlüsselte Datei muss vorhanden sein',
+      );
       // Der eigentliche Zweck dieses Tests: nirgends ein Klartext-Sidecar,
       // das die Vertraulichkeit der Verschlüsselung unterlaufen würde.
       expect(alleDateien.where((f) => f.path.endsWith('.xmp')), isEmpty);

@@ -115,7 +115,9 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
       parts.add(_formatDuration(widget.asset.durationSeconds!));
     }
     if (widget.asset.isFavorite) parts.add(t.kachelFavorisiert);
-    if (widget.asset.rating > 0) parts.add(t.sterneBewertungAnzeige(widget.asset.rating));
+    if (widget.asset.rating > 0) {
+      parts.add(t.sterneBewertungAnzeige(widget.asset.rating));
+    }
     return parts.join(', ');
   }
 
@@ -133,150 +135,191 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
       selected: widget.selected,
       child: ExcludeSemantics(
         child: MouseRegion(
-        onEnter: schwebt ? (_) => _zeigerEin() : null,
-        onExit: schwebt ? (_) => _zeigerAus() : null,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          onDoubleTap: widget.onDoubleTap,
-          onLongPress: widget.onLongPress,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-          if (thumbPath != null)
-            // Die dekodierte Bitmap wird auf die tatsächliche Kachelgröße
-            // (× Pixelverhältnis) begrenzt, statt immer die volle, auf der
-            // Platte hinterlegte 400px-Vorschau zu dekodieren und zu
-            // cachen – in dichten Rasteransichten (Timeline, Kalender,
-            // Alben) sind Kacheln oft deutlich kleiner als 400px.
-            //
-            // **In Stufen und nicht auf den Punkt** – siehe
-            // [dekodierbreite]. Die Kachelbreite ändert sich mit jedem
-            // Punkt Fensterbreite; ohne die Stufen bekäme jeder
-            // Zwischenschritt eines Ziehens am Fenster einen eigenen
-            // Schlüssel im Bildspeicher, und jede sichtbare Kachel würde
-            // dabei neu dekodiert.
-            //
-            // **Und nur eine der beiden Kanten** – siehe
-            // [deckendeDekodiermasse]. Beide zusammen stauchen das Bild.
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final masse = deckendeDekodiermasse(
-                  kachelBreite: constraints.maxWidth,
-                  kachelHoehe: constraints.maxHeight,
-                  bildBreite: widget.asset.widthPx,
-                  bildHoehe: widget.asset.heightPx,
-                  pixelverhaeltnis:
-                      MediaQuery.of(context).devicePixelRatio,
-                );
-                return Image.file(
-                  widget.paths.absolute(thumbPath),
-                  fit: BoxFit.cover,
-                  cacheWidth: masse.breite,
-                  cacheHeight: masse.hoehe,
-                  errorBuilder: (_, _, _) => _placeholder(),
-                );
-              },
-            )
-          else
-            _placeholder(),
-          // Ueber dem Standbild, unter den Abzeichen: Waehrend das Video
-          // laeuft, sollen Favoritenherz und Ortsnadel nicht verschwinden.
-          if (schwebt)
-            ListenableBuilder(
-              listenable: _vorschau!,
-              builder: (context, _) =>
-                  _vorschau!.bildFuer(widget.asset.id) ?? const SizedBox(),
-            ),
-          if (widget.asset.type == 'VIDEO')
-            Positioned(
-              right: 4,
-              bottom: 4,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.asset.durationSeconds != null) ...[
-                    Text(
-                      _formatDuration(widget.asset.durationSeconds!),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+          onEnter: schwebt ? (_) => _zeigerEin() : null,
+          onExit: schwebt ? (_) => _zeigerAus() : null,
+          child: GestureDetector(
+            onTap: widget.onTap,
+            onDoubleTap: widget.onDoubleTap,
+            onLongPress: widget.onLongPress,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (thumbPath != null)
+                  // Die dekodierte Bitmap wird auf die tatsächliche Kachelgröße
+                  // (× Pixelverhältnis) begrenzt, statt immer die volle, auf der
+                  // Platte hinterlegte 400px-Vorschau zu dekodieren und zu
+                  // cachen – in dichten Rasteransichten (Timeline, Kalender,
+                  // Alben) sind Kacheln oft deutlich kleiner als 400px.
+                  //
+                  // **In Stufen und nicht auf den Punkt** – siehe
+                  // [dekodierbreite]. Die Kachelbreite ändert sich mit jedem
+                  // Punkt Fensterbreite; ohne die Stufen bekäme jeder
+                  // Zwischenschritt eines Ziehens am Fenster einen eigenen
+                  // Schlüssel im Bildspeicher, und jede sichtbare Kachel würde
+                  // dabei neu dekodiert.
+                  //
+                  // **Und nur eine der beiden Kanten** – siehe
+                  // [deckendeDekodiermasse]. Beide zusammen stauchen das Bild.
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final masse = deckendeDekodiermasse(
+                        kachelBreite: constraints.maxWidth,
+                        kachelHoehe: constraints.maxHeight,
+                        bildBreite: widget.asset.widthPx,
+                        bildHoehe: widget.asset.heightPx,
+                        pixelverhaeltnis: MediaQuery.of(
+                          context,
+                        ).devicePixelRatio,
+                      );
+                      return Image.file(
+                        widget.paths.absolute(thumbPath),
+                        fit: BoxFit.cover,
+                        cacheWidth: masse.breite,
+                        cacheHeight: masse.hoehe,
+                        errorBuilder: (_, _, _) => _placeholder(),
+                      );
+                    },
+                  )
+                else
+                  _placeholder(),
+                // Ueber dem Standbild, unter den Abzeichen: Waehrend das Video
+                // laeuft, sollen Favoritenherz und Ortsnadel nicht verschwinden.
+                if (schwebt)
+                  ListenableBuilder(
+                    listenable: _vorschau!,
+                    builder: (context, _) =>
+                        _vorschau!.bildFuer(widget.asset.id) ??
+                        const SizedBox(),
+                  ),
+                if (widget.asset.type == 'VIDEO')
+                  Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.asset.durationSeconds != null) ...[
+                          Text(
+                            _formatDuration(widget.asset.durationSeconds!),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(color: Colors.black, blurRadius: 3),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                        ],
+                        const Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                if (widget.asset.type == 'IMAGE' &&
+                    widget.asset.linkedAssetId != null)
+                  const Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: Icon(
+                      Icons.motion_photos_on,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                if (widget.asset.isFavorite)
+                  const Positioned(
+                    left: 4,
+                    top: 4,
+                    child: Icon(
+                      Icons.favorite,
+                      color: Colors.redAccent,
+                      size: 16,
+                    ),
+                  ),
+                if (widget.asset.verortet)
+                  const Positioned(
+                    left: 4,
+                    bottom: 4,
+                    child: Icon(
+                      Icons.location_on,
+                      color: Colors.white,
+                      size: 14,
+                      shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+                    ),
+                  ),
+                // Stapel-Abzeichen hat Vorrang vor dem Format-Kürzel in derselben
+                // Ecke – bei einem Serien-Titelbild ist "wie viele Fotos stecken
+                // dahinter" wichtiger für die Kachel-Ansicht als das Dateiformat.
+                if (widget.asset.isStackCover && widget.asset.stackSize != null)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.filter_none,
+                            color: Colors.white,
+                            size: 11,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${widget.asset.stackSize}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 3),
-                  ],
-                  const Icon(Icons.play_circle_fill, color: Colors.white, size: 20),
-                ],
-              ),
-            ),
-          if (widget.asset.type == 'IMAGE' && widget.asset.linkedAssetId != null)
-            const Positioned(
-              right: 4,
-              bottom: 4,
-              child: Icon(Icons.motion_photos_on, color: Colors.white, size: 18),
-            ),
-          if (widget.asset.isFavorite)
-            const Positioned(
-              left: 4,
-              top: 4,
-              child: Icon(Icons.favorite, color: Colors.redAccent, size: 16),
-            ),
-          if (widget.asset.verortet)
-            const Positioned(
-              left: 4,
-              bottom: 4,
-              child: Icon(
-                Icons.location_on,
-                color: Colors.white,
-                size: 14,
-                shadows: [Shadow(color: Colors.black, blurRadius: 3)],
-              ),
-            ),
-          // Stapel-Abzeichen hat Vorrang vor dem Format-Kürzel in derselben
-          // Ecke – bei einem Serien-Titelbild ist "wie viele Fotos stecken
-          // dahinter" wichtiger für die Kachel-Ansicht als das Dateiformat.
-          if (widget.asset.isStackCover && widget.asset.stackSize != null)
-            Positioned(
-              right: 4,
-              top: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(3)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.filter_none, color: Colors.white, size: 11),
-                    const SizedBox(width: 3),
-                    Text(
-                      '${widget.asset.stackSize}',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                  )
+                else if (widget.asset.kuerzel.isNotEmpty)
+                  Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        widget.asset.kuerzel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            )
-          else if (widget.asset.kuerzel.isNotEmpty)
-            Positioned(
-              right: 4,
-              top: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 1),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(3)),
-                child: Text(
-                  widget.asset.kuerzel,
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
-                ),
-              ),
+                  ),
+                if (widget.selected)
+                  Container(
+                    color: Colors.black45,
+                    child: const Icon(Icons.check_circle, color: Colors.white),
+                  ),
+              ],
             ),
-          if (widget.selected)
-            Container(
-              color: Colors.black45,
-              child: const Icon(Icons.check_circle, color: Colors.white),
-            ),
-            ],
           ),
-        ),
         ),
       ),
     );
@@ -295,12 +338,14 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
   }
 
   Widget _placeholder() => Container(
-        color: Colors.grey.shade900,
-        child: Icon(
-          widget.asset.type == 'VIDEO' ? Icons.videocam_outlined : Icons.image_outlined,
-          color: Colors.white24,
-        ),
-      );
+    color: Colors.grey.shade900,
+    child: Icon(
+      widget.asset.type == 'VIDEO'
+          ? Icons.videocam_outlined
+          : Icons.image_outlined,
+      color: Colors.white24,
+    ),
+  );
 }
 
 /// Für Fälle außerhalb der Tabelle (z.B. Gesichts-Crops), bei denen nur ein
@@ -332,9 +377,9 @@ class LocalImageTile extends StatelessWidget {
             fit: BoxFit.cover,
             // Ein Gesichts-Ausschnitt ist klein, aber es sind viele: Die
             // Gesichtspruefung zeigt hunderte davon nebeneinander.
-            cacheWidth: (_ausschnittKante *
-                    MediaQuery.devicePixelRatioOf(context))
-                .round(),
+            cacheWidth:
+                (_ausschnittKante * MediaQuery.devicePixelRatioOf(context))
+                    .round(),
             errorBuilder: (_, _, _) => Container(
               color: Colors.grey.shade900,
               child: const Icon(Icons.face_outlined, color: Colors.white24),

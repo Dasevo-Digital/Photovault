@@ -116,9 +116,9 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
   }
 
   void _refresh() => setState(() {
-        _state = _load();
-        _belegung = widget.library.paths.belegung();
-      });
+    _state = _load();
+    _belegung = widget.library.paths.belegung();
+  });
 
   /// Fuehrt zur Aufgabenliste und hebt dort die gemeinte Karte hervor.
   ///
@@ -148,10 +148,15 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
       // andere.
       _belegung = widget.library.paths.belegung();
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(AppTexte.of(context)
-          .gesundheitBereinigt(result.dateien, _bytes(result.bytes))),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppTexte.of(
+            context,
+          ).gesundheitBereinigt(result.dateien, _bytes(result.bytes)),
+        ),
+      ),
+    );
   }
 
   String _bytes(int bytes) {
@@ -165,10 +170,9 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
     return '${value.toStringAsFixed(unit == 0 ? 0 : 1)} ${units[unit]}';
   }
 
-  String _date(BuildContext context, DateTime date) =>
-      DateFormat.yMd(Localizations.localeOf(context).toString())
-          .add_Hm()
-          .format(date);
+  String _date(BuildContext context, DateTime date) => DateFormat.yMd(
+    Localizations.localeOf(context).toString(),
+  ).add_Hm().format(date);
 
   @override
   Widget build(BuildContext context) {
@@ -196,22 +200,26 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
           }
           final backup = state.backup;
           final backupEnabled = backup?.autoBackupEnabled ?? false;
-          final backupOk = backupEnabled &&
+          final backupOk =
+              backupEnabled &&
               backup?.lastAutoBackupAt != null &&
               state.pendingBackup == 0;
           final colors = Theme.of(context).colorScheme;
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              Text(t.gesundheitEinleitung,
-                  style: Theme.of(context).textTheme.bodyLarge),
+              Text(
+                t.gesundheitEinleitung,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
               const SizedBox(height: AppSpacing.lg),
               _StatusCard(
                 icon: state.databaseOk
                     ? Icons.check_circle_outline
                     : Icons.error_outline,
-                color:
-                    state.databaseOk ? context.semantik.erfolg : colors.error,
+                color: state.databaseOk
+                    ? context.semantik.erfolg
+                    : colors.error,
                 title: t.gesundheitDatenbank,
                 text: state.databaseOk
                     ? t.gesundheitDatenbankOk
@@ -237,9 +245,9 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                 text: !backupEnabled
                     ? t.gesundheitSicherungAus
                     : backup?.lastAutoBackupAt == null
-                        ? t.gesundheitSicherungNie
-                        : '${t.gesundheitLetzteSicherung(_date(context, backup!.lastAutoBackupAt!))}\n'
-                            '${t.gesundheitSicherungOffen(state.pendingBackup)}',
+                    ? t.gesundheitSicherungNie
+                    : '${t.gesundheitLetzteSicherung(_date(context, backup!.lastAutoBackupAt!))}\n'
+                          '${t.gesundheitSicherungOffen(state.pendingBackup)}',
               ),
               // Die Zahl der Aufnahmen steht sofort; was auf der Platte
               // liegt, kommt nach. Die Karte wartet nicht auf den
@@ -335,10 +343,12 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                   text: t.gesundheitVorschlaegeOffen(state.vorschlaege),
                   action: FilledButton.tonalIcon(
                     onPressed: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) =>
-                            VorschlaegeScreen(library: widget.library),
-                      ));
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              VorschlaegeScreen(library: widget.library),
+                        ),
+                      );
                       if (mounted) _refresh();
                     },
                     icon: const Icon(Icons.arrow_forward),
@@ -355,10 +365,14 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                   text: t.gesundheitBeiseiteOffen(state.beiseiteNieVerglichen),
                   action: FilledButton.tonalIcon(
                     onPressed: () async {
-                      await Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => VorschlaegeScreen(
-                            library: widget.library, beiseiteZuerst: true),
-                      ));
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => VorschlaegeScreen(
+                            library: widget.library,
+                            beiseiteZuerst: true,
+                          ),
+                        ),
+                      );
                       if (mounted) _refresh();
                     },
                     icon: const Icon(Icons.arrow_forward),
@@ -398,7 +412,9 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                     : context.semantik.warnung,
                 title: t.gesundheitModelle,
                 text: t.gesundheitModelleStand(
-                    state.modelsReady, state.modelsTotal),
+                  state.modelsReady,
+                  state.modelsTotal,
+                ),
               ),
               if (state.outdatedModelPipelines > 0)
                 _StatusCard(
@@ -406,7 +422,8 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                   color: context.semantik.warnung,
                   title: t.gesundheitModellwechselTitel,
                   text: t.gesundheitModellwechselText(
-                      state.outdatedModelPipelines),
+                    state.outdatedModelPipelines,
+                  ),
                   action: FilledButton.tonalIcon(
                     onPressed: () =>
                         widget.library.zeigeBereich(Hauptbereich.werkzeuge),
@@ -441,47 +458,48 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 30),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(text),
-                    if (details.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Wrap(
-                        spacing: AppSpacing.md,
-                        runSpacing: AppSpacing.xs,
-                        children: [
-                          // Untereinander stehende Groessen: mit
-                          // Tabellenziffern bleiben die Kommastellen in
-                          // einer Flucht (siehe [Tabellenziffern]).
-                          for (final detail in details)
-                            Text(detail,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall!
-                                    .mitTabellenziffern),
-                        ],
-                      ),
+    child: Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 30),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                Text(text),
+                if (details.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.md,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      // Untereinander stehende Groessen: mit
+                      // Tabellenziffern bleiben die Kommastellen in
+                      // einer Flucht (siehe [Tabellenziffern]).
+                      for (final detail in details)
+                        Text(
+                          detail,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall!.mitTabellenziffern,
+                        ),
                     ],
-                    if (action != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      action!,
-                    ],
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+                if (action != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  action!,
+                ],
+              ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

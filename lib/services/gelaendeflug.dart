@@ -112,13 +112,16 @@ class Gelaendeflug {
   List<double>? _richtungen;
   double _richtungsschritt = 0;
 
-  Gelaendeflug(this.spur,
-      {this.werte = const [],
-      this.glaettung = 120,
-      this.blickglaettung = 900})
-      : _bisHier = _laengenSumme(spur),
-        assert(werte.isEmpty || werte.length == spur.length,
-            'Zu jedem Raumpunkt gehört genau ein Wert oder gar keiner.');
+  Gelaendeflug(
+    this.spur, {
+    this.werte = const [],
+    this.glaettung = 120,
+    this.blickglaettung = 900,
+  }) : _bisHier = _laengenSumme(spur),
+       assert(
+         werte.isEmpty || werte.length == spur.length,
+         'Zu jedem Raumpunkt gehört genau ein Wert oder gar keiner.',
+       );
 
   static List<double> _laengenSumme(List<Raumpunkt> spur) {
     final summe = <double>[if (spur.isNotEmpty) 0];
@@ -284,10 +287,7 @@ class Gelaendeflug {
       von -= bis - laengeMeter;
       bis = laengeMeter;
     }
-    return (
-      von: math.max(0, von),
-      bis: math.min(laengeMeter, bis),
-    );
+    return (von: math.max(0, von), bis: math.min(laengeMeter, bis));
   }
 
   /// Die echte Höhe bei [meter], `null` wo die Spur keine führt.
@@ -326,11 +326,10 @@ class Gelaendeflug {
   /// Mehrtagestour zwölftausend. Gemessen kostete allein das 0,6 ms je
   /// Bild von 4,1 ms für die ganze Leiste
   /// (`tool/messe_flugleiste_test.dart`).
-  List<({double meter, double hoehe})> get hoehenprofil =>
-      _hoehenprofil ??= [
-        for (var i = 0; i < werte.length && i < _bisHier.length; i++)
-          if (werte[i].hoehe case final h?) (meter: _bisHier[i], hoehe: h),
-      ];
+  List<({double meter, double hoehe})> get hoehenprofil => _hoehenprofil ??= [
+    for (var i = 0; i < werte.length && i < _bisHier.length; i++)
+      if (werte[i].hoehe case final h?) (meter: _bisHier[i], hoehe: h),
+  ];
   List<({double meter, double hoehe})>? _hoehenprofil;
 
   /// Die geglättete Blickrichtung bei [meter].
@@ -354,8 +353,10 @@ class Gelaendeflug {
   double richtungBei(double meter) {
     final tafel = _richtungstafel();
     if (tafel.length < 2) return tafel.isEmpty ? 0 : tafel.first;
-    final x = (meter / _richtungsschritt)
-        .clamp(0.0, (tafel.length - 1).toDouble());
+    final x = (meter / _richtungsschritt).clamp(
+      0.0,
+      (tafel.length - 1).toDouble(),
+    );
     final i = x.floor().clamp(0, tafel.length - 2);
     return tafel[i] + (tafel[i + 1] - tafel[i]) * (x - i);
   }
@@ -445,7 +446,8 @@ class Gelaendeflug {
     for (var i = 0; i < n; i++) {
       summe[i + 1] = summe[i] + werte[i];
     }
-    double bis(int i) => summe[i.clamp(0, n)] +
+    double bis(int i) =>
+        summe[i.clamp(0, n)] +
         (i < 0 ? werte[0] * i : 0) +
         (i > n ? werte[n - 1] * (i - n) : 0);
     final aus = List<double>.filled(n, 0);
@@ -505,8 +507,8 @@ class Gelaendeflug {
       seitStart: (start == null || jetzt == null)
           ? null
           : (jetzt.difference(start).isNegative
-              ? Duration.zero
-              : jetzt.difference(start)),
+                ? Duration.zero
+                : jetzt.difference(start)),
     );
   }
 
@@ -600,7 +602,9 @@ class Gelaendeflug {
   }) {
     if (kante <= 0 || ausdehnung <= 0) return ausdehnung;
     final masche = ausdehnung / kante;
-    return (masche * brennweite / maschenpunkte)
-        .clamp(ausdehnung * 0.15, ausdehnung * 0.8);
+    return (masche * brennweite / maschenpunkte).clamp(
+      ausdehnung * 0.15,
+      ausdehnung * 0.8,
+    );
   }
 }

@@ -24,50 +24,60 @@ void main() {
     String? stadt,
     String? land,
     bool papierkorb = false,
-  }) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: zeit,
-            importedAt: DateTime(2024),
-            latitude: Value(breite),
-            longitude: Value(laenge),
-            locationCity: Value(stadt),
-            locationCountry: Value(land),
-            isTrashed: Value(papierkorb),
-          ));
-
-  Future<void> reiseMit(String id, List<String> assetIds,
-          {String name = 'Rom'}) =>
-      db.reiseAnlegen(
-        ReisenCompanion.insert(
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
           id: id,
-          name: name,
-          von: DateTime(2024, 6, 3),
-          bis: DateTime(2024, 6, 10),
-          angelegtAm: DateTime(2024, 7, 1),
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: zeit,
+          importedAt: DateTime(2024),
+          latitude: Value(breite),
+          longitude: Value(laenge),
+          locationCity: Value(stadt),
+          locationCountry: Value(land),
+          isTrashed: Value(papierkorb),
         ),
-        assetIds,
       );
 
-  test('die Datenbank steht auf der Fassung, die der Quelltext angibt',
-      () async {
-    // Gegen [AppDatabase.schemaVersion] und nicht gegen eine
-    // hineingeschriebene Zahl: Der Test soll bemerken, wenn eine Migration
-    // nicht läuft – nicht, wenn eine neue dazukommt. Vorher stand hier
-    // eine 51, und die naechste Fassung liess ihn fallen, obwohl an den
-    // Reisen nichts kaputt war.
-    final fassung = await db
-        .customSelect('PRAGMA user_version')
-        .map((r) => r.read<int>('user_version'))
-        .getSingle();
-    expect(fassung, db.schemaVersion);
-    expect(fassung, greaterThanOrEqualTo(51),
-        reason: 'Die Reisen-Tabellen kamen mit Fassung 51.');
-  });
+  Future<void> reiseMit(
+    String id,
+    List<String> assetIds, {
+    String name = 'Rom',
+  }) => db.reiseAnlegen(
+    ReisenCompanion.insert(
+      id: id,
+      name: name,
+      von: DateTime(2024, 6, 3),
+      bis: DateTime(2024, 6, 10),
+      angelegtAm: DateTime(2024, 7, 1),
+    ),
+    assetIds,
+  );
+
+  test(
+    'die Datenbank steht auf der Fassung, die der Quelltext angibt',
+    () async {
+      // Gegen [AppDatabase.schemaVersion] und nicht gegen eine
+      // hineingeschriebene Zahl: Der Test soll bemerken, wenn eine Migration
+      // nicht läuft – nicht, wenn eine neue dazukommt. Vorher stand hier
+      // eine 51, und die naechste Fassung liess ihn fallen, obwohl an den
+      // Reisen nichts kaputt war.
+      final fassung = await db
+          .customSelect('PRAGMA user_version')
+          .map((r) => r.read<int>('user_version'))
+          .getSingle();
+      expect(fassung, db.schemaVersion);
+      expect(
+        fassung,
+        greaterThanOrEqualTo(51),
+        reason: 'Die Reisen-Tabellen kamen mit Fassung 51.',
+      );
+    },
+  );
 
   test('eine Reise entsteht samt ihren Aufnahmen', () async {
     await aufnahme('a1', DateTime(2024, 6, 3, 10));
@@ -107,8 +117,10 @@ void main() {
     await aufnahme('weg', DateTime(2024, 6, 5, 10), papierkorb: true);
     await reiseMit('r1', ['spaet', 'frueh', 'weg']);
 
-    expect((await db.aufnahmenDerReise('r1')).map((a) => a.id),
-        ['frueh', 'spaet']);
+    expect((await db.aufnahmenDerReise('r1')).map((a) => a.id), [
+      'frueh',
+      'spaet',
+    ]);
   });
 
   test('Loeschen nimmt die Zuordnungen mit', () async {
@@ -122,22 +134,24 @@ void main() {
     expect(await db.zugeordneteReiseAufnahmen(), isEmpty);
   });
 
-  test('eine Aufnahme laesst sich nachtragen und wieder herausnehmen',
-      () async {
-    await aufnahme('a1', DateTime(2024, 6, 3, 10));
-    await aufnahme('a2', DateTime(2024, 6, 4, 10));
-    await reiseMit('r1', ['a1']);
+  test(
+    'eine Aufnahme laesst sich nachtragen und wieder herausnehmen',
+    () async {
+      await aufnahme('a1', DateTime(2024, 6, 3, 10));
+      await aufnahme('a2', DateTime(2024, 6, 4, 10));
+      await reiseMit('r1', ['a1']);
 
-    await db.aufnahmenZurReise('r1', ['a2']);
-    expect(await db.zugeordneteReiseAufnahmen(), {'a1', 'a2'});
-    // Zweimal dasselbe darf nicht werfen – der Nutzer soll nicht wissen
-    // muessen, was schon drin ist.
-    await db.aufnahmenZurReise('r1', ['a2']);
-    expect((await db.aufnahmenDerReise('r1')), hasLength(2));
+      await db.aufnahmenZurReise('r1', ['a2']);
+      expect(await db.zugeordneteReiseAufnahmen(), {'a1', 'a2'});
+      // Zweimal dasselbe darf nicht werfen – der Nutzer soll nicht wissen
+      // muessen, was schon drin ist.
+      await db.aufnahmenZurReise('r1', ['a2']);
+      expect((await db.aufnahmenDerReise('r1')), hasLength(2));
 
-    await db.aufnahmeAusReise('r1', 'a2');
-    expect((await db.aufnahmenDerReise('r1')).single.id, 'a1');
-  });
+      await db.aufnahmeAusReise('r1', 'a2');
+      expect((await db.aufnahmenDerReise('r1')).single.id, 'a1');
+    },
+  );
 
   test('ein abgelehnter Vorschlag bleibt abgelehnt', () async {
     await db.verwirfReisevorschlag('a1');
@@ -147,61 +161,86 @@ void main() {
     expect(await db.verworfeneReisevorschlaege(), hasLength(1));
   });
 
-  test('der gesperrte Ordner bleibt aus allen Reise-Abfragen heraus',
-      () async {
+  test('der gesperrte Ordner bleibt aus allen Reise-Abfragen heraus', () async {
     // Belegt, bevor es behoben wurde: Eine gesperrte Aufnahme stand im
     // Raster der Reise, nahm an der Erkennung teil und zaehlte im
     // Laenderzaehler mit. Der gesperrte Ordner ist mit einer PIN
     // geschuetzt – was dort liegt, darf ausserhalb nicht auftauchen, und
     // ein Land, das nur auf gesperrten Fotos vorkommt, sagt „da war
     // jemand".
-    await aufnahme('offen', DateTime(2024, 6, 3, 10),
-        breite: 41.9, laenge: 12.5, stadt: 'Roma', land: 'Italien');
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'gesperrt',
-          originalFileName: 'gesperrt.jpg',
-          relativePath: 'originals/gesperrt.jpg',
-          checksum: 'pruef-gesperrt',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 6, 4, 10),
-          importedAt: DateTime(2024),
-          latitude: const Value(41.9),
-          longitude: const Value(12.5),
-          locationCity: const Value('Roma'),
-          locationCountry: const Value('Italien'),
-          isLocked: const Value(true),
-        ));
+    await aufnahme(
+      'offen',
+      DateTime(2024, 6, 3, 10),
+      breite: 41.9,
+      laenge: 12.5,
+      stadt: 'Roma',
+      land: 'Italien',
+    );
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'gesperrt',
+            originalFileName: 'gesperrt.jpg',
+            relativePath: 'originals/gesperrt.jpg',
+            checksum: 'pruef-gesperrt',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 6, 4, 10),
+            importedAt: DateTime(2024),
+            latitude: const Value(41.9),
+            longitude: const Value(12.5),
+            locationCity: const Value('Roma'),
+            locationCountry: const Value('Italien'),
+            isLocked: const Value(true),
+          ),
+        );
     await reiseMit('r1', ['offen', 'gesperrt']);
 
     expect((await db.aufnahmenDerReise('r1')).map((a) => a.id), ['offen']);
-    expect(
-        (await db.aufnahmenFuerReiseerkennung()).map((a) => a.id), ['offen']);
+    expect((await db.aufnahmenFuerReiseerkennung()).map((a) => a.id), [
+      'offen',
+    ]);
     expect((await db.besuchteOrte()).single.anzahl, 1);
   });
 
   test('auch unverortete gesperrte Aufnahmen bleiben draussen', () async {
     // Sie waeren sonst der Umweg: ueber das Auffuellen erkannter Reisen
     // landeten sie doch im Raster.
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'gesperrt',
-          originalFileName: 'g.jpg',
-          relativePath: 'originals/g.jpg',
-          checksum: 'pruef-g',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 6, 3),
-          importedAt: DateTime(2024),
-          isLocked: const Value(true),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'gesperrt',
+            originalFileName: 'g.jpg',
+            relativePath: 'originals/g.jpg',
+            checksum: 'pruef-g',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 6, 3),
+            importedAt: DateTime(2024),
+            isLocked: const Value(true),
+          ),
+        );
     await aufnahme('offen', DateTime(2024, 6, 3));
     expect((await db.aufnahmenOhneKoordinate()).map((a) => a.id), ['offen']);
   });
 
   test('die Erkennung bekommt nur verortete, lebende Aufnahmen', () async {
-    await aufnahme('mitOrt', DateTime(2024, 6, 3, 10),
-        breite: 41.9, laenge: 12.5, stadt: 'Roma', land: 'Italien');
+    await aufnahme(
+      'mitOrt',
+      DateTime(2024, 6, 3, 10),
+      breite: 41.9,
+      laenge: 12.5,
+      stadt: 'Roma',
+      land: 'Italien',
+    );
     await aufnahme('ohneOrt', DateTime(2024, 6, 4, 10));
-    await aufnahme('imPapierkorb', DateTime(2024, 6, 5, 10),
-        breite: 41.9, laenge: 12.5, papierkorb: true);
+    await aufnahme(
+      'imPapierkorb',
+      DateTime(2024, 6, 5, 10),
+      breite: 41.9,
+      laenge: 12.5,
+      papierkorb: true,
+    );
 
     final roh = await db.aufnahmenFuerReiseerkennung();
     expect(roh.map((a) => a.id), ['mitOrt']);
@@ -209,65 +248,80 @@ void main() {
     expect(roh.single.land, 'Italien');
   });
 
-  test('der ganze Weg: erkennen, bestaetigen, nicht erneut vorschlagen',
-      () async {
-    // Hamburg als Wohnort, eine Woche Rom.
-    for (var t = 0; t < 60; t++) {
-      await aufnahme('h$t', DateTime(2024, 1, 1).add(Duration(days: t)),
-          breite: 53.55, laenge: 9.99, stadt: 'Hamburg', land: 'Deutschland');
-    }
-    for (var t = 0; t < 6; t++) {
-      for (var i = 0; i < 4; i++) {
-        await aufnahme('r$t-$i',
-            DateTime(2024, 6, 3, 9, i * 10).add(Duration(days: t)),
-            breite: 41.9, laenge: 12.5, stadt: 'Roma', land: 'Italien');
+  test(
+    'der ganze Weg: erkennen, bestaetigen, nicht erneut vorschlagen',
+    () async {
+      // Hamburg als Wohnort, eine Woche Rom.
+      for (var t = 0; t < 60; t++) {
+        await aufnahme(
+          'h$t',
+          DateTime(2024, 1, 1).add(Duration(days: t)),
+          breite: 53.55,
+          laenge: 9.99,
+          stadt: 'Hamburg',
+          land: 'Deutschland',
+        );
       }
-    }
+      for (var t = 0; t < 6; t++) {
+        for (var i = 0; i < 4; i++) {
+          await aufnahme(
+            'r$t-$i',
+            DateTime(2024, 6, 3, 9, i * 10).add(Duration(days: t)),
+            breite: 41.9,
+            laenge: 12.5,
+            stadt: 'Roma',
+            land: 'Italien',
+          );
+        }
+      }
 
-    final roh = await db.aufnahmenFuerReiseerkennung();
-    final vorschlaege = erkenneReisen([
-      for (final a in roh)
-        (
-          id: a.id,
-          zeit: a.zeit,
-          breite: a.breite,
-          laenge: a.laenge,
-          land: a.land,
-          region: a.region,
-          stadt: a.stadt,
+      final roh = await db.aufnahmenFuerReiseerkennung();
+      final vorschlaege = erkenneReisen([
+        for (final a in roh)
+          (
+            id: a.id,
+            zeit: a.zeit,
+            breite: a.breite,
+            laenge: a.laenge,
+            land: a.land,
+            region: a.region,
+            stadt: a.stadt,
+          ),
+      ], ohneOrt: 'Unbekannt');
+      expect(vorschlaege, hasLength(1));
+      expect(vorschlaege.single.name, 'Roma');
+      expect(vorschlaege.single.anzahl, 24);
+
+      await db.reiseAnlegen(
+        ReisenCompanion.insert(
+          id: 'r1',
+          name: vorschlaege.single.name,
+          von: vorschlaege.single.von,
+          bis: vorschlaege.single.bis,
+          angelegtAm: DateTime(2024, 7, 1),
         ),
-    ], ohneOrt: 'Unbekannt');
-    expect(vorschlaege, hasLength(1));
-    expect(vorschlaege.single.name, 'Roma');
-    expect(vorschlaege.single.anzahl, 24);
+        vorschlaege.single.aufnahmeIds,
+      );
 
-    await db.reiseAnlegen(
-      ReisenCompanion.insert(
-        id: 'r1',
-        name: vorschlaege.single.name,
-        von: vorschlaege.single.von,
-        bis: vorschlaege.single.bis,
-        angelegtAm: DateTime(2024, 7, 1),
-      ),
-      vorschlaege.single.aufnahmeIds,
-    );
-
-    // Zweiter Durchgang: Die bestaetigte Reise darf nicht noch einmal
-    // vorgeschlagen werden.
-    final erneut = erkenneReisen([
-      for (final a in roh)
-        (
-          id: a.id,
-          zeit: a.zeit,
-          breite: a.breite,
-          laenge: a.laenge,
-          land: a.land,
-          region: a.region,
-          stadt: a.stadt,
-        ),
-    ],
+      // Zweiter Durchgang: Die bestaetigte Reise darf nicht noch einmal
+      // vorgeschlagen werden.
+      final erneut = erkenneReisen(
+        [
+          for (final a in roh)
+            (
+              id: a.id,
+              zeit: a.zeit,
+              breite: a.breite,
+              laenge: a.laenge,
+              land: a.land,
+              region: a.region,
+              stadt: a.stadt,
+            ),
+        ],
         ohneOrt: 'Unbekannt',
-        bekannteIds: await db.zugeordneteReiseAufnahmen());
-    expect(erneut, isEmpty);
-  });
+        bekannteIds: await db.zugeordneteReiseAufnahmen(),
+      );
+      expect(erneut, isEmpty);
+    },
+  );
 }

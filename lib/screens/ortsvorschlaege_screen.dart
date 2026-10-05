@@ -61,10 +61,13 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
       _buendel = buendel;
       _aufnahmen
         ..clear()
-        ..addEntries(buendel.map((b) => MapEntry(b.schluessel, [
-              for (final v in b.vorschlaege)
-                ?nachId[v.assetId],
-            ])));
+        ..addEntries(
+          buendel.map(
+            (b) => MapEntry(b.schluessel, [
+              for (final v in b.vorschlaege) ?nachId[v.assetId],
+            ]),
+          ),
+        );
       _laedt = false;
     });
   }
@@ -85,10 +88,12 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
 
   Future<void> _frageAlle() async {
     final t = AppTexte.of(context);
-    final aufnahmen =
-        _buendel.fold<int>(0, (n, b) => n + b.vorschlaege.length);
-    final ja = await confirmDialog(context, t.ortVorschlagAlleFrageTitel,
-        t.ortVorschlagAlleFrage(_buendel.length, aufnahmen));
+    final aufnahmen = _buendel.fold<int>(0, (n, b) => n + b.vorschlaege.length);
+    final ja = await confirmDialog(
+      context,
+      t.ortVorschlagAlleFrageTitel,
+      t.ortVorschlagAlleFrage(_buendel.length, aufnahmen),
+    );
     if (!ja || !mounted) return;
     setState(() => _uebernimmtAlle = true);
     try {
@@ -120,7 +125,8 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.done_all),
                 label: Text(t.ortVorschlagAlleUebernehmen(_buendel.length)),
               ),
@@ -131,12 +137,17 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
             child: Text(
               t.ortVorschlagErklaerung,
               style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const Divider(height: 16),
@@ -184,12 +195,15 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
                         // Zeile wäre er eine Behauptung.
                         Text(
                           t.ortVorschlagBegruendung(
-                              _nachbarn(b), b.groessterAbstand.inMinutes),
+                            _nachbarn(b),
+                            b.groessterAbstand.inMinutes,
+                          ),
                           style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant),
+                            fontSize: 12,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),

@@ -64,7 +64,6 @@ class HardswishUmbau {
 
   static const _gesucht = 'HardSwish';
 
-
   /// Die Knoten des Modells in ihrer Reihenfolge – damit sich das Ergebnis
   /// eines Umbaus prüfen lässt, ohne eine ONNX-Bibliothek zu brauchen.
   @visibleForTesting
@@ -89,8 +88,11 @@ class HardswishUmbau {
       for (final m in _felder(b, f.datenVon, f.datenBis)) {
         if (m.nummer == _merkmalName) name = _text(b, m);
         if (m.nummer == _merkmalFliess && m.typ == 5) {
-          wert = ByteData.sublistView(b, m.datenVon, m.datenBis)
-              .getFloat32(0, Endian.little);
+          wert = ByteData.sublistView(
+            b,
+            m.datenVon,
+            m.datenBis,
+          ).getFloat32(0, Endian.little);
         }
       }
       if (name.isNotEmpty && wert != null) werte[name] = wert;
@@ -100,7 +102,8 @@ class HardswishUmbau {
 
   /// Wie viele `HardSwish`-Knoten die Datei enthält. Null heisst: nichts
   /// zu tun.
-  static int zaehle(Uint8List modell) => _umbau(modell, nurZaehlen: true).anzahl;
+  static int zaehle(Uint8List modell) =>
+      _umbau(modell, nurZaehlen: true).anzahl;
 
   /// Gibt das umgebaute Modell zurück. Enthält es kein `HardSwish`, kommt
   /// die Eingabe unverändert zurück.
@@ -109,17 +112,21 @@ class HardswishUmbau {
     return e.anzahl == 0 ? modell : e.bytes!;
   }
 
-  static ({int anzahl, Uint8List? bytes}) _umbau(Uint8List modell,
-      {required bool nurZaehlen}) {
+  static ({int anzahl, Uint8List? bytes}) _umbau(
+    Uint8List modell, {
+    required bool nurZaehlen,
+  }) {
     final felder = _felder(modell, 0, modell.length);
     final graph = felder.where((f) => f.nummer == _modellGraph).toList();
     // Ein Modell ohne Graph ist keines; ohne Knoten gibt es nichts zu tun.
     if (graph.length != 1) return (anzahl: 0, bytes: null);
 
     final g = graph.first;
-    final knotenfelder = _felder(modell, g.datenVon, g.datenBis)
-        .where((f) => f.nummer == _graphKnoten)
-        .toList();
+    final knotenfelder = _felder(
+      modell,
+      g.datenVon,
+      g.datenBis,
+    ).where((f) => f.nummer == _graphKnoten).toList();
 
     // Alle vergebenen Namen einsammeln, damit der neue Zwischenname
     // garantiert frei ist. Ein doppelter Name wäre ein stiller Kurzschluss
@@ -152,29 +159,33 @@ class HardswishUmbau {
       final zwischen = _freierName('${ausgang}__hardsigmoid', vergeben);
       vergeben.add(zwischen);
 
-      neuerGraph.add(_feld(
-        _graphKnoten,
-        _knoten(
-          eingaenge: [eingang],
-          ausgaenge: [zwischen],
-          name: '${basis}__hardsigmoid',
-          art: 'HardSigmoid',
-          merkmale: [
-            _merkmalFliesskomma('alpha', _alpha),
-            _merkmalFliesskomma('beta', _beta),
-          ],
+      neuerGraph.add(
+        _feld(
+          _graphKnoten,
+          _knoten(
+            eingaenge: [eingang],
+            ausgaenge: [zwischen],
+            name: '${basis}__hardsigmoid',
+            art: 'HardSigmoid',
+            merkmale: [
+              _merkmalFliesskomma('alpha', _alpha),
+              _merkmalFliesskomma('beta', _beta),
+            ],
+          ),
         ),
-      ));
-      neuerGraph.add(_feld(
-        _graphKnoten,
-        _knoten(
-          eingaenge: [eingang, zwischen],
-          ausgaenge: [ausgang],
-          name: '${basis}__mul',
-          art: 'Mul',
-          merkmale: const [],
+      );
+      neuerGraph.add(
+        _feld(
+          _graphKnoten,
+          _knoten(
+            eingaenge: [eingang, zwischen],
+            ausgaenge: [ausgang],
+            name: '${basis}__mul',
+            art: 'Mul',
+            merkmale: const [],
+          ),
         ),
-      ));
+      );
     }
 
     // Modell neu zusammensetzen: alles ausser dem Graphen unverändert.
@@ -191,7 +202,7 @@ class HardswishUmbau {
 
   static String _freierName(String wunsch, Set<String> vergeben) {
     if (!vergeben.contains(wunsch)) return wunsch;
-    for (var i = 2;; i++) {
+    for (var i = 2; ; i++) {
       final k = '$wunsch$i';
       if (!vergeben.contains(k)) return k;
     }
@@ -205,7 +216,8 @@ class HardswishUmbau {
     List<String> ausgaenge,
     String name,
     String art,
-  }) _lieseKnoten(Uint8List b, _Feld knoten) {
+  })
+  _lieseKnoten(Uint8List b, _Feld knoten) {
     final eingaenge = <String>[];
     final ausgaenge = <String>[];
     var name = '';
@@ -227,7 +239,8 @@ class HardswishUmbau {
     }
     // Ein eigener Namensbereich hiesse: nicht der ONNX-Standardschritt.
     // Den fasst dieser Umbau nicht an.
-    final passt = art == _gesucht &&
+    final passt =
+        art == _gesucht &&
         bereich.isEmpty &&
         eingaenge.length == 1 &&
         ausgaenge.length == 1;
@@ -385,7 +398,12 @@ class KnotenAngabe {
   final Map<String, double> fliesswerte;
 
   const KnotenAngabe(
-      this.art, this.name, this.eingaenge, this.ausgaenge, this.fliesswerte);
+    this.art,
+    this.name,
+    this.eingaenge,
+    this.ausgaenge,
+    this.fliesswerte,
+  );
 
   @override
   String toString() => '$art($eingaenge -> $ausgaenge)';

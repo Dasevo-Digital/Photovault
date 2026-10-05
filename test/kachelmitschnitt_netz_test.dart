@@ -86,40 +86,48 @@ void main() {
     expect(bilanz.ohneDauerverbindung, 0);
   });
 
-  test('die Verbindungsfabrik ändert nichts – nachgemessen, nicht behauptet',
-      () async {
-    // Der Einwand gegen jedes eingebautes Messgerät: Es könnte das
-    // verändern, was es messen soll. Also beide Wege am selben Server.
-    final ohne = await Pruefserver.starte();
-    addTearDown(ohne.schliesse);
-    await hole(HttpClient()..maxConnectionsPerHost = kachelVerbindungen, ohne, 12);
+  test(
+    'die Verbindungsfabrik ändert nichts – nachgemessen, nicht behauptet',
+    () async {
+      // Der Einwand gegen jedes eingebautes Messgerät: Es könnte das
+      // verändern, was es messen soll. Also beide Wege am selben Server.
+      final ohne = await Pruefserver.starte();
+      addTearDown(ohne.schliesse);
+      await hole(
+        HttpClient()..maxConnectionsPerHost = kachelVerbindungen,
+        ohne,
+        12,
+      );
 
-    final mit = await Pruefserver.starte();
-    addTearDown(mit.schliesse);
-    await hole(kachelHttpClient(), mit, 12);
+      final mit = await Pruefserver.starte();
+      addTearDown(mit.schliesse);
+      await hole(kachelHttpClient(), mit, 12);
 
-    expect(mit.abrufe, ohne.abrufe);
-    expect(mit.verbindungen, ohne.verbindungen);
-  });
+      expect(mit.abrufe, ohne.abrufe);
+      expect(mit.verbindungen, ohne.verbindungen);
+    },
+  );
 
-  test('macht der Server nach jeder Kachel zu, kostet jede eine Verbindung',
-      () async {
-    // **Der Verdacht in Reinform.** Von aussen waren 5702 Verbindungen
-    // für 496 Kacheln zu sehen. Wenn ein Server so antwortet, sieht der
-    // Mitschnitt genau das – und sagt mit `ohneDauerverbindung` auch,
-    // woran es liegt.
-    final server = await Pruefserver.starte(schliesst: true);
-    addTearDown(server.schliesse);
+  test(
+    'macht der Server nach jeder Kachel zu, kostet jede eine Verbindung',
+    () async {
+      // **Der Verdacht in Reinform.** Von aussen waren 5702 Verbindungen
+      // für 496 Kacheln zu sehen. Wenn ein Server so antwortet, sieht der
+      // Mitschnitt genau das – und sagt mit `ohneDauerverbindung` auch,
+      // woran es liegt.
+      final server = await Pruefserver.starte(schliesst: true);
+      addTearDown(server.schliesse);
 
-    await hole(kachelHttpClient(), server, 10);
+      await hole(kachelHttpClient(), server, 10);
 
-    final bilanz = Kachelmitschnitt.instanz.bilanz;
-    expect(bilanz.abrufe, 10);
-    expect(server.verbindungen, 10);
-    expect(bilanz.verbindungen, 10);
-    expect(bilanz.verbindungenJeAbruf, 1.0);
-    expect(bilanz.ohneDauerverbindung, 10);
-  });
+      final bilanz = Kachelmitschnitt.instanz.bilanz;
+      expect(bilanz.abrufe, 10);
+      expect(server.verbindungen, 10);
+      expect(bilanz.verbindungen, 10);
+      expect(bilanz.verbindungenJeAbruf, 1.0);
+      expect(bilanz.ohneDauerverbindung, 10);
+    },
+  );
 
   test('gleichzeitige Abrufe sprengen die Deckelung nicht', () async {
     // [kachelVerbindungen] ist die Zusage, dass wir gespendeten Servern
@@ -127,8 +135,10 @@ void main() {
     // eine Zusage auf dem Papier.
     final server = await Pruefserver.starte();
     addTearDown(server.schliesse);
-    final http =
-        MitschnittClient(IOClient(kachelHttpClient()), Kachelmitschnitt.instanz);
+    final http = MitschnittClient(
+      IOClient(kachelHttpClient()),
+      Kachelmitschnitt.instanz,
+    );
     addTearDown(http.close);
 
     await Future.wait([
@@ -140,20 +150,24 @@ void main() {
     expect(Kachelmitschnitt.instanz.bilanz.verbindungen, server.verbindungen);
   });
 
-  test('ein Server, den es nicht gibt, steht als Fehler im Mitschnitt',
-      () async {
-    final server = await Pruefserver.starte();
-    final adresse = server.kachel(8, 1, 1);
-    await server.schliesse();
+  test(
+    'ein Server, den es nicht gibt, steht als Fehler im Mitschnitt',
+    () async {
+      final server = await Pruefserver.starte();
+      final adresse = server.kachel(8, 1, 1);
+      await server.schliesse();
 
-    final http =
-        MitschnittClient(IOClient(kachelHttpClient()), Kachelmitschnitt.instanz);
-    addTearDown(http.close);
-    await expectLater(http.get(adresse), throwsA(isA<Object>()));
+      final http = MitschnittClient(
+        IOClient(kachelHttpClient()),
+        Kachelmitschnitt.instanz,
+      );
+      addTearDown(http.close);
+      await expectLater(http.get(adresse), throwsA(isA<Object>()));
 
-    final bilanz = Kachelmitschnitt.instanz.bilanz;
-    expect(bilanz.abrufe, 1);
-    expect(bilanz.fehlgeschlagen, 1);
-    expect(bilanz.nachFehler, isNotEmpty);
-  });
+      final bilanz = Kachelmitschnitt.instanz.bilanz;
+      expect(bilanz.abrufe, 1);
+      expect(bilanz.fehlgeschlagen, 1);
+      expect(bilanz.nachFehler, isNotEmpty);
+    },
+  );
 }

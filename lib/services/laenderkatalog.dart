@@ -127,8 +127,9 @@ class Laenderkatalog {
       liste.add(eintrag);
     }
     liste.sort((a, b) => a.name.compareTo(b.name));
-    return Laenderkatalog._(List.unmodifiable(liste), nachIso,
-        {for (final e in liste) e.name: e});
+    return Laenderkatalog._(List.unmodifiable(liste), nachIso, {
+      for (final e in liste) e.name: e,
+    });
   }
 }
 

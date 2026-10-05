@@ -6,18 +6,14 @@ import 'package:photo_vault/services/exif_gps.dart';
 /// `readExifFromBytes` für ein Foto mit GPS-Daten liefern würde – ohne eine
 /// echte Bilddatei zu benötigen.
 IfdTag _ratiosTag(List<Ratio> ratios) => IfdTag(
-      tag: 0,
-      tagType: 'Ratio',
-      printable: ratios.toString(),
-      values: IfdRatios(ratios),
-    );
+  tag: 0,
+  tagType: 'Ratio',
+  printable: ratios.toString(),
+  values: IfdRatios(ratios),
+);
 
-IfdTag _asciiTag(String value) => IfdTag(
-      tag: 0,
-      tagType: 'ASCII',
-      printable: value,
-      values: const IfdNone(),
-    );
+IfdTag _asciiTag(String value) =>
+    IfdTag(tag: 0, tagType: 'ASCII', printable: value, values: const IfdNone());
 
 void main() {
   test('Nordhalbkugel/Osthalbkugel ergibt positive Dezimalgrade', () {
@@ -69,15 +65,22 @@ void main() {
     expect(parseExifGps(tags), isNull);
   });
 
-  test('unplausible Koordinaten außerhalb des gültigen Bereichs ergeben null', () {
-    // 200° Breite ist geometrisch unmöglich – schützt vor kaputten EXIF-Blöcken.
-    final tags = {
-      'GPS GPSLatitude': _ratiosTag([Ratio(200, 1), Ratio(0, 1), Ratio(0, 1)]),
-      'GPS GPSLatitudeRef': _asciiTag('N'),
-      'GPS GPSLongitude': _ratiosTag([Ratio(0, 1), Ratio(7, 1), Ratio(0, 1)]),
-      'GPS GPSLongitudeRef': _asciiTag('E'),
-    };
+  test(
+    'unplausible Koordinaten außerhalb des gültigen Bereichs ergeben null',
+    () {
+      // 200° Breite ist geometrisch unmöglich – schützt vor kaputten EXIF-Blöcken.
+      final tags = {
+        'GPS GPSLatitude': _ratiosTag([
+          Ratio(200, 1),
+          Ratio(0, 1),
+          Ratio(0, 1),
+        ]),
+        'GPS GPSLatitudeRef': _asciiTag('N'),
+        'GPS GPSLongitude': _ratiosTag([Ratio(0, 1), Ratio(7, 1), Ratio(0, 1)]),
+        'GPS GPSLongitudeRef': _asciiTag('E'),
+      };
 
-    expect(parseExifGps(tags), isNull);
-  });
+      expect(parseExifGps(tags), isNull);
+    },
+  );
 }

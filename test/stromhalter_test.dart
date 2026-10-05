@@ -32,8 +32,14 @@ void main() {
     // ein Halter, der stur festhält, zeigte für immer die ersten 600.
     final halter = Stromhalter<int>();
     var gebaut = 0;
-    final a = halter.hole(600, () { gebaut++; return Stream<int>.fromIterable(const []); });
-    final b = halter.hole(1200, () { gebaut++; return Stream<int>.fromIterable(const []); });
+    final a = halter.hole(600, () {
+      gebaut++;
+      return Stream<int>.fromIterable(const []);
+    });
+    final b = halter.hole(1200, () {
+      gebaut++;
+      return Stream<int>.fromIterable(const []);
+    });
     expect(identical(a, b), isFalse);
     expect(gebaut, 2);
   });
@@ -43,7 +49,11 @@ void main() {
     // mehrere Schlüssel hielte Abos offen, die niemand mehr liest.
     final halter = Stromhalter<int>();
     var gebaut = 0;
-    Stream<int> bau() { gebaut++; return Stream<int>.fromIterable(const []); }
+    Stream<int> bau() {
+      gebaut++;
+      return Stream<int>.fromIterable(const []);
+    }
+
     halter.hole(600, bau);
     halter.hole(1200, bau);
     halter.hole(600, bau);
@@ -55,22 +65,33 @@ void main() {
     // Schlüssel sein können, sonst baute der erste Aufruf zweimal.
     final halter = Stromhalter<int>();
     var gebaut = 0;
-    Stream<int> bau() { gebaut++; return Stream<int>.fromIterable(const []); }
+    Stream<int> bau() {
+      gebaut++;
+      return Stream<int>.fromIterable(const []);
+    }
+
     halter.hole(null, bau);
     halter.hole(null, bau);
     expect(gebaut, 1);
   });
 
-  test('gleichwertige Schluessel genuegen, es muss nicht dasselbe Objekt sein', () {
-    // Zusammengesetzte Schlüssel (Jahr und Sortierung etwa) entstehen bei
-    // jedem Neubau frisch. Zählte die Identität, hielte der Halter nie.
-    final halter = Stromhalter<int>();
-    var gebaut = 0;
-    Stream<int> bau() { gebaut++; return Stream<int>.fromIterable(const []); }
-    halter.hole((2025, 'datum'), bau);
-    halter.hole((2025, 'datum'), bau);
-    expect(gebaut, 1);
-  });
+  test(
+    'gleichwertige Schluessel genuegen, es muss nicht dasselbe Objekt sein',
+    () {
+      // Zusammengesetzte Schlüssel (Jahr und Sortierung etwa) entstehen bei
+      // jedem Neubau frisch. Zählte die Identität, hielte der Halter nie.
+      final halter = Stromhalter<int>();
+      var gebaut = 0;
+      Stream<int> bau() {
+        gebaut++;
+        return Stream<int>.fromIterable(const []);
+      }
+
+      halter.hole((2025, 'datum'), bau);
+      halter.hole((2025, 'datum'), bau);
+      expect(gebaut, 1);
+    },
+  );
 
   test('der gehaltene Strom bleibt derselbe Datenweg', () async {
     // Nicht nur dasselbe Objekt, sondern auch derselbe Inhalt: Wer ihn

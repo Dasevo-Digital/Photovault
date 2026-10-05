@@ -24,7 +24,10 @@ import 'dart:io';
 ///    Unicode-Normalisierung.
 class MarianTokenizer {
   MarianTokenizer._(this._pieces, this._scores, this._idByPiece, this.unkId)
-      : _maxPieceLaenge = _pieces.fold(0, (m, p) => p.runes.length > m ? p.runes.length : m);
+    : _maxPieceLaenge = _pieces.fold(
+        0,
+        (m, p) => p.runes.length > m ? p.runes.length : m,
+      );
 
   final List<String> _pieces;
   final List<double> _scores;
@@ -47,8 +50,9 @@ class MarianTokenizer {
 
   int get vokabularGroesse => _pieces.length;
 
-  static Future<MarianTokenizer> loadFromFile(String pfad) async =>
-      fromJson(jsonDecode(await File(pfad).readAsString()) as Map<String, dynamic>);
+  static Future<MarianTokenizer> loadFromFile(String pfad) async => fromJson(
+    jsonDecode(await File(pfad).readAsString()) as Map<String, dynamic>,
+  );
 
   static MarianTokenizer fromJson(Map<String, dynamic> json) {
     final model = json['model'] as Map<String, dynamic>;

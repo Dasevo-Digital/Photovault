@@ -12,7 +12,9 @@ void main() {
   late Directory tempVolumes;
 
   setUp(() {
-    tempVolumes = Directory.systemTemp.createTempSync('photo_vault_volumes_test_');
+    tempVolumes = Directory.systemTemp.createTempSync(
+      'photo_vault_volumes_test_',
+    );
   });
 
   tearDown(() {
@@ -20,45 +22,72 @@ void main() {
   });
 
   test('findet einen Datenträger mit DCIM-Ordner', () async {
-    Directory(p.join(tempVolumes.path, 'EOS_DIGITAL', 'DCIM', '100CANON')).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'EOS_DIGITAL', 'DCIM', '100CANON'),
+    ).createSync(recursive: true);
 
-    final sources = await RemovableMediaService(volumesPath: tempVolumes.path).detect();
+    final sources = await RemovableMediaService(
+      volumesPath: tempVolumes.path,
+    ).detect();
 
     expect(sources, hasLength(1));
     expect(sources.single.name, 'EOS_DIGITAL');
-    expect(sources.single.dcimPath, p.join(tempVolumes.path, 'EOS_DIGITAL', 'DCIM'));
+    expect(
+      sources.single.dcimPath,
+      p.join(tempVolumes.path, 'EOS_DIGITAL', 'DCIM'),
+    );
   });
 
   test('erkennt DCIM case-insensitiv', () async {
-    Directory(p.join(tempVolumes.path, 'SDCARD', 'dcim')).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'SDCARD', 'dcim'),
+    ).createSync(recursive: true);
 
-    final sources = await RemovableMediaService(volumesPath: tempVolumes.path).detect();
+    final sources = await RemovableMediaService(
+      volumesPath: tempVolumes.path,
+    ).detect();
 
     expect(sources, hasLength(1));
     expect(sources.single.dcimPath, p.join(tempVolumes.path, 'SDCARD', 'dcim'));
   });
 
   test('ignoriert Datenträger ohne DCIM-Ordner', () async {
-    Directory(p.join(tempVolumes.path, 'Backup-Festplatte', 'Documents')).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'Backup-Festplatte', 'Documents'),
+    ).createSync(recursive: true);
 
-    final sources = await RemovableMediaService(volumesPath: tempVolumes.path).detect();
+    final sources = await RemovableMediaService(
+      volumesPath: tempVolumes.path,
+    ).detect();
 
     expect(sources, isEmpty);
   });
 
   test('findet mehrere gleichzeitig angeschlossene Datenträger', () async {
-    Directory(p.join(tempVolumes.path, 'CameraA', 'DCIM')).createSync(recursive: true);
-    Directory(p.join(tempVolumes.path, 'CameraB', 'DCIM')).createSync(recursive: true);
-    Directory(p.join(tempVolumes.path, 'KeinFotoLaufwerk')).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'CameraA', 'DCIM'),
+    ).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'CameraB', 'DCIM'),
+    ).createSync(recursive: true);
+    Directory(
+      p.join(tempVolumes.path, 'KeinFotoLaufwerk'),
+    ).createSync(recursive: true);
 
-    final sources = await RemovableMediaService(volumesPath: tempVolumes.path).detect();
+    final sources = await RemovableMediaService(
+      volumesPath: tempVolumes.path,
+    ).detect();
 
     expect(sources.map((s) => s.name).toSet(), {'CameraA', 'CameraB'});
   });
 
-  test('liefert eine leere Liste, wenn das Wurzelverzeichnis gar nicht existiert', () async {
-    final sources =
-        await RemovableMediaService(volumesPath: p.join(tempVolumes.path, 'existiert-nicht')).detect();
-    expect(sources, isEmpty);
-  });
+  test(
+    'liefert eine leere Liste, wenn das Wurzelverzeichnis gar nicht existiert',
+    () async {
+      final sources = await RemovableMediaService(
+        volumesPath: p.join(tempVolumes.path, 'existiert-nicht'),
+      ).detect();
+      expect(sources, isEmpty);
+    },
+  );
 }

@@ -131,8 +131,9 @@ class _SearchScreenState extends State<SearchScreen>
 
   @override
   Future<void> rasterAktualisieren() async {
-    final frisch =
-        await widget.library.db.assetsByIds([for (final a in _funde) a.id]);
+    final frisch = await widget.library.db.assetsByIds([
+      for (final a in _funde) a.id,
+    ]);
     if (mounted) setState(() => _zeigeFunde(frisch));
   }
 
@@ -164,23 +165,25 @@ class _SearchScreenState extends State<SearchScreen>
   void _toggleSelected(String id) => rasterUmschalten(id);
 
   void _openViewer(int index) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: _results,
-        initialIndex: index,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: _results,
+          initialIndex: index,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _deleteSelected() async {
@@ -203,27 +206,34 @@ class _SearchScreenState extends State<SearchScreen>
     final name = await showDialog<String>(
       context: context,
       builder: (context) => MitTextsteuerung(
-          builder: (context, ctrl) => AlertDialog(
-                title: Text(AppTexte.of(context).sucheSpeichernTitel),
-                content: TextField(
-                  controller: ctrl,
-                  autofocus: true,
-                  decoration:
-                      InputDecoration(labelText: AppTexte.of(context).allgName),
-                ),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(AppTexte.of(context).allgAbbrechen)),
-                  FilledButton(
-                      onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-                      child: Text(AppTexte.of(context).allgSpeichern)),
-                ],
-              )),
+        builder: (context, ctrl) => AlertDialog(
+          title: Text(AppTexte.of(context).sucheSpeichernTitel),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: AppTexte.of(context).allgName,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppTexte.of(context).allgAbbrechen),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              child: Text(AppTexte.of(context).allgSpeichern),
+            ),
+          ],
+        ),
+      ),
     );
     if (name == null || name.isEmpty) return;
-    await widget.library.db
-        .createSavedSearch(const Uuid().v4(), name, _filters);
+    await widget.library.db.createSavedSearch(
+      const Uuid().v4(),
+      name,
+      _filters,
+    );
   }
 
   Future<void> _loadSavedSearch(SearchFilters filters) async {
@@ -240,7 +250,8 @@ class _SearchScreenState extends State<SearchScreen>
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) =>
           SearchOptionsSheet(library: widget.library, initialFilters: _filters),
     );
@@ -314,8 +325,10 @@ class _SearchScreenState extends State<SearchScreen>
   Future<void> _satzVerwerfen(String urspruenglich) async {
     setState(() {
       _satzfunde = const [];
-      _filters =
-          SearchFilters(textMode: _filters.textMode, query: urspruenglich);
+      _filters = SearchFilters(
+        textMode: _filters.textMode,
+        query: urspruenglich,
+      );
       _queryCtrl.text = urspruenglich;
     });
     await _runSearch();
@@ -399,12 +412,12 @@ class _SearchScreenState extends State<SearchScreen>
         // 81 ms je Suche. Die Kennungen kosten 4,3 ms; die 200 Zeilen,
         // die am Ende wirklich gezeigt werden, holt `assetsByIds`
         // danach für 2,6 ms.
-        final erlaubt =
-            (await widget.library.db.searchAssetIds(_filters)).toSet();
+        final erlaubt = (await widget.library.db.searchAssetIds(
+          _filters,
+        )).toSet();
         final kandidaten = <String, Float32List>{
           for (final e in embeddings.entries)
-            if (erlaubt
-                .contains(LibraryState.aufnahmeAusSuchschluessel(e.key)))
+            if (erlaubt.contains(LibraryState.aufnahmeAusSuchschluessel(e.key)))
               e.key: e.value,
         };
         if (kandidaten.isEmpty) {
@@ -418,8 +431,11 @@ class _SearchScreenState extends State<SearchScreen>
         // Etwas mehr als die 200, die am Ende stehen sollen: Ein Video
         // kann mit mehreren Standbildern in der Rangfolge auftauchen, und
         // die fallen gleich wieder zusammen.
-        final ranked = ClipService.rankBySimilarity(queryVector, kandidaten,
-            topK: 200 * (1 + videoStandbilderHoechstens));
+        final ranked = ClipService.rankBySimilarity(
+          queryVector,
+          kandidaten,
+          topK: 200 * (1 + videoStandbilderHoechstens),
+        );
         // searchAssets sortiert nach Datum – hier zählt die Ähnlichkeit.
         // Je Aufnahme zählt ihr bestes Standbild; die Rangfolge kommt
         // absteigend, das erste Auftreten ist also das beste.
@@ -454,7 +470,8 @@ class _SearchScreenState extends State<SearchScreen>
       // C++-Zusicherung mit den Pfaden eines fremden Bauservers.
       if (!mounted) return;
       setState(
-          () => _error = AppTexte.of(context).sucheModellUnbrauchbar(e.datei));
+        () => _error = AppTexte.of(context).sucheModellUnbrauchbar(e.datei),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = AppTexte.of(context).sucheFehlgeschlagen('$e'));
@@ -494,7 +511,10 @@ class _SearchScreenState extends State<SearchScreen>
     final titel = widget.titel;
     return titel == null
         ? inhalt
-        : Scaffold(appBar: AppBar(title: Text(titel)), body: inhalt);
+        : Scaffold(
+            appBar: AppBar(title: Text(titel)),
+            body: inhalt,
+          );
   }
 
   Widget _inhalt(BuildContext context) {
@@ -506,15 +526,19 @@ class _SearchScreenState extends State<SearchScreen>
             controller: _queryCtrl,
             decoration: InputDecoration(
               hintText: switch (_filters.textMode) {
-                SearchTextMode.context =>
-                  AppTexte.of(context).suchePlatzhalterKontext,
-                SearchTextMode.filename =>
-                  AppTexte.of(context).suchePlatzhalterDateiname,
-                SearchTextMode.description =>
-                  AppTexte.of(context).suchePlatzhalterBeschreibung,
+                SearchTextMode.context => AppTexte.of(
+                  context,
+                ).suchePlatzhalterKontext,
+                SearchTextMode.filename => AppTexte.of(
+                  context,
+                ).suchePlatzhalterDateiname,
+                SearchTextMode.description => AppTexte.of(
+                  context,
+                ).suchePlatzhalterBeschreibung,
                 SearchTextMode.ocr => AppTexte.of(context).suchePlatzhalterText,
-                SearchTextMode.caption =>
-                  AppTexte.of(context).suchePlatzhalterBildunterschrift,
+                SearchTextMode.caption => AppTexte.of(
+                  context,
+                ).suchePlatzhalterBildunterschrift,
               },
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
@@ -529,8 +553,9 @@ class _SearchScreenState extends State<SearchScreen>
                     ),
                   IconButton(
                     icon: Badge(
-                        isLabelVisible: !_filters.isEmpty,
-                        child: const Icon(Icons.tune)),
+                      isLabelVisible: !_filters.isEmpty,
+                      child: const Icon(Icons.tune),
+                    ),
                     tooltip: AppTexte.of(context).sucheOptionen,
                     onPressed: _openSearchOptions,
                   ),
@@ -556,9 +581,10 @@ class _SearchScreenState extends State<SearchScreen>
             if (saved.isEmpty) return const SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  right: AppSpacing.lg,
-                  bottom: AppSpacing.md),
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                bottom: AppSpacing.md,
+              ),
               child: SizedBox(
                 height: 32,
                 child: ListView.separated(
@@ -570,8 +596,11 @@ class _SearchScreenState extends State<SearchScreen>
                     return InputChip(
                       avatar: const Icon(Icons.bookmark, size: 18),
                       label: Text(entry.name),
-                      onPressed: () => _loadSavedSearch(widget.library.db
-                          .decodeSavedSearchFilters(entry.filtersJson)),
+                      onPressed: () => _loadSavedSearch(
+                        widget.library.db.decodeSavedSearchFilters(
+                          entry.filtersJson,
+                        ),
+                      ),
                       onDeleted: () =>
                           widget.library.db.deleteSavedSearch(entry.id),
                     );
@@ -585,18 +614,21 @@ class _SearchScreenState extends State<SearchScreen>
         if (_statusText != null)
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: Text(
               _statusText!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         if (_error != null)
           Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Text(_error!)),
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Text(_error!),
+          ),
         // Die Reihenfolge erscheint erst mit Treffern: ein Knopf ueber
         // einer leeren Flaeche haette nichts zu ordnen.
         if (_searched && _results.isNotEmpty)
@@ -617,29 +649,32 @@ class _SearchScreenState extends State<SearchScreen>
           child: !_searched
               ? Center(child: Text(AppTexte.of(context).sucheAnleitung))
               : _results.isEmpty && !_loading
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Text(
-                          _leerGrund ?? AppTexte.of(context).sucheKeineTreffer,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  : mitTastatur(
-                      kind: Stack(
-                      children: [
-                        LayoutBuilder(builder: (context, constraints) {
-                          _spalten = flachesRasterSpalten(constraints.maxWidth,
-                              seitenpolster: AppSpacing.md * 2);
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Text(
+                      _leerGrund ?? AppTexte.of(context).sucheKeineTreffer,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : mitTastatur(
+                  kind: Stack(
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          _spalten = flachesRasterSpalten(
+                            constraints.maxWidth,
+                            seitenpolster: AppSpacing.md * 2,
+                          );
                           return GridView.builder(
                             padding: const EdgeInsets.all(AppSpacing.md),
                             gridDelegate:
                                 const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 160,
-                              mainAxisSpacing: 4,
-                              crossAxisSpacing: 4,
-                            ),
+                                  maxCrossAxisExtent: 160,
+                                  mainAxisSpacing: 4,
+                                  crossAxisSpacing: 4,
+                                ),
                             itemCount: _results.length,
                             itemBuilder: (context, index) {
                               final asset = _results[index];
@@ -655,66 +690,96 @@ class _SearchScreenState extends State<SearchScreen>
                                   : kachel;
                             },
                           );
-                        }),
-                        if (_selected.isNotEmpty)
-                          SelectionActionBar(
-                            count: _selected.length,
-                            onClear: () => setState(_selected.clear),
-                            onCompare: vergleichsAktion(
-                                context, widget.library, _selected.toList()),
-                            onPasteDevelop:
-                                widget.library.hatKopierteEntwicklung
-                                    ? () async {
-                                        await runBatchPasteDevelop(context,
-                                            widget.library, _selected.toList());
-
-                                        if (mounted) setState(_selected.clear);
-                                      }
-                                    : null,
-                            onApplyPreset: () => runBatchApplyPreset(
-                                context, widget.library, _selected.toList()),
-                            onFavorite: () async {
-                              await runBatchFavorite(
-                                  widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onAddToAlbum: () async {
-                              await runBatchAddToAlbumDialog(
-                                  context, widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onTag: () async {
-                              await runBatchTagDialog(
-                                  context, widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onSetRating: () async {
-                              await runBatchSetRating(
-                                  context, widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onSetColorLabel: () async {
-                              await runBatchSetColorLabel(
-                                  context, widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onEditMetadata: () async {
-                              await runBatchEditMetadataDialog(
-                                  context, widget.library, _selected.toList());
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onExport: () async {
-                              final selectedAssets = _results
-                                  .where((a) => _selected.contains(a.id))
-                                  .toList();
-                              await runBatchExport(
-                                  context, widget.library, selectedAssets);
-                              if (mounted) setState(_selected.clear);
-                            },
-                            onDelete: _deleteSelected,
+                        },
+                      ),
+                      if (_selected.isNotEmpty)
+                        SelectionActionBar(
+                          count: _selected.length,
+                          onClear: () => setState(_selected.clear),
+                          onCompare: vergleichsAktion(
+                            context,
+                            widget.library,
+                            _selected.toList(),
                           ),
-                      ],
-                    )),
+                          onPasteDevelop: widget.library.hatKopierteEntwicklung
+                              ? () async {
+                                  await runBatchPasteDevelop(
+                                    context,
+                                    widget.library,
+                                    _selected.toList(),
+                                  );
+
+                                  if (mounted) setState(_selected.clear);
+                                }
+                              : null,
+                          onApplyPreset: () => runBatchApplyPreset(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          ),
+                          onFavorite: () async {
+                            await runBatchFavorite(
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onAddToAlbum: () async {
+                            await runBatchAddToAlbumDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onTag: () async {
+                            await runBatchTagDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onSetRating: () async {
+                            await runBatchSetRating(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onSetColorLabel: () async {
+                            await runBatchSetColorLabel(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onEditMetadata: () async {
+                            await runBatchEditMetadataDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onExport: () async {
+                            final selectedAssets = _results
+                                .where((a) => _selected.contains(a.id))
+                                .toList();
+                            await runBatchExport(
+                              context,
+                              widget.library,
+                              selectedAssets,
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onDelete: _deleteSelected,
+                        ),
+                    ],
+                  ),
+                ),
         ),
       ],
     );
@@ -733,19 +798,19 @@ class _Satzmarken extends StatelessWidget {
   const _Satzmarken({required this.funde, required this.beiVerwerfen});
 
   static String _artName(AppTexte t, Satzfundart art) => switch (art) {
-        Satzfundart.person => t.navPersonen,
-        Satzfundart.schlagwort => t.suchoptTagsTitel,
-        Satzfundart.kamera => t.allgKamera,
-        Satzfundart.ort => t.xmpFeldStandort,
-        Satzfundart.zeitraum => t.famstatZeitraum,
-        Satzfundart.bewertung => t.infoBewertung,
-        Satzfundart.farbmarke => t.suchoptFarbmarkierung,
-        Satzfundart.medienart => t.suchoptMedientyp,
-        Satzfundart.favorit => t.auswFavorisieren,
-        Satzfundart.schaerfe => t.suchoptNurUnscharfe,
-        Satzfundart.iso => t.suchoptIso,
-        Satzfundart.datumsherkunft => t.sucheDatumGeschaetzt,
-      };
+    Satzfundart.person => t.navPersonen,
+    Satzfundart.schlagwort => t.suchoptTagsTitel,
+    Satzfundart.kamera => t.allgKamera,
+    Satzfundart.ort => t.xmpFeldStandort,
+    Satzfundart.zeitraum => t.famstatZeitraum,
+    Satzfundart.bewertung => t.infoBewertung,
+    Satzfundart.farbmarke => t.suchoptFarbmarkierung,
+    Satzfundart.medienart => t.suchoptMedientyp,
+    Satzfundart.favorit => t.auswFavorisieren,
+    Satzfundart.schaerfe => t.suchoptNurUnscharfe,
+    Satzfundart.iso => t.suchoptIso,
+    Satzfundart.datumsherkunft => t.sucheDatumGeschaetzt,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -756,7 +821,10 @@ class _Satzmarken extends StatelessWidget {
     final urspruenglich = [for (final f in funde) f.wortlaut].join(' ');
     return Padding(
       padding: const EdgeInsets.only(
-          left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.md),
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        bottom: AppSpacing.md,
+      ),
       child: Row(
         children: [
           Expanded(

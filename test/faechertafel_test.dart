@@ -16,9 +16,9 @@ void main() {
     // Bestand –, aber der Fächer endete bündig mit ihnen und zeigte
     // nirgends, dass darüber noch Platz ist.
     Verwandtschaftsnetz nurEltern() => Verwandtschaftsnetz([
-          kante('ich', 'vater', Verwandtschaft.elternteil),
-          kante('ich', 'mutter', Verwandtschaft.elternteil),
-        ]);
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('ich', 'mutter', Verwandtschaft.elternteil),
+    ]);
 
     int rang(String id) => const {'vater': 0, 'mutter': 1}[id] ?? 99;
 
@@ -31,8 +31,11 @@ void main() {
 
     test('aber nur einer – Ring 3 bleibt weg', () {
       final p = faechertafel(nurEltern(), 'ich', rang);
-      expect(p.where((x) => x.ring >= 3), isEmpty,
-          reason: 'zwei leere Ringe sähen aus wie ein Zeichenfehler');
+      expect(
+        p.where((x) => x.ring >= 3),
+        isEmpty,
+        reason: 'zwei leere Ringe sähen aus wie ein Zeichenfehler',
+      );
     });
 
     test('ohne jeden Vorfahren bleibt es bei den zwei Elternplätzen', () {
@@ -41,17 +44,19 @@ void main() {
       expect(p.where((x) => x.ring >= 2), isEmpty);
     });
 
-    test('der leere Ring wächst mit: über Großeltern stehen die Urgroßeltern',
-        () {
-      final netz = Verwandtschaftsnetz([
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-      ]);
-      final p = faechertafel(netz, 'ich', rang);
-      expect(p.where((x) => x.ring == 3), isNotEmpty);
-      expect(p.where((x) => x.ring == 3).every((x) => x.istLeer), isTrue);
-      expect(p.where((x) => x.ring >= 4), isEmpty);
-    });
+    test(
+      'der leere Ring wächst mit: über Großeltern stehen die Urgroßeltern',
+      () {
+        final netz = Verwandtschaftsnetz([
+          kante('ich', 'vater', Verwandtschaft.elternteil),
+          kante('vater', 'opa', Verwandtschaft.elternteil),
+        ]);
+        final p = faechertafel(netz, 'ich', rang);
+        expect(p.where((x) => x.ring == 3), isNotEmpty);
+        expect(p.where((x) => x.ring == 3).every((x) => x.istLeer), isTrue);
+        expect(p.where((x) => x.ring >= 4), isEmpty);
+      },
+    );
 
     test('die Höchstzahl der Ringe wird nicht überschritten', () {
       // Vier Generationen voll – ein fünfter Ring darf nicht entstehen.
@@ -62,8 +67,10 @@ void main() {
         vorher = 'ahn$i';
       }
       final p = faechertafel(Verwandtschaftsnetz(kanten), 'ich', rang);
-      expect(p.fold(0, (m, x) => x.ring > m ? x.ring : m),
-          lessThanOrEqualTo(maxFachRinge));
+      expect(
+        p.fold(0, (m, x) => x.ring > m ? x.ring : m),
+        lessThanOrEqualTo(maxFachRinge),
+      );
     });
   });
 
@@ -74,21 +81,29 @@ void main() {
   ///    │         └ omaV
   ///    └ mutter ── opaM
   Verwandtschaftsnetz sippe() => Verwandtschaftsnetz([
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('vater', 'opaV', Verwandtschaft.elternteil),
-        kante('vater', 'omaV', Verwandtschaft.elternteil),
-        kante('mutter', 'opaM', Verwandtschaft.elternteil),
-        kante('opaV', 'uropaV', Verwandtschaft.elternteil),
-        kante('kind', 'ich', Verwandtschaft.elternteil),
-        kante('enkel', 'kind', Verwandtschaft.elternteil),
-        kante('zweitesKind', 'ich', Verwandtschaft.elternteil),
-      ]);
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('vater', 'opaV', Verwandtschaft.elternteil),
+    kante('vater', 'omaV', Verwandtschaft.elternteil),
+    kante('mutter', 'opaM', Verwandtschaft.elternteil),
+    kante('opaV', 'uropaV', Verwandtschaft.elternteil),
+    kante('kind', 'ich', Verwandtschaft.elternteil),
+    kante('enkel', 'kind', Verwandtschaft.elternteil),
+    kante('zweitesKind', 'ich', Verwandtschaft.elternteil),
+  ]);
 
   /// Feste Ordnung für die Tests: alphabetisch.
   final reihenfolge = [
-    'enkel', 'ich', 'kind', 'mutter', 'omaV', 'opaM', 'opaV', 'uropaV',
-    'vater', 'zweitesKind',
+    'enkel',
+    'ich',
+    'kind',
+    'mutter',
+    'omaV',
+    'opaM',
+    'opaV',
+    'uropaV',
+    'vater',
+    'zweitesKind',
   ];
   int ordnung(String id) => reihenfolge.indexOf(id);
 
@@ -128,8 +143,10 @@ void main() {
       expect({nachNummer[2], nachNummer[3]}, {'mutter', 'vater'});
       // … und die Eltern des Vaters liegen unter seiner Nummer.
       final vaterNummer = nachNummer[2] == 'vater' ? 2 : 3;
-      expect({nachNummer[vaterNummer * 2], nachNummer[vaterNummer * 2 + 1]},
-          {'omaV', 'opaV'});
+      expect(
+        {nachNummer[vaterNummer * 2], nachNummer[vaterNummer * 2 + 1]},
+        {'omaV', 'opaV'},
+      );
     });
 
     test('ein Ring ist lückenlos und überlappungsfrei', () {
@@ -137,16 +154,24 @@ void main() {
       for (var ring = 0; ring <= 2; ring++) {
         final imRing = plaetze.where((p) => p.ring == ring).toList()
           ..sort((a, b) => a.vonWinkel.compareTo(b.vonWinkel));
-        expect(imRing.first.vonWinkel, closeTo(fachAnfang, 1e-9),
-            reason: 'Ring $ring beginnt am Anfang');
+        expect(
+          imRing.first.vonWinkel,
+          closeTo(fachAnfang, 1e-9),
+          reason: 'Ring $ring beginnt am Anfang',
+        );
         for (var i = 1; i < imRing.length; i++) {
-          expect(imRing[i].vonWinkel,
-              closeTo(imRing[i - 1].vonWinkel + imRing[i - 1].oeffnung, 1e-9),
-              reason: 'Ring $ring, Platz $i schließt nahtlos an');
+          expect(
+            imRing[i].vonWinkel,
+            closeTo(imRing[i - 1].vonWinkel + imRing[i - 1].oeffnung, 1e-9),
+            reason: 'Ring $ring, Platz $i schließt nahtlos an',
+          );
         }
         final summe = imRing.fold(0.0, (s, p) => s + p.oeffnung);
-        expect(summe, closeTo(fachOeffnung, 1e-9),
-            reason: 'Ring $ring füllt den Halbkreis');
+        expect(
+          summe,
+          closeTo(fachOeffnung, 1e-9),
+          reason: 'Ring $ring füllt den Halbkreis',
+        );
       }
     });
 
@@ -172,8 +197,11 @@ void main() {
         kante('vater', 'opaV', Verwandtschaft.elternteil),
       ]);
       final plaetze = faechertafel(ohneUropa, 'ich', ordnung);
-      expect(plaetze.map((p) => p.ring).reduce(math.max), 3,
-          reason: 'ein leerer Ring als Einladung');
+      expect(
+        plaetze.map((p) => p.ring).reduce(math.max),
+        3,
+        reason: 'ein leerer Ring als Einladung',
+      );
       expect(plaetze.where((p) => p.ring == 3).every((p) => p.istLeer), isTrue);
       // Ring 2 bleibt belegt: Dort steht opaV.
       expect(plaetze.where((p) => p.ring == 2 && !p.istLeer), hasLength(1));
@@ -209,7 +237,10 @@ void main() {
       expect(links!.ring, 1);
       expect(links.nummer, 2);
       // Rechte Hälfte: der zweite.
-      expect(platzBei(plaetze, fachAnfang + fachOeffnung * 0.75, 1.5)!.nummer, 3);
+      expect(
+        platzBei(plaetze, fachAnfang + fachOeffnung * 0.75, 1.5)!.nummer,
+        3,
+      );
     });
 
     test('trifft die Mitte', () {
@@ -232,15 +263,22 @@ void main() {
   group('nachfahren', () {
     test('rückt jede Generation eine Stufe ein', () {
       final zeilen = nachfahren(sippe(), 'ich', ordnung);
-      expect(zeilen.map((z) => z.personId),
-          ['ich', 'kind', 'enkel', 'zweitesKind']);
+      expect(zeilen.map((z) => z.personId), [
+        'ich',
+        'kind',
+        'enkel',
+        'zweitesKind',
+      ]);
       expect(zeilen.map((z) => z.stufe), [0, 1, 2, 1]);
     });
 
     test('meldet, wo es weitergeht', () {
       final zeilen = nachfahren(sippe(), 'ich', ordnung);
       expect(zeilen.firstWhere((z) => z.personId == 'kind').hatKinder, isTrue);
-      expect(zeilen.firstWhere((z) => z.personId == 'enkel').hatKinder, isFalse);
+      expect(
+        zeilen.firstWhere((z) => z.personId == 'enkel').hatKinder,
+        isFalse,
+      );
     });
 
     test('bleibt bei einem Kreis im Bestand stehen', () {

@@ -16,8 +16,13 @@ import 'dart:io';
 /// Leerzeichen Teil des Tokens wird (als `Ġ`). Wer das verwechselt, bekommt
 /// ein Vokabular voller Treffer und trotzdem Unsinn heraus.
 class BartTokenizer {
-  BartTokenizer._(this._vocab, this._idToToken, this._merges, this._byteEncoder,
-      this._byteDecoder);
+  BartTokenizer._(
+    this._vocab,
+    this._idToToken,
+    this._merges,
+    this._byteEncoder,
+    this._byteDecoder,
+  );
 
   final Map<String, int> _vocab;
   final Map<int, String> _idToToken;
@@ -51,7 +56,8 @@ class BartTokenizer {
     required String mergesTxtPath,
   }) async {
     final vocabRaw =
-        jsonDecode(await File(vocabJsonPath).readAsString()) as Map<String, dynamic>;
+        jsonDecode(await File(vocabJsonPath).readAsString())
+            as Map<String, dynamic>;
     final vocab = vocabRaw.map((k, v) => MapEntry(k, v as int));
     final idToToken = <int, String>{
       for (final e in vocab.entries) e.value: e.key,
@@ -66,22 +72,27 @@ class BartTokenizer {
     }
 
     final enc = _buildByteEncoder();
-    return BartTokenizer._(
-      vocab,
-      idToToken,
-      merges,
-      enc,
-      {for (final e in enc.entries) e.value: e.key},
-    );
+    return BartTokenizer._(vocab, idToToken, merges, enc, {
+      for (final e in enc.entries) e.value: e.key,
+    });
   }
 
   /// Die Zuordnung aller 256 Bytes auf druckbare Zeichen – dieselbe
   /// Tabelle wie bei CLIP und ViT-GPT2. Rein algorithmisch.
   static Map<int, String> _buildByteEncoder() {
     final bs = <int>[
-      ...List.generate('~'.codeUnitAt(0) - '!'.codeUnitAt(0) + 1, (i) => '!'.codeUnitAt(0) + i),
-      ...List.generate('¬'.codeUnitAt(0) - '¡'.codeUnitAt(0) + 1, (i) => '¡'.codeUnitAt(0) + i),
-      ...List.generate('ÿ'.codeUnitAt(0) - '®'.codeUnitAt(0) + 1, (i) => '®'.codeUnitAt(0) + i),
+      ...List.generate(
+        '~'.codeUnitAt(0) - '!'.codeUnitAt(0) + 1,
+        (i) => '!'.codeUnitAt(0) + i,
+      ),
+      ...List.generate(
+        '¬'.codeUnitAt(0) - '¡'.codeUnitAt(0) + 1,
+        (i) => '¡'.codeUnitAt(0) + i,
+      ),
+      ...List.generate(
+        'ÿ'.codeUnitAt(0) - '®'.codeUnitAt(0) + 1,
+        (i) => '®'.codeUnitAt(0) + i,
+      ),
     ];
     final bsSet = bs.toSet();
     final cs = List<int>.from(bs);
@@ -93,7 +104,9 @@ class BartTokenizer {
         n++;
       }
     }
-    return {for (var i = 0; i < bs.length; i++) bs[i]: String.fromCharCode(cs[i])};
+    return {
+      for (var i = 0; i < bs.length; i++) bs[i]: String.fromCharCode(cs[i]),
+    };
   }
 
   List<String> _bpe(String token) {
@@ -117,7 +130,9 @@ class BartTokenizer {
       final neu = <String>[];
       var i = 0;
       while (i < wort.length) {
-        if (i < wort.length - 1 && wort[i] == teile[0] && wort[i + 1] == teile[1]) {
+        if (i < wort.length - 1 &&
+            wort[i] == teile[0] &&
+            wort[i + 1] == teile[1]) {
           neu.add(teile[0] + teile[1]);
           i += 2;
         } else {

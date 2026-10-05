@@ -11,34 +11,36 @@ import 'goldbilder.dart';
 /// in einem [Stack] mit festen Abständen, und seine Beschriftungen sind in
 /// beiden Sprachen unterschiedlich lang. Diese Prüfungen halten fest, dass
 /// er in eine schmale Leiste passt, ohne überzulaufen.
-Rasterzeile _foto(String id, DateTime wann) => Rasterzeile.aus(AssetData(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      type: 'IMAGE',
-      fileSizeBytes: 1000,
-      checksum: id,
-      fileCreatedAt: wann,
-      importedAt: wann,
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-      rating: 0,
-    ));
+Rasterzeile _foto(String id, DateTime wann) => Rasterzeile.aus(
+  AssetData(
+    id: id,
+    relativePath: 'originals/$id.jpg',
+    originalFileName: '$id.jpg',
+    type: 'IMAGE',
+    fileSizeBytes: 1000,
+    checksum: id,
+    fileCreatedAt: wann,
+    importedAt: wann,
+    isFavorite: false,
+    isTrashed: false,
+    isLocked: false,
+    faceScanExcluded: false,
+    gpsGeprueft: false,
+    datumGeschaetzt: false,
+    datumGeprueft: false,
+    ortGeerbt: false,
+    videobilderGeprueft: false,
+    backedUp: false,
+    autoBackedUp: false,
+    facesScanned: false,
+    ocrScanned: false,
+    aiCaptionScanned: false,
+    aiCaptionEdited: false,
+    aiTagsScanned: false,
+    isStackCover: false,
+    rating: 0,
+  ),
+);
 
 /// Vier Jahre à zwölf Monate, absteigend – so viel, dass Jahreszahlen und
 /// Monatspunkte dicht beieinander liegen.
@@ -59,31 +61,32 @@ Rasterzeile _foto(String id, DateTime wann) => Rasterzeile.aus(AssetData(
 
 Future<void> _zeige(WidgetTester tester, Locale locale, double breite) async {
   final b = _bibliothek();
-  await tester.pumpWidget(MaterialApp(
-    locale: locale,
-    localizationsDelegates: AppTexte.localizationsDelegates,
-    supportedLocales: AppTexte.supportedLocales,
-    home: Scaffold(
-      body: Row(
-        children: [
-          const Expanded(child: SizedBox()),
-          SizedBox(
-            width: breite,
-            height: 600,
-            child: TimelineScrubber(
-              orderedKeys: b.keys,
-              groups: b.groups,
-              controller: ScrollController(),
-              gridWidth: 800,
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppTexte.localizationsDelegates,
+      supportedLocales: AppTexte.supportedLocales,
+      home: Scaffold(
+        body: Row(
+          children: [
+            const Expanded(child: SizedBox()),
+            SizedBox(
+              width: breite,
+              height: 600,
+              child: TimelineScrubber(
+                orderedKeys: b.keys,
+                groups: b.groups,
+                controller: ScrollController(),
+                gridWidth: 800,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
-  ));
+  );
   await tester.pump();
 }
-
 
 /// Eine Bibliothek wie die im Fehlerbericht: Der Schwerpunkt liegt in den
 /// letzten Jahren, die alten haben je ein paar Fotos. Genau dadurch drängen
@@ -97,7 +100,8 @@ Future<void> _zeige(WidgetTester tester, Locale locale, double breite) async {
       final key = jahr * 100 + monat;
       keys.add(key);
       groups[key] = [
-        for (var i = 0; i < proMonat; i++) _foto('$key-$i', DateTime(jahr, monat, 5)),
+        for (var i = 0; i < proMonat; i++)
+          _foto('$key-$i', DateTime(jahr, monat, 5)),
       ];
     }
   }
@@ -123,7 +127,10 @@ void _weitereTests() {
       expect(gewaehlt.length, lessThan(eng.length));
       // Und was übrig bleibt, hat wirklich Abstand.
       for (var i = 1; i < gewaehlt.length; i++) {
-        expect(eng[gewaehlt[i]] - eng[gewaehlt[i - 1]], greaterThanOrEqualTo(15.0));
+        expect(
+          eng[gewaehlt[i]] - eng[gewaehlt[i - 1]],
+          greaterThanOrEqualTo(15.0),
+        );
       }
     });
 
@@ -140,8 +147,12 @@ void _weitereTests() {
       // Jahreszahl darunter wäre nur Matsch. Im Screenshot stand oben
       // „2024Aug." ineinander.
       final ohne = sichtbareBeschriftungen([100, 300], von: 0, bis: 600);
-      final mit = sichtbareBeschriftungen([100, 300],
-          von: 0, bis: 600, gesperrt: (oben: 92, unten: 114));
+      final mit = sichtbareBeschriftungen(
+        [100, 300],
+        von: 0,
+        bis: 600,
+        gesperrt: (oben: 92, unten: 114),
+      );
       expect(ohne, [0, 1]);
       expect(mit, [1], reason: 'die 100 liegt im gesperrten Band');
     });
@@ -151,31 +162,36 @@ void _weitereTests() {
     });
   });
 
-  testWidgets('keine zwei Jahreszahlen überlappen sich auf dem Schirm',
-      (tester) async {
+  testWidgets('keine zwei Jahreszahlen überlappen sich auf dem Schirm', (
+    tester,
+  ) async {
     // Die Gegenprobe zum Bericht, an gerenderten Rechtecken gemessen statt
     // an der Rechnung dahinter.
     final b = _schieflastig();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Row(children: [
-          const Expanded(child: SizedBox()),
-          SizedBox(
-            width: 64,
-            height: 700,
-            child: TimelineScrubber(
-              orderedKeys: b.keys,
-              groups: b.groups,
-              controller: ScrollController(),
-              gridWidth: 800,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              SizedBox(
+                width: 64,
+                height: 700,
+                child: TimelineScrubber(
+                  orderedKeys: b.keys,
+                  groups: b.groups,
+                  controller: ScrollController(),
+                  gridWidth: 800,
+                ),
+              ),
+            ],
           ),
-        ]),
+        ),
       ),
-    ));
+    );
     await tester.pump();
 
     final rechtecke = <Rect>[];
@@ -185,38 +201,50 @@ void _weitereTests() {
       rechtecke.add(tester.getRect(treffer));
     }
 
-    expect(rechtecke.length, greaterThan(3),
-        reason: 'ein paar Jahre müssen schon dastehen');
+    expect(
+      rechtecke.length,
+      greaterThan(3),
+      reason: 'ein paar Jahre müssen schon dastehen',
+    );
     rechtecke.sort((a, b) => a.top.compareTo(b.top));
     for (var i = 1; i < rechtecke.length; i++) {
-      expect(rechtecke[i].top, greaterThanOrEqualTo(rechtecke[i - 1].bottom - 0.5),
-          reason: 'überlappende Jahreszahlen: ${rechtecke[i - 1]} und ${rechtecke[i]}');
+      expect(
+        rechtecke[i].top,
+        greaterThanOrEqualTo(rechtecke[i - 1].bottom - 0.5),
+        reason:
+            'überlappende Jahreszahlen: ${rechtecke[i - 1]} und ${rechtecke[i]}',
+      );
     }
   });
 
-  testWidgets('auch die aktive Beschriftung überlappt keine Jahreszahl',
-      (tester) async {
+  testWidgets('auch die aktive Beschriftung überlappt keine Jahreszahl', (
+    tester,
+  ) async {
     final b = _schieflastig();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Row(children: [
-          const Expanded(child: SizedBox()),
-          SizedBox(
-            width: 64,
-            height: 700,
-            child: TimelineScrubber(
-              orderedKeys: b.keys,
-              groups: b.groups,
-              controller: ScrollController(),
-              gridWidth: 800,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              SizedBox(
+                width: 64,
+                height: 700,
+                child: TimelineScrubber(
+                  orderedKeys: b.keys,
+                  groups: b.groups,
+                  controller: ScrollController(),
+                  gridWidth: 800,
+                ),
+              ),
+            ],
           ),
-        ]),
+        ),
       ),
-    ));
+    );
     await tester.pump();
 
     // Am Anfang steht die Ansicht ganz oben – dort sass im Bericht
@@ -227,7 +255,11 @@ void _weitereTests() {
       if (treffer.evaluate().isEmpty) continue;
       final r = tester.getRect(treffer);
       final ueberlappt = r.top < aktiv.bottom && r.bottom > aktiv.top;
-      expect(ueberlappt, isFalse, reason: '$jahr liegt unter der aktiven Beschriftung');
+      expect(
+        ueberlappt,
+        isFalse,
+        reason: '$jahr liegt unter der aktiven Beschriftung',
+      );
     }
   });
 }
@@ -246,8 +278,11 @@ void main() {
       expect(find.text(jahr), findsOneWidget, reason: '\$jahr fehlt');
     }
     expect(find.text('Dez. 2026'), findsOneWidget);
-    expect(find.text('2026'), findsNothing,
-        reason: 'die aktive Beschriftung nennt das Jahr schon');
+    expect(
+      find.text('2026'),
+      findsNothing,
+      reason: 'die aktive Beschriftung nennt das Jahr schon',
+    );
   });
 
   testWidgets('nichts läuft über die Leiste hinaus', (tester) async {
@@ -256,64 +291,79 @@ void main() {
     // einen Overflow – und der zählt hier als Fehler.
     for (final locale in [const Locale('de'), const Locale('en')]) {
       await _zeige(tester, locale, 64);
-      expect(tester.takeException(), isNull,
-          reason: 'Überlauf in ${locale.languageCode}');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Überlauf in ${locale.languageCode}',
+      );
     }
   });
 
-  testWidgets('bei sehr wenigen Monaten erscheint der Regler gar nicht',
-      (tester) async {
+  testWidgets('bei sehr wenigen Monaten erscheint der Regler gar nicht', (
+    tester,
+  ) async {
     // Ein Schnell-Scroll-Regler über zwei Gruppen wäre nur Unruhe.
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: SizedBox(
-          width: 64,
-          height: 600,
-          child: TimelineScrubber(
-            orderedKeys: const [202601],
-            groups: {202601: [_foto('a', DateTime(2026, 1, 5))]},
-            controller: ScrollController(),
-            gridWidth: 800,
-          ),
-        ),
-      ),
-    ));
-    expect(find.text('2026'), findsNothing);
-  });
-
-  testWidgets('so sieht die Leiste bei schieflastigem Bestand aus',
-      (tester) async {
-    // Dieselbe Verteilung wie im Bericht. Ein Abbild statt einer
-    // Behauptung – an das echte Fenster kommt man hier nicht heran.
-    final b = _schieflastig();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        backgroundColor: const Color(0xFF202020),
-        body: Row(children: [
-          const Expanded(child: SizedBox()),
-          SizedBox(
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
             width: 64,
-            height: 700,
+            height: 600,
             child: TimelineScrubber(
-              orderedKeys: b.keys,
-              groups: b.groups,
+              orderedKeys: const [202601],
+              groups: {
+                202601: [_foto('a', DateTime(2026, 1, 5))],
+              },
               controller: ScrollController(),
               gridWidth: 800,
             ),
           ),
-        ]),
+        ),
       ),
-    ));
-    await tester.pump();
-    await expectLater(
-      find.byType(TimelineScrubber),
-      matchesGoldenFile('golden/zeitleiste.png'),
     );
-  }, skip: nurAufReferenzplattform);
+    expect(find.text('2026'), findsNothing);
+  });
+
+  testWidgets(
+    'so sieht die Leiste bei schieflastigem Bestand aus',
+    (tester) async {
+      // Dieselbe Verteilung wie im Bericht. Ein Abbild statt einer
+      // Behauptung – an das echte Fenster kommt man hier nicht heran.
+      final b = _schieflastig();
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            backgroundColor: const Color(0xFF202020),
+            body: Row(
+              children: [
+                const Expanded(child: SizedBox()),
+                SizedBox(
+                  width: 64,
+                  height: 700,
+                  child: TimelineScrubber(
+                    orderedKeys: b.keys,
+                    groups: b.groups,
+                    controller: ScrollController(),
+                    gridWidth: 800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await expectLater(
+        find.byType(TimelineScrubber),
+        matchesGoldenFile('golden/zeitleiste.png'),
+      );
+    },
+    skip: nurAufReferenzplattform,
+  );
 }

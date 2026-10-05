@@ -27,7 +27,10 @@ enum Rueckblickart {
 
 /// Das Ergebnis: die Frage und die Bilder dazu, nach „vor wie vielen
 /// Jahren" gebündelt und mit dem jüngsten Jahrgang zuerst.
-typedef Rueckblick<T> = ({Rueckblickart art, List<({int jahreHer, List<T> dinge})> gruppen});
+typedef Rueckblick<T> = ({
+  Rueckblickart art,
+  List<({int jahreHer, List<T> dinge})> gruppen,
+});
 
 /// Bündelt [dinge] nach dem Abstand ihres Aufnahmejahres zu [heute].
 ///
@@ -46,9 +49,7 @@ List<({int jahreHer, List<T> dinge})> nachJahrenGebuendelt<T>(
     gruppen.putIfAbsent(jahre, () => []).add(d);
   }
   final schluessel = gruppen.keys.toList()..sort();
-  return [
-    for (final j in schluessel) (jahreHer: j, dinge: gruppen[j]!),
-  ];
+  return [for (final j in schluessel) (jahreHer: j, dinge: gruppen[j]!)];
 }
 
 /// Wählt zwischen Tag und Monat.

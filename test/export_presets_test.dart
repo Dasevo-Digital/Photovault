@@ -25,7 +25,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_exportvorgabe_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     imp = ImportService(db, paths);
     exporter = ExportService(paths);
     ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
@@ -37,7 +39,8 @@ void main() {
   });
 
   Future<AssetData> importiere(String name, List<int> bytes) async {
-    final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
+    final inc = Directory(p.join(tempRoot.path, 'in'))
+      ..createSync(recursive: true);
     final f = File(p.join(inc.path, name))..writeAsBytesSync(bytes);
     final r = await imp.importFile(f.path);
     return (await db.assetById(r.assetId!))!;
@@ -49,15 +52,14 @@ void main() {
     int? maxKante,
     String muster = '{name}',
     bool xmp = true,
-  }) =>
-      ExportPresetsCompanion.insert(
-        name: name,
-        nachJpeg: Value(nachJpeg),
-        maxKante: Value(maxKante),
-        namensmuster: Value(muster),
-        xmpDaneben: Value(xmp),
-        erstelltAm: DateTime(2026, 8, 18),
-      );
+  }) => ExportPresetsCompanion.insert(
+    name: name,
+    nachJpeg: Value(nachJpeg),
+    maxKante: Value(maxKante),
+    namensmuster: Value(muster),
+    xmpDaneben: Value(xmp),
+    erstelltAm: DateTime(2026, 8, 18),
+  );
 
   group('gespeicherte Vorgaben', () {
     test('anlegen, lesen, ändern, löschen', () async {
@@ -67,12 +69,14 @@ void main() {
       expect(alle.single.name, 'Fotoclub');
       expect(alle.single.namensmuster, '{name}');
 
-      await db.upsertExportPreset(ExportPresetsCompanion(
-        id: Value(alle.single.id),
-        name: const Value('Fotoclub'),
-        namensmuster: const Value('{datum}_{nr}'),
-        erstelltAm: Value(alle.single.erstelltAm),
-      ));
+      await db.upsertExportPreset(
+        ExportPresetsCompanion(
+          id: Value(alle.single.id),
+          name: const Value('Fotoclub'),
+          namensmuster: const Value('{datum}_{nr}'),
+          erstelltAm: Value(alle.single.erstelltAm),
+        ),
+      );
       alle = await db.alleExportPresets();
       expect(alle, hasLength(1), reason: 'dieselbe Zeile, kein Duplikat');
       expect(alle.single.namensmuster, '{datum}_{nr}');
@@ -87,8 +91,11 @@ void main() {
 
       expect(await db.exportPresetNameVergeben('Web'), isTrue);
       expect(await db.exportPresetNameVergeben('Archiv'), isFalse);
-      expect(await db.exportPresetNameVergeben('Web', ausserId: web.id), isFalse,
-          reason: 'beim Bearbeiten kollidiert eine Vorgabe nicht mit sich selbst');
+      expect(
+        await db.exportPresetNameVergeben('Web', ausserId: web.id),
+        isFalse,
+        reason: 'beim Bearbeiten kollidiert eine Vorgabe nicht mit sich selbst',
+      );
     });
 
     test('am Speichern vorbei bleibt der doppelte Name unmöglich', () async {
@@ -107,8 +114,11 @@ void main() {
       await db.upsertExportPreset(vorgabe(name: 'Zeitung'));
       await db.upsertExportPreset(vorgabe(name: 'Archiv'));
       await db.upsertExportPreset(vorgabe(name: 'Mail'));
-      expect((await db.alleExportPresets()).map((v) => v.name),
-          ['Archiv', 'Mail', 'Zeitung']);
+      expect((await db.alleExportPresets()).map((v) => v.name), [
+        'Archiv',
+        'Mail',
+        'Zeitung',
+      ]);
     });
   });
 
@@ -136,23 +146,36 @@ void main() {
     test('ohne XMP-Schalter entsteht keine Beistelldatei', () async {
       final asset = await importiere('ohnexmp.jpg', [1, 2, 3]);
 
-      final mit = await exporter.exportAsset(asset, ziel.path,
-          vorgabe: const Exportvorgabe());
-      expect(File(p.setExtension(p.join(ziel.path, mit), '.xmp')).existsSync(),
-          isTrue);
+      final mit = await exporter.exportAsset(
+        asset,
+        ziel.path,
+        vorgabe: const Exportvorgabe(),
+      );
+      expect(
+        File(p.setExtension(p.join(ziel.path, mit), '.xmp')).existsSync(),
+        isTrue,
+      );
 
-      final ohne = await exporter.exportAsset(asset, ziel.path,
-          vorgabe: const Exportvorgabe(xmpDaneben: false));
-      expect(File(p.setExtension(p.join(ziel.path, ohne), '.xmp')).existsSync(),
-          isFalse);
+      final ohne = await exporter.exportAsset(
+        asset,
+        ziel.path,
+        vorgabe: const Exportvorgabe(xmpDaneben: false),
+      );
+      expect(
+        File(p.setExtension(p.join(ziel.path, ohne), '.xmp')).existsSync(),
+        isFalse,
+      );
     });
 
     test('ohne JPEG-Schalter bleibt die Datei Bit für Bit dieselbe', () async {
       final inhalt = List.generate(400, (i) => i % 256);
       final asset = await importiere('roh.dng', inhalt);
 
-      final name = await exporter.exportAsset(asset, ziel.path,
-          vorgabe: const Exportvorgabe(namensmuster: '{name}'));
+      final name = await exporter.exportAsset(
+        asset,
+        ziel.path,
+        vorgabe: const Exportvorgabe(namensmuster: '{name}'),
+      );
 
       expect(p.extension(name), '.dng', reason: 'kein umbenanntes JPEG');
       expect(File(p.join(ziel.path, name)).readAsBytesSync(), inhalt);
@@ -180,33 +203,42 @@ void main() {
       final ausGroesse = Exportvorgabe.ausGroesse(Exportgroesse.web);
       expect(ausGroesse.nachJpeg, isTrue);
       expect(ausGroesse.maxKante, 2048);
-      expect(Exportvorgabe.ausGroesse(Exportgroesse.original).nachJpeg, isFalse);
+      expect(
+        Exportvorgabe.ausGroesse(Exportgroesse.original).nachJpeg,
+        isFalse,
+      );
     });
   });
 
-  test('eine Datenbank von Schema 36 bekommt die Tabelle nachgereicht', () async {
-    final datei = File(p.join(tempRoot.path, 'alt.sqlite'));
+  test(
+    'eine Datenbank von Schema 36 bekommt die Tabelle nachgereicht',
+    () async {
+      final datei = File(p.join(tempRoot.path, 'alt.sqlite'));
 
-    // Vollständige Datenbank anlegen, dann auf den Stand vor der Änderung
-    // zurückversetzen: Tabelle weg, Version zurückgestempelt.
-    var alt = ZweiteDatenbank(NativeDatabase(datei));
-    await alt.setThemeMode('dark');
-    await alt.close();
+      // Vollständige Datenbank anlegen, dann auf den Stand vor der Änderung
+      // zurückversetzen: Tabelle weg, Version zurückgestempelt.
+      var alt = ZweiteDatenbank(NativeDatabase(datei));
+      await alt.setThemeMode('dark');
+      await alt.close();
 
-    final roh = sqlite.sqlite3.open(datei.path);
-    roh.execute('DROP TABLE export_presets;');
-    roh.execute('PRAGMA user_version = 36;');
-    roh.close();
+      final roh = sqlite.sqlite3.open(datei.path);
+      roh.execute('DROP TABLE export_presets;');
+      roh.execute('PRAGMA user_version = 36;');
+      roh.close();
 
-    // Öffnen löst die Migration auf 37 aus.
-    final neu = ZweiteDatenbank(NativeDatabase(datei));
-    await neu.upsertExportPreset(vorgabe(name: 'nach der Migration'));
-    final alle = await neu.alleExportPresets();
-    final einstellungen = await neu.watchAppSettings().first;
-    await neu.close();
+      // Öffnen löst die Migration auf 37 aus.
+      final neu = ZweiteDatenbank(NativeDatabase(datei));
+      await neu.upsertExportPreset(vorgabe(name: 'nach der Migration'));
+      final alle = await neu.alleExportPresets();
+      final einstellungen = await neu.watchAppSettings().first;
+      await neu.close();
 
-    expect(alle.single.name, 'nach der Migration');
-    expect(einstellungen?.themeMode, 'dark',
-        reason: 'vorhandene Daten bleiben unberührt');
-  });
+      expect(alle.single.name, 'nach der Migration');
+      expect(
+        einstellungen?.themeMode,
+        'dark',
+        reason: 'vorhandene Daten bleiben unberührt',
+      );
+    },
+  );
 }

@@ -78,17 +78,19 @@ void main() {
       expect(geo.sucheOrt('  bErLiN ')?.name, 'Berlin');
     });
 
-    test('ein unbekannter Name liefert null statt eines geratenen Punktes',
-        () async {
-      // Der wichtigste Rückgabewert der ganzen Datei. Ein Ort, den die
-      // Liste nicht kennt, muss ohne Koordinate bleiben – sonst stünde
-      // eine Erfindung auf der Karte, und niemand könnte sie von einer
-      // Tatsache unterscheiden.
-      final geo = await lade();
-      expect(geo.sucheOrt('Entenhausen'), isNull);
-      expect(geo.sucheOrt(''), isNull);
-      expect(geo.sucheOrt('   '), isNull);
-    });
+    test(
+      'ein unbekannter Name liefert null statt eines geratenen Punktes',
+      () async {
+        // Der wichtigste Rückgabewert der ganzen Datei. Ein Ort, den die
+        // Liste nicht kennt, muss ohne Koordinate bleiben – sonst stünde
+        // eine Erfindung auf der Karte, und niemand könnte sie von einer
+        // Tatsache unterscheiden.
+        final geo = await lade();
+        expect(geo.sucheOrt('Entenhausen'), isNull);
+        expect(geo.sucheOrt(''), isNull);
+        expect(geo.sucheOrt('   '), isNull);
+      },
+    );
 
     test('der Name ohne diakritische Zeichen findet ebenfalls', () async {
       // GeoNames liefert beide Schreibweisen mit; wer ohne Sonderzeichen
@@ -103,8 +105,11 @@ void main() {
     test('ohne Anhaltspunkt gewinnt der groessere Ort', () async {
       final geo = await lade();
       final treffer = geo.sucheOrt('Paris');
-      expect(treffer!.land, 'Frankreich',
-          reason: 'Paris/Texas hat 24.782 Einwohner, Paris/Frankreich 2,1 Mio');
+      expect(
+        treffer!.land,
+        'Frankreich',
+        reason: 'Paris/Texas hat 24.782 Einwohner, Paris/Frankreich 2,1 Mio',
+      );
       expect(treffer.mehrdeutig, isTrue);
       expect(treffer.weitere, 1);
     });
@@ -114,7 +119,11 @@ void main() {
       // fast alle in Texas aufgenommen hat, meint mit „Paris" eher das
       // kleine – auch wenn das andere zehnmal so gross ist.
       final geo = await lade();
-      final treffer = geo.sucheOrt('Paris', naheBreite: 32.8, naheLaenge: -96.8);
+      final treffer = geo.sucheOrt(
+        'Paris',
+        naheBreite: 32.8,
+        naheLaenge: -96.8,
+      );
       expect(treffer!.land, 'Vereinigte Staaten');
       expect(treffer.mehrdeutig, isTrue);
     });
@@ -122,25 +131,34 @@ void main() {
     test('ein Zusatz hinter dem Komma engt ein', () async {
       final geo = await lade();
       expect(geo.sucheOrt('Paris, Frankreich')?.land, 'Frankreich');
-      expect(geo.sucheOrt('Paris, Vereinigte Staaten')?.land,
-          'Vereinigte Staaten');
+      expect(
+        geo.sucheOrt('Paris, Vereinigte Staaten')?.land,
+        'Vereinigte Staaten',
+      );
       // Auch der Länderkürzel-Weg, wie er in alten Aufzeichnungen steht.
       expect(geo.sucheOrt('Paris, US')?.land, 'Vereinigte Staaten');
     });
 
     test('der Zusatz darf auch eine Region sein', () async {
       final geo = await lade();
-      expect(geo.sucheOrt('Springfield, Illinois')!.breite,
-          closeTo(39.79, 0.01));
-      expect(geo.sucheOrt('Springfield, Missouri')!.breite,
-          closeTo(37.22, 0.01));
+      expect(
+        geo.sucheOrt('Springfield, Illinois')!.breite,
+        closeTo(39.79, 0.01),
+      );
+      expect(
+        geo.sucheOrt('Springfield, Missouri')!.breite,
+        closeTo(37.22, 0.01),
+      );
     });
 
     test('ein eindeutiger Zusatz macht den Treffer eindeutig', () async {
       final geo = await lade();
       final treffer = geo.sucheOrt('Paris, Frankreich');
-      expect(treffer!.mehrdeutig, isFalse,
-          reason: 'nach dem Einengen bleibt genau einer uebrig');
+      expect(
+        treffer!.mehrdeutig,
+        isFalse,
+        reason: 'nach dem Einengen bleibt genau einer uebrig',
+      );
     });
 
     test('ein unbrauchbarer Zusatz schliesst NICHT aus', () async {

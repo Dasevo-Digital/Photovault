@@ -25,7 +25,11 @@ import '../widgets/stromhalter.dart';
 class PersonDetailScreen extends StatefulWidget {
   final LibraryState library;
   final PersonData person;
-  const PersonDetailScreen({super.key, required this.library, required this.person});
+  const PersonDetailScreen({
+    super.key,
+    required this.library,
+    required this.person,
+  });
 
   @override
   State<PersonDetailScreen> createState() => _PersonDetailScreenState();
@@ -64,9 +68,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
       if (bekannt.isEmpty || kandidaten.isEmpty) {
         if (!mounted) return;
-        melde.hinweis(bekannt.isEmpty
-            ? AppTexte.of(context).vorschlagKeineEmbeddings
-            : AppTexte.of(context).vorschlagKeineKandidaten);
+        melde.hinweis(
+          bekannt.isEmpty
+              ? AppTexte.of(context).vorschlagKeineEmbeddings
+              : AppTexte.of(context).vorschlagKeineKandidaten,
+        );
         return;
       }
 
@@ -88,8 +94,11 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 
       if (!mounted) return;
       if (roh.isEmpty) {
-        melde.hinweis(AppTexte.of(context).vorschlagNichtsGefunden(
-            library.schwelleFuerPerson(person).toStringAsFixed(2)));
+        melde.hinweis(
+          AppTexte.of(context).vorschlagNichtsGefunden(
+            library.schwelleFuerPerson(person).toStringAsFixed(2),
+          ),
+        );
         return;
       }
 
@@ -100,15 +109,19 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
             (gesicht: nachId[v.faceId]!, aehnlichkeit: v.aehnlichkeit),
       ];
 
-      final uebernommen = await Navigator.of(context).push<int>(MaterialPageRoute(
-        builder: (_) => PersonSuggestionsScreen(
-          library: library,
-          person: person,
-          vorschlaege: vorschlaege,
+      final uebernommen = await Navigator.of(context).push<int>(
+        MaterialPageRoute(
+          builder: (_) => PersonSuggestionsScreen(
+            library: library,
+            person: person,
+            vorschlaege: vorschlaege,
+          ),
         ),
-      ));
+      );
       if (!mounted || uebernommen == null) return;
-      melde.erfolg(AppTexte.of(context).vorschlagUebernommenMeldung(uebernommen));
+      melde.erfolg(
+        AppTexte.of(context).vorschlagUebernommenMeldung(uebernommen),
+      );
     } finally {
       if (mounted) setState(() => _sucheLaeuft = false);
     }
@@ -117,9 +130,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   /// Zeigt alle Gesichter dieser Person zur Auswahl an und setzt das
   /// angetippte als neues Profilbild (überschreibt ein evtl. vorhandenes).
   Future<void> _pickProfilePicture(BuildContext context) async {
-    final faces = (await library.db.facesForPerson(person.id))
-        .where((f) => f.cropRelativePath != null)
-        .toList();
+    final faces = (await library.db.facesForPerson(
+      person.id,
+    )).where((f) => f.cropRelativePath != null).toList();
     if (faces.isEmpty) {
       if (context.mounted) {
         melde.hinweis(AppTexte.of(context).personKeineGesichter);
@@ -163,7 +176,10 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
         ],
       ),
     );
@@ -185,32 +201,41 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           IconButton(
             tooltip: AppTexte.of(context).lebenslaufVon(person.name),
             icon: const Icon(Icons.timeline_outlined),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) =>
-                  LebenslaufScreen(library: library, person: person),
-            )),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    LebenslaufScreen(library: library, person: person),
+              ),
+            ),
           ),
           IconButton(
             tooltip: AppTexte.of(context).stammbaumTitel,
             icon: const Icon(Icons.account_tree_outlined),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => StammbaumScreen(
-                library: library,
-                startPersonId: person.id,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    StammbaumScreen(library: library, startPersonId: person.id),
               ),
-            )),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Row(
               children: [
                 StreamBuilder<PersonData?>(
                   stream: _personenstrom.hole(
-                      person.id, () => library.db.watchPerson(person.id)),
+                    person.id,
+                    () => library.db.watchPerson(person.id),
+                  ),
                   initialData: person,
                   builder: (context, snapshot) {
                     final coverPath = snapshot.data?.coverFaceCropPath;
@@ -240,7 +265,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.person_search_outlined),
                     label: Text(AppTexte.of(context).personWeitereFotosSuchen),
                   ),
@@ -251,59 +277,79 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           _ErkennungsStand(library: library, person: person),
           Expanded(
             child: StreamBuilder<List<AssetData>>(
-              stream: _fotostrom.hole(person.id,
-                  () => library.db.watchAssetsForPerson(person.id)),
+              stream: _fotostrom.hole(
+                person.id,
+                () => library.db.watchAssetsForPerson(person.id),
+              ),
               builder: (context, snapshot) {
                 final assets = snapshot.data ?? [];
                 if (assets.isEmpty) {
-                  return Center(child: Text(AppTexte.of(context).personKeineFotos));
+                  return Center(
+                    child: Text(AppTexte.of(context).personKeineFotos),
+                  );
                 }
                 return Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
                       child: Text(
                         AppTexte.of(context).personDoppelklickHinweis,
-                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     Expanded(
                       child: GridView.builder(
                         padding: const EdgeInsets.all(AppSpacing.md),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 160,
-                          mainAxisSpacing: 4,
-                          crossAxisSpacing: 4,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 160,
+                              mainAxisSpacing: 4,
+                              crossAxisSpacing: 4,
+                            ),
                         itemCount: assets.length,
                         itemBuilder: (context, index) {
                           final asset = assets[index];
                           return AssetThumbnailTile(
                             asset: Rasterzeile.aus(asset),
                             paths: library.paths,
-                            onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                              builder: (_) => AssetViewerScreen(
-                                assets: assets,
-                                initialIndex: index,
-                                paths: library.paths,
-                                db: library.db,
-                                library: library,
-                                onToggleFavorite: (a) => library.db.setFavorite(a.id, !a.isFavorite),
-                                onDelete: (a) => library.db.moveToTrash([a.id]),
-                                onLock: (a) async {
-                                  if (await ensureVaultUnlocked(context, library)) {
-                                    await library.lockAsset(a);
-                                  }
-                                },
+                            onTap: () =>
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => AssetViewerScreen(
+                                      assets: assets,
+                                      initialIndex: index,
+                                      paths: library.paths,
+                                      db: library.db,
+                                      library: library,
+                                      onToggleFavorite: (a) => library.db
+                                          .setFavorite(a.id, !a.isFavorite),
+                                      onDelete: (a) =>
+                                          library.db.moveToTrash([a.id]),
+                                      onLock: (a) async {
+                                        if (await ensureVaultUnlocked(
+                                          context,
+                                          library,
+                                        )) {
+                                          await library.lockAsset(a);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                            onDoubleTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => FaceReviewScreen(
+                                  library: library,
+                                  assets: assets,
+                                  startIndex: index,
+                                ),
                               ),
-                            )),
-                            onDoubleTap: () => Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => FaceReviewScreen(
-                                library: library,
-                                assets: assets,
-                                startIndex: index,
-                              ),
-                            )),
+                            ),
                           );
                         },
                       ),
@@ -361,7 +407,9 @@ class _ErkennungsStandState extends State<_ErkennungsStand> {
   @override
   Widget build(BuildContext context) {
     final rueckmeldungen = _rueckmeldungen;
-    if (rueckmeldungen == null || rueckmeldungen.isEmpty) return const SizedBox.shrink();
+    if (rueckmeldungen == null || rueckmeldungen.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final allgemein = widget.library.faceSimilarityThreshold;
     final schwelle = leiteSchwelleAb(rueckmeldungen, allgemein);
@@ -372,17 +420,27 @@ class _ErkennungsStandState extends State<_ErkennungsStand> {
     final t = AppTexte.of(context);
     final erklaerung = switch (woher) {
       SchwellenHerkunft.angepasst => t.personSchwelleAngepasst(
-          schwelle.toStringAsFixed(2), allgemein.toStringAsFixed(2)),
-      SchwellenHerkunft.widerspruch =>
-        t.personSchwelleWiderspruch(allgemein.toStringAsFixed(2)),
-      SchwellenHerkunft.zuWenigDaten =>
-        t.personSchwelleWirdAngepasst(mindestEntscheidungen),
-      SchwellenHerkunft.wieAllgemein =>
-        t.personSchwelleWieAllgemein(allgemein.toStringAsFixed(2)),
+        schwelle.toStringAsFixed(2),
+        allgemein.toStringAsFixed(2),
+      ),
+      SchwellenHerkunft.widerspruch => t.personSchwelleWiderspruch(
+        allgemein.toStringAsFixed(2),
+      ),
+      SchwellenHerkunft.zuWenigDaten => t.personSchwelleWirdAngepasst(
+        mindestEntscheidungen,
+      ),
+      SchwellenHerkunft.wieAllgemein => t.personSchwelleWieAllgemein(
+        allgemein.toStringAsFixed(2),
+      ),
     };
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Row(
         children: [
           Icon(
@@ -396,7 +454,10 @@ class _ErkennungsStandState extends State<_ErkennungsStand> {
           Expanded(
             child: Text(
               t.personWiedererkennung(erklaerung, bestaetigt, abgelehnt),
-              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           TextButton(
@@ -405,7 +466,10 @@ class _ErkennungsStandState extends State<_ErkennungsStand> {
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Text(AppTexte.of(context).personVerwerfen, style: const TextStyle(fontSize: 11)),
+            child: Text(
+              AppTexte.of(context).personVerwerfen,
+              style: const TextStyle(fontSize: 11),
+            ),
           ),
         ],
       ),

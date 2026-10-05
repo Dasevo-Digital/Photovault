@@ -33,19 +33,25 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> aufnahme(String id,
-          {bool papierkorb = false, bool gesperrt = false}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026),
-            importedAt: DateTime(2026),
-            isTrashed: Value(papierkorb),
-            isLocked: Value(gesperrt),
-          ));
+  Future<void> aufnahme(
+    String id, {
+    bool papierkorb = false,
+    bool gesperrt = false,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026),
+          importedAt: DateTime(2026),
+          isTrashed: Value(papierkorb),
+          isLocked: Value(gesperrt),
+        ),
+      );
 
   Float32List vektor(double erster) =>
       Float32List.fromList([erster, 0.5, -0.25, 1.0]);
@@ -100,28 +106,35 @@ void main() {
       await db.tagAsset('a', 'VonHand');
       await db.tagAsset('a', 'VonDerKI', quelle: Tagquelle.ki);
 
-      expect((await db.allTagNamesByAssetId())['a']!.toSet(),
-          {'VonHand', 'VonDerKI'});
+      expect((await db.allTagNamesByAssetId())['a']!.toSet(), {
+        'VonHand',
+        'VonDerKI',
+      });
       expect(await db.kiTagNamesByAssetId(), {
-        'a': {'VonDerKI'}
+        'a': {'VonDerKI'},
       });
     });
   });
 
   group('Die Gesichtsregionen', () {
-    Future<void> gesicht(String id, String? person,
-            {bool beiseite = false, double x = 0.1}) =>
-        db.insertFace(FacesCompanion.insert(
-          id: id,
-          assetId: 'a',
-          personId: Value(person),
-          boxX: x,
-          boxY: 0.2,
-          boxW: 0.3,
-          boxH: 0.4,
-          isIgnored: Value(beiseite),
-          embedding: Value(Uint8List(2048)),
-        ));
+    Future<void> gesicht(
+      String id,
+      String? person, {
+      bool beiseite = false,
+      double x = 0.1,
+    }) => db.insertFace(
+      FacesCompanion.insert(
+        id: id,
+        assetId: 'a',
+        personId: Value(person),
+        boxX: x,
+        boxY: 0.2,
+        boxW: 0.3,
+        boxH: 0.4,
+        isIgnored: Value(beiseite),
+        embedding: Value(Uint8List(2048)),
+      ),
+    );
 
     test('Name und Kasten kommen richtig heraus', () async {
       await aufnahme('a');

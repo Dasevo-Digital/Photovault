@@ -44,8 +44,9 @@ void main() {
   MediaKit.ensureInitialized();
 
   /// Dieselbe Vorlage wie im Videotest: 320x240, drei Sekunden, kein Ton.
-  final probe =
-      File(p.join('test', 'fixtures', 'werkzeuge', 'probe.mp4')).absolute;
+  final probe = File(
+    p.join('test', 'fixtures', 'werkzeuge', 'probe.mp4'),
+  ).absolute;
 
   testWidgets('aus „die Maus steht" wird ein laufendes Video', (tester) async {
     expect(probe.existsSync(), isTrue, reason: 'Vorlage fehlt: ${probe.path}');
@@ -53,7 +54,9 @@ void main() {
     final wurzel = Directory.systemTemp.createTempSync('pv_schwebe_echt_');
     addTearDown(() => wurzel.deleteSync(recursive: true));
     // ignore: invalid_use_of_visible_for_testing_member
-    final paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'l')),
+    );
     final ziel = paths.absolute('o/probe.mp4');
     await ziel.parent.create(recursive: true);
     await probe.copy(ziel.path);
@@ -73,25 +76,30 @@ void main() {
     await db.into(db.assets).insert(video);
     final asset = (await db.assetById('v1'))!;
 
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: SchwebevorschauBereich(
-          db: db,
-          paths: paths,
-          child: Center(
-            child: SizedBox(
-              width: 320,
-              height: 240,
-              child: AssetThumbnailTile(
-                  asset: Rasterzeile.aus(asset), paths: paths, onTap: () {}),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SchwebevorschauBereich(
+            db: db,
+            paths: paths,
+            child: Center(
+              child: SizedBox(
+                width: 320,
+                height: 240,
+                child: AssetThumbnailTile(
+                  asset: Rasterzeile.aus(asset),
+                  paths: paths,
+                  onTap: () {},
+                ),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
 
     final geste = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await geste.addPointer(location: Offset.zero);
@@ -107,17 +115,28 @@ void main() {
     // gehört zum Gefühl der Sache: Kommt das Bild erst nach einer
     // Sekunde, ist die Maus meistens schon weiter.
     final uhr = Stopwatch()..start();
-    for (var i = 0; i < 40 && find.byType(VideoSurface).evaluate().isEmpty; i++) {
+    for (
+      var i = 0;
+      i < 40 && find.byType(VideoSurface).evaluate().isEmpty;
+      i++
+    ) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 25)));
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
       await tester.pump();
     }
     uhr.stop();
-    print('vom Ablauf der Wartezeit bis zum Bild: ${uhr.elapsedMilliseconds} ms');
+    print(
+      'vom Ablauf der Wartezeit bis zum Bild: ${uhr.elapsedMilliseconds} ms',
+    );
 
-    expect(find.byType(VideoSurface), findsOneWidget,
-        reason: 'die Maus stand, aber es kam kein Bild – genau der Zustand, '
-            'in dem open() auf ein erstes Bild wartet, das nie kommt');
+    expect(
+      find.byType(VideoSurface),
+      findsOneWidget,
+      reason:
+          'die Maus stand, aber es kam kein Bild – genau der Zustand, '
+          'in dem open() auf ein erstes Bild wartet, das nie kommt',
+    );
     print('Bildfläche steht');
 
     // Und es läuft wirklich, statt bloss dazustehen.
@@ -125,12 +144,18 @@ void main() {
         .widget<VideoSurface>(find.byType(VideoSurface))
         .controller;
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 900)));
-    print('Position: ${regler.position.inMilliseconds} ms, '
-        'Dauer: ${regler.duration.inMilliseconds} ms');
+      () => Future<void>.delayed(const Duration(milliseconds: 900)),
+    );
+    print(
+      'Position: ${regler.position.inMilliseconds} ms, '
+      'Dauer: ${regler.duration.inMilliseconds} ms',
+    );
     expect(regler.isPlaying, isTrue);
-    expect(regler.position.inMilliseconds, greaterThan(100),
-        reason: 'das Bild stand, aber es lief nichts');
+    expect(
+      regler.position.inMilliseconds,
+      greaterThan(100),
+      reason: 'das Bild stand, aber es lief nichts',
+    );
 
     // Der Zeiger zieht weiter: Das Bild verschwindet, der Abspieler wird
     // abgeräumt. Ohne das bliebe für jede überstrichene Kachel ein

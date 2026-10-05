@@ -93,7 +93,9 @@ class _Panorama360ViewState extends State<Panorama360View> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Colors.black,
-      child: widget.mode == Panorama360Mode.sphere ? _buildSphere() : _buildFlat(),
+      child: widget.mode == Panorama360Mode.sphere
+          ? _buildSphere()
+          : _buildFlat(),
     );
   }
 

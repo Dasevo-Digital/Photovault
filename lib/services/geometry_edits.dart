@@ -25,7 +25,10 @@ import 'package:image/image.dart' as img;
 /// gedrehte, sehr längliche Bilder – dort begrenzt die kurze Seite, nicht
 /// der Winkel.
 ({double breite, double hoehe}) groesstesRechteckNachDrehung(
-    double w, double h, double winkelRad) {
+  double w,
+  double h,
+  double winkelRad,
+) {
   if (w <= 0 || h <= 0) return (breite: 0, hoehe: 0);
 
   final sin = math.sin(winkelRad).abs();
@@ -55,7 +58,10 @@ img.Image geradeziehen(img.Image quelle, double winkelGrad) {
 
   final rad = winkelGrad * math.pi / 180;
   final mass = groesstesRechteckNachDrehung(
-      quelle.width.toDouble(), quelle.height.toDouble(), rad);
+    quelle.width.toDouble(),
+    quelle.height.toDouble(),
+    rad,
+  );
   final breite = mass.breite.floor().clamp(1, gedreht.width);
   final hoehe = mass.hoehe.floor().clamp(1, gedreht.height);
 
@@ -127,7 +133,10 @@ Float64List? homographie(List<Offset> quelle, List<Offset> ziel) {
 Offset abbilden(Float64List h, double x, double y) {
   final w = h[6] * x + h[7] * y + h[8];
   if (w == 0) return Offset.zero;
-  return Offset((h[0] * x + h[1] * y + h[2]) / w, (h[3] * x + h[4] * y + h[5]) / w);
+  return Offset(
+    (h[0] * x + h[1] * y + h[2]) / w,
+    (h[3] * x + h[4] * y + h[5]) / w,
+  );
 }
 
 /// Entzerrt das von [ecken] aufgespannte Viereck auf ein Rechteck von
@@ -148,15 +157,12 @@ img.Image? perspektivischEntzerren(
 ) {
   if (zielBreite < 1 || zielHoehe < 1) return null;
   // Rückwärts: vom Ziel-Rechteck auf das Quell-Viereck.
-  final h = homographie(
-    [
-      Offset.zero,
-      Offset(zielBreite - 1, 0),
-      Offset(zielBreite - 1, zielHoehe - 1),
-      Offset(0, zielHoehe - 1),
-    ],
-    ecken,
-  );
+  final h = homographie([
+    Offset.zero,
+    Offset(zielBreite - 1, 0),
+    Offset(zielBreite - 1, zielHoehe - 1),
+    Offset(0, zielHoehe - 1),
+  ], ecken);
   if (h == null) return null;
 
   final ziel = img.Image(width: zielBreite, height: zielHoehe);
@@ -181,7 +187,8 @@ img.Image? perspektivischEntzerren(
           (pa * (1 - fx) + pb * fx) * (1 - fy) + (pc * (1 - fx) + pd * fx) * fy;
 
       ziel.setPixelRgb(
-        x, y,
+        x,
+        y,
         misch(a.r, b.r, c.r, d.r).round(),
         misch(a.g, b.g, c.g, d.g).round(),
         misch(a.b, b.b, c.b, d.b).round(),

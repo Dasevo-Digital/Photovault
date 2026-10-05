@@ -173,8 +173,8 @@ const _cp1252 = [
 ];
 
 String _ausCp1252(List<int> bytes) => String.fromCharCodes([
-      for (final b in bytes) (b >= 0x80 && b <= 0x9F) ? _cp1252[b - 0x80] : b,
-    ]);
+  for (final b in bytes) (b >= 0x80 && b <= 0x9F) ? _cp1252[b - 0x80] : b,
+]);
 
 /// Liest den Kopf der Datei, um die Kodierung zu erfahren – und zwar
 /// bevor der Rest entziffert wird.
@@ -220,7 +220,8 @@ String entziffere(List<int> bytes) {
     // entscheidbar, in welcher Reihenfolge – also nicht raten.
     throw const GedcomAbbruchFehler(GedcomAbbruch.kodierung, 'UNICODE');
   }
-  final istAnsi = angabe != null &&
+  final istAnsi =
+      angabe != null &&
       (angabe.startsWith('ANSI') ||
           angabe.contains('1252') ||
           angabe.startsWith('IBM') ||
@@ -311,7 +312,9 @@ List<_Knoten> _datensaetze(String inhalt) {
       // Die Fortsetzung gehört an den Eintrag EINE Ebene darüber, nicht
       // an den zuletzt gesehenen: Zwischen Wert und Fortsetzung kann ein
       // tieferer Eintrag stehen.
-      final ziel = z.ebene - 1 < stapel.length ? stapel[z.ebene - 1] : stapel.last;
+      final ziel = z.ebene - 1 < stapel.length
+          ? stapel[z.ebene - 1]
+          : stapel.last;
       ziel.wert += (z.tag == 'CONT' ? '\n' : '') + z.wert;
       continue;
     }
@@ -416,15 +419,18 @@ String deuteName(String roh, {String? givn, String? surn}) {
     final zweite = s.indexOf('/', erste + 1);
     final vor = s.substring(0, erste).trim();
     final nach =
-        (zweite > erste ? s.substring(erste + 1, zweite) : s.substring(erste + 1))
+        (zweite > erste
+                ? s.substring(erste + 1, zweite)
+                : s.substring(erste + 1))
             .trim();
     final danach = zweite >= 0 ? s.substring(zweite + 1).trim() : '';
     zusammen = [vor, nach, danach].where((e) => e.isNotEmpty).join(' ');
   }
   if (zusammen.isEmpty) {
-    zusammen = [givn?.trim() ?? '', surn?.trim() ?? '']
-        .where((e) => e.isNotEmpty)
-        .join(' ');
+    zusammen = [
+      givn?.trim() ?? '',
+      surn?.trim() ?? '',
+    ].where((e) => e.isNotEmpty).join(' ');
   }
   return zusammen.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
@@ -437,7 +443,8 @@ String deuteName(String roh, {String? givn, String? surn}) {
 /// **Verbindung zur Familie**, nicht an den einzelnen Elternteil – ein
 /// Kind, das nur von einem der beiden adoptiert wurde, lässt sich im
 /// Format nicht ausdrücken.
-Verwandtschaft _artAusPedi(String? pedi) => switch (pedi?.trim().toLowerCase()) {
+Verwandtschaft _artAusPedi(String? pedi) =>
+    switch (pedi?.trim().toLowerCase()) {
       'adopted' => Verwandtschaft.adoptivelternteil,
       'foster' => Verwandtschaft.pflegeelternteil,
       _ => Verwandtschaft.elternteil,
@@ -482,8 +489,10 @@ GedcomEingelesen liesGedcom(
   final ereignisseJePerson = <String, List<GedcomEreignis>>{};
   final bekannt = <String>{};
 
-  void ungenau(String wo, String wert) => hinweise
-      .add((art: GedcomHinweisart.ungenauesDatum, einzelheit: '$wo: $wert'));
+  void ungenau(String wo, String wert) => hinweise.add((
+    art: GedcomHinweisart.ungenauesDatum,
+    einzelheit: '$wo: $wert',
+  ));
 
   // --- Personen -----------------------------------------------------
   for (final satz in saetze.where((s) => s.tag == 'INDI')) {
@@ -493,8 +502,11 @@ GedcomEingelesen liesGedcom(
     final nameKnoten = satz.kind('NAME');
     var name = nameKnoten == null
         ? ''
-        : deuteName(nameKnoten.wert,
-            givn: nameKnoten.wertVon('GIVN'), surn: nameKnoten.wertVon('SURN'));
+        : deuteName(
+            nameKnoten.wert,
+            givn: nameKnoten.wertVon('GIVN'),
+            surn: nameKnoten.wertVon('SURN'),
+          );
     if (name.isEmpty) {
       name = texte.ohneNamen;
       hinweise.add((art: GedcomHinweisart.ohneNamen, einzelheit: kennung));
@@ -566,18 +578,20 @@ GedcomEingelesen liesGedcom(
     // Hochzeit steht in GEDCOM an der Familie und ist erst weiter unten
     // zu haben; über diese Zuordnung findet sie zurück zur Person.
     ereignisseJePerson[kennung] = ereignisse;
-    personen.add(GedcomImportPerson(
-      kennung: kennung,
-      name: name,
-      geschlecht: switch (satz.wertVon('SEX')?.toUpperCase()) {
-        'M' => Geschlecht.maennlich,
-        'F' => Geschlecht.weiblich,
-        _ => null,
-      },
-      geburt: geburt,
-      tod: tod,
-      ereignisse: ereignisse,
-    ));
+    personen.add(
+      GedcomImportPerson(
+        kennung: kennung,
+        name: name,
+        geschlecht: switch (satz.wertVon('SEX')?.toUpperCase()) {
+          'M' => Geschlecht.maennlich,
+          'F' => Geschlecht.weiblich,
+          _ => null,
+        },
+        geburt: geburt,
+        tod: tod,
+        ereignisse: ereignisse,
+      ),
+    );
   }
 
   if (personen.isEmpty) {
@@ -640,7 +654,10 @@ GedcomEingelesen liesGedcom(
       final kind = _verweis(c.wert);
       if (kind == null || !bekannt.contains(kind)) continue;
       final art = _artAusPedi(
-          satz.kennung == null ? null : pediJeKindUndFamilie['$kind|${satz.kennung}']);
+        satz.kennung == null
+            ? null
+            : pediJeKindUndFamilie['$kind|${satz.kennung}'],
+      );
       for (final e in eltern) {
         versuche(kind, e, art);
       }
@@ -692,16 +709,15 @@ GedcomEingelesen liesGedcom(
 List<Kante> mitNeuenKennungen(
   List<Kante> kanten,
   Map<String, String> neueKennungen,
-) =>
-    [
-      for (final k in kanten)
-        if (neueKennungen[k.personId] case final a?)
-          if (neueKennungen[k.andereId] case final b?)
-            if (k.art == Verwandtschaft.partner)
-              partnerKanteFuer(a, b)
-            else
-              kante(a, b, k.art),
-    ];
+) => [
+  for (final k in kanten)
+    if (neueKennungen[k.personId] case final a?)
+      if (neueKennungen[k.andereId] case final b?)
+        if (k.art == Verwandtschaft.partner)
+          partnerKanteFuer(a, b)
+        else
+          kante(a, b, k.art),
+];
 
 /// Zieht `@I1@` auf `I1` zusammen. Gibt `null` zurück, wenn dort kein
 /// Verweis stand – manche Programme schreiben freien Text.

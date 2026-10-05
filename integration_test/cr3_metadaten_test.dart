@@ -29,8 +29,10 @@ void main() {
     print('MAKE=${d.kamera.make}');
     print('MODEL=${d.kamera.model}');
     print('LENS=${d.kamera.lensModel}');
-    print('ISO=${d.kamera.iso} F=${d.kamera.fNumber} '
-        'MM=${d.kamera.focalLengthMm} T=${d.kamera.exposureTimeSeconds}');
+    print(
+      'ISO=${d.kamera.iso} F=${d.kamera.fNumber} '
+      'MM=${d.kamera.focalLengthMm} T=${d.kamera.exposureTimeSeconds}',
+    );
     print('ZEIT=${d.zeitpunkt}');
 
     expect(d.kamera.model, 'Canon EOS R10');

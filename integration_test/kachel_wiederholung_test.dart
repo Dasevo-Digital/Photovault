@@ -49,28 +49,31 @@ void main() {
 
   late HttpServer server;
   final abrufe = <String, int>{};
+
   /// Wie oft jede Kachel abgewiesen wird, bevor sie geliefert wird.
   var abweisungen = 1;
 
   setUp(() async {
     abrufe.clear();
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(server.forEach((anfrage) async {
-      final pfad = anfrage.uri.path;
-      final n = (abrufe[pfad] ?? 0) + 1;
-      abrufe[pfad] = n;
-      if (n <= abweisungen) {
-        anfrage.response.statusCode = HttpStatus.notFound;
-      } else {
-        anfrage.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType('image', 'png')
-          ..headers.set('cache-control', 'max-age=60')
-          ..headers.set('age', '0')
-          ..add(_einPixel);
-      }
-      await anfrage.response.close();
-    }));
+    unawaited(
+      server.forEach((anfrage) async {
+        final pfad = anfrage.uri.path;
+        final n = (abrufe[pfad] ?? 0) + 1;
+        abrufe[pfad] = n;
+        if (n <= abweisungen) {
+          anfrage.response.statusCode = HttpStatus.notFound;
+        } else {
+          anfrage.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType('image', 'png')
+            ..headers.set('cache-control', 'max-age=60')
+            ..headers.set('age', '0')
+            ..add(_einPixel);
+        }
+        await anfrage.response.close();
+      }),
+    );
   });
 
   tearDown(() => server.close(force: true));
@@ -82,30 +85,33 @@ void main() {
     final kennung = DateTime.now().microsecondsSinceEpoch;
     final fehler = <String>[];
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: SizedBox(
-          width: 600,
-          height: 400,
-          child: FlutterMap(
-            options: const MapOptions(
-              initialCenter: LatLng(51.8355, 10.7825),
-              initialZoom: 14,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'http://127.0.0.1:${server.port}/$kennung/'
-                    '{z}/{x}/{y}.png',
-                tileProvider: kartenKachelAnbieter(),
-                evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
-                errorTileCallback: (kachel, e, _) =>
-                    fehler.add('${kachel.coordinates}: $e'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 600,
+            height: 400,
+            child: FlutterMap(
+              options: const MapOptions(
+                initialCenter: LatLng(51.8355, 10.7825),
+                initialZoom: 14,
               ),
-            ],
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'http://127.0.0.1:${server.port}/$kennung/'
+                      '{z}/{x}/{y}.png',
+                  tileProvider: kartenKachelAnbieter(),
+                  evictErrorTileStrategy: EvictErrorTileStrategy.notVisible,
+                  errorTileCallback: (kachel, e, _) =>
+                      fehler.add('${kachel.coordinates}: $e'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
 
     // Echte Zeit vergehen lassen: Zwischen den Versuchen wartet der
     // Client, und `pump` allein laesst die Uhr der Welt nicht laufen.
@@ -117,39 +123,57 @@ void main() {
     return fehler;
   }
 
-  testWidgets('eine einmal abgewiesene Kachel kommt trotzdem an',
-      (tester) async {
-    abweisungen = 1;
-    final fehler = await karteLaufenLassen(tester);
+  testWidgets(
+    'eine einmal abgewiesene Kachel kommt trotzdem an',
+    (tester) async {
+      abweisungen = 1;
+      final fehler = await karteLaufenLassen(tester);
 
-    print('Kacheln angefragt: ${abrufe.length}');
-    print('Abrufe je Kachel:  ${abrufe.values.toSet().toList()..sort()}');
-    print('Fehlkacheln:       ${fehler.length}');
+      print('Kacheln angefragt: ${abrufe.length}');
+      print('Abrufe je Kachel:  ${abrufe.values.toSet().toList()..sort()}');
+      print('Fehlkacheln:       ${fehler.length}');
 
-    expect(abrufe, isNotEmpty, reason: 'sonst misst der Test nichts');
-    expect(fehler, isEmpty,
-        reason: 'genau das war der Fehler: ein 404 wurde zum Loch');
-    // Jede Kachel muss oefter als einmal abgerufen worden sein - sonst
-    // hat die Wiederholung gar nicht stattgefunden, und der Test bestuende
-    // aus dem falschen Grund.
-    expect(abrufe.values.every((n) => n >= 2), isTrue,
-        reason: 'ohne zweiten Versuch waere nichts angekommen: $abrufe');
-  }, timeout: const Timeout(Duration(minutes: 2)));
+      expect(abrufe, isNotEmpty, reason: 'sonst misst der Test nichts');
+      expect(
+        fehler,
+        isEmpty,
+        reason: 'genau das war der Fehler: ein 404 wurde zum Loch',
+      );
+      // Jede Kachel muss oefter als einmal abgerufen worden sein - sonst
+      // hat die Wiederholung gar nicht stattgefunden, und der Test bestuende
+      // aus dem falschen Grund.
+      expect(
+        abrufe.values.every((n) => n >= 2),
+        isTrue,
+        reason: 'ohne zweiten Versuch waere nichts angekommen: $abrufe',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 
-  testWidgets('nach den erlaubten Versuchen bleibt es beim Fehler',
-      (tester) async {
-    // Die Gegenprobe. Ohne sie belegte der Test oben nur, dass ueberhaupt
-    // wiederholt wird - nicht, dass die Zahl der Versuche begrenzt ist.
-    // Ein Client, der endlos nachfasst, waere gegenueber einem
-    // gespendeten Kachelserver das schlechtere Verhalten.
-    abweisungen = 99;
-    final fehler = await karteLaufenLassen(tester);
+  testWidgets(
+    'nach den erlaubten Versuchen bleibt es beim Fehler',
+    (tester) async {
+      // Die Gegenprobe. Ohne sie belegte der Test oben nur, dass ueberhaupt
+      // wiederholt wird - nicht, dass die Zahl der Versuche begrenzt ist.
+      // Ein Client, der endlos nachfasst, waere gegenueber einem
+      // gespendeten Kachelserver das schlechtere Verhalten.
+      abweisungen = 99;
+      final fehler = await karteLaufenLassen(tester);
 
-    print('Abrufe je Kachel bei Dauerfehler: '
-        '${abrufe.values.toSet().toList()..sort()}');
-    expect(fehler, isNotEmpty, reason: 'der Fehlschlag muss sichtbar werden');
-    expect(abrufe.values.every((n) => n <= kachelVersuche + 1), isTrue,
-        reason: 'hoechstens ein Versuch plus $kachelVersuche '
-            'Wiederholungen: $abrufe');
-  }, timeout: const Timeout(Duration(minutes: 2)));
+      print(
+        'Abrufe je Kachel bei Dauerfehler: '
+        '${abrufe.values.toSet().toList()..sort()}',
+      );
+      expect(fehler, isNotEmpty, reason: 'der Fehlschlag muss sichtbar werden');
+      expect(
+        abrufe.values.every((n) => n <= kachelVersuche + 1),
+        isTrue,
+        reason:
+            'hoechstens ein Versuch plus $kachelVersuche '
+            'Wiederholungen: $abrufe',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 }

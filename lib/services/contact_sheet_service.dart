@@ -40,28 +40,38 @@ class ContactSheetService {
         skipped++;
         continue;
       }
-      tiles.add(pw.Container(
-        width: 170,
-        padding: const pw.EdgeInsets.all(4),
-        child: pw.Column(children: [
-          pw.SizedBox(
-            height: 112,
-            child: pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+      tiles.add(
+        pw.Container(
+          width: 170,
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Column(
+            children: [
+              pw.SizedBox(
+                height: 112,
+                child: pw.Center(
+                  child: pw.Image(image, fit: pw.BoxFit.contain),
+                ),
+              ),
+              pw.SizedBox(height: 3),
+              // Nur Nummer und Datum: Die PDF-Standardschrift kann keine Namen
+              // mit jedem Unicode-Zeichen setzen, und ein Kontaktblatt braucht
+              // keine privaten Dateinamen preiszugeben.
+              pw.Text(
+                '${index + 1}  ${_date(asset.fileCreatedAt)}',
+                style: const pw.TextStyle(fontSize: 8),
+              ),
+            ],
           ),
-          pw.SizedBox(height: 3),
-          // Nur Nummer und Datum: Die PDF-Standardschrift kann keine Namen
-          // mit jedem Unicode-Zeichen setzen, und ein Kontaktblatt braucht
-          // keine privaten Dateinamen preiszugeben.
-          pw.Text('${index + 1}  ${_date(asset.fileCreatedAt)}',
-              style: const pw.TextStyle(fontSize: 8)),
-        ]),
-      ));
+        ),
+      );
     }
-    document.addPage(pw.MultiPage(
-      pageFormat: PdfPageFormat.a4.landscape,
-      margin: const pw.EdgeInsets.all(24),
-      build: (_) => tiles,
-    ));
+    document.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(24),
+        build: (_) => tiles,
+      ),
+    );
     return ContactSheetResult(
       bytes: await document.save(),
       included: tiles.length,
@@ -77,7 +87,8 @@ class ContactSheetService {
     }
     try {
       return await _decode(
-          (await _exporter.resolveSourceFile(asset)).readAsBytes());
+        (await _exporter.resolveSourceFile(asset)).readAsBytes(),
+      );
     } catch (_) {
       return null;
     }

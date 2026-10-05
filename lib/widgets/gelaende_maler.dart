@@ -14,7 +14,12 @@ part of 'gelaende.dart';
 /// der Sekunde, sobald das Tempo von 9,9 auf 10,1 geht. Gleich breite
 /// Ziffern allein reichen dafür nicht; es ist die **Zahl** der Ziffern,
 /// die wechselt.
-typedef Flugmesswert = ({String name, String wert, String breitester, Color? farbe});
+typedef Flugmesswert = ({
+  String name,
+  String wert,
+  String breitester,
+  Color? farbe,
+});
 
 class Gelaendemaler extends CustomPainter {
   final Gelaendenetz netz;
@@ -167,9 +172,11 @@ class Gelaendemaler extends CustomPainter {
     final wo = kamera.standort;
     final ordnung = sichtbar
       ..sort((a, b) {
-        final da = (a.mitteX - wo.x) * (a.mitteX - wo.x) +
+        final da =
+            (a.mitteX - wo.x) * (a.mitteX - wo.x) +
             (a.mitteY - wo.y) * (a.mitteY - wo.y);
-        final db = (b.mitteX - wo.x) * (b.mitteX - wo.x) +
+        final db =
+            (b.mitteX - wo.x) * (b.mitteX - wo.x) +
             (b.mitteY - wo.y) * (b.mitteY - wo.y);
         return db.compareTo(da);
       });
@@ -186,7 +193,8 @@ class Gelaendemaler extends CustomPainter {
       // wechselnder Farbe – ein Path kennt nur eine.
       final pfad = Path();
       final kommtNoch = Path();
-      final teilen = gefahrenBis != null &&
+      final teilen =
+          gefahrenBis != null &&
           streckeJePunkt != null &&
           streckeJePunkt!.length == spur.length;
       var offen = false;
@@ -228,8 +236,15 @@ class Gelaendemaler extends CustomPainter {
     // Die Schilder ganz zuletzt: Sie gehören nicht in die Landschaft,
     // sondern davor – auch vor die Spur, denn ein Name, den ein Strich
     // durchkreuzt, ist keiner.
-    zeichneSchilder(canvas, size, kamera, schilder,
-        hoeheBei: hoeheBei, stimmung: stimmung, schriftart: schriftart);
+    zeichneSchilder(
+      canvas,
+      size,
+      kamera,
+      schilder,
+      hoeheBei: hoeheBei,
+      stimmung: stimmung,
+      schriftart: schriftart,
+    );
 
     _flugbildMalen(canvas, size);
     // Die Messwerte **vor** dem Abspann: Der legt sich als helle Tafel
@@ -243,25 +258,33 @@ class Gelaendemaler extends CustomPainter {
   /// Baut einen Textabsatz – einmal je Aufruf, und das ist hier in
   /// Ordnung: Diese drei Dinge werden nur beim Videoexport gemalt, und
   /// dort kostet ein Bild ohnehin eine Kodierung.
-  ui.Paragraph _absatz(String text, double groesse,
-      {Color farbe = const Color(0xFF1B1B1B),
-      FontWeight gewicht = FontWeight.w500,
-      TextAlign ausrichtung = TextAlign.left,
-      bool festeZifferbreite = false,
-      double breite = 1200}) {
-    final bauer = ui.ParagraphBuilder(ui.ParagraphStyle(
-      fontFamily: schriftart,
-      fontSize: groesse,
-      fontWeight: gewicht,
-      textAlign: ausrichtung,
-    ))
-      ..pushStyle(ui.TextStyle(
-        color: farbe,
-        fontFeatures: festeZifferbreite
-            ? const [ui.FontFeature.tabularFigures()]
-            : null,
-      ))
-      ..addText(text);
+  ui.Paragraph _absatz(
+    String text,
+    double groesse, {
+    Color farbe = const Color(0xFF1B1B1B),
+    FontWeight gewicht = FontWeight.w500,
+    TextAlign ausrichtung = TextAlign.left,
+    bool festeZifferbreite = false,
+    double breite = 1200,
+  }) {
+    final bauer =
+        ui.ParagraphBuilder(
+            ui.ParagraphStyle(
+              fontFamily: schriftart,
+              fontSize: groesse,
+              fontWeight: gewicht,
+              textAlign: ausrichtung,
+            ),
+          )
+          ..pushStyle(
+            ui.TextStyle(
+              color: farbe,
+              fontFeatures: festeZifferbreite
+                  ? const [ui.FontFeature.tabularFigures()]
+                  : null,
+            ),
+          )
+          ..addText(text);
     return bauer.build()..layout(ui.ParagraphConstraints(width: breite));
   }
 
@@ -277,33 +300,50 @@ class Gelaendemaler extends CustomPainter {
     final bildhoehe = kante * 0.75;
     final rand = size.width * 0.02;
     final unten = f.unterschrift == null ? 0.0 : kante * 0.1;
-    final kasten = Rect.fromLTWH(size.width - kante - rand - 8, rand,
-        kante + 8, bildhoehe + 8 + unten);
+    final kasten = Rect.fromLTWH(
+      size.width - kante - rand - 8,
+      rand,
+      kante + 8,
+      bildhoehe + 8 + unten,
+    );
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(kasten, const Radius.circular(6)),
       Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: 0.92 * deck),
     );
-    final ziel = Rect.fromLTWH(kasten.left + 4, kasten.top + 4, kante,
-        bildhoehe);
+    final ziel = Rect.fromLTWH(
+      kasten.left + 4,
+      kasten.top + 4,
+      kante,
+      bildhoehe,
+    );
     canvas.save();
-    canvas.clipRRect(
-        RRect.fromRectAndRadius(ziel, const Radius.circular(3)));
+    canvas.clipRRect(RRect.fromRectAndRadius(ziel, const Radius.circular(3)));
     // `cover`: Ein Vorschaubild ist selten 4:3, und verzerrt sähe es aus
     // wie ein Fehler.
     final q = _fuellend(
-        f.bild.width.toDouble(), f.bild.height.toDouble(), ziel);
-    canvas.drawImageRect(f.bild, q, ziel,
-        Paint()
-          ..color = const Color(0xFFFFFFFF).withValues(alpha: deck)
-          ..filterQuality = FilterQuality.medium);
+      f.bild.width.toDouble(),
+      f.bild.height.toDouble(),
+      ziel,
+    );
+    canvas.drawImageRect(
+      f.bild,
+      q,
+      ziel,
+      Paint()
+        ..color = const Color(0xFFFFFFFF).withValues(alpha: deck)
+        ..filterQuality = FilterQuality.medium,
+    );
     canvas.restore();
 
     if (f.unterschrift case final u?) {
-      final absatz = _absatz(u, kante * 0.075,
-          farbe: const Color(0xFF1B1B1B).withValues(alpha: deck),
-          ausrichtung: TextAlign.center,
-          breite: kante);
+      final absatz = _absatz(
+        u,
+        kante * 0.075,
+        farbe: const Color(0xFF1B1B1B).withValues(alpha: deck),
+        ausrichtung: TextAlign.center,
+        breite: kante,
+      );
       canvas.drawParagraph(absatz, Offset(kasten.left + 4, ziel.bottom + 2));
     }
   }
@@ -329,11 +369,14 @@ class Gelaendemaler extends CustomPainter {
     final klein = size.height * 0.026;
     final absaetze = [
       for (var i = 0; i < a.zeilen.length; i++)
-        _absatz(a.zeilen[i], i == 0 ? gross : klein,
-            farbe: const Color(0xFF1B1B1B),
-            gewicht: i == 0 ? FontWeight.w300 : FontWeight.w500,
-            ausrichtung: TextAlign.center,
-            breite: size.width * 0.6),
+        _absatz(
+          a.zeilen[i],
+          i == 0 ? gross : klein,
+          farbe: const Color(0xFF1B1B1B),
+          gewicht: i == 0 ? FontWeight.w300 : FontWeight.w500,
+          ausrichtung: TextAlign.center,
+          breite: size.width * 0.6,
+        ),
     ];
     var hoehe = 0.0;
     for (final p in absaetze) {
@@ -378,17 +421,26 @@ class Gelaendemaler extends CustomPainter {
 
     final fach = <({ui.Paragraph name, ui.Paragraph wert, double breite})>[];
     for (final w in m.werte) {
-      final name = _absatz(w.name, namensgroesse,
-          farbe: const Color(0xFFFFFFFF).withValues(alpha: 0.75 * deck),
-          gewicht: FontWeight.w500);
-      final wert = _absatz(w.wert, wertgroesse,
-          farbe: (w.farbe ?? const Color(0xFFFFFFFF))
-              .withValues(alpha: deck),
-          gewicht: FontWeight.w600,
-          festeZifferbreite: true);
+      final name = _absatz(
+        w.name,
+        namensgroesse,
+        farbe: const Color(0xFFFFFFFF).withValues(alpha: 0.75 * deck),
+        gewicht: FontWeight.w500,
+      );
+      final wert = _absatz(
+        w.wert,
+        wertgroesse,
+        farbe: (w.farbe ?? const Color(0xFFFFFFFF)).withValues(alpha: deck),
+        gewicht: FontWeight.w600,
+        festeZifferbreite: true,
+      );
       // Gemessen wird an der breitesten Fassung, gemalt die jetzige.
-      final vorlage = _absatz(w.breitester, wertgroesse,
-          gewicht: FontWeight.w600, festeZifferbreite: true);
+      final vorlage = _absatz(
+        w.breitester,
+        wertgroesse,
+        gewicht: FontWeight.w600,
+        festeZifferbreite: true,
+      );
       fach.add((
         name: name,
         wert: wert,
@@ -426,7 +478,9 @@ class Gelaendemaler extends CustomPainter {
     for (final f in fach) {
       canvas.drawParagraph(f.name, Offset(x, tafel.top + luft));
       canvas.drawParagraph(
-          f.wert, Offset(x, tafel.top + luft + namensgroesse * 1.35));
+        f.wert,
+        Offset(x, tafel.top + luft + namensgroesse * 1.35),
+      );
       x += f.breite + spalt;
     }
   }
@@ -437,8 +491,12 @@ class Gelaendemaler extends CustomPainter {
   ui.Paragraph? _nennungsabsatz(Size size) {
     final n = namensnennung;
     if (n == null || n.isEmpty) return null;
-    return _absatz(n, size.height * 0.018,
-        farbe: const Color(0xFFFFFFFF), breite: size.width * 0.9);
+    return _absatz(
+      n,
+      size.height * 0.018,
+      farbe: const Color(0xFFFFFFFF),
+      breite: size.width * 0.9,
+    );
   }
 
   void _nennungMalen(Canvas canvas, Size size) {
@@ -450,9 +508,14 @@ class Gelaendemaler extends CustomPainter {
     // unlesbar, und über dunklem Wald schwarze.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-          Rect.fromLTWH(wo.dx - 4, wo.dy - 2, absatz.maxIntrinsicWidth + 8,
-              absatz.height + 4),
-          const Radius.circular(3)),
+        Rect.fromLTWH(
+          wo.dx - 4,
+          wo.dy - 2,
+          absatz.maxIntrinsicWidth + 8,
+          absatz.height + 4,
+        ),
+        const Radius.circular(3),
+      ),
       Paint()..color = const Color(0x66000000),
     );
     canvas.drawParagraph(absatz, wo);
@@ -537,8 +600,12 @@ class Gelaendemaler extends CustomPainter {
         ecken,
         BlendMode.modulate,
         Paint()
-          ..shader = ui.ImageShader(bild.bild, TileMode.clamp, TileMode.clamp,
-              bild.abbildung.storage)
+          ..shader = ui.ImageShader(
+            bild.bild,
+            TileMode.clamp,
+            TileMode.clamp,
+            bild.abbildung.storage,
+          )
           ..filterQuality = FilterQuality.low,
       );
     }
@@ -564,7 +631,10 @@ class Gelaendemaler extends CustomPainter {
       return (
         bild: eigen,
         abbildung: Matrix4.diagonal3Values(
-            1 / eigen.width, 1 / eigen.height, 1),
+          1 / eigen.width,
+          1 / eigen.height,
+          1,
+        ),
       );
     }
     final k = karte;
@@ -675,7 +745,11 @@ class Gelaendemaler extends CustomPainter {
   /// Die weiche Kante steckt dagegen in der Deckkraft des Geländes
   /// selbst (siehe [baueNetz]) – hier wird sie nur ausgespart.
   void _dunstDarueber(
-      Canvas canvas, List<Blocknetz> ordnung, double nahste, double fernste) {
+    Canvas canvas,
+    List<Blocknetz> ordnung,
+    double nahste,
+    double fernste,
+  ) {
     if (_flaeche.isEmpty) return;
     if (fernste <= nahste) return;
     final spanne = fernste - nahste;
@@ -717,18 +791,24 @@ class Gelaendemaler extends CustomPainter {
           continue;
         }
         final t = ((tiefen[i] - nahste) / spanne).clamp(0.0, 1.0);
-        final deckung = _dunstStaerke * (1 - math.exp(-_dunstDichte * t))
+        final deckung =
+            _dunstStaerke *
+            (1 - math.exp(-_dunstDichte * t))
             // Wo das Gelände selbst schon durchsichtig ist, darf der
             // Dunst es nicht wieder zumalen.
-            * b.randnaehe[i];
+            *
+            b.randnaehe[i];
         farben[i] = ((deckung * 255).round().clamp(0, 255) << 24) | grundton;
       }
       // Dieselbe Ordnung wie das Gelände – hier ist sie sogar zwingend:
       // Auf der eigenen Schicht ERSETZT jedes Dreieck, was dort steht,
       // und gewinnen soll das nächste.
       final schleier = ui.Vertices.raw(
-          ui.VertexMode.triangles, b.bildstellen,
-          colors: farben, indices: b.reihenfolge);
+        ui.VertexMode.triangles,
+        b.bildstellen,
+        colors: farben,
+        indices: b.reihenfolge,
+      );
       canvas.drawVertices(schleier, BlendMode.dst, farbe);
       schleier.dispose();
     }

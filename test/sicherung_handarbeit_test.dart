@@ -33,8 +33,9 @@ void main() {
   test('Sicherung und Wiederherstellung: was zurückkommt', () async {
     final quelle = AppDatabase(NativeDatabase.memory());
     addTearDown(quelle.close);
-    final quellPfade =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'quelle')));
+    final quellPfade = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'quelle')),
+    );
     final quellImport = ImportService(quelle, quellPfade);
     final quellSicherung = BackupService(quelle, quellPfade);
 
@@ -51,15 +52,17 @@ void main() {
     // --- Handarbeit, die es sonst nirgends gibt ---
     await quelle.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
     await quelle.createPerson(PeopleCompanion.insert(id: 'p2', name: 'Bernd'));
-    await quelle.insertFace(FacesCompanion.insert(
-      id: 'f1',
-      assetId: ids[0],
-      boxX: 0.1,
-      boxY: 0.1,
-      boxW: 0.2,
-      boxH: 0.2,
-      personId: const Value('p1'),
-    ));
+    await quelle.insertFace(
+      FacesCompanion.insert(
+        id: 'f1',
+        assetId: ids[0],
+        boxX: 0.1,
+        boxY: 0.1,
+        boxW: 0.2,
+        boxH: 0.2,
+        personId: const Value('p1'),
+      ),
+    );
     await quelle.fuegeBeziehungHinzu('p1', 'p2', Verwandtschaft.partner);
     await quelle.reiseAnlegen(
       ReisenCompanion.insert(
@@ -83,7 +86,10 @@ void main() {
       [ids[1]],
     );
     await quelle.createSavedSearch(
-        's1', 'Fünf Sterne', const SearchFilters(minRating: 5));
+      's1',
+      'Fünf Sterne',
+      const SearchFilters(minRating: 5),
+    );
 
     // --- Verschlüsselt sichern und in eine leere Bibliothek zurückspielen ---
     final quellZustand = LibraryState()
@@ -94,18 +100,19 @@ void main() {
     await quellZustand.setupBackupPassphrase('sicherungs-passwort');
 
     final ziel = Directory(p.join(temp.path, 'ziel'));
-    await quellZustand
-        .runManualBackup(ziel.path, encrypt: true)
-        .drain<void>();
+    await quellZustand.runManualBackup(ziel.path, encrypt: true).drain<void>();
 
     final neu = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(neu.close);
-    final neuPfade =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'neu')));
+    final neuPfade = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'neu')),
+    );
     await BackupService(neu, neuPfade)
         .restoreFromBackup(
-            p.join(ziel.path, 'PhotoVault-Backup'), ImportService(neu, neuPfade),
-            passphrase: 'sicherungs-passwort')
+          p.join(ziel.path, 'PhotoVault-Backup'),
+          ImportService(neu, neuPfade),
+          passphrase: 'sicherungs-passwort',
+        )
         .drain<void>();
 
     Future<int> zahl(String tabelle) async {
@@ -135,8 +142,10 @@ void main() {
     // Wiederherstellung abbricht und neu startet, tut genau das.
     await BackupService(neu, neuPfade)
         .restoreFromBackup(
-            p.join(ziel.path, 'PhotoVault-Backup'), ImportService(neu, neuPfade),
-            passphrase: 'sicherungs-passwort')
+          p.join(ziel.path, 'PhotoVault-Backup'),
+          ImportService(neu, neuPfade),
+          passphrase: 'sicherungs-passwort',
+        )
         .drain<void>();
     expect(await zahl('people'), 2);
     expect(await zahl('faces'), 1);
@@ -155,8 +164,9 @@ void main() {
     // Personenübersicht wäre eine Wand aus leeren Kacheln.
     final quelle = AppDatabase(NativeDatabase.memory());
     addTearDown(quelle.close);
-    final quellPfade =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'q2')));
+    final quellPfade = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'q2')),
+    );
     final quellImport = ImportService(quelle, quellPfade);
     final zustand = LibraryState()
       ..db = quelle
@@ -178,16 +188,18 @@ void main() {
     await quelle.markFacesScanned([r.assetId!]);
 
     await quelle.createPerson(PeopleCompanion.insert(id: 'p9', name: 'Clara'));
-    await quelle.insertFace(FacesCompanion.insert(
-      id: 'f9',
-      assetId: r.assetId!,
-      boxX: 0.3,
-      boxY: 0.3,
-      boxW: 0.2,
-      boxH: 0.2,
-      personId: const Value('p9'),
-      cropRelativePath: Value(quellPfade.faceRelativePath('f9')),
-    ));
+    await quelle.insertFace(
+      FacesCompanion.insert(
+        id: 'f9',
+        assetId: r.assetId!,
+        boxX: 0.3,
+        boxY: 0.3,
+        boxW: 0.2,
+        boxH: 0.2,
+        personId: const Value('p9'),
+        cropRelativePath: Value(quellPfade.faceRelativePath('f9')),
+      ),
+    );
 
     await zustand.setupBackupPassphrase('pw');
     final ziel = Directory(p.join(temp.path, 'ziel2'));
@@ -195,12 +207,15 @@ void main() {
 
     final neu = ZweiteDatenbank(NativeDatabase.memory());
     addTearDown(neu.close);
-    final neuPfade =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'neu2')));
+    final neuPfade = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'neu2')),
+    );
     await BackupService(neu, neuPfade)
-        .restoreFromBackup(p.join(ziel.path, 'PhotoVault-Backup'),
-            ImportService(neu, neuPfade),
-            passphrase: 'pw')
+        .restoreFromBackup(
+          p.join(ziel.path, 'PhotoVault-Backup'),
+          ImportService(neu, neuPfade),
+          passphrase: 'pw',
+        )
         .drain<void>();
 
     final gesicht = await neu.select(neu.faces).getSingle();
@@ -210,8 +225,11 @@ void main() {
     // namenlos daneben.
     expect((await neu.assetById(gesicht.assetId))!.facesScanned, isTrue);
     final ausschnitt = neuPfade.absolute(gesicht.cropRelativePath!);
-    expect(ausschnitt.existsSync(), isTrue,
-        reason: 'ohne die Datei bliebe der Name ohne Bild');
+    expect(
+      ausschnitt.existsSync(),
+      isTrue,
+      reason: 'ohne die Datei bliebe der Name ohne Bild',
+    );
     final gezeichnet = img.decodeImage(ausschnitt.readAsBytesSync())!;
     expect(gezeichnet.width, 160);
     expect(gezeichnet.height, 160);

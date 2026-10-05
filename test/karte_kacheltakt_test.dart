@@ -46,11 +46,13 @@ class _Zaehler extends TileProvider {
 
   @override
   ImageProvider getImageWithCancelLoadingSupport(
-          TileCoordinates c, TileLayer o, Future<void> abbruch) =>
-      _Sofort(pixel, '$lauf:${c.z}/${c.x}/${c.y}', () {
-        geladen++;
-        (jeStufe[c.z] ??= <String>{}).add('${c.x}/${c.y}');
-      });
+    TileCoordinates c,
+    TileLayer o,
+    Future<void> abbruch,
+  ) => _Sofort(pixel, '$lauf:${c.z}/${c.x}/${c.y}', () {
+    geladen++;
+    (jeStufe[c.z] ??= <String>{}).add('${c.x}/${c.y}');
+  });
 }
 
 @immutable
@@ -68,7 +70,8 @@ class _Sofort extends ImageProvider<_Sofort> {
   ImageStreamCompleter loadImage(_Sofort key, ImageDecoderCallback decode) {
     melde();
     return OneFrameImageStreamCompleter(
-        SynchronousFuture(ImageInfo(image: pixel.clone())));
+      SynchronousFuture(ImageInfo(image: pixel.clone())),
+    );
   }
 
   @override
@@ -107,32 +110,36 @@ void main() {
     PaintingBinding.instance.imageCache.clear();
     final steuer = MapController();
 
-    await tester.pumpWidget(MaterialApp(
-      home: FlutterMap(
-        mapController: steuer,
-        options: MapOptions(
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterMap(
+          mapController: steuer,
+          options: MapOptions(
             initialCenter: _mitte,
             initialZoom: wischen ? 6 : _ziel,
-            maxZoom: 21),
-        children: [
-          if (mitDrossel)
-            const Kachelschicht(stil: Kartenstil.hell)
-          else
-            // Dieselbe Schicht ohne den Takt – die Gegenprobe. Die
-            // Aufloesung muss mitgehen: Bei doppelter Punktdichte holt
-            // die echte Schicht vier Kacheln je Feld, und eine Gegenprobe
-            // mit einfacher Aufloesung verglich zwei verschiedene Karten.
-            Builder(
+            maxZoom: 21,
+          ),
+          children: [
+            if (mitDrossel)
+              const Kachelschicht(stil: Kartenstil.hell)
+            else
+              // Dieselbe Schicht ohne den Takt – die Gegenprobe. Die
+              // Aufloesung muss mitgehen: Bei doppelter Punktdichte holt
+              // die echte Schicht vier Kacheln je Feld, und eine Gegenprobe
+              // mit einfacher Aufloesung verglich zwei verschiedene Karten.
+              Builder(
                 builder: (context) => TileLayer(
-                      urlTemplate: Kartenstil.hell.kachelUrl,
-                      tileProvider: zaehler,
-                      maxNativeZoom: 19,
-                      userAgentPackageName: netzkennung,
-                      retinaMode: RetinaMode.isHighDensity(context),
-                    )),
-        ],
+                  urlTemplate: Kartenstil.hell.kachelUrl,
+                  tileProvider: zaehler,
+                  maxNativeZoom: 19,
+                  userAgentPackageName: netzkennung,
+                  retinaMode: RetinaMode.isHighDensity(context),
+                ),
+              ),
+          ],
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     if (wischen) {
@@ -149,24 +156,33 @@ void main() {
     return zaehler;
   }
 
-  testWidgets('der Wisch laedt einen Bruchteil dessen, was er ohne Takt laedt',
-      (tester) async {
-    tester.view.physicalSize = const Size(2880, 1800);
-    tester.view.devicePixelRatio = 2;
-    addTearDown(tester.view.reset);
+  testWidgets(
+    'der Wisch laedt einen Bruchteil dessen, was er ohne Takt laedt',
+    (tester) async {
+      tester.view.physicalSize = const Size(2880, 1800);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
 
-    final ohne = await lauf(tester, mitDrossel: false);
-    final mit = await lauf(tester, mitDrossel: true);
+      final ohne = await lauf(tester, mitDrossel: false);
+      final mit = await lauf(tester, mitDrossel: true);
 
-    debugPrint('ohne Takt ${ohne.geladen}, mit Takt ${mit.geladen}');
-    expect(mit.geladen, lessThan(ohne.geladen ~/ 2),
-        reason: 'gemessen 4252 -> 948 beim Hin und Zurueck');
-    expect(ohne.jeStufe.keys.length, greaterThan(5),
-        reason: 'ohne Takt wird jede durchquerte Stufe voll geladen');
-  });
+      debugPrint('ohne Takt ${ohne.geladen}, mit Takt ${mit.geladen}');
+      expect(
+        mit.geladen,
+        lessThan(ohne.geladen ~/ 2),
+        reason: 'gemessen 4252 -> 948 beim Hin und Zurueck',
+      );
+      expect(
+        ohne.jeStufe.keys.length,
+        greaterThan(5),
+        reason: 'ohne Takt wird jede durchquerte Stufe voll geladen',
+      );
+    },
+  );
 
-  testWidgets('und verschluckt dabei keine einzige Kachel der Zielstufe',
-      (tester) async {
+  testWidgets('und verschluckt dabei keine einzige Kachel der Zielstufe', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(2880, 1800);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
@@ -178,10 +194,16 @@ void main() {
     final noetig = stehend.jeStufe[_ziel.toInt()]!;
     final da = gewischt.jeStufe[_ziel.toInt()] ?? <String>{};
     expect(noetig, isNotEmpty);
-    expect(da.difference(noetig), isEmpty,
-        reason: 'keine Kachel ausserhalb des Ausschnitts');
-    expect(noetig.difference(da), isEmpty,
-        reason: 'der Takt darf nichts liegen lassen, nur spaeter holen');
+    expect(
+      da.difference(noetig),
+      isEmpty,
+      reason: 'keine Kachel ausserhalb des Ausschnitts',
+    );
+    expect(
+      noetig.difference(da),
+      isEmpty,
+      reason: 'der Takt darf nichts liegen lassen, nur spaeter holen',
+    );
   });
 
   testWidgets('beim Schieben kostet der Takt nichts', (tester) async {
@@ -194,25 +216,28 @@ void main() {
       kachelAnbieterFuerTest = zaehler;
       PaintingBinding.instance.imageCache.clear();
       final steuer = MapController();
-      await tester.pumpWidget(MaterialApp(
-        home: FlutterMap(
-          mapController: steuer,
-          options: const MapOptions(initialCenter: _mitte, initialZoom: 13),
-          children: [
-            if (mitDrossel)
-              const Kachelschicht(stil: Kartenstil.hell)
-            else
-              Builder(
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FlutterMap(
+            mapController: steuer,
+            options: const MapOptions(initialCenter: _mitte, initialZoom: 13),
+            children: [
+              if (mitDrossel)
+                const Kachelschicht(stil: Kartenstil.hell)
+              else
+                Builder(
                   builder: (context) => TileLayer(
-                        urlTemplate: Kartenstil.hell.kachelUrl,
-                        tileProvider: zaehler,
-                        maxNativeZoom: 19,
-                        userAgentPackageName: netzkennung,
-                        retinaMode: RetinaMode.isHighDensity(context),
-                      )),
-          ],
+                    urlTemplate: Kartenstil.hell.kachelUrl,
+                    tileProvider: zaehler,
+                    maxNativeZoom: 19,
+                    userAgentPackageName: netzkennung,
+                    retinaMode: RetinaMode.isHighDensity(context),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       for (var i = 1; i <= 40; i++) {
         steuer.move(ll.LatLng(52.37, 9.73 + 0.06 * i / 40), 13);
@@ -227,9 +252,13 @@ void main() {
     final ohne = await schub(mitDrossel: false);
     final mit = await schub(mitDrossel: true);
     debugPrint('Schieben: ohne Takt $ohne, mit Takt $mit');
-    expect(mit, ohne,
-        reason: 'beim Schieben wechselt die Stufe nicht, also faellt '
-            'nichts weg – waere das anders, kostete der Takt Bild');
+    expect(
+      mit,
+      ohne,
+      reason:
+          'beim Schieben wechselt die Stufe nicht, also faellt '
+          'nichts weg – waere das anders, kostete der Takt Bild',
+    );
   });
 
   testWidgets('nach dem Abbauen bleibt keine Uhr stehen', (tester) async {
@@ -243,13 +272,15 @@ void main() {
     kachelAnbieterFuerTest = zaehler;
     final steuer = MapController();
 
-    await tester.pumpWidget(MaterialApp(
-      home: FlutterMap(
-        mapController: steuer,
-        options: const MapOptions(initialCenter: _mitte, initialZoom: 13),
-        children: const [Kachelschicht(stil: Kartenstil.hell)],
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FlutterMap(
+          mapController: steuer,
+          options: const MapOptions(initialCenter: _mitte, initialZoom: 13),
+          children: const [Kachelschicht(stil: Kartenstil.hell)],
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // Bewegen, damit die Uhr wirklich laeuft – und sofort abbauen.
@@ -262,8 +293,9 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
   });
 
-  testWidgets('zwei Karten nebeneinander nehmen sich nichts weg',
-      (tester) async {
+  testWidgets('zwei Karten nebeneinander nehmen sich nichts weg', (
+    tester,
+  ) async {
     // Der Takt ist EIN Stueck fuer die ganze App, also muss sein Zustand
     // der Anmeldung gehoeren und nicht dem Stueck. Traege ihn das Stueck
     // – so wie [TileUpdateTransformers.throttle] es tut –, dann ginge
@@ -283,17 +315,19 @@ void main() {
     final dort = MapController();
 
     Widget karte(MapController steuer, ll.LatLng wo) => SizedBox(
-          height: 300,
-          child: FlutterMap(
-            mapController: steuer,
-            options: MapOptions(initialCenter: wo, initialZoom: 12),
-            children: const [Kachelschicht(stil: Kartenstil.hell)],
-          ),
-        );
+      height: 300,
+      child: FlutterMap(
+        mapController: steuer,
+        options: MapOptions(initialCenter: wo, initialZoom: 12),
+        children: const [Kachelschicht(stil: Kartenstil.hell)],
+      ),
+    );
 
-    await tester.pumpWidget(MaterialApp(
-      home: Column(children: [karte(hier, _mitte), karte(dort, lissabon)]),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Column(children: [karte(hier, _mitte), karte(dort, lissabon)]),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Beide innerhalb desselben Zeitfensters – das ist der Fall, um den
@@ -310,10 +344,17 @@ void main() {
     // Bei doppelter Punktdichte holt die Schicht die Kacheln der
     // naechsttieferen Stufe: Hannover liegt dort bei Spalte ~8635,
     // Lissabon bei ~7775.
-    expect(spalten.where((x) => x > 8000), isNotEmpty,
-        reason: 'die erste Karte muss ihre eigene Gegend laden');
-    expect(spalten.where((x) => x < 8000), isNotEmpty,
-        reason: 'und die zweite ihre – sonst hat das eine Stueck seinen '
-            'Zustand mit der anderen Karte geteilt');
+    expect(
+      spalten.where((x) => x > 8000),
+      isNotEmpty,
+      reason: 'die erste Karte muss ihre eigene Gegend laden',
+    );
+    expect(
+      spalten.where((x) => x < 8000),
+      isNotEmpty,
+      reason:
+          'und die zweite ihre – sonst hat das eine Stueck seinen '
+          'Zustand mit der anderen Karte geteilt',
+    );
   });
 }

@@ -27,8 +27,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -37,18 +38,22 @@ void main() {
   });
 
   Future<void> imPapierkorb(String id, {int bytes = 0}) async {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'pruef-$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026),
-          importedAt: DateTime(2026),
-          isTrashed: const Value(true),
-          trashedAt: Value(DateTime(2026, 8, 1)),
-          fileSizeBytes: Value(bytes),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026),
+            importedAt: DateTime(2026),
+            isTrashed: const Value(true),
+            trashedAt: Value(DateTime(2026, 8, 1)),
+            fileSizeBytes: Value(bytes),
+          ),
+        );
   }
 
   /// Baut den Baum ab und lässt den Aufräum-Timer von drift auslaufen.
@@ -66,21 +71,23 @@ void main() {
   }
 
   Widget bildschirm() => MaterialApp(
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: TrashScreen(library: library),
-      );
+    localizationsDelegates: AppTexte.localizationsDelegates,
+    supportedLocales: AppTexte.supportedLocales,
+    home: TrashScreen(library: library),
+  );
 
-  testWidgets('jede Kachel trägt einen Wiederherstellen-Knopf',
-      (tester) async {
+  testWidgets('jede Kachel trägt einen Wiederherstellen-Knopf', (tester) async {
     await imPapierkorb('a');
     await imPapierkorb('b');
     await tester.pumpWidget(bildschirm());
     await tester.pump();
     await tester.pump();
 
-    expect(find.byIcon(Icons.restore_from_trash_outlined), findsNWidgets(2),
-        reason: 'einer je Foto, ohne dass jemand lange drücken muss');
+    expect(
+      find.byIcon(Icons.restore_from_trash_outlined),
+      findsNWidgets(2),
+      reason: 'einer je Foto, ohne dass jemand lange drücken muss',
+    );
 
     await abbauen(tester);
   });
@@ -95,8 +102,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    final a = await (db.select(db.assets)..where((t) => t.id.equals('a')))
-        .getSingle();
+    final a = await (db.select(
+      db.assets,
+    )..where((t) => t.id.equals('a'))).getSingle();
     expect(a.isTrashed, isFalse);
 
     await abbauen(tester);
@@ -113,8 +121,9 @@ void main() {
     await abbauen(tester);
   });
 
-  testWidgets('bei ausgewählten Fotos weicht der Kachelknopf der Leiste',
-      (tester) async {
+  testWidgets('bei ausgewählten Fotos weicht der Kachelknopf der Leiste', (
+    tester,
+  ) async {
     await imPapierkorb('a');
     await imPapierkorb('b');
     await tester.pumpWidget(bildschirm());
@@ -148,8 +157,11 @@ void main() {
     await tester.pump();
 
     final t = AppTexte.of(tester.element(find.byType(TrashScreen)));
-    expect(find.text(t.papierkorbUmfang(2, '8.0 MB')), findsOneWidget,
-        reason: 'Zahl und Platz, sonst bleibt der Verbrauch unsichtbar');
+    expect(
+      find.text(t.papierkorbUmfang(2, '8.0 MB')),
+      findsOneWidget,
+      reason: 'Zahl und Platz, sonst bleibt der Verbrauch unsichtbar',
+    );
 
     await abbauen(tester);
   });

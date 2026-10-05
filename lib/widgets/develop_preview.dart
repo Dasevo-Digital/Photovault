@@ -91,8 +91,11 @@ void setzeDevelopUniforms(
   required int wuerfelKante,
   bool beschneidungZeigen = false,
 }) {
-  final werte = developUniforms(adjustments,
-      wuerfelKante: wuerfelKante, beschneidungZeigen: beschneidungZeigen);
+  final werte = developUniforms(
+    adjustments,
+    wuerfelKante: wuerfelKante,
+    beschneidungZeigen: beschneidungZeigen,
+  );
   shader
     ..setFloat(0, breite)
     ..setFloat(1, hoehe)
@@ -169,7 +172,10 @@ class DevelopPreviewPainter extends CustomPainter {
 
     canvas.save();
     canvas.translate(links, oben);
-    canvas.drawRect(Offset.zero & Size(breite, hoehe), Paint()..shader = shader);
+    canvas.drawRect(
+      Offset.zero & Size(breite, hoehe),
+      Paint()..shader = shader,
+    );
     canvas.restore();
   }
 
@@ -241,7 +247,11 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
   Future<void> _baueTexturen() async {
     final token = ++_token;
 
-    _platzhalter ??= await texturVonBytes(Uint8List.fromList([0, 0, 0, 255]), 1, 1);
+    _platzhalter ??= await texturVonBytes(
+      Uint8List.fromList([0, 0, 0, 255]),
+      1,
+      1,
+    );
 
     final kurve = widget.adjustments.toneCurve;
     final mischer = widget.adjustments.colorMixer;
@@ -249,7 +259,10 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
     final neueKurve = kurve.istNeutral
         ? null
         : await texturVonBytes(
-            packCurveLutForTexture(buildCurveLut(kurve)), curveLutSize, 1);
+            packCurveLutForTexture(buildCurveLut(kurve)),
+            curveLutSize,
+            1,
+          );
 
     final neuerWuerfel = mischer.istNeutral
         ? null
@@ -361,8 +374,7 @@ bool beschneidungBedienbar({
   required bool maskenVorhanden,
   required bool shaderGeladen,
   required bool basisGeladen,
-}) =>
-    !maskenVorhanden && shaderGeladen && basisGeladen;
+}) => !maskenVorhanden && shaderGeladen && basisGeladen;
 
 /// Ob die Shader-Vorschau anstelle des nativen Renders gezeigt wird.
 ///
@@ -374,8 +386,7 @@ bool shaderVorschauZeigen({
   required bool bedienbar,
   required bool zieht,
   required bool warnungAn,
-}) =>
-    bedienbar && (zieht || warnungAn);
+}) => bedienbar && (zieht || warnungAn);
 
 /// Ob der Vorher/Nachher-Trennstrich gerade gezeigt werden kann.
 ///
@@ -393,8 +404,7 @@ bool trennstrichZeigen({
   required bool eingeschaltet,
   required bool originalDa,
   required bool shaderLaeuft,
-}) =>
-    eingeschaltet && originalDa && !shaderLaeuft;
+}) => eingeschaltet && originalDa && !shaderLaeuft;
 
 /// Das dargestellte Rechteck eines Bildes in einer Fläche – die Rechnung
 /// hinter `BoxFit.contain`.
@@ -491,8 +501,10 @@ class VorherNachherVergleich extends StatelessWidget {
           color: Colors.black54,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Text(links ? vorherText : nachherText,
-            style: const TextStyle(color: Colors.white, fontSize: 11)),
+        child: Text(
+          links ? vorherText : nachherText,
+          style: const TextStyle(color: Colors.white, fontSize: 11),
+        ),
       ),
     );
   }
@@ -508,15 +520,23 @@ class VorherNachherVergleich extends StatelessWidget {
         return Stack(
           children: [
             Positioned.fill(
-              child: Image.memory(original,
-                  gaplessPlayback: true, fit: BoxFit.contain),
+              child: Image.memory(
+                original,
+                gaplessPlayback: true,
+                fit: BoxFit.contain,
+              ),
             ),
             Positioned.fill(
               child: ClipRect(
                 clipper: _TrennstrichClipper(
-                    schnitt: schnitt, hoehe: flaeche.height),
-                child: Image.memory(bearbeitet,
-                    gaplessPlayback: true, fit: BoxFit.contain),
+                  schnitt: schnitt,
+                  hoehe: flaeche.height,
+                ),
+                child: Image.memory(
+                  bearbeitet,
+                  gaplessPlayback: true,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             _beschriftung(bild, flaeche, links: true),
@@ -532,8 +552,9 @@ class VorherNachherVergleich extends StatelessWidget {
               height: bild.height,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onHorizontalDragUpdate: (d) =>
-                    beiVerschieben(trennstrichAnteil(schnitt + d.delta.dx, bild)),
+                onHorizontalDragUpdate: (d) => beiVerschieben(
+                  trennstrichAnteil(schnitt + d.delta.dx, bild),
+                ),
                 child: MouseRegion(
                   cursor: SystemMouseCursors.resizeLeftRight,
                   child: Center(
@@ -548,8 +569,11 @@ class VorherNachherVergleich extends StatelessWidget {
                             color: Colors.white,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.compare_arrows,
-                              size: 16, color: Colors.black87),
+                          child: const Icon(
+                            Icons.compare_arrows,
+                            size: 16,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                     ),

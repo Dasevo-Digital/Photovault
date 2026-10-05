@@ -29,15 +29,19 @@ void main() {
     await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
     // Sechs Aufnahmen, eine je Stunde ab 8 Uhr.
     for (var i = 0; i < 6; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'a$i',
-            originalFileName: 'a$i.jpg',
-            relativePath: 'originals/a$i.jpg',
-            checksum: 'c$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 6, 14, 8 + i),
-            importedAt: DateTime(2026),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'a$i',
+              originalFileName: 'a$i.jpg',
+              relativePath: 'originals/a$i.jpg',
+              checksum: 'c$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 6, 14, 8 + i),
+              importedAt: DateTime(2026),
+            ),
+          );
     }
   });
 
@@ -47,34 +51,36 @@ void main() {
   });
 
   Future<void> aktivitaet(List<String> ids) => db.aktivitaetAnlegen(
-        AktivitaetenCompanion.insert(
-          id: 'k1',
-          name: 'Wanderung',
-          art: 'wanderung',
-          von: DateTime(2026, 6, 14, 9),
-          bis: DateTime(2026, 6, 14, 11),
-          angelegtAm: DateTime(2026),
-        ),
-        ids,
-      );
+    AktivitaetenCompanion.insert(
+      id: 'k1',
+      name: 'Wanderung',
+      art: 'wanderung',
+      von: DateTime(2026, 6, 14, 9),
+      bis: DateTime(2026, 6, 14, 11),
+      angelegtAm: DateTime(2026),
+    ),
+    ids,
+  );
 
   Future<void> reise(List<String> ids) => db.reiseAnlegen(
-        ReisenCompanion.insert(
-          id: 'r1',
-          name: 'Rom',
-          von: DateTime(2026, 6, 14, 9),
-          bis: DateTime(2026, 6, 14, 11),
-          angelegtAm: DateTime(2026),
-        ),
-        ids,
-      );
+    ReisenCompanion.insert(
+      id: 'r1',
+      name: 'Rom',
+      von: DateTime(2026, 6, 14, 9),
+      bis: DateTime(2026, 6, 14, 11),
+      angelegtAm: DateTime(2026),
+    ),
+    ids,
+  );
 
   group('Aktivität', () {
     test('ein Foto dazu, eines heraus', () async {
       await aktivitaet(['a1', 'a2', 'a3']);
       await db.setzeAufnahmenDerAktivitaet('k1', {'a1', 'a2', 'a4'});
-      expect([for (final a in await db.aufnahmenDerAktivitaet('k1')) a.id],
-          ['a1', 'a2', 'a4']);
+      expect(
+        [for (final a in await db.aufnahmenDerAktivitaet('k1')) a.id],
+        ['a1', 'a2', 'a4'],
+      );
     });
 
     test('der Zeitraum wird nachgeführt', () async {
@@ -109,18 +115,21 @@ void main() {
     test('eine andere Aktivität bleibt unberührt', () async {
       await aktivitaet(['a1', 'a2']);
       await db.aktivitaetAnlegen(
-          AktivitaetenCompanion.insert(
-            id: 'k2',
-            name: 'Radtour',
-            art: 'radtour',
-            von: DateTime(2026, 6, 14, 12),
-            bis: DateTime(2026, 6, 14, 13),
-            angelegtAm: DateTime(2026),
-          ),
-          ['a4', 'a5']);
+        AktivitaetenCompanion.insert(
+          id: 'k2',
+          name: 'Radtour',
+          art: 'radtour',
+          von: DateTime(2026, 6, 14, 12),
+          bis: DateTime(2026, 6, 14, 13),
+          angelegtAm: DateTime(2026),
+        ),
+        ['a4', 'a5'],
+      );
       await db.setzeAufnahmenDerAktivitaet('k1', {'a0'});
-      expect([for (final a in await db.aufnahmenDerAktivitaet('k2')) a.id],
-          ['a4', 'a5']);
+      expect(
+        [for (final a in await db.aufnahmenDerAktivitaet('k2')) a.id],
+        ['a4', 'a5'],
+      );
     });
   });
 
@@ -128,8 +137,10 @@ void main() {
     test('dieselbe Rechnung eine Tabelle weiter', () async {
       await reise(['a1', 'a2']);
       await db.setzeAufnahmenDerReise('r1', {'a2', 'a5'});
-      expect([for (final a in await db.aufnahmenDerReise('r1')) a.id],
-          ['a2', 'a5']);
+      expect(
+        [for (final a in await db.aufnahmenDerReise('r1')) a.id],
+        ['a2', 'a5'],
+      );
       final r = (await db.reise('r1'))!;
       expect(r.von, DateTime(2026, 6, 14, 10));
       expect(r.bis, DateTime(2026, 6, 14, 13));

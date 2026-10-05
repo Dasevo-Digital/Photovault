@@ -18,9 +18,13 @@ void main() {
   late ImportService import;
 
   setUp(() async {
-    tempRoot = Directory.systemTemp.createTempSync('photo_vault_image_editor_test_');
+    tempRoot = Directory.systemTemp.createTempSync(
+      'photo_vault_image_editor_test_',
+    );
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -30,23 +34,34 @@ void main() {
   });
 
   Future<String> importPhoto(String name) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
     final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3]);
     final result = await import.importFile(file.path);
     expect(result.outcome, ImportOutcome.imported);
     return result.assetId!;
   }
 
-  test('setEditedAssetFile ersetzt Pfad/Prüfsumme und löscht die konvertierte Vorschau', () async {
-    final assetId = await importPhoto('foto.heic');
-    // Simuliert eine bei HEIC/RAW-Importen vorhandene konvertierte Vorschau.
-    await db.updateThumbnailInfo(assetId, previewRelativePath: 'previews/$assetId.jpg');
+  test(
+    'setEditedAssetFile ersetzt Pfad/Prüfsumme und löscht die konvertierte Vorschau',
+    () async {
+      final assetId = await importPhoto('foto.heic');
+      // Simuliert eine bei HEIC/RAW-Importen vorhandene konvertierte Vorschau.
+      await db.updateThumbnailInfo(
+        assetId,
+        previewRelativePath: 'previews/$assetId.jpg',
+      );
 
-    await db.setEditedAssetFile(assetId, relativePath: 'originals/2026/01/$assetId.jpg', checksum: 'new-checksum');
+      await db.setEditedAssetFile(
+        assetId,
+        relativePath: 'originals/2026/01/$assetId.jpg',
+        checksum: 'new-checksum',
+      );
 
-    final updated = await db.assetById(assetId);
-    expect(updated!.relativePath, 'originals/2026/01/$assetId.jpg');
-    expect(updated.checksum, 'new-checksum');
-    expect(updated.previewRelativePath, isNull);
-  });
+      final updated = await db.assetById(assetId);
+      expect(updated!.relativePath, 'originals/2026/01/$assetId.jpg');
+      expect(updated.checksum, 'new-checksum');
+      expect(updated.previewRelativePath, isNull);
+    },
+  );
 }

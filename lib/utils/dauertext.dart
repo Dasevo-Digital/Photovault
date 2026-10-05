@@ -20,5 +20,7 @@ String dauerText(AppTexte t, Duration dauer) {
   if (sekunden < 60) {
     return t.restaurDauerSekunden(sekunden < 1 ? 1 : sekunden);
   }
-  return t.restaurDauerMinuten((dauer.inSeconds / 60).round().clamp(1, 1 << 30));
+  return t.restaurDauerMinuten(
+    (dauer.inSeconds / 60).round().clamp(1, 1 << 30),
+  );
 }

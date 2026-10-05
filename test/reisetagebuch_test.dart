@@ -31,8 +31,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -51,18 +52,22 @@ void main() {
       DateTime(2026, 6, 15, 10),
       DateTime(2026, 6, 15, 16),
     ].indexed) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'r$i',
-            originalFileName: 'r$i.jpg',
-            relativePath: 'originals/r$i.jpg',
-            checksum: 'pruef-r$i',
-            type: 'IMAGE',
-            fileCreatedAt: wann,
-            importedAt: DateTime(2026),
-            latitude: const Value(41.9),
-            longitude: const Value(12.5),
-            locationCity: const Value('Roma'),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'r$i',
+              originalFileName: 'r$i.jpg',
+              relativePath: 'originals/r$i.jpg',
+              checksum: 'pruef-r$i',
+              type: 'IMAGE',
+              fileCreatedAt: wann,
+              importedAt: DateTime(2026),
+              latitude: const Value(41.9),
+              longitude: const Value(12.5),
+              locationCity: const Value('Roma'),
+            ),
+          );
       ids.add('r$i');
     }
     await db.reiseAnlegen(
@@ -82,20 +87,20 @@ void main() {
     tester.view.physicalSize = const Size(1000, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: ReiseDetailScreen(library: library, reise: reise),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: ReiseDetailScreen(library: library, reise: reise),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
   Future<void> schreibe(WidgetTester tester, int tag, String text) async {
-    await tester.tap(find
-        .byTooltip('Notiz zu diesem Tag schreiben')
-        .at(tag));
+    await tester.tap(find.byTooltip('Notiz zu diesem Tag schreiben').at(tag));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, text);
     await tester.tap(find.widgetWithText(FilledButton, 'Übernehmen'));
@@ -106,16 +111,23 @@ void main() {
     await anlegen();
     final tag = DateTime(2026, 6, 14);
     await db.setzeReisetagnotiz('reise1', tag, 'Regen den ganzen Tag');
-    expect(await db.reisetagnotizenFuer('reise1'), {tag: 'Regen den ganzen Tag'});
+    expect(await db.reisetagnotizenFuer('reise1'), {
+      tag: 'Regen den ganzen Tag',
+    });
     await db.setzeReisetagnotiz('reise1', tag, '   ');
     expect(await db.reisetagnotizenFuer('reise1'), isEmpty);
   });
 
   test('die Uhrzeit faellt weg - der Tag ist der Schluessel', () async {
     await anlegen();
-    await db.setzeReisetagnotiz('reise1', DateTime(2026, 6, 14, 17, 42), 'Abends');
-    expect(await db.reisetagnotizenFuer('reise1'),
-        {DateTime(2026, 6, 14): 'Abends'});
+    await db.setzeReisetagnotiz(
+      'reise1',
+      DateTime(2026, 6, 14, 17, 42),
+      'Abends',
+    );
+    expect(await db.reisetagnotizenFuer('reise1'), {
+      DateTime(2026, 6, 14): 'Abends',
+    });
   });
 
   test('mit der Reise verschwinden auch ihre Tagesnotizen', () async {
@@ -135,13 +147,16 @@ void main() {
     expect(find.byTooltip('Notiz zu diesem Tag ändern'), findsNothing);
   });
 
-  testWidgets('die geschriebene Notiz steht unter ihrer Ueberschrift',
-      (tester) async {
+  testWidgets('die geschriebene Notiz steht unter ihrer Ueberschrift', (
+    tester,
+  ) async {
     await zeige(tester, await anlegen());
     await schreibe(tester, 0, 'Ankunft im Regen, Kolosseum geschlossen.');
 
-    expect(find.text('Ankunft im Regen, Kolosseum geschlossen.'),
-        findsOneWidget);
+    expect(
+      find.text('Ankunft im Regen, Kolosseum geschlossen.'),
+      findsOneWidget,
+    );
     // Nur an ihrem Tag: der andere bleibt leer.
     expect(find.byTooltip('Notiz zu diesem Tag ändern'), findsOneWidget);
     expect(find.byTooltip('Notiz zu diesem Tag schreiben'), findsOneWidget);
@@ -149,7 +164,8 @@ void main() {
     // Und sie steht wirklich in der Datenbank, nicht nur im Bild - an
     // dem Tag, dessen Stift gedrueckt wurde (die Kapitel laufen
     // aufsteigend, der erste ist der 14.).
-    expect(await db.reisetagnotizenFuer('reise1'),
-        {DateTime(2026, 6, 14): 'Ankunft im Regen, Kolosseum geschlossen.'});
+    expect(await db.reisetagnotizenFuer('reise1'), {
+      DateTime(2026, 6, 14): 'Ankunft im Regen, Kolosseum geschlossen.',
+    });
   });
 }

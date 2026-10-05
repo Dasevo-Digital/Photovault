@@ -25,10 +25,16 @@ void main() {
     final gruppen = <int, List<double>>{};
     for (final z in zeilen) {
       final t = DateTime.fromMillisecondsSinceEpoch(
-          (z['file_created_at'] as int) * 1000);
+        (z['file_created_at'] as int) * 1000,
+      );
       final w = z['width_px'] as int?, h = z['height_px'] as int?;
-      gruppen.putIfAbsent(t.year * 100 + t.month, () => []).add(
-          (w != null && h != null && h > 0) ? w / h : seitenverhaeltnisVorgabe);
+      gruppen
+          .putIfAbsent(t.year * 100 + t.month, () => [])
+          .add(
+            (w != null && h != null && h > 0)
+                ? w / h
+                : seitenverhaeltnisVorgabe,
+          );
     }
     // ignore: avoid_print
     print('${zeilen.length} Aufnahmen, ${gruppen.length} Monatsgruppen');
@@ -37,12 +43,14 @@ void main() {
       var summe = 0.0;
       for (final vs in gruppen.values) {
         summe += reihenGesamthoehe(
-            bildreihen(
-                seitenverhaeltnisse: vs,
-                breite: 1200,
-                zielhoehe: 160,
-                abstand: 4),
-            4);
+          bildreihen(
+            seitenverhaeltnisse: vs,
+            breite: 1200,
+            zielhoehe: 160,
+            abstand: 4,
+          ),
+          4,
+        );
       }
       return summe;
     }
@@ -58,7 +66,9 @@ void main() {
     uhr.stop();
     final je = uhr.elapsedMicroseconds / laeufe / 1000;
     // ignore: avoid_print
-    print('eine Gesamthoehe: ${je.toStringAsFixed(2)} ms  '
-        '(zweimal je Bild: ${(je * 2).toStringAsFixed(2)} ms)');
+    print(
+      'eine Gesamthoehe: ${je.toStringAsFixed(2)} ms  '
+      '(zweimal je Bild: ${(je * 2).toStringAsFixed(2)} ms)',
+    );
   });
 }

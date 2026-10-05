@@ -14,12 +14,12 @@ void main() {
   /// Eine gerade Spur nach Norden, 1000 m lang, mit ungleichen
   /// Abständen: dicht am Anfang, weit in der Mitte.
   Gelaendeflug geradeNachNorden() => Gelaendeflug([
-        (x: 0, y: 0, z: 0),
-        (x: 0, y: 10, z: 0),
-        (x: 0, y: 20, z: 0),
-        (x: 0, y: 500, z: 0),
-        (x: 0, y: 1000, z: 0),
-      ], glaettung: 50);
+    (x: 0, y: 0, z: 0),
+    (x: 0, y: 10, z: 0),
+    (x: 0, y: 20, z: 0),
+    (x: 0, y: 500, z: 0),
+    (x: 0, y: 1000, z: 0),
+  ], glaettung: 50);
 
   group('Der Weg', () {
     test('die Länge ist die waagerechte Strecke', () {
@@ -54,10 +54,7 @@ void main() {
     });
 
     test('zwischen zwei Stützpunkten wird gemittelt, auch in der Höhe', () {
-      final flug = Gelaendeflug([
-        (x: 0, y: 0, z: 100),
-        (x: 0, y: 100, z: 300),
-      ]);
+      final flug = Gelaendeflug([(x: 0, y: 0, z: 100), (x: 0, y: 100, z: 300)]);
       final mitte = flug.bei(0.5).blickpunkt;
       expect(mitte.y, closeTo(50, 0.001));
       expect(mitte.z, closeTo(200, 0.001));
@@ -82,9 +79,13 @@ void main() {
       );
       final hier = kamera.projiziere(stand.blickpunkt);
       final voraus = kamera.projiziere(
-          flug.punktBei(stand.gefahrenMeter + flug.laengeMeter * 0.1));
-      expect(voraus.tiefe, greaterThan(hier.tiefe),
-          reason: 'was vor mir liegt, muss weiter weg sein als ich');
+        flug.punktBei(stand.gefahrenMeter + flug.laengeMeter * 0.1),
+      );
+      expect(
+        voraus.tiefe,
+        greaterThan(hier.tiefe),
+        reason: 'was vor mir liegt, muss weiter weg sein als ich',
+      );
     }
 
     test('nach Norden: die Strecke voraus liegt tiefer im Bild', () {
@@ -93,12 +94,16 @@ void main() {
 
     test('nach Osten ebenso', () {
       erwarteVorausLiegtHinten(
-          Gelaendeflug([(x: 0, y: 0, z: 0), (x: 1000, y: 0, z: 0)]), 0.3);
+        Gelaendeflug([(x: 0, y: 0, z: 0), (x: 1000, y: 0, z: 0)]),
+        0.3,
+      );
     });
 
     test('nach Südwesten ebenso', () {
       erwarteVorausLiegtHinten(
-          Gelaendeflug([(x: 0, y: 0, z: 0), (x: -700, y: -700, z: 0)]), 0.3);
+        Gelaendeflug([(x: 0, y: 0, z: 0), (x: -700, y: -700, z: 0)]),
+        0.3,
+      );
     });
 
     test('nach Norden ist die Drehung null', () {
@@ -120,9 +125,9 @@ void main() {
     /// Ungenauigkeit eines Geräts. Ohne Glättung folgte die Kamera dem
     /// Rauschen und nicht dem Weg.
     List<Raumpunkt> zickzack() => [
-          for (var i = 0; i <= 200; i++)
-            (x: (i.isEven ? 8.0 : -8.0), y: i * 10.0, z: 0)
-        ];
+      for (var i = 0; i <= 200; i++)
+        (x: (i.isEven ? 8.0 : -8.0), y: i * 10.0, z: 0),
+    ];
 
     double groessterSprung(Gelaendeflug flug) {
       var groesst = 0.0;
@@ -141,10 +146,16 @@ void main() {
       final roh = Gelaendeflug(zickzack(), blickglaettung: 0.01);
       final glatt = Gelaendeflug(zickzack(), blickglaettung: 150);
       // Gemessen: 0,91 gegen 0,04 Bogenmass je Vierhundertstel Flug.
-      expect(groessterSprung(roh), greaterThan(0.5),
-          reason: 'ohne Glättung schlägt die Richtung wirklich aus');
-      expect(groessterSprung(glatt), lessThan(0.1),
-          reason: 'mit Glättung bleibt der Blick auf dem Weg');
+      expect(
+        groessterSprung(roh),
+        greaterThan(0.5),
+        reason: 'ohne Glättung schlägt die Richtung wirklich aus',
+      );
+      expect(
+        groessterSprung(glatt),
+        lessThan(0.1),
+        reason: 'mit Glättung bleibt der Blick auf dem Weg',
+      );
     });
 
     /// **Eine Kehre, und sie ist der Fall, an dem das Zickzack vorbeisah.**
@@ -157,20 +168,27 @@ void main() {
     /// Rauschen. An der echten Spur durchs Ilsetal waren das 4783 Grad
     /// je Sekunde – die Kamera schlug in einem Bild um.
     List<Raumpunkt> kehre() => [
-          for (var i = 0; i <= 60; i++) (x: 0, y: i * 10.0, z: 0),
-          for (var i = 1; i <= 60; i++) (x: i * 10.0 * 0.17, y: 600 - i * 10.0, z: 0),
-        ];
+      for (var i = 0; i <= 60; i++) (x: 0, y: i * 10.0, z: 0),
+      for (var i = 1; i <= 60; i++)
+        (x: i * 10.0 * 0.17, y: 600 - i * 10.0, z: 0),
+    ];
 
     test('eine Kehre wird ein Bogen, kein Umschlag', () {
       final flug = Gelaendeflug(kehre());
-      expect(groessterSprung(flug), lessThan(0.1),
-          reason: 'die Kamera dreht durch die Kehre, sie schlägt nicht um');
+      expect(
+        groessterSprung(flug),
+        lessThan(0.1),
+        reason: 'die Kamera dreht durch die Kehre, sie schlägt nicht um',
+      );
       // Und sie dreht wirklich um: Ein Blick, der einfach stehen bleibt,
       // wäre ruhig und falsch.
       final anfang = flug.bei(0.05).drehung;
       final ende = flug.bei(0.95).drehung;
-      expect((ende - anfang).abs(), greaterThan(2.0),
-          reason: 'am Ende geht es zurück, das muss sich zeigen');
+      expect(
+        (ende - anfang).abs(),
+        greaterThan(2.0),
+        reason: 'am Ende geht es zurück, das muss sich zeigen',
+      );
     });
 
     test('mit kurzem Fenster schlaegt dieselbe Kehre um', () {
@@ -191,8 +209,10 @@ void main() {
 
     test('eine Glättung länger als die Spur bricht nichts', () {
       final flug = Gelaendeflug(
-          [(x: 0, y: 0, z: 0), (x: 0, y: 30, z: 0)],
-          glaettung: 5000, blickglaettung: 5000);
+        [(x: 0, y: 0, z: 0), (x: 0, y: 30, z: 0)],
+        glaettung: 5000,
+        blickglaettung: 5000,
+      );
       expect(flug.bei(0.5).drehung, closeTo(0, 1e-9));
     });
   });
@@ -214,8 +234,7 @@ void main() {
     test('eine Spur, die auf der Stelle aufgezeichnet wurde', () {
       // Kommt wirklich vor: Ein Gerät, das im Rucksack lag. Es darf
       // keine Division durch null geben und keinen Flug zu nichts.
-      final flug = Gelaendeflug(
-          List.filled(50, (x: 100.0, y: 200.0, z: 3.0)));
+      final flug = Gelaendeflug(List.filled(50, (x: 100.0, y: 200.0, z: 3.0)));
       expect(flug.moeglich, isFalse);
       expect(flug.bei(0.4).drehung, 0);
       expect(flug.bei(0.4).blickpunkt, (x: 100.0, y: 200.0, z: 3.0));
@@ -240,14 +259,18 @@ void main() {
     test('die Dauer wächst mit der Länge', () {
       final kurz = Gelaendeflug([(x: 0, y: 0, z: 0), (x: 0, y: 3000, z: 0)]);
       final lang = Gelaendeflug([(x: 0, y: 0, z: 0), (x: 0, y: 30000, z: 0)]);
-      expect(lang.dauerBei(300).inSeconds,
-          greaterThan(kurz.dauerBei(300).inSeconds));
+      expect(
+        lang.dauerBei(300).inSeconds,
+        greaterThan(kurz.dauerBei(300).inSeconds),
+      );
     });
 
     test('sie bleibt zwischen zehn Sekunden und drei Minuten', () {
       final winzig = Gelaendeflug([(x: 0, y: 0, z: 0), (x: 0, y: 20, z: 0)]);
-      final riesig =
-          Gelaendeflug([(x: 0, y: 0, z: 0), (x: 0, y: 900000, z: 0)]);
+      final riesig = Gelaendeflug([
+        (x: 0, y: 0, z: 0),
+        (x: 0, y: 900000, z: 0),
+      ]);
       expect(winzig.dauerBei(300).inSeconds, 10);
       expect(riesig.dauerBei(300).inSeconds, 180);
     });
@@ -259,9 +282,15 @@ void main() {
     /// breit und aus 480 m Abstand 176 Bildpunkte gross.
     test('bei feinem Netz darf die Kamera näher heran', () {
       final grob = Gelaendeflug.flugabstand(
-          ausdehnung: 9000, kante: 96, brennweite: 900);
+        ausdehnung: 9000,
+        kante: 96,
+        brennweite: 900,
+      );
       final fein = Gelaendeflug.flugabstand(
-          ausdehnung: 9000, kante: 400, brennweite: 900);
+        ausdehnung: 9000,
+        kante: 400,
+        brennweite: 900,
+      );
       expect(fein, lessThan(grob));
     });
 
@@ -270,7 +299,10 @@ void main() {
       const kante = 96;
       const brennweite = 900.0;
       final d = Gelaendeflug.flugabstand(
-          ausdehnung: ausdehnung, kante: kante, brennweite: brennweite);
+        ausdehnung: ausdehnung,
+        kante: kante,
+        brennweite: brennweite,
+      );
       final maschenpunkte = (ausdehnung / kante) * brennweite / d;
       expect(maschenpunkte, closeTo(30, 1));
     });
@@ -279,34 +311,40 @@ void main() {
       // Ein sehr grobes Netz triebe die Kamera sonst weiter weg als die
       // Übersicht, ein sehr feines mitten ins Gelände hinein.
       expect(
-          Gelaendeflug.flugabstand(
-              ausdehnung: 9000, kante: 4, brennweite: 900),
-          9000 * 0.8);
+        Gelaendeflug.flugabstand(ausdehnung: 9000, kante: 4, brennweite: 900),
+        9000 * 0.8,
+      );
       expect(
-          Gelaendeflug.flugabstand(
-              ausdehnung: 9000, kante: 5000, brennweite: 900),
-          9000 * 0.15);
+        Gelaendeflug.flugabstand(
+          ausdehnung: 9000,
+          kante: 5000,
+          brennweite: 900,
+        ),
+        9000 * 0.15,
+      );
     });
 
     test('ein leeres Gelände ergibt keine Division durch null', () {
       expect(
-          Gelaendeflug.flugabstand(ausdehnung: 0, kante: 96, brennweite: 900),
-          0);
+        Gelaendeflug.flugabstand(ausdehnung: 0, kante: 96, brennweite: 900),
+        0,
+      );
       expect(
-          Gelaendeflug.flugabstand(
-              ausdehnung: 9000, kante: 0, brennweite: 900),
-          9000);
+        Gelaendeflug.flugabstand(ausdehnung: 9000, kante: 0, brennweite: 900),
+        9000,
+      );
     });
   });
 
   group('Der Blickpunkt der Kamera', () {
     test('ohne Angabe kreist sie wie bisher um den Nullpunkt', () {
       const kamera = Gelaendekamera(
-          drehung: 0.3,
-          neigung: 0.9,
-          entfernung: 1000,
-          brennweite: 800,
-          mitte: Offset(400, 300));
+        drehung: 0.3,
+        neigung: 0.9,
+        entfernung: 1000,
+        brennweite: 800,
+        mitte: Offset(400, 300),
+      );
       // Der Nullpunkt landet in der Bildmitte – das war schon immer so
       // und darf sich für die Handbedienung nicht geändert haben.
       final mitte = kamera.projiziere(Gelaendekamera.nullpunkt);
@@ -330,18 +368,20 @@ void main() {
 
     test('das Verschieben dreht nichts – nur der Bezug wandert', () {
       const ohne = Gelaendekamera(
-          drehung: 0.7,
-          neigung: 1.1,
-          entfernung: 900,
-          brennweite: 700,
-          mitte: Offset(0, 0));
+        drehung: 0.7,
+        neigung: 1.1,
+        entfernung: 900,
+        brennweite: 700,
+        mitte: Offset(0, 0),
+      );
       const mit = Gelaendekamera(
-          drehung: 0.7,
-          neigung: 1.1,
-          entfernung: 900,
-          brennweite: 700,
-          mitte: Offset(0, 0),
-          blickpunkt: (x: 50.0, y: 60.0, z: 70.0));
+        drehung: 0.7,
+        neigung: 1.1,
+        entfernung: 900,
+        brennweite: 700,
+        mitte: Offset(0, 0),
+        blickpunkt: (x: 50.0, y: 60.0, z: 70.0),
+      );
       final a = ohne.projiziere((x: 10, y: 20, z: 30));
       final b = mit.projiziere((x: 60, y: 80, z: 100));
       expect(b.stelle.dx, closeTo(a.stelle.dx, 1e-9));
@@ -374,8 +414,11 @@ void main() {
       // gibt.
       final stand = flug.bei(0.5);
       expect(stand.hoeheMeter, closeTo(680, 1));
-      expect(stand.blickpunkt.z, closeTo(540, 1),
-          reason: 'das z ist bewusst etwas anderes');
+      expect(
+        stand.blickpunkt.z,
+        closeTo(540, 1),
+        reason: 'das z ist bewusst etwas anderes',
+      );
     });
 
     test('das Tempo kommt aus den Zeitstempeln', () {
@@ -392,7 +435,7 @@ void main() {
         [for (var i = 0; i <= 100; i++) (x: 0, y: i * 10.0, z: -i * 3.0)],
         werte: [
           for (var i = 0; i <= 100; i++)
-            (hoehe: 1000 - i * 1.0, zeit: start.add(Duration(seconds: i * 5)))
+            (hoehe: 1000 - i * 1.0, zeit: start.add(Duration(seconds: i * 5))),
         ],
       );
       expect(flug.bei(0.5).steigungProzent, lessThan(-5));
@@ -406,8 +449,7 @@ void main() {
     });
 
     test('ohne Werte bleiben die Zahlen leer statt falsch', () {
-      final flug = Gelaendeflug(
-          [(x: 0, y: 0, z: 0), (x: 0, y: 1000, z: 0)]);
+      final flug = Gelaendeflug([(x: 0, y: 0, z: 0), (x: 0, y: 1000, z: 0)]);
       final stand = flug.bei(0.5);
       expect(stand.hoeheMeter, isNull);
       expect(stand.tempoMeterJeSekunde, isNull);
@@ -456,23 +498,22 @@ void main() {
         [for (var i = 0; i <= 50; i++) (x: 0, y: i * 20.0, z: 0)],
         werte: [
           for (var i = 0; i <= 50; i++)
-            (hoehe: 300, zeit: start.subtract(Duration(seconds: i * 10)))
+            (hoehe: 300, zeit: start.subtract(Duration(seconds: i * 10))),
         ],
       );
       expect(flug.bei(0.5).tempoMeterJeSekunde, isNull);
-      expect(flug.bei(0.5).seitStart, Duration.zero,
-          reason: 'negative Dauer wäre schlimmer als keine');
+      expect(
+        flug.bei(0.5).seitStart,
+        Duration.zero,
+        reason: 'negative Dauer wäre schlimmer als keine',
+      );
     });
 
     test('ein Loch in den Höhen macht die Stelle nicht stumm', () {
       // Dieselbe Regel wie bei `profilpunkte`: Ein Loch in den
       // Höhenangaben ist kein Loch im Weg.
       final flug = Gelaendeflug(
-        [
-          (x: 0, y: 0, z: 0),
-          (x: 0, y: 100, z: 0),
-          (x: 0, y: 200, z: 0),
-        ],
+        [(x: 0, y: 0, z: 0), (x: 0, y: 100, z: 0), (x: 0, y: 200, z: 0)],
         werte: const [
           (hoehe: 100, zeit: null),
           (hoehe: null, zeit: null),
@@ -485,12 +526,13 @@ void main() {
 
     test('Werte und Punkte müssen gleich lang sein', () {
       expect(
-          () => Gelaendeflug(
-                [(x: 0, y: 0, z: 0), (x: 0, y: 1, z: 0)],
-                werte: const [(hoehe: 1, zeit: null)],
-              ),
-          throwsA(isA<AssertionError>()),
-          reason: 'ein Versatz um eins verschöbe jede Zahl lautlos');
+        () => Gelaendeflug(
+          [(x: 0, y: 0, z: 0), (x: 0, y: 1, z: 0)],
+          werte: const [(hoehe: 1, zeit: null)],
+        ),
+        throwsA(isA<AssertionError>()),
+        reason: 'ein Versatz um eins verschöbe jede Zahl lautlos',
+      );
     });
   });
 
@@ -521,7 +563,7 @@ void main() {
     double ruck(Gelaendeflug flug, Raumpunkt Function(double) punkt) {
       const bilder = 600;
       final p = [
-        for (var i = 0; i <= bilder; i++) punkt(flug.laengeMeter * i / bilder)
+        for (var i = 0; i <= bilder; i++) punkt(flug.laengeMeter * i / bilder),
       ];
       var summe = 0.0;
       for (var i = 1; i < p.length - 1; i++) {
@@ -546,8 +588,7 @@ void main() {
       // Die Schwelle steht bei 10 und nicht bei 30: Sie soll den Rueckbau
       // auf eine Stichprobenmittelung fangen (die schaffte 2,8), nicht
       // jede dritte Nachkommastelle einer kuenftigen Fassung.
-      expect(glatt, lessThan(roh / 10),
-          reason: 'roh $roh, geglaettet $glatt');
+      expect(glatt, lessThan(roh / 10), reason: 'roh $roh, geglaettet $glatt');
     });
 
     test('die gezeichnete Spur bleibt unberuehrt', () {
@@ -557,8 +598,11 @@ void main() {
       for (final m in [0.0, 250.0, 1000.0, flug.laengeMeter]) {
         final p = flug.punktBei(m);
         final s = flug.spur;
-        expect(s.any((q) => (q.x - p.x).abs() < 6), isTrue,
-            reason: 'punktBei liegt weiter auf der rohen Spur');
+        expect(
+          s.any((q) => (q.x - p.x).abs() < 6),
+          isTrue,
+          reason: 'punktBei liegt weiter auf der rohen Spur',
+        );
       }
     });
 

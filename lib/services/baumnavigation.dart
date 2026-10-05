@@ -79,8 +79,12 @@ Matrix4 baumEingepasst(Size inhalt, Size fenster) {
 /// Bild stehen und nicht dort, wo zufällig gerade der Ausschnitt lag.
 Matrix4 baumZentriert(Offset stelle, Size fenster, double zoom) {
   return Matrix4.identity()
-    ..translateByDouble(fenster.width / 2 - stelle.dx * zoom,
-        fenster.height / 2 - stelle.dy * zoom, 0, 1)
+    ..translateByDouble(
+      fenster.width / 2 - stelle.dx * zoom,
+      fenster.height / 2 - stelle.dy * zoom,
+      0,
+      1,
+    )
     ..scaleByDouble(zoom, zoom, zoom, 1);
 }
 
@@ -111,11 +115,15 @@ Matrix4 baumErsterBlick({
   required Size fenster,
   required Rect fokusSchild,
 }) {
-  final ganz =
-      baumZentriert(Offset(baum.width / 2, baum.height / 2), fenster, 1.0);
+  final ganz = baumZentriert(
+    Offset(baum.width / 2, baum.height / 2),
+    fenster,
+    1.0,
+  );
   final ecke = baumImFenster(ganz, fokusSchild.topLeft);
   final gegenueber = baumImFenster(ganz, fokusSchild.bottomRight);
-  final drin = ecke.dx >= 0 &&
+  final drin =
+      ecke.dx >= 0 &&
       ecke.dy >= 0 &&
       gegenueber.dx <= fenster.width &&
       gegenueber.dy <= fenster.height;

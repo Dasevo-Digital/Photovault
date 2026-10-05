@@ -189,7 +189,13 @@ class Zierbaumplan {
 
   @override
   int get hashCode => Object.hash(
-      breite, hoehe, stammX, schilder.length, aeste.length, baender.length);
+    breite,
+    hoehe,
+    stammX,
+    schilder.length,
+    aeste.length,
+    baender.length,
+  );
 }
 
 /// Die Masse eines Schildes und der Abstände dazwischen.
@@ -227,14 +233,14 @@ class Zierbaummasse {
 
   /// Dieselben Verhältnisse, nur grösser – für die Tafel zum Aufhängen.
   Zierbaummasse mal(double faktor) => Zierbaummasse(
-        schildBreite: schildBreite * faktor,
-        schildHoehe: schildHoehe * faktor,
-        partnerLuecke: partnerLuecke * faktor,
-        haushaltLuecke: haushaltLuecke * faktor,
-        bandLuecke: bandLuecke * faktor,
-        rand: rand * faktor,
-        randUnten: randUnten * faktor,
-      );
+    schildBreite: schildBreite * faktor,
+    schildHoehe: schildHoehe * faktor,
+    partnerLuecke: partnerLuecke * faktor,
+    haushaltLuecke: haushaltLuecke * faktor,
+    bandLuecke: bandLuecke * faktor,
+    rand: rand * faktor,
+    randUnten: randUnten * faktor,
+  );
 
   /// Wie breit ein Haushalt mit [anzahl] Bewohnern ist.
   double haushaltBreite(int anzahl) =>
@@ -281,17 +287,17 @@ class Schildmasse {
   });
 
   Schildmasse mal(double faktor) => Schildmasse(
-        rundung: rundung * faktor,
-        randStark: randStark * faktor,
-        randSchwach: randSchwach * faktor,
-        polsterX: polsterX * faktor,
-        polsterY: polsterY * faktor,
-        schriftName: schriftName * faktor,
-        schriftNeben: schriftNeben * faktor,
-        portraitRadius: portraitRadius * faktor,
-        portraitAbstand: portraitAbstand * faktor,
-        zeichenGroesse: zeichenGroesse * faktor,
-      );
+    rundung: rundung * faktor,
+    randStark: randStark * faktor,
+    randSchwach: randSchwach * faktor,
+    polsterX: polsterX * faktor,
+    polsterY: polsterY * faktor,
+    schriftName: schriftName * faktor,
+    schriftNeben: schriftNeben * faktor,
+    portraitRadius: portraitRadius * faktor,
+    portraitAbstand: portraitAbstand * faktor,
+    zeichenGroesse: zeichenGroesse * faktor,
+  );
 
   /// Wie hoch die Tafel unter dem Porträt ist.
   double tafelHoehe(double schildHoehe) =>
@@ -329,14 +335,18 @@ Zierbaumplan zierbaumplan(
   Stammbaumgeflecht geflecht, {
   Zierbaummasse masse = const Zierbaummasse(),
 }) {
-  final baender = geflecht.haushalte
-      .map((h) => geflecht.band[h.id]!)
-      .toSet()
-      .toList()
-    ..sort();
+  final baender =
+      geflecht.haushalte.map((h) => geflecht.band[h.id]!).toSet().toList()
+        ..sort();
   if (baender.isEmpty) {
     return const Zierbaumplan(
-        schilder: [], aeste: [], baender: [], breite: 0, hoehe: 0, stammX: 0);
+      schilder: [],
+      aeste: [],
+      baender: [],
+      breite: 0,
+      hoehe: 0,
+      stammX: 0,
+    );
   }
 
   // Haushalt -> gewünschte Mitte. Erst das Band der Mitte, dann nach
@@ -356,10 +366,14 @@ Zierbaumplan zierbaumplan(
 
   int seiteVon(Haushalt haushalt) => seiten[haushalt.id] ?? 0;
 
-  void setze(List<Haushalt> haushalte, Map<String, double> wunsch,
-      {bool fokusFixiert = false}) {
+  void setze(
+    List<Haushalt> haushalte,
+    Map<String, double> wunsch, {
+    bool fokusFixiert = false,
+  }) {
     if (haushalte.isEmpty) return;
-    final ordnung = [...haushalte]..sort((a, b) {
+    final ordnung = [...haushalte]
+      ..sort((a, b) {
         final w = (wunsch[a.id] ?? 0).compareTo(wunsch[b.id] ?? 0);
         if (w != 0) return w;
         return geflecht.haushalte
@@ -374,7 +388,8 @@ Zierbaumplan zierbaumplan(
     // ohne Überschneidung nach links und rechts.
     if (fokusFixiert) {
       mitte[fokusHaus.id] = 0;
-      var linkeKante = masse.haushaltBreite(fokusHaus.personen.length) / 2 +
+      var linkeKante =
+          masse.haushaltBreite(fokusHaus.personen.length) / 2 +
           masse.haushaltLuecke;
       var rechteKante = linkeKante;
 
@@ -462,15 +477,21 @@ Zierbaumplan zierbaumplan(
       final mitteOhneSeitenwechsel = halb + masse.haushaltLuecke / 2;
       switch (seiteVon(h)) {
         case < 0:
-          obereGrenze =
-              math.min(obereGrenze, -mitteOhneSeitenwechsel - gesetzt[h.id]!);
+          obereGrenze = math.min(
+            obereGrenze,
+            -mitteOhneSeitenwechsel - gesetzt[h.id]!,
+          );
         case > 0:
-          untereGrenze =
-              math.max(untereGrenze, mitteOhneSeitenwechsel - gesetzt[h.id]!);
+          untereGrenze = math.max(
+            untereGrenze,
+            mitteOhneSeitenwechsel - gesetzt[h.id]!,
+          );
       }
     }
-    final versatz =
-        math.max(untereGrenze, math.min(obereGrenze, idealerVersatz));
+    final versatz = math.max(
+      untereGrenze,
+      math.min(obereGrenze, idealerVersatz),
+    );
     for (final e in gesetzt.entries) {
       mitte[e.key] = e.value + versatz;
     }
@@ -529,12 +550,14 @@ Zierbaumplan zierbaumplan(
   // nichts mehr: Ab dem dritten bewegt sich nur noch die letzte
   // Nachkommastelle, und die Rechnung soll enden.
   for (var runde = 0; runde < 4; runde++) {
-    final reihenfolgeDerBaender =
-        runde.isEven ? baender : baender.reversed.toList();
+    final reihenfolgeDerBaender = runde.isEven
+        ? baender
+        : baender.reversed.toList();
     for (final b in reihenfolgeDerBaender) {
       final haushalte = geflecht.imBand(b);
-      setze(haushalte, {for (final h in haushalte) h.id: schwerpunkt(h)},
-          fokusFixiert: haushalte.any((h) => h.id == fokusHaus.id));
+      setze(haushalte, {
+        for (final h in haushalte) h.id: schwerpunkt(h),
+      }, fokusFixiert: haushalte.any((h) => h.id == fokusHaus.id));
     }
   }
 
@@ -600,13 +623,15 @@ Zierbaumplan zierbaumplan(
       final zielX = hausMitte[haus];
       final zielY = hausUnten[haus];
       if (zielX == null || zielY == null) continue;
-      aeste.add(Ast(
-        personId: e.key,
-        vonX: schild.mitteX,
-        vonY: schild.oben,
-        nachX: zielX,
-        nachY: zielY,
-      ));
+      aeste.add(
+        Ast(
+          personId: e.key,
+          vonX: schild.mitteX,
+          vonY: schild.oben,
+          nachX: zielX,
+          nachY: zielY,
+        ),
+      );
     }
   }
 
@@ -617,14 +642,14 @@ Zierbaumplan zierbaumplan(
   final versatzX = masse.rand - minX;
 
   Schild verschoben(Schild s) => Schild(
-        personId: s.personId,
-        haushaltId: s.haushaltId,
-        band: s.band,
-        links: s.links + versatzX,
-        oben: s.oben + masse.rand,
-        breite: s.breite,
-        hoehe: s.hoehe,
-      );
+    personId: s.personId,
+    haushaltId: s.haushaltId,
+    band: s.band,
+    links: s.links + versatzX,
+    oben: s.oben + masse.rand,
+    breite: s.breite,
+    hoehe: s.hoehe,
+  );
 
   return Zierbaumplan(
     schilder: [for (final s in schilder) verschoben(s)],
@@ -636,11 +661,11 @@ Zierbaumplan zierbaumplan(
           vonY: a.vonY + masse.rand,
           nachX: a.nachX + versatzX,
           nachY: a.nachY + masse.rand,
-        )
+        ),
     ],
     baender: [
       for (final p in partnerbaender)
-        Partnerband(p.vonX + versatzX, p.nachX + versatzX, p.y + masse.rand)
+        Partnerband(p.vonX + versatzX, p.nachX + versatzX, p.y + masse.rand),
     ],
     breite: maxX - minX + 2 * masse.rand,
     hoehe: maxY + masse.rand + masse.randUnten,
@@ -664,8 +689,9 @@ Map<String, int> _seitenVomFokus(
   const links = -1;
   const rechts = 1;
   final seiten = <String, int>{fokusHaus.id: 0};
-  final partner =
-      fokusHaus.personen.where((person) => person != geflecht.fokus).toList();
+  final partner = fokusHaus.personen
+      .where((person) => person != geflecht.fokus)
+      .toList();
 
   // Ohne Partner gibt es keine Paarmitte und damit auch keine natürliche
   // linke oder rechte Familienseite. Der allein gezeigte Fokus bleibt

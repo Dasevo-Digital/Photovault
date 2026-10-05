@@ -89,13 +89,18 @@ class VaultCrypto {
   /// Erst-Einrichtung und für einen PIN-Wechsel (dort mit dem unverändert
   /// bleibenden, bereits vorhandenen Master-Key).
   static Future<WrappedMasterKey> wrapMasterKey(
-      SecretKey masterKey, String pin) async {
+    SecretKey masterKey,
+    String pin,
+  ) async {
     final salt = _randomBytes(16);
     final wrappingKey = await _deriveWrappingKey(pin, salt);
     final masterKeyBytes = await masterKey.extractBytes();
     final nonce = _cipher.newNonce();
-    final box = await _cipher.encrypt(masterKeyBytes,
-        secretKey: wrappingKey, nonce: nonce);
+    final box = await _cipher.encrypt(
+      masterKeyBytes,
+      secretKey: wrappingKey,
+      nonce: nonce,
+    );
     return WrappedMasterKey(
       masterKey: masterKey,
       kdfSalt: salt,
@@ -125,18 +130,30 @@ class VaultCrypto {
   /// Authentifizierte Verschlüsselung für kleine Steuerdaten, die nie als
   /// Klartextdatei auf der Platte landen sollen (z.B. Paket-Manifeste).
   static Future<Uint8List> encryptBytes(
-      List<int> clearText, SecretKey masterKey,
-      {List<int> aad = const []}) async {
+    List<int> clearText,
+    SecretKey masterKey, {
+    List<int> aad = const [],
+  }) async {
     final nonce = _cipher.newNonce();
-    final box = await _cipher.encrypt(clearText,
-        secretKey: masterKey, nonce: nonce, aad: aad);
-    return Uint8List.fromList(
-        [..._bytesMagic, ...nonce, ...box.cipherText, ...box.mac.bytes]);
+    final box = await _cipher.encrypt(
+      clearText,
+      secretKey: masterKey,
+      nonce: nonce,
+      aad: aad,
+    );
+    return Uint8List.fromList([
+      ..._bytesMagic,
+      ...nonce,
+      ...box.cipherText,
+      ...box.mac.bytes,
+    ]);
   }
 
   static Future<Uint8List> decryptBytes(
-      List<int> encrypted, SecretKey masterKey,
-      {List<int> aad = const []}) async {
+    List<int> encrypted,
+    SecretKey masterKey, {
+    List<int> aad = const [],
+  }) async {
     if (encrypted.length < 4 + 12 + _macLength ||
         !_bytesEqual(encrypted.sublist(0, 4), _bytesMagic)) {
       throw const FormatException('Keine gültigen verschlüsselten Daten.');
@@ -144,11 +161,13 @@ class VaultCrypto {
     final nonce = encrypted.sublist(4, 16);
     final cipherText = encrypted.sublist(16, encrypted.length - _macLength);
     final mac = Mac(encrypted.sublist(encrypted.length - _macLength));
-    return Uint8List.fromList(await _cipher.decrypt(
-      SecretBox(cipherText, nonce: nonce, mac: mac),
-      secretKey: masterKey,
-      aad: aad,
-    ));
+    return Uint8List.fromList(
+      await _cipher.decrypt(
+        SecretBox(cipherText, nonce: nonce, mac: mac),
+        secretKey: masterKey,
+        aad: aad,
+      ),
+    );
   }
 
   /// Die laufende Nummer eines Blocks als mitauthentifizierte Zusatzdaten.
@@ -174,7 +193,10 @@ class VaultCrypto {
   /// leere Quelldatei geschrieben, damit „gar keine Blöcke" nie ein
   /// gültiger Zustand ist.
   static Future<void> encryptFile(
-      File source, File destination, SecretKey masterKey) async {
+    File source,
+    File destination,
+    SecretKey masterKey,
+  ) async {
     final input = await source.open(mode: FileMode.read);
     final sink = destination.openWrite();
     try {
@@ -182,8 +204,12 @@ class VaultCrypto {
 
       Future<void> schreibe(List<int> klartext, int nummer) async {
         final nonce = _cipher.newNonce();
-        final box = await _cipher.encrypt(klartext,
-            secretKey: masterKey, nonce: nonce, aad: _blockNummer(nummer));
+        final box = await _cipher.encrypt(
+          klartext,
+          secretKey: masterKey,
+          nonce: nonce,
+          aad: _blockNummer(nummer),
+        );
         final header = ByteData(4)..setUint32(0, klartext.length, Endian.big);
         sink.add(header.buffer.asUint8List());
         sink.add(nonce);
@@ -211,7 +237,10 @@ class VaultCrypto {
   /// [SecretBoxAuthenticationError], wenn ein Chunk manipuliert/beschädigt
   /// ist oder der falsche Master-Key übergeben wurde.
   static Future<void> decryptFile(
-      File source, File destination, SecretKey masterKey) async {
+    File source,
+    File destination,
+    SecretKey masterKey,
+  ) async {
     final input = await source.open(mode: FileMode.read);
     final sink = destination.openWrite();
     var vollstaendig = false;
@@ -221,7 +250,8 @@ class VaultCrypto {
       final istV1 = magic.length == 4 && _bytesEqual(magic, _magicV1);
       if (!istV1 && !istV2) {
         throw const FormatException(
-            'Keine gültige verschlüsselte Vault-Datei.');
+          'Keine gültige verschlüsselte Vault-Datei.',
+        );
       }
 
       var nummer = 0;
@@ -232,13 +262,15 @@ class VaultCrypto {
           // Dateiende das Ende. Bei PVE2 fehlt hier etwas.
           if (istV1) break;
           throw const FormatException(
-              'Die Datei endet vor dem Abschlussblock – sie wurde abgeschnitten.');
+            'Die Datei endet vor dem Abschlussblock – sie wurde abgeschnitten.',
+          );
         }
         if (header.length != 4) {
           throw const FormatException('Unvollständiger Blockkopf.');
         }
-        final plainLength = ByteData.sublistView(Uint8List.fromList(header))
-            .getUint32(0, Endian.big);
+        final plainLength = ByteData.sublistView(
+          Uint8List.fromList(header),
+        ).getUint32(0, Endian.big);
         // Die Länge steht unverschlüsselt in der Datei und ist damit das
         // einzige Feld, das ein Angreifer frei setzen kann. Ohne diese
         // Schranke ginge sie ungeprüft an read() – bis zu 4 GiB für einen

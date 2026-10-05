@@ -44,7 +44,9 @@ class ZuordnungAuswahlleiste extends StatelessWidget {
           top: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
             child: Row(
               children: [
                 IconButton(
@@ -54,8 +56,10 @@ class ZuordnungAuswahlleiste extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
-                  child: Text(t.auswAnzahl(anzahl),
-                      style: Theme.of(context).textTheme.titleSmall),
+                  child: Text(
+                    t.auswAnzahl(anzahl),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: anzahl == 0 ? null : beiEntfernen,

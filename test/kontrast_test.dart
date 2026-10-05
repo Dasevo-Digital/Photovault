@@ -21,11 +21,11 @@ double _leuchtdichte(Color c) =>
 
 /// Halbdurchsichtiges Weiss auf einem Grund – das ist, was jemand sieht.
 Color _ueberlagert(Color vorn, Color grund) => Color.from(
-      alpha: 1,
-      red: vorn.r * vorn.a + grund.r * (1 - vorn.a),
-      green: vorn.g * vorn.a + grund.g * (1 - vorn.a),
-      blue: vorn.b * vorn.a + grund.b * (1 - vorn.a),
-    );
+  alpha: 1,
+  red: vorn.r * vorn.a + grund.r * (1 - vorn.a),
+  green: vorn.g * vorn.a + grund.g * (1 - vorn.a),
+  blue: vorn.b * vorn.a + grund.b * (1 - vorn.a),
+);
 
 double kontrast(Color vorn, Color grund) {
   final a = _leuchtdichte(_ueberlagert(vorn, grund));
@@ -44,22 +44,33 @@ void main() {
         'hinweis': DunkleFlaeche.hinweis,
       }.entries) {
         final wert = kontrast(e.value, grund);
-        expect(wert, greaterThanOrEqualTo(4.5),
-            reason: '${e.key} kommt nur auf ${wert.toStringAsFixed(2)}:1');
+        expect(
+          wert,
+          greaterThanOrEqualTo(4.5),
+          reason: '${e.key} kommt nur auf ${wert.toStringAsFixed(2)}:1',
+        );
       }
     });
 
     test('die Rollen sind nach Kontrast geordnet', () {
       // Wäre ein Hinweis heller als der Haupttext, stimmte die Hierarchie
       // nicht mehr – und jemand hätte die Rollen vertauscht.
-      expect(kontrast(DunkleFlaeche.text, grund),
-          greaterThan(kontrast(DunkleFlaeche.zweitText, grund)));
-      expect(kontrast(DunkleFlaeche.zweitText, grund),
-          greaterThan(kontrast(DunkleFlaeche.hinweis, grund)));
-      expect(kontrast(DunkleFlaeche.hinweis, grund),
-          greaterThan(kontrast(DunkleFlaeche.inaktiv, grund)));
-      expect(kontrast(DunkleFlaeche.inaktiv, grund),
-          greaterThan(kontrast(DunkleFlaeche.linie, grund)));
+      expect(
+        kontrast(DunkleFlaeche.text, grund),
+        greaterThan(kontrast(DunkleFlaeche.zweitText, grund)),
+      );
+      expect(
+        kontrast(DunkleFlaeche.zweitText, grund),
+        greaterThan(kontrast(DunkleFlaeche.hinweis, grund)),
+      );
+      expect(
+        kontrast(DunkleFlaeche.hinweis, grund),
+        greaterThan(kontrast(DunkleFlaeche.inaktiv, grund)),
+      );
+      expect(
+        kontrast(DunkleFlaeche.inaktiv, grund),
+        greaterThan(kontrast(DunkleFlaeche.linie, grund)),
+      );
     });
 
     test('inaktiv und linie tragen bewusst keinen Text', () {
@@ -81,9 +92,13 @@ void main() {
           'erfolg': semantik.erfolg,
         }.entries) {
           final wert = kontrast(e.value, grund);
-          expect(wert, greaterThanOrEqualTo(4.5),
-              reason: '${e.key} auf ${theme.brightness.name} kommt nur auf '
-                  '${wert.toStringAsFixed(2)}:1');
+          expect(
+            wert,
+            greaterThanOrEqualTo(4.5),
+            reason:
+                '${e.key} auf ${theme.brightness.name} kommt nur auf '
+                '${wert.toStringAsFixed(2)}:1',
+          );
         }
       }
     });
@@ -93,10 +108,16 @@ void main() {
       // dem Knopf, bei dem man sicher sein muss, was man drueckt.
       for (final theme in [buildLightTheme(), buildDarkTheme()]) {
         final s = theme.colorScheme;
-        expect(kontrast(s.onError, s.error), greaterThanOrEqualTo(4.5),
-            reason: 'Knopfschrift auf ${theme.brightness.name}');
-        expect(kontrast(Colors.white, Colors.red), lessThan(4.5),
-            reason: 'die Gegenprobe: warum es nicht Colors.red ist');
+        expect(
+          kontrast(s.onError, s.error),
+          greaterThanOrEqualTo(4.5),
+          reason: 'Knopfschrift auf ${theme.brightness.name}',
+        );
+        expect(
+          kontrast(Colors.white, Colors.red),
+          lessThan(4.5),
+          reason: 'die Gegenprobe: warum es nicht Colors.red ist',
+        );
       }
     });
   });
@@ -132,10 +153,11 @@ void main() {
 
     test('nicht als Farbe auf einer Flaeche, die dem Thema folgt', () {
       final treffer = <String>[];
-      for (final datei in Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))) {
+      for (final datei
+          in Directory('lib')
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.dart'))) {
         if (datei.path.contains('/theme/')) continue;
         if (dunkleFlaechen.any(datei.path.endsWith)) continue;
         final zeilen = datei.readAsLinesSync();
@@ -149,9 +171,13 @@ void main() {
           }
         }
       }
-      expect(treffer, isEmpty,
-          reason: 'AppSemantik.erfolg/.warnung bzw. colorScheme.error '
-              'sind die Farben dieser App:\n${treffer.join('\n')}');
+      expect(
+        treffer,
+        isEmpty,
+        reason:
+            'AppSemantik.erfolg/.warnung bzw. colorScheme.error '
+            'sind die Farben dieser App:\n${treffer.join('\n')}',
+      );
     });
   });
 
@@ -167,10 +193,11 @@ void main() {
   test('Colors.grey steht nicht mehr als Textfarbe im Quelltext', () {
     final verdaechtig = RegExp(r'Colors\.grey\s*[,)]');
     final treffer = <String>[];
-    for (final datei in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       if (datei.path.contains('/theme/')) continue;
       final zeilen = datei.readAsLinesSync();
       for (var i = 0; i < zeilen.length; i++) {
@@ -181,8 +208,12 @@ void main() {
         }
       }
     }
-    expect(treffer, isEmpty,
-        reason: 'colorScheme.onSurfaceVariant ist die Farbe des Themas '
-            'fuer zweitrangigen Text:\n${treffer.join('\n')}');
+    expect(
+      treffer,
+      isEmpty,
+      reason:
+          'colorScheme.onSurfaceVariant ist die Farbe des Themas '
+          'fuer zweitrangigen Text:\n${treffer.join('\n')}',
+    );
   });
 }

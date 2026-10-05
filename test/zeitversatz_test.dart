@@ -98,8 +98,9 @@ void main() {
     setUp(() async {
       wurzel = Directory.systemTemp.createTempSync('pv_zone_');
       eingang = Directory(p.join(wurzel.path, 'eingang'))..createSync();
-      paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
       db = AppDatabase(NativeDatabase.memory());
       importService = ImportService(db, paths);
       library = LibraryState()
@@ -131,8 +132,11 @@ void main() {
 
       expect(a.zeitversatzMinuten, 270);
       // Und der Zeitstempel bleibt die Ortszeit der Kamera.
-      expect(a.fileCreatedAt, DateTime(2013, 7, 4, 15, 22, 8),
-          reason: 'der Versatz verschiebt die Aufnahmezeit NICHT');
+      expect(
+        a.fileCreatedAt,
+        DateTime(2013, 7, 4, 15, 22, 8),
+        reason: 'der Versatz verschiebt die Aufnahmezeit NICHT',
+      );
     });
 
     test('ohne Angabe in der Datei bleibt die Spalte leer', () async {
@@ -143,46 +147,51 @@ void main() {
       expect((await db.assetById(e.assetId!))!.zeitversatzMinuten, isNull);
     });
 
-    test('der Nachtrag holt ihn im selben Lauf wie die Datumsherkunft',
-        () async {
-      // Der springende Punkt: Die Datei ist fuer die Frage nach dem
-      // Aufnahmedatum ohnehin offen. Ein eigener Lauf hiesse,
-      // achttausend Dateien ein zweites Mal zu lesen.
-      for (final (id, versatz) in [('a', '+04:30'), ('b', null)]) {
-        await db.insertAsset(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/2013/07/$id.jpg',
-          checksum: 'pruef-$id',
+    test(
+      'der Nachtrag holt ihn im selben Lauf wie die Datumsherkunft',
+      () async {
+        // Der springende Punkt: Die Datei ist fuer die Frage nach dem
+        // Aufnahmedatum ohnehin offen. Ein eigener Lauf hiesse,
+        // achttausend Dateien ein zweites Mal zu lesen.
+        for (final (id, versatz) in [('a', '+04:30'), ('b', null)]) {
+          await db.insertAsset(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/2013/07/$id.jpg',
+              checksum: 'pruef-$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2013, 7, 4, 15, 22, 8),
+              importedAt: DateTime(2026),
+            ),
+          );
+          final datei = paths.absolute('originals/2013/07/$id.jpg');
+          await datei.parent.create(recursive: true);
+          await datei.writeAsBytes(jpeg(versatz: versatz, inhalt: id.hashCode));
+        }
+
+        await for (final _ in library.backfillDatumsherkunft()) {}
+
+        expect((await db.assetById('a'))!.zeitversatzMinuten, 270);
+        expect((await db.assetById('b'))!.zeitversatzMinuten, isNull);
+        // Und die Datumsherkunft ist im selben Zug mit erledigt.
+        expect(await db.countDatumsherkunft(), 0);
+        expect((await db.assetById('a'))!.datumGeschaetzt, isFalse);
+      },
+    );
+
+    test('ein zweiter Lauf nimmt einen weggefallenen Versatz zurück', () async {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'a',
+          originalFileName: 'a.jpg',
+          relativePath: 'originals/2013/07/a.jpg',
+          checksum: 'pruef-a',
           type: 'IMAGE',
-          fileCreatedAt: DateTime(2013, 7, 4, 15, 22, 8),
+          fileCreatedAt: DateTime(2013, 7, 4),
           importedAt: DateTime(2026),
-        ));
-        final datei = paths.absolute('originals/2013/07/$id.jpg');
-        await datei.parent.create(recursive: true);
-        await datei.writeAsBytes(jpeg(versatz: versatz, inhalt: id.hashCode));
-      }
-
-      await for (final _ in library.backfillDatumsherkunft()) {}
-
-      expect((await db.assetById('a'))!.zeitversatzMinuten, 270);
-      expect((await db.assetById('b'))!.zeitversatzMinuten, isNull);
-      // Und die Datumsherkunft ist im selben Zug mit erledigt.
-      expect(await db.countDatumsherkunft(), 0);
-      expect((await db.assetById('a'))!.datumGeschaetzt, isFalse);
-    });
-
-    test('ein zweiter Lauf nimmt einen weggefallenen Versatz zurück',
-        () async {
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'a',
-        originalFileName: 'a.jpg',
-        relativePath: 'originals/2013/07/a.jpg',
-        checksum: 'pruef-a',
-        type: 'IMAGE',
-        fileCreatedAt: DateTime(2013, 7, 4),
-        importedAt: DateTime(2026),
-      ));
+        ),
+      );
       final datei = paths.absolute('originals/2013/07/a.jpg');
       await datei.parent.create(recursive: true);
       await datei.writeAsBytes(jpeg(versatz: '+04:30'));

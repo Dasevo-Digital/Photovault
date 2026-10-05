@@ -21,10 +21,11 @@ void main() {
   /// Welche Tasten [rasterbedienung.dart] tatsächlich abfängt.
   Set<String> behandelteRastertasten() {
     final quelle = File('lib/widgets/rasterbedienung.dart').readAsStringSync();
-    final rumpf = quelle.substring(quelle.indexOf('KeyEventResult rasterTaste'));
+    final rumpf = quelle.substring(
+      quelle.indexOf('KeyEventResult rasterTaste'),
+    );
     final gefunden = <String>{};
-    for (final m
-        in RegExp(r'LogicalKeyboardKey\.(\w+)').allMatches(rumpf)) {
+    for (final m in RegExp(r'LogicalKeyboardKey\.(\w+)').allMatches(rumpf)) {
       gefunden.add(m.group(1)!);
     }
     // Ziffern kommen nicht als LogicalKeyboardKey vor, sondern über
@@ -48,20 +49,23 @@ void main() {
     '_ziffern6bis9': '6 – 9',
   };
 
-  testWidgets('die Tafel nennt jede Taste, die das Raster abfängt',
-      (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      locale: Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-          body: SingleChildScrollView(child: Tastenkuerzeltafel())),
-    ));
+  testWidgets('die Tafel nennt jede Taste, die das Raster abfängt', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        locale: Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(child: Tastenkuerzeltafel()),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final gezeigt = [
-      for (final w in tester.widgetList<Text>(find.byType(Text)))
-        w.data ?? '',
+      for (final w in tester.widgetList<Text>(find.byType(Text))) w.data ?? '',
     ].join(' | ');
 
     final fehlen = <String>[];
@@ -75,9 +79,13 @@ void main() {
       }
       if (!gezeigt.contains(zeichen)) fehlen.add('$taste -> „$zeichen"');
     }
-    expect(fehlen, isEmpty,
-        reason: 'Diese Tasten tun etwas, stehen aber in keiner Übersicht:\n'
-            '${fehlen.join('\n')}');
+    expect(
+      fehlen,
+      isEmpty,
+      reason:
+          'Diese Tasten tun etwas, stehen aber in keiner Übersicht:\n'
+          '${fehlen.join('\n')}',
+    );
 
     // Und die beiden Mausgriffe, die kein LogicalKeyboardKey sind.
     expect(gezeigt, contains('Umschalt-Klick'));
@@ -87,9 +95,13 @@ void main() {
   test('die Tafel ist nicht nur über „?" erreichbar', () {
     // Der eigentliche Befund: Eine Übersicht der Tastenkürzel hinter einem
     // Tastenkürzel, das nirgends genannt wird, ist keine Übersicht.
-    final einstellungen =
-        File('lib/screens/settings_screen.dart').readAsStringSync();
-    expect(einstellungen, contains('Tastenkuerzeltafel()'),
-        reason: 'die Einstellungen sind der auffindbare Weg dorthin');
+    final einstellungen = File(
+      'lib/screens/settings_screen.dart',
+    ).readAsStringSync();
+    expect(
+      einstellungen,
+      contains('Tastenkuerzeltafel()'),
+      reason: 'die Einstellungen sind der auffindbare Weg dorthin',
+    );
   });
 }

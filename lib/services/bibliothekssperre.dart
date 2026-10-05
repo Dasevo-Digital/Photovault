@@ -104,7 +104,8 @@ class Bibliothekssperre {
       final code = e.osError?.errorCode;
       final grund = '${e.osError?.message ?? e.message} (${code ?? '?'})';
       debugPrint(
-          'Bibliothekssperre nicht prüfbar unter ${wurzel.path}: $grund');
+        'Bibliothekssperre nicht prüfbar unter ${wurzel.path}: $grund',
+      );
       return (zustand: Sperrzustand.unklar, grund: grund);
     }
 
@@ -135,7 +136,8 @@ class Bibliothekssperre {
         }
         final grund = '${e.osError?.message ?? e.message} (${code ?? '?'})';
         debugPrint(
-            'Bibliothekssperre nicht prüfbar unter ${wurzel.path}: $grund');
+          'Bibliothekssperre nicht prüfbar unter ${wurzel.path}: $grund',
+        );
         return (zustand: Sperrzustand.unklar, grund: grund);
       }
     }

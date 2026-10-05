@@ -67,14 +67,18 @@ class Sanduhr {
 
   const Sanduhr(this.knoten, this.kanten);
 
-  double get vonSpalte =>
-      knoten.isEmpty ? 0 : knoten.map((k) => k.spalte).reduce((a, b) => a < b ? a : b);
-  double get bisSpalte =>
-      knoten.isEmpty ? 0 : knoten.map((k) => k.spalte).reduce((a, b) => a > b ? a : b);
-  int get obersteReihe =>
-      knoten.isEmpty ? 0 : knoten.map((k) => k.reihe).reduce((a, b) => a < b ? a : b);
-  int get untersteReihe =>
-      knoten.isEmpty ? 0 : knoten.map((k) => k.reihe).reduce((a, b) => a > b ? a : b);
+  double get vonSpalte => knoten.isEmpty
+      ? 0
+      : knoten.map((k) => k.spalte).reduce((a, b) => a < b ? a : b);
+  double get bisSpalte => knoten.isEmpty
+      ? 0
+      : knoten.map((k) => k.spalte).reduce((a, b) => a > b ? a : b);
+  int get obersteReihe => knoten.isEmpty
+      ? 0
+      : knoten.map((k) => k.reihe).reduce((a, b) => a < b ? a : b);
+  int get untersteReihe => knoten.isEmpty
+      ? 0
+      : knoten.map((k) => k.reihe).reduce((a, b) => a > b ? a : b);
 }
 
 /// Wie viele Generationen die Sanduhr höchstens in jede Richtung zeigt.
@@ -131,14 +135,17 @@ Sanduhr ordneSanduhr(
     for (final k in kinder) {
       final breite = breiteNachUnten(k, stufe + 1, {...pfad});
       if (gesehen.add(k)) {
-        knoten.add(Sanduhrknoten(
-          personId: k,
-          spalte: x + breite / 2 - 0.5,
-          reihe: stufe + 1,
-        ));
+        knoten.add(
+          Sanduhrknoten(
+            personId: k,
+            spalte: x + breite / 2 - 0.5,
+            reihe: stufe + 1,
+          ),
+        );
       }
-      kanten.add(Sanduhrkante(
-          k, id, netz.elternArt(k, id) ?? Verwandtschaft.elternteil));
+      kanten.add(
+        Sanduhrkante(k, id, netz.elternArt(k, id) ?? Verwandtschaft.elternteil),
+      );
       legeNachUnten(k, x, stufe + 1, pfad);
       x += breite;
     }
@@ -162,14 +169,13 @@ Sanduhr ordneSanduhr(
       final versatz = (i == 0 ? -1 : 1) * breite / 2;
       final spalte = mitte + versatz;
       if (gesehen.add(e)) {
-        knoten.add(Sanduhrknoten(
-          personId: e,
-          spalte: spalte,
-          reihe: -(stufe + 1),
-        ));
+        knoten.add(
+          Sanduhrknoten(personId: e, spalte: spalte, reihe: -(stufe + 1)),
+        );
       }
-      kanten.add(Sanduhrkante(
-          id, e, netz.elternArt(id, e) ?? Verwandtschaft.elternteil));
+      kanten.add(
+        Sanduhrkante(id, e, netz.elternArt(id, e) ?? Verwandtschaft.elternteil),
+      );
       legeNachOben(e, spalte, stufe + 1, breite / 2);
     }
   }
@@ -204,15 +210,18 @@ Sanduhr ordneSanduhr(
     // ist das zugleich der Schwager.
     var rechteste = links + breite - 1;
     var seite = 1.0;
-    for (final p in netz.partner(id).toList()
-      ..sort((a, b) => ordnung(a).compareTo(ordnung(b)))) {
+    for (final p
+        in netz.partner(id).toList()
+          ..sort((a, b) => ordnung(a).compareTo(ordnung(b)))) {
       if (!gesehen.add(p)) continue;
-      knoten.add(Sanduhrknoten(
-        personId: p,
-        spalte: spalte + seite,
-        reihe: 0,
-        istPartner: true,
-      ));
+      knoten.add(
+        Sanduhrknoten(
+          personId: p,
+          spalte: spalte + seite,
+          reihe: 0,
+          istPartner: true,
+        ),
+      );
       kanten.add(Sanduhrkante(id, p, Verwandtschaft.partner));
       if (spalte + seite > rechteste) rechteste = spalte + seite;
       seite += 1;
@@ -228,8 +237,9 @@ Sanduhr ordneSanduhr(
     final davor = x;
     x = setzeMitglied(mitglied, davor);
     if (mitglied == wurzel) {
-      wurzelSpalte =
-          knoten.firstWhere((k) => k.personId == wurzel && k.reihe == 0).spalte;
+      wurzelSpalte = knoten
+          .firstWhere((k) => k.personId == wurzel && k.reihe == 0)
+          .spalte;
     }
   }
 
@@ -250,8 +260,9 @@ Sanduhr ordneSanduhr(
     if (g == wurzel) continue;
     for (final e in netz.eltern(g)) {
       if (!gezeichnet.contains(e)) continue;
-      kanten.add(Sanduhrkante(
-          g, e, netz.elternArt(g, e) ?? Verwandtschaft.elternteil));
+      kanten.add(
+        Sanduhrkante(g, e, netz.elternArt(g, e) ?? Verwandtschaft.elternteil),
+      );
     }
   }
 

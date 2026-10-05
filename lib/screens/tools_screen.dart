@@ -45,7 +45,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
   // einmalig statt inline in build() abgefragt, damit ein FutureBuilder
   // nicht bei jedem Rebuild neu in den Ladezustand zurückfällt.
   late final Future<({bool bereit, List<String> fehlende})>
-      _bildwerkzeugstandFuture = NativeImageConverter.bildwerkzeugstand();
+  _bildwerkzeugstandFuture = NativeImageConverter.bildwerkzeugstand();
 
   /// Wie viele Serien darauf warten, zu Stapeln zu werden.
   ///
@@ -105,18 +105,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
       melde.hinweis(AppTexte.of(context).werkzKeineUnbewerteten);
       return;
     }
-    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: assets,
-        initialIndex: 0,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
-        cullingMode: true,
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: assets,
+          initialIndex: 0,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          cullingMode: true,
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _importSecurePackage() async {
@@ -127,18 +129,27 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
     final path = result?.files.single.path;
     if (path == null || !mounted) return;
-    final passphrase = await showEnterPassphraseDialog(context,
-        title: AppTexte.of(context).sicherTeilenImportPassphrase);
+    final passphrase = await showEnterPassphraseDialog(
+      context,
+      title: AppTexte.of(context).sicherTeilenImportPassphrase,
+    );
     if (passphrase == null || !mounted) return;
     setState(() => _shareImporting = true);
     try {
       final service = SecureShareService(
-          ExportService(widget.library.paths, library: widget.library));
+        ExportService(widget.library.paths, library: widget.library),
+      );
       final imported = await service.importPackage(
-          File(path), passphrase, widget.library.importService);
+        File(path),
+        passphrase,
+        widget.library.importService,
+      );
       if (mounted) {
-        melde.erfolg(AppTexte.of(context)
-            .sicherTeilenImportFertig(imported.imported, imported.duplicates));
+        melde.erfolg(
+          AppTexte.of(
+            context,
+          ).sicherTeilenImportFertig(imported.imported, imported.duplicates),
+        );
       }
     } on SharePackageExpired catch (_) {
       if (mounted) {
@@ -147,7 +158,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
     } catch (error) {
       if (mounted) {
         melde.warnung(
-            AppTexte.of(context).sicherTeilenImportFehler(error.toString()));
+          AppTexte.of(context).sicherTeilenImportFehler(error.toString()),
+        );
       }
     } finally {
       if (mounted) setState(() => _shareImporting = false);
@@ -178,9 +190,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
               subtitle: Text(t.werkzZuAufgabenText),
               isThreeLine: true,
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => BackgroundTasksScreen(library: widget.library),
-              )),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      BackgroundTasksScreen(library: widget.library),
+                ),
+              ),
             ),
           ),
           Card(
@@ -190,9 +205,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
               subtitle: Text(t.gesundheitWerkzeugText),
               isThreeLine: true,
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => LibraryHealthScreen(library: widget.library),
-              )),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LibraryHealthScreen(library: widget.library),
+                ),
+              ),
             ),
           ),
           Card(
@@ -211,8 +228,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittStatistik,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittStatistik,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.bar_chart_outlined),
@@ -222,13 +241,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                    builder: (_) => StatisticsScreen(library: widget.library)),
+                  builder: (_) => StatisticsScreen(library: widget.library),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittGesichtserkennung,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittGesichtserkennung,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           // Nur noch der Regler: Das Scannen selbst ist eine Aufgabe. Der
           // Regler dagegen ist eine Einstellung, die entscheidet, wie
           // gefundene Gesichter zu Personen zusammengelegt werden.
@@ -236,14 +258,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                      AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.xs,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
                         flex: 2,
-                        child: Text(t.werkzSchwelleLabel,
-                            style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          t.werkzSchwelleLabel,
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       ),
                       Expanded(
                         flex: 3,
@@ -265,27 +293,35 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         ),
                       ),
                       SizedBox(
-                          width: 36,
-                          child: Text(_threshold.toStringAsFixed(2))),
+                        width: 36,
+                        child: Text(_threshold.toStringAsFixed(2)),
+                      ),
                     ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
                   child: Text(
                     t.werkzSchwelleErklaerung,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittVorschau,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittVorschau,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           // Eine Auskunft, kein Vorgang: ob die Umwandlung für HEIC und RAW
           // überhaupt einsatzbereit ist. Das Erzeugen der Vorschaubilder
           // selbst ist eine Aufgabe.
@@ -302,12 +338,13 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 final ueberWerkzeuge = !Platform.isMacOS;
                 final text = bereit
                     ? (ueberWerkzeuge
-                        ? t.werkzHeicWerkzeugeAktiv
-                        : t.werkzHeicAktiv)
+                          ? t.werkzHeicWerkzeugeAktiv
+                          : t.werkzHeicAktiv)
                     : (ueberWerkzeuge
-                        ? t.werkzHeicWerkzeugeFehlen(
-                            (stand?.fehlende ?? const <String>[]).join(', '))
-                        : t.werkzHeicInaktiv);
+                          ? t.werkzHeicWerkzeugeFehlen(
+                              (stand?.fehlende ?? const <String>[]).join(', '),
+                            )
+                          : t.werkzHeicInaktiv);
                 return ListTile(
                   leading: Icon(
                     bereit ? Icons.check_circle_outline : Icons.error_outline,
@@ -323,8 +360,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittOrte,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittOrte,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.route_outlined),
@@ -332,14 +371,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
               subtitle: Text(t.werkzGpxText),
               isThreeLine: true,
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => GpxVerortungScreen(library: widget.library),
-              )),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => GpxVerortungScreen(library: widget.library),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittKamera,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittKamera,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Card(
             child: Column(
               children: [
@@ -351,8 +394,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            CameraPresetsScreen(library: widget.library)),
+                      builder: (_) =>
+                          CameraPresetsScreen(library: widget.library),
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -364,8 +408,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            ExportPresetsScreen(library: widget.library)),
+                      builder: (_) =>
+                          ExportPresetsScreen(library: widget.library),
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -377,8 +422,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            StaubsucheScreen(library: widget.library)),
+                      builder: (_) => StaubsucheScreen(library: widget.library),
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -390,16 +435,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            AutomationRulesScreen(library: widget.library)),
+                      builder: (_) =>
+                          AutomationRulesScreen(library: widget.library),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittBibliothek,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittBibliothek,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Card(
             child: Column(
               children: [
@@ -419,8 +467,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            DuplicatesScreen(library: widget.library)),
+                      builder: (_) => DuplicatesScreen(library: widget.library),
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -443,7 +491,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             child: Text(
                               t.werkzStapelGefunden(zahl),
                               style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary),
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           );
                         },
@@ -462,8 +511,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             return const SizedBox.shrink();
                           }
                           return Padding(
-                            padding:
-                                const EdgeInsets.only(right: AppSpacing.sm),
+                            padding: const EdgeInsets.only(
+                              right: AppSpacing.sm,
+                            ),
                             child: Badge(label: Text('$zahl')),
                           );
                         },
@@ -472,9 +522,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ],
                   ),
                   onTap: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
                         builder: (_) =>
-                            StackReviewScreen(library: widget.library)));
+                            StackReviewScreen(library: widget.library),
+                      ),
+                    );
                     if (mounted) setState(() => _serienzahl = _zaehleSerien());
                   },
                 ),
@@ -496,7 +549,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             child: Text(
                               t.ortVorschlagAlleUebernehmen(zahl),
                               style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary),
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           );
                         },
@@ -515,8 +569,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             return const SizedBox.shrink();
                           }
                           return Padding(
-                            padding:
-                                const EdgeInsets.only(right: AppSpacing.sm),
+                            padding: const EdgeInsets.only(
+                              right: AppSpacing.sm,
+                            ),
                             child: Badge(label: Text('$zahl')),
                           );
                         },
@@ -525,12 +580,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ],
                   ),
                   onTap: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
                         builder: (_) =>
-                            OrtsvorschlaegeScreen(library: widget.library)));
+                            OrtsvorschlaegeScreen(library: widget.library),
+                      ),
+                    );
                     if (mounted) {
                       setState(
-                          () => _ortsvorschlagszahl = _zaehleOrtsvorschlaege());
+                        () => _ortsvorschlagszahl = _zaehleOrtsvorschlaege(),
+                      );
                     }
                   },
                 ),
@@ -543,16 +602,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) =>
-                            IntegrityCheckScreen(library: widget.library)),
+                      builder: (_) =>
+                          IntegrityCheckScreen(library: widget.library),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text(t.werkzAbschnittInterop,
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.werkzAbschnittInterop,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.file_open_outlined),
@@ -562,7 +624,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                    builder: (_) => XmpImportScreen(library: widget.library)),
+                  builder: (_) => XmpImportScreen(library: widget.library),
+                ),
               ),
             ),
           ),

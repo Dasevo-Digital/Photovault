@@ -207,17 +207,21 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
   void _onScroll() {
     if (!widget.controller.hasClients) return;
     final maxExtent = widget.controller.position.maxScrollExtent;
-    final fraction = maxExtent <= 0 ? 0.0 : (widget.controller.position.pixels / maxExtent).clamp(0.0, 1.0);
+    final fraction = maxExtent <= 0
+        ? 0.0
+        : (widget.controller.position.pixels / maxExtent).clamp(0.0, 1.0);
     if ((fraction - _scrollFraction).abs() > 0.001) {
       setState(() => _scrollFraction = fraction);
     }
   }
 
-  double _monthHeight(int key) =>
-      timelineMonthGroupHeight(widget.groups[key]!, widget.gridWidth,
-          kachelbreite: widget.kachelbreite,
-          form: widget.form,
-          mitTagen: widget.mitTagen);
+  double _monthHeight(int key) => timelineMonthGroupHeight(
+    widget.groups[key]!,
+    widget.gridWidth,
+    kachelbreite: widget.kachelbreite,
+    form: widget.form,
+    mitTagen: widget.mitTagen,
+  );
 
   /// Kumulierte Pixel-Offsets für den Start jedes Monats (gleiche
   /// Reihenfolge wie [orderedKeys]), letzter Eintrag = geschätzte
@@ -234,7 +238,9 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
 
   void _handleDrag(double localY, double trackHeight) {
     if (widget.orderedKeys.isEmpty || !widget.controller.hasClients) return;
-    final fraction = trackHeight <= 0 ? 0.0 : (localY / trackHeight).clamp(0.0, 1.0);
+    final fraction = trackHeight <= 0
+        ? 0.0
+        : (localY / trackHeight).clamp(0.0, 1.0);
     final offsets = _cumulativeOffsets;
     final totalHeight = offsets.last + timelineTrailingHeight;
     final targetPixels = fraction * totalHeight;
@@ -262,8 +268,9 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
   /// kam „202609" heraus – an jedem beschrifteten Tag dieselbe Zahl.
   String _festeBeschriftung(int index) {
     if (!widget.tageweise) return '${widget.orderedKeys[index] ~/ 100}';
-    return DateFormat.d(Localizations.localeOf(context).toString())
-        .format(widget.groups[widget.orderedKeys[index]]!.first.fileCreatedAt);
+    return DateFormat.d(
+      Localizations.localeOf(context).toString(),
+    ).format(widget.groups[widget.orderedKeys[index]]!.first.fileCreatedAt);
   }
 
   @override
@@ -280,13 +287,17 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
         final trackHeight = constraints.maxHeight;
 
         double topFor(int index) {
-          final fraction = totalHeight <= 0 ? 0.0 : offsets[index] / totalHeight;
+          final fraction = totalHeight <= 0
+              ? 0.0
+              : offsets[index] / totalHeight;
           return fraction * trackHeight;
         }
 
         final aktiv = _aktiverIndex(trackHeight);
-        final aktivY =
-            ((_dragFraction ?? _scrollFraction) * trackHeight).clamp(0.0, trackHeight);
+        final aktivY = ((_dragFraction ?? _scrollFraction) * trackHeight).clamp(
+          0.0,
+          trackHeight,
+        );
 
         // Erst die Anwärter sammeln, dann auswählen, was hineinpasst:
         // über Monate die Jahresanfänge, über Tage jeder Tag.
@@ -314,8 +325,10 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
           value: _labelFor(widget.orderedKeys[aktiv]),
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onVerticalDragStart: (d) => _handleDrag(d.localPosition.dy, trackHeight),
-            onVerticalDragUpdate: (d) => _handleDrag(d.localPosition.dy, trackHeight),
+            onVerticalDragStart: (d) =>
+                _handleDrag(d.localPosition.dy, trackHeight),
+            onVerticalDragUpdate: (d) =>
+                _handleDrag(d.localPosition.dy, trackHeight),
             onVerticalDragEnd: (_) => setState(() => _dragFraction = null),
             onTapDown: (d) => _handleDrag(d.localPosition.dy, trackHeight),
             child: DecoratedBox(
@@ -350,11 +363,17 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
                       )!;
                       return Positioned(
                         right: _punktSpalte + 0.5 - groesse / 2,
-                        top: (y - groesse / 2).clamp(0.0, trackHeight - groesse),
+                        top: (y - groesse / 2).clamp(
+                          0.0,
+                          trackHeight - groesse,
+                        ),
                         child: Container(
                           width: groesse,
                           height: groesse,
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: farbe),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: farbe,
+                          ),
                         ),
                       );
                     }(),
@@ -364,7 +383,10 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
                         final nah = _naehegrad((y - aktivY).abs());
                         return Positioned(
                           right: _punktSpalte + 8,
-                          top: (y - _zeilenhoehe / 2).clamp(0.0, trackHeight - _zeilenhoehe),
+                          top: (y - _zeilenhoehe / 2).clamp(
+                            0.0,
+                            trackHeight - _zeilenhoehe,
+                          ),
                           child: Text(
                             _festeBeschriftung(i),
                             style: TextStyle(
@@ -373,8 +395,13 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
                               // In der Nähe der Position heller – die
                               // Leiste öffnet sich dort, wo man hinsieht.
                               color: Color.lerp(
-                                  DunkleFlaeche.hinweis, DunkleFlaeche.text, nah)!,
-                              fontWeight: nah > 0.5 ? FontWeight.w700 : FontWeight.w500,
+                                DunkleFlaeche.hinweis,
+                                DunkleFlaeche.text,
+                                nah,
+                              )!,
+                              fontWeight: nah > 0.5
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                         );

@@ -34,8 +34,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -43,16 +44,19 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<void> aufnahme(String id, {String type = 'IMAGE'}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c_$id',
-            type: type,
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-          ));
+  Future<void> aufnahme(String id, {String type = 'IMAGE'}) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'c_$id',
+          type: type,
+          fileCreatedAt: DateTime(2026, 1, 1),
+          importedAt: DateTime(2026, 1, 1),
+        ),
+      );
 
   Future<void> takte(WidgetTester tester) async {
     for (var i = 0; i < 8; i++) {
@@ -65,34 +69,45 @@ void main() {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: AlbumsScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: AlbumsScreen(library: library),
+      ),
+    );
     await takte(tester);
   }
 
-  testWidgets('ohne alles sagt der Reiter auch, was ein kluges Album ist',
-      (tester) async {
+  testWidgets('ohne alles sagt der Reiter auch, was ein kluges Album ist', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       await zeige(tester);
       expect(find.text('Noch keine Alben vorhanden.'), findsOneWidget);
-      expect(find.textContaining('Ein intelligentes Album ist eine gespeicherte Suche'),
-          findsOneWidget);
+      expect(
+        find.textContaining(
+          'Ein intelligentes Album ist eine gespeicherte Suche',
+        ),
+        findsOneWidget,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(milliseconds: 1));
     });
   });
 
-  testWidgets('eine gespeicherte Suche steht als Kachel im Albenreiter',
-      (tester) async {
+  testWidgets('eine gespeicherte Suche steht als Kachel im Albenreiter', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       await aufnahme('f1');
       await aufnahme('v1', type: 'VIDEO');
-      await db.createSavedSearch('s1', 'Nur Videos',
-          const SearchFilters(mediaType: MediaTypeFilter.video));
+      await db.createSavedSearch(
+        's1',
+        'Nur Videos',
+        const SearchFilters(mediaType: MediaTypeFilter.video),
+      );
       await zeige(tester);
 
       expect(find.text('Nur Videos'), findsOneWidget);
@@ -118,13 +133,22 @@ void main() {
     });
   });
 
-  testWidgets('neben gewoehnlichen Alben bekommen beide eine Ueberschrift',
-      (tester) async {
+  testWidgets('neben gewoehnlichen Alben bekommen beide eine Ueberschrift', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
-      await db.createAlbum(AlbumsCompanion.insert(
-          id: 'a1', name: 'Urlaub', createdAt: DateTime(2026, 1, 1)));
-      await db.createSavedSearch('s1', 'Nur Videos',
-          const SearchFilters(mediaType: MediaTypeFilter.video));
+      await db.createAlbum(
+        AlbumsCompanion.insert(
+          id: 'a1',
+          name: 'Urlaub',
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
+      await db.createSavedSearch(
+        's1',
+        'Nur Videos',
+        const SearchFilters(mediaType: MediaTypeFilter.video),
+      );
       await zeige(tester);
 
       expect(find.text('Intelligente Alben'), findsOneWidget);

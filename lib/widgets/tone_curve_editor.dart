@@ -82,9 +82,9 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
       Offset(p.input * size.width, (1 - p.output) * size.height);
 
   CurvePoint _zuKurve(Offset o, Size size) => CurvePoint(
-        (o.dx / size.width).clamp(0.0, 1.0),
-        (1 - o.dy / size.height).clamp(0.0, 1.0),
-      );
+    (o.dx / size.width).clamp(0.0, 1.0),
+    (1 - o.dy / size.height).clamp(0.0, 1.0),
+  );
 
   void _setze(List<CurvePoint> neu) {
     setState(() => _arbeit = neu);
@@ -93,7 +93,9 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
 
   int? _treffer(Offset stelle, Size size) {
     for (var i = 0; i < _punkte.length; i++) {
-      if ((_zuBild(_punkte[i], size) - stelle).distance <= _fangradius) return i;
+      if ((_zuBild(_punkte[i], size) - stelle).distance <= _fangradius) {
+        return i;
+      }
     }
     return null;
   }
@@ -121,8 +123,14 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
     if (index < 0) index = neu.length;
     // Zu dicht an einem Nachbarn: lieber gar nichts, als einen Punkt
     // anzulegen, der sich anschliessend nicht mehr greifen lässt.
-    if (index > 0 && neuerPunkt.input - neu[index - 1].input < _mindestabstand) return;
-    if (index < neu.length && neu[index].input - neuerPunkt.input < _mindestabstand) return;
+    if (index > 0 &&
+        neuerPunkt.input - neu[index - 1].input < _mindestabstand) {
+      return;
+    }
+    if (index < neu.length &&
+        neu[index].input - neuerPunkt.input < _mindestabstand) {
+      return;
+    }
 
     neu.insert(index, neuerPunkt);
     _gezogen = index;
@@ -156,7 +164,9 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
     final treffer = _treffer(stelle, size);
     // Die Endpunkte bleiben: Ohne sie hätte die Kurve keinen Anfang und
     // kein Ende.
-    if (treffer == null || treffer == 0 || treffer == _punkte.length - 1) return;
+    if (treffer == null || treffer == 0 || treffer == _punkte.length - 1) {
+      return;
+    }
     final neu = [..._punkte]..removeAt(treffer);
     _gezogen = null;
     _setze(neu);
@@ -172,7 +182,8 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final kanalIstNeutral = _punkte.length == 2 &&
+    final kanalIstNeutral =
+        _punkte.length == 2 &&
         _punkte.first == const CurvePoint(0, 0) &&
         _punkte.last == const CurvePoint(1, 1);
 
@@ -197,8 +208,10 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(AppTexte.of(context).einstZuruecksetzen,
-                  style: const TextStyle(fontSize: 11)),
+              child: Text(
+                AppTexte.of(context).einstZuruecksetzen,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
           ],
         ),
@@ -219,7 +232,8 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
                   key: toneCurveRasterKey,
                   behavior: HitTestBehavior.opaque,
                   onPanDown: (d) => _abgesetzt = d.localPosition,
-                  onPanStart: (d) => _beginn(_abgesetzt ?? d.localPosition, size),
+                  onPanStart: (d) =>
+                      _beginn(_abgesetzt ?? d.localPosition, size),
                   onPanUpdate: (d) => _zieh(d.localPosition, size),
                   onPanEnd: (_) {
                     // Arbeitskopie verwerfen: Ab hier ist widget.curve
@@ -252,10 +266,22 @@ class _ToneCurveEditorState extends State<ToneCurveEditor> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           segments: const [
-            ButtonSegment(value: CurveChannel.zusammen, label: Text('RGB', style: TextStyle(fontSize: 11))),
-            ButtonSegment(value: CurveChannel.rot, label: Text('R', style: TextStyle(fontSize: 11))),
-            ButtonSegment(value: CurveChannel.gruen, label: Text('G', style: TextStyle(fontSize: 11))),
-            ButtonSegment(value: CurveChannel.blau, label: Text('B', style: TextStyle(fontSize: 11))),
+            ButtonSegment(
+              value: CurveChannel.zusammen,
+              label: Text('RGB', style: TextStyle(fontSize: 11)),
+            ),
+            ButtonSegment(
+              value: CurveChannel.rot,
+              label: Text('R', style: TextStyle(fontSize: 11)),
+            ),
+            ButtonSegment(
+              value: CurveChannel.gruen,
+              label: Text('G', style: TextStyle(fontSize: 11)),
+            ),
+            ButtonSegment(
+              value: CurveChannel.blau,
+              label: Text('B', style: TextStyle(fontSize: 11)),
+            ),
           ],
           selected: {_kanal},
           onSelectionChanged: (auswahl) => setState(() {
@@ -373,7 +399,11 @@ class _ToneCurvePainter extends CustomPainter {
         (1 - punkte[i].output) * size.height,
       );
       final aktiv = i == gezogen;
-      canvas.drawCircle(stelle, aktiv ? 6 : 4.5, Paint()..color = _kanalFarben[kanal]!);
+      canvas.drawCircle(
+        stelle,
+        aktiv ? 6 : 4.5,
+        Paint()..color = _kanalFarben[kanal]!,
+      );
       canvas.drawCircle(
         stelle,
         aktiv ? 6 : 4.5,

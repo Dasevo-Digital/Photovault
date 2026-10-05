@@ -56,9 +56,9 @@ void main() {
         ..add((ByteData(4)..setUint32(0, 0)).buffer.asUint8List()) // Sprache
         ..add(text.codeUnits);
       final dataKasten = kasten('data', daten.toBytes());
-      b.add((ByteData(4)..setUint32(0, 8 + dataKasten.length))
-          .buffer
-          .asUint8List());
+      b.add(
+        (ByteData(4)..setUint32(0, 8 + dataKasten.length)).buffer.asUint8List(),
+      );
       b.add((ByteData(4)..setUint32(0, nummer)).buffer.asUint8List());
       b.add(dataKasten);
     });
@@ -71,11 +71,13 @@ void main() {
   Uint8List appleMoov(String ort, {bool mitFassungsbytes = false}) {
     final inneres = BytesBuilder()
       ..add(kasten('hdlr', List.filled(24, 0)))
-      ..add(keysKasten([
-        'com.apple.quicktime.location.accuracy.horizontal',
-        'com.apple.quicktime.make',
-        'com.apple.quicktime.location.ISO6709',
-      ]))
+      ..add(
+        keysKasten([
+          'com.apple.quicktime.location.accuracy.horizontal',
+          'com.apple.quicktime.make',
+          'com.apple.quicktime.location.ISO6709',
+        ]),
+      )
       ..add(ilstKasten({1: '13.9', 2: 'Apple', 3: ort}));
     final metaInhalt = BytesBuilder();
     if (mitFassungsbytes) metaInhalt.add(const [0, 0, 0, 0]);
@@ -91,9 +93,7 @@ void main() {
       ..add((ByteData(2)..setUint16(0, ort.length)).buffer.asUint8List())
       ..add(const [0xFF, 0x7F])
       ..add(ort.codeUnits);
-    return kasten('moov', [
-      ...kasten('udta', kasten('©xyz', nutz.toBytes())),
-    ]);
+    return kasten('moov', [...kasten('udta', kasten('©xyz', nutz.toBytes()))]);
   }
 
   Uint8List lociMoov(double breite, double laenge, {String name = ''}) {
@@ -169,7 +169,8 @@ void main() {
       // MP4 gegen QuickTime. Wer sich für eine Fassung entscheidet, liest
       // die andere als Müll.
       final o = ortAusMoov(
-          appleMoov('+52.2375+010.5955/', mitFassungsbytes: true))!;
+        appleMoov('+52.2375+010.5955/', mitFassungsbytes: true),
+      )!;
       expect(o.breite, closeTo(52.2375, 1e-9));
     });
 
@@ -219,8 +220,10 @@ void main() {
     });
 
     test('ein moov ohne Ort ergibt null statt einer Ausnahme', () {
-      expect(ortAusMoov(kasten('moov', kasten('mvhd', List.filled(100, 0)))),
-          isNull);
+      expect(
+        ortAusMoov(kasten('moov', kasten('mvhd', List.filled(100, 0)))),
+        isNull,
+      );
       expect(ortAusMoov(Uint8List(0)), isNull);
     });
   });
@@ -244,14 +247,16 @@ void main() {
 
     test('moov hinter mdat wird gefunden', () async {
       final o = await leseVideoGps(
-          datei('a.mov', appleMoov('+52.2375+010.5955/')));
+        datei('a.mov', appleMoov('+52.2375+010.5955/')),
+      );
       expect(o, isNotNull);
       expect(o!.breite, closeTo(52.2375, 1e-9));
     });
 
     test('ein Video ohne Ort ergibt null', () async {
       final o = await leseVideoGps(
-          datei('b.mov', kasten('moov', kasten('mvhd', List.filled(80, 0)))));
+        datei('b.mov', kasten('moov', kasten('mvhd', List.filled(80, 0)))),
+      );
       expect(o, isNull);
     });
 
@@ -262,17 +267,28 @@ void main() {
     test('eine abgeschnittene Datei wirft nicht', () async {
       final voll = datei('c.mov', xyzMoov('+52.0+10.0'));
       final bytes = voll.readAsBytesSync();
-      File('${temp.path}/halb.mov')
-          .writeAsBytesSync(bytes.sublist(0, bytes.length - 20));
+      File(
+        '${temp.path}/halb.mov',
+      ).writeAsBytesSync(bytes.sublist(0, bytes.length - 20));
       expect(await leseVideoGps(File('${temp.path}/halb.mov')), isNull);
     });
 
     test('eine erfundene Kastenlänge läuft nicht ins Leere', () async {
       // Vier Byte Länge, die weit über das Dateiende zeigt.
       final f = File('${temp.path}/kaputt.mov');
-      f.writeAsBytesSync(Uint8List.fromList([
-        0xFF, 0xFF, 0xFF, 0xFF, ...'moov'.codeUnits, 1, 2, 3, 4,
-      ]));
+      f.writeAsBytesSync(
+        Uint8List.fromList([
+          0xFF,
+          0xFF,
+          0xFF,
+          0xFF,
+          ...'moov'.codeUnits,
+          1,
+          2,
+          3,
+          4,
+        ]),
+      );
       expect(await leseVideoGps(f), isNull);
     });
 

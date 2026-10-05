@@ -25,7 +25,9 @@ class Fortschrittsbalken extends StatelessWidget {
       children: [
         Text(
           t.fortschrittLaender(
-              fortschritt.laenderBesucht, fortschritt.laenderGesamt),
+            fortschritt.laenderBesucht,
+            fortschritt.laenderGesamt,
+          ),
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppSpacing.xs),

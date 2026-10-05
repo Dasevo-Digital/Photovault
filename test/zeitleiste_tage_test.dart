@@ -30,8 +30,9 @@ import 'package:photo_vault/widgets/timeline_grid_layout.dart';
 import 'package:photo_vault/widgets/timeline_scrubber.dart';
 
 final _einPunktPng = base64Decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAE'
-    'hQGAhKmMIQAAAABJRU5ErkJggg==');
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAE'
+  'hQGAhKmMIQAAAABJRU5ErkJggg==',
+);
 
 const double _fensterBreite = 1600;
 const double _fensterHoehe = 1000;
@@ -75,11 +76,14 @@ Rasterzeile _foto(String id, DateTime wann, {int b = 3000, int h = 2000}) =>
 
 /// Ein Tag mit [anzahl] Fotos, absteigend innerhalb des Tages.
 List<Rasterzeile> _tag(DateTime tag, int anzahl) => [
-      for (var i = 0; i < anzahl; i++)
-        _foto('${tag.year}${tag.month}${tag.day}_$i',
-            DateTime(tag.year, tag.month, tag.day, 20 - i % 12, i % 60),
-            b: i.isEven ? 3000 : 2000, h: i.isEven ? 2000 : 3000),
-    ];
+  for (var i = 0; i < anzahl; i++)
+    _foto(
+      '${tag.year}${tag.month}${tag.day}_$i',
+      DateTime(tag.year, tag.month, tag.day, 20 - i % 12, i % 60),
+      b: i.isEven ? 3000 : 2000,
+      h: i.isEven ? 2000 : 3000,
+    ),
+];
 
 /// Vierzig Monate, gemischt wie die echte Bibliothek: viele Tage mit
 /// einem bis drei Fotos, dazwischen ein grosser.
@@ -104,8 +108,11 @@ void main() {
         final zeilen = zeitleisteTageszeilen(monat, _gitter, form: form);
         expect(zeilen.first, isA<TagesblockZeile>());
         final erste = zeilen.first as TagesblockZeile;
-        expect([for (final b in erste.bloecke) b.anzahl], [1, 2, 3],
-            reason: 'drei kleine Tage passen in 1536 Punkte');
+        expect(
+          [for (final b in erste.bloecke) b.anzahl],
+          [1, 2, 3],
+          reason: 'drei kleine Tage passen in 1536 Punkte',
+        );
         expect(zeilen[1], isA<TageskopfZeile>());
         expect(zeilen.whereType<TagesbildZeile>().length, greaterThan(1));
         expect(zeilen.last, isA<TagesblockZeile>());
@@ -118,28 +125,33 @@ void main() {
           for (final z in zeilen)
             ...switch (z) {
               TagesblockZeile(:final bloecke) => [
-                  for (final b in bloecke)
-                    for (final p in b.reihe.plaetze) p.index,
-                ],
+                for (final b in bloecke)
+                  for (final p in b.reihe.plaetze) p.index,
+              ],
               TagesbildZeile(:final reihe) => [
-                  for (final p in reihe.plaetze) p.index,
-                ],
+                for (final p in reihe.plaetze) p.index,
+              ],
               TageskopfZeile() => const <int>[],
             },
         ];
         expect(indizes, [for (var i = 0; i < monat.length; i++) i]);
-        expect(tageszeilenLaengen(zeilen).fold<int>(0, (a, b) => a + b),
-            monat.length);
+        expect(
+          tageszeilenLaengen(zeilen).fold<int>(0, (a, b) => a + b),
+          monat.length,
+        );
       });
 
       test('${form.name}: keine Zeile ist breiter als das Raster', () {
         for (final breite in [400.0, 700.0, _gitter]) {
           for (final z in zeitleisteTageszeilen(monat, breite, form: form)) {
             if (z is! TagesblockZeile) continue;
-            final belegt = z.bloecke.fold<double>(0, (a, b) => a + b.breite) +
+            final belegt =
+                z.bloecke.fold<double>(0, (a, b) => a + b.breite) +
                 timelineTagesabstand * (z.bloecke.length - 1);
-            expect(belegt,
-                lessThanOrEqualTo(breite - timelineGridHorizontalPadding + 0.5));
+            expect(
+              belegt,
+              lessThanOrEqualTo(breite - timelineGridHorizontalPadding + 0.5),
+            );
           }
         }
       });
@@ -154,8 +166,9 @@ void main() {
     test('Monatshöhe = Überschrift + Zeilen', () {
       final zeilen = zeitleisteTageszeilen(monat, _gitter);
       expect(
-          timelineMonthGroupHeight(monat, _gitter, mitTagen: true),
-          closeTo(timelineHeaderHeight + tageszeilenHoehe(zeilen), 0.001));
+        timelineMonthGroupHeight(monat, _gitter, mitTagen: true),
+        closeTo(timelineHeaderHeight + tageszeilenHoehe(zeilen), 0.001),
+      );
     });
 
     test('Pfeil nach unten läuft über die Tagesgrenze hinweg', () {
@@ -165,11 +178,12 @@ void main() {
       // Vom dritten Foto der ersten Zeile (zweiter Tag) nach unten: in die
       // erste Reihe des grossen Tages, an dieselbe Stelle.
       final ziel = nachbarkachel(
-          gruppen: [ids],
-          von: ids[2],
-          richtung: Rasterrichtung.runter,
-          spalten: 1,
-          reihenlaengen: [laengen]);
+        gruppen: [ids],
+        von: ids[2],
+        richtung: Rasterrichtung.runter,
+        spalten: 1,
+        reihenlaengen: [laengen],
+      );
       expect(ziel, ids[laengen.first + 2]);
     });
   });
@@ -180,24 +194,40 @@ void main() {
     final heute = DateTime(2026, 3, 30, 9);
 
     test('heute und gestern beim Namen', () {
-      expect(tagesbeschriftung(DateTime(2026, 3, 30, 23), t, 'de', heute: heute),
-          'Heute');
+      expect(
+        tagesbeschriftung(DateTime(2026, 3, 30, 23), t, 'de', heute: heute),
+        'Heute',
+      );
       // Am 29. März 2026 wird auf Sommerzeit umgestellt – der Tag hat 23
       // Stunden, „gestern" muss trotzdem stimmen.
-      expect(tagesbeschriftung(DateTime(2026, 3, 29, 1), t, 'de', heute: heute),
-          'Gestern');
+      expect(
+        tagesbeschriftung(DateTime(2026, 3, 29, 1), t, 'de', heute: heute),
+        'Gestern',
+      );
     });
 
     test('sonst Wochentag und Datum, knapp ohne Wochentag', () {
-      final lang =
-          tagesbeschriftung(DateTime(2026, 3, 2), t, 'de', heute: heute);
-      final knapp = tagesbeschriftung(DateTime(2026, 3, 2), t, 'de',
-          heute: heute, knapp: true);
+      final lang = tagesbeschriftung(
+        DateTime(2026, 3, 2),
+        t,
+        'de',
+        heute: heute,
+      );
+      final knapp = tagesbeschriftung(
+        DateTime(2026, 3, 2),
+        t,
+        'de',
+        heute: heute,
+        knapp: true,
+      );
       expect(lang, contains('Mo'));
       expect(lang, contains('2.'));
       expect(knapp, isNot(contains('Mo')));
-      expect(lang, isNot(contains('2026')),
-          reason: 'das Jahr steht schon in der Monatsüberschrift');
+      expect(
+        lang,
+        isNot(contains('2026')),
+        reason: 'das Jahr steht schon in der Monatsüberschrift',
+      );
     });
   });
 
@@ -226,7 +256,9 @@ void main() {
 
     setUpAll(() async {
       wurzel = Directory.systemTemp.createTempSync('pv_tage_');
-      paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
+      paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'l')),
+      );
       for (final a in _bestand) {
         File(p.join(paths.root.path, a.thumbnailRelativePath!))
           ..parent.createSync(recursive: true)
@@ -236,82 +268,106 @@ void main() {
 
     tearDownAll(() => wurzel.deleteSync(recursive: true));
 
-    Future<void> zeige(WidgetTester tester, Zeitleistenform form,
-        {List<Rasterzeile>? assets, bool nachTag = false}) async {
+    Future<void> zeige(
+      WidgetTester tester,
+      Zeitleistenform form, {
+      List<Rasterzeile>? assets,
+      bool nachTag = false,
+    }) async {
       tester.view.physicalSize = const Size(_fensterBreite, _fensterHoehe);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: Scaffold(
-          body: MonthGroupedAssetGrid(
-            assets: assets ?? _bestand,
-            paths: paths,
-            onTap: (_) {},
-            onHeaderTap: (_) {},
-            form: form,
-            mitTagen: !nachTag,
-            nachTag: nachTag,
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: Scaffold(
+            body: MonthGroupedAssetGrid(
+              assets: assets ?? _bestand,
+              paths: paths,
+              onTap: (_) {},
+              onHeaderTap: (_) {},
+              form: form,
+              mitTagen: !nachTag,
+              nachTag: nachTag,
+            ),
           ),
         ),
-      ));
+      );
       for (var i = 0; i < 12; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 16));
         await tester.pump();
       }
     }
 
-    testWidgets('die Tagesüberschrift ist so hoch, wie die Rechnung annimmt',
-        (tester) async {
+    testWidgets('die Tagesüberschrift ist so hoch, wie die Rechnung annimmt', (
+      tester,
+    ) async {
       await tester.runAsync(() => zeige(tester, Zeitleistenform.quadrate));
       // Erster Tag ist klein: Monatsüberschrift, Tagesüberschrift, Foto.
-      expect(tester.getTopLeft(find.byType(AssetThumbnailTile).first).dy,
-          closeTo(timelineHeaderHeight + timelineTagesKopfHoehe, 0.01));
+      expect(
+        tester.getTopLeft(find.byType(AssetThumbnailTile).first).dy,
+        closeTo(timelineHeaderHeight + timelineTagesKopfHoehe, 0.01),
+      );
     });
 
     for (final form in Zeitleistenform.values) {
-      testWidgets('${form.name}: der gerechnete Sprung trifft',
-          (tester) async {
+      testWidgets('${form.name}: der gerechnete Sprung trifft', (tester) async {
         await tester.runAsync(() => zeige(tester, form));
         final gruppen = monatsgruppen(_bestand);
         // Mitten im grossen Tag eines späten Monats – dort summieren sich
         // Tagesüberschriften und Zeilen von zwanzig Monaten davor.
         final ziel = gruppen.gruppen[gruppen.schluessel[20]]![15];
         final gerechnet = timelineOffsetForAsset(
-            gruppen.schluessel, gruppen.gruppen, _gitter, ziel.id,
-            form: form, mitTagen: true)!;
-        final lage =
-            tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+          gruppen.schluessel,
+          gruppen.gruppen,
+          _gitter,
+          ziel.id,
+          form: form,
+          mitTagen: true,
+        )!;
+        final lage = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
         lage.jumpTo(gerechnet - 300);
         await tester.pump();
         final treffer = find.byWidgetPredicate(
-            (w) => w is AssetThumbnailTile && w.asset.id == ziel.id);
+          (w) => w is AssetThumbnailTile && w.asset.id == ziel.id,
+        );
         expect(treffer, findsOneWidget);
         expect(tester.getTopLeft(treffer).dy, closeTo(300, 1.0));
       });
 
-      testWidgets('${form.name}: ein kleiner Tag springt mit Überschrift',
-          (tester) async {
+      testWidgets('${form.name}: ein kleiner Tag springt mit Überschrift', (
+        tester,
+      ) async {
         await tester.runAsync(() => zeige(tester, form));
         final gruppen = monatsgruppen(_bestand);
         // Das zweite Foto des Zwei-Foto-Tages: Die Rechnung zielt auf den
         // Beginn der Zeile, also auf die Tagesüberschrift darüber.
         final ziel = gruppen.gruppen[gruppen.schluessel[10]]![2];
         final gerechnet = timelineOffsetForAsset(
-            gruppen.schluessel, gruppen.gruppen, _gitter, ziel.id,
-            form: form, mitTagen: true)!;
+          gruppen.schluessel,
+          gruppen.gruppen,
+          _gitter,
+          ziel.id,
+          form: form,
+          mitTagen: true,
+        )!;
         tester
             .state<ScrollableState>(find.byType(Scrollable).first)
             .position
             .jumpTo(gerechnet - 300);
         await tester.pump();
         final treffer = find.byWidgetPredicate(
-            (w) => w is AssetThumbnailTile && w.asset.id == ziel.id);
-        expect(tester.getTopLeft(treffer).dy,
-            closeTo(300 + timelineTagesKopfHoehe, 1.0));
+          (w) => w is AssetThumbnailTile && w.asset.id == ziel.id,
+        );
+        expect(
+          tester.getTopLeft(treffer).dy,
+          closeTo(300 + timelineTagesKopfHoehe, 1.0),
+        );
       });
     }
 
@@ -321,46 +377,61 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
       await tester.runAsync(() async {
-        await tester.pumpWidget(MaterialApp(
-          locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
-          supportedLocales: AppTexte.supportedLocales,
-          home: Scaffold(
-            body: MonthGroupedAssetGrid(
-              assets: _bestand,
-              paths: paths,
-              onTap: (_) {},
-              onHeaderTap: (g) => gewaehlt = g,
-              mitTagen: true,
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppTexte.localizationsDelegates,
+            supportedLocales: AppTexte.supportedLocales,
+            home: Scaffold(
+              body: MonthGroupedAssetGrid(
+                assets: _bestand,
+                paths: paths,
+                onTap: (_) {},
+                onHeaderTap: (g) => gewaehlt = g,
+                mitTagen: true,
+              ),
             ),
           ),
-        ));
+        );
         await tester.pump();
       });
-      final zweiterTag = _bestand.where((a) =>
-          a.fileCreatedAt.year == 2026 &&
-          a.fileCreatedAt.month == 1 &&
-          a.fileCreatedAt.day == 22);
-      final label = tagesbeschriftung(zweiterTag.first.fileCreatedAt,
-          AppTexteDe(), 'de',
-          // Zwei Kacheln sind breiter als die Grenze für die knappe Form.
-          heute: DateTime.now());
+      final zweiterTag = _bestand.where(
+        (a) =>
+            a.fileCreatedAt.year == 2026 &&
+            a.fileCreatedAt.month == 1 &&
+            a.fileCreatedAt.day == 22,
+      );
+      final label = tagesbeschriftung(
+        zweiterTag.first.fileCreatedAt,
+        AppTexteDe(),
+        'de',
+        // Zwei Kacheln sind breiter als die Grenze für die knappe Form.
+        heute: DateTime.now(),
+      );
       await tester.tap(find.text(label).first);
       expect(gewaehlt?.map((a) => a.id), zweiterTag.map((a) => a.id));
     });
 
-    testWidgets(
-        'Zeitstrahl über Tage beschriftet Tage, nicht „202609"',
-        (tester) async {
+    testWidgets('Zeitstrahl über Tage beschriftet Tage, nicht „202609"', (
+      tester,
+    ) async {
       final september = [
         for (final d in [28, 21, 14, 7]) ..._tag(DateTime(2026, 9, d), 30),
       ];
-      await tester.runAsync(() => zeige(tester, Zeitleistenform.quadrate,
-          assets: september, nachTag: true));
+      await tester.runAsync(
+        () => zeige(
+          tester,
+          Zeitleistenform.quadrate,
+          assets: september,
+          nachTag: true,
+        ),
+      );
       expect(find.byType(TimelineScrubber), findsOneWidget);
       final texte = find
           .descendant(
-              of: find.byType(TimelineScrubber), matching: find.byType(Text))
+            of: find.byType(TimelineScrubber),
+            matching: find.byType(Text),
+          )
           .evaluate()
           .map((e) => (e.widget as Text).data)
           .toList();

@@ -16,7 +16,9 @@ void main() {
 
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_belegung_');
-    paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'library')),
+    );
   });
 
   tearDown(() => wurzel.deleteSync(recursive: true));
@@ -28,8 +30,9 @@ void main() {
   }
 
   void legeNeben(String name, int bytes) {
-    File(p.join(paths.root.parent.path, name))
-        .writeAsBytesSync(List.filled(bytes, 7));
+    File(
+      p.join(paths.root.parent.path, name),
+    ).writeAsBytesSync(List.filled(bytes, 7));
   }
 
   test('eine leere Bibliothek belegt nichts', () async {
@@ -83,12 +86,15 @@ void main() {
     final b = await paths.belegung();
     // Originale zuerst, Datenbank und Sonstiges zuletzt - unabhaengig
     // davon, in welcher Reihenfolge die Dateien gefunden wurden.
-    expect(b.posten.map((e) => e.name),
-        ['originals', 'thumbnails', 'trash', 'datenbank']);
+    expect(b.posten.map((e) => e.name), [
+      'originals',
+      'thumbnails',
+      'trash',
+      'datenbank',
+    ]);
   });
 
-  test('die Summe stimmt mit dem ueberein, was auf der Platte liegt',
-      () async {
+  test('die Summe stimmt mit dem ueberein, was auf der Platte liegt', () async {
     lege('originals/2026/03/a.jpg', 1234);
     lege('previews/a.jpg', 567);
     lege('faces/a.png', 89);
@@ -98,7 +104,9 @@ void main() {
     for (final e in paths.root.listSync(recursive: true)) {
       if (e is File) vonHand += e.lengthSync();
     }
-    vonHand += File(p.join(paths.root.parent.path, 'library.sqlite')).lengthSync();
+    vonHand += File(
+      p.join(paths.root.parent.path, 'library.sqlite'),
+    ).lengthSync();
     expect((await paths.belegung()).gesamt, vonHand);
   });
 }

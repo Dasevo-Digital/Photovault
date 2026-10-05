@@ -18,20 +18,29 @@ void main() {
         'windows' => 'Segoe UI Variable',
         _ => 'Adwaita Sans',
       };
-      expect(familie, erwartet,
-          reason: 'jede Plattform bekommt die Schrift, die es dort gibt');
+      expect(
+        familie,
+        erwartet,
+        reason: 'jede Plattform bekommt die Schrift, die es dort gibt',
+      );
     }
   });
 
   test('hinter der Schrift steht ein Rückfall', () {
-    final rueckfall = buildLightTheme().textTheme.bodyMedium?.fontFamilyFallback;
+    final rueckfall =
+        buildLightTheme().textTheme.bodyMedium?.fontFamilyFallback;
     expect(rueckfall, isNotNull);
-    expect(rueckfall, isNotEmpty,
-        reason: 'fehlt die erste Wahl, muss etwas Brauchbares folgen');
+    expect(
+      rueckfall,
+      isNotEmpty,
+      reason: 'fehlt die erste Wahl, muss etwas Brauchbares folgen',
+    );
   });
 
   test('helles und dunkles Design schreiben gleich', () {
-    expect(buildLightTheme().textTheme.bodyMedium?.fontFamily,
-        buildDarkTheme().textTheme.bodyMedium?.fontFamily);
+    expect(
+      buildLightTheme().textTheme.bodyMedium?.fontFamily,
+      buildDarkTheme().textTheme.bodyMedium?.fontFamily,
+    );
   });
 }

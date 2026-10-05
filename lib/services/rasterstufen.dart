@@ -28,8 +28,8 @@ const int zeitleisteKachelstufeVorgabe = 2;
 /// Bildschirm zu verhindern – dieselbe Regel wie beim Kartenstil.
 double zeitleisteKachelbreite(int stufe) =>
     stufe >= 0 && stufe < zeitleisteKachelstufen.length
-        ? zeitleisteKachelstufen[stufe]
-        : zeitleisteKachelstufen[zeitleisteKachelstufeVorgabe];
+    ? zeitleisteKachelstufen[stufe]
+    : zeitleisteKachelstufen[zeitleisteKachelstufeVorgabe];
 
 /// Die Stufe, die auf [stufe] folgt – geklemmt an den Enden.
 int naechsteKachelstufe(int stufe, {required bool groesser}) =>
@@ -86,5 +86,5 @@ const Zeitleistenform zeitleisteFormVorgabe = Zeitleistenform.quadrate;
 /// Bildschirm zu verhindern – dieselbe Regel wie bei der Kachelstufe.
 Zeitleistenform zeitleisteForm(int wert) =>
     wert >= 0 && wert < Zeitleistenform.values.length
-        ? Zeitleistenform.values[wert]
-        : zeitleisteFormVorgabe;
+    ? Zeitleistenform.values[wert]
+    : zeitleisteFormVorgabe;

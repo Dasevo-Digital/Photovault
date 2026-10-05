@@ -109,12 +109,16 @@ void main() {
   group('die Verdrahtung zur Kartenschicht', () {
     Future<TileLayer> schicht(WidgetTester tester, Kartenstil stil) async {
       late TileLayer gebaut;
-      await tester.pumpWidget(MaterialApp(
-        home: Builder(builder: (context) {
-          gebaut = buildMapTileLayer(context, stil: stil);
-          return const SizedBox.shrink();
-        }),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              gebaut = buildMapTileLayer(context, stil: stil);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
       return gebaut;
     }
 
@@ -179,11 +183,16 @@ void main() {
       await db.setzeCartoSchluesselWert('abc123');
       await db.setzeCartoSchluesselWert('  ');
       expect(await db.cartoSchluesselWert(), isNull);
-      final zeile = await db.customSelect(
-              'SELECT carto_schluessel AS s FROM app_settings WHERE id = 0')
+      final zeile = await db
+          .customSelect(
+            'SELECT carto_schluessel AS s FROM app_settings WHERE id = 0',
+          )
           .getSingle();
-      expect(zeile.data['s'], isNull,
-          reason: 'in der Spalte muss NULL stehen, nicht ""');
+      expect(
+        zeile.data['s'],
+        isNull,
+        reason: 'in der Spalte muss NULL stehen, nicht ""',
+      );
     });
 
     test('die anderen Einstellungen bleiben stehen', () async {
@@ -202,10 +211,11 @@ void main() {
     // Ausprobieren" doch in den Quelltext zu schreiben.
     final verdacht = RegExp(r'key=[A-Za-z0-9_\-]{8,}');
     final treffer = <String>[];
-    for (final datei in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       for (final zeile in datei.readAsLinesSync()) {
         if (verdacht.hasMatch(zeile)) treffer.add('${datei.path}: $zeile');
       }

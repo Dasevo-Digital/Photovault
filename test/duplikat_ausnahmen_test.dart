@@ -50,16 +50,20 @@ void main() {
   }
 
   Future<void> lege(String id, Float32List v) async {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: id,
-          fileCreatedAt: DateTime(2024, 5, 1),
-          importedAt: DateTime(2024, 5, 2),
-          type: 'IMAGE',
-          thumbnailRelativePath: Value('thumbs/$id.jpg'),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: id,
+            fileCreatedAt: DateTime(2024, 5, 1),
+            importedAt: DateTime(2024, 5, 2),
+            type: 'IMAGE',
+            thumbnailRelativePath: Value('thumbs/$id.jpg'),
+          ),
+        );
     await db.saveEmbedding(id, v);
   }
 
@@ -70,25 +74,32 @@ void main() {
       final ohne = findDuplicateGroups(DuplicateSearchParams(embeddings, 0.92));
       expect(ohne.single.toSet(), {'a', 'b'});
 
-      final mit = findDuplicateGroups(DuplicateSearchParams(
-        embeddings,
-        0.92,
-        ausnahmen: {duplikatPaarSchluessel('a', 'b')},
-      ));
+      final mit = findDuplicateGroups(
+        DuplicateSearchParams(
+          embeddings,
+          0.92,
+          ausnahmen: {duplikatPaarSchluessel('a', 'b')},
+        ),
+      );
       expect(mit, isEmpty);
     });
 
     test('der Schlüssel gilt unabhängig von der Reihenfolge', () {
       // Zwei Fassungen desselben Formats wären genau die Art Fehler, die
       // sich nur als „die Ausnahme wirkt nicht" zeigt.
-      expect(duplikatPaarSchluessel('b', 'a'), duplikatPaarSchluessel('a', 'b'));
+      expect(
+        duplikatPaarSchluessel('b', 'a'),
+        duplikatPaarSchluessel('a', 'b'),
+      );
 
       final embeddings = {'zebra': vektor(0.01), 'aal': vektor(0.02)};
-      final mit = findDuplicateGroups(DuplicateSearchParams(
-        embeddings,
-        0.92,
-        ausnahmen: {duplikatPaarSchluessel('zebra', 'aal')},
-      ));
+      final mit = findDuplicateGroups(
+        DuplicateSearchParams(
+          embeddings,
+          0.92,
+          ausnahmen: {duplikatPaarSchluessel('zebra', 'aal')},
+        ),
+      );
       expect(mit, isEmpty);
     });
 
@@ -96,53 +107,71 @@ void main() {
       // Bekannte Grenze, bewusst so: C verbindet A und B, obwohl das Paar
       // A–B ausgenommen ist. Eine Gruppe aufzubrechen, weil eines ihrer
       // Paare ausgenommen ist, wäre die falschere Antwort.
-      final embeddings = {'a': vektor(0.01), 'b': vektor(0.02), 'c': vektor(0.015)};
-      final gruppen = findDuplicateGroups(DuplicateSearchParams(
-        embeddings,
-        0.92,
-        ausnahmen: {duplikatPaarSchluessel('a', 'b')},
-      ));
+      final embeddings = {
+        'a': vektor(0.01),
+        'b': vektor(0.02),
+        'c': vektor(0.015),
+      };
+      final gruppen = findDuplicateGroups(
+        DuplicateSearchParams(
+          embeddings,
+          0.92,
+          ausnahmen: {duplikatPaarSchluessel('a', 'b')},
+        ),
+      );
       expect(gruppen.single.toSet(), {'a', 'b', 'c'});
     });
   });
 
   group('Speicherung', () {
-    test('eine Gruppe legt alle ihre Paare an und lässt sich zurücknehmen', () async {
-      await db.ignoriereDuplikatgruppe(['a', 'b', 'c']);
-      expect(await db.zaehleDuplikatAusnahmen(), 3, reason: 'drei Paare aus drei Fotos');
-      expect(await db.duplikatAusnahmeSchluessel(), {
-        duplikatPaarSchluessel('a', 'b'),
-        duplikatPaarSchluessel('a', 'c'),
-        duplikatPaarSchluessel('b', 'c'),
-      });
+    test(
+      'eine Gruppe legt alle ihre Paare an und lässt sich zurücknehmen',
+      () async {
+        await db.ignoriereDuplikatgruppe(['a', 'b', 'c']);
+        expect(
+          await db.zaehleDuplikatAusnahmen(),
+          3,
+          reason: 'drei Paare aus drei Fotos',
+        );
+        expect(await db.duplikatAusnahmeSchluessel(), {
+          duplikatPaarSchluessel('a', 'b'),
+          duplikatPaarSchluessel('a', 'c'),
+          duplikatPaarSchluessel('b', 'c'),
+        });
 
-      // Zweimal dasselbe darf nicht scheitern und nichts verdoppeln.
-      await db.ignoriereDuplikatgruppe(['c', 'a', 'b']);
-      expect(await db.zaehleDuplikatAusnahmen(), 3);
+        // Zweimal dasselbe darf nicht scheitern und nichts verdoppeln.
+        await db.ignoriereDuplikatgruppe(['c', 'a', 'b']);
+        expect(await db.zaehleDuplikatAusnahmen(), 3);
 
-      await db.hebeDuplikatgruppeAuf(['a', 'b', 'c']);
-      expect(await db.zaehleDuplikatAusnahmen(), 0);
-    });
+        await db.hebeDuplikatgruppeAuf(['a', 'b', 'c']);
+        expect(await db.zaehleDuplikatAusnahmen(), 0);
+      },
+    );
 
-    test('das endgültige Löschen eines Fotos räumt seine Ausnahmen mit weg', () async {
-      await lege('a', vektor(0.01));
-      await lege('b', vektor(0.02));
-      await db.ignoriereDuplikatgruppe(['a', 'b']);
-      expect(await db.zaehleDuplikatAusnahmen(), 1);
+    test(
+      'das endgültige Löschen eines Fotos räumt seine Ausnahmen mit weg',
+      () async {
+        await lege('a', vektor(0.01));
+        await lege('b', vektor(0.02));
+        await db.ignoriereDuplikatgruppe(['a', 'b']);
+        expect(await db.zaehleDuplikatAusnahmen(), 1);
 
-      await db.deleteAssetRows(['a']);
+        await db.deleteAssetRows(['a']);
 
-      // Sonst bliebe eine Zeile ohne Foto liegen, die nie wieder wirken
-      // kann und niemandem mehr auffällt.
-      expect(await db.zaehleDuplikatAusnahmen(), 0);
-    });
+        // Sonst bliebe eine Zeile ohne Foto liegen, die nie wieder wirken
+        // kann und niemandem mehr auffällt.
+        expect(await db.zaehleDuplikatAusnahmen(), 0);
+      },
+    );
   });
 
   group('Ansicht', () {
     late LibraryState library;
 
     setUp(() async {
-      final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+      final paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'lib')),
+      );
       library = LibraryState()
         ..db = db
         ..paths = paths
@@ -171,24 +200,29 @@ void main() {
       // stehende Liste.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        builder: (context, kind) => mitMeldungen(kind),
-        home: DuplicatesScreen(library: library),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          builder: (context, kind) => mitMeldungen(kind),
+          home: DuplicatesScreen(library: library),
+        ),
+      );
       for (var i = 0; i < 20; i++) {
         await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 50)));
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pump();
         if (find.byType(CircularProgressIndicator).evaluate().isEmpty) return;
       }
       fail('der Durchlauf kam nicht zum Ende');
     }
 
-    testWidgets('nennt die Zahl der Gruppen und der Fotos darin', (tester) async {
+    testWidgets('nennt die Zahl der Gruppen und der Fotos darin', (
+      tester,
+    ) async {
       await lege('a', vektor(0.01));
       await lege('b', vektor(0.02));
       await lege('c', vektor(0.015));
@@ -204,7 +238,9 @@ void main() {
       library.clearEmbeddingCaches();
     });
 
-    testWidgets('„Übergehen" blendet die Gruppe aus und merkt sich das', (tester) async {
+    testWidgets('„Übergehen" blendet die Gruppe aus und merkt sich das', (
+      tester,
+    ) async {
       await lege('a', vektor(0.01));
       await lege('b', vektor(0.02));
 
@@ -213,7 +249,8 @@ void main() {
 
       await tester.tap(find.text('Übergehen'));
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -244,7 +281,8 @@ void main() {
 
       await tester.tap(find.text('Übergehen'));
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       // Der Knopf ist da, solange die Meldung steht.

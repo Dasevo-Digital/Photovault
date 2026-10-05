@@ -102,18 +102,18 @@ typedef Einhaengeweg = ({
 
 /// Alle Großeltern – die Eltern der Eltern.
 Set<String> grosseltern(Verwandtschaftsnetz netz, String id) => {
-      for (final e in netz.eltern(id)) ...netz.eltern(e),
-    };
+  for (final e in netz.eltern(id)) ...netz.eltern(e),
+};
 
 /// Alle Enkel – die Kinder der Kinder.
 Set<String> enkel(Verwandtschaftsnetz netz, String id) => {
-      for (final k in netz.kinder(id)) ...netz.kinder(k),
-    };
+  for (final k in netz.kinder(id)) ...netz.kinder(k),
+};
 
 /// Onkel und Tanten – die Geschwister der Eltern.
 Set<String> onkelUndTanten(Verwandtschaftsnetz netz, String id) => {
-      for (final e in netz.eltern(id)) ...netz.geschwister(e),
-    };
+  for (final e in netz.eltern(id)) ...netz.geschwister(e),
+};
 
 /// Die Wege, auf denen sich [grad] für [fokus] eintragen lässt.
 ///
@@ -142,7 +142,8 @@ List<Einhaengeweg> wegeFuer(
 
   /// Der häufigste Fall: je Bezugsperson ein Weg, und die Bezugsperson ist
   /// zugleich der einzige Anker.
-  List<Einhaengeweg> jeEinzeln(Iterable<String> kandidaten, Ankerrolle rolle) => [
+  List<Einhaengeweg> jeEinzeln(Iterable<String> kandidaten, Ankerrolle rolle) =>
+      [
         for (final id in sortiert(kandidaten))
           (bezugsperson: id, anker: [id], rolle: rolle),
       ];
@@ -181,7 +182,7 @@ List<Einhaengeweg> wegeFuer(
             (
               bezugsperson: e,
               anker: sortiert(netz.eltern(e)),
-              rolle: Ankerrolle.kind
+              rolle: Ankerrolle.kind,
             ),
       ];
 
@@ -209,7 +210,7 @@ List<Einhaengeweg> wegeFuer(
             (
               bezugsperson: p,
               anker: sortiert(netz.eltern(p)),
-              rolle: Ankerrolle.kind
+              rolle: Ankerrolle.kind,
             ),
       ];
 
@@ -227,33 +228,33 @@ List<Einhaengeweg> wegeFuer(
 /// dass es Wege gibt, und der soll nicht jedes Mal einen ungenutzten
 /// Grund mitschleppen.
 Fehlt fehlendeVoraussetzung(Zusatzgrad grad) => switch (grad) {
-      Zusatzgrad.grosselternteil ||
-      Zusatzgrad.geschwisterkind ||
-      Zusatzgrad.halbgeschwisterkind ||
-      Zusatzgrad.stiefelternteil =>
-        Fehlt.elternteil,
-      // Urgroßeltern und Onkel brauchen beide eine Generation MEHR als
-      // nur die Eltern: die Eltern der Eltern.
-      Zusatzgrad.urgrosselternteil || Zusatzgrad.onkelTante => Fehlt.grosselternteil,
-      Zusatzgrad.enkelkind || Zusatzgrad.schwiegerkind => Fehlt.kind,
-      Zusatzgrad.urenkelkind => Fehlt.enkelkind,
-      Zusatzgrad.neffeNichte => Fehlt.geschwister,
-      Zusatzgrad.cousin => Fehlt.onkelTante,
-      Zusatzgrad.schwiegerelternteil || Zusatzgrad.stiefkind => Fehlt.partner,
-      Zusatzgrad.schwager => Fehlt.geschwisterOderPartner,
-    };
+  Zusatzgrad.grosselternteil ||
+  Zusatzgrad.geschwisterkind ||
+  Zusatzgrad.halbgeschwisterkind ||
+  Zusatzgrad.stiefelternteil => Fehlt.elternteil,
+  // Urgroßeltern und Onkel brauchen beide eine Generation MEHR als
+  // nur die Eltern: die Eltern der Eltern.
+  Zusatzgrad.urgrosselternteil ||
+  Zusatzgrad.onkelTante => Fehlt.grosselternteil,
+  Zusatzgrad.enkelkind || Zusatzgrad.schwiegerkind => Fehlt.kind,
+  Zusatzgrad.urenkelkind => Fehlt.enkelkind,
+  Zusatzgrad.neffeNichte => Fehlt.geschwister,
+  Zusatzgrad.cousin => Fehlt.onkelTante,
+  Zusatzgrad.schwiegerelternteil || Zusatzgrad.stiefkind => Fehlt.partner,
+  Zusatzgrad.schwager => Fehlt.geschwisterOderPartner,
+};
 
 /// Die Kanten, die ein [Einhaengeweg] für die neue Person [neueId] erzeugt.
 ///
 /// Eine Liste, weil ein Geschwisterkind an mehreren Eltern gleichzeitig
 /// hängt.
 List<Kante> kantenFuer(Einhaengeweg weg, String neueId) => [
-      for (final anker in weg.anker)
-        switch (weg.rolle) {
-          // Die neue Person ist Elternteil des Ankers: Die Kante gehört
-          // dem Anker und zeigt auf die neue Person.
-          Ankerrolle.elternteil => kante(anker, neueId, Verwandtschaft.elternteil),
-          Ankerrolle.kind => kante(neueId, anker, Verwandtschaft.elternteil),
-          Ankerrolle.partner => partnerKanteFuer(neueId, anker),
-        },
-    ];
+  for (final anker in weg.anker)
+    switch (weg.rolle) {
+      // Die neue Person ist Elternteil des Ankers: Die Kante gehört
+      // dem Anker und zeigt auf die neue Person.
+      Ankerrolle.elternteil => kante(anker, neueId, Verwandtschaft.elternteil),
+      Ankerrolle.kind => kante(neueId, anker, Verwandtschaft.elternteil),
+      Ankerrolle.partner => partnerKanteFuer(neueId, anker),
+    },
+];

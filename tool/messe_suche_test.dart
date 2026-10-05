@@ -12,8 +12,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/services/search_filters.dart';
 
-Future<double> misst(String name, Future<Object?> Function() was,
-    {int laeufe = 5}) async {
+Future<double> misst(
+  String name,
+  Future<Object?> Function() was, {
+  int laeufe = 5,
+}) async {
   for (var i = 0; i < 2; i++) {
     await was();
   }
@@ -46,11 +49,18 @@ void main() {
       final (name, filter) = fall;
       final treffer = await db.searchAssets(filter);
       print('\n$name: ${treffer.length} Treffer');
-      await misst('  searchAssets (volle Zeilen)', () => db.searchAssets(filter));
-      await misst('  searchAssetIds (nur Kennungen)',
-          () => db.searchAssetIds(filter));
-      await misst('  countSearchResults (neu)',
-          () => db.countSearchResults(filter));
+      await misst(
+        '  searchAssets (volle Zeilen)',
+        () => db.searchAssets(filter),
+      );
+      await misst(
+        '  searchAssetIds (nur Kennungen)',
+        () => db.searchAssetIds(filter),
+      );
+      await misst(
+        '  countSearchResults (neu)',
+        () => db.countSearchResults(filter),
+      );
     }
     await db.close();
   }, timeout: const Timeout(Duration(minutes: 20)));

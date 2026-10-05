@@ -22,10 +22,11 @@ Future<AlbumChoice?> showAlbumPickerDialog(
   return showDialog<AlbumChoice>(
     context: context,
     builder: (context) => _AlbumPickerDialog(
-        existingAlbums: existingAlbums,
-        // Der Vorgabewert kann nicht im Kopf stehen: Ein übersetzter Text
-        // braucht den Kontext, den es dort noch nicht gibt.
-        title: title ?? AppTexte.of(context).auswZuAlbum),
+      existingAlbums: existingAlbums,
+      // Der Vorgabewert kann nicht im Kopf stehen: Ein übersetzter Text
+      // braucht den Kontext, den es dort noch nicht gibt.
+      title: title ?? AppTexte.of(context).auswZuAlbum,
+    ),
   );
 }
 
@@ -60,33 +61,48 @@ class _AlbumPickerDialogState extends State<_AlbumPickerDialog> {
             DropdownButtonFormField<AlbumData>(
               initialValue: _selectedExisting,
               isExpanded: true,
-              decoration: InputDecoration(labelText: AppTexte.of(context).albumBestehendes),
+              decoration: InputDecoration(
+                labelText: AppTexte.of(context).albumBestehendes,
+              ),
               items: widget.existingAlbums
                   .map((a) => DropdownMenuItem(value: a, child: Text(a.name)))
                   .toList(),
               onChanged: (a) => setState(() => _selectedExisting = a),
             ),
             const SizedBox(height: 12),
-            Text(AppTexte.of(context).allgOder,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              AppTexte.of(context).allgOder,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 12),
           ],
           TextField(
             controller: _nameCtrl,
-            decoration: InputDecoration(labelText: AppTexte.of(context).albumNeuAnlegen),
+            decoration: InputDecoration(
+              labelText: AppTexte.of(context).albumNeuAnlegen,
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppTexte.of(context).allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppTexte.of(context).allgAbbrechen),
+        ),
         FilledButton(
           onPressed: () {
             if (_nameCtrl.text.trim().isNotEmpty) {
-              Navigator.pop(context, AlbumChoice.newAlbum(_nameCtrl.text.trim()));
+              Navigator.pop(
+                context,
+                AlbumChoice.newAlbum(_nameCtrl.text.trim()),
+              );
             } else if (_selectedExisting != null) {
-              Navigator.pop(context, AlbumChoice.existing(_selectedExisting!.id));
+              Navigator.pop(
+                context,
+                AlbumChoice.existing(_selectedExisting!.id),
+              );
             }
           },
           child: Text(AppTexte.of(context).allgHinzufuegen),

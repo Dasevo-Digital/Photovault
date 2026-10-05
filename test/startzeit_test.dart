@@ -30,10 +30,16 @@ void main() {
     // zeigt: Ein `await geoBereit` im Bildaufbau würde das erste Bild
     // wieder anhalten – genau das, was die Änderung abgeschafft hat.
     final quelle = _quelle('lib/state/library_state.dart');
-    expect(quelle, contains('await geoBereit;'),
-        reason: 'der Import muss warten');
-    expect(quelle, isNot(contains('await _loadGeoDataIfPresent();')),
-        reason: 'im Start darf nicht mehr darauf gewartet werden');
+    expect(
+      quelle,
+      contains('await geoBereit;'),
+      reason: 'der Import muss warten',
+    );
+    expect(
+      quelle,
+      isNot(contains('await _loadGeoDataIfPresent();')),
+      reason: 'im Start darf nicht mehr darauf gewartet werden',
+    );
 
     for (final pfad in [
       'lib/screens/weltkarte_screen.dart',
@@ -41,8 +47,11 @@ void main() {
       'lib/screens/ortsansicht_screen.dart',
       'lib/screens/laenderliste_screen.dart',
     ]) {
-      expect(_quelle(pfad), isNot(contains('geoBereit')),
-          reason: '$pfad soll nicht warten, sondern zeigen, was da ist');
+      expect(
+        _quelle(pfad),
+        isNot(contains('geoBereit')),
+        reason: '$pfad soll nicht warten, sondern zeigen, was da ist',
+      );
     }
   });
 }

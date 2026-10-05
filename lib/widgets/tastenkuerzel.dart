@@ -22,47 +22,60 @@ class Tastenkuerzeltafel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Abschnitt(titel: t.kuerzelNavigation, kuerzel: [
-          ('⌘1 – ⌘0', t.kuerzelBereicheWechseln),
-          ('⌘K / Ctrl+K', t.kuerzelBefehlspalette),
-          ('—', t.kuerzelReisenOhne),
-          ('?', t.kuerzelUebersichtOeffnen),
-        ]),
+        _Abschnitt(
+          titel: t.kuerzelNavigation,
+          kuerzel: [
+            ('⌘1 – ⌘0', t.kuerzelBereicheWechseln),
+            ('⌘K / Ctrl+K', t.kuerzelBefehlspalette),
+            ('—', t.kuerzelReisenOhne),
+            ('?', t.kuerzelUebersichtOeffnen),
+          ],
+        ),
         const SizedBox(height: AppSpacing.md),
         // Neu in 2.5.0 – und bis hierher in keiner Übersicht genannt.
-        _Abschnitt(titel: t.kuerzelRaster, kuerzel: [
-          (t.kuerzelUmschaltKlick, t.kuerzelBereichWaehlen),
-          (t.kuerzelStrgKlick, t.kuerzelEinzelnWaehlen),
-          ('← ↑ ↓ →', t.kuerzelRahmenBewegen),
-          (t.kuerzelUmschaltPfeil, t.kuerzelAuswahlZiehen),
-          ('0 – 5', t.kuerzelBewertungSetzen),
-          ('6 – 9', t.kuerzelFarbmarkeSetzen),
-          ('F', t.kuerzelFavoritUmschalten),
-          ('Esc', t.kuerzelAuswahlLeeren),
-          ('⏎', t.kuerzelFotoOeffnen),
-        ]),
+        _Abschnitt(
+          titel: t.kuerzelRaster,
+          kuerzel: [
+            (t.kuerzelUmschaltKlick, t.kuerzelBereichWaehlen),
+            (t.kuerzelStrgKlick, t.kuerzelEinzelnWaehlen),
+            ('← ↑ ↓ →', t.kuerzelRahmenBewegen),
+            (t.kuerzelUmschaltPfeil, t.kuerzelAuswahlZiehen),
+            ('0 – 5', t.kuerzelBewertungSetzen),
+            ('6 – 9', t.kuerzelFarbmarkeSetzen),
+            ('F', t.kuerzelFavoritUmschalten),
+            ('Esc', t.kuerzelAuswahlLeeren),
+            ('⏎', t.kuerzelFotoOeffnen),
+          ],
+        ),
         const SizedBox(height: AppSpacing.xs),
-        Text(t.kuerzelWirktAuf,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text(
+          t.kuerzelWirktAuf,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
-        _Abschnitt(titel: t.kuerzelVollbild, kuerzel: [
-          ('← / →', t.kuerzelVorherigesNaechstes),
-          (t.kuerzelLeertaste, t.kuerzelNaechstesFoto),
-          ('0 – 5', t.kuerzelBewertungSetzen),
-          ('6 – 9', t.kuerzelFarbmarkeSetzen),
-          ('F', t.kuerzelFavoritUmschalten),
-          ('⌫ / Delete', t.kuerzelPapierkorbMitBestaetigung),
-          // Eine Magic Mouse kann nicht kneifen - siehe
-          // [BildZoomGesten]. Ohne diese Zeile waere der Zoom dort eine
-          // Geste, die niemand findet.
-          (t.kuerzelZoomWischen, t.kuerzelZoomImBild),
-          ('Esc', t.allgSchliessen),
-        ]),
+        _Abschnitt(
+          titel: t.kuerzelVollbild,
+          kuerzel: [
+            ('← / →', t.kuerzelVorherigesNaechstes),
+            (t.kuerzelLeertaste, t.kuerzelNaechstesFoto),
+            ('0 – 5', t.kuerzelBewertungSetzen),
+            ('6 – 9', t.kuerzelFarbmarkeSetzen),
+            ('F', t.kuerzelFavoritUmschalten),
+            ('⌫ / Delete', t.kuerzelPapierkorbMitBestaetigung),
+            // Eine Magic Mouse kann nicht kneifen - siehe
+            // [BildZoomGesten]. Ohne diese Zeile waere der Zoom dort eine
+            // Geste, die niemand findet.
+            (t.kuerzelZoomWischen, t.kuerzelZoomImBild),
+            ('Esc', t.allgSchliessen),
+          ],
+        ),
         const SizedBox(height: AppSpacing.md),
-        _Abschnitt(titel: t.kuerzelSichtung, kuerzel: [
-          ('⌫ / Delete', t.kuerzelSofortAblehnen),
-        ]),
+        _Abschnitt(
+          titel: t.kuerzelSichtung,
+          kuerzel: [('⌫ / Delete', t.kuerzelSofortAblehnen)],
+        ),
       ],
     );
   }
@@ -93,15 +106,17 @@ class _Abschnitt extends StatelessWidget {
                   width: 132,
                   child: Text(
                     taste,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Expanded(
-                    child: Text(was,
-                        style: Theme.of(context).textTheme.bodyMedium)),
+                  child: Text(
+                    was,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
               ],
             ),
           ),

@@ -22,17 +22,21 @@ void main() {
   tearDown(() => db.close());
 
   Future<String> lege(String id, {String? caption, String? deutsch}) async {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'c_$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 1, 1),
-          importedAt: DateTime(2024, 1, 1),
-          aiCaption: Value(caption),
-          aiCaptionDe: Value(deutsch),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'c_$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 1, 1),
+            importedAt: DateTime(2024, 1, 1),
+            aiCaption: Value(caption),
+            aiCaptionDe: Value(deutsch),
+          ),
+        );
     return id;
   }
 
@@ -73,7 +77,11 @@ void main() {
       // Beschreibungsmodell über die ganze Bibliothek erneut laufen zu
       // lassen.
       final id = await lege('a');
-      await db.setAiCaption(id, 'a dog on the beach', deutsch: 'ein Hund am Strand');
+      await db.setAiCaption(
+        id,
+        'a dog on the beach',
+        deutsch: 'ein Hund am Strand',
+      );
 
       final asset = await db.assetById(id);
       expect(asset!.aiCaption, 'a dog on the beach');
@@ -94,7 +102,11 @@ void main() {
       // englischer und Fotos mit beiden Beschreibungen. Nur in einer zu
       // suchen liesse einen Teil der Bibliothek unauffindbar.
       await lege('nur_englisch', caption: 'a dog on the beach');
-      await lege('beides', caption: 'a cat on the sofa', deutsch: 'eine Katze auf dem Sofa');
+      await lege(
+        'beides',
+        caption: 'a cat on the sofa',
+        deutsch: 'eine Katze auf dem Sofa',
+      );
 
       expect(await suche('dog'), ['nur_englisch']);
       expect(await suche('Katze'), ['beides']);
@@ -115,45 +127,56 @@ void main() {
     // F1 0,16 auf 0,48, an einer zweiten Stichprobe von 0,07 auf 0,42.
     // Die Maschine bleibt für selbst hinzugefügte Begriffe zuständig.
 
-    test('der Cache hängt am deutschen Begriff, nicht an der Übersetzung', () async {
-      // Der Tag wird unter dem deutschen Namen vergeben. Hinge der Cache
-      // an der Übersetzung, käme bei abgeschalteter Übersetzung ein
-      // anderer Schlüssel heraus und die Vektoren würden doppelt gerechnet.
-      final dienst = AiTaggingService();
-      final gefragt = <String>[];
-      final bild = Float32List.fromList([1, 0, 0]);
+    test(
+      'der Cache hängt am deutschen Begriff, nicht an der Übersetzung',
+      () async {
+        // Der Tag wird unter dem deutschen Namen vergeben. Hinge der Cache
+        // an der Übersetzung, käme bei abgeschalteter Übersetzung ein
+        // anderer Schlüssel heraus und die Vektoren würden doppelt gerechnet.
+        final dienst = AiTaggingService();
+        final gefragt = <String>[];
+        final bild = Float32List.fromList([1, 0, 0]);
 
-      final tags = await dienst.suggestTags(
-        _ClipAttrappe(gefragt),
-        bild,
-        ['Sonnenuntergang', 'Hund'],
-        insEnglische: (t) async => 'sollte nicht gefragt werden',
-      );
+        final tags = await dienst.suggestTags(
+          _ClipAttrappe(gefragt),
+          bild,
+          ['Sonnenuntergang', 'Hund'],
+          insEnglische: (t) async => 'sollte nicht gefragt werden',
+        );
 
-      expect(tags, ['Sonnenuntergang', 'Hund'],
-          reason: 'vergeben wird der deutsche Begriff');
-      expect(gefragt, ['a photo of sunset.', 'a photo of dog.'],
-          reason: 'geprüfte Übersetzung, in der Schablone');
+        expect(tags, [
+          'Sonnenuntergang',
+          'Hund',
+        ], reason: 'vergeben wird der deutsche Begriff');
+        expect(gefragt, [
+          'a photo of sunset.',
+          'a photo of dog.',
+        ], reason: 'geprüfte Übersetzung, in der Schablone');
 
-      // Zweiter Lauf: nichts wird erneut eingebettet.
-      gefragt.clear();
-      await dienst.suggestTags(
-        _ClipAttrappe(gefragt), bild, ['Sonnenuntergang', 'Hund']);
-      expect(gefragt, isEmpty);
-    });
+        // Zweiter Lauf: nichts wird erneut eingebettet.
+        gefragt.clear();
+        await dienst.suggestTags(_ClipAttrappe(gefragt), bild, [
+          'Sonnenuntergang',
+          'Hund',
+        ]);
+        expect(gefragt, isEmpty);
+      },
+    );
 
-    test('ein selbst hinzugefügter Begriff geht weiterhin an die Maschine',
-        () async {
-      final dienst = AiTaggingService();
-      final gefragt = <String>[];
-      await dienst.suggestTags(
-        _ClipAttrappe(gefragt),
-        Float32List.fromList([1, 0, 0]),
-        ['Ferienlager'],
-        insEnglische: (t) async => 'summer camp',
-      );
-      expect(gefragt, ['a photo of summer camp.']);
-    });
+    test(
+      'ein selbst hinzugefügter Begriff geht weiterhin an die Maschine',
+      () async {
+        final dienst = AiTaggingService();
+        final gefragt = <String>[];
+        await dienst.suggestTags(
+          _ClipAttrappe(gefragt),
+          Float32List.fromList([1, 0, 0]),
+          ['Ferienlager'],
+          insEnglische: (t) async => 'summer camp',
+        );
+        expect(gefragt, ['a photo of summer camp.']);
+      },
+    );
 
     test('ohne Übersetzerfunktion greift wenigstens die Schablone', () async {
       final dienst = AiTaggingService();
@@ -174,15 +197,17 @@ void main() {
       final gefragt = <String>[];
       final bild = Float32List.fromList([1, 0, 0]);
 
-      await dienst.suggestTags(_ClipAttrappe(gefragt), bild, ['Ferienlager'],
-          insEnglische: (t) async => 'summer camp');
+      await dienst.suggestTags(_ClipAttrappe(gefragt), bild, [
+        'Ferienlager',
+      ], insEnglische: (t) async => 'summer camp');
       expect(gefragt, ['a photo of summer camp.']);
 
       dienst.leereBegriffsCache();
       gefragt.clear();
       await dienst.suggestTags(_ClipAttrappe(gefragt), bild, ['Ferienlager']);
-      expect(gefragt, ['a photo of ferienlager.'],
-          reason: 'jetzt ohne Übersetzung');
+      expect(gefragt, [
+        'a photo of ferienlager.',
+      ], reason: 'jetzt ohne Übersetzung');
     });
   });
 }

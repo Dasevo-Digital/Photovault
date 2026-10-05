@@ -211,14 +211,17 @@ Kachelbilanz bilanzAus(
     // Absteigend, damit das Häufigste oben steht.
     nachStatus: _sortiert(nachStatus),
     nachFehler: _sortiert(nachFehler),
-    mittlereDauer: abrufe == 0 ? Duration.zero : Duration(microseconds: summeMikro ~/ abrufe),
+    mittlereDauer: abrufe == 0
+        ? Duration.zero
+        : Duration(microseconds: summeMikro ~/ abrufe),
     laengsteDauer: laengste,
     bytes: bytes,
   );
 }
 
 Map<K, int> _sortiert<K>(Map<K, int> roh) {
-  final schluessel = roh.keys.toList()..sort((a, b) => roh[b]!.compareTo(roh[a]!));
+  final schluessel = roh.keys.toList()
+    ..sort((a, b) => roh[b]!.compareTo(roh[a]!));
   return {for (final k in schluessel) k: roh[k]!};
 }
 
@@ -267,11 +270,8 @@ class Kachelmitschnitt {
   /// Die Einträge, älteste zuerst.
   List<Kachelabruf> get eintraege => List.unmodifiable(_eintraege);
 
-  Kachelbilanz get bilanz => bilanzAus(
-        _eintraege,
-        verbindungen: _verbindungen,
-        verworfen: _verworfen,
-      );
+  Kachelbilanz get bilanz =>
+      bilanzAus(_eintraege, verbindungen: _verbindungen, verworfen: _verworfen);
 
   /// Fängt von vorn an. Ein laufender Mitschnitt wird dabei verworfen –
   /// zwei Zoomfahrten in einer Zahl wären keine Messung.
@@ -332,13 +332,15 @@ class MitschnittClient extends BaseClient {
     try {
       antwort = await _innen.send(anfrage);
     } catch (fehler) {
-      _mitschnitt.notiere(Kachelabruf(
-        zeit: DateTime.now(),
-        adresse: adresse,
-        dauer: uhr.elapsed,
-        fehler: fehlertext(fehler),
-        abgebrochen: istAbbruch(fehler),
-      ));
+      _mitschnitt.notiere(
+        Kachelabruf(
+          zeit: DateTime.now(),
+          adresse: adresse,
+          dauer: uhr.elapsed,
+          fehler: fehlertext(fehler),
+          abgebrochen: istAbbruch(fehler),
+        ),
+      );
       rethrow;
     }
 

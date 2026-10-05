@@ -78,24 +78,30 @@ class _Netz extends BaseClient {
   }
 }
 
-StreamedResponse _antwort(int status, BaseRequest? anfrage) => StreamedResponse(
-      const Stream<List<int>>.empty(),
-      status,
-      request: anfrage,
-    );
+StreamedResponse _antwort(int status, BaseRequest? anfrage) =>
+    StreamedResponse(const Stream<List<int>>.empty(), status, request: anfrage);
 
 void main() {
   test('ohne Netz antwortet die Platte mit 304', () async {
     final platte = _Platte();
     final lager = FragmentloserSpeicher(platte);
-    final netz = _Netz(() => ClientException('Aborted: no response within 15 s',
-        Uri.parse(_adresse)));
+    final netz = _Netz(
+      () => ClientException(
+        'Aborted: no response within 15 s',
+        Uri.parse(_adresse),
+      ),
+    );
 
-    final antwort = await Offlinerueckfall(netz, lager)
-        .send(Request('GET', Uri.parse(_adresse)));
+    final antwort = await Offlinerueckfall(
+      netz,
+      lager,
+    ).send(Request('GET', Uri.parse(_adresse)));
 
-    expect(antwort.statusCode, 304,
-        reason: 'flutter_map nimmt bei 304 die Bilddaten, die es schon hat');
+    expect(
+      antwort.statusCode,
+      304,
+      reason: 'flutter_map nimmt bei 304 die Bilddaten, die es schon hat',
+    );
     expect(netz.abrufe, 1);
   });
 
@@ -120,17 +126,19 @@ void main() {
     );
   });
 
-  test('ein geplanter Abbruch bekommt keine alte Kachel nachgeschoben',
-      () async {
-    final lager = FragmentloserSpeicher(_Platte());
-    final netz = _Netz(() => RequestAbortedException(Uri.parse(_adresse)));
+  test(
+    'ein geplanter Abbruch bekommt keine alte Kachel nachgeschoben',
+    () async {
+      final lager = FragmentloserSpeicher(_Platte());
+      final netz = _Netz(() => RequestAbortedException(Uri.parse(_adresse)));
 
-    await expectLater(
-      Offlinerueckfall(netz, lager).send(Request('GET', Uri.parse(_adresse))),
-      throwsA(isA<RequestAbortedException>()),
-      reason: 'die Kachel ist aus dem Bild gelaufen, niemand will sie noch',
-    );
-  });
+      await expectLater(
+        Offlinerueckfall(netz, lager).send(Request('GET', Uri.parse(_adresse))),
+        throwsA(isA<RequestAbortedException>()),
+        reason: 'die Kachel ist aus dem Bild gelaufen, niemand will sie noch',
+      );
+    },
+  );
 
   test('ein Fehlerstatus bleibt ein Fehlerstatus', () async {
     // OpenTopoMap meldet mit 404, dass eine Kachel noch gerendert wird.
@@ -144,27 +152,33 @@ void main() {
     expect(antwort.statusCode, 404);
   });
 
-  test('die Haltbarkeit wird nach einem Rueckfall NICHT aufgefrischt',
-      () async {
-    // Die 304 kam von uns, nicht vom Server. Niemand hat bestaetigt, dass
-    // die Kachel noch gilt – sie bekaeme sonst dreissig weitere Tage,
-    // ohne je nachgefragt worden zu sein.
-    final platte = _Platte();
-    final lager = FragmentloserSpeicher(platte);
-    final netz = _Netz(() => ClientException('kein Netz'));
+  test(
+    'die Haltbarkeit wird nach einem Rueckfall NICHT aufgefrischt',
+    () async {
+      // Die 304 kam von uns, nicht vom Server. Niemand hat bestaetigt, dass
+      // die Kachel noch gilt – sie bekaeme sonst dreissig weitere Tage,
+      // ohne je nachgefragt worden zu sein.
+      final platte = _Platte();
+      final lager = FragmentloserSpeicher(platte);
+      final netz = _Netz(() => ClientException('kein Netz'));
 
-    await Offlinerueckfall(netz, lager).send(Request('GET', Uri.parse(_adresse)));
-    await lager.putTile(
-      url: _adresse,
-      metadata: CachedMapTileMetadata(
+      await Offlinerueckfall(
+        netz,
+        lager,
+      ).send(Request('GET', Uri.parse(_adresse)));
+      await lager.putTile(
+        url: _adresse,
+        metadata: CachedMapTileMetadata(
           staleAt: DateTime.timestamp().add(const Duration(days: 30)),
           lastModified: null,
-          etag: null),
-      bytes: null,
-    );
+          etag: null,
+        ),
+        bytes: null,
+      );
 
-    expect(platte.geschrieben, isEmpty);
-  });
+      expect(platte.geschrieben, isEmpty);
+    },
+  );
 
   test('eine echte 304 vom Server frischt weiterhin auf', () async {
     // Ohne diesen Unterschied waere die Marke ein Holzhammer: Dann
@@ -175,15 +189,19 @@ void main() {
     await lager.putTile(
       url: '$_adresse#1',
       metadata: CachedMapTileMetadata(
-          staleAt: DateTime.timestamp().add(const Duration(days: 30)),
-          lastModified: null,
-          etag: null),
+        staleAt: DateTime.timestamp().add(const Duration(days: 30)),
+        lastModified: null,
+        etag: null,
+      ),
       bytes: null,
     );
 
     expect(platte.geschrieben, hasLength(1));
-    expect(platte.geschrieben.single.url, _adresse,
-        reason: 'der Nachfass-Anhang gehoert nicht in den Speicherschluessel');
+    expect(
+      platte.geschrieben.single.url,
+      _adresse,
+      reason: 'der Nachfass-Anhang gehoert nicht in den Speicherschluessel',
+    );
   });
 
   test('Bilddaten werden auch nach einem Rueckfall geschrieben', () async {
@@ -191,13 +209,17 @@ void main() {
     final lager = FragmentloserSpeicher(platte);
     final netz = _Netz(() => ClientException('kein Netz'));
 
-    await Offlinerueckfall(netz, lager).send(Request('GET', Uri.parse(_adresse)));
+    await Offlinerueckfall(
+      netz,
+      lager,
+    ).send(Request('GET', Uri.parse(_adresse)));
     await lager.putTile(
       url: _adresse,
       metadata: CachedMapTileMetadata(
-          staleAt: DateTime.timestamp().add(const Duration(days: 30)),
-          lastModified: null,
-          etag: null),
+        staleAt: DateTime.timestamp().add(const Duration(days: 30)),
+        lastModified: null,
+        etag: null,
+      ),
       bytes: Uint8List.fromList(const [9]),
     );
 
@@ -205,8 +227,7 @@ void main() {
     expect(platte.geschrieben.single.mitBilddaten, isTrue);
   });
 
-  testWidgets('und flutter_map zeigt die Kachel dann wirklich',
-      (tester) async {
+  testWidgets('und flutter_map zeigt die Kachel dann wirklich', (tester) async {
     // Der eigentliche Nachweis. Die sieben Pruefungen darueber messen den
     // Rueckfall fuer sich; ob flutter_map eine 304 ohne Rumpf auch
     // annimmt und die Bilddaten von der Platte nimmt, steht damit noch
@@ -214,32 +235,41 @@ void main() {
     late final Uint8List png;
     await tester.runAsync(() async {
       final aufnahme = ui.PictureRecorder();
-      Canvas(aufnahme)
-          .drawRect(const Rect.fromLTWH(0, 0, 4, 4), Paint()..color = const Color(0xFF2266AA));
+      Canvas(aufnahme).drawRect(
+        const Rect.fromLTWH(0, 0, 4, 4),
+        Paint()..color = const Color(0xFF2266AA),
+      );
       final bild = await aufnahme.endRecording().toImage(4, 4);
-      png = (await bild.toByteData(format: ui.ImageByteFormat.png))!
-          .buffer
-          .asUint8List();
+      png = (await bild.toByteData(
+        format: ui.ImageByteFormat.png,
+      ))!.buffer.asUint8List();
     });
 
     final platte = _Platte(bild: png);
     final lager = FragmentloserSpeicher(platte);
     final netz = _Netz(() => ClientException('kein Netz'));
     final anbieter = Nachfassanbieter(
-        httpClient: Offlinerueckfall(netz, lager), lager: lager);
+      httpClient: Offlinerueckfall(netz, lager),
+      lager: lager,
+    );
 
     final schicht = TileLayer(
       urlTemplate: 'https://kacheln.example/{z}/{x}/{y}.png',
       tileProvider: anbieter,
     );
     final bildquelle = anbieter.getImageWithCancelLoadingSupport(
-        const TileCoordinates(2148, 1370, 12), schicht, Completer<void>().future);
+      const TileCoordinates(2148, 1370, 12),
+      schicht,
+      Completer<void>().future,
+    );
 
     ui.Image? angekommen;
     Object? gescheitert;
     await tester.runAsync(() async {
       final fertig = Completer<void>();
-      bildquelle.resolve(ImageConfiguration.empty).addListener(
+      bildquelle
+          .resolve(ImageConfiguration.empty)
+          .addListener(
             ImageStreamListener(
               (info, _) {
                 angekommen = info.image;
@@ -257,7 +287,10 @@ void main() {
     expect(gescheitert, isNull);
     expect(angekommen, isNotNull);
     expect(angekommen!.width, 4);
-    expect(platte.geschrieben, isEmpty,
-        reason: 'die Haltbarkeit darf der Rueckfall nicht auffrischen');
+    expect(
+      platte.geschrieben,
+      isEmpty,
+      reason: 'die Haltbarkeit darf der Rueckfall nicht auffrischen',
+    );
   });
 }

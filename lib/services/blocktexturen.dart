@@ -30,7 +30,6 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-
 import 'package:flutter_map/flutter_map.dart' show MapCachingProvider;
 import 'package:http/http.dart' as http;
 
@@ -75,8 +74,8 @@ class Blocktexturlader {
     this._speicher,
     this.hoechstensBytes = blocktexturSpeicher,
     this.beiAenderung,
-  })  : _netz = netz,
-        _eigenerKlient = netz == null {
+  }) : _netz = netz,
+       _eigenerKlient = netz == null {
     _vorrat = Blockvorrat<ui.Image>(
       hoechstensBytes: hoechstensBytes,
       freigeben: (bild) => bild.dispose(),
@@ -393,8 +392,13 @@ class Blocktexturlader {
     // Gleichheitszeichen.
     final ebenen = karte.ebenen;
     for (var nr = 0; nr < ebenen.length; nr++) {
-      final da =
-          await _ebeneZeichnen(leinwand, ebenen[nr], block, stufe, kante);
+      final da = await _ebeneZeichnen(
+        leinwand,
+        ebenen[nr],
+        block,
+        stufe,
+        kante,
+      );
       if (da && nr == 0) etwasDa = true;
       if (_geschlossen) break;
     }
@@ -424,8 +428,13 @@ class Blocktexturlader {
   /// **eine** Kachel mehrere Blöcke ab, und dieser hier braucht nur ein
   /// Stück davon. Beide Fälle stehen hier: mehrere Kacheln je Block, oder
   /// ein Ausschnitt aus einer.
-  Future<bool> _ebeneZeichnen(ui.Canvas leinwand, Kartenebene ebene,
-      Texturblock block, int stufe, int kante) async {
+  Future<bool> _ebeneZeichnen(
+    ui.Canvas leinwand,
+    Kartenebene ebene,
+    Texturblock block,
+    int stufe,
+    int kante,
+  ) async {
     final z = math.min(stufe, ebene.hoechsteStufe);
     final klient = _netz ??= http.Client();
     final speicher = _speicher ?? gemeinsamerKachelspeicher();
@@ -440,8 +449,12 @@ class Blocktexturlader {
       final teil = kachelKante / f;
       leinwand.drawImageRect(
         bild,
-        ui.Rect.fromLTWH((block.spalte % f) * teil, (block.zeile % f) * teil,
-            teil, teil),
+        ui.Rect.fromLTWH(
+          (block.spalte % f) * teil,
+          (block.zeile % f) * teil,
+          teil,
+          teil,
+        ),
         ui.Rect.fromLTWH(0, 0, kante.toDouble(), kante.toDouble()),
         ui.Paint()..filterQuality = ui.FilterQuality.medium,
       );
@@ -483,8 +496,14 @@ class Blocktexturlader {
     return etwas;
   }
 
-  Future<ui.Image?> _kachel(http.Client klient, MapCachingProvider speicher,
-      Kartenebene ebene, int z, int x, int y) async {
+  Future<ui.Image?> _kachel(
+    http.Client klient,
+    MapCachingProvider speicher,
+    Kartenebene ebene,
+    int z,
+    int x,
+    int y,
+  ) async {
     try {
       final roh = await holeKachelRoh(
         klient,
@@ -509,8 +528,7 @@ class Blocktexturlader {
   /// die Landschaft gelegt müssten sie in jedem Bild neu projiziert
   /// werden, und dann läge jede Linie über dem Berg, hinter dem sie
   /// eigentlich verschwindet.
-  void _hoehenlinienZeichnen(
-      ui.Canvas leinwand, Texturblock block, int kante) {
+  void _hoehenlinienZeichnen(ui.Canvas leinwand, Texturblock block, int kante) {
     final g = hoehen;
     if (g == null) return;
     final spanne = g.spanne;

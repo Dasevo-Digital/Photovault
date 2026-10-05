@@ -50,34 +50,37 @@ void main() {
     bool titelbild = false,
     bool papierkorb = false,
     bool gesperrt = false,
-  }) =>
-      db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id.jpg',
-        originalFileName: '$id.jpg',
-        type: typ,
-        checksum: id,
-        fileCreatedAt: wann,
-        importedAt: wann,
-        isTrashed: Value(papierkorb),
-        isLocked: Value(gesperrt),
-        linkedAssetId: Value(verknuepft),
-        stackId: Value(stapel),
-        isStackCover: Value(titelbild),
-      ));
+  }) => db.insertAsset(
+    AssetsCompanion.insert(
+      id: id,
+      relativePath: 'originals/$id.jpg',
+      originalFileName: '$id.jpg',
+      type: typ,
+      checksum: id,
+      fileCreatedAt: wann,
+      importedAt: wann,
+      isTrashed: Value(papierkorb),
+      isLocked: Value(gesperrt),
+      linkedAssetId: Value(verknuepft),
+      stackId: Value(stapel),
+      isStackCover: Value(titelbild),
+    ),
+  );
 
   /// Die Fassung, die es vorher gab – Wort für Wort.
   Future<List<String>> alterWeg(DateTime heute) async {
     final alle = await db.select(db.assets).get();
     return (alle
-            .where((a) =>
-                !a.isTrashed &&
-                !a.isLocked &&
-                (a.type == 'IMAGE' || a.linkedAssetId == null) &&
-                (a.stackId == null || a.isStackCover) &&
-                a.fileCreatedAt.month == heute.month &&
-                a.fileCreatedAt.day == heute.day &&
-                a.fileCreatedAt.year != heute.year)
+            .where(
+              (a) =>
+                  !a.isTrashed &&
+                  !a.isLocked &&
+                  (a.type == 'IMAGE' || a.linkedAssetId == null) &&
+                  (a.stackId == null || a.isStackCover) &&
+                  a.fileCreatedAt.month == heute.month &&
+                  a.fileCreatedAt.day == heute.day &&
+                  a.fileCreatedAt.year != heute.year,
+            )
             .toList()
           ..sort((a, b) => b.fileCreatedAt.compareTo(a.fileCreatedAt)))
         .map((a) => a.id)
@@ -92,8 +95,10 @@ void main() {
 
     final heute = DateTime(2026, 8, 15);
     final ids = (await db.assetsOnThisDay(heute)).map((a) => a.id).toList();
-    expect(ids, ['a2025', 'a2024'],
-        reason: 'das Foto von heute ist kein Rückblick');
+    expect(ids, [
+      'a2025',
+      'a2024',
+    ], reason: 'das Foto von heute ist kein Rückblick');
     expect(ids, await alterWeg(heute));
   });
 
@@ -101,11 +106,22 @@ void main() {
     // Genau die Regel, die überall sonst gilt (_isPrimaryGridEntry) – sie
     // steht nur einmal, und die schlanke Abfrage benutzt dieselbe.
     await foto('sichtbar', wann: DateTime(2024, 8, 15, 12, 17));
-    await foto('videohaelfte',
-        wann: DateTime(2024, 8, 15, 11, 17), typ: 'VIDEO', verknuepft: 'sichtbar');
-    await foto('stapelmitglied',
-        wann: DateTime(2024, 8, 15, 10, 17), stapel: 's1');
-    await foto('papierkorb', wann: DateTime(2024, 8, 15, 9, 17), papierkorb: true);
+    await foto(
+      'videohaelfte',
+      wann: DateTime(2024, 8, 15, 11, 17),
+      typ: 'VIDEO',
+      verknuepft: 'sichtbar',
+    );
+    await foto(
+      'stapelmitglied',
+      wann: DateTime(2024, 8, 15, 10, 17),
+      stapel: 's1',
+    );
+    await foto(
+      'papierkorb',
+      wann: DateTime(2024, 8, 15, 9, 17),
+      papierkorb: true,
+    );
     await foto('tresor', wann: DateTime(2024, 8, 15, 8, 17), gesperrt: true);
     await foto('freiesvideo', wann: DateTime(2024, 8, 15, 7, 17), typ: 'VIDEO');
 

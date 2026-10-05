@@ -72,9 +72,12 @@ void main() {
   });
 
   test('gibt bei leerem Datensatz immer null zurück', () async {
-    final citiesFile = File(p.join(tempDir.path, 'empty_cities.txt'))..writeAsStringSync('');
-    final admin1File = File(p.join(tempDir.path, 'empty_admin1.txt'))..writeAsStringSync('');
-    final countryFile = File(p.join(tempDir.path, 'empty_country.txt'))..writeAsStringSync('');
+    final citiesFile = File(p.join(tempDir.path, 'empty_cities.txt'))
+      ..writeAsStringSync('');
+    final admin1File = File(p.join(tempDir.path, 'empty_admin1.txt'))
+      ..writeAsStringSync('');
+    final countryFile = File(p.join(tempDir.path, 'empty_country.txt'))
+      ..writeAsStringSync('');
 
     final geocoder = await ReverseGeocoder.loadFromFiles(
       citiesFile: citiesFile,
@@ -112,16 +115,18 @@ void main() {
       expect(geocoder.regionenVon('F'), isEmpty);
     });
 
-    test('nennt die Orte einer Region mit dem Schlüssel der Ortsmarken',
-        () async {
-      final geocoder = await loadSynthetic();
-      final orte = geocoder.orteIn('FR.11');
-      expect(orte, hasLength(1));
-      // „Land|Region|Ort" mit Namen – genau so schreibt die Weltkarte
-      // eine Marke.
-      expect(orte.single.schluessel, 'France|Île-de-France|Paris');
-      expect(orte.single.name, 'Paris');
-    });
+    test(
+      'nennt die Orte einer Region mit dem Schlüssel der Ortsmarken',
+      () async {
+        final geocoder = await loadSynthetic();
+        final orte = geocoder.orteIn('FR.11');
+        expect(orte, hasLength(1));
+        // „Land|Region|Ort" mit Namen – genau so schreibt die Weltkarte
+        // eine Marke.
+        expect(orte.single.schluessel, 'France|Île-de-France|Paris');
+        expect(orte.single.name, 'Paris');
+      },
+    );
 
     test('die grössten Orte zuerst', () async {
       final geocoder = await loadSynthetic();
@@ -145,44 +150,55 @@ void main() {
     });
   });
 
-  test('das Einlesen laesst den Hauptstrang zwischendurch zu Wort kommen',
-      () async {
-    // Der Fund der 17. Pruefrunde. `readAsLines()` plus eine Schleife
-    // ueber 170.584 Zeilen ist EIN Block Arbeit: gemessen 215 ms, in
-    // denen die Oberflaeche steht - und zwar beim Programmstart, wo sie
-    // gerade aufgebaut wird. Ueber den Strom sind es 5 ms.
-    //
-    // Gemessen wird hier nicht die Zeit (die haengt an der Maschine),
-    // sondern die Eigenschaft dahinter: dass das Ereignisrad ueberhaupt
-    // drankommt. Am Stueck gelesen waere die Antwort null.
-    final grossesVerzeichnis = File(p.join(tempDir.path, 'viele.txt'));
-    final zeilen = StringBuffer();
-    for (var i = 0; i < 60000; i++) {
-      zeilen.writeln('$i\tOrt$i\tOrt$i\t\t${48 + i % 5}.0\t${2 + i % 7}.0'
-          '\tP\tPPL\tFR\t\t11\t\t\t\t1000');
-    }
-    await grossesVerzeichnis.writeAsString(zeilen.toString());
+  test(
+    'das Einlesen laesst den Hauptstrang zwischendurch zu Wort kommen',
+    () async {
+      // Der Fund der 17. Pruefrunde. `readAsLines()` plus eine Schleife
+      // ueber 170.584 Zeilen ist EIN Block Arbeit: gemessen 215 ms, in
+      // denen die Oberflaeche steht - und zwar beim Programmstart, wo sie
+      // gerade aufgebaut wird. Ueber den Strom sind es 5 ms.
+      //
+      // Gemessen wird hier nicht die Zeit (die haengt an der Maschine),
+      // sondern die Eigenschaft dahinter: dass das Ereignisrad ueberhaupt
+      // drankommt. Am Stueck gelesen waere die Antwort null.
+      final grossesVerzeichnis = File(p.join(tempDir.path, 'viele.txt'));
+      final zeilen = StringBuffer();
+      for (var i = 0; i < 60000; i++) {
+        zeilen.writeln(
+          '$i\tOrt$i\tOrt$i\t\t${48 + i % 5}.0\t${2 + i % 7}.0'
+          '\tP\tPPL\tFR\t\t11\t\t\t\t1000',
+        );
+      }
+      await grossesVerzeichnis.writeAsString(zeilen.toString());
 
-    var zugKamDran = 0;
-    final takt = Timer.periodic(Duration.zero, (_) => zugKamDran++);
-    final geocoder = await ReverseGeocoder.loadFromFiles(
-      citiesFile: grossesVerzeichnis,
-      admin1File: File(p.join(tempDir.path, 'admin1CodesASCII.txt'))
-        ..writeAsStringSync(''),
-      countryFile: File(p.join(tempDir.path, 'countryInfo.txt'))
-        ..writeAsStringSync(''),
-    );
-    takt.cancel();
+      var zugKamDran = 0;
+      final takt = Timer.periodic(Duration.zero, (_) => zugKamDran++);
+      final geocoder = await ReverseGeocoder.loadFromFiles(
+        citiesFile: grossesVerzeichnis,
+        admin1File: File(p.join(tempDir.path, 'admin1CodesASCII.txt'))
+          ..writeAsStringSync(''),
+        countryFile: File(p.join(tempDir.path, 'countryInfo.txt'))
+          ..writeAsStringSync(''),
+      );
+      takt.cancel();
 
-    expect(geocoder.lookup(48.0, 2.0), isNotNull,
-        reason: 'sonst pruefte der Test ein leeres Verzeichnis');
-    // Der Strom liefert je 64-kB-Stueck ein Ereignis, bei 4 MB also rund
-    // 64 Zuege - eine Zahl, die an der Dateigroesse haengt und nicht an
-    // der Maschine. Am Stueck gelesen kommen nur die Zuege zusammen, die
-    // das asynchrone Lesen selbst uebriglaesst; gemessen 21 bis 31.
-    // Fuenfzig trennt beides mit Abstand.
-    expect(zugKamDran, greaterThan(50),
-        reason: 'am Stueck gelesen stuende die Oberflaeche waehrend der '
-            'ganzen Schleife still - gemessen 215 ms bei 170.584 Orten');
-  });
+      expect(
+        geocoder.lookup(48.0, 2.0),
+        isNotNull,
+        reason: 'sonst pruefte der Test ein leeres Verzeichnis',
+      );
+      // Der Strom liefert je 64-kB-Stueck ein Ereignis, bei 4 MB also rund
+      // 64 Zuege - eine Zahl, die an der Dateigroesse haengt und nicht an
+      // der Maschine. Am Stueck gelesen kommen nur die Zuege zusammen, die
+      // das asynchrone Lesen selbst uebriglaesst; gemessen 21 bis 31.
+      // Fuenfzig trennt beides mit Abstand.
+      expect(
+        zugKamDran,
+        greaterThan(50),
+        reason:
+            'am Stueck gelesen stuende die Oberflaeche waehrend der '
+            'ganzen Schleife still - gemessen 215 ms bei 170.584 Orten',
+      );
+    },
+  );
 }

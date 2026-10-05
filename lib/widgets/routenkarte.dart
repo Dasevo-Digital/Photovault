@@ -113,8 +113,10 @@ class _RoutenkarteState extends State<Routenkarte> {
 
   void _zoom(double schritte) {
     final kamera = _steuerung.camera;
-    final ziel = (kamera.zoom + schritte)
-        .clamp(kamera.minZoom ?? 1.0, kamera.maxZoom ?? 20.0);
+    final ziel = (kamera.zoom + schritte).clamp(
+      kamera.minZoom ?? 1.0,
+      kamera.maxZoom ?? 20.0,
+    );
     _steuerung.move(kamera.center, ziel);
   }
 
@@ -151,144 +153,153 @@ class _RoutenkarteState extends State<Routenkarte> {
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: SizedBox(
         height: widget.hoehe * Routenkarte.stufen[_stufe],
-        child: Stack(children: [
-        FlutterMap(
-          mapController: _steuerung,
-          options: MapOptions(
-            // Der Ausschnitt wird auf die Strecke gelegt, nicht auf eine
-            // geratene Mitte mit geratener Zoomstufe.
-            // Beides einpassen: Eine Spur, die weiter reicht als die
-            // Fotos, liefe sonst aus dem Bild.
-            initialCameraFit: _anfang,
-            // Nur Ziehen. Kein Rad und kein Kneifen: Beides ist auf
-            // dieser Seite die Geste zum Rollen, und die Karte darf sie
-            // der Seite nicht wegnehmen.
-            interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.drag),
-            // Das Einpassen auf die Strecke kann bei zwei dicht
-            // beieinanderliegenden Punkten über die höchste Stufe hinaus
-            // rechnen, für die es Kacheln gibt.
-            maxZoom: kartenHoechsteStufe(context),
-          ),
+        child: Stack(
           children: [
-            const Kachelschicht(),
-            PolylineLayer(polylines: [
-              Polyline(
-                points: punkte,
-                strokeWidth: 3,
-                color: farben.primary,
-              ),
-              for (final linie in spurlinien)
-                if (linie.length > 1)
-                  Polyline(
-                    points: linie,
-                    strokeWidth: 4,
-                    color: farben.tertiary,
-                  ),
-            ]),
-            MarkerLayer(markers: [
-              for (final (i, p) in punkte.indexed)
-                Marker(
-                  point: p,
-                  width: 14,
-                  height: 14,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      // Anfang und Ende betont: Eine Strecke ohne
-                      // erkennbare Richtung ist nur ein Strich.
-                      color: i == 0 || i == punkte.length - 1
-                          ? farben.primary
-                          : farben.surface,
-                      border: Border.all(color: farben.primary, width: 2),
-                    ),
-                  ),
+            FlutterMap(
+              mapController: _steuerung,
+              options: MapOptions(
+                // Der Ausschnitt wird auf die Strecke gelegt, nicht auf eine
+                // geratene Mitte mit geratener Zoomstufe.
+                // Beides einpassen: Eine Spur, die weiter reicht als die
+                // Fotos, liefe sonst aus dem Bild.
+                initialCameraFit: _anfang,
+                // Nur Ziehen. Kein Rad und kein Kneifen: Beides ist auf
+                // dieser Seite die Geste zum Rollen, und die Karte darf sie
+                // der Seite nicht wegnehmen.
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.drag,
                 ),
-            ]),
-            // Die Bilder liegen ueber der Strecke: Sie sind das, wonach man
-            // auf einer Reisekarte sucht.
-            MarkerLayer(markers: [
-              for (final ort in orte)
-                if (nachId[ort.aufnahmeIds.first] case final bild?)
-                  Marker(
-                    point: ll.LatLng(ort.breite, ort.laenge),
-                    width: 52,
-                    height: 52,
-                    child: _Ortsbild(
-                      bild: bild,
-                      paths: paths,
-                      anzahl: ort.aufnahmeIds.length,
-                      name: ort.name,
-                      beiTippen: () => beiOrt(ort),
-                    ),
-                  ),
-            ]),
-            if (stelle case final s?)
-              MarkerLayer(markers: [
-                Marker(
-                  point: ll.LatLng(s.breite, s.laenge),
-                  width: 18,
-                  height: 18,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: farben.error,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ]),
-            buildMapAttribution(context),
-          ],
-        ),
-        Positioned(
-          right: AppSpacing.sm,
-          top: AppSpacing.sm,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Zoomsteuerung(
-                beiNaeher: () => _zoom(1),
-                beiWeiter: () => _zoom(-1),
-                beiEinpassen: _einpassen,
+                // Das Einpassen auf die Strecke kann bei zwei dicht
+                // beieinanderliegenden Punkten über die höchste Stufe hinaus
+                // rechnen, für die es Kacheln gibt.
+                maxZoom: kartenHoechsteStufe(context),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              // Die Fläche der Karte ist keine Sache des Zooms, sondern
-              // des Platzes auf der Seite – deshalb ein eigener Knopf und
-              // nicht ein vierter in der Zoomleiste.
-              Material(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                clipBehavior: Clip.antiAlias,
-                child: Tooltip(
-                  message: _stufe == Routenkarte.stufen.length - 1
-                      ? t.routeVerkleinern
-                      : t.routeVergroessern,
-                  child: InkResponse(
-                    onTap: _groesse,
-                    radius: 22,
-                    child: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Icon(
-                        _stufe == Routenkarte.stufen.length - 1
-                            ? Icons.close_fullscreen
-                            : Icons.open_in_full,
-                        size: 20,
-                        color: farben.onSurfaceVariant,
+              children: [
+                const Kachelschicht(),
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: punkte,
+                      strokeWidth: 3,
+                      color: farben.primary,
+                    ),
+                    for (final linie in spurlinien)
+                      if (linie.length > 1)
+                        Polyline(
+                          points: linie,
+                          strokeWidth: 4,
+                          color: farben.tertiary,
+                        ),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    for (final (i, p) in punkte.indexed)
+                      Marker(
+                        point: p,
+                        width: 14,
+                        height: 14,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            // Anfang und Ende betont: Eine Strecke ohne
+                            // erkennbare Richtung ist nur ein Strich.
+                            color: i == 0 || i == punkte.length - 1
+                                ? farben.primary
+                                : farben.surface,
+                            border: Border.all(color: farben.primary, width: 2),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Die Bilder liegen ueber der Strecke: Sie sind das, wonach man
+                // auf einer Reisekarte sucht.
+                MarkerLayer(
+                  markers: [
+                    for (final ort in orte)
+                      if (nachId[ort.aufnahmeIds.first] case final bild?)
+                        Marker(
+                          point: ll.LatLng(ort.breite, ort.laenge),
+                          width: 52,
+                          height: 52,
+                          child: _Ortsbild(
+                            bild: bild,
+                            paths: paths,
+                            anzahl: ort.aufnahmeIds.length,
+                            name: ort.name,
+                            beiTippen: () => beiOrt(ort),
+                          ),
+                        ),
+                  ],
+                ),
+                if (stelle case final s?)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: ll.LatLng(s.breite, s.laenge),
+                        width: 18,
+                        height: 18,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: farben.error,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                buildMapAttribution(context),
+              ],
+            ),
+            Positioned(
+              right: AppSpacing.sm,
+              top: AppSpacing.sm,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Zoomsteuerung(
+                    beiNaeher: () => _zoom(1),
+                    beiWeiter: () => _zoom(-1),
+                    beiEinpassen: _einpassen,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // Die Fläche der Karte ist keine Sache des Zooms, sondern
+                  // des Platzes auf der Seite – deshalb ein eigener Knopf und
+                  // nicht ein vierter in der Zoomleiste.
+                  Material(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    clipBehavior: Clip.antiAlias,
+                    child: Tooltip(
+                      message: _stufe == Routenkarte.stufen.length - 1
+                          ? t.routeVerkleinern
+                          : t.routeVergroessern,
+                      child: InkResponse(
+                        onTap: _groesse,
+                        radius: 22,
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Icon(
+                            _stufe == Routenkarte.stufen.length - 1
+                                ? Icons.close_fullscreen
+                                : Icons.open_in_full,
+                            size: 20,
+                            color: farben.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        ]),
       ),
     );
   }
@@ -322,10 +333,7 @@ class _Ortsbild extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     final pfad = bild.thumbnailRelativePath;
     return Tooltip(
-      message: [
-        ?name,
-        t.reisenAufnahmen(anzahl),
-      ].join(' · '),
+      message: [?name, t.reisenAufnahmen(anzahl)].join(' · '),
       child: GestureDetector(
         onTap: beiTippen,
         child: MouseRegion(
@@ -346,8 +354,11 @@ class _Ortsbild extends StatelessWidget {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: pfad == null
-                    ? Icon(Icons.image_outlined,
-                        size: 18, color: farben.onSurfaceVariant)
+                    ? Icon(
+                        Icons.image_outlined,
+                        size: 18,
+                        color: farben.onSurfaceVariant,
+                      )
                     : Image.file(
                         paths.absolute(pfad),
                         fit: BoxFit.cover,
@@ -356,9 +367,10 @@ class _Ortsbild extends StatelessWidget {
                         // zwanzig Orten das Zwanzigfache im Speicher.
                         cacheWidth: 132,
                         errorBuilder: (_, _, _) => Icon(
-                            Icons.image_not_supported_outlined,
-                            size: 18,
-                            color: farben.onSurfaceVariant),
+                          Icons.image_not_supported_outlined,
+                          size: 18,
+                          color: farben.onSurfaceVariant,
+                        ),
                       ),
               ),
               if (anzahl > 1)
@@ -367,17 +379,22 @@ class _Ortsbild extends StatelessWidget {
                   top: -6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xs, vertical: 1),
+                      horizontal: AppSpacing.xs,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: farben.primary,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(color: Colors.white, width: 1),
                     ),
-                    child: Text('$anzahl',
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: farben.onPrimary)),
+                    child: Text(
+                      '$anzahl',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: farben.onPrimary,
+                      ),
+                    ),
                   ),
                 ),
             ],

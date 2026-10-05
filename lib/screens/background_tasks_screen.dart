@@ -35,14 +35,14 @@ enum Aufgabenmodus {
 }
 
 String modusName(AppTexte t, Aufgabenmodus m) => switch (m) {
-      Aufgabenmodus.alle => t.aufgModusAlle,
-      Aufgabenmodus.fehlende => t.aufgFehlende,
-    };
+  Aufgabenmodus.alle => t.aufgModusAlle,
+  Aufgabenmodus.fehlende => t.aufgFehlende,
+};
 
 IconData modusSymbol(Aufgabenmodus m) => switch (m) {
-      Aufgabenmodus.alle => Icons.all_inclusive,
-      Aufgabenmodus.fehlende => Icons.image_search,
-    };
+  Aufgabenmodus.alle => Icons.all_inclusive,
+  Aufgabenmodus.fehlende => Icons.image_search,
+};
 
 /// Eine der Möglichkeiten, eine Aufgabe zu starten.
 class Aufgabenaktion {
@@ -111,8 +111,10 @@ class _Laufanzeige extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(lauf.titel,
-            style: TextStyle(fontSize: 13, color: farben.onSurface)),
+        Text(
+          lauf.titel,
+          style: TextStyle(fontSize: 13, color: farben.onSurface),
+        ),
         const SizedBox(height: AppSpacing.sm),
         // Ein Balken auch im beendeten Zustand, damit die Karte nicht in der
         // Höhe springt, sobald der Vorgang durch ist.
@@ -169,29 +171,38 @@ class _Zahlenfeld extends StatelessWidget {
     final grund = hervorgehoben
         ? farben.primaryContainer
         : farben.surfaceContainerHighest;
-    final schrift =
-        hervorgehoben ? farben.onPrimaryContainer : farben.onSurfaceVariant;
+    final schrift = hervorgehoben
+        ? farben.onPrimaryContainer
+        : farben.onSurfaceVariant;
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-      decoration:
-          BoxDecoration(color: grund, borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 14,
+      ),
+      decoration: BoxDecoration(
+        color: grund,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Flexible(
-            child: Text(beschriftung,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: schrift)),
+            child: Text(
+              beschriftung,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: schrift),
+            ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(wert,
-              style: TextStyle(
-                color: schrift,
-                fontWeight: FontWeight.w600,
-                // Damit die Zahlen zweier Karten untereinander fluchten.
-                fontFeatures: const [FontFeature.tabularFigures()],
-              )),
+          Text(
+            wert,
+            style: TextStyle(
+              color: schrift,
+              fontWeight: FontWeight.w600,
+              // Damit die Zahlen zweier Karten untereinander fluchten.
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );
@@ -217,14 +228,17 @@ class _Zahlenreihe extends StatelessWidget {
       children: [
         Expanded(
           child: _Zahlenfeld(
-              beschriftung: linksBeschriftung,
-              wert: linksWert,
-              hervorgehoben: true),
+            beschriftung: linksBeschriftung,
+            wert: linksWert,
+            hervorgehoben: true,
+          ),
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child:
-              _Zahlenfeld(beschriftung: rechtsBeschriftung, wert: rechtsWert),
+          child: _Zahlenfeld(
+            beschriftung: rechtsBeschriftung,
+            wert: rechtsWert,
+          ),
         ),
       ],
     );
@@ -279,15 +293,19 @@ class _Aktionsleiste extends StatelessWidget {
                 onTap: bedienbar ? knoepfe[i].onTap : null,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.md,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(knoepfe[i].icon,
-                          size: 26,
-                          color: bedienbar
-                              ? farben.onSurface
-                              : farben.onSurface.withValues(alpha: 0.38)),
+                      Icon(
+                        knoepfe[i].icon,
+                        size: 26,
+                        color: bedienbar
+                            ? farben.onSurface
+                            : farben.onSurface.withValues(alpha: 0.38),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         knoepfe[i].label,
@@ -367,18 +385,22 @@ class _Aufgabenrahmen extends StatelessWidget {
                         Icon(icon, size: 20, color: farben.primary),
                         const SizedBox(width: AppSpacing.sm),
                         Flexible(
-                          child: Text(titel,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(color: farben.primary)),
+                          child: Text(
+                            titel,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: farben.primary),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(beschreibung,
-                        style: TextStyle(
-                            fontSize: 13, color: farben.onSurfaceVariant)),
+                    Text(
+                      beschreibung,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     inhalt,
                   ],
@@ -456,8 +478,10 @@ class Aufgabe {
   /// schreiben" gibt es nur „Alle", und diese Aufgabe deshalb aus einer
   /// Sammelauswahl herauszulassen wäre schwerer zu verstehen als sie
   /// mitlaufen zu lassen.
-  Aufgabenaktion aktionFuer(Aufgabenmodus modus) => aktionen
-      .firstWhere((a) => a.modus == modus, orElse: () => aktionen.first);
+  Aufgabenaktion aktionFuer(Aufgabenmodus modus) => aktionen.firstWhere(
+    (a) => a.modus == modus,
+    orElse: () => aktionen.first,
+  );
 }
 
 /// Eine Aufgaben-Karte: Symbol und Titel, Kurzbeschreibung, die Zahlen
@@ -478,10 +502,11 @@ class _TaskCard extends StatefulWidget {
   final LibraryState library;
   final Aufgabe aufgabe;
   final bool hervorgehoben;
-  const _TaskCard(
-      {required this.library,
-      required this.aufgabe,
-      this.hervorgehoben = false});
+  const _TaskCard({
+    required this.library,
+    required this.aufgabe,
+    this.hervorgehoben = false,
+  });
 
   @override
   State<_TaskCard> createState() => _TaskCardState();
@@ -509,8 +534,10 @@ class _TaskCardState extends State<_TaskCard> {
   /// Beginn und Ende eines Laufs melden sich über den Zustand, die Zahlen
   /// dazwischen über [LibraryState.fortschritt]. Einmal gebaut, damit der
   /// ListenableBuilder nicht bei jedem Aufbau neu abonniert.
-  late final Listenable _zuhoeren =
-      Listenable.merge([widget.library, widget.library.fortschritt]);
+  late final Listenable _zuhoeren = Listenable.merge([
+    widget.library,
+    widget.library.fortschritt,
+  ]);
 
   @override
   void initState() {
@@ -633,9 +660,13 @@ class _TaskCardState extends State<_TaskCard> {
           knoepfe: knoepfe,
           bedienbar: _a.bedienbar,
           inhalt: _a.nichtVerfuegbar != null
-              ? Text(_a.nichtVerfuegbar!,
-                  style:
-                      TextStyle(fontSize: 12, color: context.semantik.warnung))
+              ? Text(
+                  _a.nichtVerfuegbar!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.semantik.warnung,
+                  ),
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -656,13 +687,14 @@ class _TaskCardState extends State<_TaskCard> {
                         builder: (context, snapshot) => Text(
                           snapshot.hasData
                               ? (_a.offenLabel == null
-                                  ? t.aufgOffeneFotos(snapshot.data!)
-                                  : '${_a.offenLabel}: ${snapshot.data}')
+                                    ? t.aufgOffeneFotos(snapshot.data!)
+                                    : '${_a.offenLabel}: ${snapshot.data}')
                               : '…',
                           style: TextStyle(
                             fontSize: 12,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -681,15 +713,17 @@ class _TaskCardState extends State<_TaskCard> {
 /// Sammeldialog. Kein `await`: Der Lauf soll weiterlaufen, wenn dieser
 /// Bildschirm längst weg ist.
 Startabweisung? reiheEin(
-        LibraryState library, Aufgabe aufgabe, Aufgabenaktion aktion) =>
-    library.reiheAufgabeEin(
-      schluessel: aufgabe.schluessel,
-      titel: aktion.laufTitel,
-      leermeldung: aktion.emptyMessage,
-      bilanztext: aktion.bilanztext,
-      strom: aktion.stream,
-      rechenintensiv: aufgabe.rechenintensiv,
-    );
+  LibraryState library,
+  Aufgabe aufgabe,
+  Aufgabenaktion aktion,
+) => library.reiheAufgabeEin(
+  schluessel: aufgabe.schluessel,
+  titel: aktion.laufTitel,
+  leermeldung: aktion.emptyMessage,
+  bilanztext: aktion.bilanztext,
+  strom: aktion.stream,
+  rechenintensiv: aufgabe.rechenintensiv,
+);
 
 /// Sonderkarte für [LibraryState.starteHintergrundanalyse]: läuft (anders als
 /// die übrigen Aufgaben hier) bereits echt im Hintergrund weiter, während man
@@ -755,14 +789,16 @@ class _CombinedAnalysisCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   t.aufgStufe(
-                      analysestufeName(t, analyse.stufe),
-                      analyse.erledigt,
-                      analyse.gesamt,
-                      analyse.stufeNummer,
-                      analyse.stufenGesamt),
+                    analysestufeName(t, analyse.stufe),
+                    analyse.erledigt,
+                    analyse.gesamt,
+                    analyse.stufeNummer,
+                    analyse.stufenGesamt,
+                  ),
                   style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ],
@@ -779,471 +815,499 @@ class _CombinedAnalysisCard extends StatelessWidget {
 /// eindeutige Kennung hat und mindestens eine Aktion, lässt sich so
 /// nachrechnen, statt es fünfzehnmal von Hand nachzusehen.
 List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
-      Aufgabe(
-        schluessel: 'gesichter',
-        rechenintensiv: true,
-        // Dieselbe Stufe wie Unschärfe und Einbettung: Der gemeinsame
-        // Durchgang der Analyse dekodiert jedes Foto einmal und erledigt
-        // alle drei daran. Ohne diese Angabe stand hier „Aktiv 0",
-        // während die Analyse sichtbar genau diese Arbeit tat.
-        stufe: Analysestufe.bildanalyse,
-        icon: Icons.face_retouching_natural,
-        titel: t.werkzGesichterScannenTitel,
-        beschreibung: t.aufgGesichterText,
-        offeneZahl: () => library.db.countFaceScan(onlyNew: true),
-        nichtVerfuegbar: _modelHint(t, library.faceDetectionAvailable,
-            t.aufgYunetModell, t.aufgWoModelle),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzScanneAlle,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.rescanFaces(onlyNewPhotos: false),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzScanneNeue,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.rescanFaces(onlyNewPhotos: true),
-          ),
-        ],
+  Aufgabe(
+    schluessel: 'gesichter',
+    rechenintensiv: true,
+    // Dieselbe Stufe wie Unschärfe und Einbettung: Der gemeinsame
+    // Durchgang der Analyse dekodiert jedes Foto einmal und erledigt
+    // alle drei daran. Ohne diese Angabe stand hier „Aktiv 0",
+    // während die Analyse sichtbar genau diese Arbeit tat.
+    stufe: Analysestufe.bildanalyse,
+    icon: Icons.face_retouching_natural,
+    titel: t.werkzGesichterScannenTitel,
+    beschreibung: t.aufgGesichterText,
+    offeneZahl: () => library.db.countFaceScan(onlyNew: true),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.faceDetectionAvailable,
+      t.aufgYunetModell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzScanneAlle,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.rescanFaces(onlyNewPhotos: false),
       ),
-      Aufgabe(
-        schluessel: 'wiedererkennung',
-        icon: Icons.person_search_outlined,
-        titel: t.aufgWiedererkennungTitel,
-        beschreibung: t.aufgWiedererkennungText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countWiedererkennungOffen(),
-        aktionen: [
-          // „Alle" fragt auch dort noch einmal, wo schon verglichen
-          // wurde – der Weg, nachdem neue Personen benannt wurden: Ein
-          // Gesicht ohne Kern von damals kann heute einen haben.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzWiedererkennung,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillWiedererkennung(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzWiedererkennung,
-            emptyMessage: t.werkzAlleVerglichen,
-            stream: () => library.backfillWiedererkennung(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzScanneNeue,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.rescanFaces(onlyNewPhotos: true),
       ),
-      Aufgabe(
-        schluessel: 'vorschau',
-        icon: Icons.photo_size_select_actual_outlined,
-        // Ein eigener Titel und nicht mehr die Abschnittsüberschrift der
-        // Werkzeuge: Dieselbe Zeichenkette an zwei Stellen liest sich
-        // harmlos und macht jede Prüfung „steht diese Aufgabe wirklich
-        // nur hier?" unmöglich.
-        titel: t.aufgVorschauTitel,
-        beschreibung: t.aufgVorschauText,
-        offeneZahl: () => library.db.countThumbnailRegen(onlyMissing: true),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzErstelleAlle,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.regenerateThumbnails(onlyMissing: false),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzErstelleFehlende,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.regenerateThumbnails(onlyMissing: true),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'wiedererkennung',
+    icon: Icons.person_search_outlined,
+    titel: t.aufgWiedererkennungTitel,
+    beschreibung: t.aufgWiedererkennungText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countWiedererkennungOffen(),
+    aktionen: [
+      // „Alle" fragt auch dort noch einmal, wo schon verglichen
+      // wurde – der Weg, nachdem neue Personen benannt wurden: Ein
+      // Gesicht ohne Kern von damals kann heute einen haben.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzWiedererkennung,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillWiedererkennung(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'ocr',
-        rechenintensiv: true,
-        icon: Icons.text_fields,
-        titel: t.aufgOcrTitel,
-        stufe: Analysestufe.texterkennung,
-        beschreibung: t.aufgOcrText,
-        offeneZahl: () => library.db.countOcrBackfill(),
-        // Auf macOS immer verfügbar (Vision-Framework), sonst erst mit
-        // den beiden nachgeladenen Modellen.
-        nichtVerfuegbar: _modelHint(
-            t, library.ocrAvailable, t.aufgOcrModell, t.aufgWoModelle),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzErkenneText,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillOcrText(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzErkenneText,
-            emptyMessage: t.werkzAlleTextDurchsucht,
-            stream: () => library.backfillOcrText(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzWiedererkennung,
+        emptyMessage: t.werkzAlleVerglichen,
+        stream: () => library.backfillWiedererkennung(),
       ),
-      Aufgabe(
-        schluessel: 'beschreibungen',
-        rechenintensiv: true,
-        icon: Icons.subtitles_outlined,
-        titel: t.aufgBeschreibungenTitel,
-        stufe: Analysestufe.bildbeschreibung,
-        beschreibung: t.aufgBeschreibungenText,
-        offeneZahl: () => library.db.countCaptionBackfill(),
-        nichtVerfuegbar: _modelHint(t, library.captioningAvailable,
-            t.aufgBeschreibungsmodell, t.aufgWoModelle),
-        aktionen: [
-          // Nach dem Modellwechsel der eigentlich sinnvolle Weg: Die
-          // vorhandenen Sätze stammen vom abgelösten Modell.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzErzeugeBeschreibungen,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillCaptions(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzErzeugeBeschreibungen,
-            emptyMessage: t.werkzAlleHabenBeschreibung,
-            stream: () => library.backfillCaptions(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'vorschau',
+    icon: Icons.photo_size_select_actual_outlined,
+    // Ein eigener Titel und nicht mehr die Abschnittsüberschrift der
+    // Werkzeuge: Dieselbe Zeichenkette an zwei Stellen liest sich
+    // harmlos und macht jede Prüfung „steht diese Aufgabe wirklich
+    // nur hier?" unmöglich.
+    titel: t.aufgVorschauTitel,
+    beschreibung: t.aufgVorschauText,
+    offeneZahl: () => library.db.countThumbnailRegen(onlyMissing: true),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzErstelleAlle,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.regenerateThumbnails(onlyMissing: false),
       ),
-      Aufgabe(
-        schluessel: 'beschreibungen_de',
-        rechenintensiv: true,
-        icon: Icons.translate,
-        titel: t.aufgUebersetzenTitel,
-        beschreibung: t.aufgUebersetzenText,
-        offeneZahl: () => library.db.countCaptionTranslation(),
-        nichtVerfuegbar: _modelHint(t, library.uebersetzungEnDeAvailable,
-            t.aufgUebersetzungsmodell, t.aufgWoModelle),
-        aktionen: [
-          // Nach einem Wechsel des Übersetzungsmodells der sinnvolle Weg.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzUebersetzeBeschreibungen,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.uebersetzeBildbeschreibungen(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzUebersetzeBeschreibungen,
-            emptyMessage: t.werkzAlleUebersetzt,
-            stream: () => library.uebersetzeBildbeschreibungen(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzErstelleFehlende,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.regenerateThumbnails(onlyMissing: true),
       ),
-      Aufgabe(
-        schluessel: 'gesichtsschaerfe',
-        // Kein Modell und kein neuer Dekodiervorgang: Gerechnet wird auf
-        // den bereits gespeicherten 160x160-Ausschnitten, rund zwei
-        // Millisekunden je Gesicht.
-        rechenintensiv: false,
-        icon: Icons.blur_on,
-        titel: t.aufgGesichtsschaerfeTitel,
-        beschreibung: t.aufgGesichtsschaerfeText,
-        offeneZahl: () => library.db.countGesichterOhneSchaerfe(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzBerechneGesichtsschaerfe,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillGesichtsschaerfe(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'ocr',
+    rechenintensiv: true,
+    icon: Icons.text_fields,
+    titel: t.aufgOcrTitel,
+    stufe: Analysestufe.texterkennung,
+    beschreibung: t.aufgOcrText,
+    offeneZahl: () => library.db.countOcrBackfill(),
+    // Auf macOS immer verfügbar (Vision-Framework), sonst erst mit
+    // den beiden nachgeladenen Modellen.
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.ocrAvailable,
+      t.aufgOcrModell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzErkenneText,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillOcrText(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'embeddings',
-        rechenintensiv: true,
-        icon: Icons.scatter_plot_outlined,
-        titel: t.aufgEmbeddingsTitel,
-        stufe: Analysestufe.bildanalyse,
-        beschreibung: t.aufgEmbeddingsText,
-        offeneZahl: () => library.db.countEmbeddingBackfill(),
-        nichtVerfuegbar: _modelHint(
-            t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
-        aktionen: [
-          // Nach der Umstellung der Bildvorverarbeitung der eigentlich
-          // sinnvolle Weg: Die gespeicherten Vektoren stammen noch vom
-          // gestauchten Bild.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzBerechneEmbeddings,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillClipEmbeddings(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzBerechneEmbeddings,
-            emptyMessage: t.werkzAlleHabenEmbedding,
-            stream: () => library.backfillClipEmbeddings(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzErkenneText,
+        emptyMessage: t.werkzAlleTextDurchsucht,
+        stream: () => library.backfillOcrText(),
       ),
-      Aufgabe(
-        schluessel: 'kitags',
-        rechenintensiv: true,
-        icon: Icons.sell_outlined,
-        titel: t.aufgKiTagsTitel,
-        stufe: Analysestufe.schlagwoerter,
-        beschreibung: t.aufgKiTagsText,
-        offeneZahl: () => library.db.countAiTagging(onlyUntagged: true),
-        nichtVerfuegbar: _modelHint(
-            t, library.clipAvailable, t.aufgClipModell, t.aufgWoModelle),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzBerechneKiTags,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillAiTags(onlyUntagged: false),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzBerechneKiTags,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillAiTags(onlyUntagged: true),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'beschreibungen',
+    rechenintensiv: true,
+    icon: Icons.subtitles_outlined,
+    titel: t.aufgBeschreibungenTitel,
+    stufe: Analysestufe.bildbeschreibung,
+    beschreibung: t.aufgBeschreibungenText,
+    offeneZahl: () => library.db.countCaptionBackfill(),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.captioningAvailable,
+      t.aufgBeschreibungsmodell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      // Nach dem Modellwechsel der eigentlich sinnvolle Weg: Die
+      // vorhandenen Sätze stammen vom abgelösten Modell.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzErzeugeBeschreibungen,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillCaptions(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'unschaerfe',
-        rechenintensiv: true,
-        // Teil des gemeinsamen Durchgangs, siehe Gesichter.
-        stufe: Analysestufe.bildanalyse,
-        icon: Icons.blur_on,
-        titel: t.aufgUnschaerfeTitel,
-        beschreibung: t.aufgUnschaerfeText,
-        offeneZahl: () => library.db.countBlurBackfill(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzBerechneUnschaerfe,
-            emptyMessage: t.werkzAlleHabenUnschaerfe,
-            stream: () => library.backfillBlurScores(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzErzeugeBeschreibungen,
+        emptyMessage: t.werkzAlleHabenBeschreibung,
+        stream: () => library.backfillCaptions(),
       ),
-      Aufgabe(
-        schluessel: 'videobilder',
-        rechenintensiv: true,
-        icon: Icons.video_library_outlined,
-        titel: t.aufgVideobilderTitel,
-        beschreibung: t.aufgVideobilderText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countVideobilder(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzVideobilder,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillVideobilder(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzVideobilder,
-            emptyMessage: t.werkzAlleVideobilder,
-            stream: () => library.backfillVideobilder(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'beschreibungen_de',
+    rechenintensiv: true,
+    icon: Icons.translate,
+    titel: t.aufgUebersetzenTitel,
+    beschreibung: t.aufgUebersetzenText,
+    offeneZahl: () => library.db.countCaptionTranslation(),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.uebersetzungEnDeAvailable,
+      t.aufgUebersetzungsmodell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      // Nach einem Wechsel des Übersetzungsmodells der sinnvolle Weg.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzUebersetzeBeschreibungen,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.uebersetzeBildbeschreibungen(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'datumsherkunft',
-        icon: Icons.event_busy_outlined,
-        titel: t.aufgDatumsherkunftTitel,
-        beschreibung: t.aufgDatumsherkunftText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countDatumsherkunft(),
-        aktionen: [
-          // „Alle" sieht auch dort noch einmal nach, wo schon geprüft
-          // wurde – der Weg für Dateien, die ausserhalb der App
-          // nachträglich ein Datum bekommen haben.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzPruefeDatumsherkunft,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillDatumsherkunft(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzPruefeDatumsherkunft,
-            emptyMessage: t.werkzAlleDatumGeprueft,
-            stream: () => library.backfillDatumsherkunft(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzUebersetzeBeschreibungen,
+        emptyMessage: t.werkzAlleUebersetzt,
+        stream: () => library.uebersetzeBildbeschreibungen(),
       ),
-      Aufgabe(
-        schluessel: 'orte',
-        icon: Icons.place_outlined,
-        titel: t.aufgOrteTitel,
-        beschreibung: t.aufgOrteText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countLocationBackfill(),
-        aktionen: [
-          // „Alle" liest auch die, in denen schon einmal nachgesehen
-          // wurde – der Weg für Dateien, die ausserhalb der App
-          // nachträglich Koordinaten bekommen haben.
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzLeseOrte,
-            emptyMessage: t.werkzKeinePassenden,
-            stream: () => library.backfillLocations(alle: true),
-          ),
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzLeseOrte,
-            emptyMessage: t.werkzAlleHabenOrt,
-            stream: () => library.backfillLocations(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'gesichtsschaerfe',
+    // Kein Modell und kein neuer Dekodiervorgang: Gerechnet wird auf
+    // den bereits gespeicherten 160x160-Ausschnitten, rund zwei
+    // Millisekunden je Gesicht.
+    rechenintensiv: false,
+    icon: Icons.blur_on,
+    titel: t.aufgGesichtsschaerfeTitel,
+    beschreibung: t.aufgGesichtsschaerfeText,
+    offeneZahl: () => library.db.countGesichterOhneSchaerfe(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzBerechneGesichtsschaerfe,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillGesichtsschaerfe(),
       ),
-      Aufgabe(
-        schluessel: 'ortsnamen',
-        icon: Icons.map_outlined,
-        titel: t.werkzOrteAufloesenTitel,
-        beschreibung: t.aufgOrteAufloesenText,
-        offeneZahl: () => library.db.countLocationNameBackfill(),
-        nichtVerfuegbar: _modelHint(t, library.geoDataAvailable,
-            t.aufgGeoDatensatz, t.aufgWoStandortdaten),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzLoeseOrteAuf,
-            emptyMessage: t.werkzAlleAufgeloest,
-            stream: () => library.backfillLocationNames(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'embeddings',
+    rechenintensiv: true,
+    icon: Icons.scatter_plot_outlined,
+    titel: t.aufgEmbeddingsTitel,
+    stufe: Analysestufe.bildanalyse,
+    beschreibung: t.aufgEmbeddingsText,
+    offeneZahl: () => library.db.countEmbeddingBackfill(),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.clipAvailable,
+      t.aufgClipModell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      // Nach der Umstellung der Bildvorverarbeitung der eigentlich
+      // sinnvolle Weg: Die gespeicherten Vektoren stammen noch vom
+      // gestauchten Bild.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzBerechneEmbeddings,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillClipEmbeddings(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'kameradaten',
-        icon: Icons.photo_camera_outlined,
-        titel: t.aufgKameraTitel,
-        beschreibung: t.aufgKameraText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countCameraMetadataBackfill(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzLeseKameradaten,
-            emptyMessage: t.werkzAlleHabenKameradaten,
-            stream: () => library.backfillCameraMetadata(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzBerechneEmbeddings,
+        emptyMessage: t.werkzAlleHabenEmbedding,
+        stream: () => library.backfillClipEmbeddings(),
       ),
-      Aufgabe(
-        schluessel: 'aufnahmedatum',
-        icon: Icons.event_repeat_outlined,
-        titel: t.werkzDatumTitel,
-        beschreibung: t.aufgDatumText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countDatumskorrektur(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzKorrigiereDatum,
-            emptyMessage: t.werkzKeineRawFotos,
-            stream: () => library.korrigiereAufnahmedaten(),
-            // Eine der beiden Aufgaben mit Rückfrage: Sie schreibt
-            // Aufnahmedaten um und verschiebt Dateien auf der Platte.
-            bestaetigung: _frageDatumskorrektur,
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'kitags',
+    rechenintensiv: true,
+    icon: Icons.sell_outlined,
+    titel: t.aufgKiTagsTitel,
+    stufe: Analysestufe.schlagwoerter,
+    beschreibung: t.aufgKiTagsText,
+    offeneZahl: () => library.db.countAiTagging(onlyUntagged: true),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.clipAvailable,
+      t.aufgClipModell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzBerechneKiTags,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillAiTags(onlyUntagged: false),
       ),
-      // Direkt hinter der Datumskorrektur: Die verschiebt Dateien nach
-      // dem neu gelesenen Datum, und was danach noch schief liegt, ist
-      // genau der Fall für diese Karte.
-      Aufgabe(
-        schluessel: 'ablage',
-        icon: Icons.folder_copy_outlined,
-        titel: t.aufgAblageTitel,
-        beschreibung: t.aufgAblageText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.zaehleAblageordnung(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzOrdneAblage,
-            emptyMessage: t.werkzAblageStimmt,
-            // Am Ende soll die Zahl der wirklich umgelegten Dateien
-            // dastehen, nicht die der angesehenen.
-            bilanztext: (getan, gesamt) => t.werkzAblageBilanz(getan, gesamt),
-            stream: () => library.ordneAblageNeu(),
-            // Die zweite Aufgabe mit Rückfrage, aus demselben Grund wie
-            // die erste: Sie fasst Dateien auf der Platte an.
-            bestaetigung: _frageAblage,
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzBerechneKiTags,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillAiTags(onlyUntagged: true),
       ),
-      // Vor den Live-Photo-Paaren: Wer als Video geführt wird, obwohl er
-      // ein Standbild ist, wird auch bei der Paarsuche nicht gefunden.
-      Aufgabe(
-        schluessel: 'dateiarten',
-        icon: Icons.rule_folder_outlined,
-        titel: t.aufgDateiartTitel,
-        beschreibung: t.aufgDateiartText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countAssetsOfType('VIDEO'),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzPruefeDateiarten,
-            emptyMessage: t.werkzAlleArtenStimmen,
-            stream: () => library.repariereDateiarten(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'unschaerfe',
+    rechenintensiv: true,
+    // Teil des gemeinsamen Durchgangs, siehe Gesichter.
+    stufe: Analysestufe.bildanalyse,
+    icon: Icons.blur_on,
+    titel: t.aufgUnschaerfeTitel,
+    beschreibung: t.aufgUnschaerfeText,
+    offeneZahl: () => library.db.countBlurBackfill(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzBerechneUnschaerfe,
+        emptyMessage: t.werkzAlleHabenUnschaerfe,
+        stream: () => library.backfillBlurScores(),
       ),
-      Aufgabe(
-        schluessel: 'livephotos',
-        icon: Icons.motion_photos_on_outlined,
-        titel: t.aufgLivePhotoTitel,
-        beschreibung: t.aufgLivePhotoText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countUnlinkedAssetsOfType('IMAGE'),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.fehlende,
-            laufTitel: t.werkzPruefeLivePhotos,
-            emptyMessage: t.werkzKeineUnverknuepften,
-            stream: () => library.relinkLivePhotos(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'videobilder',
+    rechenintensiv: true,
+    icon: Icons.video_library_outlined,
+    titel: t.aufgVideobilderTitel,
+    beschreibung: t.aufgVideobilderText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countVideobilder(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzVideobilder,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillVideobilder(alle: true),
       ),
-      Aufgabe(
-        schluessel: 'rendern',
-        icon: Icons.tune,
-        titel: t.werkzNeuRendernTitel,
-        beschreibung: t.aufgRendernText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countAssetsWithDevelopSettings(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzRendereNeu,
-            emptyMessage: t.werkzKeineEntwickelten,
-            stream: () => library.redevelopAll(),
-          ),
-        ],
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzVideobilder,
+        emptyMessage: t.werkzAlleVideobilder,
+        stream: () => library.backfillVideobilder(),
       ),
-      Aufgabe(
-        schluessel: 'xmp',
-        icon: Icons.description_outlined,
-        titel: t.werkzXmpSchreibenTitel,
-        beschreibung: t.aufgXmpText,
-        offenLabel: t.aufgBetrifft,
-        offeneZahl: () => library.db.countXmpExport(),
-        aktionen: [
-          Aufgabenaktion(
-            modus: Aufgabenmodus.alle,
-            laufTitel: t.werkzSchreibeXmp,
-            emptyMessage: t.werkzKeineFotosGesperrt,
-            stream: () => library.writeXmpSidecars(),
-          ),
-        ],
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'datumsherkunft',
+    icon: Icons.event_busy_outlined,
+    titel: t.aufgDatumsherkunftTitel,
+    beschreibung: t.aufgDatumsherkunftText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countDatumsherkunft(),
+    aktionen: [
+      // „Alle" sieht auch dort noch einmal nach, wo schon geprüft
+      // wurde – der Weg für Dateien, die ausserhalb der App
+      // nachträglich ein Datum bekommen haben.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzPruefeDatumsherkunft,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillDatumsherkunft(alle: true),
       ),
-    ];
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzPruefeDatumsherkunft,
+        emptyMessage: t.werkzAlleDatumGeprueft,
+        stream: () => library.backfillDatumsherkunft(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'orte',
+    icon: Icons.place_outlined,
+    titel: t.aufgOrteTitel,
+    beschreibung: t.aufgOrteText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countLocationBackfill(),
+    aktionen: [
+      // „Alle" liest auch die, in denen schon einmal nachgesehen
+      // wurde – der Weg für Dateien, die ausserhalb der App
+      // nachträglich Koordinaten bekommen haben.
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzLeseOrte,
+        emptyMessage: t.werkzKeinePassenden,
+        stream: () => library.backfillLocations(alle: true),
+      ),
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzLeseOrte,
+        emptyMessage: t.werkzAlleHabenOrt,
+        stream: () => library.backfillLocations(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'ortsnamen',
+    icon: Icons.map_outlined,
+    titel: t.werkzOrteAufloesenTitel,
+    beschreibung: t.aufgOrteAufloesenText,
+    offeneZahl: () => library.db.countLocationNameBackfill(),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.geoDataAvailable,
+      t.aufgGeoDatensatz,
+      t.aufgWoStandortdaten,
+    ),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzLoeseOrteAuf,
+        emptyMessage: t.werkzAlleAufgeloest,
+        stream: () => library.backfillLocationNames(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'kameradaten',
+    icon: Icons.photo_camera_outlined,
+    titel: t.aufgKameraTitel,
+    beschreibung: t.aufgKameraText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countCameraMetadataBackfill(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzLeseKameradaten,
+        emptyMessage: t.werkzAlleHabenKameradaten,
+        stream: () => library.backfillCameraMetadata(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'aufnahmedatum',
+    icon: Icons.event_repeat_outlined,
+    titel: t.werkzDatumTitel,
+    beschreibung: t.aufgDatumText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countDatumskorrektur(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzKorrigiereDatum,
+        emptyMessage: t.werkzKeineRawFotos,
+        stream: () => library.korrigiereAufnahmedaten(),
+        // Eine der beiden Aufgaben mit Rückfrage: Sie schreibt
+        // Aufnahmedaten um und verschiebt Dateien auf der Platte.
+        bestaetigung: _frageDatumskorrektur,
+      ),
+    ],
+  ),
+  // Direkt hinter der Datumskorrektur: Die verschiebt Dateien nach
+  // dem neu gelesenen Datum, und was danach noch schief liegt, ist
+  // genau der Fall für diese Karte.
+  Aufgabe(
+    schluessel: 'ablage',
+    icon: Icons.folder_copy_outlined,
+    titel: t.aufgAblageTitel,
+    beschreibung: t.aufgAblageText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.zaehleAblageordnung(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzOrdneAblage,
+        emptyMessage: t.werkzAblageStimmt,
+        // Am Ende soll die Zahl der wirklich umgelegten Dateien
+        // dastehen, nicht die der angesehenen.
+        bilanztext: (getan, gesamt) => t.werkzAblageBilanz(getan, gesamt),
+        stream: () => library.ordneAblageNeu(),
+        // Die zweite Aufgabe mit Rückfrage, aus demselben Grund wie
+        // die erste: Sie fasst Dateien auf der Platte an.
+        bestaetigung: _frageAblage,
+      ),
+    ],
+  ),
+  // Vor den Live-Photo-Paaren: Wer als Video geführt wird, obwohl er
+  // ein Standbild ist, wird auch bei der Paarsuche nicht gefunden.
+  Aufgabe(
+    schluessel: 'dateiarten',
+    icon: Icons.rule_folder_outlined,
+    titel: t.aufgDateiartTitel,
+    beschreibung: t.aufgDateiartText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countAssetsOfType('VIDEO'),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzPruefeDateiarten,
+        emptyMessage: t.werkzAlleArtenStimmen,
+        stream: () => library.repariereDateiarten(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'livephotos',
+    icon: Icons.motion_photos_on_outlined,
+    titel: t.aufgLivePhotoTitel,
+    beschreibung: t.aufgLivePhotoText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countUnlinkedAssetsOfType('IMAGE'),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzPruefeLivePhotos,
+        emptyMessage: t.werkzKeineUnverknuepften,
+        stream: () => library.relinkLivePhotos(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'rendern',
+    icon: Icons.tune,
+    titel: t.werkzNeuRendernTitel,
+    beschreibung: t.aufgRendernText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countAssetsWithDevelopSettings(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzRendereNeu,
+        emptyMessage: t.werkzKeineEntwickelten,
+        stream: () => library.redevelopAll(),
+      ),
+    ],
+  ),
+  Aufgabe(
+    schluessel: 'xmp',
+    icon: Icons.description_outlined,
+    titel: t.werkzXmpSchreibenTitel,
+    beschreibung: t.aufgXmpText,
+    offenLabel: t.aufgBetrifft,
+    offeneZahl: () => library.db.countXmpExport(),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzSchreibeXmp,
+        emptyMessage: t.werkzKeineFotosGesperrt,
+        stream: () => library.writeXmpSidecars(),
+      ),
+    ],
+  ),
+];
 
 /// Die Rückfrage vor der Datumskorrektur.
 Future<bool> _frageDatumskorrektur(BuildContext context) async {
@@ -1255,8 +1319,9 @@ Future<bool> _frageDatumskorrektur(BuildContext context) async {
       content: Text(t.werkzDatumFrage),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(t.werkzDatumStarten),
@@ -1277,8 +1342,9 @@ Future<bool> _frageAblage(BuildContext context) async {
       content: Text(t.werkzAblageFrage),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           child: Text(t.werkzAblageStarten),
@@ -1318,8 +1384,11 @@ class BackgroundTasksScreen extends StatelessWidget {
   /// zugehoerige Karte sofort sehen – nicht sie suchen.
   final String? hervorheben;
 
-  const BackgroundTasksScreen(
-      {super.key, required this.library, this.hervorheben});
+  const BackgroundTasksScreen({
+    super.key,
+    required this.library,
+    this.hervorheben,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1424,7 +1493,10 @@ class _Kopfknopf extends StatelessWidget {
 /// ankreuzen lässt und vier davon verwirft, wäre eine Zumutung. Jetzt
 /// laufen sie der Reihe nach durch.
 Future<void> _zeigeSammeldialog(
-    BuildContext context, LibraryState library, List<Aufgabe> aufgaben) async {
+  BuildContext context,
+  LibraryState library,
+  List<Aufgabe> aufgaben,
+) async {
   final t = AppTexte.of(context);
   final waehlbar = aufgaben.where((a) => a.bedienbar).toList();
   final gewaehlt = <String>{};
@@ -1441,18 +1513,22 @@ Future<void> _zeigeSammeldialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(t.aufgErstellenText,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                t.aufgErstellenText,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               SegmentedButton<Aufgabenmodus>(
                 segments: [
                   for (final m in Aufgabenmodus.values)
                     ButtonSegment(
-                        value: m,
-                        label: Text(modusName(t, m)),
-                        icon: Icon(modusSymbol(m))),
+                      value: m,
+                      label: Text(modusName(t, m)),
+                      icon: Icon(modusSymbol(m)),
+                    ),
                 ],
                 selected: {modus},
                 onSelectionChanged: (auswahl) =>
@@ -1469,9 +1545,11 @@ Future<void> _zeigeSammeldialog(
                         value: gewaehlt.contains(a.schluessel),
                         title: Text(a.titel),
                         secondary: Icon(a.icon),
-                        onChanged: (an) => setzeZustand(() => an == true
-                            ? gewaehlt.add(a.schluessel)
-                            : gewaehlt.remove(a.schluessel)),
+                        onChanged: (an) => setzeZustand(
+                          () => an == true
+                              ? gewaehlt.add(a.schluessel)
+                              : gewaehlt.remove(a.schluessel),
+                        ),
                       ),
                   ],
                 ),
@@ -1481,13 +1559,15 @@ Future<void> _zeigeSammeldialog(
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
             // Abgeschaltet statt mit einer Meldung quittiert: Ein Knopf,
             // der nichts tun kann, soll das vorher zeigen.
-            onPressed:
-                gewaehlt.isEmpty ? null : () => Navigator.pop(context, true),
+            onPressed: gewaehlt.isEmpty
+                ? null
+                : () => Navigator.pop(context, true),
             child: Text(t.aufgEinreihen),
           ),
         ],
@@ -1511,7 +1591,9 @@ Future<void> _zeigeSammeldialog(
 
 /// Wie viele schwere Aufgaben nebeneinander laufen dürfen.
 Future<void> _zeigeGleichzeitig(
-    BuildContext context, LibraryState library) async {
+  BuildContext context,
+  LibraryState library,
+) async {
   final t = AppTexte.of(context);
   var wert = library.maxGleichzeitig;
   final neu = await showDialog<int>(
@@ -1523,10 +1605,13 @@ Future<void> _zeigeGleichzeitig(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t.aufgGleichzeitigText,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              t.aufgGleichzeitigText,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1536,14 +1621,17 @@ Future<void> _zeigeGleichzeitig(
                   // Ohne Kurzhinweis liest die Sprachausgabe hier zwei
                   // namenlose Knoepfe um eine nackte Zahl vor.
                   tooltip: t.aufgWenigerGleichzeitig,
-                  onPressed:
-                      wert <= 1 ? null : () => setzeZustand(() => wert--),
+                  onPressed: wert <= 1
+                      ? null
+                      : () => setzeZustand(() => wert--),
                 ),
                 SizedBox(
                   width: 56,
-                  child: Text('$wert',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall),
+                  child: Text(
+                    '$wert',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add),
@@ -1553,8 +1641,9 @@ Future<void> _zeigeGleichzeitig(
                   // im Speicher (CLIP-Bild 335 MB, Bildbeschreibung
                   // 235 MB, gemessen) und dekodiert dieselben Fotos noch
                   // einmal.
-                  onPressed:
-                      wert >= 4 ? null : () => setzeZustand(() => wert++),
+                  onPressed: wert >= 4
+                      ? null
+                      : () => setzeZustand(() => wert++),
                 ),
               ],
             ),
@@ -1562,11 +1651,13 @@ Future<void> _zeigeGleichzeitig(
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, wert),
-              child: Text(t.allgSpeichern)),
+            onPressed: () => Navigator.pop(context, wert),
+            child: Text(t.allgSpeichern),
+          ),
         ],
       ),
     ),

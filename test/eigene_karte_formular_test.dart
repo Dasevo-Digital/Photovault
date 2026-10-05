@@ -39,46 +39,55 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     final formular = GlobalKey<EigeneKarteEinstellungState>();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              KartenquellenUebersicht(
-                library: library,
-                aufVorlage: (v) => formular.currentState?.vorlageEinsetzen(v),
-              ),
-              EigeneKarteEinstellung(key: formular, library: library),
-            ],
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                KartenquellenUebersicht(
+                  library: library,
+                  aufVorlage: (v) => formular.currentState?.vorlageEinsetzen(v),
+                ),
+                EigeneKarteEinstellung(key: formular, library: library),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
   /// Was in einem Textfeld mit dieser Beschriftung steht.
   String feld(WidgetTester tester, String beschriftung) {
-    final f = tester.widget<TextField>(find.ancestor(
-      of: find.text(beschriftung),
-      matching: find.byType(TextField),
-    ));
+    final f = tester.widget<TextField>(
+      find.ancestor(
+        of: find.text(beschriftung),
+        matching: find.byType(TextField),
+      ),
+    );
     return f.controller!.text;
   }
 
-  testWidgets('Eintragen fuellt alles aus ausser dem Schluessel',
-      (tester) async {
+  testWidgets('Eintragen fuellt alles aus ausser dem Schluessel', (
+    tester,
+  ) async {
     await zeige(tester);
     final v = kartenvorlagen.firstWhere((v) => v.brauchtSchluessel);
-    await tester.tap(find.descendant(
-      of: find.ancestor(
-          of: find.text(v.name), matching: find.byType(ListTile)),
-      matching: find.text('Eintragen'),
-    ));
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text(v.name),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.text('Eintragen'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(feld(tester, 'Name'), v.name);
@@ -93,15 +102,21 @@ void main() {
   testWidgets('wo es den Schluessel gibt, ist anklickbar', (tester) async {
     await zeige(tester);
     final v = kartenvorlagen.firstWhere((v) => v.woher != null);
-    await tester.tap(find.descendant(
-      of: find.ancestor(
-          of: find.text(v.name), matching: find.byType(ListTile)),
-      matching: find.text('Eintragen'),
-    ));
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text(v.name),
+          matching: find.byType(ListTile),
+        ),
+        matching: find.text('Eintragen'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final knopf = find.widgetWithText(
-        TextButton, 'Schlüssel gibt es bei ${v.woher}');
+      TextButton,
+      'Schlüssel gibt es bei ${v.woher}',
+    );
     expect(knopf, findsOneWidget);
     expect(tester.widget<TextButton>(knopf).onPressed, isNotNull);
   });

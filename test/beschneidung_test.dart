@@ -61,7 +61,11 @@ void main() {
   test('abgesoffene Tiefen ebenso', () {
     final b = beschneidungAus(mit(rot0: 500, gruen0: 500, blau0: 500));
     expect(b.tiefen, isTrue);
-    expect(b.tiefenNeutral, isTrue, reason: 'alle drei Kanäle = wirklich schwarz');
+    expect(
+      b.tiefenNeutral,
+      isTrue,
+      reason: 'alle drei Kanäle = wirklich schwarz',
+    );
     expect(b.lichter, isFalse);
   });
 
@@ -69,7 +73,11 @@ void main() {
     // Ein einzelnes schwarzes Pixel in einer Nachtaufnahme darf die
     // Warnung nicht dauerleuchten lassen – sonst schaut niemand mehr hin.
     final b = beschneidungAus(mit(rot0: 5, gesamt: 10000));
-    expect(b.irgendwas, isFalse, reason: '5 von 10000 liegt unter einem Promille');
+    expect(
+      b.irgendwas,
+      isFalse,
+      reason: '5 von 10000 liegt unter einem Promille',
+    );
   });
 
   test('die Schwelle greift genau dort, wo sie steht', () {

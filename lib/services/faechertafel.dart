@@ -130,13 +130,15 @@ List<Fachplatz> faechertafel(
         final nummer = eintrag.key * 2 + seite;
         final index = nummer - plaetzeImRing;
         final person = eltern[seite];
-        plaetze.add(Fachplatz(
-          nummer: nummer,
-          ring: ring,
-          personId: person,
-          vonWinkel: fachAnfang + index * breite,
-          oeffnung: breite,
-        ));
+        plaetze.add(
+          Fachplatz(
+            nummer: nummer,
+            ring: ring,
+            personId: person,
+            vonWinkel: fachAnfang + index * breite,
+            oeffnung: breite,
+          ),
+        );
         if (person != null) naechste[nummer] = person;
       }
     }

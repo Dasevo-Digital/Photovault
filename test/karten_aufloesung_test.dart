@@ -26,41 +26,56 @@ void main() {
     });
 
     test('am Aequator ist es weiter als bei uns', () {
-      expect(massstabMeter(15, breite: 0),
-          greaterThan(massstabMeter(15, breite: 52)));
+      expect(
+        massstabMeter(15, breite: 0),
+        greaterThan(massstabMeter(15, breite: 52)),
+      );
     });
   });
 
   group('die Aufloesung der Kacheln', () {
     /// Baut die Kachelschicht unter einer bestimmten Punktdichte und
     /// gibt zurueck, was flutter_map daraus gemacht hat.
-    Future<TileLayer> schicht(WidgetTester tester,
-        {required double dichte, required Kartenstil stil}) async {
+    Future<TileLayer> schicht(
+      WidgetTester tester, {
+      required double dichte,
+      required Kartenstil stil,
+    }) async {
       late TileLayer gebaut;
-      await tester.pumpWidget(MediaQuery(
-        data: MediaQueryData(devicePixelRatio: dichte),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Builder(builder: (context) {
-            gebaut = buildMapTileLayer(context, stil: stil);
-            return const SizedBox();
-          }),
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(devicePixelRatio: dichte),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (context) {
+                gebaut = buildMapTileLayer(context, stil: stil);
+                return const SizedBox();
+              },
+            ),
+          ),
         ),
-      ));
+      );
       return gebaut;
     }
 
-    testWidgets('auf einem gewoehnlichen Bildschirm bleibt sie aus',
-        (tester) async {
+    testWidgets('auf einem gewoehnlichen Bildschirm bleibt sie aus', (
+      tester,
+    ) async {
       final s = await schicht(tester, dichte: 1.0, stil: Kartenstil.dunkel);
       expect(s.resolvedRetinaMode, RetinaMode.disabled);
     });
 
-    testWidgets('auf einem Retina-Bildschirm wird sie nachgebildet',
-        (tester) async {
+    testWidgets('auf einem Retina-Bildschirm wird sie nachgebildet', (
+      tester,
+    ) async {
       // OpenStreetMap kennt keine @2x-Kacheln (nachgemessen: HTTP 400),
       // also holt flutter_map vier Kacheln der naechsttieferen Stufe.
-      for (final stil in [Kartenstil.hell, Kartenstil.dunkel, Kartenstil.topo]) {
+      for (final stil in [
+        Kartenstil.hell,
+        Kartenstil.dunkel,
+        Kartenstil.topo,
+      ]) {
         final s = await schicht(tester, dichte: 2.0, stil: stil);
         expect(s.resolvedRetinaMode, RetinaMode.simulation, reason: stil.name);
       }
@@ -78,18 +93,21 @@ void main() {
 
     testWidgets('eine eigene Quelle mit {r} ebenso', (tester) async {
       addTearDown(() => setzeEigeneKarte(null));
-      setzeEigeneKarte(const Eigenkarte(
-        name: 'Meine',
-        url: 'https://beispiel.de/{z}/{x}/{y}{r}.png',
-        nennung: '© Beispiel',
-        zugestimmt: true,
-      ));
+      setzeEigeneKarte(
+        const Eigenkarte(
+          name: 'Meine',
+          url: 'https://beispiel.de/{z}/{x}/{y}{r}.png',
+          nennung: '© Beispiel',
+          zugestimmt: true,
+        ),
+      );
       final s = await schicht(tester, dichte: 2.0, stil: Kartenstil.eigene);
       expect(s.resolvedRetinaMode, RetinaMode.server);
     });
 
-    testWidgets('die nachgebildete Fassung kostet eine native Stufe',
-        (tester) async {
+    testWidgets('die nachgebildete Fassung kostet eine native Stufe', (
+      tester,
+    ) async {
       // Der Preis, und er steht hier, damit ihn niemand uebersieht:
       // flutter_map senkt maxNativeZoom um eins und rechnet einen
       // Zoomversatz dazu. Wer die Zahl anhebt, um das auszugleichen,
@@ -105,8 +123,7 @@ void main() {
   group('die Massstabsleiste', () {
     testWidgets('steht auf der flachen Karte', (tester) async {
       // Ohne sie liess sich ueber Kartentiefe nur in Zoomstufen reden.
-      final quelle =
-          File('lib/screens/map_screen.dart').readAsStringSync();
+      final quelle = File('lib/screens/map_screen.dart').readAsStringSync();
       expect(quelle.contains('Scalebar('), isTrue);
     });
   });

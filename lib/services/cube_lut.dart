@@ -108,8 +108,9 @@ class CubeLut {
       return [werte[i], werte[i + 1], werte[i + 2]];
     }
 
-    List<double> misch(List<double> a, List<double> b, double t) =>
-        [for (var i = 0; i < 3; i++) a[i] + (b[i] - a[i]) * t];
+    List<double> misch(List<double> a, List<double> b, double t) => [
+      for (var i = 0; i < 3; i++) a[i] + (b[i] - a[i]) * t,
+    ];
 
     final c00 = misch(stelle(r0, g0, b0), stelle(r1, g0, b0), fr);
     final c10 = misch(stelle(r0, g1, b0), stelle(r1, g1, b0), fr);
@@ -137,7 +138,9 @@ CubeLut parseCubeLut(String inhalt) {
   for (var nr = 0; nr < zeilen.length; nr++) {
     // Kommentare beginnen mit '#'; Leerzeilen sind erlaubt.
     final roh = zeilen[nr];
-    final ohneKommentar = roh.contains('#') ? roh.substring(0, roh.indexOf('#')) : roh;
+    final ohneKommentar = roh.contains('#')
+        ? roh.substring(0, roh.indexOf('#'))
+        : roh;
     final zeile = ohneKommentar.trim();
     if (zeile.isEmpty) continue;
 
@@ -146,7 +149,9 @@ CubeLut parseCubeLut(String inhalt) {
 
     switch (wort) {
       case 'TITLE':
-        titel = zeile.substring(zeile.indexOf(teile[0]) + teile[0].length).trim();
+        titel = zeile
+            .substring(zeile.indexOf(teile[0]) + teile[0].length)
+            .trim();
         titel = titel.replaceAll('"', '').trim();
         if (titel.isEmpty) titel = null;
       case 'LUT_3D_SIZE':
@@ -174,7 +179,9 @@ CubeLut parseCubeLut(String inhalt) {
         }
       default:
         final zahlen = _dreiZahlen(teile);
-        if (zahlen == null) throw CubeAusnahme(CubeFehler.unlesbareZeile, zeile: nr + 1);
+        if (zahlen == null) {
+          throw CubeAusnahme(CubeFehler.unlesbareZeile, zeile: nr + 1);
+        }
         // Unverändert übernehmen: Das sind Ausgabefarben. Der Bereich aus
         // DOMAIN_MIN/MAX gilt für die Eingabe und wird beim Abtasten
         // angewandt.

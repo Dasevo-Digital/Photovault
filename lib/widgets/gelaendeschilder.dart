@@ -35,11 +35,7 @@ import '../services/wanderobjekte.dart';
 /// setzen ist der teuerste Einzelposten einer Beschriftung, und der Text
 /// ändert sich nie.
 class Gelaendeschild {
-  Gelaendeschild({
-    required this.ort,
-    required this.art,
-    this.beschriftung,
-  });
+  Gelaendeschild({required this.ort, required this.art, this.beschriftung});
 
   /// Wo es steht – in denselben Metern wie das Netz.
   final Raumpunkt ort;
@@ -55,15 +51,18 @@ class Gelaendeschild {
     final text = beschriftung;
     if (text == null) return null;
     if (_absatz != null) return _absatz;
-    final bauer = ui.ParagraphBuilder(ui.ParagraphStyle(
-      fontFamily: schriftart,
-      fontSize: schriftgroesse,
-      fontWeight: FontWeight.w600,
-      maxLines: 1,
-      textAlign: TextAlign.left,
-    ))
-      ..pushStyle(ui.TextStyle(color: const Color(0xFF1B1B1B)))
-      ..addText(text);
+    final bauer =
+        ui.ParagraphBuilder(
+            ui.ParagraphStyle(
+              fontFamily: schriftart,
+              fontSize: schriftgroesse,
+              fontWeight: FontWeight.w600,
+              maxLines: 1,
+              textAlign: TextAlign.left,
+            ),
+          )
+          ..pushStyle(ui.TextStyle(color: const Color(0xFF1B1B1B)))
+          ..addText(text);
     return _absatz = bauer.build()
       ..layout(const ui.ParagraphConstraints(width: 400));
   }
@@ -185,7 +184,11 @@ int zeichneSchilder(
       final breite = absatz.maxIntrinsicWidth + 2 * rand;
       final hoehe = absatz.height + 2 * rand;
       kasten = Rect.fromLTWH(
-          e.stelle.dx + 10, e.stelle.dy - hoehe - 8, breite, hoehe);
+        e.stelle.dx + 10,
+        e.stelle.dy - hoehe - 8,
+        breite,
+        hoehe,
+      );
       // Wer näher steht, gewinnt: Ein Kästchen, das ein schon
       // gezeichnetes überdeckt, fällt weg. Ohne das ist die Ferne eine
       // Wand aus Kästchen.
@@ -221,8 +224,7 @@ int zeichneSchilder(
         ..strokeWidth = 1
         ..color = zeichen.withValues(alpha: 0.7 * deckkraft),
     );
-    leinwand.drawParagraph(
-        absatz, Offset(kasten.left + 5, kasten.top + 5));
+    leinwand.drawParagraph(absatz, Offset(kasten.left + 5, kasten.top + 5));
   }
   return beschriftet;
 }
@@ -230,16 +232,16 @@ int zeichneSchilder(
 /// Die Farbe je Art – nicht Zierrat, sondern die einzige Auskunft, die
 /// ein namenloser Punkt gibt.
 Color _zeichenfarbe(Wanderart art) => switch (art) {
-      Wanderart.gipfel => const Color(0xFF8D5524),
-      Wanderart.sattel => const Color(0xFF8D5524),
-      Wanderart.aussicht => const Color(0xFF1565C0),
-      Wanderart.huette => const Color(0xFFB3261E),
-      Wanderart.schutzhuette => const Color(0xFFB3261E),
-      Wanderart.quelle => const Color(0xFF00838F),
-      Wanderart.wasserfall => const Color(0xFF00838F),
-      Wanderart.wegweiser => const Color(0xFF5D6B3A),
-      Wanderart.ruine => const Color(0xFF5B5B5B),
-    };
+  Wanderart.gipfel => const Color(0xFF8D5524),
+  Wanderart.sattel => const Color(0xFF8D5524),
+  Wanderart.aussicht => const Color(0xFF1565C0),
+  Wanderart.huette => const Color(0xFFB3261E),
+  Wanderart.schutzhuette => const Color(0xFFB3261E),
+  Wanderart.quelle => const Color(0xFF00838F),
+  Wanderart.wasserfall => const Color(0xFF00838F),
+  Wanderart.wegweiser => const Color(0xFF5D6B3A),
+  Wanderart.ruine => const Color(0xFF5B5B5B),
+};
 
 /// Das Zeichen selbst – gezeichnet und nicht aus einer Schrift geholt.
 ///
@@ -248,8 +250,13 @@ Color _zeichenfarbe(Wanderart art) => switch (art) {
 /// stünden dann auf verschiedenen Höhen über demselben Punkt. Vier
 /// gezeichnete Formen sind hier billiger als eine Ausrichtung, die man
 /// je Zeichen nachmessen müsste.
-void _zeichenMalen(ui.Canvas leinwand, Offset wo, Wanderart art, Color farbe,
-    double deckkraft) {
+void _zeichenMalen(
+  ui.Canvas leinwand,
+  Offset wo,
+  Wanderart art,
+  Color farbe,
+  double deckkraft,
+) {
   final fuellung = ui.Paint()..color = farbe.withValues(alpha: deckkraft);
   final saum = ui.Paint()
     ..style = ui.PaintingStyle.stroke

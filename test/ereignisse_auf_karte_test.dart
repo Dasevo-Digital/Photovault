@@ -19,19 +19,24 @@ void main() {
   });
   tearDown(() => db.close());
 
-  Future<void> ereignis(String id, String person,
-          {String? ort, double? breite, double? laenge}) =>
-      db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-        id: id,
-        personId: person,
-        art: 'hochzeit',
-        ort: Value(ort),
-        ortBreite: Value(breite),
-        ortLaenge: Value(laenge),
-      ));
+  Future<void> ereignis(
+    String id,
+    String person, {
+    String? ort,
+    double? breite,
+    double? laenge,
+  }) => db.fuegeEreignisHinzu(
+    LebensereignisseCompanion.insert(
+      id: id,
+      personId: person,
+      art: 'hochzeit',
+      ort: Value(ort),
+      ortBreite: Value(breite),
+      ortLaenge: Value(laenge),
+    ),
+  );
 
-  test('liefert nur verortete Ereignisse, mit dem Namen der Person',
-      () async {
+  test('liefert nur verortete Ereignisse, mit dem Namen der Person', () async {
     await ereignis('e1', 'p1', ort: 'Berlin', breite: 52.5, laenge: 13.4);
     await ereignis('e2', 'p1', ort: 'Nirgendwo');
 

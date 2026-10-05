@@ -118,13 +118,15 @@ class _TimelineScreenState extends State<TimelineScreen>
     // hin als der Rahmen.
     if (_alsListe || !_gliedert) {
       return [
-        [for (final a in _geladen) a.id]
+        [for (final a in _geladen) a.id],
       ];
     }
-    final m =
-        monatsgruppen(_geladen, absteigend: sortierungAbsteigend(_sortierung));
+    final m = monatsgruppen(
+      _geladen,
+      absteigend: sortierungAbsteigend(_sortierung),
+    );
     return [
-      for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id]
+      for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id],
     ];
   }
 
@@ -139,12 +141,20 @@ class _TimelineScreenState extends State<TimelineScreen>
     // Gruppen bleiben Monate, eine Zeile sind alle Fotos nebeneinander -
     // über die Tagesgrenzen hinweg, so wie das Auge sie liest.
     if (_wirksamMitTagen) {
-      final m = monatsgruppen(_geladen,
-          absteigend: sortierungAbsteigend(_sortierung));
+      final m = monatsgruppen(
+        _geladen,
+        absteigend: sortierungAbsteigend(_sortierung),
+      );
       return [
         for (final k in m.schluessel)
-          tageszeilenLaengen(zeitleisteTageszeilen(m.gruppen[k]!, _rasterbreite,
-              kachelbreite: _kachelbreite, form: _form)),
+          tageszeilenLaengen(
+            zeitleisteTageszeilen(
+              m.gruppen[k]!,
+              _rasterbreite,
+              kachelbreite: _kachelbreite,
+              form: _form,
+            ),
+          ),
       ];
     }
     if (_form != Zeitleistenform.reihen) return null;
@@ -152,18 +162,23 @@ class _TimelineScreenState extends State<TimelineScreen>
     // Rechnung Reihen in Gruppen, die die andere gar nicht kennt.
     final gruppen = _gliedert
         ? () {
-            final m = monatsgruppen(_geladen,
-                absteigend: sortierungAbsteigend(_sortierung));
+            final m = monatsgruppen(
+              _geladen,
+              absteigend: sortierungAbsteigend(_sortierung),
+            );
             return [for (final k in m.schluessel) m.gruppen[k]!];
           }()
         : [_geladen];
     return [
       for (final g in gruppen)
         [
-          for (final r in zeitleisteReihen(g, _rasterbreite,
-              kachelbreite: _kachelbreite))
-            r.plaetze.length
-        ]
+          for (final r in zeitleisteReihen(
+            g,
+            _rasterbreite,
+            kachelbreite: _kachelbreite,
+          ))
+            r.plaetze.length,
+        ],
     ];
   }
 
@@ -358,23 +373,25 @@ class _TimelineScreenState extends State<TimelineScreen>
         : await widget.library.db.assetsByIds([for (final z in zeilen) z.id]);
     if (!mounted) return;
     final initialIndex = viewerAssets.indexWhere((a) => a.id == zeile.id);
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: viewerAssets,
-        initialIndex: initialIndex < 0 ? 0 : initialIndex,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: viewerAssets,
+          initialIndex: initialIndex < 0 ? 0 : initialIndex,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _deleteSelected() async {
@@ -399,7 +416,11 @@ class _TimelineScreenState extends State<TimelineScreen>
     final t = AppTexte.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.xs, AppSpacing.md, 0),
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        0,
+      ),
       child: Row(
         children: [
           IconButton(
@@ -438,17 +459,25 @@ class _TimelineScreenState extends State<TimelineScreen>
               underline: const SizedBox.shrink(),
               items: [
                 DropdownMenuItem(
-                    value: ListenGruppierung.monat, child: Text(t.gruppeMonat)),
+                  value: ListenGruppierung.monat,
+                  child: Text(t.gruppeMonat),
+                ),
                 DropdownMenuItem(
-                    value: ListenGruppierung.tag, child: Text(t.gruppeTag)),
+                  value: ListenGruppierung.tag,
+                  child: Text(t.gruppeTag),
+                ),
                 DropdownMenuItem(
-                    value: ListenGruppierung.kamera,
-                    child: Text(t.gruppeKamera)),
+                  value: ListenGruppierung.kamera,
+                  child: Text(t.gruppeKamera),
+                ),
                 DropdownMenuItem(
-                    value: ListenGruppierung.keine, child: Text(t.gruppeKeine)),
+                  value: ListenGruppierung.keine,
+                  child: Text(t.gruppeKeine),
+                ),
               ],
               onChanged: (wahl) => setState(
-                  () => _gruppierung = wahl ?? ListenGruppierung.monat),
+                () => _gruppierung = wahl ?? ListenGruppierung.monat,
+              ),
             ),
           ],
           const Spacer(),
@@ -482,18 +511,20 @@ class _TimelineScreenState extends State<TimelineScreen>
                   ? t.zeitleisteFormReihen
                   : t.zeitleisteFormQuadrate,
               icon: Icon(
-                  _form == Zeitleistenform.quadrate
-                      ? Icons.view_stream_outlined
-                      : Icons.grid_view_outlined,
-                  size: 20),
+                _form == Zeitleistenform.quadrate
+                    ? Icons.view_stream_outlined
+                    : Icons.grid_view_outlined,
+                size: 20,
+              ),
               onPressed: _wechsleForm,
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
               tooltip: t.zeitleisteKleiner,
               icon: const Icon(Icons.zoom_out, size: 20),
-              onPressed:
-                  _kachelstufe == 0 ? null : () => _zoome(groesser: false),
+              onPressed: _kachelstufe == 0
+                  ? null
+                  : () => _zoome(groesser: false),
             ),
             IconButton(
               visualDensity: VisualDensity.compact,
@@ -521,9 +552,12 @@ class _TimelineScreenState extends State<TimelineScreen>
   Widget _mitSchmalenZeilen() {
     return StreamBuilder<List<Rasterzeile>>(
       stream: _zeitleiste.hole(
-          (_windowSize, _sortierung),
-          () => widget.library.db
-              .watchRasterzeilen(limit: _windowSize, sortierung: _sortierung)),
+        (_windowSize, _sortierung),
+        () => widget.library.db.watchRasterzeilen(
+          limit: _windowSize,
+          sortierung: _sortierung,
+        ),
+      ),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -541,9 +575,12 @@ class _TimelineScreenState extends State<TimelineScreen>
   Widget _mitVollenZeilen() {
     return StreamBuilder<List<AssetData>>(
       stream: _liste.hole(
-          (_windowSize, _sortierung),
-          () => widget.library.db
-              .watchTimeline(limit: _windowSize, sortierung: _sortierung)),
+        (_windowSize, _sortierung),
+        () => widget.library.db.watchTimeline(
+          limit: _windowSize,
+          sortierung: _sortierung,
+        ),
+      ),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -562,7 +599,10 @@ class _TimelineScreenState extends State<TimelineScreen>
   List<Rasterzeile> _volleZeilen = const [];
 
   Widget _inhalt(
-      BuildContext context, List<Rasterzeile> assets, List<AssetData>? voll) {
+    BuildContext context,
+    List<Rasterzeile> assets,
+    List<AssetData>? voll,
+  ) {
     {
       {
         _geladen = assets;
@@ -580,7 +620,11 @@ class _TimelineScreenState extends State<TimelineScreen>
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -604,129 +648,166 @@ class _TimelineScreenState extends State<TimelineScreen>
         }
 
         return mitTastatur(
-            kind: Stack(
-          children: [
-            Column(
-              children: [
-                _ansichtsLeiste(context),
-                Expanded(
-                  // Die Spaltenzahl steht nur hier fest, wird aber beim
-                  // Tastendruck gebraucht – dort gibt es keine Constraints.
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final mitZeitstrahl = _gliedert &&
-                        rasterMitZeitstrahl(monatsgruppen(assets,
-                                absteigend: sortierungAbsteigend(_sortierung))
-                            .schluessel
-                            .length);
-                    _rasterbreite = rasterGridbreite(constraints.maxWidth,
-                        mitZeitstrahl: mitZeitstrahl);
-                    _spalten = _alsListe
-                        ? 1
-                        : rasterSpaltenzahl(
-                            constraints.maxWidth,
-                            mitZeitstrahl: mitZeitstrahl,
-                            kachelbreite: _kachelbreite,
-                          );
-                    return _alsListe
-                        ? AssetListView(
-                            assets: voll ?? const [],
-                            paths: widget.library.paths,
-                            gruppierung: _wirksameGruppierung,
-                            absteigend: sortierungAbsteigend(_sortierung),
-                            selectedIds: _selected,
-                            highlightAssetId: widget.highlightAssetId,
-                            nachObenSignal: widget.nachObenSignal,
-                            spalten: _listenspalten,
-                            onSpalten: _setzeSpalten,
-                            onLongPress: (asset) => _toggle(asset.id),
-                            // Die Liste haelt volle Zeilen, die Auswahl
-                            // arbeitet mit schmalen - umgesetzt wird ueber
-                            // die Kennung, nicht ueber das Objekt.
-                            onTap: (asset) =>
-                                rasterKlick(Rasterzeile.aus(asset)),
-                          )
-                        : MonthGroupedAssetGrid(
-                            assets: assets,
-                            paths: widget.library.paths,
-                            highlightAssetId: widget.highlightAssetId,
-                            aktiveKachelId: aktiveKachel,
-                            nachObenSignal: widget.nachObenSignal,
-                            selectedIds: _selected,
-                            onLongPress: (asset) => _toggle(asset.id),
-                            onHeaderTap: _toggleGroup,
-                            onTap: rasterKlick,
-                            kachelbreite: _kachelbreite,
-                            form: _form,
-                            gliedern: _gliedert,
-                            mitTagen: _wirksamMitTagen,
-                            absteigend: sortierungAbsteigend(_sortierung),
-                            onScrollNearEnd: () =>
-                                _maybeGrowWindow(assets.length),
-                          );
-                  }),
-                ),
-              ],
-            ),
-            if (_selected.isNotEmpty)
-              SelectionActionBar(
-                count: _selected.length,
-                onClear: () => setState(_selected.clear),
-                onCompare: vergleichsAktion(
-                    context, widget.library, _selected.toList()),
-                // Nur sichtbar, wenn tatsächlich Einstellungen kopiert
-                // wurden – ein Knopf, der meistens nichts tun kann, wäre
-                // in einer Leiste mit neun Symbolen nur Rauschen.
-                onPasteDevelop: widget.library.hatKopierteEntwicklung
-                    ? () async {
-                        await runBatchPasteDevelop(
-                            context, widget.library, _selected.toList());
-                        if (mounted) setState(_selected.clear);
-                      }
-                    : null,
-                onApplyPreset: () => runBatchApplyPreset(
-                    context, widget.library, _selected.toList()),
-                onFavorite: () async {
-                  await runBatchFavorite(widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onAddToAlbum: () async {
-                  await runBatchAddToAlbumDialog(
-                      context, widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onTag: () async {
-                  await runBatchTagDialog(
-                      context, widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onSetRating: () async {
-                  await runBatchSetRating(
-                      context, widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onSetColorLabel: () async {
-                  await runBatchSetColorLabel(
-                      context, widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onEditMetadata: () async {
-                  await runBatchEditMetadataDialog(
-                      context, widget.library, _selected.toList());
-                  if (mounted) setState(_selected.clear);
-                },
-                onExport: () async {
-                  // Die Ausfuhr schreibt Beipackzettel und braucht dafuer
-                  // die ganze Zeile - hier nachgeholt statt vorgehalten.
-                  final selectedAssets =
-                      await widget.library.db.assetsByIds(_selected.toList());
-                  if (!context.mounted) return;
-                  await runBatchExport(context, widget.library, selectedAssets);
-                  if (mounted) setState(_selected.clear);
-                },
-                onDelete: _deleteSelected,
+          kind: Stack(
+            children: [
+              Column(
+                children: [
+                  _ansichtsLeiste(context),
+                  Expanded(
+                    // Die Spaltenzahl steht nur hier fest, wird aber beim
+                    // Tastendruck gebraucht – dort gibt es keine Constraints.
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final mitZeitstrahl =
+                            _gliedert &&
+                            rasterMitZeitstrahl(
+                              monatsgruppen(
+                                assets,
+                                absteigend: sortierungAbsteigend(_sortierung),
+                              ).schluessel.length,
+                            );
+                        _rasterbreite = rasterGridbreite(
+                          constraints.maxWidth,
+                          mitZeitstrahl: mitZeitstrahl,
+                        );
+                        _spalten = _alsListe
+                            ? 1
+                            : rasterSpaltenzahl(
+                                constraints.maxWidth,
+                                mitZeitstrahl: mitZeitstrahl,
+                                kachelbreite: _kachelbreite,
+                              );
+                        return _alsListe
+                            ? AssetListView(
+                                assets: voll ?? const [],
+                                paths: widget.library.paths,
+                                gruppierung: _wirksameGruppierung,
+                                absteigend: sortierungAbsteigend(_sortierung),
+                                selectedIds: _selected,
+                                highlightAssetId: widget.highlightAssetId,
+                                nachObenSignal: widget.nachObenSignal,
+                                spalten: _listenspalten,
+                                onSpalten: _setzeSpalten,
+                                onLongPress: (asset) => _toggle(asset.id),
+                                // Die Liste haelt volle Zeilen, die Auswahl
+                                // arbeitet mit schmalen - umgesetzt wird ueber
+                                // die Kennung, nicht ueber das Objekt.
+                                onTap: (asset) =>
+                                    rasterKlick(Rasterzeile.aus(asset)),
+                              )
+                            : MonthGroupedAssetGrid(
+                                assets: assets,
+                                paths: widget.library.paths,
+                                highlightAssetId: widget.highlightAssetId,
+                                aktiveKachelId: aktiveKachel,
+                                nachObenSignal: widget.nachObenSignal,
+                                selectedIds: _selected,
+                                onLongPress: (asset) => _toggle(asset.id),
+                                onHeaderTap: _toggleGroup,
+                                onTap: rasterKlick,
+                                kachelbreite: _kachelbreite,
+                                form: _form,
+                                gliedern: _gliedert,
+                                mitTagen: _wirksamMitTagen,
+                                absteigend: sortierungAbsteigend(_sortierung),
+                                onScrollNearEnd: () =>
+                                    _maybeGrowWindow(assets.length),
+                              );
+                      },
+                    ),
+                  ),
+                ],
               ),
-          ],
-        ));
+              if (_selected.isNotEmpty)
+                SelectionActionBar(
+                  count: _selected.length,
+                  onClear: () => setState(_selected.clear),
+                  onCompare: vergleichsAktion(
+                    context,
+                    widget.library,
+                    _selected.toList(),
+                  ),
+                  // Nur sichtbar, wenn tatsächlich Einstellungen kopiert
+                  // wurden – ein Knopf, der meistens nichts tun kann, wäre
+                  // in einer Leiste mit neun Symbolen nur Rauschen.
+                  onPasteDevelop: widget.library.hatKopierteEntwicklung
+                      ? () async {
+                          await runBatchPasteDevelop(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          );
+                          if (mounted) setState(_selected.clear);
+                        }
+                      : null,
+                  onApplyPreset: () => runBatchApplyPreset(
+                    context,
+                    widget.library,
+                    _selected.toList(),
+                  ),
+                  onFavorite: () async {
+                    await runBatchFavorite(widget.library, _selected.toList());
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onAddToAlbum: () async {
+                    await runBatchAddToAlbumDialog(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onTag: () async {
+                    await runBatchTagDialog(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onSetRating: () async {
+                    await runBatchSetRating(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onSetColorLabel: () async {
+                    await runBatchSetColorLabel(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onEditMetadata: () async {
+                    await runBatchEditMetadataDialog(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onExport: () async {
+                    // Die Ausfuhr schreibt Beipackzettel und braucht dafuer
+                    // die ganze Zeile - hier nachgeholt statt vorgehalten.
+                    final selectedAssets = await widget.library.db.assetsByIds(
+                      _selected.toList(),
+                    );
+                    if (!context.mounted) return;
+                    await runBatchExport(
+                      context,
+                      widget.library,
+                      selectedAssets,
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
+                  onDelete: _deleteSelected,
+                ),
+            ],
+          ),
+        );
       }
     }
   }

@@ -14,9 +14,9 @@ import 'package:photo_vault/widgets/hoehenprofil.dart';
 void main() {
   /// Ein Profil über zehn Kilometer, gleichmässig ansteigend.
   List<Profilpunkt> profil({int anzahl = 11}) => [
-        for (var i = 0; i < anzahl; i++)
-          (km: i.toDouble(), hoehe: 100.0 + i * 10, index: i),
-      ];
+    for (var i = 0; i < anzahl; i++)
+      (km: i.toDouble(), hoehe: 100.0 + i * 10, index: i),
+  ];
 
   Future<int?> zeigeUndTippe(
     WidgetTester tester,
@@ -28,24 +28,26 @@ void main() {
     tester.view.physicalSize = const Size(600, 400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: SizedBox(
-          width: 600,
-          child: Hoehenprofil(
-            punkte: punkte,
-            beschreibung: 'Höhenprofil über 10 km',
-            beiStelle: (i) {
-              gemeldet = i;
-              gerufen = true;
-            },
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 600,
+            child: Hoehenprofil(
+              punkte: punkte,
+              beschreibung: 'Höhenprofil über 10 km',
+              beiStelle: (i) {
+                gemeldet = i;
+                gerufen = true;
+              },
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // Eine echte Mausbewegung und kein Tippen: `onHover` ist der Weg,
@@ -55,7 +57,8 @@ void main() {
     final zeiger = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await zeiger.addPointer(location: Offset.zero);
     await zeiger.moveTo(
-        Offset(kasten.left + kasten.width * anteil, kasten.center.dy));
+      Offset(kasten.left + kasten.width * anteil, kasten.center.dy),
+    );
     await tester.pump();
     expect(gerufen, isTrue, reason: 'keine Meldung bei anteil=$anteil');
     final antwort = gemeldet;
@@ -77,14 +80,12 @@ void main() {
     expect(await zeigeUndTippe(tester, profil(), anteil: 0.99), 10);
   });
 
-  testWidgets('sucht über die Strecke, nicht über den Index',
-      (tester) async {
+  testWidgets('sucht über die Strecke, nicht über den Index', (tester) async {
     // **Der Unterschied, der zählt.** Wer stehen bleibt, erzeugt viele
     // Punkte an derselben Stelle. Hier liegen neun der zehn Punkte auf
     // dem ersten Kilometer, einer bei zehn.
     final rast = [
-      for (var i = 0; i < 9; i++)
-        (km: i * 0.1, hoehe: 100.0, index: i),
+      for (var i = 0; i < 9; i++) (km: i * 0.1, hoehe: 100.0, index: i),
       (km: 10.0, hoehe: 200.0, index: 9),
     ];
     // Über den Index gesucht käme in der Mitte der Punkt Nummer 5
@@ -99,17 +100,19 @@ void main() {
   testWidgets('zeigt die Stelle als Text an', (tester) async {
     // Geprüft wird der Text, während der Zeiger liegt – deshalb hier
     // ohne den Helfer, der ihn am Ende abmeldet.
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: SizedBox(
-          width: 600,
-          child: Hoehenprofil(punkte: profil(), beschreibung: 'Profil'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 600,
+            child: Hoehenprofil(punkte: profil(), beschreibung: 'Profil'),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     final kasten = tester.getRect(find.byType(Hoehenprofil));
     final zeiger = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -120,26 +123,26 @@ void main() {
     expect(find.text('5,0 km · 150 m'), findsOneWidget);
   });
 
-  testWidgets('die Sprachausgabe bekommt eine Beschreibung',
-      (tester) async {
+  testWidgets('die Sprachausgabe bekommt eine Beschreibung', (tester) async {
     // Ohne sie wäre das Profil für jemanden, der es sich vorlesen lässt,
     // überhaupt nicht vorhanden.
     final griff = tester.ensureSemantics();
     await zeigeUndTippe(tester, profil(), anteil: 0.5);
-    expect(
-        find.bySemanticsLabel('Höhenprofil über 10 km'), findsOneWidget);
+    expect(find.bySemanticsLabel('Höhenprofil über 10 km'), findsOneWidget);
     griff.dispose();
   });
 
   testWidgets('ohne Punkte wird nichts gezeichnet', (tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      locale: Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Hoehenprofil(punkte: [], beschreibung: 'leer'),
+    await tester.pumpWidget(
+      const MaterialApp(
+        locale: Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Hoehenprofil(punkte: [], beschreibung: 'leer'),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     // Eine leere Fläche statt eines Rahmens um nichts.
     expect(tester.getSize(find.byType(Hoehenprofil)), Size.zero);

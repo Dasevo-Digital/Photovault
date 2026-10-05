@@ -40,8 +40,10 @@ void main() {
     expect(pfad, endsWith(OcrService.lesungUmgebaut));
     final umgebaut = File(pfad).readAsBytesSync();
     expect(HardswishUmbau.zaehle(umgebaut), 0);
-    expect(HardswishUmbau.knoten(umgebaut).map((k) => k.art),
-        containsAll(['HardSigmoid', 'Mul', 'Relu']));
+    expect(
+      HardswishUmbau.knoten(umgebaut).map((k) => k.art),
+      containsAll(['HardSigmoid', 'Mul', 'Relu']),
+    );
   });
 
   test('das heruntergeladene Modell bleibt unangetastet', () async {
@@ -66,16 +68,17 @@ void main() {
   test('ein neu geladenes Original wird neu umgebaut', () async {
     final quelle = await legeModellAn(base64.decode(_mitHardswish));
     final pfad = await OcrService.lesemodellPfad(ordner.path);
-    await File(pfad)
-        .setLastModified(DateTime.now().subtract(const Duration(days: 2)));
+    await File(
+      pfad,
+    ).setLastModified(DateTime.now().subtract(const Duration(days: 2)));
     quelle.setLastModifiedSync(DateTime.now());
 
     await OcrService.lesemodellPfad(ordner.path);
 
     expect(
-      File(pfad)
-          .lastModifiedSync()
-          .isAfter(DateTime.now().subtract(const Duration(minutes: 1))),
+      File(pfad).lastModifiedSync().isAfter(
+        DateTime.now().subtract(const Duration(minutes: 1)),
+      ),
       isTrue,
     );
   });
@@ -88,8 +91,10 @@ void main() {
     final pfad = await OcrService.lesemodellPfad(ordner.path);
 
     expect(pfad, endsWith('ocr_rec.onnx'));
-    expect(File('${ordner.path}/${OcrService.lesungUmgebaut}').existsSync(),
-        isFalse);
+    expect(
+      File('${ordner.path}/${OcrService.lesungUmgebaut}').existsSync(),
+      isFalse,
+    );
   });
 
   test('eine unlesbare Datei führt zum Original, nicht zum Absturz', () async {
@@ -100,22 +105,24 @@ void main() {
     expect(pfad, endsWith('ocr_rec.onnx'));
   });
 
-  test('beim Löschen des Eintrags verschwindet auch die eigene Datei',
-      () async {
-    for (final f in ModelCatalog.ocrPaddle.files) {
-      await File('${ordner.path}/${f.fileName}').writeAsBytes([1, 2, 3]);
-    }
-    final abgeleitet = File('${ordner.path}/${OcrService.lesungUmgebaut}');
-    await abgeleitet.writeAsBytes(List.filled(500, 7));
+  test(
+    'beim Löschen des Eintrags verschwindet auch die eigene Datei',
+    () async {
+      for (final f in ModelCatalog.ocrPaddle.files) {
+        await File('${ordner.path}/${f.fileName}').writeAsBytes([1, 2, 3]);
+      }
+      final abgeleitet = File('${ordner.path}/${OcrService.lesungUmgebaut}');
+      await abgeleitet.writeAsBytes(List.filled(500, 7));
 
-    final dienst = ModelDownloadService(ordner.path);
-    // Der eigene Anteil zählt beim belegten Platz mit …
-    expect(dienst.belegteBytes(ModelCatalog.ocrPaddle), 3 * 3 + 500);
+      final dienst = ModelDownloadService(ordner.path);
+      // Der eigene Anteil zählt beim belegten Platz mit …
+      expect(dienst.belegteBytes(ModelCatalog.ocrPaddle), 3 * 3 + 500);
 
-    await dienst.deleteEntry(ModelCatalog.ocrPaddle);
+      await dienst.deleteEntry(ModelCatalog.ocrPaddle);
 
-    // … und bleibt nicht liegen.
-    expect(abgeleitet.existsSync(), isFalse);
-    expect(dienst.belegteBytes(ModelCatalog.ocrPaddle), 0);
-  });
+      // … und bleibt nicht liegen.
+      expect(abgeleitet.existsSync(), isFalse);
+      expect(dienst.belegteBytes(ModelCatalog.ocrPaddle), 0);
+    },
+  );
 }

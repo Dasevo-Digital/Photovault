@@ -24,15 +24,15 @@ const _bandFarbe = <ColorBand, Color>{
 /// Der Anzeigename eines Bandes – nicht in [_bandFarbe], weil die Tabelle
 /// `const` ist und ein übersetzter Text den Kontext braucht.
 String bandName(AppTexte t, ColorBand band) => switch (band) {
-      ColorBand.rot => t.bandRot,
-      ColorBand.orange => t.bandOrange,
-      ColorBand.gelb => t.bandGelb,
-      ColorBand.gruen => t.bandGruen,
-      ColorBand.aqua => t.bandAqua,
-      ColorBand.blau => t.bandBlau,
-      ColorBand.violett => t.bandViolett,
-      ColorBand.magenta => t.bandMagenta,
-    };
+  ColorBand.rot => t.bandRot,
+  ColorBand.orange => t.bandOrange,
+  ColorBand.gelb => t.bandGelb,
+  ColorBand.gruen => t.bandGruen,
+  ColorBand.aqua => t.bandAqua,
+  ColorBand.blau => t.bandBlau,
+  ColorBand.violett => t.bandViolett,
+  ColorBand.magenta => t.bandMagenta,
+};
 
 /// Farbmischer: acht Farbbänder mit je Farbton, Sättigung und Helligkeit.
 ///
@@ -97,8 +97,10 @@ class _ColorMixerPanelState extends State<ColorMixerPanel> {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(AppTexte.of(context).einstZuruecksetzen,
-                  style: const TextStyle(fontSize: 11)),
+              child: Text(
+                AppTexte.of(context).einstZuruecksetzen,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
           ],
         ),
@@ -123,29 +125,35 @@ class _ColorMixerPanelState extends State<ColorMixerPanel> {
         _regler(
           AppTexte.of(context).mischerFarbton,
           anpassung.farbton,
-          (v) => _setze(BandAnpassung(
-            farbton: v,
-            saettigung: anpassung.saettigung,
-            helligkeit: anpassung.helligkeit,
-          )),
+          (v) => _setze(
+            BandAnpassung(
+              farbton: v,
+              saettigung: anpassung.saettigung,
+              helligkeit: anpassung.helligkeit,
+            ),
+          ),
         ),
         _regler(
           AppTexte.of(context).mischerSaettigung,
           anpassung.saettigung,
-          (v) => _setze(BandAnpassung(
-            farbton: anpassung.farbton,
-            saettigung: v,
-            helligkeit: anpassung.helligkeit,
-          )),
+          (v) => _setze(
+            BandAnpassung(
+              farbton: anpassung.farbton,
+              saettigung: v,
+              helligkeit: anpassung.helligkeit,
+            ),
+          ),
         ),
         _regler(
           AppTexte.of(context).mischerHelligkeit,
           anpassung.helligkeit,
-          (v) => _setze(BandAnpassung(
-            farbton: anpassung.farbton,
-            saettigung: anpassung.saettigung,
-            helligkeit: v,
-          )),
+          (v) => _setze(
+            BandAnpassung(
+              farbton: anpassung.farbton,
+              saettigung: anpassung.saettigung,
+              helligkeit: v,
+            ),
+          ),
         ),
         Text(
           AppTexte.of(context).mischerHinweis,
@@ -167,7 +175,10 @@ class _ColorMixerPanelState extends State<ColorMixerPanel> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
               Text(
                 wert.toStringAsFixed(2),
                 style: const TextStyle(color: Colors.white70, fontSize: 12),

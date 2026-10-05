@@ -55,8 +55,7 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
   }
 
   Future<void> _laden() async {
-    final spalten =
-        await serienspalten(widget.library.db, widget.serie);
+    final spalten = await serienspalten(widget.library.db, widget.serie);
     if (mounted) setState(() => _spalten = spalten);
   }
 
@@ -78,7 +77,11 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    0,
+                  ),
                   child: Text(
                     spalten.any((s) => s.gesichter.isNotEmpty)
                         ? t.serienvergleichErklaerung
@@ -98,7 +101,8 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
                           _Spalte(
                             spalte: spalte,
                             library: widget.library,
-                            bestesGesicht: spalte.schaerfsteId ==
+                            bestesGesicht:
+                                spalte.schaerfsteId ==
                                 _besteSpalte(spalten)?.schaerfsteId,
                             beiBewertung: (n) => _bewerte(spalte.asset, n),
                           ),
@@ -170,11 +174,14 @@ class _Spalte extends StatelessWidget {
           if (bestesGesicht)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: Text(t.serienvergleichSchaerfstes,
-                  style: TextStyle(
-                      color: farben.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12)),
+              child: Text(
+                t.serienvergleichSchaerfstes,
+                style: TextStyle(
+                  color: farben.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
             ),
           // Die Gesichter – der eigentliche Grund für diesen Bildschirm.
           for (final g in spalte.gesichter) ...[
@@ -193,18 +200,22 @@ class _Spalte extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (g.name != null)
-                        Text(g.name!,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 12),
-                            overflow: TextOverflow.ellipsis),
+                        Text(
+                          g.name!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       Text(
                         g.schaerfe == null
                             ? t.serienvergleichOhneWert
-                            : t.serienvergleichSchaerfe(
-                                g.schaerfe!.round()),
+                            : t.serienvergleichSchaerfe(g.schaerfe!.round()),
                         style: TextStyle(
                           fontSize: 11,
-                          color: g.schaerfe != null &&
+                          color:
+                              g.schaerfe != null &&
                                   g.schaerfe! < gesichtUnscharfSchwelle
                               ? farben.tertiary
                               : farben.onSurfaceVariant,
@@ -212,10 +223,11 @@ class _Spalte extends StatelessWidget {
                       ),
                       if (g.augenOffen != null)
                         Text(
-                          t.serienvergleichAugen(
-                              (g.augenOffen! * 100).round()),
+                          t.serienvergleichAugen((g.augenOffen! * 100).round()),
                           style: TextStyle(
-                              fontSize: 11, color: farben.onSurfaceVariant),
+                            fontSize: 11,
+                            color: farben.onSurfaceVariant,
+                          ),
                         ),
                     ],
                   ),

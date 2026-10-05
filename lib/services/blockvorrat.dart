@@ -40,10 +40,7 @@ class Vorratsstueck<T> {
 
 /// Ein nach Grösse gedeckelter Vorrat an Blocktexturen.
 class Blockvorrat<T> {
-  Blockvorrat({
-    required this.hoechstensBytes,
-    required this.freigeben,
-  });
+  Blockvorrat({required this.hoechstensBytes, required this.freigeben});
 
   /// Die Obergrenze in Bytes.
   ///
@@ -99,7 +96,11 @@ class Blockvorrat<T> {
       freigeben(alt.inhalt);
     }
     _stuecke[k] = Vorratsstueck(
-        block: block, stufe: stufe, inhalt: inhalt, bytes: bytes);
+      block: block,
+      stufe: stufe,
+      inhalt: inhalt,
+      bytes: bytes,
+    );
     _belegt += bytes;
   }
 
@@ -119,8 +120,9 @@ class Blockvorrat<T> {
     if (_belegt <= hoechstensBytes) return;
     final liste = _stuecke.entries.toList()
       ..sort((a, b) {
-        final d = entfernung(b.value.block).compareTo(
-            entfernung(a.value.block));
+        final d = entfernung(
+          b.value.block,
+        ).compareTo(entfernung(a.value.block));
         if (d != 0) return d;
         return b.value.stufe.compareTo(a.value.stufe);
       });

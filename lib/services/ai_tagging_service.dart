@@ -12,16 +12,62 @@ import 'clip_service.dart';
 /// für die KI-Bildsuche installierte CLIP-Modell per Zero-Shot-
 /// Klassifikation wiederverwendet (siehe [AiTaggingService]).
 const List<String> defaultAiTagVocabulary = [
-  'Baby', 'Kleinkind', 'Kind', 'Familie', 'Gruppe von Menschen', 'Porträt', 'Selfie',
-  'Draußen', 'Drinnen', 'Natur', 'Wald', 'Berge', 'Strand', 'Meer', 'See', 'Fluss',
-  'Garten', 'Spielplatz', 'Stadt', 'Straße', 'Zuhause',
-  'Essen', 'Kuchen', 'Geburtstagstorte', 'Restaurant',
-  'Tier', 'Hund', 'Katze', 'Vogel',
-  'Auto', 'Fahrrad', 'Zug', 'Flugzeug', 'Boot',
-  'Feier', 'Geburtstag', 'Weihnachten', 'Ostern', 'Urlaub', 'Hochzeit',
-  'Schnee', 'Winter', 'Sommer', 'Herbst', 'Frühling', 'Sonnenuntergang', 'Nacht',
-  'Blumen', 'Sport', 'Schwimmen', 'Wasser',
-  'Bildschirmfoto', 'Dokument', 'Bauwerk', 'Kunst', 'Gruppenfoto',
+  'Baby',
+  'Kleinkind',
+  'Kind',
+  'Familie',
+  'Gruppe von Menschen',
+  'Porträt',
+  'Selfie',
+  'Draußen',
+  'Drinnen',
+  'Natur',
+  'Wald',
+  'Berge',
+  'Strand',
+  'Meer',
+  'See',
+  'Fluss',
+  'Garten',
+  'Spielplatz',
+  'Stadt',
+  'Straße',
+  'Zuhause',
+  'Essen',
+  'Kuchen',
+  'Geburtstagstorte',
+  'Restaurant',
+  'Tier',
+  'Hund',
+  'Katze',
+  'Vogel',
+  'Auto',
+  'Fahrrad',
+  'Zug',
+  'Flugzeug',
+  'Boot',
+  'Feier',
+  'Geburtstag',
+  'Weihnachten',
+  'Ostern',
+  'Urlaub',
+  'Hochzeit',
+  'Schnee',
+  'Winter',
+  'Sommer',
+  'Herbst',
+  'Frühling',
+  'Sonnenuntergang',
+  'Nacht',
+  'Blumen',
+  'Sport',
+  'Schwimmen',
+  'Wasser',
+  'Bildschirmfoto',
+  'Dokument',
+  'Bauwerk',
+  'Kunst',
+  'Gruppenfoto',
 ];
 
 /// Englische Entsprechung jedes Begriffs aus [defaultAiTagVocabulary] – für
@@ -117,7 +163,8 @@ final Map<String, String> _englischeBegriffe = {
 ///
 /// An 40 echten Fotos gemessen: allein diese Schablone hob die Güte von
 /// F1 0,25 auf 0,41. Der Wortlaut ist der aus der CLIP-Veröffentlichung.
-String schabloneFuer(String englisch) => 'a photo of ${englisch.toLowerCase()}.';
+String schabloneFuer(String englisch) =>
+    'a photo of ${englisch.toLowerCase()}.';
 
 /// Der Text, der für [begriff] tatsächlich in den Text-Encoder geht.
 ///
@@ -141,7 +188,9 @@ Future<String> begriffFuerModell(
   final ausTabelle = aiTagVocabularyEnglisch[begriff];
   if (ausTabelle != null) return schabloneFuer(ausTabelle);
   if (_englischeBegriffe.containsKey(begriff)) return schabloneFuer(begriff);
-  final uebersetzt = insEnglische == null ? begriff : await insEnglische(begriff);
+  final uebersetzt = insEnglische == null
+      ? begriff
+      : await insEnglische(begriff);
   return schabloneFuer(uebersetzt);
 }
 
@@ -217,7 +266,7 @@ List<String> waehleTags(
   if (groesste < untergrenze) return const [];
 
   final gewichte = [
-    for (final n in naehe) math.exp(_kiTagTemperatur * (n - groesste))
+    for (final n in naehe) math.exp(_kiTagTemperatur * (n - groesste)),
   ];
   final summe = gewichte.fold<double>(0, (a, b) => a + b);
 
@@ -297,14 +346,19 @@ class AiTaggingService {
       var embedding = _termEmbeddingCache[term];
       if (embedding == null) {
         final fuerModell = await begriffFuerModell(term, insEnglische);
-        embedding = _termEmbeddingCache[term] = await clipText.embedText(fuerModell);
+        embedding = _termEmbeddingCache[term] = await clipText.embedText(
+          fuerModell,
+        );
       }
       naehe.add(_cosine(imageEmbedding, embedding));
     }
-    return waehleTags(vocabulary, naehe,
-        hoechstens: hoechstens,
-        mindestAnteil: mindestAnteil,
-        untergrenze: untergrenze);
+    return waehleTags(
+      vocabulary,
+      naehe,
+      hoechstens: hoechstens,
+      mindestAnteil: mindestAnteil,
+      untergrenze: untergrenze,
+    );
   }
 
   /// Verwirft die zwischengespeicherten Begriffs-Vektoren.

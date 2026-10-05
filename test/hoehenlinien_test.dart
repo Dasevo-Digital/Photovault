@@ -24,15 +24,26 @@ Hoehengitter _gitter(double Function(double x, double y) hoehe, {int n = 64}) {
     }
   }
   return Hoehengitter(
-      spalten: n, zeilen: n, hoehen: h,
-      nord: _nord, sued: _sued, west: _west, ost: _ost);
+    spalten: n,
+    zeilen: n,
+    hoehen: h,
+    nord: _nord,
+    sued: _sued,
+    west: _west,
+    ost: _ost,
+  );
 }
 
-Hoehenlinien _linien(Hoehengitter g,
-        {double abstand = 10, int maschen = 48}) =>
-    hoehenlinien(g,
-        west: _west, ost: _ost, sued: _sued, nord: _nord,
-        abstand: abstand, maschen: maschen);
+Hoehenlinien _linien(Hoehengitter g, {double abstand = 10, int maschen = 48}) =>
+    hoehenlinien(
+      g,
+      west: _west,
+      ost: _ost,
+      sued: _sued,
+      nord: _nord,
+      abstand: abstand,
+      maschen: maschen,
+    );
 
 void main() {
   group('Der Abstand passt sich dem Gelände an', () {
@@ -48,7 +59,17 @@ void main() {
 
     test('die Stufen sind die einer Wanderkarte', () {
       // „Alle 37 Meter" liest niemand.
-      final erlaubt = {5.0, 10.0, 20.0, 25.0, 50.0, 100.0, 200.0, 500.0, 1000.0};
+      final erlaubt = {
+        5.0,
+        10.0,
+        20.0,
+        25.0,
+        50.0,
+        100.0,
+        200.0,
+        500.0,
+        1000.0,
+      };
       for (var spanne = 1.0; spanne < 6000; spanne *= 1.3) {
         expect(erlaubt, contains(hoehenlinienAbstand(spanne)));
       }
@@ -69,9 +90,13 @@ void main() {
       final alle = [...l.linien, ...l.zaehllinien];
       expect(alle, isNotEmpty);
       for (final s in alle) {
-        expect((s.x1 - s.x2).abs(), lessThan(0.02),
-            reason: 'eine Linie über einer schiefen Ebene muss senkrecht '
-                'stehen, diese läuft von ${s.x1} nach ${s.x2}');
+        expect(
+          (s.x1 - s.x2).abs(),
+          lessThan(0.02),
+          reason:
+              'eine Linie über einer schiefen Ebene muss senkrecht '
+              'stehen, diese läuft von ${s.x1} nach ${s.x2}',
+        );
       }
       // Neun Höhen (410..490) mal 48 Zellen je Spalte.
       final hoehenZahl = alle.map((s) => (s.x1 * 100).round()).toSet().length;
@@ -83,8 +108,10 @@ void main() {
       // Bei 400 + 100·x liegt die 450er Linie genau in der Mitte.
       final l = _linien(_gitter((x, y) => 400 + 100 * x), abstand: 50);
       // 450 ist keine Zähllinie (450/50 = 9), 500 wäre eine.
-      final vierhundertfuenfzig =
-          [...l.linien, ...l.zaehllinien].where((s) => s.x1 > 0.4 && s.x1 < 0.6);
+      final vierhundertfuenfzig = [
+        ...l.linien,
+        ...l.zaehllinien,
+      ].where((s) => s.x1 > 0.4 && s.x1 < 0.6);
       expect(vierhundertfuenfzig, isNotEmpty);
       for (final s in vierhundertfuenfzig) {
         expect(s.x1, closeTo(0.5, 0.03));
@@ -98,8 +125,8 @@ void main() {
       expect(l.linien, isNotEmpty);
       // 410..490 bei zehn Metern: 450 ist die einzige durch fünf
       // teilbare, also ein Achtel bis ein Viertel der Strecken.
-      final anteil = l.zaehllinien.length /
-          (l.linien.length + l.zaehllinien.length);
+      final anteil =
+          l.zaehllinien.length / (l.linien.length + l.zaehllinien.length);
       expect(anteil, lessThan(0.35));
       expect(anteil, greaterThan(0.05));
     });
@@ -109,11 +136,12 @@ void main() {
       // Nachbarn auf derselben Höhe – das ist die prüfbare Eigenschaft
       // eines Rings.
       final l = _linien(
-          _gitter((x, y) {
-            final dx = x - 0.5, dy = y - 0.5;
-            return 500 - 300 * math.sqrt(dx * dx + dy * dy);
-          }),
-          abstand: 20);
+        _gitter((x, y) {
+          final dx = x - 0.5, dy = y - 0.5;
+          return 500 - 300 * math.sqrt(dx * dx + dy * dy);
+        }),
+        abstand: 20,
+      );
       final alle = [...l.linien, ...l.zaehllinien];
       expect(alle, isNotEmpty);
       // Zu jeder Höhe gehört genau ein Radius. Geprüft wird die
@@ -130,8 +158,11 @@ void main() {
         if (e.value.length < 8) continue;
         final mittel = e.value.reduce((a, b) => a + b) / e.value.length;
         for (final r in e.value) {
-          expect((r - mittel).abs(), lessThan(0.06),
-              reason: 'Stufe ${e.key}: Radius $r weicht von $mittel ab');
+          expect(
+            (r - mittel).abs(),
+            lessThan(0.06),
+            reason: 'Stufe ${e.key}: Radius $r weicht von $mittel ab',
+          );
         }
       }
     });
@@ -147,14 +178,25 @@ void main() {
           h[y * n + x] = x < n ~/ 2 ? 400 + 100 * x / n : double.nan;
         }
       }
-      final l = _linien(Hoehengitter(
-          spalten: n, zeilen: n, hoehen: h,
-          nord: _nord, sued: _sued, west: _west, ost: _ost));
+      final l = _linien(
+        Hoehengitter(
+          spalten: n,
+          zeilen: n,
+          hoehen: h,
+          nord: _nord,
+          sued: _sued,
+          west: _west,
+          ost: _ost,
+        ),
+      );
       final alle = [...l.linien, ...l.zaehllinien];
       expect(alle, isNotEmpty, reason: 'die linke Hälfte muss Linien haben');
       for (final s in alle) {
-        expect(s.x1, lessThan(0.55),
-            reason: 'eine Linie in der unbekannten Hälfte wäre erfunden');
+        expect(
+          s.x1,
+          lessThan(0.55),
+          reason: 'eine Linie in der unbekannten Hälfte wäre erfunden',
+        );
       }
     });
   });

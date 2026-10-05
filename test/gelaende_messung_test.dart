@@ -77,10 +77,12 @@ void main() {
       zeichenUhr.stop();
 
       // ignore: avoid_print
-      print('${kante.toString().padLeft(5)} | '
-          '${netz.dreiecke.toString().padLeft(8)} | '
-          '${bauUhr.elapsedMilliseconds.toString().padLeft(5)} ms | '
-          '${(zeichenUhr.elapsedMicroseconds / 10 / 1000).toStringAsFixed(2).padLeft(8)} ms');
+      print(
+        '${kante.toString().padLeft(5)} | '
+        '${netz.dreiecke.toString().padLeft(8)} | '
+        '${bauUhr.elapsedMilliseconds.toString().padLeft(5)} ms | '
+        '${(zeichenUhr.elapsedMicroseconds / 10 / 1000).toStringAsFixed(2).padLeft(8)} ms',
+      );
     }
 
     // Keine Zusicherung über Millisekunden – die hinge an der Maschine.

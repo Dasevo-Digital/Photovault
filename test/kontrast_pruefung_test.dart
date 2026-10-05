@@ -41,12 +41,18 @@ void main() {
   });
 
   test('die Grundfarben des dunklen Themas tragen', () {
-    expect(kontrast(dunkel.onSurface, dunkel.surface), greaterThan(4.5),
-        reason: 'Fliesstext auf der Grundflaeche');
-    expect(kontrast(dunkel.onSurfaceVariant, dunkel.surface),
-        greaterThan(4.5),
-        reason: 'die zweite Textfarbe, in der die meisten Beschriftungen '
-            'stehen');
+    expect(
+      kontrast(dunkel.onSurface, dunkel.surface),
+      greaterThan(4.5),
+      reason: 'Fliesstext auf der Grundflaeche',
+    );
+    expect(
+      kontrast(dunkel.onSurfaceVariant, dunkel.surface),
+      greaterThan(4.5),
+      reason:
+          'die zweite Textfarbe, in der die meisten Beschriftungen '
+          'stehen',
+    );
   });
 
   /// **Dieselbe Halbblindheit wie beim Umriss, eine Runde spaeter.**
@@ -70,9 +76,13 @@ void main() {
       ]) {
         test('die Farbe des Themas traegt, $name, auf der $wo', () {
           final wert = kontrast(schema.onSurfaceVariant, grund);
-          expect(wert, greaterThan(4.5),
-              reason: 'onSurfaceVariant ergibt hier '
-                  '${wert.toStringAsFixed(2)}:1');
+          expect(
+            wert,
+            greaterThan(4.5),
+            reason:
+                'onSurfaceVariant ergibt hier '
+                '${wert.toStringAsFixed(2)}:1',
+          );
         });
       }
     }
@@ -81,7 +91,10 @@ void main() {
       // Die Gegenprobe: Sie haelt fest, WARUM getauscht wurde.
       final hell = buildLightTheme().colorScheme;
       expect(kontrast(Colors.grey, hell.surface), lessThan(4.5));
-      expect(kontrast(Colors.grey, hell.surfaceContainerHighest), lessThan(4.5));
+      expect(
+        kontrast(Colors.grey, hell.surfaceContainerHighest),
+        lessThan(4.5),
+      );
     });
   });
 
@@ -107,10 +120,14 @@ void main() {
       ]) {
         test('zweitrangiger Text, $name, auf der $wo', () {
           final ausweich = kontrast(schema.onSurfaceVariant, grund);
-          expect(ausweich, greaterThan(4.5),
-              reason: 'onSurfaceVariant ist die Farbe des Themas fuer '
-                  'zweitrangigen Text und ergibt hier '
-                  '${ausweich.toStringAsFixed(2)}:1');
+          expect(
+            ausweich,
+            greaterThan(4.5),
+            reason:
+                'onSurfaceVariant ist die Farbe des Themas fuer '
+                'zweitrangigen Text und ergibt hier '
+                '${ausweich.toStringAsFixed(2)}:1',
+          );
         });
       }
     }
@@ -121,8 +138,10 @@ void main() {
       // und dann darf man neu entscheiden.
       final hell = buildLightTheme().colorScheme;
       expect(kontrast(hell.outline, hell.surface), lessThan(4.5));
-      expect(kontrast(hell.outline, hell.surfaceContainerHighest),
-          lessThan(4.5));
+      expect(
+        kontrast(hell.outline, hell.surfaceContainerHighest),
+        lessThan(4.5),
+      );
     });
   });
 }

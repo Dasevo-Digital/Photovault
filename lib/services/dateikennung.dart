@@ -43,8 +43,16 @@ String? kennungAus(List<int> kopf) {
 
   // PNG: der Signaturblock, der absichtlich so gebaut ist, dass ihn eine
   // Textübertragung zerstört.
-  if (_gleich(
-      kopf, 0, const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) {
+  if (_gleich(kopf, 0, const [
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+  ])) {
     return '.png';
   }
 
@@ -78,18 +86,18 @@ String _marke(List<int> kopf) {
 /// Antwort auf eine andere Frage. `null` heisst darum auch hier: nicht
 /// zuständig, bleib bei der Endung.
 String? _bmff(String marke) => switch (marke) {
-      // Einzelbild, Bildfolge, sowie die beiden Sammelmarken, mit denen
-      // Apple seine Fotos auszeichnet.
-      'heic' || 'heix' || 'heim' || 'heis' => '.heic',
-      'hevc' || 'hevx' || 'hevm' || 'hevs' => '.heic',
-      'mif1' || 'msf1' => '.heic',
-      'avif' || 'avis' => '.avif',
-      // Canons neueres RAW-Format steckt im selben Kasten wie ein Film.
-      // Die Marke ist eindeutig – anders als bei den TIFF-RAWs oben lässt
-      // sich CR3 also sicher an den Bytes erkennen.
-      'crx ' => '.cr3',
-      _ => null,
-    };
+  // Einzelbild, Bildfolge, sowie die beiden Sammelmarken, mit denen
+  // Apple seine Fotos auszeichnet.
+  'heic' || 'heix' || 'heim' || 'heis' => '.heic',
+  'hevc' || 'hevx' || 'hevm' || 'hevs' => '.heic',
+  'mif1' || 'msf1' => '.heic',
+  'avif' || 'avis' => '.avif',
+  // Canons neueres RAW-Format steckt im selben Kasten wie ein Film.
+  // Die Marke ist eindeutig – anders als bei den TIFF-RAWs oben lässt
+  // sich CR3 also sicher an den Bytes erkennen.
+  'crx ' => '.cr3',
+  _ => null,
+};
 
 bool _gleich(List<int> kopf, int ab, List<int> muster) {
   if (kopf.length < ab + muster.length) return false;

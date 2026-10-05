@@ -22,7 +22,9 @@ void main() {
       return;
     }
     final dateien = <File>[];
-    await for (final e in Directory('$libPfad/originals').list(recursive: true)) {
+    await for (final e in Directory(
+      '$libPfad/originals',
+    ).list(recursive: true)) {
       if (e is! File) continue;
       final endung = e.path.toLowerCase();
       if (endung.endsWith('.jpg') ||
@@ -40,7 +42,9 @@ void main() {
     for (final d in probe) {
       bytes += await d.length();
     }
-    print('${probe.length} Dateien, ${(bytes / 1024 / 1024).toStringAsFixed(0)} MB');
+    print(
+      '${probe.length} Dateien, ${(bytes / 1024 / 1024).toStringAsFixed(0)} MB',
+    );
 
     // Erst einmal warmlaufen, damit der Dateisystem-Zwischenspeicher
     // nicht die eine Haelfte bevorzugt.
@@ -64,14 +68,21 @@ void main() {
     }
     uhrStrom.stop();
 
-    print('ganze Datei  ${uhrGanz.elapsedMilliseconds} ms  '
-        '$trefferGanz Aufnahmedaten');
-    print('stroemend    ${uhrStrom.elapsedMilliseconds} ms  '
-        '$trefferStrom Aufnahmedaten');
+    print(
+      'ganze Datei  ${uhrGanz.elapsedMilliseconds} ms  '
+      '$trefferGanz Aufnahmedaten',
+    );
+    print(
+      'stroemend    ${uhrStrom.elapsedMilliseconds} ms  '
+      '$trefferStrom Aufnahmedaten',
+    );
 
     // Die Zahl der gefundenen Daten MUSS gleich sein - ein schnellerer
     // Weg, der weniger findet, ist kein schnellerer Weg.
-    expect(trefferStrom, trefferGanz,
-        reason: 'beide Wege muessen dasselbe finden');
+    expect(
+      trefferStrom,
+      trefferGanz,
+      reason: 'beide Wege muessen dasselbe finden',
+    );
   }, timeout: const Timeout(Duration(minutes: 30)));
 }

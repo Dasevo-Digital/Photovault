@@ -42,11 +42,11 @@ enum Exportgroesse {
 /// desselben Textes – eine hier, eine in den Sprachdateien – laufen
 /// verlässlich auseinander.
 String exportgroesseBezeichnung(AppTexte t, Exportgroesse g) => switch (g) {
-      Exportgroesse.original => t.exportOriginal,
-      Exportgroesse.gross => t.exportGross,
-      Exportgroesse.web => t.exportWeb,
-      Exportgroesse.email => t.exportEmail,
-    };
+  Exportgroesse.original => t.exportOriginal,
+  Exportgroesse.gross => t.exportGross,
+  Exportgroesse.web => t.exportWeb,
+  Exportgroesse.email => t.exportEmail,
+};
 
 /// Alles, was ein Export-Lauf über die Ausgabe wissen muss.
 ///
@@ -93,27 +93,25 @@ class Exportvorgabe {
 
   /// Die Entsprechung einer der vier festen Grössen – damit der schnelle
   /// Weg und der Voreinstellungs-Weg denselben Code durchlaufen.
-  factory Exportvorgabe.ausGroesse(Exportgroesse g) => Exportvorgabe(
-        nachJpeg: g.maxKante != null,
-        maxKante: g.maxKante,
-      );
+  factory Exportvorgabe.ausGroesse(Exportgroesse g) =>
+      Exportvorgabe(nachJpeg: g.maxKante != null, maxKante: g.maxKante);
 
   factory Exportvorgabe.datenschutz() => const Exportvorgabe(
-        nachJpeg: true,
-        maxKante: 2048,
-        qualitaet: 0.9,
-        xmpDaneben: false,
-        metadatenEntfernen: true,
-        gesichterVerdecken: true,
-      );
+    nachJpeg: true,
+    maxKante: 2048,
+    qualitaet: 0.9,
+    xmpDaneben: false,
+    metadatenEntfernen: true,
+    gesichterVerdecken: true,
+  );
 
   factory Exportvorgabe.ausPreset(ExportPresetData p) => Exportvorgabe(
-        nachJpeg: p.nachJpeg,
-        maxKante: p.maxKante,
-        qualitaet: p.qualitaet,
-        namensmuster: p.namensmuster,
-        xmpDaneben: p.xmpDaneben,
-      );
+    nachJpeg: p.nachJpeg,
+    maxKante: p.maxKante,
+    qualitaet: p.qualitaet,
+    namensmuster: p.namensmuster,
+    xmpDaneben: p.xmpDaneben,
+  );
 }
 
 /// Eine Aufnahme, deren Metadaten sich nicht entfernen lassen.
@@ -211,10 +209,10 @@ class ExportService {
           ...plateBoxes,
         ];
         if (boxes.isNotEmpty) {
-          gerendert = await compute(
-            verdeckeGesichter,
-            (bytes: gerendert, boxen: boxes),
-          );
+          gerendert = await compute(verdeckeGesichter, (
+            bytes: gerendert,
+            boxen: boxes,
+          ));
         }
       }
     }
@@ -231,8 +229,9 @@ class ExportService {
     // Die Endung richtet sich danach, was WIRKLICH geschrieben wird: Ist
     // das Rendern fehlgeschlagen (oder war es ein Video), wird kopiert –
     // dann darf dort auch kein `.jpg` stehen.
-    final endung =
-        gerendert != null ? '.jpg' : p.extension(asset.originalFileName);
+    final endung = gerendert != null
+        ? '.jpg'
+        : p.extension(asset.originalFileName);
     final zielName = dateiname(
       v.namensmuster,
       asset,
@@ -248,9 +247,9 @@ class ExportService {
 
     if (v.xmpDaneben && !v.metadatenEntfernen) {
       final tagNames = _library != null
-          ? (await _library.db.tagsForAsset(asset.id))
-              .map((t) => t.name)
-              .toList()
+          ? (await _library.db.tagsForAsset(
+              asset.id,
+            )).map((t) => t.name).toList()
           : const <String>[];
       // Die benannten Gesichter gehen mit: Genau dafür exportiert man mit
       // Beipackzettel – damit das Zielprogramm die Namen übernimmt, statt
@@ -298,9 +297,10 @@ List<(double, double, double, double)> kennzeichenBoxen(String? ocrBoxen) {
   const plateUmlauts = '\u00c4\u00d6\u00dc';
   final ergebnis = <(double, double, double, double)>[];
   for (final stelle in textstellenAusJson(ocrBoxen)) {
-    final kompakt = stelle.text
-        .toUpperCase()
-        .replaceAll(RegExp('[^A-Z0-9$plateUmlauts]'), '');
+    final kompakt = stelle.text.toUpperCase().replaceAll(
+      RegExp('[^A-Z0-9$plateUmlauts]'),
+      '',
+    );
     final hatBuchstabe = RegExp('[A-Z$plateUmlauts]').hasMatch(kompakt);
     final hatZahl = RegExp(r'[0-9]').hasMatch(kompakt);
     final breitGenug = stelle.hoehe > 0 && stelle.breite / stelle.hoehe >= 2;
@@ -319,21 +319,33 @@ List<(double, double, double, double)> kennzeichenBoxen(String? ocrBoxen) {
 /// gerenderten Export. Die Rechtecke sind normiert und bleiben daher auch
 /// nach einer Größenänderung gültig.
 Uint8List verdeckeGesichter(
-    ({Uint8List bytes, List<(double, double, double, double)> boxen}) args) {
+  ({Uint8List bytes, List<(double, double, double, double)> boxen}) args,
+) {
   final image = img.decodeImage(args.bytes);
   if (image == null) return args.bytes;
   for (final (bx, by, bw, bh) in args.boxen) {
     final marginX = bw * .12;
     final marginY = bh * .12;
     final x = ((bx - marginX) * image.width).floor().clamp(0, image.width - 1);
-    final y =
-        ((by - marginY) * image.height).floor().clamp(0, image.height - 1);
-    final right =
-        ((bx + bw + marginX) * image.width).ceil().clamp(x + 1, image.width);
-    final bottom =
-        ((by + bh + marginY) * image.height).ceil().clamp(y + 1, image.height);
-    final crop =
-        img.copyCrop(image, x: x, y: y, width: right - x, height: bottom - y);
+    final y = ((by - marginY) * image.height).floor().clamp(
+      0,
+      image.height - 1,
+    );
+    final right = ((bx + bw + marginX) * image.width).ceil().clamp(
+      x + 1,
+      image.width,
+    );
+    final bottom = ((by + bh + marginY) * image.height).ceil().clamp(
+      y + 1,
+      image.height,
+    );
+    final crop = img.copyCrop(
+      image,
+      x: x,
+      y: y,
+      width: right - x,
+      height: bottom - y,
+    );
     img.gaussianBlur(crop, radius: (crop.width ~/ 10).clamp(8, 40));
     img.compositeImage(image, crop, dstX: x, dstY: y);
   }

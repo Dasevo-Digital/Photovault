@@ -71,17 +71,17 @@ enum Analysestufe {
   texterkennung,
   schlagwoerter,
   bildbeschreibung,
-  wiedererkennung
+  wiedererkennung,
 }
 
 /// Der Name einer Stufe in der Oberflächensprache.
 String analysestufeName(AppTexte t, Analysestufe stufe) => switch (stufe) {
-      Analysestufe.bildanalyse => t.stufeBildanalyse,
-      Analysestufe.texterkennung => t.stufeTexterkennung,
-      Analysestufe.schlagwoerter => t.stufeSchlagwoerter,
-      Analysestufe.bildbeschreibung => t.stufeBildbeschreibung,
-      Analysestufe.wiedererkennung => t.stufeWiedererkennung,
-    };
+  Analysestufe.bildanalyse => t.stufeBildanalyse,
+  Analysestufe.texterkennung => t.stufeTexterkennung,
+  Analysestufe.schlagwoerter => t.stufeSchlagwoerter,
+  Analysestufe.bildbeschreibung => t.stufeBildbeschreibung,
+  Analysestufe.wiedererkennung => t.stufeWiedererkennung,
+};
 
 /// Fortschritt der Hintergrundanalyse (siehe
 /// [LibraryState.starteHintergrundanalyse]).
@@ -173,8 +173,9 @@ class LibraryState extends ChangeNotifier {
   // audit_optimierungen_test.dart) und dürfen dabei nicht auf ein
   // uninitialisiertes `late`-Feld treffen. _loadModelsIfPresent() ersetzt
   // die Platzhalter beim echten Start durch die tatsächlichen Halter.
-  ModellHalter<FaceEngineService> faceEngineHalter =
-      _leererHalter('Gesichtserkennung');
+  ModellHalter<FaceEngineService> faceEngineHalter = _leererHalter(
+    'Gesichtserkennung',
+  );
   ModellHalter<EyeStateService> eyeStateHalter = _leererHalter('Augen-Zustand');
   // CLIP getrennt nach Encoder: Der Bildteil (335 MB) arbeitet in der
   // Hintergrundanalyse, der Textteil (242 MB) nur, wenn jemand eine
@@ -184,17 +185,21 @@ class LibraryState extends ChangeNotifier {
   // Text-Embeddings der Vokabelbegriffe) und deshalb beide leiht.
   ModellHalter<ClipService> clipBildHalter = _leererHalter('CLIP-Bild');
   ModellHalter<ClipService> clipTextHalter = _leererHalter('CLIP-Text');
-  ModellHalter<SegmentationService> segmentationHalter =
-      _leererHalter('Segmentierung');
-  ModellHalter<FlorenceCaptioningService> captioningHalter =
-      _leererHalter('Bildbeschreibung');
+  ModellHalter<SegmentationService> segmentationHalter = _leererHalter(
+    'Segmentierung',
+  );
+  ModellHalter<FlorenceCaptioningService> captioningHalter = _leererHalter(
+    'Bildbeschreibung',
+  );
 
   /// Die beiden Übersetzungsrichtungen – getrennte Halter, weil sie
   /// getrennt installierbar sind und selten gleichzeitig gebraucht werden.
-  ModellHalter<TranslationService> uebersetzungEnDeHalter =
-      _leererHalter('translate-en-de');
-  ModellHalter<TranslationService> uebersetzungDeEnHalter =
-      _leererHalter('translate-de-en');
+  ModellHalter<TranslationService> uebersetzungEnDeHalter = _leererHalter(
+    'translate-en-de',
+  );
+  ModellHalter<TranslationService> uebersetzungDeEnHalter = _leererHalter(
+    'translate-de-en',
+  );
 
   /// Texterkennung ohne Betriebssystem-Hilfe – nur ausserhalb von macOS
   /// gebraucht, wo Apples Vision-Framework die Arbeit besser und ohne
@@ -202,12 +207,13 @@ class LibraryState extends ChangeNotifier {
   ModellHalter<OcrService> ocrHalter = _leererHalter('Texterkennung');
 
   static ModellHalter<T> _leererHalter<T>(String name) => ModellHalter<T>(
-        name: name,
-        installiert: false,
-        laden: () => throw StateError(
-            'LibraryState.initialize() wurde noch nicht aufgerufen.'),
-        entsorgen: (_) async {},
-      );
+    name: name,
+    installiert: false,
+    laden: () => throw StateError(
+      'LibraryState.initialize() wurde noch nicht aufgerufen.',
+    ),
+    entsorgen: (_) async {},
+  );
 
   /// Halter, die gerade durch einen frischen ersetzt wurden, während sie
   /// noch in Benutzung waren (siehe _loadModelsIfPresent) – ohne diese Liste
@@ -217,16 +223,16 @@ class LibraryState extends ChangeNotifier {
   Timer? _modellFreigabeTimer;
 
   List<ModellHalter> get _alleHalter => [
-        faceEngineHalter,
-        eyeStateHalter,
-        clipBildHalter,
-        clipTextHalter,
-        segmentationHalter,
-        captioningHalter,
-        uebersetzungEnDeHalter,
-        uebersetzungDeEnHalter,
-        if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
-      ];
+    faceEngineHalter,
+    eyeStateHalter,
+    clipBildHalter,
+    clipTextHalter,
+    segmentationHalter,
+    captioningHalter,
+    uebersetzungEnDeHalter,
+    uebersetzungDeEnHalter,
+    if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
+  ];
 
   /// Kein eigenes ONNX-Modell (siehe ai_tagging_service.dart) – braucht nur
   /// eine bereits geladene [ClipService]-Sitzung als Parameter, deshalb ohne
@@ -511,8 +517,12 @@ class LibraryState extends ChangeNotifier {
     await db.uebernimmOrtsvorschlag(ids, buendel.breite, buendel.laenge);
     final treffer = geocoder?.lookup(buendel.breite, buendel.laenge);
     if (treffer != null) {
-      await db.setLocationNamesBulk(ids,
-          country: treffer.country, state: treffer.state, city: treffer.city);
+      await db.setLocationNamesBulk(
+        ids,
+        country: treffer.country,
+        state: treffer.state,
+        city: treffer.city,
+      );
     }
     notifyListeners();
   }
@@ -638,8 +648,10 @@ class LibraryState extends ChangeNotifier {
     return gebildet;
   }
 
-  Future<PersonData?> personenvorschlag(Uint8List? einbettung,
-      {String? ausser}) async {
+  Future<PersonData?> personenvorschlag(
+    Uint8List? einbettung, {
+    String? ausser,
+  }) async {
     if (einbettung == null) return null;
     final alleKerne = await _personenkerne();
     // [ausser] faellt erst hier heraus: Der Vorrat gilt fuer alle
@@ -648,7 +660,7 @@ class LibraryState extends ChangeNotifier {
         ? alleKerne
         : [
             for (final k in alleKerne)
-              if (k.personId != ausser) k
+              if (k.personId != ausser) k,
           ];
     final treffer = besterTreffer(
       floatsFromEmbeddingBlob(einbettung),
@@ -656,8 +668,9 @@ class LibraryState extends ChangeNotifier {
       schwelleFuer: (id) => _schwellen?[id] ?? faceSimilarityThreshold,
     );
     if (treffer == null) return null;
-    return (db.select(db.people)..where((t) => t.id.equals(treffer.personId)))
-        .getSingleOrNull();
+    return (db.select(
+      db.people,
+    )..where((t) => t.id.equals(treffer.personId))).getSingleOrNull();
   }
 
   /// Übersetzt [text] ins Englische, sofern das Modell installiert und die
@@ -679,8 +692,9 @@ class LibraryState extends ChangeNotifier {
     if (!await db.uebersetzeSucheUndTags()) return text;
     try {
       // `mit` gibt null zurück, wenn das Modell doch nicht ladbar war.
-      final uebersetzt =
-          await uebersetzungDeEnHalter.mit((s) => s.translate(text));
+      final uebersetzt = await uebersetzungDeEnHalter.mit(
+        (s) => s.translate(text),
+      );
       if (uebersetzt == null || uebersetzt.trim().isEmpty) return text;
       return uebersetzt;
     } catch (e) {
@@ -880,7 +894,9 @@ class LibraryState extends ChangeNotifier {
     // beim nächsten Neustart nachgeholt wird.
     unawaited(runAutoBackupIfDue());
     _autoBackupTimer = Timer.periodic(
-        const Duration(minutes: 30), (_) => runAutoBackupIfDue());
+      const Duration(minutes: 30),
+      (_) => runAutoBackupIfDue(),
+    );
 
     // Automatischer Papierkorb-Ablauf – aus demselben Grund (kein
     // Hintergrunddienst) ebenfalls einmal direkt beim Start geprüft und
@@ -888,21 +904,27 @@ class LibraryState extends ChangeNotifier {
     // da "nach N Tagen" ohnehin keine Sekundengenauigkeit braucht.
     unawaited(purgeExpiredTrashIfDue());
     _trashPurgeTimer = Timer.periodic(
-        const Duration(hours: 6), (_) => purgeExpiredTrashIfDue());
+      const Duration(hours: 6),
+      (_) => purgeExpiredTrashIfDue(),
+    );
 
     // Überwachter Ordner – einmal beim Start und danach regelmässig, aus
     // demselben Grund wie beim automatischen Backup: Es gibt keinen
     // Hintergrunddienst, der das erledigen könnte.
     unawaited(pruefeUeberwachtenOrdner());
-    _ordnerTimer =
-        Timer.periodic(_ordnerIntervall, (_) => pruefeUeberwachtenOrdner());
+    _ordnerTimer = Timer.periodic(
+      _ordnerIntervall,
+      (_) => pruefeUeberwachtenOrdner(),
+    );
 
     // Gibt KI-Modelle frei, die seit dem letzten Durchlauf nicht mehr in
     // Benutzung sind (siehe ModellHalter.freigebenWennUnbenutzt) – das ist
     // der Gegenpart zum bedarfsweisen Laden: ohne das hier bliebe ein einmal
     // benutztes Modell bis zum Beenden der App im Speicher.
-    _modellFreigabeTimer =
-        Timer.periodic(const Duration(minutes: 2), (_) => _sweepIdleModels());
+    _modellFreigabeTimer = Timer.periodic(
+      const Duration(minutes: 2),
+      (_) => _sweepIdleModels(),
+    );
 
     _ready = true;
     notifyListeners();
@@ -981,7 +1003,9 @@ class LibraryState extends ChangeNotifier {
     uebersetzungEnDeHalter = ModellHalter<TranslationService>(
       name: 'translate-en-de',
       installiert: TranslationService.isAvailable(
-          _modelsDir!, Uebersetzungsrichtung.enDe),
+        _modelsDir!,
+        Uebersetzungsrichtung.enDe,
+      ),
       laden: () =>
           TranslationService.load(_modelsDir!, Uebersetzungsrichtung.enDe),
       entsorgen: (s) => s.dispose(),
@@ -989,7 +1013,9 @@ class LibraryState extends ChangeNotifier {
     uebersetzungDeEnHalter = ModellHalter<TranslationService>(
       name: 'translate-de-en',
       installiert: TranslationService.isAvailable(
-          _modelsDir!, Uebersetzungsrichtung.deEn),
+        _modelsDir!,
+        Uebersetzungsrichtung.deEn,
+      ),
       laden: () =>
           TranslationService.load(_modelsDir!, Uebersetzungsrichtung.deEn),
       entsorgen: (s) => s.dispose(),
@@ -1122,7 +1148,8 @@ class LibraryState extends ChangeNotifier {
     // Ein Schreibvorgang für alle, nicht einer je Ereignis.
     if (gefunden.isNotEmpty) await db.setzeEreignisorte(gefunden);
     debugPrint(
-        'Ereignisorte nachgetragen: ${gefunden.length} von ${offen.length}');
+      'Ereignisorte nachgetragen: ${gefunden.length} von ${offen.length}',
+    );
   }
 
   // Beide CLIP-Halter prüfen dieselben Dateien – einer genügt als Auskunft.
@@ -1161,8 +1188,9 @@ class LibraryState extends ChangeNotifier {
         done,
         filePaths.length,
         currentFile: p.basename(filePath),
-        assetId:
-            result.outcome == ImportOutcome.imported ? result.assetId : null,
+        assetId: result.outcome == ImportOutcome.imported
+            ? result.assetId
+            : null,
         duplikat: result.outcome == ImportOutcome.duplicateSkipped,
         gescheitert: result.outcome == ImportOutcome.failed,
       );
@@ -1193,7 +1221,9 @@ class LibraryState extends ChangeNotifier {
   Future<img.Image?> _decodeAsset(AssetData asset) async {
     try {
       return await compute(
-          decodeImageBytes, await _decodableFile(asset).readAsBytes());
+        decodeImageBytes,
+        await _decodableFile(asset).readAsBytes(),
+      );
     } catch (_) {
       return null;
     }
@@ -1212,18 +1242,22 @@ class LibraryState extends ChangeNotifier {
     if (isImage && !_livePhotoImageExts.contains(ext)) return;
     if (!isImage && ext != _livePhotoVideoExt) return;
 
-    final stem =
-        p.basenameWithoutExtension(asset.originalFileName).toLowerCase();
-    final candidates =
-        await db.unlinkedAssetsOfType(isImage ? 'VIDEO' : 'IMAGE');
+    final stem = p
+        .basenameWithoutExtension(asset.originalFileName)
+        .toLowerCase();
+    final candidates = await db.unlinkedAssetsOfType(
+      isImage ? 'VIDEO' : 'IMAGE',
+    );
     for (final candidate in candidates) {
       if (candidate.id == asset.id) continue;
-      final candidateExt =
-          p.extension(candidate.originalFileName).toLowerCase();
+      final candidateExt = p
+          .extension(candidate.originalFileName)
+          .toLowerCase();
       if (isImage && candidateExt != _livePhotoVideoExt) continue;
       if (!isImage && !_livePhotoImageExts.contains(candidateExt)) continue;
-      final candidateStem =
-          p.basenameWithoutExtension(candidate.originalFileName).toLowerCase();
+      final candidateStem = p
+          .basenameWithoutExtension(candidate.originalFileName)
+          .toLowerCase();
       if (candidateStem == stem) {
         await db.linkAssets(asset.id, candidate.id);
         return;
@@ -1295,22 +1329,29 @@ class LibraryState extends ChangeNotifier {
       final bool matches;
       switch (rule.triggerType) {
         case 'location':
-          matches = latitude != null &&
+          matches =
+              latitude != null &&
               longitude != null &&
               rule.regionCenterLat != null &&
               rule.regionCenterLon != null &&
               rule.regionRadiusKm != null &&
-              ReverseGeocoder.haversineKm(latitude, longitude,
-                      rule.regionCenterLat!, rule.regionCenterLon!) <=
+              ReverseGeocoder.haversineKm(
+                    latitude,
+                    longitude,
+                    rule.regionCenterLat!,
+                    rule.regionCenterLon!,
+                  ) <=
                   rule.regionRadiusKm!;
         case 'dateRange':
-          matches = fileCreatedAt != null &&
+          matches =
+              fileCreatedAt != null &&
               rule.dateFrom != null &&
               rule.dateTo != null &&
               !fileCreatedAt.isBefore(rule.dateFrom!) &&
               !fileCreatedAt.isAfter(rule.dateTo!);
         case 'aiTag':
-          matches = aiTags != null &&
+          matches =
+              aiTags != null &&
               rule.aiTagTerm != null &&
               aiTags.contains(rule.aiTagTerm);
         default:
@@ -1402,24 +1443,24 @@ class LibraryState extends ChangeNotifier {
 
     final stufen =
         <({Analysestufe name, Stream<ImportProgress> Function() lauf})>[
-      (name: Analysestufe.bildanalyse, lauf: () => _bildinhaltsAnalyse()),
-      (name: Analysestufe.texterkennung, lauf: () => backfillOcrText()),
-      // Kein eigener CLIP-Schritt mehr – die Embeddings entstehen bereits in
-      // der Bildanalyse. [backfillClipEmbeddings] bleibt für den manuellen
-      // Aufruf in den Werkzeugen erhalten.
-      (
-        name: Analysestufe.schlagwoerter,
-        lauf: () => backfillAiTags(onlyUntagged: true)
-      ),
-      (name: Analysestufe.bildbeschreibung, lauf: () => backfillCaptions()),
-      // Zuletzt, und das ist keine Nebensache: Die Gesichter entstehen
-      // erst in der Bildanalyse ganz oben. Wer hier frueher fragt, fragt
-      // nach Gesichtern, die es noch nicht gibt.
-      (
-        name: Analysestufe.wiedererkennung,
-        lauf: () => backfillWiedererkennung()
-      ),
-    ];
+          (name: Analysestufe.bildanalyse, lauf: () => _bildinhaltsAnalyse()),
+          (name: Analysestufe.texterkennung, lauf: () => backfillOcrText()),
+          // Kein eigener CLIP-Schritt mehr – die Embeddings entstehen bereits in
+          // der Bildanalyse. [backfillClipEmbeddings] bleibt für den manuellen
+          // Aufruf in den Werkzeugen erhalten.
+          (
+            name: Analysestufe.schlagwoerter,
+            lauf: () => backfillAiTags(onlyUntagged: true),
+          ),
+          (name: Analysestufe.bildbeschreibung, lauf: () => backfillCaptions()),
+          // Zuletzt, und das ist keine Nebensache: Die Gesichter entstehen
+          // erst in der Bildanalyse ganz oben. Wer hier frueher fragt, fragt
+          // nach Gesichtern, die es noch nicht gibt.
+          (
+            name: Analysestufe.wiedererkennung,
+            lauf: () => backfillWiedererkennung(),
+          ),
+        ];
 
     try {
       for (var i = 0; i < stufen.length; i++) {
@@ -1462,8 +1503,10 @@ class LibraryState extends ChangeNotifier {
           // Anzeige bei „7994 von 8096" stehen.
           _fortschritt.value++;
         } catch (e) {
-          debugPrint('Analysestufe "${stufe.name.name}" fehlgeschlagen, '
-              'weiter mit der nächsten: $e');
+          debugPrint(
+            'Analysestufe "${stufe.name.name}" fehlgeschlagen, '
+            'weiter mit der nächsten: $e',
+          );
         }
       }
     } finally {
@@ -1580,8 +1623,8 @@ class LibraryState extends ChangeNotifier {
   /// eine Behauptung über die Regel, die nicht mehr stimmt.
   Startabweisung? pruefeStart(String schluessel) =>
       (_laeufe[schluessel]?.offen ?? false)
-          ? Startabweisung.laeuftBereits
-          : null;
+      ? Startabweisung.laeuftBereits
+      : null;
 
   /// Ob [lauf] jetzt losdarf.
   ///
@@ -1744,7 +1787,8 @@ class LibraryState extends ChangeNotifier {
     // Datei noch ab.
     notifyListeners();
     unawaited(
-        (abo?.cancel() ?? Future<void>.value()).whenComplete(lauf.schliesseAb));
+      (abo?.cancel() ?? Future<void>.value()).whenComplete(lauf.schliesseAb),
+    );
   }
 
   /// Räumt einen beendeten Lauf weg, damit die Karte wieder ihre Zahlen
@@ -1768,8 +1812,11 @@ class LibraryState extends ChangeNotifier {
     if (asset == null) return;
 
     await _tryLinkLivePhoto(asset);
-    await applyCameraPreset(asset.id,
-        cameraMake: asset.cameraMake, cameraModel: asset.cameraModel);
+    await applyCameraPreset(
+      asset.id,
+      cameraMake: asset.cameraMake,
+      cameraModel: asset.cameraModel,
+    );
     await applyAutomationRules(
       asset.id,
       latitude: asset.latitude,
@@ -1789,8 +1836,12 @@ class LibraryState extends ChangeNotifier {
     if (geocoder != null && asset.latitude != null && asset.longitude != null) {
       final result = geocoder!.lookup(asset.latitude!, asset.longitude!);
       if (result != null) {
-        await db.setLocationNames(asset.id,
-            country: result.country, state: result.state, city: result.city);
+        await db.setLocationNames(
+          asset.id,
+          country: result.country,
+          state: result.state,
+          city: result.city,
+        );
       }
     }
   }
@@ -1807,7 +1858,10 @@ class LibraryState extends ChangeNotifier {
   ///
   /// Ohne eingespielten GeoNames-Datensatz bleibt es bei der Koordinate.
   Future<void> setzeOrtVonHand(
-      List<String> assetIds, double? breite, double? laenge) async {
+    List<String> assetIds,
+    double? breite,
+    double? laenge,
+  ) async {
     await db.setLocationBulk(assetIds, breite, laenge);
     if (breite == null || laenge == null) return;
     // **Kein `await geoBereit` hier**, anders als beim Import. Der wartet
@@ -1825,8 +1879,12 @@ class LibraryState extends ChangeNotifier {
     // hier ein UPDATE je Foto; bei 500 Fotos gemessen 163 ms gegen 2 ms.
     // Wichtiger als die Zeit: Eine Schleife, die in der Mitte scheitert,
     // lässt die eine Hälfte am neuen Ort und die andere am alten stehen.
-    await db.setLocationNamesBulk(assetIds,
-        country: treffer.country, state: treffer.state, city: treffer.city);
+    await db.setLocationNamesBulk(
+      assetIds,
+      country: treffer.country,
+      state: treffer.state,
+      city: treffer.city,
+    );
   }
 
   /// Führt die Gesichtserkennung für ein Asset aus, dessen Bild bereits
@@ -1924,32 +1982,37 @@ class LibraryState extends ChangeNotifier {
             eyeOpenScore = await eyeState.eyeOpenScore(decoded, box);
           } catch (e) {
             debugPrint(
-                'Augen-Zustand-Erkennung fehlgeschlagen für ${asset.originalFileName}: $e');
+              'Augen-Zustand-Erkennung fehlgeschlagen für ${asset.originalFileName}: $e',
+            );
           }
         }
 
-        await db.insertFace(FacesCompanion.insert(
-          id: faceId,
-          assetId: asset.id,
-          boxX: box.x,
-          boxY: box.y,
-          boxW: box.width,
-          boxH: box.height,
-          cropRelativePath: Value(paths.faceRelativePath(faceId)),
-          embedding: embedding != null
-              ? Value(blobFromEmbeddingFloats(embedding))
-              : const Value.absent(),
-          eyeOpenScore:
-              eyeOpenScore != null ? Value(eyeOpenScore) : const Value.absent(),
-          // Auf dem Ausschnitt, der ohnehin schon im Speicher liegt –
-          // kein zweiter Dekodiervorgang, keine zweite Skalierung.
-          schaerfe: Value(gesichtsschaerfe(croppedThumb)),
-        ));
+        await db.insertFace(
+          FacesCompanion.insert(
+            id: faceId,
+            assetId: asset.id,
+            boxX: box.x,
+            boxY: box.y,
+            boxW: box.width,
+            boxH: box.height,
+            cropRelativePath: Value(paths.faceRelativePath(faceId)),
+            embedding: embedding != null
+                ? Value(blobFromEmbeddingFloats(embedding))
+                : const Value.absent(),
+            eyeOpenScore: eyeOpenScore != null
+                ? Value(eyeOpenScore)
+                : const Value.absent(),
+            // Auf dem Ausschnitt, der ohnehin schon im Speicher liegt –
+            // kein zweiter Dekodiervorgang, keine zweite Skalierung.
+            schaerfe: Value(gesichtsschaerfe(croppedThumb)),
+          ),
+        );
       }
       await db.markFacesScanned([asset.id]);
     } catch (e) {
       debugPrint(
-          'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e');
+        'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
+      );
     }
   }
 
@@ -2008,12 +2071,17 @@ class LibraryState extends ChangeNotifier {
             );
           } catch (e) {
             failed = true;
-            debugPrint('Gesichtserkennung fehlgeschlagen für '
-                '${asset.originalFileName}: $e');
+            debugPrint(
+              'Gesichtserkennung fehlgeschlagen für '
+              '${asset.originalFileName}: $e',
+            );
           }
           done++;
-          yield ImportProgress(done, assets.length,
-              currentFile: asset.originalFileName);
+          yield ImportProgress(
+            done,
+            assets.length,
+            currentFile: asset.originalFileName,
+          );
         }
       } finally {
         if (eyeState != null) eyeStateHalter.zurueckgeben();
@@ -2030,8 +2098,9 @@ class LibraryState extends ChangeNotifier {
   /// native Bildkonvertierung für HEIC/DNG oder die Video-Thumbnail-
   /// Erzeugung erst nachträglich eingerichtet wurde. [onlyMissing] = true
   /// verarbeitet nur Assets ohne Thumbnail.
-  Stream<ImportProgress> regenerateThumbnails(
-      {required bool onlyMissing}) async* {
+  Stream<ImportProgress> regenerateThumbnails({
+    required bool onlyMissing,
+  }) async* {
     final assets = await db.assetsForThumbnailRegen(onlyMissing: onlyMissing);
     var done = 0;
     yield ImportProgress(0, assets.length);
@@ -2059,11 +2128,15 @@ class LibraryState extends ChangeNotifier {
         }
       } catch (e) {
         debugPrint(
-            'Vorschau-Erzeugung fehlgeschlagen für ${asset.originalFileName}: $e');
+          'Vorschau-Erzeugung fehlgeschlagen für ${asset.originalFileName}: $e',
+        );
       }
       done++;
-      yield ImportProgress(done, assets.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        assets.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -2136,11 +2209,15 @@ class LibraryState extends ChangeNotifier {
         }
       } catch (e) {
         debugPrint(
-            'Neu-Rendern fehlgeschlagen für ${asset.originalFileName}: $e');
+          'Neu-Rendern fehlgeschlagen für ${asset.originalFileName}: $e',
+        );
       }
       done++;
-      yield ImportProgress(done, entries.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        entries.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -2154,8 +2231,11 @@ class LibraryState extends ChangeNotifier {
     for (final asset in images) {
       await _tryLinkLivePhoto(asset);
       done++;
-      yield ImportProgress(done, images.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        images.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -2185,8 +2265,11 @@ class LibraryState extends ChangeNotifier {
         if (await datei.exists()) {
           final kennung = await ImportService.inhaltskennung(datei, null);
           if (kennung != null) {
-            await db.setzeDateiart(asset.id, 'IMAGE',
-                dateiformat: kennung.substring(1));
+            await db.setzeDateiart(
+              asset.id,
+              'IMAGE',
+              dateiformat: kennung.substring(1),
+            );
             berichtigt++;
           }
         }
@@ -2194,8 +2277,11 @@ class LibraryState extends ChangeNotifier {
         debugPrint('Dateiart für ${asset.originalFileName} nicht geprüft: $e');
       }
       done++;
-      yield ImportProgress(done, verdaechtig.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        verdaechtig.length,
+        currentFile: asset.originalFileName,
+      );
     }
     debugPrint('Dateiarten berichtigt: $berichtigt');
   }
@@ -2225,16 +2311,20 @@ class LibraryState extends ChangeNotifier {
 
     try {
       for (final asset in assets) {
-        final gps = await importService
-            .readGpsLocation(paths.absolute(asset.relativePath));
+        final gps = await importService.readGpsLocation(
+          paths.absolute(asset.relativePath),
+        );
         if (gps != null) {
           await db.setLocation(asset.id, gps.latitude, gps.longitude);
         }
         block.add(asset.id);
         if (block.length >= blockGroesse) await blockSchreiben();
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       // Auch bei Abbruch: Was angesehen wurde, ist angesehen. Ein
@@ -2284,8 +2374,11 @@ class LibraryState extends ChangeNotifier {
       block = [];
       ohneDatum = [];
       versatz = {};
-      await db.markDatumGeprueft(zuSchreiben,
-          geschaetzt: markieren, versatz: zonen);
+      await db.markDatumGeprueft(
+        zuSchreiben,
+        geschaetzt: markieren,
+        versatz: zonen,
+      );
     }
 
     try {
@@ -2324,14 +2417,19 @@ class LibraryState extends ChangeNotifier {
         }
         if (block.length >= blockGroesse) await blockSchreiben();
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       await blockSchreiben();
     }
-    debugPrint('Datumsherkunft: $geraten von ${assets.length} geraten, '
-        '$unlesbar nicht lesbar, $mitZone mit Zeitzone');
+    debugPrint(
+      'Datumsherkunft: $geraten von ${assets.length} geraten, '
+      '$unlesbar nicht lesbar, $mitZone mit Zeitzone',
+    );
   }
 
   /// Wertet **weitere Standbilder** eines Videos aus – bisher war ein
@@ -2380,10 +2478,14 @@ class LibraryState extends ChangeNotifier {
   /// Gerechnet wird gegen die Kerne der benannten Personen, mit der
   /// **persoenlichen** Schwelle jeder Person: Darin steckt, was aus
   /// frueheren Zustimmungen und Ablehnungen gelernt wurde.
-  Stream<ImportProgress> backfillWiedererkennung(
-      {bool alle = false, bool beiseite = false}) async* {
-    final gesichter =
-        await db.gesichterFuerWiedererkennung(alle: alle, beiseite: beiseite);
+  Stream<ImportProgress> backfillWiedererkennung({
+    bool alle = false,
+    bool beiseite = false,
+  }) async* {
+    final gesichter = await db.gesichterFuerWiedererkennung(
+      alle: alle,
+      beiseite: beiseite,
+    );
     if (gesichter.isEmpty) {
       yield ImportProgress(0, 0);
       return;
@@ -2458,8 +2560,9 @@ class LibraryState extends ChangeNotifier {
     try {
       final gesichter = await faceEngineHalter.leihen();
       try {
-        final augenzustand =
-            gesichter != null ? await eyeStateHalter.leihen() : null;
+        final augenzustand = gesichter != null
+            ? await eyeStateHalter.leihen()
+            : null;
         try {
           final vokabular = await db.aiTagVocabularyTerms();
           var done = 0;
@@ -2478,13 +2581,15 @@ class LibraryState extends ChangeNotifier {
                 for (final stelle in stellen) {
                   final bild =
                       await NativeImageConverter.generateVideoThumbnail(
-                    paths.absolute(video.relativePath),
-                    maxDimension: videoStandbildKante,
-                    anteil: stelle,
-                  );
+                        paths.absolute(video.relativePath),
+                        maxDimension: videoStandbildKante,
+                        anteil: stelle,
+                      );
                   if (bild == null) continue;
-                  final dekodiert =
-                      await compute(img.decodeJpg, bild.jpegBytes);
+                  final dekodiert = await compute(
+                    img.decodeJpg,
+                    bild.jpegBytes,
+                  );
                   if (dekodiert == null) continue;
                   bilder++;
 
@@ -2492,12 +2597,15 @@ class LibraryState extends ChangeNotifier {
                     final vektor = await clipBild.embedImage(dekodiert);
                     neue.add((
                       stelle: stelle,
-                      vector: blobFromEmbeddingFloats(vektor)
+                      vector: blobFromEmbeddingFloats(vektor),
                     ));
                     if (clipText != null) {
                       for (final tag in await aiTaggingService.suggestTags(
-                          clipText, vektor, vokabular,
-                          insEnglische: insEnglische)) {
+                        clipText,
+                        vektor,
+                        vokabular,
+                        insEnglische: insEnglische,
+                      )) {
                         await db.tagAsset(video.id, tag, quelle: Tagquelle.ki);
                       }
                     }
@@ -2521,12 +2629,16 @@ class LibraryState extends ChangeNotifier {
                 await db.setzeVideoeinbettungen(video.id, neue);
               } catch (e) {
                 debugPrint(
-                    'Standbilder fehlgeschlagen für ${video.originalFileName}: $e');
+                  'Standbilder fehlgeschlagen für ${video.originalFileName}: $e',
+                );
               }
             }
             done++;
-            yield ImportProgress(done, videos.length,
-                currentFile: video.originalFileName);
+            yield ImportProgress(
+              done,
+              videos.length,
+              currentFile: video.originalFileName,
+            );
           }
           if (ohneArbeit.isNotEmpty) {
             await db.markVideobilderGeprueft(ohneArbeit);
@@ -2579,10 +2691,12 @@ class LibraryState extends ChangeNotifier {
       block = [];
       await db.transaction(() async {
         for (final e in zuSchreiben) {
-          await db.setLocationNames(e.id,
-              country: e.treffer.country,
-              state: e.treffer.state,
-              city: e.treffer.city);
+          await db.setLocationNames(
+            e.id,
+            country: e.treffer.country,
+            state: e.treffer.state,
+            city: e.treffer.city,
+          );
         }
       });
     }
@@ -2592,8 +2706,11 @@ class LibraryState extends ChangeNotifier {
       if (result != null) block.add((id: asset.id, treffer: result));
       if (block.length >= blockGroesse) await blockSchreiben();
       done++;
-      yield ImportProgress(done, assets.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        assets.length,
+        currentFile: asset.originalFileName,
+      );
     }
     await blockSchreiben();
   }
@@ -2606,16 +2723,23 @@ class LibraryState extends ChangeNotifier {
     var done = 0;
     yield ImportProgress(0, assets.length);
     for (final asset in assets) {
-      final info = await importService
-          .readCameraInfo(paths.absolute(asset.relativePath));
+      final info = await importService.readCameraInfo(
+        paths.absolute(asset.relativePath),
+      );
       if (!info.isEmpty) {
         await db.setCameraMetadata(asset.id, info);
-        await applyCameraPreset(asset.id,
-            cameraMake: info.make, cameraModel: info.model);
+        await applyCameraPreset(
+          asset.id,
+          cameraMake: info.make,
+          cameraModel: info.model,
+        );
       }
       done++;
-      yield ImportProgress(done, assets.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        assets.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -2649,8 +2773,11 @@ class LibraryState extends ChangeNotifier {
         final daten = await importService.readAufnahmedaten(datei);
         if (!daten.kamera.isEmpty) {
           await db.setCameraMetadata(asset.id, daten.kamera);
-          await applyCameraPreset(asset.id,
-              cameraMake: daten.kamera.make, cameraModel: daten.kamera.model);
+          await applyCameraPreset(
+            asset.id,
+            cameraMake: daten.kamera.make,
+            cameraModel: daten.kamera.model,
+          );
         }
         final neu = daten.zeitpunkt;
         // Eine Minute Spielraum: Sekundenbruchteile und Rundungen der
@@ -2662,8 +2789,11 @@ class LibraryState extends ChangeNotifier {
         }
       }
       done++;
-      yield ImportProgress(done, kandidaten.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        kandidaten.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -2703,8 +2833,11 @@ class LibraryState extends ChangeNotifier {
 
       if (!daten.kamera.isEmpty && (asset.cameraModel ?? '').isEmpty) {
         await db.setCameraMetadata(id, daten.kamera);
-        await applyCameraPreset(id,
-            cameraMake: daten.kamera.make, cameraModel: daten.kamera.model);
+        await applyCameraPreset(
+          id,
+          cameraMake: daten.kamera.make,
+          cameraModel: daten.kamera.model,
+        );
       }
       final neu = daten.zeitpunkt;
       if (neu != null &&
@@ -2772,11 +2905,16 @@ class LibraryState extends ChangeNotifier {
     // – aus dem Erstlauf-Bericht (A08): „Aufgabe lief ohne Fehlermeldung
     // durch, genannt wurde nichts."
     if (gesamt > 0) {
-      yield ImportProgress(gesamt, gesamt,
-          getan: verschoben + zettelVerschoben);
+      yield ImportProgress(
+        gesamt,
+        gesamt,
+        getan: verschoben + zettelVerschoben,
+      );
     }
-    debugPrint('Ablage neu geordnet: $verschoben von ${betroffen.length}, '
-        'Beipackzettel $zettelVerschoben von ${zettel.length}');
+    debugPrint(
+      'Ablage neu geordnet: $verschoben von ${betroffen.length}, '
+      'Beipackzettel $zettelVerschoben von ${zettel.length}',
+    );
     notifyListeners();
   }
 
@@ -2803,7 +2941,9 @@ class LibraryState extends ChangeNotifier {
   /// Ordner als das liest, was sie zu sein behaupten. Ein Ablageschema,
   /// dem man nicht trauen kann, ist keines.
   Future<void> setzeAufnahmedatumVonHand(
-      List<String> assetIds, DateTime neu) async {
+    List<String> assetIds,
+    DateTime neu,
+  ) async {
     for (final id in assetIds) {
       final asset = await db.assetById(id);
       if (asset == null) continue;
@@ -2815,7 +2955,10 @@ class LibraryState extends ChangeNotifier {
   Future<void> _datumUmschreiben(AssetData asset, DateTime neu) async {
     final alterPfad = asset.relativePath;
     final neuerPfad = paths.originalRelativePath(
-        neu, asset.id, p.extension(alterPfad).toLowerCase());
+      neu,
+      asset.id,
+      p.extension(alterPfad).toLowerCase(),
+    );
     if (neuerPfad == alterPfad) {
       await db.setAufnahmezeitpunkt(asset.id, neu);
       return;
@@ -2862,7 +3005,9 @@ class LibraryState extends ChangeNotifier {
   /// geklappt hat. Er wird beim nächsten Lauf von
   /// [verirrteBeipackzettel] ohnehin eingesammelt.
   Future<void> _beipackzettelMitnehmen(
-      String alterPfad, String neuerPfad) async {
+    String alterPfad,
+    String neuerPfad,
+  ) async {
     final alt = paths.absolute(paths.xmpSidecarPath(alterPfad));
     if (!await alt.exists()) return;
     try {
@@ -2899,11 +3044,13 @@ class LibraryState extends ChangeNotifier {
     if (!wurzel.existsSync()) return const [];
     final pfadJeKennung = {
       for (final a in await db.allAssetsForIntegrityCheck())
-        a.id: a.relativePath
+        a.id: a.relativePath,
     };
     final gefunden = <({String von, String nach})>[];
-    await for (final eintrag
-        in wurzel.list(recursive: true, followLinks: false)) {
+    await for (final eintrag in wurzel.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (eintrag is! File) continue;
       final rel = p.relative(eintrag.path, from: paths.root.path);
       if (p.extension(rel).toLowerCase() != '.xmp') continue;
@@ -2952,8 +3099,10 @@ class LibraryState extends ChangeNotifier {
       // Programmstart und muss aus dem gespeicherten Merkmal wiederhergestellt
       // werden (siehe FolderAccess).
       final zugriff = FolderAccess.forCurrentPlatform();
-      var pfad =
-          await zugriff.resolveRoot(path: eintrag.pfad, token: eintrag.token);
+      var pfad = await zugriff.resolveRoot(
+        path: eintrag.pfad,
+        token: eintrag.token,
+      );
       // Ohne Merkmal liefert die macOS-Umsetzung grundsätzlich null – das
       // ist für Ordner ausserhalb des Programmbereichs richtig, schliesst
       // aber auch solche aus, die ohnehin gelesen werden dürfen (innerhalb
@@ -3048,33 +3197,32 @@ class LibraryState extends ChangeNotifier {
   Future<Entwicklungswerte> _werteAus(
     DevelopSettingsData d, {
     String? quellAssetId,
-  }) async =>
-      Entwicklungswerte(
-        regler: DevelopAdjustments(
-          exposure: d.exposure,
-          temperature: d.temperature,
-          tint: d.tint,
-          contrast: d.contrast,
-          shadows: d.shadows,
-          highlights: d.highlights,
-          sharpness: d.sharpness,
-          noiseReduction: d.noiseReduction,
-          clarity: d.clarity,
-          vignette: d.vignette,
-          lensCorrectionEnabled: d.lensCorrectionEnabled,
-          // Kurve und Mischer gehören genauso zur Entwicklung wie die
-          // Regler. Ohne sie übernähme das Ziel die Belichtung, aber nicht
-          // die Gradation.
-          toneCurve: toneCurveAus(d.toneCurveJson),
-          colorMixer: colorMixerAus(d.colorMixerJson),
-          lut: await _ladeLut(d.lutPath),
-          lutStrength: d.lutStrength,
-        ),
-        lutPath: d.lutPath,
-        toneCurveJson: d.toneCurveJson,
-        colorMixerJson: d.colorMixerJson,
-        quellAssetId: quellAssetId,
-      );
+  }) async => Entwicklungswerte(
+    regler: DevelopAdjustments(
+      exposure: d.exposure,
+      temperature: d.temperature,
+      tint: d.tint,
+      contrast: d.contrast,
+      shadows: d.shadows,
+      highlights: d.highlights,
+      sharpness: d.sharpness,
+      noiseReduction: d.noiseReduction,
+      clarity: d.clarity,
+      vignette: d.vignette,
+      lensCorrectionEnabled: d.lensCorrectionEnabled,
+      // Kurve und Mischer gehören genauso zur Entwicklung wie die
+      // Regler. Ohne sie übernähme das Ziel die Belichtung, aber nicht
+      // die Gradation.
+      toneCurve: toneCurveAus(d.toneCurveJson),
+      colorMixer: colorMixerAus(d.colorMixerJson),
+      lut: await _ladeLut(d.lutPath),
+      lutStrength: d.lutStrength,
+    ),
+    lutPath: d.lutPath,
+    toneCurveJson: d.toneCurveJson,
+    colorMixerJson: d.colorMixerJson,
+    quellAssetId: quellAssetId,
+  );
 
   Future<Entwicklungswerte?> _ausZwischenablage() async {
     final q = _kopierteEntwicklung;
@@ -3085,28 +3233,28 @@ class LibraryState extends ChangeNotifier {
   /// Dasselbe aus einer benannten Vorgabe. Ohne Quellfoto – eine Vorgabe
   /// gehört zu keinem.
   Future<Entwicklungswerte> werteAusVorgabe(DevelopPresetData v) => _werteAus(
-        DevelopSettingsData(
-          // Der Bezeichner wird nie benutzt: [quellAssetId] bleibt null,
-          // also überspringt die Übertragung kein Foto.
-          assetId: '',
-          exposure: v.exposure,
-          temperature: v.temperature,
-          tint: v.tint,
-          contrast: v.contrast,
-          shadows: v.shadows,
-          highlights: v.highlights,
-          sharpness: v.sharpness,
-          noiseReduction: v.noiseReduction,
-          lensCorrectionEnabled: v.lensCorrectionEnabled,
-          clarity: v.clarity,
-          vignette: v.vignette,
-          lutPath: v.lutPath,
-          lutStrength: v.lutStrength,
-          toneCurveJson: v.toneCurveJson,
-          colorMixerJson: v.colorMixerJson,
-          updatedAt: v.erstelltAm,
-        ),
-      );
+    DevelopSettingsData(
+      // Der Bezeichner wird nie benutzt: [quellAssetId] bleibt null,
+      // also überspringt die Übertragung kein Foto.
+      assetId: '',
+      exposure: v.exposure,
+      temperature: v.temperature,
+      tint: v.tint,
+      contrast: v.contrast,
+      shadows: v.shadows,
+      highlights: v.highlights,
+      sharpness: v.sharpness,
+      noiseReduction: v.noiseReduction,
+      lensCorrectionEnabled: v.lensCorrectionEnabled,
+      clarity: v.clarity,
+      vignette: v.vignette,
+      lutPath: v.lutPath,
+      lutStrength: v.lutStrength,
+      toneCurveJson: v.toneCurveJson,
+      colorMixerJson: v.colorMixerJson,
+      updatedAt: v.erstelltAm,
+    ),
+  );
 
   /// Überträgt die kopierten Einstellungen auf [zielIds] und rendert jedes
   /// Zielfoto dabei neu – ohne das Rendern bliebe die Änderung unsichtbar,
@@ -3191,11 +3339,15 @@ class LibraryState extends ChangeNotifier {
         );
       } catch (e) {
         debugPrint(
-            'Entwicklung übertragen fehlgeschlagen für ${asset.originalFileName}: $e');
+          'Entwicklung übertragen fehlgeschlagen für ${asset.originalFileName}: $e',
+        );
       }
       done++;
-      yield ImportProgress(done, ziele.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        ziele.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -3231,8 +3383,9 @@ class LibraryState extends ChangeNotifier {
         try {
           List<Textstelle>? stellen;
           if (ueberSystem) {
-            stellen =
-                await NativeImageConverter.recognizeText(_decodableFile(asset));
+            stellen = await NativeImageConverter.recognizeText(
+              _decodableFile(asset),
+            );
           } else {
             final bild = await _decodeAsset(asset);
             if (bild != null) stellen = await modell!.erkenne(bild);
@@ -3252,17 +3405,23 @@ class LibraryState extends ChangeNotifier {
           // NICHT als leeres Ergebnis speichern: Das Foto würde als
           // durchsucht vermerkt und nach einer Reparatur nie wieder
           // drankommen. Es bleibt offen, der Lauf geht weiter.
-          debugPrint('Texterkennung: ${e.stellen} Stellen mit Schrift in '
-              '${asset.originalFileName}, keine lesbar – Foto bleibt offen.');
+          debugPrint(
+            'Texterkennung: ${e.stellen} Stellen mit Schrift in '
+            '${asset.originalFileName}, keine lesbar – Foto bleibt offen.',
+          );
           failed = true;
         } catch (e) {
           failed = true;
           debugPrint(
-              'Texterkennung fehlgeschlagen für ${asset.originalFileName}: $e');
+            'Texterkennung fehlgeschlagen für ${asset.originalFileName}: $e',
+          );
         }
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       if (!ueberSystem) ocrHalter.zurueckgeben();
@@ -3318,18 +3477,23 @@ class LibraryState extends ChangeNotifier {
               // Eine fehlgeschlagene Übersetzung darf die Beschreibung
               // nicht mitreissen – das englische Original ist brauchbar.
               debugPrint(
-                  'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e');
+                'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e',
+              );
             }
           }
           await db.setAiCaption(asset.id, caption, deutsch: deutsch);
         } catch (e) {
           failed = true;
           debugPrint(
-              'KI-Bildbeschreibung fehlgeschlagen für ${asset.originalFileName}: $e');
+            'KI-Bildbeschreibung fehlgeschlagen für ${asset.originalFileName}: $e',
+          );
         }
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       if (uebersetzer != null) uebersetzungEnDeHalter.zurueckgeben();
@@ -3349,8 +3513,9 @@ class LibraryState extends ChangeNotifier {
   ///
   /// [alle] übersetzt auch das, was schon eine deutsche Fassung hat – nach
   /// einem Modellwechsel der sinnvolle Weg.
-  Stream<ImportProgress> uebersetzeBildbeschreibungen(
-      {bool alle = false}) async* {
+  Stream<ImportProgress> uebersetzeBildbeschreibungen({
+    bool alle = false,
+  }) async* {
     // Erst die Arbeit ermitteln, dann das Modell holen – siehe
     // [_bildinhaltsAnalyse].
     final assets = await db.assetsForCaptionTranslation(alle: alle);
@@ -3379,12 +3544,16 @@ class LibraryState extends ChangeNotifier {
             // Ein Satz, an dem sich das Modell verschluckt, darf den Lauf
             // über die ganze Bibliothek nicht beenden.
             debugPrint(
-                'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e');
+              'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e',
+            );
           }
         }
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       uebersetzungEnDeHalter.zurueckgeben();
@@ -3422,8 +3591,9 @@ class LibraryState extends ChangeNotifier {
     try {
       final gesichter = await faceEngineHalter.leihen();
       try {
-        final augenzustand =
-            gesichter != null ? await eyeStateHalter.leihen() : null;
+        final augenzustand = gesichter != null
+            ? await eyeStateHalter.leihen()
+            : null;
         try {
           var done = 0;
           yield ImportProgress(0, kandidaten.length);
@@ -3440,10 +3610,13 @@ class LibraryState extends ChangeNotifier {
                 if (brauchtUnschaerfe) {
                   try {
                     await db.setSharpnessScore(
-                        asset.id, await compute(computeBlurScore, decoded));
+                      asset.id,
+                      await compute(computeBlurScore, decoded),
+                    );
                   } catch (e) {
                     debugPrint(
-                        'Unschärfe fehlgeschlagen für ${asset.originalFileName}: $e');
+                      'Unschärfe fehlgeschlagen für ${asset.originalFileName}: $e',
+                    );
                   }
                 }
                 if (brauchtGesichter) {
@@ -3457,24 +3630,31 @@ class LibraryState extends ChangeNotifier {
                     );
                   } catch (e) {
                     debugPrint(
-                        'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e');
+                      'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
+                    );
                   }
                 }
                 if (brauchtEmbedding) {
                   try {
                     await db.saveEmbedding(
-                        asset.id, await clip.embedImage(decoded));
+                      asset.id,
+                      await clip.embedImage(decoded),
+                    );
                   } catch (e) {
                     debugPrint(
-                        'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e');
+                      'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
+                    );
                   }
                 }
               }
             }
 
             done++;
-            yield ImportProgress(done, kandidaten.length,
-                currentFile: asset.originalFileName);
+            yield ImportProgress(
+              done,
+              kandidaten.length,
+              currentFile: asset.originalFileName,
+            );
           }
         } finally {
           if (augenzustand != null) eyeStateHalter.zurueckgeben();
@@ -3502,15 +3682,21 @@ class LibraryState extends ChangeNotifier {
         final decoded = await _decodeAsset(asset);
         if (decoded != null) {
           await db.setSharpnessScore(
-              asset.id, await compute(computeBlurScore, decoded));
+            asset.id,
+            await compute(computeBlurScore, decoded),
+          );
         }
       } catch (e) {
         debugPrint(
-            'Unschärfe-Berechnung fehlgeschlagen für ${asset.originalFileName}: $e');
+          'Unschärfe-Berechnung fehlgeschlagen für ${asset.originalFileName}: $e',
+        );
       }
       done++;
-      yield ImportProgress(done, assets.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        assets.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -3539,7 +3725,9 @@ class LibraryState extends ChangeNotifier {
             final bild = img.decodeImage(await datei.readAsBytes());
             if (bild != null) {
               await db.setzeGesichtsschaerfe(
-                  gesicht.id, gesichtsschaerfe(bild));
+                gesicht.id,
+                gesichtsschaerfe(bild),
+              );
             }
           }
         }
@@ -3573,12 +3761,16 @@ class LibraryState extends ChangeNotifier {
         tagsByAssetId[asset.id] ?? const [],
         gesichter: gesichterByAssetId[asset.id] ?? const [],
       );
-      final sidecarFile =
-          paths.absolute(paths.xmpSidecarPath(asset.relativePath));
+      final sidecarFile = paths.absolute(
+        paths.xmpSidecarPath(asset.relativePath),
+      );
       await sidecarFile.writeAsString(xmp);
       done++;
-      yield ImportProgress(done, assets.length,
-          currentFile: asset.originalFileName);
+      yield ImportProgress(
+        done,
+        assets.length,
+        currentFile: asset.originalFileName,
+      );
     }
   }
 
@@ -3684,11 +3876,15 @@ class LibraryState extends ChangeNotifier {
         } catch (e) {
           failed = true;
           debugPrint(
-              'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e');
+            'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
+          );
         }
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       clipBildHalter.zurueckgeben();
@@ -3702,9 +3898,7 @@ class LibraryState extends ChangeNotifier {
     final fingerprint = ModelProcessingState.currentFingerprints()[pipeline];
     if (fingerprint == null) return;
     await state.markCurrent(pipeline, fingerprint);
-    _outdatedModelPipelines = {
-      ..._outdatedModelPipelines,
-    }..remove(pipeline);
+    _outdatedModelPipelines = {..._outdatedModelPipelines}..remove(pipeline);
     notifyListeners();
   }
 
@@ -3769,8 +3963,11 @@ class LibraryState extends ChangeNotifier {
             await db.tagAsset(asset.id, tag, quelle: Tagquelle.ki);
           }
           if (tags.isNotEmpty) {
-            await applyAutomationRules(asset.id,
-                aiTags: tags, rules: automationRules);
+            await applyAutomationRules(
+              asset.id,
+              aiTags: tags,
+              rules: automationRules,
+            );
           }
           // Auch bei LEERER Trefferliste vermerken: "kein Begriff passt" ist
           // ein Ergebnis, kein offener Posten. Ohne diesen Vermerk bliebe das
@@ -3781,11 +3978,15 @@ class LibraryState extends ChangeNotifier {
           await db.markAiTagsScanned([asset.id]);
         } catch (e) {
           debugPrint(
-              'KI-Tagging fehlgeschlagen für ${asset.originalFileName}: $e');
+            'KI-Tagging fehlgeschlagen für ${asset.originalFileName}: $e',
+          );
         }
         done++;
-        yield ImportProgress(done, assets.length,
-            currentFile: asset.originalFileName);
+        yield ImportProgress(
+          done,
+          assets.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       clipTextHalter.zurueckgeben();
@@ -3814,9 +4015,10 @@ class LibraryState extends ChangeNotifier {
   Future<void> setupVaultPin(String pin) async {
     final wrapped = await VaultCrypto.createMasterKey(pin);
     await db.saveVaultKey(
-        kdfSalt: wrapped.kdfSalt,
-        nonce: wrapped.nonce,
-        wrapped: wrapped.wrapped);
+      kdfSalt: wrapped.kdfSalt,
+      nonce: wrapped.nonce,
+      wrapped: wrapped.wrapped,
+    );
     _vaultKey = wrapped.masterKey;
   }
 
@@ -3830,8 +4032,12 @@ class LibraryState extends ChangeNotifier {
     if (kdfSalt == null || nonce == null || wrapped == null) {
       throw StateError('Kein PIN eingerichtet.');
     }
-    _vaultKey = await VaultCrypto.unwrapMasterKey(pin,
-        kdfSalt: kdfSalt, nonce: nonce, wrapped: wrapped);
+    _vaultKey = await VaultCrypto.unwrapMasterKey(
+      pin,
+      kdfSalt: kdfSalt,
+      nonce: nonce,
+      wrapped: wrapped,
+    );
   }
 
   /// Ändert den PIN, ohne den Master-Key (und damit alle bereits
@@ -3844,9 +4050,10 @@ class LibraryState extends ChangeNotifier {
     }
     final wrapped = await VaultCrypto.wrapMasterKey(key, newPin);
     await db.saveVaultKey(
-        kdfSalt: wrapped.kdfSalt,
-        nonce: wrapped.nonce,
-        wrapped: wrapped.wrapped);
+      kdfSalt: wrapped.kdfSalt,
+      nonce: wrapped.nonce,
+      wrapped: wrapped.wrapped,
+    );
   }
 
   /// Entfernt den PIN-Schutz und entschlüsselt alle gesperrten Dateien
@@ -3936,22 +4143,21 @@ class LibraryState extends ChangeNotifier {
   /// Nicht vorhandene Dateien stehen mit in der Liste; die drei
   /// Verwender kommen damit zurecht.
   Future<List<String>> dateienVon(AssetData asset) async => [
-        asset.relativePath,
-        // Der Beipackzettel neben dem Original: Er trägt Beschreibung,
-        // Schlagwörter, Bewertung und Ort im Klartext. Beim Sperren blieb
-        // er liegen – genau das, wovor der gesperrte Ordner schützen soll
-        // (dieselbe Überlegung wie bei metadata.json in backup_service).
-        paths.xmpSidecarPath(asset.relativePath),
-        if (asset.thumbnailRelativePath != null) asset.thumbnailRelativePath!,
-        if (asset.previewRelativePath != null) asset.previewRelativePath!,
-        if (asset.developedRelativePath != null) asset.developedRelativePath!,
-        if (asset.restoredRelativePath != null) asset.restoredRelativePath!,
-        if (asset.trimmedRelativePath != null) asset.trimmedRelativePath!,
-        for (final face in await db.facesForAsset(asset.id))
-          if (face.cropRelativePath != null) face.cropRelativePath!,
-        for (final mask in await db.masksForAsset(asset.id))
-          mask.maskRelativePath,
-      ];
+    asset.relativePath,
+    // Der Beipackzettel neben dem Original: Er trägt Beschreibung,
+    // Schlagwörter, Bewertung und Ort im Klartext. Beim Sperren blieb
+    // er liegen – genau das, wovor der gesperrte Ordner schützen soll
+    // (dieselbe Überlegung wie bei metadata.json in backup_service).
+    paths.xmpSidecarPath(asset.relativePath),
+    if (asset.thumbnailRelativePath != null) asset.thumbnailRelativePath!,
+    if (asset.previewRelativePath != null) asset.previewRelativePath!,
+    if (asset.developedRelativePath != null) asset.developedRelativePath!,
+    if (asset.restoredRelativePath != null) asset.restoredRelativePath!,
+    if (asset.trimmedRelativePath != null) asset.trimmedRelativePath!,
+    for (final face in await db.facesForAsset(asset.id))
+      if (face.cropRelativePath != null) face.cropRelativePath!,
+    for (final mask in await db.masksForAsset(asset.id)) mask.maskRelativePath,
+  ];
 
   Future<void> _encryptAssetFiles(AssetData asset, SecretKey key) async {
     for (final relPath in await dateienVon(asset)) {
@@ -4018,8 +4224,12 @@ class LibraryState extends ChangeNotifier {
     };
     final cipher = AesGcm.with256bits();
     final nonce = cipher.newNonce();
-    final box = await cipher.encrypt(utf8.encode(jsonEncode(metadata)),
-        secretKey: key, nonce: nonce, aad: utf8.encode(asset.id));
+    final box = await cipher.encrypt(
+      utf8.encode(jsonEncode(metadata)),
+      secretKey: key,
+      nonce: nonce,
+      aad: utf8.encode(asset.id),
+    );
     final target = paths.absolute(paths.vaultMetadataRelativePath(asset.id));
     final part = File('${target.path}.part');
     try {
@@ -4027,7 +4237,7 @@ class LibraryState extends ChangeNotifier {
         ..._privateMetadataMagic,
         ...nonce,
         ...box.cipherText,
-        ...box.mac.bytes
+        ...box.mac.bytes,
       ], flush: true);
       if (await target.exists()) await target.delete();
       await part.rename(target.path);
@@ -4103,7 +4313,7 @@ class LibraryState extends ChangeNotifier {
       ),
       tags: tags,
       albumIds: [
-        for (final id in json['albums'] as List? ?? const []) id as String
+        for (final id in json['albums'] as List? ?? const []) id as String,
       ],
     );
     await target.delete();
@@ -4254,8 +4464,9 @@ class LibraryState extends ChangeNotifier {
       // das Entschlüsseln ab, hielte der Zwischenspeicher die abgebrochene
       // Fassung für fertig und zeigte sie beim nächsten Zugriff wortlos
       // weiter, statt es erneut zu versuchen.
-      final teil =
-          File('${target.path}.${DateTime.now().microsecondsSinceEpoch}');
+      final teil = File(
+        '${target.path}.${DateTime.now().microsecondsSinceEpoch}',
+      );
       try {
         await VaultCrypto.decryptFile(paths.absolute(relativePath), teil, key);
         await teil.rename(target.path);
@@ -4312,8 +4523,10 @@ class LibraryState extends ChangeNotifier {
     var cacheBytes = 0;
     final dir = _decryptCacheDir;
     if (await dir.exists()) {
-      await for (final entity
-          in dir.list(recursive: true, followLinks: false)) {
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (entity is File) {
           try {
             cacheDateien++;
@@ -4343,9 +4556,10 @@ class LibraryState extends ChangeNotifier {
   Future<void> setupBackupPassphrase(String passphrase) async {
     final wrapped = await VaultCrypto.createMasterKey(passphrase);
     await db.saveBackupKey(
-        kdfSalt: wrapped.kdfSalt,
-        nonce: wrapped.nonce,
-        wrapped: wrapped.wrapped);
+      kdfSalt: wrapped.kdfSalt,
+      nonce: wrapped.nonce,
+      wrapped: wrapped.wrapped,
+    );
     _backupKey = wrapped.masterKey;
   }
 
@@ -4357,8 +4571,12 @@ class LibraryState extends ChangeNotifier {
     if (kdfSalt == null || nonce == null || wrapped == null) {
       throw StateError('Keine Backup-Passphrase eingerichtet.');
     }
-    _backupKey = await VaultCrypto.unwrapMasterKey(passphrase,
-        kdfSalt: kdfSalt, nonce: nonce, wrapped: wrapped);
+    _backupKey = await VaultCrypto.unwrapMasterKey(
+      passphrase,
+      kdfSalt: kdfSalt,
+      nonce: nonce,
+      wrapped: wrapped,
+    );
   }
 
   Future<void> changeBackupPassphrase(String newPassphrase) async {
@@ -4368,9 +4586,10 @@ class LibraryState extends ChangeNotifier {
     }
     final wrapped = await VaultCrypto.wrapMasterKey(key, newPassphrase);
     await db.saveBackupKey(
-        kdfSalt: wrapped.kdfSalt,
-        nonce: wrapped.nonce,
-        wrapped: wrapped.wrapped);
+      kdfSalt: wrapped.kdfSalt,
+      nonce: wrapped.nonce,
+      wrapped: wrapped.wrapped,
+    );
   }
 
   /// Entfernt nur die lokale Backup-Verschlüsselungs-Einrichtung – bereits
@@ -4386,11 +4605,16 @@ class LibraryState extends ChangeNotifier {
   /// Führt ein manuelles Backup aus – bei [encrypt] mit dem für diese
   /// Sitzung entsperrten Backup-Schlüssel (siehe [ensureBackupKeyAvailable]
   /// in pin_dialogs.dart, das der Aufrufer vorher ausgeführt haben muss).
-  Stream<BackupProgress> runManualBackup(String destination,
-      {required bool encrypt}) async* {
+  Stream<BackupProgress> runManualBackup(
+    String destination, {
+    required bool encrypt,
+  }) async* {
     final grenze = await _backupGrenzeBytes();
-    yield* backupService.performBackup(destination,
-        encryptionKey: encrypt ? _backupKey : null, maxBytesPerRun: grenze);
+    yield* backupService.performBackup(
+      destination,
+      encryptionKey: encrypt ? _backupKey : null,
+      maxBytesPerRun: grenze,
+    );
   }
 
   /// Portionsgrenze je Sicherungslauf in Bytes, 0 = unbegrenzt (siehe
@@ -4410,8 +4634,11 @@ class LibraryState extends ChangeNotifier {
     if (key == null) {
       throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
     }
-    yield* backupService.performAutoBackup(destination, key,
-        maxBytesPerRun: await _backupGrenzeBytes());
+    yield* backupService.performAutoBackup(
+      destination,
+      key,
+      maxBytesPerRun: await _backupGrenzeBytes(),
+    );
     await db.setLastAutoBackupAt(DateTime.now());
   }
 
@@ -4444,10 +4671,13 @@ class LibraryState extends ChangeNotifier {
     _autoBackupRunning = true;
     try {
       await backupService
-          .performAutoBackup(destination, key,
-              maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
-                  ? config.autoBackupMaxMbPerRun * 1024 * 1024
-                  : 0)
+          .performAutoBackup(
+            destination,
+            key,
+            maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
+                ? config.autoBackupMaxMbPerRun * 1024 * 1024
+                : 0,
+          )
           .drain<void>();
       await db.setLastAutoBackupAt(DateTime.now());
     } catch (e) {
@@ -4488,8 +4718,9 @@ class LibraryState extends ChangeNotifier {
 
     _trashPurgeRunning = true;
     try {
-      final cutoff =
-          DateTime.now().subtract(Duration(days: config.autoDeleteAfterDays));
+      final cutoff = DateTime.now().subtract(
+        Duration(days: config.autoDeleteAfterDays),
+      );
       final expired = await db.expiredTrashAssets(cutoff);
       for (final asset in expired) {
         await deleteAssetFilesFromDisk(asset);

@@ -29,8 +29,15 @@ const _vokabular = Suchvokabular(
 
 final _heute = DateTime(2026, 5, 20);
 
-Satzdeutung deute(String satz, {SearchFilters grundlage = const SearchFilters()}) =>
-    deuteSuchsatz(satz, vokabular: _vokabular, heute: _heute, grundlage: grundlage);
+Satzdeutung deute(
+  String satz, {
+  SearchFilters grundlage = const SearchFilters(),
+}) => deuteSuchsatz(
+  satz,
+  vokabular: _vokabular,
+  heute: _heute,
+  grundlage: grundlage,
+);
 
 void main() {
   /// Drei Felder, die der Satzleser bis zur 7. Vergleichsauflage nicht
@@ -89,12 +96,15 @@ void main() {
       expect(d.filter.locationCity, 'Berlin');
       expect(d.rest, isEmpty);
       // Die Marken zeichnen den Satz nach, nicht die Pruefreihenfolge.
-      expect([for (final f in d.funde) f.art], [
-        Satzfundart.schaerfe,
-        Satzfundart.medienart,
-        Satzfundart.iso,
-        Satzfundart.ort,
-      ]);
+      expect(
+        [for (final f in d.funde) f.art],
+        [
+          Satzfundart.schaerfe,
+          Satzfundart.medienart,
+          Satzfundart.iso,
+          Satzfundart.ort,
+        ],
+      );
     });
   });
 
@@ -102,7 +112,11 @@ void main() {
     test('„5 Sterne" wird zur Mindestbewertung', () {
       final d = deute('Fotos mit 5 Sternen');
       expect(d.filter.minRating, 5);
-      expect(d.rest, isEmpty, reason: 'nichts soll als Suchbegriff übrig bleiben');
+      expect(
+        d.rest,
+        isEmpty,
+        reason: 'nichts soll als Suchbegriff übrig bleiben',
+      );
     });
 
     test('englische Schreibweise ebenso', () {
@@ -204,8 +218,10 @@ void main() {
     test('erkennt mehrere Personen', () {
       // Die Reihenfolge in personIds trägt nichts – die Abfrage verknüpft
       // sie ohnehin. Geprüft wird deshalb die Menge.
-      expect(deute('Anna und Bernd').filter.personIds,
-          unorderedEquals(['p-anna', 'p-bernd']));
+      expect(
+        deute('Anna und Bernd').filter.personIds,
+        unorderedEquals(['p-anna', 'p-bernd']),
+      );
     });
 
     test('die Funde stehen in der Reihenfolge des Satzes', () {
@@ -233,7 +249,10 @@ void main() {
     });
 
     test('erkennt die Kamera', () {
-      expect(deute('mit der Canon EOS R10').filter.cameraModel, 'Canon EOS R10');
+      expect(
+        deute('mit der Canon EOS R10').filter.cameraModel,
+        'Canon EOS R10',
+      );
     });
 
     test('ein Wortteil ist kein Treffer', () {
@@ -260,7 +279,11 @@ void main() {
       final d = deute('Sonnenuntergang am Meer');
       expect(d.hatVerstanden, isFalse);
       expect(d.rest, 'Sonnenuntergang Meer');
-      expect(d.filter.isEmpty, isFalse, reason: 'die Anfrage steht als query da');
+      expect(
+        d.filter.isEmpty,
+        isFalse,
+        reason: 'die Anfrage steht als query da',
+      );
     });
 
     test('eine leere Eingabe ergibt einen leeren Filter', () {
@@ -282,19 +305,23 @@ void main() {
       db = AppDatabase(NativeDatabase.memory());
       library = LibraryState()
         ..db = db
-        ..paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+        ..paths = await StoragePaths.forTesting(
+          Directory(p.join(wurzel.path, 'lib')),
+        );
       await db.createPerson(PeopleCompanion.insert(id: 'p-anna', name: 'Anna'));
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'a1',
-        relativePath: 'originals/a1.jpg',
-        originalFileName: 'a1.jpg',
-        type: 'IMAGE',
-        fileSizeBytes: const Value(10),
-        checksum: 'a1',
-        fileCreatedAt: DateTime(2019, 7, 4),
-        importedAt: DateTime(2019, 7, 5),
-        rating: const Value(5),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'a1',
+          relativePath: 'originals/a1.jpg',
+          originalFileName: 'a1.jpg',
+          type: 'IMAGE',
+          fileSizeBytes: const Value(10),
+          checksum: 'a1',
+          fileCreatedAt: DateTime(2019, 7, 4),
+          importedAt: DateTime(2019, 7, 5),
+          rating: const Value(5),
+        ),
+      );
     });
 
     tearDown(() async {
@@ -302,25 +329,31 @@ void main() {
       wurzel.deleteSync(recursive: true);
     });
 
-    testWidgets('ein getippter Satz wird gedeutet und zeigt seine Marken',
-        (tester) async {
+    testWidgets('ein getippter Satz wird gedeutet und zeigt seine Marken', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(body: SearchScreen(library: library)),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(body: SearchScreen(library: library)),
+        ),
+      );
       // Kein pumpAndSettle: Der Bildschirm haengt an einem drift-Strom
       // (gespeicherte Suchen), und der kommt nie zur Ruhe - der Test bliebe
       // wortlos stehen statt durchzufallen. Feste Takte statt zu warten.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.enterText(find.byType(TextField).first, 'Anna 2019 mit 5 Sternen');
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Anna 2019 mit 5 Sternen',
+      );
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -329,8 +362,10 @@ void main() {
       expect(find.text('Bewertung: 5'), findsOneWidget);
       expect(find.text('Zeitraum: 2019'), findsOneWidget);
       expect(find.text('Personen: Anna'), findsOneWidget);
-      expect(find.byTooltip('Deutung zurücknehmen und wörtlich suchen'),
-          findsOneWidget);
+      expect(
+        find.byTooltip('Deutung zurücknehmen und wörtlich suchen'),
+        findsOneWidget,
+      );
 
       // Den Strom abbauen, sonst bleibt sein Zeitgeber liegen und der Lauf
       // haengt am Ende (siehe kachelmitschnitt_ansicht_test.dart).
@@ -360,7 +395,10 @@ void main() {
     });
 
     test('von Hand gesetzte Kriterien bleiben stehen', () {
-      final d = deute('2019', grundlage: const SearchFilters(favoritesOnly: true));
+      final d = deute(
+        '2019',
+        grundlage: const SearchFilters(favoritesOnly: true),
+      );
       expect(d.filter.favoritesOnly, isTrue);
       expect(d.filter.startDate, DateTime(2019));
     });

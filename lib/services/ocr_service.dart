@@ -45,6 +45,7 @@ class OcrService {
 
   static const erkennungsDatei = 'ocr_det.onnx';
   static const lesungsDatei = 'ocr_rec.onnx';
+
   /// Die Zeichentabelle steht **in der Konfiguration des Modells**, nicht
   /// in einer eigenen Datei: `latin_PP-OCRv5_mobile_rec` liefert sie als
   /// `character_dict` in `inference.yml` aus, und eine zweite, von Hand
@@ -82,10 +83,10 @@ class OcrService {
   static const _leseHoehe = 48;
 
   static bool isAvailable(String modelsDir) => [
-        erkennungsDatei,
-        lesungsDatei,
-        zeichenDatei,
-      ].every((n) => File('$modelsDir/$n').existsSync());
+    erkennungsDatei,
+    lesungsDatei,
+    zeichenDatei,
+  ].every((n) => File('$modelsDir/$n').existsSync());
 
   /// Ablage der umgebauten Fassung des Lesemodells – siehe
   /// [lesemodellPfad].
@@ -163,8 +164,9 @@ class OcrService {
   @visibleForTesting
   static List<String> zeichenAusKonfig(String inhalt) {
     final zeilen = const LineSplitter().convert(inhalt);
-    final start =
-        zeilen.indexWhere((z) => z.trimRight() == '  character_dict:');
+    final start = zeilen.indexWhere(
+      (z) => z.trimRight() == '  character_dict:',
+    );
     if (start < 0) return const [];
     final tabelle = <String>[];
     for (final zeile in zeilen.skip(start + 1)) {
@@ -180,12 +182,17 @@ class OcrService {
 
   static Future<OcrService> load(String modelsDir) async {
     final ort = OnnxRuntime();
-    final erkennung = await ort.createSession('$modelsDir/$erkennungsDatei',
-        options: modelloptionen());
-    final lesung = await ort.createSession(await lesemodellPfad(modelsDir),
-        options: modelloptionen());
+    final erkennung = await ort.createSession(
+      '$modelsDir/$erkennungsDatei',
+      options: modelloptionen(),
+    );
+    final lesung = await ort.createSession(
+      await lesemodellPfad(modelsDir),
+      options: modelloptionen(),
+    );
     final tabelle = zeichenAusKonfig(
-        await File('$modelsDir/$zeichenDatei').readAsString(encoding: utf8));
+      await File('$modelsDir/$zeichenDatei').readAsString(encoding: utf8),
+    );
     // Leerplatz vorn, Leerzeichen hinten – genau so zählt PaddleOCR.
     return OcrService._(erkennung, lesung, ['', ...tabelle, ' ']);
   }
@@ -227,13 +234,15 @@ class OcrService {
     for (final stelle in stellen) {
       final text = await _liesStelle(bild, stelle);
       if (text.isEmpty) continue;
-      gelesen.add(Textstelle(
-        text: text,
-        links: stelle.links / bild.width,
-        oben: stelle.oben / bild.height,
-        breite: (stelle.rechts - stelle.links + 1) / bild.width,
-        hoehe: (stelle.unten - stelle.oben + 1) / bild.height,
-      ));
+      gelesen.add(
+        Textstelle(
+          text: text,
+          links: stelle.links / bild.width,
+          oben: stelle.oben / bild.height,
+          breite: (stelle.rechts - stelle.links + 1) / bild.width,
+          hoehe: (stelle.unten - stelle.oben + 1) / bild.height,
+        ),
+      );
     }
     if (gelesen.isEmpty) throw LesungLiefertNichts(stellen.length);
     return gelesen;
@@ -246,8 +255,12 @@ class OcrService {
     // den Faktor zwei; eine krumme Kante ergäbe eine krumme Ausgabekarte.
     final nw = math.max(32, ((bild.width * faktor) / 32).round() * 32);
     final nh = math.max(32, ((bild.height * faktor) / 32).round() * 32);
-    final klein = img.copyResize(bild, width: nw, height: nh,
-        interpolation: img.Interpolation.linear);
+    final klein = img.copyResize(
+      bild,
+      width: nw,
+      height: nh,
+      interpolation: img.Interpolation.linear,
+    );
 
     final eingabe = Float32List(3 * nh * nw);
     const mittel = [0.485, 0.456, 0.406];
@@ -289,10 +302,12 @@ class OcrService {
           (k.$2 * sy).floor().clamp(0, bild.height - 1),
           (k.$3 * sx).ceil().clamp(0, bild.width - 1),
           (k.$4 * sy).ceil().clamp(0, bild.height - 1),
-        )
+        ),
     ];
     // Von oben nach unten, dann von links nach rechts – Lesereihenfolge.
-    stellen.sort((a, b) => a.oben != b.oben ? a.oben - b.oben : a.links - b.links);
+    stellen.sort(
+      (a, b) => a.oben != b.oben ? a.oben - b.oben : a.links - b.links,
+    );
     if (stellen.length <= _maxStellen) return stellen;
     // Zu viele: die grössten behalten, das ist der Text und nicht das Laub.
     final nachGroesse = [...stellen]
@@ -308,7 +323,10 @@ class OcrService {
   /// und Schrift auf Fotos steht fast immer waagerecht. Schräge Aufnahmen
   /// liefern dadurch einen etwas grösseren Ausschnitt – lesbar bleibt er.
   List<(int, int, int, int)> _zusammenhaengendeFlecken(
-      List<double> karte, int breite, int hoehe) {
+    List<double> karte,
+    int breite,
+    int hoehe,
+  ) {
     final gesehen = Uint8List(breite * hoehe);
     final kaesten = <(int, int, int, int)>[];
     final schlange = Queue<int>();
@@ -370,10 +388,20 @@ class OcrService {
     final w = s.rechts - s.links + 1, h = s.unten - s.oben + 1;
     if (w < 4 || h < 4) return '';
 
-    final ausschnitt = img.copyCrop(bild, x: s.links, y: s.oben, width: w, height: h);
+    final ausschnitt = img.copyCrop(
+      bild,
+      x: s.links,
+      y: s.oben,
+      width: w,
+      height: h,
+    );
     final zielBreite = _lesebreite(w, h);
-    final skaliert = img.copyResize(ausschnitt,
-        width: zielBreite, height: _leseHoehe, interpolation: img.Interpolation.linear);
+    final skaliert = img.copyResize(
+      ausschnitt,
+      width: zielBreite,
+      height: _leseHoehe,
+      interpolation: img.Interpolation.linear,
+    );
 
     final eingabe = Float32List(3 * _leseHoehe * zielBreite);
     var i = 0;
@@ -388,8 +416,12 @@ class OcrService {
       }
     }
 
-    final tensor =
-        await OrtValue.fromList(eingabe, [1, 3, _leseHoehe, zielBreite]);
+    final tensor = await OrtValue.fromList(eingabe, [
+      1,
+      3,
+      _leseHoehe,
+      zielBreite,
+    ]);
     Map<String, OrtValue>? aus;
     try {
       aus = await _lesung.run({_lesung.inputNames.first: tensor});

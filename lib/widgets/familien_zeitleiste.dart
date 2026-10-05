@@ -190,8 +190,10 @@ class _AchsenMaler extends CustomPainter {
       )..layout();
       // Die erste und die letzte Zahl werden nach innen gerückt, sonst
       // stehen sie halb außerhalb.
-      final links = (x - maler.width / 2)
-          .clamp(0.0, (size.width - maler.width).clamp(0.0, double.infinity));
+      final links = (x - maler.width / 2).clamp(
+        0.0,
+        (size.width - maler.width).clamp(0.0, double.infinity),
+      );
       maler.paint(canvas, Offset(links, size.height - maler.height - 4));
       canvas.drawLine(
         Offset(x, size.height - 3),
@@ -273,8 +275,12 @@ class _ZeilenMaler extends CustomPainter {
           ? links + _balkenHoehe
           : festesEnde;
       final balken = RRect.fromRectAndRadius(
-        Rect.fromLTRB(links, mitte - _balkenHoehe / 2, rechts,
-            mitte + _balkenHoehe / 2),
+        Rect.fromLTRB(
+          links,
+          mitte - _balkenHoehe / 2,
+          rechts,
+          mitte + _balkenHoehe / 2,
+        ),
         const Radius.circular(_balkenHoehe / 2),
       );
       canvas.drawRRect(balken, Paint()..color = fuellung);
@@ -337,7 +343,12 @@ class _ZeilenMaler extends CustomPainter {
   /// Lebenden kein Sterbedatum steht, ist die halbe Leiste gestrichelt.
   /// In voller Stärke gezeichnet übertönte das Unbekannte das Bekannte.
   void _gestrichelt(
-      Canvas canvas, double von, double bis, double y, Color farbe) {
+    Canvas canvas,
+    double von,
+    double bis,
+    double y,
+    Color farbe,
+  ) {
     const strich = 3.0;
     const luecke = 4.0;
     final stift = Paint()
@@ -346,7 +357,10 @@ class _ZeilenMaler extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     for (var x = von; x < bis; x += strich + luecke) {
       canvas.drawLine(
-          Offset(x, y), Offset((x + strich).clamp(von, bis), y), stift);
+        Offset(x, y),
+        Offset((x + strich).clamp(von, bis), y),
+        stift,
+      );
     }
   }
 

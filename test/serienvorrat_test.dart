@@ -32,7 +32,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'l')),
+      );
   });
 
   tearDown(() async {
@@ -51,17 +53,24 @@ void main() {
       }
       for (var k = 0; k < 3; k++) {
         final id = 'g${g}_$k';
-        await db.into(db.assets).insert(AssetsCompanion.insert(
-              id: id,
-              originalFileName: '$id.jpg',
-              relativePath: 'o/$id.jpg',
-              checksum: 'c$id',
-              type: 'IMAGE',
-              fileCreatedAt:
-                  DateTime(2026, 1, 1).add(Duration(hours: g, seconds: k * 2)),
-              importedAt: DateTime(2026),
-              sharpnessScore: Value(k.toDouble()),
-            ));
+        await db
+            .into(db.assets)
+            .insert(
+              AssetsCompanion.insert(
+                id: id,
+                originalFileName: '$id.jpg',
+                relativePath: 'o/$id.jpg',
+                checksum: 'c$id',
+                type: 'IMAGE',
+                fileCreatedAt: DateTime(
+                  2026,
+                  1,
+                  1,
+                ).add(Duration(hours: g, seconds: k * 2)),
+                importedAt: DateTime(2026),
+                sharpnessScore: Value(k.toDouble()),
+              ),
+            );
         final v = Float32List.fromList(basis);
         v[0] += k * 0.00001;
         await db.saveEmbedding(id, v);
@@ -131,5 +140,4 @@ void main() {
       expect(nachEntfernen({0: 2, 1: 0, 2: 1}, 1), {0: 2, 1: 1});
     });
   });
-
 }

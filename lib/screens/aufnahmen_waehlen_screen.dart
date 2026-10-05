@@ -59,8 +59,8 @@ enum _Umfang { zeitraum, alle }
 
 class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
   late final Set<String> _gewaehlt = {...widget.vorhanden};
-  late _Umfang _umfang =
-      widget.hatZeitraum ? _Umfang.zeitraum : _Umfang.alle;
+  late _Umfang _umfang = widget.hatZeitraum ? _Umfang.zeitraum : _Umfang.alle;
+
   /// Schmale Zeilen: Das Raster zeigt Kachel, Name und Datum – die
   /// vollen 56 Spalten dafür zu lesen kostete an der gewachsenen
   /// Bibliothek 80 ms statt 30, und umgewandelt wurden sie hier ohnehin.
@@ -84,7 +84,8 @@ class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
         ? await db.alleRasterzeilen()
         : await db.rasterzeilenImZeitraum(
             widget.von!.subtract(const Duration(days: 1)),
-            widget.bis!.add(const Duration(days: 1)));
+            widget.bis!.add(const Duration(days: 1)),
+          );
     if (!mounted || gefragt != _umfang) return;
     setState(() {
       _gezeigt = liste;
@@ -99,8 +100,8 @@ class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
   }
 
   void _tippen(Rasterzeile a) => setState(() {
-        if (!_gewaehlt.remove(a.id)) _gewaehlt.add(a.id);
-      });
+    if (!_gewaehlt.remove(a.id)) _gewaehlt.add(a.id);
+  });
 
   /// Wie viele der Gewählten gerade gar nicht zu sehen sind.
   ///
@@ -129,8 +130,12 @@ class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm,
-                AppSpacing.md, AppSpacing.xs),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
             // Umbrechend und nicht in einer Reihe: Die Zeitraum-Marke
             // trägt zwei ausgeschriebene Daten und ist damit länger als
             // ein schmales Fenster – in einer Reihe lief sie über.
@@ -140,8 +145,12 @@ class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
               children: [
                 if (widget.hatZeitraum)
                   ChoiceChip(
-                    label: Text(t.aufnahmenWahlZeitraum(
-                        datum.format(widget.von!), datum.format(widget.bis!))),
+                    label: Text(
+                      t.aufnahmenWahlZeitraum(
+                        datum.format(widget.von!),
+                        datum.format(widget.bis!),
+                      ),
+                    ),
                     selected: _umfang == _Umfang.zeitraum,
                     onSelected: (_) => _umschalten(_Umfang.zeitraum),
                   ),
@@ -171,30 +180,32 @@ class _AufnahmenWaehlenScreenState extends State<AufnahmenWaehlenScreen> {
             child: _laedt
                 ? const Center(child: CircularProgressIndicator())
                 : _gezeigt.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          child: Text(t.aufnahmenWahlLeer,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: farben.onSurfaceVariant)),
-                        ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        t.aufnahmenWahlLeer,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: farben.onSurfaceVariant),
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 160,
                           mainAxisSpacing: 4,
                           crossAxisSpacing: 4,
                         ),
-                        itemCount: _gezeigt.length,
-                        itemBuilder: (context, i) => AssetThumbnailTile(
-                          asset: _gezeigt[i],
-                          paths: widget.library.paths,
-                          selected: _gewaehlt.contains(_gezeigt[i].id),
-                          onTap: () => _tippen(_gezeigt[i]),
-                        ),
-                      ),
+                    itemCount: _gezeigt.length,
+                    itemBuilder: (context, i) => AssetThumbnailTile(
+                      asset: _gezeigt[i],
+                      paths: widget.library.paths,
+                      selected: _gewaehlt.contains(_gezeigt[i].id),
+                      onTap: () => _tippen(_gezeigt[i]),
+                    ),
+                  ),
           ),
         ],
       ),

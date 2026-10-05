@@ -25,9 +25,10 @@ import 'package:photo_vault/services/speicher_rueckgabe.dart';
 /// Der belegte Speicher in MB. `/proc` gibt es nur unter Linux – deshalb
 /// läuft diese Datei auch nur dort.
 int rssMb() {
-  final zeile = File('/proc/self/status')
-      .readAsLinesSync()
-      .firstWhere((z) => z.startsWith('VmRSS'), orElse: () => 'VmRSS: 0 kB');
+  final zeile = File('/proc/self/status').readAsLinesSync().firstWhere(
+    (z) => z.startsWith('VmRSS'),
+    orElse: () => 'VmRSS: 0 kB',
+  );
   return int.parse(zeile.split(RegExp(r'\s+'))[1]) ~/ 1024;
 }
 
@@ -63,8 +64,14 @@ img.Image probebild(String ordner) {
   // Ein Test, dessen Voraussetzung anderswo liegt, faellt irgendwann aus.
   final bild = img.Image(width: 720, height: 120);
   img.fill(bild, color: img.ColorRgb8(255, 255, 255));
-  img.drawString(bild, 'PHOTO VAULT',
-      font: img.arial48, x: 40, y: 30, color: img.ColorRgb8(0, 0, 0));
+  img.drawString(
+    bild,
+    'PHOTO VAULT',
+    font: img.arial48,
+    x: 40,
+    y: 30,
+    color: img.ColorRgb8(0, 0, 0),
+  );
   return bild;
 }
 
@@ -99,38 +106,50 @@ void main() {
     // Nicht geprüft wird, ob der Zuwachs von Runde zu Runde monoton
     // abnimmt: Bei diesen kleinen Beträgen schwankt die Messung zwischen
     // den Läufen stärker als der Effekt (gesehen: 5 MB, dann 15 MB).
-    expect(spaeterZuwachs, lessThan(60),
-        reason: 'gleichbleibender Zuwachs je Runde wäre ein Leck');
+    expect(
+      spaeterZuwachs,
+      lessThan(60),
+      reason: 'gleichbleibender Zuwachs je Runde wäre ein Leck',
+    );
   });
 
   // Der Gegenpart zum Test darueber: Zurueckgehaltener Speicher ist kein
   // Leck - aber er laesst sich zurueckgeben. Gemessen am 25.08.2026 an
   // einer knapp dreizehn Stunden alten Instanz: 2,4 GB belegt, davon
   // 1,5 GB Heap; ein malloc_trim(0) gab 692 MB ans System zurueck.
-  test('malloc_trim gibt nach einem Modelllauf Speicher zurueck', () async {
-    expect(SpeicherRueckgabe.moeglich, isTrue,
-        reason: 'malloc_trim nicht auffindbar - kein glibc?');
+  test(
+    'malloc_trim gibt nach einem Modelllauf Speicher zurueck',
+    () async {
+      expect(
+        SpeicherRueckgabe.moeglich,
+        isTrue,
+        reason: 'malloc_trim nicht auffindbar - kein glibc?',
+      );
 
-    final ordner = modellOrdner();
-    expect(ordner, isNotNull, reason: 'OCR-Modelle nirgends gefunden');
-    final bild = probebild(ordner!);
+      final ordner = modellOrdner();
+      expect(ordner, isNotNull, reason: 'OCR-Modelle nirgends gefunden');
+      final bild = probebild(ordner!);
 
-    final dienst = await OcrService.load(ordner);
-    await dienst.erkenneText(bild);
-    await dienst.dispose();
-    await Future<void>.delayed(const Duration(seconds: 2));
+      final dienst = await OcrService.load(ordner);
+      await dienst.erkenneText(bild);
+      await dienst.dispose();
+      await Future<void>.delayed(const Duration(seconds: 2));
 
-    final vorher = rssMb();
-    final etwasFrei = SpeicherRueckgabe.jetzt();
-    final nachher = rssMb();
-    print('vor der Rueckgabe: $vorher MB, danach: $nachher MB '
-        '(${vorher - nachher} MB zurueck, etwasFrei=$etwasFrei)');
+      final vorher = rssMb();
+      final etwasFrei = SpeicherRueckgabe.jetzt();
+      final nachher = rssMb();
+      print(
+        'vor der Rueckgabe: $vorher MB, danach: $nachher MB '
+        '(${vorher - nachher} MB zurueck, etwasFrei=$etwasFrei)',
+      );
 
-    // Bewusst keine Zahl als Erwartung: Wie viel zurueckkommt, haengt an
-    // der Fragmentierung des Heaps und schwankt. Was zaehlt, ist die
-    // Richtung - der Aufruf darf den Speicher nicht VERGROESSERN, und er
-    // muss melden, dass er etwas getan hat.
-    expect(etwasFrei, isTrue);
-    expect(nachher, lessThanOrEqualTo(vorher));
-  }, timeout: const Timeout(Duration(minutes: 3)));
+      // Bewusst keine Zahl als Erwartung: Wie viel zurueckkommt, haengt an
+      // der Fragmentierung des Heaps und schwankt. Was zaehlt, ist die
+      // Richtung - der Aufruf darf den Speicher nicht VERGROESSERN, und er
+      // muss melden, dass er etwas getan hat.
+      expect(etwasFrei, isTrue);
+      expect(nachher, lessThanOrEqualTo(vorher));
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }

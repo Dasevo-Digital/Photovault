@@ -15,36 +15,39 @@ import 'package:photo_vault/widgets/typed_confirm_dialog.dart';
 void main() {
   Future<bool?> zeige(WidgetTester tester) async {
     bool? ergebnis;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                ergebnis = await showTypedConfirmDialog(
-                  context,
-                  title: 'Wirklich?',
-                  message: 'Das ist endgültig.',
-                  confirmationWord: 'LÖSCHEN',
-                );
-              },
-              child: const Text('auf'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  ergebnis = await showTypedConfirmDialog(
+                    context,
+                    title: 'Wirklich?',
+                    message: 'Das ist endgültig.',
+                    confirmationWord: 'LÖSCHEN',
+                  );
+                },
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     await tester.pumpAndSettle();
     return ergebnis;
   }
 
-  testWidgets('der Knopf bleibt gesperrt, bis das Wort genau stimmt',
-      (tester) async {
+  testWidgets('der Knopf bleibt gesperrt, bis das Wort genau stimmt', (
+    tester,
+  ) async {
     await zeige(tester);
     final knopf = find.widgetWithText(FilledButton, 'Endgültig löschen');
     expect(tester.widget<FilledButton>(knopf).onPressed, isNull);
@@ -59,8 +62,9 @@ void main() {
     expect(tester.widget<FilledButton>(knopf).onPressed, isNotNull);
   });
 
-  testWidgets('das Schliessen wirft keine Steuerung zu frueh weg',
-      (tester) async {
+  testWidgets('das Schliessen wirft keine Steuerung zu frueh weg', (
+    tester,
+  ) async {
     // Der eigentliche Grund fuer diese Datei: Bis hierher stuerzte das
     // Ausblenden im Fehlersuchbetrieb ab.
     await zeige(tester);

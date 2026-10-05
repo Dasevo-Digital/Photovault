@@ -14,16 +14,15 @@ RestoreJobData _auftrag({
   int gesamt = 0,
   DateTime? gestartet,
   String status = 'running',
-}) =>
-    RestoreJobData(
-      id: 'j1',
-      assetId: 'a1',
-      status: status,
-      tilesDone: fertig,
-      tilesTotal: gesamt,
-      createdAt: DateTime(2026, 8, 26, 10),
-      startedAt: gestartet,
-    );
+}) => RestoreJobData(
+  id: 'j1',
+  assetId: 'a1',
+  status: status,
+  tilesDone: fertig,
+  tilesTotal: gesamt,
+  createdAt: DateTime(2026, 8, 26, 10),
+  startedAt: gestartet,
+);
 
 void main() {
   group('fortschrittProzent', () {
@@ -59,55 +58,65 @@ void main() {
     test('ohne Startzeit keine Schaetzung', () {
       // Die Auftraege aus der Zeit vor Fassung 53 haben keine.
       expect(
-          restzeitSchaetzung(_auftrag(fertig: 5, gesamt: 20),
-              jetzt: start.add(const Duration(seconds: 25))),
-          isNull);
+        restzeitSchaetzung(
+          _auftrag(fertig: 5, gesamt: 20),
+          jetzt: start.add(const Duration(seconds: 25)),
+        ),
+        isNull,
+      );
     });
 
     test('ohne eine einzige fertige Kachel keine Schaetzung', () {
       // Es gibt nichts, woraus sich rechnen liesse. Eine geratene
       // Restzeit waere schlimmer als keine.
       expect(
-          restzeitSchaetzung(
-            _auftrag(fertig: 0, gesamt: 20, gestartet: start),
-            jetzt: start.add(const Duration(seconds: 25)),
-          ),
-          isNull);
+        restzeitSchaetzung(
+          _auftrag(fertig: 0, gesamt: 20, gestartet: start),
+          jetzt: start.add(const Duration(seconds: 25)),
+        ),
+        isNull,
+      );
     });
 
     test('am Ende ist die Restzeit null und nicht negativ', () {
       expect(
-          restzeitSchaetzung(
-            _auftrag(fertig: 20, gesamt: 20, gestartet: start),
-            jetzt: start.add(const Duration(seconds: 99)),
-          ),
-          Duration.zero);
+        restzeitSchaetzung(
+          _auftrag(fertig: 20, gesamt: 20, gestartet: start),
+          jetzt: start.add(const Duration(seconds: 99)),
+        ),
+        Duration.zero,
+      );
     });
 
     test('eine Startzeit in der Zukunft ergibt keine Schaetzung', () {
       // Kommt bei einer verstellten Uhr vor; ohne diese Grenze käme eine
       // negative Restzeit heraus.
       expect(
-          restzeitSchaetzung(
-            _auftrag(fertig: 5, gesamt: 20, gestartet: start),
-            jetzt: start.subtract(const Duration(seconds: 5)),
-          ),
-          isNull);
+        restzeitSchaetzung(
+          _auftrag(fertig: 5, gesamt: 20, gestartet: start),
+          jetzt: start.subtract(const Duration(seconds: 5)),
+        ),
+        isNull,
+      );
     });
   });
 
   group('dauerText', () {
     late AppTexte t;
     testWidgets('holt die Texte', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Builder(builder: (context) {
-          t = AppTexte.of(context);
-          return const SizedBox();
-        }),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              t = AppTexte.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
 
       expect(dauerText(t, const Duration(seconds: 5)), '5 Sekunden');
       expect(dauerText(t, const Duration(seconds: 1)), 'eine Sekunde');
@@ -125,16 +134,17 @@ void main() {
     tearDown(() => db.close());
 
     test('markRestoreJobStatus setzt und loescht die Startzeit', () async {
-      await db.createRestoreJob(RestoreJobsCompanion.insert(
-        id: 'j1',
-        assetId: 'a1',
-        status: 'queued',
-        createdAt: DateTime(2026, 8, 26, 10),
-      ));
-      Future<RestoreJobData> holen() async =>
-          (await (db.select(db.restoreJobs)
-                ..where((j) => j.id.equals('j1')))
-              .getSingle());
+      await db.createRestoreJob(
+        RestoreJobsCompanion.insert(
+          id: 'j1',
+          assetId: 'a1',
+          status: 'queued',
+          createdAt: DateTime(2026, 8, 26, 10),
+        ),
+      );
+      Future<RestoreJobData> holen() async => (await (db.select(
+        db.restoreJobs,
+      )..where((j) => j.id.equals('j1'))).getSingle());
 
       expect((await holen()).startedAt, isNull);
 

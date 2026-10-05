@@ -26,8 +26,16 @@ void main() {
 
   test('ein Rechenschritt je Modell', () async {
     final ordner = '${Platform.environment['HOME']}/ocr_modelle';
-    final x =
-        Float32List.fromList([-4.0, -3.0, -1.0, -0.5, 0.0, 0.5, 1.0, 3.0]);
+    final x = Float32List.fromList([
+      -4.0,
+      -3.0,
+      -1.0,
+      -0.5,
+      0.0,
+      0.5,
+      1.0,
+      3.0,
+    ]);
 
     for (final op in [
       'hardswish',
@@ -48,8 +56,10 @@ void main() {
       final t = await OrtValue.fromList(x, [1, 8]);
       final aus = await s.run({s.inputNames.first: t});
       final roh = (await aus.values.first.asFlattenedList()).cast<num>();
-      print('${op.padRight(12)} '
-          '${roh.map((v) => v.toDouble().toStringAsFixed(4)).join(' ')}');
+      print(
+        '${op.padRight(12)} '
+        '${roh.map((v) => v.toDouble().toStringAsFixed(4)).join(' ')}',
+      );
       for (final v in aus.values) {
         await v.dispose();
       }

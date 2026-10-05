@@ -23,7 +23,8 @@ void main() {
 
   const t = gedcomBezeichnungenTest;
 
-  const datei = '0 HEAD\r\n'
+  const datei =
+      '0 HEAD\r\n'
       '1 CHAR UTF-8\r\n'
       '0 @I1@ INDI\r\n'
       '1 NAME Hans /Meier/\r\n'
@@ -43,8 +44,10 @@ void main() {
       '0 TRLR\r\n';
 
   /// Derselbe Ablauf wie im Bildschirm, nur ohne Oberfläche.
-  Future<Map<String, String>> uebernimm(String inhalt,
-      {List<String> kennungen = const ['n1', 'n2', 'n3']}) async {
+  Future<Map<String, String>> uebernimm(
+    String inhalt, {
+    List<String> kennungen = const ['n1', 'n2', 'n3'],
+  }) async {
     final gelesen = liesGedcom(utf8.encode(inhalt), texte: t);
     final neu = <String, String>{};
     for (var i = 0; i < gelesen.personen.length; i++) {
@@ -84,8 +87,11 @@ void main() {
     expect(await db.alleBeziehungen(), hasLength(3));
     final ereignisse = await db.select(db.lebensereignisse).get();
     expect(ereignisse, hasLength(1));
-    expect(ereignisse.single.ort, 'Hamburg',
-        reason: 'der Geburtsort wäre sonst der Eintrag, der still verschwindet');
+    expect(
+      ereignisse.single.ort,
+      'Hamburg',
+      reason: 'der Geburtsort wäre sonst der Eintrag, der still verschwindet',
+    );
   });
 
   test('die Partnerzeile steht in ihrer gespeicherten Form', () async {
@@ -94,15 +100,18 @@ void main() {
     // andere Person. Stünde die alte Reihenfolge in der Zeile, fände das
     // spätere Auflösen der Partnerschaft sie nicht mehr.
     final neu = await uebernimm(datei, kennungen: ['zzz', 'aaa', 'mmm']);
-    final partner = (await db.alleBeziehungen())
-        .firstWhere((z) => z.art == artZuText(Verwandtschaft.partner));
+    final partner = (await db.alleBeziehungen()).firstWhere(
+      (z) => z.art == artZuText(Verwandtschaft.partner),
+    );
     expect(partner.personId, 'aaa');
     expect(partner.andereId, 'zzz');
     expect(neu['I2'], 'aaa');
 
     // Gegenprobe über den Weg, den die App wirklich geht.
-    expect(await db.entferneBeziehung('zzz', 'aaa', Verwandtschaft.partner),
-        isTrue);
+    expect(
+      await db.entferneBeziehung('zzz', 'aaa', Verwandtschaft.partner),
+      isTrue,
+    );
   });
 
   test('die Kanten sind fuer den Stammbaum lesbar', () async {
@@ -129,9 +138,15 @@ void main() {
         kanten: const [],
         ereignisse: [
           LebensereignisseCompanion.insert(
-              id: 'gleich', personId: 'p1', art: 'umzug'),
+            id: 'gleich',
+            personId: 'p1',
+            art: 'umzug',
+          ),
           LebensereignisseCompanion.insert(
-              id: 'gleich', personId: 'p1', art: 'umzug'),
+            id: 'gleich',
+            personId: 'p1',
+            art: 'umzug',
+          ),
         ],
       ),
       throwsA(anything),
@@ -170,10 +185,14 @@ void main() {
     expect(gelesen.personen, hasLength(paare * 2));
     expect(gelesen.kanten, hasLength(paare + (paare - 1) * 2));
     expect(gelesen.hinweiseMit(GedcomHinweisart.kreisVerhindert), 0);
-    expect(uhr.elapsed, lessThan(const Duration(milliseconds: 500)),
-        reason: 'gemessen: 36 ms mit `ergaenze`, 1550 ms ohne – das '
-            'Dreiundvierzigfache. Die Grenze liegt zwischen beiden Werten '
-            'und nicht bei „ein paar Sekunden": Eine Grenze oberhalb des '
-            'Rückfalls wäre keine.');
+    expect(
+      uhr.elapsed,
+      lessThan(const Duration(milliseconds: 500)),
+      reason:
+          'gemessen: 36 ms mit `ergaenze`, 1550 ms ohne – das '
+          'Dreiundvierzigfache. Die Grenze liegt zwischen beiden Werten '
+          'und nicht bei „ein paar Sekunden": Eine Grenze oberhalb des '
+          'Rückfalls wäre keine.',
+    );
   });
 }

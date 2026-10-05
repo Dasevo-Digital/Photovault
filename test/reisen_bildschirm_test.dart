@@ -37,7 +37,8 @@ Future<ReverseGeocoder> _geokodierer(Directory wurzel) async {
   );
   final regionen = File(p.join(wurzel.path, 'admin1CodesASCII.txt'));
   await regionen.writeAsString(
-      'DE.16\tBerlin\tBerlin\t2950157\nIT.07\tLazio\tLazio\t3174976\n');
+    'DE.16\tBerlin\tBerlin\t2950157\nIT.07\tLazio\tLazio\t3174976\n',
+  );
   final laender = File(p.join(wurzel.path, 'countryInfo.txt'));
   await laender.writeAsString(
     '# Kopfzeile\n'
@@ -47,7 +48,10 @@ Future<ReverseGeocoder> _geokodierer(Directory wurzel) async {
     'ES\tESP\t724\tES\tSpain\tMadrid\t504782\t46723749\tEU\t.es\tEUR\tEuro\t34\t\t\tes-ES\t2510769\t\t\n',
   );
   return ReverseGeocoder.loadFromFiles(
-      citiesFile: staedte, admin1File: regionen, countryFile: laender);
+    citiesFile: staedte,
+    admin1File: regionen,
+    countryFile: laender,
+  );
 }
 
 void main() {
@@ -58,8 +62,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_reisen_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -68,33 +73,53 @@ void main() {
       // gegen die sich zaehlen liesse.
       ..geocoder = await _geokodierer(tempRoot);
 
-    Future<void> aufnahme(String id, DateTime zeit, double b, double l,
-            String stadt, String land) =>
-        db.into(db.assets).insert(AssetsCompanion.insert(
-              id: id,
-              originalFileName: '$id.jpg',
-              relativePath: 'originals/$id.jpg',
-              checksum: 'pruef-$id',
-              type: 'IMAGE',
-              fileCreatedAt: zeit,
-              importedAt: DateTime(2024),
-              latitude: Value(b),
-              longitude: Value(l),
-              locationCity: Value(stadt),
-              locationCountry: Value(land),
-            ));
+    Future<void> aufnahme(
+      String id,
+      DateTime zeit,
+      double b,
+      double l,
+      String stadt,
+      String land,
+    ) => db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: zeit,
+            importedAt: DateTime(2024),
+            latitude: Value(b),
+            longitude: Value(l),
+            locationCity: Value(stadt),
+            locationCountry: Value(land),
+          ),
+        );
 
     // Hamburg als Wohnort: sechzig verschiedene Tage.
     for (var t = 0; t < 60; t++) {
-      await aufnahme('h$t', DateTime(2024, 1, 1).add(Duration(days: t)), 53.55,
-          9.99, 'Hamburg', 'Germany');
+      await aufnahme(
+        'h$t',
+        DateTime(2024, 1, 1).add(Duration(days: t)),
+        53.55,
+        9.99,
+        'Hamburg',
+        'Germany',
+      );
     }
     // Sechs Tage Rom, je vier Aufnahmen.
     for (var t = 0; t < 6; t++) {
       for (var i = 0; i < 4; i++) {
-        await aufnahme('r$t-$i',
-            DateTime(2024, 6, 3, 9, i * 10).add(Duration(days: t)), 41.90,
-            12.50, 'Roma', 'Italy');
+        await aufnahme(
+          'r$t-$i',
+          DateTime(2024, 6, 3, 9, i * 10).add(Duration(days: t)),
+          41.90,
+          12.50,
+          'Roma',
+          'Italy',
+        );
       }
     }
   });
@@ -111,22 +136,25 @@ void main() {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
-      // erscheinen Meldungen dort und nicht mehr als SnackBar im
-      // Scaffold.
-      builder: (context, kind) => mitMeldungen(kind),
-      home: ReisenScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
+        // erscheinen Meldungen dort und nicht mehr als SnackBar im
+        // Scaffold.
+        builder: (context, kind) => mitMeldungen(kind),
+        home: ReisenScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('der Vorschlag steht da, bevor jemand etwas eintippt',
-      (tester) async {
+  testWidgets('der Vorschlag steht da, bevor jemand etwas eintippt', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.text('Roma'), findsOneWidget);
     // Zeitraum, Nächte und Zahl der Aufnahmen in einer Zeile.
@@ -143,8 +171,9 @@ void main() {
     // Der vorgeschlagene Name steht schon im Feld – meistens stimmt er.
     expect(find.text('Reise benennen'), findsOneWidget);
     expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Roma');
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Roma',
+    );
     await tester.enterText(find.byType(TextField), 'Rom im Juni');
     await tester.tap(find.text('Übernehmen'));
     await tester.pumpAndSettle();
@@ -188,8 +217,9 @@ void main() {
     expect(find.text('Roma'), findsWidgets);
   });
 
-  testWidgets('zwei Reisen lassen sich zu einer zusammenfuehren',
-      (tester) async {
+  testWidgets('zwei Reisen lassen sich zu einer zusammenfuehren', (
+    tester,
+  ) async {
     // **Warum es das braucht.** Die Erkennung trennt bei mehr als zwei
     // Tagen ohne Aufnahme. Bei einem Urlaub ist das richtig; ein
     // zweimonatiger Auslandseinsatz zerfiel dadurch in vier Vorschlaege
@@ -221,19 +251,29 @@ void main() {
     // Das Menue der Reise, die stehenbleiben soll – die Kachel traegt
     // es oben rechts.
     final kachel = find.ancestor(
-        of: find.text('Einsatz'),
-        matching: find.byType(Reisekachel));
-    await tester.tap(find.descendant(
-        of: kachel, matching: find.byType(PopupMenuButton<Kachelbefehl>)));
+      of: find.text('Einsatz'),
+      matching: find.byType(Reisekachel),
+    );
+    await tester.tap(
+      find.descendant(
+        of: kachel,
+        matching: find.byType(PopupMenuButton<Kachelbefehl>),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Zusammenführen').last);
     await tester.pumpAndSettle();
 
     // Die andere Reise steht zur Wahl, die eigene nicht.
-    expect(find.widgetWithText(CheckboxListTile, 'Zweiter Teil'),
-        findsOneWidget);
-    expect(find.widgetWithText(CheckboxListTile, 'Einsatz'), findsNothing,
-        reason: 'in sich selbst kann nichts aufgehen');
+    expect(
+      find.widgetWithText(CheckboxListTile, 'Zweiter Teil'),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(CheckboxListTile, 'Einsatz'),
+      findsNothing,
+      reason: 'in sich selbst kann nichts aufgehen',
+    );
 
     await tester.tap(find.widgetWithText(CheckboxListTile, 'Zweiter Teil'));
     await tester.pumpAndSettle();
@@ -247,8 +287,9 @@ void main() {
     expect(await db.aufnahmenDerReise('r1'), hasLength(4));
   });
 
-  testWidgets('die Art der Reise steht dabei und laesst sich aendern',
-      (tester) async {
+  testWidgets('die Art der Reise steht dabei und laesst sich aendern', (
+    tester,
+  ) async {
     await db.reiseAnlegen(
       ReisenCompanion.insert(
         id: 'r1',
@@ -274,8 +315,9 @@ void main() {
     expect((await db.alleReisen()).single.art, 'unternehmung');
   });
 
-  testWidgets('eine Notiz laesst sich schreiben und wieder loeschen',
-      (tester) async {
+  testWidgets('eine Notiz laesst sich schreiben und wieder loeschen', (
+    tester,
+  ) async {
     // „Bewertung, Notizen, Tags" gab es bisher je Foto, nicht je Reise.
     await zeige(tester);
     await tester.tap(find.text('War eine Reise'));
@@ -302,8 +344,7 @@ void main() {
     expect((await db.alleReisen()).single.notiz, isNull);
   });
 
-  testWidgets('die Reiseansicht zeigt Route und Tageskapitel',
-      (tester) async {
+  testWidgets('die Reiseansicht zeigt Route und Tageskapitel', (tester) async {
     await zeige(tester);
     await tester.tap(find.text('War eine Reise'));
     await tester.pumpAndSettle();
@@ -322,32 +363,41 @@ void main() {
 
     // Alle Aufnahmen liegen an derselben Stelle – dann gibt es keine
     // Strecke, und das steht auch da.
-    expect(find.text('Ohne verortete Aufnahme gibt es keine Strecke.'),
-        findsOneWidget);
+    expect(
+      find.text('Ohne verortete Aufnahme gibt es keine Strecke.'),
+      findsOneWidget,
+    );
 
     // Und das letzte Kapitel ist erreichbar.
     await tester.scrollUntilVisible(
-        find.text('Samstag, 8. Juni 2024 · Roma'), 300);
+      find.text('Samstag, 8. Juni 2024 · Roma'),
+      300,
+    );
   });
 
-  testWidgets('bei mehreren Orten wird eine Strecke gezeichnet',
-      (tester) async {
+  testWidgets('bei mehreren Orten wird eine Strecke gezeichnet', (
+    tester,
+  ) async {
     // Florenz dazu: Erst wenn sich die Orte unterscheiden, gibt es eine
     // Linie zu zeichnen.
     for (var i = 0; i < 4; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'f$i',
-            originalFileName: 'f$i.jpg',
-            relativePath: 'originals/f$i.jpg',
-            checksum: 'pruef-f$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2024, 6, 5, 14, i * 10),
-            importedAt: DateTime(2024),
-            latitude: const Value(43.77),
-            longitude: const Value(11.26),
-            locationCity: const Value('Firenze'),
-            locationCountry: const Value('Italy'),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'f$i',
+              originalFileName: 'f$i.jpg',
+              relativePath: 'originals/f$i.jpg',
+              checksum: 'pruef-f$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2024, 6, 5, 14, i * 10),
+              importedAt: DateTime(2024),
+              latitude: const Value(43.77),
+              longitude: const Value(11.26),
+              locationCity: const Value('Firenze'),
+              locationCountry: const Value('Italy'),
+            ),
+          );
     }
     await zeige(tester);
     await tester.tap(find.text('War eine Reise'));
@@ -359,8 +409,10 @@ void main() {
 
     expect(find.text('Route'), findsOneWidget);
     expect(find.byType(PolylineLayer), findsOneWidget);
-    expect(find.text('Ohne verortete Aufnahme gibt es keine Strecke.'),
-        findsNothing);
+    expect(
+      find.text('Ohne verortete Aufnahme gibt es keine Strecke.'),
+      findsNothing,
+    );
   });
 
   testWidgets('ein langer Druck macht ein Bild zum Titelbild', (tester) async {
@@ -413,15 +465,17 @@ void main() {
     expect(find.textContaining('195 souveränen Staaten'), findsOneWidget);
   });
 
-  testWidgets('ohne verortete Aufnahmen erklaert der Bildschirm sich selbst',
-      (tester) async {
+  testWidgets('ohne verortete Aufnahmen erklaert der Bildschirm sich selbst', (
+    tester,
+  ) async {
     await db.delete(db.assets).go();
     await zeige(tester);
     expect(find.textContaining('erkennt sie'), findsOneWidget);
   });
 
-  testWidgets('jeder Aufenthaltsort bekommt eine Bildmarke auf der Karte',
-      (tester) async {
+  testWidgets('jeder Aufenthaltsort bekommt eine Bildmarke auf der Karte', (
+    tester,
+  ) async {
     // Punkt 5 der Wunschliste: nicht nackte Kreise, sondern das Bild, das
     // dort entstanden ist – und die Zahl, wie viele es sind.
     //
@@ -429,19 +483,23 @@ void main() {
     // Dazu ein Bild aus Florenz, 230 km entfernt: Das muss ein zweiter
     // Ort werden, sonst faende die Zusammenfassung ueberhaupt keine
     // Grenze.
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'flo',
-          originalFileName: 'flo.jpg',
-          relativePath: 'originals/flo.jpg',
-          checksum: 'pruef-flo',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 6, 12, 10),
-          importedAt: DateTime(2024),
-          latitude: const Value(43.7696),
-          longitude: const Value(11.2558),
-          locationCity: const Value('Firenze'),
-          locationCountry: const Value('Italy'),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'flo',
+            originalFileName: 'flo.jpg',
+            relativePath: 'originals/flo.jpg',
+            checksum: 'pruef-flo',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 6, 12, 10),
+            importedAt: DateTime(2024),
+            latitude: const Value(43.7696),
+            longitude: const Value(11.2558),
+            locationCity: const Value('Firenze'),
+            locationCountry: const Value('Italy'),
+          ),
+        );
     await db.reiseAnlegen(
       ReisenCompanion.insert(
         id: 'r1',
@@ -460,18 +518,22 @@ void main() {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
-      // erscheinen Meldungen dort und nicht mehr als SnackBar im
-      // Scaffold.
-      builder: (context, kind) => mitMeldungen(kind),
-      home: ReiseDetailScreen(
-          library: library, reise: (await db.alleReisen()).single),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
+        // erscheinen Meldungen dort und nicht mehr als SnackBar im
+        // Scaffold.
+        builder: (context, kind) => mitMeldungen(kind),
+        home: ReiseDetailScreen(
+          library: library,
+          reise: (await db.alleReisen()).single,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Roma · 24 Aufnahmen'), findsOneWidget);
@@ -480,8 +542,9 @@ void main() {
     expect(find.text('24'), findsOneWidget);
   });
 
-  testWidgets('ein Vorschlag ueber zwei Laender heisst deutsch',
-      (tester) async {
+  testWidgets('ein Vorschlag ueber zwei Laender heisst deutsch', (
+    tester,
+  ) async {
     // **Der Datensatz kennt Laender nur englisch** – so stehen sie in der
     // Datenbank, und dort gehoeren sie auch hin: Sie sind der Schluessel,
     // ueber den Aufnahme und Katalog zusammenfinden. Der Vorschlag heisst
@@ -492,26 +555,38 @@ void main() {
     // sonst heisst ein Vorschlag nach seinen Staedten.
     for (var t = 0; t < 3; t++) {
       for (var i = 0; i < 4; i++) {
-        await db.into(db.assets).insert(AssetsCompanion.insert(
-              id: 'p$t-$i',
-              originalFileName: 'p$t-$i.jpg',
-              relativePath: 'originals/p$t-$i.jpg',
-              checksum: 'pruef-p$t-$i',
-              type: 'IMAGE',
-              fileCreatedAt:
-                  DateTime(2024, 6, 9, 9, i * 10).add(Duration(days: t)),
-              importedAt: DateTime(2024),
-              latitude: const Value(48.85),
-              longitude: const Value(2.35),
-              locationCity: const Value('Paris'),
-              locationCountry: const Value('France'),
-            ));
+        await db
+            .into(db.assets)
+            .insert(
+              AssetsCompanion.insert(
+                id: 'p$t-$i',
+                originalFileName: 'p$t-$i.jpg',
+                relativePath: 'originals/p$t-$i.jpg',
+                checksum: 'pruef-p$t-$i',
+                type: 'IMAGE',
+                fileCreatedAt: DateTime(
+                  2024,
+                  6,
+                  9,
+                  9,
+                  i * 10,
+                ).add(Duration(days: t)),
+                importedAt: DateTime(2024),
+                latitude: const Value(48.85),
+                longitude: const Value(2.35),
+                locationCity: const Value('Paris'),
+                locationCountry: const Value('France'),
+              ),
+            );
       }
     }
     await zeige(tester);
     expect(find.text('Italien – Frankreich'), findsOneWidget);
-    expect(find.text('Italy – France'), findsNothing,
-        reason: 'der englische Schluessel gehoert nicht auf den Schirm');
+    expect(
+      find.text('Italy – France'),
+      findsNothing,
+      reason: 'der englische Schluessel gehoert nicht auf den Schirm',
+    );
   });
 
   group('Eine GPX-Spur an einer Reise', () {
@@ -520,19 +595,23 @@ void main() {
       // Aufnahmen in Rom innerhalb eines Kilometers, es gibt gar keine
       // Route – und damit auch keine Karte, auf der eine Spur liegen
       // koennte.
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'flo',
-            originalFileName: 'flo.jpg',
-            relativePath: 'originals/flo.jpg',
-            checksum: 'pruef-flo',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2024, 6, 8, 10),
-            importedAt: DateTime(2024),
-            latitude: const Value(43.7696),
-            longitude: const Value(11.2558),
-            locationCity: const Value('Firenze'),
-            locationCountry: const Value('Italy'),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'flo',
+              originalFileName: 'flo.jpg',
+              relativePath: 'originals/flo.jpg',
+              checksum: 'pruef-flo',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2024, 6, 8, 10),
+              importedAt: DateTime(2024),
+              latitude: const Value(43.7696),
+              longitude: const Value(11.2558),
+              locationCity: const Value('Firenze'),
+              locationCountry: const Value('Italy'),
+            ),
+          );
       await db.reiseAnlegen(
         ReisenCompanion.insert(
           id: 'r1',
@@ -576,15 +655,19 @@ void main() {
       tester.view.physicalSize = const Size(900, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        builder: (context, kind) => mitMeldungen(kind),
-        home: ReiseDetailScreen(
-            library: library, reise: (await db.alleReisen()).single),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          builder: (context, kind) => mitMeldungen(kind),
+          home: ReiseDetailScreen(
+            library: library,
+            reise: (await db.alleReisen()).single,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -592,8 +675,11 @@ void main() {
       await reiseMitSpur();
       await zeigeReise(tester);
       final karte = tester.widget<Routenkarte>(find.byType(Routenkarte));
-      expect(karte.spuren, hasLength(1),
-          reason: 'die gemessene Linie gehoert neben die geratene');
+      expect(
+        karte.spuren,
+        hasLength(1),
+        reason: 'die gemessene Linie gehoert neben die geratene',
+      );
       expect(karte.spuren.first, hasLength(12));
       // Und sie steht mit Namen darunter - sonst waere nicht zu sehen,
       // welche Datei da liegt.

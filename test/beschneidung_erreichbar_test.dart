@@ -21,7 +21,10 @@ void main() {
     test('ohne Masken, mit geladenem Shader: bedienbar', () {
       expect(
         beschneidungBedienbar(
-            maskenVorhanden: false, shaderGeladen: true, basisGeladen: true),
+          maskenVorhanden: false,
+          shaderGeladen: true,
+          basisGeladen: true,
+        ),
         isTrue,
       );
     });
@@ -31,7 +34,10 @@ void main() {
       // Maskenwirkung – die Markierung wäre dort schlicht falsch.
       expect(
         beschneidungBedienbar(
-            maskenVorhanden: true, shaderGeladen: true, basisGeladen: true),
+          maskenVorhanden: true,
+          shaderGeladen: true,
+          basisGeladen: true,
+        ),
         isFalse,
       );
     });
@@ -39,12 +45,18 @@ void main() {
     test('ohne Shader oder ohne Basis: nicht bedienbar', () {
       expect(
         beschneidungBedienbar(
-            maskenVorhanden: false, shaderGeladen: false, basisGeladen: true),
+          maskenVorhanden: false,
+          shaderGeladen: false,
+          basisGeladen: true,
+        ),
         isFalse,
       );
       expect(
         beschneidungBedienbar(
-            maskenVorhanden: false, shaderGeladen: true, basisGeladen: false),
+          maskenVorhanden: false,
+          shaderGeladen: true,
+          basisGeladen: false,
+        ),
         isFalse,
       );
     });
@@ -55,9 +67,13 @@ void main() {
       // anfassen und stolpert dabei über den Kommentar oben.
       expect(
         beschneidungBedienbar(
-            maskenVorhanden: false, shaderGeladen: true, basisGeladen: true),
+          maskenVorhanden: false,
+          shaderGeladen: true,
+          basisGeladen: true,
+        ),
         isTrue,
-        reason: 'ein Knopf, der nur waehrend des Ziehens klickbar ist, '
+        reason:
+            'ein Knopf, der nur waehrend des Ziehens klickbar ist, '
             'ist nicht klickbar',
       );
     });
@@ -112,22 +128,36 @@ void main() {
         dotAll: true,
       ).firstMatch(quelle);
 
-      expect(knopf, isNotNull,
-          reason: 'Knopf fuer die Beschneidungswarnung nicht gefunden - '
-              'wurde er umbenannt? Dann diesen Test nachziehen.');
-      expect(knopf!.group(1), '_shaderMoeglich',
-          reason: 'An _zeigeShaderVorschau gehaengt waere der Knopf nur '
-              'waehrend des Ziehens klickbar - also nie. Genau das war '
-              'der Fehler.');
+      expect(
+        knopf,
+        isNotNull,
+        reason:
+            'Knopf fuer die Beschneidungswarnung nicht gefunden - '
+            'wurde er umbenannt? Dann diesen Test nachziehen.',
+      );
+      expect(
+        knopf!.group(1),
+        '_shaderMoeglich',
+        reason:
+            'An _zeigeShaderVorschau gehaengt waere der Knopf nur '
+            'waehrend des Ziehens klickbar - also nie. Genau das war '
+            'der Fehler.',
+      );
     });
 
     test('_shaderMoeglich kennt das Ziehen nicht', () {
-      final getter = RegExp(r'bool get _shaderMoeglich =>(.*?);', dotAll: true)
-          .firstMatch(quelle);
+      final getter = RegExp(
+        r'bool get _shaderMoeglich =>(.*?);',
+        dotAll: true,
+      ).firstMatch(quelle);
       expect(getter, isNotNull);
-      expect(getter!.group(1), isNot(contains('_dragging')),
-          reason: 'Sobald das Ziehen wieder in die Bedienbarkeit einzieht, '
-              'ist der Knopf erneut unerreichbar.');
+      expect(
+        getter!.group(1),
+        isNot(contains('_dragging')),
+        reason:
+            'Sobald das Ziehen wieder in die Bedienbarkeit einzieht, '
+            'ist der Knopf erneut unerreichbar.',
+      );
     });
   });
 }

@@ -186,12 +186,7 @@ Hoehenlinien hoehenlinien(
             ? (x: x0, y: y0 + (y1 - y0) * anteil(a, d, ziel))
             : null;
 
-        final punkte = [
-          ?oben,
-          ?rechts,
-          ?unten,
-          ?links,
-        ];
+        final punkte = [?oben, ?rechts, ?unten, ?links];
         // Zwei Schnittpunkte sind der Regelfall. Vier bedeuten einen
         // Sattel – dann werden sie paarweise verbunden, wie sie in der
         // Aufzählung stehen; welches der beiden Paare richtig ist,
@@ -203,7 +198,7 @@ Hoehenlinien hoehenlinien(
             x1: punkte[p].x,
             y1: punkte[p].y,
             x2: punkte[p + 1].x,
-            y2: punkte[p + 1].y
+            y2: punkte[p + 1].y,
           ));
         }
       }
@@ -229,7 +224,11 @@ Hoehenlinien hoehenlinien(
 /// Schirm niemand sieht – die Textur wird ja auf ein Stück Landschaft
 /// gelegt, das viel kleiner ist als sie selbst.
 void zeichneHoehenlinien(
-    ui.Canvas leinwand, Hoehenlinien linien, double breite, double hoehe) {
+  ui.Canvas leinwand,
+  Hoehenlinien linien,
+  double breite,
+  double hoehe,
+) {
   final massstab = math.max(breite, hoehe) / 512;
 
   void zug(List<Linienstueck> stuecke, double stark) {

@@ -21,8 +21,9 @@ import 'package:photo_vault/services/florence_captioning_service.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('zwei verschiedene Bilder ergeben zwei verschiedene Sätze',
-      (tester) async {
+  testWidgets('zwei verschiedene Bilder ergeben zwei verschiedene Sätze', (
+    tester,
+  ) async {
     final support = await getApplicationSupportDirectory();
     final modelle = p.join(support.path, 'PhotoVault', 'models');
     if (!FlorenceCaptioningService.isAvailable(modelle)) {
@@ -42,11 +43,22 @@ void main() {
       final i = img.Image(width: n, height: n);
       img.fill(i, color: img.ColorRgb8(r, g, b));
       if (balken) {
-        img.fillRect(i, x1: 100, y1: 300, x2: 700, y2: 500,
-            color: img.ColorRgb8(255 - r, 255 - g, 255 - b));
+        img.fillRect(
+          i,
+          x1: 100,
+          y1: 300,
+          x2: 700,
+          y2: 500,
+          color: img.ColorRgb8(255 - r, 255 - g, 255 - b),
+        );
       } else {
-        img.fillCircle(i, x: 400, y: 400, radius: 220,
-            color: img.ColorRgb8(255 - r, 255 - g, 255 - b));
+        img.fillCircle(
+          i,
+          x: 400,
+          y: 400,
+          radius: 220,
+          color: img.ColorRgb8(255 - r, 255 - g, 255 - b),
+        );
       }
       return i;
     }
@@ -54,9 +66,13 @@ void main() {
     final dienst = await FlorenceCaptioningService.load(modelle);
     try {
       final uhr = Stopwatch()..start();
-      final eins = await dienst.generateCaption(bild(20, 90, 180, balken: true));
+      final eins = await dienst.generateCaption(
+        bild(20, 90, 180, balken: true),
+      );
       final zeitEins = uhr.elapsedMilliseconds;
-      final zwei = await dienst.generateCaption(bild(200, 160, 40, balken: false));
+      final zwei = await dienst.generateCaption(
+        bild(200, 160, 40, balken: false),
+      );
       uhr.stop();
 
       // ignore: avoid_print
@@ -64,17 +80,28 @@ void main() {
       // ignore: avoid_print
       print('Satz 2 (${uhr.elapsedMilliseconds - zeitEins}ms): $zwei');
 
-      expect(eins, isNotEmpty, reason: 'ein leerer Satz heisst: Decoder bricht sofort ab');
+      expect(
+        eins,
+        isNotEmpty,
+        reason: 'ein leerer Satz heisst: Decoder bricht sofort ab',
+      );
       expect(zwei, isNotEmpty);
-      expect(eins, isNot(equals(zwei)),
-          reason: 'gleiche Sätze für verschiedene Bilder heissen: das Bild '
-              'kommt nach dem ersten Schritt nicht mehr an');
+      expect(
+        eins,
+        isNot(equals(zwei)),
+        reason:
+            'gleiche Sätze für verschiedene Bilder heissen: das Bild '
+            'kommt nach dem ersten Schritt nicht mehr an',
+      );
 
       // Kein Wort dreimal hintereinander – die Wiederholungsbremse greift.
       final woerter = eins.toLowerCase().split(RegExp(r'\s+'));
       for (var i = 0; i + 2 < woerter.length; i++) {
-        expect(woerter[i] == woerter[i + 1] && woerter[i + 1] == woerter[i + 2],
-            isFalse, reason: 'Wiederholung ab Wort $i in „$eins"');
+        expect(
+          woerter[i] == woerter[i + 1] && woerter[i + 1] == woerter[i + 2],
+          isFalse,
+          reason: 'Wiederholung ab Wort $i in „$eins"',
+        );
       }
     } finally {
       await dienst.dispose();

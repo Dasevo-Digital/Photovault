@@ -74,7 +74,9 @@ class Serienspalte {
 /// jeder Spalte oben. Nach Kennung oder Erkennungsreihenfolge sortiert
 /// sprängen dieselben Köpfe von Spalte zu Spalte.
 Future<List<Serienspalte>> serienspalten(
-    AppDatabase db, List<AssetData> serie) async {
+  AppDatabase db,
+  List<AssetData> serie,
+) async {
   final namen = {for (final p in await db.allePersonen()) p.id: p.name};
   final spalten = <Serienspalte>[];
   for (final asset in serie) {

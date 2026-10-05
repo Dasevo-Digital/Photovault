@@ -37,8 +37,11 @@ void main() {
     // Kein stilles Überspringen: Ein Test, der ohne Modelle grün meldet,
     // sagt nichts – und genau das ist hier schon einmal passiert, weil die
     // macOS-Sandbox ein anderes HOME hat als die Anmeldung.
-    expect(OcrService.isAvailable(ordner), isTrue,
-        reason: 'Modelle fehlen unter $ordner');
+    expect(
+      OcrService.isAvailable(ordner),
+      isTrue,
+      reason: 'Modelle fehlen unter $ordner',
+    );
     expect(bildDatei.existsSync(), isTrue, reason: 'Probe fehlt unter $ordner');
 
     final dienst = await OcrService.load(ordner);

@@ -22,16 +22,23 @@ void main() {
   late MarianTokenizer tok;
 
   setUpAll(() async {
-    final roh = await File('test/fixtures/marian_vocab_subset.json').readAsString();
+    final roh = await File(
+      'test/fixtures/marian_vocab_subset.json',
+    ).readAsString();
     tok = MarianTokenizer.fromJson(jsonDecode(roh) as Map<String, dynamic>);
   });
 
   /// Übersetzt Kennungen zurück in ihre Stücke – für den Vergleich mit der
   /// Referenz, die Stücke ausgibt.
   List<String> stuecke(List<int> ids) {
-    final vokabular = jsonDecode(File('test/fixtures/marian_vocab_subset.json').readAsStringSync())
-        as Map<String, dynamic>;
-    final liste = (vokabular['model']['vocab'] as List).map((e) => e[0] as String).toList();
+    final vokabular =
+        jsonDecode(
+              File('test/fixtures/marian_vocab_subset.json').readAsStringSync(),
+            )
+            as Map<String, dynamic>;
+    final liste = (vokabular['model']['vocab'] as List)
+        .map((e) => e[0] as String)
+        .toList();
     return [for (final id in ids) liste[id]];
   }
 
@@ -39,19 +46,35 @@ void main() {
     // Jeweils die Stückfolge, die `tokenizers` für denselben Text liefert
     // (ohne das angehängte Satzende, das separat geprüft wird).
     const erwartet = <String, List<String>>{
-      'a dog running on the beach': ['▁a', '▁dog', '▁running', '▁on', '▁the', '▁beach'],
+      'a dog running on the beach': [
+        '▁a',
+        '▁dog',
+        '▁running',
+        '▁on',
+        '▁the',
+        '▁beach',
+      ],
       'sunset over the sea': ['▁sunset', '▁over', '▁the', '▁sea'],
       'A man riding a horse.': ['▁A', '▁man', '▁riding', '▁a', '▁horse', '.'],
       'birthday cake with candles': ['▁birthday', '▁cake', '▁with', '▁candles'],
       'two children playing in the snow': [
-        '▁two', '▁children', '▁playing', '▁in', '▁the', '▁snow',
+        '▁two',
+        '▁children',
+        '▁playing',
+        '▁in',
+        '▁the',
+        '▁snow',
       ],
     };
 
     for (final eintrag in erwartet.entries) {
       test('„${eintrag.key}"', () {
         final ids = tok.encode(eintrag.key);
-        expect(ids.last, MarianTokenizer.eosId, reason: 'Satzende muss angehängt werden');
+        expect(
+          ids.last,
+          MarianTokenizer.eosId,
+          reason: 'Satzende muss angehängt werden',
+        );
         expect(stuecke(ids.sublist(0, ids.length - 1)), eintrag.value);
       });
     }
@@ -62,11 +85,18 @@ void main() {
     // WhitespaceSplit, dann Metaspace je Wort. Referenz liefert
     // ▁a ▁double ▁space.
     final ids = tok.encode('a  double   space');
-    expect(stuecke(ids.sublist(0, ids.length - 1)), ['▁a', '▁double', '▁space']);
+    expect(stuecke(ids.sublist(0, ids.length - 1)), [
+      '▁a',
+      '▁double',
+      '▁space',
+    ]);
   });
 
   test('führender und abschliessender Leerraum stören nicht', () {
-    expect(tok.encode('  sunset over the sea  '), tok.encode('sunset over the sea'));
+    expect(
+      tok.encode('  sunset over the sea  '),
+      tok.encode('sunset over the sea'),
+    );
   });
 
   test('ein unbekanntes Zeichen wird zu unkId, nicht zu <unk>', () {

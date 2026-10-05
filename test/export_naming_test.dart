@@ -53,8 +53,11 @@ void main() {
     expect(namenAusMuster('{zeit}', a, nummer: 1), '1405');
     expect(namenAusMuster('{jahr}-{monat}-{tag}', a, nummer: 1), '2026-03-07');
     expect(namenAusMuster('{kamera}', a, nummer: 1), 'SONY ILCE-6300');
-    expect(namenAusMuster('{nr}', a, nummer: 7), '0007',
-        reason: 'vierstellig, damit die Reihenfolge im Dateimanager stimmt');
+    expect(
+      namenAusMuster('{nr}', a, nummer: 7),
+      '0007',
+      reason: 'vierstellig, damit die Reihenfolge im Dateimanager stimmt',
+    );
   });
 
   test('Hersteller und Modell werden nicht doppelt geschrieben', () {
@@ -65,8 +68,11 @@ void main() {
 
   test('fehlende Kameradaten ergeben keinen Rest im Namen', () {
     final a = _asset();
-    expect(namenAusMuster('{kamera}', a, nummer: 1), 'IMG_1234',
-        reason: 'ein leeres Ergebnis fällt auf den Originalnamen zurück');
+    expect(
+      namenAusMuster('{kamera}', a, nummer: 1),
+      'IMG_1234',
+      reason: 'ein leeres Ergebnis fällt auf den Originalnamen zurück',
+    );
     expect(namenAusMuster('{name}_{kamera}', a, nummer: 1), 'IMG_1234_');
   });
 
@@ -92,15 +98,20 @@ void main() {
 
   test('sehr lange Namen werden gekappt', () {
     final a = _asset(dateiname: '${'x' * 400}.jpg');
-    expect(namenAusMuster('{name}', a, nummer: 1).length, lessThanOrEqualTo(200));
+    expect(
+      namenAusMuster('{name}', a, nummer: 1).length,
+      lessThanOrEqualTo(200),
+    );
   });
 
   test('die Endung kommt nie aus dem Muster', () {
     final a = _asset();
     // Auch wenn im Muster eine Endung steht, hängt der Aufrufer die
     // tatsächliche an – sonst hiesse eine gerenderte JPEG-Datei ".cr3".
-    expect(dateiname('{name}.cr3', a, nummer: 1, endung: '.jpg'),
-        'IMG_1234.cr3.jpg');
+    expect(
+      dateiname('{name}.cr3', a, nummer: 1, endung: '.jpg'),
+      'IMG_1234.cr3.jpg',
+    );
     expect(dateiname('{name}', a, nummer: 1, endung: '.jpg'), 'IMG_1234.jpg');
   });
 
@@ -111,8 +122,11 @@ void main() {
     final a = _asset(hersteller: 'Sony', modell: 'A7');
     for (final baustein in Namensbaustein.values) {
       final ergebnis = namenAusMuster(baustein.muster, a, nummer: 3);
-      expect(ergebnis, isNot(contains('{')),
-          reason: '${baustein.muster} wurde nicht ersetzt');
+      expect(
+        ergebnis,
+        isNot(contains('{')),
+        reason: '${baustein.muster} wurde nicht ersetzt',
+      );
     }
   });
 

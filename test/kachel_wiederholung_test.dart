@@ -47,12 +47,17 @@ void main() {
 
   group('Welche Fehler einen zweiten Versuch bekommen', () {
     test('Netzprobleme ja', () {
-      expect(kachelFehlerNochmalVersuchen(const SocketException('weg')), isTrue);
+      expect(
+        kachelFehlerNochmalVersuchen(const SocketException('weg')),
+        isTrue,
+      );
       expect(kachelFehlerNochmalVersuchen(TimeoutException('zu lang')), isTrue);
       expect(
-          kachelFehlerNochmalVersuchen(
-              ClientException('Connection closed before full header')),
-          isTrue);
+        kachelFehlerNochmalVersuchen(
+          ClientException('Connection closed before full header'),
+        ),
+        isTrue,
+      );
     });
 
     test('ein Abbruch NICHT', () {
@@ -60,14 +65,21 @@ void main() {
       // Ziehen nicht mehr gebraucht wird. Die zu wiederholen hiesse,
       // Arbeit für Bilder anzufordern, die niemand mehr sieht - und
       // ausgerechnet beim schnellen Ziehen entstehen die meisten davon.
-      expect(kachelFehlerNochmalVersuchen(ClientException('Request cancelled')),
-          isFalse);
-      expect(kachelFehlerNochmalVersuchen(ClientException('aborted by client')),
-          isFalse);
+      expect(
+        kachelFehlerNochmalVersuchen(ClientException('Request cancelled')),
+        isFalse,
+      );
+      expect(
+        kachelFehlerNochmalVersuchen(ClientException('aborted by client')),
+        isFalse,
+      );
     });
 
     test('alles Uebrige nicht', () {
-      expect(kachelFehlerNochmalVersuchen(const FormatException('krumm')), isFalse);
+      expect(
+        kachelFehlerNochmalVersuchen(const FormatException('krumm')),
+        isFalse,
+      );
       expect(kachelFehlerNochmalVersuchen(ArgumentError('falsch')), isFalse);
     });
   });
@@ -92,8 +104,12 @@ void main() {
   });
 
   test('der Anbieter ist wirklich ein Einzelstueck', () {
-    expect(identical(kartenKachelAnbieter(), kartenKachelAnbieter()), isTrue,
-        reason: 'ein neuer Anbieter je Aufbau waere ein offener '
-            'HTTP-Client je Aufbau');
+    expect(
+      identical(kartenKachelAnbieter(), kartenKachelAnbieter()),
+      isTrue,
+      reason:
+          'ein neuer Anbieter je Aufbau waere ein offener '
+          'HTTP-Client je Aufbau',
+    );
   });
 }

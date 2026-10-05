@@ -18,7 +18,12 @@ class EyeCropRect {
   final int y;
   final int width;
   final int height;
-  const EyeCropRect({required this.x, required this.y, required this.width, required this.height});
+  const EyeCropRect({
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+  });
 }
 
 /// Berechnet die beiden Augen-Ausschnitte (rechtes, linkes Auge – in dieser
@@ -26,7 +31,11 @@ class EyeCropRect {
 /// Bild-/Modell-Zugriff, daher ohne ONNX-Laufzeit testbar. Gibt `null`
 /// zurück, wenn [landmarks] fehlt (weniger als 4 Werte) oder ein berechneter
 /// Ausschnitt zu klein würde (z.B. bei extrem kleinen Bildern).
-(EyeCropRect?, EyeCropRect?)? eyeCropRects(int imageWidth, int imageHeight, List<double>? landmarks) {
+(EyeCropRect?, EyeCropRect?)? eyeCropRects(
+  int imageWidth,
+  int imageHeight,
+  List<double>? landmarks,
+) {
   if (landmarks == null || landmarks.length < 4) return null;
 
   final rightEyeX = landmarks[0] * imageWidth;
@@ -71,13 +80,16 @@ class EyeStateService {
 
   final OrtSession _session;
 
-  static bool isAvailable(String modelsDir) => File('$modelsDir/eye_state_ocec_n.onnx').existsSync();
+  static bool isAvailable(String modelsDir) =>
+      File('$modelsDir/eye_state_ocec_n.onnx').existsSync();
 
   static Future<EyeStateService?> load(String modelsDir) async {
     if (!isAvailable(modelsDir)) return null;
     final ort = OnnxRuntime();
-    final session = await ort.createSession('$modelsDir/eye_state_ocec_n.onnx',
-        options: modelloptionen());
+    final session = await ort.createSession(
+      '$modelsDir/eye_state_ocec_n.onnx',
+      options: modelloptionen(),
+    );
     return EyeStateService._(session);
   }
 
@@ -91,8 +103,12 @@ class EyeStateService {
     if (rects == null) return null;
     final (rightRect, leftRect) = rects;
 
-    final rightScore = rightRect == null ? null : await _scoreEyeCrop(decoded, rightRect);
-    final leftScore = leftRect == null ? null : await _scoreEyeCrop(decoded, leftRect);
+    final rightScore = rightRect == null
+        ? null
+        : await _scoreEyeCrop(decoded, rightRect);
+    final leftScore = leftRect == null
+        ? null
+        : await _scoreEyeCrop(decoded, leftRect);
     if (rightScore == null && leftScore == null) return null;
     if (rightScore == null) return leftScore;
     if (leftScore == null) return rightScore;
@@ -100,8 +116,18 @@ class EyeStateService {
   }
 
   Future<double?> _scoreEyeCrop(img.Image decoded, EyeCropRect rect) async {
-    final cropped = img.copyCrop(decoded, x: rect.x, y: rect.y, width: rect.width, height: rect.height);
-    final resized = img.copyResize(cropped, width: _eyeStateInputWidth, height: _eyeStateInputHeight);
+    final cropped = img.copyCrop(
+      decoded,
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+    );
+    final resized = img.copyResize(
+      cropped,
+      width: _eyeStateInputWidth,
+      height: _eyeStateInputHeight,
+    );
 
     final chw = Float32List(3 * _eyeStateInputHeight * _eyeStateInputWidth);
     var idx = 0;
@@ -122,7 +148,12 @@ class EyeStateService {
       }
     }
 
-    final inputTensor = await OrtValue.fromList(chw, [1, 3, _eyeStateInputHeight, _eyeStateInputWidth]);
+    final inputTensor = await OrtValue.fromList(chw, [
+      1,
+      3,
+      _eyeStateInputHeight,
+      _eyeStateInputWidth,
+    ]);
     Map<String, OrtValue>? outputs;
     try {
       outputs = await _session.run({_session.inputNames.first: inputTensor});

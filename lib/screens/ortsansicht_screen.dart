@@ -63,7 +63,7 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
         return (
           land: geo?.laenderkatalog.nachIso(widget.schluessel)?.name,
           region: null,
-          ort: null
+          ort: null,
         );
       case Ortsebene.region:
         final punkt = widget.schluessel.indexOf('.');
@@ -120,11 +120,13 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
     final n = _namen();
     final fotos = n.land == null
         ? <AssetData>[]
-        : await db.searchAssets(SearchFilters(
-            locationCountry: n.land,
-            locationState: n.region,
-            locationCity: n.ort,
-          ));
+        : await db.searchAssets(
+            SearchFilters(
+              locationCountry: n.land,
+              locationState: n.region,
+              locationCity: n.ort,
+            ),
+          );
 
     if (!mounted) return;
     setState(() {
@@ -146,30 +148,34 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
     if (wert == null) {
       await widget.library.db.loescheOrtsmarke(art, widget.schluessel);
     } else {
-      await widget.library.db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-        art: art,
-        schluessel: widget.schluessel,
-        name: widget.name,
-        status: wert == Markenart.geplant ? 'geplant' : 'besucht',
-        angelegtAm: DateTime.now(),
-      ));
+      await widget.library.db.setzeOrtsmarke(
+        OrtsmarkenCompanion.insert(
+          art: art,
+          schluessel: widget.schluessel,
+          name: widget.name,
+          status: wert == Markenart.geplant ? 'geplant' : 'besucht',
+          angelegtAm: DateTime.now(),
+        ),
+      );
     }
     await _laden();
   }
 
   void _weiter(Unterort u) {
     Navigator.of(context)
-        .push(MaterialPageRoute(
-          builder: (_) => OrtsansichtScreen(
-            library: widget.library,
-            // Unter einem Land liegen Regionen, unter einer Region Orte.
-            ebene: widget.ebene == Ortsebene.land
-                ? Ortsebene.region
-                : Ortsebene.ort,
-            schluessel: u.schluessel,
-            name: u.name,
+        .push(
+          MaterialPageRoute(
+            builder: (_) => OrtsansichtScreen(
+              library: widget.library,
+              // Unter einem Land liegen Regionen, unter einer Region Orte.
+              ebene: widget.ebene == Ortsebene.land
+                  ? Ortsebene.region
+                  : Ortsebene.ort,
+              schluessel: u.schluessel,
+              name: u.name,
+            ),
           ),
-        ))
+        )
         // Nach der Rückkehr neu laden: Dort unten konnte eine Marke
         // gesetzt worden sein, und die zählt hier oben mit.
         .then((_) => _laden());
@@ -177,23 +183,25 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
 
   void _fotoOeffnen(AssetData asset) {
     Navigator.of(context, rootNavigator: true)
-        .push(MaterialPageRoute(
-          builder: (_) => AssetViewerScreen(
-            assets: _fotos,
-            initialIndex: _fotos.indexOf(asset),
-            paths: widget.library.paths,
-            db: widget.library.db,
-            library: widget.library,
-            onToggleFavorite: (a) =>
-                widget.library.db.setFavorite(a.id, !a.isFavorite),
-            onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-            onLock: (a) async {
-              if (await ensureVaultUnlocked(context, widget.library)) {
-                await widget.library.lockAsset(a);
-              }
-            },
+        .push(
+          MaterialPageRoute(
+            builder: (_) => AssetViewerScreen(
+              assets: _fotos,
+              initialIndex: _fotos.indexOf(asset),
+              paths: widget.library.paths,
+              db: widget.library.db,
+              library: widget.library,
+              onToggleFavorite: (a) =>
+                  widget.library.db.setFavorite(a.id, !a.isFavorite),
+              onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+              onLock: (a) async {
+                if (await ensureVaultUnlocked(context, widget.library)) {
+                  await widget.library.lockAsset(a);
+                }
+              },
+            ),
           ),
-        ))
+        )
         .then((_) => _laden());
   }
 
@@ -211,18 +219,21 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
                   child: _Kopf(stand: stand, land: _land),
                 ),
                 SliverToBoxAdapter(
-                  child: _Markenwahl(
-                    marke: stand.marke,
-                    beiWahl: _markieren,
-                  ),
+                  child: _Markenwahl(marke: stand.marke, beiWahl: _markieren),
                 ),
                 if (stand.unterorte.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: _Abschnitt(widget.ebene == Ortsebene.land
-                        ? t.ortRegionen(
-                            stand.unterorteBesucht, stand.unterorteGesamt)
-                        : t.ortOrte(
-                            stand.unterorteBesucht, stand.unterorteGesamt)),
+                    child: _Abschnitt(
+                      widget.ebene == Ortsebene.land
+                          ? t.ortRegionen(
+                              stand.unterorteBesucht,
+                              stand.unterorteGesamt,
+                            )
+                          : t.ortOrte(
+                              stand.unterorteBesucht,
+                              stand.unterorteGesamt,
+                            ),
+                    ),
                   ),
                   SliverList.builder(
                     itemCount: stand.unterorte.length,
@@ -241,10 +252,10 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
                     sliver: SliverGrid.builder(
                       gridDelegate:
                           const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 140,
-                        mainAxisSpacing: 2,
-                        crossAxisSpacing: 2,
-                      ),
+                            maxCrossAxisExtent: 140,
+                            mainAxisSpacing: 2,
+                            crossAxisSpacing: 2,
+                          ),
                       itemCount: _fotos.length,
                       itemBuilder: (_, i) => AssetThumbnailTile(
                         asset: Rasterzeile.aus(_fotos[i]),
@@ -261,13 +272,14 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
                       child: Text(
                         t.ortNichtsHier,
                         style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
                 const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.xl)),
+                  child: SizedBox(height: AppSpacing.xl),
+                ),
               ],
             ),
     );
@@ -294,7 +306,11 @@ class _Kopf extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -309,14 +325,20 @@ class _Kopf extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(stand.name,
-                    style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  stand.name,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 if (zeile.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Text(zeile,
-                        style: TextStyle(
-                            fontSize: 13, color: farben.onSurfaceVariant)),
+                    child: Text(
+                      zeile,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 if (stand.unterorteGesamt > 0)
                   Padding(
@@ -330,7 +352,8 @@ class _Kopf extends StatelessWidget {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadius.xs),
                             child: LinearProgressIndicator(
-                              value: stand.unterorteBesucht /
+                              value:
+                                  stand.unterorteBesucht /
                                   stand.unterorteGesamt,
                               minHeight: 5,
                               backgroundColor: farben.surfaceContainerHighest,
@@ -341,7 +364,9 @@ class _Kopf extends StatelessWidget {
                         Text(
                           '${stand.unterorteBesucht}/${stand.unterorteGesamt}',
                           style: TextStyle(
-                              fontSize: 11, color: farben.onSurfaceVariant),
+                            fontSize: 11,
+                            color: farben.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -395,10 +420,14 @@ class _Abschnitt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.xs),
-        child: Text(titel, style: Theme.of(context).textTheme.titleSmall),
-      );
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      AppSpacing.lg,
+      AppSpacing.md,
+      AppSpacing.xs,
+    ),
+    child: Text(titel, style: Theme.of(context).textTheme.titleSmall),
+  );
 }
 
 /// Eine Region unter einem Land, ein Ort unter einer Region.
@@ -419,27 +448,31 @@ class _Unterortzeile extends StatelessWidget {
       // Beides heisst „ohne Foto belegt". Welcher es war, steht eine
       // Ebene weiter, wo man ihn auch wieder wegnehmen kann.
       _ when unterort.marke == Markenart.besucht || unterort.abgeleitet => (
-          Icons.check_circle_outline,
-          farben.primary
-        ),
+        Icons.check_circle_outline,
+        farben.primary,
+      ),
       // NACH der Ableitung: Ein Vorhaben, in dem schon jemand war, ist
       // kein Vorhaben mehr.
       _ when unterort.marke == Markenart.geplant => (
-          Icons.flag_outlined,
-          farben.secondary
-        ),
+        Icons.flag_outlined,
+        farben.secondary,
+      ),
       _ => (Icons.circle_outlined, farben.outline),
     };
     return ListTile(
       onTap: beiTippen,
       leading: Icon(symbol, color: farbe),
-      title: Text(unterort.name,
-          style: unterort.besucht
-              ? null
-              : TextStyle(color: farben.onSurfaceVariant)),
+      title: Text(
+        unterort.name,
+        style: unterort.besucht
+            ? null
+            : TextStyle(color: farben.onSurfaceVariant),
+      ),
       subtitle: unterort.aufnahmen > 0
-          ? Text(t.laenderAufnahmen(unterort.aufnahmen),
-              style: const TextStyle(fontSize: 12))
+          ? Text(
+              t.laenderAufnahmen(unterort.aufnahmen),
+              style: const TextStyle(fontSize: 12),
+            )
           : null,
       trailing: const Icon(Icons.chevron_right),
     );

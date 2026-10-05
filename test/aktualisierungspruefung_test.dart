@@ -42,8 +42,11 @@ void main() {
     test('Unlesbares meldet keine Aktualisierung', () {
       expect(Aktualisierungspruefung.istNeuer('irgendwas', '0.4.0'), isFalse);
       expect(Aktualisierungspruefung.istNeuer('', '0.4.0'), isFalse);
-      expect(Aktualisierungspruefung.istNeuer('0.4.x', '0.4.0'), isFalse,
-          reason: 'lieber keine Meldung als eine erfundene');
+      expect(
+        Aktualisierungspruefung.istNeuer('0.4.x', '0.4.0'),
+        isFalse,
+        reason: 'lieber keine Meldung als eine erfundene',
+      );
       expect(Aktualisierungspruefung.istNeuer('0.5.0', 'kaputt'), isFalse);
     });
   });
@@ -61,9 +64,21 @@ void main() {
       // Die Reihenfolge der Schnittstelle ist nicht garantiert sortiert.
       final p = Aktualisierungspruefung(
         dio: dioMit([
-          {'tag_name': 'v0.3.0', 'draft': false, 'html_url': 'https://example.invalid/3'},
-          {'tag_name': 'v0.5.0', 'draft': false, 'html_url': 'https://example.invalid/5'},
-          {'tag_name': 'v0.4.0', 'draft': false, 'html_url': 'https://example.invalid/4'},
+          {
+            'tag_name': 'v0.3.0',
+            'draft': false,
+            'html_url': 'https://example.invalid/3',
+          },
+          {
+            'tag_name': 'v0.5.0',
+            'draft': false,
+            'html_url': 'https://example.invalid/5',
+          },
+          {
+            'tag_name': 'v0.4.0',
+            'draft': false,
+            'html_url': 'https://example.invalid/4',
+          },
         ]),
       );
       final stand = await p.pruefe('0.4.0');
@@ -73,19 +88,22 @@ void main() {
       expect(stand.seitenUrl, 'https://example.invalid/5');
     });
 
-    test('Vorabversionen zählen mit – sonst fände die Prüfung nie etwas', () async {
-      // Genau hier lag der Fehler: /releases/latest überspringt
-      // Vorabversionen, und alle bisherigen Veröffentlichungen sind so
-      // markiert. Die Abfrage lief deshalb in einen 404.
-      final p = Aktualisierungspruefung(
-        dio: dioMit([
-          {'tag_name': 'v0.5.0', 'draft': false, 'prerelease': true},
-        ]),
-      );
-      final stand = await p.pruefe('0.4.0');
-      expect(stand.neueste, 'v0.5.0');
-      expect(stand.istNeuereVerfuegbar, isTrue);
-    });
+    test(
+      'Vorabversionen zählen mit – sonst fände die Prüfung nie etwas',
+      () async {
+        // Genau hier lag der Fehler: /releases/latest überspringt
+        // Vorabversionen, und alle bisherigen Veröffentlichungen sind so
+        // markiert. Die Abfrage lief deshalb in einen 404.
+        final p = Aktualisierungspruefung(
+          dio: dioMit([
+            {'tag_name': 'v0.5.0', 'draft': false, 'prerelease': true},
+          ]),
+        );
+        final stand = await p.pruefe('0.4.0');
+        expect(stand.neueste, 'v0.5.0');
+        expect(stand.istNeuereVerfuegbar, isTrue);
+      },
+    );
 
     test('Entwürfe bleiben aussen vor', () async {
       final p = Aktualisierungspruefung(
@@ -95,15 +113,20 @@ void main() {
         ]),
       );
       final stand = await p.pruefe('0.4.0');
-      expect(stand.neueste, 'v0.4.0',
-          reason: 'ein Entwurf ist noch nicht veröffentlicht');
+      expect(
+        stand.neueste,
+        'v0.4.0',
+        reason: 'ein Entwurf ist noch nicht veröffentlicht',
+      );
       expect(stand.istNeuereVerfuegbar, isFalse);
     });
 
     test('meldet Gleichstand ohne Aufforderung', () async {
-      final p = Aktualisierungspruefung(dio: dioMit([
-        {'tag_name': 'v0.4.0', 'draft': false},
-      ]));
+      final p = Aktualisierungspruefung(
+        dio: dioMit([
+          {'tag_name': 'v0.4.0', 'draft': false},
+        ]),
+      );
       final stand = await p.pruefe('0.4.0');
       expect(stand.istNeuereVerfuegbar, isFalse);
     });
@@ -123,8 +146,11 @@ class _FesteAntwort implements HttpClientAdapter {
   void close({bool force = false}) {}
 
   @override
-  Future<ResponseBody> fetch(RequestOptions options, Stream<List<int>>? requestStream,
-      Future<void>? cancelFuture) async {
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<List<int>>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     return ResponseBody.fromString(
       rumpf,
       200,

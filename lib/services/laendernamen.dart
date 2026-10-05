@@ -284,7 +284,6 @@ const laendernamenDe = <String, String>{
   'ZW': 'Simbabwe',
 };
 
-
 /// Dieselben Namen, aber nachgeschlagen über den **englischen** Namen.
 ///
 /// Denn das ist, was in den Aufnahmen steht: Die Umkehr-Geokodierung
@@ -358,7 +357,8 @@ const _laendernamenDeNachEnglisch = <String, String>{
   'Greenland': 'Grönland',
   'Equatorial Guinea': 'Äquatorialguinea',
   'Greece': 'Griechenland',
-  'South Georgia and the South Sandwich Islands': 'Südgeorgien und die Südlichen Sandwichinseln',
+  'South Georgia and the South Sandwich Islands':
+      'Südgeorgien und die Südlichen Sandwichinseln',
   'Hong Kong': 'Hongkong',
   'Heard Island and McDonald Islands': 'Heard und McDonaldinseln',
   'Croatia': 'Kroatien',

@@ -44,26 +44,32 @@ void main() {
 
   /// Ein Live Photo: Foto und Videohälfte, beide auf dieselbe Sekunde und
   /// denselben Ort, wechselseitig verknüpft – so legt der Import sie an.
-  Future<void> livePhoto(AppDatabase db, String nr,
-      {required DateTime zeit, double? breite, double? laenge}) async {
+  Future<void> livePhoto(
+    AppDatabase db,
+    String nr, {
+    required DateTime zeit,
+    double? breite,
+    double? laenge,
+  }) async {
     for (final (id, typ, endung) in [
       ('$nr-foto', 'IMAGE', 'JPG'),
       ('$nr-video', 'VIDEO', 'MOV'),
     ]) {
-      await db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id.$endung',
-        originalFileName: 'IMG_$nr.$endung',
-        type: typ,
-        checksum: id,
-        fileCreatedAt: zeit,
-        importedAt: zeit,
-        isTrashed: const Value(false),
-        latitude: Value(breite),
-        longitude: Value(laenge),
-        linkedAssetId:
-            Value(typ == 'IMAGE' ? '$nr-video' : '$nr-foto'),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          relativePath: 'originals/$id.$endung',
+          originalFileName: 'IMG_$nr.$endung',
+          type: typ,
+          checksum: id,
+          fileCreatedAt: zeit,
+          importedAt: zeit,
+          isTrashed: const Value(false),
+          latitude: Value(breite),
+          longitude: Value(laenge),
+          linkedAssetId: Value(typ == 'IMAGE' ? '$nr-video' : '$nr-foto'),
+        ),
+      );
     }
   }
 
@@ -71,52 +77,64 @@ void main() {
     late AppDatabase db;
     setUp(() async {
       db = AppDatabase(NativeDatabase.memory());
-      await livePhoto(db, '01',
-          zeit: DateTime(2026, 5, 1, 10), breite: 52.1, laenge: 10.5);
+      await livePhoto(
+        db,
+        '01',
+        zeit: DateTime(2026, 5, 1, 10),
+        breite: 52.1,
+        laenge: 10.5,
+      );
       await livePhoto(db, '02', zeit: DateTime(2026, 5, 1, 11));
       // Ein gewöhnliches Foto und ein eigenständiges Video – beide
       // gehören dazu und dürfen NICHT mit herausfallen.
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'einzeln-foto',
-        relativePath: 'originals/e.jpg',
-        originalFileName: 'e.jpg',
-        type: 'IMAGE',
-        checksum: 'e',
-        fileCreatedAt: DateTime(2026, 5, 1, 12),
-        importedAt: DateTime(2026, 5, 1, 12),
-        isTrashed: const Value(false),
-        latitude: const Value(52.2),
-        longitude: const Value(10.6),
-      ));
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'einzeln-video',
-        relativePath: 'originals/v.mp4',
-        originalFileName: 'v.mp4',
-        type: 'VIDEO',
-        checksum: 'v',
-        fileCreatedAt: DateTime(2026, 5, 1, 13),
-        importedAt: DateTime(2026, 5, 1, 13),
-        isTrashed: const Value(false),
-        latitude: const Value(52.3),
-        longitude: const Value(10.7),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'einzeln-foto',
+          relativePath: 'originals/e.jpg',
+          originalFileName: 'e.jpg',
+          type: 'IMAGE',
+          checksum: 'e',
+          fileCreatedAt: DateTime(2026, 5, 1, 12),
+          importedAt: DateTime(2026, 5, 1, 12),
+          isTrashed: const Value(false),
+          latitude: const Value(52.2),
+          longitude: const Value(10.6),
+        ),
+      );
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'einzeln-video',
+          relativePath: 'originals/v.mp4',
+          originalFileName: 'v.mp4',
+          type: 'VIDEO',
+          checksum: 'v',
+          fileCreatedAt: DateTime(2026, 5, 1, 13),
+          importedAt: DateTime(2026, 5, 1, 13),
+          isTrashed: const Value(false),
+          latitude: const Value(52.3),
+          longitude: const Value(10.7),
+        ),
+      );
     });
     tearDown(() => db.close());
 
     test('die verortete Videohälfte fällt heraus, das Foto bleibt', () async {
       final ids = {
-        for (final a in await db.aufnahmenFuerReiseerkennung()) a.id
+        for (final a in await db.aufnahmenFuerReiseerkennung()) a.id,
       };
       expect(ids, contains('01-foto'));
-      expect(ids, isNot(contains('01-video')),
-          reason: 'sonst bildet sie hinterher einen eigenen Vorschlag');
+      expect(
+        ids,
+        isNot(contains('01-video')),
+        reason: 'sonst bildet sie hinterher einen eigenen Vorschlag',
+      );
     });
 
     test('ein eigenständiges Video bleibt drin', () async {
       // Die Gegenprobe: Es geht um die HÄLFTE eines Live Photos, nicht um
       // Videos. Ein Video von der Wanderung ist eine Aufnahme wie jede.
       final ids = {
-        for (final a in await db.aufnahmenFuerReiseerkennung()) a.id
+        for (final a in await db.aufnahmenFuerReiseerkennung()) a.id,
       };
       expect(ids, contains('einzeln-video'));
       expect(ids, contains('einzeln-foto'));
@@ -140,8 +158,13 @@ void main() {
 
     test('eine Zuordnung auf die Videohälfte wird zum Foto', () async {
       var db = AppDatabase(NativeDatabase(datei));
-      await livePhoto(db, '01',
-          zeit: DateTime(2026, 5, 1, 10), breite: 52.1, laenge: 10.5);
+      await livePhoto(
+        db,
+        '01',
+        zeit: DateTime(2026, 5, 1, 10),
+        breite: 52.1,
+        laenge: 10.5,
+      );
       await db.aktivitaetAnlegen(
         AktivitaetenCompanion.insert(
           id: 'a1',
@@ -165,42 +188,58 @@ void main() {
       await db.close();
 
       expect(fassung, await aktuelleFassung());
-      expect(drin.map((a) => a.id), ['01-foto'],
-          reason: 'die Aktivität bestand aus einem Videoschnipsel und '
-              'keinem einzigen Foto');
-    });
-
-    test('ist das Foto schon zugeordnet, bleibt es bei einem Eintrag',
-        () async {
-      // Der Fall, an dem eine Reparatur ohne `INSERT OR IGNORE` jedes Live
-      // Photo verdoppelt hätte.
-      var db = AppDatabase(NativeDatabase(datei));
-      await livePhoto(db, '01',
-          zeit: DateTime(2026, 5, 1, 10), breite: 52.1, laenge: 10.5);
-      await db.aktivitaetAnlegen(
-        AktivitaetenCompanion.insert(
-          id: 'a1',
-          name: 'Köln',
-          art: 'spaziergang',
-          von: DateTime(2026, 5, 1, 9),
-          bis: DateTime(2026, 5, 1, 11),
-          angelegtAm: DateTime(2026, 5, 1),
-        ),
-        const ['01-foto', '01-video'],
+      expect(
+        drin.map((a) => a.id),
+        ['01-foto'],
+        reason:
+            'die Aktivität bestand aus einem Videoschnipsel und '
+            'keinem einzigen Foto',
       );
-      await db.close();
-      await aufFassung64();
-
-      db = AppDatabase(NativeDatabase(datei));
-      final drin = await db.aufnahmenDerAktivitaet('a1');
-      await db.close();
-      expect(drin.map((a) => a.id), ['01-foto']);
     });
+
+    test(
+      'ist das Foto schon zugeordnet, bleibt es bei einem Eintrag',
+      () async {
+        // Der Fall, an dem eine Reparatur ohne `INSERT OR IGNORE` jedes Live
+        // Photo verdoppelt hätte.
+        var db = AppDatabase(NativeDatabase(datei));
+        await livePhoto(
+          db,
+          '01',
+          zeit: DateTime(2026, 5, 1, 10),
+          breite: 52.1,
+          laenge: 10.5,
+        );
+        await db.aktivitaetAnlegen(
+          AktivitaetenCompanion.insert(
+            id: 'a1',
+            name: 'Köln',
+            art: 'spaziergang',
+            von: DateTime(2026, 5, 1, 9),
+            bis: DateTime(2026, 5, 1, 11),
+            angelegtAm: DateTime(2026, 5, 1),
+          ),
+          const ['01-foto', '01-video'],
+        );
+        await db.close();
+        await aufFassung64();
+
+        db = AppDatabase(NativeDatabase(datei));
+        final drin = await db.aufnahmenDerAktivitaet('a1');
+        await db.close();
+        expect(drin.map((a) => a.id), ['01-foto']);
+      },
+    );
 
     test('eine Reise wird genauso berichtigt', () async {
       var db = AppDatabase(NativeDatabase(datei));
-      await livePhoto(db, '01',
-          zeit: DateTime(2026, 5, 1, 10), breite: 52.1, laenge: 10.5);
+      await livePhoto(
+        db,
+        '01',
+        zeit: DateTime(2026, 5, 1, 10),
+        breite: 52.1,
+        laenge: 10.5,
+      );
       await db.reiseAnlegen(
         ReisenCompanion.insert(
           id: 'r1',
@@ -226,16 +265,18 @@ void main() {
       // hat kein Foto, auf das sich umbiegen liesse – es wäre sonst
       // spurlos verschwunden.
       var db = AppDatabase(NativeDatabase(datei));
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'v1',
-        relativePath: 'originals/v.mp4',
-        originalFileName: 'v.mp4',
-        type: 'VIDEO',
-        checksum: 'v',
-        fileCreatedAt: DateTime(2026, 5, 1, 10),
-        importedAt: DateTime(2026, 5, 1, 10),
-        isTrashed: const Value(false),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'v1',
+          relativePath: 'originals/v.mp4',
+          originalFileName: 'v.mp4',
+          type: 'VIDEO',
+          checksum: 'v',
+          fileCreatedAt: DateTime(2026, 5, 1, 10),
+          importedAt: DateTime(2026, 5, 1, 10),
+          isTrashed: const Value(false),
+        ),
+      );
       await db.aktivitaetAnlegen(
         AktivitaetenCompanion.insert(
           id: 'a1',

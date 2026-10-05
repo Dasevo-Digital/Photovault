@@ -35,7 +35,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_stammbaum_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -51,20 +53,30 @@ void main() {
       ('schwester', 'Schwester', 1965, 'w'),
       ('uropa', 'Uropa', 1874, 'm'),
     ]) {
-      await db.createPerson(PeopleCompanion.insert(
-        id: id,
-        name: name,
-        geburtsdatum: Value(DateTime(jahr)),
-        geschlecht: Value(geschlecht),
-      ));
+      await db.createPerson(
+        PeopleCompanion.insert(
+          id: id,
+          name: name,
+          geburtsdatum: Value(DateTime(jahr)),
+          geschlecht: Value(geschlecht),
+        ),
+      );
     }
     await db.fuegeBeziehungHinzu('vater', 'opa', Verwandtschaft.elternteil);
     await db.fuegeBeziehungHinzu('vater', 'oma', Verwandtschaft.elternteil);
     await db.fuegeBeziehungHinzu('vater', 'mutter', Verwandtschaft.partner);
     await db.fuegeBeziehungHinzu('kind', 'vater', Verwandtschaft.elternteil);
     await db.fuegeBeziehungHinzu('kind', 'mutter', Verwandtschaft.elternteil);
-    await db.fuegeBeziehungHinzu('schwester', 'vater', Verwandtschaft.elternteil);
-    await db.fuegeBeziehungHinzu('schwester', 'mutter', Verwandtschaft.elternteil);
+    await db.fuegeBeziehungHinzu(
+      'schwester',
+      'vater',
+      Verwandtschaft.elternteil,
+    );
+    await db.fuegeBeziehungHinzu(
+      'schwester',
+      'mutter',
+      Verwandtschaft.elternteil,
+    );
     await db.fuegeBeziehungHinzu('opa', 'uropa', Verwandtschaft.elternteil);
   });
 
@@ -78,50 +90,60 @@ void main() {
   /// Der Zierbaum hat zwei Farbsätze, und der zweite ist der, den man
   /// vergisst. Ein Goldbild je Fassung ist das Gegenmittel.
   Future<void> zeigeHell(WidgetTester tester, String start) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildLightTheme(),
-      home: StammbaumScreen(library: library, startPersonId: start),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildLightTheme(),
+        home: StammbaumScreen(library: library, startPersonId: start),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
   /// Der Bildschirm wird auf eine Route geschoben statt als `home` gesetzt:
   /// Nur dann gibt es einen Zurück-Pfeil, und nur dann lässt sich prüfen,
   /// dass er erst dem Weg durch den Baum folgt.
-  Future<void> zeige(WidgetTester tester, String start,
-      {double schriftfaktor = 1.0}) async {
-    await tester.pumpWidget(MaterialApp(
-      // Eigener Schlüssel je Durchgang: Ohne ihn behält ein zweiter
-      // Aufruf im selben Prüfstand den Navigator des ersten, und der
-      // Knopf „auf" ist dann gar nicht mehr da.
-      key: ValueKey('$start-$schriftfaktor'),
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      builder: schriftfaktor == 1.0
-          ? null
-          : (context, kind) => MediaQuery.withClampedTextScaling(
-              minScaleFactor: schriftfaktor,
-              maxScaleFactor: schriftfaktor,
-              child: kind!),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) =>
-                    StammbaumScreen(library: library, startPersonId: start),
-              )),
-              child: const Text('auf'),
+  Future<void> zeige(
+    WidgetTester tester,
+    String start, {
+    double schriftfaktor = 1.0,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        // Eigener Schlüssel je Durchgang: Ohne ihn behält ein zweiter
+        // Aufruf im selben Prüfstand den Navigator des ersten, und der
+        // Knopf „auf" ist dann gar nicht mehr da.
+        key: ValueKey('$start-$schriftfaktor'),
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: schriftfaktor == 1.0
+            ? null
+            : (context, kind) => MediaQuery.withClampedTextScaling(
+                minScaleFactor: schriftfaktor,
+                maxScaleFactor: schriftfaktor,
+                child: kind!,
+              ),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        StammbaumScreen(library: library, startPersonId: start),
+                  ),
+                ),
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     await tester.pumpAndSettle();
   }
@@ -144,8 +166,9 @@ void main() {
     expect(find.text('Schwester'), findsNWidgets(2));
   });
 
-  testWidgets('zeigt Partner und Kinder der Person in der Mitte',
-      (tester) async {
+  testWidgets('zeigt Partner und Kinder der Person in der Mitte', (
+    tester,
+  ) async {
     await zeige(tester, 'vater');
 
     // Die Mutter wohnt jetzt IM Haushalt des Vaters – sie steht neben
@@ -159,8 +182,9 @@ void main() {
     expect(find.text('Tochter'), findsOneWidget);
   });
 
-  testWidgets('ein Klick rückt die angetippte Person in die Mitte',
-      (tester) async {
+  testWidgets('ein Klick rückt die angetippte Person in die Mitte', (
+    tester,
+  ) async {
     await zeige(tester, 'kind');
     // Der Zierbaum reicht weiter als der Reihenbaum: Großeltern und
     // Urgroßvater stehen von Anfang an im Bild.
@@ -176,18 +200,25 @@ void main() {
     // Jetzt steht der Vater in der Mitte: Das Kind heisst von dort aus
     // „Sohn", und die Großeltern sind zu Eltern geworden.
     expect(find.text('Sohn'), findsOneWidget);
-    expect(find.text('Urgroßvater'), findsNothing,
-        reason: 'von hier aus ist Uropa der Großvater');
+    expect(
+      find.text('Urgroßvater'),
+      findsNothing,
+      reason: 'von hier aus ist Uropa der Großvater',
+    );
   });
 
-  testWidgets('der Zurück-Pfeil folgt dem eigenen Weg durch den Baum',
-      (tester) async {
+  testWidgets('der Zurück-Pfeil folgt dem eigenen Weg durch den Baum', (
+    tester,
+  ) async {
     await zeige(tester, 'kind');
     expect(find.text('Urgroßvater'), findsOneWidget);
     await tester.tap(find.text('Vater').first);
     await tester.pumpAndSettle();
-    expect(find.text('Urgroßvater'), findsNothing,
-        reason: 'von hier aus ist Uropa der Großvater');
+    expect(
+      find.text('Urgroßvater'),
+      findsNothing,
+      reason: 'von hier aus ist Uropa der Großvater',
+    );
 
     // Nicht tester.pageBack(): das sucht nach der Beschriftung "Back",
     // und die Oberfläche läuft hier auf Deutsch.
@@ -197,32 +228,42 @@ void main() {
     // Zurück beim Kind – und nicht aus dem Stammbaum heraus.
     expect(find.byType(StammbaumScreen), findsOneWidget);
     expect(find.text('Urgroßvater'), findsOneWidget);
-    expect(find.text('Schwester'), findsNWidgets(2),
-        reason: 'Name und Verhältnis, beide auf ihrem Schild');
+    expect(
+      find.text('Schwester'),
+      findsNWidgets(2),
+      reason: 'Name und Verhältnis, beide auf ihrem Schild',
+    );
   });
 
-  testWidgets('weist auf Verwandtschaft hin, die außerhalb des Bildes liegt',
-      (tester) async {
+  testWidgets('weist auf Verwandtschaft hin, die außerhalb des Bildes liegt', (
+    tester,
+  ) async {
     // Der Zierbaum reicht bis zu den Urgroßeltern. Erst eine Generation
     // darüber liegt draussen – und dann trägt der Urgroßvater das
     // Zeichen, sonst niemand.
     await db.createPerson(
-        PeopleCompanion.insert(id: 'ururopa', name: 'Ururopa'));
+      PeopleCompanion.insert(id: 'ururopa', name: 'Ururopa'),
+    );
     await db.fuegeBeziehungHinzu('uropa', 'ururopa', Verwandtschaft.elternteil);
 
     await zeige(tester, 'kind');
 
     expect(find.text('Uropa'), findsOneWidget);
     expect(find.text('Ururopa'), findsNothing, reason: 'zu weit draussen');
-    expect(find.byIcon(Icons.more_horiz), findsOneWidget,
-        reason: 'genau am Urgroßvater, über dem es weitergeht');
+    expect(
+      find.byIcon(Icons.more_horiz),
+      findsOneWidget,
+      reason: 'genau am Urgroßvater, über dem es weitergeht',
+    );
   });
 
   testWidgets('eine Verbindung lässt sich lösen', (tester) async {
     await zeige(tester, 'kind');
 
     final maus = await tester.createGesture(
-        kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
     await maus.down(tester.getCenter(find.text('Mutter').first));
     await maus.up();
     await tester.pumpAndSettle();
@@ -256,27 +297,46 @@ void main() {
     expect(find.text('Mutter'), findsNWidgets(2));
     // Die Schwester heißt „Schwester" und ist eine – auch zwei Treffer.
     expect(find.text('Schwester'), findsNWidgets(2));
-    expect(find.text('Großvater'), findsOneWidget,
-        reason: 'der Zierbaum reicht bis zu den Urgroßeltern');
+    expect(
+      find.text('Großvater'),
+      findsOneWidget,
+      reason: 'der Zierbaum reicht bis zu den Urgroßeltern',
+    );
     // Auf der Karte in der Mitte steht keine Bezeichnung.
     expect(find.text('diese Person'), findsNothing);
   });
 
-  testWidgets('die Eltern des Schwagers heissen nach dem Weg zu ihnen',
-      (tester) async {
+  testWidgets('die Eltern des Schwagers heissen nach dem Weg zu ihnen', (
+    tester,
+  ) async {
     // Der Anlass der ganzen Runde: Bis hierher stand bei diesen Personen
     // „angeheiratet" – dieselbe Auskunft, die auch ein wildfremder
     // Vetter bekäme. Und die Rechnung allein beweist nichts: Der Baum
     // muss sie auch abrufen.
-    await db.createPerson(PeopleCompanion.insert(
-        id: 'schwager', name: 'Michael', geschlecht: const Value('m')));
-    await db.createPerson(PeopleCompanion.insert(
+    await db.createPerson(
+      PeopleCompanion.insert(
+        id: 'schwager',
+        name: 'Michael',
+        geschlecht: const Value('m'),
+      ),
+    );
+    await db.createPerson(
+      PeopleCompanion.insert(
         id: 'schwiegermutterDerSchwester',
         name: 'Petra',
-        geschlecht: const Value('w')));
-    await db.fuegeBeziehungHinzu('schwester', 'schwager', Verwandtschaft.partner);
+        geschlecht: const Value('w'),
+      ),
+    );
     await db.fuegeBeziehungHinzu(
-        'schwager', 'schwiegermutterDerSchwester', Verwandtschaft.elternteil);
+      'schwester',
+      'schwager',
+      Verwandtschaft.partner,
+    );
+    await db.fuegeBeziehungHinzu(
+      'schwager',
+      'schwiegermutterDerSchwester',
+      Verwandtschaft.elternteil,
+    );
 
     // Angeheiratetes steht am Ende der Liste – ein hohes Fenster, sonst
     // ist die Zeile schlicht noch nicht gebaut und der Sucher findet
@@ -289,18 +349,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Mutter von Schwager Michael'), findsOneWidget);
-    expect(find.text('angeheiratet'), findsNothing,
-        reason: 'für diese Person gibt es jetzt eine Auskunft');
+    expect(
+      find.text('angeheiratet'),
+      findsNothing,
+      reason: 'für diese Person gibt es jetzt eine Auskunft',
+    );
   });
 
-  testWidgets('das Geschlecht entscheidet über die Bezeichnung',
-      (tester) async {
+  testWidgets('das Geschlecht entscheidet über die Bezeichnung', (
+    tester,
+  ) async {
     await db.setzeGeschlecht('schwester', null);
     await zeige(tester, 'kind');
     // Ohne Angabe lautet die Bezeichnung „Geschwister" – zusammen mit der
     // Überschrift also zwei Treffer. Mit Angabe stand dort „Schwester".
-    expect(find.text('Geschwister'), findsOneWidget,
-        reason: 'ohne Angabe die neutrale Form');
+    expect(
+      find.text('Geschwister'),
+      findsOneWidget,
+      reason: 'ohne Angabe die neutrale Form',
+    );
     expect(find.text('Schwester'), findsOneWidget, reason: 'nur noch der Name');
   });
 
@@ -316,8 +383,9 @@ void main() {
     expect(find.text('Opa'), findsOneWidget);
   });
 
-  testWidgets('die Liste stellt die nächsten Angehörigen voran',
-      (tester) async {
+  testWidgets('die Liste stellt die nächsten Angehörigen voran', (
+    tester,
+  ) async {
     await zeige(tester, 'kind');
     await tester.tap(find.text('Verwandte'));
     await tester.pumpAndSettle();
@@ -332,24 +400,28 @@ void main() {
     expect(namen.last, 'Uropa');
   });
 
-  testWidgets('ohne Vorgabe wählt der Bildschirm selbst eine Person',
-      (tester) async {
+  testWidgets('ohne Vorgabe wählt der Bildschirm selbst eine Person', (
+    tester,
+  ) async {
     // Über den Menüpunkt geöffnet gibt es keine Startperson. Genommen wird
     // die mit den meisten Verwandten – hier der Vater (zwei Eltern, zwei
     // Kinder, eine Partnerin).
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: StammbaumScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: StammbaumScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Stammbaum: Vater'), findsOneWidget);
   });
 
-  testWidgets('der Fächer zeigt Generationen, die der Baum nicht zeigt',
-      (tester) async {
+  testWidgets('der Fächer zeigt Generationen, die der Baum nicht zeigt', (
+    tester,
+  ) async {
     await zeige(tester, 'kind');
     await tester.tap(find.text('Fächer'));
     await tester.pumpAndSettle();
@@ -357,17 +429,20 @@ void main() {
     // Im Baum stehen die Großeltern nicht – im Fächer schon, als äußerer
     // Ring. Gezeichnet wird auf Leinwand, also prüft der Test die Daten
     // dahinter statt der Pixel.
-    final maler = tester.widget<CustomPaint>(find.descendant(
-      of: find.byType(FaecherAnsicht),
-      matching: find.byType(CustomPaint),
-    ));
+    final maler = tester.widget<CustomPaint>(
+      find.descendant(
+        of: find.byType(FaecherAnsicht),
+        matching: find.byType(CustomPaint),
+      ),
+    );
     expect(maler.painter, isNotNull);
     // Und das Abbild weiter unten zeigt, dass daraus auch etwas wird.
     expect(find.byType(FaecherAnsicht), findsOneWidget);
   });
 
-  testWidgets('die Nachfahrengliederung rückt jede Generation ein',
-      (tester) async {
+  testWidgets('die Nachfahrengliederung rückt jede Generation ein', (
+    tester,
+  ) async {
     await zeige(tester, 'opa');
     await tester.tap(find.text('Nachfahren'));
     await tester.pumpAndSettle();
@@ -385,14 +460,17 @@ void main() {
     expect(x['Kind']!, greaterThan(x['Vater']!));
   });
 
-  testWidgets('ohne Vorfahren erklärt der Fächer, was er zeigen würde',
-      (tester) async {
+  testWidgets('ohne Vorfahren erklärt der Fächer, was er zeigen würde', (
+    tester,
+  ) async {
     // Der Urgroßvater ist die einzige Person ohne eingetragene Eltern.
     await zeige(tester, 'uropa');
     await tester.tap(find.text('Fächer'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('noch keine Vorfahren eingetragen'),
-        findsOneWidget);
+    expect(
+      find.textContaining('noch keine Vorfahren eingetragen'),
+      findsOneWidget,
+    );
   });
 
   group('grössere Systemschrift', () {
@@ -410,19 +488,30 @@ void main() {
       await zeige(tester, 'kind');
       final normal = tester.getSize(find.text('Kind'));
       final schildNormal = tester.getSize(
-          find.ancestor(of: find.text('Kind'), matching: find.byType(Stack)).first);
+        find
+            .ancestor(of: find.text('Kind'), matching: find.byType(Stack))
+            .first,
+      );
 
       await zeige(tester, 'kind', schriftfaktor: 1.5);
       final gross = tester.getSize(find.text('Kind'));
       final schildGross = tester.getSize(
-          find.ancestor(of: find.text('Kind'), matching: find.byType(Stack)).first);
+        find
+            .ancestor(of: find.text('Kind'), matching: find.byType(Stack))
+            .first,
+      );
 
-      expect(gross.height / normal.height, closeTo(1.5, 0.15),
-          reason: 'die Schrift wird wirklich grösser');
-      expect(schildGross.width / schildNormal.width, closeTo(1.5, 0.05),
-          reason: 'und das Schild im selben Mass – sonst läuft es über');
+      expect(
+        gross.height / normal.height,
+        closeTo(1.5, 0.15),
+        reason: 'die Schrift wird wirklich grösser',
+      );
+      expect(
+        schildGross.width / schildNormal.width,
+        closeTo(1.5, 0.05),
+        reason: 'und das Schild im selben Mass – sonst läuft es über',
+      );
     });
-
   });
 
   group('den Baum bewegen', () {
@@ -440,7 +529,10 @@ void main() {
       // oder einer Magic Mouse kam man damit nicht an seinen Rand.
       await zeigeGross(tester);
       final vorher = tester.getRect(find.text('Kind'));
-      await tester.drag(find.byType(InteractiveViewer), const Offset(-120, -60));
+      await tester.drag(
+        find.byType(InteractiveViewer),
+        const Offset(-120, -60),
+      );
       await tester.pumpAndSettle();
       final nachher = tester.getRect(find.text('Kind'));
       // Nicht auf den Punkt: Die Gestenerkennung schluckt die ersten
@@ -451,19 +543,25 @@ void main() {
       expect(nachher.top, lessThan(vorher.top - 20));
     });
 
-    testWidgets('die Zoomknöpfe machen den Baum grösser und wieder kleiner',
-        (tester) async {
+    testWidgets('die Zoomknöpfe machen den Baum grösser und wieder kleiner', (
+      tester,
+    ) async {
       await zeigeGross(tester);
       final vorher = tester.getRect(find.text('Kind'));
       await tester.tap(find.byTooltip('Näher heran'));
       await tester.pumpAndSettle();
       final nah = tester.getRect(find.text('Kind'));
-      expect(nah.width, greaterThan(vorher.width),
-          reason: 'ein Zoomschritt muss zu sehen sein');
+      expect(
+        nah.width,
+        greaterThan(vorher.width),
+        reason: 'ein Zoomschritt muss zu sehen sein',
+      );
       await tester.tap(find.byTooltip('Weiter weg'));
       await tester.pumpAndSettle();
-      expect(tester.getRect(find.text('Kind')).width,
-          closeTo(vorher.width, 0.5));
+      expect(
+        tester.getRect(find.text('Kind')).width,
+        closeTo(vorher.width, 0.5),
+      );
     });
 
     testWidgets('„Ganz zeigen" holt den ganzen Baum ins Bild', (tester) async {
@@ -488,8 +586,7 @@ void main() {
       }
     });
 
-    testWidgets('ein Klick auf eine Person rückt sie ins Bild',
-        (tester) async {
+    testWidgets('ein Klick auf eine Person rückt sie ins Bild', (tester) async {
       // Vorher begann der Ausschnitt in der linken oberen Ecke des
       // Baumes. Wer eine Person in die Mitte setzte, musste sie danach
       // erst suchen.
@@ -502,8 +599,11 @@ void main() {
       await tester.pumpAndSettle();
       final fenster = tester.getRect(find.byType(InteractiveViewer));
       final kasten = tester.getRect(find.text('Opa'));
-      expect(fenster.contains(kasten.center), isTrue,
-          reason: 'die neue Mitte muss zu sehen sein');
+      expect(
+        fenster.contains(kasten.center),
+        isTrue,
+        reason: 'die neue Mitte muss zu sehen sein',
+      );
     });
   });
 
@@ -574,12 +674,15 @@ void main() {
     await zeige(tester, 'kind');
     await tester.tap(find.text('Sanduhr'));
     await tester.pumpAndSettle();
-    await expectLater(find.byType(StammbaumScreen),
-        matchesGoldenFile('golden/stammbaum_sanduhr.png'));
+    await expectLater(
+      find.byType(StammbaumScreen),
+      matchesGoldenFile('golden/stammbaum_sanduhr.png'),
+    );
   }, skip: nurAufReferenzplattform);
 
-  testWidgets('die Sanduhr zeigt mehrere Generationen auf einmal',
-      (tester) async {
+  testWidgets('die Sanduhr zeigt mehrere Generationen auf einmal', (
+    tester,
+  ) async {
     await zeige(tester, 'kind');
     await tester.tap(find.text('Sanduhr'));
     await tester.pumpAndSettle();
@@ -608,22 +711,28 @@ void main() {
   /// Ein paar Daten mehr, damit auf der Zeitleiste etwas zu sehen ist:
   /// ein abgeschlossenes Leben, eine Hochzeit, ein Umzug.
   Future<void> lebenslaeufe() async {
-    await (db.update(db.people)..where((t) => t.id.equals('opa')))
-        .write(PeopleCompanion(sterbedatum: Value(DateTime(1980, 3, 4))));
-    await (db.update(db.people)..where((t) => t.id.equals('uropa')))
-        .write(PeopleCompanion(sterbedatum: Value(DateTime(1941, 8, 1))));
-    await db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-      id: 'hochzeit',
-      personId: 'vater',
-      art: 'hochzeit',
-      datum: Value(DateTime(1958, 6, 21)),
-    ));
-    await db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-      id: 'umzug',
-      personId: 'vater',
-      art: 'umzug',
-      datum: Value(DateTime(1970, 9, 1)),
-    ));
+    await (db.update(db.people)..where((t) => t.id.equals('opa'))).write(
+      PeopleCompanion(sterbedatum: Value(DateTime(1980, 3, 4))),
+    );
+    await (db.update(db.people)..where((t) => t.id.equals('uropa'))).write(
+      PeopleCompanion(sterbedatum: Value(DateTime(1941, 8, 1))),
+    );
+    await db.fuegeEreignisHinzu(
+      LebensereignisseCompanion.insert(
+        id: 'hochzeit',
+        personId: 'vater',
+        art: 'hochzeit',
+        datum: Value(DateTime(1958, 6, 21)),
+      ),
+    );
+    await db.fuegeEreignisHinzu(
+      LebensereignisseCompanion.insert(
+        id: 'umzug',
+        personId: 'vater',
+        art: 'umzug',
+        datum: Value(DateTime(1970, 9, 1)),
+      ),
+    );
   }
 
   /// Öffnet die Zeitleiste.
@@ -631,8 +740,11 @@ void main() {
   /// Mit breiterem Fenster: Die Ansichtsauswahl hat sechs Abschnitte und
   /// liegt in einer waagerecht schiebbaren Zeile – bei 800 Pixeln steht
   /// der letzte außerhalb des Bildes und lässt sich nicht antippen.
-  Future<void> zeigeZeitleiste(WidgetTester tester, String start,
-      {Size groesse = const Size(1040, 620)}) async {
+  Future<void> zeigeZeitleiste(
+    WidgetTester tester,
+    String start, {
+    Size groesse = const Size(1040, 620),
+  }) async {
     tester.view.physicalSize = groesse;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -641,8 +753,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('die Zeitleiste ordnet die Zeilen nach der Zeit',
-      (tester) async {
+  testWidgets('die Zeitleiste ordnet die Zeilen nach der Zeit', (tester) async {
     // Das, was keine der anderen vier Ansichten zeigt: Gleichzeitigkeit.
     // Geprüft wird die Reihenfolge von oben nach unten, nicht das Bild.
     await lebenslaeufe();
@@ -651,13 +762,17 @@ void main() {
     double y(String name) => tester.getTopLeft(find.text(name)).dy;
     final reihenfolge = ['Uropa', 'Opa', 'Oma', 'Vater', 'Mutter', 'Kind'];
     for (var i = 1; i < reihenfolge.length; i++) {
-      expect(y(reihenfolge[i - 1]), lessThan(y(reihenfolge[i])),
-          reason: '${reihenfolge[i - 1]} vor ${reihenfolge[i]}');
+      expect(
+        y(reihenfolge[i - 1]),
+        lessThan(y(reihenfolge[i])),
+        reason: '${reihenfolge[i - 1]} vor ${reihenfolge[i]}',
+      );
     }
   });
 
-  testWidgets('ein Tipp auf eine Zeile rueckt die Person in die Mitte',
-      (tester) async {
+  testWidgets('ein Tipp auf eine Zeile rueckt die Person in die Mitte', (
+    tester,
+  ) async {
     await lebenslaeufe();
     await zeigeZeitleiste(tester, 'kind');
     await tester.tap(find.text('Uropa'));
@@ -667,8 +782,11 @@ void main() {
     // Hervorhebung eine Farbe, und eine Farbe ist kein Beleg.
     await tester.tap(find.text('Baum'));
     await tester.pumpAndSettle();
-    expect(find.text('Sohn'), findsWidgets,
-        reason: 'Opa ist der Sohn des Uropas – und das steht auf seinem Schild');
+    expect(
+      find.text('Sohn'),
+      findsWidgets,
+      reason: 'Opa ist der Sohn des Uropas – und das steht auf seinem Schild',
+    );
     expect(find.text('Opa'), findsWidgets);
   });
 
@@ -687,43 +805,62 @@ void main() {
       for (final knoten in tester.semantics.simulatedAccessibilityTraversal())
         if (knoten.label.isNotEmpty) knoten.label,
     ];
-    expect(gelesen, containsAll([
-      'Uropa, 1874–1941',
-      'Opa, 1901–1980',
-      'Oma, Geboren 1903',
-      'Vater, Geboren 1931, 2 Ereignisse',
-    ]));
+    expect(
+      gelesen,
+      containsAll([
+        'Uropa, 1874–1941',
+        'Opa, 1901–1980',
+        'Oma, Geboren 1903',
+        'Vater, Geboren 1931, 2 Ereignisse',
+      ]),
+    );
     // Auch die Reihenfolge stimmt: Wer sich die Leiste vorlesen lässt,
     // bekommt sie chronologisch und nicht in der Reihenfolge der
     // Datenbank.
-    expect(gelesen.indexOf('Uropa, 1874–1941'),
-        lessThan(gelesen.indexOf('Kind, Geboren 1962')));
+    expect(
+      gelesen.indexOf('Uropa, 1874–1941'),
+      lessThan(gelesen.indexOf('Kind, Geboren 1962')),
+    );
     semantik.dispose();
   });
 
-  testWidgets('ohne ein einziges Datum sagt die Zeitleiste, was ihr fehlt',
-      (tester) async {
+  testWidgets('ohne ein einziges Datum sagt die Zeitleiste, was ihr fehlt', (
+    tester,
+  ) async {
     // Nicht „keine Verwandten": Die Personen sind da, nur ihre Zeit ist
     // es nicht. Es gäbe keine Achse, auf der etwas läge.
-    for (final id in ['opa', 'oma', 'vater', 'mutter', 'kind', 'schwester',
-      'uropa']) {
-      await (db.update(db.people)..where((t) => t.id.equals(id)))
-          .write(const PeopleCompanion(geburtsdatum: Value(null)));
+    for (final id in [
+      'opa',
+      'oma',
+      'vater',
+      'mutter',
+      'kind',
+      'schwester',
+      'uropa',
+    ]) {
+      await (db.update(db.people)..where((t) => t.id.equals(id))).write(
+        const PeopleCompanion(geburtsdatum: Value(null)),
+      );
     }
     await zeigeZeitleiste(tester, 'kind');
-    expect(find.textContaining('Auf der Zeitleiste steht noch nichts'),
-        findsOneWidget);
+    expect(
+      find.textContaining('Auf der Zeitleiste steht noch nichts'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('so sieht die Zeitleiste aus', (tester) async {
     await lebenslaeufe();
     await zeigeZeitleiste(tester, 'kind');
-    await expectLater(find.byType(StammbaumScreen),
-        matchesGoldenFile('golden/stammbaum_zeitleiste.png'));
+    await expectLater(
+      find.byType(StammbaumScreen),
+      matchesGoldenFile('golden/stammbaum_zeitleiste.png'),
+    );
   }, skip: nurAufReferenzplattform);
 
-  testWidgets('die Familienstatistik rechnet die Lebenden nicht als null',
-      (tester) async {
+  testWidgets('die Familienstatistik rechnet die Lebenden nicht als null', (
+    tester,
+  ) async {
     // Der Fall, vor dem der Plan ausdrücklich warnte, und der einzige
     // Weg, ihn zu sehen: Die Zahl selbst ist plausibel, gleich welche
     // von beiden dasteht.
@@ -743,13 +880,15 @@ void main() {
 
     expect(find.byType(FamilienstatistikScreen), findsOneWidget);
     expect(find.text('73 Jahre'), findsOneWidget);
-    expect(find.textContaining('20,9'), findsNothing,
-        reason: 'das waere der Durchschnitt mit den Lebenden als null');
+    expect(
+      find.textContaining('20,9'),
+      findsNothing,
+      reason: 'das waere der Durchschnitt mit den Lebenden als null',
+    );
 
     // Und die Zahl der Ausgeschlossenen steht daneben – ohne sie waere
     // das Ergebnis wieder nur eine halbe Auskunft.
-    expect(find.textContaining('5 Personen ohne Sterbedatum'),
-        findsOneWidget);
+    expect(find.textContaining('5 Personen ohne Sterbedatum'), findsOneWidget);
     expect(find.textContaining('Wer noch lebt'), findsOneWidget);
 
     // Das Heiratsalter kommt aus dem Ereignis, nicht aus einer Spalte.
@@ -776,12 +915,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Familienstatistik'));
     await tester.pumpAndSettle();
-    await expectLater(find.byType(FamilienstatistikScreen),
-        matchesGoldenFile('golden/familienstatistik.png'));
+    await expectLater(
+      find.byType(FamilienstatistikScreen),
+      matchesGoldenFile('golden/familienstatistik.png'),
+    );
   }, skip: nurAufReferenzplattform);
 
-  testWidgets('ohne Lebensdaten steht ein Satz statt leerer Kacheln',
-      (tester) async {
+  testWidgets('ohne Lebensdaten steht ein Satz statt leerer Kacheln', (
+    tester,
+  ) async {
     // Frueher standen hier zwei Kacheln „keine Angabe" nebeneinander. Das
     // sah aus wie ein Fehler des Programms, dabei fehlten schlicht die
     // Eintraege. Jetzt steht ein Satz da, der sagt, was fehlt – und die
@@ -789,10 +931,18 @@ void main() {
     tester.view.physicalSize = const Size(1040, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    for (final id in ['opa', 'oma', 'vater', 'mutter', 'kind', 'schwester',
-      'uropa']) {
-      await (db.update(db.people)..where((t) => t.id.equals(id)))
-          .write(const PeopleCompanion(geburtsdatum: Value(null)));
+    for (final id in [
+      'opa',
+      'oma',
+      'vater',
+      'mutter',
+      'kind',
+      'schwester',
+      'uropa',
+    ]) {
+      await (db.update(db.people)..where((t) => t.id.equals(id))).write(
+        const PeopleCompanion(geburtsdatum: Value(null)),
+      );
     }
     await zeige(tester, 'kind');
     await tester.tap(find.byType(PopupMenuButton<String>));
@@ -803,23 +953,32 @@ void main() {
     expect(find.text('keine Angabe'), findsNothing);
     expect(find.text('Lebensalter'), findsNothing);
     expect(find.text('Heiratsalter'), findsNothing);
-    expect(find.textContaining('Photo Vault schätzt sie nicht'),
-        findsOneWidget);
+    expect(
+      find.textContaining('Photo Vault schätzt sie nicht'),
+      findsOneWidget,
+    );
     await tester.scrollUntilVisible(find.text('Kinder je Person'), 200);
-    expect(find.text('Kinder je Person'), findsOneWidget,
-        reason: 'die Verteilung braucht keine Daten und steht weiter da');
+    expect(
+      find.text('Kinder je Person'),
+      findsOneWidget,
+      reason: 'die Verteilung braucht keine Daten und steht weiter da',
+    );
   });
 
-  testWidgets('eine Person ohne Verwandtschaft bekommt eine Erklärung',
-      (tester) async {
+  testWidgets('eine Person ohne Verwandtschaft bekommt eine Erklärung', (
+    tester,
+  ) async {
     await db.createPerson(PeopleCompanion.insert(id: 'allein', name: 'Allein'));
     await zeige(tester, 'allein');
-    expect(find.textContaining('noch keine Verwandtschaft eingetragen'),
-        findsOneWidget);
+    expect(
+      find.textContaining('noch keine Verwandtschaft eingetragen'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('der Schwager steht bei seiner Frau, seine Eltern ueber ihm',
-      (tester) async {
+  testWidgets('der Schwager steht bei seiner Frau, seine Eltern ueber ihm', (
+    tester,
+  ) async {
     // **Der Kernbeleg der ganzen Runde.** Vorher stand der Schwager in
     // einer eigenen Reihe „Schwager und Schwägerin", und welche der
     // Schwestern ihn geheiratet hatte, war nicht zu sehen. Seine Eltern
@@ -831,14 +990,30 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await db.createPerson(PeopleCompanion.insert(
-        id: 'schwager', name: 'Michael', geschlecht: const Value('m')));
-    await db.createPerson(PeopleCompanion.insert(
-        id: 'schwagersVater', name: 'Kurt', geschlecht: const Value('m')));
+    await db.createPerson(
+      PeopleCompanion.insert(
+        id: 'schwager',
+        name: 'Michael',
+        geschlecht: const Value('m'),
+      ),
+    );
+    await db.createPerson(
+      PeopleCompanion.insert(
+        id: 'schwagersVater',
+        name: 'Kurt',
+        geschlecht: const Value('m'),
+      ),
+    );
     await db.fuegeBeziehungHinzu(
-        'schwester', 'schwager', Verwandtschaft.partner);
+      'schwester',
+      'schwager',
+      Verwandtschaft.partner,
+    );
     await db.fuegeBeziehungHinzu(
-        'schwager', 'schwagersVater', Verwandtschaft.elternteil);
+      'schwager',
+      'schwagersVater',
+      Verwandtschaft.elternteil,
+    );
 
     await zeige(tester, 'kind');
 
@@ -856,13 +1031,22 @@ void main() {
     final kurt = tester.getCenter(find.text('Kurt'));
     final mitte = tester.getCenter(find.text('Kind'));
 
-    expect((michael.dy - schwester.dy).abs(), lessThan(20),
-        reason: 'dieselbe Generation, dieselbe Hoehe');
-    expect((michael.dx - schwester.dx).abs(), lessThan(200),
-        reason: 'Seite an Seite, nicht in getrennten Gruppen');
+    expect(
+      (michael.dy - schwester.dy).abs(),
+      lessThan(20),
+      reason: 'dieselbe Generation, dieselbe Hoehe',
+    );
+    expect(
+      (michael.dx - schwester.dx).abs(),
+      lessThan(200),
+      reason: 'Seite an Seite, nicht in getrennten Gruppen',
+    );
     expect(kurt.dy, lessThan(michael.dy), reason: 'die Eltern stehen darueber');
-    expect((kurt.dx - michael.dx).abs(), lessThan((kurt.dx - mitte.dx).abs()),
-        reason: 'Kurt steht ueber seinem Sohn, nicht ueber mir');
+    expect(
+      (kurt.dx - michael.dx).abs(),
+      lessThan((kurt.dx - mitte.dx).abs()),
+      reason: 'Kurt steht ueber seinem Sohn, nicht ueber mir',
+    );
   });
 
   testWidgets('so sieht der Baum mit Seitenaesten aus', (tester) async {
@@ -874,31 +1058,41 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await db.createPerson(
-        PeopleCompanion.insert(id: 'schwager', name: 'Schwager'));
+      PeopleCompanion.insert(id: 'schwager', name: 'Schwager'),
+    );
     await db.fuegeBeziehungHinzu(
-        'schwester', 'schwager', Verwandtschaft.partner);
+      'schwester',
+      'schwager',
+      Verwandtschaft.partner,
+    );
     await zeige(tester, 'kind');
-    await expectLater(find.byType(StammbaumScreen),
-        matchesGoldenFile('golden/stammbaum_seitenaeste.png'));
-  }, skip: nurAufReferenzplattform);
-
-  testWidgets('so sieht der Baum im hellen Erscheinungsbild aus',
-      (tester) async {
-    // Bronze auf Pergament statt Gold auf Dunkel. Nicht die dunkle
-    // Fassung mit vertauschten Werten: Dieselben Goldtöne auf hellem
-    // Grund verlieren jeden Halt.
-    tester.view.physicalSize = const Size(1000, 700);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-    await zeigeHell(tester, 'kind');
     await expectLater(
       find.byType(StammbaumScreen),
-      matchesGoldenFile('golden/stammbaum_hell.png'),
+      matchesGoldenFile('golden/stammbaum_seitenaeste.png'),
     );
   }, skip: nurAufReferenzplattform);
 
-  testWidgets('ein Schild mit beiden Mehrzeichen laeuft nicht ueber',
-      (tester) async {
+  testWidgets(
+    'so sieht der Baum im hellen Erscheinungsbild aus',
+    (tester) async {
+      // Bronze auf Pergament statt Gold auf Dunkel. Nicht die dunkle
+      // Fassung mit vertauschten Werten: Dieselben Goldtöne auf hellem
+      // Grund verlieren jeden Halt.
+      tester.view.physicalSize = const Size(1000, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await zeigeHell(tester, 'kind');
+      await expectLater(
+        find.byType(StammbaumScreen),
+        matchesGoldenFile('golden/stammbaum_hell.png'),
+      );
+    },
+    skip: nurAufReferenzplattform,
+  );
+
+  testWidgets('ein Schild mit beiden Mehrzeichen laeuft nicht ueber', (
+    tester,
+  ) async {
     // Der gemeldete Fehler, am Bildschirmfoto zu sehen: Auf einer Karte
     // lag "Sohn" halb ueber "Martin". Ursache waren fuenf Zeilen in einem
     // Schild, das fuer drei gebaut ist - Name, Verhaeltnis, Lebensdaten
@@ -920,17 +1114,25 @@ void main() {
     await db.fuegeBeziehungHinzu('enkel', 'kind', Verwandtschaft.elternteil);
     await db.fuegeBeziehungHinzu('urenkel', 'enkel', Verwandtschaft.elternteil);
     await db.fuegeBeziehungHinzu(
-        'ururenkel', 'urenkel', Verwandtschaft.elternteil);
+      'ururenkel',
+      'urenkel',
+      Verwandtschaft.elternteil,
+    );
     await db.fuegeBeziehungHinzu(
-        'urururenkel', 'ururenkel', Verwandtschaft.elternteil);
+      'urururenkel',
+      'ururenkel',
+      Verwandtschaft.elternteil,
+    );
     // Ein zweiter Elternteil, der zur Mitte in keiner Beziehung steht -
     // genau die Lage aus der Meldung, wo Martin einen Vater hatte, der
     // von Berta aus niemand ist. Damit traegt Ururenkel BEIDE Zeichen:
     // oben ein unbekannter Elternteil, unten ein Kind ausserhalb.
-    await db.createPerson(
-        PeopleCompanion.insert(id: 'fremd', name: 'Fremde'));
+    await db.createPerson(PeopleCompanion.insert(id: 'fremd', name: 'Fremde'));
     await db.fuegeBeziehungHinzu(
-        'ururenkel', 'fremd', Verwandtschaft.elternteil);
+      'ururenkel',
+      'fremd',
+      Verwandtschaft.elternteil,
+    );
 
     await zeige(tester, 'kind');
     expect(tester.takeException(), isNull);
@@ -940,8 +1142,16 @@ void main() {
     expect(find.text('Enkelin'), findsOneWidget);
     expect(find.text('Urenkel'), findsOneWidget);
     expect(find.text('Ururenkel'), findsOneWidget);
-    expect(find.text('Urururenkel'), findsNothing, reason: 'eine Stufe zu weit');
-    expect(find.text('Fremde'), findsNothing, reason: 'mit der Mitte nicht verwandt');
+    expect(
+      find.text('Urururenkel'),
+      findsNothing,
+      reason: 'eine Stufe zu weit',
+    );
+    expect(
+      find.text('Fremde'),
+      findsNothing,
+      reason: 'mit der Mitte nicht verwandt',
+    );
     // Genau ein Schild traegt beide Zeichen - und das ist das, an dem
     // es kaputt war.
     expect(find.byIcon(Icons.more_horiz), findsNWidgets(2));
@@ -960,9 +1170,13 @@ void main() {
       final kasten = tester.getSize(treffer.first);
       final stil = tester.widget<Text>(treffer.first).style!;
       final zeilenhoehe = stil.fontSize! * (stil.height ?? 1.2);
-      expect(kasten.height, greaterThanOrEqualTo(zeilenhoehe - 0.5),
-          reason: '"$name" ist auf ${kasten.height.toStringAsFixed(1)} '
-              'gequetscht, braucht aber ${zeilenhoehe.toStringAsFixed(1)}');
+      expect(
+        kasten.height,
+        greaterThanOrEqualTo(zeilenhoehe - 0.5),
+        reason:
+            '"$name" ist auf ${kasten.height.toStringAsFixed(1)} '
+            'gequetscht, braucht aber ${zeilenhoehe.toStringAsFixed(1)}',
+      );
     }
   });
   group('der Baum merkt sich, wo man war', () {
@@ -974,19 +1188,22 @@ void main() {
       tester.view.physicalSize = const Size(1600, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        key: UniqueKey(),
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: StammbaumScreen(library: library),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          key: UniqueKey(),
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: StammbaumScreen(library: library),
+        ),
+      );
       await tester.pumpAndSettle();
     }
 
-    testWidgets('die gewaehlte Ansicht steht beim naechsten Mal wieder da',
-        (tester) async {
+    testWidgets('die gewaehlte Ansicht steht beim naechsten Mal wieder da', (
+      tester,
+    ) async {
       // Breit genug, dass die Ansichtsleiste ganz hineinpasst - sie
       // liegt sonst in einer waagerechten Rolle und ist nicht antippbar.
       tester.view.physicalSize = const Size(1600, 1200);
@@ -998,25 +1215,30 @@ void main() {
       expect(find.byType(FamilienZeitleiste), findsOneWidget);
 
       await ohneVorgabe(tester);
-      expect(find.byType(FamilienZeitleiste), findsOneWidget,
-          reason: 'die Zeitleiste war zuletzt offen');
+      expect(
+        find.byType(FamilienZeitleiste),
+        findsOneWidget,
+        reason: 'die Zeitleiste war zuletzt offen',
+      );
     });
 
-    testWidgets('und die Person, die zuletzt in der Mitte stand',
-        (tester) async {
+    testWidgets('und die Person, die zuletzt in der Mitte stand', (
+      tester,
+    ) async {
       await zeige(tester, 'kind');
       // Ueber ein Schild in eine andere Person ruecken.
       await tester.tap(find.text('Schwester').first);
       await tester.pumpAndSettle();
-      expect(await db.stammbaumZuletzt(),
-          (ansicht: 'baum', person: 'schwester'));
+      expect(await db.stammbaumZuletzt(), (
+        ansicht: 'baum',
+        person: 'schwester',
+      ));
 
       await ohneVorgabe(tester);
       expect(find.text('Stammbaum: Schwester'), findsOneWidget);
     });
 
-    testWidgets('eine geloeschte Person faellt still zurueck',
-        (tester) async {
+    testWidgets('eine geloeschte Person faellt still zurueck', (tester) async {
       await db.setzeStammbaumZuletzt(ansicht: 'baum', person: 'gibtsnicht');
       await ohneVorgabe(tester);
       // Kein leerer Bildschirm, sondern die Person mit den meisten
@@ -1025,5 +1247,4 @@ void main() {
       expect(find.text('Stammbaum: '), findsNothing);
     });
   });
-
 }

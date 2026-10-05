@@ -112,11 +112,7 @@ class StammbaumScreen extends StatefulWidget {
   /// sich selbst eine Person aus (siehe [_StammbaumScreenState._startperson]).
   final String? startPersonId;
 
-  const StammbaumScreen({
-    super.key,
-    required this.library,
-    this.startPersonId,
-  });
+  const StammbaumScreen({super.key, required this.library, this.startPersonId});
 
   @override
   State<StammbaumScreen> createState() => _StammbaumScreenState();
@@ -188,7 +184,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
   Future<void> _laden() async {
     final personen = widget.library.db.nachAlterSortiert(
-        await widget.library.db.select(widget.library.db.people).get());
+      await widget.library.db.select(widget.library.db.people).get(),
+    );
     final zeilen = await widget.library.db.alleBeziehungen();
     final ereignisse = await widget.library.db.alleEreignisse();
     final zuletzt = await widget.library.db.stammbaumZuletzt();
@@ -199,7 +196,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     }
     final netz = Verwandtschaftsnetz([
       for (final z in zeilen)
-        if (artAusText(z.art) case final art?) kante(z.personId, z.andereId, art),
+        if (artAusText(z.art) case final art?)
+          kante(z.personId, z.andereId, art),
     ]);
     final vorhanden = {for (final p in personen) p.id};
     setState(() {
@@ -214,7 +212,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         final gemerkt = _ansichtAusText(zuletzt.ansicht);
         if (gemerkt != null) _ansicht = gemerkt;
         final person = zuletzt.person;
-        _fokusId ??= widget.startPersonId ??
+        _fokusId ??=
+            widget.startPersonId ??
             (person != null && vorhanden.contains(person) ? person : null) ??
             _startperson(personen, netz);
       } else {
@@ -233,8 +232,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// beim naechsten Mal eine Person zu frueh anfaengt.
   void _merken() {
     if (!_standGelesen) return;
-    unawaited(widget.library.db
-        .setzeStammbaumZuletzt(ansicht: _ansicht.name, person: _fokusId));
+    unawaited(
+      widget.library.db.setzeStammbaumZuletzt(
+        ansicht: _ansicht.name,
+        person: _fokusId,
+      ),
+    );
   }
 
   static _Ansicht? _ansichtAusText(String? text) {
@@ -255,7 +258,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     var beste = personen.first;
     var meiste = -1;
     for (final p in personen) {
-      final anzahl = netz.eltern(p.id).length +
+      final anzahl =
+          netz.eltern(p.id).length +
           netz.kinder(p.id).length +
           netz.partner(p.id).length;
       if (anzahl > meiste) {
@@ -272,7 +276,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     setState(() {
       _grade = alleGrade(_netz, fokus, [for (final p in _personen) p.id]);
       _rangImBaum = {
-        for (var i = 0; i < _personen.length; i++) _personen[i].id: i
+        for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
       };
     });
   }
@@ -287,8 +291,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final grad = _grade[person.id];
     if (grad == null) return null;
     if (grad.art == Gradart.angeheiratet) {
-      final umweg = umwegZu(_netz, _fokusId!, person.id,
-          reihenfolge: (id) => _rangImBaum[id] ?? 1 << 30);
+      final umweg = umwegZu(
+        _netz,
+        _fokusId!,
+        person.id,
+        reihenfolge: (id) => _rangImBaum[id] ?? 1 << 30,
+      );
       if (umweg != null) {
         final zwischen = _nachId[umweg.ueber];
         if (zwischen != null) {
@@ -303,7 +311,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       }
     }
     return verwandtschaftText(
-        context, grad, geschlechtAusText(person.geschlecht));
+      context,
+      grad,
+      geschlechtAusText(person.geschlecht),
+    );
   }
 
   /// Der Platz jeder Person in der ohnehin geführten Reihenfolge
@@ -339,15 +350,18 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Schalter bräuchte es eine zweite Art, die dasselbe bedeutet – und
   /// zwei Schreibweisen für einen Sachverhalt laufen früher oder später
   /// auseinander.
-  Future<void> _hinzufuegen(Verwandtschaft art, {bool umgekehrt = false}) async {
+  Future<void> _hinzufuegen(
+    Verwandtschaft art, {
+    bool umgekehrt = false,
+  }) async {
     final fokusId = _fokusId;
     if (fokusId == null) return;
     final t = AppTexte.of(context);
     final titel = art == Verwandtschaft.partner
         ? t.stammbaumPartnerHinzufuegen
         : umgekehrt
-            ? t.stammbaumKindHinzufuegen
-            : t.stammbaumElternteilHinzufuegen;
+        ? t.stammbaumKindHinzufuegen
+        : t.stammbaumElternteilHinzufuegen;
     final wahl = await showPersonPickerDialog(
       context,
       // Die Person in der Mitte steht nicht zur Auswahl – mit sich selbst
@@ -393,9 +407,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final grad = await _gradWaehlen(fokus);
     if (grad == null || !mounted) return;
 
-    final rang = {for (var i = 0; i < _personen.length; i++) _personen[i].id: i};
-    final wege = wegeFuer(_netz, fokusId, grad,
-        reihenfolge: (id) => rang[id] ?? 1 << 30);
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
+    final wege = wegeFuer(
+      _netz,
+      fokusId,
+      grad,
+      reihenfolge: (id) => rang[id] ?? 1 << 30,
+    );
     if (wege.isEmpty) {
       _kurzerHinweis(_fehltText(t, fehlendeVoraussetzung(grad), fokus.name));
       return;
@@ -429,8 +449,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       neueId = wahl.existingPersonId!;
     }
 
-    final fehler = await widget.library.db
-        .fuegeBeziehungenHinzu(kantenFuer(weg, neueId));
+    final fehler = await widget.library.db.fuegeBeziehungenHinzu(
+      kantenFuer(weg, neueId),
+    );
     await _laden();
     if (!mounted) return;
     if (fehler != null) {
@@ -444,11 +465,16 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final person = _nachId[neueId];
     final gerechnet = _grade[neueId];
     if (person != null && gerechnet != null) {
-      _kurzerHinweis(t.stammbaumVerwandterEingetragen(
-        person.name,
-        verwandtschaftText(
-            context, gerechnet, geschlechtAusText(person.geschlecht)),
-      ));
+      _kurzerHinweis(
+        t.stammbaumVerwandterEingetragen(
+          person.name,
+          verwandtschaftText(
+            context,
+            gerechnet,
+            geschlechtAusText(person.geschlecht),
+          ),
+        ),
+      );
     }
   }
 
@@ -504,14 +530,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 child: Text(
                   t.stammbaumNurEintragbares(fokus.name),
                   style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(dialog).colorScheme.onSurfaceVariant),
+                    fontSize: 12,
+                    color: Theme.of(dialog).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               for (final eintrag in gruppen.entries) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      0, AppSpacing.md, 0, AppSpacing.xs),
+                    0,
+                    AppSpacing.md,
+                    0,
+                    AppSpacing.xs,
+                  ),
                   child: Text(
                     eintrag.key,
                     style: TextStyle(
@@ -529,15 +560,20 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog),
+            child: Text(t.allgAbbrechen),
+          ),
         ],
       ),
     );
   }
 
   Widget _gradZeile(
-      BuildContext dialog, Zusatzgrad grad, PersonData fokus, String fokusId) {
+    BuildContext dialog,
+    Zusatzgrad grad,
+    PersonData fokus,
+    String fokusId,
+  ) {
     final t = AppTexte.of(dialog);
     final moeglich = wegeFuer(_netz, fokusId, grad).isNotEmpty;
     return ListTile(
@@ -546,40 +582,43 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       title: Text(_gradName(t, grad)),
       subtitle: moeglich
           ? null
-          : Text(_fehltText(t, fehlendeVoraussetzung(grad), fokus.name),
-              style: const TextStyle(fontSize: 11)),
+          : Text(
+              _fehltText(t, fehlendeVoraussetzung(grad), fokus.name),
+              style: const TextStyle(fontSize: 11),
+            ),
       onTap: moeglich ? () => Navigator.pop(dialog, grad) : null,
     );
   }
 
   String _gradName(AppTexte t, Zusatzgrad grad) => switch (grad) {
-        Zusatzgrad.grosselternteil => t.stammbaumGradGrosselternteil,
-        Zusatzgrad.urgrosselternteil => t.stammbaumGradUrgrosselternteil,
-        Zusatzgrad.enkelkind => t.stammbaumGradEnkelkind,
-        Zusatzgrad.urenkelkind => t.stammbaumGradUrenkelkind,
-        Zusatzgrad.geschwisterkind => t.stammbaumGradGeschwisterkind,
-        Zusatzgrad.halbgeschwisterkind => t.stammbaumGradHalbgeschwisterkind,
-        Zusatzgrad.onkelTante => t.stammbaumGradOnkelTante,
-        Zusatzgrad.neffeNichte => t.stammbaumGradNeffeNichte,
-        Zusatzgrad.cousin => t.stammbaumGradCousin,
-        Zusatzgrad.schwiegerelternteil => t.stammbaumGradSchwiegerelternteil,
-        Zusatzgrad.schwiegerkind => t.stammbaumGradSchwiegerkind,
-        Zusatzgrad.schwager => t.stammbaumGradSchwager,
-        Zusatzgrad.stiefelternteil => t.stammbaumGradStiefelternteil,
-        Zusatzgrad.stiefkind => t.stammbaumGradStiefkind,
-      };
+    Zusatzgrad.grosselternteil => t.stammbaumGradGrosselternteil,
+    Zusatzgrad.urgrosselternteil => t.stammbaumGradUrgrosselternteil,
+    Zusatzgrad.enkelkind => t.stammbaumGradEnkelkind,
+    Zusatzgrad.urenkelkind => t.stammbaumGradUrenkelkind,
+    Zusatzgrad.geschwisterkind => t.stammbaumGradGeschwisterkind,
+    Zusatzgrad.halbgeschwisterkind => t.stammbaumGradHalbgeschwisterkind,
+    Zusatzgrad.onkelTante => t.stammbaumGradOnkelTante,
+    Zusatzgrad.neffeNichte => t.stammbaumGradNeffeNichte,
+    Zusatzgrad.cousin => t.stammbaumGradCousin,
+    Zusatzgrad.schwiegerelternteil => t.stammbaumGradSchwiegerelternteil,
+    Zusatzgrad.schwiegerkind => t.stammbaumGradSchwiegerkind,
+    Zusatzgrad.schwager => t.stammbaumGradSchwager,
+    Zusatzgrad.stiefelternteil => t.stammbaumGradStiefelternteil,
+    Zusatzgrad.stiefkind => t.stammbaumGradStiefkind,
+  };
 
   String _fehltText(AppTexte t, Fehlt fehlt, String name) => switch (fehlt) {
-        Fehlt.elternteil => t.stammbaumFehltElternteil(name),
-        Fehlt.grosselternteil => t.stammbaumFehltGrosselternteil(name),
-        Fehlt.kind => t.stammbaumFehltKind(name),
-        Fehlt.enkelkind => t.stammbaumFehltEnkelkind(name),
-        Fehlt.geschwister => t.stammbaumFehltGeschwister(name),
-        Fehlt.onkelTante => t.stammbaumFehltOnkelTante(name),
-        Fehlt.partner => t.stammbaumFehltPartner(name),
-        Fehlt.geschwisterOderPartner =>
-          t.stammbaumFehltGeschwisterOderPartner(name),
-      };
+    Fehlt.elternteil => t.stammbaumFehltElternteil(name),
+    Fehlt.grosselternteil => t.stammbaumFehltGrosselternteil(name),
+    Fehlt.kind => t.stammbaumFehltKind(name),
+    Fehlt.enkelkind => t.stammbaumFehltEnkelkind(name),
+    Fehlt.geschwister => t.stammbaumFehltGeschwister(name),
+    Fehlt.onkelTante => t.stammbaumFehltOnkelTante(name),
+    Fehlt.partner => t.stammbaumFehltPartner(name),
+    Fehlt.geschwisterOderPartner => t.stammbaumFehltGeschwisterOderPartner(
+      name,
+    ),
+  };
 
   /// Ein kurzer Hinweis am unteren Rand – für die Fälle, in denen der
   /// Wunsch verständlich, aber (noch) nicht ausführbar ist.
@@ -593,7 +632,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// „Schwager" stehen Geschwister und Partner nebeneinander in der Liste,
   /// und erst die Bezeichnung macht die beiden Lesarten unterscheidbar.
   Future<Einhaengeweg?> _wegWaehlen(
-      List<Einhaengeweg> wege, String titel) async {
+    List<Einhaengeweg> wege,
+    String titel,
+  ) async {
     return showDialog<Einhaengeweg>(
       context: context,
       builder: (dialog) => SimpleDialog(
@@ -608,14 +649,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                   leading: Profilbild(
                     datei: p.coverFaceCropPath == null
                         ? null
-                        : widget.library.paths
-                            .absolute(p.coverFaceCropPath!),
+                        : widget.library.paths.absolute(p.coverFaceCropPath!),
                     radius: 18,
                     symbolgroesse: 18,
                   ),
                   title: Text(p.name),
-                  subtitle:
-                      _bezeichnung(p) == null ? null : Text(_bezeichnung(p)!),
+                  subtitle: _bezeichnung(p) == null
+                      ? null
+                      : Text(_bezeichnung(p)!),
                 ),
               ),
         ],
@@ -626,10 +667,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   void _meldeFehler(Beziehungsfehler fehler) {
     final t = AppTexte.of(context);
     melde.warnung(switch (fehler) {
-          Beziehungsfehler.mitSichSelbst => t.stammbaumFehlerSelbst,
-          Beziehungsfehler.kreis => t.stammbaumFehlerKreis,
-          Beziehungsfehler.schonVorhanden => t.stammbaumFehlerVorhanden,
-        });
+      Beziehungsfehler.mitSichSelbst => t.stammbaumFehlerSelbst,
+      Beziehungsfehler.kreis => t.stammbaumFehlerKreis,
+      Beziehungsfehler.schonVorhanden => t.stammbaumFehlerVorhanden,
+    });
   }
 
   /// Das Menü einer Karte. [art] und [umgekehrt] beschreiben, wie die
@@ -646,12 +687,18 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final wo = Overlay.of(context).context.findRenderObject() as RenderBox;
     final wahl = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromRect(position & Size.zero, Offset.zero & wo.size),
+      position: RelativeRect.fromRect(
+        position & Size.zero,
+        Offset.zero & wo.size,
+      ),
       items: [
         if (person.id != _fokusId)
           PopupMenuItem(
             value: 'mitte',
-            child: _zeile(Icons.center_focus_strong_outlined, t.stammbaumInDieMitte),
+            child: _zeile(
+              Icons.center_focus_strong_outlined,
+              t.stammbaumInDieMitte,
+            ),
           ),
         PopupMenuItem(
           value: 'lebensdaten',
@@ -688,13 +735,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       case 'lebensdaten':
         await _lebensdatenBearbeiten(person);
       case 'lebenslauf':
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => LebenslaufScreen(library: widget.library, person: person),
-        ));
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                LebenslaufScreen(library: widget.library, person: person),
+          ),
+        );
       case 'fotos':
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => PersonDetailScreen(library: widget.library, person: person),
-        ));
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                PersonDetailScreen(library: widget.library, person: person),
+          ),
+        );
         await _laden();
       case 'art':
         await _verbindungsartAendern(person, art!, umgekehrt);
@@ -711,7 +764,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// suchen. Die Art ist eine Eigenschaft der Verbindung; sie zu ändern
   /// sollte die Verbindung nicht antasten.
   Future<void> _verbindungsartAendern(
-      PersonData person, Verwandtschaft art, bool umgekehrt) async {
+    PersonData person,
+    Verwandtschaft art,
+    bool umgekehrt,
+  ) async {
     final fokusId = _fokusId;
     if (fokusId == null) return;
     // Wer ist hier das Kind? In der Elternreihe die Mitte, in der
@@ -723,21 +779,31 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final neueArt = await showDialog<Verwandtschaft>(
       context: context,
       builder: (dialog) => AlertDialog(
-        title: Text(t.stammbaumVerbindungsartTitel(
-          _nachId[kindId]?.name ?? '',
-          _nachId[elternteilId]?.name ?? '',
-        )),
+        title: Text(
+          t.stammbaumVerbindungsartTitel(
+            _nachId[kindId]?.name ?? '',
+            _nachId[elternteilId]?.name ?? '',
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final (kandidat, symbol, text) in [
-              (Verwandtschaft.elternteil, Icons.person_outline, t.stammbaumLeiblich),
-              (Verwandtschaft.adoptivelternteil, Icons.family_restroom, t.stammbaumAdoptiv),
+              (
+                Verwandtschaft.elternteil,
+                Icons.person_outline,
+                t.stammbaumLeiblich,
+              ),
+              (
+                Verwandtschaft.adoptivelternteil,
+                Icons.family_restroom,
+                t.stammbaumAdoptiv,
+              ),
               (
                 Verwandtschaft.pflegeelternteil,
                 Icons.volunteer_activism_outlined,
-                t.stammbaumPflege
+                t.stammbaumPflege,
               ),
             ])
               ListTile(
@@ -755,15 +821,17 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             Text(
               t.stammbaumVerbindungsartHinweis,
               style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog),
+            child: Text(t.allgAbbrechen),
+          ),
         ],
       ),
     );
@@ -773,21 +841,30 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   }
 
   Future<void> _verbindungLoesen(
-      PersonData person, Verwandtschaft art, bool umgekehrt) async {
+    PersonData person,
+    Verwandtschaft art,
+    bool umgekehrt,
+  ) async {
     final t = AppTexte.of(context);
     final ja = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(t.stammbaumVerbindungEntfernen),
-        content: Text(t.stammbaumVerbindungEntfernenFrage(
-            person.name, _nachId[_fokusId]?.name ?? '')),
+        content: Text(
+          t.stammbaumVerbindungEntfernenFrage(
+            person.name,
+            _nachId[_fokusId]?.name ?? '',
+          ),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgEntfernen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgEntfernen),
+          ),
         ],
       ),
     );
@@ -807,13 +884,18 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
   Future<void> _lebensdatenBearbeiten(PersonData person) async {
     final ergebnis =
-        await showDialog<({DateTime? geburt, DateTime? tod, Geschlecht? geschlecht})>(
-      context: context,
-      builder: (_) => _LebensdatenDialog(person: person),
-    );
+        await showDialog<
+          ({DateTime? geburt, DateTime? tod, Geschlecht? geschlecht})
+        >(
+          context: context,
+          builder: (_) => _LebensdatenDialog(person: person),
+        );
     if (ergebnis == null) return;
-    await widget.library.db.setzeLebensdaten(person.id,
-        geburt: ergebnis.geburt, tod: ergebnis.tod);
+    await widget.library.db.setzeLebensdaten(
+      person.id,
+      geburt: ergebnis.geburt,
+      tod: ergebnis.tod,
+    );
     await widget.library.db.setzeGeschlecht(person.id, ergebnis.geschlecht);
     await _laden();
   }
@@ -832,8 +914,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     if (wahl == null || !mounted) return;
     if (wahl.newName != null) {
       final id = const Uuid().v4();
-      await widget.library.db
-          .createPerson(PeopleCompanion.insert(id: id, name: wahl.newName!));
+      await widget.library.db.createPerson(
+        PeopleCompanion.insert(id: id, name: wahl.newName!),
+      );
       if (!mounted) return;
       setState(() => _fokusId = id);
       await _laden();
@@ -860,13 +943,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       melde.hinweis(t.stammbaumKeineFamilienfotos);
       return;
     }
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => FamilienfotosScreen(
-        library: widget.library,
-        titel: t.stammbaumFamilienfotosVon(_nachId[fokus]?.name ?? ''),
-        assets: assets,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FamilienfotosScreen(
+          library: widget.library,
+          titel: t.stammbaumFamilienfotosVon(_nachId[fokus]?.name ?? ''),
+          assets: assets,
+        ),
       ),
-    ));
+    );
   }
 
   /// Zeigt die Fotos der Familie auf einer Karte, eingefärbt nach
@@ -880,8 +965,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     // Lebensereignisse gehören auf dieselbe Karte: Wo jemand gelebt hat,
     // ist dieselbe Frage wie, wo fotografiert wurde – nur aus der
     // anderen Quelle.
-    final ereignisse =
-        await widget.library.db.verorteteEreignisseFuerPersonen(personen);
+    final ereignisse = await widget.library.db.verorteteEreignisseFuerPersonen(
+      personen,
+    );
     if (!mounted) return;
     final orte = <Familienort>[
       for (final e in roh)
@@ -894,14 +980,16 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       melde.hinweis(t.stammbaumKeineFamilienorte);
       return;
     }
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => FamilienorteScreen(
-        library: widget.library,
-        titel: t.stammbaumFamilienorteVon(_nachId[fokus]?.name ?? ''),
-        orte: orte,
-        ereignisse: ereignisse,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FamilienorteScreen(
+          library: widget.library,
+          titel: t.stammbaumFamilienorteVon(_nachId[fokus]?.name ?? ''),
+          orte: orte,
+          ereignisse: ereignisse,
+        ),
       ),
-    ));
+    );
   }
 
   /// Zahlen über die Familie – siehe [FamilienstatistikScreen].
@@ -936,11 +1024,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       ereignisse: [
         for (final id in ids)
           for (final e in _ereignisse[id] ?? const [])
-            (
-              personId: id,
-              art: ereignisartAusText(e.art),
-              datum: e.datum,
-            ),
+            (personId: id, art: ereignisartAusText(e.art), datum: e.datum),
       ],
     );
     final bilder = fotostatistik(
@@ -952,17 +1036,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       },
     );
     if (!mounted) return;
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => FamilienstatistikScreen(
-        statistik: statistik,
-        fokusName: _nachId[fokus]?.name ?? '',
-        foto: bilder,
-        namen: {
-          for (final p in _personen)
-            if (ids.contains(p.id)) p.id: p.name,
-        },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FamilienstatistikScreen(
+          statistik: statistik,
+          fokusName: _nachId[fokus]?.name ?? '',
+          foto: bilder,
+          namen: {
+            for (final p in _personen)
+              if (ids.contains(p.id)) p.id: p.name,
+          },
+        ),
       ),
-    ));
+    );
   }
 
   /// Schreibt den Fächer als PDF – die Tafel zum Aufhängen.
@@ -976,7 +1062,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final fokus = _fokusId;
     if (fokus == null) return;
     final t = AppTexte.of(context);
-    final rang = {for (var i = 0; i < _personen.length; i++) _personen[i].id: i};
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
     final plaetze = faechertafel(_netz, fokus, (id) => rang[id] ?? 1 << 30);
 
     final ziel = await FilePicker.platform.saveFile(
@@ -1008,12 +1096,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final fokus = _fokusId;
     if (fokus == null) return;
     final t = AppTexte.of(context);
-    final geflecht =
-        geflechtUm(_netz, fokus, [for (final p in _personen) p.id]);
+    final geflecht = geflechtUm(_netz, fokus, [
+      for (final p in _personen) p.id,
+    ]);
     final farben = Zierbaumfarben.fuer(Theme.of(context).brightness);
     final richtung = Directionality.of(context);
-    final name = haeufigsterNachname(
-        [for (final id in geflecht.personen) _nachId[id]!.name]);
+    final name = haeufigsterNachname([
+      for (final id in geflecht.personen) _nachId[id]!.name,
+    ]);
     Schildinhalt inhalt(String id) {
       final person = _nachId[id]!;
       return Schildinhalt(
@@ -1125,8 +1215,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         switch (fehler.grund) {
           GedcomAbbruch.keinKopf => t.gedcomFehlerKeinKopf,
           GedcomAbbruch.keinePersonen => t.gedcomFehlerKeinePersonen,
-          GedcomAbbruch.kodierung =>
-            t.gedcomFehlerKodierung(fehler.einzelheit ?? '?'),
+          GedcomAbbruch.kodierung => t.gedcomFehlerKodierung(
+            fehler.einzelheit ?? '?',
+          ),
         },
       ]);
       return;
@@ -1141,8 +1232,13 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t.gedcomImportGefunden(gelesen.personen.length,
-                gelesen.kanten.length, gelesen.anzahlEreignisse)),
+            Text(
+              t.gedcomImportGefunden(
+                gelesen.personen.length,
+                gelesen.kanten.length,
+                gelesen.anzahlEreignisse,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               t.gedcomImportNeuHinweis,
@@ -1152,11 +1248,13 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.gedcomImportUebernehmen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.gedcomImportUebernehmen),
+          ),
         ],
       ),
     );
@@ -1185,9 +1283,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           PeopleCompanion.insert(
             id: neueKennung[p.kennung]!,
             name: p.name,
-            geschlecht: Value(p.geschlecht == null
-                ? null
-                : geschlechtZuText(p.geschlecht!)),
+            geschlecht: Value(
+              p.geschlecht == null ? null : geschlechtZuText(p.geschlecht!),
+            ),
             geburtsdatum: Value(p.geburt),
             sterbedatum: Value(p.tod),
           ),
@@ -1241,8 +1339,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Eine Aufzählung, die nicht über den Bildschirm hinauswächst.
   static String _gekuerzt(List<String> namen, {int hoechstens = 12}) =>
       namen.length <= hoechstens
-          ? namen.join(', ')
-          : '${namen.take(hoechstens).join(', ')} …';
+      ? namen.join(', ')
+      : '${namen.take(hoechstens).join(', ')} …';
 
   /// Ein Fenster mit mehreren Absätzen, zum Lesen und Wegklicken.
   Future<void> _gedcomMeldung(String titel, List<String> absaetze) =>
@@ -1265,20 +1363,19 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           ),
           actions: [
             FilledButton(
-                onPressed: () => Navigator.pop(dialog),
-                child: Text(AppTexte.of(dialog).allgSchliessen)),
+              onPressed: () => Navigator.pop(dialog),
+              child: Text(AppTexte.of(dialog).allgSchliessen),
+            ),
           ],
         ),
       );
 
   /// Der Fächer – siehe [FaecherAnsicht].
   Widget _faecher(BuildContext context, PersonData fokus) {
-    final rang = {for (var i = 0; i < _personen.length; i++) _personen[i].id: i};
-    final plaetze = faechertafel(
-      _netz,
-      fokus.id,
-      (id) => rang[id] ?? 1 << 30,
-    );
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
+    final plaetze = faechertafel(_netz, fokus.id, (id) => rang[id] ?? 1 << 30);
     // Nicht "nur ein Platz": Für eine Person ohne Eltern liefert die
     // Tafel zwei leere Elternplätze mit – die Lücke ist gewollt. Leer ist
     // der Fächer erst, wenn außerhalb der Mitte niemand steht.
@@ -1298,9 +1395,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Die Sanduhr – siehe [SanduhrAnsicht].
   Widget _sanduhr(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
-    final rang = {for (var i = 0; i < _personen.length; i++) _personen[i].id: i};
-    final s = ordneSanduhr(_netz, fokus.id, (id) => rang[id] ?? 1 << 30,
-        seitenlinien: _seitenlinien);
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
+    final s = ordneSanduhr(
+      _netz,
+      fokus.id,
+      (id) => rang[id] ?? 1 << 30,
+      seitenlinien: _seitenlinien,
+    );
     return Column(
       children: [
         // Der Schalter steht über der Zeichnung und nicht in einem Menü:
@@ -1310,7 +1413,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         // etwas breiter ist.
         Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           child: Row(
             children: [
               FilterChip(
@@ -1324,8 +1429,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 child: Text(
                   t.stammbaumSeitenlinienHinweis,
                   style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -1347,7 +1453,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
   /// Die Nachkommen als eingerückte Gliederung.
   Widget _nachfahrenTafel(BuildContext context, PersonData fokus) {
-    final rang = {for (var i = 0; i < _personen.length; i++) _personen[i].id: i};
+    final rang = {
+      for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
+    };
     final zeilen = nachfahren(_netz, fokus.id, (id) => rang[id] ?? 1 << 30);
     if (zeilen.length == 1) {
       return _hinweis(context, AppTexte.of(context).stammbaumKeineNachfahren);
@@ -1364,10 +1472,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           onTap: () => _ruecke(person.id),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg + zeile.stufe * 24.0,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.sm),
+              AppSpacing.lg + zeile.stufe * 24.0,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Row(
               children: [
                 // Ein Winkel statt eines Aufzählungspunkts: Er zeigt an,
@@ -1383,16 +1492,20 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 Text(
                   person.name,
                   style: TextStyle(
-                    fontWeight:
-                        zeile.stufe == 0 ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: zeile.stufe == 0
+                        ? FontWeight.w600
+                        : FontWeight.w400,
                   ),
                 ),
                 if (spanne != null) ...[
                   const SizedBox(width: AppSpacing.sm),
-                  Text(spanne,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  Text(
+                    spanne,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -1403,16 +1516,20 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   }
 
   Widget _hinweis(BuildContext context, String text) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: SizedBox(
-            width: 420,
-            child: Text(text,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+    child: Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: SizedBox(
+        width: 420,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   /// Alle Verwandten mit ihrer Bezeichnung, von den nächsten zu den
   /// entferntesten.
@@ -1470,9 +1587,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       },
       beschriftung: (z) => [
         z.name,
-        lebensspanne(z.geburt, z.tod,
-                geboren: '${t.stammbaumGeboren} ',
-                gestorben: '${t.stammbaumGestorben} ') ??
+        lebensspanne(
+              z.geburt,
+              z.tod,
+              geboren: '${t.stammbaumGeboren} ',
+              gestorben: '${t.stammbaumGestorben} ',
+            ) ??
             t.zeitleisteOhneDatum,
         if (z.marken.isNotEmpty) t.zeitleisteEreignisse(z.marken.length),
       ].join(', '),
@@ -1481,15 +1601,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
   Widget _verwandtenListe(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
-    final eintraege = _grade.entries
-        .where((e) => _nachId.containsKey(e.key))
-        .toList()
-      ..sort((a, b) {
-        final rang = naeheRang(a.value).compareTo(naeheRang(b.value));
-        if (rang != 0) return rang;
-        return _nachId[a.key]!.name.toLowerCase().compareTo(
-            _nachId[b.key]!.name.toLowerCase());
-      });
+    final eintraege =
+        _grade.entries.where((e) => _nachId.containsKey(e.key)).toList()
+          ..sort((a, b) {
+            final rang = naeheRang(a.value).compareTo(naeheRang(b.value));
+            if (rang != 0) return rang;
+            return _nachId[a.key]!.name.toLowerCase().compareTo(
+              _nachId[b.key]!.name.toLowerCase(),
+            );
+          });
 
     if (eintraege.isEmpty) {
       return Center(
@@ -1511,10 +1631,16 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         if (index == 0) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
             child: Text(
               t.stammbaumListeKopf(fokus.name, eintraege.length),
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           );
         }
@@ -1542,21 +1668,22 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (spanne != null)
-                Text(spanne,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 12)),
+                Text(
+                  spanne,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
               Builder(
                 builder: (knopfKontext) => IconButton(
                   tooltip: t.stammbaumMenue,
                   icon: const Icon(Icons.more_vert),
                   onPressed: () {
-                    final kasten =
-                        knopfKontext.findRenderObject() as RenderBox;
+                    final kasten = knopfKontext.findRenderObject() as RenderBox;
                     final bezug = _bezugZurMitte(person.id);
                     _karteMenue(
-                      kasten.localToGlobal(
-                          kasten.size.bottomLeft(Offset.zero)),
+                      kasten.localToGlobal(kasten.size.bottomLeft(Offset.zero)),
                       person,
                       art: _artFuer(person, bezug),
                       umgekehrt: bezug == _Bezug.kind,
@@ -1582,9 +1709,15 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// der Person noch nach der Art zu fragen – ein zweiter Dialog bei
   /// jedem Eintrag, für eine Angabe, die in den allermeisten Fällen
   /// „leiblich“ lautet.
-  Widget _elternMenue(AppTexte t, PersonData? fokus, {required bool umgekehrt}) {
+  Widget _elternMenue(
+    AppTexte t,
+    PersonData? fokus, {
+    required bool umgekehrt,
+  }) {
     return PopupMenuButton<Verwandtschaft>(
-      tooltip: umgekehrt ? t.stammbaumKindHinzufuegen : t.stammbaumElternteilHinzufuegen,
+      tooltip: umgekehrt
+          ? t.stammbaumKindHinzufuegen
+          : t.stammbaumElternteilHinzufuegen,
       icon: Icon(umgekehrt ? Icons.child_care_outlined : Icons.person_add_alt),
       enabled: fokus != null,
       onSelected: (art) => _hinzufuegen(art, umgekehrt: umgekehrt),
@@ -1605,11 +1738,13 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
   }
 
-  Widget _zeile(IconData icon, String text) => Row(children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 12),
-        Flexible(child: Text(text)),
-      ]);
+  Widget _zeile(IconData icon, String text) => Row(
+    children: [
+      Icon(icon, size: 20),
+      const SizedBox(width: 12),
+      Flexible(child: Text(text)),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -1627,9 +1762,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           title: Row(
             children: [
               Flexible(
-                child: Text(fokus == null
-                    ? t.stammbaumTitel
-                    : t.stammbaumTitelVon(fokus.name)),
+                child: Text(
+                  fokus == null
+                      ? t.stammbaumTitel
+                      : t.stammbaumTitelVon(fokus.name),
+                ),
               ),
               if (fokus != null) ...[
                 const SizedBox(width: AppSpacing.sm),
@@ -1696,7 +1833,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             IconButton(
               tooltip: t.stammbaumPartnerHinzufuegen,
               icon: const Icon(Icons.favorite_border),
-              onPressed: fokus == null ? null : () => _hinzufuegen(Verwandtschaft.partner),
+              onPressed: fokus == null
+                  ? null
+                  : () => _hinzufuegen(Verwandtschaft.partner),
             ),
             _elternMenue(t, fokus, umgekehrt: true),
             PopupMenuButton<String>(
@@ -1732,13 +1871,18 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                   value: 'verwandter',
                   enabled: fokus != null,
                   child: _zeile(
-                      Icons.diversity_1_outlined, t.stammbaumVerwandtenHinzufuegen),
+                    Icons.diversity_1_outlined,
+                    t.stammbaumVerwandtenHinzufuegen,
+                  ),
                 ),
                 const PopupMenuDivider(),
                 PopupMenuItem(
                   value: 'fotos',
                   enabled: fokus != null,
-                  child: _zeile(Icons.photo_library_outlined, t.stammbaumFamilienfotos),
+                  child: _zeile(
+                    Icons.photo_library_outlined,
+                    t.stammbaumFamilienfotos,
+                  ),
                 ),
                 PopupMenuItem(
                   value: 'orte',
@@ -1749,7 +1893,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                   value: 'statistik',
                   enabled: fokus != null,
                   child: _zeile(
-                      Icons.bar_chart_outlined, t.stammbaumFamilienstatistik),
+                    Icons.bar_chart_outlined,
+                    t.stammbaumFamilienstatistik,
+                  ),
                 ),
                 PopupMenuItem(
                   value: 'tafel',
@@ -1760,7 +1906,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                   value: 'zierbaum',
                   enabled: fokus != null,
                   child: _zeile(
-                      Icons.park_outlined, t.stammbaumZierbaumDrucken),
+                    Icons.park_outlined,
+                    t.stammbaumZierbaumDrucken,
+                  ),
                 ),
                 PopupMenuItem(
                   value: 'gedcom',
@@ -1772,7 +1920,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 PopupMenuItem(
                   value: 'gedcom_import',
                   child: _zeile(
-                      Icons.file_download_outlined, t.stammbaumGedcomImport),
+                    Icons.file_download_outlined,
+                    t.stammbaumGedcomImport,
+                  ),
                 ),
               ],
             ),
@@ -1781,17 +1931,21 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         body: _laedt
             ? const Center(child: CircularProgressIndicator())
             : fokus == null
-                ? Center(child: Text(_personen.isEmpty
-                    ? t.stammbaumKeinePersonen
-                    : t.stammbaumPersonFehlt))
-                : switch (_ansicht) {
-                    _Ansicht.baum => _baum(context, fokus),
-                    _Ansicht.faecher => _faecher(context, fokus),
-                    _Ansicht.sanduhr => _sanduhr(context, fokus),
-                    _Ansicht.nachfahren => _nachfahrenTafel(context, fokus),
-                    _Ansicht.liste => _verwandtenListe(context, fokus),
-                    _Ansicht.zeitleiste => _zeitleiste(context, fokus),
-                  },
+            ? Center(
+                child: Text(
+                  _personen.isEmpty
+                      ? t.stammbaumKeinePersonen
+                      : t.stammbaumPersonFehlt,
+                ),
+              )
+            : switch (_ansicht) {
+                _Ansicht.baum => _baum(context, fokus),
+                _Ansicht.faecher => _faecher(context, fokus),
+                _Ansicht.sanduhr => _sanduhr(context, fokus),
+                _Ansicht.nachfahren => _nachfahrenTafel(context, fokus),
+                _Ansicht.liste => _verwandtenListe(context, fokus),
+                _Ansicht.zeitleiste => _zeitleiste(context, fokus),
+              },
       ),
     );
   }
@@ -1806,8 +1960,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Aufgabenverwaltung gerade abgelegt hat.
   Widget _baum(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
-    final geflecht =
-        geflechtUm(_netz, fokus.id, [for (final p in _personen) p.id]);
+    final geflecht = geflechtUm(_netz, fokus.id, [
+      for (final p in _personen) p.id,
+    ]);
     // **Der Baum wächst mit der Systemschrift.** Ein Schild ist 132 auf
     // 108 Punkte gross, und in seine Tafel passen genau drei Zeilen:
     // 56,6 von 67 Punkten. Wer die Schrift des Systems auf 120 Prozent
@@ -1818,8 +1973,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     // dreifach vergrössert wird.
     final schriftfaktor = MediaQuery.textScalerOf(context).scale(14) / 14;
     final schildmasse = const Schildmasse().mal(schriftfaktor);
-    final plan = zierbaumplan(geflecht,
-        masse: const Zierbaummasse().mal(schriftfaktor));
+    final plan = zierbaumplan(
+      geflecht,
+      masse: const Zierbaummasse().mal(schriftfaktor),
+    );
     final farben = Zierbaumfarben.fuer(Theme.of(context).brightness);
 
     if (plan.schilder.length <= 1) {
@@ -1829,135 +1986,162 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           child: Text(
             t.stammbaumLeer,
             textAlign: TextAlign.center,
-            style:
-                TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );
     }
 
-    return Column(children: [
-      if (geflecht.verschwiegen > 0)
-        Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              Icon(Icons.more_horiz,
+    return Column(
+      children: [
+        if (geflecht.verschwiegen > 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.more_horiz,
                   size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  t.stammbaumZuVieleHaushalte(geflecht.verschwiegen),
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
-          ),
-        ),
-      Expanded(
-        // Verschieben und Zoomen statt zweier ineinandergesteckter
-        // Rollbereiche. Die konnten zwar in beide Richtungen rollen, aber
-        // ein Baum mit angeheirateter Verwandtschaft ist breiter als
-        // jedes Fenster – man bekam ihn nie ganz zu sehen, und ohne
-        // Rollbalken (Tastfläche, Magic Mouse) kam man nicht einmal an
-        // seinen Rand.
-        //
-        // Die Mindestmasse sind der Grund für den LayoutBuilder: Ein
-        // unbeschränkter Bereich gibt seinem Kind unbegrenzten Platz, und
-        // ein Kind, das nur so gross ist wie sein Inhalt, hört dort auf.
-        // Der gemalte Grund endete dann mitten im Fenster, und daneben
-        // stand die gewöhnliche Hintergrundfarbe – ein Bild mit einer
-        // Kante. Herausgezoomt bleibt genau das übrig, deshalb liegt
-        // derselbe Grundton auch unter der ganzen Fläche.
-        child: LayoutBuilder(builder: (context, platz) {
-          final fenster = Size(platz.maxWidth, platz.maxHeight);
-          _passeEin(fokus.id, fenster, plan);
-          return Stack(children: [
-              // Der Grund liegt HINTER dem verschiebbaren Bereich und
-              // bleibt stehen. Läge er darin, wäre er so gross wie der
-              // Baum – und beim Verschieben sähe man seine Kante mitten
-              // im Fenster.
-              Positioned.fill(
-                child: CustomPaint(painter: Zierbaumgrund(farben: farben)),
-              ),
-              Positioned.fill(
-                child: InteractiveViewer(
-          transformationController: _blick,
-          // Der Baum behält seine eigene Grösse, statt ins Fenster
-          // gequetscht zu werden – sonst gäbe es nichts zu verschieben.
-          constrained: false,
-          minScale: kleinsterBaumzoom,
-          maxScale: groessterBaumzoom,
-          // Ohne Rand liesse sich ein Baum, der schmaler ist als das
-          // Fenster, überhaupt nicht bewegen; mit unendlichem Rand
-          // schöbe man ihn versehentlich ganz aus dem Bild und stünde vor
-          // einer leeren Fläche. Eine Fensterbreite ringsum ist beides
-          // nicht: Jedes Schild lässt sich bis an die gegenüberliegende
-          // Kante ziehen, und irgendetwas bleibt immer zu sehen.
-          boundaryMargin: EdgeInsets.symmetric(
-              horizontal: platz.maxWidth, vertical: platz.maxHeight),
-          // Wischen auf einer Tastfläche oder Magic Mouse zoomt, wie auf
-          // der Karte. Ohne diese Zeile verschöbe es nur – und die
-          // Geräte, die kein Rad haben, hätten wieder keinen Zoom.
-          trackpadScrollCausesScale: true,
-          // Die Schriftgrössen stecken schon in den Massen – ohne diese
-          // Zeile käme der Faktor ein zweites Mal obendrauf.
-          child: MediaQuery.withNoTextScaling(
-            child: ZierbaumAnsicht(
-              // Kein Mindestmass mehr: Der Grund steht dahinter, also
-              // darf der Baum genau so gross sein, wie er ist.
-              malGrund: false,
-              schildmasse: schildmasse,
-              plan: plan,
-              farben: farben,
-              fokusId: fokus.id,
-              menueHinweis: t.stammbaumMenue,
-              familienname: haeufigsterNachname(
-                  [for (final id in geflecht.personen) _nachId[id]!.name]),
-              inhalt: (id) {
-                final person = _nachId[id]!;
-                final bild = person.coverFaceCropPath;
-                return Schildinhalt(
-                  name: person.name,
-                  verwandtschaft: id == fokus.id ? null : _bezeichnung(person),
-                  bild:
-                      bild == null ? null : widget.library.paths.absolute(bild),
-                  lebensspanne: lebensspanne(
-                      person.geburtsdatum, person.sterbedatum),
-                  weitereOben: geflecht.weitereOben[id] ?? false,
-                  weitereUnten: geflecht.weitereUnten[id] ?? false,
-                );
-              },
-              beiTipp: _ruecke,
-              beiMenue: (id, stelle) {
-                final person = _nachId[id]!;
-                final bezug = _bezugZurMitte(id);
-                _karteMenue(stelle, person,
-                    art: _artFuer(person, bezug),
-                    umgekehrt: bezug == _Bezug.kind);
-              },
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    t.stammbaumZuVieleHaushalte(geflecht.verschwiegen),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-                ),
-              ),
-              Positioned(
-                right: AppSpacing.sm,
-                bottom: AppSpacing.sm,
-                child: Zoomsteuerung(
-                  beiNaeher: () => _baumZoomen(baumZoomschritt, fenster),
-                  beiWeiter: () => _baumZoomen(1 / baumZoomschritt, fenster),
-                  beiEinpassen: () => _blick.value = baumEingepasst(
-                      Size(plan.breite, plan.hoehe), fenster),
-                ),
-              ),
-          ]);
-        }),
-      ),
-    ]);
+        Expanded(
+          // Verschieben und Zoomen statt zweier ineinandergesteckter
+          // Rollbereiche. Die konnten zwar in beide Richtungen rollen, aber
+          // ein Baum mit angeheirateter Verwandtschaft ist breiter als
+          // jedes Fenster – man bekam ihn nie ganz zu sehen, und ohne
+          // Rollbalken (Tastfläche, Magic Mouse) kam man nicht einmal an
+          // seinen Rand.
+          //
+          // Die Mindestmasse sind der Grund für den LayoutBuilder: Ein
+          // unbeschränkter Bereich gibt seinem Kind unbegrenzten Platz, und
+          // ein Kind, das nur so gross ist wie sein Inhalt, hört dort auf.
+          // Der gemalte Grund endete dann mitten im Fenster, und daneben
+          // stand die gewöhnliche Hintergrundfarbe – ein Bild mit einer
+          // Kante. Herausgezoomt bleibt genau das übrig, deshalb liegt
+          // derselbe Grundton auch unter der ganzen Fläche.
+          child: LayoutBuilder(
+            builder: (context, platz) {
+              final fenster = Size(platz.maxWidth, platz.maxHeight);
+              _passeEin(fokus.id, fenster, plan);
+              return Stack(
+                children: [
+                  // Der Grund liegt HINTER dem verschiebbaren Bereich und
+                  // bleibt stehen. Läge er darin, wäre er so gross wie der
+                  // Baum – und beim Verschieben sähe man seine Kante mitten
+                  // im Fenster.
+                  Positioned.fill(
+                    child: CustomPaint(painter: Zierbaumgrund(farben: farben)),
+                  ),
+                  Positioned.fill(
+                    child: InteractiveViewer(
+                      transformationController: _blick,
+                      // Der Baum behält seine eigene Grösse, statt ins Fenster
+                      // gequetscht zu werden – sonst gäbe es nichts zu verschieben.
+                      constrained: false,
+                      minScale: kleinsterBaumzoom,
+                      maxScale: groessterBaumzoom,
+                      // Ohne Rand liesse sich ein Baum, der schmaler ist als das
+                      // Fenster, überhaupt nicht bewegen; mit unendlichem Rand
+                      // schöbe man ihn versehentlich ganz aus dem Bild und stünde vor
+                      // einer leeren Fläche. Eine Fensterbreite ringsum ist beides
+                      // nicht: Jedes Schild lässt sich bis an die gegenüberliegende
+                      // Kante ziehen, und irgendetwas bleibt immer zu sehen.
+                      boundaryMargin: EdgeInsets.symmetric(
+                        horizontal: platz.maxWidth,
+                        vertical: platz.maxHeight,
+                      ),
+                      // Wischen auf einer Tastfläche oder Magic Mouse zoomt, wie auf
+                      // der Karte. Ohne diese Zeile verschöbe es nur – und die
+                      // Geräte, die kein Rad haben, hätten wieder keinen Zoom.
+                      trackpadScrollCausesScale: true,
+                      // Die Schriftgrössen stecken schon in den Massen – ohne diese
+                      // Zeile käme der Faktor ein zweites Mal obendrauf.
+                      child: MediaQuery.withNoTextScaling(
+                        child: ZierbaumAnsicht(
+                          // Kein Mindestmass mehr: Der Grund steht dahinter, also
+                          // darf der Baum genau so gross sein, wie er ist.
+                          malGrund: false,
+                          schildmasse: schildmasse,
+                          plan: plan,
+                          farben: farben,
+                          fokusId: fokus.id,
+                          menueHinweis: t.stammbaumMenue,
+                          familienname: haeufigsterNachname([
+                            for (final id in geflecht.personen)
+                              _nachId[id]!.name,
+                          ]),
+                          inhalt: (id) {
+                            final person = _nachId[id]!;
+                            final bild = person.coverFaceCropPath;
+                            return Schildinhalt(
+                              name: person.name,
+                              verwandtschaft: id == fokus.id
+                                  ? null
+                                  : _bezeichnung(person),
+                              bild: bild == null
+                                  ? null
+                                  : widget.library.paths.absolute(bild),
+                              lebensspanne: lebensspanne(
+                                person.geburtsdatum,
+                                person.sterbedatum,
+                              ),
+                              weitereOben: geflecht.weitereOben[id] ?? false,
+                              weitereUnten: geflecht.weitereUnten[id] ?? false,
+                            );
+                          },
+                          beiTipp: _ruecke,
+                          beiMenue: (id, stelle) {
+                            final person = _nachId[id]!;
+                            final bezug = _bezugZurMitte(id);
+                            _karteMenue(
+                              stelle,
+                              person,
+                              art: _artFuer(person, bezug),
+                              umgekehrt: bezug == _Bezug.kind,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: AppSpacing.sm,
+                    bottom: AppSpacing.sm,
+                    child: Zoomsteuerung(
+                      beiNaeher: () => _baumZoomen(baumZoomschritt, fenster),
+                      beiWeiter: () =>
+                          _baumZoomen(1 / baumZoomschritt, fenster),
+                      beiEinpassen: () => _blick.value = baumEingepasst(
+                        Size(plan.breite, plan.hoehe),
+                        fenster,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   /// Stellt den Ausschnitt neu ein, wenn ein anderer Baum davorsteht.
@@ -1987,15 +2171,22 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     _blick.value = baumErsterBlick(
       baum: baum,
       fenster: fenster,
-      fokusSchild:
-          Rect.fromLTWH(schild.links, schild.oben, schild.breite, schild.hoehe),
+      fokusSchild: Rect.fromLTWH(
+        schild.links,
+        schild.oben,
+        schild.breite,
+        schild.hoehe,
+      ),
     );
   }
 
   /// Ein Zoomschritt über die Knöpfe, festgehalten an der Fenstermitte.
   void _baumZoomen(double faktor, Size fenster) {
-    _blick.value = baumGezoomt(_blick.value, faktor,
-        Offset(fenster.width / 2, fenster.height / 2));
+    _blick.value = baumGezoomt(
+      _blick.value,
+      faktor,
+      Offset(fenster.width / 2, fenster.height / 2),
+    );
   }
 
   /// Wie [person] zur Mitte steht, aus dem Netz hergeleitet.
@@ -2084,16 +2275,22 @@ class _LebensdatenDialogState extends State<_LebensdatenDialog> {
                   isDense: true,
                   onChanged: (w) => setState(() => _geschlecht = w),
                   items: [
-                    DropdownMenuItem(value: null, child: Text(t.stammbaumGeschlechtOffen)),
                     DropdownMenuItem(
-                        value: Geschlecht.weiblich,
-                        child: Text(t.stammbaumGeschlechtWeiblich)),
+                      value: null,
+                      child: Text(t.stammbaumGeschlechtOffen),
+                    ),
                     DropdownMenuItem(
-                        value: Geschlecht.maennlich,
-                        child: Text(t.stammbaumGeschlechtMaennlich)),
+                      value: Geschlecht.weiblich,
+                      child: Text(t.stammbaumGeschlechtWeiblich),
+                    ),
                     DropdownMenuItem(
-                        value: Geschlecht.divers,
-                        child: Text(t.stammbaumGeschlechtDivers)),
+                      value: Geschlecht.maennlich,
+                      child: Text(t.stammbaumGeschlechtMaennlich),
+                    ),
+                    DropdownMenuItem(
+                      value: Geschlecht.divers,
+                      child: Text(t.stammbaumGeschlechtDivers),
+                    ),
                   ],
                 ),
               ),
@@ -2105,7 +2302,9 @@ class _LebensdatenDialogState extends State<_LebensdatenDialog> {
             child: Text(
               t.stammbaumGeschlechtHinweis,
               style: TextStyle(
-                  fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           _Datumszeile(
@@ -2123,16 +2322,24 @@ class _LebensdatenDialogState extends State<_LebensdatenDialog> {
           const SizedBox(height: AppSpacing.md),
           Text(
             t.stammbaumNurJahrHinweis,
-            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(
-          onPressed: () => Navigator.pop(
-              context, (geburt: _geburt, tod: _tod, geschlecht: _geschlecht)),
+          onPressed: () => Navigator.pop(context, (
+            geburt: _geburt,
+            tod: _tod,
+            geschlecht: _geschlecht,
+          )),
           child: Text(t.allgSpeichern),
         ),
       ],
@@ -2162,9 +2369,11 @@ class _Datumszeile extends StatelessWidget {
         Expanded(
           child: OutlinedButton(
             onPressed: onWaehlen,
-            child: Text(wert == null
-                ? t.stammbaumUnbekannt
-                : '${wert!.day}.${wert!.month}.${wert!.year}'),
+            child: Text(
+              wert == null
+                  ? t.stammbaumUnbekannt
+                  : '${wert!.day}.${wert!.month}.${wert!.year}',
+            ),
           ),
         ),
         IconButton(

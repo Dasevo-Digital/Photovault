@@ -21,14 +21,16 @@ Future<void> zeige(WidgetTester tester, Kachelmitschnitt m) async {
   // keine Aussage über die Ansicht, sondern über die Fenstergrösse.
   await tester.binding.setSurfaceSize(const Size(900, 2400));
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(MaterialApp(
-    localizationsDelegates: AppTexte.localizationsDelegates,
-    supportedLocales: AppTexte.supportedLocales,
-    // Mit dem echten Thema: Die Ansicht färbt auffällige Werte über
-    // [AppSemantik], und das ist eine Erweiterung des Themas.
-    theme: buildDarkTheme(),
-    home: KachelmitschnittScreen(mitschnitt: m),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppTexte.localizationsDelegates,
+      supportedLocales: AppTexte.supportedLocales,
+      // Mit dem echten Thema: Die Ansicht färbt auffällige Werte über
+      // [AppSemantik], und das ist eine Erweiterung des Themas.
+      theme: buildDarkTheme(),
+      home: KachelmitschnittScreen(mitschnitt: m),
+    ),
+  );
   await tester.pump();
 }
 
@@ -45,8 +47,9 @@ Future<void> raeumeAb(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('ohne Einträge steht da, dass nichts mitgeschrieben wurde',
-      (tester) async {
+  testWidgets('ohne Einträge steht da, dass nichts mitgeschrieben wurde', (
+    tester,
+  ) async {
     await zeige(tester, Kachelmitschnitt());
     final t = texte(tester);
     expect(find.text(t.mitschnittNochNichts), findsOneWidget);
@@ -54,8 +57,9 @@ void main() {
     await raeumeAb(tester);
   });
 
-  testWidgets('der Knopf schaltet den Mitschnitt an und wieder aus',
-      (tester) async {
+  testWidgets('der Knopf schaltet den Mitschnitt an und wieder aus', (
+    tester,
+  ) async {
     final m = Kachelmitschnitt();
     await zeige(tester, m);
 
@@ -71,8 +75,9 @@ void main() {
     await raeumeAb(tester);
   });
 
-  testWidgets('die beiden Verhältniszahlen stehen oben und stimmen',
-      (tester) async {
+  testWidgets('die beiden Verhältniszahlen stehen oben und stimmen', (
+    tester,
+  ) async {
     // Der gemessene Fall in klein: sechs Abrufe auf drei Kacheln, dazu
     // zwölf Verbindungen. Genau diese beiden Zahlen auseinanderzuhalten
     // ist der Zweck des Bildschirms.
@@ -95,8 +100,9 @@ void main() {
     await raeumeAb(tester);
   });
 
-  testWidgets('Statuscodes, Fehler und die letzten Abrufe stehen darunter',
-      (tester) async {
+  testWidgets('Statuscodes, Fehler und die letzten Abrufe stehen darunter', (
+    tester,
+  ) async {
     final m = Kachelmitschnitt()..starte();
     m.notiere(abruf('8/134/85'));
     m.notiere(abruf('8/134/86', status: 404));

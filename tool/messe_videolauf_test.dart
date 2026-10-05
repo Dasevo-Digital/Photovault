@@ -43,7 +43,12 @@ Future<Uint8List> _kachel() async {
   }
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      rgba, kante, kante, ui.PixelFormat.rgba8888, fertig.complete);
+    rgba,
+    kante,
+    kante,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   final bild = await fertig.future;
   final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
   bild.dispose();
@@ -68,8 +73,13 @@ void main() {
         }
       }
       final gitter = Hoehengitter(
-        spalten: n, zeilen: n, hoehen: hoehen,
-        nord: 51.90, sued: 51.80, west: 10.55, ost: 10.71,
+        spalten: n,
+        zeilen: n,
+        hoehen: hoehen,
+        nord: 51.90,
+        sued: 51.80,
+        west: 10.55,
+        ost: 10.71,
       );
       final netzDreiecke = baueNetz(gitter, kante: 96, grundstufe: 15);
       final lader = Blocktexturlader(
@@ -80,7 +90,7 @@ void main() {
         speicher: const DisabledMapCachingProvider(),
         hoechstensBytes:
             int.tryParse(Platform.environment['PV_BUDGET'] ?? '') ??
-                blocktexturSpeicher,
+            blocktexturSpeicher,
       );
       addTearDown(lader.schliessen);
 
@@ -96,11 +106,7 @@ void main() {
           entfernung: 2600,
           brennweite: 1000,
           mitte: const Offset(960, 670),
-          blickpunkt: (
-            x: -2000 + 4000 * t,
-            y: -1500 + 3000 * t,
-            z: 0,
-          ),
+          blickpunkt: (x: -2000 + 4000 * t, y: -1500 + 3000 * t, z: 0),
         );
         lader.brauche(bloeckeImBild(netzDreiecke, kamera, flaeche));
         final w = Stopwatch()..start();
@@ -118,16 +124,24 @@ void main() {
         gesamt += sch.gesamt;
       }
       uhr.stop();
-      print('$bilder Bilder: ${uhr.elapsedMilliseconds} ms gesamt, '
-          'davon ${(warten / 1000).round()} ms Warten '
-          '(${(warten / bilder / 1000).toStringAsFixed(0)} ms je Bild)');
-      print('$abrufe Kachelabrufe, ${lader.gehalten} Texturen im Vorrat, '
-          '${(lader.belegt / 1024 / 1024).toStringAsFixed(0)} MB');
-      print('auf Zielstufe: die 24 naechsten '
-          '${(scharf24 / gesamt24 * 100).toStringAsFixed(0)} %, '
-          'die 60 naechsten ${(scharf / gesamt * 100).toStringAsFixed(0)} %');
-      print('hochgerechnet auf 1800 Bilder: '
-          '${(warten / bilder * 1800 / 1e6).toStringAsFixed(0)} s allein Warten');
+      print(
+        '$bilder Bilder: ${uhr.elapsedMilliseconds} ms gesamt, '
+        'davon ${(warten / 1000).round()} ms Warten '
+        '(${(warten / bilder / 1000).toStringAsFixed(0)} ms je Bild)',
+      );
+      print(
+        '$abrufe Kachelabrufe, ${lader.gehalten} Texturen im Vorrat, '
+        '${(lader.belegt / 1024 / 1024).toStringAsFixed(0)} MB',
+      );
+      print(
+        'auf Zielstufe: die 24 naechsten '
+        '${(scharf24 / gesamt24 * 100).toStringAsFixed(0)} %, '
+        'die 60 naechsten ${(scharf / gesamt * 100).toStringAsFixed(0)} %',
+      );
+      print(
+        'hochgerechnet auf 1800 Bilder: '
+        '${(warten / bilder * 1800 / 1e6).toStringAsFixed(0)} s allein Warten',
+      );
     });
   }, timeout: const Timeout(Duration(minutes: 10)));
 }

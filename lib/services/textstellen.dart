@@ -38,12 +38,12 @@ class Textstelle {
   double get unten => oben + hoehe;
 
   Map<String, Object?> toJson() => {
-        't': text,
-        'x': _gerundet(links),
-        'y': _gerundet(oben),
-        'b': _gerundet(breite),
-        'h': _gerundet(hoehe),
-      };
+    't': text,
+    'x': _gerundet(links),
+    'y': _gerundet(oben),
+    'b': _gerundet(breite),
+    'h': _gerundet(hoehe),
+  };
 
   /// Vier Nachkommastellen. Bei einem 6000 Pixel breiten Foto ist das gut ein
   /// halbes Pixel – genauer wäre eine Behauptung, die die Erkennung gar nicht
@@ -85,10 +85,7 @@ List<Textstelle> textstellenAusJson(String? json) {
   try {
     final roh = jsonDecode(json);
     if (roh is! List) return const [];
-    return [
-      for (final eintrag in roh)
-        ?Textstelle._ausJson(eintrag),
-    ];
+    return [for (final eintrag in roh) ?Textstelle._ausJson(eintrag)];
   } on FormatException {
     return const [];
   }

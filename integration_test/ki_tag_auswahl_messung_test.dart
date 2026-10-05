@@ -47,14 +47,17 @@ void main() {
 
     final begriffe = [
       for (final r in db.select(
-          'SELECT term FROM ai_tag_vocabulary ORDER BY term'))
-        r['term'] as String
+        'SELECT term FROM ai_tag_vocabulary ORDER BY term',
+      ))
+        r['term'] as String,
     ];
     expect(begriffe, isNotEmpty, reason: 'kein Vokabular in der Bibliothek');
 
     final begriffsVektoren = <Float32List>[];
     for (final b in begriffe) {
-      begriffsVektoren.add(await clip.embedText(await begriffFuerModell(b, null)));
+      begriffsVektoren.add(
+        await clip.embedText(await begriffFuerModell(b, null)),
+      );
     }
 
     double cosinus(Float32List a, Float32List b) {
@@ -66,8 +69,7 @@ void main() {
       return s;
     }
 
-    final zeilen = db.select(
-        'SELECT vector FROM image_embeddings LIMIT 1500');
+    final zeilen = db.select('SELECT vector FROM image_embeddings LIMIT 1500');
     var altSumme = 0, neuSumme = 0, neuLeer = 0;
     final altVerteilung = <int, int>{};
     final neuVerteilung = <int, int>{};
@@ -77,12 +79,15 @@ void main() {
     for (final z in zeilen) {
       final roh = z['vector'] as Uint8List;
       final bild = Float32List.view(
-          roh.buffer, roh.offsetInBytes, roh.lengthInBytes ~/ 4);
+        roh.buffer,
+        roh.offsetInBytes,
+        roh.lengthInBytes ~/ 4,
+      );
       final naehe = [for (final v in begriffsVektoren) cosinus(bild, v)];
 
       final alt = [
         for (var i = 0; i < begriffe.length; i++)
-          if (naehe[i] >= 0.24) begriffe[i]
+          if (naehe[i] >= 0.24) begriffe[i],
       ];
       final neu = waehleTags(begriffe, naehe);
 
@@ -107,11 +112,17 @@ void main() {
     print('Aufnahmen: ${zeilen.length}, Vokabular: ${begriffe.length}');
     print('alt: ${(altSumme / zeilen.length).toStringAsFixed(1)} je Foto');
     print('     ${top(altBegriff)}');
-    print('neu: ${(neuSumme / zeilen.length).toStringAsFixed(1)} je Foto, '
-        '$neuLeer ohne Schlagwort');
+    print(
+      'neu: ${(neuSumme / zeilen.length).toStringAsFixed(1)} je Foto, '
+      '$neuLeer ohne Schlagwort',
+    );
     print('     ${top(neuBegriff)}');
-    print('Verteilung alt: ${(altVerteilung.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => "${e.key}:${e.value}").join(" ")}');
-    print('Verteilung neu: ${(neuVerteilung.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => "${e.key}:${e.value}").join(" ")}');
+    print(
+      'Verteilung alt: ${(altVerteilung.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => "${e.key}:${e.value}").join(" ")}',
+    );
+    print(
+      'Verteilung neu: ${(neuVerteilung.entries.toList()..sort((a, b) => a.key.compareTo(b.key))).map((e) => "${e.key}:${e.value}").join(" ")}',
+    );
 
     expect(neuSumme, lessThan(altSumme));
   }, timeout: const Timeout(Duration(minutes: 20)));

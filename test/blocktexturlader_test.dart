@@ -31,7 +31,12 @@ Future<Uint8List> _kachel(Color farbe) async {
   }
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      rgba, kante, kante, ui.PixelFormat.rgba8888, fertig.complete);
+    rgba,
+    kante,
+    kante,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   final bild = await fertig.future;
   final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
   bild.dispose();
@@ -44,25 +49,29 @@ void main() {
 
   /// Drei Blöcke nebeneinander im Harz.
   List<Texturblock> bloecke() => texturbloecke(
-      sued: 51.83, west: 10.61, nord: 51.835, ost: 10.625,
-      grundstufe: texturGrundstufe);
+    sued: 51.83,
+    west: 10.61,
+    nord: 51.835,
+    ost: 10.625,
+    grundstufe: texturGrundstufe,
+  );
 
   Blocktexturlader lader(
     http.Client netz, {
     int grundstufe = texturGrundstufe,
     int hoechstensBytes = blocktexturSpeicher,
     Gelaendegrund grund = Gelaendegrund.luftbild,
-  }) =>
-      Blocktexturlader(
-        karte: Gelaendekarte(grund: grund),
-        grundstufe: grundstufe,
-        netz: netz,
-        speicher: const DisabledMapCachingProvider(),
-        hoechstensBytes: hoechstensBytes,
-      );
+  }) => Blocktexturlader(
+    karte: Gelaendekarte(grund: grund),
+    grundstufe: grundstufe,
+    netz: netz,
+    speicher: const DisabledMapCachingProvider(),
+    hoechstensBytes: hoechstensBytes,
+  );
 
-  testWidgets('ein Block bekommt seine Textur in der gewünschten Grösse',
-      (tester) async {
+  testWidgets('ein Block bekommt seine Textur in der gewünschten Grösse', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       final netz = MockClient((_) async => http.Response.bytes(kachel, 200));
       final l = lader(netz);
@@ -104,8 +113,9 @@ void main() {
     });
   });
 
-  testWidgets('ein Block, der nicht kommt, wird nicht endlos nachgefragt',
-      (tester) async {
+  testWidgets('ein Block, der nicht kommt, wird nicht endlos nachgefragt', (
+    tester,
+  ) async {
     // Der Fund beim Bauen: Ohne Merkposten für Fehlschläge fragte der
     // Lader denselben Block wieder und wieder, weil der Wunsch
     // unverändert offen stand. Kein Absturz, keine Meldung – nur ein
@@ -123,8 +133,11 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 400));
       // Eine Kachel, zwei Versuche (siehe `holeKachelRoh`) – und dann
       // Ruhe. Alles darüber wäre die Endlosschleife.
-      expect(anfragen, lessThanOrEqualTo(4),
-          reason: 'der Lader dreht sich im Kreis: $anfragen Anfragen');
+      expect(
+        anfragen,
+        lessThanOrEqualTo(4),
+        reason: 'der Lader dreht sich im Kreis: $anfragen Anfragen',
+      );
       expect(l.bei(b), isNull);
 
       // Gegenprobe: Ein anderer Block wird trotzdem noch bedient – der
@@ -136,8 +149,9 @@ void main() {
     });
   });
 
-  testWidgets('was nicht ins Budget passt, bekommt gar keine eigene Textur',
-      (tester) async {
+  testWidgets('was nicht ins Budget passt, bekommt gar keine eigene Textur', (
+    tester,
+  ) async {
     // **Der erste Anlauf holte alles und liess den Vorrat aufräumen.**
     // Das ergab entweder gar keine Verdrängung – acht Blöcke in einem
     // Vorrat für zwei, hier gemessen – oder einen Kreislauf: Der fernste
@@ -153,7 +167,7 @@ void main() {
       addTearDown(l.schliessen);
       l.brauche([
         for (var i = 0; i < bs.length; i++)
-          (block: bs[i], stufe: 16, entfernung: 100.0 + i * 1000)
+          (block: bs[i], stufe: 16, entfernung: 100.0 + i * 1000),
       ]);
       await _bisFertig(() => l.bei(bs[1]) != null);
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -166,8 +180,9 @@ void main() {
     });
   });
 
-  testWidgets('was nicht mehr gewünscht wird, gibt seinen Platz her',
-      (tester) async {
+  testWidgets('was nicht mehr gewünscht wird, gibt seinen Platz her', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       final netz = MockClient((_) async => http.Response.bytes(kachel, 200));
       final bs = bloecke();
@@ -183,15 +198,20 @@ void main() {
         (block: bs[2], stufe: 16, entfernung: 200.0),
       ]);
       await _bisFertig(() => l.bei(bs[2]) != null);
-      expect(l.bei(bs[0]), isNull,
-          reason: 'was hinter der Kamera liegt, ist frisch benutzt und '
-              'trotzdem am wenigsten wert');
+      expect(
+        l.bei(bs[0]),
+        isNull,
+        reason:
+            'was hinter der Kamera liegt, ist frisch benutzt und '
+            'trotzdem am wenigsten wert',
+      );
       expect(l.belegt, 2 * 256 * 256 * 4);
     });
   });
 
-  testWidgets('ruhe wartet, bis alles da ist – aber nicht ewig',
-      (tester) async {
+  testWidgets('ruhe wartet, bis alles da ist – aber nicht ewig', (
+    tester,
+  ) async {
     // Fuer den Videoexport: Was beim Aufzeichnen eines Bildes nicht da
     // ist, fehlt darin fuer immer. Am Bildschirm holt der Lader nach,
     // ein Video hat dafuer keine Gelegenheit mehr.
@@ -205,7 +225,7 @@ void main() {
       final bs = bloecke();
       l.brauche([
         for (var i = 0; i < bs.length; i++)
-          (block: bs[i], stufe: 16, entfernung: 100.0 + i)
+          (block: bs[i], stufe: 16, entfernung: 100.0 + i),
       ]);
       await l.ruhe();
       for (final b in bs) {
@@ -214,8 +234,9 @@ void main() {
     });
   });
 
-  testWidgets('ruhe haelt keine Ausgabe an, wenn ein Server schweigt',
-      (tester) async {
+  testWidgets('ruhe haelt keine Ausgabe an, wenn ein Server schweigt', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       final netz = MockClient((_) async {
         await Future<void>.delayed(const Duration(seconds: 5));
@@ -227,8 +248,11 @@ void main() {
       final uhr = Stopwatch()..start();
       await l.ruhe(hoechstens: const Duration(milliseconds: 200));
       uhr.stop();
-      expect(uhr.elapsedMilliseconds, lessThan(1500),
-          reason: 'ein schweigender Server haelt die Ausgabe an');
+      expect(
+        uhr.elapsedMilliseconds,
+        lessThan(1500),
+        reason: 'ein schweigender Server haelt die Ausgabe an',
+      );
     });
   });
 
@@ -238,24 +262,30 @@ void main() {
     // 1. Was dem Anbieter zuzumuten ist. OpenTopoMap rendert bei Bedarf
     //    und braucht dafür Sekunden – ein Überflug wollte 88 Blöcke auf
     //    Stufe 17 und bekam in zwei Minuten 31 davon.
-    expect(
-        lader(netz, grund: Gelaendegrund.wanderkarte).hoechsteStufeFuer, 16);
+    expect(lader(netz, grund: Gelaendegrund.wanderkarte).hoechsteStufeFuer, 16);
 
     // 2. Die eigene Obergrenze – darüber belegte ein Block 16 MB.
-    expect(lader(netz, grund: Gelaendegrund.luftbild).hoechsteStufeFuer,
-        texturHoechsteStufe);
+    expect(
+      lader(netz, grund: Gelaendegrund.luftbild).hoechsteStufeFuer,
+      texturHoechsteStufe,
+    );
 
     // 3. Zwei Stufen über der Grundstufe. Bei einer grossen Tour steht
     //    die Grundstufe gröber, und ohne diese Grenze bräuchte ein
     //    einzelner Block 64 MB.
     expect(
-        lader(netz, grundstufe: 13, grund: Gelaendegrund.luftbild)
-            .hoechsteStufeFuer,
-        15);
+      lader(
+        netz,
+        grundstufe: 13,
+        grund: Gelaendegrund.luftbild,
+      ).hoechsteStufeFuer,
+      15,
+    );
   });
 
-  testWidgets('geschlossen wird nichts mehr geholt und nichts mehr gehalten',
-      (tester) async {
+  testWidgets('geschlossen wird nichts mehr geholt und nichts mehr gehalten', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
       var anfragen = 0;
       final netz = MockClient((_) async {
@@ -289,10 +319,12 @@ void main() {
     // naechstgelegene Block seine Stufe hat - `ruhe` erst, wenn alle
     // durch sind.
     await tester.runAsync(() async {
-      final l = lader(MockClient((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 60));
-        return http.Response.bytes(kachel, 200);
-      }));
+      final l = lader(
+        MockClient((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+          return http.Response.bytes(kachel, 200);
+        }),
+      );
       addTearDown(l.schliessen);
       final b = bloecke();
       // Entfernung aufsteigend: Der erste ist der naechste.
@@ -304,19 +336,28 @@ void main() {
       final uhr = Stopwatch()..start();
       await l.ruheNah(naechste: 1, hoechstens: const Duration(seconds: 5));
       final nah = uhr.elapsedMilliseconds;
-      expect(l.bei(b.first), isNotNull,
-          reason: 'auf den naechsten Block wurde ja gewartet');
+      expect(
+        l.bei(b.first),
+        isNotNull,
+        reason: 'auf den naechsten Block wurde ja gewartet',
+      );
       await l.ruhe(hoechstens: const Duration(seconds: 5));
       final ganz = uhr.elapsedMilliseconds;
-      expect(nah, lessThan(ganz),
-          reason: 'sonst wartet ruheNah genauso lange wie ruhe');
+      expect(
+        nah,
+        lessThan(ganz),
+        reason: 'sonst wartet ruheNah genauso lange wie ruhe',
+      );
     });
   });
 
-  testWidgets('ruheNah kehrt sofort zurueck, wenn das Nahe schon da ist',
-      (tester) async {
+  testWidgets('ruheNah kehrt sofort zurueck, wenn das Nahe schon da ist', (
+    tester,
+  ) async {
     await tester.runAsync(() async {
-      final l = lader(MockClient((_) async => http.Response.bytes(kachel, 200)));
+      final l = lader(
+        MockClient((_) async => http.Response.bytes(kachel, 200)),
+      );
       addTearDown(l.schliessen);
       final b = bloecke();
       l.brauche([
@@ -326,13 +367,17 @@ void main() {
       await l.ruhe(hoechstens: const Duration(seconds: 5));
       final uhr = Stopwatch()..start();
       await l.ruheNah(hoechstens: const Duration(milliseconds: 800));
-      expect(uhr.elapsedMilliseconds, lessThan(120),
-          reason: 'nichts offen heisst nicht warten');
+      expect(
+        uhr.elapsedMilliseconds,
+        lessThan(120),
+        reason: 'nichts offen heisst nicht warten',
+      );
     });
   });
 
-  testWidgets('eine vergebliche Kachel haelt das Warten nicht auf',
-      (tester) async {
+  testWidgets('eine vergebliche Kachel haelt das Warten nicht auf', (
+    tester,
+  ) async {
     // Sonst stuende die Videoausgabe bei jedem Bild die volle Frist vor
     // einem Block, der nie kommt.
     await tester.runAsync(() async {
@@ -349,7 +394,6 @@ void main() {
       expect(uhr.elapsedMilliseconds, lessThan(200));
     });
   });
-
 }
 
 /// Wartet, bis [fertig] wahr ist – höchstens zwei Sekunden.

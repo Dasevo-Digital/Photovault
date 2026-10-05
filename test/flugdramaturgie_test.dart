@@ -25,10 +25,17 @@ Gelaendenetz _netz() {
     }
   }
   return baueNetz(
-      Hoehengitter(
-          spalten: n, zeilen: n, hoehen: h,
-          nord: 51.85, sued: 51.83, west: 10.63, ost: 10.66),
-      kante: 24);
+    Hoehengitter(
+      spalten: n,
+      zeilen: n,
+      hoehen: h,
+      nord: 51.85,
+      sued: 51.83,
+      west: 10.63,
+      ost: 10.66,
+    ),
+    kante: 24,
+  );
 }
 
 /// Eine Spur quer durch die Landschaft, mit Höhen und Zeiten.
@@ -111,8 +118,10 @@ void main() {
     test('die Dauer kommt aus den Zeitstempeln', () {
       final netz = _netz();
       final s = _spur(netz);
-      expect(Gelaendeflug(s.linie, werte: s.werte).gesamtdauer,
-          const Duration(minutes: 120));
+      expect(
+        Gelaendeflug(s.linie, werte: s.werte).gesamtdauer,
+        const Duration(minutes: 120),
+      );
     });
 
     test('eine rueckwaerts laufende Uhr ergibt keine Dauer', () {
@@ -130,8 +139,7 @@ void main() {
   });
 
   group('Am Bildschirm', () {
-    Widget bildschirm(
-        {List<Flugfoto> fotos = const [], Gelaendenetz? netz}) {
+    Widget bildschirm({List<Flugfoto> fotos = const [], Gelaendenetz? netz}) {
       final n = netz ?? _netz();
       final s = _spur(n);
       return MaterialApp(
@@ -149,8 +157,9 @@ void main() {
       );
     }
 
-    testWidgets('der Flug faengt nicht mitten in der Landschaft an',
-        (tester) async {
+    testWidgets('der Flug faengt nicht mitten in der Landschaft an', (
+      tester,
+    ) async {
       // **Der Einflug beantwortet die Frage, die vor allen anderen
       // kommt: wo sind wir ueberhaupt.** Ohne ihn stand die Kamera im
       // ersten Bild schon am Boden.
@@ -168,14 +177,20 @@ void main() {
       // Im ersten Bild des Fluges muss die Kamera noch fast so weit weg
       // stehen wie in der Uebersicht.
       final gleichZuBeginn = maler().kamera.entfernung;
-      expect(gleichZuBeginn, closeTo(uebersicht, uebersicht * 0.1),
-          reason: 'der Einflug springt statt zu fliegen');
+      expect(
+        gleichZuBeginn,
+        closeTo(uebersicht, uebersicht * 0.1),
+        reason: 'der Einflug springt statt zu fliegen',
+      );
 
       // Und nach einem Viertel der Vorfuehrung deutlich naeher.
       tester.widget<Slider>(find.byType(Slider)).onChanged!(0.25);
       await tester.pump();
-      expect(maler().kamera.entfernung, lessThan(uebersicht * 0.5),
-          reason: 'der Einflug kommt nie an');
+      expect(
+        maler().kamera.entfernung,
+        lessThan(uebersicht * 0.5),
+        reason: 'der Einflug kommt nie an',
+      );
     });
 
     testWidgets('am Ende stehen die Zahlen der Tour', (tester) async {
@@ -183,10 +198,12 @@ void main() {
       await tester.pump();
       await tester.tap(find.byIcon(Icons.flight_takeoff));
       await tester.pump();
-      final t = AppTexte.of(
-          tester.element(find.byType(Gelaendeansicht)));
-      expect(find.text(t.flugAufstieg), findsNothing,
-          reason: 'der Abspann gehoert ans Ende, nicht an den Anfang');
+      final t = AppTexte.of(tester.element(find.byType(Gelaendeansicht)));
+      expect(
+        find.text(t.flugAufstieg),
+        findsNothing,
+        reason: 'der Abspann gehoert ans Ende, nicht an den Anfang',
+      );
 
       tester.widget<Slider>(find.byType(Slider)).onChanged!(1.0);
       await tester.pump();
@@ -194,13 +211,19 @@ void main() {
       // Flugleiste darunter, und der Test soll den Abspann pruefen.
       final abspann = find.byKey(const ValueKey('gelaende-abspann'));
       expect(abspann, findsOneWidget);
-      expect(find.descendant(of: abspann, matching: find.text(t.flugAufstieg)),
-          findsOneWidget);
-      expect(find.descendant(of: abspann, matching: find.text(t.flugUnterwegs)),
-          findsOneWidget);
+      expect(
+        find.descendant(of: abspann, matching: find.text(t.flugAufstieg)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: abspann, matching: find.text(t.flugUnterwegs)),
+        findsOneWidget,
+      );
       // Die Laenge der Tour, in Kilometern.
-      expect(find.descendant(of: abspann, matching: find.textContaining('km')),
-          findsOneWidget);
+      expect(
+        find.descendant(of: abspann, matching: find.textContaining('km')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('das Foto taucht dort auf, wo es entstanden ist – und '
@@ -208,18 +231,23 @@ void main() {
       final n = _netz();
       final s = _spur(n);
       final laenge = Gelaendeflug(s.linie, werte: s.werte).laengeMeter;
-      await tester.pumpWidget(bildschirm(netz: n, fotos: [
-        (
-          meter: laenge * 0.2,
-          bild: const _Attrappe('frueh'),
-          unterschrift: '09:30'
+      await tester.pumpWidget(
+        bildschirm(
+          netz: n,
+          fotos: [
+            (
+              meter: laenge * 0.2,
+              bild: const _Attrappe('frueh'),
+              unterschrift: '09:30',
+            ),
+            (
+              meter: laenge * 0.8,
+              bild: const _Attrappe('spaet'),
+              unterschrift: '11:00',
+            ),
+          ],
         ),
-        (
-          meter: laenge * 0.8,
-          bild: const _Attrappe('spaet'),
-          unterschrift: '11:00'
-        ),
-      ]));
+      );
       await tester.pump();
       await tester.tap(find.byIcon(Icons.flight_takeoff));
       await tester.pump();
@@ -251,8 +279,11 @@ void main() {
       // echten Wanderung 22 % des Fluges mit Bild, die ersten 28 % ohne.
       tester.widget<Slider>(find.byType(Slider)).onChanged!(0.50);
       await tester.pump();
-      expect(sichtbar(), 'frueh',
-          reason: 'das letzte Bild gilt weiter, bis eines an seine Stelle tritt');
+      expect(
+        sichtbar(),
+        'frueh',
+        reason: 'das letzte Bild gilt weiter, bis eines an seine Stelle tritt',
+      );
 
       tester.widget<Slider>(find.byType(Slider)).onChanged!(0.75);
       await tester.pump();

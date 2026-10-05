@@ -15,7 +15,8 @@ const Map<String, Color> colorLabelSwatches = {
 /// Anzeigenamen für VoiceOver-Labels – die Kreise selbst tragen keinen Text,
 /// ohne diese Zuordnung wären sie für Screenreader-Nutzer nur nummerierte,
 /// nicht unterscheidbare Buttons.
-String farbmarkierungName(AppTexte t, String schluessel) => switch (schluessel) {
+String farbmarkierungName(AppTexte t, String schluessel) =>
+    switch (schluessel) {
       'red' => t.farbeRot,
       'yellow' => t.farbeGelb,
       'green' => t.farbeGruen,
@@ -31,7 +32,12 @@ class ColorLabelPicker extends StatelessWidget {
   final ValueChanged<String?>? onChanged;
   final double size;
 
-  const ColorLabelPicker({super.key, required this.value, this.onChanged, this.size = 22});
+  const ColorLabelPicker({
+    super.key,
+    required this.value,
+    this.onChanged,
+    this.size = 22,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +49,19 @@ class ColorLabelPicker extends StatelessWidget {
             padding: const EdgeInsets.only(right: 6),
             child: Semantics(
               label: value == entry.key
-                  ? AppTexte.of(context).farbeAusgewaehlt(farbmarkierungName(AppTexte.of(context), entry.key))
-                  : AppTexte.of(context).farbeSetzen(farbmarkierungName(AppTexte.of(context), entry.key)),
+                  ? AppTexte.of(context).farbeAusgewaehlt(
+                      farbmarkierungName(AppTexte.of(context), entry.key),
+                    )
+                  : AppTexte.of(context).farbeSetzen(
+                      farbmarkierungName(AppTexte.of(context), entry.key),
+                    ),
               button: onChanged != null,
               excludeSemantics: true,
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: onChanged == null ? null : () => onChanged!(value == entry.key ? null : entry.key),
+                onTap: onChanged == null
+                    ? null
+                    : () => onChanged!(value == entry.key ? null : entry.key),
                 child: Container(
                   width: size,
                   height: size,
@@ -57,11 +69,18 @@ class ColorLabelPicker extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: entry.value,
                     border: Border.all(
-                      color: value == entry.key ? Colors.white : Colors.transparent,
+                      color: value == entry.key
+                          ? Colors.white
+                          : Colors.transparent,
                       width: 2,
                     ),
                     boxShadow: value == entry.key
-                        ? [BoxShadow(color: entry.value.withValues(alpha: 0.6), blurRadius: 4)]
+                        ? [
+                            BoxShadow(
+                              color: entry.value.withValues(alpha: 0.6),
+                              blurRadius: 4,
+                            ),
+                          ]
                         : null,
                   ),
                 ),

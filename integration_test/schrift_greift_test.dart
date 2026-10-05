@@ -12,7 +12,10 @@ double breite(String? familie, List<String>? rueckfall) {
     text: TextSpan(
       text: 'Photo Vault – Bibliothek, Alben, Personen 0123456789',
       style: TextStyle(
-          fontSize: 24, fontFamily: familie, fontFamilyFallback: rueckfall),
+        fontSize: 24,
+        fontFamily: familie,
+        fontFamilyFallback: rueckfall,
+      ),
     ),
     textDirection: TextDirection.ltr,
   )..layout();
@@ -34,7 +37,10 @@ void main() {
 
     // Ein unbekannter Name landet beim Standard. Läge die gewählte
     // Schrift genau dort, wäre sie nicht vorhanden.
-    expect(gewaehlt, isNot(closeTo(unsinn, 0.5)),
-        reason: 'die Schrift wird offenbar nicht gefunden');
+    expect(
+      gewaehlt,
+      isNot(closeTo(unsinn, 0.5)),
+      reason: 'die Schrift wird offenbar nicht gefunden',
+    );
   });
 }

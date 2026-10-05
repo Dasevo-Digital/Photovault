@@ -175,9 +175,15 @@ class SearchFilters {
       cameraMake: clearCameraMake ? null : (cameraMake ?? this.cameraMake),
       cameraModel: clearCameraModel ? null : (cameraModel ?? this.cameraModel),
       lensModel: clearLensModel ? null : (lensModel ?? this.lensModel),
-      locationCountry: clearLocationCountry ? null : (locationCountry ?? this.locationCountry),
-      locationState: clearLocationState ? null : (locationState ?? this.locationState),
-      locationCity: clearLocationCity ? null : (locationCity ?? this.locationCity),
+      locationCountry: clearLocationCountry
+          ? null
+          : (locationCountry ?? this.locationCountry),
+      locationState: clearLocationState
+          ? null
+          : (locationState ?? this.locationState),
+      locationCity: clearLocationCity
+          ? null
+          : (locationCity ?? this.locationCity),
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       mediaType: mediaType ?? this.mediaType,
@@ -191,9 +197,15 @@ class SearchFilters {
       maxIso: clearMaxIso ? null : (maxIso ?? this.maxIso),
       minFNumber: clearMinFNumber ? null : (minFNumber ?? this.minFNumber),
       maxFNumber: clearMaxFNumber ? null : (maxFNumber ?? this.maxFNumber),
-      minFocalLengthMm: clearMinFocalLengthMm ? null : (minFocalLengthMm ?? this.minFocalLengthMm),
-      maxFocalLengthMm: clearMaxFocalLengthMm ? null : (maxFocalLengthMm ?? this.maxFocalLengthMm),
-      maxSharpnessScore: clearMaxSharpnessScore ? null : (maxSharpnessScore ?? this.maxSharpnessScore),
+      minFocalLengthMm: clearMinFocalLengthMm
+          ? null
+          : (minFocalLengthMm ?? this.minFocalLengthMm),
+      maxFocalLengthMm: clearMaxFocalLengthMm
+          ? null
+          : (maxFocalLengthMm ?? this.maxFocalLengthMm),
+      maxSharpnessScore: clearMaxSharpnessScore
+          ? null
+          : (maxSharpnessScore ?? this.maxSharpnessScore),
     );
   }
 
@@ -202,62 +214,74 @@ class SearchFilters {
   /// ein normales Album) eine feste Foto-Liste zu speichern – beim erneuten
   /// Öffnen läuft die Suche live gegen die aktuelle Bibliothek.
   Map<String, dynamic> toJson() => {
-        'personIds': personIds,
-        'textMode': textMode.name,
-        'query': query,
-        'tagIds': tagIds,
-        'noTag': noTag,
-        'cameraMake': cameraMake,
-        'cameraModel': cameraModel,
-        'lensModel': lensModel,
-        'locationCountry': locationCountry,
-        'locationState': locationState,
-        'locationCity': locationCity,
-        'startDate': startDate?.toIso8601String(),
-        'endDate': endDate?.toIso8601String(),
-        'mediaType': mediaType.name,
-        'favoritesOnly': favoritesOnly,
-        'nurGeschaetztesDatum': nurGeschaetztesDatum,
-        'notInAnyAlbum': notInAnyAlbum,
-        'minRating': minRating,
-        'colorLabels': colorLabels.toList(),
-        'formate': formate.toList(),
-        'minIso': minIso,
-        'maxIso': maxIso,
-        'minFNumber': minFNumber,
-        'maxFNumber': maxFNumber,
-        'minFocalLengthMm': minFocalLengthMm,
-        'maxFocalLengthMm': maxFocalLengthMm,
-        'maxSharpnessScore': maxSharpnessScore,
-      };
+    'personIds': personIds,
+    'textMode': textMode.name,
+    'query': query,
+    'tagIds': tagIds,
+    'noTag': noTag,
+    'cameraMake': cameraMake,
+    'cameraModel': cameraModel,
+    'lensModel': lensModel,
+    'locationCountry': locationCountry,
+    'locationState': locationState,
+    'locationCity': locationCity,
+    'startDate': startDate?.toIso8601String(),
+    'endDate': endDate?.toIso8601String(),
+    'mediaType': mediaType.name,
+    'favoritesOnly': favoritesOnly,
+    'nurGeschaetztesDatum': nurGeschaetztesDatum,
+    'notInAnyAlbum': notInAnyAlbum,
+    'minRating': minRating,
+    'colorLabels': colorLabels.toList(),
+    'formate': formate.toList(),
+    'minIso': minIso,
+    'maxIso': maxIso,
+    'minFNumber': minFNumber,
+    'maxFNumber': maxFNumber,
+    'minFocalLengthMm': minFocalLengthMm,
+    'maxFocalLengthMm': maxFocalLengthMm,
+    'maxSharpnessScore': maxSharpnessScore,
+  };
 
   factory SearchFilters.fromJson(Map<String, dynamic> json) => SearchFilters(
-        personIds: (json['personIds'] as List<dynamic>? ?? const []).cast<String>(),
-        textMode: SearchTextMode.values.byName(json['textMode'] as String? ?? 'context'),
-        query: json['query'] as String? ?? '',
-        tagIds: (json['tagIds'] as List<dynamic>? ?? const []).cast<String>(),
-        noTag: json['noTag'] as bool? ?? false,
-        cameraMake: json['cameraMake'] as String?,
-        cameraModel: json['cameraModel'] as String?,
-        lensModel: json['lensModel'] as String?,
-        locationCountry: json['locationCountry'] as String?,
-        locationState: json['locationState'] as String?,
-        locationCity: json['locationCity'] as String?,
-        startDate: json['startDate'] != null ? DateTime.parse(json['startDate'] as String) : null,
-        endDate: json['endDate'] != null ? DateTime.parse(json['endDate'] as String) : null,
-        mediaType: MediaTypeFilter.values.byName(json['mediaType'] as String? ?? 'all'),
-        favoritesOnly: json['favoritesOnly'] as bool? ?? false,
-        nurGeschaetztesDatum: json['nurGeschaetztesDatum'] as bool? ?? false,
-        notInAnyAlbum: json['notInAnyAlbum'] as bool? ?? false,
-        minRating: json['minRating'] as int?,
-        colorLabels: (json['colorLabels'] as List<dynamic>? ?? const []).cast<String>().toSet(),
-        formate: (json['formate'] as List<dynamic>? ?? const []).cast<String>().toSet(),
-        minIso: json['minIso'] as int?,
-        maxIso: json['maxIso'] as int?,
-        minFNumber: (json['minFNumber'] as num?)?.toDouble(),
-        maxFNumber: (json['maxFNumber'] as num?)?.toDouble(),
-        minFocalLengthMm: (json['minFocalLengthMm'] as num?)?.toDouble(),
-        maxFocalLengthMm: (json['maxFocalLengthMm'] as num?)?.toDouble(),
-        maxSharpnessScore: (json['maxSharpnessScore'] as num?)?.toDouble(),
-      );
+    personIds: (json['personIds'] as List<dynamic>? ?? const []).cast<String>(),
+    textMode: SearchTextMode.values.byName(
+      json['textMode'] as String? ?? 'context',
+    ),
+    query: json['query'] as String? ?? '',
+    tagIds: (json['tagIds'] as List<dynamic>? ?? const []).cast<String>(),
+    noTag: json['noTag'] as bool? ?? false,
+    cameraMake: json['cameraMake'] as String?,
+    cameraModel: json['cameraModel'] as String?,
+    lensModel: json['lensModel'] as String?,
+    locationCountry: json['locationCountry'] as String?,
+    locationState: json['locationState'] as String?,
+    locationCity: json['locationCity'] as String?,
+    startDate: json['startDate'] != null
+        ? DateTime.parse(json['startDate'] as String)
+        : null,
+    endDate: json['endDate'] != null
+        ? DateTime.parse(json['endDate'] as String)
+        : null,
+    mediaType: MediaTypeFilter.values.byName(
+      json['mediaType'] as String? ?? 'all',
+    ),
+    favoritesOnly: json['favoritesOnly'] as bool? ?? false,
+    nurGeschaetztesDatum: json['nurGeschaetztesDatum'] as bool? ?? false,
+    notInAnyAlbum: json['notInAnyAlbum'] as bool? ?? false,
+    minRating: json['minRating'] as int?,
+    colorLabels: (json['colorLabels'] as List<dynamic>? ?? const [])
+        .cast<String>()
+        .toSet(),
+    formate: (json['formate'] as List<dynamic>? ?? const [])
+        .cast<String>()
+        .toSet(),
+    minIso: json['minIso'] as int?,
+    maxIso: json['maxIso'] as int?,
+    minFNumber: (json['minFNumber'] as num?)?.toDouble(),
+    maxFNumber: (json['maxFNumber'] as num?)?.toDouble(),
+    minFocalLengthMm: (json['minFocalLengthMm'] as num?)?.toDouble(),
+    maxFocalLengthMm: (json['maxFocalLengthMm'] as num?)?.toDouble(),
+    maxSharpnessScore: (json['maxSharpnessScore'] as num?)?.toDouble(),
+  );
 }

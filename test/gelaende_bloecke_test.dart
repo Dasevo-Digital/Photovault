@@ -34,7 +34,8 @@ Hoehengitter _gitter({int n = 120}) {
   final h = Float32List(n * n);
   for (var y = 0; y < n; y++) {
     for (var x = 0; x < n; x++) {
-      h[y * n + x] = 400 +
+      h[y * n + x] =
+          400 +
           260 * math.sin(x / 11.0) * math.cos(y / 9.0) +
           80 * math.sin((x + y) / 17.0);
     }
@@ -70,15 +71,23 @@ Future<ui.Image> _verlauf({int breite = 256, int hoehe = 64}) {
   }
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      daten, breite, hoehe, ui.PixelFormat.rgba8888, fertig.complete);
+    daten,
+    breite,
+    hoehe,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   return fertig.future;
 }
 
 void main() {
   test('zwei Nachbarn treffen sich auf ihrer gemeinsamen Kante genau', () {
     final netz = baueNetz(_gitter());
-    expect(netz.bloecke.length, greaterThan(4),
-        reason: 'ohne mehrere Blöcke prüft dieser Test nichts');
+    expect(
+      netz.bloecke.length,
+      greaterThan(4),
+      reason: 'ohne mehrere Blöcke prüft dieser Test nichts',
+    );
 
     /// Die Eckpunkte eines Blocks, die auf einer seiner Kanten liegen –
     /// gerundet auf einen Millimeter, damit die Suche nicht an der
@@ -98,8 +107,10 @@ void main() {
         final z = b.ecken[i * 3 + 2];
         if (beiX != null && (x - beiX).abs() > 0.001) continue;
         if (beiY != null && (y - beiY).abs() > 0.001) continue;
-        aus.add('${(x * 1000).round()}/${(y * 1000).round()}/'
-            '${(z * 1000).round()}');
+        aus.add(
+          '${(x * 1000).round()}/${(y * 1000).round()}/'
+          '${(z * 1000).round()}',
+        );
       }
       return aus;
     }
@@ -111,18 +122,26 @@ void main() {
     for (final b in netz.bloecke) {
       final rechts = nachOrt['${b.block.spalte + 1}/${b.block.zeile}'];
       if (rechts != null) {
-        expect(aufKante(b, beiX: b.ostM), aufKante(rechts, beiX: rechts.westM),
-            reason: '${b.block} und ${rechts.block} stimmen auf ihrer '
-                'gemeinsamen Kante nicht überein – dort klafft die '
-                'Landschaft');
+        expect(
+          aufKante(b, beiX: b.ostM),
+          aufKante(rechts, beiX: rechts.westM),
+          reason:
+              '${b.block} und ${rechts.block} stimmen auf ihrer '
+              'gemeinsamen Kante nicht überein – dort klafft die '
+              'Landschaft',
+        );
         expect(aufKante(b, beiX: b.ostM), isNotEmpty);
         geprueft++;
       }
       final unten = nachOrt['${b.block.spalte}/${b.block.zeile + 1}'];
       if (unten != null) {
-        expect(aufKante(b, beiY: b.suedM), aufKante(unten, beiY: unten.nordM),
-            reason: '${b.block} und ${unten.block} stimmen auf ihrer '
-                'gemeinsamen Kante nicht überein');
+        expect(
+          aufKante(b, beiY: b.suedM),
+          aufKante(unten, beiY: unten.nordM),
+          reason:
+              '${b.block} und ${unten.block} stimmen auf ihrer '
+              'gemeinsamen Kante nicht überein',
+        );
         expect(aufKante(b, beiY: b.suedM), isNotEmpty);
         geprueft++;
       }
@@ -157,22 +176,24 @@ void main() {
     // ragt.
     final netz = baueNetz(_gitter());
     Gelaendemaler maler(double drehung) => Gelaendemaler(
-          netz: netz,
-          kamera: Gelaendekamera(
-            drehung: drehung,
-            neigung: 0.12,
-            entfernung: 900,
-            brennweite: 900,
-            mitte: const Offset(400, 300),
-          ),
-          spur: const [],
-          spurfarbe: const Color(0xFFFF0000),
-        );
+      netz: netz,
+      kamera: Gelaendekamera(
+        drehung: drehung,
+        neigung: 0.12,
+        entfernung: 900,
+        brennweite: 900,
+        mitte: const Offset(400, 300),
+      ),
+      spur: const [],
+      spurfarbe: const Color(0xFFFF0000),
+    );
     const flaeche = Size(800, 600);
-    final flach =
-        bloeckeAnzahlImBild(netz, maler(0).kamera, flaeche);
-    expect(flach, lessThan(netz.bloecke.length),
-        reason: 'aus Augenhöhe liegt die halbe Landschaft hinter der Kamera');
+    final flach = bloeckeAnzahlImBild(netz, maler(0).kamera, flaeche);
+    expect(
+      flach,
+      lessThan(netz.bloecke.length),
+      reason: 'aus Augenhöhe liegt die halbe Landschaft hinter der Kamera',
+    );
 
     // Gegenprobe: von weit oben ist alles zu sehen.
     final vonOben = bloeckeAnzahlImBild(
@@ -189,8 +210,9 @@ void main() {
     expect(vonOben, netz.bloecke.length);
   });
 
-  testWidgets('die Übersichtskarte liegt richtig auf den Blöcken',
-      (tester) async {
+  testWidgets('die Übersichtskarte liegt richtig auf den Blöcken', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(400, 400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -249,12 +271,20 @@ void main() {
 
       final links = zaehle(120, 170);
       final rechts = zaehle(230, 280);
-      expect(links.rot, greaterThan(links.blau * 5),
-          reason: 'links muss die rote Seite der Karte stehen – '
-              'rot ${links.rot}, blau ${links.blau}');
-      expect(rechts.blau, greaterThan(rechts.rot * 5),
-          reason: 'rechts muss die blaue Seite stehen – '
-              'rot ${rechts.rot}, blau ${rechts.blau}');
+      expect(
+        links.rot,
+        greaterThan(links.blau * 5),
+        reason:
+            'links muss die rote Seite der Karte stehen – '
+            'rot ${links.rot}, blau ${links.blau}',
+      );
+      expect(
+        rechts.blau,
+        greaterThan(rechts.rot * 5),
+        reason:
+            'rechts muss die blaue Seite stehen – '
+            'rot ${rechts.rot}, blau ${rechts.blau}',
+      );
     });
   });
 }

@@ -9,7 +9,16 @@ import 'vault_crypto.dart';
 /// IntegrityCheckScreen sinnvoll ist (z.B. bei einer fehlenden Vorschau
 /// reicht es, den DB-Pfad zu löschen und neu zu rendern; bei einem fehlenden
 /// Original bleibt nur, die ganze Asset-Zeile zu entfernen).
-enum MissingFileKind { original, thumbnail, preview, developed, restored, trimmed, faceCrop, mask }
+enum MissingFileKind {
+  original,
+  thumbnail,
+  preview,
+  developed,
+  restored,
+  trimmed,
+  faceCrop,
+  mask,
+}
 
 /// Leichtgewichtiges, isolate-taugliches Abbild der für die
 /// Integritätsprüfung relevanten Spalten eines Assets – bewusst kein
@@ -75,19 +84,29 @@ class MissingFileIssue {
   final String ownerId;
   final MissingFileKind kind;
   final String relativePath;
-  const MissingFileIssue({required this.ownerId, required this.kind, required this.relativePath});
+  const MissingFileIssue({
+    required this.ownerId,
+    required this.kind,
+    required this.relativePath,
+  });
 }
 
 class OrphanedFileIssue {
   final String relativePath;
   final int sizeBytes;
-  const OrphanedFileIssue({required this.relativePath, required this.sizeBytes});
+  const OrphanedFileIssue({
+    required this.relativePath,
+    required this.sizeBytes,
+  });
 }
 
 class ChecksumMismatchIssue {
   final String assetId;
   final String relativePath;
-  const ChecksumMismatchIssue({required this.assetId, required this.relativePath});
+  const ChecksumMismatchIssue({
+    required this.assetId,
+    required this.relativePath,
+  });
 }
 
 /// Nur für gesperrte (verschlüsselte) Assets: die Datei beginnt nicht mit
@@ -98,7 +117,10 @@ class ChecksumMismatchIssue {
 class EncryptedFileHeaderIssue {
   final String assetId;
   final String relativePath;
-  const EncryptedFileHeaderIssue({required this.assetId, required this.relativePath});
+  const EncryptedFileHeaderIssue({
+    required this.assetId,
+    required this.relativePath,
+  });
 }
 
 class IntegrityCheckReport {
@@ -128,7 +150,15 @@ class IntegrityCheckReport {
 /// Verschieben in den Papierkorb nur per DB-Flag markiert, nie physisch
 /// verschoben (StoragePaths.moveToPhysicalTrash hat keine Aufrufer mehr),
 /// der Ordner ist daher faktisch immer leer.
-const _scannedSubdirs = ['originals', 'thumbnails', 'previews', 'developed', 'trimmed', 'masks', 'faces'];
+const _scannedSubdirs = [
+  'originals',
+  'thumbnails',
+  'previews',
+  'developed',
+  'trimmed',
+  'masks',
+  'faces',
+];
 
 /// Dateien, die absichtlich nie in der DB verzeichnet sind und daher nicht
 /// als "verwaist" gelten sollen: macOS-Finder-Metadaten (.DS_Store, AppleDouble
@@ -141,44 +171,89 @@ bool _isExpectedNonDbFile(String basename) =>
 /// embedding_similarity.dart) – gleicht DB-Zeilen gegen tatsächliche
 /// Dateien auf der Platte ab. Läuft über [compute], damit das Auflisten
 /// großer Verzeichnisse und ggf. Prüfsummen-Berechnung die UI nicht blockiert.
-Future<IntegrityCheckReport> runIntegrityCheck(IntegrityCheckParams params) async {
+Future<IntegrityCheckReport> runIntegrityCheck(
+  IntegrityCheckParams params,
+) async {
   final root = Directory(params.libraryRootPath);
   final knownRelativePaths = <String>{};
   final missingFiles = <MissingFileIssue>[];
   final checksumMismatches = <ChecksumMismatchIssue>[];
   final encryptedHeaderIssues = <EncryptedFileHeaderIssue>[];
 
-  Future<void> checkPath(String? relativePath, String ownerId, MissingFileKind kind) async {
+  Future<void> checkPath(
+    String? relativePath,
+    String ownerId,
+    MissingFileKind kind,
+  ) async {
     if (relativePath == null) return;
     knownRelativePaths.add(p.normalize(relativePath));
     final file = File(p.join(root.path, relativePath));
     if (!await file.exists()) {
-      missingFiles.add(MissingFileIssue(ownerId: ownerId, kind: kind, relativePath: relativePath));
+      missingFiles.add(
+        MissingFileIssue(
+          ownerId: ownerId,
+          kind: kind,
+          relativePath: relativePath,
+        ),
+      );
     }
   }
 
   for (final asset in params.assets) {
-    await checkPath(asset.relativePath, asset.assetId, MissingFileKind.original);
-    await checkPath(asset.thumbnailRelativePath, asset.assetId, MissingFileKind.thumbnail);
-    await checkPath(asset.previewRelativePath, asset.assetId, MissingFileKind.preview);
-    await checkPath(asset.developedRelativePath, asset.assetId, MissingFileKind.developed);
-    await checkPath(asset.restoredRelativePath, asset.assetId, MissingFileKind.restored);
-    await checkPath(asset.trimmedRelativePath, asset.assetId, MissingFileKind.trimmed);
+    await checkPath(
+      asset.relativePath,
+      asset.assetId,
+      MissingFileKind.original,
+    );
+    await checkPath(
+      asset.thumbnailRelativePath,
+      asset.assetId,
+      MissingFileKind.thumbnail,
+    );
+    await checkPath(
+      asset.previewRelativePath,
+      asset.assetId,
+      MissingFileKind.preview,
+    );
+    await checkPath(
+      asset.developedRelativePath,
+      asset.assetId,
+      MissingFileKind.developed,
+    );
+    await checkPath(
+      asset.restoredRelativePath,
+      asset.assetId,
+      MissingFileKind.restored,
+    );
+    await checkPath(
+      asset.trimmedRelativePath,
+      asset.assetId,
+      MissingFileKind.trimmed,
+    );
 
     final originalFile = File(p.join(root.path, asset.relativePath));
     if (await originalFile.exists()) {
       if (asset.isLocked) {
-        final hasValidHeader = await VaultCrypto.hasValidEncryptedHeader(originalFile);
+        final hasValidHeader = await VaultCrypto.hasValidEncryptedHeader(
+          originalFile,
+        );
         if (!hasValidHeader) {
           encryptedHeaderIssues.add(
-            EncryptedFileHeaderIssue(assetId: asset.assetId, relativePath: asset.relativePath),
+            EncryptedFileHeaderIssue(
+              assetId: asset.assetId,
+              relativePath: asset.relativePath,
+            ),
           );
         }
       } else if (params.verifyChecksums) {
-        final actual = (await sha256.bind(originalFile.openRead()).first).toString();
+        final actual = (await sha256.bind(originalFile.openRead()).first)
+            .toString();
         if (actual != asset.checksum) {
           checksumMismatches.add(
-            ChecksumMismatchIssue(assetId: asset.assetId, relativePath: asset.relativePath),
+            ChecksumMismatchIssue(
+              assetId: asset.assetId,
+              relativePath: asset.relativePath,
+            ),
           );
         }
       }
@@ -189,7 +264,11 @@ Future<IntegrityCheckReport> runIntegrityCheck(IntegrityCheckParams params) asyn
     await checkPath(face.relativePath, face.faceId, MissingFileKind.faceCrop);
   }
   for (final mask in params.masks) {
-    await checkPath(mask.relativePath, mask.maskId.toString(), MissingFileKind.mask);
+    await checkPath(
+      mask.relativePath,
+      mask.maskId.toString(),
+      MissingFileKind.mask,
+    );
   }
 
   final orphanedFiles = <OrphanedFileIssue>[];
@@ -203,14 +282,18 @@ Future<IntegrityCheckReport> runIntegrityCheck(IntegrityCheckParams params) asyn
       filesScanned++;
       final basename = p.basename(entity.path);
       if (_isExpectedNonDbFile(basename)) continue;
-      final relativePath = p.normalize(p.relative(entity.path, from: root.path));
+      final relativePath = p.normalize(
+        p.relative(entity.path, from: root.path),
+      );
       if (knownRelativePaths.contains(relativePath)) continue;
       // Wettlauf mit einem gerade laufenden Import vermeiden: frisch
       // geschriebene Dateien (< 60s) noch nicht als verwaist melden, die
       // zugehörige DB-Zeile ist evtl. noch nicht committet.
       final stat = await entity.stat();
       if (now.difference(stat.modified) < const Duration(seconds: 60)) continue;
-      orphanedFiles.add(OrphanedFileIssue(relativePath: relativePath, sizeBytes: stat.size));
+      orphanedFiles.add(
+        OrphanedFileIssue(relativePath: relativePath, sizeBytes: stat.size),
+      );
     }
   }
 

@@ -35,10 +35,12 @@ void main() {
   }
 
   Future<Map<String, String>> quellen(AppDatabase db) async {
-    final rows = await db.customSelect(
-      'SELECT at.asset_id AS a, t.name AS n, at.quelle AS q '
-      'FROM asset_tags at JOIN tags t ON t.id = at.tag_id',
-    ).get();
+    final rows = await db
+        .customSelect(
+          'SELECT at.asset_id AS a, t.name AS n, at.quelle AS q '
+          'FROM asset_tags at JOIN tags t ON t.id = at.tag_id',
+        )
+        .get();
     return {
       for (final r in rows)
         '${r.data['a']}/${r.data['n']}': r.data['q'] as String,
@@ -46,54 +48,61 @@ void main() {
   }
 
   Future<void> foto(AppDatabase db, String id, {required bool kiGelaufen}) =>
-      db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id.jpg',
-        originalFileName: '$id.jpg',
-        type: 'IMAGE',
-        checksum: id,
-        fileCreatedAt: DateTime(2026),
-        importedAt: DateTime(2026),
-        aiTagsScanned: Value(kiGelaufen),
-      ));
+      db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          relativePath: 'originals/$id.jpg',
+          originalFileName: '$id.jpg',
+          type: 'IMAGE',
+          checksum: id,
+          fileCreatedAt: DateTime(2026),
+          importedAt: DateTime(2026),
+          aiTagsScanned: Value(kiGelaufen),
+        ),
+      );
 
-  test('nur was die Bilderkennung erzeugt haben KANN, gilt als ihres',
-      () async {
-    var db = AppDatabase(NativeDatabase(datei));
-    // „Strand" steht im mitgelieferten Vokabular, „Kreta 2018" nicht.
-    final vokabular = await db.aiTagVocabularyTerms();
-    expect(vokabular, contains('Strand'),
-        reason: 'ohne diesen Begriff prueft der Test nichts');
-    expect(vokabular, isNot(contains('Kreta 2018')));
+  test(
+    'nur was die Bilderkennung erzeugt haben KANN, gilt als ihres',
+    () async {
+      var db = AppDatabase(NativeDatabase(datei));
+      // „Strand" steht im mitgelieferten Vokabular, „Kreta 2018" nicht.
+      final vokabular = await db.aiTagVocabularyTerms();
+      expect(
+        vokabular,
+        contains('Strand'),
+        reason: 'ohne diesen Begriff prueft der Test nichts',
+      );
+      expect(vokabular, isNot(contains('Kreta 2018')));
 
-    await foto(db, 'verschlagwortet', kiGelaufen: true);
-    await foto(db, 'unberuehrt', kiGelaufen: false);
+      await foto(db, 'verschlagwortet', kiGelaufen: true);
+      await foto(db, 'unberuehrt', kiGelaufen: false);
 
-    // Vier Fälle, die sich in genau je einer Bedingung unterscheiden.
-    await db.tagAsset('verschlagwortet', 'Strand');      // beides -> ki
-    await db.tagAsset('verschlagwortet', 'Kreta 2018');  // kein Vokabular
-    await db.tagAsset('unberuehrt', 'Strand');           // nie gelaufen
-    await db.tagAsset('unberuehrt', 'Kreta 2018');       // keines von beidem
-    await db.close();
+      // Vier Fälle, die sich in genau je einer Bedingung unterscheiden.
+      await db.tagAsset('verschlagwortet', 'Strand'); // beides -> ki
+      await db.tagAsset('verschlagwortet', 'Kreta 2018'); // kein Vokabular
+      await db.tagAsset('unberuehrt', 'Strand'); // nie gelaufen
+      await db.tagAsset('unberuehrt', 'Kreta 2018'); // keines von beidem
+      await db.close();
 
-    await aufFassung55Zuruecksetzen();
+      await aufFassung55Zuruecksetzen();
 
-    db = AppDatabase(NativeDatabase(datei));
-    // Die erste Abfrage löst die Migration aus.
-    final fassung = await db
-        .customSelect('PRAGMA user_version')
-        .map((r) => r.read<int>('user_version'))
-        .getSingle();
-    expect(fassung, await aktuelleFassung());
+      db = AppDatabase(NativeDatabase(datei));
+      // Die erste Abfrage löst die Migration aus.
+      final fassung = await db
+          .customSelect('PRAGMA user_version')
+          .map((r) => r.read<int>('user_version'))
+          .getSingle();
+      expect(fassung, await aktuelleFassung());
 
-    expect(await quellen(db), {
-      'verschlagwortet/Strand': Tagquelle.ki,
-      'verschlagwortet/Kreta 2018': Tagquelle.hand,
-      'unberuehrt/Strand': Tagquelle.hand,
-      'unberuehrt/Kreta 2018': Tagquelle.hand,
-    });
-    await db.close();
-  });
+      expect(await quellen(db), {
+        'verschlagwortet/Strand': Tagquelle.ki,
+        'verschlagwortet/Kreta 2018': Tagquelle.hand,
+        'unberuehrt/Strand': Tagquelle.hand,
+        'unberuehrt/Kreta 2018': Tagquelle.hand,
+      });
+      await db.close();
+    },
+  );
 
   test('ohne einen einzigen Treffer bleibt alles Handvergabe', () async {
     // Die Gegenprobe: Eine Bibliothek, die nie verschlagwortet wurde,

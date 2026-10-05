@@ -62,23 +62,27 @@ void main() {
     test('der Bereich nimmt die feinste Stufe, die noch passt', () {
       // Ein kleiner Ausschnitt von rund zwei Kilometern.
       final fein = kachelbereich(
-          sued: 50.60, west: 9.79, nord: 50.62, ost: 9.82);
+        sued: 50.60,
+        west: 9.79,
+        nord: 50.62,
+        ost: 9.82,
+      );
       expect(fein.zoom, gelaendeHoechsteStufe);
 
       // Ein ganzes Land passt auf Stufe 15 nicht in sechzehn Kacheln.
-      final grob =
-          kachelbereich(sued: 47.0, west: 6.0, nord: 55.0, ost: 15.0);
+      final grob = kachelbereich(sued: 47.0, west: 6.0, nord: 55.0, ost: 15.0);
       expect(grob.zoom, lessThan(8));
       final anzahl = (grob.x1 - grob.x0 + 1) * (grob.y1 - grob.y0 + 1);
       expect(anzahl, lessThanOrEqualTo(16));
     });
 
-    test('die Adressliste hat so viele Einträge wie der Bereich Kacheln',
-        () {
+    test('die Adressliste hat so viele Einträge wie der Bereich Kacheln', () {
       const bereich = (zoom: 11, x0: 1080, y0: 689, x1: 1081, y1: 690);
       expect(kacheladressen(bereich), hasLength(4));
-      expect(kacheladresse(11, 1080, 689),
-          endsWith('/terrarium/11/1080/689.png'));
+      expect(
+        kacheladresse(11, 1080, 689),
+        endsWith('/terrarium/11/1080/689.png'),
+      );
     });
   });
 
@@ -196,23 +200,29 @@ void main() {
     });
 
     test('Osten geht nach rechts', () {
-      expect(kamera.projiziere((x: 1000, y: 0, z: 0)).stelle.dx,
-          greaterThan(200));
+      expect(
+        kamera.projiziere((x: 1000, y: 0, z: 0)).stelle.dx,
+        greaterThan(200),
+      );
     });
 
     test('was weiter weg ist, wird kleiner', () {
       // Der Beweis, dass es eine Perspektive ist und keine Schrägansicht.
       final nah = kamera.projiziere((x: 1000, y: -3000, z: 0));
       final fern = kamera.projiziere((x: 1000, y: 3000, z: 0));
-      expect((nah.stelle.dx - 200).abs(),
-          greaterThan((fern.stelle.dx - 200).abs()));
+      expect(
+        (nah.stelle.dx - 200).abs(),
+        greaterThan((fern.stelle.dx - 200).abs()),
+      );
       expect(fern.tiefe, greaterThan(nah.tiefe));
     });
 
     test('eine halbe Drehung vertauscht Osten und Westen', () {
       final gedreht = kamera.kopieMit(drehung: math.pi);
-      expect(gedreht.projiziere((x: 1000, y: 0, z: 0)).stelle.dx,
-          lessThan(200));
+      expect(
+        gedreht.projiziere((x: 1000, y: 0, z: 0)).stelle.dx,
+        lessThan(200),
+      );
     });
 
     test('senkrecht von oben ist eine Karte', () {
@@ -259,11 +269,11 @@ void main() {
     });
 
     test('die Normale steht senkrecht auf einer waagerechten Fläche', () {
-      final n = normale(
-        (x: 0, y: 0, z: 100),
-        (x: 1, y: 0, z: 100),
-        (x: 0, y: 1, z: 100),
-      );
+      final n = normale((x: 0, y: 0, z: 100), (x: 1, y: 0, z: 100), (
+        x: 0,
+        y: 1,
+        z: 100,
+      ));
       expect(n.x, closeTo(0, 0.0001));
       expect(n.y, closeTo(0, 0.0001));
       expect(n.z.abs(), greaterThan(0));

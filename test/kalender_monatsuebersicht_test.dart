@@ -34,8 +34,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -43,29 +44,34 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<void> aufnahme(String id, DateTime wann) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: wann,
-            importedAt: DateTime(2026),
-            thumbnailRelativePath: Value('thumbs/$id.jpg'),
-          ));
+  Future<void> aufnahme(String id, DateTime wann) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: wann,
+          importedAt: DateTime(2026),
+          thumbnailRelativePath: Value('thumbs/$id.jpg'),
+        ),
+      );
 
   Future<void> zeige(WidgetTester tester, Widget was) async {
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: was,
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: was,
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -80,8 +86,7 @@ void main() {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 3, 9, 10));
       await aufnahme('c', DateTime(2026, 7, 1, 10));
-      await zeige(tester,
-          MonatsuebersichtScreen(library: library, jahr: 2026));
+      await zeige(tester, MonatsuebersichtScreen(library: library, jahr: 2026));
 
       expect(find.text('März'), findsOneWidget);
       expect(find.text('Juli'), findsOneWidget);
@@ -91,15 +96,15 @@ void main() {
       await abbauen(tester);
     });
 
-    testWidgets('zählt richtig und stellt den jüngsten Monat nach vorn',
-        (tester) async {
+    testWidgets('zählt richtig und stellt den jüngsten Monat nach vorn', (
+      tester,
+    ) async {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 3, 9, 10));
       await aufnahme('c', DateTime(2026, 7, 1, 10));
       // Ein Nachbarjahr, das nicht mitzählen darf.
       await aufnahme('d', DateTime(2025, 3, 4, 10));
-      await zeige(tester,
-          MonatsuebersichtScreen(library: library, jahr: 2026));
+      await zeige(tester, MonatsuebersichtScreen(library: library, jahr: 2026));
 
       // Beide Kacheln stehen in derselben Zeile - „vorn" heisst hier
       // also links, nicht oben.
@@ -117,8 +122,7 @@ void main() {
 
     testWidgets('ein Monat führt in seine Aufnahmen', (tester) async {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
-      await zeige(tester,
-          MonatsuebersichtScreen(library: library, jahr: 2026));
+      await zeige(tester, MonatsuebersichtScreen(library: library, jahr: 2026));
       await tester.tap(find.text('März'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -129,8 +133,7 @@ void main() {
 
     testWidgets('das ganze Jahr bleibt erreichbar', (tester) async {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
-      await zeige(tester,
-          MonatsuebersichtScreen(library: library, jahr: 2026));
+      await zeige(tester, MonatsuebersichtScreen(library: library, jahr: 2026));
       await tester.tap(find.text('Ganzes Jahr'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -144,8 +147,10 @@ void main() {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 3, 5, 14));
       await aufnahme('c', DateTime(2026, 3, 9, 10));
-      await zeige(tester,
-          YearDetailScreen(library: library, year: 2026, monat: 3));
+      await zeige(
+        tester,
+        YearDetailScreen(library: library, year: 2026, monat: 3),
+      );
 
       expect(find.textContaining('5. März 2026'), findsOneWidget);
       expect(find.textContaining('9. März 2026'), findsOneWidget);
@@ -158,14 +163,17 @@ void main() {
       // erscheint erst ab zweien.
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 3, 9, 10));
-      await zeige(tester,
-          YearDetailScreen(library: library, year: 2026, monat: 3));
+      await zeige(
+        tester,
+        YearDetailScreen(library: library, year: 2026, monat: 3),
+      );
       expect(find.byType(TimelineScrubber), findsOneWidget);
       await abbauen(tester);
     });
 
-    testWidgets('über ein ganzes Jahr bleibt es bei den Monaten',
-        (tester) async {
+    testWidgets('über ein ganzes Jahr bleibt es bei den Monaten', (
+      tester,
+    ) async {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 7, 9, 10));
       await zeige(tester, YearDetailScreen(library: library, year: 2026));
@@ -174,12 +182,13 @@ void main() {
       await abbauen(tester);
     });
 
-    testWidgets('ein Monat zeigt nur seine eigenen Aufnahmen',
-        (tester) async {
+    testWidgets('ein Monat zeigt nur seine eigenen Aufnahmen', (tester) async {
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 4, 5, 10));
-      await zeige(tester,
-          YearDetailScreen(library: library, year: 2026, monat: 3));
+      await zeige(
+        tester,
+        YearDetailScreen(library: library, year: 2026, monat: 3),
+      );
       expect(find.textContaining('5. März 2026'), findsOneWidget);
       expect(find.textContaining('April'), findsNothing);
       await abbauen(tester);
@@ -208,7 +217,10 @@ void main() {
       await aufnahme('spaet', DateTime(2026, 3, 5, 23, 50));
       await aufnahme('frueh', DateTime(2026, 3, 6, 0, 10));
       final alle = await db.watchTimelineForMonth(2026, 3).first;
-      expect(tagesgruppen([for (final x in alle) Rasterzeile.aus(x)]).schluessel, hasLength(2));
+      expect(
+        tagesgruppen([for (final x in alle) Rasterzeile.aus(x)]).schluessel,
+        hasLength(2),
+      );
     });
   });
 }

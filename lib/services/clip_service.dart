@@ -38,7 +38,9 @@ const _imageSize = 224;
 /// schlechtere Treffer.
 img.Image aufClipGroesse(img.Image bild) {
   final kurz = bild.width < bild.height ? bild.width : bild.height;
-  if (kurz == 0) return img.copyResize(bild, width: _imageSize, height: _imageSize);
+  if (kurz == 0) {
+    return img.copyResize(bild, width: _imageSize, height: _imageSize);
+  }
   final faktor = _imageSize / kurz;
   final skaliert = img.copyResize(
     bild,
@@ -87,7 +89,8 @@ class ClipService {
   // (siehe embedImage/embedText) statt geraten – das war zuvor eine
   // Fehlerquelle (z.B. schlug "attention_mask" beim Xenova-CLIP-Text-Encoder
   // fehl, weil dieser gar kein solches Eingabefeld hat).
-  static const imageOutputName = 'image_embeds'; // bevorzugter Name, mit Fallback
+  static const imageOutputName =
+      'image_embeds'; // bevorzugter Name, mit Fallback
   static const textOutputName = 'text_embeds'; // bevorzugter Name, mit Fallback
 
   static bool _filesPresent(String modelsDir) {
@@ -174,7 +177,12 @@ class ClipService {
       }
     }
 
-    final inputTensor = await OrtValue.fromList(chw, [1, 3, _imageSize, _imageSize]);
+    final inputTensor = await OrtValue.fromList(chw, [
+      1,
+      3,
+      _imageSize,
+      _imageSize,
+    ]);
     // Freigeben gehört ins finally, nicht dahinter: Wirft run(), das
     // Auspacken oder der !-Zugriff, bliebe der Tensor sonst als nativer
     // Speicher liegen, den der Dart-Sammler nie zurückholt. Dieser Pfad
@@ -183,9 +191,12 @@ class ClipService {
     Map<String, OrtValue>? outputs;
     try {
       outputs = await session.run({session.inputNames.first: inputTensor});
-      final outputTensor = outputs[imageOutputName] ?? outputs[session.outputNames.first]!;
+      final outputTensor =
+          outputs[imageOutputName] ?? outputs[session.outputNames.first]!;
       final raw = await outputTensor.asFlattenedList();
-      return _l2Normalize(Float32List.fromList(raw.map((e) => (e as num).toDouble()).toList()));
+      return _l2Normalize(
+        Float32List.fromList(raw.map((e) => (e as num).toDouble()).toList()),
+      );
     } finally {
       await inputTensor.dispose();
       for (final v in outputs?.values ?? const <OrtValue>[]) {
@@ -202,15 +213,19 @@ class ClipService {
     }
     final tokenIds = Int64List.fromList(tokenizer.encode(text));
 
-    final idsTensor = await OrtValue.fromList(tokenIds, [1, ClipTokenizer.contextLength]);
+    final idsTensor = await OrtValue.fromList(tokenIds, [
+      1,
+      ClipTokenizer.contextLength,
+    ]);
     Map<String, OrtValue>? outputs;
     try {
-      outputs = await session.run({
-        session.inputNames.first: idsTensor,
-      });
-      final outputTensor = outputs[textOutputName] ?? outputs[session.outputNames.first]!;
+      outputs = await session.run({session.inputNames.first: idsTensor});
+      final outputTensor =
+          outputs[textOutputName] ?? outputs[session.outputNames.first]!;
       final raw = await outputTensor.asFlattenedList();
-      return _l2Normalize(Float32List.fromList(raw.map((e) => (e as num).toDouble()).toList()));
+      return _l2Normalize(
+        Float32List.fromList(raw.map((e) => (e as num).toDouble()).toList()),
+      );
     } finally {
       await idsTensor.dispose();
       for (final v in outputs?.values ?? const <OrtValue>[]) {
@@ -268,9 +283,9 @@ class ClipService {
     final heap = <({String key, double score, int order})>[];
 
     bool schlechterAls(
-            ({String key, double score, int order}) a,
-            ({String key, double score, int order}) b) =>
-        a.score < b.score || (a.score == b.score && a.order > b.order);
+      ({String key, double score, int order}) a,
+      ({String key, double score, int order}) b,
+    ) => a.score < b.score || (a.score == b.score && a.order > b.order);
 
     void nachOben(int index) {
       while (index > 0) {
@@ -289,8 +304,7 @@ class ClipService {
         if (links >= heap.length) return;
         final rechts = links + 1;
         var schlechtester = links;
-        if (rechts < heap.length &&
-            schlechterAls(heap[rechts], heap[links])) {
+        if (rechts < heap.length && schlechterAls(heap[rechts], heap[links])) {
           schlechtester = rechts;
         }
         if (!schlechterAls(heap[schlechtester], heap[index])) return;

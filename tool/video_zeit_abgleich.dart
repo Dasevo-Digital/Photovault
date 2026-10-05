@@ -17,12 +17,15 @@ import 'package:photo_vault/services/video_metadaten.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    stderr.writeln('Aufruf: dart run tool/video_zeit_abgleich.dart <liste.txt>');
+    stderr.writeln(
+      'Aufruf: dart run tool/video_zeit_abgleich.dart <liste.txt>',
+    );
     exitCode = 2;
     return;
   }
-  final pfade =
-      File(args[0]).readAsLinesSync().where((z) => z.trim().isNotEmpty);
+  final pfade = File(
+    args[0],
+  ).readAsLinesSync().where((z) => z.trim().isNotEmpty);
   final uhr = Stopwatch()..start();
   var anzahl = 0;
   for (final pfad in pfade) {
@@ -30,13 +33,15 @@ Future<void> main(List<String> args) async {
     final zeit = await leseVideoZeit(datei);
     final kamera = await leseVideoKamera(datei);
     anzahl++;
-    stdout.writeln([
-      pfad,
-      zeit == null ? 'KEINE_ZEIT' : zeit.zeitpunkt.toIso8601String(),
-      zeit == null ? '-' : zeit.herkunft.name,
-      kamera.hersteller ?? '-',
-      kamera.geraet ?? '-',
-    ].join('|'));
+    stdout.writeln(
+      [
+        pfad,
+        zeit == null ? 'KEINE_ZEIT' : zeit.zeitpunkt.toIso8601String(),
+        zeit == null ? '-' : zeit.herkunft.name,
+        kamera.hersteller ?? '-',
+        kamera.geraet ?? '-',
+      ].join('|'),
+    );
   }
   stderr.writeln('$anzahl Dateien in ${uhr.elapsedMilliseconds} ms');
 }

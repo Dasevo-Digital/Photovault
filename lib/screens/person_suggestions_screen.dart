@@ -30,7 +30,8 @@ class PersonSuggestionsScreen extends StatefulWidget {
   });
 
   @override
-  State<PersonSuggestionsScreen> createState() => _PersonSuggestionsScreenState();
+  State<PersonSuggestionsScreen> createState() =>
+      _PersonSuggestionsScreenState();
 }
 
 class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
@@ -61,18 +62,14 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
       await widget.library.db.verwirfVorschlaege(abgelehnt);
     }
 
-    await widget.library.db.merkeGesichtsEntscheidungen(
-      widget.person.id,
-      [
-        for (final v in widget.vorschlaege)
-          (
-            faceId: v.gesicht.id,
-            accepted: _gewaehlt.contains(v.gesicht.id),
-            similarity: v.aehnlichkeit,
-          ),
-      ],
-      allgemeineSchwelle: widget.library.faceSimilarityThreshold,
-    );
+    await widget.library.db.merkeGesichtsEntscheidungen(widget.person.id, [
+      for (final v in widget.vorschlaege)
+        (
+          faceId: v.gesicht.id,
+          accepted: _gewaehlt.contains(v.gesicht.id),
+          similarity: v.aehnlichkeit,
+        ),
+    ], allgemeineSchwelle: widget.library.faceSimilarityThreshold);
 
     if (!mounted) return;
     Navigator.of(context).pop(angenommen.length);
@@ -88,13 +85,18 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
           TextButton(
             onPressed: _laeuft
                 ? null
-                : () => setState(() => _gewaehlt.length == widget.vorschlaege.length
-                    ? _gewaehlt.clear()
-                    : _gewaehlt.addAll(
-                        [for (final v in widget.vorschlaege) v.gesicht.id])),
-            child: Text(_gewaehlt.length == widget.vorschlaege.length
-                ? t.vorschlagKeineWaehlen
-                : t.vorschlagAlleWaehlen),
+                : () => setState(
+                    () => _gewaehlt.length == widget.vorschlaege.length
+                        ? _gewaehlt.clear()
+                        : _gewaehlt.addAll([
+                            for (final v in widget.vorschlaege) v.gesicht.id,
+                          ]),
+                  ),
+            child: Text(
+              _gewaehlt.length == widget.vorschlaege.length
+                  ? t.vorschlagKeineWaehlen
+                  : t.vorschlagAlleWaehlen,
+            ),
           ),
         ],
       ),
@@ -102,11 +104,17 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Text(
               t.vorschlagHinweis,
               style: TextStyle(
-                  fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
@@ -128,10 +136,11 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
                     LocalImageTile(
                       file: widget.library.paths.absolute(pfad),
                       selected: _gewaehlt.contains(v.gesicht.id),
-                      onTap: () => setState(() =>
-                          _gewaehlt.contains(v.gesicht.id)
-                              ? _gewaehlt.remove(v.gesicht.id)
-                              : _gewaehlt.add(v.gesicht.id)),
+                      onTap: () => setState(
+                        () => _gewaehlt.contains(v.gesicht.id)
+                            ? _gewaehlt.remove(v.gesicht.id)
+                            : _gewaehlt.add(v.gesicht.id),
+                      ),
                     ),
                     // Die Ähnlichkeit sichtbar zu machen ist kein Selbstzweck:
                     // Bei einem knappen Wert lohnt das genaue Hinsehen, bei
@@ -143,19 +152,26 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
                       // Ein Textabsatz nimmt Zeigerereignisse selbst an,
                       // und wer auf die Zahl tippt, hätte nichts bewirkt.
                       child: IgnorePointer(
-                          child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          child: Text(
-                            v.aehnlichkeit.toStringAsFixed(2),
-                            style: const TextStyle(fontSize: 10, color: Colors.white),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            child: Text(
+                              v.aehnlichkeit.toStringAsFixed(2),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      )),
+                      ),
                     ),
                   ],
                 );

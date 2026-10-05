@@ -15,15 +15,20 @@ const zuhause = (breite: 52.37, laenge: 9.73);
 /// Ein Grad Länge sind auf dieser Breite rund 68 km – ein Kilometer also
 /// rund 0,0147 Grad. Das reicht: Geprüft werden Grössenordnungen, nicht
 /// Vermessungsgenauigkeit.
-Aktivitaetsaufnahme auf(String id, DateTime start, int minuten, double kmOst,
-        {String? stadt, double kmNord = 0}) =>
-    (
-      id: id,
-      zeit: start.add(Duration(minutes: minuten)),
-      breite: 52.37 + kmNord / 111.0,
-      laenge: 9.73 + kmOst / 68.0,
-      stadt: stadt,
-    );
+Aktivitaetsaufnahme auf(
+  String id,
+  DateTime start,
+  int minuten,
+  double kmOst, {
+  String? stadt,
+  double kmNord = 0,
+}) => (
+  id: id,
+  zeit: start.add(Duration(minutes: minuten)),
+  breite: 52.37 + kmNord / 111.0,
+  laenge: 9.73 + kmOst / 68.0,
+  stadt: stadt,
+);
 
 void main() {
   final tag = DateTime(2026, 6, 14, 9);
@@ -40,7 +45,7 @@ void main() {
           (
             breite: 52.37,
             laenge: 9.73 + i / 68.0,
-            zeit: tag.add(Duration(minutes: i * 10))
+            zeit: tag.add(Duration(minutes: i * 10)),
           ),
       ]);
       expect(weg, closeTo(3.0, 0.1));
@@ -68,7 +73,7 @@ void main() {
           (
             breite: 52.37,
             laenge: 9.73 + i / 68.0,
-            zeit: tag.add(Duration(minutes: i * 10))
+            zeit: tag.add(Duration(minutes: i * 10)),
           ),
       ];
       expect(strecke(punkte.reversed), closeTo(strecke(punkte), 0.001));
@@ -77,8 +82,10 @@ void main() {
 
   group('die vermutete Art', () {
     test('ohne Weg, aber mit Zeit ist es eine Besichtigung', () {
-      expect(vermuteArt(0.3, const Duration(hours: 2)),
-          Aktivitaetsart.besichtigung);
+      expect(
+        vermuteArt(0.3, const Duration(hours: 2)),
+        Aktivitaetsart.besichtigung,
+      );
     });
 
     test('acht Kilometer in drei Stunden sind eine Wanderung', () {
@@ -103,21 +110,24 @@ void main() {
   });
 
   group('das Erkennen', () {
-    List<Aktivitaetsvorschlag> erkenne(List<Aktivitaetsaufnahme> a,
-            {Set<String> bekannt = const {},
-            Set<String> verworfen = const {},
-            bool mitWohnort = true}) =>
-        erkenneAktivitaeten(a,
-            ohneOrt: 'Unbekannt',
-            wohnort: mitWohnort ? zuhause : null,
-            bekannteIds: bekannt,
-            verworfen: verworfen);
+    List<Aktivitaetsvorschlag> erkenne(
+      List<Aktivitaetsaufnahme> a, {
+      Set<String> bekannt = const {},
+      Set<String> verworfen = const {},
+      bool mitWohnort = true,
+    }) => erkenneAktivitaeten(
+      a,
+      ohneOrt: 'Unbekannt',
+      wohnort: mitWohnort ? zuhause : null,
+      bekannteIds: bekannt,
+      verworfen: verworfen,
+    );
 
     /// Eine Wanderung: acht Bilder über vier Stunden, zwölf Kilometer.
     List<Aktivitaetsaufnahme> wanderung([DateTime? start]) => [
-          for (var i = 0; i < 8; i++)
-            auf('w$i', start ?? tag, i * 30, i * 1.5, stadt: 'Goslar'),
-        ];
+      for (var i = 0; i < 8; i++)
+        auf('w$i', start ?? tag, i * 30, i * 1.5, stadt: 'Goslar'),
+    ];
 
     test('eine Wanderung wird erkannt und benannt', () {
       final v = erkenne(wanderung()).single;
@@ -136,8 +146,10 @@ void main() {
       final kurz = [
         for (var i = 0; i < 6; i++) auf('k$i', tag, i * 5, i * 1.0),
       ];
-      expect(kurz.last.zeit.difference(kurz.first.zeit),
-          lessThan(aktivitaetMindestdauer));
+      expect(
+        kurz.last.zeit.difference(kurz.first.zeit),
+        lessThan(aktivitaetMindestdauer),
+      );
       expect(erkenne(kurz), isEmpty);
     });
 
@@ -213,8 +225,10 @@ void main() {
     });
 
     test('schon zugeordnete Aufnahmen kommen nicht noch einmal', () {
-      expect(erkenne(wanderung(), bekannt: {'w0', 'w1', 'w2', 'w3', 'w4'}),
-          isEmpty);
+      expect(
+        erkenne(wanderung(), bekannt: {'w0', 'w1', 'w2', 'w3', 'w4'}),
+        isEmpty,
+      );
     });
 
     test('ein abgelehnter Vorschlag bleibt abgelehnt', () {
@@ -243,90 +257,96 @@ void main() {
   group('zu welcher Reise sie gehört', () {
     test('ohne Reise und ohne Zeitraum: keine', () {
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a', 'b'],
-            von: DateTime(2026, 6, 14),
-            reiseJeAufnahme: const {},
-          ),
-          isNull);
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a', 'b'],
+          von: DateTime(2026, 6, 14),
+          reiseJeAufnahme: const {},
+        ),
+        isNull,
+      );
     });
 
     test('die Fotos entscheiden', () {
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a', 'b', 'c'],
-            von: DateTime(2026, 6, 14),
-            reiseJeAufnahme: const {'a': 'italien', 'b': 'italien'},
-          ),
-          'italien');
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a', 'b', 'c'],
+          von: DateTime(2026, 6, 14),
+          reiseJeAufnahme: const {'a': 'italien', 'b': 'italien'},
+        ),
+        'italien',
+      );
     });
 
     test('bei zwei Reisen gewinnt die mit den meisten Bildern', () {
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a', 'b', 'c'],
-            von: DateTime(2026, 6, 14),
-            reiseJeAufnahme: const {
-              'a': 'italien',
-              'b': 'schweiz',
-              'c': 'schweiz'
-            },
-          ),
-          'schweiz');
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a', 'b', 'c'],
+          von: DateTime(2026, 6, 14),
+          reiseJeAufnahme: const {
+            'a': 'italien',
+            'b': 'schweiz',
+            'c': 'schweiz',
+          },
+        ),
+        'schweiz',
+      );
     });
 
     test('ein Zeitraum, der über die Reise hinausragt, ändert nichts', () {
       // Der Zeitraum einer Reise ist selbst nur aus ihren Aufnahmen
       // abgeleitet. Die Zuordnung der Bilder ist die stärkere Auskunft.
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a', 'b'],
-            von: DateTime(2026, 7, 20),
-            reiseJeAufnahme: const {'a': 'italien', 'b': 'italien'},
-            reisen: [
-              (
-                id: 'italien',
-                von: DateTime(2026, 6, 1),
-                bis: DateTime(2026, 6, 10)
-              ),
-            ],
-          ),
-          'italien');
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a', 'b'],
+          von: DateTime(2026, 7, 20),
+          reiseJeAufnahme: const {'a': 'italien', 'b': 'italien'},
+          reisen: [
+            (
+              id: 'italien',
+              von: DateTime(2026, 6, 1),
+              bis: DateTime(2026, 6, 10),
+            ),
+          ],
+        ),
+        'italien',
+      );
     });
 
     test('ohne zugeordnete Bilder entscheidet die Zeit', () {
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a'],
-            von: DateTime(2026, 6, 5),
-            reiseJeAufnahme: const {},
-            reisen: [
-              (
-                id: 'italien',
-                von: DateTime(2026, 6, 1),
-                bis: DateTime(2026, 6, 10)
-              ),
-            ],
-          ),
-          'italien');
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a'],
+          von: DateTime(2026, 6, 5),
+          reiseJeAufnahme: const {},
+          reisen: [
+            (
+              id: 'italien',
+              von: DateTime(2026, 6, 1),
+              bis: DateTime(2026, 6, 10),
+            ),
+          ],
+        ),
+        'italien',
+      );
     });
 
     test('und ausserhalb jeder Reise bleibt sie für sich', () {
       // Die Sonntagswanderung vor der Haustür braucht keine Reise.
       expect(
-          reiseFuerAktivitaet(
-            aufnahmeIds: const ['a'],
-            von: DateTime(2026, 9, 5),
-            reiseJeAufnahme: const {},
-            reisen: [
-              (
-                id: 'italien',
-                von: DateTime(2026, 6, 1),
-                bis: DateTime(2026, 6, 10)
-              ),
-            ],
-          ),
-          isNull);
+        reiseFuerAktivitaet(
+          aufnahmeIds: const ['a'],
+          von: DateTime(2026, 9, 5),
+          reiseJeAufnahme: const {},
+          reisen: [
+            (
+              id: 'italien',
+              von: DateTime(2026, 6, 1),
+              bis: DateTime(2026, 6, 10),
+            ),
+          ],
+        ),
+        isNull,
+      );
     });
   });
 }

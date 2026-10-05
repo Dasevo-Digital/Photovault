@@ -36,8 +36,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -46,20 +47,27 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<void> aufnahme(String id, int minuten, double kmOst,
-          {String? stadt}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 6, 14, 9, minuten),
-            importedAt: DateTime(2026),
-            latitude: const Value(52.37),
-            longitude: Value(9.73 + kmOst / 68.0),
-            locationCity: Value(stadt),
-          ));
+  Future<void> aufnahme(
+    String id,
+    int minuten,
+    double kmOst, {
+    String? stadt,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026, 6, 14, 9, minuten),
+          importedAt: DateTime(2026),
+          latitude: const Value(52.37),
+          longitude: Value(9.73 + kmOst / 68.0),
+          locationCity: Value(stadt),
+        ),
+      );
 
   Future<AktivitaetenData> anlegen({
     Aktivitaetsart art = Aktivitaetsart.wanderung,
@@ -87,14 +95,16 @@ void main() {
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      builder: (context, kind) => mitMeldungen(kind),
-      home: AktivitaetDetailScreen(library: library, aktivitaet: k),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: (context, kind) => mitMeldungen(kind),
+        home: AktivitaetDetailScreen(library: library, aktivitaet: k),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -106,14 +116,15 @@ void main() {
     expect(find.textContaining('5 Fotos'), findsOneWidget);
   });
 
-  testWidgets('die Strecke kommt aus den Bildern, nicht aus der Tabelle',
-      (tester) async {
+  testWidgets('die Strecke kommt aus den Bildern, nicht aus der Tabelle', (
+    tester,
+  ) async {
     final k = await anlegen();
     // Ein Bild aus der Aktivität nehmen – die Zeile muss kürzer werden,
     // ohne dass jemand eine gespeicherte Zahl nachführt.
-    await (db.delete(db.aktivitaetAufnahmen)
-          ..where((t) => t.assetId.equals('w4')))
-        .go();
+    await (db.delete(
+      db.aktivitaetAufnahmen,
+    )..where((t) => t.assetId.equals('w4'))).go();
     await zeige(tester, k);
     expect(find.textContaining('6,0 km'), findsOneWidget);
     expect(find.textContaining('4 Fotos'), findsOneWidget);
@@ -124,8 +135,9 @@ void main() {
     expect(find.byType(Routenkarte), findsOneWidget);
   });
 
-  testWidgets('ein einzelnes Bild bekommt keine Karte, sondern einen Satz',
-      (tester) async {
+  testWidgets('ein einzelnes Bild bekommt keine Karte, sondern einen Satz', (
+    tester,
+  ) async {
     await aufnahme('e1', 0, 0);
     await db.aktivitaetAnlegen(
       AktivitaetenCompanion.insert(
@@ -140,8 +152,10 @@ void main() {
     );
     await zeige(tester, (await db.alleAktivitaeten()).single);
     expect(find.byType(Routenkarte), findsNothing);
-    expect(find.textContaining('Zu wenige verortete Aufnahmen'),
-        findsOneWidget);
+    expect(
+      find.textContaining('Zu wenige verortete Aufnahmen'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('die Art lässt sich ändern', (tester) async {
@@ -151,8 +165,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Radtour'));
     await tester.pumpAndSettle();
-    expect(Aktivitaetsart.aus((await db.alleAktivitaeten()).single.art),
-        Aktivitaetsart.radtour);
+    expect(
+      Aktivitaetsart.aus((await db.alleAktivitaeten()).single.art),
+      Aktivitaetsart.radtour,
+    );
     expect(find.byIcon(Icons.directions_bike), findsWidgets);
   });
 
@@ -260,8 +276,9 @@ void main() {
       expect(find.text('Höhenprofil'), findsOneWidget);
     });
 
-    testWidgets('ohne Höhen steht ein Satz statt eines Profils',
-        (tester) async {
+    testWidgets('ohne Höhen steht ein Satz statt eines Profils', (
+      tester,
+    ) async {
       // Eine Datei ohne `<ele>` ist kein Fehler – aber ein Profil aus
       // erfundenen Nullen wäre einer.
       final k = await anlegen();
@@ -277,16 +294,16 @@ void main() {
       final k = await anlegen();
       await spur();
       await zeige(tester, k);
-      final karte =
-          tester.widget<Routenkarte>(find.byType(Routenkarte));
+      final karte = tester.widget<Routenkarte>(find.byType(Routenkarte));
       expect(karte.spuren, hasLength(1));
       expect(karte.spuren.first, hasLength(20));
       // Solange niemand auf das Profil zeigt, gibt es keine Marke.
       expect(karte.stelle, isNull);
     });
 
-    testWidgets('das Zeigen auf das Profil setzt die Marke auf der Karte',
-        (tester) async {
+    testWidgets('das Zeigen auf das Profil setzt die Marke auf der Karte', (
+      tester,
+    ) async {
       final k = await anlegen();
       await spur();
       await zeige(tester, k);
@@ -319,8 +336,7 @@ void main() {
       expect(await db.alleAktivitaeten(), hasLength(1));
     });
 
-    testWidgets('ohne Spur steht der Knopf zum Hinzufügen da',
-        (tester) async {
+    testWidgets('ohne Spur steht der Knopf zum Hinzufügen da', (tester) async {
       await zeige(tester, await anlegen());
       expect(find.byIcon(Icons.route_outlined), findsOneWidget);
       expect(find.byIcon(Icons.wrong_location_outlined), findsNothing);
@@ -333,8 +349,7 @@ void main() {
       expect(find.byType(ZuordnungAuswahlleiste), findsNothing);
     });
 
-    testWidgets('langer Druck waehlt aus und zeigt die Leiste',
-        (tester) async {
+    testWidgets('langer Druck waehlt aus und zeigt die Leiste', (tester) async {
       await zeige(tester, await anlegen());
       await tester.longPress(find.byType(AssetThumbnailTile).first);
       await tester.pumpAndSettle();
@@ -343,8 +358,9 @@ void main() {
       expect(find.text('Aus der Aktivität entfernen'), findsOneWidget);
     });
 
-    testWidgets('bei laufender Auswahl waehlt ein Tipp weitere dazu',
-        (tester) async {
+    testWidgets('bei laufender Auswahl waehlt ein Tipp weitere dazu', (
+      tester,
+    ) async {
       await zeige(tester, await anlegen());
       await tester.longPress(find.byType(AssetThumbnailTile).at(0));
       await tester.pumpAndSettle();
@@ -357,8 +373,9 @@ void main() {
       expect(find.text('1 ausgewählt'), findsOneWidget);
     });
 
-    testWidgets('der Knopf nimmt sie wirklich aus der Aktivitaet',
-        (tester) async {
+    testWidgets('der Knopf nimmt sie wirklich aus der Aktivitaet', (
+      tester,
+    ) async {
       final k = await anlegen();
       await zeige(tester, k);
       await tester.longPress(find.byType(AssetThumbnailTile).at(0));
@@ -379,15 +396,17 @@ void main() {
       expect(find.byType(ZuordnungAuswahlleiste), findsNothing);
     });
 
-    testWidgets('eine gesperrte Zuordnung ueberlebt das Herausnehmen',
-        (tester) async {
+    testWidgets('eine gesperrte Zuordnung ueberlebt das Herausnehmen', (
+      tester,
+    ) async {
       // Der Fall, an dem der Fotowaehler schon einmal Zuordnungen
       // gekostet hat: `_aufnahmen` zeigt Gesperrtes nicht, die
       // Zuordnung besteht aber. Wer die Ausgangsmenge aus dem Bild
       // naehme, loeschte sie beim Neuschreiben mit.
       final k = await anlegen();
-      await (db.update(db.assets)..where((t) => t.id.equals('w4')))
-          .write(const AssetsCompanion(isLocked: Value(true)));
+      await (db.update(db.assets)..where((t) => t.id.equals('w4'))).write(
+        const AssetsCompanion(isLocked: Value(true)),
+      );
       await zeige(tester, k);
       expect(find.byType(AssetThumbnailTile), findsNWidgets(4));
 
@@ -397,8 +416,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final uebrig = await db.zuordnungenDerAktivitaet(k.id);
-      expect(uebrig, contains('w4'),
-          reason: 'die gesperrte Zuordnung darf nicht mit verschwinden');
+      expect(
+        uebrig,
+        contains('w4'),
+        reason: 'die gesperrte Zuordnung darf nicht mit verschwinden',
+      );
       expect(uebrig, hasLength(4));
     });
 

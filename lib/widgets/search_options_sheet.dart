@@ -24,7 +24,11 @@ import '../services/laendernamen.dart';
 class SearchOptionsSheet extends StatefulWidget {
   final LibraryState library;
   final SearchFilters initialFilters;
-  const SearchOptionsSheet({super.key, required this.library, required this.initialFilters});
+  const SearchOptionsSheet({
+    super.key,
+    required this.library,
+    required this.initialFilters,
+  });
 
   @override
   State<SearchOptionsSheet> createState() => _SearchOptionsSheetState();
@@ -72,15 +76,20 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   String? _countedSignature;
   Future<int>? _resultCountFuture;
 
-  late final Future<List<String>> _cameraMakesFuture = widget.library.db.distinctCameraMakes();
-  late final Future<List<String>> _cameraModelsFuture = widget.library.db.distinctCameraModels();
-  late final Future<List<String>> _lensModelsFuture = widget.library.db.distinctLensModels();
-  late final Future<List<String>> _formateFuture = widget.library.db.distinctDateiformate();
+  late final Future<List<String>> _cameraMakesFuture = widget.library.db
+      .distinctCameraMakes();
+  late final Future<List<String>> _cameraModelsFuture = widget.library.db
+      .distinctCameraModels();
+  late final Future<List<String>> _lensModelsFuture = widget.library.db
+      .distinctLensModels();
+  late final Future<List<String>> _formateFuture = widget.library.db
+      .distinctDateiformate();
 
   // Kaskadierend (Land -> Bundesland -> Stadt): jede Ebene schränkt die
   // darunterliegende ein, deshalb nicht `late final`, sondern bei jeder
   // Auswahl über [_onCountryChanged]/[_onStateChanged] neu zugewiesen.
-  late final Future<List<String>> _countriesFuture = widget.library.db.distinctCountries();
+  late final Future<List<String>> _countriesFuture = widget.library.db
+      .distinctCountries();
   late Future<List<String>> _statesFuture;
   late Future<List<String>> _citiesFuture;
 
@@ -104,10 +113,12 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     _locationCountry = f.locationCountry;
     _locationState = f.locationState;
     _locationCity = f.locationCity;
-    _statesFuture =
-        _locationCountry != null ? widget.library.db.distinctStates(_locationCountry!) : Future.value(const []);
-    _citiesFuture =
-        _locationState != null ? widget.library.db.distinctCities(_locationState!) : Future.value(const []);
+    _statesFuture = _locationCountry != null
+        ? widget.library.db.distinctStates(_locationCountry!)
+        : Future.value(const []);
+    _citiesFuture = _locationState != null
+        ? widget.library.db.distinctCities(_locationState!)
+        : Future.value(const []);
     _startDate = f.startDate;
     _endDate = f.endDate;
     _mediaType = f.mediaType;
@@ -119,10 +130,18 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     _formate = f.formate.toSet();
     _minIsoController = TextEditingController(text: f.minIso?.toString() ?? '');
     _maxIsoController = TextEditingController(text: f.maxIso?.toString() ?? '');
-    _minFNumberController = TextEditingController(text: f.minFNumber?.toString() ?? '');
-    _maxFNumberController = TextEditingController(text: f.maxFNumber?.toString() ?? '');
-    _minFocalLengthController = TextEditingController(text: f.minFocalLengthMm?.toString() ?? '');
-    _maxFocalLengthController = TextEditingController(text: f.maxFocalLengthMm?.toString() ?? '');
+    _minFNumberController = TextEditingController(
+      text: f.minFNumber?.toString() ?? '',
+    );
+    _maxFNumberController = TextEditingController(
+      text: f.maxFNumber?.toString() ?? '',
+    );
+    _minFocalLengthController = TextEditingController(
+      text: f.minFocalLengthMm?.toString() ?? '',
+    );
+    _maxFocalLengthController = TextEditingController(
+      text: f.maxFocalLengthMm?.toString() ?? '',
+    );
     _blurryOnly = f.maxSharpnessScore != null;
   }
 
@@ -131,7 +150,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       _locationCountry = country;
       _locationState = null;
       _locationCity = null;
-      _statesFuture = country != null ? widget.library.db.distinctStates(country) : Future.value(const []);
+      _statesFuture = country != null
+          ? widget.library.db.distinctStates(country)
+          : Future.value(const []);
       _citiesFuture = Future.value(const []);
     });
   }
@@ -140,7 +161,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     setState(() {
       _locationState = state;
       _locationCity = null;
-      _citiesFuture = state != null ? widget.library.db.distinctCities(state) : Future.value(const []);
+      _citiesFuture = state != null
+          ? widget.library.db.distinctCities(state)
+          : Future.value(const []);
     });
   }
 
@@ -192,34 +215,42 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   }
 
   SearchFilters _buildFilters() => SearchFilters(
-        personIds: _personIds.toList(),
-        textMode: _textMode,
-        query: _queryController.text,
-        tagIds: _tagIds.toList(),
-        noTag: _noTag,
-        cameraMake: _cameraMake,
-        cameraModel: _cameraModel,
-        lensModel: _lensModel,
-        locationCountry: _locationCountry,
-        locationState: _locationState,
-        locationCity: _locationCity,
-        startDate: _startDate,
-        endDate: _endDate,
-        mediaType: _mediaType,
-        favoritesOnly: _favoritesOnly,
-        nurGeschaetztesDatum: _nurGeschaetztesDatum,
-        notInAnyAlbum: _notInAnyAlbum,
-        minRating: _minRating,
-        colorLabels: _colorLabels,
-        formate: _formate,
-        minIso: int.tryParse(_minIsoController.text.trim()),
-        maxIso: int.tryParse(_maxIsoController.text.trim()),
-        minFNumber: double.tryParse(_minFNumberController.text.trim().replaceAll(',', '.')),
-        maxFNumber: double.tryParse(_maxFNumberController.text.trim().replaceAll(',', '.')),
-        minFocalLengthMm: double.tryParse(_minFocalLengthController.text.trim().replaceAll(',', '.')),
-        maxFocalLengthMm: double.tryParse(_maxFocalLengthController.text.trim().replaceAll(',', '.')),
-        maxSharpnessScore: _blurryOnly ? blurryScoreThreshold : null,
-      );
+    personIds: _personIds.toList(),
+    textMode: _textMode,
+    query: _queryController.text,
+    tagIds: _tagIds.toList(),
+    noTag: _noTag,
+    cameraMake: _cameraMake,
+    cameraModel: _cameraModel,
+    lensModel: _lensModel,
+    locationCountry: _locationCountry,
+    locationState: _locationState,
+    locationCity: _locationCity,
+    startDate: _startDate,
+    endDate: _endDate,
+    mediaType: _mediaType,
+    favoritesOnly: _favoritesOnly,
+    nurGeschaetztesDatum: _nurGeschaetztesDatum,
+    notInAnyAlbum: _notInAnyAlbum,
+    minRating: _minRating,
+    colorLabels: _colorLabels,
+    formate: _formate,
+    minIso: int.tryParse(_minIsoController.text.trim()),
+    maxIso: int.tryParse(_maxIsoController.text.trim()),
+    minFNumber: double.tryParse(
+      _minFNumberController.text.trim().replaceAll(',', '.'),
+    ),
+    maxFNumber: double.tryParse(
+      _maxFNumberController.text.trim().replaceAll(',', '.'),
+    ),
+    minFocalLengthMm: double.tryParse(
+      _minFocalLengthController.text.trim().replaceAll(',', '.'),
+    ),
+    maxFocalLengthMm: double.tryParse(
+      _maxFocalLengthController.text.trim().replaceAll(',', '.'),
+    ),
+    maxSharpnessScore: _blurryOnly ? blurryScoreThreshold : null,
+  );
 
   void _search() => Navigator.of(context).pop(_buildFilters());
 
@@ -272,7 +303,12 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         builder: (context, setDialogState) {
           final visible = filter.isEmpty
               ? allTags
-              : allTags.where((t) => t.name.toLowerCase().contains(filter.toLowerCase())).toList();
+              : allTags
+                    .where(
+                      (t) =>
+                          t.name.toLowerCase().contains(filter.toLowerCase()),
+                    )
+                    .toList();
           return AlertDialog(
             title: Text(AppTexte.of(context).suchoptTagsWaehlen),
             content: SizedBox(
@@ -292,7 +328,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   const SizedBox(height: 8),
                   Expanded(
                     child: visible.isEmpty
-                        ? Center(child: Text(AppTexte.of(context).suchoptKeineTags))
+                        ? Center(
+                            child: Text(AppTexte.of(context).suchoptKeineTags),
+                          )
                         : ListView(
                             children: [
                               for (final tag in visible)
@@ -300,7 +338,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                                   value: selection.contains(tag.id),
                                   title: Text(tag.name),
                                   onChanged: (checked) => setDialogState(() {
-                                    checked == true ? selection.add(tag.id) : selection.remove(tag.id);
+                                    checked == true
+                                        ? selection.add(tag.id)
+                                        : selection.remove(tag.id);
                                   }),
                                 ),
                             ],
@@ -311,11 +351,13 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(AppTexte.of(context).allgAbbrechen)),
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppTexte.of(context).allgAbbrechen),
+              ),
               FilledButton(
-                  onPressed: () => Navigator.pop(context, selection),
-                  child: Text(AppTexte.of(context).allgUebernehmen)),
+                onPressed: () => Navigator.pop(context, selection),
+                child: Text(AppTexte.of(context).allgUebernehmen),
+              ),
             ],
           );
         },
@@ -336,14 +378,21 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.tune),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(AppTexte.of(context).suchoptTitel,
-                        style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(
+                      AppTexte.of(context).suchoptTitel,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -357,7 +406,12 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             Expanded(
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.lg),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                ),
                 children: [
                   _buildPeopleSection(),
                   const SizedBox(height: 24),
@@ -387,10 +441,18 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   final count = snapshot.data;
                   if (count != 0) return const SizedBox.shrink();
                   return Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 10, AppSpacing.lg, 0),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      10,
+                      AppSpacing.lg,
+                      0,
+                    ),
                     child: Text(
                       AppTexte.of(context).suchoptKeineTreffer,
-                      style: TextStyle(fontSize: 12, color: context.semantik.warnung),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.semantik.warnung,
+                      ),
                     ),
                   );
                 },
@@ -401,12 +463,16 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                        onPressed: _clearAll, child: Text(AppTexte.of(context).suchoptAllesLeeren)),
+                      onPressed: _clearAll,
+                      child: Text(AppTexte.of(context).suchoptAllesLeeren),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                        onPressed: _search, child: Text(AppTexte.of(context).suchoptSuchen)),
+                      onPressed: _search,
+                      child: Text(AppTexte.of(context).suchoptSuchen),
+                    ),
                   ),
                 ],
               ),
@@ -425,14 +491,21 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         final filtered = _peopleFilterText.isEmpty
             ? people
             : people
-                .where((p) => p.name.toLowerCase().contains(_peopleFilterText.toLowerCase()))
-                .toList();
+                  .where(
+                    (p) => p.name.toLowerCase().contains(
+                      _peopleFilterText.toLowerCase(),
+                    ),
+                  )
+                  .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text(AppTexte.of(context).navPersonen, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  AppTexte.of(context).navPersonen,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const Spacer(),
                 if (people.length > 6)
                   SizedBox(
@@ -452,11 +525,19 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             ),
             const SizedBox(height: 12),
             if (people.isEmpty)
-              Text(AppTexte.of(context).suchoptKeinePersonenBenannt,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
+              Text(
+                AppTexte.of(context).suchoptKeinePersonenBenannt,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              )
             else if (filtered.isEmpty)
-              Text(AppTexte.of(context).suchoptKeinePersonenGefunden,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))
+              Text(
+                AppTexte.of(context).suchoptKeinePersonenGefunden,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              )
             else
               SizedBox(
                 height: 96,
@@ -469,7 +550,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                     final selected = _personIds.contains(person.id);
                     return GestureDetector(
                       onTap: () => setState(() {
-                        selected ? _personIds.remove(person.id) : _personIds.add(person.id);
+                        selected
+                            ? _personIds.remove(person.id)
+                            : _personIds.add(person.id);
                       }),
                       child: SizedBox(
                         width: 76,
@@ -482,7 +565,8 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                                   datei: person.coverFaceCropPath == null
                                       ? null
                                       : widget.library.paths.absolute(
-                                          person.coverFaceCropPath!),
+                                          person.coverFaceCropPath!,
+                                        ),
                                   radius: 32,
                                   hintergrund: Colors.grey.shade800,
                                   symbolgroesse: 28,
@@ -495,12 +579,19 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                                       shape: BoxShape.circle,
                                       color: Colors.black45,
                                       border: Border.all(
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         width: 2,
                                       ),
                                     ),
-                                    child: Icon(Icons.check_circle,
-                                        color: Theme.of(context).colorScheme.primary, size: 26),
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      size: 26,
+                                    ),
                                   ),
                               ],
                             ),
@@ -525,18 +616,21 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   }
 
   String _textModeSectionLabel() => switch (_textMode) {
-        SearchTextMode.context => AppTexte.of(context).suchoptNachKontext,
-        SearchTextMode.filename => AppTexte.of(context).suchoptNachDateiname,
-        SearchTextMode.description => AppTexte.of(context).suchoptNachBeschreibung,
-        SearchTextMode.ocr => AppTexte.of(context).suchoptNachOcr,
-        SearchTextMode.caption => AppTexte.of(context).suchoptNachCaption,
-      };
+    SearchTextMode.context => AppTexte.of(context).suchoptNachKontext,
+    SearchTextMode.filename => AppTexte.of(context).suchoptNachDateiname,
+    SearchTextMode.description => AppTexte.of(context).suchoptNachBeschreibung,
+    SearchTextMode.ocr => AppTexte.of(context).suchoptNachOcr,
+    SearchTextMode.caption => AppTexte.of(context).suchoptNachCaption,
+  };
 
   Widget _buildTextModeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppTexte.of(context).suchoptTypTitel, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          AppTexte.of(context).suchoptTypTitel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         Wrap(
           children: [
@@ -573,7 +667,10 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           ],
         ),
         const SizedBox(height: 12),
-        Text(_textModeSectionLabel(), style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          _textModeSectionLabel(),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: _queryController,
@@ -582,14 +679,19 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             isDense: true,
             hintText: switch (_textMode) {
               SearchTextMode.context => AppTexte.of(context).suchoptHintKontext,
-              SearchTextMode.filename => AppTexte.of(context).suchoptHintDateiname,
-              SearchTextMode.description => AppTexte.of(context).suchoptHintBeschreibung,
+              SearchTextMode.filename => AppTexte.of(
+                context,
+              ).suchoptHintDateiname,
+              SearchTextMode.description => AppTexte.of(
+                context,
+              ).suchoptHintBeschreibung,
               SearchTextMode.ocr => AppTexte.of(context).suchoptHintOcr,
               SearchTextMode.caption => AppTexte.of(context).suchoptHintCaption,
             },
           ),
         ),
-        if (_textMode == SearchTextMode.context && !widget.library.clipAvailable)
+        if (_textMode == SearchTextMode.context &&
+            !widget.library.clipAvailable)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: Text(
@@ -597,7 +699,8 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               style: TextStyle(fontSize: 12, color: context.semantik.warnung),
             ),
           ),
-        if (_textMode == SearchTextMode.caption && !widget.library.captioningAvailable)
+        if (_textMode == SearchTextMode.caption &&
+            !widget.library.captioningAvailable)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: Text(
@@ -614,14 +717,21 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       stream: widget.library.db.watchAllTags(),
       builder: (context, snapshot) {
         final allTags = snapshot.data ?? [];
-        final selectedTags = allTags.where((t) => _tagIds.contains(t.id)).toList();
+        final selectedTags = allTags
+            .where((t) => _tagIds.contains(t.id))
+            .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppTexte.of(context).suchoptTagsTitel, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              AppTexte.of(context).suchoptTagsTitel,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             InkWell(
-              onTap: _noTag || allTags.isEmpty ? null : () => _openTagPicker(allTags),
+              onTap: _noTag || allTags.isEmpty
+                  ? null
+                  : () => _openTagPicker(allTags),
               child: InputDecorator(
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
@@ -638,7 +748,8 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                           for (final tag in selectedTags)
                             Chip(
                               label: Text(tag.name),
-                              onDeleted: () => setState(() => _tagIds.remove(tag.id)),
+                              onDeleted: () =>
+                                  setState(() => _tagIds.remove(tag.id)),
                             ),
                         ],
                       ),
@@ -670,12 +781,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppTexte.of(context).suchoptMindestbewertung,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                AppTexte.of(context).suchoptMindestbewertung,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               StarRating(
                 value: _minRating ?? 0,
-                onChanged: (v) => setState(() => _minRating = v == 0 ? null : v),
+                onChanged: (v) =>
+                    setState(() => _minRating = v == 0 ? null : v),
               ),
             ],
           ),
@@ -685,8 +799,10 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppTexte.of(context).suchoptFarbmarkierung,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                AppTexte.of(context).suchoptFarbmarkierung,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
@@ -695,10 +811,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   for (final entry in colorLabelSwatches.entries)
                     FilterChip(
                       label: Text(_colorLabelName(entry.key)),
-                      avatar: CircleAvatar(backgroundColor: entry.value, radius: 8),
+                      avatar: CircleAvatar(
+                        backgroundColor: entry.value,
+                        radius: 8,
+                      ),
                       selected: _colorLabels.contains(entry.key),
                       onSelected: (selected) => setState(() {
-                        selected ? _colorLabels.add(entry.key) : _colorLabels.remove(entry.key);
+                        selected
+                            ? _colorLabels.add(entry.key)
+                            : _colorLabels.remove(entry.key);
                       }),
                     ),
                 ],
@@ -711,35 +832,39 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   }
 
   String _colorLabelName(String key) => switch (key) {
-        'red' => AppTexte.of(context).farbeRot,
-        'yellow' => AppTexte.of(context).farbeGelb,
-        'green' => AppTexte.of(context).farbeGruen,
-        'blue' => AppTexte.of(context).farbeBlau,
-        'purple' => AppTexte.of(context).farbeLila,
-        _ => key,
-      };
+    'red' => AppTexte.of(context).farbeRot,
+    'yellow' => AppTexte.of(context).farbeGelb,
+    'green' => AppTexte.of(context).farbeGruen,
+    'blue' => AppTexte.of(context).farbeBlau,
+    'purple' => AppTexte.of(context).farbeLila,
+    _ => key,
+  };
 
   Widget _buildRangeFiltersSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppTexte.of(context).suchoptAufnahmewerte, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          AppTexte.of(context).suchoptAufnahmewerte,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _numberField(AppTexte.of(context).suchoptIsoVon, _minIsoController)),
+            Expanded(
+              child: _numberField(
+                AppTexte.of(context).suchoptIsoVon,
+                _minIsoController,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _numberField(AppTexte.of(context).suchoptIsoBis, _maxIsoController)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _numberField(AppTexte.of(context).suchoptBlendeVon, _minFNumberController)),
-            const SizedBox(width: 12),
-            Expanded(child: _numberField(AppTexte.of(context).suchoptBlendeBis, _maxFNumberController)),
+            Expanded(
+              child: _numberField(
+                AppTexte.of(context).suchoptIsoBis,
+                _maxIsoController,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -747,10 +872,37 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-                child: _numberField(AppTexte.of(context).suchoptBrennweiteVon, _minFocalLengthController)),
+              child: _numberField(
+                AppTexte.of(context).suchoptBlendeVon,
+                _minFNumberController,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: _numberField(AppTexte.of(context).suchoptBrennweiteBis, _maxFocalLengthController)),
+              child: _numberField(
+                AppTexte.of(context).suchoptBlendeBis,
+                _maxFNumberController,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _numberField(
+                AppTexte.of(context).suchoptBrennweiteVon,
+                _minFocalLengthController,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _numberField(
+                AppTexte.of(context).suchoptBrennweiteBis,
+                _maxFocalLengthController,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -770,7 +922,11 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     return TextField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), isDense: true),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
     );
   }
 
@@ -778,24 +934,39 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppTexte.of(context).werkzAbschnittKamera, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          AppTexte.of(context).werkzAbschnittKamera,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _cameraDropdown(AppTexte.of(context).suchoptMarke, _cameraMakesFuture,
-                  _cameraMake, (v) => setState(() => _cameraMake = v)),
+              child: _cameraDropdown(
+                AppTexte.of(context).suchoptMarke,
+                _cameraMakesFuture,
+                _cameraMake,
+                (v) => setState(() => _cameraMake = v),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _cameraDropdown(AppTexte.of(context).suchoptModell, _cameraModelsFuture,
-                  _cameraModel, (v) => setState(() => _cameraModel = v)),
+              child: _cameraDropdown(
+                AppTexte.of(context).suchoptModell,
+                _cameraModelsFuture,
+                _cameraModel,
+                (v) => setState(() => _cameraModel = v),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _cameraDropdown(AppTexte.of(context).suchoptObjektiv, _lensModelsFuture,
-                  _lensModel, (v) => setState(() => _lensModel = v)),
+              child: _cameraDropdown(
+                AppTexte.of(context).suchoptObjektiv,
+                _lensModelsFuture,
+                _lensModel,
+                (v) => setState(() => _lensModel = v),
+              ),
             ),
           ],
         ),
@@ -820,14 +991,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         // Nur die RAW-Formate, die es hier auch gibt. Ein Knopf, der
         // 26 Endungen auswaehlt, von denen 23 nirgends vorkommen, waere
         // eine Auswahl ohne Wirkung.
-        final rawVorhanden =
-            vorhanden.where(rawDateiformate.contains).toList();
+        final rawVorhanden = vorhanden.where(rawDateiformate.contains).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppTexte.of(context).suchoptDateiformat,
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              AppTexte.of(context).suchoptDateiformat,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -867,6 +1039,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     Future<List<String>> future,
     String? value,
     ValueChanged<String?>? onChanged, {
+
     /// Wie ein Wert dasteht. Der Wert selbst bleibt, was in der Datenbank
     /// steht – bei Ländern ist das der englische Name.
     String Function(String)? beschriftung,
@@ -890,11 +1063,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             isDense: true,
           ),
           items: [
-            DropdownMenuItem(value: null, child: Text(AppTexte.of(context).allgAlle)),
+            DropdownMenuItem(
+              value: null,
+              child: Text(AppTexte.of(context).allgAlle),
+            ),
             for (final v in items)
               DropdownMenuItem(
-                  value: v,
-                  child: Text(zeige(v), overflow: TextOverflow.ellipsis)),
+                value: v,
+                child: Text(zeige(v), overflow: TextOverflow.ellipsis),
+              ),
           ],
           onChanged: onChanged,
         );
@@ -906,7 +1083,10 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(AppTexte.of(context).suchoptOrtTitel, style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          AppTexte.of(context).suchoptOrtTitel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,18 +1100,30 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                 // Die Datenbank führt „Germany"; im Feld steht
                 // „Deutschland", und danach ist auch sortiert.
                 beschriftung: (v) => landAnzeige(
-                    v, Localizations.localeOf(context).languageCode),
+                  v,
+                  Localizations.localeOf(context).languageCode,
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _cameraDropdown(AppTexte.of(context).suchoptBundesland, _statesFuture,
-                  _locationState, _locationCountry == null ? null : _onStateChanged),
+              child: _cameraDropdown(
+                AppTexte.of(context).suchoptBundesland,
+                _statesFuture,
+                _locationState,
+                _locationCountry == null ? null : _onStateChanged,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _cameraDropdown(AppTexte.of(context).suchoptStadt, _citiesFuture, _locationCity,
-                  _locationState == null ? null : (v) => setState(() => _locationCity = v)),
+              child: _cameraDropdown(
+                AppTexte.of(context).suchoptStadt,
+                _citiesFuture,
+                _locationCity,
+                _locationState == null
+                    ? null
+                    : (v) => setState(() => _locationCity = v),
+              ),
             ),
           ],
         ),
@@ -952,19 +1144,32 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _dateField(AppTexte.of(context).suchoptAnfangsdatum, _startDate,
-              () => _pickDate(isStart: true), () => setState(() => _startDate = null)),
+          child: _dateField(
+            AppTexte.of(context).suchoptAnfangsdatum,
+            _startDate,
+            () => _pickDate(isStart: true),
+            () => setState(() => _startDate = null),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _dateField(AppTexte.of(context).suchoptEnddatum, _endDate,
-              () => _pickDate(isStart: false), () => setState(() => _endDate = null)),
+          child: _dateField(
+            AppTexte.of(context).suchoptEnddatum,
+            _endDate,
+            () => _pickDate(isStart: false),
+            () => setState(() => _endDate = null),
+          ),
         ),
       ],
     );
   }
 
-  Widget _dateField(String label, DateTime? value, VoidCallback onTap, VoidCallback onClear) {
+  Widget _dateField(
+    String label,
+    DateTime? value,
+    VoidCallback onTap,
+    VoidCallback onClear,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -984,9 +1189,13 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                     )
                   : const Icon(Icons.calendar_today_outlined, size: 18),
             ),
-            child: Text(value != null
-                ? DateFormat.yMd(Localizations.localeOf(context).toString()).format(value)
-                : AppTexte.of(context).suchoptDatumPlatzhalter),
+            child: Text(
+              value != null
+                  ? DateFormat.yMd(
+                      Localizations.localeOf(context).toString(),
+                    ).format(value)
+                  : AppTexte.of(context).suchoptDatumPlatzhalter,
+            ),
           ),
         ),
       ],
@@ -1001,7 +1210,10 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppTexte.of(context).suchoptMedientyp, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                AppTexte.of(context).suchoptMedientyp,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 children: [
@@ -1033,8 +1245,10 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(AppTexte.of(context).suchoptAnzeigeoptionen,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                AppTexte.of(context).suchoptAnzeigeoptionen,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               CheckboxListTile(
                 value: _notInAnyAlbum,
@@ -1093,7 +1307,10 @@ class _InlineRadio<T> extends StatelessWidget {
       onTap: () => onChanged(value),
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          vertical: 2,
+          horizontal: AppSpacing.xs,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -49,7 +49,7 @@ enum _ContextMenuAction {
   editMetadata,
   faceReview,
   entwicklungEinfuegen,
-  originalHerstellen
+  originalHerstellen,
 }
 
 /// Obergrenze für die Dekodierauflösung (längste Kante) in der
@@ -108,8 +108,9 @@ class AssetViewerScreen extends StatefulWidget {
 }
 
 class _AssetViewerScreenState extends State<AssetViewerScreen> {
-  late final PageController _controller =
-      PageController(initialPage: widget.initialIndex);
+  late final PageController _controller = PageController(
+    initialPage: widget.initialIndex,
+  );
   late int _currentIndex = widget.initialIndex;
 
   /// Für die Positionierung des Teilen-Dialog-Popovers (siehe _shareAsset)
@@ -186,7 +187,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       for (final f in faces)
         if (!f.isIgnored && f.schaerfe != null) f.schaerfe!,
     ];
-    final unscharf = gemessen.isNotEmpty &&
+    final unscharf =
+        gemessen.isNotEmpty &&
         gemessen.reduce((a, b) => a > b ? a : b) < gesichtUnscharfSchwelle;
     if (mounted && _assets[_currentIndex].id == assetId) {
       setState(() => _currentGesichterUnscharf = unscharf);
@@ -239,7 +241,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (_slideshowActive) _stopSlideshow();
     if (_hasPrevious) {
       _controller.previousPage(
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -247,14 +251,19 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (_slideshowActive) _stopSlideshow();
     if (_hasNext) {
       _controller.nextPage(
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     }
   }
 
   void _jumpToIndex(int index) {
     if (_slideshowActive) _stopSlideshow();
-    _controller.animateToPage(index,
-        duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    _controller.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   void _toggleSlideshow() =>
@@ -263,8 +272,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   void _startSlideshow() {
     _slideshowTimer?.cancel();
     setState(() => _slideshowActive = true);
-    _slideshowTimer =
-        Timer.periodic(_slideshowInterval, (_) => _advanceSlideshow());
+    _slideshowTimer = Timer.periodic(
+      _slideshowInterval,
+      (_) => _advanceSlideshow(),
+    );
   }
 
   void _stopSlideshow() {
@@ -279,10 +290,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   void _advanceSlideshow() {
     if (_hasNext) {
       _controller.nextPage(
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     } else {
-      _controller.animateToPage(0,
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      _controller.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -368,9 +384,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// gezielte Einzelaktion statt eines schnellen Tastatur-Durchlaufs).
   Future<void> _confirmAndDeleteCurrent() async {
     final confirmed = await confirmDialog(
-        context,
-        AppTexte.of(context).loeschenTitel(1),
-        AppTexte.of(context).loeschenHinweis(1));
+      context,
+      AppTexte.of(context).loeschenTitel(1),
+      AppTexte.of(context).loeschenHinweis(1),
+    );
     if (!confirmed) return;
     await _removeCurrentAndAdvance();
   }
@@ -384,9 +401,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _confirmAndDelete() async {
     if (widget.onDelete == null) return;
     final confirmed = await confirmDialog(
-        context,
-        AppTexte.of(context).loeschenTitel(1),
-        AppTexte.of(context).loeschenHinweis(1));
+      context,
+      AppTexte.of(context).loeschenTitel(1),
+      AppTexte.of(context).loeschenHinweis(1),
+    );
     if (!confirmed) return;
     await widget.onDelete!(_currentAsset);
   }
@@ -400,10 +418,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   void _showSimilarImages() {
     final library = context.read<LibraryState>();
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) =>
-          SimilarPhotosScreen(library: library, sourceAsset: _currentAsset),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            SimilarPhotosScreen(library: library, sourceAsset: _currentAsset),
+      ),
+    );
   }
 
   Future<void> _openMetadataEditor() async {
@@ -420,12 +440,18 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _originalWiederherstellen() async {
     final t = AppTexte.of(context);
     if (!await confirmDialog(
-        context, t.infoOriginalHerstellen, t.infoOriginalHerstellenFrage,
-        bestaetigen: t.infoOriginalHerstellen)) {
+      context,
+      t.infoOriginalHerstellen,
+      t.infoOriginalHerstellenFrage,
+      bestaetigen: t.infoOriginalHerstellen,
+    )) {
       return;
     }
     await originalWiederherstellen(
-        db: widget.db, paths: widget.paths, asset: _currentAsset);
+      db: widget.db,
+      paths: widget.paths,
+      asset: _currentAsset,
+    );
     if (!mounted) return;
     melde.erfolg(t.infoOriginalHergestellt);
     await _refreshCurrentAsset();
@@ -441,7 +467,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     final fotoRechteck = bildbereich == null
         ? Offset.zero & overlay.size
         : bildbereich.localToGlobal(Offset.zero, ancestor: overlay) &
-            bildbereich.size;
+              bildbereich.size;
     final lokal = overlay.globalToLocal(globalPosition);
     final anker = Offset(
       lokal.dx.clamp(fotoRechteck.left + 4, fotoRechteck.right - 4),
@@ -460,27 +486,33 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         if (widget.library?.hatKopierteEntwicklung ?? false)
           PopupMenuItem(
             value: _ContextMenuAction.entwicklungEinfuegen,
-            child: Row(children: [
-              const Icon(Icons.auto_fix_high_outlined, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).viewerEntwicklungAnwenden),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_fix_high_outlined, size: 20),
+                const SizedBox(width: 12),
+                Text(AppTexte.of(context).viewerEntwicklungAnwenden),
+              ],
+            ),
           ),
         PopupMenuItem(
           value: _ContextMenuAction.showInTimeline,
-          child: Row(children: [
-            const Icon(Icons.photo_library_outlined, size: 20),
-            const SizedBox(width: 12),
-            Text(AppTexte.of(context).viewerInTimelineZeigen),
-          ]),
+          child: Row(
+            children: [
+              const Icon(Icons.photo_library_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text(AppTexte.of(context).viewerInTimelineZeigen),
+            ],
+          ),
         ),
         PopupMenuItem(
           value: _ContextMenuAction.showSimilar,
-          child: Row(children: [
-            const Icon(Icons.image_search_outlined, size: 20),
-            const SizedBox(width: 12),
-            Text(AppTexte.of(context).viewerAehnlicheZeigen),
-          ]),
+          child: Row(
+            children: [
+              const Icon(Icons.image_search_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text(AppTexte.of(context).viewerAehnlicheZeigen),
+            ],
+          ),
         ),
         // Der Weg zurueck – nur bei einer Aufnahme, an der es etwas
         // zurueckzunehmen gibt. Denselben Knopf traegt die Info-Ansicht;
@@ -489,19 +521,23 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         if (bearbeitungsarten(_currentAsset).isNotEmpty)
           PopupMenuItem(
             value: _ContextMenuAction.originalHerstellen,
-            child: Row(children: [
-              const Icon(Icons.restore, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).infoOriginalHerstellen),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.restore, size: 20),
+                const SizedBox(width: 12),
+                Text(AppTexte.of(context).infoOriginalHerstellen),
+              ],
+            ),
           ),
         PopupMenuItem(
           value: _ContextMenuAction.editMetadata,
-          child: Row(children: [
-            const Icon(Icons.edit_note_outlined, size: 20),
-            const SizedBox(width: 12),
-            Text(AppTexte.of(context).viewerMetadatenBearbeiten),
-          ]),
+          child: Row(
+            children: [
+              const Icon(Icons.edit_note_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text(AppTexte.of(context).viewerMetadatenBearbeiten),
+            ],
+          ),
         ),
         // Nur für Fotos (nicht Videos), nicht gesperrt (FaceReviewScreen
         // liest Original/Vorschau direkt von der Platte, ohne die
@@ -514,11 +550,13 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             !_currentAsset.isLocked)
           PopupMenuItem(
             value: _ContextMenuAction.faceReview,
-            child: Row(children: [
-              const Icon(Icons.face_retouching_natural_outlined, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).viewerGesichterBearbeiten),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.face_retouching_natural_outlined, size: 20),
+                const SizedBox(width: 12),
+                Text(AppTexte.of(context).viewerGesichterBearbeiten),
+              ],
+            ),
           ),
       ],
     );
@@ -533,8 +571,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       case _ContextMenuAction.faceReview:
         await _openFaceReview();
       case _ContextMenuAction.entwicklungEinfuegen:
-        await runBatchPasteDevelop(
-            context, widget.library!, [_currentAsset.id]);
+        await runBatchPasteDevelop(context, widget.library!, [
+          _currentAsset.id,
+        ]);
         await _refreshCurrentAsset();
       case _ContextMenuAction.originalHerstellen:
         await _originalWiederherstellen();
@@ -549,27 +588,30 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _openFaceReview() async {
     final library = widget.library;
     if (library == null) return;
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => FaceReviewScreen(
-        library: library,
-        assets: _assets,
-        startIndex: _currentIndex,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FaceReviewScreen(
+          library: library,
+          assets: _assets,
+          startIndex: _currentIndex,
+        ),
       ),
-    ));
+    );
     if (mounted) await _refreshCurrentAsset();
   }
 
   Future<void> _editAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true)
-        .push<bool>(MaterialPageRoute(
-      builder: (_) => ImageEditorScreen(
-        asset: asset,
-        db: widget.db,
-        paths: widget.paths,
-        modelsDir: widget.library?.modelsDir,
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ImageEditorScreen(
+          asset: asset,
+          db: widget.db,
+          paths: widget.paths,
+          modelsDir: widget.library?.modelsDir,
+        ),
       ),
-    ));
+    );
     if (saved == true) await _refreshCurrentAsset();
   }
 
@@ -583,35 +625,39 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// denselben Kreis in der Palette.
   Future<void> _setColorLabel(String farbe) async {
     final aktuell = _currentAsset.colorLabel;
-    await widget.db
-        .setColorLabel(_currentAsset.id, aktuell == farbe ? null : farbe);
+    await widget.db.setColorLabel(
+      _currentAsset.id,
+      aktuell == farbe ? null : farbe,
+    );
     await _refreshCurrentAsset();
   }
 
   Future<void> _developAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true)
-        .push<bool>(MaterialPageRoute(
-      builder: (_) => DevelopScreen(
-        asset: asset,
-        db: widget.db,
-        paths: widget.paths,
-        segmentation: widget.library?.segmentationHalter,
-        restoreQueue: widget.library?.restoreQueue,
-        onEinstellungenKopieren: widget.library?.setzeKopierteEntwicklung,
-        kopierteEinstellungen: () => widget.library?.kopierteEntwicklung,
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DevelopScreen(
+          asset: asset,
+          db: widget.db,
+          paths: widget.paths,
+          segmentation: widget.library?.segmentationHalter,
+          restoreQueue: widget.library?.restoreQueue,
+          onEinstellungenKopieren: widget.library?.setzeKopierteEntwicklung,
+          kopierteEinstellungen: () => widget.library?.kopierteEntwicklung,
+        ),
       ),
-    ));
+    );
     if (saved == true) await _refreshCurrentAsset();
   }
 
   Future<void> _trimVideoAsset() async {
     final asset = _currentAsset;
-    final saved = await Navigator.of(context, rootNavigator: true)
-        .push<bool>(MaterialPageRoute(
-      builder: (_) =>
-          VideoTrimScreen(asset: asset, db: widget.db, paths: widget.paths),
-    ));
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            VideoTrimScreen(asset: asset, db: widget.db, paths: widget.paths),
+      ),
+    );
     if (saved == true) await _refreshCurrentAsset();
   }
 
@@ -632,8 +678,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         }
       }
       if (mounted) {
-        melde
-            .erfolg(AppTexte.of(context).viewerExportiert(exported.join(', ')));
+        melde.erfolg(
+          AppTexte.of(context).viewerExportiert(exported.join(', ')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -653,7 +700,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     try {
       final exporter = ExportService(widget.paths, library: widget.library);
       final files = <XFile>[
-        XFile((await exporter.resolveSourceFile(asset)).path)
+        XFile((await exporter.resolveSourceFile(asset)).path),
       ];
       final names = <String>[asset.originalFileName];
       if (asset.linkedAssetId != null) {
@@ -665,13 +712,16 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       }
       final box =
           _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
-      final origin =
-          box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
-      await SharePlus.instance.share(ShareParams(
-        files: files,
-        fileNameOverrides: names,
-        sharePositionOrigin: origin,
-      ));
+      final origin = box != null
+          ? (box.localToGlobal(Offset.zero) & box.size)
+          : null;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: files,
+          fileNameOverrides: names,
+          sharePositionOrigin: origin,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         melde.fehler(AppTexte.of(context).viewerTeilenFehlgeschlagen('$e'));
@@ -703,11 +753,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
               if (assetFormatLabel(asset).isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(AppRadius.xs)),
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
                   child: Text(
                     assetFormatLabel(asset),
                     style: const TextStyle(fontSize: 11, color: Colors.white70),
@@ -719,9 +772,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           actions: [
             if (_assets.length > 1)
               IconButton(
-                icon: Icon(_slideshowActive
-                    ? Icons.pause_circle_outline
-                    : Icons.slideshow_outlined),
+                icon: Icon(
+                  _slideshowActive
+                      ? Icons.pause_circle_outline
+                      : Icons.slideshow_outlined,
+                ),
                 tooltip: _slideshowActive
                     ? AppTexte.of(context).viewerDiaschauStoppen
                     : AppTexte.of(context).viewerDiaschauStarten,
@@ -738,9 +793,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             // Gesichts-Bearbeitung gelehrt.
             if (asset.type == 'IMAGE' && !asset.isLocked)
               IconButton(
-                icon: Icon(_gesichterZeigen
-                    ? Icons.face_retouching_natural
-                    : Icons.face_retouching_natural_outlined),
+                icon: Icon(
+                  _gesichterZeigen
+                      ? Icons.face_retouching_natural
+                      : Icons.face_retouching_natural_outlined,
+                ),
                 tooltip: _gesichterZeigen
                     ? AppTexte.of(context).viewerGesichterVerbergen
                     : AppTexte.of(context).viewerGesichterZeigen,
@@ -756,9 +813,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             // sehen, was schon da ist.
             if (asset.type == 'IMAGE' && !asset.isLocked && _gesichterZeigen)
               IconButton(
-                icon: Icon(_gesichtAufziehen
-                    ? Icons.person_add
-                    : Icons.person_add_outlined),
+                icon: Icon(
+                  _gesichtAufziehen
+                      ? Icons.person_add
+                      : Icons.person_add_outlined,
+                ),
                 color: _gesichtAufziehen
                     ? Theme.of(context).colorScheme.primary
                     : null,
@@ -773,9 +832,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             // erkannten Text, der bis Schema 60 nirgends zu sehen war.
             if (asset.type == 'IMAGE' && !asset.isLocked)
               IconButton(
-                icon: Icon(_textZeigen
-                    ? Icons.text_fields
-                    : Icons.text_fields_outlined),
+                icon: Icon(
+                  _textZeigen ? Icons.text_fields : Icons.text_fields_outlined,
+                ),
                 tooltip: _textZeigen
                     ? AppTexte.of(context).viewerTextVerbergen
                     : AppTexte.of(context).viewerTextZeigen,
@@ -808,8 +867,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 icon: const Icon(Icons.auto_fix_high_outlined),
                 tooltip: AppTexte.of(context).viewerEntwicklungAnwendenLang,
                 onPressed: () async {
-                  await runBatchPasteDevelop(
-                      context, widget.library!, [asset.id]);
+                  await runBatchPasteDevelop(context, widget.library!, [
+                    asset.id,
+                  ]);
                   await _refreshCurrentAsset();
                 },
               ),
@@ -828,7 +888,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             if (widget.onToggleFavorite != null)
               IconButton(
                 icon: Icon(
-                    asset.isFavorite ? Icons.favorite : Icons.favorite_border),
+                  asset.isFavorite ? Icons.favorite : Icons.favorite_border,
+                ),
                 tooltip: asset.isFavorite
                     ? AppTexte.of(context).viewerFavoritEntfernen
                     : AppTexte.of(context).viewerFavoritSetzen,
@@ -876,18 +937,19 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                             itemBuilder: (context, index) {
                               final a = _assets[index];
                               return _AssetPage(
-                                  asset: a,
-                                  db: widget.db,
-                                  paths: widget.paths,
-                                  library: widget.library,
-                                  isCurrent: index == _currentIndex,
-                                  gesichterZeigen: _gesichterZeigen,
-                                  gesichtAufziehen: _gesichtAufziehen &&
-                                      index == _currentIndex,
-                                  beiGesichtAngelegt: () =>
-                                      setState(() => _gesichtAufziehen = false),
-                                  textZeigen: _textZeigen,
-                                  focusPeakingEnabled: _focusPeakingEnabled);
+                                asset: a,
+                                db: widget.db,
+                                paths: widget.paths,
+                                library: widget.library,
+                                isCurrent: index == _currentIndex,
+                                gesichterZeigen: _gesichterZeigen,
+                                gesichtAufziehen:
+                                    _gesichtAufziehen && index == _currentIndex,
+                                beiGesichtAngelegt: () =>
+                                    setState(() => _gesichtAufziehen = false),
+                                textZeigen: _textZeigen,
+                                focusPeakingEnabled: _focusPeakingEnabled,
+                              );
                             },
                           ),
                         ),
@@ -897,11 +959,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                             top: 0,
                             bottom: 0,
                             child: Center(
-                                child: _NavArrowButton(
-                                    icon: Icons.chevron_left,
-                                    tooltip: AppTexte.of(context)
-                                        .viewerVorherigesFoto,
-                                    onPressed: _goToPrevious)),
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_left,
+                                tooltip: AppTexte.of(
+                                  context,
+                                ).viewerVorherigesFoto,
+                                onPressed: _goToPrevious,
+                              ),
+                            ),
                           ),
                         if (_hasNext)
                           Positioned(
@@ -909,11 +974,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                             top: 0,
                             bottom: 0,
                             child: Center(
-                                child: _NavArrowButton(
-                                    icon: Icons.chevron_right,
-                                    tooltip: AppTexte.of(context)
-                                        .viewerNaechstesFoto,
-                                    onPressed: _goToNext)),
+                              child: _NavArrowButton(
+                                icon: Icons.chevron_right,
+                                tooltip: AppTexte.of(
+                                  context,
+                                ).viewerNaechstesFoto,
+                                onPressed: _goToNext,
+                              ),
+                            ),
                           ),
                       ],
                     ),
@@ -945,7 +1013,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 total: _assets.length,
                 focusPeakingEnabled: _focusPeakingEnabled,
                 onToggleFocusPeaking: () => setState(
-                    () => _focusPeakingEnabled = !_focusPeakingEnabled),
+                  () => _focusPeakingEnabled = !_focusPeakingEnabled,
+                ),
                 gesichterUnscharf: _currentGesichterUnscharf,
               ),
             ] else if (_assets.length > 1) ...[
@@ -1020,8 +1089,11 @@ class _CullingHintBar extends StatelessWidget {
                   if (gesichterUnscharf) ...[
                     Tooltip(
                       message: AppTexte.of(context).viewerGesichtUnscharf,
-                      child: const Icon(Icons.blur_on,
-                          size: 18, color: Colors.orangeAccent),
+                      child: const Icon(
+                        Icons.blur_on,
+                        size: 18,
+                        color: Colors.orangeAccent,
+                      ),
                     ),
                   ],
                 ],
@@ -1055,8 +1127,11 @@ class _NavArrowButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
   final String tooltip;
-  const _NavArrowButton(
-      {required this.icon, required this.onPressed, required this.tooltip});
+  const _NavArrowButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1103,8 +1178,9 @@ class _FilmstripState extends State<_Filmstrip> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _scrollToCurrent(animate: false));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollToCurrent(animate: false),
+    );
   }
 
   @override
@@ -1124,14 +1200,20 @@ class _FilmstripState extends State<_Filmstrip> {
   void _scrollToCurrent({required bool animate}) {
     if (!_scrollController.hasClients) return;
     final viewport = _scrollController.position.viewportDimension;
-    final target = widget.currentIndex * (_itemWidth + _itemSpacing) -
+    final target =
+        widget.currentIndex * (_itemWidth + _itemSpacing) -
         viewport / 2 +
         _itemWidth / 2;
-    final clamped =
-        target.clamp(0.0, _scrollController.position.maxScrollExtent);
+    final clamped = target.clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
     if (animate) {
-      _scrollController.animateTo(clamped,
-          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+      _scrollController.animateTo(
+        clamped,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
     } else {
       _scrollController.jumpTo(clamped);
     }
@@ -1146,7 +1228,9 @@ class _FilmstripState extends State<_Filmstrip> {
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         itemCount: widget.assets.length,
         separatorBuilder: (_, _) => const SizedBox(width: _itemSpacing),
         itemBuilder: (context, index) {
@@ -1161,31 +1245,35 @@ class _FilmstripState extends State<_Filmstrip> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppRadius.xs),
                 border: Border.all(
-                    color: selected ? Colors.white : Colors.transparent,
-                    width: 2),
+                  color: selected ? Colors.white : Colors.transparent,
+                  width: 2,
+                ),
               ),
               clipBehavior: Clip.antiAlias,
               child: thumbPath != null
-                  ? Builder(builder: (context) {
-                      // Nur eine Kante begrenzen, sonst wird das Bild
-                      // gestaucht - siehe [deckendeDekodiermasse].
-                      final masse = deckendeDekodiermasse(
-                        kachelBreite: _itemWidth,
-                        kachelHoehe: _itemWidth,
-                        bildBreite: asset.widthPx,
-                        bildHoehe: asset.heightPx,
-                        pixelverhaeltnis:
-                            MediaQuery.of(context).devicePixelRatio,
-                      );
-                      return Image.file(
-                        widget.paths.absolute(thumbPath),
-                        fit: BoxFit.cover,
-                        cacheWidth: masse.breite,
-                        cacheHeight: masse.hoehe,
-                        errorBuilder: (_, _, _) =>
-                            Container(color: Colors.grey.shade900),
-                      );
-                    })
+                  ? Builder(
+                      builder: (context) {
+                        // Nur eine Kante begrenzen, sonst wird das Bild
+                        // gestaucht - siehe [deckendeDekodiermasse].
+                        final masse = deckendeDekodiermasse(
+                          kachelBreite: _itemWidth,
+                          kachelHoehe: _itemWidth,
+                          bildBreite: asset.widthPx,
+                          bildHoehe: asset.heightPx,
+                          pixelverhaeltnis: MediaQuery.of(
+                            context,
+                          ).devicePixelRatio,
+                        );
+                        return Image.file(
+                          widget.paths.absolute(thumbPath),
+                          fit: BoxFit.cover,
+                          cacheWidth: masse.breite,
+                          cacheHeight: masse.hoehe,
+                          errorBuilder: (_, _, _) =>
+                              Container(color: Colors.grey.shade900),
+                        );
+                      },
+                    )
                   : Container(color: Colors.grey.shade900),
             ),
           );
@@ -1223,17 +1311,18 @@ class _AssetPage extends StatefulWidget {
   /// Ob die gelesenen Textstellen als Kästen über dem Foto liegen.
   final bool textZeigen;
   final bool focusPeakingEnabled;
-  const _AssetPage(
-      {required this.asset,
-      required this.db,
-      required this.paths,
-      required this.library,
-      required this.isCurrent,
-      this.gesichterZeigen = false,
-      this.gesichtAufziehen = false,
-      this.beiGesichtAngelegt,
-      this.textZeigen = false,
-      this.focusPeakingEnabled = false});
+  const _AssetPage({
+    required this.asset,
+    required this.db,
+    required this.paths,
+    required this.library,
+    required this.isCurrent,
+    this.gesichterZeigen = false,
+    this.gesichtAufziehen = false,
+    this.beiGesichtAngelegt,
+    this.textZeigen = false,
+    this.focusPeakingEnabled = false,
+  });
 
   @override
   State<_AssetPage> createState() => _AssetPageState();
@@ -1274,8 +1363,9 @@ class _AssetPageState extends State<_AssetPage> {
 
   /// Die gelesenen Textstellen dieses Fotos. Anders als die Gesichter
   /// kostet das keine Abfrage – sie stehen in der Asset-Zeile selbst.
-  late final List<Textstelle> _stellen =
-      textstellenAusJson(widget.asset.ocrBoxen);
+  late final List<Textstelle> _stellen = textstellenAusJson(
+    widget.asset.ocrBoxen,
+  );
 
   /// Die Masse des angezeigten Bildes. Gebraucht, weil die Kästen als
   /// Anteile davon gespeichert sind – ohne sie liegt jeder Rahmen falsch.
@@ -1391,7 +1481,8 @@ class _AssetPageState extends State<_AssetPage> {
       (info, _) {
         if (!fertig.isCompleted) {
           fertig.complete(
-              Size(info.image.width.toDouble(), info.image.height.toDouble()));
+            Size(info.image.width.toDouble(), info.image.height.toDouble()),
+          );
         }
         info.dispose();
         strom.removeListener(horcher);
@@ -1416,13 +1507,16 @@ class _AssetPageState extends State<_AssetPage> {
     final bibliothek = widget.library;
     if (person != null) {
       if (bibliothek == null) return;
-      final zeile = await (widget.db.select(widget.db.people)
-            ..where((t) => t.id.equals(person)))
-          .getSingleOrNull();
+      final zeile = await (widget.db.select(
+        widget.db.people,
+      )..where((t) => t.id.equals(person))).getSingleOrNull();
       if (!mounted || zeile == null) return;
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PersonDetailScreen(library: bibliothek, person: zeile),
-      ));
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              PersonDetailScreen(library: bibliothek, person: zeile),
+        ),
+      );
       await _gesichterLaden();
       return;
     }
@@ -1432,16 +1526,21 @@ class _AssetPageState extends State<_AssetPage> {
     // Betrachter läuft auch ohne sie (siehe [widget.library]).
     final vorschlag = await bibliothek?.personenvorschlag(gesicht.embedding);
     if (!mounted) return;
-    final wahl = await showPersonPickerDialog(context, personen,
-        paths: widget.paths,
-        suggestedPerson: vorschlag,
-        title: AppTexte.of(context).viewerGesichtBenennen);
+    final wahl = await showPersonPickerDialog(
+      context,
+      personen,
+      paths: widget.paths,
+      suggestedPerson: vorschlag,
+      title: AppTexte.of(context).viewerGesichtBenennen,
+    );
     if (wahl == null) return;
-    final id =
-        wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
+    final id = wahl.newName != null
+        ? const Uuid().v4()
+        : wahl.existingPersonId!;
     if (wahl.newName != null) {
-      await widget.db
-          .createPerson(PeopleCompanion.insert(id: id, name: wahl.newName!));
+      await widget.db.createPerson(
+        PeopleCompanion.insert(id: id, name: wahl.newName!),
+      );
     }
     await widget.db.assignFacesToPerson([gesicht.id], id);
     await _gesichterLaden();
@@ -1470,16 +1569,21 @@ class _AssetPageState extends State<_AssetPage> {
     if (!mounted) return;
     // Kein Vorschlag: Der Rahmen ist gerade erst entstanden, eine
     // Einbettung dazu gibt es noch nicht – sie entsteht beim Anlegen.
-    final wahl = await showPersonPickerDialog(context, personen,
-        paths: widget.paths,
-        title: AppTexte.of(context).viewerGesichtNachtragen);
+    final wahl = await showPersonPickerDialog(
+      context,
+      personen,
+      paths: widget.paths,
+      title: AppTexte.of(context).viewerGesichtNachtragen,
+    );
     if (wahl == null || !mounted) return;
 
-    final personId =
-        wahl.newName != null ? const Uuid().v4() : wahl.existingPersonId!;
+    final personId = wahl.newName != null
+        ? const Uuid().v4()
+        : wahl.existingPersonId!;
     if (wahl.newName != null) {
       await widget.db.createPerson(
-          PeopleCompanion.insert(id: personId, name: wahl.newName!));
+        PeopleCompanion.insert(id: personId, name: wahl.newName!),
+      );
     }
 
     final datei = await _fileFuture;
@@ -1517,8 +1621,10 @@ class _AssetPageState extends State<_AssetPage> {
       return;
     }
     _focusPeakingDebounce?.cancel();
-    _focusPeakingDebounce =
-        Timer(const Duration(milliseconds: 200), _computeFocusPeaking);
+    _focusPeakingDebounce = Timer(
+      const Duration(milliseconds: 200),
+      _computeFocusPeaking,
+    );
   }
 
   Future<void> _computeFocusPeaking() async {
@@ -1621,12 +1727,15 @@ class _AssetPageState extends State<_AssetPage> {
                 child: PhotoView(
                   imageProvider: begrenztesBild(file),
                   controller: _zoomsteuerung,
-                  backgroundDecoration:
-                      const BoxDecoration(color: Colors.black),
-                  initialScale:
-                      isPanorama(asset) ? PhotoViewComputedScale.covered : null,
-                  minScale:
-                      isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+                  backgroundDecoration: const BoxDecoration(
+                    color: Colors.black,
+                  ),
+                  initialScale: isPanorama(asset)
+                      ? PhotoViewComputedScale.covered
+                      : null,
+                  minScale: isPanorama(asset)
+                      ? PhotoViewComputedScale.covered
+                      : null,
                 ),
               ),
               // Im Malmodus sagt die Fahne, was zu tun ist. Sie ersetzt die
@@ -1638,8 +1747,10 @@ class _AssetPageState extends State<_AssetPage> {
                   right: 0,
                   bottom: AppSpacing.md,
                   child: Center(
-                      child: _Hinweisfahne(
-                          text: AppTexte.of(context).viewerAufziehenHinweis)),
+                    child: _Hinweisfahne(
+                      text: AppTexte.of(context).viewerAufziehenHinweis,
+                    ),
+                  ),
                 )
               else if (widget.gesichterZeigen && _gesichter.isEmpty)
                 Positioned(
@@ -1647,8 +1758,10 @@ class _AssetPageState extends State<_AssetPage> {
                   right: 0,
                   bottom: AppSpacing.md,
                   child: Center(
-                      child: _Hinweisfahne(
-                          text: AppTexte.of(context).viewerKeineGesichter)),
+                    child: _Hinweisfahne(
+                      text: AppTexte.of(context).viewerKeineGesichter,
+                    ),
+                  ),
                 ),
               // Zwei verschiedene Auskünfte, und der Unterschied trägt:
               // „kein Text im Bild" ist ein Ergebnis, „noch keine Stellen
@@ -1694,19 +1807,21 @@ class _AssetPageState extends State<_AssetPage> {
             // Ohne das verschöbe der Zug das Bild, statt einen Rahmen zu
             // malen: PhotoView greift dieselbe Geste ab.
             disableGestures: malen,
-            initialScale:
-                isPanorama(asset) ? PhotoViewComputedScale.covered : null,
+            initialScale: isPanorama(asset)
+                ? PhotoViewComputedScale.covered
+                : null,
             minScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
             child: GestureDetector(
               // `opaque` nur im Malmodus: Sonst schluckte diese Fläche die
               // Tipps auf die Gesichtsrahmen darunter.
-              behavior:
-                  malen ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+              behavior: malen
+                  ? HitTestBehavior.opaque
+                  : HitTestBehavior.deferToChild,
               onPanStart: malen
                   ? (d) => setState(() {
-                        _zugAnfang = d.localPosition;
-                        _zugJetzt = d.localPosition;
-                      })
+                      _zugAnfang = d.localPosition;
+                      _zugJetzt = d.localPosition;
+                    })
                   : null,
               onPanUpdate: malen
                   ? (d) => setState(() => _zugJetzt = d.localPosition)
@@ -1759,7 +1874,9 @@ class _AssetPageState extends State<_AssetPage> {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             border: Border.all(
-                                color: Colors.orangeAccent, width: 2),
+                              color: Colors.orangeAccent,
+                              width: 2,
+                            ),
                             color: Colors.orangeAccent.withValues(alpha: 0.15),
                           ),
                         ),
@@ -1786,17 +1903,21 @@ class _Hinweisfahne extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Text(text,
-              style: const TextStyle(color: Colors.white, fontSize: 13)),
-        ),
-      );
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+      ),
+    ),
+  );
 }
 
 /// Lädt den verknüpften Video-Asset-Datensatz (für den Dateipfad) und zeigt
@@ -1834,8 +1955,9 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
     super.dispose();
   }
 
-  late final Future<AssetData?> _videoAssetFuture =
-      widget.db.assetById(widget.videoAssetId);
+  late final Future<AssetData?> _videoAssetFuture = widget.db.assetById(
+    widget.videoAssetId,
+  );
   // Erst berechenbar, sobald _videoAssetFuture aufgelöst ist – deshalb per
   // `??=` einmalig gecacht statt (wie ursprünglich) bei jedem Rebuild neu im
   // FutureBuilder-Callback erzeugt zu werden.
@@ -1862,10 +1984,12 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
               imageProvider: begrenztesBild(widget.imageFile),
               controller: _zoomsteuerung,
               backgroundDecoration: const BoxDecoration(color: Colors.black),
-              initialScale:
-                  widget.isPanorama ? PhotoViewComputedScale.covered : null,
-              minScale:
-                  widget.isPanorama ? PhotoViewComputedScale.covered : null,
+              initialScale: widget.isPanorama
+                  ? PhotoViewComputedScale.covered
+                  : null,
+              minScale: widget.isPanorama
+                  ? PhotoViewComputedScale.covered
+                  : null,
             ),
           );
         }
@@ -1876,7 +2000,9 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
               return const Center(child: CircularProgressIndicator());
             }
             return LivePhotoView(
-                imageFile: widget.imageFile, videoFile: videoSnapshot.data!);
+              imageFile: widget.imageFile,
+              videoFile: videoSnapshot.data!,
+            );
           },
         );
       },
@@ -1974,7 +2100,9 @@ class _VideoPageState extends State<_VideoPage> {
               child: VideoProgressBar(
                 controller: controller,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
+                ),
               ),
             ),
           ],

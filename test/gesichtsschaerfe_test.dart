@@ -107,32 +107,41 @@ void main() {
       // 19. Prüfrunde mit, ob die Aufnahme gesperrt ist, und dafür braucht
       // sie die Zeile.
       for (final (id, gesperrt) in [('a', false), ('tresor', true)]) {
-        await db.insertAsset(AssetsCompanion.insert(
-          id: id,
-          relativePath: 'originals/\$id.jpg',
-          originalFileName: '\$id.jpg',
-          type: 'IMAGE',
-          checksum: id,
-          fileCreatedAt: DateTime(2024),
-          importedAt: DateTime(2024),
-          isLocked: Value(gesperrt),
-        ));
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: id,
+            relativePath: 'originals/\$id.jpg',
+            originalFileName: '\$id.jpg',
+            type: 'IMAGE',
+            checksum: id,
+            fileCreatedAt: DateTime(2024),
+            importedAt: DateTime(2024),
+            isLocked: Value(gesperrt),
+          ),
+        );
       }
     });
     tearDown(() => db.close());
 
-    Future<void> lege(String id,
-            {String? ausschnitt, double? schaerfe, String aufnahme = 'a'}) =>
-        db.into(db.faces).insert(FacesCompanion.insert(
-              id: id,
-              assetId: aufnahme,
-              boxX: 0.1,
-              boxY: 0.1,
-              boxW: 0.2,
-              boxH: 0.2,
-              cropRelativePath: Value(ausschnitt),
-              schaerfe: Value(schaerfe),
-            ));
+    Future<void> lege(
+      String id, {
+      String? ausschnitt,
+      double? schaerfe,
+      String aufnahme = 'a',
+    }) => db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: id,
+            assetId: aufnahme,
+            boxX: 0.1,
+            boxY: 0.1,
+            boxW: 0.2,
+            boxH: 0.2,
+            cropRelativePath: Value(ausschnitt),
+            schaerfe: Value(schaerfe),
+          ),
+        );
 
     test('nur Gesichter ohne Wert und MIT Ausschnitt', () async {
       await lege('offen', ausschnitt: 'faces/offen.jpg');
@@ -141,7 +150,10 @@ void main() {
       // sonst bei jedem Lauf erneut in der Liste.
       await lege('ohneBild');
 
-      expect([for (final g in await db.gesichterOhneSchaerfe()) g.id], ['offen']);
+      expect(
+        [for (final g in await db.gesichterOhneSchaerfe()) g.id],
+        ['offen'],
+      );
       expect(await db.countGesichterOhneSchaerfe(), 1);
     });
 
@@ -152,10 +164,16 @@ void main() {
       // Hintergrundaufgabe, die dauerhaft „noch 1 offen" meldet und nie
       // fertig wird, ist schlimmer als keine.
       await lege('offen', ausschnitt: 'faces/offen.jpg');
-      await lege('gesperrt',
-          ausschnitt: 'faces/gesperrt.jpg', aufnahme: 'tresor');
+      await lege(
+        'gesperrt',
+        ausschnitt: 'faces/gesperrt.jpg',
+        aufnahme: 'tresor',
+      );
 
-      expect([for (final g in await db.gesichterOhneSchaerfe()) g.id], ['offen']);
+      expect(
+        [for (final g in await db.gesichterOhneSchaerfe()) g.id],
+        ['offen'],
+      );
       expect(await db.countGesichterOhneSchaerfe(), 1);
     });
 

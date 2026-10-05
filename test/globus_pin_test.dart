@@ -12,16 +12,18 @@ import 'package:photo_vault/screens/map_screen.dart';
 /// [feinheit] vervierfacht die Auflösung, damit auch Bruchteile eines
 /// Punktes messbar sind.
 Future<({double oben, double unten, double links, double rechts, Size kasten})>
-    _tinte(WidgetTester tester, Widget kind, {double feinheit = 4}) async {
+_tinte(WidgetTester tester, Widget kind, {double feinheit = 4}) async {
   final schluessel = GlobalKey();
-  await tester.pumpWidget(MaterialApp(
-    home: Center(
-      child: RepaintBoundary(
-        key: schluessel,
-        child: ColoredBox(color: Colors.white, child: kind),
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Center(
+        child: RepaintBoundary(
+          key: schluessel,
+          child: ColoredBox(color: Colors.white, child: kind),
+        ),
       ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
 
   final grenze =
@@ -63,34 +65,45 @@ void main() {
   // den Pin zurechtrücken, wirklich der Glyphe entspricht. Ändert sich die
   // Symbolschrift, fällt dieser Test und nicht erst der Nutzer, der seinen
   // Pin im Meer sucht.
-  testWidgets('die Spitze des Pins sitzt dort, wo pinSpitzeUeberKante sagt',
-      (tester) async {
+  testWidgets('die Spitze des Pins sitzt dort, wo pinSpitzeUeberKante sagt', (
+    tester,
+  ) async {
     final t = await _tinte(
       tester,
       const Icon(Icons.location_pin, color: Colors.black, size: pinGroesse),
     );
 
     expect(t.kasten, const Size(pinGroesse, pinGroesse));
-    expect(t.kasten.height - t.unten, closeTo(pinSpitzeUeberKante, 0.3),
-        reason: 'Die Glyphe endet bei ${t.unten} von ${t.kasten.height} – '
-            'pinSpitzeUeberKante muss diesen Abstand abbilden, sonst zeigt '
-            'der Pin nach Norden an seinem Ort vorbei.');
+    expect(
+      t.kasten.height - t.unten,
+      closeTo(pinSpitzeUeberKante, 0.3),
+      reason:
+          'Die Glyphe endet bei ${t.unten} von ${t.kasten.height} – '
+          'pinSpitzeUeberKante muss diesen Abstand abbilden, sonst zeigt '
+          'der Pin nach Norden an seinem Ort vorbei.',
+    );
   });
 
-  testWidgets('im richtig breiten Kasten steht der Pin waagerecht mittig',
-      (tester) async {
+  testWidgets('im richtig breiten Kasten steht der Pin waagerecht mittig', (
+    tester,
+  ) async {
     final t = await _tinte(
       tester,
       const Icon(Icons.location_pin, color: Colors.black, size: pinGroesse),
     );
     final mitte = (t.links + t.rechts) / 2;
-    expect(mitte, closeTo(t.kasten.width / 2, 0.3),
-        reason: 'Ein zu schmaler Kasten quetscht die Glyphe aus der Mitte – '
-            'genau das war vorher der Fall (30 statt 34 Punkte).');
+    expect(
+      mitte,
+      closeTo(t.kasten.width / 2, 0.3),
+      reason:
+          'Ein zu schmaler Kasten quetscht die Glyphe aus der Mitte – '
+          'genau das war vorher der Fall (30 statt 34 Punkte).',
+    );
   });
 
-  testWidgets('ein zu schmaler Kasten verschiebt die Glyphe messbar',
-      (tester) async {
+  testWidgets('ein zu schmaler Kasten verschiebt die Glyphe messbar', (
+    tester,
+  ) async {
     // Die Gegenprobe: der alte Zustand. Ohne sie stünde nur die
     // Behauptung da, die Breite habe etwas ausgemacht.
     final t = await _tinte(

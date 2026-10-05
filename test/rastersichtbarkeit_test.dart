@@ -24,21 +24,28 @@ import 'package:photo_vault/db/rasterzeile.dart';
 void main() {
   late AppDatabase db;
 
-  Future<void> foto(String id,
-          {String? stapel, bool titelbild = false, String art = 'IMAGE',
-          String? verknuepft}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            relativePath: 'originals/$id.jpg',
-            originalFileName: '$id.jpg',
-            type: art,
-            checksum: 'c$id',
-            fileCreatedAt: DateTime(2024, 5, 5),
-            importedAt: DateTime(2024, 6, 1),
-            stackId: Value(stapel),
-            isStackCover: Value(titelbild),
-            linkedAssetId: Value(verknuepft),
-          ));
+  Future<void> foto(
+    String id, {
+    String? stapel,
+    bool titelbild = false,
+    String art = 'IMAGE',
+    String? verknuepft,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          relativePath: 'originals/$id.jpg',
+          originalFileName: '$id.jpg',
+          type: art,
+          checksum: 'c$id',
+          fileCreatedAt: DateTime(2024, 5, 5),
+          importedAt: DateTime(2024, 6, 1),
+          stackId: Value(stapel),
+          isStackCover: Value(titelbild),
+          linkedAssetId: Value(verknuepft),
+        ),
+      );
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
@@ -55,33 +62,48 @@ void main() {
   Set<String> ausZeilen(List<Rasterzeile> z) => {for (final r in z) r.id};
 
   test('das Raster zeigt Titelbild und Einzelne, keine Mitglieder', () async {
-    expect(ausZeilen(await db.watchRasterzeilen().first),
-        {'einzeln', 'titel', 'livefoto'});
+    expect(ausZeilen(await db.watchRasterzeilen().first), {
+      'einzeln',
+      'titel',
+      'livefoto',
+    });
   });
 
   test('und die Liste daneben zeigt genau dieselben', () async {
     final liste = {for (final a in await db.watchTimeline().first) a.id};
-    expect(ausZeilen(await db.watchRasterzeilen().first), liste,
-        reason: 'Raster und Listenansicht dürfen sich nicht trennen');
+    expect(
+      ausZeilen(await db.watchRasterzeilen().first),
+      liste,
+      reason: 'Raster und Listenansicht dürfen sich nicht trennen',
+    );
   });
 
   test('der Fotowähler ebenso', () async {
-    expect(ausZeilen(await db.alleRasterzeilen()),
-        {for (final a in await db.alleAufnahmen()) a.id});
+    expect(ausZeilen(await db.alleRasterzeilen()), {
+      for (final a in await db.alleAufnahmen()) a.id,
+    });
   });
 
   test('und der Zeitraum-Ausschnitt ebenso', () async {
     final von = DateTime(2024), bis = DateTime(2024, 12, 31);
-    expect(ausZeilen(await db.rasterzeilenImZeitraum(von, bis)),
-        {for (final a in await db.aufnahmenImZeitraum(von, bis)) a.id});
-    expect(await db.zahlImZeitraum(von, bis),
-        (await db.aufnahmenImZeitraum(von, bis)).length,
-        reason: 'der Zähler zählt dieselbe Menge, die die Liste zeigt');
+    expect(ausZeilen(await db.rasterzeilenImZeitraum(von, bis)), {
+      for (final a in await db.aufnahmenImZeitraum(von, bis)) a.id,
+    });
+    expect(
+      await db.zahlImZeitraum(von, bis),
+      (await db.aufnahmenImZeitraum(von, bis)).length,
+      reason: 'der Zähler zählt dieselbe Menge, die die Liste zeigt',
+    );
   });
 
   test('nach dem Auflösen sind alle wieder einzeln zu sehen', () async {
     await db.unstackAssets('s1');
-    expect(ausZeilen(await db.watchRasterzeilen().first),
-        {'einzeln', 'titel', 'mitglied1', 'mitglied2', 'livefoto'});
+    expect(ausZeilen(await db.watchRasterzeilen().first), {
+      'einzeln',
+      'titel',
+      'mitglied1',
+      'mitglied2',
+      'livefoto',
+    });
   });
 }

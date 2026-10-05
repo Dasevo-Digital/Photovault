@@ -110,7 +110,10 @@ const _focusPeakingEdgeThreshold = 40;
 /// herunter – das übernimmt bewusst der Aufrufer (Performance-Kompromiss
 /// zwischen Overlay-Genauigkeit und Rechenzeit liegt dort, siehe
 /// AssetViewerScreen).
-Uint8List renderFocusPeakingOverlayPng(img.Image image, {int threshold = _focusPeakingEdgeThreshold}) {
+Uint8List renderFocusPeakingOverlayPng(
+  img.Image image, {
+  int threshold = _focusPeakingEdgeThreshold,
+}) {
   final gray = img.grayscale(image);
   final width = gray.width;
   final height = gray.height;
@@ -154,7 +157,9 @@ Future<Uint8List?> computeFocusPeakingOverlay(Uint8List fileBytes) async {
   final decoded = img.decodeImage(fileBytes);
   if (decoded == null) return null;
   final longEdge = math.max(decoded.width, decoded.height);
-  final scale = longEdge > _focusPeakingIntermediateLongEdge ? _focusPeakingIntermediateLongEdge / longEdge : 1.0;
+  final scale = longEdge > _focusPeakingIntermediateLongEdge
+      ? _focusPeakingIntermediateLongEdge / longEdge
+      : 1.0;
   final resized = scale < 1.0
       ? img.copyResize(
           decoded,

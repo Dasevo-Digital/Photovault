@@ -42,10 +42,12 @@ void main() {
     expect(gitter, isNotNull, reason: 'keine Kachel angekommen');
     final spanne = gitter!.spanne;
     // ignore: avoid_print
-    print('Vogelsberg 11/1080/689: '
-        '${spanne.tief.toStringAsFixed(1)} bis '
-        '${spanne.hoch.toStringAsFixed(1)} m, '
-        '${gitter.spalten}x${gitter.zeilen} Punkte');
+    print(
+      'Vogelsberg 11/1080/689: '
+      '${spanne.tief.toStringAsFixed(1)} bis '
+      '${spanne.hoch.toStringAsFixed(1)} m, '
+      '${gitter.spalten}x${gitter.zeilen} Punkte',
+    );
 
     // Der Taufstein misst 773 m, die Talsohlen liegen um 340.
     expect(spanne.tief, closeTo(337, 30));

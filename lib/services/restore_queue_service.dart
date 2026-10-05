@@ -28,10 +28,7 @@ import 'storage_paths.dart';
 /// **Nicht aus [RestoreJobData.createdAt] rechnen.** Das ist der Moment
 /// des Einreihens; bei drei wartenden Aufträgen läge dazwischen eine
 /// Stunde, und die Restzeit wäre um diese Stunde zu lang.
-Duration? restzeitSchaetzung(
-  RestoreJobData auftrag, {
-  DateTime? jetzt,
-}) {
+Duration? restzeitSchaetzung(RestoreJobData auftrag, {DateTime? jetzt}) {
   final start = auftrag.startedAt;
   if (start == null) return null;
   if (auftrag.tilesDone <= 0 || auftrag.tilesTotal <= 0) return null;
@@ -136,12 +133,14 @@ class RestoreQueueService {
     if (existing != null) return existing.id;
 
     final id = const Uuid().v4();
-    await _db.createRestoreJob(RestoreJobsCompanion.insert(
-      id: id,
-      assetId: assetId,
-      status: 'queued',
-      createdAt: DateTime.now(),
-    ));
+    await _db.createRestoreJob(
+      RestoreJobsCompanion.insert(
+        id: id,
+        assetId: assetId,
+        status: 'queued',
+        createdAt: DateTime.now(),
+      ),
+    );
     if (waitForIdle) {
       _warteAufLeerlauf();
     } else {
@@ -254,15 +253,21 @@ class RestoreQueueService {
       // für immer auf "queued" stehen UND das nachfolgende
       // unawaited(_maybeStartNext()) in _maybeStartNext() wurde nie erreicht,
       // wodurch die gesamte Warteschlange dauerhaft blockierte (Audit-Fund).
-      await _db.markRestoreJobStatus(job.id, 'failed',
-          // Kennung UND Ursache: Die Kennung wird übersetzt, die Ursache
-          // dahinter ist das, was bei einem Fehlerbericht wirklich hilft.
-          errorMessage: '${RestaurierungsGrund.modellLaedtNicht.name}: $e');
+      await _db.markRestoreJobStatus(
+        job.id,
+        'failed',
+        // Kennung UND Ursache: Die Kennung wird übersetzt, die Ursache
+        // dahinter ist das, was bei einem Fehlerbericht wirklich hilft.
+        errorMessage: '${RestaurierungsGrund.modellLaedtNicht.name}: $e',
+      );
       return;
     }
     if (service == null) {
-      await _db.markRestoreJobStatus(job.id, 'failed',
-          errorMessage: RestaurierungsGrund.modellWeg.name);
+      await _db.markRestoreJobStatus(
+        job.id,
+        'failed',
+        errorMessage: RestaurierungsGrund.modellWeg.name,
+      );
       return;
     }
     await _db.markRestoreJobStatus(job.id, 'running');
@@ -270,20 +275,29 @@ class RestoreQueueService {
     try {
       final asset = await _db.assetById(job.assetId);
       if (asset == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed',
-            errorMessage: RestaurierungsGrund.fotoWeg.name);
+        await _db.markRestoreJobStatus(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.fotoWeg.name,
+        );
         return;
       }
       if (asset.isLocked) {
-        await _db.markRestoreJobStatus(job.id, 'failed',
-            errorMessage: RestaurierungsGrund.gesperrt.name);
+        await _db.markRestoreJobStatus(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.gesperrt.name,
+        );
         return;
       }
       final targetWidth = asset.widthPx;
       final targetHeight = asset.heightPx;
       if (targetWidth == null || targetHeight == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed',
-            errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name);
+        await _db.markRestoreJobStatus(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name,
+        );
         return;
       }
 
@@ -331,14 +345,20 @@ class RestoreQueueService {
         quality: 0.95,
       );
       if (jpegBytes == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed',
-            errorMessage: RestaurierungsGrund.nichtGerendert.name);
+        await _db.markRestoreJobStatus(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.nichtGerendert.name,
+        );
         return;
       }
       final decoded = img.decodeJpg(jpegBytes);
       if (decoded == null) {
-        await _db.markRestoreJobStatus(job.id, 'failed',
-            errorMessage: RestaurierungsGrund.nichtDekodiert.name);
+        await _db.markRestoreJobStatus(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.nichtDekodiert.name,
+        );
         return;
       }
 
@@ -348,9 +368,9 @@ class RestoreQueueService {
         // nicht ausbremsen) – catchError statt eines unbehandelten
         // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
         // fehlschlägt.
-        onProgress: (done, total) => unawaited(_db
-            .updateRestoreJobProgress(job.id, done, total)
-            .catchError((_) {})),
+        onProgress: (done, total) => unawaited(
+          _db.updateRestoreJobProgress(job.id, done, total).catchError((_) {}),
+        ),
         isCancelled: () => _cancelRequested.contains(job.id),
       );
 
@@ -374,8 +394,11 @@ class RestoreQueueService {
       vergissAlleBilder();
       await _db.completeRestoreJob(job.id, job.assetId, relativePath);
     } catch (e) {
-      await _db.markRestoreJobStatus(job.id, 'failed',
-          errorMessage: e.toString());
+      await _db.markRestoreJobStatus(
+        job.id,
+        'failed',
+        errorMessage: e.toString(),
+      );
     } finally {
       halter!.zurueckgeben();
     }

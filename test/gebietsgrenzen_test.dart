@@ -10,7 +10,8 @@ import 'package:photo_vault/services/gebietsgrenzen.dart';
 /// rechnet – nicht, dass Flensburg in Schleswig-Holstein liegt. Genau das
 /// war die Beschwerde.
 Gebietsgrenzen _laden() => Gebietsgrenzen.ausGepackt(
-    File('assets/geo/gebiete.bin.gz').readAsBytesSync());
+  File('assets/geo/gebiete.bin.gz').readAsBytesSync(),
+);
 
 void main() {
   late Gebietsgrenzen g;
@@ -59,8 +60,11 @@ void main() {
       // hier je nach Reihenfolge in der Datei mal das eine, mal das
       // andere heraus.
       expect(g.regionBei(52.52, 13.405, imLand: 'DE'), 'DE.16');
-      expect(g.region('DE.11')!.enthaelt(52.52, 13.405), isTrue,
-          reason: 'Brandenburg enthält den Punkt ebenfalls');
+      expect(
+        g.region('DE.11')!.enthaelt(52.52, 13.405),
+        isTrue,
+        reason: 'Brandenburg enthält den Punkt ebenfalls',
+      );
     });
 
     test('Lesotho gewinnt gegen Südafrika', () {
@@ -89,7 +93,10 @@ void main() {
       // sie wieder.
       expect(g.regionBei(41.9028, 12.4964, imLand: 'IT'), 'IT.07'); // Latium
       expect(g.regionBei(45.4642, 9.19, imLand: 'IT'), 'IT.09'); // Lombardei
-      expect(g.regionBei(48.8566, 2.3522, imLand: 'FR'), 'FR.11'); // Île-de-France
+      expect(
+        g.regionBei(48.8566, 2.3522, imLand: 'FR'),
+        'FR.11',
+      ); // Île-de-France
       expect(g.regionBei(51.5074, -0.1278, imLand: 'GB'), 'GB.ENG');
     });
 

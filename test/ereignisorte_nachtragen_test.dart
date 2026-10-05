@@ -30,21 +30,27 @@ void main() {
       '3\tSpringfield\tSpringfield\t\t37.21533\t-93.29824\tP\tPPLA2\tUS\t\tMO\t077\t\t\t169176\t\t395\tAmerica/Chicago\t2023\n',
     );
     final admin1 = File(p.join(temp.path, 'admin1.txt'));
-    await admin1.writeAsString('DE.16\tBerlin\tBerlin\t1\nUS.IL\tIllinois\tIllinois\t2\nUS.MO\tMissouri\tMissouri\t3\n');
+    await admin1.writeAsString(
+      'DE.16\tBerlin\tBerlin\t1\nUS.IL\tIllinois\tIllinois\t2\nUS.MO\tMissouri\tMissouri\t3\n',
+    );
     final laender = File(p.join(temp.path, 'countryInfo.txt'));
     await laender.writeAsString(
       'DE\tDEU\t276\tDE\tDeutschland\tBerlin\t357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t2921044\t\t\n'
       'US\tUSA\t840\tUS\tVereinigte Staaten\tWashington\t9629091\t327167434\tNA\t.us\tUSD\tDollar\t1\t\t\ten-US\t6252001\t\t\n',
     );
     return ReverseGeocoder.loadFromFiles(
-        citiesFile: cities, admin1File: admin1, countryFile: laender);
+      citiesFile: cities,
+      admin1File: admin1,
+      countryFile: laender,
+    );
   }
 
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('pv_ereignisorte_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'lib')),
+    );
     lib = LibraryState()
       ..db = db
       ..paths = paths;
@@ -56,16 +62,16 @@ void main() {
     temp.deleteSync(recursive: true);
   });
 
-  Future<void> ereignis(String id, {String? ort}) =>
-      db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-        id: id,
-        personId: 'p1',
-        art: 'umzug',
-        ort: Value(ort),
-      ));
+  Future<void> ereignis(String id, {String? ort}) => db.fuegeEreignisHinzu(
+    LebensereignisseCompanion.insert(
+      id: id,
+      personId: 'p1',
+      art: 'umzug',
+      ort: Value(ort),
+    ),
+  );
 
-  test('ohne Ortsverzeichnis geschieht nichts – und nichts bricht',
-      () async {
+  test('ohne Ortsverzeichnis geschieht nichts – und nichts bricht', () async {
     // Der GeoNames-Datensatz ist ein optionaler Download. Ohne ihn muss
     // der Lauf schweigend nichts tun, nicht werfen.
     await ereignis('e1', ort: 'Berlin');
@@ -82,8 +88,11 @@ void main() {
     final mit = await db.ereignisseMitKoordinate();
     expect(mit, hasLength(1));
     expect(mit.single.ortBreite, closeTo(52.524, 0.001));
-    expect(mit.single.ort, 'Berlin',
-        reason: 'der aufgeschriebene Name bleibt unangetastet');
+    expect(
+      mit.single.ort,
+      'Berlin',
+      reason: 'der aufgeschriebene Name bleibt unangetastet',
+    );
   });
 
   test('ein unbekannter Ort bleibt als Text stehen', () async {
@@ -99,8 +108,7 @@ void main() {
     expect(offen.single.ort, 'Gut Hohenrode');
   });
 
-  test('eine von Hand gesetzte Koordinate wird nicht ueberschrieben',
-      () async {
+  test('eine von Hand gesetzte Koordinate wird nicht ueberschrieben', () async {
     // Die Zuordnung ist eine Vermutung, und der Nutzer darf sie
     // umstossen. Ein zweiter Lauf – etwa beim naechsten Programmstart –
     // darf die Berichtigung nicht wieder wegraeumen.
@@ -110,12 +118,14 @@ void main() {
     await lib.trageEreignisorteNach();
 
     final mit = await db.ereignisseMitKoordinate();
-    expect(mit.single.ortBreite, 1.0,
-        reason: 'die eigene Angabe gilt, nicht die geratene');
+    expect(
+      mit.single.ortBreite,
+      1.0,
+      reason: 'die eigene Angabe gilt, nicht die geratene',
+    );
   });
 
-  test('bei Mehrdeutigkeit entscheidet der Schwerpunkt der Fotos',
-      () async {
+  test('bei Mehrdeutigkeit entscheidet der Schwerpunkt der Fotos', () async {
     // Der Grund, warum das Nachtragen im LibraryState sitzt und nicht in
     // der Datenbankschicht: Nur hier sind die verorteten Fotos greifbar.
     await ereignis('e1', ort: 'Springfield');
@@ -124,25 +134,31 @@ void main() {
     // Läge das Foto in Missouri, gewänne dieses ohnehin nach
     // Einwohnerzahl, und der Test bestünde, ohne den Schwerpunkt je
     // gebraucht zu haben.
-    await db.insertAsset(AssetsCompanion.insert(
-      id: 'a1',
-      relativePath: 'originals/a1.jpg',
-      originalFileName: 'a1.jpg',
-      type: 'IMAGE',
-      fileSizeBytes: const Value(1),
-      checksum: 'a1',
-      fileCreatedAt: DateTime(2026),
-      importedAt: DateTime(2026),
-      latitude: const Value(39.8),
-      longitude: const Value(-89.6),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: 'a1',
+        relativePath: 'originals/a1.jpg',
+        originalFileName: 'a1.jpg',
+        type: 'IMAGE',
+        fileSizeBytes: const Value(1),
+        checksum: 'a1',
+        fileCreatedAt: DateTime(2026),
+        importedAt: DateTime(2026),
+        latitude: const Value(39.8),
+        longitude: const Value(-89.6),
+      ),
+    );
     lib.geocoder = await geocoder();
     await lib.trageEreignisorteNach();
 
     final mit = await db.ereignisseMitKoordinate();
-    expect(mit.single.ortBreite, closeTo(39.792, 0.001),
-        reason: 'Springfield/Illinois liegt beim Foto, obwohl Missouri '
-            'mehr Einwohner hat');
+    expect(
+      mit.single.ortBreite,
+      closeTo(39.792, 0.001),
+      reason:
+          'Springfield/Illinois liegt beim Foto, obwohl Missouri '
+          'mehr Einwohner hat',
+    );
   });
 
   test('ohne verortete Fotos entscheidet die Einwohnerzahl', () async {
@@ -153,8 +169,11 @@ void main() {
     await lib.trageEreignisorteNach();
 
     final mit = await db.ereignisseMitKoordinate();
-    expect(mit.single.ortBreite, closeTo(37.215, 0.001),
-        reason: 'Springfield/MO hat 169.176 Einwohner, /IL nur 114.230');
+    expect(
+      mit.single.ortBreite,
+      closeTo(37.215, 0.001),
+      reason: 'Springfield/MO hat 169.176 Einwohner, /IL nur 114.230',
+    );
   });
 
   /// Zwei Eigenschaften, die man am Ergebnis nicht sieht und die deshalb
@@ -166,21 +185,22 @@ void main() {
   /// Der bleibt ohne Koordinate und steht beim nächsten Start wieder da.
   group('der Lauf bei jedem Start', () {
     Future<void> foto(String id, double breite, double laenge) =>
-        db.insertAsset(AssetsCompanion.insert(
-          id: id,
-          relativePath: 'originals/$id.jpg',
-          originalFileName: '$id.jpg',
-          type: 'IMAGE',
-          fileSizeBytes: const Value(1),
-          checksum: id,
-          fileCreatedAt: DateTime(2026),
-          importedAt: DateTime(2026),
-          latitude: Value(breite),
-          longitude: Value(laenge),
-        ));
+        db.insertAsset(
+          AssetsCompanion.insert(
+            id: id,
+            relativePath: 'originals/$id.jpg',
+            originalFileName: '$id.jpg',
+            type: 'IMAGE',
+            fileSizeBytes: const Value(1),
+            checksum: id,
+            fileCreatedAt: DateTime(2026),
+            importedAt: DateTime(2026),
+            latitude: Value(breite),
+            longitude: Value(laenge),
+          ),
+        );
 
-    test('der Schwerpunkt kommt als eine Zeile, nicht als tausend',
-        () async {
+    test('der Schwerpunkt kommt als eine Zeile, nicht als tausend', () async {
       // Die Gegenprobe zur Abkürzung: Das Aggregat muss denselben Punkt
       // liefern wie der Mittelwert über die vollen Zeilen. Weicht eine
       // der beiden Bedingungen ab – Papierkorb, gesperrt, Live-Photo –,
@@ -208,12 +228,14 @@ void main() {
       expect(voll, hasLength(3), reason: 'gesperrt und gelöscht fallen raus');
     });
 
-    test('ohne ein einziges verortetes Foto gibt es keinen Schwerpunkt',
-        () async {
-      // `avg()` über null Zeilen ist NULL, nicht 0. Käme hier (0, 0)
-      // heraus, zöge ein mehrdeutiger Ortsname vor Westafrika.
-      expect(await db.schwerpunktVerorteterFotos(), isNull);
-    });
+    test(
+      'ohne ein einziges verortetes Foto gibt es keinen Schwerpunkt',
+      () async {
+        // `avg()` über null Zeilen ist NULL, nicht 0. Käme hier (0, 0)
+        // heraus, zöge ein mehrdeutiger Ortsname vor Westafrika.
+        expect(await db.schwerpunktVerorteterFotos(), isNull);
+      },
+    );
 
     test('der Sammelweg trifft jede Zeile einzeln', () async {
       // Die Falle beim Zusammenfassen: ein `where`, das für alle Zeilen
@@ -227,8 +249,11 @@ void main() {
       });
       final danach = await db.ereignisseMitKoordinate();
       expect(danach, hasLength(50));
-      expect(danach.map((e) => e.ortBreite).toSet(), hasLength(50),
-          reason: 'jede Zeile bekam ihren eigenen Wert, nicht alle denselben');
+      expect(
+        danach.map((e) => e.ortBreite).toSet(),
+        hasLength(50),
+        reason: 'jede Zeile bekam ihren eigenen Wert, nicht alle denselben',
+      );
     });
   });
 }

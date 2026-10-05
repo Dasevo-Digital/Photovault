@@ -22,7 +22,9 @@ class SecurityScopedBookmark {
   /// ein dauerhaftes Bookmark für den gewählten Ordner. Gibt `null` zurück,
   /// falls der Nutzer abgebrochen hat, die native Anbindung fehlt oder die
   /// Bookmark-Erzeugung scheitert.
-  static Future<PickedFolder?> pickFolderAndCreateBookmark({String? message}) async {
+  static Future<PickedFolder?> pickFolderAndCreateBookmark({
+    String? message,
+  }) async {
     try {
       final result = await _channel.invokeMethod<Map<Object?, Object?>>(
         'pickFolderAndCreateBookmark',
@@ -46,7 +48,9 @@ class SecurityScopedBookmark {
   /// Laufwerk nicht eingebunden) oder die native Anbindung fehlt.
   static Future<String?> resolve(String bookmarkBase64) async {
     try {
-      return await _channel.invokeMethod<String>('resolveBookmark', {'bookmark': bookmarkBase64});
+      return await _channel.invokeMethod<String>('resolveBookmark', {
+        'bookmark': bookmarkBase64,
+      });
     } on PlatformException {
       return null;
     } on MissingPluginException {

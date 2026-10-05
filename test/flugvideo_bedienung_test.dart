@@ -30,10 +30,17 @@ void main() {
     for (var i = 0; i < n * n; i++) {
       hoehen[i] = 400 + 50 * math.sin(i / 7);
     }
-    return baueNetz(Hoehengitter(
-      spalten: n, zeilen: n, hoehen: hoehen,
-      nord: 50.63, sued: 50.60, west: 9.85, ost: 9.91,
-    ));
+    return baueNetz(
+      Hoehengitter(
+        spalten: n,
+        zeilen: n,
+        hoehen: hoehen,
+        nord: 50.63,
+        sued: 50.60,
+        west: 9.85,
+        ost: 9.91,
+      ),
+    );
   }
 
   ({List<Raumpunkt> linie, List<Flugwert> werte}) spur() {
@@ -42,7 +49,10 @@ void main() {
     final start = DateTime.utc(2026, 9, 3, 10);
     for (var i = 0; i <= 100; i++) {
       linie.add((x: -1000 + i * 20.0, y: i * 4.0, z: i * 3.0));
-      werte.add((hoehe: 400 + i * 1.0, zeit: start.add(Duration(seconds: i * 12))));
+      werte.add((
+        hoehe: 400 + i * 1.0,
+        zeit: start.add(Duration(seconds: i * 12)),
+      ));
     }
     return (linie: linie, werte: werte);
   }
@@ -77,29 +87,40 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
-  testWidgets('waehrend der Ausgabe steht ein Balken da, und er stimmt',
-      (tester) async {
+  testWidgets('waehrend der Ausgabe steht ein Balken da, und er stimmt', (
+    tester,
+  ) async {
     await tester.pumpWidget(leiste(fortschritt: 0.42));
     final balken = tester.widget<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator));
-    expect(balken.value, closeTo(0.42, 1e-9),
-        reason: 'ein Balken, der nicht mitgeht, ist eine Zierleiste');
-    expect(find.textContaining('42'), findsOneWidget,
-        reason: 'die Zahl gehoert daneben - ein Balken allein sagt nicht, '
-            'ob es noch eine Minute oder eine Stunde dauert');
+      find.byType(LinearProgressIndicator),
+    );
+    expect(
+      balken.value,
+      closeTo(0.42, 1e-9),
+      reason: 'ein Balken, der nicht mitgeht, ist eine Zierleiste',
+    );
+    expect(
+      find.textContaining('42'),
+      findsOneWidget,
+      reason:
+          'die Zahl gehoert daneben - ein Balken allein sagt nicht, '
+          'ob es noch eine Minute oder eine Stunde dauert',
+    );
   });
 
   testWidgets('ist eine Restzeit da, steht sie dabei', (tester) async {
     await tester.pumpWidget(
-        leiste(fortschritt: 0.5, rest: const Duration(seconds: 90)));
+      leiste(fortschritt: 0.5, rest: const Duration(seconds: 90)),
+    );
     // 90 Sekunden werden auf zwei Minuten gerundet - genauer, als eine
     // Schaetzung es hergibt.
     expect(find.textContaining('2'), findsWidgets);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('ohne Restzeit steht nur der Anteil, keine geratene Zahl',
-      (tester) async {
+  testWidgets('ohne Restzeit steht nur der Anteil, keine geratene Zahl', (
+    tester,
+  ) async {
     await tester.pumpWidget(leiste(fortschritt: 0.05));
     expect(find.textContaining('5'), findsWidgets);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -121,7 +142,9 @@ void main() {
     NativerVideoschreiber.vergiss();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-            NativerVideoschreiber.kanal, (_) async => true);
+          NativerVideoschreiber.kanal,
+          (_) async => true,
+        );
     addTearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(NativerVideoschreiber.kanal, null);
@@ -129,21 +152,23 @@ void main() {
     });
     Duration? gefragt;
     final s = spur();
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Gelaendeansicht(
-          netz: netz(),
-          spur: s.linie,
-          spurwerte: s.werte,
-          beimVideoZiel: (vorgabe) async {
-            gefragt = vorgabe;
-            return null;
-          },
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Gelaendeansicht(
+            netz: netz(),
+            spur: s.linie,
+            spurwerte: s.werte,
+            beimVideoZiel: (vorgabe) async {
+              gefragt = vorgabe;
+              return null;
+            },
+          ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.byIcon(Icons.movie_outlined));
     await tester.pumpAndSettle();
     expect(gefragt, isNotNull, reason: 'der Knopf fragt gar nicht');

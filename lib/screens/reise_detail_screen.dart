@@ -75,12 +75,16 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   Future<void> _laden() async {
     final aufnahmen = await widget.library.db.aufnahmenDerReise(_reise.id);
     final frisch = await widget.library.db.reise(_reise.id);
-    final aktivitaeten =
-        await widget.library.db.aktivitaetenDerReise(_reise.id);
+    final aktivitaeten = await widget.library.db.aktivitaetenDerReise(
+      _reise.id,
+    );
     final notizen = await widget.library.db.reisetagnotizenFuer(_reise.id);
     final spuren = <({SpurenData spur, List<SpurpunkteData> punkte})>[];
     for (final s in await widget.library.db.spurenDerReise(_reise.id)) {
-      spuren.add((spur: s, punkte: await widget.library.db.punkteDerSpur(s.id)));
+      spuren.add((
+        spur: s,
+        punkte: await widget.library.db.punkteDerSpur(s.id),
+      ));
     }
     if (!mounted) return;
     setState(() {
@@ -103,47 +107,44 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       if (ort == null || ort.isEmpty) continue;
       gezaehlt[ort] = (gezaehlt[ort] ?? 0) + 1;
     }
-    return gezaehlt.keys.toList()
-      ..sort((a, b) {
-        final z = gezaehlt[b]!.compareTo(gezaehlt[a]!);
-        return z != 0 ? z : a.compareTo(b);
-      });
+    return gezaehlt.keys.toList()..sort((a, b) {
+      final z = gezaehlt[b]!.compareTo(gezaehlt[a]!);
+      return z != 0 ? z : a.compareTo(b);
+    });
   }
 
-  Map<String, AssetData> get _nachId =>
-      {for (final a in _aufnahmen) a.id: a};
+  Map<String, AssetData> get _nachId => {for (final a in _aufnahmen) a.id: a};
 
   List<Routenpunkt> get _route => reiseroute([
-        for (final a in _aufnahmen)
-          if (a.latitude != null && a.longitude != null)
-            (
-              breite: a.latitude!,
-              laenge: a.longitude!,
-              zeit: a.fileCreatedAt,
-            ),
-      ]);
+    for (final a in _aufnahmen)
+      if (a.latitude != null && a.longitude != null)
+        (breite: a.latitude!, laenge: a.longitude!, zeit: a.fileCreatedAt),
+  ]);
 
   /// Die Aufenthaltsorte – ein Pin je Ort statt einer je Aufnahme.
   List<Aufenthaltsort> get _orteMitBildern => aufenthaltsorte([
-        for (final a in _aufnahmen)
-          if (a.latitude != null && a.longitude != null)
-            (
-              id: a.id,
-              breite: a.latitude!,
-              laenge: a.longitude!,
-              zeit: a.fileCreatedAt,
-              stadt: a.locationCity,
-            ),
-      ]);
+    for (final a in _aufnahmen)
+      if (a.latitude != null && a.longitude != null)
+        (
+          id: a.id,
+          breite: a.latitude!,
+          laenge: a.longitude!,
+          zeit: a.fileCreatedAt,
+          stadt: a.locationCity,
+        ),
+  ]);
 
   List<Reisetag> get _tage => reisetage([
-        for (final a in _aufnahmen)
-          (id: a.id, zeit: a.fileCreatedAt, stadt: a.locationCity),
-      ]);
+    for (final a in _aufnahmen)
+      (id: a.id, zeit: a.fileCreatedAt, stadt: a.locationCity),
+  ]);
 
-  int get _naechte => DateTime(_reise.bis.year, _reise.bis.month, _reise.bis.day)
-      .difference(DateTime(_reise.von.year, _reise.von.month, _reise.von.day))
-      .inDays;
+  int get _naechte =>
+      DateTime(_reise.bis.year, _reise.bis.month, _reise.bis.day)
+          .difference(
+            DateTime(_reise.von.year, _reise.von.month, _reise.von.day),
+          )
+          .inDays;
 
   Future<void> _umbenennen() async {
     final t = AppTexte.of(context);
@@ -154,8 +155,10 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       vorgabe: _reise.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db
-        .reiseAendern(_reise.id, ReisenCompanion(name: Value(sauber)));
+    await widget.library.db.reiseAendern(
+      _reise.id,
+      ReisenCompanion(name: Value(sauber)),
+    );
     await _laden();
   }
 
@@ -182,8 +185,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   /// Schreibt oder ändert die Notiz eines Reisetages.
   Future<void> _tagesnotiz(DateTime tag) async {
     final t = AppTexte.of(context);
-    final datum =
-        DateFormat.yMMMMd(Localizations.localeOf(context).toString());
+    final datum = DateFormat.yMMMMd(Localizations.localeOf(context).toString());
     final text = await frageNamen(
       context,
       titel: t.reisenTagesnotizTitel(datum.format(tag)),
@@ -233,7 +235,9 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   Future<void> _titelbild(AssetData asset) async {
     final t = AppTexte.of(context);
     await widget.library.db.reiseAendern(
-        _reise.id, ReisenCompanion(titelbildAssetId: Value(asset.id)));
+      _reise.id,
+      ReisenCompanion(titelbildAssetId: Value(asset.id)),
+    );
     await _laden();
     if (!mounted) return;
     melde.erfolg(t.reisenTitelbildGesetzt);
@@ -248,11 +252,13 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
         content: Text(t.reisenLoeschenFrage(_reise.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgEntfernen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgEntfernen),
+          ),
         ],
       ),
     );
@@ -271,8 +277,8 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   final Set<String> _auswahl = {};
 
   void _auswahlUmschalten(String id) => setState(() {
-        if (!_auswahl.remove(id)) _auswahl.add(id);
-      });
+    if (!_auswahl.remove(id)) _auswahl.add(id);
+  });
 
   /// Nimmt die ausgewaehlten Fotos aus der Reise heraus.
   ///
@@ -286,8 +292,10 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
     if (weg.isEmpty) return;
     final vorher = await widget.library.db.zuordnungenDerReise(_reise.id);
     if (!mounted) return;
-    await widget.library.db
-        .setzeAufnahmenDerReise(_reise.id, vorher.difference(weg));
+    await widget.library.db.setzeAufnahmenDerReise(
+      _reise.id,
+      vorher.difference(weg),
+    );
     if (!mounted) return;
     setState(_auswahl.clear);
     melde.erfolg(t.aufnahmenEntferntReise(weg.length));
@@ -379,7 +387,14 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
     // Unternehmung nicht wiedersehen.
     final vom = DateTime(angabe.von.year, angabe.von.month, angabe.von.day);
     final bis = DateTime(
-        angabe.bis.year, angabe.bis.month, angabe.bis.day, 23, 59, 59, 999);
+      angabe.bis.year,
+      angabe.bis.month,
+      angabe.bis.day,
+      23,
+      59,
+      59,
+      999,
+    );
     final ids = [
       for (final a in _aufnahmen)
         if (!a.fileCreatedAt.isBefore(vom) && !a.fileCreatedAt.isAfter(bis))
@@ -408,52 +423,55 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   }
 
   Future<void> _aktivitaetOeffnen(AktivitaetenData k) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) =>
-          AktivitaetDetailScreen(library: widget.library, aktivitaet: k),
-    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            AktivitaetDetailScreen(library: widget.library, aktivitaet: k),
+      ),
+    );
     if (mounted) await _laden();
   }
 
   void _ortOeffnen(Aufenthaltsort ort) {
-    final bilder = [
-      for (final id in ort.aufnahmeIds)
-        ?_nachId[id],
-    ];
+    final bilder = [for (final id in ort.aufnahmeIds) ?_nachId[id]];
     if (bilder.isEmpty) return;
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: bilder,
-        initialIndex: 0,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: bilder,
+          initialIndex: 0,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+        ),
       ),
-    ));
+    );
   }
 
   void _oeffnen(int index) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: _aufnahmen,
-        initialIndex: index,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: _aufnahmen,
+          initialIndex: index,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+        ),
       ),
-    ));
+    );
   }
 
   /// Die Spuren als reine Linien – das ist alles, was die Karte braucht.
   List<List<({double breite, double laenge})>> get _spurlinien => [
-        for (final e in _spuren)
-          if (e.punkte.length > 1)
-            [for (final p in e.punkte) (breite: p.breite, laenge: p.laenge)],
-      ];
+    for (final e in _spuren)
+      if (e.punkte.length > 1)
+        [for (final p in e.punkte) (breite: p.breite, laenge: p.laenge)],
+  ];
 
   /// Eine GPX-Datei als Route an diese Reise hängen.
   ///
@@ -517,12 +535,15 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       ],
     );
     if (!mounted) return;
-    melde.erfolg(t.spurHinzugefuegtMeldung(
+    melde.erfolg(
+      t.spurHinzugefuegtMeldung(
         name,
         NumberFormat.decimalPatternDigits(
-                locale: Localizations.localeOf(context).toString(),
-                decimalDigits: 1)
-            .format(zahlen.laengeKm)));
+          locale: Localizations.localeOf(context).toString(),
+          decimalDigits: 1,
+        ).format(zahlen.laengeKm),
+      ),
+    );
     await _laden();
   }
 
@@ -542,243 +563,278 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
         title: Text(_reise.name),
         // Solange geladen wird, keine Knoepfe - siehe die gleiche Stelle
         // in aktivitaet_detail_screen.dart.
-        actions: _laedt ? const [] : [
-          // Siehe die gleiche Stelle in aktivitaet_detail_screen.dart:
-          // Das Herausnehmen hat jetzt einen eigenen Weg, also darf der
-          // Knopf ein Pluszeichen tragen und gefunden werden.
-          IconButton(
-            tooltip: t.aufnahmenHinzufuegen,
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            onPressed: _aufnahmenBearbeiten,
-          ),
-          // **Hinzufügen, nicht ersetzen.** Eine Reise darf mehrere
-          // Spuren tragen – eine je Tag. Der Knopf bleibt deshalb immer
-          // stehen; weggenommen wird eine einzelne unter der Karte.
-          IconButton(
-            tooltip: t.reisenAktivitaetAnlegen,
-            icon: const Icon(Icons.hiking_outlined),
-            onPressed: _aktivitaetAnlegen,
-          ),
-          IconButton(
-            tooltip: t.spurHinzufuegen,
-            icon: const Icon(Icons.route_outlined),
-            onPressed: _spurHinzufuegen,
-          ),
-          IconButton(
-            tooltip: t.reisenUmbenennen,
-            icon: const Icon(Icons.drive_file_rename_outline),
-            onPressed: _umbenennen,
-          ),
-          IconButton(
-            tooltip: t.reisenNotiz,
-            icon: const Icon(Icons.notes_outlined),
-            onPressed: _notiz,
-          ),
-          IconButton(
-            tooltip: t.reisenLoeschen,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _entfernen,
-          ),
-        ],
+        actions: _laedt
+            ? const []
+            : [
+                // Siehe die gleiche Stelle in aktivitaet_detail_screen.dart:
+                // Das Herausnehmen hat jetzt einen eigenen Weg, also darf der
+                // Knopf ein Pluszeichen tragen und gefunden werden.
+                IconButton(
+                  tooltip: t.aufnahmenHinzufuegen,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  onPressed: _aufnahmenBearbeiten,
+                ),
+                // **Hinzufügen, nicht ersetzen.** Eine Reise darf mehrere
+                // Spuren tragen – eine je Tag. Der Knopf bleibt deshalb immer
+                // stehen; weggenommen wird eine einzelne unter der Karte.
+                IconButton(
+                  tooltip: t.reisenAktivitaetAnlegen,
+                  icon: const Icon(Icons.hiking_outlined),
+                  onPressed: _aktivitaetAnlegen,
+                ),
+                IconButton(
+                  tooltip: t.spurHinzufuegen,
+                  icon: const Icon(Icons.route_outlined),
+                  onPressed: _spurHinzufuegen,
+                ),
+                IconButton(
+                  tooltip: t.reisenUmbenennen,
+                  icon: const Icon(Icons.drive_file_rename_outline),
+                  onPressed: _umbenennen,
+                ),
+                IconButton(
+                  tooltip: t.reisenNotiz,
+                  icon: const Icon(Icons.notes_outlined),
+                  onPressed: _notiz,
+                ),
+                IconButton(
+                  tooltip: t.reisenLoeschen,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _entfernen,
+                ),
+              ],
       ),
       body: _laedt
           ? const Center(child: CircularProgressIndicator())
-          : Stack(children: [
-              CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                        AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+          : Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.sm,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ActionChip(
-                              avatar: Icon(
-                                  symbolFuerReiseartKennung(_reise.art),
-                                  size: 18),
-                              label: Text(
-                                  nameFuerReiseartKennung(t, _reise.art)),
-                              tooltip: t.reisenArtAendern,
-                              visualDensity: VisualDensity.compact,
-                              onPressed: _artWaehlen,
+                            Row(
+                              children: [
+                                ActionChip(
+                                  avatar: Icon(
+                                    symbolFuerReiseartKennung(_reise.art),
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    nameFuerReiseartKennung(t, _reise.art),
+                                  ),
+                                  tooltip: t.reisenArtAendern,
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: _artWaehlen,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    reiseUnterzeile(
+                                      t,
+                                      Localizations.localeOf(context),
+                                      von: _reise.von,
+                                      bis: _reise.bis,
+                                      naechte: _naechte,
+                                      anzahl: _aufnahmen.length,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: farben.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                reiseUnterzeile(
-                                    t, Localizations.localeOf(context),
-                                    von: _reise.von,
-                                    bis: _reise.bis,
-                                    naechte: _naechte,
-                                    anzahl: _aufnahmen.length),
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: farben.onSurfaceVariant),
+                            if (_route.length > 1 || _spuren.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                t.reisenRoute,
+                                style: Theme.of(context).textTheme.titleSmall,
                               ),
-                            ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Routenkarte(
+                                route: _route,
+                                orte: _orteMitBildern,
+                                nachId: _nachId,
+                                paths: widget.library.paths,
+                                beiOrt: _ortOeffnen,
+                                spuren: _spurlinien,
+                              ),
+                              if (_spuren.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.xs),
+                                for (final e in _spuren)
+                                  _Spurzeile(
+                                    spur: e.spur,
+                                    sprache: Localizations.localeOf(
+                                      context,
+                                    ).toString(),
+                                    beimEntfernen: () => _spurEntfernen(e.spur),
+                                  ),
+                              ],
+                            ] else if (_aufnahmen.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                t.reisenKeineRoute,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: farben.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            if (_reise.notiz case final notiz?
+                                when notiz.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(notiz),
+                            ],
+                            if (_orte.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                t.reisenOrte,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Wrap(
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.xs,
+                                children: [
+                                  for (final ort in _orte.take(20))
+                                    Chip(
+                                      label: Text(ort),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
-                        if (_route.length > 1 || _spuren.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(t.reisenRoute,
-                              style: Theme.of(context).textTheme.titleSmall),
-                          const SizedBox(height: AppSpacing.xs),
-                          Routenkarte(
-                            route: _route,
-                            orte: _orteMitBildern,
-                            nachId: _nachId,
-                            paths: widget.library.paths,
-                            beiOrt: _ortOeffnen,
-                            spuren: _spurlinien,
-                          ),
-                          if (_spuren.isNotEmpty) ...[
+                      ),
+                    ),
+                    // Die Unternehmungen dieser Reise – vor den Tagen, weil
+                    // sie die Frage „was haben wir gemacht?" beantworten und
+                    // die Tage nur die Frage „wann".
+                    // **Immer da, auch leer.** Vorher erschien der
+                    // Abschnitt erst, wenn schon eine Unternehmung
+                    // existierte – wer keine hatte, erfuhr nie, dass es sie
+                    // gibt.
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.md,
+                          AppSpacing.lg,
+                          0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.aktivitaetenInDieserReise,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
                             const SizedBox(height: AppSpacing.xs),
-                            for (final e in _spuren)
-                              _Spurzeile(
-                                spur: e.spur,
-                                sprache:
-                                    Localizations.localeOf(context).toString(),
-                                beimEntfernen: () => _spurEntfernen(e.spur),
+                            if (_aktivitaeten.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.xs,
+                                ),
+                                child: Text(
+                                  t.reisenOhneAktivitaeten,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            for (final k in _aktivitaeten)
+                              Aktivitaetszeile(
+                                aktivitaet: k,
+                                library: widget.library,
+                                // In der Liste einer Reise wäre der Name
+                                // bei jeder Zeile derselbe.
+                                reisename: null,
+                                onTippen: () => _aktivitaetOeffnen(k),
                               ),
                           ],
-                        ] else if (_aufnahmen.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(t.reisenKeineRoute,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: farben.onSurfaceVariant)),
-                        ],
-                        if (_reise.notiz case final notiz?
-                            when notiz.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(notiz),
-                        ],
-                        if (_orte.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(t.reisenOrte,
-                              style: Theme.of(context).textTheme.titleSmall),
-                          const SizedBox(height: AppSpacing.xs),
-                          Wrap(
-                            spacing: AppSpacing.sm,
-                            runSpacing: AppSpacing.xs,
-                            children: [
-                              for (final ort in _orte.take(20))
-                                Chip(
-                                  label: Text(ort),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                            ],
-                          ),
-                        ],
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                // Die Unternehmungen dieser Reise – vor den Tagen, weil
-                // sie die Frage „was haben wir gemacht?" beantworten und
-                // die Tage nur die Frage „wann".
-                // **Immer da, auch leer.** Vorher erschien der
-                // Abschnitt erst, wenn schon eine Unternehmung
-                // existierte – wer keine hatte, erfuhr nie, dass es sie
-                // gibt.
-                SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                          AppSpacing.md, AppSpacing.lg, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t.aktivitaetenInDieserReise,
-                              style: Theme.of(context).textTheme.titleSmall),
-                          const SizedBox(height: AppSpacing.xs),
-                          if (_aktivitaeten.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: AppSpacing.xs),
-                              child: Text(
-                                t.reisenOhneAktivitaeten,
-                                style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant),
+                    // Die Tage als Kapitel. Ein durchgehendes Raster von
+                    // dreihundertfünfzig Bildern beantwortet die Frage nicht,
+                    // die man an eine Reise stellt: Was war wann?
+                    for (final tag in _tage) ...[
+                      SliverToBoxAdapter(
+                        child: _Tageskopf(
+                          tag: tag,
+                          anzahl: tag.aufnahmeIds.length,
+                          notiz:
+                              _tagesnotizen[DateTime(
+                                tag.tag.year,
+                                tag.tag.month,
+                                tag.tag.day,
+                              )],
+                          beimSchreiben: () => _tagesnotiz(tag.tag),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        sliver: SliverGrid(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 160,
+                                mainAxisSpacing: 4,
+                                crossAxisSpacing: 4,
                               ),
-                            ),
-                          for (final k in _aktivitaeten)
-                            Aktivitaetszeile(
-                              aktivitaet: k,
-                              library: widget.library,
-                              // In der Liste einer Reise wäre der Name
-                              // bei jeder Zeile derselbe.
-                              reisename: null,
-                              onTippen: () => _aktivitaetOeffnen(k),
-                            ),
-                        ],
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final asset = _nachId[tag.aufnahmeIds[index]];
+                            if (asset == null) return const SizedBox.shrink();
+                            return AssetThumbnailTile(
+                              asset: Rasterzeile.aus(asset),
+                              paths: widget.library.paths,
+                              selected: _auswahl.contains(asset.id),
+                              onTap: () => _auswahl.isEmpty
+                                  ? _oeffnen(_aufnahmen.indexOf(asset))
+                                  : _auswahlUmschalten(asset.id),
+                              // Der lange Druck oeffnet hier das Bildmenue
+                              // (Titelbild setzen) – das gab es schon.
+                              // Deshalb steht das Auswaehlen dort als
+                              // erster Eintrag drin, statt die Geste zu
+                              // ueberschreiben.
+                              onLongPress: () => _bildmenue(asset),
+                            );
+                          }, childCount: tag.aufnahmeIds.length),
+                        ),
                       ),
+                    ],
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.xl),
                     ),
-                  ),
-                // Die Tage als Kapitel. Ein durchgehendes Raster von
-                // dreihundertfünfzig Bildern beantwortet die Frage nicht,
-                // die man an eine Reise stellt: Was war wann?
-                for (final tag in _tage) ...[
-                  SliverToBoxAdapter(
-                    child: _Tageskopf(
-                      tag: tag,
-                      anzahl: tag.aufnahmeIds.length,
-                      notiz: _tagesnotizen[
-                          DateTime(tag.tag.year, tag.tag.month, tag.tag.day)],
-                      beimSchreiben: () => _tagesnotiz(tag.tag),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 160,
-                        mainAxisSpacing: 4,
-                        crossAxisSpacing: 4,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final asset =
-                              _nachId[tag.aufnahmeIds[index]];
-                          if (asset == null) return const SizedBox.shrink();
-                          return AssetThumbnailTile(
-                            asset: Rasterzeile.aus(asset),
-                            paths: widget.library.paths,
-                            selected: _auswahl.contains(asset.id),
-                            onTap: () => _auswahl.isEmpty
-                                ? _oeffnen(_aufnahmen.indexOf(asset))
-                                : _auswahlUmschalten(asset.id),
-                            // Der lange Druck oeffnet hier das Bildmenue
-                            // (Titelbild setzen) – das gab es schon.
-                            // Deshalb steht das Auswaehlen dort als
-                            // erster Eintrag drin, statt die Geste zu
-                            // ueberschreiben.
-                            onLongPress: () => _bildmenue(asset),
-                          );
-                        },
-                        childCount: tag.aufnahmeIds.length,
-                      ),
-                    ),
-                  ),
-                ],
-                const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.xl)),
-              ],
-              ),
-              if (_auswahl.isNotEmpty)
-                ZuordnungAuswahlleiste(
-                  anzahl: _auswahl.length,
-                  beschriftungEntfernen: t.aufnahmenAusReiseEntfernen,
-                  beiAufheben: () => setState(_auswahl.clear),
-                  beiEntfernen: _auswahlEntfernen,
+                  ],
                 ),
-            ]),
+                if (_auswahl.isNotEmpty)
+                  ZuordnungAuswahlleiste(
+                    anzahl: _auswahl.length,
+                    beschriftungEntfernen: t.aufnahmenAusReiseEntfernen,
+                    beiAufheben: () => setState(_auswahl.clear),
+                    beiEntfernen: _auswahlEntfernen,
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -804,11 +860,16 @@ class _Tageskopf extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
-    final datum =
-        DateFormat.yMMMMEEEEd(Localizations.localeOf(context).toString());
+    final datum = DateFormat.yMMMMEEEEd(
+      Localizations.localeOf(context).toString(),
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -827,9 +888,10 @@ class _Tageskopf extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(t.reisenAufnahmen(anzahl),
-                  style:
-                      TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+              Text(
+                t.reisenAufnahmen(anzahl),
+                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+              ),
               const Spacer(),
               // Der Stift steht immer da, auch am leeren Tag: Eine
               // Bedienmoeglichkeit, die erst erscheint, wenn es schon
@@ -837,9 +899,11 @@ class _Tageskopf extends StatelessWidget {
               IconButton(
                 visualDensity: VisualDensity.compact,
                 iconSize: 18,
-                icon: Icon(notiz == null
-                    ? Icons.note_add_outlined
-                    : Icons.edit_note_outlined),
+                icon: Icon(
+                  notiz == null
+                      ? Icons.note_add_outlined
+                      : Icons.edit_note_outlined,
+                ),
                 tooltip: notiz == null
                     ? t.reisenTagesnotizSchreiben
                     : t.reisenTagesnotizAendern,
@@ -852,9 +916,14 @@ class _Tageskopf extends StatelessWidget {
           if (notiz != null)
             Padding(
               padding: const EdgeInsets.only(
-                  top: AppSpacing.xs, bottom: AppSpacing.xs, right: AppSpacing.xl),
-              child: Text(notiz!,
-                  style: Theme.of(context).textTheme.bodyMedium),
+                top: AppSpacing.xs,
+                bottom: AppSpacing.xs,
+                right: AppSpacing.xl,
+              ),
+              child: Text(
+                notiz!,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ),
         ],
       ),
@@ -888,8 +957,10 @@ class _Spurzeile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
-    final eine =
-        NumberFormat.decimalPatternDigits(locale: sprache, decimalDigits: 1);
+    final eine = NumberFormat.decimalPatternDigits(
+      locale: sprache,
+      decimalDigits: 1,
+    );
     return Row(
       children: [
         Icon(Icons.route_outlined, size: 16, color: farben.tertiary),

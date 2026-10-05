@@ -27,7 +27,9 @@ void main() {
     addTearDown(() => tempRoot.deleteSync(recursive: true));
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
 
     // Jeder Ladeversuch wird vermerkt und schlägt dann fehl. Echte Modelle
     // gibt es im Test nicht (die ONNX-Anbindung läuft über einen
@@ -36,14 +38,14 @@ void main() {
     // ihrerseits abfangen, ist gewollt und ändert am Vermerk nichts.
     final versuche = <String>[];
     ModellHalter<T> falle<T>(String name) => ModellHalter<T>(
-          name: name,
-          installiert: true,
-          laden: () async {
-            versuche.add(name);
-            throw StateError('$name hätte nicht geladen werden dürfen');
-          },
-          entsorgen: (_) async {},
-        );
+      name: name,
+      installiert: true,
+      laden: () async {
+        versuche.add(name);
+        throw StateError('$name hätte nicht geladen werden dürfen');
+      },
+      entsorgen: (_) async {},
+    );
 
     final lib = LibraryState()
       ..db = db
@@ -58,9 +60,13 @@ void main() {
     // Leere Bibliothek: keine Stufe hat etwas zu tun.
     await lib.starteHintergrundanalyse();
 
-    expect(versuche, isEmpty,
-        reason: 'ohne offene Fotos darf kein Modell in den Speicher – '
-            'angefordert wurde aber: ${versuche.join(", ")}');
+    expect(
+      versuche,
+      isEmpty,
+      reason:
+          'ohne offene Fotos darf kein Modell in den Speicher – '
+          'angefordert wurde aber: ${versuche.join(", ")}',
+    );
   });
 
   /// **„Gescannt" darf nur dastehen, wenn hingesehen wurde.**
@@ -84,16 +90,23 @@ void main() {
     final rumpf = quelle.substring(von, bis);
 
     final ausstieg = rumpf.indexOf('if (decoded == null) return;');
-    expect(ausstieg, greaterThan(0),
-        reason: 'der frühe Ausstieg fehlt – ein nicht dekodierbares Foto '
-            'würde wieder als gescannt vermerkt');
+    expect(
+      ausstieg,
+      greaterThan(0),
+      reason:
+          'der frühe Ausstieg fehlt – ein nicht dekodierbares Foto '
+          'würde wieder als gescannt vermerkt',
+    );
     for (final schreibt in [
       'db.markFacesScanned',
       'db.insertFace',
       'db.deleteUnassignedFacesForAsset',
     ]) {
-      expect(rumpf.indexOf(schreibt), greaterThan(ausstieg),
-          reason: '$schreibt steht vor dem Ausstieg');
+      expect(
+        rumpf.indexOf(schreibt),
+        greaterThan(ausstieg),
+        reason: '$schreibt steht vor dem Ausstieg',
+      );
     }
   });
 }

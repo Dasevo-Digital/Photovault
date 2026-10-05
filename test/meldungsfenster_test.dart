@@ -17,27 +17,31 @@ void main() {
 
   var gedrueckt = 0;
 
-  Future<void> zeige(WidgetTester tester,
-      {Size groesse = const Size(1200, 900)}) async {
+  Future<void> zeige(
+    WidgetTester tester, {
+    Size groesse = const Size(1200, 900),
+  }) async {
     gedrueckt = 0;
     tester.view.physicalSize = groesse;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      builder: (context, kind) => mitMeldungen(kind, dienst: d),
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Bildschirm')),
-        body: Center(
-          child: FilledButton(
-            onPressed: () => gedrueckt++,
-            child: const Text('Darunter'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        builder: (context, kind) => mitMeldungen(kind, dienst: d),
+        home: Scaffold(
+          appBar: AppBar(title: const Text('Bildschirm')),
+          body: Center(
+            child: FilledButton(
+              onPressed: () => gedrueckt++,
+              child: const Text('Darunter'),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pump();
   }
 
@@ -100,12 +104,15 @@ void main() {
     await ruhe(tester);
   });
 
-  testWidgets('der Knopf an einer Meldung wirkt und schliesst sie',
-      (tester) async {
+  testWidgets('der Knopf an einer Meldung wirkt und schliesst sie', (
+    tester,
+  ) async {
     await zeige(tester);
     var zurueck = 0;
-    d.hinweis('3 Fotos gelöscht',
-        aktion: (beschriftung: 'Rückgängig', beiDruck: () => zurueck++));
+    d.hinweis(
+      '3 Fotos gelöscht',
+      aktion: (beschriftung: 'Rückgängig', beiDruck: () => zurueck++),
+    );
     await tester.pump();
     await tester.tap(find.text('Rückgängig'));
     await tester.pump();
@@ -114,8 +121,9 @@ void main() {
     await ruhe(tester);
   });
 
-  testWidgets('dieselbe Meldung mehrfach zeigt eine Karte mit Zahl',
-      (tester) async {
+  testWidgets('dieselbe Meldung mehrfach zeigt eine Karte mit Zahl', (
+    tester,
+  ) async {
     await zeige(tester);
     for (var i = 0; i < 3; i++) {
       d.warnung('Datei nicht lesbar');
@@ -126,8 +134,9 @@ void main() {
     await ruhe(tester);
   });
 
-  testWidgets('im breiten Fenster steht der Stapel oben rechts',
-      (tester) async {
+  testWidgets('im breiten Fenster steht der Stapel oben rechts', (
+    tester,
+  ) async {
     await zeige(tester);
     d.hinweis('Oben rechts');
     await tester.pump();
@@ -167,8 +176,9 @@ void main() {
     await ruhe(tester);
   });
 
-  testWidgets('ohne Meldung und ohne Ungelesenes ist da nichts',
-      (tester) async {
+  testWidgets('ohne Meldung und ohne Ungelesenes ist da nichts', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.byIcon(Icons.notifications_none), findsNothing);
     expect(find.byType(Material).evaluate().length, greaterThan(0));

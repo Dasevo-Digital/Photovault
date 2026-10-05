@@ -63,33 +63,40 @@ void main() {
   }
 
   Future<void> lege(String id, DateTime wann, Float32List v) async {
-    await db.insertAsset(AssetsCompanion.insert(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      type: 'IMAGE',
-      checksum: id,
-      fileCreatedAt: wann,
-      importedAt: wann,
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: id,
+        relativePath: 'originals/$id.jpg',
+        originalFileName: '$id.jpg',
+        type: 'IMAGE',
+        checksum: id,
+        fileCreatedAt: wann,
+        importedAt: wann,
+      ),
+    );
     await db.saveEmbedding(id, v);
   }
 
   /// Drei fast gleiche Aufnahmen im Abstand von einer Sekunde.
   Future<void> legeSerie(String praefix, int saat, DateTime start) async {
     for (var i = 0; i < 3; i++) {
-      await lege('$praefix$i', start.add(Duration(seconds: i)),
-          vektor(saat, streuung: 0.02 * i));
+      await lege(
+        '$praefix$i',
+        start.add(Duration(seconds: i)),
+        vektor(saat, streuung: 0.02 * i),
+      );
     }
   }
 
   Future<Map<String, Float32List>> alleEinbettungen() async {
-    final zeilen =
-        await db.customSelect('SELECT asset_id, vector FROM image_embeddings').get();
+    final zeilen = await db
+        .customSelect('SELECT asset_id, vector FROM image_embeddings')
+        .get();
     return {
       for (final z in zeilen)
-        z.read<String>('asset_id'):
-            floatsFromEmbeddingBlob(z.read<Uint8List>('vector')),
+        z.read<String>('asset_id'): floatsFromEmbeddingBlob(
+          z.read<Uint8List>('vector'),
+        ),
     };
   }
 
@@ -128,7 +135,10 @@ void main() {
     // daran, käme ein abgelehnter Vorschlag beim nächsten Lauf unter neuem
     // Namen zurück.
     await legeSerie('a', 1, DateTime(2024, 5, 1, 12));
-    final gruppe = (await serienvorschlaege(db, await alleEinbettungen())).single;
+    final gruppe = (await serienvorschlaege(
+      db,
+      await alleEinbettungen(),
+    )).single;
     final rueckwaerts = gruppe.reversed.toList();
     expect(serienschluessel(rueckwaerts), serienschluessel(gruppe));
   });

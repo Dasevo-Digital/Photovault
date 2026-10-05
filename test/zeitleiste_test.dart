@@ -12,23 +12,29 @@ void main() {
   EreignisEingabe e(String id, Ereignisart art, DateTime? datum) =>
       (id: id, art: art, datum: datum, ort: null, notiz: null);
 
-  Zeitzeile person(String id, {DateTime? geb, DateTime? tod,
-          List<EreignisEingabe> ereignisse = const []}) =>
-      zeitzeile(
-          personId: id,
-          name: id,
-          geburt: geb,
-          tod: tod,
-          ereignisse: ereignisse);
+  Zeitzeile person(
+    String id, {
+    DateTime? geb,
+    DateTime? tod,
+    List<EreignisEingabe> ereignisse = const [],
+  }) => zeitzeile(
+    personId: id,
+    name: id,
+    geburt: geb,
+    tod: tod,
+    ereignisse: ereignisse,
+  );
 
   group('Eine Zeile', () {
     test('Geburt und Tod stehen nicht doppelt in den Marken', () {
       // Sie sind die Enden des Balkens. Noch einmal als Marke gezeichnet
       // sähen sie aus wie zusätzliche Ereignisse.
-      final z = person('a',
-          geb: DateTime(1931, 4, 2),
-          tod: DateTime(2004, 11, 9),
-          ereignisse: [e('x', Ereignisart.hochzeit, DateTime(1955, 5, 14))]);
+      final z = person(
+        'a',
+        geb: DateTime(1931, 4, 2),
+        tod: DateTime(2004, 11, 9),
+        ereignisse: [e('x', Ereignisart.hochzeit, DateTime(1955, 5, 14))],
+      );
       expect(z.marken, hasLength(1));
       expect(z.marken.single.datum, DateTime(1955, 5, 14));
     });
@@ -36,17 +42,23 @@ void main() {
     test('ein Ereignis ohne Datum bekommt keine Marke', () {
       // Es hätte auf der Achse keinen Ort. „Irgendwo" wäre eine
       // Behauptung.
-      final z = person('a',
-          geb: DateTime(1931),
-          ereignisse: [e('x', Ereignisart.umzug, null)]);
+      final z = person(
+        'a',
+        geb: DateTime(1931),
+        ereignisse: [e('x', Ereignisart.umzug, null)],
+      );
       expect(z.marken, isEmpty);
     });
 
     test('die Marken kommen chronologisch', () {
-      final z = person('a', geb: DateTime(1900), ereignisse: [
-        e('spaet', Ereignisart.beruf, DateTime(1950)),
-        e('frueh', Ereignisart.ausbildung, DateTime(1920)),
-      ]);
+      final z = person(
+        'a',
+        geb: DateTime(1900),
+        ereignisse: [
+          e('spaet', Ereignisart.beruf, DateTime(1950)),
+          e('frueh', Ereignisart.ausbildung, DateTime(1920)),
+        ],
+      );
       expect(z.marken.map((m) => m.datum.year), [1920, 1950]);
     });
 
@@ -56,18 +68,22 @@ void main() {
       // Leiste.
       expect(person('a', tod: DateTime(1890)).frueheste, DateTime(1890));
       expect(
-          person('b',
-                  ereignisse: [e('x', Ereignisart.hochzeit, DateTime(1875))])
-              .frueheste,
-          DateTime(1875));
+        person(
+          'b',
+          ereignisse: [e('x', Ereignisart.hochzeit, DateTime(1875))],
+        ).frueheste,
+        DateTime(1875),
+      );
     });
 
     test('ein Ereignis nach dem Tod verlaengert die Zeile', () {
       // Umbettung, Nachlass – lebenslauf.dart lässt das ausdrücklich zu.
-      final z = person('a',
-          geb: DateTime(1900),
-          tod: DateTime(1960),
-          ereignisse: [e('x', Ereignisart.umzug, DateTime(1975))]);
+      final z = person(
+        'a',
+        geb: DateTime(1900),
+        tod: DateTime(1960),
+        ereignisse: [e('x', Ereignisart.umzug, DateTime(1975))],
+      );
       expect(z.spaeteste, DateTime(1975));
     });
 
@@ -75,10 +91,15 @@ void main() {
       // Und bleibt zweideutig: „lebt noch" und „Sterbedatum unbekannt"
       // sind für diese App dasselbe, weil niemand danach gefragt hat.
       expect(person('a', geb: DateTime(1990)).offen, isTrue);
-      expect(person('b', geb: DateTime(1900), tod: DateTime(1980)).offen,
-          isFalse);
-      expect(person('c', tod: DateTime(1980)).offen, isFalse,
-          reason: 'ohne Geburt gibt es keinen Balken, der auslaufen könnte');
+      expect(
+        person('b', geb: DateTime(1900), tod: DateTime(1980)).offen,
+        isFalse,
+      );
+      expect(
+        person('c', tod: DateTime(1980)).offen,
+        isFalse,
+        reason: 'ohne Geburt gibt es keinen Balken, der auslaufen könnte',
+      );
     });
 
     test('ohne jedes Datum ist die Zeile undatiert', () {
@@ -177,24 +198,25 @@ void main() {
       // „1900, 1920, 1940" liest sich, „1898, 1919, 1940" nicht. Bei 106
       // Jahren und höchstens acht Marken fällt die Wahl auf den
       // Zwanzigerschritt: Zehn ergäbe elf Marken, das ist eine zu viel.
-      final marken =
-          jahresmarken(Zeitspanne(DateTime(1898), DateTime(2004)));
+      final marken = jahresmarken(Zeitspanne(DateTime(1898), DateTime(2004)));
       expect(marken, [1900, 1920, 1940, 1960, 1980, 2000]);
     });
 
     test('haelt die Obergrenze ein', () {
       for (final jahre in [5, 40, 120, 900, 3000]) {
         final marken = jahresmarken(
-            Zeitspanne(DateTime(1000), DateTime(1000 + jahre)),
-            hoechstens: 6);
+          Zeitspanne(DateTime(1000), DateTime(1000 + jahre)),
+          hoechstens: 6,
+        );
         expect(marken.length, lessThanOrEqualTo(7), reason: '$jahre Jahre');
         expect(marken, isNotEmpty, reason: '$jahre Jahre');
       }
     });
 
     test('eine sehr kurze Spanne bekommt trotzdem eine Marke', () {
-      final marken =
-          jahresmarken(Zeitspanne(DateTime(1930, 6), DateTime(1931, 6)));
+      final marken = jahresmarken(
+        Zeitspanne(DateTime(1930, 6), DateTime(1931, 6)),
+      );
       expect(marken, [1930, 1931]);
     });
   });

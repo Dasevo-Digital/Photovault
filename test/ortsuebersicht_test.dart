@@ -58,8 +58,11 @@ void main() {
       final l = land();
       expect(l.unterorteGesamt, 3);
       expect(l.unterorteBesucht, 2);
-      expect(l.unterorte.map((u) => u.name),
-          ['Lower Saxony', 'Hamburg', 'Bavaria']);
+      expect(l.unterorte.map((u) => u.name), [
+        'Lower Saxony',
+        'Hamburg',
+        'Bavaria',
+      ]);
     });
 
     test('besuchte zuerst, darin die mit den meisten Aufnahmen', () {
@@ -72,8 +75,7 @@ void main() {
 
     test('ein Haken von Hand macht eine Region besucht', () {
       final l = land(marken: [marke('region', 'DE.02', Markenart.besucht)]);
-      final bayern =
-          l.unterorte.firstWhere((u) => u.schluessel == 'DE.02');
+      final bayern = l.unterorte.firstWhere((u) => u.schluessel == 'DE.02');
       expect(bayern.aufnahmen, 0);
       expect(bayern.besucht, isTrue);
       expect(l.unterorteBesucht, 3);
@@ -97,8 +99,12 @@ void main() {
         ],
         marken: [marke('region', 'DE.09', Markenart.besucht)],
       );
-      expect(mitSaarland.unterorte.map((u) => u.name),
-          ['Lower Saxony', 'Hamburg', 'Saarland', 'Bavaria']);
+      expect(mitSaarland.unterorte.map((u) => u.name), [
+        'Lower Saxony',
+        'Hamburg',
+        'Saarland',
+        'Bavaria',
+      ]);
     });
 
     test('„geplant" zählt nicht als besucht', () {
@@ -112,28 +118,34 @@ void main() {
 
     test('die eigene Marke des Landes wird gefunden', () {
       expect(land().marke, isNull);
-      expect(land(marken: [marke('land', 'DE', Markenart.besucht)]).marke,
-          Markenart.besucht);
+      expect(
+        land(marken: [marke('land', 'DE', Markenart.besucht)]).marke,
+        Markenart.besucht,
+      );
       // Eine Marke auf einer Region ist nicht die des Landes.
-      expect(land(marken: [marke('region', 'DE.06', Markenart.besucht)]).marke,
-          isNull);
+      expect(
+        land(marken: [marke('region', 'DE.06', Markenart.besucht)]).marke,
+        isNull,
+      );
     });
 
-    test('ein Land ohne verzeichnete Region bleibt trotzdem auskunftsfähig',
-        () {
-      // 24 der 252 Länder haben keine – Monaco und der Vatikan etwa.
-      final l = ortsuebersicht(
-        ebene: Ortsebene.land,
-        schluessel: 'MC',
-        name: 'Monaco',
-        angaben: [angabe('Monaco', null, 'Monte-Carlo', 4)],
-        nachIso: const {'Monaco': 'MC'},
-        regionscodes: const {},
-      );
-      expect(l.aufnahmen, 4);
-      expect(l.unterorte, isEmpty);
-      expect(l.besucht, isTrue);
-    });
+    test(
+      'ein Land ohne verzeichnete Region bleibt trotzdem auskunftsfähig',
+      () {
+        // 24 der 252 Länder haben keine – Monaco und der Vatikan etwa.
+        final l = ortsuebersicht(
+          ebene: Ortsebene.land,
+          schluessel: 'MC',
+          name: 'Monaco',
+          angaben: [angabe('Monaco', null, 'Monte-Carlo', 4)],
+          nachIso: const {'Monaco': 'MC'},
+          regionscodes: const {},
+        );
+        expect(l.aufnahmen, 4);
+        expect(l.unterorte, isEmpty);
+        expect(l.besucht, isTrue);
+      },
+    );
 
     test('ein Land ohne alles ist nicht besucht, aber auch kein Fehler', () {
       final l = ortsuebersicht(
@@ -143,9 +155,7 @@ void main() {
         angaben: angaben,
         nachIso: nachIso,
         regionscodes: regionscodes,
-        bekannteUnterorte: const [
-          (schluessel: 'FR.11', name: 'Île-de-France')
-        ],
+        bekannteUnterorte: const [(schluessel: 'FR.11', name: 'Île-de-France')],
       );
       expect(l.aufnahmen, 0);
       expect(l.besucht, isFalse);
@@ -155,16 +165,16 @@ void main() {
 
   group('eine Region', () {
     Ortsuebersicht region() => ortsuebersicht(
-          ebene: Ortsebene.region,
-          schluessel: 'DE.06',
-          name: 'Lower Saxony',
-          angaben: angaben,
-          nachIso: nachIso,
-          regionscodes: regionscodes,
-          bekannteUnterorte: const [
-            (schluessel: 'Germany|Lower Saxony|Celle', name: 'Celle'),
-          ],
-        );
+      ebene: Ortsebene.region,
+      schluessel: 'DE.06',
+      name: 'Lower Saxony',
+      angaben: angaben,
+      nachIso: nachIso,
+      regionscodes: regionscodes,
+      bekannteUnterorte: const [
+        (schluessel: 'Germany|Lower Saxony|Celle', name: 'Celle'),
+      ],
+    );
 
     test('zählt nur ihre eigenen Aufnahmen', () {
       expect(region().aufnahmen, 637);
@@ -176,15 +186,21 @@ void main() {
       // dastehen. Ein Ort, den `cities1000` nicht führt, ist kein Grund,
       // seine Bilder zu verstecken.
       final r = region();
-      expect(r.unterorte.map((u) => u.name), ['Hannover', 'Oldenburg', 'Celle']);
+      expect(r.unterorte.map((u) => u.name), [
+        'Hannover',
+        'Oldenburg',
+        'Celle',
+      ]);
       expect(r.unterorteBesucht, 2);
     });
 
     test('der Schlüssel eines Ortes passt zu dem der Ortsmarken', () {
       // „Land|Region|Ort" mit Namen – genau so, wie die Weltkarte eine
       // Marke schreibt. Zwei Schreibweisen wären zwei Orte.
-      expect(region().unterorte.first.schluessel,
-          'Germany|Lower Saxony|Hannover');
+      expect(
+        region().unterorte.first.schluessel,
+        'Germany|Lower Saxony|Hannover',
+      );
     });
   });
 
@@ -203,24 +219,26 @@ void main() {
       expect(o.besucht, isTrue);
     });
 
-    test('zwei gleichnamige Orte in verschiedenen Ländern bleiben getrennt',
-        () {
-      // „Springfield" gibt es über zwanzigmal. Ohne Land und Region im
-      // Schlüssel wären es alle zusammen ein Ort.
-      final zwei = [
-        angabe('Germany', 'Hesse', 'Neustadt', 3),
-        angabe('Poland', 'Lesser Poland', 'Neustadt', 7),
-      ];
-      final deutsch = ortsuebersicht(
-        ebene: Ortsebene.ort,
-        schluessel: 'Germany|Hesse|Neustadt',
-        name: 'Neustadt',
-        angaben: zwei,
-        nachIso: nachIso,
-        regionscodes: regionscodes,
-      );
-      expect(deutsch.aufnahmen, 3);
-    });
+    test(
+      'zwei gleichnamige Orte in verschiedenen Ländern bleiben getrennt',
+      () {
+        // „Springfield" gibt es über zwanzigmal. Ohne Land und Region im
+        // Schlüssel wären es alle zusammen ein Ort.
+        final zwei = [
+          angabe('Germany', 'Hesse', 'Neustadt', 3),
+          angabe('Poland', 'Lesser Poland', 'Neustadt', 7),
+        ];
+        final deutsch = ortsuebersicht(
+          ebene: Ortsebene.ort,
+          schluessel: 'Germany|Hesse|Neustadt',
+          name: 'Neustadt',
+          angaben: zwei,
+          nachIso: nachIso,
+          regionscodes: regionscodes,
+        );
+        expect(deutsch.aufnahmen, 3);
+      },
+    );
   });
 
   group('was aus den Fotos nicht auflösbar ist', () {
@@ -301,9 +319,9 @@ void main() {
     });
 
     test('eine markierte Stadt macht ihre Region besucht', () {
-      final b = bayern(marken: [
-        marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht),
-      ]);
+      final b = bayern(
+        marken: [marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht)],
+      );
       expect(b.besucht, isTrue);
       expect(b.abgeleitet, isTrue);
     });
@@ -311,25 +329,30 @@ void main() {
     test('die Ableitung ist keine eigene Marke', () {
       // Sonst böte die Oberfläche einen Haken zum Wegnehmen an, den es an
       // dieser Zeile gar nicht gibt.
-      final b = bayern(marken: [
-        marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht),
-      ]);
+      final b = bayern(
+        marken: [marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht)],
+      );
       expect(b.marke, isNull);
       expect(b.aufnahmen, 0);
     });
 
     test('eine geplante Stadt färbt nichts', () {
-      final b = bayern(marken: [
-        marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.geplant),
-      ]);
-      expect(b.besucht, isFalse,
-          reason: 'ein Vorhaben ist kein Besuch – wie überall in dieser App');
+      final b = bayern(
+        marken: [marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.geplant)],
+      );
+      expect(
+        b.besucht,
+        isFalse,
+        reason: 'ein Vorhaben ist kein Besuch – wie überall in dieser App',
+      );
     });
 
     test('eine Stadt eines anderen Landes färbt nichts', () {
-      final b = bayern(marken: [
-        marke('ort', 'Poland|Lesser Poland|Kraków', Markenart.besucht),
-      ]);
+      final b = bayern(
+        marken: [
+          marke('ort', 'Poland|Lesser Poland|Kraków', Markenart.besucht),
+        ],
+      );
       expect(b.besucht, isFalse);
     });
 
@@ -392,9 +415,13 @@ void main() {
         marken: marken,
       ).single;
 
-      expect(uebersicht.unterorteBesucht, liste.regionenBesucht,
-          reason: 'die Länderliste und die Regionenübersicht müssen '
-              'dieselbe Zahl nennen');
+      expect(
+        uebersicht.unterorteBesucht,
+        liste.regionenBesucht,
+        reason:
+            'die Länderliste und die Regionenübersicht müssen '
+            'dieselbe Zahl nennen',
+      );
     });
   });
 
@@ -425,38 +452,47 @@ void main() {
     });
 
     test('er bekommt eine eigene Zeile', () {
-      final r = region(marken: [
-        marke('ort', 'Germany|Hamburg|Neuenfelde', Markenart.besucht),
-      ]);
-      final zeile =
-          r.unterorte.where((u) => u.name == 'Neuenfelde').singleOrNull;
-      expect(zeile, isNotNull, reason: 'sonst liesse sie sich nie zurücknehmen');
+      final r = region(
+        marken: [marke('ort', 'Germany|Hamburg|Neuenfelde', Markenart.besucht)],
+      );
+      final zeile = r.unterorte
+          .where((u) => u.name == 'Neuenfelde')
+          .singleOrNull;
+      expect(
+        zeile,
+        isNotNull,
+        reason: 'sonst liesse sie sich nie zurücknehmen',
+      );
       expect(zeile!.marke, Markenart.besucht);
       expect(zeile.besucht, isTrue);
     });
 
     test('auch ein geplanter – gerade der', () {
-      final r = region(marken: [
-        marke('ort', 'Germany|Hamburg|Neuenfelde', Markenart.geplant),
-      ]);
-      final zeile =
-          r.unterorte.where((u) => u.name == 'Neuenfelde').singleOrNull;
-      expect(zeile, isNotNull,
-          reason: 'ein Vorhaben, das man nicht findet, kann man nicht abhaken');
+      final r = region(
+        marken: [marke('ort', 'Germany|Hamburg|Neuenfelde', Markenart.geplant)],
+      );
+      final zeile = r.unterorte
+          .where((u) => u.name == 'Neuenfelde')
+          .singleOrNull;
+      expect(
+        zeile,
+        isNotNull,
+        reason: 'ein Vorhaben, das man nicht findet, kann man nicht abhaken',
+      );
       expect(zeile!.besucht, isFalse);
     });
 
     test('einer aus einer anderen Region bleibt draussen', () {
-      final r = region(marken: [
-        marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht),
-      ]);
+      final r = region(
+        marken: [marke('ort', 'Germany|Bavaria|Nürnberg', Markenart.besucht)],
+      );
       expect(r.unterorte.map((u) => u.name), ['Hamburg']);
     });
 
     test('er verdoppelt eine bekannte Zeile nicht', () {
-      final r = region(marken: [
-        marke('ort', 'Germany|Hamburg|Hamburg', Markenart.besucht),
-      ]);
+      final r = region(
+        marken: [marke('ort', 'Germany|Hamburg|Hamburg', Markenart.besucht)],
+      );
       expect(r.unterorte.where((u) => u.name == 'Hamburg'), hasLength(1));
     });
   });

@@ -44,8 +44,13 @@ class _NachgestellterDateidialog extends FilePicker {
   }) async {
     final d = datei;
     if (d == null) return null;
-    return FilePickerResult(
-        [PlatformFile(name: p.basename(d.path), path: d.path, size: d.lengthSync())]);
+    return FilePickerResult([
+      PlatformFile(
+        name: p.basename(d.path),
+        path: d.path,
+        size: d.lengthSync(),
+      ),
+    ]);
   }
 
   @override
@@ -57,8 +62,7 @@ class _NachgestellterDateidialog extends FilePicker {
     List<String>? allowedExtensions,
     Uint8List? bytes,
     bool lockParentWindow = false,
-  }) async =>
-      null;
+  }) async => null;
 }
 
 void main() {
@@ -70,8 +74,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_gpx_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -86,8 +91,9 @@ void main() {
     ].join();
     spurdatei = File(p.join(tempRoot.path, 'wanderung.gpx'));
     spurdatei.writeAsStringSync(
-        '<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>$punkte'
-        '</trkseg></trk></gpx>');
+      '<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>$punkte'
+      '</trkseg></trk></gpx>',
+    );
 
     // Fünf Aufnahmen ohne Koordinate über eine volle Stunde, zwei
     // Stunden versetzt (Kamera auf MESZ), und eine, die längst verortet
@@ -96,18 +102,21 @@ void main() {
     // Über die volle Stunde verteilt, damit der Versatz eindeutig ist:
     // Lägen sie enger beieinander, passten mehrere Versätze gleich gut,
     // und der Test prüfte die Gleichstandsregel statt der Erkennung.
-    Future<void> foto(String id, DateTime zeit, {double? breite}) =>
-        db.into(db.assets).insert(AssetsCompanion.insert(
-              id: id,
-              originalFileName: '$id.jpg',
-              relativePath: 'originals/$id.jpg',
-              checksum: 'pruef-$id',
-              type: 'IMAGE',
-              fileCreatedAt: zeit,
-              importedAt: DateTime(2024),
-              latitude: Value(breite),
-              longitude: Value(breite == null ? null : 1.0),
-            ));
+    Future<void> foto(String id, DateTime zeit, {double? breite}) => db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: zeit,
+            importedAt: DateTime(2024),
+            latitude: Value(breite),
+            longitude: Value(breite == null ? null : 1.0),
+          ),
+        );
     for (var i = 0; i < 5; i++) {
       await foto('f$i', DateTime.utc(2024, 6, 3, 11, i * 15));
     }
@@ -128,17 +137,19 @@ void main() {
     tester.view.physicalSize = const Size(900, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
-      // erscheinen Meldungen dort und nicht mehr als SnackBar im
-      // Scaffold.
-      builder: (context, kind) => mitMeldungen(kind),
-      home: GpxVerortungScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        // Der Meldungsstapel gehoert dazu: Seit der Meldungszentrale
+        // erscheinen Meldungen dort und nicht mehr als SnackBar im
+        // Scaffold.
+        builder: (context, kind) => mitMeldungen(kind),
+        home: GpxVerortungScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -153,13 +164,15 @@ void main() {
     await tester.pump();
     for (var runde = 0; runde < 6; runde++) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump(const Duration(milliseconds: 50));
     }
   }
 
-  testWidgets('der Zeitversatz wird vorgeschlagen, nicht erfragt',
-      (tester) async {
+  testWidgets('der Zeitversatz wird vorgeschlagen, nicht erfragt', (
+    tester,
+  ) async {
     // EXIF schreibt ohne Zeitzone, GPX schreibt UTC. Die Kamera stand auf
     // MESZ – niemand soll das raten muessen.
     await zeige(tester);
@@ -178,8 +191,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final verortet = await db.aufnahmenFuerReiseerkennung();
-    expect(verortet.map((a) => a.id).toSet(),
-        {'schon', 'f0', 'f1', 'f2', 'f3', 'f4'});
+    expect(verortet.map((a) => a.id).toSet(), {
+      'schon',
+      'f0',
+      'f1',
+      'f2',
+      'f3',
+      'f4',
+    });
     // **Nicht auf dem Schirm nachsehen.** `pumpAndSettle` läuft, bis
     // keine Bilder mehr anstehen – und der ablaufende Balken der Meldung
     // ist so ein Bild. Die Karte ist danach also planmässig weg. Im
@@ -189,8 +208,13 @@ void main() {
 
     // Und danach ist nichts mehr zu tun – dieselbe Zahl darf nicht noch
     // einmal dastehen.
-    expect(find.text('Im Zeitraum dieser Spur hat jede Aufnahme schon '
-        'einen Ort.'), findsOneWidget);
+    expect(
+      find.text(
+        'Im Zeitraum dieser Spur hat jede Aufnahme schon '
+        'einen Ort.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('ein anderer Versatz trifft weniger', (tester) async {
@@ -202,10 +226,13 @@ void main() {
     expect(find.text('5 Aufnahmen bekommen einen Ort.'), findsNothing);
   });
 
-  testWidgets('eine Datei ohne Zeitstempel sagt, was ihr fehlt',
-      (tester) async {
-    spurdatei.writeAsStringSync('<?xml version="1.0"?><gpx version="1.1">'
-        '<trk><trkseg><trkpt lat="52" lon="13"/></trkseg></trk></gpx>');
+  testWidgets('eine Datei ohne Zeitstempel sagt, was ihr fehlt', (
+    tester,
+  ) async {
+    spurdatei.writeAsStringSync(
+      '<?xml version="1.0"?><gpx version="1.1">'
+      '<trk><trkseg><trkpt lat="52" lon="13"/></trkseg></trk></gpx>',
+    );
     await zeige(tester);
     await waehlen(tester);
     expect(find.textContaining('kein Punkt einen Zeitstempel'), findsOneWidget);

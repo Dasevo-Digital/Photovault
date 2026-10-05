@@ -23,14 +23,14 @@ class ModelProcessingState {
   /// zusammen: Ein Wechsel nur einer der beiden Gewichte verändert das
   /// Gesamtergebnis.
   static Map<String, String> currentFingerprints() => {
-        'clip': _fingerprint([ModelCatalog.clip]),
-        'ocr': _fingerprint([ModelCatalog.ocrPaddle]),
-        'captions': _fingerprint([ModelCatalog.captioningFlorence]),
-        'faces': _fingerprint([
-          ModelCatalog.faceDetection,
-          ModelCatalog.faceRecognition,
-        ]),
-      };
+    'clip': _fingerprint([ModelCatalog.clip]),
+    'ocr': _fingerprint([ModelCatalog.ocrPaddle]),
+    'captions': _fingerprint([ModelCatalog.captioningFlorence]),
+    'faces': _fingerprint([
+      ModelCatalog.faceDetection,
+      ModelCatalog.faceRecognition,
+    ]),
+  };
 
   static String _fingerprint(List<ModelCatalogEntry> entries) => entries
       .expand((entry) => entry.files)
@@ -85,9 +85,8 @@ class ModelProcessingState {
 
   Future<void> _write(Map<String, String> pipelines) async {
     await _file.parent.create(recursive: true);
-    await _file.writeAsString(jsonEncode({
-      'format': _format,
-      'pipelines': pipelines,
-    }));
+    await _file.writeAsString(
+      jsonEncode({'format': _format, 'pipelines': pipelines}),
+    );
   }
 }

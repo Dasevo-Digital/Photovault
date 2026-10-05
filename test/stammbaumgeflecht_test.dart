@@ -18,30 +18,40 @@ void main() {
   ///                           |
   ///                         neffe
   Verwandtschaftsnetz sippe() => Verwandtschaftsnetz([
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-        kante('vater', 'oma', Verwandtschaft.elternteil),
-        partnerKanteFuer('opa', 'oma'),
-        partnerKanteFuer('vater', 'mutter'),
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('anna', 'vater', Verwandtschaft.elternteil),
-        kante('anna', 'mutter', Verwandtschaft.elternteil),
-        kante('bruno', 'vater', Verwandtschaft.elternteil),
-        kante('bruno', 'mutter', Verwandtschaft.elternteil),
-        partnerKanteFuer('anna', 'schwager'),
-        kante('neffe', 'anna', Verwandtschaft.elternteil),
-        kante('neffe', 'schwager', Verwandtschaft.elternteil),
-        kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
-        kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
-        partnerKanteFuer('schwagersVater', 'schwagersMutter'),
-        kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
-        kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
-      ]);
+    kante('vater', 'opa', Verwandtschaft.elternteil),
+    kante('vater', 'oma', Verwandtschaft.elternteil),
+    partnerKanteFuer('opa', 'oma'),
+    partnerKanteFuer('vater', 'mutter'),
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('anna', 'vater', Verwandtschaft.elternteil),
+    kante('anna', 'mutter', Verwandtschaft.elternteil),
+    kante('bruno', 'vater', Verwandtschaft.elternteil),
+    kante('bruno', 'mutter', Verwandtschaft.elternteil),
+    partnerKanteFuer('anna', 'schwager'),
+    kante('neffe', 'anna', Verwandtschaft.elternteil),
+    kante('neffe', 'schwager', Verwandtschaft.elternteil),
+    kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
+    kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
+    partnerKanteFuer('schwagersVater', 'schwagersMutter'),
+    kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
+    kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
+  ]);
 
   /// Alle Personen, in einer festen Reihenfolge – wie im Baum.
   const alle = [
-    'opa', 'oma', 'schwagersVater', 'schwagersMutter', 'vater', 'mutter',
-    'ich', 'anna', 'bruno', 'schwager', 'schwagersBruder', 'neffe',
+    'opa',
+    'oma',
+    'schwagersVater',
+    'schwagersMutter',
+    'vater',
+    'mutter',
+    'ich',
+    'anna',
+    'bruno',
+    'schwager',
+    'schwagersBruder',
+    'neffe',
   ];
 
   Stammbaumgeflecht geflecht([String fokus = 'ich']) =>
@@ -65,7 +75,10 @@ void main() {
     test('Vater und Mutter sind ein Haushalt, nicht zwei', () {
       final g = geflecht();
       expect(g.haushaltVon('vater'), same(g.haushaltVon('mutter')));
-      expect(g.imBand(-1).where((h) => h.personen.contains('vater')), hasLength(1));
+      expect(
+        g.imBand(-1).where((h) => h.personen.contains('vater')),
+        hasLength(1),
+      );
     });
 
     test('niemand wohnt zweimal', () {
@@ -86,10 +99,10 @@ void main() {
       // der beiden Linien gelogen.
       final g = geflecht();
       expect(g.elternhaeuserVon['anna'], [g.haushaltVon('vater')!.id]);
-      expect(g.elternhaeuserVon['schwager'],
-          [g.haushaltVon('schwagersVater')!.id]);
-      expect(g.elternhaeuserVon['anna'],
-          isNot(g.elternhaeuserVon['schwager']));
+      expect(g.elternhaeuserVon['schwager'], [
+        g.haushaltVon('schwagersVater')!.id,
+      ]);
+      expect(g.elternhaeuserVon['anna'], isNot(g.elternhaeuserVon['schwager']));
     });
 
     test('der Neffe hängt am Haushalt seiner Eltern', () {
@@ -102,7 +115,11 @@ void main() {
       // sieht. Dafür gibt es das Mehrzeichen.
       final g = geflecht();
       expect(g.elternhaeuserVon.containsKey('opa'), isFalse);
-      expect(g.weitereOben['opa'], isFalse, reason: 'Opa hat keine Eltern im Netz');
+      expect(
+        g.weitereOben['opa'],
+        isFalse,
+        reason: 'Opa hat keine Eltern im Netz',
+      );
     });
   });
 
@@ -125,8 +142,9 @@ void main() {
       // Schwager, nicht zu mir.
       final g = geflecht();
       expect(g.band[g.haushaltVon('schwagersVater')!.id], -1);
-      expect(g.elternhaeuserVon['schwager'],
-          [g.haushaltVon('schwagersVater')!.id]);
+      expect(g.elternhaeuserVon['schwager'], [
+        g.haushaltVon('schwagersVater')!.id,
+      ]);
       expect(g.elternhaeuserVon['ich'], [g.haushaltVon('vater')!.id]);
     });
   });
@@ -137,16 +155,20 @@ void main() {
     /// brach nach dem ersten ab – der Vater stand ohne jeden Ast im
     /// Bild, als gehörte er nicht dazu.
     Verwandtschaftsnetz getrennt() => Verwandtschaftsnetz([
-          kante('ich', 'vater', Verwandtschaft.elternteil),
-          kante('ich', 'mutter', Verwandtschaft.elternteil),
-          kante('schwester', 'vater', Verwandtschaft.elternteil),
-          kante('schwester', 'mutter', Verwandtschaft.elternteil),
-        ]);
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('ich', 'mutter', Verwandtschaft.elternteil),
+      kante('schwester', 'vater', Verwandtschaft.elternteil),
+      kante('schwester', 'mutter', Verwandtschaft.elternteil),
+    ]);
 
     // Die Mutter steht vorn - genau die Reihenfolge, in der der Vater
     // vorher unter den Tisch fiel.
-    Stammbaumgeflecht g() => geflechtUm(
-        getrennt(), 'ich', const ['mutter', 'vater', 'ich', 'schwester']);
+    Stammbaumgeflecht g() => geflechtUm(getrennt(), 'ich', const [
+      'mutter',
+      'vater',
+      'ich',
+      'schwester',
+    ]);
 
     test('beide Eltern haben ein eigenes Haus', () {
       final geflecht = g();
@@ -212,17 +234,26 @@ void main() {
     /// Enkel. Drei Generationen hinauf, eine hinab - und die App sagte
     /// mit ihrem Mehrzeichen sogar selbst, dass da unten noch etwas ist.
     Verwandtschaftsnetz vierGenerationen() => Verwandtschaftsnetz([
-          kante('vater', 'opa', Verwandtschaft.elternteil),
-          kante('ich', 'vater', Verwandtschaft.elternteil),
-          kante('anna', 'vater', Verwandtschaft.elternteil),
-          kante('kind', 'ich', Verwandtschaft.elternteil),
-          kante('enkel', 'kind', Verwandtschaft.elternteil),
-          kante('urenkel', 'enkel', Verwandtschaft.elternteil),
-          kante('neffe', 'anna', Verwandtschaft.elternteil),
-          kante('grossneffe', 'neffe', Verwandtschaft.elternteil),
-        ]);
-    const ids = ['opa', 'vater', 'ich', 'anna', 'kind', 'neffe', 'enkel',
-        'grossneffe', 'urenkel'];
+      kante('vater', 'opa', Verwandtschaft.elternteil),
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('anna', 'vater', Verwandtschaft.elternteil),
+      kante('kind', 'ich', Verwandtschaft.elternteil),
+      kante('enkel', 'kind', Verwandtschaft.elternteil),
+      kante('urenkel', 'enkel', Verwandtschaft.elternteil),
+      kante('neffe', 'anna', Verwandtschaft.elternteil),
+      kante('grossneffe', 'neffe', Verwandtschaft.elternteil),
+    ]);
+    const ids = [
+      'opa',
+      'vater',
+      'ich',
+      'anna',
+      'kind',
+      'neffe',
+      'enkel',
+      'grossneffe',
+      'urenkel',
+    ];
 
     test('Enkel und Urenkel stehen im Bild', () {
       final g = geflechtUm(vierGenerationen(), 'ich', ids);
@@ -242,15 +273,21 @@ void main() {
       // hinauf und eine hinab zeigt, ist keiner.
       final g = geflechtUm(vierGenerationen(), 'ich', ids);
       final baender = g.haushalte.map((h) => g.band[h.id]!);
-      expect(baender.reduce((a, b) => a < b ? a : b), -2,
-          reason: 'Opa ist der einzige Vorfahre ausser dem Vater');
+      expect(
+        baender.reduce((a, b) => a < b ? a : b),
+        -2,
+        reason: 'Opa ist der einzige Vorfahre ausser dem Vater',
+      );
       expect(baender.reduce((a, b) => a > b ? a : b), 3);
     });
 
     test('wer unten alles zeigt, traegt kein Mehrzeichen', () {
       final g = geflechtUm(vierGenerationen(), 'ich', ids);
-      expect(g.weitereUnten['kind'], isFalse,
-          reason: 'der Enkel steht jetzt im Bild');
+      expect(
+        g.weitereUnten['kind'],
+        isFalse,
+        reason: 'der Enkel steht jetzt im Bild',
+      );
       expect(g.weitereUnten['enkel'], isFalse);
     });
   });

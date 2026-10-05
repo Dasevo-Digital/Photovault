@@ -20,7 +20,9 @@ class DesktopFolderAccess implements FolderAccess {
   @override
   Future<PickedFolder?> pickFolder({String? message}) async {
     try {
-      final path = await FilePicker.platform.getDirectoryPath(dialogTitle: message);
+      final path = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: message,
+      );
       if (path == null) return null;
       return PickedFolder(path, '');
     } catch (_) {

@@ -21,8 +21,11 @@ import 'person_suggestions_screen.dart';
 /// ausdrücklicher Durchgang lohnt es sich trotzdem: Weggelegt wurde,
 /// bevor es die heutigen Personen gab.
 class VorschlaegeScreen extends StatefulWidget {
-  const VorschlaegeScreen(
-      {super.key, required this.library, this.beiseiteZuerst = false});
+  const VorschlaegeScreen({
+    super.key,
+    required this.library,
+    this.beiseiteZuerst = false,
+  });
 
   final LibraryState library;
 
@@ -37,19 +40,19 @@ class VorschlaegeScreen extends StatefulWidget {
 class _VorschlaegeScreenState extends State<VorschlaegeScreen> {
   late bool _beiseite = widget.beiseiteZuerst;
   late Future<List<({PersonData person, int anzahl})>> _liste = _laden();
-  late Future<int> _nochNieVerglichen =
-      widget.library.db.countWiedererkennungOffen();
-  late Future<int> _beiseiteOffen =
-      widget.library.db.countBeiseiteNieVerglichen();
+  late Future<int> _nochNieVerglichen = widget.library.db
+      .countWiedererkennungOffen();
+  late Future<int> _beiseiteOffen = widget.library.db
+      .countBeiseiteNieVerglichen();
 
   Future<List<({PersonData person, int anzahl})>> _laden() =>
       widget.library.db.vorschlaegeJePerson(beiseite: _beiseite);
 
   void _neuLaden() => setState(() {
-        _liste = _laden();
-        _nochNieVerglichen = widget.library.db.countWiedererkennungOffen();
-        _beiseiteOffen = widget.library.db.countBeiseiteNieVerglichen();
-      });
+    _liste = _laden();
+    _nochNieVerglichen = widget.library.db.countWiedererkennungOffen();
+    _beiseiteOffen = widget.library.db.countBeiseiteNieVerglichen();
+  });
 
   /// Startet den Durchgang ueber die beiseitegelegten Gesichter.
   ///
@@ -76,16 +79,20 @@ class _VorschlaegeScreenState extends State<VorschlaegeScreen> {
   bool _laeuft = false;
 
   Future<void> _oeffne(PersonData person) async {
-    final vorschlaege = await widget.library.db
-        .vorschlaegeFuerPerson(person.id, beiseite: _beiseite);
+    final vorschlaege = await widget.library.db.vorschlaegeFuerPerson(
+      person.id,
+      beiseite: _beiseite,
+    );
     if (!mounted || vorschlaege.isEmpty) return;
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => PersonSuggestionsScreen(
-        library: widget.library,
-        person: person,
-        vorschlaege: vorschlaege,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PersonSuggestionsScreen(
+          library: widget.library,
+          person: person,
+          vorschlaege: vorschlaege,
+        ),
       ),
-    ));
+    );
     _neuLaden();
   }
 
@@ -97,8 +104,10 @@ class _VorschlaegeScreenState extends State<VorschlaegeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text(t.vorschlaegeEinleitung,
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            t.vorschlaegeEinleitung,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           const SizedBox(height: AppSpacing.md),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -129,8 +138,9 @@ class _VorschlaegeScreenState extends State<VorschlaegeScreen> {
                       leading: Profilbild(
                         datei: zeile.person.coverFaceCropPath == null
                             ? null
-                            : widget.library.paths
-                                .absolute(zeile.person.coverFaceCropPath!),
+                            : widget.library.paths.absolute(
+                                zeile.person.coverFaceCropPath!,
+                              ),
                         radius: 20,
                         hintergrund: Colors.grey.shade800,
                         symbolgroesse: 18,
@@ -153,46 +163,46 @@ class _VorschlaegeScreenState extends State<VorschlaegeScreen> {
   /// gesucht" sind zwei verschiedene Auskünfte, und nur die zweite hat
   /// einen nächsten Schritt.
   Widget _leer(AppTexte t) => FutureBuilder<int>(
-        future: _beiseite ? _beiseiteOffen : _nochNieVerglichen,
-        builder: (context, stand) {
-          final offen = stand.data ?? 0;
-          final nieGesucht = offen > 0;
-          return Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _beiseite
-                      ? (nieGesucht
-                          ? t.vorschlaegeBeiseiteNieVerglichen(offen)
-                          : t.vorschlaegeBeiseiteLeer)
-                      : (nieGesucht
-                          ? t.vorschlaegeLaufHinweis
-                          : t.vorschlaegeKeine),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                // Den Durchgang gibt es nur hier, und nur fuer die
-                // Beiseitegelegten: Der Lauf nach dem Import laesst sie
-                // aus, und das soll er auch.
-                if (_beiseite && nieGesucht) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  FilledButton.tonalIcon(
-                    onPressed: _laeuft ? null : _vergleicheBeiseite,
-                    icon: _laeuft
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.person_search_outlined),
-                    label: Text(_laeuft
-                        ? t.vorschlaegeLaeuft
-                        : t.vorschlaegeJetztVergleichen),
-                  ),
-                ],
-              ],
+    future: _beiseite ? _beiseiteOffen : _nochNieVerglichen,
+    builder: (context, stand) {
+      final offen = stand.data ?? 0;
+      final nieGesucht = offen > 0;
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _beiseite
+                  ? (nieGesucht
+                        ? t.vorschlaegeBeiseiteNieVerglichen(offen)
+                        : t.vorschlaegeBeiseiteLeer)
+                  : (nieGesucht
+                        ? t.vorschlaegeLaufHinweis
+                        : t.vorschlaegeKeine),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-          );
-        },
+            // Den Durchgang gibt es nur hier, und nur fuer die
+            // Beiseitegelegten: Der Lauf nach dem Import laesst sie
+            // aus, und das soll er auch.
+            if (_beiseite && nieGesucht) ...[
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.tonalIcon(
+                onPressed: _laeuft ? null : _vergleicheBeiseite,
+                icon: _laeuft
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.person_search_outlined),
+                label: Text(
+                  _laeuft ? t.vorschlaegeLaeuft : t.vorschlaegeJetztVergleichen,
+                ),
+              ),
+            ],
+          ],
+        ),
       );
+    },
+  );
 }

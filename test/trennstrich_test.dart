@@ -16,7 +16,10 @@ void main() {
     test('eingeschaltet, Original da, kein Shader: sichtbar', () {
       expect(
         trennstrichZeigen(
-            eingeschaltet: true, originalDa: true, shaderLaeuft: false),
+          eingeschaltet: true,
+          originalDa: true,
+          shaderLaeuft: false,
+        ),
         isTrue,
       );
     });
@@ -27,7 +30,10 @@ void main() {
       // aus wie ein kaputtes Bild.
       expect(
         trennstrichZeigen(
-            eingeschaltet: true, originalDa: false, shaderLaeuft: false),
+          eingeschaltet: true,
+          originalDa: false,
+          shaderLaeuft: false,
+        ),
         isFalse,
       );
     });
@@ -38,7 +44,10 @@ void main() {
       // keinen Unterschied - die schlimmste Art, falsch zu liegen.
       expect(
         trennstrichZeigen(
-            eingeschaltet: true, originalDa: true, shaderLaeuft: true),
+          eingeschaltet: true,
+          originalDa: true,
+          shaderLaeuft: true,
+        ),
         isFalse,
       );
     });
@@ -46,7 +55,10 @@ void main() {
     test('ausgeschaltet bleibt ausgeschaltet', () {
       expect(
         trennstrichZeigen(
-            eingeschaltet: false, originalDa: true, shaderLaeuft: false),
+          eingeschaltet: false,
+          originalDa: true,
+          shaderLaeuft: false,
+        ),
         isFalse,
       );
     });
@@ -123,37 +135,46 @@ void main() {
       0x42, 0x60, 0x82,
     ]);
 
-    Future<void> zeige(WidgetTester tester, double anteil,
-        {ValueChanged<double>? beiVerschieben}) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 400,
-            height: 200,
-            child: VorherNachherVergleich(
-              original: einPixel,
-              bearbeitet: einPixel,
-              seitenverhaeltnis: 2.0,
-              anteil: anteil,
-              beiVerschieben: beiVerschieben ?? (_) {},
-              vorherText: 'Vorher',
-              nachherText: 'Nachher',
+    Future<void> zeige(
+      WidgetTester tester,
+      double anteil, {
+      ValueChanged<double>? beiVerschieben,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 200,
+              child: VorherNachherVergleich(
+                original: einPixel,
+                bearbeitet: einPixel,
+                seitenverhaeltnis: 2.0,
+                anteil: anteil,
+                beiVerschieben: beiVerschieben ?? (_) {},
+                vorherText: 'Vorher',
+                nachherText: 'Nachher',
+              ),
             ),
           ),
         ),
-      ));
+      );
     }
 
     testWidgets('zeigt beide Bilder gleichzeitig', (tester) async {
       await zeige(tester, 0.5);
-      expect(find.byType(Image), findsNWidgets(2),
-          reason: 'genau das kann das Gedrueckt-Halten nicht');
+      expect(
+        find.byType(Image),
+        findsNWidgets(2),
+        reason: 'genau das kann das Gedrueckt-Halten nicht',
+      );
       expect(find.text('Vorher'), findsOneWidget);
       expect(find.text('Nachher'), findsOneWidget);
     });
 
-    testWidgets('das Ziehen am Griff meldet eine neue Position',
-        (tester) async {
+    testWidgets('das Ziehen am Griff meldet eine neue Position', (
+      tester,
+    ) async {
       double? gemeldet;
       await zeige(tester, 0.5, beiVerschieben: (a) => gemeldet = a);
 
@@ -166,16 +187,19 @@ void main() {
       // heraus - richtig, aber ein Wert, der die Schwelle misst statt
       // die Umrechnung von Punkten in Anteile.
       await tester.drag(
-          find.byIcon(Icons.compare_arrows), const Offset(100, 0),
-          touchSlopX: 0);
+        find.byIcon(Icons.compare_arrows),
+        const Offset(100, 0),
+        touchSlopX: 0,
+      );
       await tester.pump();
 
       expect(gemeldet, isNotNull, reason: 'der Griff nimmt das Ziehen an');
       expect(gemeldet, closeTo(0.75, 0.001));
     });
 
-    testWidgets('ein Anteil von 0 blendet das bearbeitete Bild ganz aus',
-        (tester) async {
+    testWidgets('ein Anteil von 0 blendet das bearbeitete Bild ganz aus', (
+      tester,
+    ) async {
       // Der Randfall, in dem der Clipper eine Breite von 0 bekommt. Er
       // darf dabei nicht werfen.
       await zeige(tester, 0.0);

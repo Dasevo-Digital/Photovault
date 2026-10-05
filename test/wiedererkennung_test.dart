@@ -30,17 +30,20 @@ void main() {
   Uint8List vektor(List<double> werte) =>
       blobFromEmbeddingFloats(Float32List.fromList(werte));
 
-  Future<void> foto(String id, {bool papierkorb = false}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 5, 1),
-            importedAt: DateTime(2026, 5, 1),
-            isTrashed: Value(papierkorb),
-          ));
+  Future<void> foto(String id, {bool papierkorb = false}) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026, 5, 1),
+          importedAt: DateTime(2026, 5, 1),
+          isTrashed: Value(papierkorb),
+        ),
+      );
 
   Future<void> gesicht(
     String id, {
@@ -51,49 +54,55 @@ void main() {
     String? vorschlag,
     double? wert,
     DateTime? geprueft,
-  }) =>
-      db.into(db.faces).insert(FacesCompanion.insert(
-            id: id,
-            assetId: assetId,
-            boxX: 0,
-            boxY: 0,
-            boxW: 1,
-            boxH: 1,
-            personId: Value(personId),
-            embedding:
-                Value(einbettung == null ? null : vektor(einbettung)),
-            isIgnored: Value(beiseite),
-            vorschlagPersonId: Value(vorschlag),
-            vorschlagWert: Value(wert),
-            vorschlagGeprueftAm: Value(geprueft),
-          ));
+  }) => db
+      .into(db.faces)
+      .insert(
+        FacesCompanion.insert(
+          id: id,
+          assetId: assetId,
+          boxX: 0,
+          boxY: 0,
+          boxW: 1,
+          boxH: 1,
+          personId: Value(personId),
+          embedding: Value(einbettung == null ? null : vektor(einbettung)),
+          isIgnored: Value(beiseite),
+          vorschlagPersonId: Value(vorschlag),
+          vorschlagWert: Value(wert),
+          vorschlagGeprueftAm: Value(geprueft),
+        ),
+      );
 
   Future<String> person(String name) async {
     final id = 'p_$name';
-    await db
-        .into(db.people)
-        .insert(PeopleCompanion.insert(id: id, name: name));
+    await db.into(db.people).insert(PeopleCompanion.insert(id: id, name: name));
     return id;
   }
 
   group('was der Lauf ansieht', () {
-    test('geprueft ist geprueft – der zweite Lauf faengt nicht von vorn an',
-        () async {
-      await foto('a');
-      await gesicht('offen', assetId: 'a', einbettung: [1, 0]);
-      await gesicht('schon', assetId: 'a', einbettung: [1, 0],
-          geprueft: DateTime(2026, 5, 2));
+    test(
+      'geprueft ist geprueft – der zweite Lauf faengt nicht von vorn an',
+      () async {
+        await foto('a');
+        await gesicht('offen', assetId: 'a', einbettung: [1, 0]);
+        await gesicht(
+          'schon',
+          assetId: 'a',
+          einbettung: [1, 0],
+          geprueft: DateTime(2026, 5, 2),
+        );
 
-      expect(
+        expect(
           [for (final g in await db.gesichterFuerWiedererkennung()) g.id],
-          ['offen']);
-      // Und mit „alle" sind beide wieder dabei – der Weg, nachdem neue
-      // Personen benannt wurden.
-      expect((await db.gesichterFuerWiedererkennung(alle: true)).length, 2);
-    });
+          ['offen'],
+        );
+        // Und mit „alle" sind beide wieder dabei – der Weg, nachdem neue
+        // Personen benannt wurden.
+        expect((await db.gesichterFuerWiedererkennung(alle: true)).length, 2);
+      },
+    );
 
-    test('beiseitegelegte bleiben draussen, bis jemand danach fragt',
-        () async {
+    test('beiseitegelegte bleiben draussen, bis jemand danach fragt', () async {
       await foto('a');
       await gesicht('weg', assetId: 'a', einbettung: [1, 0], beiseite: true);
 
@@ -101,51 +110,69 @@ void main() {
       expect(await db.countWiedererkennungOffen(beiseite: true), 1);
     });
 
-    test('ohne Einbettung und im Papierkorb ist nichts zu vergleichen',
-        () async {
-      await foto('a');
-      await foto('weg', papierkorb: true);
-      await gesicht('ohne', assetId: 'a');
-      await gesicht('imMuell', assetId: 'weg', einbettung: [1, 0]);
+    test(
+      'ohne Einbettung und im Papierkorb ist nichts zu vergleichen',
+      () async {
+        await foto('a');
+        await foto('weg', papierkorb: true);
+        await gesicht('ohne', assetId: 'a');
+        await gesicht('imMuell', assetId: 'weg', einbettung: [1, 0]);
 
-      expect(await db.countWiedererkennungOffen(), 0);
-    });
+        expect(await db.countWiedererkennungOffen(), 0);
+      },
+    );
   });
 
   group('was der Lauf schreibt', () {
-    test('die Marke wird auch dann gesetzt, wenn nichts gefunden wurde',
-        () async {
-      await foto('a');
-      await gesicht('fremd', assetId: 'a', einbettung: [0, 1]);
+    test(
+      'die Marke wird auch dann gesetzt, wenn nichts gefunden wurde',
+      () async {
+        await foto('a');
+        await gesicht('fremd', assetId: 'a', einbettung: [0, 1]);
 
-      await db.merkeVorschlaege([
-        (faceId: 'fremd', personId: null, wert: null),
-      ]);
+        await db.merkeVorschlaege([
+          (faceId: 'fremd', personId: null, wert: null),
+        ]);
 
-      final g = await (db.select(db.faces)
-            ..where((t) => t.id.equals('fremd')))
-          .getSingle();
-      expect(g.vorschlagPersonId, isNull);
-      expect(g.vorschlagGeprueftAm, isNotNull);
-      // Und damit ist er aus dem naechsten Lauf heraus – sonst begaenne
-      // jeder Lauf wieder bei allen.
-      expect(await db.countWiedererkennungOffen(), 0);
-    });
+        final g = await (db.select(
+          db.faces,
+        )..where((t) => t.id.equals('fremd'))).getSingle();
+        expect(g.vorschlagPersonId, isNull);
+        expect(g.vorschlagGeprueftAm, isNotNull);
+        // Und damit ist er aus dem naechsten Lauf heraus – sonst begaenne
+        // jeder Lauf wieder bei allen.
+        expect(await db.countWiedererkennungOffen(), 0);
+      },
+    );
   });
 
   group('was die Zahlen melden', () {
     test('gezaehlt wird, was auf eine Entscheidung wartet', () async {
       final anna = await person('Anna');
       await foto('a');
-      await gesicht('warte', assetId: 'a', einbettung: [1, 0],
-          vorschlag: anna, wert: 0.8, geprueft: DateTime(2026, 5, 2));
-      await gesicht('nichts', assetId: 'a', einbettung: [0, 1],
-          geprueft: DateTime(2026, 5, 2));
-      await gesicht('weggelegt', assetId: 'a', einbettung: [1, 0],
-          beiseite: true,
-          vorschlag: anna,
-          wert: 0.9,
-          geprueft: DateTime(2026, 5, 2));
+      await gesicht(
+        'warte',
+        assetId: 'a',
+        einbettung: [1, 0],
+        vorschlag: anna,
+        wert: 0.8,
+        geprueft: DateTime(2026, 5, 2),
+      );
+      await gesicht(
+        'nichts',
+        assetId: 'a',
+        einbettung: [0, 1],
+        geprueft: DateTime(2026, 5, 2),
+      );
+      await gesicht(
+        'weggelegt',
+        assetId: 'a',
+        einbettung: [1, 0],
+        beiseite: true,
+        vorschlag: anna,
+        wert: 0.9,
+        geprueft: DateTime(2026, 5, 2),
+      );
 
       expect(await db.countVorschlaege(), 1);
       expect(await db.countVorschlaege(beiseite: true), 1);
@@ -155,19 +182,31 @@ void main() {
       expect(jePerson.single.anzahl, 1);
     });
 
-    test('je Person absteigend nach Aehnlichkeit – das Sicherste zuerst',
-        () async {
-      final anna = await person('Anna');
-      await foto('a');
-      await gesicht('mittel', assetId: 'a', einbettung: [1, 0],
-          vorschlag: anna, wert: 0.7);
-      await gesicht('sicher', assetId: 'a', einbettung: [1, 0],
-          vorschlag: anna, wert: 0.9);
+    test(
+      'je Person absteigend nach Aehnlichkeit – das Sicherste zuerst',
+      () async {
+        final anna = await person('Anna');
+        await foto('a');
+        await gesicht(
+          'mittel',
+          assetId: 'a',
+          einbettung: [1, 0],
+          vorschlag: anna,
+          wert: 0.7,
+        );
+        await gesicht(
+          'sicher',
+          assetId: 'a',
+          einbettung: [1, 0],
+          vorschlag: anna,
+          wert: 0.9,
+        );
 
-      final liste = await db.vorschlaegeFuerPerson(anna);
-      expect([for (final v in liste) v.gesicht.id], ['sicher', 'mittel']);
-      expect(liste.first.aehnlichkeit, 0.9);
-    });
+        final liste = await db.vorschlaegeFuerPerson(anna);
+        expect([for (final v in liste) v.gesicht.id], ['sicher', 'mittel']);
+        expect(liste.first.aehnlichkeit, 0.9);
+      },
+    );
   });
 
   group('die stille Luecke', () {
@@ -176,8 +215,13 @@ void main() {
       await gesicht('weg1', assetId: 'a', einbettung: [1, 0], beiseite: true);
       await gesicht('weg2', assetId: 'a', einbettung: [1, 0], beiseite: true);
       // Schon angesehen: kein offener Posten mehr.
-      await gesicht('weg3', assetId: 'a', einbettung: [1, 0],
-          beiseite: true, geprueft: DateTime(2026, 5, 2));
+      await gesicht(
+        'weg3',
+        assetId: 'a',
+        einbettung: [1, 0],
+        beiseite: true,
+        geprueft: DateTime(2026, 5, 2),
+      );
       // Nicht beiseite: gehoert in die andere Zahl.
       await gesicht('offen', assetId: 'a', einbettung: [1, 0]);
 
@@ -193,26 +237,29 @@ void main() {
       await gesicht('weg', assetId: 'a', einbettung: [1, 0], beiseite: true);
       expect(await db.countBeiseiteNieVerglichen(), 1);
 
-      await db.merkeVorschlaege([
-        (faceId: 'weg', personId: null, wert: null),
-      ]);
+      await db.merkeVorschlaege([(faceId: 'weg', personId: null, wert: null)]);
 
       expect(await db.countBeiseiteNieVerglichen(), 0);
     });
   });
 
   group('was nach der Entscheidung passiert', () {
-    test('ein angenommener Vorschlag verschwindet aus der Schlange',
-        () async {
+    test('ein angenommener Vorschlag verschwindet aus der Schlange', () async {
       final anna = await person('Anna');
       await foto('a');
-      await gesicht('ja', assetId: 'a', einbettung: [1, 0],
-          vorschlag: anna, wert: 0.9);
+      await gesicht(
+        'ja',
+        assetId: 'a',
+        einbettung: [1, 0],
+        vorschlag: anna,
+        wert: 0.9,
+      );
 
       await db.assignFacesToPerson(['ja'], anna);
 
-      final g = await (db.select(db.faces)..where((t) => t.id.equals('ja')))
-          .getSingle();
+      final g = await (db.select(
+        db.faces,
+      )..where((t) => t.id.equals('ja'))).getSingle();
       expect(g.personId, anna);
       expect(g.vorschlagPersonId, isNull);
       expect(await db.countVorschlaege(), 0);
@@ -221,16 +268,26 @@ void main() {
     test('ein abgelehnter auch – aber die Marke bleibt stehen', () async {
       final anna = await person('Anna');
       await foto('a');
-      await gesicht('nein', assetId: 'a', einbettung: [1, 0],
-          vorschlag: anna, wert: 0.9, geprueft: DateTime(2026, 5, 2));
+      await gesicht(
+        'nein',
+        assetId: 'a',
+        einbettung: [1, 0],
+        vorschlag: anna,
+        wert: 0.9,
+        geprueft: DateTime(2026, 5, 2),
+      );
 
       await db.verwirfVorschlaege(['nein']);
 
-      final g = await (db.select(db.faces)..where((t) => t.id.equals('nein')))
-          .getSingle();
+      final g = await (db.select(
+        db.faces,
+      )..where((t) => t.id.equals('nein'))).getSingle();
       expect(g.vorschlagPersonId, isNull);
-      expect(g.vorschlagGeprueftAm, isNotNull,
-          reason: 'sonst stuende dieselbe Frage sofort wieder da');
+      expect(
+        g.vorschlagGeprueftAm,
+        isNotNull,
+        reason: 'sonst stuende dieselbe Frage sofort wieder da',
+      );
       expect(await db.countVorschlaege(), 0);
       expect(await db.countWiedererkennungOffen(), 0);
     });
@@ -240,10 +297,18 @@ void main() {
     test('der Kern einer Person zieht ein aehnliches Gesicht an', () async {
       final anna = await person('Anna');
       await foto('a');
-      await gesicht('anna1', assetId: 'a',
-          personId: anna, einbettung: [1, 0, 0]);
-      await gesicht('anna2', assetId: 'a',
-          personId: anna, einbettung: [0.9, 0.1, 0]);
+      await gesicht(
+        'anna1',
+        assetId: 'a',
+        personId: anna,
+        einbettung: [1, 0, 0],
+      );
+      await gesicht(
+        'anna2',
+        assetId: 'a',
+        personId: anna,
+        einbettung: [0.9, 0.1, 0],
+      );
 
       final roh = await db.einbettungenZugeordneterGesichter();
       final kerne = personenkerne([

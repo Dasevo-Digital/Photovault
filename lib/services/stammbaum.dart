@@ -45,19 +45,19 @@ bool istElternArt(Verwandtschaft art) => elternArten.contains(art);
 /// `index`, damit eine spätere Ergänzung der Aufzählung nicht die
 /// Bedeutung bereits gespeicherter Zeilen verschiebt.
 String artZuText(Verwandtschaft art) => switch (art) {
-      Verwandtschaft.elternteil => 'elternteil',
-      Verwandtschaft.adoptivelternteil => 'adoptiv',
-      Verwandtschaft.pflegeelternteil => 'pflege',
-      Verwandtschaft.partner => 'partner',
-    };
+  Verwandtschaft.elternteil => 'elternteil',
+  Verwandtschaft.adoptivelternteil => 'adoptiv',
+  Verwandtschaft.pflegeelternteil => 'pflege',
+  Verwandtschaft.partner => 'partner',
+};
 
 Verwandtschaft? artAusText(String text) => switch (text) {
-      'elternteil' => Verwandtschaft.elternteil,
-      'adoptiv' => Verwandtschaft.adoptivelternteil,
-      'pflege' => Verwandtschaft.pflegeelternteil,
-      'partner' => Verwandtschaft.partner,
-      _ => null,
-    };
+  'elternteil' => Verwandtschaft.elternteil,
+  'adoptiv' => Verwandtschaft.adoptivelternteil,
+  'pflege' => Verwandtschaft.pflegeelternteil,
+  'partner' => Verwandtschaft.partner,
+  _ => null,
+};
 
 /// Eine gespeicherte Kante, gelesen wie in [Verwandtschaft] beschrieben.
 typedef Kante = ({String personId, String andereId, Verwandtschaft art});
@@ -71,8 +71,9 @@ Kante kante(String personId, String andereId, Verwandtschaft art) =>
 /// Ohne diese Festlegung entstünden für dasselbe Paar je nach
 /// Eingaberichtung zwei verschiedene Zeilen – und ein späteres Entfernen
 /// träfe nur eine davon.
-Kante partnerKanteFuer(String a, String b) =>
-    a.compareTo(b) <= 0 ? kante(a, b, Verwandtschaft.partner) : kante(b, a, Verwandtschaft.partner);
+Kante partnerKanteFuer(String a, String b) => a.compareTo(b) <= 0
+    ? kante(a, b, Verwandtschaft.partner)
+    : kante(b, a, Verwandtschaft.partner);
 
 /// Alle Kanten in nachschlagbarer Form.
 class Verwandtschaftsnetz {
@@ -268,7 +269,10 @@ class Stammbaumausschnitt {
   /// entstehen, und ein Ausschnitt, der nur aus Grosseltern bestünde,
   /// gibt es nicht.
   bool get istLeer =>
-      eltern.isEmpty && geschwister.isEmpty && partner.isEmpty && kinder.isEmpty;
+      eltern.isEmpty &&
+      geschwister.isEmpty &&
+      partner.isEmpty &&
+      kinder.isEmpty;
 }
 
 /// Stellt den Ausschnitt um [fokus] zusammen.
@@ -290,7 +294,8 @@ Stammbaumausschnitt ausschnittUm(
 }) {
   final rang = {for (var i = 0; i < reihenfolge.length; i++) reihenfolge[i]: i};
   List<String> sortiert(Iterable<String> ids) =>
-      ids.toList()..sort((a, b) => (rang[a] ?? 1 << 30).compareTo(rang[b] ?? 1 << 30));
+      ids.toList()
+        ..sort((a, b) => (rang[a] ?? 1 << 30).compareTo(rang[b] ?? 1 << 30));
 
   final eltern = sortiert(netz.eltern(fokus));
   final geschwister = sortiert(netz.geschwister(fokus));
@@ -309,7 +314,8 @@ Stammbaumausschnitt ausschnittUm(
   // –, kam sonst zweimal. Dasselbe gilt für Grosseltern, wenn die Eltern
   // Cousins sind. Beides kommt in echten Familien vor.
   List<String> ohneKern(Iterable<String> ids, Set<String> schon) => sortiert(
-      ids.toSet().where((id) => !kern.contains(id) && !schon.contains(id)));
+    ids.toSet().where((id) => !kern.contains(id) && !schon.contains(id)),
+  );
 
   var grosseltern = const <String>[];
   var onkelTanten = const <String>[];
@@ -318,17 +324,19 @@ Stammbaumausschnitt ausschnittUm(
   var schwaeger = const <String>[];
   if (seitenlinien) {
     final belegt = <String>{};
-    grosseltern = ohneKern(
-        [for (final e in eltern) ...netz.eltern(e)], belegt);
+    grosseltern = ohneKern([for (final e in eltern) ...netz.eltern(e)], belegt);
     belegt.addAll(grosseltern);
-    onkelTanten =
-        ohneKern([for (final e in eltern) ...netz.geschwister(e)], belegt);
+    onkelTanten = ohneKern([
+      for (final e in eltern) ...netz.geschwister(e),
+    ], belegt);
     belegt.addAll(onkelTanten);
-    schwiegereltern =
-        ohneKern([for (final p in partner) ...netz.eltern(p)], belegt);
+    schwiegereltern = ohneKern([
+      for (final p in partner) ...netz.eltern(p),
+    ], belegt);
     belegt.addAll(schwiegereltern);
-    neffenNichten =
-        ohneKern([for (final g in geschwister) ...netz.kinder(g)], belegt);
+    neffenNichten = ohneKern([
+      for (final g in geschwister) ...netz.kinder(g),
+    ], belegt);
     belegt.addAll(neffenNichten);
     // Beide Richtungen, wie im Verwandtschaftsrechner: der Partner meines
     // Geschwisters und das Geschwister meines Partners.
@@ -385,7 +393,12 @@ Stammbaumausschnitt ausschnittUm(
 ///
 /// Gibt `null` zurück, wenn nichts bekannt ist – dann bleibt die Zeile
 /// weg, statt einen leeren Gedankenstrich zu zeigen.
-String? lebensspanne(DateTime? geburt, DateTime? tod, {String geboren = '*', String gestorben = '†'}) {
+String? lebensspanne(
+  DateTime? geburt,
+  DateTime? tod, {
+  String geboren = '*',
+  String gestorben = '†',
+}) {
   if (geburt == null && tod == null) return null;
   if (geburt != null && tod != null) return '${geburt.year}–${tod.year}';
   if (geburt != null) return '$geboren${geburt.year}';
@@ -500,8 +513,10 @@ class Stammbaumgeflecht {
   }
 
   /// Alle Haushalte eines Bandes, in ihrer Reihenfolge.
-  List<Haushalt> imBand(int nummer) =>
-      [for (final h in haushalte) if (band[h.id] == nummer) h];
+  List<Haushalt> imBand(int nummer) => [
+    for (final h in haushalte)
+      if (band[h.id] == nummer) h,
+  ];
 
   /// Alle Personen im Bild.
   Set<String> get personen => {for (final h in haushalte) ...h.personen};
@@ -553,8 +568,9 @@ Stammbaumgeflecht geflechtUm(
         verschwiegen++;
         continue;
       }
-      final mitbewohner =
-          sortiert(netz.partner(a).where((x) => x != a && !vergeben.contains(x)));
+      final mitbewohner = sortiert(
+        netz.partner(a).where((x) => x != a && !vergeben.contains(x)),
+      );
       haushalte.add(Haushalt(a, mitbewohner));
       band[a] = nummer;
       vergeben.add(a);
@@ -593,20 +609,20 @@ Stammbaumgeflecht geflechtUm(
   // die Partner der Geschwister; ihre Eltern und Geschwister sind das,
   // wonach ausdrücklich gefragt war.
   final schwaeger = sortiert([for (final g in geschwister) ...netz.partner(g)]);
-  final grosseltern =
-      sortiert([for (final e in eltern) ...netz.eltern(e)]);
+  final grosseltern = sortiert([for (final e in eltern) ...netz.eltern(e)]);
   hausen([for (final g in grosseltern) ...netz.eltern(g)], -3);
   hausen([for (final s in schwaeger) ...netz.eltern(s)], -1);
   hausen([for (final s in schwaeger) ...netz.geschwister(s)], 0);
   hausen([
     for (final p in eigenePartner)
-      for (final se in netz.eltern(p)) ...netz.eltern(se)
+      for (final se in netz.eltern(p)) ...netz.eltern(se),
   ], -2);
   // Und ebenso weit hinab: Urenkel, und die Kinder der Neffen und
   // Nichten. Damit reicht der Baum in beide Richtungen gleich weit.
   final enkel = sortiert([for (final k in kinder) ...netz.kinder(k)]);
-  final neffenNichten =
-      sortiert([for (final g in geschwister) ...netz.kinder(g)]);
+  final neffenNichten = sortiert([
+    for (final g in geschwister) ...netz.kinder(g),
+  ]);
   hausen([for (final e in enkel) ...netz.kinder(e)], 3);
   hausen([for (final n in neffenNichten) ...netz.kinder(n)], 2);
 
@@ -642,7 +658,9 @@ Stammbaumgeflecht geflechtUm(
 
   haushalte.sort((a, b) {
     final bandVergleich = band[a.id]!.compareTo(band[b.id]!);
-    return bandVergleich != 0 ? bandVergleich : platz(a.anker).compareTo(platz(b.anker));
+    return bandVergleich != 0
+        ? bandVergleich
+        : platz(a.anker).compareTo(platz(b.anker));
   });
 
   return Stammbaumgeflecht(

@@ -26,8 +26,7 @@ import '../theme/app_spacing.dart';
 /// schmalen [Rasterzeile], Alben und Suche mit der vollen `AssetData` –
 /// beide auf einen Typ zu zwingen hiesse, an einer der beiden Stellen bei
 /// jedem Tastendruck eine Liste umzuwandeln.
-mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
-    on State<T> {
+mixin Rasterbedienung<T extends StatefulWidget, Z extends Object> on State<T> {
   // ---- vom Bildschirm zu liefern ----
 
   /// Die Auswahlmenge des Bildschirms. Wird von hier aus verändert.
@@ -69,8 +68,8 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
   /// das Kalenderjahr überschreiben das mit ihren Monatsgruppen, sonst spränge
   /// der Zeiger über eine Monatsüberschrift hinweg an die falsche Stelle.
   List<List<String>> get rasterGruppen => [
-        [for (final a in rasterAssets) rasterKennung(a)],
-      ];
+    [for (final a in rasterAssets) rasterKennung(a)],
+  ];
 
   // ---- Zustand ----
 
@@ -163,7 +162,9 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
 
       case Klickart.einzeln:
         setState(() {
-          if (!auswahl.remove(rasterKennung(asset))) auswahl.add(rasterKennung(asset));
+          if (!auswahl.remove(rasterKennung(asset))) {
+            auswahl.add(rasterKennung(asset));
+          }
           anker = rasterKennung(asset);
           aktiveKachel = rasterKennung(asset);
         });
@@ -171,7 +172,9 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
       case Klickart.einfach:
         if (auswahl.isNotEmpty) {
           setState(() {
-            if (!auswahl.remove(rasterKennung(asset))) auswahl.add(rasterKennung(asset));
+            if (!auswahl.remove(rasterKennung(asset))) {
+              auswahl.add(rasterKennung(asset));
+            }
             anker = rasterKennung(asset);
             aktiveKachel = rasterKennung(asset);
           });
@@ -227,7 +230,11 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
       // `down` statt `up`: Bis der Finger wieder hochgeht, hat die Kachel
       // ihre eigene Reaktion schon begonnen.
       onPointerDown: (_) => rasterFokusHolen(),
-      child: Focus(focusNode: rasterFokus, onKeyEvent: rasterTaste, child: kind),
+      child: Focus(
+        focusNode: rasterFokus,
+        onKeyEvent: rasterTaste,
+        child: kind,
+      ),
     );
   }
 
@@ -313,8 +320,7 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
       // zweiter Klick auf denselben Kreis in der Palette. Massgeblich ist
       // dabei die aktive Kachel bzw. das erste Foto der Auswahl; bei
       // gemischten Marken setzt die Taste also erst einmal alle gleich.
-      final erstes =
-          rasterAssets.where((a) => rasterKennung(a) == ziele.first);
+      final erstes = rasterAssets.where((a) => rasterKennung(a) == ziele.first);
       final schonSo =
           erstes.isNotEmpty && rasterMerkmale(erstes.first).farbe == farbe;
       _fuehreAus(rasterDb.setColorLabelBulk(ziele, schonSo ? null : farbe));
@@ -322,10 +328,8 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object>
     }
 
     if (taste == LogicalKeyboardKey.keyF) {
-      final erstes =
-          rasterAssets.where((a) => rasterKennung(a) == ziele.first);
-      final schonSo =
-          erstes.isNotEmpty && rasterMerkmale(erstes.first).favorit;
+      final erstes = rasterAssets.where((a) => rasterKennung(a) == ziele.first);
+      final schonSo = erstes.isNotEmpty && rasterMerkmale(erstes.first).favorit;
       _fuehreAus(rasterDb.setFavoriteBulk(ziele, !schonSo));
       return KeyEventResult.handled;
     }
@@ -414,8 +418,10 @@ class AktiveKachelRahmen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border:
-            Border.all(color: Theme.of(context).colorScheme.primary, width: 3),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 3,
+        ),
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: child,

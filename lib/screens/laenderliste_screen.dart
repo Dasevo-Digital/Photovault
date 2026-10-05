@@ -106,29 +106,33 @@ class _LaenderlisteScreenState extends State<LaenderlisteScreen> {
     if (wert == null) {
       await db.loescheOrtsmarke('land', land.iso);
     } else {
-      await db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-        art: 'land',
-        schluessel: land.iso,
-        // Der ENGLISCHE Name in die Datenbank: Die Marke soll nicht davon
-        // abhängen, in welcher Sprache sie gesetzt wurde.
-        name: land.name,
-        status: wert == Markenart.geplant ? 'geplant' : 'besucht',
-        angelegtAm: DateTime.now(),
-      ));
+      await db.setzeOrtsmarke(
+        OrtsmarkenCompanion.insert(
+          art: 'land',
+          schluessel: land.iso,
+          // Der ENGLISCHE Name in die Datenbank: Die Marke soll nicht davon
+          // abhängen, in welcher Sprache sie gesetzt wurde.
+          name: land.name,
+          status: wert == Markenart.geplant ? 'geplant' : 'besucht',
+          angelegtAm: DateTime.now(),
+        ),
+      );
     }
     await _laden();
   }
 
   void _oeffne(Landstand land) {
     Navigator.of(context)
-        .push(MaterialPageRoute(
-          builder: (_) => OrtsansichtScreen(
-            library: widget.library,
-            ebene: Ortsebene.land,
-            schluessel: land.iso,
-            name: land.anzeige(_sprache),
+        .push(
+          MaterialPageRoute(
+            builder: (_) => OrtsansichtScreen(
+              library: widget.library,
+              ebene: Ortsebene.land,
+              schluessel: land.iso,
+              name: land.anzeige(_sprache),
+            ),
           ),
-        ))
+        )
         // Dort unten kann eine Marke gesetzt worden sein – auch auf einer
         // Region, und die zählt im Balken dieser Liste mit.
         .then((_) => _laden());
@@ -146,8 +150,9 @@ class _LaenderlisteScreenState extends State<LaenderlisteScreen> {
               title: Text(land.anzeige(_sprache)),
               subtitle: Text(t.laenderHinweisMarke),
               subtitleTextStyle: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(blatt).colorScheme.onSurfaceVariant),
+                fontSize: 12,
+                color: Theme.of(blatt).colorScheme.onSurfaceVariant,
+              ),
             ),
             const Divider(height: 1),
             ListTile(
@@ -192,26 +197,25 @@ class _LaenderlisteScreenState extends State<LaenderlisteScreen> {
       body: stand == null
           ? const Center(child: CircularProgressIndicator())
           : stand.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: Text(t.laenderOhneGeodaten,
-                        textAlign: TextAlign.center),
-                  ),
-                )
-              : Column(
-                  children: [
-                    _Kopfzeile(stand: stand),
-                    _Werkzeugleiste(
-                      feld: _suchfeld,
-                      filter: _filter,
-                      beiSuche: (text) => setState(() => _suche = text),
-                      beiFilter: (f) => setState(() => _filter = f),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(child: _liste(t)),
-                  ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Text(t.laenderOhneGeodaten, textAlign: TextAlign.center),
+              ),
+            )
+          : Column(
+              children: [
+                _Kopfzeile(stand: stand),
+                _Werkzeugleiste(
+                  feld: _suchfeld,
+                  filter: _filter,
+                  beiSuche: (text) => setState(() => _suche = text),
+                  beiFilter: (f) => setState(() => _filter = f),
                 ),
+                const Divider(height: 1),
+                Expanded(child: _liste(t)),
+              ],
+            ),
     );
   }
 
@@ -252,18 +256,23 @@ class _Kopfzeile extends StatelessWidget {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
     final besucht = stand.where((l) => l.besucht).length;
-    final voll =
-        stand.where((l) => l.grad == Besuchsgrad.vollstaendig).length;
+    final voll = stand.where((l) => l.grad == Besuchsgrad.vollstaendig).length;
     final teil = stand.where((l) => l.grad == Besuchsgrad.teilweise).length;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(t.laenderKopf(stand.length, besucht, teil),
-              style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            t.laenderKopf(stand.length, besucht, teil),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
@@ -271,8 +280,9 @@ class _Kopfzeile extends StatelessWidget {
               _Zahl(wert: voll, beschriftung: t.laenderVollstaendig),
               _Zahl(wert: teil, beschriftung: t.laenderTeilweise),
               _Zahl(
-                  wert: stand.length - besucht,
-                  beschriftung: t.laenderVerbleibend),
+                wert: stand.length - besucht,
+                beschriftung: t.laenderVerbleibend,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -313,8 +323,10 @@ class _Zahl extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$wert', style: Theme.of(context).textTheme.headlineSmall),
-          Text(beschriftung,
-              style: TextStyle(fontSize: 11, color: farben.onSurfaceVariant)),
+          Text(
+            beschriftung,
+            style: TextStyle(fontSize: 11, color: farben.onSurfaceVariant),
+          ),
         ],
       ),
     );
@@ -355,10 +367,13 @@ class _Werkzeugleiste extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              Text(t.laenderFilter,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                t.laenderFilter,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: SingleChildScrollView(
@@ -435,10 +450,12 @@ class _Landzeile extends StatelessWidget {
           // bleibt auch dann lesbar – der Name steht daneben, nicht darin.
           : Text(flagge, style: const TextStyle(fontSize: 24)),
       title: Text(land.anzeige(Localizations.localeOf(context).languageCode)),
-      subtitle: Text(unterzeile,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+      subtitle: Text(
+        unterzeile,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+      ),
       trailing: SizedBox(
         width: 148,
         child: Row(
@@ -449,7 +466,9 @@ class _Landzeile extends StatelessWidget {
                 // Die Zahlen stehen kurz da, weil die Zeile schmal ist –
                 // ausgeschrieben erklärt der Tooltip, was „1/2" heisst.
                 message: t.laenderRegionen(
-                    land.regionenBesucht, land.regionenGesamt),
+                  land.regionenBesucht,
+                  land.regionenGesamt,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -465,9 +484,13 @@ class _Landzeile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Text('${land.regionenBesucht}/${land.regionenGesamt}',
-                        style: TextStyle(
-                            fontSize: 11, color: farben.onSurfaceVariant)),
+                    Text(
+                      '${land.regionenBesucht}/${land.regionenGesamt}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -494,22 +517,19 @@ class _Statuspunkt extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     final (symbol, farbe, text) = switch (land.grad) {
       Besuchsgrad.vollstaendig => (
-          Icons.check_circle,
-          farben.primary,
-          t.laenderVollstaendig
-        ),
+        Icons.check_circle,
+        farben.primary,
+        t.laenderVollstaendig,
+      ),
       Besuchsgrad.teilweise => (
-          Icons.adjust,
-          farben.tertiary,
-          t.laenderTeilweise
-        ),
-      Besuchsgrad.nicht => land.marke == Markenart.geplant
-          ? (Icons.flag_outlined, farben.secondary, t.laenderGeplant)
-          : (
-              Icons.circle_outlined,
-              farben.outline,
-              t.laenderNichtBesucht
-            ),
+        Icons.adjust,
+        farben.tertiary,
+        t.laenderTeilweise,
+      ),
+      Besuchsgrad.nicht =>
+        land.marke == Markenart.geplant
+            ? (Icons.flag_outlined, farben.secondary, t.laenderGeplant)
+            : (Icons.circle_outlined, farben.outline, t.laenderNichtBesucht),
     };
     final punkt = Tooltip(
       message: text,
@@ -522,8 +542,8 @@ class _Statuspunkt extends StatelessWidget {
     final (herkunft, hinweis) = land.aufnahmen > 0
         ? (Icons.photo_camera_outlined, t.laenderAusFotos)
         : land.nurVonHand
-            ? (Icons.back_hand_outlined, t.laenderNurVonHand)
-            : (null, '');
+        ? (Icons.back_hand_outlined, t.laenderNurVonHand)
+        : (null, '');
     if (herkunft == null) return punkt;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -557,19 +577,21 @@ class _Legende extends StatelessWidget {
     final stil = TextStyle(fontSize: 11, color: farben.onSurfaceVariant);
 
     Widget eintrag(IconData symbol, Color farbe, String text) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(symbol, size: 14, color: farbe),
-            const SizedBox(width: 4),
-            Text(text, style: stil),
-          ],
-        );
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(symbol, size: 14, color: farbe),
+        const SizedBox(width: 4),
+        Text(text, style: stil),
+      ],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.laenderLegende,
-            style: stil.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          t.laenderLegende,
+          style: stil.copyWith(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 4),
         // Umbrechend und nicht in einer Reihe: Fuenf Eintraege passen in
         // ein breites Fenster, in ein schmales nicht - und eine Reihe,
@@ -582,11 +604,20 @@ class _Legende extends StatelessWidget {
             eintrag(Icons.adjust, farben.tertiary, t.laenderTeilweise),
             eintrag(Icons.flag_outlined, farben.secondary, t.laenderGeplant),
             eintrag(
-                Icons.circle_outlined, farben.outline, t.laenderNichtBesucht),
-            eintrag(Icons.photo_camera_outlined, farben.onSurfaceVariant,
-                t.laenderAusFotos),
-            eintrag(Icons.back_hand_outlined, farben.onSurfaceVariant,
-                t.laenderNurVonHand),
+              Icons.circle_outlined,
+              farben.outline,
+              t.laenderNichtBesucht,
+            ),
+            eintrag(
+              Icons.photo_camera_outlined,
+              farben.onSurfaceVariant,
+              t.laenderAusFotos,
+            ),
+            eintrag(
+              Icons.back_hand_outlined,
+              farben.onSurfaceVariant,
+              t.laenderNurVonHand,
+            ),
           ],
         ),
       ],
@@ -596,12 +627,12 @@ class _Legende extends StatelessWidget {
 
 /// Der ausgeschriebene Erdteil zum Kürzel des Datensatzes.
 String erdteilName(AppTexte t, String kuerzel) => switch (kuerzel) {
-      'EU' => t.erdteilEU,
-      'AS' => t.erdteilAS,
-      'NA' => t.erdteilNA,
-      'SA' => t.erdteilSA,
-      'AF' => t.erdteilAF,
-      'OC' => t.erdteilOC,
-      'AN' => t.erdteilAN,
-      _ => t.erdteilUnbekannt,
-    };
+  'EU' => t.erdteilEU,
+  'AS' => t.erdteilAS,
+  'NA' => t.erdteilNA,
+  'SA' => t.erdteilSA,
+  'AF' => t.erdteilAF,
+  'OC' => t.erdteilOC,
+  'AN' => t.erdteilAN,
+  _ => t.erdteilUnbekannt,
+};

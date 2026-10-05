@@ -69,28 +69,41 @@ void main() {
     print('-' * 58);
     print('Wort            Treffer   nur Kennungen   volle Zeilen');
     for (final wort in ['bathtub', 'woman', 'people', 'with']) {
-      final filter =
-          SearchFilters(query: wort, textMode: SearchTextMode.caption);
+      final filter = SearchFilters(
+        query: wort,
+        textMode: SearchTextMode.caption,
+      );
       final treffer = (await db.searchAssetIds(filter)).length;
-      final kennungen =
-          await misst(() async => (await db.searchAssetIds(filter)).length);
-      final zeilen =
-          await misst(() async => (await db.searchAssets(filter)).length);
-      print('${wort.padRight(14)}${treffer.toString().padLeft(8)}'
-          '${kennungen.toStringAsFixed(1).padLeft(13)} ms'
-          '${zeilen.toStringAsFixed(1).padLeft(12)} ms');
+      final kennungen = await misst(
+        () async => (await db.searchAssetIds(filter)).length,
+      );
+      final zeilen = await misst(
+        () async => (await db.searchAssets(filter)).length,
+      );
+      print(
+        '${wort.padRight(14)}${treffer.toString().padLeft(8)}'
+        '${kennungen.toStringAsFixed(1).padLeft(13)} ms'
+        '${zeilen.toStringAsFixed(1).padLeft(12)} ms',
+      );
     }
     print('\n  Der Sprung von links nach rechts ist NICHT der Index, sondern');
     print('  das Zusammenbauen der Zeilen - 56 Spalten je Treffer.');
 
     // Der Index fuer sich allein, ohne alles Drumherum.
-    final nurFts = await misst(() async => (await db.customSelect(
-          'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
-          "MATCH 'ai_caption : (\"with\"*) OR ai_caption_de : (\"with\"*)'",
-        ).get())
-            .length);
-    print('\n  Die reine FTS-Abfrage fuer "with": '
-        '${nurFts.toStringAsFixed(1)} ms');
+    final nurFts = await misst(
+      () async =>
+          (await db
+                  .customSelect(
+                    'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
+                    "MATCH 'ai_caption : (\"with\"*) OR ai_caption_de : (\"with\"*)'",
+                  )
+                  .get())
+              .length,
+    );
+    print(
+      '\n  Die reine FTS-Abfrage fuer "with": '
+      '${nurFts.toStringAsFixed(1)} ms',
+    );
 
     // **Der Preis.** Die drei Ausloeser haengen an jedem UPDATE der fuenf
     // indizierten Spalten - und genau die schreiben Texterkennung und
@@ -101,8 +114,9 @@ void main() {
       await db.transaction(() async {
         for (var i = 0; i < 100; i++) {
           await db.customStatement(
-              "UPDATE assets SET ai_caption = ai_caption || '' WHERE id = "
-              '(SELECT id FROM assets LIMIT 1 OFFSET $i)');
+            "UPDATE assets SET ai_caption = ai_caption || '' WHERE id = "
+            '(SELECT id FROM assets LIMIT 1 OFFSET $i)',
+          );
         }
       });
       return 0;
@@ -114,31 +128,42 @@ void main() {
     var zaehler = 0;
     final echteAenderung = await misst(() async {
       await db.customStatement(
-          "UPDATE assets SET description = 'x${zaehler++}' WHERE id = "
-          '(SELECT id FROM assets LIMIT 1)');
+        "UPDATE assets SET description = 'x${zaehler++}' WHERE id = "
+        '(SELECT id FROM assets LIMIT 1)',
+      );
       return 0;
     }, laeufe: 50);
     final einzelnMit = await misst(() async {
       await db.customStatement(
-          "UPDATE assets SET description = 'gleichbleibend' WHERE id = "
-          '(SELECT id FROM assets LIMIT 1)');
+        "UPDATE assets SET description = 'gleichbleibend' WHERE id = "
+        '(SELECT id FROM assets LIMIT 1)',
+      );
       return 0;
     }, laeufe: 50);
-    print('  eine Zeile, Text WIRKLICH geaendert  '
-        '${echteAenderung.toStringAsFixed(3)} ms');
+    print(
+      '  eine Zeile, Text WIRKLICH geaendert  '
+      '${echteAenderung.toStringAsFixed(3)} ms',
+    );
     await db.customStatement('DROP TRIGGER IF EXISTS assets_fts_update');
     final einzelnOhne = await misst(() async {
       await db.customStatement(
-          "UPDATE assets SET description = 'y' WHERE id = "
-          '(SELECT id FROM assets LIMIT 1)');
+        "UPDATE assets SET description = 'y' WHERE id = "
+        '(SELECT id FROM assets LIMIT 1)',
+      );
       return 0;
     }, laeufe: 50);
-    print('  100 Zeilen in einer Transaktion  '
-        '${(inKlammer / 100).toStringAsFixed(3)} ms je Zeile');
-    print('  eine Zeile, Text unveraendert        '
-        '${einzelnMit.toStringAsFixed(3)} ms');
-    print('  eine Zeile, ohne Ausloeser           '
-        '${einzelnOhne.toStringAsFixed(3)} ms');
+    print(
+      '  100 Zeilen in einer Transaktion  '
+      '${(inKlammer / 100).toStringAsFixed(3)} ms je Zeile',
+    );
+    print(
+      '  eine Zeile, Text unveraendert        '
+      '${einzelnMit.toStringAsFixed(3)} ms',
+    );
+    print(
+      '  eine Zeile, ohne Ausloeser           '
+      '${einzelnOhne.toStringAsFixed(3)} ms',
+    );
     print('\n  Vor Schema 84 kostete AUCH die unveraenderte Zeile 1,56 ms:');
     print('  `UPDATE OF` feuert, sobald die Spalte in der SET-Klausel steht,');
     print('  nicht erst wenn ihr Wert ein anderer wird. Ueber 8098 Aufnahmen');
@@ -149,7 +174,9 @@ void main() {
       await db.databaseQuickCheck();
       return 0;
     }, laeufe: 5);
-    print('\nPRAGMA quick_check (Gesundheitsbildschirm): '
-        '${quick.toStringAsFixed(0)} ms');
+    print(
+      '\nPRAGMA quick_check (Gesundheitsbildschirm): '
+      '${quick.toStringAsFixed(0)} ms',
+    );
   });
 }

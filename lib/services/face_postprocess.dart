@@ -14,7 +14,14 @@ class DetectedFace {
   final double x, y, width, height;
   final double score;
   final List<double>? landmarks;
-  DetectedFace(this.x, this.y, this.width, this.height, this.score, {this.landmarks});
+  DetectedFace(
+    this.x,
+    this.y,
+    this.width,
+    this.height,
+    this.score, {
+    this.landmarks,
+  });
 }
 
 /// Reine, deterministische Nachverarbeitung für YuNets Rohausgaben –
@@ -93,7 +100,8 @@ class FacePostprocess {
     final interY1 = math.max(a.y, b.y);
     final interX2 = math.min(ax2, bx2);
     final interY2 = math.min(ay2, by2);
-    final interArea = math.max(0.0, interX2 - interX1) * math.max(0.0, interY2 - interY1);
+    final interArea =
+        math.max(0.0, interX2 - interX1) * math.max(0.0, interY2 - interY1);
     final unionArea = a.width * a.height + b.width * b.height - interArea;
     return unionArea <= 0 ? 0 : interArea / unionArea;
   }
@@ -104,7 +112,8 @@ class FacePostprocess {
     List<DetectedFace> boxes, {
     required double iouThreshold,
   }) {
-    final sorted = List<DetectedFace>.from(boxes)..sort((a, b) => b.score.compareTo(a.score));
+    final sorted = List<DetectedFace>.from(boxes)
+      ..sort((a, b) => b.score.compareTo(a.score));
     final kept = <DetectedFace>[];
     for (final candidate in sorted) {
       var overlaps = false;

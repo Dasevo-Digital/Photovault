@@ -57,7 +57,11 @@ class _NachgestellterDateidialog extends FilePicker {
     final d = datei;
     if (d == null) return null;
     return FilePickerResult([
-      PlatformFile(name: p.basename(d.path), path: d.path, size: d.lengthSync()),
+      PlatformFile(
+        name: p.basename(d.path),
+        path: d.path,
+        size: d.lengthSync(),
+      ),
     ]);
   }
 
@@ -86,34 +90,37 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_gedcom_bs_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
       ..backupService = BackupService(db, paths);
 
     gedcom = File(p.join(tempRoot.path, 'ahnen.ged'));
-    await gedcom.writeAsString([
-      '0 HEAD',
-      '1 CHAR UTF-8',
-      '0 @I1@ INDI',
-      '1 NAME Hans /Meier/',
-      '1 SEX M',
-      '1 BIRT',
-      '2 DATE 2 APR 1931',
-      '2 PLAC Hamburg',
-      '0 @I2@ INDI',
-      '1 NAME Grete /Meier/',
-      '1 SEX F',
-      '0 @I3@ INDI',
-      '1 NAME Karl /Meier/',
-      '0 @F1@ FAM',
-      '1 HUSB @I1@',
-      '1 WIFE @I2@',
-      '1 CHIL @I3@',
-      '0 TRLR',
-    ].map((z) => '$z\r\n').join());
+    await gedcom.writeAsString(
+      [
+        '0 HEAD',
+        '1 CHAR UTF-8',
+        '0 @I1@ INDI',
+        '1 NAME Hans /Meier/',
+        '1 SEX M',
+        '1 BIRT',
+        '2 DATE 2 APR 1931',
+        '2 PLAC Hamburg',
+        '0 @I2@ INDI',
+        '1 NAME Grete /Meier/',
+        '1 SEX F',
+        '0 @I3@ INDI',
+        '1 NAME Karl /Meier/',
+        '0 @F1@ FAM',
+        '1 HUSB @I1@',
+        '1 WIFE @I2@',
+        '1 CHIL @I3@',
+        '0 TRLR',
+      ].map((z) => '$z\r\n').join(),
+    );
 
     dialog = _NachgestellterDateidialog(gedcom);
     FilePicker.platform = dialog;
@@ -125,13 +132,15 @@ void main() {
   });
 
   Future<void> zeige(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: StammbaumScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: StammbaumScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -156,7 +165,8 @@ void main() {
     // Menüpunkt wirkungslos.
     for (var runde = 0; runde < 5; runde++) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle(
         const Duration(milliseconds: 50),
         EnginePhase.sendSemanticsUpdate,
@@ -165,8 +175,9 @@ void main() {
     }
   }
 
-  testWidgets('der Menuepunkt ist auch ohne eine einzige Person da',
-      (tester) async {
+  testWidgets('der Menuepunkt ist auch ohne eine einzige Person da', (
+    tester,
+  ) async {
     // Genau dann ist er gefragt. Der Ausgabe-Punkt daneben bleibt aus
     // gutem Grund gesperrt – es gäbe nichts auszugeben.
     await zeige(tester);
@@ -175,11 +186,16 @@ void main() {
     final punkt = find.text('GEDCOM einlesen …');
     expect(punkt, findsOneWidget);
     expect(
-        tester
-            .widget<PopupMenuItem<String>>(find.ancestor(
-                of: punkt, matching: find.byType(PopupMenuItem<String>)))
-            .enabled,
-        isTrue);
+      tester
+          .widget<PopupMenuItem<String>>(
+            find.ancestor(
+              of: punkt,
+              matching: find.byType(PopupMenuItem<String>),
+            ),
+          )
+          .enabled,
+      isTrue,
+    );
   });
 
   testWidgets('vom Menuepunkt bis in die Datenbank', (tester) async {
@@ -196,14 +212,20 @@ void main() {
     // Bestehendes anzufassen.
     expect(find.textContaining('3 Personen'), findsOneWidget);
     expect(find.textContaining('Nichts Bestehendes'), findsOneWidget);
-    expect(await db.select(db.people).get(), isEmpty,
-        reason: 'vor der Zusage darf nichts geschrieben sein');
+    expect(
+      await db.select(db.people).get(),
+      isEmpty,
+      reason: 'vor der Zusage darf nichts geschrieben sein',
+    );
 
     await tippeMitPlatte(tester, find.text('Einlesen'));
 
     final personen = await db.select(db.people).get();
-    expect(personen.map((x) => x.name).toSet(),
-        {'Hans Meier', 'Grete Meier', 'Karl Meier'});
+    expect(personen.map((x) => x.name).toSet(), {
+      'Hans Meier',
+      'Grete Meier',
+      'Karl Meier',
+    });
     expect(await db.alleBeziehungen(), hasLength(3));
     expect((await db.select(db.lebensereignisse).get()).single.ort, 'Hamburg');
 
@@ -242,8 +264,11 @@ void main() {
         expect(find.text('Nichts zu beanstanden.'), findsOneWidget);
       } else {
         expect(find.textContaining('könnte es schon geben'), findsOneWidget);
-        expect(find.text('Grete Meier, Hans Meier, Karl Meier'), findsOneWidget,
-            reason: 'die Namen stehen dabei, sonst müsste man suchen');
+        expect(
+          find.text('Grete Meier, Hans Meier, Karl Meier'),
+          findsOneWidget,
+          reason: 'die Namen stehen dabei, sonst müsste man suchen',
+        );
         expect(find.textContaining('entscheidest du'), findsOneWidget);
       }
       await tester.tap(find.text('Schließen'));

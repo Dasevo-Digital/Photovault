@@ -23,7 +23,7 @@ const heicAndRawExtensions = {
   '.heif',
   '.avif',
   '.avifs',
-  ...rawImageExtensions
+  ...rawImageExtensions,
 };
 
 /// Was sich für ein Foto an Tiefendaten holen lässt.
@@ -129,8 +129,8 @@ class NativeImageConverter {
   /// Kanal (macOS).
   static Future<Map<String, bool>> verfuegbareWerkzeuge() async =>
       _ueberWerkzeuge
-          ? await DesktopImageTools.pruefeWerkzeuge()
-          : const <String, bool>{};
+      ? await DesktopImageTools.pruefeWerkzeuge()
+      : const <String, bool>{};
 
   /// Ob die Bildumwandlung hier arbeiten kann – und was ihr gegebenenfalls
   /// fehlt.
@@ -142,7 +142,7 @@ class NativeImageConverter {
   /// eine Swift-Datei ins Xcode-Projekt einzubinden. Unter Windows gilt
   /// seit der Werkzeugschicht dasselbe.
   static Future<({bool bereit, List<String> fehlende})>
-      bildwerkzeugstand() async {
+  bildwerkzeugstand() async {
     if (_ueberWerkzeuge) {
       final vorhanden = await DesktopImageTools.pruefeWerkzeuge();
       final fehlende = [
@@ -167,8 +167,10 @@ class NativeImageConverter {
       return Objektivkorrekturstand.unbekannt;
     }
     try {
-      final antwort = await _channel
-          .invokeMethod<String>('lensCorrectionStatus', {'path': file.path});
+      final antwort = await _channel.invokeMethod<String>(
+        'lensCorrectionStatus',
+        {'path': file.path},
+      );
       return switch (antwort) {
         'keinRaw' => Objektivkorrekturstand.keinRaw,
         'verfuegbar' => Objektivkorrekturstand.verfuegbar,
@@ -209,8 +211,8 @@ class NativeImageConverter {
         stand: png != null
             ? Tiefenmaskenstand.verfuegbar
             : (tiefenFaehigeEndungen.contains(endung)
-                ? Tiefenmaskenstand.nichtAufDieserPlattform
-                : Tiefenmaskenstand.keineTiefendaten),
+                  ? Tiefenmaskenstand.nichtAufDieserPlattform
+                  : Tiefenmaskenstand.keineTiefendaten),
         png: png,
       );
     }
@@ -218,8 +220,10 @@ class NativeImageConverter {
       return (stand: Tiefenmaskenstand.keineTiefendaten, png: null);
     }
     try {
-      final antwort = await _channel
-          .invokeMapMethod<String, dynamic>('depthMask', {'path': file.path});
+      final antwort = await _channel.invokeMapMethod<String, dynamic>(
+        'depthMask',
+        {'path': file.path},
+      );
       final stand = switch (antwort?['stand']) {
         'verfuegbar' => Tiefenmaskenstand.verfuegbar,
         'keineTiefendaten' => Tiefenmaskenstand.keineTiefendaten,
@@ -257,7 +261,9 @@ class NativeImageConverter {
     if (!await isSupported()) return Aufnahmedaten.leer;
     try {
       final antwort = await _channel.invokeMapMethod<String, dynamic>(
-          'cameraMetadata', {'path': file.path});
+        'cameraMetadata',
+        {'path': file.path},
+      );
       if (antwort == null) return Aufnahmedaten.leer;
       return _ausImageIo(antwort);
     } on PlatformException {
@@ -315,7 +321,7 @@ class NativeImageConverter {
   /// Ortung verfügbar oder die Abfrage lief in ihre Zeitgrenze. Der
   /// Aufrufer sagt das dem Nutzer, statt es zu verschlucken.
   static Future<({double breite, double laenge, double genauigkeit})?>
-      aktuellerStandort() async {
+  aktuellerStandort() async {
     if (!standortMoeglich) return null;
     if (Platform.isWindows) {
       final ort = await DesktopImageTools.standort();
@@ -328,8 +334,9 @@ class NativeImageConverter {
     }
     if (!await isSupported()) return null;
     try {
-      final antwort =
-          await _channel.invokeMapMethod<String, dynamic>('currentLocation');
+      final antwort = await _channel.invokeMapMethod<String, dynamic>(
+        'currentLocation',
+      );
       if (antwort == null) return null;
       final breite = (antwort['breite'] as num?)?.toDouble();
       final laenge = (antwort['laenge'] as num?)?.toDouble();
@@ -366,8 +373,11 @@ class NativeImageConverter {
   }) async {
     final grenze = maxDimension ?? _ohneBegrenzung;
     if (_ueberWerkzeuge) {
-      return DesktopImageTools.convertToJpeg(file,
-          maxDimension: grenze, quality: (quality * 100).round());
+      return DesktopImageTools.convertToJpeg(
+        file,
+        maxDimension: grenze,
+        quality: (quality * 100).round(),
+      );
     }
     if (!await isSupported()) return null;
     try {
@@ -442,24 +452,27 @@ class NativeImageConverter {
     double? anteil,
   }) async {
     if (_ueberWerkzeuge) {
-      final r = await DesktopImageTools.videoThumbnail(file,
-          maxDimension: maxDimension, anteil: anteil);
+      final r = await DesktopImageTools.videoThumbnail(
+        file,
+        maxDimension: maxDimension,
+        anteil: anteil,
+      );
       return r == null ? null : VideoThumbnailResult(r.jpeg, r.dauerSekunden);
     }
     if (!await isSupported()) return null;
     try {
-      final result =
-          await _channel.invokeMethod<Map<Object?, Object?>>('videoThumbnail', {
-        'path': file.path,
-        'maxDimension': maxDimension,
-        'anteil': ?anteil,
-      });
+      final result = await _channel.invokeMethod<Map<Object?, Object?>>(
+        'videoThumbnail',
+        {'path': file.path, 'maxDimension': maxDimension, 'anteil': ?anteil},
+      );
       if (result == null) return null;
       final jpeg = result['jpeg'] as Uint8List?;
       if (jpeg == null) return null;
       final duration = (result['durationSeconds'] as num?)?.toDouble();
       return VideoThumbnailResult(
-          jpeg, (duration != null && duration > 0) ? duration : null);
+        jpeg,
+        (duration != null && duration > 0) ? duration : null,
+      );
     } on PlatformException {
       return null;
     } on MissingPluginException {
@@ -479,7 +492,9 @@ class NativeImageConverter {
     if (!await isSupported()) return null;
     try {
       final roh = await _channel.invokeMapMethod<String, Object?>(
-          'recognizeText', {'path': file.path});
+        'recognizeText',
+        {'path': file.path},
+      );
       if (roh == null) return null;
       final stellen = roh['stellen'];
       if (stellen is! List) return const [];
@@ -504,10 +519,12 @@ class NativeImageConverter {
     required String outputPath,
   }) async {
     if (_ueberWerkzeuge) {
-      return DesktopImageTools.trimVideo(file,
-          startSekunden: startSeconds,
-          endSekunden: endSeconds,
-          zielPfad: outputPath);
+      return DesktopImageTools.trimVideo(
+        file,
+        startSekunden: startSeconds,
+        endSekunden: endSeconds,
+        zielPfad: outputPath,
+      );
     }
     if (!await isSupported()) return false;
     try {
@@ -612,24 +629,27 @@ class DevelopAdjustments {
   /// übertragen: Die native Seite lässt den jeweiligen Filter dann weg,
   /// statt eine Identität durch Core Image zu schicken.
   Map<String, Object?> toChannelMap() => {
-        'exposure': exposure,
-        'temperature': temperature,
-        'tint': tint,
-        'contrast': contrast,
-        'shadows': shadows,
-        'highlights': highlights,
-        'sharpness': sharpness,
-        'noiseReduction': noiseReduction,
-        'clarity': clarity,
-        'vignette': vignette,
-        'lensCorrectionEnabled': lensCorrectionEnabled,
-        if (!toneCurve.istNeutral) 'toneCurveLut': buildCurveLut(toneCurve),
-        if (brauchtFarbwuerfel) ...{
-          'colorCube':
-              buildColorCube(colorMixer, lut: lut, lutStaerke: lutStrength),
-          'colorCubeSize': colorCubeSize,
-        },
-      };
+    'exposure': exposure,
+    'temperature': temperature,
+    'tint': tint,
+    'contrast': contrast,
+    'shadows': shadows,
+    'highlights': highlights,
+    'sharpness': sharpness,
+    'noiseReduction': noiseReduction,
+    'clarity': clarity,
+    'vignette': vignette,
+    'lensCorrectionEnabled': lensCorrectionEnabled,
+    if (!toneCurve.istNeutral) 'toneCurveLut': buildCurveLut(toneCurve),
+    if (brauchtFarbwuerfel) ...{
+      'colorCube': buildColorCube(
+        colorMixer,
+        lut: lut,
+        lutStaerke: lutStrength,
+      ),
+      'colorCubeSize': colorCubeSize,
+    },
+  };
 }
 
 /// Ein vollständiger Satz Entwicklungswerte, losgelöst von einem Foto.
@@ -678,11 +698,13 @@ class MaskAdjustmentLayer {
   final String maskFilePath;
   final DevelopAdjustments adjustments;
 
-  const MaskAdjustmentLayer(
-      {required this.maskFilePath, required this.adjustments});
+  const MaskAdjustmentLayer({
+    required this.maskFilePath,
+    required this.adjustments,
+  });
 
   Map<String, Object?> toChannelMap() => {
-        'path': maskFilePath,
-        ...adjustments.toChannelMap(),
-      };
+    'path': maskFilePath,
+    ...adjustments.toChannelMap(),
+  };
 }

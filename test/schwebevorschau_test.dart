@@ -94,11 +94,17 @@ void main() {
 
   group('Welche Kachel überhaupt ein Video trägt', () {
     test('ein Video: es selbst', () {
-      expect(schwebeVideoId(Rasterzeile.aus(_asset(id: 'v1', type: 'VIDEO'))), 'v1');
+      expect(
+        schwebeVideoId(Rasterzeile.aus(_asset(id: 'v1', type: 'VIDEO'))),
+        'v1',
+      );
     });
 
     test('ein Live Photo: die verknüpfte Hälfte', () {
-      expect(schwebeVideoId(Rasterzeile.aus(_asset(id: 'p1', linkedAssetId: 'v9'))), 'v9');
+      expect(
+        schwebeVideoId(Rasterzeile.aus(_asset(id: 'p1', linkedAssetId: 'v9'))),
+        'v9',
+      );
     });
 
     test('ein gewöhnliches Foto: nichts', () {
@@ -108,11 +114,20 @@ void main() {
     test('eine gesperrte Aufnahme bleibt still', () {
       // Sie abzuspielen hiesse, sie nebenbei zu entschlüsseln – und der
       // Klartext bliebe liegen, weil niemand ihn angefordert hat.
-      expect(schwebeVideoId(Rasterzeile.aus(_asset(id: 'v1', type: 'VIDEO', isLocked: true))),
-          isNull);
       expect(
-          schwebeVideoId(Rasterzeile.aus(_asset(id: 'p1', linkedAssetId: 'v9', isLocked: true))),
-          isNull);
+        schwebeVideoId(
+          Rasterzeile.aus(_asset(id: 'v1', type: 'VIDEO', isLocked: true)),
+        ),
+        isNull,
+      );
+      expect(
+        schwebeVideoId(
+          Rasterzeile.aus(
+            _asset(id: 'p1', linkedAssetId: 'v9', isLocked: true),
+          ),
+        ),
+        isNull,
+      );
     });
   });
 
@@ -131,24 +146,29 @@ void main() {
     Future<_Mitschrift> baue(WidgetTester tester, AssetData asset) async {
       final mitschrift = _Mitschrift();
       addTearDown(mitschrift.dispose);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: SchwebevorschauScope(
-            vorschau: mitschrift,
-            child: Center(
-              child: SizedBox(
-                width: 200,
-                height: 200,
-                child: AssetThumbnailTile(
-                    asset: Rasterzeile.aus(asset), paths: paths, onTap: () {}),
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: SchwebevorschauScope(
+              vorschau: mitschrift,
+              child: Center(
+                child: SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: AssetThumbnailTile(
+                    asset: Rasterzeile.aus(asset),
+                    paths: paths,
+                    onTap: () {},
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       return mitschrift;
     }
 
@@ -163,8 +183,9 @@ void main() {
       return geste;
     }
 
-    testWidgets('startet erst, wenn der Zeiger lange genug steht',
-        (tester) async {
+    testWidgets('startet erst, wenn der Zeiger lange genug steht', (
+      tester,
+    ) async {
       final mitschrift = await baue(tester, _asset(id: 'v1', type: 'VIDEO'));
       await zeigeAuf(tester);
 
@@ -178,8 +199,10 @@ void main() {
     });
 
     testWidgets('ein Live Photo läuft genauso an', (tester) async {
-      final mitschrift =
-          await baue(tester, _asset(id: 'p1', linkedAssetId: 'v9'));
+      final mitschrift = await baue(
+        tester,
+        _asset(id: 'p1', linkedAssetId: 'v9'),
+      );
       await zeigeAuf(tester);
       await tester.pump(schwebeVerzoegerung);
       expect(mitschrift.gestartet, ['p1']);
@@ -234,25 +257,29 @@ void main() {
       expect(mitschrift.beendet, ['v1']);
     });
 
-    testWidgets('ohne Bereich darüber verhält sich die Kachel wie zuvor',
-        (tester) async {
+    testWidgets('ohne Bereich darüber verhält sich die Kachel wie zuvor', (
+      tester,
+    ) async {
       // Alle zwanzig anderen Aufrufer der Kachel gehen diesen Weg, wenn
       // sie ausserhalb der App gebaut werden - etwa in einem Test.
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: SizedBox(
-            width: 200,
-            height: 200,
-            child: AssetThumbnailTile(
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 200,
+              child: AssetThumbnailTile(
                 asset: Rasterzeile.aus(_asset(id: 'v1', type: 'VIDEO')),
                 paths: paths,
-                onTap: () {}),
+                onTap: () {},
+              ),
+            ),
           ),
         ),
-      ));
+      );
       final geste = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await geste.addPointer(location: Offset.zero);
       addTearDown(geste.removePointer);

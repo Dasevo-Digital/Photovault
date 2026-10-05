@@ -12,13 +12,21 @@ void main() {
     test('nach oben wischen vergroessert', () {
       // In Flutter waechst y nach unten: Ein Wisch nach oben ist negativ.
       final neu = bildWischZoom(
-          startZoom: 1, wischWegY: -200, kleinster: 0.1, groesster: 8);
+        startZoom: 1,
+        wischWegY: -200,
+        kleinster: 0.1,
+        groesster: 8,
+      );
       expect(neu, greaterThan(1));
     });
 
     test('nach unten wischen verkleinert', () {
       final neu = bildWischZoom(
-          startZoom: 2, wischWegY: 200, kleinster: 0.1, groesster: 8);
+        startZoom: 2,
+        wischWegY: 200,
+        kleinster: 0.1,
+        groesster: 8,
+      );
       expect(neu, lessThan(2));
     });
 
@@ -27,28 +35,51 @@ void main() {
       // soll bei 1,0 dasselbe Verhaeltnis ergeben wie bei 4,0 - sonst
       // fuehlt sich die Geste weit hineingezoomt zaeh an.
       final vonEins = bildWischZoom(
-          startZoom: 1, wischWegY: -100, kleinster: 0.01, groesster: 100);
+        startZoom: 1,
+        wischWegY: -100,
+        kleinster: 0.01,
+        groesster: 100,
+      );
       final vonVier = bildWischZoom(
-          startZoom: 4, wischWegY: -100, kleinster: 0.01, groesster: 100);
+        startZoom: 4,
+        wischWegY: -100,
+        kleinster: 0.01,
+        groesster: 100,
+      );
       expect(vonVier / 4, closeTo(vonEins / 1, 1e-9));
     });
 
     test('ein Wisch ohne Weg laesst alles, wie es ist', () {
       expect(
-          bildWischZoom(
-              startZoom: 1.7, wischWegY: 0, kleinster: 0.1, groesster: 8),
-          closeTo(1.7, 1e-9));
+        bildWischZoom(
+          startZoom: 1.7,
+          wischWegY: 0,
+          kleinster: 0.1,
+          groesster: 8,
+        ),
+        closeTo(1.7, 1e-9),
+      );
     });
 
     test('die Grenzen halten', () {
       expect(
-          bildWischZoom(
-              startZoom: 1, wischWegY: -5000, kleinster: 0.1, groesster: 8),
-          8);
+        bildWischZoom(
+          startZoom: 1,
+          wischWegY: -5000,
+          kleinster: 0.1,
+          groesster: 8,
+        ),
+        8,
+      );
       expect(
-          bildWischZoom(
-              startZoom: 1, wischWegY: 5000, kleinster: 0.1, groesster: 8),
-          0.1);
+        bildWischZoom(
+          startZoom: 1,
+          wischWegY: 5000,
+          kleinster: 0.1,
+          groesster: 8,
+        ),
+        0.1,
+      );
     });
   });
 

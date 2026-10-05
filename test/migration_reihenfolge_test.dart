@@ -18,7 +18,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('die Schritte in onUpgrade stehen aufsteigend', () {
     final quelle = File('lib/db/database.dart');
-    expect(quelle.existsSync(), isTrue, reason: 'aus dem Projektordner starten');
+    expect(
+      quelle.existsSync(),
+      isTrue,
+      reason: 'aus dem Projektordner starten',
+    );
     final text = quelle.readAsStringSync();
 
     final anfang = text.indexOf('onUpgrade: (m, from, to) async {');
@@ -30,15 +34,22 @@ void main() {
         .toList();
 
     expect(nummern, isNotEmpty);
-    expect(nummern, List.of(nummern)..sort(),
-        reason: 'Ein neuer Schritt gehört ans ENDE der Kette, nicht an den '
-            'Anfang: Er darf voraussetzen, was die niedrigeren angelegt '
-            'haben.');
+    expect(
+      nummern,
+      List.of(nummern)..sort(),
+      reason:
+          'Ein neuer Schritt gehört ans ENDE der Kette, nicht an den '
+          'Anfang: Er darf voraussetzen, was die niedrigeren angelegt '
+          'haben.',
+    );
     // Und lückenlos: Eine übersprungene Nummer wäre eine Fassung, für
     // die niemand etwas tut – eine stille Lücke im Aufstiegsweg.
     for (var i = 1; i < nummern.length; i++) {
-      expect(nummern[i], nummern[i - 1] + 1,
-          reason: 'zwischen ${nummern[i - 1]} und ${nummern[i]}');
+      expect(
+        nummern[i],
+        nummern[i - 1] + 1,
+        reason: 'zwischen ${nummern[i - 1]} und ${nummern[i]}',
+      );
     }
   });
 }

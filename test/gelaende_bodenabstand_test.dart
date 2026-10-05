@@ -56,8 +56,7 @@ void main() {
   test('reicht auch die steilste Neigung nicht, kommt sie trotzdem', () {
     final k = kamera();
     // Ein Boden weit ueber allem, was die Kamera erreichen kann.
-    final gehoben =
-        ueberDemBoden(k, hoeheBei: (x, y) => 100000, abstand: 50);
+    final gehoben = ueberDemBoden(k, hoeheBei: (x, y) => 100000, abstand: 50);
     expect(gehoben.neigung, closeTo(1.45, 1e-9));
   });
 

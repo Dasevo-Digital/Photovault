@@ -8,7 +8,10 @@ import '../state/library_state.dart';
 /// Nennt beim Namen, was läuft: „es läuft noch etwas" allein liesse offen,
 /// ob es um Sekunden oder um eine Stunde geht. Gibt `true` zurück, wenn
 /// trotzdem beendet werden soll.
-Future<bool> zeigeBeendenFrage(BuildContext context, LibraryState library) async {
+Future<bool> zeigeBeendenFrage(
+  BuildContext context,
+  LibraryState library,
+) async {
   final t = AppTexte.of(context);
 
   final offen = <String>[
@@ -29,10 +32,12 @@ Future<bool> zeigeBeendenFrage(BuildContext context, LibraryState library) async
           for (final name in offen)
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
-              child: Text('• $name',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      )),
+              child: Text(
+                '• $name',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
         ],
       ),

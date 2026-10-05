@@ -8,10 +8,10 @@ import 'package:photo_vault/services/native_image_converter.dart';
 
 /// Baut den Kopf eines ISO-BMFF-Kastens: vier Byte Länge, `ftyp`, Marke.
 Uint8List bmff(String marke) => Uint8List.fromList([
-      0x00, 0x00, 0x00, 0x18, //
-      ...'ftyp'.codeUnits,
-      ...marke.codeUnits,
-    ]);
+  0x00, 0x00, 0x00, 0x18, //
+  ...'ftyp'.codeUnits,
+  ...marke.codeUnits,
+]);
 
 void main() {
   group('kennungAus', () {
@@ -28,7 +28,15 @@ void main() {
     });
 
     test('kennt die Marken der HEIF-Familie', () {
-      for (final marke in ['heic', 'heix', 'heim', 'heis', 'hevc', 'mif1', 'msf1']) {
+      for (final marke in [
+        'heic',
+        'heix',
+        'heim',
+        'heis',
+        'hevc',
+        'mif1',
+        'msf1',
+      ]) {
         expect(kennungAus(bmff(marke)), '.heic', reason: marke);
       }
       expect(kennungAus(bmff('avif')), '.avif');
@@ -45,7 +53,10 @@ void main() {
 
     test('erkennt die übrigen gängigen Bildformate', () {
       expect(kennungAus([0xFF, 0xD8, 0xFF, 0xE0]), '.jpg');
-      expect(kennungAus([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), '.png');
+      expect(
+        kennungAus([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+        '.png',
+      );
       expect(kennungAus('GIF89a'.codeUnits), '.gif');
       expect(kennungAus([0x42, 0x4D, 0x00, 0x00]), '.bmp');
       expect(
@@ -56,7 +67,10 @@ void main() {
 
     test('RIFF allein ist noch kein WebP', () {
       // Eine WAV-Datei fängt genauso an.
-      expect(kennungAus([...'RIFF'.codeUnits, 0, 0, 0, 0, ...'WAVE'.codeUnits]), isNull);
+      expect(
+        kennungAus([...'RIFF'.codeUnits, 0, 0, 0, 0, ...'WAVE'.codeUnits]),
+        isNull,
+      );
     });
 
     test('schweigt bei TIFF – dort steckt jedes RAW-Format mit drin', () {
@@ -83,46 +97,68 @@ void main() {
     });
     tearDown(() async => ordner.delete(recursive: true));
 
-    test('liest die Bytes von der Platte, wenn sie nicht schon da sind', () async {
-      final datei = File('${ordner.path}/heisst-so.jpg');
-      // Absichtlich mehr als [kennungBytes], damit belegt ist, dass ein
-      // Teilstück genügt.
-      await datei.writeAsBytes([...bmff('heic'), ...List.filled(4096, 0)]);
-      expect(await ImportService.inhaltskennung(datei, null), '.heic');
-    });
+    test(
+      'liest die Bytes von der Platte, wenn sie nicht schon da sind',
+      () async {
+        final datei = File('${ordner.path}/heisst-so.jpg');
+        // Absichtlich mehr als [kennungBytes], damit belegt ist, dass ein
+        // Teilstück genügt.
+        await datei.writeAsBytes([...bmff('heic'), ...List.filled(4096, 0)]);
+        expect(await ImportService.inhaltskennung(datei, null), '.heic');
+      },
+    );
 
-    test('nimmt die schon gelesenen Bytes und fasst die Platte nicht an', () async {
-      // Die Datei gibt es gar nicht – käme die Antwort von der Platte,
-      // stünde hier `null`.
-      final gibtEsNicht = File('${ordner.path}/nirgends.jpg');
-      expect(
-        await ImportService.inhaltskennung(gibtEsNicht, bmff('avif')),
-        '.avif',
-      );
-    });
+    test(
+      'nimmt die schon gelesenen Bytes und fasst die Platte nicht an',
+      () async {
+        // Die Datei gibt es gar nicht – käme die Antwort von der Platte,
+        // stünde hier `null`.
+        final gibtEsNicht = File('${ordner.path}/nirgends.jpg');
+        expect(
+          await ImportService.inhaltskennung(gibtEsNicht, bmff('avif')),
+          '.avif',
+        );
+      },
+    );
 
-    test('eine fehlende Datei ist keine Ausnahme, sondern keine Auskunft', () async {
-      expect(await ImportService.inhaltskennung(File('${ordner.path}/weg.jpg'), null), isNull);
-    });
+    test(
+      'eine fehlende Datei ist keine Ausnahme, sondern keine Auskunft',
+      () async {
+        expect(
+          await ImportService.inhaltskennung(
+            File('${ordner.path}/weg.jpg'),
+            null,
+          ),
+          isNull,
+        );
+      },
+    );
 
-    test('die Weiche: der Inhalt schickt die Datei auf den nativen Weg', () async {
-      // Das ist die Aussage, um die es geht. Die Endung `.jpg` steht
-      // NICHT in [heicAndRawExtensions] – die erkannte Kennung schon,
-      // und nur deshalb wird umgewandelt statt direkt dekodiert.
-      final datei = File('${ordner.path}/FullSizeRender - Kopie.jpg');
-      await datei.writeAsBytes(bmff('heic'));
-      expect(heicAndRawExtensions.contains('.jpg'), isFalse);
-      expect(
-        heicAndRawExtensions.contains(await ImportService.inhaltskennung(datei, null)),
-        isTrue,
-      );
-    });
+    test(
+      'die Weiche: der Inhalt schickt die Datei auf den nativen Weg',
+      () async {
+        // Das ist die Aussage, um die es geht. Die Endung `.jpg` steht
+        // NICHT in [heicAndRawExtensions] – die erkannte Kennung schon,
+        // und nur deshalb wird umgewandelt statt direkt dekodiert.
+        final datei = File('${ordner.path}/FullSizeRender - Kopie.jpg');
+        await datei.writeAsBytes(bmff('heic'));
+        expect(heicAndRawExtensions.contains('.jpg'), isFalse);
+        expect(
+          heicAndRawExtensions.contains(
+            await ImportService.inhaltskennung(datei, null),
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('ein echtes JPEG bleibt auf dem direkten Weg', () async {
       final datei = File('${ordner.path}/echt.jpg');
       await datei.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0, ...List.filled(64, 0)]);
       expect(
-        heicAndRawExtensions.contains(await ImportService.inhaltskennung(datei, null)),
+        heicAndRawExtensions.contains(
+          await ImportService.inhaltskennung(datei, null),
+        ),
         isFalse,
       );
     });

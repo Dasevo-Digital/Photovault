@@ -20,20 +20,24 @@ void main() {
 
   group('Einlesen', () {
     test('liest Punkte mit Zeitstempel', () {
-      final spur = liesGpx(gpx(
-        '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}'
-        '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}',
-      ));
+      final spur = liesGpx(
+        gpx(
+          '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}'
+          '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}',
+        ),
+      );
       expect(spur, hasLength(2));
       expect(spur.first.breite, closeTo(52.5, 0.001));
       expect(spur.first.zeit, DateTime.utc(2024, 6, 3, 9));
     });
 
     test('sortiert nach Zeit', () {
-      final spur = liesGpx(gpx(
-        '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}'
-        '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}',
-      ));
+      final spur = liesGpx(
+        gpx(
+          '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}'
+          '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}',
+        ),
+      );
       expect(spur.first.zeit.hour, 9);
     });
 
@@ -45,18 +49,22 @@ void main() {
 
     test('nimmt auch Routen- und Wegpunkte', () {
       // Welches Programm welche Art schreibt, ist nicht vorherzusehen.
-      final spur = liesGpx('<?xml version="1.0"?><gpx>'
-          '<wpt lat="1" lon="2"><time>2024-06-03T09:00:00Z</time></wpt>'
-          '<rte><rtept lat="3" lon="4">'
-          '<time>2024-06-03T10:00:00Z</time></rtept></rte>'
-          '</gpx>');
+      final spur = liesGpx(
+        '<?xml version="1.0"?><gpx>'
+        '<wpt lat="1" lon="2"><time>2024-06-03T09:00:00Z</time></wpt>'
+        '<rte><rtept lat="3" lon="4">'
+        '<time>2024-06-03T10:00:00Z</time></rtept></rte>'
+        '</gpx>',
+      );
       expect(spur, hasLength(2));
     });
 
     test('Punkte ohne Zeit fallen weg, der Rest bleibt', () {
-      final spur = liesGpx(gpx(
-        '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}${punkt(52.6, 13.5, null)}',
-      ));
+      final spur = liesGpx(
+        gpx(
+          '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}${punkt(52.6, 13.5, null)}',
+        ),
+      );
       expect(spur, hasLength(1));
     });
 
@@ -64,27 +72,35 @@ void main() {
       // Ohne Zeit laesst sich nichts zuordnen; die Spur waere nur eine
       // Linie. Das gehoert gesagt, nicht stillschweigend uebergangen.
       expect(
-          () => liesGpx(gpx(punkt(52.5, 13.4, null))),
-          throwsA(isA<GpxFehler>()
-              .having((e) => e.grund, 'grund', GpxAbbruch.ohneZeit)));
+        () => liesGpx(gpx(punkt(52.5, 13.4, null))),
+        throwsA(
+          isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.ohneZeit),
+        ),
+      );
     });
 
     test('eine leere Datei wird abgelehnt', () {
       expect(
-          () => liesGpx('<?xml version="1.0"?><gpx></gpx>'),
-          throwsA(isA<GpxFehler>()
-              .having((e) => e.grund, 'grund', GpxAbbruch.leer)));
+        () => liesGpx('<?xml version="1.0"?><gpx></gpx>'),
+        throwsA(
+          isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.leer),
+        ),
+      );
     });
 
     test('etwas anderes als GPX wird abgelehnt', () {
       expect(
-          () => liesGpx('<?xml version="1.0"?><html><body/></html>'),
-          throwsA(isA<GpxFehler>()
-              .having((e) => e.grund, 'grund', GpxAbbruch.keinGpx)));
+        () => liesGpx('<?xml version="1.0"?><html><body/></html>'),
+        throwsA(
+          isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.keinGpx),
+        ),
+      );
       expect(
-          () => liesGpx('Das ist ein Brief.'),
-          throwsA(isA<GpxFehler>()
-              .having((e) => e.grund, 'grund', GpxAbbruch.keinGpx)));
+        () => liesGpx('Das ist ein Brief.'),
+        throwsA(
+          isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.keinGpx),
+        ),
+      );
     });
   });
 
@@ -92,10 +108,12 @@ void main() {
     // Zehn Minuten Abstand – so zeichnen Geraete wirklich auf. Eine
     // ganze Stunde laege ueber [gpxHoechsteLuecke], und dazwischen wird
     // absichtlich nicht gerechnet.
-    final spur = liesGpx(gpx(
-      '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
-      '${punkt(52.2, 13.0, '2024-06-03T09:10:00Z')}',
-    ));
+    final spur = liesGpx(
+      gpx(
+        '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
+        '${punkt(52.2, 13.0, '2024-06-03T09:10:00Z')}',
+      ),
+    );
 
     test('trifft einen Punkt genau', () {
       final ort = ortZurZeit(spur, DateTime.utc(2024, 6, 3, 9))!;
@@ -112,10 +130,12 @@ void main() {
       // Bei einer laengeren Luecke stand das Geraet still oder hatte
       // keinen Empfang – dazwischen zu rechnen hiesse, eine Bewegung zu
       // erfinden, die niemand aufgezeichnet hat.
-      final weit = liesGpx(gpx(
-        '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
-        '${punkt(48.0, 11.0, '2024-06-03T15:00:00Z')}',
-      ));
+      final weit = liesGpx(
+        gpx(
+          '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
+          '${punkt(48.0, 11.0, '2024-06-03T15:00:00Z')}',
+        ),
+      );
       expect(ortZurZeit(weit, DateTime.utc(2024, 6, 3, 12)), isNull);
     });
 
@@ -136,12 +156,23 @@ void main() {
 
   group('Der Zeitversatz', () {
     // Eine Spur von 09:00 bis 11:00 UTC, alle zehn Minuten ein Punkt.
-    final spur = liesGpx(gpx([
-      for (var m = 0; m <= 120; m += 10)
-        punkt(52.0 + m / 1000, 13.0,
-            DateTime.utc(2024, 6, 3, 9).add(Duration(minutes: m))
-                .toIso8601String()),
-    ].join()));
+    final spur = liesGpx(
+      gpx(
+        [
+          for (var m = 0; m <= 120; m += 10)
+            punkt(
+              52.0 + m / 1000,
+              13.0,
+              DateTime.utc(
+                2024,
+                6,
+                3,
+                9,
+              ).add(Duration(minutes: m)).toIso8601String(),
+            ),
+        ].join(),
+      ),
+    );
 
     test('findet die Zeitzone, die die meisten Fotos trifft', () {
       // EXIF schreibt ohne Zeitzone, GPX schreibt UTC. Die Kamera stand
@@ -165,15 +196,16 @@ void main() {
 
     test('ohne jeden Treffer bleibt es beim Nullversatz', () {
       // Ein Vorschlag von "irgendwas" waere schlechter als keiner.
-      expect(
-          besterVersatz(spur, [DateTime.utc(2020, 1, 1)]), Duration.zero);
+      expect(besterVersatz(spur, [DateTime.utc(2020, 1, 1)]), Duration.zero);
     });
 
     test('bei Gleichstand gewinnt der kleinere Versatz', () {
       // Wenn zwei Erklaerungen gleich viele Fotos treffen, ist die
       // harmlosere die wahrscheinlichere.
-      expect(besterVersatz(spur, [DateTime.utc(2024, 6, 3, 10)]),
-          Duration.zero);
+      expect(
+        besterVersatz(spur, [DateTime.utc(2024, 6, 3, 10)]),
+        Duration.zero,
+      );
     });
   });
 
@@ -181,10 +213,12 @@ void main() {
     // Zehn Minuten Abstand – so zeichnen Geraete wirklich auf. Eine
     // ganze Stunde laege ueber [gpxHoechsteLuecke], und dazwischen wird
     // absichtlich nicht gerechnet.
-    final spur = liesGpx(gpx(
-      '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
-      '${punkt(52.2, 13.0, '2024-06-03T09:10:00Z')}',
-    ));
+    final spur = liesGpx(
+      gpx(
+        '${punkt(52.0, 13.0, '2024-06-03T09:00:00Z')}'
+        '${punkt(52.2, 13.0, '2024-06-03T09:10:00Z')}',
+      ),
+    );
 
     test('ordnet zu, was sich zuordnen laesst', () {
       final ergebnis = verorteAusSpur(spur, [
@@ -197,11 +231,9 @@ void main() {
     });
 
     test('der Versatz wird angewandt', () {
-      final ergebnis = verorteAusSpur(
-        spur,
-        [(id: 'a', zeit: DateTime.utc(2024, 6, 3, 11, 5))],
-        versatz: const Duration(hours: -2),
-      );
+      final ergebnis = verorteAusSpur(spur, [
+        (id: 'a', zeit: DateTime.utc(2024, 6, 3, 11, 5)),
+      ], versatz: const Duration(hours: -2));
       expect(ergebnis, hasLength(1));
     });
   });
@@ -209,10 +241,12 @@ void main() {
   group('Die Höhe', () {
     test('wird gelesen, wo sie dasteht', () {
       // Bis zu dieser Stufe wurde `<ele>` gelesen und weggeworfen.
-      final spur = liesGpx(gpx(
-        '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z', hoehe: 340.5)}'
-        '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}',
-      ));
+      final spur = liesGpx(
+        gpx(
+          '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z', hoehe: 340.5)}'
+          '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}',
+        ),
+      );
       expect(spur.first.hoehe, closeTo(340.5, 0.01));
       // Und wo sie fehlt, steht null – keine erfundene Null, die wie
       // eine Messung aussähe.
@@ -222,35 +256,41 @@ void main() {
     test('alle Punkte, auch die ohne Zeit', () {
       // Für die Linie und das Profil taugt auch ein Punkt ohne Zeit; nur
       // zum Zuordnen von Fotos taugt er nicht.
-      final alle = liesGpxPunkte(gpx(
-        '${punkt(52.5, 13.4, null, hoehe: 100)}'
-        '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z', hoehe: 200)}',
-      ));
+      final alle = liesGpxPunkte(
+        gpx(
+          '${punkt(52.5, 13.4, null, hoehe: 100)}'
+          '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z', hoehe: 200)}',
+        ),
+      );
       expect(alle, hasLength(2));
       expect(alle.first.zeit, isNull);
       expect(alle.first.hoehe, 100);
       // liesGpx sieht davon nur einen.
       expect(
-          liesGpx(gpx(
+        liesGpx(
+          gpx(
             '${punkt(52.5, 13.4, null, hoehe: 100)}'
             '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z', hoehe: 200)}',
-          )),
-          hasLength(1));
+          ),
+        ),
+        hasLength(1),
+      );
     });
 
     test('die Reihenfolge der Datei bleibt', () {
       // Für eine Linie ist die aufgezeichnete Folge die Aussage – anders
       // als beim Zuordnen, wo nach Zeit sortiert wird.
-      final alle = liesGpxPunkte(gpx(
-        '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}'
-        '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}',
-      ));
+      final alle = liesGpxPunkte(
+        gpx(
+          '${punkt(52.6, 13.5, '2024-06-03T10:00:00Z')}'
+          '${punkt(52.5, 13.4, '2024-06-03T09:00:00Z')}',
+        ),
+      );
       expect(alle.first.breite, closeTo(52.6, 0.001));
     });
 
     test('eine Datei ganz ohne Punkte bleibt ein Fehler', () {
-      expect(() => liesGpxPunkte(gpx('')),
-          throwsA(isA<GpxFehler>()));
+      expect(() => liesGpxPunkte(gpx('')), throwsA(isA<GpxFehler>()));
     });
   });
 
@@ -258,8 +298,7 @@ void main() {
     test('ist die Summe der Luftlinien', () {
       // Vier Punkte im Abstand von je einem Kilometer nach Osten.
       final punkte = [
-        for (var i = 0; i < 4; i++)
-          (breite: 52.37, laenge: 9.73 + i / 68.0),
+        for (var i = 0; i < 4; i++) (breite: 52.37, laenge: 9.73 + i / 68.0),
       ];
       expect(spurlaengeKm(punkte), closeTo(3.0, 0.1));
     });
@@ -318,11 +357,12 @@ void main() {
 
       // Die Gegenprobe: ohne Glättung summiert dieselbe flache Runde
       // über hundert Höhenmeter, die es nie gab.
-      expect(hoehenbilanz(rauschen, glaettung: 1).aufstieg,
-          greaterThan(100));
+      expect(hoehenbilanz(rauschen, glaettung: 1).aufstieg, greaterThan(100));
       // Und ohne beides das Doppelte davon.
-      expect(hoehenbilanz(rauschen, glaettung: 1, schwelle: 0).aufstieg,
-          greaterThan(150));
+      expect(
+        hoehenbilanz(rauschen, glaettung: 1, schwelle: 0).aufstieg,
+        greaterThan(150),
+      );
     });
 
     test('das Glätten kürzt eine gleichmässige Steigung nicht', () {
@@ -345,13 +385,20 @@ void main() {
       // Eine fehlende Höhe als Null zu lesen ergäbe einen Absturz auf
       // Meereshöhe und einen Wiederaufstieg. Hier ohne Glättung, damit
       // der Test nur diese eine Sache prüft.
-      final bilanz =
-          hoehenbilanz([100.0, null, 150.0, null, 100.0], glaettung: 1);
+      final bilanz = hoehenbilanz([
+        100.0,
+        null,
+        150.0,
+        null,
+        100.0,
+      ], glaettung: 1);
       expect(bilanz.aufstieg, closeTo(50, 0.01));
       expect(bilanz.abstieg, closeTo(50, 0.01));
       // Genullt käme ein Absturz auf 0 und ein Aufstieg auf 150 heraus.
-      expect(hoehenbilanz([100.0, 0.0, 150.0, 0.0, 100.0], glaettung: 1).abstieg,
-          greaterThan(200));
+      expect(
+        hoehenbilanz([100.0, 0.0, 150.0, 0.0, 100.0], glaettung: 1).abstieg,
+        greaterThan(200),
+      );
     });
 
     test('ganz ohne Höhen kommt null heraus', () {
@@ -363,16 +410,16 @@ void main() {
 
   group('Die Kennzahlen einer Spur', () {
     List<Rohpunkt> spur({bool mitHoehe = true, bool mitZeit = true}) => [
-          for (var i = 0; i < 5; i++)
-            (
-              zeit: mitZeit
-                  ? DateTime.utc(2024, 6, 3, 9).add(Duration(minutes: i * 10))
-                  : null,
-              breite: 52.37,
-              laenge: 9.73 + i / 68.0,
-              hoehe: mitHoehe ? 100.0 + i * 20 : null,
-            ),
-        ];
+      for (var i = 0; i < 5; i++)
+        (
+          zeit: mitZeit
+              ? DateTime.utc(2024, 6, 3, 9).add(Duration(minutes: i * 10))
+              : null,
+          breite: 52.37,
+          laenge: 9.73 + i / 68.0,
+          hoehe: mitHoehe ? 100.0 + i * 20 : null,
+        ),
+    ];
 
     test('Zeitraum, Punktzahl und Länge', () {
       final z = spurkennzahlen(spur());
@@ -391,8 +438,7 @@ void main() {
       expect(z.punktzahl, 5);
     });
 
-    test('ohne Höhen ist der Aufstieg null – und das heisst nicht „flach"',
-        () {
+    test('ohne Höhen ist der Aufstieg null – und das heisst nicht „flach"', () {
       // Null Meter Aufstieg und „keine Höhenangabe" sind zweierlei: das
       // eine ist eine flache Runde, das andere ein Gerät ohne Barometer.
       expect(spurkennzahlen(spur(mitHoehe: false)).aufstieg, isNull);
@@ -438,11 +484,12 @@ void main() {
 
     test('ganz ohne Höhen bleibt das Profil leer', () {
       expect(
-          profilpunkte([
-            (breite: 52.37, laenge: 9.73, hoehe: null),
-            (breite: 52.37, laenge: 9.74, hoehe: null),
-          ]),
-          isEmpty);
+        profilpunkte([
+          (breite: 52.37, laenge: 9.73, hoehe: null),
+          (breite: 52.37, laenge: 9.74, hoehe: null),
+        ]),
+        isEmpty,
+      );
     });
   });
 }

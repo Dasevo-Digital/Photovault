@@ -63,8 +63,10 @@ List<Entwicklungswerkzeug> geaenderteWerkzeuge(
     if (anders) werkzeuge.add(w);
   }
 
-  pruefe(Entwicklungswerkzeug.belichtung,
-      _andersD(vorher.exposure, nachher.exposure));
+  pruefe(
+    Entwicklungswerkzeug.belichtung,
+    _andersD(vorher.exposure, nachher.exposure),
+  );
 
   // Der Weissabgleich ist ein Schalter UND zwei Regler. `null` heisst
   // „der Kamera überlassen"; von dort auf einen Wert zu wechseln ist ein
@@ -72,42 +74,70 @@ List<Entwicklungswerkzeug> geaenderteWerkzeuge(
   // denselben Namen tragen.
   final automatikVorher = vorher.temperature == null;
   final automatikNachher = nachher.temperature == null;
-  pruefe(Entwicklungswerkzeug.weissabgleich, automatikVorher != automatikNachher);
+  pruefe(
+    Entwicklungswerkzeug.weissabgleich,
+    automatikVorher != automatikNachher,
+  );
   if (!automatikVorher && !automatikNachher) {
-    pruefe(Entwicklungswerkzeug.temperatur,
-        _andersD(vorher.temperature!, nachher.temperature!));
-    pruefe(Entwicklungswerkzeug.tint,
-        _andersD(vorher.tint ?? 0, nachher.tint ?? 0));
+    pruefe(
+      Entwicklungswerkzeug.temperatur,
+      _andersD(vorher.temperature!, nachher.temperature!),
+    );
+    pruefe(
+      Entwicklungswerkzeug.tint,
+      _andersD(vorher.tint ?? 0, nachher.tint ?? 0),
+    );
   }
 
-  pruefe(Entwicklungswerkzeug.kontrast,
-      _andersD(vorher.contrast, nachher.contrast));
-  pruefe(Entwicklungswerkzeug.lichter,
-      _andersD(vorher.highlights, nachher.highlights));
-  pruefe(Entwicklungswerkzeug.schatten,
-      _andersD(vorher.shadows, nachher.shadows));
-  pruefe(Entwicklungswerkzeug.schaerfe,
-      _andersD(vorher.sharpness, nachher.sharpness));
-  pruefe(Entwicklungswerkzeug.rauschunterdrueckung,
-      _andersD(vorher.noiseReduction, nachher.noiseReduction));
-  pruefe(Entwicklungswerkzeug.klarheit,
-      _andersD(vorher.clarity, nachher.clarity));
-  pruefe(Entwicklungswerkzeug.vignettierung,
-      _andersD(vorher.vignette, nachher.vignette));
-  pruefe(Entwicklungswerkzeug.tonwertkurve,
-      vorher.toneCurve != nachher.toneCurve);
-  pruefe(Entwicklungswerkzeug.farbmischer,
-      vorher.colorMixer != nachher.colorMixer);
+  pruefe(
+    Entwicklungswerkzeug.kontrast,
+    _andersD(vorher.contrast, nachher.contrast),
+  );
+  pruefe(
+    Entwicklungswerkzeug.lichter,
+    _andersD(vorher.highlights, nachher.highlights),
+  );
+  pruefe(
+    Entwicklungswerkzeug.schatten,
+    _andersD(vorher.shadows, nachher.shadows),
+  );
+  pruefe(
+    Entwicklungswerkzeug.schaerfe,
+    _andersD(vorher.sharpness, nachher.sharpness),
+  );
+  pruefe(
+    Entwicklungswerkzeug.rauschunterdrueckung,
+    _andersD(vorher.noiseReduction, nachher.noiseReduction),
+  );
+  pruefe(
+    Entwicklungswerkzeug.klarheit,
+    _andersD(vorher.clarity, nachher.clarity),
+  );
+  pruefe(
+    Entwicklungswerkzeug.vignettierung,
+    _andersD(vorher.vignette, nachher.vignette),
+  );
+  pruefe(
+    Entwicklungswerkzeug.tonwertkurve,
+    vorher.toneCurve != nachher.toneCurve,
+  );
+  pruefe(
+    Entwicklungswerkzeug.farbmischer,
+    vorher.colorMixer != nachher.colorMixer,
+  );
   // Die Tabelle selbst wird nicht Wert für Wert verglichen – sie hat bis
   // zu 64³ Einträge. Ob eine da ist, wie sie heisst und wie stark sie
   // wirkt, sagt dasselbe.
   pruefe(
-      Entwicklungswerkzeug.farbtabelle,
-      (vorher.lut == null) != (nachher.lut == null) ||
-          vorher.lut?.titel != nachher.lut?.titel ||
-          _andersD(vorher.lutStrength, nachher.lutStrength));
-  pruefe(Entwicklungswerkzeug.objektivkorrektur,
-      vorher.lensCorrectionEnabled != nachher.lensCorrectionEnabled);
+    Entwicklungswerkzeug.farbtabelle,
+    (vorher.lut == null) != (nachher.lut == null) ||
+        vorher.lut?.titel != nachher.lut?.titel ||
+        _andersD(vorher.lutStrength, nachher.lutStrength),
+  );
+  pruefe(
+    Entwicklungswerkzeug.objektivkorrektur,
+    vorher.lensCorrectionEnabled != nachher.lensCorrectionEnabled,
+  );
 
   return werkzeuge;
 }

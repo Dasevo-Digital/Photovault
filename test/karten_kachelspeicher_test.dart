@@ -17,8 +17,11 @@ void main() {
     // Die kuerzeste beobachtete Haltbarkeit von OpenTopoMap lag bei rund
     // 3,5 Stunden. Alles darunter waere wirkungslos; ein Tag waere
     // besser, aber immer noch bei jedem zweiten Besuch teuer.
-    expect(kartenKachelFrische.inDays, greaterThanOrEqualTo(7),
-        reason: 'unter einer Woche greift die Massnahme kaum');
+    expect(
+      kartenKachelFrische.inDays,
+      greaterThanOrEqualTo(7),
+      reason: 'unter einer Woche greift die Massnahme kaum',
+    );
     // Nach oben ebenfalls begrenzt: Strassen aendern sich, und die
     // Kacheln sollen nicht auf Dauer veralten.
     expect(kartenKachelFrische.inDays, lessThanOrEqualTo(90));
@@ -30,8 +33,11 @@ void main() {
     // wenig: Die neun Gebiete der echten Bibliothek sind bis Stufe 14
     // rund 850 MB, und der Aufraeumer haette weggeworfen, was gerade
     // erst geholt wurde.
-    expect(kartenSpeicherGrenze, greaterThanOrEqualTo(2 * 1024 * 1024 * 1024),
-        reason: 'ein Vorrat muss hineinpassen, sonst ist er sinnlos');
+    expect(
+      kartenSpeicherGrenze,
+      greaterThanOrEqualTo(2 * 1024 * 1024 * 1024),
+      reason: 'ein Vorrat muss hineinpassen, sonst ist er sinnlos',
+    );
     // Eine Obergrenze braucht es trotzdem: Ohne sie waechst der
     // Zwischenspeicher unbegrenzt.
     expect(kartenSpeicherGrenze, lessThanOrEqualTo(8 * 1024 * 1024 * 1024));
@@ -58,7 +64,7 @@ void main() {
       final stellen = [
         for (final (pfad, inhalt) in quellen)
           if (inhalt.contains('BuiltInMapCachingProvider.getOrCreateInstance'))
-            pfad
+            pfad,
       ];
       expect(stellen, hasLength(1), reason: 'gefunden in: $stellen');
       expect(stellen.single, endsWith('mini_location_map.dart'));
@@ -72,7 +78,7 @@ void main() {
       // HTTP-Client. Deshalb gibt es genau ein Exemplar.
       final stellen = [
         for (final (pfad, inhalt) in quellen)
-          if (inhalt.contains('Nachfassanbieter(')) pfad
+          if (inhalt.contains('Nachfassanbieter(')) pfad,
       ];
       expect(stellen, hasLength(1), reason: 'gefunden in: $stellen');
       expect(stellen.single, endsWith('mini_location_map.dart'));
@@ -83,7 +89,7 @@ void main() {
       // einziges Mal wiederholt.
       final blanke = [
         for (final (pfad, inhalt) in quellen)
-          if (inhalt.contains('NetworkTileProvider(')) pfad
+          if (inhalt.contains('NetworkTileProvider(')) pfad,
       ];
       expect(blanke, isEmpty, reason: 'gefunden in: $blanke');
     });
@@ -94,9 +100,13 @@ void main() {
       // Zwischenspeicher, faende der Test oben trotzdem eine Stelle -
       // und es entstuende bei jedem Aufbau ein neuer Anbieter.
       final quelle = quellen
-          .firstWhere((q) => q.$1.endsWith('mini_location_map.dart')).$2;
-      expect(quelle, contains('_kachelAnbieter ??='),
-          reason: 'sonst ist es kein Einzelstueck, sondern eine Fabrik');
+          .firstWhere((q) => q.$1.endsWith('mini_location_map.dart'))
+          .$2;
+      expect(
+        quelle,
+        contains('_kachelAnbieter ??='),
+        reason: 'sonst ist es kein Einzelstueck, sondern eine Fabrik',
+      );
     });
 
     test('die Landschaft benutzt denselben Speicher', () {
@@ -106,12 +116,20 @@ void main() {
       // zweiten Oeffnen derselben Wanderung lud sie alles noch einmal,
       // und ohne Netz gar nichts.
       final quelle = quellen
-          .firstWhere((q) => q.$1.endsWith('gelaende_laden.dart')).$2;
-      expect(quelle, contains('kartenKachelspeicher()'),
-          reason: 'sonst geht die Landschaft am Speicher vorbei');
-      expect(quelle, contains('kachelNochmalVersuchen'),
-          reason: 'ein 404 von OpenTopoMap heisst „noch nicht gerendert" '
-              'und wurde hier zu einem dauerhaften Loch im Gelaende');
+          .firstWhere((q) => q.$1.endsWith('gelaende_laden.dart'))
+          .$2;
+      expect(
+        quelle,
+        contains('kartenKachelspeicher()'),
+        reason: 'sonst geht die Landschaft am Speicher vorbei',
+      );
+      expect(
+        quelle,
+        contains('kachelNochmalVersuchen'),
+        reason:
+            'ein 404 von OpenTopoMap heisst „noch nicht gerendert" '
+            'und wurde hier zu einem dauerhaften Loch im Gelaende',
+      );
     });
   });
 }

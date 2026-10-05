@@ -31,11 +31,13 @@ void main() {
         if (quelle[i] == ')') tiefe--;
         i++;
       }
-      treffer.add(_Aufruf(
-        zeile: '\n'.allMatches(quelle.substring(0, start)).length + 1,
-        rumpf: quelle.substring(start, i),
-        davor: quelle.substring(start < 60 ? 0 : start - 60, start),
-      ));
+      treffer.add(
+        _Aufruf(
+          zeile: '\n'.allMatches(quelle.substring(0, start)).length + 1,
+          rumpf: quelle.substring(start, i),
+          davor: quelle.substring(start < 60 ? 0 : start - 60, start),
+        ),
+      );
       ab = start + muster.length;
     }
     return treffer;
@@ -72,7 +74,8 @@ void main() {
     expect(
       ohne,
       isEmpty,
-      reason: 'Diese Stellen dekodieren eine Datei in ihrer vollen Grösse. '
+      reason:
+          'Diese Stellen dekodieren eine Datei in ihrer vollen Grösse. '
           'Ein Original der Prüfbibliothek misst 20383 × 4077 Punkte und '
           'belegt damit 317 MB. Entweder cacheWidth angeben oder '
           'begrenztesBild() benutzen:\n${ohne.join('\n')}',
@@ -88,8 +91,11 @@ void main() {
       'lib/screens/asset_viewer_screen.dart',
       'lib/widgets/panorama_360_view.dart',
     ]) {
-      expect(File(pfad).readAsStringSync(), contains('begrenztesBild('),
-          reason: '$pfad zeigt ein Original und braucht den Deckel');
+      expect(
+        File(pfad).readAsStringSync(),
+        contains('begrenztesBild('),
+        reason: '$pfad zeigt ein Original und braucht den Deckel',
+      );
     }
   });
 
@@ -138,8 +144,11 @@ void main() {
         ohneStufen.add(kachelbreite(fenster).round());
         mitStufen.add(dekodierbreite(kachelbreite(fenster), 1.0));
       }
-      expect(ohneStufen.length, greaterThan(15),
-          reason: 'so war es: fast jede Fensterbreite ein eigener Schlüssel');
+      expect(
+        ohneStufen.length,
+        greaterThan(15),
+        reason: 'so war es: fast jede Fensterbreite ein eigener Schlüssel',
+      );
       expect(mitStufen.length, 1);
     });
 
@@ -147,9 +156,11 @@ void main() {
       // Eine Stufe zu klein hiesse hochskalieren – sichtbar unscharf.
       for (final punkte in [1.0, 31.0, 32.0, 33.0, 148.0, 400.0]) {
         for (final dpr in [1.0, 2.0, 3.0]) {
-          expect(dekodierbreite(punkte, dpr),
-              greaterThanOrEqualTo((punkte * dpr).ceil()),
-              reason: '$punkte × $dpr');
+          expect(
+            dekodierbreite(punkte, dpr),
+            greaterThanOrEqualTo((punkte * dpr).ceil()),
+            reason: '$punkte × $dpr',
+          );
         }
       }
     });
@@ -169,26 +180,29 @@ void main() {
       expect(dekodierbreite(double.nan, 2), dekodierstufe);
     });
 
-    test('die beiden Stellen mit veränderlicher Breite gehen über die Stufen',
-        () {
-      // Gegenprobe: Alle anderen Stellen rechnen mit festen Kantenlängen
-      // und haben das Problem nicht. Diese zwei hängen am Fenster.
-      //
-      // Die Kachel geht seit der Verzerrungskorrektur über
-      // `deckendeDekodiermasse`, und das rundet seinerseits über
-      // [dekodierbreite] – beides zählt also.
-      for (final pfad in [
-        'lib/widgets/asset_thumbnail_tile.dart',
-        'lib/screens/face_review_screen.dart',
-      ]) {
-        final quelle = File(pfad).readAsStringSync();
-        expect(
+    test(
+      'die beiden Stellen mit veränderlicher Breite gehen über die Stufen',
+      () {
+        // Gegenprobe: Alle anderen Stellen rechnen mit festen Kantenlängen
+        // und haben das Problem nicht. Diese zwei hängen am Fenster.
+        //
+        // Die Kachel geht seit der Verzerrungskorrektur über
+        // `deckendeDekodiermasse`, und das rundet seinerseits über
+        // [dekodierbreite] – beides zählt also.
+        for (final pfad in [
+          'lib/widgets/asset_thumbnail_tile.dart',
+          'lib/screens/face_review_screen.dart',
+        ]) {
+          final quelle = File(pfad).readAsStringSync();
+          expect(
             quelle.contains('dekodierbreite(') ||
                 quelle.contains('deckendeDekodiermasse('),
             isTrue,
-            reason: '$pfad rechnet seine Zielbreite aus dem Layout');
-      }
-    });
+            reason: '$pfad rechnet seine Zielbreite aus dem Layout',
+          );
+        }
+      },
+    );
   });
 
   group('Der Bildspeicher', () {
@@ -199,25 +213,33 @@ void main() {
     test('steht auf gemessenen Grenzen', () {
       final vorherBytes = PaintingBinding.instance.imageCache.maximumSizeBytes;
       final vorherN = PaintingBinding.instance.imageCache.maximumSize;
-      addTearDown(() => PaintingBinding.instance.imageCache
-        ..maximumSizeBytes = vorherBytes
-        ..maximumSize = vorherN);
+      addTearDown(
+        () => PaintingBinding.instance.imageCache
+          ..maximumSizeBytes = vorherBytes
+          ..maximumSize = vorherN,
+      );
       bildspeicherEinrichten();
-      expect(PaintingBinding.instance.imageCache.maximumSizeBytes,
-          200 * 1024 * 1024);
+      expect(
+        PaintingBinding.instance.imageCache.maximumSizeBytes,
+        200 * 1024 * 1024,
+      );
       // Die Zahl der Bilder muss so gross sein, dass die Megabyte
       // entscheiden - sonst greift wieder sie zuerst, wie mit Flutters
       // Vorgabe von 1000 bei einfacher Pixeldichte.
-      expect(PaintingBinding.instance.imageCache.maximumSize,
-          greaterThan(200 * 1024 * 1024 ~/ (140 * 1024)));
+      expect(
+        PaintingBinding.instance.imageCache.maximumSize,
+        greaterThan(200 * 1024 * 1024 ~/ (140 * 1024)),
+      );
     });
 
     test('und der Start ruft es auf', () {
       // Eine Einstellung, die niemand vornimmt, ist keine. Genau so ist
       // in 1.9.6 ein Knopf ausgeliefert worden, den niemand druecken
       // konnte.
-      expect(File('lib/main.dart').readAsStringSync(),
-          contains('bildspeicherEinrichten()'));
+      expect(
+        File('lib/main.dart').readAsStringSync(),
+        contains('bildspeicherEinrichten()'),
+      );
     });
   });
 }

@@ -68,12 +68,15 @@ class Zoomsteuerung extends StatelessWidget {
             width: 40,
             height: 40,
             child: Center(
-              child: statt ??
-                  Icon(symbol,
-                      size: 20,
-                      color: beiDruck == null
-                          ? farben.onSurfaceVariant.withValues(alpha: 0.4)
-                          : farben.onSurfaceVariant),
+              child:
+                  statt ??
+                  Icon(
+                    symbol,
+                    size: 20,
+                    color: beiDruck == null
+                        ? farben.onSurfaceVariant.withValues(alpha: 0.4)
+                        : farben.onSurfaceVariant,
+                  ),
             ),
           ),
         ),
@@ -88,20 +91,23 @@ class Zoomsteuerung extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           knopf(
-              symbol: Icons.add,
-              hinweis: t.karteHineinzoomen,
-              beiDruck: beiNaeher),
+            symbol: Icons.add,
+            hinweis: t.karteHineinzoomen,
+            beiDruck: beiNaeher,
+          ),
           Divider(height: 1, thickness: 1, color: farben.outlineVariant),
           knopf(
-              symbol: Icons.remove,
-              hinweis: t.karteHerauszoomen,
-              beiDruck: beiWeiter),
+            symbol: Icons.remove,
+            hinweis: t.karteHerauszoomen,
+            beiDruck: beiWeiter,
+          ),
           if (beiEinpassen != null) ...[
             Divider(height: 1, thickness: 1, color: farben.outlineVariant),
             knopf(
-                symbol: Icons.fit_screen_outlined,
-                hinweis: t.zoomEinpassen,
-                beiDruck: beiEinpassen),
+              symbol: Icons.fit_screen_outlined,
+              hinweis: t.zoomEinpassen,
+              beiDruck: beiEinpassen,
+            ),
           ],
           if (beiEreignisse != null) ...[
             Divider(height: 1, thickness: 1, color: farben.outlineVariant),
@@ -125,8 +131,10 @@ class Zoomsteuerung extends StatelessWidget {
               beiDruck: standortLaeuft ? null : beiStandort,
               statt: standortLaeuft
                   ? const SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : null,
             ),
           ],

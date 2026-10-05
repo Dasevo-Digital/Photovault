@@ -20,22 +20,27 @@ void main() {
 
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('pv_kachel_');
-    paths =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
   });
   tearDown(() => temp.deleteSync(recursive: true));
 
   Future<AppTexte> texte(WidgetTester tester) async {
     late AppTexte t;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Builder(builder: (context) {
-        t = AppTexte.of(context);
-        return const SizedBox.shrink();
-      }),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            t = AppTexte.of(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
     return t;
   }
 
@@ -43,13 +48,15 @@ void main() {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(body: kind),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(body: kind),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -62,7 +69,7 @@ void main() {
           region: 'Latium',
           land: 'Italien',
           weitereOrte: 0,
-          aufnahmen: 12
+          aufnahmen: 12,
         ), sprache: 'de'),
         'Rom, Latium, Italien',
       );
@@ -78,7 +85,7 @@ void main() {
           region: null,
           land: null,
           weitereOrte: 0,
-          aufnahmen: 3
+          aufnahmen: 3,
         ), sprache: 'de'),
         isNull,
       );
@@ -93,14 +100,15 @@ void main() {
           region: null,
           land: 'Norwegen',
           weitereOrte: 0,
-          aufnahmen: 4
+          aufnahmen: 4,
         ), sprache: 'de'),
         'Oslo, Norwegen',
       );
     });
 
-    testWidgets('eine Region gleichen Namens steht nicht doppelt da',
-        (tester) async {
+    testWidgets('eine Region gleichen Namens steht nicht doppelt da', (
+      tester,
+    ) async {
       // Stadtstaaten: GeoNames führt Berlin als Ort UND als Region.
       // „Berlin, Berlin, Deutschland" sähe aus wie ein Fehler.
       final t = await texte(tester);
@@ -110,7 +118,7 @@ void main() {
           region: 'Berlin',
           land: 'Deutschland',
           weitereOrte: 0,
-          aufnahmen: 9
+          aufnahmen: 9,
         ), sprache: 'de'),
         'Berlin, Deutschland',
       );
@@ -125,7 +133,7 @@ void main() {
         region: null,
         land: 'Italien',
         weitereOrte: 4,
-        aufnahmen: 80
+        aufnahmen: 80,
       ), sprache: 'de');
       expect(zeile, contains('Rom, Italien'));
       expect(zeile, contains('4'));
@@ -211,7 +219,7 @@ void main() {
             (
               symbol: Icons.drive_file_rename_outline,
               text: 'Umbenennen',
-              tun: () => umbenannt++
+              tun: () => umbenannt++,
             ),
           ],
         ),
@@ -242,28 +250,33 @@ void main() {
   });
 
   group('das Raster', () {
-    testWidgets('legt im breiten Fenster mehrere Spalten nebeneinander',
-        (tester) async {
+    testWidgets('legt im breiten Fenster mehrere Spalten nebeneinander', (
+      tester,
+    ) async {
       // Der Sinn des Rasters: Auf einem 1200 Punkte breiten Fenster
       // stehen drei Kacheln in einer Reihe, nicht drei untereinander.
       await zeige(
         tester,
-        CustomScrollView(slivers: [
-          Kachelraster(kacheln: [
-            for (var i = 0; i < 6; i++)
-              Ortskachel(
-                key: ValueKey('k$i'),
-                bild: null,
-                paths: paths,
-                symbol: Icons.luggage_outlined,
-                name: 'Reise $i',
-                kennzeichen: '1 Nacht',
-                zeitraum: '2024',
-                ort: null,
-                onTippen: () {},
-              ),
-          ]),
-        ]),
+        CustomScrollView(
+          slivers: [
+            Kachelraster(
+              kacheln: [
+                for (var i = 0; i < 6; i++)
+                  Ortskachel(
+                    key: ValueKey('k$i'),
+                    bild: null,
+                    paths: paths,
+                    symbol: Icons.luggage_outlined,
+                    name: 'Reise $i',
+                    kennzeichen: '1 Nacht',
+                    zeitraum: '2024',
+                    ort: null,
+                    onTippen: () {},
+                  ),
+              ],
+            ),
+          ],
+        ),
       );
       final erste = tester.getTopLeft(find.text('Reise 0'));
       final zweite = tester.getTopLeft(find.text('Reise 1'));
@@ -277,23 +290,29 @@ void main() {
       // eine Zeile Text.
       await zeige(
         tester,
-        CustomScrollView(slivers: [
-          Kachelraster(kacheln: [
-            Ortskachel(
-              bild: null,
-              paths: paths,
-              symbol: Icons.luggage_outlined,
-              name: 'Einzeln',
-              kennzeichen: '1 Nacht',
-              zeitraum: '2024',
-              ort: null,
-              onTippen: () {},
+        CustomScrollView(
+          slivers: [
+            Kachelraster(
+              kacheln: [
+                Ortskachel(
+                  bild: null,
+                  paths: paths,
+                  symbol: Icons.luggage_outlined,
+                  name: 'Einzeln',
+                  kennzeichen: '1 Nacht',
+                  zeitraum: '2024',
+                  ort: null,
+                  onTippen: () {},
+                ),
+              ],
             ),
-          ]),
-        ]),
+          ],
+        ),
       );
-      expect(tester.getSize(find.byType(Card)).width,
-          lessThanOrEqualTo(kachelBreite));
+      expect(
+        tester.getSize(find.byType(Card)).width,
+        lessThanOrEqualTo(kachelBreite),
+      );
     });
   });
 
@@ -307,54 +326,65 @@ void main() {
     // Gefunden wurde er beim Nachrechnen, nicht beim Ansehen: Bei 340
     // Punkten Spaltenbreite kam der Inhalt auf 328 Punkte, die feste
     // Höhe stand auf 300. Im schmalen Testfenster fiel das nie auf.
-    Future<void> raster(WidgetTester tester, double breite,
-        double schrift) async {
+    Future<void> raster(
+      WidgetTester tester,
+      double breite,
+      double schrift,
+    ) async {
       tester.view.physicalSize = Size(breite, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(schrift)),
-          child: Scaffold(
-            body: CustomScrollView(slivers: [
-              Kachelraster(kacheln: [
-                for (var i = 0; i < 4; i++)
-                  Ortskachel(
-                    key: ValueKey('k$i'),
-                    bild: null,
-                    paths: paths,
-                    symbol: Icons.luggage_outlined,
-                    // Lang genug für zwei Zeilen, beides.
-                    name: 'Grosse Rundreise durch die Toskana im Sommer',
-                    kennzeichen: '14 Nächte',
-                    zeitraum: '2024–2025',
-                    ort: 'Castelnuovo di Garfagnana, Toskana, '
-                        'Italien · 11 weitere Orte',
-                    onTippen: () {},
-                    befehle: [
-                      (
-                        symbol: Icons.delete_outline,
-                        text: 'Entfernen',
-                        tun: () {}
-                      ),
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(schrift)),
+            child: Scaffold(
+              body: CustomScrollView(
+                slivers: [
+                  Kachelraster(
+                    kacheln: [
+                      for (var i = 0; i < 4; i++)
+                        Ortskachel(
+                          key: ValueKey('k$i'),
+                          bild: null,
+                          paths: paths,
+                          symbol: Icons.luggage_outlined,
+                          // Lang genug für zwei Zeilen, beides.
+                          name: 'Grosse Rundreise durch die Toskana im Sommer',
+                          kennzeichen: '14 Nächte',
+                          zeitraum: '2024–2025',
+                          ort:
+                              'Castelnuovo di Garfagnana, Toskana, '
+                              'Italien · 11 weitere Orte',
+                          onTippen: () {},
+                          befehle: [
+                            (
+                              symbol: Icons.delete_outline,
+                              text: 'Entfernen',
+                              tun: () {},
+                            ),
+                          ],
+                        ),
                     ],
                   ),
-              ]),
-            ]),
+                ],
+              ),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
     }
 
     for (final breite in [420.0, 760.0, 1200.0, 1800.0]) {
       for (final schrift in [1.0, 1.3, 1.8]) {
-        testWidgets('${breite.toInt()} Punkte breit, Schrift $schrift',
-            (tester) async {
+        testWidgets('${breite.toInt()} Punkte breit, Schrift $schrift', (
+          tester,
+        ) async {
           await raster(tester, breite, schrift);
           // Ein Überlauf meldet sich in Flutter als Ausnahme - die
           // fängt der Testlauf von selbst ab. Hier steht sie noch
@@ -399,20 +429,26 @@ void main() {
       // Stundenrechnung käme auf eine.
       expect(
         naechteZwischen(
-            von: DateTime(2024, 6, 7, 19), bis: DateTime(2024, 6, 9, 9)),
+          von: DateTime(2024, 6, 7, 19),
+          bis: DateTime(2024, 6, 9, 9),
+        ),
         2,
       );
       expect(
         naechteZwischen(
-            von: DateTime(2024, 6, 7, 8), bis: DateTime(2024, 6, 7, 20)),
+          von: DateTime(2024, 6, 7, 8),
+          bis: DateTime(2024, 6, 7, 20),
+        ),
         0,
       );
     });
 
     test('über den Jahreswechsel stehen zwei Jahre da', () {
       expect(jahresspanne(DateTime(2024, 6, 1), DateTime(2024, 6, 9)), '2024');
-      expect(jahresspanne(DateTime(2024, 12, 27), DateTime(2025, 1, 3)),
-          '2024–2025');
+      expect(
+        jahresspanne(DateTime(2024, 12, 27), DateTime(2025, 1, 3)),
+        '2024–2025',
+      );
     });
   });
 }

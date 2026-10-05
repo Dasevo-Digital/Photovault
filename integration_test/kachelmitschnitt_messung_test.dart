@@ -39,25 +39,30 @@ void main() {
     // Netz an – beim ersten Versuch standen deshalb lauter Nullen da.
     // Das ist genau das dokumentierte Verhalten des Mitschnitts, aber
     // eine Zoomfahrt lässt sich so nicht messen.
-    await tester.runAsync(() =>
-        BuiltInMapCachingProvider.getOrCreateInstance().destroy(deleteCache: true));
+    await tester.runAsync(
+      () => BuiltInMapCachingProvider.getOrCreateInstance().destroy(
+        deleteCache: true,
+      ),
+    );
     kartenSpeicherEinrichten();
     await tester.binding.setSurfaceSize(_fenster);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     final steuerung = MapController();
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: FlutterMap(
-          mapController: steuerung,
-          options: const MapOptions(
-            initialCenter: ll.LatLng(51.0, 10.0),
-            initialZoom: 5,
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlutterMap(
+            mapController: steuerung,
+            options: const MapOptions(
+              initialCenter: ll.LatLng(51.0, 10.0),
+              initialZoom: 5,
+            ),
+            children: const [Kachelschicht(stil: Kartenstil.topo)],
           ),
-          children: const [Kachelschicht(stil: Kartenstil.topo)],
         ),
       ),
-    ));
+    );
 
     Kachelmitschnitt.instanz.starte();
     addTearDown(Kachelmitschnitt.instanz.halteAn);
@@ -72,19 +77,21 @@ void main() {
       steuerung.move(const ll.LatLng(51.0, 10.0), stufe);
       await tester.pump();
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 900)));
+        () => Future<void>.delayed(const Duration(milliseconds: 900)),
+      );
       await tester.pump();
     }
     // Nachlauf: Was noch unterwegs ist, soll ankommen dürfen.
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(seconds: 4)));
+      () => Future<void>.delayed(const Duration(seconds: 4)),
+    );
     await tester.pump();
 
     final b = Kachelmitschnitt.instanz.bilanz;
     // ignore: avoid_print
-    print('\n=== Kachelmitschnitt ===\n${berichtAus(Kachelmitschnitt.instanz)
-        .split('\nAbrufe:\n')
-        .first}\n');
+    print(
+      '\n=== Kachelmitschnitt ===\n${berichtAus(Kachelmitschnitt.instanz).split('\nAbrufe:\n').first}\n',
+    );
 
     // Es ist eine Messung, keine Behauptung – belegt wird nur, dass das
     // Messgerät im gebauten Programm überhaupt etwas sieht. Die Zahlen

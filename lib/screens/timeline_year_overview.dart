@@ -39,29 +39,37 @@ class TimelineYearOverview extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) =>
-                      MonatsuebersichtScreen(library: library, jahr: year),
-                )),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MonatsuebersichtScreen(library: library, jahr: year),
+                  ),
+                ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text('$year',
-                            style: Theme.of(context).textTheme.titleMedium),
+                        child: Text(
+                          '$year',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                       ),
                       Semantics(
-                        label: AppTexte.of(context)
-                            .kalenderAnzahlFotos(counts[year]!),
+                        label: AppTexte.of(
+                          context,
+                        ).kalenderAnzahlFotos(counts[year]!),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.photo_outlined, size: 15),
                             const SizedBox(width: 3),
-                            Text('${counts[year]}',
-                                style: Theme.of(context).textTheme.bodySmall),
+                            Text(
+                              '${counts[year]}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ],
                         ),
                       ),

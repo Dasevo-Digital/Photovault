@@ -12,7 +12,10 @@ class GesichtsRueckmeldung {
   final bool bestaetigt;
   final double aehnlichkeit;
 
-  const GesichtsRueckmeldung({required this.bestaetigt, required this.aehnlichkeit});
+  const GesichtsRueckmeldung({
+    required this.bestaetigt,
+    required this.aehnlichkeit,
+  });
 }
 
 /// Ab wie vielen Entscheidungen überhaupt von der allgemeinen Schwelle
@@ -46,7 +49,10 @@ const maximaleAbweichung = 0.15;
 ///
 /// [allgemein] ist die global eingestellte Schwelle; sie ist zugleich
 /// Ausgangspunkt und Bezug für den Deckel.
-double leiteSchwelleAb(List<GesichtsRueckmeldung> rueckmeldungen, double allgemein) {
+double leiteSchwelleAb(
+  List<GesichtsRueckmeldung> rueckmeldungen,
+  double allgemein,
+) {
   if (rueckmeldungen.length < mindestEntscheidungen) return allgemein;
 
   double? niedrigsteBestaetigt;
@@ -76,7 +82,10 @@ double leiteSchwelleAb(List<GesichtsRueckmeldung> rueckmeldungen, double allgeme
     roh = math.max(allgemein, hoechsteAbgelehnt! + 0.01);
   }
 
-  return roh.clamp(allgemein - maximaleAbweichung, allgemein + maximaleAbweichung);
+  return roh.clamp(
+    allgemein - maximaleAbweichung,
+    allgemein + maximaleAbweichung,
+  );
 }
 
 /// Ob [rueckmeldungen] überhaupt zu einer Abweichung führen.
@@ -85,8 +94,13 @@ double leiteSchwelleAb(List<GesichtsRueckmeldung> rueckmeldungen, double allgeme
 /// benennen können muss: "noch zu wenige Entscheidungen" ist etwas anderes
 /// als "die Entscheidungen widersprechen sich", und beides etwas anderes
 /// als "angepasst".
-SchwellenHerkunft herkunft(List<GesichtsRueckmeldung> rueckmeldungen, double allgemein) {
-  if (rueckmeldungen.length < mindestEntscheidungen) return SchwellenHerkunft.zuWenigDaten;
+SchwellenHerkunft herkunft(
+  List<GesichtsRueckmeldung> rueckmeldungen,
+  double allgemein,
+) {
+  if (rueckmeldungen.length < mindestEntscheidungen) {
+    return SchwellenHerkunft.zuWenigDaten;
+  }
   final abgeleitet = leiteSchwelleAb(rueckmeldungen, allgemein);
   if (abgeleitet == allgemein) {
     // Kann zwei Gründe haben; unterschieden wird über die Überschneidung.

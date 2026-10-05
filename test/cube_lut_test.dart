@@ -46,8 +46,11 @@ void main() {
       ]) {
         final aus = lut.abtasten(punkt[0], punkt[1], punkt[2]);
         for (var k = 0; k < 3; k++) {
-          expect(aus[k], closeTo(punkt[k], 1e-5),
-              reason: 'bei $punkt, Kanal $k – Achsen vertauscht?');
+          expect(
+            aus[k],
+            closeTo(punkt[k], 1e-5),
+            reason: 'bei $punkt, Kanal $k – Achsen vertauscht?',
+          );
         }
       }
     });
@@ -66,8 +69,11 @@ void main() {
       }
       final lut = parseCubeLut(zeilen.join('\n'));
       expect(lut.abtasten(1, 0, 0)[0], closeTo(1, 1e-6));
-      expect(lut.abtasten(0, 0, 1)[0], closeTo(0, 1e-6),
-          reason: 'Blau darf den Rotkanal nicht steuern');
+      expect(
+        lut.abtasten(0, 0, 1)[0],
+        closeTo(0, 1e-6),
+        reason: 'Blau darf den Rotkanal nicht steuern',
+      );
     });
 
     test('Titel, Kommentare und Leerzeilen stören nicht', () {
@@ -91,8 +97,13 @@ ${identitaet(2)}
     test('ohne LUT_3D_SIZE wird abgelehnt', () {
       expect(
         () => parseCubeLut('0.0 0.0 0.0\n1.0 1.0 1.0'),
-        throwsA(isA<CubeAusnahme>()
-            .having((e) => e.grund, 'Grund', CubeFehler.keineGroesse)),
+        throwsA(
+          isA<CubeAusnahme>().having(
+            (e) => e.grund,
+            'Grund',
+            CubeFehler.keineGroesse,
+          ),
+        ),
       );
     });
 
@@ -102,8 +113,13 @@ ${identitaet(2)}
       // ohne Wirkung zu laden.
       expect(
         () => parseCubeLut('LUT_1D_SIZE 16\n0 0 0'),
-        throwsA(isA<CubeAusnahme>()
-            .having((e) => e.grund, 'Grund', CubeFehler.nurEindimensional)),
+        throwsA(
+          isA<CubeAusnahme>().having(
+            (e) => e.grund,
+            'Grund',
+            CubeFehler.nurEindimensional,
+          ),
+        ),
       );
     });
 
@@ -111,15 +127,23 @@ ${identitaet(2)}
       final zeilen = identitaet(4).split('\n')..removeLast();
       expect(
         () => parseCubeLut(zeilen.join('\n')),
-        throwsA(isA<CubeAusnahme>()
-            .having((e) => e.grund, 'Grund', CubeFehler.falscheZeilenzahl)),
+        throwsA(
+          isA<CubeAusnahme>().having(
+            (e) => e.grund,
+            'Grund',
+            CubeFehler.falscheZeilenzahl,
+          ),
+        ),
       );
     });
 
     test('eine unsinnige Kantenlänge wird abgelehnt', () {
       for (final n in ['0', '1', '9999', 'viele']) {
-        expect(() => parseCubeLut('LUT_3D_SIZE $n\n0 0 0'),
-            throwsA(isA<CubeAusnahme>()), reason: n);
+        expect(
+          () => parseCubeLut('LUT_3D_SIZE $n\n0 0 0'),
+          throwsA(isA<CubeAusnahme>()),
+          reason: n,
+        );
       }
     });
 
@@ -155,8 +179,11 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
   group('Hineinrechnen in den Würfel', () {
     test('eine Identitätstabelle ändert den Würfel nicht', () {
       final ohne = buildColorCube(ColorMixer.neutral, size: 8);
-      final mit = buildColorCube(ColorMixer.neutral,
-          size: 8, lut: parseCubeLut(identitaet(8)));
+      final mit = buildColorCube(
+        ColorMixer.neutral,
+        size: 8,
+        lut: parseCubeLut(identitaet(8)),
+      );
       for (var i = 0; i < ohne.length; i++) {
         expect(mit[i], closeTo(ohne[i], 1e-4), reason: 'Eintrag $i');
       }
@@ -167,8 +194,12 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
       // schwach zu sehen.
       final grau = parseCubeLut(_konstanteTabelle(2, 0.5));
       final ohne = buildColorCube(ColorMixer.neutral, size: 8);
-      final mit = buildColorCube(ColorMixer.neutral,
-          size: 8, lut: grau, lutStaerke: 0);
+      final mit = buildColorCube(
+        ColorMixer.neutral,
+        size: 8,
+        lut: grau,
+        lutStaerke: 0,
+      );
       expect(mit, orderedEquals(ohne));
     });
 
@@ -182,8 +213,12 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
 
     test('halbe Stärke liegt in der Mitte', () {
       final grau = parseCubeLut(_konstanteTabelle(2, 0.0));
-      final mit = buildColorCube(ColorMixer.neutral,
-          size: 4, lut: grau, lutStaerke: 0.5);
+      final mit = buildColorCube(
+        ColorMixer.neutral,
+        size: 4,
+        lut: grau,
+        lutStaerke: 0.5,
+      );
       // Eingang Weiss (letzte Stützstelle), Ziel Schwarz – erwartet 0,5.
       final letzterRot = mit.length - 4;
       expect(mit[letzterRot], closeTo(0.5, 1e-4));
@@ -191,8 +226,11 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
 
     test('der Alphawert bleibt 1', () {
       // Core Image setzt vorvervielfachte Daten voraus.
-      final mit = buildColorCube(ColorMixer.neutral,
-          size: 4, lut: parseCubeLut(_konstanteTabelle(2, 0.3)));
+      final mit = buildColorCube(
+        ColorMixer.neutral,
+        size: 4,
+        lut: parseCubeLut(_konstanteTabelle(2, 0.3)),
+      );
       for (var i = 3; i < mit.length; i += 4) {
         expect(mit[i], 1);
       }
@@ -204,61 +242,74 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
       final lut = parseCubeLut(identitaet(3));
       final wuerfel = buildColorCube(ColorMixer.neutral, size: 16, lut: lut);
       expect(wuerfel.length, 16 * 16 * 16 * 4);
-      expect(Float32List.fromList(wuerfel.sublist(0, 4)),
-          orderedEquals([0.0, 0.0, 0.0, 1.0]));
+      expect(
+        Float32List.fromList(wuerfel.sublist(0, 4)),
+        orderedEquals([0.0, 0.0, 0.0, 1.0]),
+      );
     });
   });
 
   group('Migration und Speicherung', () {
-    test('eine Datenbank von Schema 38 bekommt die Spalten nachgereicht',
-        () async {
-      final ordner = Directory.systemTemp.createTempSync('pv_lut_mig');
-      addTearDown(() => ordner.deleteSync(recursive: true));
-      final datei = File(pfad.join(ordner.path, 'alt.sqlite'));
+    test(
+      'eine Datenbank von Schema 38 bekommt die Spalten nachgereicht',
+      () async {
+        final ordner = Directory.systemTemp.createTempSync('pv_lut_mig');
+        addTearDown(() => ordner.deleteSync(recursive: true));
+        final datei = File(pfad.join(ordner.path, 'alt.sqlite'));
 
-      var alt = AppDatabase(NativeDatabase(datei));
-      await alt.into(alt.assets).insert(AssetsCompanion.insert(
-            id: 'a1',
-            originalFileName: 'a1.jpg',
-            relativePath: 'originals/a1.jpg',
-            checksum: 'a1',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-          ));
-      await alt.close();
+        var alt = AppDatabase(NativeDatabase(datei));
+        await alt
+            .into(alt.assets)
+            .insert(
+              AssetsCompanion.insert(
+                id: 'a1',
+                originalFileName: 'a1.jpg',
+                relativePath: 'originals/a1.jpg',
+                checksum: 'a1',
+                type: 'IMAGE',
+                fileCreatedAt: DateTime(2026, 1, 1),
+                importedAt: DateTime(2026, 1, 1),
+              ),
+            );
+        await alt.close();
 
-      final roh = sqlite.sqlite3.open(datei.path);
-      for (final tabelle in ['develop_settings', 'develop_history']) {
-        for (final spalte in ['clarity', 'vignette', 'lut_path', 'lut_strength']) {
-          roh.execute('ALTER TABLE $tabelle DROP COLUMN $spalte;');
+        final roh = sqlite.sqlite3.open(datei.path);
+        for (final tabelle in ['develop_settings', 'develop_history']) {
+          for (final spalte in [
+            'clarity',
+            'vignette',
+            'lut_path',
+            'lut_strength',
+          ]) {
+            roh.execute('ALTER TABLE $tabelle DROP COLUMN $spalte;');
+          }
         }
-      }
-      roh.execute('PRAGMA user_version = 38;');
-      roh.close();
+        roh.execute('PRAGMA user_version = 38;');
+        roh.close();
 
-      // Öffnen löst die Migration auf 39 aus.
-      final neu = AppDatabase(NativeDatabase(datei));
-      await neu.saveDevelopResult(
-        'a1',
-        settings: DevelopSettingsCompanion.insert(
-          assetId: 'a1',
-          clarity: const Value(0.4),
-          vignette: const Value(-0.3),
-          lutPath: const Value('luts/kodak.cube'),
-          lutStrength: const Value(0.8),
-          updatedAt: DateTime(2026, 2, 1),
-        ),
-        developedRelativePath: 'developed/a1.jpg',
-      );
-      final gespeichert = await neu.developSettingsForAsset('a1');
-      await neu.close();
+        // Öffnen löst die Migration auf 39 aus.
+        final neu = AppDatabase(NativeDatabase(datei));
+        await neu.saveDevelopResult(
+          'a1',
+          settings: DevelopSettingsCompanion.insert(
+            assetId: 'a1',
+            clarity: const Value(0.4),
+            vignette: const Value(-0.3),
+            lutPath: const Value('luts/kodak.cube'),
+            lutStrength: const Value(0.8),
+            updatedAt: DateTime(2026, 2, 1),
+          ),
+          developedRelativePath: 'developed/a1.jpg',
+        );
+        final gespeichert = await neu.developSettingsForAsset('a1');
+        await neu.close();
 
-      expect(gespeichert!.clarity, closeTo(0.4, 1e-9));
-      expect(gespeichert.vignette, closeTo(-0.3, 1e-9));
-      expect(gespeichert.lutPath, 'luts/kodak.cube');
-      expect(gespeichert.lutStrength, closeTo(0.8, 1e-9));
-    });
+        expect(gespeichert!.clarity, closeTo(0.4, 1e-9));
+        expect(gespeichert.vignette, closeTo(-0.3, 1e-9));
+        expect(gespeichert.lutPath, 'luts/kodak.cube');
+        expect(gespeichert.lutStrength, closeTo(0.8, 1e-9));
+      },
+    );
 
     test('vorhandene Zeilen bekommen unauffällige Vorgabewerte', () async {
       // Wer eine gespeicherte Entwicklung hat, darf nach dem Update kein
@@ -266,19 +317,25 @@ ${identitaet(2).split('\n').skip(2).join('\n')}
       // und die Stärke bei 1 (wirkungslos, solange kein Pfad gesetzt ist).
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'a1',
-            originalFileName: 'a1.jpg',
-            relativePath: 'originals/a1.jpg',
-            checksum: 'a1',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'a1',
+              originalFileName: 'a1.jpg',
+              relativePath: 'originals/a1.jpg',
+              checksum: 'a1',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 1, 1),
+              importedAt: DateTime(2026, 1, 1),
+            ),
+          );
       await db.saveDevelopResult(
         'a1',
         settings: DevelopSettingsCompanion.insert(
-            assetId: 'a1', updatedAt: DateTime(2026, 1, 1)),
+          assetId: 'a1',
+          updatedAt: DateTime(2026, 1, 1),
+        ),
         developedRelativePath: 'developed/a1.jpg',
       );
       final s = await db.developSettingsForAsset('a1');

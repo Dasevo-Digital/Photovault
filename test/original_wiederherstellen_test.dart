@@ -33,8 +33,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_zurueck_');
     db = AppDatabase(NativeDatabase.memory());
-    pfade =
-        await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    pfade = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
   });
 
   tearDown(() async {
@@ -66,40 +67,50 @@ void main() {
 
   Future<AssetData> aufnahme(String id, {String type = 'IMAGE'}) async {
     await datei('originals/$id.jpg', 'DAS ORIGINAL');
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'c_$id',
-          type: type,
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 1),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'c_$id',
+            type: type,
+            fileCreatedAt: DateTime(2026, 1, 1),
+            importedAt: DateTime(2026, 1, 1),
+          ),
+        );
     return hole(id);
   }
 
   Future<void> entwickle(String id) async {
     final pfad = await datei('developed/$id.jpg', 'ENTWICKELT');
-    await db.saveDevelopResult(id,
-        settings: DevelopSettingsCompanion.insert(
-          assetId: id,
-          exposure: const Value(0.5),
-          updatedAt: DateTime(2026, 2, 1),
-        ),
-        developedRelativePath: pfad);
-    await db.createDevelopMask(DevelopMasksCompanion.insert(
-      assetId: id,
-      maskRelativePath: await datei('masks/$id-1.png', 'MASKE'),
-      label: 'Himmel',
-      createdAt: DateTime(2026, 2, 1),
-    ));
+    await db.saveDevelopResult(
+      id,
+      settings: DevelopSettingsCompanion.insert(
+        assetId: id,
+        exposure: const Value(0.5),
+        updatedAt: DateTime(2026, 2, 1),
+      ),
+      developedRelativePath: pfad,
+    );
+    await db.createDevelopMask(
+      DevelopMasksCompanion.insert(
+        assetId: id,
+        maskRelativePath: await datei('masks/$id-1.png', 'MASKE'),
+        label: 'Himmel',
+        createdAt: DateTime(2026, 2, 1),
+      ),
+    );
   }
 
   test('eine unveraenderte Aufnahme hat nichts zurueckzunehmen', () async {
     final a = await aufnahme('a1');
     expect(bearbeitungsarten(a), isEmpty);
-    expect(await originalWiederherstellen(db: db, paths: pfade, asset: a),
-        isEmpty);
+    expect(
+      await originalWiederherstellen(db: db, paths: pfade, asset: a),
+      isEmpty,
+    );
   });
 
   test('die Entwicklung samt Masken faellt weg', () async {
@@ -108,8 +119,11 @@ void main() {
     final bearbeitet = await hole('a1');
     expect(bearbeitungsarten(bearbeitet), {Bearbeitungsart.entwickelt});
 
-    final genommen =
-        await originalWiederherstellen(db: db, paths: pfade, asset: bearbeitet);
+    final genommen = await originalWiederherstellen(
+      db: db,
+      paths: pfade,
+      asset: bearbeitet,
+    );
     expect(genommen, {Bearbeitungsart.entwickelt});
 
     final nachher = await hole('a1');
@@ -124,22 +138,33 @@ void main() {
 
   test('Restaurierung und Zuschnitt ebenso', () async {
     await aufnahme('v1', type: 'VIDEO');
-    await db.into(db.restoreJobs).insert(RestoreJobsCompanion.insert(
-          id: 'j1',
-          assetId: 'v1',
-          status: 'queued',
-          createdAt: DateTime(2026, 2, 1),
-        ));
+    await db
+        .into(db.restoreJobs)
+        .insert(
+          RestoreJobsCompanion.insert(
+            id: 'j1',
+            assetId: 'v1',
+            status: 'queued',
+            createdAt: DateTime(2026, 2, 1),
+          ),
+        );
     await db.completeRestoreJob(
-        'j1', 'v1', await datei('restored/v1.jpg', 'RESTAURIERT'));
-    await db.saveVideoTrim('v1',
-        startSeconds: 1,
-        endSeconds: 2,
-        trimmedRelativePath: await datei('trimmed/v1.mp4', 'GESCHNITTEN'));
+      'j1',
+      'v1',
+      await datei('restored/v1.jpg', 'RESTAURIERT'),
+    );
+    await db.saveVideoTrim(
+      'v1',
+      startSeconds: 1,
+      endSeconds: 2,
+      trimmedRelativePath: await datei('trimmed/v1.mp4', 'GESCHNITTEN'),
+    );
 
     final bearbeitet = await hole('v1');
-    expect(bearbeitungsarten(bearbeitet),
-        {Bearbeitungsart.restauriert, Bearbeitungsart.zugeschnitten});
+    expect(bearbeitungsarten(bearbeitet), {
+      Bearbeitungsart.restauriert,
+      Bearbeitungsart.zugeschnitten,
+    });
 
     await originalWiederherstellen(db: db, paths: pfade, asset: bearbeitet);
 
@@ -188,21 +213,23 @@ void main() {
       var lauf = 0;
       Future<void> zeige(AssetData a) async {
         lauf++;
-        await tester.pumpWidget(MaterialApp(
-          locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
-          supportedLocales: AppTexte.supportedLocales,
-          home: Scaffold(
-            body: AssetInfoSheet(
-              key: ValueKey(lauf),
-              asset: a,
-              db: db,
-              paths: pfade,
-              onUpdated: (_) {},
-              onClose: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppTexte.localizationsDelegates,
+            supportedLocales: AppTexte.supportedLocales,
+            home: Scaffold(
+              body: AssetInfoSheet(
+                key: ValueKey(lauf),
+                asset: a,
+                db: db,
+                paths: pfade,
+                onUpdated: (_) {},
+                onClose: () {},
+              ),
             ),
           ),
-        ));
+        );
         await takte();
       }
 
@@ -217,14 +244,18 @@ void main() {
       expect(find.textContaining('entwickelt'), findsOneWidget);
 
       // Und der Knopf daneben nimmt es zurueck - nach einer Rueckfrage.
-      await tester
-          .tapAt(tester.getCenter(find.byTooltip('Original wiederherstellen')));
+      await tester.tapAt(
+        tester.getCenter(find.byTooltip('Original wiederherstellen')),
+      );
       await takte();
       // Der Ja-Knopf traegt den Namen der Handlung. Stuende dort wie
       // ueberall sonst "Löschen", laese es sich, als werde das Original
       // geloescht.
-      await tester.tapAt(tester.getCenter(
-          find.widgetWithText(FilledButton, 'Original wiederherstellen')));
+      await tester.tapAt(
+        tester.getCenter(
+          find.widgetWithText(FilledButton, 'Original wiederherstellen'),
+        ),
+      );
       await takte();
 
       expect((await hole('a1')).developedRelativePath, isNull);
@@ -234,8 +265,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
       // Der eingebaute Kachelspeicher hält auf Windows seinen
       // Größenwächter offen, bis er ausdrücklich beendet wird.
-      await BuiltInMapCachingProvider.getOrCreateInstance()
-          .destroy(deleteCache: true);
+      await BuiltInMapCachingProvider.getOrCreateInstance().destroy(
+        deleteCache: true,
+      );
     });
   });
 
@@ -243,7 +275,10 @@ void main() {
     await aufnahme('a1');
     await entwickle('a1');
     await originalWiederherstellen(
-        db: db, paths: pfade, asset: await hole('a1'));
+      db: db,
+      paths: pfade,
+      asset: await hole('a1'),
+    );
 
     final original = pfade.absolute('originals/a1.jpg');
     expect(original.existsSync(), isTrue);

@@ -14,9 +14,13 @@ void main() {
       final route = reiseroute([
         for (var i = 0; i < 50; i++) p(41.900, 12.500, i % 24),
       ]);
-      expect(route, hasLength(1),
-          reason: 'auch der letzte Punkt faellt weg – er liegt dort, wo der '
-              'erste schon steht');
+      expect(
+        route,
+        hasLength(1),
+        reason:
+            'auch der letzte Punkt faellt weg – er liegt dort, wo der '
+            'erste schon steht',
+      );
     });
 
     test('behaelt weit auseinanderliegende Punkte', () {
@@ -42,10 +46,7 @@ void main() {
     });
 
     test('sortiert nach Zeit, nicht nach Eingabereihenfolge', () {
-      final route = reiseroute([
-        p(45.44, 12.32, 18),
-        p(41.90, 12.50, 9),
-      ]);
+      final route = reiseroute([p(45.44, 12.32, 18), p(41.90, 12.50, 9)]);
       expect(route.first.zeit.hour, 9);
     });
 
@@ -57,8 +58,10 @@ void main() {
 
   group('Die Tageskapitel', () {
     ({String id, DateTime zeit, String? stadt}) a(
-            String id, DateTime zeit, String? stadt) =>
-        (id: id, zeit: zeit, stadt: stadt);
+      String id,
+      DateTime zeit,
+      String? stadt,
+    ) => (id: id, zeit: zeit, stadt: stadt);
 
     test('teilen nach Kalendertagen', () {
       // Was um 23:50 aufgenommen wurde, gehoert zum 4. Juni und nicht zum
@@ -107,15 +110,19 @@ void main() {
   });
 
   group('aufenthaltsorte', () {
-    Aufenthaltsaufnahme a(String id, double breite, double laenge, int tag,
-            {String? stadt}) =>
-        (
-          id: id,
-          breite: breite,
-          laenge: laenge,
-          zeit: DateTime(2024, 6, tag),
-          stadt: stadt
-        );
+    Aufenthaltsaufnahme a(
+      String id,
+      double breite,
+      double laenge,
+      int tag, {
+      String? stadt,
+    }) => (
+      id: id,
+      breite: breite,
+      laenge: laenge,
+      zeit: DateTime(2024, 6, tag),
+      stadt: stadt,
+    );
 
     test('Aufnahmen derselben Stadt werden ein Pin', () {
       // Rom und der Vatikan sind zwei Kilometer auseinander.

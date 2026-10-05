@@ -142,8 +142,9 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
-    final datum =
-        DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm();
+    final datum = DateFormat.yMMMd(
+      Localizations.localeOf(context).toString(),
+    ).add_Hm();
     final spur = _spur;
 
     return Scaffold(
@@ -165,20 +166,22 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
           if (spur != null) ...[
             const SizedBox(height: AppSpacing.xl),
             Text(
-              t.gpxSpur(spur.length, datum.format(spur.first.zeit.toLocal()),
-                  datum.format(spur.last.zeit.toLocal())),
+              t.gpxSpur(
+                spur.length,
+                datum.format(spur.first.zeit.toLocal()),
+                datum.format(spur.last.zeit.toLocal()),
+              ),
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(t.gpxVersatz,
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(t.gpxVersatz, style: Theme.of(context).textTheme.titleSmall),
             Row(
               children: [
                 IconButton(
                   tooltip: '−30',
                   icon: const Icon(Icons.remove),
-                  onPressed: () => setState(
-                      () => _versatz -= const Duration(minutes: 30)),
+                  onPressed: () =>
+                      setState(() => _versatz -= const Duration(minutes: 30)),
                 ),
                 SizedBox(
                   width: 90,
@@ -186,26 +189,33 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
                     _versatzText(_versatz),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontFeatures: [FontFeature.tabularFigures()]),
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
                 IconButton(
                   tooltip: '+30',
                   icon: const Icon(Icons.add),
-                  onPressed: () => setState(
-                      () => _versatz += const Duration(minutes: 30)),
+                  onPressed: () =>
+                      setState(() => _versatz += const Duration(minutes: 30)),
                 ),
               ],
             ),
-            Text(t.gpxVersatzHinweis,
-                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+            Text(
+              t.gpxVersatzHinweis,
+              style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+            ),
             const SizedBox(height: AppSpacing.lg),
             if (_kandidaten.isEmpty)
-              Text(t.gpxKeineKandidaten,
-                  style: TextStyle(color: farben.onSurfaceVariant))
+              Text(
+                t.gpxKeineKandidaten,
+                style: TextStyle(color: farben.onSurfaceVariant),
+              )
             else ...[
-              Text(t.gpxTreffer(_treffer),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t.gpxTreffer(_treffer),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: AppSpacing.md),
               FilledButton(
                 onPressed: _arbeitet || _treffer == 0 ? null : _verorten,

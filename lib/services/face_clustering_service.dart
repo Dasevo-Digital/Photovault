@@ -21,7 +21,11 @@ class FaceClusterInput {
   /// der Hälfte der Zeit schon bei 71 % und danach scheinbar still.
   final SendPort? fortschritt;
 
-  const FaceClusterInput(this.embeddingsByFaceId, this.threshold, {this.fortschritt});
+  const FaceClusterInput(
+    this.embeddingsByFaceId,
+    this.threshold, {
+    this.fortschritt,
+  });
 }
 
 /// Gruppiert unzugeordnete Gesichter anhand ihrer SFace-Embeddings zu
@@ -46,7 +50,11 @@ class FaceClusterInput {
 List<List<String>> clusterFaces(FaceClusterInput input) {
   final ids = input.embeddingsByFaceId.keys.toList(growable: false);
   final n = ids.length;
-  final vectors = List<Float32List>.generate(n, (i) => input.embeddingsByFaceId[ids[i]]!, growable: false);
+  final vectors = List<Float32List>.generate(
+    n,
+    (i) => input.embeddingsByFaceId[ids[i]]!,
+    growable: false,
+  );
 
   final parent = List<int>.generate(n, (i) => i, growable: false);
   int find(int x) {
@@ -67,7 +75,8 @@ List<List<String>> clusterFaces(FaceClusterInput input) {
 
   for (var i = 0; i < n; i++) {
     for (var j = i + 1; j < n; j++) {
-      if (FaceEngineService.cosineSimilarity(vectors[i], vectors[j]) >= input.threshold) {
+      if (FaceEngineService.cosineSimilarity(vectors[i], vectors[j]) >=
+          input.threshold) {
         union(i, j);
       }
     }
@@ -151,11 +160,13 @@ class _ClusterAuftrag {
 }
 
 void _clusterImIsolat(_ClusterAuftrag auftrag) {
-  final clusters = clusterFaces(FaceClusterInput(
-    auftrag.embeddings,
-    auftrag.threshold,
-    fortschritt: auftrag.antwort,
-  ));
+  final clusters = clusterFaces(
+    FaceClusterInput(
+      auftrag.embeddings,
+      auftrag.threshold,
+      fortschritt: auftrag.antwort,
+    ),
+  );
   auftrag.antwort.send(clusters);
 }
 
@@ -224,8 +235,13 @@ Future<FaceClusterLauf> starteFaceClustering(
     // heisst „zu Ende, ohne Ergebnis". Nach einem Abbruch ist genau das
     // erwartet und schon beantwortet.
     if (!fertig.isCompleted && !lauf._abgebrochen) {
-      fertig.completeError(FaceClusterFehler(
-          nachricht is List && nachricht.isNotEmpty ? '${nachricht.first}' : null));
+      fertig.completeError(
+        FaceClusterFehler(
+          nachricht is List && nachricht.isNotEmpty
+              ? '${nachricht.first}'
+              : null,
+        ),
+      );
     }
     port.close();
   });

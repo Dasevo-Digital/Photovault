@@ -23,30 +23,39 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> asset(String id, {bool geloescht = false, bool gesperrt = false}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: id,
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-            isTrashed: Value(geloescht),
-            isLocked: Value(gesperrt),
-          ));
+  Future<void> asset(
+    String id, {
+    bool geloescht = false,
+    bool gesperrt = false,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: id,
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026, 1, 1),
+          importedAt: DateTime(2026, 1, 1),
+          isTrashed: Value(geloescht),
+          isLocked: Value(gesperrt),
+        ),
+      );
 
   Future<void> gesicht(String id, String assetId, {String? person}) =>
-      db.insertFace(FacesCompanion.insert(
-        id: id,
-        assetId: assetId,
-        personId: Value(person),
-        boxX: 0.1,
-        boxY: 0.1,
-        boxW: 0.2,
-        boxH: 0.2,
-        cropRelativePath: Value('faces/$id.jpg'),
-      ));
+      db.insertFace(
+        FacesCompanion.insert(
+          id: id,
+          assetId: assetId,
+          personId: Value(person),
+          boxX: 0.1,
+          boxY: 0.1,
+          boxW: 0.2,
+          boxH: 0.2,
+          cropRelativePath: Value('faces/$id.jpg'),
+        ),
+      );
 
   test('ein beiseitegelegtes Gesicht verlässt das Raster', () async {
     await asset('a1');
@@ -85,21 +94,24 @@ void main() {
     expect(await db.ignoredFacesCount(), 0);
   });
 
-  test('wer einem ignorierten Gesicht einen Namen gibt, holt es zurück', () async {
-    // Sonst verschwände es unmittelbar nach dem Benennen wieder – die
-    // Person hätte ein Foto, das nirgends auftaucht.
-    await asset('a1');
-    await gesicht('f1', 'a1');
-    await db.setFacesIgnored(['f1'], true);
-    await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
+  test(
+    'wer einem ignorierten Gesicht einen Namen gibt, holt es zurück',
+    () async {
+      // Sonst verschwände es unmittelbar nach dem Benennen wieder – die
+      // Person hätte ein Foto, das nirgends auftaucht.
+      await asset('a1');
+      await gesicht('f1', 'a1');
+      await db.setFacesIgnored(['f1'], true);
+      await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
 
-    await db.assignFacesToPerson(['f1'], 'p1');
+      await db.assignFacesToPerson(['f1'], 'p1');
 
-    final f = (await db.facesForAsset('a1')).single;
-    expect(f.isIgnored, isFalse);
-    expect(f.personId, 'p1');
-    expect(await db.ignoredFacesCount(), 0);
-  });
+      final f = (await db.facesForAsset('a1')).single;
+      expect(f.isIgnored, isFalse);
+      expect(f.personId, 'p1');
+      expect(await db.ignoredFacesCount(), 0);
+    },
+  );
 
   test('beiseitelegen löst eine bestehende Zuordnung', () async {
     // Ein Gesicht, das zugleich „Anna" und „ignoriert" wäre, hinge zwischen
@@ -164,51 +176,63 @@ void main() {
     expect(await db.ignoredFacesCount(), 0);
   });
 
-  test('eine Datenbank von Schema 37 bekommt die Spalte nachgereicht', () async {
-    final ordner = Directory.systemTemp.createTempSync('pv_ignoriert');
-    addTearDown(() => ordner.deleteSync(recursive: true));
-    final datei = File(p.join(ordner.path, 'alt.sqlite'));
+  test(
+    'eine Datenbank von Schema 37 bekommt die Spalte nachgereicht',
+    () async {
+      final ordner = Directory.systemTemp.createTempSync('pv_ignoriert');
+      addTearDown(() => ordner.deleteSync(recursive: true));
+      final datei = File(p.join(ordner.path, 'alt.sqlite'));
 
-    // Vollständige Datenbank anlegen, mit Daten füllen, dann auf den Stand
-    // vor der Änderung zurückversetzen: Spalte weg, Version zurückgestempelt.
-    var alt = ZweiteDatenbank(NativeDatabase(datei));
-    await alt.into(alt.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'a1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 1),
-        ));
-    await alt.insertFace(FacesCompanion.insert(
-      id: 'f1',
-      assetId: 'a1',
-      boxX: 0.1,
-      boxY: 0.1,
-      boxW: 0.2,
-      boxH: 0.2,
-    ));
-    await alt.close();
+      // Vollständige Datenbank anlegen, mit Daten füllen, dann auf den Stand
+      // vor der Änderung zurückversetzen: Spalte weg, Version zurückgestempelt.
+      var alt = ZweiteDatenbank(NativeDatabase(datei));
+      await alt
+          .into(alt.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'a1',
+              originalFileName: 'a1.jpg',
+              relativePath: 'originals/a1.jpg',
+              checksum: 'a1',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 1, 1),
+              importedAt: DateTime(2026, 1, 1),
+            ),
+          );
+      await alt.insertFace(
+        FacesCompanion.insert(
+          id: 'f1',
+          assetId: 'a1',
+          boxX: 0.1,
+          boxY: 0.1,
+          boxW: 0.2,
+          boxH: 0.2,
+        ),
+      );
+      await alt.close();
 
-    final roh = sqlite.sqlite3.open(datei.path);
-    // Der Teilindex hängt an der Spalte – erst er, dann sie.
-    roh.execute('DROP INDEX IF EXISTS idx_faces_ignored;');
-    roh.execute('ALTER TABLE faces DROP COLUMN is_ignored;');
-    roh.execute('PRAGMA user_version = 37;');
-    roh.close();
+      final roh = sqlite.sqlite3.open(datei.path);
+      // Der Teilindex hängt an der Spalte – erst er, dann sie.
+      roh.execute('DROP INDEX IF EXISTS idx_faces_ignored;');
+      roh.execute('ALTER TABLE faces DROP COLUMN is_ignored;');
+      roh.execute('PRAGMA user_version = 37;');
+      roh.close();
 
-    // Öffnen löst die Migration auf 38 aus.
-    final neu = ZweiteDatenbank(NativeDatabase(datei));
-    final vorher = await neu.facesForAsset('a1');
-    await neu.setFacesIgnored(['f1'], true);
-    final anzahl = await neu.ignoredFacesCount();
-    await neu.close();
+      // Öffnen löst die Migration auf 38 aus.
+      final neu = ZweiteDatenbank(NativeDatabase(datei));
+      final vorher = await neu.facesForAsset('a1');
+      await neu.setFacesIgnored(['f1'], true);
+      final anzahl = await neu.ignoredFacesCount();
+      await neu.close();
 
-    expect(vorher.single.isIgnored, isFalse,
-        reason: 'bestehende Gesichter gelten als nicht beiseitegelegt');
-    expect(anzahl, 1);
-  });
+      expect(
+        vorher.single.isIgnored,
+        isFalse,
+        reason: 'bestehende Gesichter gelten als nicht beiseitegelegt',
+      );
+      expect(anzahl, 1);
+    },
+  );
 
   test('der Teilindex für die Zählung entsteht auch bei der Migration', () async {
     // Ohne ihn läuft die Zählung über alle Fotos statt über die wenigen
@@ -236,7 +260,9 @@ void main() {
 
     final pruefung = sqlite.sqlite3.open(datei.path);
     final indizes = pruefung
-        .select("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='faces';")
+        .select(
+          "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='faces';",
+        )
         .map((r) => r['name'] as String)
         .toList();
     pruefung.close();
@@ -293,49 +319,59 @@ void main() {
       expect((await db.facesForAsset('a1')).map((f) => f.id), ['f1']);
     });
 
-    test('gezählt werden Erkennungen, geliefert nur vorhandene Ausschnitte',
-        () async {
-      // Ohne Embedding-Modell entsteht eine Zeile ohne Ausschnitt. Würde
-      // der Aufrufer die Pfade zählen, meldete er zu wenige gelöschte
-      // Erkennungen.
-      await asset('a1');
-      await gesicht('f1', 'a1');
-      await db.insertFace(FacesCompanion.insert(
-        id: 'f2',
-        assetId: 'a1',
-        boxX: 0.5,
-        boxY: 0.5,
-        boxW: 0.2,
-        boxH: 0.2,
-      ));
+    test(
+      'gezählt werden Erkennungen, geliefert nur vorhandene Ausschnitte',
+      () async {
+        // Ohne Embedding-Modell entsteht eine Zeile ohne Ausschnitt. Würde
+        // der Aufrufer die Pfade zählen, meldete er zu wenige gelöschte
+        // Erkennungen.
+        await asset('a1');
+        await gesicht('f1', 'a1');
+        await db.insertFace(
+          FacesCompanion.insert(
+            id: 'f2',
+            assetId: 'a1',
+            boxX: 0.5,
+            boxY: 0.5,
+            boxW: 0.2,
+            boxH: 0.2,
+          ),
+        );
 
-      final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
+        final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
 
-      expect(ergebnis.anzahl, 2);
-      expect(ergebnis.pfade, hasLength(1));
-    });
+        expect(ergebnis.anzahl, 2);
+        expect(ergebnis.pfade, hasLength(1));
+      },
+    );
 
-    test('gesperrte und gelöschte Fotos bleiben von beidem verschont', () async {
-      // Sonst räumte eine Massenaktion im gesperrten Ordner auf, ohne dass
-      // dieser überhaupt entsperrt wäre.
-      await asset('a1', gesperrt: true);
-      await asset('a2', geloescht: true);
-      await gesicht('f1', 'a1');
-      await gesicht('f2', 'a2');
+    test(
+      'gesperrte und gelöschte Fotos bleiben von beidem verschont',
+      () async {
+        // Sonst räumte eine Massenaktion im gesperrten Ordner auf, ohne dass
+        // dieser überhaupt entsperrt wäre.
+        await asset('a1', gesperrt: true);
+        await asset('a2', geloescht: true);
+        await gesicht('f1', 'a1');
+        await gesicht('f2', 'a2');
 
-      expect(await db.ignoriereAlleUnbenannten(), 0);
-      expect((await db.loescheAlleUnbenanntenErkennungen()).anzahl, 0);
-      expect(await db.facesForAsset('a1'), hasLength(1));
-      expect(await db.facesForAsset('a2'), hasLength(1));
-    });
+        expect(await db.ignoriereAlleUnbenannten(), 0);
+        expect((await db.loescheAlleUnbenanntenErkennungen()).anzahl, 0);
+        expect(await db.facesForAsset('a1'), hasLength(1));
+        expect(await db.facesForAsset('a2'), hasLength(1));
+      },
+    );
 
-    test('die Zahl für die Rückfrage geht über das Anzeigelimit hinaus', () async {
-      await asset('a1');
-      for (var i = 0; i < 250; i++) {
-        await gesicht('f$i', 'a1');
-      }
-      expect(await db.unassignedFaces(), hasLength(200));
-      expect(await db.unassignedFacesCount(), 250);
-    });
+    test(
+      'die Zahl für die Rückfrage geht über das Anzeigelimit hinaus',
+      () async {
+        await asset('a1');
+        for (var i = 0; i < 250; i++) {
+          await gesicht('f$i', 'a1');
+        }
+        expect(await db.unassignedFaces(), hasLength(200));
+        expect(await db.unassignedFacesCount(), 250);
+      },
+    );
   });
 }

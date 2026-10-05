@@ -16,17 +16,20 @@ void main() {
     expect(themeModeFromString('irgendwas'), ThemeMode.system);
   });
 
-  test('setThemeMode speichert, watchAppSettings liefert den aktuellen Wert reaktiv', () async {
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
+  test(
+    'setThemeMode speichert, watchAppSettings liefert den aktuellen Wert reaktiv',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
 
-    // Vor dem ersten setThemeMode existiert noch keine Zeile.
-    expect(await db.watchAppSettings().first, isNull);
+      // Vor dem ersten setThemeMode existiert noch keine Zeile.
+      expect(await db.watchAppSettings().first, isNull);
 
-    await db.setThemeMode('dark');
-    expect((await db.watchAppSettings().first)?.themeMode, 'dark');
+      await db.setThemeMode('dark');
+      expect((await db.watchAppSettings().first)?.themeMode, 'dark');
 
-    await db.setThemeMode('light');
-    expect((await db.watchAppSettings().first)?.themeMode, 'light');
-  });
+      await db.setThemeMode('light');
+      expect((await db.watchAppSettings().first)?.themeMode, 'light');
+    },
+  );
 }

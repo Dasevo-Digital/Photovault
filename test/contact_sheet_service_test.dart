@@ -13,8 +13,9 @@ void main() {
   test('Kontaktblatt enthält lokal gerenderte Bildkacheln als PDF', () async {
     final temp = Directory.systemTemp.createTempSync('pv_contact_sheet_');
     addTearDown(() => temp.deleteSync(recursive: true));
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
     const relativePath = 'originals/test.jpg';
     final bytes = img.encodeJpg(img.Image(width: 20, height: 10));
     await paths.absolute(relativePath).parent.create(recursive: true);
@@ -48,8 +49,10 @@ void main() {
       isStackCover: false,
     );
 
-    final result =
-        await ContactSheetService(paths, ExportService(paths)).create([asset]);
+    final result = await ContactSheetService(
+      paths,
+      ExportService(paths),
+    ).create([asset]);
     expect(result.included, 1);
     expect(result.skipped, 0);
     expect(String.fromCharCodes(result.bytes.take(4)), '%PDF');

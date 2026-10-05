@@ -59,8 +59,10 @@ Future<Map<Object?, Object?>> _manifest(File paket, String passphrase) async {
       wrapped: base64Decode(schluesseldaten['wrapped'] as String),
     );
     final klar = await VaultCrypto.decryptBytes(
-        await File(p.join(temp.path, 'manifest.pve')).readAsBytes(), schluessel,
-        aad: utf8.encode('photo-vault-share-manifest'));
+      await File(p.join(temp.path, 'manifest.pve')).readAsBytes(),
+      schluessel,
+      aad: utf8.encode('photo-vault-share-manifest'),
+    );
     return jsonDecode(utf8.decode(klar)) as Map<Object?, Object?>;
   } finally {
     temp.deleteSync(recursive: true);
@@ -72,33 +74,33 @@ bool _alterLeserNimmtAn(Map<Object?, Object?> manifest) =>
     manifest['format'] == 1 && manifest['assets'] is List;
 
 AssetData _aufnahme(String rel, List<int> inhalt) => AssetData(
-      id: 'frist',
-      originalFileName: p.basename(rel),
-      relativePath: rel,
-      checksum: sha256.convert(inhalt).toString(),
-      type: 'IMAGE',
-      fileCreatedAt: DateTime(2026),
-      importedAt: DateTime(2026),
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      fileSizeBytes: inhalt.length,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      rating: 0,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-    );
+  id: 'frist',
+  originalFileName: p.basename(rel),
+  relativePath: rel,
+  checksum: sha256.convert(inhalt).toString(),
+  type: 'IMAGE',
+  fileCreatedAt: DateTime(2026),
+  importedAt: DateTime(2026),
+  isFavorite: false,
+  isTrashed: false,
+  isLocked: false,
+  faceScanExcluded: false,
+  gpsGeprueft: false,
+  datumGeschaetzt: false,
+  datumGeprueft: false,
+  ortGeerbt: false,
+  videobilderGeprueft: false,
+  fileSizeBytes: inhalt.length,
+  backedUp: false,
+  autoBackedUp: false,
+  facesScanned: false,
+  rating: 0,
+  ocrScanned: false,
+  aiCaptionScanned: false,
+  aiCaptionEdited: false,
+  aiTagsScanned: false,
+  isStackCover: false,
+);
 
 void main() {
   late Directory temp;
@@ -109,8 +111,9 @@ void main() {
 
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('pv_frist_');
-    paths =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
     await paths.absolute(rel).parent.create(recursive: true);
     await paths.absolute(rel).writeAsBytes(inhalt);
   });
@@ -118,9 +121,12 @@ void main() {
 
   Future<File> paket({DateTime? frist}) async {
     final ziel = File(p.join(temp.path, 'p${frist?.year ?? 0}.pvshare'));
-    await SecureShareService(ExportService(paths))
-        .createPackage([_aufnahme(rel, inhalt)], ziel, passphrase,
-            expiresAt: frist);
+    await SecureShareService(ExportService(paths)).createPackage(
+      [_aufnahme(rel, inhalt)],
+      ziel,
+      passphrase,
+      expiresAt: frist,
+    );
     return ziel;
   }
 
@@ -130,9 +136,13 @@ void main() {
 
     expect(manifest['format'], SecureShareService.formatMitFrist);
     expect(manifest['expiresAt'], isNotNull);
-    expect(_alterLeserNimmtAn(manifest), isFalse,
-        reason: 'sonst überliest eine ältere Fassung die Frist und '
-            'importiert – genau der vorgeführte Weg über 3.15.0');
+    expect(
+      _alterLeserNimmtAn(manifest),
+      isFalse,
+      reason:
+          'sonst überliest eine ältere Fassung die Frist und '
+          'importiert – genau der vorgeführte Weg über 3.15.0',
+    );
   });
 
   test('ein Paket OHNE Frist bleibt für den alten Leser offen', () async {
@@ -156,10 +166,14 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       try {
         final zielPaths = await StoragePaths.forTesting(
-            Directory(p.join(temp.path, 'ziel${frist?.year ?? 0}')));
+          Directory(p.join(temp.path, 'ziel${frist?.year ?? 0}')),
+        );
         final ergebnis = await SecureShareService(ExportService(paths))
-            .importPackage(await paket(frist: frist), passphrase,
-                ImportService(db, zielPaths));
+            .importPackage(
+              await paket(frist: frist),
+              passphrase,
+              ImportService(db, zielPaths),
+            );
         expect(ergebnis.imported, 1, reason: 'Frist: $frist');
       } finally {
         await db.close();

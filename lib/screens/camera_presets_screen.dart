@@ -13,7 +13,9 @@ import '../theme/app_spacing.dart';
 /// eines AssetData, da ein Preset (noch) keinem konkreten Foto zugeordnet
 /// sein muss.
 String _cameraDisplayName(String make, String model) {
-  return model.toLowerCase().startsWith(make.toLowerCase()) ? model : '$make $model';
+  return model.toLowerCase().startsWith(make.toLowerCase())
+      ? model
+      : '$make $model';
 }
 
 /// Verwaltung von Kamera-Presets: pro erkannter Kamera (Hersteller + Modell)
@@ -31,7 +33,10 @@ class CameraPresetsScreen extends StatefulWidget {
 }
 
 class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
-  late final Future<List<(String, String)>> _knownCamerasFuture = widget.library.db.distinctCameras();
+  late final Future<List<(String, String)>> _knownCamerasFuture = widget
+      .library
+      .db
+      .distinctCameras();
 
   Future<void> _editPreset({CameraPresetData? existing}) async {
     final albums = await widget.library.db.watchAlbums().first;
@@ -58,19 +63,28 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
     if (result.newAlbumName != null) {
       albumId = const Uuid().v4();
       await widget.library.db.createAlbum(
-        AlbumsCompanion.insert(id: albumId, name: result.newAlbumName!, createdAt: DateTime.now()),
+        AlbumsCompanion.insert(
+          id: albumId,
+          name: result.newAlbumName!,
+          createdAt: DateTime.now(),
+        ),
       );
     }
 
     final presetId = existing?.id ?? const Uuid().v4();
-    await widget.library.db.upsertCameraPreset(CameraPresetsCompanion.insert(
-      id: presetId,
-      cameraMake: result.cameraMake,
-      cameraModel: result.cameraModel,
-      targetAlbumId: Value(albumId),
-      autoFavorite: Value(result.autoFavorite),
-    ));
-    await widget.library.db.setCameraPresetTags(presetId, result.tagIds.toList());
+    await widget.library.db.upsertCameraPreset(
+      CameraPresetsCompanion.insert(
+        id: presetId,
+        cameraMake: result.cameraMake,
+        cameraModel: result.cameraModel,
+        targetAlbumId: Value(albumId),
+        autoFavorite: Value(result.autoFavorite),
+      ),
+    );
+    await widget.library.db.setCameraPresetTags(
+      presetId,
+      result.tagIds.toList(),
+    );
   }
 
   Future<void> _deletePreset(CameraPresetData preset) async {
@@ -80,11 +94,18 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
         title: Text(AppTexte.of(context).presetLoeschenTitel),
         content: Text(
           AppTexte.of(context).presetLoeschenText(
-              _cameraDisplayName(preset.cameraMake, preset.cameraModel)),
+            _cameraDisplayName(preset.cameraMake, preset.cameraModel),
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppTexte.of(context).allgAbbrechen)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppTexte.of(context).allgLoeschen)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).allgLoeschen),
+          ),
         ],
       ),
     );
@@ -123,15 +144,22 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
           return StreamBuilder<List<AlbumData>>(
             stream: widget.library.db.watchAlbums(),
             builder: (context, albumSnap) {
-              final albumNames = {for (final a in albumSnap.data ?? const <AlbumData>[]) a.id: a.name};
+              final albumNames = {
+                for (final a in albumSnap.data ?? const <AlbumData>[])
+                  a.id: a.name,
+              };
               return StreamBuilder<List<TagData>>(
                 stream: widget.library.db.watchAllTags(),
                 builder: (context, tagSnap) {
-                  final tagNames = {for (final t in tagSnap.data ?? const <TagData>[]) t.id: t.name};
+                  final tagNames = {
+                    for (final t in tagSnap.data ?? const <TagData>[])
+                      t.id: t.name,
+                  };
                   return StreamBuilder<Map<String, List<String>>>(
                     stream: widget.library.db.watchAllCameraPresetTagIds(),
                     builder: (context, presetTagSnap) {
-                      final presetTagIds = presetTagSnap.data ?? const <String, List<String>>{};
+                      final presetTagIds =
+                          presetTagSnap.data ?? const <String, List<String>>{};
                       return ListView.separated(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         itemCount: presets.length,
@@ -141,9 +169,13 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
                           return _CameraPresetTile(
                             key: ValueKey(preset.id),
                             preset: preset,
-                            albumName: preset.targetAlbumId != null ? albumNames[preset.targetAlbumId] : null,
+                            albumName: preset.targetAlbumId != null
+                                ? albumNames[preset.targetAlbumId]
+                                : null,
                             tagLabels: [
-                              for (final id in presetTagIds[preset.id] ?? const <String>[])
+                              for (final id
+                                  in presetTagIds[preset.id] ??
+                                      const <String>[])
                                 if (tagNames[id] != null) tagNames[id]!,
                             ],
                             onEdit: () => _editPreset(existing: preset),
@@ -201,8 +233,16 @@ class _CameraPresetTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(icon: const Icon(Icons.edit_outlined), tooltip: t.allgBearbeiten, onPressed: onEdit),
-            IconButton(icon: const Icon(Icons.delete_outline), tooltip: t.allgLoeschen, onPressed: onDelete),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: t.allgBearbeiten,
+              onPressed: onEdit,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: t.allgLoeschen,
+              onPressed: onDelete,
+            ),
           ],
         ),
       ),
@@ -244,12 +284,17 @@ class _CameraPresetEditorDialog extends StatefulWidget {
   });
 
   @override
-  State<_CameraPresetEditorDialog> createState() => _CameraPresetEditorDialogState();
+  State<_CameraPresetEditorDialog> createState() =>
+      _CameraPresetEditorDialogState();
 }
 
 class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
-  late final _makeCtrl = TextEditingController(text: widget.existing?.cameraMake ?? '');
-  late final _modelCtrl = TextEditingController(text: widget.existing?.cameraModel ?? '');
+  late final _makeCtrl = TextEditingController(
+    text: widget.existing?.cameraMake ?? '',
+  );
+  late final _modelCtrl = TextEditingController(
+    text: widget.existing?.cameraModel ?? '',
+  );
   late final _newAlbumCtrl = TextEditingController();
   AlbumData? _selectedAlbum;
   late bool _autoFavorite = widget.existing?.autoFavorite ?? false;
@@ -283,7 +328,12 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
         builder: (context, setDialogState) {
           final visible = filter.isEmpty
               ? widget.allTags
-              : widget.allTags.where((t) => t.name.toLowerCase().contains(filter.toLowerCase())).toList();
+              : widget.allTags
+                    .where(
+                      (t) =>
+                          t.name.toLowerCase().contains(filter.toLowerCase()),
+                    )
+                    .toList();
           return AlertDialog(
             title: Text(AppTexte.of(context).suchoptTagsWaehlen),
             content: SizedBox(
@@ -303,7 +353,9 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                   const SizedBox(height: 8),
                   Expanded(
                     child: visible.isEmpty
-                        ? Center(child: Text(AppTexte.of(context).presetKeineTags))
+                        ? Center(
+                            child: Text(AppTexte.of(context).presetKeineTags),
+                          )
                         : ListView(
                             children: [
                               for (final tag in visible)
@@ -311,7 +363,9 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                                   value: selection.contains(tag.id),
                                   title: Text(tag.name),
                                   onChanged: (checked) => setDialogState(() {
-                                    checked == true ? selection.add(tag.id) : selection.remove(tag.id);
+                                    checked == true
+                                        ? selection.add(tag.id)
+                                        : selection.remove(tag.id);
                                   }),
                                 ),
                             ],
@@ -321,8 +375,14 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
-              FilledButton(onPressed: () => Navigator.pop(context, selection), child: Text(AppTexte.of(context).allgUebernehmen)),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppTexte.of(context).allgAbbrechen),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, selection),
+                child: Text(AppTexte.of(context).allgUebernehmen),
+              ),
             ],
           );
         },
@@ -335,7 +395,9 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
     final make = _makeCtrl.text.trim();
     final model = _modelCtrl.text.trim();
     if (make.isEmpty || model.isEmpty) {
-      setState(() => _error = AppTexte.of(context).presetHerstellerModellNoetig);
+      setState(
+        () => _error = AppTexte.of(context).presetHerstellerModellNoetig,
+      );
       return;
     }
     final newAlbumName = _newAlbumCtrl.text.trim();
@@ -354,11 +416,15 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedTags = widget.allTags.where((t) => _tagIds.contains(t.id)).toList();
+    final selectedTags = widget.allTags
+        .where((t) => _tagIds.contains(t.id))
+        .toList();
     return AlertDialog(
-      title: Text(widget.existing == null
-          ? AppTexte.of(context).presetNeuTitel
-          : AppTexte.of(context).presetBearbeitenTitel),
+      title: Text(
+        widget.existing == null
+            ? AppTexte.of(context).presetNeuTitel
+            : AppTexte.of(context).presetBearbeitenTitel,
+      ),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(
@@ -374,10 +440,15 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                 DropdownButtonFormField<(String, String)>(
                   initialValue: null,
                   isExpanded: true,
-                  decoration: InputDecoration(labelText: AppTexte.of(context).presetBekannteKamera),
+                  decoration: InputDecoration(
+                    labelText: AppTexte.of(context).presetBekannteKamera,
+                  ),
                   items: [
                     for (final cam in widget.knownCameras)
-                      DropdownMenuItem(value: cam, child: Text(_cameraDisplayName(cam.$1, cam.$2))),
+                      DropdownMenuItem(
+                        value: cam,
+                        child: Text(_cameraDisplayName(cam.$1, cam.$2)),
+                      ),
                   ],
                   onChanged: (cam) {
                     if (cam == null) return;
@@ -391,21 +462,31 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               ],
               TextField(
                 controller: _makeCtrl,
-                decoration: InputDecoration(labelText: AppTexte.of(context).presetHersteller),
+                decoration: InputDecoration(
+                  labelText: AppTexte.of(context).presetHersteller,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _modelCtrl,
-                decoration: InputDecoration(labelText: AppTexte.of(context).presetModell),
+                decoration: InputDecoration(
+                  labelText: AppTexte.of(context).presetModell,
+                ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<AlbumData?>(
                 initialValue: _selectedAlbum,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: AppTexte.of(context).presetZielalbum),
+                decoration: InputDecoration(
+                  labelText: AppTexte.of(context).presetZielalbum,
+                ),
                 items: [
-                  DropdownMenuItem<AlbumData?>(value: null, child: Text(AppTexte.of(context).presetKeinAlbum)),
-                  for (final a in widget.albums) DropdownMenuItem<AlbumData?>(value: a, child: Text(a.name)),
+                  DropdownMenuItem<AlbumData?>(
+                    value: null,
+                    child: Text(AppTexte.of(context).presetKeinAlbum),
+                  ),
+                  for (final a in widget.albums)
+                    DropdownMenuItem<AlbumData?>(value: a, child: Text(a.name)),
                 ],
                 // Beide Felder meinen dasselbe Ziel (Zielalbum) – ohne das
                 // gegenseitige Leeren würde die zuletzt beim Speichern
@@ -419,7 +500,9 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               const SizedBox(height: 4),
               TextField(
                 controller: _newAlbumCtrl,
-                decoration: InputDecoration(labelText: AppTexte.of(context).presetNeuesAlbum),
+                decoration: InputDecoration(
+                  labelText: AppTexte.of(context).presetNeuesAlbum,
+                ),
                 onChanged: (text) {
                   if (text.trim().isNotEmpty && _selectedAlbum != null) {
                     setState(() => _selectedAlbum = null);
@@ -434,7 +517,10 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                 onChanged: (v) => setState(() => _autoFavorite = v),
               ),
               const SizedBox(height: 8),
-              Text(AppTexte.of(context).suchoptTagsTitel, style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                AppTexte.of(context).suchoptTagsTitel,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               const SizedBox(height: 4),
               InkWell(
                 onTap: _openTagPicker,
@@ -454,7 +540,8 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                             for (final tag in selectedTags)
                               Chip(
                                 label: Text(tag.name),
-                                onDeleted: () => setState(() => _tagIds.remove(tag.id)),
+                                onDeleted: () =>
+                                    setState(() => _tagIds.remove(tag.id)),
                               ),
                           ],
                         ),
@@ -465,8 +552,14 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
-        FilledButton(onPressed: _save, child: Text(AppTexte.of(context).allgSpeichern)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppTexte.of(context).allgAbbrechen),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: Text(AppTexte.of(context).allgSpeichern),
+        ),
       ],
     );
   }

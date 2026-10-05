@@ -34,16 +34,18 @@ void main() {
   });
 
   Future<AssetData> lege(String id, {int rating = 0}) async {
-    await db.insertAsset(AssetsCompanion.insert(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      type: 'IMAGE',
-      checksum: id,
-      fileCreatedAt: DateTime(2024, 5, 1, 12, 0, int.parse(id.substring(1))),
-      importedAt: DateTime(2024),
-      rating: Value(rating),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: id,
+        relativePath: 'originals/$id.jpg',
+        originalFileName: '$id.jpg',
+        type: 'IMAGE',
+        checksum: id,
+        fileCreatedAt: DateTime(2024, 5, 1, 12, 0, int.parse(id.substring(1))),
+        importedAt: DateTime(2024),
+        rating: Value(rating),
+      ),
+    );
     return (await db.assetById(id))!;
   }
 
@@ -55,20 +57,21 @@ void main() {
     double? augen,
     String? personId,
     bool ignoriert = false,
-  }) =>
-      db.insertFace(FacesCompanion.insert(
-        id: id,
-        assetId: assetId,
-        boxX: 0.1,
-        boxY: 0.1,
-        boxW: breite,
-        boxH: breite,
-        cropRelativePath: Value('faces/$id.jpg'),
-        schaerfe: Value(schaerfe),
-        eyeOpenScore: Value(augen),
-        personId: Value(personId),
-        isIgnored: Value(ignoriert),
-      ));
+  }) => db.insertFace(
+    FacesCompanion.insert(
+      id: id,
+      assetId: assetId,
+      boxX: 0.1,
+      boxY: 0.1,
+      boxW: breite,
+      boxH: breite,
+      cropRelativePath: Value('faces/$id.jpg'),
+      schaerfe: Value(schaerfe),
+      eyeOpenScore: Value(augen),
+      personId: Value(personId),
+      isIgnored: Value(ignoriert),
+    ),
+  );
 
   test('eine Spalte je Aufnahme, Gesichter nach Grösse', () async {
     final a = await lege('a1');
@@ -81,8 +84,10 @@ void main() {
 
     final spalten = await serienspalten(db, [a]);
     expect(spalten.length, 1);
-    expect([for (final g in spalten.single.gesichter) g.breite],
-        [0.30, 0.15, 0.05]);
+    expect(
+      [for (final g in spalten.single.gesichter) g.breite],
+      [0.30, 0.15, 0.05],
+    );
   });
 
   test('das schärfste Gesicht zählt, nicht der Durchschnitt', () async {
@@ -108,9 +113,13 @@ void main() {
     await legeGesicht('weg', 'a1', schaerfe: 900, ignoriert: true);
     final spalte = (await serienspalten(db, [a])).single;
     expect(spalte.gesichter.length, 1);
-    expect(spalte.besteSchaerfe, 100,
-        reason: 'ein beiseitegelegtes Gesicht darf die Auswahl nicht '
-            'bestimmen');
+    expect(
+      spalte.besteSchaerfe,
+      100,
+      reason:
+          'ein beiseitegelegtes Gesicht darf die Auswahl nicht '
+          'bestimmen',
+    );
   });
 
   test('der Name der Person steht dabei', () async {
@@ -129,8 +138,11 @@ void main() {
     await legeGesicht('f2', 'a1', breite: 0.1);
     final koepfe = (await serienspalten(db, [a])).single.gesichter;
     expect(koepfe.first.augenOffen, closeTo(0.93, 1e-9));
-    expect(koepfe.last.augenOffen, isNull,
-        reason: '„nicht berechnet" ist etwas anderes als „Augen zu"');
+    expect(
+      koepfe.last.augenOffen,
+      isNull,
+      reason: '„nicht berechnet" ist etwas anderes als „Augen zu"',
+    );
   });
 
   test('eine Serie behält ihre Reihenfolge', () async {

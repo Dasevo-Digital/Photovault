@@ -34,15 +34,22 @@ void main() {
   test('ein Bild, das den vollen Umfang nutzt, bleibt unangetastet', () {
     final w = automatikAus(spanne(0, 255));
     expect(w.kontrast, closeTo(0, 0.05), reason: 'nichts zu strecken');
-    expect(w.belichtung, closeTo(0, 0.1), reason: 'die Mitte liegt schon richtig');
+    expect(
+      w.belichtung,
+      closeTo(0, 0.1),
+      reason: 'die Mitte liegt schon richtig',
+    );
   });
 
   test('ein flaues Bild bekommt Kontrast', () {
     // Nutzt nur die Hälfte des Umfangs – das lässt sich strecken.
     final w = automatikAus(spanne(64, 191));
     expect(w.kontrast, greaterThan(0.5));
-    expect(w.belichtung, closeTo(0, 0.1),
-        reason: 'die Mitte liegt bereits bei mittlerem Grau');
+    expect(
+      w.belichtung,
+      closeTo(0, 0.1),
+      reason: 'die Mitte liegt bereits bei mittlerem Grau',
+    );
   });
 
   test('ein zu dunkles Bild wird aufgehellt', () {
@@ -63,22 +70,34 @@ void main() {
     final mit = spanne(0, 100);
     final luma = List<int>.from(mit.luminance);
     luma[255] = 3; // drei von 10000 = weit unter einem halben Prozent
-    final w = automatikAus(HistogramData(
-      luminance: luma,
-      red: luma,
-      green: luma,
-      blue: luma,
-      sampleCount: mit.sampleCount + 3,
-    ));
-    expect(w.belichtung, closeTo(ohne.belichtung, 0.15),
-        reason: 'drei Pixel duerfen die Belichtung nicht kippen');
+    final w = automatikAus(
+      HistogramData(
+        luminance: luma,
+        red: luma,
+        green: luma,
+        blue: luma,
+        sampleCount: mit.sampleCount + 3,
+      ),
+    );
+    expect(
+      w.belichtung,
+      closeTo(ohne.belichtung, 0.15),
+      reason: 'drei Pixel duerfen die Belichtung nicht kippen',
+    );
   });
 
   test('eine einfarbige Flaeche laesst sich nicht strecken', () {
     final luma = List<int>.filled(histogramBinCount, 0);
     luma[128] = 10000;
-    final w = automatikAus(HistogramData(
-      luminance: luma, red: luma, green: luma, blue: luma, sampleCount: 10000));
+    final w = automatikAus(
+      HistogramData(
+        luminance: luma,
+        red: luma,
+        green: luma,
+        blue: luma,
+        sampleCount: 10000,
+      ),
+    );
     expect(w.kontrast, 0, reason: 'kein Umfang, nichts zu tun');
     expect(w.belichtung, 0);
   });
@@ -88,8 +107,15 @@ void main() {
     // vorschlagen - der Regler nimmt sie gar nicht an.
     final luma = List<int>.filled(histogramBinCount, 0);
     luma[1] = 10000;
-    final w = automatikAus(HistogramData(
-      luminance: luma, red: luma, green: luma, blue: luma, sampleCount: 10000));
+    final w = automatikAus(
+      HistogramData(
+        luminance: luma,
+        red: luma,
+        green: luma,
+        blue: luma,
+        sampleCount: 10000,
+      ),
+    );
     expect(w.belichtung, lessThanOrEqualTo(3.0));
     expect(w.belichtung, greaterThanOrEqualTo(-3.0));
     expect(w.kontrast, inInclusiveRange(0.0, 1.0));

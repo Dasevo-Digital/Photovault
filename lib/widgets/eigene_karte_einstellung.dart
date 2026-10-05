@@ -119,10 +119,12 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
       null => null,
       Adressfehler.leer => t.einstEigeneKarteFehlerLeer,
       Adressfehler.keinHttp => t.einstEigeneKarteFehlerHttp,
-      Adressfehler.platzhalterFehlt =>
-        t.einstEigeneKarteFehlerPlatzhalter('{z}, {x}, {y}'),
-      Adressfehler.platzhalterUnbekannt =>
-        t.einstEigeneKarteFehlerUnbekannt('{z}, {x}, {y}, {s}, {r}'),
+      Adressfehler.platzhalterFehlt => t.einstEigeneKarteFehlerPlatzhalter(
+        '{z}, {x}, {y}',
+      ),
+      Adressfehler.platzhalterUnbekannt => t.einstEigeneKarteFehlerUnbekannt(
+        '{z}, {x}, {y}, {s}, {r}',
+      ),
       Adressfehler.schluesselFehlt => t.einstEigeneKarteFehlerSchluessel,
     };
   }
@@ -174,7 +176,6 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
     melde.hinweis(t.einstEigeneKarteEntfernt);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
@@ -216,7 +217,8 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                             : t.einstEigeneKarteAktiv(
                                 eingerichtet.name.isEmpty
                                     ? t.karteEigene
-                                    : eingerichtet.name),
+                                    : eingerichtet.name,
+                              ),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ),
@@ -233,10 +235,15 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           title: Text(v.name),
-                          subtitle: Text(v.gemessen
-                              ? t.einstEigeneKarteVorlageGemessen('${v.stufe}')
-                              : t.einstEigeneKarteVorlageLautAnbieter(
-                                  '${v.stufe}')),
+                          subtitle: Text(
+                            v.gemessen
+                                ? t.einstEigeneKarteVorlageGemessen(
+                                    '${v.stufe}',
+                                  )
+                                : t.einstEigeneKarteVorlageLautAnbieter(
+                                    '${v.stufe}',
+                                  ),
+                          ),
                         ),
                       ),
                   ],
@@ -263,7 +270,8 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                         label: Text(t.einstEigeneKarteWoher(v.woher!)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xs),
+                            horizontal: AppSpacing.xs,
+                          ),
                           textStyle: const TextStyle(fontSize: 12),
                         ),
                       ),
@@ -274,8 +282,10 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
                       t.einstEigeneKarteSchluesselHinweis(schluesselMarke),
-                      style:
-                          TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: farben.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 const SizedBox(height: AppSpacing.md),
@@ -294,8 +304,9 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                   decoration: InputDecoration(
                     labelText: t.einstEigeneKarteAdresse,
                     hintText: t.einstEigeneKarteAdresseHinweis('{z}/{x}/{y}'),
-                    errorText:
-                        _adresse.text.isEmpty ? null : _adressfehlertext(t),
+                    errorText: _adresse.text.isEmpty
+                        ? null
+                        : _adressfehlertext(t),
                     isDense: true,
                     border: const OutlineInputBorder(),
                   ),
@@ -329,7 +340,9 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                   Text(
                     t.einstEigeneKarteSitzungText,
                     style: TextStyle(
-                        fontSize: 12, color: farben.onSurfaceVariant),
+                      fontSize: 12,
+                      color: farben.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   OutlinedButton.icon(
@@ -338,7 +351,8 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.vpn_key_outlined),
                     label: Text(t.einstEigeneKarteSitzung),
                   ),
@@ -375,14 +389,17 @@ class _Warnzeile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(symbol,
-              size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(text)),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(
+        symbol,
+        size: 18,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      const SizedBox(width: AppSpacing.sm),
+      Expanded(child: Text(text)),
+    ],
+  );
 }
 
 /// Der Hinweis, der vor dem Einschalten einer fremden Kartenquelle
@@ -404,16 +421,19 @@ Future<bool?> zeigeKartenwarnung(BuildContext context) {
           mainAxisSize: MainAxisSize.min,
           children: [
             _Warnzeile(
-                symbol: Icons.cell_tower_outlined,
-                text: t.einstEigeneKarteWarnungUebermittlung),
+              symbol: Icons.cell_tower_outlined,
+              text: t.einstEigeneKarteWarnungUebermittlung,
+            ),
             const SizedBox(height: AppSpacing.md),
             _Warnzeile(
-                symbol: Icons.cloud_off_outlined,
-                text: t.einstEigeneKarteWarnungOffline),
+              symbol: Icons.cloud_off_outlined,
+              text: t.einstEigeneKarteWarnungOffline,
+            ),
             const SizedBox(height: AppSpacing.md),
             _Warnzeile(
-                symbol: Icons.gavel_outlined,
-                text: t.einstEigeneKarteWarnungBedingungen),
+              symbol: Icons.gavel_outlined,
+              text: t.einstEigeneKarteWarnungBedingungen,
+            ),
           ],
         ),
       ),

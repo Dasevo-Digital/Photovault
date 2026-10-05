@@ -21,10 +21,16 @@ void main() {
     // springen, langsam genug, dass sechzig Bilder je Sekunde nicht
     // sechzig Neuaufbauten bedeuten.
     expect(LibraryState.meldeabstand, const Duration(milliseconds: 100));
-    expect(LibraryState.meldeabstand.inMilliseconds, greaterThan(16),
-        reason: 'kuerzer als ein Bildwechsel waere sinnlos');
-    expect(LibraryState.meldeabstand.inMilliseconds, lessThan(500),
-        reason: 'laenger saehe wie Stillstand aus');
+    expect(
+      LibraryState.meldeabstand.inMilliseconds,
+      greaterThan(16),
+      reason: 'kuerzer als ein Bildwechsel waere sinnlos',
+    );
+    expect(
+      LibraryState.meldeabstand.inMilliseconds,
+      lessThan(500),
+      reason: 'laenger saehe wie Stillstand aus',
+    );
   });
 
   group('Die Regel, nach der gemeldet wird', () {
@@ -42,15 +48,20 @@ void main() {
       return n + 1; // die abschliessende Meldung am Ende der Stufe
     }
 
-    test('achttausend Aufnahmen in zwei Minuten ergeben gut tausend Meldungen',
-        () {
-      // 15 ms je Foto ist optimistisch schnell; je schneller die Stufe
-      // läuft, desto mehr spart die Drosselung.
-      final zeiten = [for (var i = 1; i <= 8000; i++) i * 15];
-      expect(meldungen(zeiten, LibraryState.meldeabstand), lessThan(1300));
-      expect(meldungen(zeiten, Duration.zero), 8001,
-          reason: 'ohne Drosselung eine je Aufnahme');
-    });
+    test(
+      'achttausend Aufnahmen in zwei Minuten ergeben gut tausend Meldungen',
+      () {
+        // 15 ms je Foto ist optimistisch schnell; je schneller die Stufe
+        // läuft, desto mehr spart die Drosselung.
+        final zeiten = [for (var i = 1; i <= 8000; i++) i * 15];
+        expect(meldungen(zeiten, LibraryState.meldeabstand), lessThan(1300));
+        expect(
+          meldungen(zeiten, Duration.zero),
+          8001,
+          reason: 'ohne Drosselung eine je Aufnahme',
+        );
+      },
+    );
 
     test('eine langsame Stufe wird gar nicht gedrosselt', () {
       // Bildbeschreibung: ein paar Sekunden je Foto. Dort liegt zwischen

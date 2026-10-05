@@ -29,8 +29,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_tueren_');
     db = AppDatabase(NativeDatabase.memory());
-    final pfade =
-        await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    final pfade = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     bib = LibraryState()
       ..db = db
       ..paths = pfade
@@ -44,15 +45,18 @@ void main() {
   });
 
   Future<void> zeige(WidgetTester tester) async {
-    final person =
-        await (db.select(db.people)..where((t) => t.id.equals('p1'))).getSingle();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: PersonDetailScreen(library: bib, person: person),
-    ));
+    final person = await (db.select(
+      db.people,
+    )..where((t) => t.id.equals('p1'))).getSingle();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: PersonDetailScreen(library: bib, person: person),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
   }
@@ -68,8 +72,11 @@ void main() {
   testWidgets('von der Person führt ein Weg zum Lebenslauf', (tester) async {
     await zeige(tester);
     final knopf = find.byTooltip('Lebenslauf: Anna');
-    expect(knopf, findsOneWidget,
-        reason: 'ein sichtbarer Knopf, kein verborgenes Menü');
+    expect(
+      knopf,
+      findsOneWidget,
+      reason: 'ein sichtbarer Knopf, kein verborgenes Menü',
+    );
 
     await tester.tap(knopf);
     await tester.pump();

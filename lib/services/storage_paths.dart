@@ -95,7 +95,10 @@ class StoragePaths {
       File(p.join(root.path, 'model_processing_v1.json'));
 
   String originalRelativePath(
-      DateTime fileCreatedAt, String assetId, String extension) {
+    DateTime fileCreatedAt,
+    String assetId,
+    String extension,
+  ) {
     final yyyy = fileCreatedAt.year.toString().padLeft(4, '0');
     final mm = fileCreatedAt.month.toString().padLeft(2, '0');
     return p.join('originals', yyyy, mm, '$assetId$extension');
@@ -164,13 +167,19 @@ class StoragePaths {
   File absolute(String relativePath) {
     if (relativePath.isEmpty || p.isAbsolute(relativePath)) {
       throw ArgumentError.value(
-          relativePath, 'relativePath', 'Kein relativer Bibliothekspfad');
+        relativePath,
+        'relativePath',
+        'Kein relativer Bibliothekspfad',
+      );
     }
     final basis = p.normalize(p.absolute(root.path));
     final ziel = p.normalize(p.absolute(p.join(basis, relativePath)));
     if (!p.isWithin(basis, ziel)) {
       throw ArgumentError.value(
-          relativePath, 'relativePath', 'Path leaves the library root');
+        relativePath,
+        'relativePath',
+        'Path leaves the library root',
+      );
     }
     return File(ziel);
   }
@@ -196,8 +205,10 @@ class StoragePaths {
   Future<int> totalOriginalsSizeBytes() async {
     var total = 0;
     if (!await originalsDir.exists()) return 0;
-    await for (final entity
-        in originalsDir.list(recursive: true, followLinks: false)) {
+    await for (final entity in originalsDir.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (entity is File) total += await entity.length();
     }
     return total;
@@ -236,8 +247,10 @@ class StoragePaths {
     final teile = <String, int>{};
     var sonstiges = 0;
     if (await root.exists()) {
-      await for (final eintrag
-          in root.list(recursive: true, followLinks: false)) {
+      await for (final eintrag in root.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (eintrag is! File) continue;
         final laenge = await eintrag.length();
         final rest = p.relative(eintrag.path, from: root.path);
@@ -260,7 +273,10 @@ class StoragePaths {
       if (await datei.exists()) datenbank += await datei.length();
     }
     return Bibliotheksbelegung(
-        teile: teile, sonstiges: sonstiges, datenbank: datenbank);
+      teile: teile,
+      sonstiges: sonstiges,
+      datenbank: datenbank,
+    );
   }
 
   /// Entfernt ausschließlich abgebrochene Schreibreste, die kein gültiger
@@ -320,9 +336,9 @@ class Bibliotheksbelegung {
   /// B" sagt nichts, und zehn davon machen die drei, auf die es ankommt,
   /// unauffindbar.
   List<({String name, int bytes})> get posten => [
-        for (final ordner in StoragePaths.belegungsordner)
-          if ((teile[ordner] ?? 0) > 0) (name: ordner, bytes: teile[ordner]!),
-        if (datenbank > 0) (name: 'datenbank', bytes: datenbank),
-        if (sonstiges > 0) (name: 'sonstiges', bytes: sonstiges),
-      ];
+    for (final ordner in StoragePaths.belegungsordner)
+      if ((teile[ordner] ?? 0) > 0) (name: ordner, bytes: teile[ordner]!),
+    if (datenbank > 0) (name: 'datenbank', bytes: datenbank),
+    if (sonstiges > 0) (name: 'sonstiges', bytes: sonstiges),
+  ];
 }

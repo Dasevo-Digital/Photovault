@@ -104,11 +104,15 @@ class VideoPlaybackController {
     const grenze = Duration(seconds: 10);
     await Future.wait([
       if (_player.state.duration == Duration.zero)
-        _player.stream.duration.firstWhere((d) => d > Duration.zero).timeout(grenze)
+        _player.stream.duration
+            .firstWhere((d) => d > Duration.zero)
+            .timeout(grenze)
       else
         Future<void>.value(),
       if (_player.state.width == null)
-        _player.stream.width.firstWhere((w) => w != null && w > 0).timeout(grenze)
+        _player.stream.width
+            .firstWhere((w) => w != null && w > 0)
+            .timeout(grenze)
       else
         Future<void>.value(),
     ]);
@@ -116,7 +120,8 @@ class VideoPlaybackController {
 
   Future<void> play() => _disposed ? Future.value() : _player.play();
   Future<void> pause() => _disposed ? Future.value() : _player.pause();
-  Future<void> seek(Duration to) => _disposed ? Future.value() : _player.seek(to);
+  Future<void> seek(Duration to) =>
+      _disposed ? Future.value() : _player.seek(to);
   Future<void> seekToStart() => seek(Duration.zero);
 
   /// Lautstärke in Prozent (0 = still, 100 = wie aufgenommen).
@@ -150,7 +155,11 @@ class VideoSurface extends StatelessWidget {
   final VideoPlaybackController controller;
   final BoxFit fit;
 
-  const VideoSurface({super.key, required this.controller, this.fit = BoxFit.contain});
+  const VideoSurface({
+    super.key,
+    required this.controller,
+    this.fit = BoxFit.contain,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +211,8 @@ class VideoProgressBar extends StatelessWidget {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (d) => spuleZu(d.localPosition.dx, breite),
-                onHorizontalDragUpdate: (d) => spuleZu(d.localPosition.dx, breite),
+                onHorizontalDragUpdate: (d) =>
+                    spuleZu(d.localPosition.dx, breite),
                 child: SizedBox(
                   // Größer als der sichtbare Balken, damit er sich mit der
                   // Maus überhaupt treffen lässt.

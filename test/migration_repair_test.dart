@@ -32,30 +32,35 @@ void main() {
     await db.close();
 
     final roh = sqlite.sqlite3.open(datei.path);
-    roh.execute('ALTER TABLE app_settings DROP COLUMN auto_analyze_after_import;');
+    roh.execute(
+      'ALTER TABLE app_settings DROP COLUMN auto_analyze_after_import;',
+    );
     roh.execute('PRAGMA user_version = $version;');
     roh.close();
     return datei;
   }
 
-  test('fehlende Spalte wird nachgeholt, obwohl die Version sie vortäuscht', () async {
-    final datei = await beschaedigteDatenbank(28);
+  test(
+    'fehlende Spalte wird nachgeholt, obwohl die Version sie vortäuscht',
+    () async {
+      final datei = await beschaedigteDatenbank(28);
 
-    // Öffnen löst die Migration nach 29 aus.
-    final db = AppDatabase(NativeDatabase(datei));
-    final wert = await db.autoAnalyzeAfterImportEnabled();
-    await db.close();
+      // Öffnen löst die Migration nach 29 aus.
+      final db = AppDatabase(NativeDatabase(datei));
+      final wert = await db.autoAnalyzeAfterImportEnabled();
+      await db.close();
 
-    expect(wert, isTrue, reason: 'Standardwert muss lesbar sein');
+      expect(wert, isTrue, reason: 'Standardwert muss lesbar sein');
 
-    final roh = sqlite.sqlite3.open(datei.path);
-    final spalten = roh
-        .select('PRAGMA table_info(app_settings)')
-        .map((r) => r['name'] as String)
-        .toSet();
-    roh.close();
-    expect(spalten, contains('auto_analyze_after_import'));
-  });
+      final roh = sqlite.sqlite3.open(datei.path);
+      final spalten = roh
+          .select('PRAGMA table_info(app_settings)')
+          .map((r) => r['name'] as String)
+          .toSet();
+      roh.close();
+      expect(spalten, contains('auto_analyze_after_import'));
+    },
+  );
 
   test('vorhandene Daten überleben die Reparatur', () async {
     final datei = await beschaedigteDatenbank(28);
@@ -64,20 +69,26 @@ void main() {
     final zeile = await db.watchAppSettings().first;
     await db.close();
 
-    expect(zeile?.themeMode, 'dark',
-        reason: 'die Reparatur darf bestehende Einstellungen nicht verwerfen');
+    expect(
+      zeile?.themeMode,
+      'dark',
+      reason: 'die Reparatur darf bestehende Einstellungen nicht verwerfen',
+    );
   });
 
-  test('eine bereits vollständige Datenbank wird nicht doppelt migriert', () async {
-    // Frisch angelegt = vollständiges Schema. Ein erneutes Öffnen darf
-    // nicht an "duplicate column" scheitern.
-    final datei = File('${temp.path}/frisch.sqlite');
-    var db = AppDatabase(NativeDatabase(datei));
-    await db.setAutoAnalyzeAfterImport(false);
-    await db.close();
+  test(
+    'eine bereits vollständige Datenbank wird nicht doppelt migriert',
+    () async {
+      // Frisch angelegt = vollständiges Schema. Ein erneutes Öffnen darf
+      // nicht an "duplicate column" scheitern.
+      final datei = File('${temp.path}/frisch.sqlite');
+      var db = AppDatabase(NativeDatabase(datei));
+      await db.setAutoAnalyzeAfterImport(false);
+      await db.close();
 
-    db = AppDatabase(NativeDatabase(datei));
-    expect(await db.autoAnalyzeAfterImportEnabled(), isFalse);
-    await db.close();
-  });
+      db = AppDatabase(NativeDatabase(datei));
+      expect(await db.autoAnalyzeAfterImportEnabled(), isFalse);
+      await db.close();
+    },
+  );
 }

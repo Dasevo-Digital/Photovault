@@ -21,7 +21,9 @@ void main() {
     tempRoot = Directory.systemTemp.createTempSync('pv_watch_');
     beobachtet = Directory(p.join(tempRoot.path, 'kamera'))..createSync();
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     lib = LibraryState()
       ..db = db
       ..paths = paths
@@ -34,7 +36,8 @@ void main() {
   });
 
   File lege(String name, int fuellung) =>
-      File(p.join(beobachtet.path, name))..writeAsBytesSync(List.filled(64, fuellung));
+      File(p.join(beobachtet.path, name))
+        ..writeAsBytesSync(List.filled(64, fuellung));
 
   test('ohne eingerichteten Ordner passiert nichts', () async {
     expect(await lib.pruefeUeberwachtenOrdner(), 0);
@@ -55,9 +58,13 @@ void main() {
     await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
     await lib.pruefeUeberwachtenOrdner();
 
-    expect(await lib.pruefeUeberwachtenOrdner(), 0,
-        reason: 'die Prüfsummenerkennung des Imports muss greifen, sonst '
-            'wüchse die Bibliothek bei jedem Durchgang');
+    expect(
+      await lib.pruefeUeberwachtenOrdner(),
+      0,
+      reason:
+          'die Prüfsummenerkennung des Imports muss greifen, sonst '
+          'wüchse die Bibliothek bei jedem Durchgang',
+    );
     expect(await db.select(db.assets).get(), hasLength(1));
 
     // Erst eine wirklich neue Datei kommt hinzu.
@@ -82,8 +89,11 @@ void main() {
         .whereType<File>()
         .map((f) => '${p.basename(f.path)}:${f.lengthSync()}')
         .toList();
-    expect(nachher, vorher,
-        reason: 'ein fremder Ordner wird gelesen, nicht aufgeräumt');
+    expect(
+      nachher,
+      vorher,
+      reason: 'ein fremder Ordner wird gelesen, nicht aufgeräumt',
+    );
   });
 
   test('die Überwachung lässt sich wieder abschalten', () async {
@@ -99,8 +109,13 @@ void main() {
   });
 
   test('ein verschwundener Ordner wirft nicht', () async {
-    await db.setzeUeberwachtenOrdner(pfad: p.join(tempRoot.path, 'gibtesnicht'));
-    expect(await lib.pruefeUeberwachtenOrdner(), 0,
-        reason: 'eine abgezogene Platte darf den Programmstart nicht stören');
+    await db.setzeUeberwachtenOrdner(
+      pfad: p.join(tempRoot.path, 'gibtesnicht'),
+    );
+    expect(
+      await lib.pruefeUeberwachtenOrdner(),
+      0,
+      reason: 'eine abgezogene Platte darf den Programmstart nicht stören',
+    );
   });
 }

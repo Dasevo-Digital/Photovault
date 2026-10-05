@@ -55,7 +55,8 @@ void main() {
       // liegt nur unter tool/, weil es kein Teil der Suite sein soll.
       // ignore: invalid_use_of_visible_for_testing_member
       final paths = await StoragePaths.forTesting(
-          Directory(p.join(wurzel.path, 'lib')));
+        Directory(p.join(wurzel.path, 'lib')),
+      );
       library = LibraryState()
         ..db = db
         ..paths = paths;
@@ -73,13 +74,15 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: RepaintBoundary(child: HomeShell(library: library)),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: RepaintBoundary(child: HomeShell(library: library)),
+        ),
+      );
       await tester.pump();
 
       // Ein echter Bildschirm der App, nicht ein gestellter Kasten: Der
@@ -87,18 +90,20 @@ void main() {
       // Naht zwischen Leiste und fremder Titelzeile entscheidet sich, ob
       // das Ganze aussieht wie gewollt.
       final kontext = tester.element(find.byType(TimelineScreen));
-      unawaited(Navigator.of(kontext, rootNavigator: ganzesFenster).push(
-        MaterialPageRoute<void>(
-          builder: (_) => TrashScreen(library: library),
+      unawaited(
+        Navigator.of(kontext, rootNavigator: ganzesFenster).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TrashScreen(library: library),
+          ),
         ),
-      ));
+      );
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      final grenze = tester
-          .firstElement(find.byType(RepaintBoundary))
-          .renderObject! as RenderRepaintBoundary;
+      final grenze =
+          tester.firstElement(find.byType(RepaintBoundary)).renderObject!
+              as RenderRepaintBoundary;
       await tester.runAsync(() async {
         final bild = await grenze.toImage(pixelRatio: 1.0);
         final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
@@ -108,8 +113,10 @@ void main() {
         await datei.parent.create(recursive: true);
         await datei.writeAsBytes(daten!.buffer.asUint8List());
         // ignore: avoid_print
-        print('geschrieben: ${datei.path} '
-            '(${daten.lengthInBytes ~/ 1024} KB)');
+        print(
+          'geschrieben: ${datei.path} '
+          '(${daten.lengthInBytes ~/ 1024} KB)',
+        );
       });
     }
 

@@ -15,8 +15,9 @@ import 'package:photo_vault/services/standort_parser.dart';
 void main() {
   group('Ortungsausgabe, echte Form', () {
     test('WLAN-Position wird übernommen', () {
-      final roh =
-          File('test/fixtures/werkzeuge/pv_standort_wifi.json').readAsStringSync();
+      final roh = File(
+        'test/fixtures/werkzeuge/pv_standort_wifi.json',
+      ).readAsStringSync();
       final ort = parseStandort(roh);
       expect(ort, isNotNull);
       expect(ort!.quelle, 'WiFi');
@@ -27,8 +28,13 @@ void main() {
     });
 
     test('abschliessender Zeilenumbruch stört nicht', () {
-      expect(parseStandort('{"breite":52.0,"laenge":10.0,'
-          '"genauigkeit":19.0,"quelle":"WiFi"}\r\n'), isNotNull);
+      expect(
+        parseStandort(
+          '{"breite":52.0,"laenge":10.0,'
+          '"genauigkeit":19.0,"quelle":"WiFi"}\r\n',
+        ),
+        isNotNull,
+      );
     });
   });
 
@@ -40,43 +46,66 @@ void main() {
     // Lüge, der der Nutzer glaubt.
     test('IP-Position wird nicht durchgereicht', () {
       expect(
-          parseStandort('{"breite":50.1109,"laenge":8.68213,'
-              '"genauigkeit":25000.0,"quelle":"IPAddress"}'),
-          isNull);
+        parseStandort(
+          '{"breite":50.1109,"laenge":8.68213,'
+          '"genauigkeit":25000.0,"quelle":"IPAddress"}',
+        ),
+        isNull,
+      );
     });
 
     test('auch eine IP-Position mit schöner Genauigkeit nicht', () {
       // Die Herkunft entscheidet, nicht die behauptete Güte.
       expect(
-          parseStandort('{"breite":50.1109,"laenge":8.68213,'
-              '"genauigkeit":20.0,"quelle":"IPAddress"}'),
-          isNull);
+        parseStandort(
+          '{"breite":50.1109,"laenge":8.68213,'
+          '"genauigkeit":20.0,"quelle":"IPAddress"}',
+        ),
+        isNull,
+      );
     });
 
     test('Default und Obfuscated gelten nicht als Messung', () {
       for (final q in ['Default', 'Obfuscated', 'Unknown']) {
-        expect(parseStandort('{"breite":52.0,"laenge":10.0,'
-            '"genauigkeit":30.0,"quelle":"$q"}'), isNull,
-            reason: 'Quelle $q');
+        expect(
+          parseStandort(
+            '{"breite":52.0,"laenge":10.0,'
+            '"genauigkeit":30.0,"quelle":"$q"}',
+          ),
+          isNull,
+          reason: 'Quelle $q',
+        );
       }
     });
 
     test('WLAN, aber jenseits der Genauigkeitsgrenze', () {
       expect(
-          parseStandort('{"breite":52.0,"laenge":10.0,'
-              '"genauigkeit":${hoechsteGenauigkeitMeter + 1},"quelle":"WiFi"}'),
-          isNull);
+        parseStandort(
+          '{"breite":52.0,"laenge":10.0,'
+          '"genauigkeit":${hoechsteGenauigkeitMeter + 1},"quelle":"WiFi"}',
+        ),
+        isNull,
+      );
       // Genau auf der Grenze zählt noch.
       expect(
-          parseStandort('{"breite":52.0,"laenge":10.0,'
-              '"genauigkeit":$hoechsteGenauigkeitMeter,"quelle":"WiFi"}'),
-          isNotNull);
+        parseStandort(
+          '{"breite":52.0,"laenge":10.0,'
+          '"genauigkeit":$hoechsteGenauigkeitMeter,"quelle":"WiFi"}',
+        ),
+        isNotNull,
+      );
     });
 
     test('Genauigkeit null oder negativ ist keine Angabe', () {
       for (final g in ['0', '-1']) {
-        expect(parseStandort('{"breite":52.0,"laenge":10.0,'
-            '"genauigkeit":$g,"quelle":"WiFi"}'), isNull, reason: 'g=$g');
+        expect(
+          parseStandort(
+            '{"breite":52.0,"laenge":10.0,'
+            '"genauigkeit":$g,"quelle":"WiFi"}',
+          ),
+          isNull,
+          reason: 'g=$g',
+        );
       }
     });
 
@@ -88,18 +117,31 @@ void main() {
 
     test('unmögliche Koordinaten', () {
       expect(
-          parseStandort('{"breite":91.0,"laenge":10.0,'
-              '"genauigkeit":19.0,"quelle":"WiFi"}'),
-          isNull);
+        parseStandort(
+          '{"breite":91.0,"laenge":10.0,'
+          '"genauigkeit":19.0,"quelle":"WiFi"}',
+        ),
+        isNull,
+      );
       expect(
-          parseStandort('{"breite":52.0,"laenge":181.0,'
-              '"genauigkeit":19.0,"quelle":"WiFi"}'),
-          isNull);
+        parseStandort(
+          '{"breite":52.0,"laenge":181.0,'
+          '"genauigkeit":19.0,"quelle":"WiFi"}',
+        ),
+        isNull,
+      );
     });
 
     test('kaputte oder leere Ausgabe wirft nicht', () {
-      for (final t in ['', '   ', 'nicht als Programm erkannt', '[]', '{}',
-        '{"breite":52.0}', 'null']) {
+      for (final t in [
+        '',
+        '   ',
+        'nicht als Programm erkannt',
+        '[]',
+        '{}',
+        '{"breite":52.0}',
+        'null',
+      ]) {
         expect(parseStandort(t), isNull, reason: 'Eingabe: "$t"');
       }
     });

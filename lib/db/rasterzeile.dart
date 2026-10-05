@@ -37,7 +37,8 @@ import 'database.dart';
 ///
 /// Sie stehen hier und nicht in der Abfrage, damit Spaltenliste und
 /// Klasse nebeneinander liegen: Wer ein Feld ergänzt, sieht beides.
-const String rasterSpalten = 'id, type, original_file_name, relative_path, '
+const String rasterSpalten =
+    'id, type, original_file_name, relative_path, '
     'thumbnail_relative_path, file_created_at, duration_seconds, '
     'is_favorite, is_stack_cover, stack_id, stack_size, linked_asset_id, '
     'rating, color_label, width_px, height_px, latitude, longitude, '
@@ -54,7 +55,8 @@ const String rasterSpalten = 'id, type, original_file_name, relative_path, '
 /// blendete dieselben 144 korrekt aus. Eine Bedingung, die an zwei
 /// Stellen geschrieben wird, verliert irgendwann an einer davon ihre
 /// Hälfte; deshalb steht sie jetzt einmal da.
-const String rasterSichtbar = 'is_trashed = 0 AND is_locked = 0 '
+const String rasterSichtbar =
+    'is_trashed = 0 AND is_locked = 0 '
     "AND (type = 'IMAGE' OR linked_asset_id IS NULL) "
     'AND (stack_id IS NULL OR is_stack_cover = 1)';
 
@@ -109,27 +111,27 @@ class Rasterzeile {
   /// anderen). Sie gewinnen nichts, verlieren aber auch nichts: Die
   /// Umwandlung ist ein Feldzugriff je Spalte.
   factory Rasterzeile.aus(AssetData a) => Rasterzeile(
-        id: a.id,
-        type: a.type,
-        originalFileName: a.originalFileName,
-        relativePath: a.relativePath,
-        thumbnailRelativePath: a.thumbnailRelativePath,
-        fileCreatedAt: a.fileCreatedAt,
-        durationSeconds: a.durationSeconds,
-        isFavorite: a.isFavorite,
-        isStackCover: a.isStackCover,
-        stackId: a.stackId,
-        stackSize: a.stackSize,
-        linkedAssetId: a.linkedAssetId,
-        rating: a.rating,
-        colorLabel: a.colorLabel,
-        widthPx: a.widthPx,
-        heightPx: a.heightPx,
-        latitude: a.latitude,
-        longitude: a.longitude,
-        cameraMake: a.cameraMake,
-        isLocked: a.isLocked,
-      );
+    id: a.id,
+    type: a.type,
+    originalFileName: a.originalFileName,
+    relativePath: a.relativePath,
+    thumbnailRelativePath: a.thumbnailRelativePath,
+    fileCreatedAt: a.fileCreatedAt,
+    durationSeconds: a.durationSeconds,
+    isFavorite: a.isFavorite,
+    isStackCover: a.isStackCover,
+    stackId: a.stackId,
+    stackSize: a.stackSize,
+    linkedAssetId: a.linkedAssetId,
+    rating: a.rating,
+    colorLabel: a.colorLabel,
+    widthPx: a.widthPx,
+    heightPx: a.heightPx,
+    latitude: a.latitude,
+    longitude: a.longitude,
+    cameraMake: a.cameraMake,
+    isLocked: a.isLocked,
+  );
 
   /// Aus einer rohen Abfragezeile – der Weg, um dessentwillen es diese
   /// Klasse gibt.
@@ -139,28 +141,29 @@ class Rasterzeile {
   /// hier `fromMillisecondsSinceEpoch` schriebe, bekäme das Jahr 1970 –
   /// und alle Aufnahmen in einer einzigen Monatsgruppe.
   factory Rasterzeile.ausZeile(QueryRow r) => Rasterzeile(
-        id: r.read<String>('id'),
-        type: r.read<String>('type'),
-        originalFileName: r.read<String>('original_file_name'),
-        relativePath: r.read<String>('relative_path'),
-        thumbnailRelativePath: r.readNullable<String>('thumbnail_relative_path'),
-        fileCreatedAt: DateTime.fromMillisecondsSinceEpoch(
-            r.read<int>('file_created_at') * 1000),
-        durationSeconds: r.readNullable<double>('duration_seconds'),
-        isFavorite: r.read<int>('is_favorite') != 0,
-        isStackCover: r.read<int>('is_stack_cover') != 0,
-        stackId: r.readNullable<String>('stack_id'),
-        stackSize: r.readNullable<int>('stack_size'),
-        linkedAssetId: r.readNullable<String>('linked_asset_id'),
-        rating: r.read<int>('rating'),
-        colorLabel: r.readNullable<String>('color_label'),
-        widthPx: r.readNullable<int>('width_px'),
-        heightPx: r.readNullable<int>('height_px'),
-        latitude: r.readNullable<double>('latitude'),
-        longitude: r.readNullable<double>('longitude'),
-        cameraMake: r.readNullable<String>('camera_make'),
-        isLocked: r.read<int>('is_locked') != 0,
-      );
+    id: r.read<String>('id'),
+    type: r.read<String>('type'),
+    originalFileName: r.read<String>('original_file_name'),
+    relativePath: r.read<String>('relative_path'),
+    thumbnailRelativePath: r.readNullable<String>('thumbnail_relative_path'),
+    fileCreatedAt: DateTime.fromMillisecondsSinceEpoch(
+      r.read<int>('file_created_at') * 1000,
+    ),
+    durationSeconds: r.readNullable<double>('duration_seconds'),
+    isFavorite: r.read<int>('is_favorite') != 0,
+    isStackCover: r.read<int>('is_stack_cover') != 0,
+    stackId: r.readNullable<String>('stack_id'),
+    stackSize: r.readNullable<int>('stack_size'),
+    linkedAssetId: r.readNullable<String>('linked_asset_id'),
+    rating: r.read<int>('rating'),
+    colorLabel: r.readNullable<String>('color_label'),
+    widthPx: r.readNullable<int>('width_px'),
+    heightPx: r.readNullable<int>('height_px'),
+    latitude: r.readNullable<double>('latitude'),
+    longitude: r.readNullable<double>('longitude'),
+    cameraMake: r.readNullable<String>('camera_make'),
+    isLocked: r.read<int>('is_locked') != 0,
+  );
 
   /// Das Format-Kürzel für die Kachel – dieselbe Rechnung wie für eine
   /// volle Zeile, siehe [formatKuerzel].

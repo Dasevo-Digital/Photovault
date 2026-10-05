@@ -59,8 +59,11 @@ void main() {
     // der Tabelle (𝑢 und 𝜓, mathematische Kursive) liegen ausserhalb der
     // Grundebene und zählen als zwei Einheiten. Mit `length` wäre diese
     // Prüfung an echten, richtigen Daten rot geworden.
-    expect(tabelle.where((z) => z.runes.length != 1), isEmpty,
-        reason: 'jeder Eintrag ist genau ein Zeichen');
+    expect(
+      tabelle.where((z) => z.runes.length != 1),
+      isEmpty,
+      reason: 'jeder Eintrag ist genau ein Zeichen',
+    );
   });
 
   test('der doppelte Apostroph wird zu einem', () {
@@ -114,15 +117,17 @@ PostProcess:
   use_space_char: true
   - C
 ''';
-    expect(OcrService.zeichenAusKonfig(konfig), ['A', 'B'],
-        reason: 'was nach dem Block steht, gehört nicht dazu');
+    expect(
+      OcrService.zeichenAusKonfig(konfig),
+      ['A', 'B'],
+      reason: 'was nach dem Block steht, gehört nicht dazu',
+    );
   });
 
   test('der Katalog nennt genau die Datei, die der Dienst liest', () {
     // Die beiden liefen schon einmal auseinander: Der Katalog lud eine
     // `ocr_dict.txt`, die es nach dem Modellwechsel nicht mehr gibt.
-    final namen =
-        ModelCatalog.ocrPaddle.files.map((f) => f.fileName).toList();
+    final namen = ModelCatalog.ocrPaddle.files.map((f) => f.fileName).toList();
     expect(namen, contains(OcrService.zeichenDatei));
     expect(namen, contains(OcrService.erkennungsDatei));
     expect(namen, contains(OcrService.lesungsDatei));
@@ -130,8 +135,9 @@ PostProcess:
 
   test('die Vorlage ist die ausgelieferte Datei', () {
     // Sonst prüfte alles oben eine Datei, die niemand bekommt.
-    final eintrag = ModelCatalog.ocrPaddle.files
-        .firstWhere((f) => f.fileName == OcrService.zeichenDatei);
+    final eintrag = ModelCatalog.ocrPaddle.files.firstWhere(
+      (f) => f.fileName == OcrService.zeichenDatei,
+    );
     expect(echte.lengthSync(), eintrag.bytes);
   });
 }

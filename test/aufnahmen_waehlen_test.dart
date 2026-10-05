@@ -23,7 +23,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_wahl_');
     db = AppDatabase(NativeDatabase.memory());
-    final pfade = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    final pfade = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     bib = LibraryState()
       ..db = db
       ..paths = pfade
@@ -35,15 +37,19 @@ void main() {
       ('a2', 14, 11),
       ('alt', 7, 9),
     ]) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 6, tag, stunde),
-            importedAt: DateTime(2026),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/$id.jpg',
+              checksum: 'c-$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 6, tag, stunde),
+              importedAt: DateTime(2026),
+            ),
+          );
     }
   });
 
@@ -56,37 +62,42 @@ void main() {
   /// zurück, wenn er verlassen wird – lange nachdem [zeige] fertig ist.
   final ergebnisse = <String, Set<String>?>{};
 
-  Future<void> zeige(WidgetTester tester,
-      {required Set<String> vorhanden}) async {
+  Future<void> zeige(
+    WidgetTester tester, {
+    required Set<String> vorhanden,
+  }) async {
     ergebnisse.clear();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Builder(
-        builder: (context) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                ergebnisse['wahl'] = await Navigator.of(context).push<Set<String>>(
-                  MaterialPageRoute(
-                    builder: (_) => AufnahmenWaehlenScreen(
-                      library: bib,
-                      titel: 'Fotos',
-                      vorhanden: vorhanden,
-                      von: DateTime(2026, 6, 14, 9),
-                      bis: DateTime(2026, 6, 14, 11),
-                    ),
-                  ),
-                );
-              },
-              child: const Text('auf'),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  ergebnisse['wahl'] = await Navigator.of(context)
+                      .push<Set<String>>(
+                        MaterialPageRoute(
+                          builder: (_) => AufnahmenWaehlenScreen(
+                            library: bib,
+                            titel: 'Fotos',
+                            vorhanden: vorhanden,
+                            von: DateTime(2026, 6, 14, 9),
+                            bis: DateTime(2026, 6, 14, 11),
+                          ),
+                        ),
+                      );
+                },
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     // Bis der Übergang durch ist: Während die Seite hereinschiebt,
     // liegt ihre Leiste noch neben dem Fenster, und ein Tipp darauf
@@ -99,8 +110,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('der Zeitraum ist die Voreinstellung, nicht die Grenze',
-      (tester) async {
+  testWidgets('der Zeitraum ist die Voreinstellung, nicht die Grenze', (
+    tester,
+  ) async {
     await zeige(tester, vorhanden: {'a0', 'a1'});
     // Drei aus dem Zeitraum – das alte Foto ist nicht dabei.
     expect(find.byType(AssetThumbnailTile), findsNWidgets(3));
@@ -174,21 +186,27 @@ void main() {
 
     setUp(() async {
       d2 = db;
-      await d2.into(d2.aktivitaeten).insert(AktivitaetenCompanion.insert(
-            id: 'akt',
-            name: 'Wanderung',
-            art: 'wanderung',
-            von: DateTime(2026, 6, 14, 9),
-            bis: DateTime(2026, 6, 14, 11),
-            angelegtAm: DateTime(2026, 6, 14),
-          ));
+      await d2
+          .into(d2.aktivitaeten)
+          .insert(
+            AktivitaetenCompanion.insert(
+              id: 'akt',
+              name: 'Wanderung',
+              art: 'wanderung',
+              von: DateTime(2026, 6, 14, 9),
+              bis: DateTime(2026, 6, 14, 11),
+              angelegtAm: DateTime(2026, 6, 14),
+            ),
+          );
     });
 
     test('sie enthaelt auch, was der Bildschirm nicht zeigen darf', () async {
-      await (d2.update(d2.assets)..where((t) => t.id.equals('a1')))
-          .write(const AssetsCompanion(isTrashed: Value(true)));
-      await (d2.update(d2.assets)..where((t) => t.id.equals('a2')))
-          .write(const AssetsCompanion(isLocked: Value(true)));
+      await (d2.update(d2.assets)..where((t) => t.id.equals('a1'))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
+      await (d2.update(d2.assets)..where((t) => t.id.equals('a2'))).write(
+        const AssetsCompanion(isLocked: Value(true)),
+      );
       await d2.setzeAufnahmenDerAktivitaet('akt', {'a0', 'a1', 'a2'});
 
       // Was der Bildschirm zeigen kann:
@@ -201,16 +219,20 @@ void main() {
     });
 
     test('Fertig ohne Aenderung laesst alles stehen', () async {
-      await (d2.update(d2.assets)..where((t) => t.id.equals('a1')))
-          .write(const AssetsCompanion(isTrashed: Value(true)));
+      await (d2.update(d2.assets)..where((t) => t.id.equals('a1'))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
       await d2.setzeAufnahmenDerAktivitaet('akt', {'a0', 'a1'});
 
       // Der Weg, den der Detailbildschirm jetzt geht.
       final vorher = await d2.zuordnungenDerAktivitaet('akt');
       await d2.setzeAufnahmenDerAktivitaet('akt', vorher);
 
-      expect(await d2.zuordnungenDerAktivitaet('akt'), {'a0', 'a1'},
-          reason: 'ohne Antippen darf nichts verschwinden');
+      expect(
+        await d2.zuordnungenDerAktivitaet('akt'),
+        {'a0', 'a1'},
+        reason: 'ohne Antippen darf nichts verschwinden',
+      );
     });
 
     test('ein einziger Haken loescht die uebrigen nicht', () async {
@@ -220,20 +242,29 @@ void main() {
       final vorher = await d2.zuordnungenDerAktivitaet('akt');
       await d2.setzeAufnahmenDerAktivitaet('akt', {...vorher, 'alt'});
 
-      expect(await d2.zuordnungenDerAktivitaet('akt'),
-          {'a0', 'a1', 'a2', 'alt'});
+      expect(await d2.zuordnungenDerAktivitaet('akt'), {
+        'a0',
+        'a1',
+        'a2',
+        'alt',
+      });
     });
 
     test('dasselbe fuer Reisen', () async {
-      await d2.into(d2.reisen).insert(ReisenCompanion.insert(
-            id: 'r1',
-            name: 'Reise',
-            von: DateTime(2026, 6, 14, 9),
-            bis: DateTime(2026, 6, 14, 11),
-            angelegtAm: DateTime(2026, 6, 14),
-          ));
-      await (d2.update(d2.assets)..where((t) => t.id.equals('a1')))
-          .write(const AssetsCompanion(isTrashed: Value(true)));
+      await d2
+          .into(d2.reisen)
+          .insert(
+            ReisenCompanion.insert(
+              id: 'r1',
+              name: 'Reise',
+              von: DateTime(2026, 6, 14, 9),
+              bis: DateTime(2026, 6, 14, 11),
+              angelegtAm: DateTime(2026, 6, 14),
+            ),
+          );
+      await (d2.update(d2.assets)..where((t) => t.id.equals('a1'))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
       await d2.setzeAufnahmenDerReise('r1', {'a0', 'a1'});
 
       expect((await d2.aufnahmenDerReise('r1')).map((a) => a.id), ['a0']);
@@ -245,15 +276,23 @@ void main() {
       // seiner Anzeigeliste baut - genau das war der Fehler. Geprueft
       // wird deshalb die Verdrahtung, wie in karten_kachelspeicher_test.
       for (final (pfad, erwartet) in [
-        ('lib/screens/aktivitaet_detail_screen.dart',
-            'zuordnungenDerAktivitaet'),
+        (
+          'lib/screens/aktivitaet_detail_screen.dart',
+          'zuordnungenDerAktivitaet',
+        ),
         ('lib/screens/reise_detail_screen.dart', 'zuordnungenDerReise'),
       ]) {
         final quelle = File(pfad).readAsStringSync();
-        expect(quelle, contains(erwartet),
-            reason: '$pfad baut die Ausgangsmenge nicht aus der Datenbank');
-        expect(quelle, isNot(contains('final vorher = {for (final a in _aufnahmen)')),
-            reason: '$pfad baut sie noch aus der Anzeigeliste');
+        expect(
+          quelle,
+          contains(erwartet),
+          reason: '$pfad baut die Ausgangsmenge nicht aus der Datenbank',
+        );
+        expect(
+          quelle,
+          isNot(contains('final vorher = {for (final a in _aufnahmen)')),
+          reason: '$pfad baut sie noch aus der Anzeigeliste',
+        );
       }
     });
   });

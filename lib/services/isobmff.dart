@@ -82,8 +82,15 @@ Kasten? sucheKasten(
     if (k.art == art) return k;
     if (tiefe < maxTiefe && absteigenIn.contains(k.art)) {
       final ab = kinderVon(b, k);
-      final treffer = sucheKasten(b, ab, k.inhaltBis, art,
-          absteigenIn: absteigenIn, tiefe: tiefe + 1, maxTiefe: maxTiefe);
+      final treffer = sucheKasten(
+        b,
+        ab,
+        k.inhaltBis,
+        art,
+        absteigenIn: absteigenIn,
+        tiefe: tiefe + 1,
+        maxTiefe: maxTiefe,
+      );
       if (treffer != null) return treffer;
     }
   }
@@ -144,8 +151,9 @@ Future<Uint8List?> kastenAusDatei(
       await griff.setPosition(p);
       final kopfBytes = await griff.read(8);
       if (kopfBytes.length < 8) return null;
-      var groesse =
-          ByteData.sublistView(Uint8List.fromList(kopfBytes)).getUint32(0);
+      var groesse = ByteData.sublistView(
+        Uint8List.fromList(kopfBytes),
+      ).getUint32(0);
       var kopf = 8;
       if (groesse == 1) {
         final weiter = await griff.read(8);
@@ -185,8 +193,13 @@ Future<Uint8List?> kastenAusDatei(
 /// Aufnahmedatum und die Kamera tragen (siehe [zeitAusMoov]) – der
 /// gleiche Griff, dreimal gebraucht.
 String? appleSchluesselwert(Uint8List moov, String schluessel) {
-  final meta = sucheKasten(moov, 0, moov.length, 'meta',
-      absteigenIn: const {'moov', 'udta'});
+  final meta = sucheKasten(
+    moov,
+    0,
+    moov.length,
+    'meta',
+    absteigenIn: const {'moov', 'udta'},
+  );
   if (meta == null) return null;
   final ab = kinderVon(moov, meta);
 
@@ -250,15 +263,21 @@ String? _wertAusIlst(Uint8List b, Kasten ilst, int nummer) {
 /// Schreiber, die den Vorspann weglassen – deshalb wird die angegebene
 /// Länge geprüft und nur benutzt, wenn sie in den Kasten passt.
 String? udtaAnmerkung(Uint8List moov, String atom) {
-  final k = sucheKasten(moov, 0, moov.length, atom,
-      absteigenIn: const {'moov', 'udta', 'meta'});
+  final k = sucheKasten(
+    moov,
+    0,
+    moov.length,
+    atom,
+    absteigenIn: const {'moov', 'udta', 'meta'},
+  );
   if (k == null) return null;
   final laenge = k.inhaltBis - k.inhaltVon;
   if (laenge >= 4) {
     final angegeben = ByteData.sublistView(moov).getUint16(k.inhaltVon);
     if (angegeben > 0 && k.inhaltVon + 4 + angegeben <= k.inhaltBis) {
       return String.fromCharCodes(
-          moov.sublist(k.inhaltVon + 4, k.inhaltVon + 4 + angegeben));
+        moov.sublist(k.inhaltVon + 4, k.inhaltVon + 4 + angegeben),
+      );
     }
   }
   return laenge <= 0

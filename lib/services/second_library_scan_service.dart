@@ -22,7 +22,11 @@ class ExternalLibrary {
   final Map<String, Float32List> embeddings;
   final Map<String, AssetData> assetsById;
   final Directory root;
-  const ExternalLibrary({required this.embeddings, required this.assetsById, required this.root});
+  const ExternalLibrary({
+    required this.embeddings,
+    required this.assetsById,
+    required this.root,
+  });
 }
 
 /// Ein Treffer zwischen einem eigenen Foto und einem inhaltlich sehr
@@ -76,10 +80,14 @@ class ExternalDuplicateMatch {
 Future<ExternalLibrary> loadExternalLibrary(Directory secondLibraryRoot) async {
   final dbFile = File(p.join(secondLibraryRoot.path, 'library.sqlite'));
   if (!await dbFile.exists()) {
-    throw StateError('Kein PhotoVault-Ordner: library.sqlite fehlt unter "${secondLibraryRoot.path}".');
+    throw StateError(
+      'Kein PhotoVault-Ordner: library.sqlite fehlt unter "${secondLibraryRoot.path}".',
+    );
   }
 
-  final tempDir = await Directory.systemTemp.createTemp('photo_vault_second_library_');
+  final tempDir = await Directory.systemTemp.createTemp(
+    'photo_vault_second_library_',
+  );
   AppDatabase? secondDb;
   try {
     final tempDbFile = File(p.join(tempDir.path, 'library.sqlite'));
@@ -114,21 +122,29 @@ Future<List<ExternalDuplicateMatch>> matchAgainstExternalLibrary({
 
   final combined = <String, Float32List>{
     ...ownEmbeddings,
-    for (final entry in external.embeddings.entries) '$_externalPrefix${entry.key}': entry.value,
+    for (final entry in external.embeddings.entries)
+      '$_externalPrefix${entry.key}': entry.value,
   };
 
   // Derselbe LSH-vorgefilterte Union-Find-Vergleich wie bei der internen
   // Duplikatsuche (siehe DuplicatesScreen) – findDuplicateGroups kennt keine
   // Vault-Zugehörigkeit, nur Strings, daher die Präfix-Trennung oben.
-  final groups = await compute(findDuplicateGroups, DuplicateSearchParams(combined, threshold));
+  final groups = await compute(
+    findDuplicateGroups,
+    DuplicateSearchParams(combined, threshold),
+  );
 
   final ownIdsNeeded = <String>{};
   final pairs = <(String ownId, String externalId)>[];
   for (final group in groups) {
-    final ownIds = [for (final id in group) if (!id.startsWith(_externalPrefix)) id];
+    final ownIds = [
+      for (final id in group)
+        if (!id.startsWith(_externalPrefix)) id,
+    ];
     final externalIds = [
       for (final id in group)
-        if (id.startsWith(_externalPrefix)) id.substring(_externalPrefix.length)
+        if (id.startsWith(_externalPrefix))
+          id.substring(_externalPrefix.length),
     ];
     // Nur Gruppen mit mindestens einem eigenen UND einem externen Foto sind
     // hier relevant – rein interne Ähnlichkeits-Cluster (nur eigene oder nur
@@ -149,7 +165,8 @@ Future<List<ExternalDuplicateMatch>> matchAgainstExternalLibrary({
 
   return [
     for (final (ownId, externalId) in pairs)
-      if (ownAssetsById[ownId] != null && external.assetsById[externalId] != null)
+      if (ownAssetsById[ownId] != null &&
+          external.assetsById[externalId] != null)
         ExternalDuplicateMatch(
           ownAsset: ownAssetsById[ownId]!,
           externalAssetId: externalId,
@@ -160,8 +177,18 @@ Future<List<ExternalDuplicateMatch>> matchAgainstExternalLibrary({
           // liegen) – deshalb hier die tatsächliche Ähnlichkeit DIESES
           // konkreten Paares neu berechnet statt sie aus der Gruppenbildung
           // zu übernehmen.
-          similarity: cosineSimilarity(ownEmbeddings[ownId]!, external.embeddings[externalId]!),
-          externalThumbnail: File(p.join(external.root.path, 'library', 'thumbnails', '$externalId.jpg')),
+          similarity: cosineSimilarity(
+            ownEmbeddings[ownId]!,
+            external.embeddings[externalId]!,
+          ),
+          externalThumbnail: File(
+            p.join(
+              external.root.path,
+              'library',
+              'thumbnails',
+              '$externalId.jpg',
+            ),
+          ),
         ),
   ];
 }

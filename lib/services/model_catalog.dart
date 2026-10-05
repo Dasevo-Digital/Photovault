@@ -88,56 +88,57 @@ class ModelCatalogEntry {
 /// [ModelCatalogEntry.id], dieselbe Kennung, unter der die Dateien im
 /// Modellordner liegen.
 String modellTitel(AppTexte t, String id) => switch (id) {
-      'face_detection_yunet' => t.modellYunetTitel,
-      'face_recognition_sface' => t.modellSfaceTitel,
-      'clip_vit_b32' => t.modellClipTitel,
-      'segmentation_sam_vit_base' => t.modellSamTitel,
-      'captioning_florence2_base_ft' => t.modellCaptionTitel,
-      'eye_state_ocec' => t.modellOcecTitel,
-      'neural_restore_real_esrgan_x4' => t.modellEsrganTitel,
-      'inpainting_lama' => t.modellLamaTitel,
-      'translation_en_de' => t.modellEnDeTitel,
-      'translation_de_en' => t.modellDeEnTitel,
-      'ocr_ppocr_latin' => t.modellOcrTitel,
-      // Lieber die Kennung als eine leere Karte: Ein neu aufgenommenes
-      // Modell fällt so sofort auf, statt still ohne Namen dazustehen.
-      _ => id,
-    };
+  'face_detection_yunet' => t.modellYunetTitel,
+  'face_recognition_sface' => t.modellSfaceTitel,
+  'clip_vit_b32' => t.modellClipTitel,
+  'segmentation_sam_vit_base' => t.modellSamTitel,
+  'captioning_florence2_base_ft' => t.modellCaptionTitel,
+  'eye_state_ocec' => t.modellOcecTitel,
+  'neural_restore_real_esrgan_x4' => t.modellEsrganTitel,
+  'inpainting_lama' => t.modellLamaTitel,
+  'translation_en_de' => t.modellEnDeTitel,
+  'translation_de_en' => t.modellDeEnTitel,
+  'ocr_ppocr_latin' => t.modellOcrTitel,
+  // Lieber die Kennung als eine leere Karte: Ein neu aufgenommenes
+  // Modell fällt so sofort auf, statt still ohne Namen dazustehen.
+  _ => id,
+};
 
 String modellBeschreibung(AppTexte t, String id) => switch (id) {
-      'face_detection_yunet' => t.modellYunetText,
-      'face_recognition_sface' => t.modellSfaceText,
-      'clip_vit_b32' => t.modellClipText,
-      'segmentation_sam_vit_base' => t.modellSamText,
-      'captioning_florence2_base_ft' => t.modellCaptionText,
-      'eye_state_ocec' => t.modellOcecText,
-      'neural_restore_real_esrgan_x4' => t.modellEsrganText,
-      'inpainting_lama' => t.modellLamaText,
-      'translation_en_de' => t.modellEnDeText,
-      'translation_de_en' => t.modellDeEnText,
-      'ocr_ppocr_latin' => t.modellOcrText,
-      _ => '',
-    };
+  'face_detection_yunet' => t.modellYunetText,
+  'face_recognition_sface' => t.modellSfaceText,
+  'clip_vit_b32' => t.modellClipText,
+  'segmentation_sam_vit_base' => t.modellSamText,
+  'captioning_florence2_base_ft' => t.modellCaptionText,
+  'eye_state_ocec' => t.modellOcecText,
+  'neural_restore_real_esrgan_x4' => t.modellEsrganText,
+  'inpainting_lama' => t.modellLamaText,
+  'translation_en_de' => t.modellEnDeText,
+  'translation_de_en' => t.modellDeEnText,
+  'ocr_ppocr_latin' => t.modellOcrText,
+  _ => '',
+};
 
 String modellLizenz(AppTexte t, String id) => switch (id) {
-      'face_detection_yunet' => t.modellYunetLizenz,
-      'face_recognition_sface' => t.modellSfaceLizenz,
-      'clip_vit_b32' => t.modellClipLizenz,
-      'segmentation_sam_vit_base' => t.modellSamLizenz,
-      'captioning_florence2_base_ft' => t.modellCaptionLizenz,
-      'eye_state_ocec' => t.modellOcecLizenz,
-      'neural_restore_real_esrgan_x4' => t.modellEsrganLizenz,
-      'inpainting_lama' => t.modellLamaLizenz,
-      'translation_en_de' => t.modellEnDeLizenz,
-      'translation_de_en' => t.modellDeEnLizenz,
-      'ocr_ppocr_latin' => t.modellOcrLizenz,
-      _ => '',
-    };
+  'face_detection_yunet' => t.modellYunetLizenz,
+  'face_recognition_sface' => t.modellSfaceLizenz,
+  'clip_vit_b32' => t.modellClipLizenz,
+  'segmentation_sam_vit_base' => t.modellSamLizenz,
+  'captioning_florence2_base_ft' => t.modellCaptionLizenz,
+  'eye_state_ocec' => t.modellOcecLizenz,
+  'neural_restore_real_esrgan_x4' => t.modellEsrganLizenz,
+  'inpainting_lama' => t.modellLamaLizenz,
+  'translation_en_de' => t.modellEnDeLizenz,
+  'translation_de_en' => t.modellDeEnLizenz,
+  'ocr_ppocr_latin' => t.modellOcrLizenz,
+  _ => '',
+};
 
 class ModelCatalog {
   static const faceDetection = ModelCatalogEntry(
     id: 'face_detection_yunet',
-    sourceUrl: 'https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet',
+    sourceUrl:
+        'https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet',
     files: [
       ModelFile(
         'face_detection_yunet.onnx',
@@ -150,7 +151,8 @@ class ModelCatalog {
 
   static const faceRecognition = ModelCatalogEntry(
     id: 'face_recognition_sface',
-    sourceUrl: 'https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface',
+    sourceUrl:
+        'https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface',
     files: [
       ModelFile(
         'face_recognition_sface.onnx',
@@ -426,7 +428,7 @@ class ModelCatalog {
     'translate_vocab.json',
     'https://huggingface.co/Xenova/opus-mt-en-de/resolve/main/tokenizer.json',
     '8e0fcf45621ea87fa680c7f9969c37a7f819c1f4c7658a2e6e0879b866a14b17',
-        5498450,
+    5498450,
   );
 
   /// Englisch → Deutsch, für die Bildbeschreibungen.
@@ -634,12 +636,11 @@ class ModelCatalog {
   static List<ModelCatalogEntry> fuerSprache(
     String sprachcode, {
     required bool Function(ModelCatalogEntry) istInstalliert,
-  }) =>
-      [
-        for (final e in all)
-          if (sprachcode == 'de' ||
-              !nurFuerDeutsch.contains(e) ||
-              istInstalliert(e))
-            e,
-      ];
+  }) => [
+    for (final e in all)
+      if (sprachcode == 'de' ||
+          !nurFuerDeutsch.contains(e) ||
+          istInstalliert(e))
+        e,
+  ];
 }

@@ -20,9 +20,13 @@ void main() {
   var nextByte = 0;
 
   setUp(() async {
-    tempRoot = Directory.systemTemp.createTempSync('photo_vault_people_for_asset_test_');
+    tempRoot = Directory.systemTemp.createTempSync(
+      'photo_vault_people_for_asset_test_',
+    );
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -32,8 +36,10 @@ void main() {
   });
 
   Future<String> importPhoto(String name) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-    final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
+    final file = File(p.join(incoming.path, name))
+      ..writeAsBytesSync([1, 2, 3, nextByte++]);
     final result = await import.importFile(file.path);
     expect(result.outcome, ImportOutcome.imported);
     return result.assetId!;
@@ -41,15 +47,17 @@ void main() {
 
   Future<String> addFace(String assetId, {String? personId}) async {
     final faceId = const Uuid().v4();
-    await db.insertFace(FacesCompanion.insert(
-      id: faceId,
-      assetId: assetId,
-      personId: personId == null ? const Value.absent() : Value(personId),
-      boxX: 0,
-      boxY: 0,
-      boxW: 0.1,
-      boxH: 0.1,
-    ));
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: faceId,
+        assetId: assetId,
+        personId: personId == null ? const Value.absent() : Value(personId),
+        boxX: 0,
+        boxY: 0,
+        boxW: 0.1,
+        boxH: 0.1,
+      ),
+    );
     return faceId;
   }
 
@@ -69,14 +77,17 @@ void main() {
     expect(resultWithout, isEmpty);
   });
 
-  test('dedupliziert, wenn dieselbe Person mehrfach auf einem Foto markiert ist', () async {
-    final photoId = await importPhoto('group.jpg');
-    final bobId = const Uuid().v4();
-    await db.createPerson(PeopleCompanion.insert(id: bobId, name: 'Bob'));
-    await addFace(photoId, personId: bobId);
-    await addFace(photoId, personId: bobId);
+  test(
+    'dedupliziert, wenn dieselbe Person mehrfach auf einem Foto markiert ist',
+    () async {
+      final photoId = await importPhoto('group.jpg');
+      final bobId = const Uuid().v4();
+      await db.createPerson(PeopleCompanion.insert(id: bobId, name: 'Bob'));
+      await addFace(photoId, personId: bobId);
+      await addFace(photoId, personId: bobId);
 
-    final result = await db.peopleForAsset(photoId);
-    expect(result.map((p) => p.id), [bobId]);
-  });
+      final result = await db.peopleForAsset(photoId);
+      expect(result.map((p) => p.id), [bobId]);
+    },
+  );
 }

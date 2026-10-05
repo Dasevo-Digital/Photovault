@@ -10,25 +10,25 @@ import 'package:photo_vault/services/zierbaum.dart';
 void main() {
   /// Dieselbe Sippe wie im Geflecht-Prüfstand.
   Verwandtschaftsnetz sippe() => Verwandtschaftsnetz([
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-        kante('vater', 'oma', Verwandtschaft.elternteil),
-        partnerKanteFuer('opa', 'oma'),
-        partnerKanteFuer('vater', 'mutter'),
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('anna', 'vater', Verwandtschaft.elternteil),
-        kante('anna', 'mutter', Verwandtschaft.elternteil),
-        kante('bruno', 'vater', Verwandtschaft.elternteil),
-        kante('bruno', 'mutter', Verwandtschaft.elternteil),
-        partnerKanteFuer('anna', 'schwager'),
-        kante('neffe', 'anna', Verwandtschaft.elternteil),
-        kante('neffe', 'schwager', Verwandtschaft.elternteil),
-        kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
-        kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
-        partnerKanteFuer('schwagersVater', 'schwagersMutter'),
-        kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
-        kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
-      ]);
+    kante('vater', 'opa', Verwandtschaft.elternteil),
+    kante('vater', 'oma', Verwandtschaft.elternteil),
+    partnerKanteFuer('opa', 'oma'),
+    partnerKanteFuer('vater', 'mutter'),
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('anna', 'vater', Verwandtschaft.elternteil),
+    kante('anna', 'mutter', Verwandtschaft.elternteil),
+    kante('bruno', 'vater', Verwandtschaft.elternteil),
+    kante('bruno', 'mutter', Verwandtschaft.elternteil),
+    partnerKanteFuer('anna', 'schwager'),
+    kante('neffe', 'anna', Verwandtschaft.elternteil),
+    kante('neffe', 'schwager', Verwandtschaft.elternteil),
+    kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
+    kante('schwager', 'schwagersMutter', Verwandtschaft.elternteil),
+    partnerKanteFuer('schwagersVater', 'schwagersMutter'),
+    kante('schwagersBruder', 'schwagersVater', Verwandtschaft.elternteil),
+    kante('schwagersBruder', 'schwagersMutter', Verwandtschaft.elternteil),
+  ]);
 
   const alle = [
     'opa',
@@ -56,8 +56,11 @@ void main() {
       final p = plan();
       for (var i = 0; i < p.schilder.length; i++) {
         for (var j = i + 1; j < p.schilder.length; j++) {
-          expect(p.schilder[i].ueberschneidet(p.schilder[j]), isFalse,
-              reason: '${p.schilder[i]} und ${p.schilder[j]}');
+          expect(
+            p.schilder[i].ueberschneidet(p.schilder[j]),
+            isFalse,
+            reason: '${p.schilder[i]} und ${p.schilder[j]}',
+          );
         }
       }
     });
@@ -70,8 +73,9 @@ void main() {
         kanten.add(kante('g$i', 'vater', Verwandtschaft.elternteil));
         ids.add('g$i');
       }
-      final p =
-          zierbaumplan(geflechtUm(Verwandtschaftsnetz(kanten), 'ich', ids));
+      final p = zierbaumplan(
+        geflechtUm(Verwandtschaftsnetz(kanten), 'ich', ids),
+      );
       for (var i = 0; i < p.schilder.length; i++) {
         for (var j = i + 1; j < p.schilder.length; j++) {
           expect(p.schilder[i].ueberschneidet(p.schilder[j]), isFalse);
@@ -95,10 +99,14 @@ void main() {
     test('die Bänder liegen gleich weit auseinander', () {
       final p = plan();
       final abstand = schild(p, 'ich').oben - schild(p, 'vater').oben;
-      expect(schild(p, 'vater').oben - schild(p, 'opa').oben,
-          closeTo(abstand, 0.001));
-      expect(schild(p, 'neffe').oben - schild(p, 'ich').oben,
-          closeTo(abstand, 0.001));
+      expect(
+        schild(p, 'vater').oben - schild(p, 'opa').oben,
+        closeTo(abstand, 0.001),
+      );
+      expect(
+        schild(p, 'neffe').oben - schild(p, 'ich').oben,
+        closeTo(abstand, 0.001),
+      );
     });
   });
 
@@ -112,16 +120,21 @@ void main() {
       expect(annasAst.nachX, isNot(closeTo(schwagersAst.nachX, 1)));
       // Annas Ast endet über dem Elternhaus, der des Schwagers über seinem.
       expect(
-          annasAst.nachX,
-          closeTo((schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2,
-              0.001));
+        annasAst.nachX,
+        closeTo(
+          (schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2,
+          0.001,
+        ),
+      );
       expect(
-          schwagersAst.nachX,
-          closeTo(
-              (schild(p, 'schwagersVater').mitteX +
-                      schild(p, 'schwagersMutter').mitteX) /
-                  2,
-              0.001));
+        schwagersAst.nachX,
+        closeTo(
+          (schild(p, 'schwagersVater').mitteX +
+                  schild(p, 'schwagersMutter').mitteX) /
+              2,
+          0.001,
+        ),
+      );
     });
 
     test('ein Ast beginnt am Schild und endet am Elternhaus', () {
@@ -136,14 +149,16 @@ void main() {
       // Der gemeldete Fehler: Im Bild stand der Vater ohne jede
       // Verbindung, weil je Person nur ein Elternhaus gefuehrt wurde und
       // die Mutter zuerst kam.
-      final p = zierbaumplan(geflechtUm(
-        Verwandtschaftsnetz([
-          kante('ich', 'vater', Verwandtschaft.elternteil),
-          kante('ich', 'mutter', Verwandtschaft.elternteil),
-        ]),
-        'ich',
-        const ['mutter', 'vater', 'ich'],
-      ));
+      final p = zierbaumplan(
+        geflechtUm(
+          Verwandtschaftsnetz([
+            kante('ich', 'vater', Verwandtschaft.elternteil),
+            kante('ich', 'mutter', Verwandtschaft.elternteil),
+          ]),
+          'ich',
+          const ['mutter', 'vater', 'ich'],
+        ),
+      );
       final meine = p.aeste.where((a) => a.personId == 'ich').toList();
       expect(meine, hasLength(2));
       // Beide gehen an derselben Stelle los und laufen auseinander.
@@ -165,9 +180,11 @@ void main() {
   group('Partnerbänder', () {
     test('zwischen zwei Bewohnern eines Haushalts liegt eines', () {
       final p = plan();
-      final zwischenAnnaUndSchwager = p.baender.where((b) =>
-          b.vonX == schild(p, 'anna').rechts &&
-          b.nachX == schild(p, 'schwager').links);
+      final zwischenAnnaUndSchwager = p.baender.where(
+        (b) =>
+            b.vonX == schild(p, 'anna').rechts &&
+            b.nachX == schild(p, 'schwager').links,
+      );
       expect(zwischenAnnaUndSchwager, hasLength(1));
     });
 
@@ -222,8 +239,11 @@ void main() {
         'meineSchwester',
         'meinSchwager',
       ]) {
-        expect(schild(p, person).mitteX, greaterThan(ich),
-            reason: '$person gehört zur rechten Fokusfamilie');
+        expect(
+          schild(p, person).mitteX,
+          greaterThan(ich),
+          reason: '$person gehört zur rechten Fokusfamilie',
+        );
       }
       for (final person in [
         'partnerVater',
@@ -231,8 +251,11 @@ void main() {
         'partnerSchwester',
         'partnerSchwager',
       ]) {
-        expect(schild(p, person).mitteX, lessThan(partner),
-            reason: '$person gehört zur linken Partnerfamilie');
+        expect(
+          schild(p, person).mitteX,
+          lessThan(partner),
+          reason: '$person gehört zur linken Partnerfamilie',
+        );
       }
     });
 
@@ -256,8 +279,9 @@ void main() {
 
     test('unter dem untersten Schild bleibt Platz für den Namen', () {
       final p = plan();
-      final tiefstes =
-          p.schilder.map((s) => s.unten).reduce((a, b) => a > b ? a : b);
+      final tiefstes = p.schilder
+          .map((s) => s.unten)
+          .reduce((a, b) => a > b ? a : b);
       expect(p.hoehe - tiefstes, greaterThan(100));
     });
 
@@ -278,8 +302,10 @@ void main() {
       // Die Tafel zum Aufhängen geht diesen Weg. Zwei Sätze Konstanten
       // wären zwei Bäume, die auseinanderlaufen können.
       final klein = zierbaumplan(geflechtUm(sippe(), 'ich', alle));
-      final gross = zierbaumplan(geflechtUm(sippe(), 'ich', alle),
-          masse: const Zierbaummasse().mal(3));
+      final gross = zierbaumplan(
+        geflechtUm(sippe(), 'ich', alle),
+        masse: const Zierbaummasse().mal(3),
+      );
       expect(gross.breite / klein.breite, closeTo(3, 0.001));
       expect(gross.schilder.length, klein.schilder.length);
     });
@@ -287,7 +313,8 @@ void main() {
 
   test('eine Person ganz ohne Verwandtschaft ergibt ein Schild', () {
     final p = zierbaumplan(
-        geflechtUm(Verwandtschaftsnetz(const []), 'allein', ['allein']));
+      geflechtUm(Verwandtschaftsnetz(const []), 'allein', ['allein']),
+    );
     expect(p.schilder, hasLength(1));
     expect(p.aeste, isEmpty);
     expect(p.schilder.single.links, greaterThanOrEqualTo(0));
@@ -312,11 +339,17 @@ void main() {
       final anna = schild(p, 'anna').mitteX;
       final schwiegerfamilie = schild(p, 'schwagersBruder').mitteX;
 
-      expect(schwiegerfamilie, lessThan(anna),
-          reason: 'die angeheiratete Familie bleibt ein eigener Seitenzweig');
+      expect(
+        schwiegerfamilie,
+        lessThan(anna),
+        reason: 'die angeheiratete Familie bleibt ein eigener Seitenzweig',
+      );
       expect(bruno, lessThan(ich));
-      expect(anna, greaterThan(ich),
-          reason: 'Geschwister teilen sich links und rechts des Fokus auf');
+      expect(
+        anna,
+        greaterThan(ich),
+        reason: 'Geschwister teilen sich links und rechts des Fokus auf',
+      );
     });
 
     test('die Eltern stehen ueber der Mitte ihrer Kinder', () {
@@ -328,8 +361,10 @@ void main() {
       // Nicht auf den Punkt: Der Haushalt der Schwester traegt ihren Mann
       // mit, und der zieht ihn ein Stueck nach rechts. Aber in derselben
       // Gegend.
-      expect((elternMitte - schwerpunkt).abs(),
-          lessThan(const Zierbaummasse().schildBreite * 2));
+      expect(
+        (elternMitte - schwerpunkt).abs(),
+        lessThan(const Zierbaummasse().schildBreite * 2),
+      );
     });
   });
 
@@ -345,9 +380,11 @@ void main() {
       // von EB Garamond - er kann diesen Fehler gar nicht zeigen.
       const masse = Zierbaummasse();
       const schild = Schildmasse();
-      expect(schild.mindestTafelhoehe(),
-          lessThanOrEqualTo(schild.tafelHoehe(masse.schildHoehe)),
-          reason: 'Name, Verhaeltnis und Lebensdaten muessen hineinpassen');
+      expect(
+        schild.mindestTafelhoehe(),
+        lessThanOrEqualTo(schild.tafelHoehe(masse.schildHoehe)),
+        reason: 'Name, Verhaeltnis und Lebensdaten muessen hineinpassen',
+      );
     });
 
     test('zwei Mehrzeichen im Textfluss haetten NICHT gepasst', () {
@@ -356,17 +393,21 @@ void main() {
       // mehr, als sie hat - deshalb liegen sie jetzt als Marke am Rand.
       const masse = Zierbaummasse();
       const schild = Schildmasse();
-      expect(schild.mindestTafelhoeheMitZeichen(),
-          greaterThan(schild.tafelHoehe(masse.schildHoehe)),
-          reason: 'sonst waere die Verlegung an den Rand unnoetig gewesen');
+      expect(
+        schild.mindestTafelhoeheMitZeichen(),
+        greaterThan(schild.tafelHoehe(masse.schildHoehe)),
+        reason: 'sonst waere die Verlegung an den Rand unnoetig gewesen',
+      );
     });
 
     test('auch die vergroesserte Tafel traegt ihre Zeilen', () {
       // Die Tafel zum Aufhaengen rechnet mit demselben Verhaeltnis.
       final masse = const Zierbaummasse().mal(3);
       final schild = const Schildmasse().mal(3);
-      expect(schild.mindestTafelhoehe(),
-          lessThanOrEqualTo(schild.tafelHoehe(masse.schildHoehe)));
+      expect(
+        schild.mindestTafelhoehe(),
+        lessThanOrEqualTo(schild.tafelHoehe(masse.schildHoehe)),
+      );
     });
   });
 
@@ -392,8 +433,11 @@ void main() {
       for (final faktor in [1.0, 1.15, 1.3, 1.6, 2.0, 3.0]) {
         final m = const Schildmasse().mal(faktor);
         final b = const Zierbaummasse().mal(faktor);
-        expect(m.mindestTafelhoehe(), lessThanOrEqualTo(platzInDerTafel(m, b)),
-            reason: 'bei Faktor $faktor');
+        expect(
+          m.mindestTafelhoehe(),
+          lessThanOrEqualTo(platzInDerTafel(m, b)),
+          reason: 'bei Faktor $faktor',
+        );
       }
     });
 
@@ -402,16 +446,19 @@ void main() {
       // wuchs. Ab knapp 1,2 passte es nicht mehr.
       final tafel = platzInDerTafel(const Schildmasse(), const Zierbaummasse());
       double bedarf(double faktor) => Schildmasse(
-            schriftName: 14 * faktor,
-            schriftNeben: 11 * faktor,
-          ).mindestTafelhoehe();
+        schriftName: 14 * faktor,
+        schriftNeben: 11 * faktor,
+      ).mindestTafelhoehe();
       expect(bedarf(1.0), lessThanOrEqualTo(tafel));
       // 18,9 + 29,7 Punkte Schrift und 8 Punkte Polster, das gibt
       // 48,6 f + 8 = 67 bei f = 1,21. Darüber malt der Text über den
       // Rand – und das ist keine ungewöhnliche Einstellung.
       expect(bedarf(1.21), lessThanOrEqualTo(tafel));
-      expect(bedarf(1.25), greaterThan(tafel),
-          reason: 'ab hier lag der Text über der Zeile darüber');
+      expect(
+        bedarf(1.25),
+        greaterThan(tafel),
+        reason: 'ab hier lag der Text über der Zeile darüber',
+      );
       expect(bedarf(1.5), greaterThan(tafel));
     });
   });

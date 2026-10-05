@@ -26,7 +26,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_vorgaben_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     imp = ImportService(db, paths);
     lib = LibraryState()
       ..db = db
@@ -39,23 +41,27 @@ void main() {
   });
 
   Future<String> importiere(String name, int fuellung) async {
-    final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
-    final f = File(p.join(inc.path, name))..writeAsBytesSync(List.filled(64, fuellung));
+    final inc = Directory(p.join(tempRoot.path, 'in'))
+      ..createSync(recursive: true);
+    final f = File(p.join(inc.path, name))
+      ..writeAsBytesSync(List.filled(64, fuellung));
     return (await imp.importFile(f.path)).assetId!;
   }
 
   Future<DevelopPresetData> legeVorgabe(String name) async {
-    await db.upsertDevelopPreset(DevelopPresetsCompanion.insert(
-      name: name,
-      exposure: const Value(0.8),
-      contrast: const Value(0.3),
-      shadows: const Value(0.2),
-      highlights: const Value(-0.6),
-      clarity: const Value(0.4),
-      vignette: const Value(-0.25),
-      lutStrength: const Value(0.75),
-      erstelltAm: DateTime.now(),
-    ));
+    await db.upsertDevelopPreset(
+      DevelopPresetsCompanion.insert(
+        name: name,
+        exposure: const Value(0.8),
+        contrast: const Value(0.3),
+        shadows: const Value(0.2),
+        highlights: const Value(-0.6),
+        clarity: const Value(0.4),
+        vignette: const Value(-0.25),
+        lutStrength: const Value(0.75),
+        erstelltAm: DateTime.now(),
+      ),
+    );
     return (await db.alleDevelopPresets()).firstWhere((v) => v.name == name);
   }
 
@@ -73,11 +79,16 @@ void main() {
     expect(await db.developPresetNameVergeben('Tageslicht'), isFalse);
   });
 
-  test('die eigene Vorgabe kollidiert beim Bearbeiten nicht mit sich selbst',
-      () async {
-    final v = await legeVorgabe('Portraet');
-    expect(await db.developPresetNameVergeben('Portraet', ausserId: v.id), isFalse);
-  });
+  test(
+    'die eigene Vorgabe kollidiert beim Bearbeiten nicht mit sich selbst',
+    () async {
+      final v = await legeVorgabe('Portraet');
+      expect(
+        await db.developPresetNameVergeben('Portraet', ausserId: v.id),
+        isFalse,
+      );
+    },
+  );
 
   test('alle Werte wandern in die Reglerwerte - auch die vier, die das '
       'Kopieren frueher weggelassen hat', () async {
@@ -93,9 +104,16 @@ void main() {
     expect(werte.regler.highlights, -0.6);
     expect(werte.regler.clarity, 0.4, reason: 'Klarheit muss mitwandern');
     expect(werte.regler.vignette, -0.25, reason: 'Vignette muss mitwandern');
-    expect(werte.regler.lutStrength, 0.75, reason: 'LUT-Staerke muss mitwandern');
-    expect(werte.quellAssetId, isNull,
-        reason: 'eine Vorgabe gehoert zu keinem Foto');
+    expect(
+      werte.regler.lutStrength,
+      0.75,
+      reason: 'LUT-Staerke muss mitwandern',
+    );
+    expect(
+      werte.quellAssetId,
+      isNull,
+      reason: 'eine Vorgabe gehoert zu keinem Foto',
+    );
   });
 
   test('eine Vorgabe wird als Quelle angenommen', () async {
@@ -109,14 +127,21 @@ void main() {
     final b = await importiere('b.jpg', 2);
     final v = await legeVorgabe('Anwenden');
 
-    final schritte = await lib
-        .uebertrageEntwicklung([a, b], vorgabe: await lib.werteAusVorgabe(v))
-        .toList();
+    final schritte = await lib.uebertrageEntwicklung([
+      a,
+      b,
+    ], vorgabe: await lib.werteAusVorgabe(v)).toList();
 
-    expect(schritte.first.total, 2,
-        reason: 'beide Fotos muessen als Ziel angenommen werden');
-    expect(lib.hatKopierteEntwicklung, isFalse,
-        reason: 'und zwar ohne dass etwas in der Zwischenablage liegt');
+    expect(
+      schritte.first.total,
+      2,
+      reason: 'beide Fotos muessen als Ziel angenommen werden',
+    );
+    expect(
+      lib.hatKopierteEntwicklung,
+      isFalse,
+      reason: 'und zwar ohne dass etwas in der Zwischenablage liegt',
+    );
   });
 
   test('ohne Vorgabe und ohne Zwischenablage passiert nichts', () async {

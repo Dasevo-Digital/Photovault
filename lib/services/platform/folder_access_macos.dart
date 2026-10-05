@@ -15,7 +15,8 @@ class MacOsFolderAccess implements FolderAccess {
 
   @override
   Future<PickedFolder?> pickFolder({String? message}) async {
-    final picked = await native.SecurityScopedBookmark.pickFolderAndCreateBookmark(message: message);
+    final picked = await native
+        .SecurityScopedBookmark.pickFolderAndCreateBookmark(message: message);
     if (picked == null) return null;
     return PickedFolder(picked.path, picked.bookmark);
   }

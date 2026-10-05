@@ -47,33 +47,51 @@ void main() {
 
     final lose = Stopwatch()..start();
     for (final id in ids) {
-      await db.setLocationNames(id,
-          country: 'Germany', state: 'Lower Saxony', city: 'Goslar');
+      await db.setLocationNames(
+        id,
+        country: 'Germany',
+        state: 'Lower Saxony',
+        city: 'Goslar',
+      );
     }
     lose.stop();
 
     final klammer = Stopwatch()..start();
     await db.transaction(() async {
       for (final id in ids) {
-        await db.setLocationNames(id,
-            country: 'Germany', state: 'Harz', city: 'Wernigerode');
+        await db.setLocationNames(
+          id,
+          country: 'Germany',
+          state: 'Harz',
+          city: 'Wernigerode',
+        );
       }
     });
     klammer.stop();
 
     final eine = Stopwatch()..start();
-    await db.setLocationNamesBulk(ids,
-        country: 'Germany', state: 'Harz', city: 'Ilsenburg');
+    await db.setLocationNamesBulk(
+      ids,
+      country: 'Germany',
+      state: 'Harz',
+      city: 'Ilsenburg',
+    );
     eine.stop();
 
     print('$n Aufnahmen:');
-    print('  lose        ${lose.elapsedMilliseconds} ms '
-        '(${(lose.elapsedMicroseconds / n / 1000).toStringAsFixed(2)} ms je Foto)');
-    print('  in einer Klammer ${klammer.elapsedMilliseconds} ms '
-        '(${(klammer.elapsedMicroseconds / n / 1000).toStringAsFixed(2)} ms je Foto)');
+    print(
+      '  lose        ${lose.elapsedMilliseconds} ms '
+      '(${(lose.elapsedMicroseconds / n / 1000).toStringAsFixed(2)} ms je Foto)',
+    );
+    print(
+      '  in einer Klammer ${klammer.elapsedMilliseconds} ms '
+      '(${(klammer.elapsedMicroseconds / n / 1000).toStringAsFixed(2)} ms je Foto)',
+    );
     print('  eine Anweisung   ${eine.elapsedMilliseconds} ms');
-    print('  Faktor Klammer ${(lose.elapsedMicroseconds / klammer.elapsedMicroseconds).toStringAsFixed(1)}, '
-        'Faktor eine Anweisung '
-        '${(lose.elapsedMicroseconds / eine.elapsedMicroseconds).toStringAsFixed(1)}');
+    print(
+      '  Faktor Klammer ${(lose.elapsedMicroseconds / klammer.elapsedMicroseconds).toStringAsFixed(1)}, '
+      'Faktor eine Anweisung '
+      '${(lose.elapsedMicroseconds / eine.elapsedMicroseconds).toStringAsFixed(1)}',
+    );
   });
 }

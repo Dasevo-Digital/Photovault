@@ -35,7 +35,9 @@ void main() {
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('pv_sicherung_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(temp.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
     imp = ImportService(db, paths);
     backup = BackupService(db, paths);
     rein = Directory(p.join(temp.path, 'rein'))..createSync();
@@ -60,8 +62,8 @@ void main() {
   }
 
   List<String> namen(Map<String, dynamic> json) => [
-        for (final a in json['assets'] as List) a['originalFileName'] as String,
-      ];
+    for (final a in json['assets'] as List) a['originalFileName'] as String,
+  ];
 
   group('der gesperrte Ordner bleibt gesperrt', () {
     test('kein Wort über ein gesperrtes Foto in metadata.json', () async {
@@ -90,8 +92,9 @@ void main() {
       await db.setAssetsLocked([geheim], true);
       await sichereUndLies();
 
-      final originals =
-          Directory(p.join(temp.path, 'ziel', 'PhotoVault-Backup', 'originals'));
+      final originals = Directory(
+        p.join(temp.path, 'ziel', 'PhotoVault-Backup', 'originals'),
+      );
       final dateien = originals
           .listSync(recursive: true)
           .whereType<File>()
@@ -115,9 +118,15 @@ void main() {
       await db.setRating(a, 4);
       await db.setColorLabel(a, 'gruen');
       await db.setLocation(a, 41.9028, 12.4964);
-      await db.setLocationNames(a, country: 'Italien', state: 'Latium', city: 'Rom');
+      await db.setLocationNames(
+        a,
+        country: 'Italien',
+        state: 'Latium',
+        city: 'Rom',
+      );
 
-      final eintrag = (await sichereUndLies())['assets'][0] as Map<String, dynamic>;
+      final eintrag =
+          (await sichereUndLies())['assets'][0] as Map<String, dynamic>;
       expect(eintrag['rating'], 4);
       expect(eintrag['colorLabel'], 'gruen');
       expect(eintrag['latitude'], closeTo(41.9028, 0.0001));
@@ -126,25 +135,32 @@ void main() {
       expect(eintrag['locationCountry'], 'Italien');
     });
 
-    test('der Rundlauf bringt sie in einer leeren Bibliothek zurück',
-        () async {
+    test('der Rundlauf bringt sie in einer leeren Bibliothek zurück', () async {
       // Der eigentliche Nachweis. Ohne ihn belegt der Test oben nur,
       // dass etwas geschrieben wird - nicht, dass es ankommt.
       final a = await aufnahme('urlaub.jpg', [1, 2, 3]);
       await db.setRating(a, 5);
       await db.setColorLabel(a, 'rot');
       await db.setLocation(a, 41.9028, 12.4964);
-      await db.setLocationNames(a, country: 'Italien', state: 'Latium', city: 'Rom');
+      await db.setLocationNames(
+        a,
+        country: 'Italien',
+        state: 'Latium',
+        city: 'Rom',
+      );
       final ziel = Directory(p.join(temp.path, 'ziel'));
       await backup.performBackup(ziel.path).drain<void>();
 
       final zielDb = ZweiteDatenbank(NativeDatabase.memory());
       addTearDown(zielDb.close);
-      final zielPaths =
-          await StoragePaths.forTesting(Directory(p.join(temp.path, 'ziel_lib')));
+      final zielPaths = await StoragePaths.forTesting(
+        Directory(p.join(temp.path, 'ziel_lib')),
+      );
       await BackupService(zielDb, zielPaths)
-          .restoreFromBackup(p.join(ziel.path, 'PhotoVault-Backup'),
-              ImportService(zielDb, zielPaths))
+          .restoreFromBackup(
+            p.join(ziel.path, 'PhotoVault-Backup'),
+            ImportService(zielDb, zielPaths),
+          )
           .drain<void>();
 
       final zurueck = (await zielDb.select(zielDb.assets).get()).single;
@@ -162,25 +178,31 @@ void main() {
         ..createSync(recursive: true);
       await aufnahme('alt.jpg', [7, 8, 9]);
       final quelle = (await db.select(db.assets).get()).single;
-      File(p.join(ziel.path, 'metadata.json')).writeAsStringSync(jsonEncode({
-        'exportedAt': DateTime(2026).toIso8601String(),
-        'assets': [
-          {
-            'checksum': quelle.checksum,
-            'originalFileName': 'alt.jpg',
-            'isFavorite': false,
-            'description': null,
-            'fileCreatedAt': quelle.fileCreatedAt.toIso8601String(),
-            'tags': <String>[],
-          }
-        ],
-        'albums': <dynamic>[],
-      }));
+      File(p.join(ziel.path, 'metadata.json')).writeAsStringSync(
+        jsonEncode({
+          'exportedAt': DateTime(2026).toIso8601String(),
+          'assets': [
+            {
+              'checksum': quelle.checksum,
+              'originalFileName': 'alt.jpg',
+              'isFavorite': false,
+              'description': null,
+              'fileCreatedAt': quelle.fileCreatedAt.toIso8601String(),
+              'tags': <String>[],
+            },
+          ],
+          'albums': <dynamic>[],
+        }),
+      );
 
       await db.setRating(quelle.id, 3);
       await backup.restoreFromBackup(ziel.path, imp).drain<void>();
       final danach = (await db.select(db.assets).get()).single;
-      expect(danach.rating, 3, reason: 'die alte Sicherung darf nichts wegnehmen');
+      expect(
+        danach.rating,
+        3,
+        reason: 'die alte Sicherung darf nichts wegnehmen',
+      );
     });
   });
 }

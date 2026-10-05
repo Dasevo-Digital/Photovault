@@ -37,20 +37,20 @@ const double _schmalAb = 600;
 /// Genau deshalb steht der Verlauf als aufklappbare Tafel im Stapel und
 /// nicht in einem Dialog.
 Widget mitMeldungen(Widget? kind, {Meldungsdienst? dienst}) => Stack(
-      children: [
-        kind ?? const SizedBox.shrink(),
-        Positioned.fill(
-          child: Overlay(
-            initialEntries: [
-              OverlayEntry(
-                builder: (_) =>
-                    Meldungsfenster(dienst: dienst ?? Meldungsdienst.zentral),
-              ),
-            ],
+  children: [
+    kind ?? const SizedBox.shrink(),
+    Positioned.fill(
+      child: Overlay(
+        initialEntries: [
+          OverlayEntry(
+            builder: (_) =>
+                Meldungsfenster(dienst: dienst ?? Meldungsdienst.zentral),
           ),
-        ),
-      ],
-    );
+        ],
+      ),
+    ),
+  ],
+);
 
 class Meldungsfenster extends StatefulWidget {
   final Meldungsdienst dienst;
@@ -206,31 +206,33 @@ class _MeldungsfensterState extends State<Meldungsfenster> {
 /// Farbe und Symbol einer Art – an einer Stelle, damit Einblendung und
 /// Verlauf nicht auseinanderlaufen.
 ({Color farbe, IconData symbol, String name}) _aussehen(
-    BuildContext context, Meldungsart art) {
+  BuildContext context,
+  Meldungsart art,
+) {
   final schema = Theme.of(context).colorScheme;
   final semantik = Theme.of(context).extension<AppSemantik>();
   final t = AppTexte.of(context);
   return switch (art) {
     Meldungsart.hinweis => (
-        farbe: schema.primary,
-        symbol: Icons.info_outline,
-        name: t.meldungArtHinweis,
-      ),
+      farbe: schema.primary,
+      symbol: Icons.info_outline,
+      name: t.meldungArtHinweis,
+    ),
     Meldungsart.erfolg => (
-        farbe: semantik?.erfolg ?? schema.primary,
-        symbol: Icons.check_circle_outline,
-        name: t.meldungArtErfolg,
-      ),
+      farbe: semantik?.erfolg ?? schema.primary,
+      symbol: Icons.check_circle_outline,
+      name: t.meldungArtErfolg,
+    ),
     Meldungsart.warnung => (
-        farbe: semantik?.warnung ?? schema.tertiary,
-        symbol: Icons.warning_amber_outlined,
-        name: t.meldungArtWarnung,
-      ),
+      farbe: semantik?.warnung ?? schema.tertiary,
+      symbol: Icons.warning_amber_outlined,
+      name: t.meldungArtWarnung,
+    ),
     Meldungsart.fehler => (
-        farbe: schema.error,
-        symbol: Icons.error_outline,
-        name: t.meldungArtFehler,
-      ),
+      farbe: schema.error,
+      symbol: Icons.error_outline,
+      name: t.meldungArtFehler,
+    ),
   };
 }
 
@@ -271,15 +273,18 @@ class _Glocke extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                      offen
-                          ? Icons.notifications_active_outlined
-                          : Icons.notifications_none,
-                      size: 18,
-                      color: schema.onSurfaceVariant),
+                    offen
+                        ? Icons.notifications_active_outlined
+                        : Icons.notifications_none,
+                    size: 18,
+                    color: schema.onSurfaceVariant,
+                  ),
                   if (anzahl > 0) ...[
                     const SizedBox(width: AppSpacing.xs),
-                    Text('$anzahl',
-                        style: Theme.of(context).textTheme.labelMedium),
+                    Text(
+                      '$anzahl',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
                   ],
                 ],
               ),
@@ -318,7 +323,11 @@ class _Meldungskarte extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.md, AppSpacing.sm, AppSpacing.sm),
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.sm,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -328,16 +337,16 @@ class _Meldungskarte extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(meldung.text,
-                            style: Theme.of(context).textTheme.bodyMedium),
+                        Text(
+                          meldung.text,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         if (meldung.anzahl > 1)
                           Padding(
                             padding: const EdgeInsets.only(top: AppSpacing.xs),
                             child: Text(
                               t.meldungWiederholt(meldung.anzahl),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
+                              style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(color: schema.onSurfaceVariant),
                             ),
                           ),
@@ -385,8 +394,9 @@ class _Ablauf extends StatelessWidget {
       tween: Tween(begin: 1, end: 0),
       duration: dauer,
       builder: (context, wert, _) => ClipRRect(
-        borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(AppRadius.md)),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(AppRadius.md),
+        ),
         child: LinearProgressIndicator(
           value: wert,
           minHeight: 3,
@@ -429,12 +439,18 @@ class _Verlaufstafel extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md, AppSpacing.sm, AppSpacing.sm, 0),
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                0,
+              ),
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(t.meldungenTitel,
-                        style: Theme.of(context).textTheme.titleSmall),
+                    child: Text(
+                      t.meldungenTitel,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                   ),
                   if (verlauf.isNotEmpty)
                     TextButton(
@@ -443,8 +459,9 @@ class _Verlaufstafel extends StatelessWidget {
                     ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
-                    tooltip:
-                        MaterialLocalizations.of(context).closeButtonTooltip,
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
                     visualDensity: VisualDensity.compact,
                     onPressed: beiSchliessen,
                   ),
@@ -482,15 +499,18 @@ class _Verlaufszeile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final aussehen = _aussehen(context, meldung.art);
-    final uhrzeit = MaterialLocalizations.of(context)
-        .formatTimeOfDay(TimeOfDay.fromDateTime(meldung.zeit));
+    final uhrzeit = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(meldung.zeit));
     return ListTile(
       dense: true,
       leading: Icon(aussehen.symbol, color: aussehen.farbe),
       title: Text(meldung.text),
-      subtitle: Text(meldung.anzahl > 1
-          ? '$uhrzeit · ${aussehen.name} · ${t.meldungWiederholt(meldung.anzahl)}'
-          : '$uhrzeit · ${aussehen.name}'),
+      subtitle: Text(
+        meldung.anzahl > 1
+            ? '$uhrzeit · ${aussehen.name} · ${t.meldungWiederholt(meldung.anzahl)}'
+            : '$uhrzeit · ${aussehen.name}',
+      ),
     );
   }
 }

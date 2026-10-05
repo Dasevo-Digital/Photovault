@@ -13,20 +13,20 @@ import '../services/reisen.dart';
 import '../theme/app_spacing.dart';
 
 IconData symbolFuerReiseart(Reiseart art) => switch (art) {
-      Reiseart.reise => Icons.luggage_outlined,
-      Reiseart.unternehmung => Icons.flag_outlined,
-      Reiseart.geschaeftlich => Icons.work_outline,
-      Reiseart.besuch => Icons.family_restroom_outlined,
-      Reiseart.sonstiges => Icons.explore_outlined,
-    };
+  Reiseart.reise => Icons.luggage_outlined,
+  Reiseart.unternehmung => Icons.flag_outlined,
+  Reiseart.geschaeftlich => Icons.work_outline,
+  Reiseart.besuch => Icons.family_restroom_outlined,
+  Reiseart.sonstiges => Icons.explore_outlined,
+};
 
 String nameFuerReiseart(AppTexte t, Reiseart art) => switch (art) {
-      Reiseart.reise => t.reiseartReise,
-      Reiseart.unternehmung => t.reiseartUnternehmung,
-      Reiseart.geschaeftlich => t.reiseartGeschaeftlich,
-      Reiseart.besuch => t.reiseartBesuch,
-      Reiseart.sonstiges => t.reiseartSonstiges,
-    };
+  Reiseart.reise => t.reiseartReise,
+  Reiseart.unternehmung => t.reiseartUnternehmung,
+  Reiseart.geschaeftlich => t.reiseartGeschaeftlich,
+  Reiseart.besuch => t.reiseartBesuch,
+  Reiseart.sonstiges => t.reiseartSonstiges,
+};
 
 /// Symbol und Name zu einer Kennung aus der Datenbank.
 IconData symbolFuerReiseartKennung(String kennung) =>
@@ -43,10 +43,7 @@ String nameFuerReiseartKennung(AppTexte t, String kennung) =>
 /// Liste hiesse nur, dass dieselbe Reise beim nächsten Mal anders heisst.
 ///
 /// `null` heisst „abgebrochen".
-Future<String?> frageReiseart(
-  BuildContext context, {
-  String? aktuell,
-}) {
+Future<String?> frageReiseart(BuildContext context, {String? aktuell}) {
   final t = AppTexte.of(context);
   return showDialog<String>(
     context: context,

@@ -85,7 +85,9 @@ class _KachelmitschnittScreenState extends State<KachelmitschnittScreen> {
     final t = AppTexte.of(context);
     await Clipboard.setData(ClipboardData(text: berichtAus(widget.mitschnitt)));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t.mitschnittKopiert)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(t.mitschnittKopiert)));
   }
 
   @override
@@ -119,11 +121,15 @@ class _KachelmitschnittScreenState extends State<KachelmitschnittScreen> {
               FilledButton.icon(
                 onPressed: _umschalten,
                 icon: Icon(laeuft ? Icons.stop : Icons.fiber_manual_record),
-                label: Text(laeuft ? t.mitschnittAnhalten : t.mitschnittStarten),
+                label: Text(
+                  laeuft ? t.mitschnittAnhalten : t.mitschnittStarten,
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
               TextButton(
-                onPressed: bilanz.abrufe == 0 ? null : () => setState(widget.mitschnitt.leere),
+                onPressed: bilanz.abrufe == 0
+                    ? null
+                    : () => setState(widget.mitschnitt.leere),
                 child: Text(t.mitschnittLeeren),
               ),
             ],
@@ -138,7 +144,10 @@ class _KachelmitschnittScreenState extends State<KachelmitschnittScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
           if (bilanz.abrufe == 0)
-            Text(t.mitschnittNochNichts, style: TextStyle(color: farben.onSurfaceVariant))
+            Text(
+              t.mitschnittNochNichts,
+              style: TextStyle(color: farben.onSurfaceVariant),
+            )
           else ...[
             _Verhaeltnisse(bilanz: bilanz),
             const SizedBox(height: AppSpacing.md),
@@ -148,7 +157,8 @@ class _KachelmitschnittScreenState extends State<KachelmitschnittScreen> {
               _Verteilung(
                 titel: t.mitschnittStatusTitel,
                 zeilen: {
-                  for (final e in bilanz.nachStatus.entries) '${e.key}': e.value,
+                  for (final e in bilanz.nachStatus.entries)
+                    '${e.key}': e.value,
                 },
               ),
             ],
@@ -217,8 +227,8 @@ class _GrosseZahl extends StatelessWidget {
     final farbe = wert >= 4
         ? Theme.of(context).colorScheme.error
         : wert >= 2
-            ? context.semantik.warnung
-            : farben.onSurface;
+        ? context.semantik.warnung
+        : farben.onSurface;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -227,12 +237,10 @@ class _GrosseZahl extends StatelessWidget {
           children: [
             Text(
               wert.toStringAsFixed(1),
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(color: farbe, fontFeatures: const [
-                FontFeature.tabularFigures(),
-              ]),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: farbe,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
             Text(
               beschriftung,
@@ -299,21 +307,24 @@ class _Zeile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(beschriftung, style: Theme.of(context).textTheme.bodyMedium),
-            ),
-            Text(
-              wert,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            beschriftung,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ),
-      );
+        Text(
+          wert,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _Verteilung extends StatelessWidget {
@@ -335,7 +346,8 @@ class _Verteilung extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final e in zeilen.entries) _Zeile(e.key, t.mitschnittMalGeholt(e.value)),
+                for (final e in zeilen.entries)
+                  _Zeile(e.key, t.mitschnittMalGeholt(e.value)),
               ],
             ),
           ),
@@ -364,7 +376,10 @@ class _Liste extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.mitschnittLetzteTitel, style: Theme.of(context).textTheme.titleSmall),
+        Text(
+          t.mitschnittLetzteTitel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
         const SizedBox(height: AppSpacing.xs),
         Card(
           child: Padding(
@@ -379,19 +394,25 @@ class _Liste extends StatelessWidget {
                       a.geglueckt
                           ? Icons.check
                           : a.abgebrochen
-                              ? Icons.block
-                              : Icons.close,
+                          ? Icons.block
+                          : Icons.close,
                       size: 18,
                       color: a.geglueckt
                           ? context.semantik.erfolg
                           : a.abgebrochen
-                              ? farben.onSurfaceVariant
-                              : Theme.of(context).colorScheme.error,
+                          ? farben.onSurfaceVariant
+                          : Theme.of(context).colorScheme.error,
                     ),
-                    title: Text(a.kachel, style: Theme.of(context).textTheme.bodyMedium),
+                    title: Text(
+                      a.kachel,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                     subtitle: Text(
                       a.fehler ?? '${a.status} · ${a.bytes} B',
-                      style: TextStyle(fontSize: 11, color: farben.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: farben.onSurfaceVariant,
+                      ),
                     ),
                     trailing: Text(
                       '${a.dauer.inMilliseconds} ms',

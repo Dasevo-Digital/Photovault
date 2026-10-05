@@ -16,39 +16,43 @@ import 'package:photo_vault/widgets/rasterbedienung.dart';
 /// er herkommt.
 
 AssetData _foto(String id) => AssetData(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      type: 'IMAGE',
-      fileSizeBytes: 1000,
-      checksum: id,
-      fileCreatedAt: DateTime(2026, 8, 1),
-      importedAt: DateTime(2026, 8, 1),
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-      rating: 0,
-    );
+  id: id,
+  relativePath: 'originals/$id.jpg',
+  originalFileName: '$id.jpg',
+  type: 'IMAGE',
+  fileSizeBytes: 1000,
+  checksum: id,
+  fileCreatedAt: DateTime(2026, 8, 1),
+  importedAt: DateTime(2026, 8, 1),
+  isFavorite: false,
+  isTrashed: false,
+  isLocked: false,
+  faceScanExcluded: false,
+  gpsGeprueft: false,
+  datumGeschaetzt: false,
+  datumGeprueft: false,
+  ortGeerbt: false,
+  videobilderGeprueft: false,
+  backedUp: false,
+  autoBackedUp: false,
+  facesScanned: false,
+  ocrScanned: false,
+  aiCaptionScanned: false,
+  aiCaptionEdited: false,
+  aiTagsScanned: false,
+  isStackCover: false,
+  rating: 0,
+);
 
 class _Gast extends StatefulWidget {
   final AppDatabase db;
   final List<AssetData> assets;
   final bool mitTextfeld;
-  const _Gast({required this.db, required this.assets, this.mitTextfeld = false});
+  const _Gast({
+    required this.db,
+    required this.assets,
+    this.mitTextfeld = false,
+  });
 
   @override
   State<_Gast> createState() => _GastState();
@@ -121,27 +125,34 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     assets = [for (var i = 1; i <= 7; i++) _foto('f$i')];
     for (final a in assets) {
-      await db.insertAsset(AssetsCompanion.insert(
-        id: a.id,
-        relativePath: a.relativePath,
-        originalFileName: a.originalFileName,
-        type: a.type,
-        fileSizeBytes: Value(a.fileSizeBytes),
-        checksum: a.checksum,
-        fileCreatedAt: a.fileCreatedAt,
-        importedAt: a.importedAt,
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: a.id,
+          relativePath: a.relativePath,
+          originalFileName: a.originalFileName,
+          type: a.type,
+          fileSizeBytes: Value(a.fileSizeBytes),
+          checksum: a.checksum,
+          fileCreatedAt: a.fileCreatedAt,
+          importedAt: a.importedAt,
+        ),
+      );
     }
   });
 
   tearDown(() async => db.close());
 
-  Future<_GastState> zeige(WidgetTester tester, {bool mitTextfeld = false}) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: _Gast(db: db, assets: assets, mitTextfeld: mitTextfeld),
+  Future<_GastState> zeige(
+    WidgetTester tester, {
+    bool mitTextfeld = false,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: _Gast(db: db, assets: assets, mitTextfeld: mitTextfeld),
+        ),
       ),
-    ));
+    );
     return tester.state<_GastState>(find.byType(_Gast));
   }
 
@@ -157,7 +168,9 @@ void main() {
   }
 
   group('Maus mit Zusatztasten', () {
-    testWidgets('einfacher Klick ohne Auswahl öffnet weiterhin das Foto', (tester) async {
+    testWidgets('einfacher Klick ohne Auswahl öffnet weiterhin das Foto', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tester.tap(find.byKey(const Key('kachel-f3')));
       await tester.pump();
@@ -172,14 +185,18 @@ void main() {
       expect(gast.geoeffnet, isEmpty);
     });
 
-    testWidgets('Umschalt-Klick zieht den Bereich vom Anker auf', (tester) async {
+    testWidgets('Umschalt-Klick zieht den Bereich vom Anker auf', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f2');
       await tippeMit(tester, LogicalKeyboardKey.shiftLeft, 'f5');
       expect(gast.gewaehlt, {'f2', 'f3', 'f4', 'f5'});
     });
 
-    testWidgets('Umschalt-Klick verliert eine Auswahl ausserhalb nicht', (tester) async {
+    testWidgets('Umschalt-Klick verliert eine Auswahl ausserhalb nicht', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f7');
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f2');
@@ -187,7 +204,9 @@ void main() {
       expect(gast.gewaehlt, {'f2', 'f3', 'f4', 'f7'});
     });
 
-    testWidgets('Umschalt-Klick ohne Anker wählt nur diese eine', (tester) async {
+    testWidgets('Umschalt-Klick ohne Anker wählt nur diese eine', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tippeMit(tester, LogicalKeyboardKey.shiftLeft, 'f4');
       expect(gast.gewaehlt, {'f4'});
@@ -198,18 +217,24 @@ void main() {
     /// teilweise auch einige zusammenhaengende Fotos, aber nicht der
     /// ganze Bereich." Ausgewaehlt wird mit dem Finger ueber einen
     /// langen Druck - und der setzte den Anker nicht.
-    testWidgets('nach dem Auswaehlen per langem Druck greift Umschalt',
-        (tester) async {
+    testWidgets('nach dem Auswaehlen per langem Druck greift Umschalt', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       gast.rasterUmschalten('f2');
       await tester.pump();
       await tippeMit(tester, LogicalKeyboardKey.shiftLeft, 'f5');
-      expect(gast.gewaehlt, {'f2', 'f3', 'f4', 'f5'},
-          reason: 'der lange Druck hat keinen Anker hinterlassen');
+      expect(gast.gewaehlt, {
+        'f2',
+        'f3',
+        'f4',
+        'f5',
+      }, reason: 'der lange Druck hat keinen Anker hinterlassen');
     });
 
-    testWidgets('ein alter Anker darf den langen Druck nicht ueberstimmen',
-        (tester) async {
+    testWidgets('ein alter Anker darf den langen Druck nicht ueberstimmen', (
+      tester,
+    ) async {
       // Genau die zweite Haelfte der Beobachtung: Es kamen "einige
       // zusammenhaengende Fotos", naemlich der Bereich ab einem laengst
       // vergessenen Klick - und nicht der, den man aufziehen wollte.
@@ -233,8 +258,9 @@ void main() {
       expect(gast.gewaehlt, {'f2', 'f5', 'f6', 'f7'});
     });
 
-    testWidgets('eine ganze Gruppe hinterlaesst ihren letzten Eintrag',
-        (tester) async {
+    testWidgets('eine ganze Gruppe hinterlaesst ihren letzten Eintrag', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       gast.rasterGruppeUmschalten(['f1', 'f2', 'f3']);
       await tester.pump();
@@ -242,8 +268,9 @@ void main() {
       expect(gast.gewaehlt, {'f1', 'f2', 'f3', 'f4', 'f5'});
     });
 
-    testWidgets('das Abwaehlen einer Gruppe laesst den Anker stehen',
-        (tester) async {
+    testWidgets('das Abwaehlen einer Gruppe laesst den Anker stehen', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       gast.rasterGruppeUmschalten(['f1', 'f2']);
       gast.rasterGruppeUmschalten(['f1', 'f2']);
@@ -256,7 +283,9 @@ void main() {
       expect(gast.gewaehlt, {'f2', 'f3', 'f4'});
     });
 
-    testWidgets('Command-Klick auf ein ausgewähltes wählt es wieder ab', (tester) async {
+    testWidgets('Command-Klick auf ein ausgewähltes wählt es wieder ab', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f3');
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f3');
@@ -265,7 +294,9 @@ void main() {
   });
 
   group('Tastatur', () {
-    testWidgets('der erste Pfeil setzt den Zeiger auf das erste Foto', (tester) async {
+    testWidgets('der erste Pfeil setzt den Zeiger auf das erste Foto', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
@@ -280,7 +311,9 @@ void main() {
       expect(gast.aktiveKachel, 'f2');
     });
 
-    testWidgets('Pfeil nach unten springt bei drei Spalten um drei', (tester) async {
+    testWidgets('Pfeil nach unten springt bei drei Spalten um drei', (
+      tester,
+    ) async {
       final gast = await zeige(tester);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -299,28 +332,36 @@ void main() {
       expect(gast.gewaehlt, {'f2', 'f3', 'f4'});
     });
 
-    testWidgets('Ziffer bewertet die aktive Kachel, wenn nichts ausgewählt ist', (tester) async {
-      await zeige(tester);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
-      await tester.pumpAndSettle();
-      expect((await db.assetById('f1'))!.rating, 3);
-      expect((await db.assetById('f2'))!.rating, 0);
-    });
+    testWidgets(
+      'Ziffer bewertet die aktive Kachel, wenn nichts ausgewählt ist',
+      (tester) async {
+        await zeige(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+        await tester.pumpAndSettle();
+        expect((await db.assetById('f1'))!.rating, 3);
+        expect((await db.assetById('f2'))!.rating, 0);
+      },
+    );
 
-    testWidgets('Ziffer bewertet die ganze Auswahl, nicht nur die aktive Kachel', (tester) async {
-      await zeige(tester);
-      await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f2');
-      await tippeMit(tester, LogicalKeyboardKey.shiftLeft, 'f4');
-      await tester.sendKeyEvent(LogicalKeyboardKey.digit5);
-      await tester.pumpAndSettle();
-      expect((await db.assetById('f2'))!.rating, 5);
-      expect((await db.assetById('f3'))!.rating, 5);
-      expect((await db.assetById('f4'))!.rating, 5);
-      expect((await db.assetById('f1'))!.rating, 0);
-    });
+    testWidgets(
+      'Ziffer bewertet die ganze Auswahl, nicht nur die aktive Kachel',
+      (tester) async {
+        await zeige(tester);
+        await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f2');
+        await tippeMit(tester, LogicalKeyboardKey.shiftLeft, 'f4');
+        await tester.sendKeyEvent(LogicalKeyboardKey.digit5);
+        await tester.pumpAndSettle();
+        expect((await db.assetById('f2'))!.rating, 5);
+        expect((await db.assetById('f3'))!.rating, 5);
+        expect((await db.assetById('f4'))!.rating, 5);
+        expect((await db.assetById('f1'))!.rating, 0);
+      },
+    );
 
-    testWidgets('Taste 6 setzt Rot, dieselbe Taste nimmt es wieder weg', (tester) async {
+    testWidgets('Taste 6 setzt Rot, dieselbe Taste nimmt es wieder weg', (
+      tester,
+    ) async {
       await zeige(tester);
       await tippeMit(tester, LogicalKeyboardKey.metaLeft, 'f1');
       await tester.sendKeyEvent(LogicalKeyboardKey.digit6);
@@ -358,7 +399,9 @@ void main() {
       expect(gast.geoeffnet, ['f1']);
     });
 
-    testWidgets('Command und Ziffer bleibt den Fensterkürzeln überlassen', (tester) async {
+    testWidgets('Command und Ziffer bleibt den Fensterkürzeln überlassen', (
+      tester,
+    ) async {
       // Die Hülle wechselt mit ⌘1…⌘9 den Bereich. Fingen wir die Taste hier
       // ab, käme der Wechsel nie an – und es stünde eine Bewertung da, die
       // niemand vergeben wollte.
@@ -396,24 +439,29 @@ void main() {
       WidgetTester tester, {
       List<String>? huellenTasten,
     }) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Focus(
-          autofocus: true,
-          onKeyEvent: (node, event) {
-            if (event is KeyDownEvent) {
-              huellenTasten?.add(event.logicalKey.keyLabel);
-            }
-            return KeyEventResult.ignored;
-          },
-          child: Scaffold(body: _Gast(db: db, assets: assets)),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Focus(
+            autofocus: true,
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent) {
+                huellenTasten?.add(event.logicalKey.keyLabel);
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Scaffold(
+              body: _Gast(db: db, assets: assets),
+            ),
+          ),
         ),
-      ));
+      );
       await tester.pump();
       return tester.state<_GastState>(find.byType(_Gast));
     }
 
-    testWidgets('die Ziffer bewertet auch unter dem Fokus der Hülle',
-        (tester) async {
+    testWidgets('die Ziffer bewertet auch unter dem Fokus der Hülle', (
+      tester,
+    ) async {
       await zeigeUnterHuelle(tester);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
@@ -428,8 +476,9 @@ void main() {
       expect(gast.aktiveKachel, 'f1');
     });
 
-    testWidgets('das Nummernfeld bewertet wie die Ziffernreihe',
-        (tester) async {
+    testWidgets('das Nummernfeld bewertet wie die Ziffernreihe', (
+      tester,
+    ) async {
       // Gemeldet als „Nummernfeld nur ein Piep": Die Zuordnung kannte nur
       // digit0…digit5, nicht numpad0…numpad5.
       await zeigeUnterHuelle(tester);

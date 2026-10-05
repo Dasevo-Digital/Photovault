@@ -44,7 +44,14 @@ import '../services/meldungsdienst.dart';
 /// Welche Art von Maske gerade erstellt/bearbeitet wird – KI-Auswahl (SAM-
 /// Punkt-Prompts, siehe SegmentationService) oder eine der drei editierbaren
 /// Vektorformen (siehe vector_mask_service.dart).
-enum _MaskFormType { aiSelect, freehand, ellipse, rectangle, gradient, colorRange }
+enum _MaskFormType {
+  aiSelect,
+  freehand,
+  ellipse,
+  rectangle,
+  gradient,
+  colorRange,
+}
 
 /// Nicht-destruktive Bildentwicklung (Belichtung, Weißabgleich, Kontrast,
 /// Schatten, Schärfe, Rauschunterdrückung, Objektivkorrektur) – anders als
@@ -183,10 +190,10 @@ class _DevelopScreenState extends State<DevelopScreen> {
   static bool get _shaderIstGenau => DevelopRender.istMassgeblich;
 
   bool get _shaderMoeglich => beschneidungBedienbar(
-        maskenVorhanden: _masks.isNotEmpty,
-        shaderGeladen: _shader != null,
-        basisGeladen: _shaderBasis != null,
-      );
+    maskenVorhanden: _masks.isNotEmpty,
+    shaderGeladen: _shader != null,
+    basisGeladen: _shaderBasis != null,
+  );
 
   /// Ob sie auch gezeigt wird. Zwei Anlässe, und der zweite ist der
   /// Grund für die Trennung von [_shaderMoeglich]:
@@ -198,19 +205,19 @@ class _DevelopScreenState extends State<DevelopScreen> {
   ///   Sekundenbruchteil zwischen Loslassen und fertigem Render
   ///   anklickbar, also praktisch gar nicht.
   bool get _zeigeShaderVorschau => shaderVorschauZeigen(
-        bedienbar: _shaderMoeglich,
-        zieht: _dragging,
-        warnungAn: _beschneidungZeigen,
-      );
+    bedienbar: _shaderMoeglich,
+    zieht: _dragging,
+    warnungAn: _beschneidungZeigen,
+  );
 
   /// Ob der Vorher/Nachher-Trennstrich gerade zu sehen ist. Getrennt vom
   /// Umschalter, weil „eingeschaltet" und „zeigbar" zwei Dinge sind –
   /// dieselbe Lehre wie bei der Beschneidungswarnung.
   bool get _zeigeTrennstrich => trennstrichZeigen(
-        eingeschaltet: _trennstrich != null,
-        originalDa: _originalPreviewBytes != null,
-        shaderLaeuft: _zeigeShaderVorschau,
-      );
+    eingeschaltet: _trennstrich != null,
+    originalDa: _originalPreviewBytes != null,
+    shaderLaeuft: _zeigeShaderVorschau,
+  );
 
   /// Tonwertverteilung der aktuell angezeigten Vorschau (siehe
   /// [_recomputeHistogram]). `null`, solange noch nichts berechnet wurde.
@@ -225,7 +232,8 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   double _exposure = 0;
   bool _autoWhiteBalance = true;
-  double _temperature = 6500; // Nur Anzeigewert, solange _autoWhiteBalance = true.
+  double _temperature =
+      6500; // Nur Anzeigewert, solange _autoWhiteBalance = true.
   double _tint = 0;
   double _contrast = 0;
   double _shadows = 0;
@@ -281,6 +289,7 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   bool _maskEditMode = false;
   bool _computingEmbedding = false;
+
   /// Beim ersten Mal wird das Segmentierungsmodell (101 MB) geladen –
   /// das dauert deutlich länger als das blosse Vorbereiten des Bildes
   /// und verdient eine eigene Erklärung.
@@ -430,7 +439,8 @@ class _DevelopScreenState extends State<DevelopScreen> {
     // Nach dem Anzeigen, nicht davor: Der Bildschirm soll nicht auf eine
     // Auskunft warten, die nur eine Beschriftung betrifft.
     final stand = await NativeImageConverter.lensCorrectionStatus(
-        widget.paths.absolute(widget.asset.relativePath));
+      widget.paths.absolute(widget.asset.relativePath),
+    );
     if (mounted) setState(() => _korrekturstand = stand);
 
     if (settings == null && _masks.isEmpty) {
@@ -449,7 +459,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   Future<void> _showExistingPreview() async {
     try {
-      final bytes = await widget.paths.absolute(displayRelativePath(widget.asset)).readAsBytes();
+      final bytes = await widget.paths
+          .absolute(displayRelativePath(widget.asset))
+          .readAsBytes();
       if (!mounted) return;
       setState(() => _previewBytes = bytes);
       unawaited(_recomputeHistogram());
@@ -480,7 +492,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
       _lut = null;
       _lutPfad = null;
       if (mounted) {
-        melde.warnung(AppTexte.of(context).entwLutFehlt(p.basename(relativerPfad)));
+        melde.warnung(
+          AppTexte.of(context).entwLutFehlt(p.basename(relativerPfad)),
+        );
       }
     }
   }
@@ -530,30 +544,30 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// liefert bewusst nur den Typ – welche Sprache gesprochen wird, weiss
   /// erst die Oberfläche.
   String _lutFehlertext(AppTexte t, CubeAusnahme e) => switch (e.grund) {
-        CubeFehler.nurEindimensional => t.entwLutEindimensional,
-        CubeFehler.keineGroesse => t.entwLutOhneGroesse,
-        CubeFehler.ungueltigeGroesse => t.entwLutGroesse(e.zeile),
-        CubeFehler.falscheZeilenzahl => t.entwLutZeilenzahl,
-        CubeFehler.unlesbareZeile => t.entwLutZeile(e.zeile),
-      };
+    CubeFehler.nurEindimensional => t.entwLutEindimensional,
+    CubeFehler.keineGroesse => t.entwLutOhneGroesse,
+    CubeFehler.ungueltigeGroesse => t.entwLutGroesse(e.zeile),
+    CubeFehler.falscheZeilenzahl => t.entwLutZeilenzahl,
+    CubeFehler.unlesbareZeile => t.entwLutZeile(e.zeile),
+  };
 
   DevelopAdjustments _currentAdjustments() => DevelopAdjustments(
-        exposure: _exposure,
-        temperature: _autoWhiteBalance ? null : _temperature,
-        tint: _autoWhiteBalance ? null : _tint,
-        contrast: _contrast,
-        shadows: _shadows,
-        highlights: _highlights,
-        sharpness: _sharpness,
-        noiseReduction: _noiseReduction,
-        clarity: _clarity,
-        vignette: _vignette,
-        lensCorrectionEnabled: _lensCorrectionEnabled,
-        toneCurve: _toneCurve,
-        colorMixer: _colorMixer,
-        lut: _lut,
-        lutStrength: _lutStaerke,
-      );
+    exposure: _exposure,
+    temperature: _autoWhiteBalance ? null : _temperature,
+    tint: _autoWhiteBalance ? null : _tint,
+    contrast: _contrast,
+    shadows: _shadows,
+    highlights: _highlights,
+    sharpness: _sharpness,
+    noiseReduction: _noiseReduction,
+    clarity: _clarity,
+    vignette: _vignette,
+    lensCorrectionEnabled: _lensCorrectionEnabled,
+    toneCurve: _toneCurve,
+    colorMixer: _colorMixer,
+    lut: _lut,
+    lutStrength: _lutStaerke,
+  );
 
   /// Baut die Masken-Ebenen für den nativen Renderaufruf: für die gerade
   /// ausgewählte Maske werden die LIVE-Entwurfswerte verwendet (damit
@@ -666,13 +680,13 @@ class _DevelopScreenState extends State<DevelopScreen> {
   }
 
   void _scheduleRerender() => _debouncer.run(() {
-        // **Hier und nicht im Regler**: Der Entprelle laesst genau einen
-        // Durchgang je gesetzter Aenderung durch. Am Regler selbst waere
-        // jeder Punkt Reglerweg ein Schritt, und der Verlauf haette nach
-        // einem Zug zweihundert Eintraege.
-        _merkeSchritt();
-        _requestPreview();
-      });
+    // **Hier und nicht im Regler**: Der Entprelle laesst genau einen
+    // Durchgang je gesetzter Aenderung durch. Am Regler selbst waere
+    // jeder Punkt Reglerweg ein Schritt, und der Verlauf haette nach
+    // einem Zug zweihundert Eintraege.
+    _merkeSchritt();
+    _requestPreview();
+  });
 
   /// Haelt den aktuellen Stand als Schritt fest, wenn er neu ist.
   void _merkeSchritt() {
@@ -753,7 +767,11 @@ class _DevelopScreenState extends State<DevelopScreen> {
     // Ohne bekanntes Seitenverhaeltnis waere die Lage des Strichs geraten.
     // Dann lieber das normale Bild zeigen, bis die Auswertung da ist.
     if (verhaeltnis == null) {
-      return Image.memory(_previewBytes!, gaplessPlayback: true, fit: BoxFit.contain);
+      return Image.memory(
+        _previewBytes!,
+        gaplessPlayback: true,
+        fit: BoxFit.contain,
+      );
     }
 
     return VorherNachherVergleich(
@@ -767,7 +785,6 @@ class _DevelopScreenState extends State<DevelopScreen> {
     );
   }
 
-
   /// Der Stand einer gespeicherten Zeile als [DevelopAdjustments] – damit
   /// sich gespeicherte und Sitzungsschritte mit **derselben** Rechnung
   /// vergleichen lassen.
@@ -776,21 +793,21 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// fest, nicht die Datei. Ein Unterschied allein in der Tabelle bliebe
   /// deshalb unbenannt – lieber das, als eine erfundene Auskunft.
   DevelopAdjustments _standAus(DevelopHistoryData e) => DevelopAdjustments(
-        exposure: e.exposure,
-        temperature: e.temperature,
-        tint: e.tint,
-        contrast: e.contrast,
-        shadows: e.shadows,
-        highlights: e.highlights,
-        sharpness: e.sharpness,
-        noiseReduction: e.noiseReduction,
-        clarity: e.clarity,
-        vignette: e.vignette,
-        lensCorrectionEnabled: e.lensCorrectionEnabled,
-        toneCurve: toneCurveAus(e.toneCurveJson),
-        colorMixer: colorMixerAus(e.colorMixerJson),
-        lutStrength: e.lutStrength,
-      );
+    exposure: e.exposure,
+    temperature: e.temperature,
+    tint: e.tint,
+    contrast: e.contrast,
+    shadows: e.shadows,
+    highlights: e.highlights,
+    sharpness: e.sharpness,
+    noiseReduction: e.noiseReduction,
+    clarity: e.clarity,
+    vignette: e.vignette,
+    lensCorrectionEnabled: e.lensCorrectionEnabled,
+    toneCurve: toneCurveAus(e.toneCurveJson),
+    colorMixer: colorMixerAus(e.colorMixerJson),
+    lutStrength: e.lutStrength,
+  );
 
   /// Übernimmt einen Sitzungsschritt zurück in die Regler.
   void _ladeSchritt(DevelopAdjustments stand) {
@@ -845,22 +862,29 @@ class _DevelopScreenState extends State<DevelopScreen> {
           for (var i = _sitzung.length - 1; i >= 0; i--) {
             final schritt = _sitzung[i];
             final vorher = i == 0 ? null : _sitzung[i - 1].stand;
-            zeilen.add(ListTile(
-              leading: Icon(
+            zeilen.add(
+              ListTile(
+                leading: Icon(
                   i == _sitzung.length - 1 ? Icons.circle : Icons.history,
                   size: i == _sitzung.length - 1 ? 12 : 20,
-                  color: Colors.white70),
-              title: Text(was(vorher, schritt.stand),
-                  style: const TextStyle(color: Colors.white)),
-              subtitle: Text(
-                i == _sitzung.length - 1
-                    ? '${zeit(schritt.wann)} · ${t.entwVerlaufJetzt}'
-                    : zeit(schritt.wann),
-                style: const TextStyle(
-                    color: DunkleFlaeche.hinweis, fontSize: 12),
+                  color: Colors.white70,
+                ),
+                title: Text(
+                  was(vorher, schritt.stand),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  i == _sitzung.length - 1
+                      ? '${zeit(schritt.wann)} · ${t.entwVerlaufJetzt}'
+                      : zeit(schritt.wann),
+                  style: const TextStyle(
+                    color: DunkleFlaeche.hinweis,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, schritt.stand),
               ),
-              onTap: () => Navigator.pop(context, schritt.stand),
-            ));
+            );
           }
         }
 
@@ -873,29 +897,40 @@ class _DevelopScreenState extends State<DevelopScreen> {
             final vorher = i + 1 < history.length
                 ? _standAus(history[i + 1])
                 : null;
-            zeilen.add(ListTile(
-              leading: const Icon(Icons.history, color: Colors.white70),
-              title: Text(was(vorher, _standAus(eintrag)),
-                  style: const TextStyle(color: Colors.white)),
-              subtitle: Text(zeit(eintrag.createdAt),
+            zeilen.add(
+              ListTile(
+                leading: const Icon(Icons.history, color: Colors.white70),
+                title: Text(
+                  was(vorher, _standAus(eintrag)),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  zeit(eintrag.createdAt),
                   style: const TextStyle(
-                      color: DunkleFlaeche.hinweis, fontSize: 12)),
-              onTap: () => Navigator.pop(context, _standAus(eintrag)),
-            ));
+                    color: DunkleFlaeche.hinweis,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, _standAus(eintrag)),
+              ),
+            );
           }
         }
 
         if (zeilen.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: Text(t.entwKeinVerlauf,
-                style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              t.entwKeinVerlauf,
+              style: const TextStyle(color: Colors.white70),
+            ),
           );
         }
         return SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.7),
+              maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            ),
             child: ListView(shrinkWrap: true, children: zeilen),
           ),
         );
@@ -905,14 +940,21 @@ class _DevelopScreenState extends State<DevelopScreen> {
   }
 
   Widget _verlaufKopf(String titel) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
-        child: Text(titel,
-            style: const TextStyle(
-                color: DunkleFlaeche.hinweis,
-                fontSize: 12,
-                fontWeight: FontWeight.w600)),
-      );
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.md,
+      AppSpacing.lg,
+      AppSpacing.xs,
+    ),
+    child: Text(
+      titel,
+      style: const TextStyle(
+        color: DunkleFlaeche.hinweis,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
 
   /// Legt den AKTUELLEN Reglerstand in die Zwischenablage – nicht den
   /// zuletzt gespeicherten. Andernfalls käme man nie zum Kopieren: Das
@@ -952,23 +994,26 @@ class _DevelopScreenState extends State<DevelopScreen> {
     final name = await showDialog<String>(
       context: context,
       builder: (context) => MitTextsteuerung(
-          builder: (context, feld) => AlertDialog(
-        title: Text(t.entwVorgabeSichern),
-        content: TextField(
-          controller: feld,
-          autofocus: true,
-          decoration: InputDecoration(hintText: t.entwVorgabeName),
-          onSubmitted: (v) => Navigator.pop(context, v.trim()),
-        ),
-        actions: [
-          TextButton(
+        builder: (context, feld) => AlertDialog(
+          title: Text(t.entwVorgabeSichern),
+          content: TextField(
+            controller: feld,
+            autofocus: true,
+            decoration: InputDecoration(hintText: t.entwVorgabeName),
+            onSubmitted: (v) => Navigator.pop(context, v.trim()),
+          ),
+          actions: [
+            TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(t.allgAbbrechen)),
-          FilledButton(
+              child: Text(t.allgAbbrechen),
+            ),
+            FilledButton(
               onPressed: () => Navigator.pop(context, feld.text.trim()),
-              child: Text(t.allgSpeichern)),
-                ],
-              )),
+              child: Text(t.allgSpeichern),
+            ),
+          ],
+        ),
+      ),
     );
     if (name == null || name.isEmpty || !mounted) return;
 
@@ -981,26 +1026,31 @@ class _DevelopScreenState extends State<DevelopScreen> {
     }
 
     final a = _currentAdjustments();
-    await widget.db.upsertDevelopPreset(DevelopPresetsCompanion.insert(
-      name: name,
-      exposure: Value(a.exposure),
-      temperature: Value(a.temperature),
-      tint: Value(a.tint),
-      contrast: Value(a.contrast),
-      shadows: Value(a.shadows),
-      highlights: Value(a.highlights),
-      sharpness: Value(a.sharpness),
-      noiseReduction: Value(a.noiseReduction),
-      lensCorrectionEnabled: Value(a.lensCorrectionEnabled),
-      clarity: Value(a.clarity),
-      vignette: Value(a.vignette),
-      lutPath: Value(_lutPfad),
-      lutStrength: Value(a.lutStrength),
-      toneCurveJson: Value(_toneCurve.istNeutral ? null : _toneCurve.encode()),
-      colorMixerJson:
-          Value(_colorMixer.istNeutral ? null : _colorMixer.encode()),
-      erstelltAm: DateTime.now(),
-    ));
+    await widget.db.upsertDevelopPreset(
+      DevelopPresetsCompanion.insert(
+        name: name,
+        exposure: Value(a.exposure),
+        temperature: Value(a.temperature),
+        tint: Value(a.tint),
+        contrast: Value(a.contrast),
+        shadows: Value(a.shadows),
+        highlights: Value(a.highlights),
+        sharpness: Value(a.sharpness),
+        noiseReduction: Value(a.noiseReduction),
+        lensCorrectionEnabled: Value(a.lensCorrectionEnabled),
+        clarity: Value(a.clarity),
+        vignette: Value(a.vignette),
+        lutPath: Value(_lutPfad),
+        lutStrength: Value(a.lutStrength),
+        toneCurveJson: Value(
+          _toneCurve.istNeutral ? null : _toneCurve.encode(),
+        ),
+        colorMixerJson: Value(
+          _colorMixer.istNeutral ? null : _colorMixer.encode(),
+        ),
+        erstelltAm: DateTime.now(),
+      ),
+    );
     if (!mounted) return;
     melde.erfolg(t.entwVorgabeGesichert(name));
   }
@@ -1053,25 +1103,27 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   void _kopiereEinstellungen() {
     final a = _currentAdjustments();
-    widget.onEinstellungenKopieren!(DevelopSettingsData(
-      assetId: widget.asset.id,
-      exposure: a.exposure,
-      temperature: a.temperature,
-      tint: a.tint,
-      contrast: a.contrast,
-      shadows: a.shadows,
-      highlights: a.highlights,
-      sharpness: a.sharpness,
-      noiseReduction: a.noiseReduction,
-      clarity: a.clarity,
-      vignette: a.vignette,
-      lutPath: _lutPfad,
-      lutStrength: a.lutStrength,
-      lensCorrectionEnabled: a.lensCorrectionEnabled,
-      toneCurveJson: a.toneCurve.istNeutral ? null : a.toneCurve.encode(),
-      colorMixerJson: a.colorMixer.istNeutral ? null : a.colorMixer.encode(),
-      updatedAt: DateTime.now(),
-    ));
+    widget.onEinstellungenKopieren!(
+      DevelopSettingsData(
+        assetId: widget.asset.id,
+        exposure: a.exposure,
+        temperature: a.temperature,
+        tint: a.tint,
+        contrast: a.contrast,
+        shadows: a.shadows,
+        highlights: a.highlights,
+        sharpness: a.sharpness,
+        noiseReduction: a.noiseReduction,
+        clarity: a.clarity,
+        vignette: a.vignette,
+        lutPath: _lutPfad,
+        lutStrength: a.lutStrength,
+        lensCorrectionEnabled: a.lensCorrectionEnabled,
+        toneCurveJson: a.toneCurve.istNeutral ? null : a.toneCurve.encode(),
+        colorMixerJson: a.colorMixer.istNeutral ? null : a.colorMixer.encode(),
+        updatedAt: DateTime.now(),
+      ),
+    );
     melde.erfolg(AppTexte.of(context).entwKopiert);
   }
 
@@ -1124,7 +1176,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
       return;
     }
 
-    final developedRelativePath = widget.paths.developedRelativePath(widget.asset.id);
+    final developedRelativePath = widget.paths.developedRelativePath(
+      widget.asset.id,
+    );
     final targetFile = widget.paths.absolute(developedRelativePath);
     await targetFile.parent.create(recursive: true);
     await targetFile.writeAsBytes(bytes);
@@ -1152,9 +1206,15 @@ class _DevelopScreenState extends State<DevelopScreen> {
         lutStrength: Value(adjustments.lutStrength),
         lensCorrectionEnabled: Value(adjustments.lensCorrectionEnabled),
         toneCurveJson: Value(
-            adjustments.toneCurve.istNeutral ? null : adjustments.toneCurve.encode()),
+          adjustments.toneCurve.istNeutral
+              ? null
+              : adjustments.toneCurve.encode(),
+        ),
         colorMixerJson: Value(
-            adjustments.colorMixer.istNeutral ? null : adjustments.colorMixer.encode()),
+          adjustments.colorMixer.istNeutral
+              ? null
+              : adjustments.colorMixer.encode(),
+        ),
         updatedAt: DateTime.now(),
       ),
       developedRelativePath: developedRelativePath,
@@ -1184,7 +1244,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   Future<void> _reset() async {
     await widget.db.resetDevelopSettings(widget.asset.id);
-    final developedFile = widget.paths.absolute(widget.paths.developedRelativePath(widget.asset.id));
+    final developedFile = widget.paths.absolute(
+      widget.paths.developedRelativePath(widget.asset.id),
+    );
     if (await developedFile.exists()) await developedFile.delete();
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -1206,17 +1268,16 @@ class _DevelopScreenState extends State<DevelopScreen> {
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(t.modellEsrganTitel),
-        content: SizedBox(
-          width: 420,
-          child: Text(t.restaurWasPassiert),
-        ),
+        content: SizedBox(width: 420, child: Text(t.restaurWasPassiert)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgStarten)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgStarten),
+          ),
         ],
       ),
     );
@@ -1299,7 +1360,10 @@ class _DevelopScreenState extends State<DevelopScreen> {
       RectangleShape() => _MaskFormType.rectangle,
       GradientShape() => _MaskFormType.gradient,
       ColorRangeShape() => _MaskFormType.colorRange,
-      null => (widget.segmentation?.installiert ?? false) ? _MaskFormType.aiSelect : _MaskFormType.freehand,
+      null =>
+        (widget.segmentation?.installiert ?? false)
+            ? _MaskFormType.aiSelect
+            : _MaskFormType.freehand,
     };
     setState(() {
       _maskEditMode = true;
@@ -1434,9 +1498,17 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// der berechnete Bildbereich um genau diesen Rand daneben, und jede
   /// Maskengeste traf ein paar Bildpunkte neben der Stelle, auf die
   /// gezeigt wurde.
-  Rect _imageDisplayRect(Size widgetSize, double imageWidth, double imageHeight) {
-    final flaeche = Rect.fromLTWH(0, 0, widgetSize.width, widgetSize.height)
-        .deflate(_maskenrand);
+  Rect _imageDisplayRect(
+    Size widgetSize,
+    double imageWidth,
+    double imageHeight,
+  ) {
+    final flaeche = Rect.fromLTWH(
+      0,
+      0,
+      widgetSize.width,
+      widgetSize.height,
+    ).deflate(_maskenrand);
     // Ein Editor, der schmaler ist als sein eigener Rand, hat keinen
     // Bildbereich – ohne diese Rückfallebene käme eine negative Breite
     // heraus, und jede Umrechnung darauf wäre Unsinn.
@@ -1456,14 +1528,27 @@ class _DevelopScreenState extends State<DevelopScreen> {
       offsetX = (flaeche.width - renderedWidth) / 2;
     }
     return Rect.fromLTWH(
-        flaeche.left + offsetX, flaeche.top + offsetY, renderedWidth, renderedHeight);
+      flaeche.left + offsetX,
+      flaeche.top + offsetY,
+      renderedWidth,
+      renderedHeight,
+    );
   }
 
   /// Rechnet eine Tipp-Position innerhalb des Vorschau-Widgets in eine
   /// Pixel-Koordinate des dekodierten Bilds um. `null`, wenn der Tipp im
   /// Letterbox-Rand lag.
-  Offset? _widgetPointToImagePoint(Offset local, Size widgetSize, int imageWidth, int imageHeight) {
-    final rect = _imageDisplayRect(widgetSize, imageWidth.toDouble(), imageHeight.toDouble());
+  Offset? _widgetPointToImagePoint(
+    Offset local,
+    Size widgetSize,
+    int imageWidth,
+    int imageHeight,
+  ) {
+    final rect = _imageDisplayRect(
+      widgetSize,
+      imageWidth.toDouble(),
+      imageHeight.toDouble(),
+    );
     final dx = local.dx - rect.left;
     final dy = local.dy - rect.top;
     if (dx < 0 || dy < 0 || dx > rect.width || dy > rect.height) return null;
@@ -1478,8 +1563,17 @@ class _DevelopScreenState extends State<DevelopScreen> {
   Offset? _widgetPointToNormalizedImagePoint(Offset local, Size widgetSize) {
     final imageWidth = widget.asset.widthPx;
     final imageHeight = widget.asset.heightPx;
-    if (imageWidth == null || imageHeight == null || imageWidth <= 0 || imageHeight <= 0) return null;
-    final rect = _imageDisplayRect(widgetSize, imageWidth.toDouble(), imageHeight.toDouble());
+    if (imageWidth == null ||
+        imageHeight == null ||
+        imageWidth <= 0 ||
+        imageHeight <= 0) {
+      return null;
+    }
+    final rect = _imageDisplayRect(
+      widgetSize,
+      imageWidth.toDouble(),
+      imageHeight.toDouble(),
+    );
     final dx = local.dx - rect.left;
     final dy = local.dy - rect.top;
     if (dx < 0 || dy < 0 || dx > rect.width || dy > rect.height) return null;
@@ -1524,9 +1618,19 @@ class _DevelopScreenState extends State<DevelopScreen> {
   void _handleMaskTap(Offset local, Size widgetSize) {
     final decoded = _decodedForMasking;
     if (decoded == null || _computingMask) return;
-    final imagePoint = _widgetPointToImagePoint(local, widgetSize, decoded.width, decoded.height);
+    final imagePoint = _widgetPointToImagePoint(
+      local,
+      widgetSize,
+      decoded.width,
+      decoded.height,
+    );
     if (imagePoint == null) return;
-    setState(() => _maskPoints.add((point: imagePoint, isBackground: _backgroundPointMode)));
+    setState(
+      () => _maskPoints.add((
+        point: imagePoint,
+        isBackground: _backgroundPointMode,
+      )),
+    );
     _runMaskPrediction();
   }
 
@@ -1554,18 +1658,20 @@ class _DevelopScreenState extends State<DevelopScreen> {
     final faktor = maxWert > 0 ? 255.0 / maxWert : 1.0;
 
     final vorher = _draftShape;
-    setState(() => _draftShape = ColorRangeShape(
-          pointX: punkt.dx,
-          pointY: punkt.dy,
-          red: (pixel.r * faktor).round().clamp(0, 255),
-          green: (pixel.g * faktor).round().clamp(0, 255),
-          blue: (pixel.b * faktor).round().clamp(0, 255),
-          // Toleranz und Weichzeichnung überleben ein erneutes Aufnehmen:
-          // Wer die Werte eingestellt hat und dann daneben getroffen hat,
-          // will nicht von vorn anfangen.
-          tolerance: vorher is ColorRangeShape ? vorher.tolerance : 0.25,
-          feather: vorher is ColorRangeShape ? vorher.feather : 0.3,
-        ));
+    setState(
+      () => _draftShape = ColorRangeShape(
+        pointX: punkt.dx,
+        pointY: punkt.dy,
+        red: (pixel.r * faktor).round().clamp(0, 255),
+        green: (pixel.g * faktor).round().clamp(0, 255),
+        blue: (pixel.b * faktor).round().clamp(0, 255),
+        // Toleranz und Weichzeichnung überleben ein erneutes Aufnehmen:
+        // Wer die Werte eingestellt hat und dann daneben getroffen hat,
+        // will nicht von vorn anfangen.
+        tolerance: vorher is ColorRangeShape ? vorher.tolerance : 0.25,
+        feather: vorher is ColorRangeShape ? vorher.feather : 0.3,
+      ),
+    );
   }
 
   void _undoLastMaskPoint() {
@@ -1587,17 +1693,29 @@ class _DevelopScreenState extends State<DevelopScreen> {
   Future<void> _runMaskPrediction() async {
     final segmentation = _segmentation;
     final embedding = _embedding;
-    if (segmentation == null || embedding == null || _maskPoints.isEmpty) return;
+    if (segmentation == null || embedding == null || _maskPoints.isEmpty) {
+      return;
+    }
     setState(() => _computingMask = true);
-    final foreground = [for (final p in _maskPoints) if (!p.isBackground) p.point];
-    final background = [for (final p in _maskPoints) if (p.isBackground) p.point];
+    final foreground = [
+      for (final p in _maskPoints)
+        if (!p.isBackground) p.point,
+    ];
+    final background = [
+      for (final p in _maskPoints)
+        if (p.isBackground) p.point,
+    ];
     if (foreground.isEmpty) {
       // SAM braucht mindestens einen Vordergrund-Punkt, um sinnvoll zu
       // starten – reine Hintergrund-Punkte allein ergeben keine Maske.
       setState(() => _computingMask = false);
       return;
     }
-    final result = await segmentation.decodeMask(embedding, foregroundPoints: foreground, backgroundPoints: background);
+    final result = await segmentation.decodeMask(
+      embedding,
+      foregroundPoints: foreground,
+      backgroundPoints: background,
+    );
     // Über compute() ausgelagert (Audit-Fund: Hochskalieren/Einfärben/PNG-
     // Kodieren lief vorher synchron im Haupt-Isolate bei JEDEM Punkt-Tap).
     final overlayPng = await compute(renderMaskPreviewPng, result);
@@ -1623,12 +1741,14 @@ class _DevelopScreenState extends State<DevelopScreen> {
     await file.parent.create(recursive: true);
     await file.writeAsBytes(pngBytes);
 
-    await widget.db.createDevelopMask(DevelopMasksCompanion.insert(
-      assetId: widget.asset.id,
-      maskRelativePath: relativePath,
-      label: name,
-      createdAt: DateTime.now(),
-    ));
+    await widget.db.createDevelopMask(
+      DevelopMasksCompanion.insert(
+        assetId: widget.asset.id,
+        maskRelativePath: relativePath,
+        label: name,
+        createdAt: DateTime.now(),
+      ),
+    );
     final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
 
     if (!mounted) return;
@@ -1658,7 +1778,8 @@ class _DevelopScreenState extends State<DevelopScreen> {
     final t = AppTexte.of(context);
     setState(() => _computingMask = true);
     final ergebnis = await NativeImageConverter.tiefenmaske(
-        widget.paths.absolute(widget.asset.relativePath));
+      widget.paths.absolute(widget.asset.relativePath),
+    );
     if (!mounted) return;
     setState(() => _computingMask = false);
 
@@ -1680,12 +1801,14 @@ class _DevelopScreenState extends State<DevelopScreen> {
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(ergebnis.png!);
 
-    await widget.db.createDevelopMask(DevelopMasksCompanion.insert(
-      assetId: widget.asset.id,
-      maskRelativePath: relativePath,
-      label: name,
-      createdAt: DateTime.now(),
-    ));
+    await widget.db.createDevelopMask(
+      DevelopMasksCompanion.insert(
+        assetId: widget.asset.id,
+        maskRelativePath: relativePath,
+        label: name,
+        createdAt: DateTime.now(),
+      ),
+    );
     final frisch = await widget.db.masksForAsset(widget.asset.id);
     if (!mounted) return;
     setState(() => _masks = frisch);
@@ -1696,22 +1819,34 @@ class _DevelopScreenState extends State<DevelopScreen> {
   // --- Vektor-Masken: Zieh-Gesten -----------------------------------------
 
   void _handleShapePanStart(DragStartDetails details, Size widgetSize) {
-    final point = _widgetPointToNormalizedImagePoint(details.localPosition, widgetSize);
+    final point = _widgetPointToNormalizedImagePoint(
+      details.localPosition,
+      widgetSize,
+    );
     if (point == null) return;
     switch (_maskFormType) {
       case _MaskFormType.freehand:
-        setState(() => _draftShape = FreehandShape(
-              points: [point],
-              strokeWidth: (_draftShape as FreehandShape?)?.strokeWidth ?? 0.03,
-            ));
+        setState(
+          () => _draftShape = FreehandShape(
+            points: [point],
+            strokeWidth: (_draftShape as FreehandShape?)?.strokeWidth ?? 0.03,
+          ),
+        );
       case _MaskFormType.ellipse:
       case _MaskFormType.rectangle:
         // Beide werden gleich aufgezogen: von Ecke zu Ecke.
         setState(() => _ellipseDragAnchor = point);
       case _MaskFormType.gradient:
         final feather = (_draftShape as GradientShape?)?.feather ?? 0.3;
-        setState(() => _draftShape =
-            GradientShape(startX: point.dx, startY: point.dy, endX: point.dx, endY: point.dy, feather: feather));
+        setState(
+          () => _draftShape = GradientShape(
+            startX: point.dx,
+            startY: point.dy,
+            endX: point.dx,
+            endY: point.dy,
+            feather: feather,
+          ),
+        );
       case _MaskFormType.aiSelect:
       case _MaskFormType.colorRange:
         // Beide entstehen aus einem Tipp, nicht aus einer Zieh-Geste.
@@ -1720,52 +1855,65 @@ class _DevelopScreenState extends State<DevelopScreen> {
   }
 
   void _handleShapePanUpdate(DragUpdateDetails details, Size widgetSize) {
-    final point = _widgetPointToNormalizedImagePoint(details.localPosition, widgetSize);
+    final point = _widgetPointToNormalizedImagePoint(
+      details.localPosition,
+      widgetSize,
+    );
     if (point == null) return;
     switch (_maskFormType) {
       case _MaskFormType.freehand:
         final current = _draftShape;
         if (current is! FreehandShape) return;
-        setState(() =>
-            _draftShape = FreehandShape(points: [...current.points, point], strokeWidth: current.strokeWidth));
+        setState(
+          () => _draftShape = FreehandShape(
+            points: [...current.points, point],
+            strokeWidth: current.strokeWidth,
+          ),
+        );
       case _MaskFormType.ellipse:
         final anchor = _ellipseDragAnchor;
         if (anchor == null) return;
         final previous = _draftShape;
         final rotation = previous is EllipseShape ? previous.rotation : 0.0;
         final feather = previous is EllipseShape ? previous.feather : 0.3;
-        setState(() => _draftShape = EllipseShape(
-              centerX: (anchor.dx + point.dx) / 2,
-              centerY: (anchor.dy + point.dy) / 2,
-              radiusX: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
-              radiusY: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
-              rotation: rotation,
-              feather: feather,
-            ));
+        setState(
+          () => _draftShape = EllipseShape(
+            centerX: (anchor.dx + point.dx) / 2,
+            centerY: (anchor.dy + point.dy) / 2,
+            radiusX: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
+            radiusY: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
+            rotation: rotation,
+            feather: feather,
+          ),
+        );
       case _MaskFormType.rectangle:
         final anchor = _ellipseDragAnchor;
         if (anchor == null) return;
         final previous = _draftShape;
         final rotation = previous is RectangleShape ? previous.rotation : 0.0;
         final feather = previous is RectangleShape ? previous.feather : 0.2;
-        setState(() => _draftShape = RectangleShape(
-              centerX: (anchor.dx + point.dx) / 2,
-              centerY: (anchor.dy + point.dy) / 2,
-              halfWidth: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
-              halfHeight: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
-              rotation: rotation,
-              feather: feather,
-            ));
+        setState(
+          () => _draftShape = RectangleShape(
+            centerX: (anchor.dx + point.dx) / 2,
+            centerY: (anchor.dy + point.dy) / 2,
+            halfWidth: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
+            halfHeight: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
+            rotation: rotation,
+            feather: feather,
+          ),
+        );
       case _MaskFormType.gradient:
         final current = _draftShape;
         if (current is! GradientShape) return;
-        setState(() => _draftShape = GradientShape(
-              startX: current.startX,
-              startY: current.startY,
-              endX: point.dx,
-              endY: point.dy,
-              feather: current.feather,
-            ));
+        setState(
+          () => _draftShape = GradientShape(
+            startX: current.startX,
+            startY: current.startY,
+            endX: point.dx,
+            endY: point.dy,
+            feather: current.feather,
+          ),
+        );
       case _MaskFormType.aiSelect:
       case _MaskFormType.colorRange:
         break;
@@ -1773,13 +1921,13 @@ class _DevelopScreenState extends State<DevelopScreen> {
   }
 
   bool get _canCommitShape => switch (_maskFormType) {
-        _MaskFormType.aiSelect => _pendingMaskResult != null,
-        _MaskFormType.freehand => _draftShape is FreehandShape,
-        _MaskFormType.ellipse => _draftShape is EllipseShape,
-        _MaskFormType.rectangle => _draftShape is RectangleShape,
-        _MaskFormType.gradient => _draftShape is GradientShape,
-        _MaskFormType.colorRange => _draftShape is ColorRangeShape,
-      };
+    _MaskFormType.aiSelect => _pendingMaskResult != null,
+    _MaskFormType.freehand => _draftShape is FreehandShape,
+    _MaskFormType.ellipse => _draftShape is EllipseShape,
+    _MaskFormType.rectangle => _draftShape is RectangleShape,
+    _MaskFormType.gradient => _draftShape is GradientShape,
+    _MaskFormType.colorRange => _draftShape is ColorRangeShape,
+  };
 
   Future<void> _commitCurrentMask() =>
       _maskFormType == _MaskFormType.aiSelect ? _commitMask() : _commitShape();
@@ -1807,11 +1955,17 @@ class _DevelopScreenState extends State<DevelopScreen> {
     // Formen fassen die Datei gar nicht an.
     final quellPfad = shape is ColorRangeShape
         ? widget.paths
-            .absolute(widget.asset.previewRelativePath ?? widget.asset.relativePath)
-            .path
+              .absolute(
+                widget.asset.previewRelativePath ?? widget.asset.relativePath,
+              )
+              .path
         : null;
-    final pngBytes =
-        await compute(rasterizeMaskShapeToPngBytes, (shape, width, height, quellPfad));
+    final pngBytes = await compute(rasterizeMaskShapeToPngBytes, (
+      shape,
+      width,
+      height,
+      quellPfad,
+    ));
     var editingId = _editingMaskId;
 
     // Verteidigung gegen eine seit dem Öffnen des Editors zwischenzeitlich
@@ -1828,20 +1982,24 @@ class _DevelopScreenState extends State<DevelopScreen> {
     }
 
     if (editingId != null && existing != null) {
-      await widget.paths.absolute(existing.maskRelativePath).writeAsBytes(pngBytes);
+      await widget.paths
+          .absolute(existing.maskRelativePath)
+          .writeAsBytes(pngBytes);
       await widget.db.updateDevelopMaskShape(editingId, shape.encode());
     } else {
       final relativePath = widget.paths.maskRelativePath(const Uuid().v4());
       final file = widget.paths.absolute(relativePath);
       await file.parent.create(recursive: true);
       await file.writeAsBytes(pngBytes);
-      await widget.db.createDevelopMask(DevelopMasksCompanion.insert(
-        assetId: widget.asset.id,
-        maskRelativePath: relativePath,
-        label: name,
-        createdAt: DateTime.now(),
-        shapeDefinitionJson: Value(shape.encode()),
-      ));
+      await widget.db.createDevelopMask(
+        DevelopMasksCompanion.insert(
+          assetId: widget.asset.id,
+          maskRelativePath: relativePath,
+          label: name,
+          createdAt: DateTime.now(),
+          shapeDefinitionJson: Value(shape.encode()),
+        ),
+      );
     }
     final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
 
@@ -1871,6 +2029,7 @@ class _DevelopScreenState extends State<DevelopScreen> {
     double max,
     ValueChanged<double> onChanged, {
     bool enabled = true,
+
     /// Ob der Shader diesen Regler **richtig** zeigt.
     ///
     /// Wo ja, laeuft die Live-Vorschau ueber ihn – das ist der Regelfall
@@ -1905,19 +2064,25 @@ class _DevelopScreenState extends State<DevelopScreen> {
               // Punkte breiten Spalte um 33 Punkte ueber ihren Rand –
               // und die Zahl daneben wird abgeschnitten.
               Expanded(
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: enabled
-                            ? DunkleFlaeche.text
-                            : DunkleFlaeche.inaktiv,
-                        fontSize: 13)),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: enabled ? DunkleFlaeche.text : DunkleFlaeche.inaktiv,
+                    fontSize: 13,
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 value.toStringAsFixed(min.abs() >= 100 ? 0 : 2),
-                style: TextStyle(color: enabled ? DunkleFlaeche.zweitText : DunkleFlaeche.linie, fontSize: 12),
+                style: TextStyle(
+                  color: enabled
+                      ? DunkleFlaeche.zweitText
+                      : DunkleFlaeche.linie,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -1927,8 +2092,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
             max: max,
             // Während des Ziehens rechnet der Shader live; nach dem
             // Loslassen übernimmt wieder der native Render.
-            onChangeStart:
-                (enabled && imShader) ? (_) => setState(() => _dragging = true) : null,
+            onChangeStart: (enabled && imShader)
+                ? (_) => setState(() => _dragging = true)
+                : null,
             // Bewusst NICHT hier _dragging zurücksetzen: der native Render
             // ist erst nach Debounce + Renderzeit da. Sofortiges Umschalten
             // würde für diese Zeitspanne den ALTEN Stand zeigen, das Bild
@@ -1974,18 +2140,23 @@ class _DevelopScreenState extends State<DevelopScreen> {
             tooltip: widget.restoreQueue?.restoreHalter?.installiert != true
                 ? AppTexte.of(context).entwRestaurierungModellFehlt
                 : AppTexte.of(context).entwRestaurierungAnwenden,
-            onPressed: (_saving || widget.restoreQueue?.restoreHalter?.installiert != true) ? null : _enqueueRestore,
+            onPressed:
+                (_saving ||
+                    widget.restoreQueue?.restoreHalter?.installiert != true)
+                ? null
+                : _enqueueRestore,
           ),
           IconButton(
             icon: const Icon(Icons.auto_fix_high_outlined),
             tooltip: AppTexte.of(context).entwMaskeHinzufuegen,
-            onPressed: (_saving || _maskEditMode) ? null : () => _startMaskCreation(),
+            onPressed: (_saving || _maskEditMode)
+                ? null
+                : () => _startMaskCreation(),
           ),
           IconButton(
             icon: const Icon(Icons.blur_on_outlined),
             tooltip: AppTexte.of(context).entwTiefenmaske,
-            onPressed:
-                (_saving || _maskEditMode) ? null : _tiefenmaskeAnlegen,
+            onPressed: (_saving || _maskEditMode) ? null : _tiefenmaskeAnlegen,
           ),
           IconButton(
             icon: const Icon(Icons.history),
@@ -2021,8 +2192,10 @@ class _DevelopScreenState extends State<DevelopScreen> {
             ),
           TextButton(
             onPressed: _saving ? null : _reset,
-            child: Text(AppTexte.of(context).einstZuruecksetzen,
-                style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              AppTexte.of(context).einstZuruecksetzen,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           // Die Beschneidungswarnung gehoert neben das Bild, nicht in die
           // Reglerspalte: Sie beurteilt das Bild, sie stellt nichts ein.
@@ -2032,17 +2205,19 @@ class _DevelopScreenState extends State<DevelopScreen> {
           // Blick auf das Bild, keine Einstellung daran - deshalb hier
           // neben ihr und nicht in der Reglerspalte.
           IconButton(
-            icon: Icon(_trennstrich != null
-                ? Icons.compare
-                : Icons.compare_outlined),
+            icon: Icon(
+              _trennstrich != null ? Icons.compare : Icons.compare_outlined,
+            ),
             color: _trennstrich != null ? Colors.amber : Colors.white70,
             tooltip: AppTexte.of(context).entwTrennstrich,
             onPressed: _trennstrichUmschalten,
           ),
           IconButton(
-            icon: Icon(_beschneidungZeigen
-                ? Icons.report_problem
-                : Icons.report_problem_outlined),
+            icon: Icon(
+              _beschneidungZeigen
+                  ? Icons.report_problem
+                  : Icons.report_problem_outlined,
+            ),
             color: _beschneidungZeigen ? Colors.amber : Colors.white70,
             // Nicht an _zeigeShaderVorschau haengen: das waere der
             // Knopf, der genau dann klickbar ist, wenn man ihn nicht
@@ -2051,8 +2226,8 @@ class _DevelopScreenState extends State<DevelopScreen> {
                 ? AppTexte.of(context).entwBeschneidungWarnung
                 : AppTexte.of(context).entwBeschneidungMitMasken,
             onPressed: _shaderMoeglich
-                ? () => setState(
-                    () => _beschneidungZeigen = !_beschneidungZeigen)
+                ? () =>
+                      setState(() => _beschneidungZeigen = !_beschneidungZeigen)
                 : null,
           ),
           if (_saving)
@@ -2061,7 +2236,10 @@ class _DevelopScreenState extends State<DevelopScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
             )
           else
@@ -2081,129 +2259,177 @@ class _DevelopScreenState extends State<DevelopScreen> {
                     child: Center(
                       child: _previewBytes == null
                           ? (_error != null
-                              ? Padding(
-                                  padding: const EdgeInsets.all(AppSpacing.xxl),
-                                  child: Text(_error!, style: const TextStyle(color: Colors.white70)),
-                                )
-                              : const CircularProgressIndicator())
-                          : _maskEditMode
-                              ? _buildMaskEditor()
-                              : GestureDetector(
-                                  onLongPressStart: (_) {
-                                    _ensureOriginalPreviewLoaded();
-                                    setState(() => _showingOriginal = true);
-                                  },
-                                  onLongPressEnd: (_) => setState(() => _showingOriginal = false),
-                                  onLongPressCancel: () => setState(() => _showingOriginal = false),
-                                  child: Stack(
-                                    alignment: Alignment.bottomCenter,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(AppSpacing.lg),
-                                        child: (_zeigeShaderVorschau && !_showingOriginal)
-                                            ? DevelopShaderPreview(
-                                                shader: _shader,
-                                                image: _shaderBasis!,
-                                                adjustments: _currentAdjustments(),
-                                                beschneidungZeigen: _beschneidungZeigen,
-                                              )
-                                            : (_zeigeTrennstrich && !_showingOriginal)
-                                                ? _buildTrennstrichVergleich()
-                                                : Image.memory(
-                                                    (_showingOriginal && _originalPreviewBytes != null)
-                                                        ? _originalPreviewBytes!
-                                                        : _previewBytes!,
-                                                    gaplessPlayback: true,
-                                                    fit: BoxFit.contain,
-                                                  ),
+                                ? Padding(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.xxl,
+                                    ),
+                                    child: Text(
+                                      _error!,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
                                       ),
-                                      if (_showingOriginal)
-                                        Positioned(
-                                          top: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black54,
-                                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                                            ),
-                                            child: Text(AppTexte.of(context).entwOriginal,
-                                                style: const TextStyle(
-                                                    color: Colors.white, fontSize: 12)),
+                                    ),
+                                  )
+                                : const CircularProgressIndicator())
+                          : _maskEditMode
+                          ? _buildMaskEditor()
+                          : GestureDetector(
+                              onLongPressStart: (_) {
+                                _ensureOriginalPreviewLoaded();
+                                setState(() => _showingOriginal = true);
+                              },
+                              onLongPressEnd: (_) =>
+                                  setState(() => _showingOriginal = false),
+                              onLongPressCancel: () =>
+                                  setState(() => _showingOriginal = false),
+                              child: Stack(
+                                alignment: Alignment.bottomCenter,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(
+                                      AppSpacing.lg,
+                                    ),
+                                    child:
+                                        (_zeigeShaderVorschau &&
+                                            !_showingOriginal)
+                                        ? DevelopShaderPreview(
+                                            shader: _shader,
+                                            image: _shaderBasis!,
+                                            adjustments: _currentAdjustments(),
+                                            beschneidungZeigen:
+                                                _beschneidungZeigen,
+                                          )
+                                        : (_zeigeTrennstrich &&
+                                              !_showingOriginal)
+                                        ? _buildTrennstrichVergleich()
+                                        : Image.memory(
+                                            (_showingOriginal &&
+                                                    _originalPreviewBytes !=
+                                                        null)
+                                                ? _originalPreviewBytes!
+                                                : _previewBytes!,
+                                            gaplessPlayback: true,
+                                            fit: BoxFit.contain,
                                           ),
-                                        )
-                                      else
-                                        Positioned(
-                                          bottom: 4,
-                                          child: Text(
-                                            AppTexte.of(context).entwVergleichen,
-                                            style: const TextStyle(
-                                                color: DunkleFlaeche.hinweis, fontSize: 11),
-                                          ),
-                                        ),
-                                      // Der Strich ist an, aber das
-                                      // unbearbeitete Bild wird noch
-                                      // gerechnet. Ohne diesen Hinweis
-                                      // sähe der Knopf wirkungslos aus -
-                                      // und man suchte den Fehler dort.
-                                      if (_trennstrich != null &&
-                                          _originalPreviewBytes == null)
-                                        Positioned(
-                                          top: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: AppSpacing.xs),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black54,
-                                              borderRadius:
-                                                  BorderRadius.circular(AppRadius.pill),
-                                            ),
-                                            child: Text(
-                                                AppTexte.of(context).entwTrennstrichWartet,
-                                                style: const TextStyle(
-                                                    color: Colors.white, fontSize: 12)),
-                                          ),
-                                        ),
-                                      // Solange die Warnung an ist, zeigt
-                                      // der Shader das Bild - und der
-                                      // rechnet unter macOS NICHT dasselbe
-                                      // wie Core Image. Vier Regler fehlen
-                                      // darin. Wo der Shader ohnehin das
-                                      // Ergebnis erzeugt (Linux, Windows),
-                                      // gibt es nichts zu vermelden.
-                                      if (_beschneidungZeigen &&
-                                          !_dragging &&
-                                          !_showingOriginal &&
-                                          _shaderMoeglich &&
-                                          !DevelopRender.istMassgeblich)
-                                        Positioned(
-                                          top: 8,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: AppSpacing.xs),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black54,
-                                              borderRadius:
-                                                  BorderRadius.circular(AppRadius.pill),
-                                            ),
-                                            child: Text(
-                                                AppTexte.of(context)
-                                                    .entwBeschneidungVorschauHinweis,
-                                                style: const TextStyle(
-                                                    color: Colors.white, fontSize: 12)),
-                                          ),
-                                        ),
-                                      if (_rendering)
-                                        const Padding(
-                                          padding: EdgeInsets.only(bottom: AppSpacing.lg),
-                                          child: SizedBox(
-                                            width: 22,
-                                            height: 22,
-                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
-                                          ),
-                                        ),
-                                    ],
                                   ),
-                                ),
+                                  if (_showingOriginal)
+                                    Positioned(
+                                      top: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: AppSpacing.xs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.pill,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          AppTexte.of(context).entwOriginal,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Positioned(
+                                      bottom: 4,
+                                      child: Text(
+                                        AppTexte.of(context).entwVergleichen,
+                                        style: const TextStyle(
+                                          color: DunkleFlaeche.hinweis,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  // Der Strich ist an, aber das
+                                  // unbearbeitete Bild wird noch
+                                  // gerechnet. Ohne diesen Hinweis
+                                  // sähe der Knopf wirkungslos aus -
+                                  // und man suchte den Fehler dort.
+                                  if (_trennstrich != null &&
+                                      _originalPreviewBytes == null)
+                                    Positioned(
+                                      top: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: AppSpacing.xs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.pill,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          AppTexte.of(
+                                            context,
+                                          ).entwTrennstrichWartet,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  // Solange die Warnung an ist, zeigt
+                                  // der Shader das Bild - und der
+                                  // rechnet unter macOS NICHT dasselbe
+                                  // wie Core Image. Vier Regler fehlen
+                                  // darin. Wo der Shader ohnehin das
+                                  // Ergebnis erzeugt (Linux, Windows),
+                                  // gibt es nichts zu vermelden.
+                                  if (_beschneidungZeigen &&
+                                      !_dragging &&
+                                      !_showingOriginal &&
+                                      _shaderMoeglich &&
+                                      !DevelopRender.istMassgeblich)
+                                    Positioned(
+                                      top: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: AppSpacing.xs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.pill,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          AppTexte.of(
+                                            context,
+                                          ).entwBeschneidungVorschauHinweis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (_rendering)
+                                    const Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: AppSpacing.lg,
+                                      ),
+                                      child: SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                     ),
                   ),
                   // `Material` und nicht `Container(color:)`: Die
@@ -2215,17 +2441,17 @@ class _DevelopScreenState extends State<DevelopScreen> {
                   Material(
                     color: const Color(0xFF1A1A1A),
                     child: SizedBox(
-                    width: 300,
-                    child: Column(
-                      children: [
-                        _restaurierungsfortschritt(),
-                        Expanded(
-                          child: _maskEditMode
-                              ? _buildMaskCreationPanel()
-                              : _buildAdjustmentsPanel(),
-                        ),
-                      ],
-                    ),
+                      width: 300,
+                      child: Column(
+                        children: [
+                          _restaurierungsfortschritt(),
+                          Expanded(
+                            child: _maskEditMode
+                                ? _buildMaskCreationPanel()
+                                : _buildAdjustmentsPanel(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -2247,28 +2473,37 @@ class _DevelopScreenState extends State<DevelopScreen> {
   Widget _restaurierungsfortschritt() {
     return StreamBuilder<List<RestoreJobData>>(
       stream: _restaurierungen.hole(
-          widget.asset.id, () => widget.db.watchRestoreJobs()),
+        widget.asset.id,
+        () => widget.db.watchRestoreJobs(),
+      ),
       builder: (context, schnappschuss) {
         final auftrag = (schnappschuss.data ?? const <RestoreJobData>[])
-            .where((j) =>
-                j.assetId == widget.asset.id &&
-                (j.status == 'queued' || j.status == 'running'))
+            .where(
+              (j) =>
+                  j.assetId == widget.asset.id &&
+                  (j.status == 'queued' || j.status == 'running'),
+            )
             .firstOrNull;
         if (auftrag == null) return const SizedBox.shrink();
         final t = AppTexte.of(context);
         final prozent = fortschrittProzent(auftrag);
         return Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md, AppSpacing.md, AppSpacing.xs, AppSpacing.sm),
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.xs,
+            AppSpacing.sm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Expanded(
-                    child: Text(t.entwRestaurierungLaeuft,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 13)),
+                    child: Text(
+                      t.entwRestaurierungLaeuft,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
@@ -2297,7 +2532,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
                     ? t.restaurWartet
                     : restaurLaufText(t, auftrag),
                 style: const TextStyle(
-                    color: DunkleFlaeche.hinweis, fontSize: 11),
+                  color: DunkleFlaeche.hinweis,
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -2306,8 +2543,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
     );
   }
 
-  Widget _buildMaskEditor() =>
-      _maskFormType == _MaskFormType.aiSelect ? _buildAiSelectMaskEditor() : _buildShapeMaskEditor();
+  Widget _buildMaskEditor() => _maskFormType == _MaskFormType.aiSelect
+      ? _buildAiSelectMaskEditor()
+      : _buildShapeMaskEditor();
 
   Widget _buildAiSelectMaskEditor() {
     return LayoutBuilder(
@@ -2326,42 +2564,54 @@ class _DevelopScreenState extends State<DevelopScreen> {
             // Damit auch ein Tipp im Letterbox-Rand beim Werkzeug
             // ankommt und nicht ins Leere faellt.
             behavior: HitTestBehavior.opaque,
-            onTapUp: (details) => _handleMaskTap(details.localPosition, widgetSize),
+            onTapUp: (details) =>
+                _handleMaskTap(details.localPosition, widgetSize),
             child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Image.memory(_previewBytes!, gaplessPlayback: true, fit: BoxFit.contain),
-              ),
-              if (_pendingMaskOverlayPng != null)
+              alignment: Alignment.center,
+              children: [
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Image.memory(_pendingMaskOverlayPng!, gaplessPlayback: true, fit: BoxFit.contain),
-                ),
-              if (_computingEmbedding)
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(color: Colors.white70),
-                    const SizedBox(height: 12),
-                    Text(
-                      _ladeSegmentierungsmodell
-                          ? AppTexte.of(context).entwModellLaedt
-                          : AppTexte.of(context).entwBildWirdVorbereitet,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                )
-              else if (_computingMask)
-                const Positioned(
-                  bottom: 16,
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+                  child: Image.memory(
+                    _previewBytes!,
+                    gaplessPlayback: true,
+                    fit: BoxFit.contain,
                   ),
                 ),
+                if (_pendingMaskOverlayPng != null)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Image.memory(
+                      _pendingMaskOverlayPng!,
+                      gaplessPlayback: true,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                if (_computingEmbedding)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: Colors.white70),
+                      const SizedBox(height: 12),
+                      Text(
+                        _ladeSegmentierungsmodell
+                            ? AppTexte.of(context).entwModellLaedt
+                            : AppTexte.of(context).entwBildWirdVorbereitet,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  )
+                else if (_computingMask)
+                  const Positioned(
+                    bottom: 16,
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -2381,8 +2631,16 @@ class _DevelopScreenState extends State<DevelopScreen> {
         final widgetSize = Size(constraints.maxWidth, constraints.maxHeight);
         final assetWidth = widget.asset.widthPx;
         final assetHeight = widget.asset.heightPx;
-        final displayRect = (assetWidth != null && assetHeight != null && assetWidth > 0 && assetHeight > 0)
-            ? _imageDisplayRect(widgetSize, assetWidth.toDouble(), assetHeight.toDouble())
+        final displayRect =
+            (assetWidth != null &&
+                assetHeight != null &&
+                assetWidth > 0 &&
+                assetHeight > 0)
+            ? _imageDisplayRect(
+                widgetSize,
+                assetWidth.toDouble(),
+                assetHeight.toDouble(),
+              )
             : Rect.fromLTWH(0, 0, widgetSize.width, widgetSize.height);
         // Siehe [_buildAiSelectMaskEditor]: ohne `SizedBox.expand` meldet
         // der `LayoutBuilder` eine andere Flaeche, als die Geste sie
@@ -2391,30 +2649,41 @@ class _DevelopScreenState extends State<DevelopScreen> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onPanStart: (details) => _handleShapePanStart(details, widgetSize),
-            onPanUpdate: (details) => _handleShapePanUpdate(details, widgetSize),
+            onPanUpdate: (details) =>
+                _handleShapePanUpdate(details, widgetSize),
             // Die Farbauswahl entsteht durch Tippen, nicht durch Ziehen.
-            onTapUp: (details) => _handleFarbeAufnehmen(details.localPosition, widgetSize),
+            onTapUp: (details) =>
+                _handleFarbeAufnehmen(details.localPosition, widgetSize),
             child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Image.memory(_previewBytes!, gaplessPlayback: true, fit: BoxFit.contain),
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(painter: _ShapeDraftPainter(_draftShape, displayRect)),
-                ),
-              ),
-              if (_computingMask)
-                const Positioned(
-                  bottom: 16,
-                  child: SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+              alignment: Alignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Image.memory(
+                    _previewBytes!,
+                    gaplessPlayback: true,
+                    fit: BoxFit.contain,
                   ),
                 ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _ShapeDraftPainter(_draftShape, displayRect),
+                    ),
+                  ),
+                ),
+                if (_computingMask)
+                  const Positioned(
+                    bottom: 16,
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -2429,9 +2698,14 @@ class _DevelopScreenState extends State<DevelopScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(AppTexte.of(context).entwMaskeErstellen,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+          Text(
+            AppTexte.of(context).entwMaskeErstellen,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 12),
           // Umbrechende Chips statt einer Segmentleiste: Sechs Werkzeuge
           // nebeneinander passen nicht in ein 300 Punkte breites Bedienfeld,
@@ -2445,37 +2719,37 @@ class _DevelopScreenState extends State<DevelopScreen> {
                   _MaskFormType.aiSelect,
                   AppTexte.of(context).entwFormKi,
                   Icons.auto_awesome_outlined,
-                  widget.segmentation?.installiert ?? false
+                  widget.segmentation?.installiert ?? false,
                 ),
                 (
                   _MaskFormType.freehand,
                   AppTexte.of(context).entwFormPinsel,
                   Icons.brush_outlined,
-                  true
+                  true,
                 ),
                 (
                   _MaskFormType.ellipse,
                   AppTexte.of(context).entwFormEllipse,
                   Icons.circle_outlined,
-                  true
+                  true,
                 ),
                 (
                   _MaskFormType.rectangle,
                   AppTexte.of(context).entwFormRechteck,
                   Icons.crop_square,
-                  true
+                  true,
                 ),
                 (
                   _MaskFormType.gradient,
                   AppTexte.of(context).entwFormVerlauf,
                   Icons.gradient_outlined,
-                  true
+                  true,
                 ),
                 (
                   _MaskFormType.colorRange,
                   AppTexte.of(context).entwFormFarbe,
                   Icons.colorize_outlined,
-                  true
+                  true,
                 ),
               ])
                 // Ein grauer Knopf ohne Grund ist eine Sackgasse: Die
@@ -2486,12 +2760,16 @@ class _DevelopScreenState extends State<DevelopScreen> {
                       ? beschriftung
                       : AppTexte.of(context).entwFormKiFehlt,
                   child: ChoiceChip(
-                    label: Text(beschriftung, style: const TextStyle(fontSize: 12)),
+                    label: Text(
+                      beschriftung,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     avatar: Icon(symbol, size: 15),
                     selected: _maskFormType == typ,
                     visualDensity: VisualDensity.compact,
-                    onSelected:
-                        bedienbar ? (_) => _switchMaskFormType(typ) : null,
+                    onSelected: bedienbar
+                        ? (_) => _switchMaskFormType(typ)
+                        : null,
                   ),
                 ),
             ],
@@ -2502,7 +2780,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                    onPressed: _cancelMaskCreation, child: Text(AppTexte.of(context).allgAbbrechen)),
+                  onPressed: _cancelMaskCreation,
+                  child: Text(AppTexte.of(context).allgAbbrechen),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -2519,13 +2799,13 @@ class _DevelopScreenState extends State<DevelopScreen> {
   }
 
   Widget _buildMaskFormTypePanel() => switch (_maskFormType) {
-        _MaskFormType.aiSelect => _buildAiSelectPanel(),
-        _MaskFormType.freehand => _buildFreehandPanel(),
-        _MaskFormType.ellipse => _buildEllipsePanel(),
-        _MaskFormType.rectangle => _buildRectanglePanel(),
-        _MaskFormType.gradient => _buildGradientPanel(),
-        _MaskFormType.colorRange => _buildColorRangePanel(),
-      };
+    _MaskFormType.aiSelect => _buildAiSelectPanel(),
+    _MaskFormType.freehand => _buildFreehandPanel(),
+    _MaskFormType.ellipse => _buildEllipsePanel(),
+    _MaskFormType.rectangle => _buildRectanglePanel(),
+    _MaskFormType.gradient => _buildGradientPanel(),
+    _MaskFormType.colorRange => _buildColorRangePanel(),
+  };
 
   Widget _buildAiSelectPanel() {
     return Column(
@@ -2540,23 +2820,28 @@ class _DevelopScreenState extends State<DevelopScreen> {
         SegmentedButton<bool>(
           segments: [
             ButtonSegment(
-                value: false,
-                label: Text(AppTexte.of(context).entwPunktHinzufuegen),
-                icon: const Icon(Icons.add)),
+              value: false,
+              label: Text(AppTexte.of(context).entwPunktHinzufuegen),
+              icon: const Icon(Icons.add),
+            ),
             ButtonSegment(
-                value: true,
-                label: Text(AppTexte.of(context).entwPunktEntfernen),
-                icon: const Icon(Icons.remove)),
+              value: true,
+              label: Text(AppTexte.of(context).entwPunktEntfernen),
+              icon: const Icon(Icons.remove),
+            ),
           ],
           selected: {_backgroundPointMode},
-          onSelectionChanged: (s) => setState(() => _backgroundPointMode = s.first),
+          onSelectionChanged: (s) =>
+              setState(() => _backgroundPointMode = s.first),
         ),
         const SizedBox(height: 12),
         TextButton.icon(
           onPressed: _maskPoints.isEmpty ? null : _undoLastMaskPoint,
           icon: const Icon(Icons.undo, color: Colors.white70, size: 18),
-          label: Text(AppTexte.of(context).entwLetztenPunktEntfernen,
-              style: const TextStyle(color: Colors.white70)),
+          label: Text(
+            AppTexte.of(context).entwLetztenPunktEntfernen,
+            style: const TextStyle(color: Colors.white70),
+          ),
         ),
       ],
     );
@@ -2574,15 +2859,30 @@ class _DevelopScreenState extends State<DevelopScreen> {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 16),
-        _shapeSlider(AppTexte.of(context).entwStrichbreite, strokeWidth, 0.01, 0.15, (v) {
-          setState(() => _draftShape =
-              FreehandShape(points: shape is FreehandShape ? shape.points : const [], strokeWidth: v));
-        }),
+        _shapeSlider(
+          AppTexte.of(context).entwStrichbreite,
+          strokeWidth,
+          0.01,
+          0.15,
+          (v) {
+            setState(
+              () => _draftShape = FreehandShape(
+                points: shape is FreehandShape ? shape.points : const [],
+                strokeWidth: v,
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 8),
         TextButton.icon(
-          onPressed: shape == null ? null : () => setState(() => _draftShape = null),
+          onPressed: shape == null
+              ? null
+              : () => setState(() => _draftShape = null),
           icon: const Icon(Icons.undo, color: Colors.white70, size: 18),
-          label: Text(AppTexte.of(context).entwNeuZeichnen, style: const TextStyle(color: Colors.white70)),
+          label: Text(
+            AppTexte.of(context).entwNeuZeichnen,
+            style: const TextStyle(color: Colors.white70),
+          ),
         ),
       ],
     );
@@ -2590,7 +2890,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
 
   Widget _buildRectanglePanel() {
     final shape = _draftShape;
-    final rotationDeg = shape is RectangleShape ? shape.rotation * 180 / math.pi : 0.0;
+    final rotationDeg = shape is RectangleShape
+        ? shape.rotation * 180 / math.pi
+        : 0.0;
     final feather = shape is RectangleShape ? shape.feather : 0.2;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2601,28 +2903,46 @@ class _DevelopScreenState extends State<DevelopScreen> {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 16),
-        _shapeSlider(AppTexte.of(context).entwRotation, rotationDeg, -180, 180, (v) {
-          if (shape is! RectangleShape) return;
-          setState(() => _draftShape = RectangleShape(
+        _shapeSlider(
+          AppTexte.of(context).entwRotation,
+          rotationDeg,
+          -180,
+          180,
+          (v) {
+            if (shape is! RectangleShape) return;
+            setState(
+              () => _draftShape = RectangleShape(
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 halfWidth: shape.halfWidth,
                 halfHeight: shape.halfHeight,
                 rotation: v * math.pi / 180,
                 feather: shape.feather,
-              ));
-        }, enabled: shape is RectangleShape),
-        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (v) {
-          if (shape is! RectangleShape) return;
-          setState(() => _draftShape = RectangleShape(
+              ),
+            );
+          },
+          enabled: shape is RectangleShape,
+        ),
+        _shapeSlider(
+          AppTexte.of(context).entwWeichzeichnung,
+          feather,
+          0,
+          1,
+          (v) {
+            if (shape is! RectangleShape) return;
+            setState(
+              () => _draftShape = RectangleShape(
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 halfWidth: shape.halfWidth,
                 halfHeight: shape.halfHeight,
                 rotation: shape.rotation,
                 feather: v,
-              ));
-        }, enabled: shape is RectangleShape),
+              ),
+            );
+          },
+          enabled: shape is RectangleShape,
+        ),
       ],
     );
   }
@@ -2646,7 +2966,12 @@ class _DevelopScreenState extends State<DevelopScreen> {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: Color.fromARGB(255, gewaehlt.red, gewaehlt.green, gewaehlt.blue),
+                  color: Color.fromARGB(
+                    255,
+                    gewaehlt.red,
+                    gewaehlt.green,
+                    gewaehlt.blue,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(color: DunkleFlaeche.linie),
                 ),
@@ -2659,19 +2984,30 @@ class _DevelopScreenState extends State<DevelopScreen> {
               // Farbwaehler ueberhaupt keine Farbe aufnahm.
               Expanded(
                 child: Text(
-                  AppTexte.of(context)
-                      .entwFarbeAufgenommen(gewaehlt.red, gewaehlt.green, gewaehlt.blue),
-                  style: const TextStyle(color: DunkleFlaeche.zweitText, fontSize: 12),
+                  AppTexte.of(context).entwFarbeAufgenommen(
+                    gewaehlt.red,
+                    gewaehlt.green,
+                    gewaehlt.blue,
+                  ),
+                  style: const TextStyle(
+                    color: DunkleFlaeche.zweitText,
+                    fontSize: 12,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
         const SizedBox(height: 8),
-        _shapeSlider(AppTexte.of(context).entwToleranz, gewaehlt?.tolerance ?? 0.25, 0.01, 1,
-            (v) {
-          if (gewaehlt == null) return;
-          setState(() => _draftShape = ColorRangeShape(
+        _shapeSlider(
+          AppTexte.of(context).entwToleranz,
+          gewaehlt?.tolerance ?? 0.25,
+          0.01,
+          1,
+          (v) {
+            if (gewaehlt == null) return;
+            setState(
+              () => _draftShape = ColorRangeShape(
                 pointX: gewaehlt.pointX,
                 pointY: gewaehlt.pointY,
                 red: gewaehlt.red,
@@ -2679,12 +3015,20 @@ class _DevelopScreenState extends State<DevelopScreen> {
                 blue: gewaehlt.blue,
                 tolerance: v,
                 feather: gewaehlt.feather,
-              ));
-        }, enabled: gewaehlt != null),
-        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, gewaehlt?.feather ?? 0.3, 0, 1,
-            (v) {
-          if (gewaehlt == null) return;
-          setState(() => _draftShape = ColorRangeShape(
+              ),
+            );
+          },
+          enabled: gewaehlt != null,
+        ),
+        _shapeSlider(
+          AppTexte.of(context).entwWeichzeichnung,
+          gewaehlt?.feather ?? 0.3,
+          0,
+          1,
+          (v) {
+            if (gewaehlt == null) return;
+            setState(
+              () => _draftShape = ColorRangeShape(
                 pointX: gewaehlt.pointX,
                 pointY: gewaehlt.pointY,
                 red: gewaehlt.red,
@@ -2692,15 +3036,20 @@ class _DevelopScreenState extends State<DevelopScreen> {
                 blue: gewaehlt.blue,
                 tolerance: gewaehlt.tolerance,
                 feather: v,
-              ));
-        }, enabled: gewaehlt != null),
+              ),
+            );
+          },
+          enabled: gewaehlt != null,
+        ),
       ],
     );
   }
 
   Widget _buildEllipsePanel() {
     final shape = _draftShape;
-    final rotationDeg = shape is EllipseShape ? shape.rotation * 180 / math.pi : 0.0;
+    final rotationDeg = shape is EllipseShape
+        ? shape.rotation * 180 / math.pi
+        : 0.0;
     final feather = shape is EllipseShape ? shape.feather : 0.3;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2711,28 +3060,46 @@ class _DevelopScreenState extends State<DevelopScreen> {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 16),
-        _shapeSlider(AppTexte.of(context).entwRotation, rotationDeg, -180, 180, (v) {
-          if (shape is! EllipseShape) return;
-          setState(() => _draftShape = EllipseShape(
+        _shapeSlider(
+          AppTexte.of(context).entwRotation,
+          rotationDeg,
+          -180,
+          180,
+          (v) {
+            if (shape is! EllipseShape) return;
+            setState(
+              () => _draftShape = EllipseShape(
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 radiusX: shape.radiusX,
                 radiusY: shape.radiusY,
                 rotation: v * math.pi / 180,
                 feather: shape.feather,
-              ));
-        }, enabled: shape is EllipseShape),
-        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (v) {
-          if (shape is! EllipseShape) return;
-          setState(() => _draftShape = EllipseShape(
+              ),
+            );
+          },
+          enabled: shape is EllipseShape,
+        ),
+        _shapeSlider(
+          AppTexte.of(context).entwWeichzeichnung,
+          feather,
+          0,
+          1,
+          (v) {
+            if (shape is! EllipseShape) return;
+            setState(
+              () => _draftShape = EllipseShape(
                 centerX: shape.centerX,
                 centerY: shape.centerY,
                 radiusX: shape.radiusX,
                 radiusY: shape.radiusY,
                 rotation: shape.rotation,
                 feather: v,
-              ));
-        }, enabled: shape is EllipseShape),
+              ),
+            );
+          },
+          enabled: shape is EllipseShape,
+        ),
       ],
     );
   }
@@ -2749,16 +3116,25 @@ class _DevelopScreenState extends State<DevelopScreen> {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 16),
-        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (v) {
-          if (shape is! GradientShape) return;
-          setState(() => _draftShape = GradientShape(
+        _shapeSlider(
+          AppTexte.of(context).entwWeichzeichnung,
+          feather,
+          0,
+          1,
+          (v) {
+            if (shape is! GradientShape) return;
+            setState(
+              () => _draftShape = GradientShape(
                 startX: shape.startX,
                 startY: shape.startY,
                 endX: shape.endX,
                 endY: shape.endY,
                 feather: v,
-              ));
-        }, enabled: shape is GradientShape),
+              ),
+            );
+          },
+          enabled: shape is GradientShape,
+        ),
       ],
     );
   }
@@ -2767,8 +3143,14 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// wirken erst nach "Fertig" ([_commitShape]) auf das Bild, ein
   /// zwischenzeitlicher nativer Re-Render bei jeder Regler-Bewegung wäre nur
   /// verschwendete Arbeit.
-  Widget _shapeSlider(String label, double value, double min, double max, ValueChanged<double> onChanged,
-      {bool enabled = true}) {
+  Widget _shapeSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged, {
+    bool enabled = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Column(
@@ -2777,14 +3159,30 @@ class _DevelopScreenState extends State<DevelopScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: TextStyle(color: enabled ? DunkleFlaeche.text : DunkleFlaeche.inaktiv, fontSize: 13)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: enabled ? DunkleFlaeche.text : DunkleFlaeche.inaktiv,
+                  fontSize: 13,
+                ),
+              ),
               Text(
                 value.toStringAsFixed(min.abs() >= 100 ? 0 : 2),
-                style: TextStyle(color: enabled ? DunkleFlaeche.zweitText : DunkleFlaeche.linie, fontSize: 12),
+                style: TextStyle(
+                  color: enabled
+                      ? DunkleFlaeche.zweitText
+                      : DunkleFlaeche.linie,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
-          Slider(value: value, min: min, max: max, onChanged: enabled ? onChanged : null),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: enabled ? onChanged : null,
+          ),
         ],
       ),
     );
@@ -2801,15 +3199,18 @@ class _DevelopScreenState extends State<DevelopScreen> {
           // das Ergebnis aller Anpassungen zusammen – auch beim Bearbeiten
           // einer einzelnen Maske.
           HistogramView(
-              data: _histogram,
-              waveform: _waveform,
-              isStale: _histogramPending || _rendering),
+            data: _histogram,
+            waveform: _waveform,
+            isStale: _histogramPending || _rendering,
+          ),
           const SizedBox(height: AppSpacing.lg),
           const Divider(color: Colors.white24),
           const SizedBox(height: AppSpacing.sm),
           if (_masks.isNotEmpty) ...[
-            Text(AppTexte.of(context).entwAnpassungFuer,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              AppTexte.of(context).entwAnpassungFuer,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -2867,7 +3268,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// Die Farbtabelle: auswählen, Stärke einstellen, entfernen.
   Widget _lutBedienfeld() {
     final t = AppTexte.of(context);
-    final name = _lutPfad == null ? null : p.basenameWithoutExtension(_lutPfad!);
+    final name = _lutPfad == null
+        ? null
+        : p.basenameWithoutExtension(_lutPfad!);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2879,7 +3282,9 @@ class _DevelopScreenState extends State<DevelopScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: name == null ? DunkleFlaeche.hinweis : DunkleFlaeche.text,
+                  color: name == null
+                      ? DunkleFlaeche.hinweis
+                      : DunkleFlaeche.text,
                   fontSize: 13,
                 ),
               ),
@@ -2887,7 +3292,11 @@ class _DevelopScreenState extends State<DevelopScreen> {
             if (name != null)
               IconButton(
                 tooltip: t.entwLutEntfernen,
-                icon: const Icon(Icons.close, size: 18, color: DunkleFlaeche.zweitText),
+                icon: const Icon(
+                  Icons.close,
+                  size: 18,
+                  color: DunkleFlaeche.zweitText,
+                ),
                 onPressed: () {
                   setState(() {
                     _lut = null;
@@ -2898,127 +3307,194 @@ class _DevelopScreenState extends State<DevelopScreen> {
               ),
             IconButton(
               tooltip: t.entwLutWaehlen,
-              icon: const Icon(Icons.folder_open, size: 18, color: DunkleFlaeche.zweitText),
+              icon: const Icon(
+                Icons.folder_open,
+                size: 18,
+                color: DunkleFlaeche.zweitText,
+              ),
               onPressed: _lutWaehlen,
             ),
           ],
         ),
         if (name != null)
-          _slider(t.entwLutStaerke, _lutStaerke, 0, 1,
-              (v) => setState(() => _lutStaerke = v)),
+          _slider(
+            t.entwLutStaerke,
+            _lutStaerke,
+            0,
+            1,
+            (v) => setState(() => _lutStaerke = v),
+          ),
       ],
     );
   }
 
   List<Widget> _buildGlobalSliders() => [
-        _slider(AppTexte.of(context).entwBelichtung, _exposure, -3, 3, (v) => setState(() => _exposure = v)),
-        const Divider(color: Colors.white24),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(AppTexte.of(context).entwAutoWeissabgleich,
-              style: const TextStyle(color: Colors.white, fontSize: 13)),
-          value: _autoWhiteBalance,
-          onChanged: (v) {
-            setState(() => _autoWhiteBalance = v);
-            _scheduleRerender();
-          },
+    _slider(
+      AppTexte.of(context).entwBelichtung,
+      _exposure,
+      -3,
+      3,
+      (v) => setState(() => _exposure = v),
+    ),
+    const Divider(color: Colors.white24),
+    SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        AppTexte.of(context).entwAutoWeissabgleich,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+      ),
+      value: _autoWhiteBalance,
+      onChanged: (v) {
+        setState(() => _autoWhiteBalance = v);
+        _scheduleRerender();
+      },
+    ),
+    _slider(
+      AppTexte.of(context).entwTemperatur,
+      _temperature,
+      2000,
+      12000,
+      (v) => setState(() => _temperature = v),
+      enabled: !_autoWhiteBalance,
+      imShader: _shaderIstGenau,
+    ),
+    _slider(
+      AppTexte.of(context).entwTint,
+      _tint,
+      -100,
+      100,
+      (v) => setState(() => _tint = v),
+      enabled: !_autoWhiteBalance,
+      imShader: _shaderIstGenau,
+    ),
+    const Divider(color: Colors.white24),
+    _slider(
+      AppTexte.of(context).entwKontrast,
+      _contrast,
+      -1,
+      1,
+      (v) => setState(() => _contrast = v),
+    ),
+    _slider(
+      AppTexte.of(context).entwLichter,
+      _highlights,
+      -1,
+      1,
+      (v) => setState(() => _highlights = v),
+    ),
+    _slider(
+      AppTexte.of(context).entwSchatten,
+      _shadows,
+      -1,
+      1,
+      (v) => setState(() => _shadows = v),
+    ),
+    // Die vier Nachbarpixel-Regler folgen im Desktop-Renderer nach dem
+    // Shader. Während des Ziehens wird deshalb ein gedrosselter Render
+    // angefordert; gespeichert wirken sie auf allen Desktop-Systemen.
+    _slider(
+      AppTexte.of(context).entwSchaerfe,
+      _sharpness,
+      0,
+      1,
+      (v) => setState(() => _sharpness = v),
+      imShader: _shaderIstGenau,
+    ),
+    _slider(
+      AppTexte.of(context).entwRauschunterdrueckung,
+      _noiseReduction,
+      0,
+      1,
+      (v) => setState(() => _noiseReduction = v),
+      imShader: _shaderIstGenau,
+    ),
+    _slider(
+      AppTexte.of(context).entwKlarheit,
+      _clarity,
+      -1,
+      1,
+      (v) => setState(() => _clarity = v),
+      imShader: _shaderIstGenau,
+    ),
+    _slider(
+      AppTexte.of(context).entwVignettierung,
+      _vignette,
+      -1,
+      1,
+      (v) => setState(() => _vignette = v),
+      imShader: _shaderIstGenau,
+    ),
+    if (DevelopRender.ohneWirkung.isNotEmpty)
+      Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 4),
+        child: Text(
+          AppTexte.of(context).entwNurMitCoreImage,
+          style: const TextStyle(fontSize: 11, color: Colors.white54),
         ),
-        _slider(AppTexte.of(context).entwTemperatur, _temperature, 2000, 12000,
-            (v) => setState(() => _temperature = v),
-            enabled: !_autoWhiteBalance, imShader: _shaderIstGenau),
-        _slider(AppTexte.of(context).entwTint, _tint, -100, 100,
-            (v) => setState(() => _tint = v),
-            enabled: !_autoWhiteBalance, imShader: _shaderIstGenau),
-        const Divider(color: Colors.white24),
-        _slider(AppTexte.of(context).entwKontrast, _contrast, -1, 1, (v) => setState(() => _contrast = v)),
-        _slider(AppTexte.of(context).entwLichter, _highlights, -1, 1, (v) => setState(() => _highlights = v)),
-        _slider(AppTexte.of(context).entwSchatten, _shadows, -1, 1, (v) => setState(() => _shadows = v)),
-        // Die vier Nachbarpixel-Regler folgen im Desktop-Renderer nach dem
-        // Shader. Während des Ziehens wird deshalb ein gedrosselter Render
-        // angefordert; gespeichert wirken sie auf allen Desktop-Systemen.
-        _slider(AppTexte.of(context).entwSchaerfe, _sharpness, 0, 1,
-            (v) => setState(() => _sharpness = v),
-            imShader: _shaderIstGenau),
-        _slider(AppTexte.of(context).entwRauschunterdrueckung, _noiseReduction, 0, 1,
-            (v) => setState(() => _noiseReduction = v),
-            imShader: _shaderIstGenau),
-        _slider(AppTexte.of(context).entwKlarheit, _clarity, -1, 1,
-            (v) => setState(() => _clarity = v),
-            imShader: _shaderIstGenau),
-        _slider(AppTexte.of(context).entwVignettierung, _vignette, -1, 1,
-            (v) => setState(() => _vignette = v),
-            imShader: _shaderIstGenau),
-        if (DevelopRender.ohneWirkung.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 4),
-            child: Text(
-              AppTexte.of(context).entwNurMitCoreImage,
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
-            ),
-          ),
-        const Divider(color: Colors.white24),
-        _lutBedienfeld(),
-        const Divider(color: Colors.white24),
-        ToneCurveEditor(
-          curve: _toneCurve,
-          histogram: _histogram,
-          // Wie beim Regler-Ziehen: Während der Geste rechnet der Shader
-          // live, nach dem Loslassen übernimmt der native Render.
-          onChanged: (kurve) => setState(() {
-            _toneCurve = kurve;
-            _dragging = true;
-          }),
-          onChangeEnd: _scheduleRerender,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        const Divider(color: Colors.white24),
-        ColorMixerPanel(
-          mixer: _colorMixer,
-          onChanged: (mischer) => setState(() {
-            _colorMixer = mischer;
-            _dragging = true;
-          }),
-          onChangeEnd: _scheduleRerender,
-        ),
-        const Divider(color: Colors.white24),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(AppTexte.of(context).entwObjektivkorrektur,
-              style: const TextStyle(color: Colors.white, fontSize: 13)),
-          subtitle: Text(
-            _objektivkorrekturHinweis(AppTexte.of(context)),
-            style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 11),
-          ),
-          // Ein Schalter, der nachweislich nichts bewirkt, wird
-          // ausgegraut statt still ins Leere zu greifen. Solange der
-          // Stand noch geladen wird, bleibt er bedienbar – die Abfrage
-          // dauert Millisekunden, aber ein kurz gesperrter Schalter wäre
-          // irritierender als einer, der einmal zu viel reagiert.
-          value: _lensCorrectionEnabled,
-          onChanged: switch (_korrekturstand) {
-            Objektivkorrekturstand.keinRaw ||
-            Objektivkorrekturstand.nichtInDatenbank ||
-            Objektivkorrekturstand.nichtLesbar =>
-              null,
-            _ => (v) {
-                setState(() => _lensCorrectionEnabled = v);
-                _scheduleRerender();
-              },
-          },
-        ),
-      ];
+      ),
+    const Divider(color: Colors.white24),
+    _lutBedienfeld(),
+    const Divider(color: Colors.white24),
+    ToneCurveEditor(
+      curve: _toneCurve,
+      histogram: _histogram,
+      // Wie beim Regler-Ziehen: Während der Geste rechnet der Shader
+      // live, nach dem Loslassen übernimmt der native Render.
+      onChanged: (kurve) => setState(() {
+        _toneCurve = kurve;
+        _dragging = true;
+      }),
+      onChangeEnd: _scheduleRerender,
+    ),
+    const SizedBox(height: AppSpacing.md),
+    const Divider(color: Colors.white24),
+    ColorMixerPanel(
+      mixer: _colorMixer,
+      onChanged: (mischer) => setState(() {
+        _colorMixer = mischer;
+        _dragging = true;
+      }),
+      onChangeEnd: _scheduleRerender,
+    ),
+    const Divider(color: Colors.white24),
+    SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        AppTexte.of(context).entwObjektivkorrektur,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+      ),
+      subtitle: Text(
+        _objektivkorrekturHinweis(AppTexte.of(context)),
+        style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 11),
+      ),
+      // Ein Schalter, der nachweislich nichts bewirkt, wird
+      // ausgegraut statt still ins Leere zu greifen. Solange der
+      // Stand noch geladen wird, bleibt er bedienbar – die Abfrage
+      // dauert Millisekunden, aber ein kurz gesperrter Schalter wäre
+      // irritierender als einer, der einmal zu viel reagiert.
+      value: _lensCorrectionEnabled,
+      onChanged: switch (_korrekturstand) {
+        Objektivkorrekturstand.keinRaw ||
+        Objektivkorrekturstand.nichtInDatenbank ||
+        Objektivkorrekturstand.nichtLesbar => null,
+        _ => (v) {
+          setState(() => _lensCorrectionEnabled = v);
+          _scheduleRerender();
+        },
+      },
+    ),
+  ];
 
   /// Der Satz unter dem Objektivkorrektur-Schalter, passend zu dem, was für
   /// diese Datei wirklich gilt.
   String _objektivkorrekturHinweis(AppTexte t) => switch (_korrekturstand) {
-        Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
-        Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
-        Objektivkorrekturstand.nichtInDatenbank =>
-          t.entwObjektivkorrekturUnbekanntesObjektiv,
-        Objektivkorrekturstand.nichtLesbar =>
-          t.entwObjektivkorrekturNichtLesbar,
-        Objektivkorrekturstand.unbekannt => t.entwObjektivkorrekturHinweis,
-      };
+    Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
+    Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
+    Objektivkorrekturstand.nichtInDatenbank =>
+      t.entwObjektivkorrekturUnbekanntesObjektiv,
+    Objektivkorrekturstand.nichtLesbar => t.entwObjektivkorrekturNichtLesbar,
+    Objektivkorrekturstand.unbekannt => t.entwObjektivkorrekturHinweis,
+  };
 
   /// Die Regler einer Maske.
   ///
@@ -3027,34 +3503,92 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// dort waere „live" ein Wort ohne Deckung, und waehrend des Ziehens
   /// passierte gar nichts.
   List<Widget> _buildMaskSliders() => [
-        Text(
-          AppTexte.of(context).entwMaskenHinweis,
-          style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 11),
-        ),
-        const SizedBox(height: 8),
-        _slider(AppTexte.of(context).entwBelichtung, _maskExposure, -3, 3, (v) => setState(() => _maskExposure = v), imShader: false),
-        const Divider(color: Colors.white24),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(AppTexte.of(context).entwAutoWeissabgleich,
-              style: const TextStyle(color: Colors.white, fontSize: 13)),
-          value: _maskAutoWhiteBalance,
-          onChanged: (v) {
-            setState(() => _maskAutoWhiteBalance = v);
-            _scheduleRerender();
-          },
-        ),
-        _slider(AppTexte.of(context).entwTemperatur, _maskTemperature, 2000, 12000, (v) => setState(() => _maskTemperature = v),
-            enabled: !_maskAutoWhiteBalance, imShader: false),
-        _slider(AppTexte.of(context).entwTint, _maskTint, -100, 100, (v) => setState(() => _maskTint = v), enabled: !_maskAutoWhiteBalance, imShader: false),
-        const Divider(color: Colors.white24),
-        _slider(AppTexte.of(context).entwKontrast, _maskContrast, -1, 1, (v) => setState(() => _maskContrast = v), imShader: false),
-        _slider(AppTexte.of(context).entwLichter, _maskHighlights, -1, 1,
-            (v) => setState(() => _maskHighlights = v), imShader: false),
-        _slider(AppTexte.of(context).entwSchatten, _maskShadows, -1, 1, (v) => setState(() => _maskShadows = v), imShader: false),
-        _slider(AppTexte.of(context).entwSchaerfe, _maskSharpness, 0, 1, (v) => setState(() => _maskSharpness = v), imShader: false),
-        _slider(AppTexte.of(context).entwRauschunterdrueckung, _maskNoiseReduction, 0, 1, (v) => setState(() => _maskNoiseReduction = v), imShader: false),
-      ];
+    Text(
+      AppTexte.of(context).entwMaskenHinweis,
+      style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 11),
+    ),
+    const SizedBox(height: 8),
+    _slider(
+      AppTexte.of(context).entwBelichtung,
+      _maskExposure,
+      -3,
+      3,
+      (v) => setState(() => _maskExposure = v),
+      imShader: false,
+    ),
+    const Divider(color: Colors.white24),
+    SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        AppTexte.of(context).entwAutoWeissabgleich,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+      ),
+      value: _maskAutoWhiteBalance,
+      onChanged: (v) {
+        setState(() => _maskAutoWhiteBalance = v);
+        _scheduleRerender();
+      },
+    ),
+    _slider(
+      AppTexte.of(context).entwTemperatur,
+      _maskTemperature,
+      2000,
+      12000,
+      (v) => setState(() => _maskTemperature = v),
+      enabled: !_maskAutoWhiteBalance,
+      imShader: false,
+    ),
+    _slider(
+      AppTexte.of(context).entwTint,
+      _maskTint,
+      -100,
+      100,
+      (v) => setState(() => _maskTint = v),
+      enabled: !_maskAutoWhiteBalance,
+      imShader: false,
+    ),
+    const Divider(color: Colors.white24),
+    _slider(
+      AppTexte.of(context).entwKontrast,
+      _maskContrast,
+      -1,
+      1,
+      (v) => setState(() => _maskContrast = v),
+      imShader: false,
+    ),
+    _slider(
+      AppTexte.of(context).entwLichter,
+      _maskHighlights,
+      -1,
+      1,
+      (v) => setState(() => _maskHighlights = v),
+      imShader: false,
+    ),
+    _slider(
+      AppTexte.of(context).entwSchatten,
+      _maskShadows,
+      -1,
+      1,
+      (v) => setState(() => _maskShadows = v),
+      imShader: false,
+    ),
+    _slider(
+      AppTexte.of(context).entwSchaerfe,
+      _maskSharpness,
+      0,
+      1,
+      (v) => setState(() => _maskSharpness = v),
+      imShader: false,
+    ),
+    _slider(
+      AppTexte.of(context).entwRauschunterdrueckung,
+      _maskNoiseReduction,
+      0,
+      1,
+      (v) => setState(() => _maskNoiseReduction = v),
+      imShader: false,
+    ),
+  ];
 }
 
 /// Zeichnet [shape] live über die Vorschau, in Widget-Koordinaten
@@ -3067,36 +3601,40 @@ class _DevelopScreenState extends State<DevelopScreen> {
 /// Dienst und kennt keine Sprache – dieselbe Trennung wie beim
 /// Modellkatalog.
 String werkzeugName(AppTexte t, Entwicklungswerkzeug w) => switch (w) {
-      Entwicklungswerkzeug.belichtung => t.entwWerkzBelichtung,
-      Entwicklungswerkzeug.weissabgleich => t.entwWerkzWeissabgleich,
-      Entwicklungswerkzeug.temperatur => t.entwWerkzTemperatur,
-      Entwicklungswerkzeug.tint => t.entwWerkzTint,
-      Entwicklungswerkzeug.kontrast => t.entwWerkzKontrast,
-      Entwicklungswerkzeug.lichter => t.entwWerkzLichter,
-      Entwicklungswerkzeug.schatten => t.entwWerkzSchatten,
-      Entwicklungswerkzeug.schaerfe => t.entwWerkzSchaerfe,
-      Entwicklungswerkzeug.rauschunterdrueckung => t.entwWerkzRauschen,
-      Entwicklungswerkzeug.klarheit => t.entwWerkzKlarheit,
-      Entwicklungswerkzeug.vignettierung => t.entwWerkzVignettierung,
-      Entwicklungswerkzeug.tonwertkurve => t.entwWerkzKurve,
-      Entwicklungswerkzeug.farbmischer => t.entwWerkzFarbmischer,
-      Entwicklungswerkzeug.farbtabelle => t.entwWerkzFarbtabelle,
-      Entwicklungswerkzeug.objektivkorrektur => t.entwWerkzObjektiv,
-    };
+  Entwicklungswerkzeug.belichtung => t.entwWerkzBelichtung,
+  Entwicklungswerkzeug.weissabgleich => t.entwWerkzWeissabgleich,
+  Entwicklungswerkzeug.temperatur => t.entwWerkzTemperatur,
+  Entwicklungswerkzeug.tint => t.entwWerkzTint,
+  Entwicklungswerkzeug.kontrast => t.entwWerkzKontrast,
+  Entwicklungswerkzeug.lichter => t.entwWerkzLichter,
+  Entwicklungswerkzeug.schatten => t.entwWerkzSchatten,
+  Entwicklungswerkzeug.schaerfe => t.entwWerkzSchaerfe,
+  Entwicklungswerkzeug.rauschunterdrueckung => t.entwWerkzRauschen,
+  Entwicklungswerkzeug.klarheit => t.entwWerkzKlarheit,
+  Entwicklungswerkzeug.vignettierung => t.entwWerkzVignettierung,
+  Entwicklungswerkzeug.tonwertkurve => t.entwWerkzKurve,
+  Entwicklungswerkzeug.farbmischer => t.entwWerkzFarbmischer,
+  Entwicklungswerkzeug.farbtabelle => t.entwWerkzFarbtabelle,
+  Entwicklungswerkzeug.objektivkorrektur => t.entwWerkzObjektiv,
+};
 
 class _ShapeDraftPainter extends CustomPainter {
   final MaskShapeDefinition? shape;
   final Rect displayRect;
   _ShapeDraftPainter(this.shape, this.displayRect);
 
-  Offset _toWidget(double nx, double ny) =>
-      Offset(displayRect.left + nx * displayRect.width, displayRect.top + ny * displayRect.height);
+  Offset _toWidget(double nx, double ny) => Offset(
+    displayRect.left + nx * displayRect.width,
+    displayRect.top + ny * displayRect.height,
+  );
 
   @override
   void paint(Canvas canvas, Size size) {
     final s = shape;
     if (s == null) return;
-    const fillColor = Color(0x8C2196F3); // Muster: maskToPreviewOverlay (33,150,243, alpha 140).
+    const fillColor = Color(
+      0x8C2196F3,
+    ); // Muster: maskToPreviewOverlay (33,150,243, alpha 140).
     final strokePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
@@ -3112,7 +3650,8 @@ class _ShapeDraftPainter extends CustomPainter {
           final w = _toWidget(p.dx, p.dy);
           path.lineTo(w.dx, w.dy);
         }
-        final strokeWidthPx = s.strokeWidth * math.max(displayRect.width, displayRect.height);
+        final strokeWidthPx =
+            s.strokeWidth * math.max(displayRect.width, displayRect.height);
         canvas.drawPath(
           path,
           Paint()
@@ -3129,7 +3668,11 @@ class _ShapeDraftPainter extends CustomPainter {
         canvas.save();
         canvas.translate(center.dx, center.dy);
         canvas.rotate(s.rotation);
-        final rect = Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2);
+        final rect = Rect.fromCenter(
+          center: Offset.zero,
+          width: rx * 2,
+          height: ry * 2,
+        );
         canvas.drawOval(rect, Paint()..color = fillColor);
         canvas.drawOval(rect, strokePaint);
         canvas.restore();
@@ -3152,7 +3695,10 @@ class _ShapeDraftPainter extends CustomPainter {
         final punkt = _toWidget(s.pointX, s.pointY);
         canvas.drawCircle(punkt, 9, strokePaint);
         canvas.drawCircle(
-            punkt, 7, Paint()..color = Color.fromARGB(255, s.red, s.green, s.blue));
+          punkt,
+          7,
+          Paint()..color = Color.fromARGB(255, s.red, s.green, s.blue),
+        );
       case GradientShape():
         final start = _toWidget(s.startX, s.startY);
         final end = _toWidget(s.endX, s.endY);

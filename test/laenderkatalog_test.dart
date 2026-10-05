@@ -3,9 +3,17 @@ import 'package:photo_vault/services/laenderkatalog.dart';
 
 // Auszug im Format von countryInfo.txt: Spalte 0 ISO, 4 Name,
 // 5 Hauptstadt, 8 Erdteil.
-String _land(String iso, String name, String hauptstadt, String erdteil) =>
-    [iso, '${iso}X', '000', 'XX', name, hauptstadt, '1', '2', erdteil]
-        .join('\t');
+String _land(String iso, String name, String hauptstadt, String erdteil) => [
+  iso,
+  '${iso}X',
+  '000',
+  'XX',
+  name,
+  hauptstadt,
+  '1',
+  '2',
+  erdteil,
+].join('\t');
 
 void main() {
   group('Laenderkatalog', () {

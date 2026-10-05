@@ -35,8 +35,11 @@ void main() {
   group('Mittag ist genau das Bisherige', () {
     test('für jede Fläche dieselbe Zahl wie vor den Tageszeiten', () {
       for (final f in _flaechen) {
-        expect(schattierung(f, stimmungMittag), closeTo(_wieFrueher(f), 1e-12),
-            reason: 'bei $f');
+        expect(
+          schattierung(f, stimmungMittag),
+          closeTo(_wieFrueher(f), 1e-12),
+          reason: 'bei $f',
+        );
       }
     });
 
@@ -64,17 +67,20 @@ void main() {
 
     test('die Sonnenrichtung hat Länge eins', () {
       for (final s in lichtstimmungen) {
-        final l = math.sqrt(s.sonne.x * s.sonne.x +
-            s.sonne.y * s.sonne.y +
-            s.sonne.z * s.sonne.z);
+        final l = math.sqrt(
+          s.sonne.x * s.sonne.x + s.sonne.y * s.sonne.y + s.sonne.z * s.sonne.z,
+        );
         expect(l, closeTo(1, 0.005), reason: '${s.zeit}');
       }
     });
 
     test('Grund- und Richtungslicht ergeben zusammen eins', () {
       for (final s in lichtstimmungen) {
-        expect(s.grundlicht + s.richtungslicht, closeTo(1, 1e-9),
-            reason: '${s.zeit}');
+        expect(
+          s.grundlicht + s.richtungslicht,
+          closeTo(1, 1e-9),
+          reason: '${s.zeit}',
+        );
       }
     });
 
@@ -83,8 +89,11 @@ void main() {
       for (final s in lichtstimmungen) {
         for (final f in _flaechen) {
           final w = schattierung(f, s);
-          expect(w, greaterThanOrEqualTo(s.untergrenze - 1e-9),
-              reason: '${s.zeit} bei $f');
+          expect(
+            w,
+            greaterThanOrEqualTo(s.untergrenze - 1e-9),
+            reason: '${s.zeit} bei $f',
+          );
           expect(w, lessThanOrEqualTo(1.0), reason: '${s.zeit} bei $f');
         }
       }
@@ -92,17 +101,22 @@ void main() {
       // wegzeigt – die kommt in echtem Gelände durchaus vor.
       for (final s in lichtstimmungen) {
         final weg = (x: -s.sonne.x, y: -s.sonne.y, z: -s.sonne.z);
-        expect(schattierung(weg, s), closeTo(s.untergrenze, 1e-9),
-            reason: '${s.zeit}');
+        expect(
+          schattierung(weg, s),
+          closeTo(s.untergrenze, 1e-9),
+          reason: '${s.zeit}',
+        );
       }
     });
 
     test('die Untergrenze liegt nicht unter der Grundhelligkeit', () {
       // Sonst schnitte sie nie – und die Zahl wäre eine Behauptung.
       for (final s in lichtstimmungen) {
-        expect(s.untergrenze,
-            lessThan(s.grundlicht),
-            reason: '${s.zeit}: Untergrenze greift nie');
+        expect(
+          s.untergrenze,
+          lessThan(s.grundlicht),
+          reason: '${s.zeit}: Untergrenze greift nie',
+        );
       }
     });
   });
@@ -125,8 +139,10 @@ void main() {
     test('die blaue Stunde zeigt weniger, nicht mehr', () {
       // Ohne direkte Sonne gibt es keine harten Schatten. Wer hier das
       // Relief hochzöge, malte eine Mittagsszene in Blau.
-      expect(spreizung(stimmungBlaueStunde),
-          lessThan(spreizung(stimmungAbend)));
+      expect(
+        spreizung(stimmungBlaueStunde),
+        lessThan(spreizung(stimmungAbend)),
+      );
     });
 
     test('jede Tageszeit hat ihren eigenen Himmel', () {
@@ -139,8 +155,10 @@ void main() {
     });
 
     test('es gibt zu jeder Tageszeit genau eine Stimmung', () {
-      expect(lichtstimmungen.map((s) => s.zeit).toSet(),
-          Tageszeit.values.toSet());
+      expect(
+        lichtstimmungen.map((s) => s.zeit).toSet(),
+        Tageszeit.values.toSet(),
+      );
     });
   });
 

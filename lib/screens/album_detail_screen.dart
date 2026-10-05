@@ -76,25 +76,28 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
   void _toggle(String id) => rasterUmschalten(id);
 
   void _openViewer(List<AssetData> assets, int index) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: assets,
-        initialIndex: index,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) async {
-          await widget.library.db.removeAssetFromAlbum(widget.albumId, a.id);
-          await widget.library.db.moveToTrash([a.id]);
-        },
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: assets,
+          initialIndex: index,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) async {
+            await widget.library.db.removeAssetFromAlbum(widget.albumId, a.id);
+            await widget.library.db.moveToTrash([a.id]);
+          },
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   /// Entfernt die Auswahl aus dem Album UND verschiebt sie in den
@@ -115,31 +118,49 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     if (mounted) setState(_selected.clear);
   }
 
-  Future<void> _exportAlbum(BuildContext context, List<AssetData> assets) async {
+  Future<void> _exportAlbum(
+    BuildContext context,
+    List<AssetData> assets,
+  ) async {
     final destination = await FilePicker.platform.getDirectoryPath(
       dialogTitle: AppTexte.of(context).albumZielordner(widget.albumName),
     );
     if (destination == null || !context.mounted) return;
 
-    final exporter = ExportService(widget.library.paths, library: widget.library);
+    final exporter = ExportService(
+      widget.library.paths,
+      library: widget.library,
+    );
     var done = 0;
     void Function(void Function())? setDialogState;
 
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(builder: (context, setState) {
-        setDialogState = setState;
-        return AlertDialog(
-          content: Row(
-            children: [
-              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-              const SizedBox(width: 16),
-              Expanded(child: Text(AppTexte.of(context).auswExportiereLaeuft(done, assets.length))),
-            ],
-          ),
-        );
-      }),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          setDialogState = setState;
+          return AlertDialog(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    AppTexte.of(
+                      context,
+                    ).auswExportiereLaeuft(done, assets.length),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     var exported = 0;
@@ -156,7 +177,11 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
 
     if (context.mounted) {
       Navigator.of(context).pop(); // Ladeanzeige schließen
-      melde.erfolg(AppTexte.of(context).auswExportFertig(exported, assets.length, destination));
+      melde.erfolg(
+        AppTexte.of(
+          context,
+        ).auswExportFertig(exported, assets.length, destination),
+      );
     }
   }
 
@@ -199,8 +224,10 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AssetData>>(
-      stream: _albumstrom.hole(widget.albumId,
-          () => widget.library.db.watchAlbumAssets(widget.albumId)),
+      stream: _albumstrom.hole(
+        widget.albumId,
+        () => widget.library.db.watchAlbumAssets(widget.albumId),
+      ),
       builder: (context, snapshot) {
         final assets = snapshot.data ?? [];
         _geladen = assets;
@@ -234,85 +261,127 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
               ? Center(child: Text(AppTexte.of(context).albumLeer))
               : mitTastatur(
                   kind: Stack(
-                  children: [
-                    LayoutBuilder(builder: (context, constraints) {
-                      _spalten = flachesRasterSpalten(constraints.maxWidth,
-                          seitenpolster: AppSpacing.md * 2);
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 160,
-                          mainAxisSpacing: 4,
-                          crossAxisSpacing: 4,
-                        ),
-                        itemCount: assets.length,
-                        itemBuilder: (context, index) {
-                          final asset = assets[index];
-                          final kachel = AssetThumbnailTile(
-                            asset: Rasterzeile.aus(asset),
-                            paths: widget.library.paths,
-                            selected: _selected.contains(asset.id),
-                            onLongPress: () => _toggle(asset.id),
-                            onTap: () => rasterKlick(asset),
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          _spalten = flachesRasterSpalten(
+                            constraints.maxWidth,
+                            seitenpolster: AppSpacing.md * 2,
                           );
-                          return asset.id == aktiveKachel
-                              ? AktiveKachelRahmen(child: kachel)
-                              : kachel;
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 160,
+                                  mainAxisSpacing: 4,
+                                  crossAxisSpacing: 4,
+                                ),
+                            itemCount: assets.length,
+                            itemBuilder: (context, index) {
+                              final asset = assets[index];
+                              final kachel = AssetThumbnailTile(
+                                asset: Rasterzeile.aus(asset),
+                                paths: widget.library.paths,
+                                selected: _selected.contains(asset.id),
+                                onLongPress: () => _toggle(asset.id),
+                                onTap: () => rasterKlick(asset),
+                              );
+                              return asset.id == aktiveKachel
+                                  ? AktiveKachelRahmen(child: kachel)
+                                  : kachel;
+                            },
+                          );
                         },
-                      );
-                    }),
-                    if (_selected.isNotEmpty)
-                      SelectionActionBar(
-                        count: _selected.length,
-                        onClear: () => setState(_selected.clear),
-                        onCompare: vergleichsAktion(context, widget.library, _selected.toList()),
-
-                        onPasteDevelop: widget.library.hatKopierteEntwicklung
-
-                            ? () async {
-
-                                await runBatchPasteDevelop(context, widget.library, _selected.toList());
-
-                                if (mounted) setState(_selected.clear);
-
-                              }
-
-                            : null,
-                        onApplyPreset: () =>
-                            runBatchApplyPreset(context, widget.library, _selected.toList()),
-                        onFavorite: () async {
-                          await runBatchFavorite(widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onAddToAlbum: () async {
-                          await runBatchAddToAlbumDialog(context, widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onTag: () async {
-                          await runBatchTagDialog(context, widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onSetRating: () async {
-                          await runBatchSetRating(context, widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onSetColorLabel: () async {
-                          await runBatchSetColorLabel(context, widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onEditMetadata: () async {
-                          await runBatchEditMetadataDialog(context, widget.library, _selected.toList());
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onExport: () async {
-                          final selectedAssets = assets.where((a) => _selected.contains(a.id)).toList();
-                          await runBatchExport(context, widget.library, selectedAssets);
-                          if (mounted) setState(_selected.clear);
-                        },
-                        onDelete: _deleteSelected,
                       ),
-                  ],
-                )),
+                      if (_selected.isNotEmpty)
+                        SelectionActionBar(
+                          count: _selected.length,
+                          onClear: () => setState(_selected.clear),
+                          onCompare: vergleichsAktion(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          ),
+
+                          onPasteDevelop: widget.library.hatKopierteEntwicklung
+                              ? () async {
+                                  await runBatchPasteDevelop(
+                                    context,
+                                    widget.library,
+                                    _selected.toList(),
+                                  );
+
+                                  if (mounted) setState(_selected.clear);
+                                }
+                              : null,
+                          onApplyPreset: () => runBatchApplyPreset(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          ),
+                          onFavorite: () async {
+                            await runBatchFavorite(
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onAddToAlbum: () async {
+                            await runBatchAddToAlbumDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onTag: () async {
+                            await runBatchTagDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onSetRating: () async {
+                            await runBatchSetRating(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onSetColorLabel: () async {
+                            await runBatchSetColorLabel(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onEditMetadata: () async {
+                            await runBatchEditMetadataDialog(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onExport: () async {
+                            final selectedAssets = assets
+                                .where((a) => _selected.contains(a.id))
+                                .toList();
+                            await runBatchExport(
+                              context,
+                              widget.library,
+                              selectedAssets,
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
+                          onDelete: _deleteSelected,
+                        ),
+                    ],
+                  ),
+                ),
         );
       },
     );

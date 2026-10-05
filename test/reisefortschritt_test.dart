@@ -53,18 +53,20 @@ void main() {
     expect(f.laender.map((l) => l.name), ['Andorra', 'Zypern']);
   });
 
-  test('Aufnahmen ohne Land zaehlen bei den Aufnahmen, nicht bei den Laendern',
-      () {
-    // Eine Aufnahme mitten auf dem Meer hat eine Koordinate, aber kein
-    // Land. Sie zu verschweigen waere falsch, sie als Land zu zaehlen
-    // auch.
-    final f = reisefortschritt([
-      a('Deutschland', 'Bayern', 'München', 30),
-      a(null, null, null, 7),
-    ], laenderGesamt: 252);
-    expect(f.laenderBesucht, 1);
-    expect(f.aufnahmen, 37);
-  });
+  test(
+    'Aufnahmen ohne Land zaehlen bei den Aufnahmen, nicht bei den Laendern',
+    () {
+      // Eine Aufnahme mitten auf dem Meer hat eine Koordinate, aber kein
+      // Land. Sie zu verschweigen waere falsch, sie als Land zu zaehlen
+      // auch.
+      final f = reisefortschritt([
+        a('Deutschland', 'Bayern', 'München', 30),
+        a(null, null, null, 7),
+      ], laenderGesamt: 252);
+      expect(f.laenderBesucht, 1);
+      expect(f.aufnahmen, 37);
+    },
+  );
 
   test('eine fehlende Region macht den Ort nicht zunichte', () {
     final f = reisefortschritt([
@@ -90,11 +92,14 @@ void main() {
     expect(f.anteil, 0);
   });
 
-  test('ohne Datensatz gibt es keinen Anteil statt einer Division durch null',
-      () {
-    final f = reisefortschritt([a('Italien', null, null, 1)],
-        laenderGesamt: 0);
-    expect(f.anteil, 0);
-    expect(f.laenderBesucht, 1);
-  });
+  test(
+    'ohne Datensatz gibt es keinen Anteil statt einer Division durch null',
+    () {
+      final f = reisefortschritt([
+        a('Italien', null, null, 1),
+      ], laenderGesamt: 0);
+      expect(f.anteil, 0);
+      expect(f.laenderBesucht, 1);
+    },
+  );
 }

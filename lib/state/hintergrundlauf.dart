@@ -215,5 +215,5 @@ enum Startabweisung {
 /// Werkzeuge) greifen darauf zu, damit derselbe Grund nicht zweimal
 /// unterschiedlich formuliert wird.
 String abweisungstext(AppTexte t, Startabweisung grund) => switch (grund) {
-      Startabweisung.laeuftBereits => t.aufgLaeuftSchon,
-    };
+  Startabweisung.laeuftBereits => t.aufgLaeuftSchon,
+};

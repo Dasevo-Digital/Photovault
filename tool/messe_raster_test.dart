@@ -34,9 +34,11 @@ void main() {
       }
       uhr.stop();
       // ignore: avoid_print
-      print('$n Aufnahmen: '
-          '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
-          'je Neuaufbau');
+      print(
+        '$n Aufnahmen: '
+        '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
+        'je Neuaufbau',
+      );
     }
   });
 }

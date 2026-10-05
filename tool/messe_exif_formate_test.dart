@@ -23,15 +23,20 @@ void main() {
       return;
     }
     final nachEndung = <String, List<File>>{};
-    await for (final e in Directory('$libPfad/originals').list(recursive: true)) {
+    await for (final e in Directory(
+      '$libPfad/originals',
+    ).list(recursive: true)) {
       if (e is! File) continue;
-      nachEndung.putIfAbsent(p.extension(e.path).toLowerCase(), () => []).add(e);
+      nachEndung
+          .putIfAbsent(p.extension(e.path).toLowerCase(), () => [])
+          .add(e);
     }
 
     for (final endung in nachEndung.keys.toList()..sort()) {
-      final dateien = nachEndung[endung]!..sort((a, b) => a.path.compareTo(b.path));
+      final dateien = nachEndung[endung]!
+        ..sort((a, b) => a.path.compareTo(b.path));
       final probe = [
-        for (var i = 0; i < dateien.length && i < 8 * 50; i += 50) dateien[i]
+        for (var i = 0; i < dateien.length && i < 8 * 50; i += 50) dateien[i],
       ];
       if (probe.isEmpty) continue;
       var mitTags = 0;
@@ -50,11 +55,13 @@ void main() {
         }
       }
       uhr.stop();
-      print('${endung.padRight(7)} ${dateien.length.toString().padLeft(5)} Dateien  '
-          'Probe ${probe.length.toString().padLeft(2)}: '
-          '$mitTags mit Tags, $mitDatum mit Datum, '
-          '${(bytes / 1024 / 1024).toStringAsFixed(0).padLeft(4)} MB in '
-          '${uhr.elapsedMilliseconds.toString().padLeft(5)} ms');
+      print(
+        '${endung.padRight(7)} ${dateien.length.toString().padLeft(5)} Dateien  '
+        'Probe ${probe.length.toString().padLeft(2)}: '
+        '$mitTags mit Tags, $mitDatum mit Datum, '
+        '${(bytes / 1024 / 1024).toStringAsFixed(0).padLeft(4)} MB in '
+        '${uhr.elapsedMilliseconds.toString().padLeft(5)} ms',
+      );
     }
   }, timeout: const Timeout(Duration(minutes: 30)));
 }

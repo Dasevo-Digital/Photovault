@@ -27,8 +27,12 @@ void main() {
     expect(ende, greaterThan(start));
     final koerper = quelle.substring(start, ende);
 
-    expect(koerper, contains('_globeController = null'),
-        reason: 'Ohne diese Zeile bleiben rund 268 MB Erdtextur bis zum '
-            'Programmende belegt, auch wenn der Globus längst zu ist.');
+    expect(
+      koerper,
+      contains('_globeController = null'),
+      reason:
+          'Ohne diese Zeile bleiben rund 268 MB Erdtextur bis zum '
+          'Programmende belegt, auch wenn der Globus längst zu ist.',
+    );
   });
 }

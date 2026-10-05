@@ -29,8 +29,8 @@ class SharePackageExpired implements Exception {
 /// Entpackens ab, bevor Platte oder Arbeitsspeicher unkontrolliert wachsen.
 class _BegrenzterDateiAusgabestrom extends OutputStream {
   _BegrenzterDateiAusgabestrom(String path, this.maxBytes)
-      : _delegate = OutputFileStream(path),
-        super(byteOrder: ByteOrder.littleEndian);
+    : _delegate = OutputFileStream(path),
+      super(byteOrder: ByteOrder.littleEndian);
 
   final OutputFileStream _delegate;
   final int maxBytes;
@@ -113,7 +113,7 @@ class SecureShareService {
   static const formatMitFrist = 2;
 
   SecureShareService(this._exporter, {DateTime Function()? now})
-      : _now = now ?? DateTime.now;
+    : _now = now ?? DateTime.now;
 
   final ExportService _exporter;
   final DateTime Function() _now;
@@ -144,7 +144,10 @@ class SecureShareService {
         final source = await _exporter.resolveSourceFile(asset);
         final opaqueName = '${(i + 1).toString().padLeft(6, '0')}.pve';
         await VaultCrypto.encryptFile(
-            source, File(p.join(dataDir.path, opaqueName)), wrapped.masterKey);
+          source,
+          File(p.join(dataDir.path, opaqueName)),
+          wrapped.masterKey,
+        );
         manifest.add({
           'file': opaqueName,
           'name': p.basename(asset.originalFileName),
@@ -162,21 +165,30 @@ class SecureShareService {
         if (expiresAtUtc != null) 'expiresAt': expiresAtUtc.toIso8601String(),
       };
       final manifestBytes = utf8.encode(jsonEncode(manifestPayload));
-      await manifestEncrypted.writeAsBytes(await VaultCrypto.encryptBytes(
-          manifestBytes, wrapped.masterKey,
-          aad: utf8.encode('photo-vault-share-manifest')));
+      await manifestEncrypted.writeAsBytes(
+        await VaultCrypto.encryptBytes(
+          manifestBytes,
+          wrapped.masterKey,
+          aad: utf8.encode('photo-vault-share-manifest'),
+        ),
+      );
 
-      await File(p.join(temp.path, 'key.json')).writeAsString(jsonEncode({
-        'format': 1,
-        'kdfSalt': base64Encode(wrapped.kdfSalt),
-        'nonce': base64Encode(wrapped.nonce),
-        'wrapped': base64Encode(wrapped.wrapped),
-      }));
+      await File(p.join(temp.path, 'key.json')).writeAsString(
+        jsonEncode({
+          'format': 1,
+          'kdfSalt': base64Encode(wrapped.kdfSalt),
+          'nonce': base64Encode(wrapped.nonce),
+          'wrapped': base64Encode(wrapped.wrapped),
+        }),
+      );
 
       await destination.parent.create(recursive: true);
       if (await destination.exists()) await destination.delete();
-      await ZipFileEncoder()
-          .zipDirectory(temp, filename: destination.path, followLinks: false);
+      await ZipFileEncoder().zipDirectory(
+        temp,
+        filename: destination.path,
+        followLinks: false,
+      );
     } finally {
       if (await temp.exists()) await temp.delete(recursive: true);
     }
@@ -209,23 +221,29 @@ class SecureShareService {
       // ihrer deklarierten Größen abgewiesen. Der begrenzte Ausgabestrom
       // unten kontrolliert zusätzlich jede tatsächlich ausgegebene Bytezahl,
       // falls jemand die Größenangabe im Archiv manipuliert hat.
-      final archive =
-          ZipDecoder().decodeStream(input, verify: true, callback: (entry) {
-        final name = entry.name.replaceAll('\\', '/');
-        if (entry.isDirectory && name == 'data/') return;
-        if (entry.isDirectory ||
-            entry.isSymbolicLink ||
-            !allowed.hasMatch(name)) {
-          throw const FormatException('Unerlaubter Eintrag im Austauschpaket.');
-        }
-        if (!names.add(name) || entry.size < 0) {
-          throw const FormatException('Ungültige Paketstruktur.');
-        }
-        declaredTotal += entry.size;
-        if (entry.size > maxExpandedBytes || declaredTotal > maxExpandedBytes) {
-          throw const FormatException('Unplausible Paketgröße.');
-        }
-      });
+      final archive = ZipDecoder().decodeStream(
+        input,
+        verify: true,
+        callback: (entry) {
+          final name = entry.name.replaceAll('\\', '/');
+          if (entry.isDirectory && name == 'data/') return;
+          if (entry.isDirectory ||
+              entry.isSymbolicLink ||
+              !allowed.hasMatch(name)) {
+            throw const FormatException(
+              'Unerlaubter Eintrag im Austauschpaket.',
+            );
+          }
+          if (!names.add(name) || entry.size < 0) {
+            throw const FormatException('Ungültige Paketstruktur.');
+          }
+          declaredTotal += entry.size;
+          if (entry.size > maxExpandedBytes ||
+              declaredTotal > maxExpandedBytes) {
+            throw const FormatException('Unplausible Paketgröße.');
+          }
+        },
+      );
       for (final entry in archive) {
         final name = entry.name.replaceAll('\\', '/');
         if (entry.isDirectory && name == 'data/') continue;
@@ -256,11 +274,14 @@ class SecureShareService {
         nonce: base64Decode(keyData['nonce'] as String),
         wrapped: base64Decode(keyData['wrapped'] as String),
       );
-      final encryptedManifest =
-          await File(p.join(temp.path, 'manifest.pve')).readAsBytes();
+      final encryptedManifest = await File(
+        p.join(temp.path, 'manifest.pve'),
+      ).readAsBytes();
       final manifestClear = await VaultCrypto.decryptBytes(
-          encryptedManifest, key,
-          aad: utf8.encode('photo-vault-share-manifest'));
+        encryptedManifest,
+        key,
+        aad: utf8.encode('photo-vault-share-manifest'),
+      );
       final manifest = jsonDecode(utf8.decode(manifestClear)) as Map;
       final format = manifest['format'];
       if ((format != formatOhneFrist && format != formatMitFrist) ||
@@ -302,9 +323,14 @@ class SecureShareService {
         final clear = File(p.join(temp.path, 'clear', originalName));
         await clear.parent.create(recursive: true);
         await VaultCrypto.decryptFile(
-            File(p.join(temp.path, 'data', encryptedName)), clear, key);
-        final actualChecksum =
-            await sha256.bind(clear.openRead()).first.then((d) => d.toString());
+          File(p.join(temp.path, 'data', encryptedName)),
+          clear,
+          key,
+        );
+        final actualChecksum = await sha256
+            .bind(clear.openRead())
+            .first
+            .then((d) => d.toString());
         if (actualChecksum != item['checksum']) {
           throw const FormatException('Prüfsumme einer Aufnahme stimmt nicht.');
         }

@@ -36,17 +36,20 @@ class GeoDataCatalog {
   /// entpackt deutlich kleiner als der volle Datensatz (alle Orte).
   static const files = [
     GeoDataFile(
-        citiesZipFileName,
-        'https://download.geonames.org/export/dump/cities1000.zip',
-        32 * 1024 * 1024),
+      citiesZipFileName,
+      'https://download.geonames.org/export/dump/cities1000.zip',
+      32 * 1024 * 1024,
+    ),
     GeoDataFile(
-        admin1FileName,
-        'https://download.geonames.org/export/dump/admin1CodesASCII.txt',
-        8 * 1024 * 1024),
+      admin1FileName,
+      'https://download.geonames.org/export/dump/admin1CodesASCII.txt',
+      8 * 1024 * 1024,
+    ),
     GeoDataFile(
-        countryFileName,
-        'https://download.geonames.org/export/dump/countryInfo.txt',
-        4 * 1024 * 1024),
+      countryFileName,
+      'https://download.geonames.org/export/dump/countryInfo.txt',
+      4 * 1024 * 1024,
+    ),
   ];
 
   static const license = 'CC BY 4.0';

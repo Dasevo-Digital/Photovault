@@ -61,27 +61,46 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 _SummaryGrid(stats: stats),
                 if (stats.countsByYear.isNotEmpty) ...[
                   const SizedBox(height: 28),
-                  Text(AppTexte.of(context).statProJahr, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    AppTexte.of(context).statProJahr,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.sm,
+                        AppSpacing.xl,
+                        AppSpacing.xl,
+                        AppSpacing.sm,
+                      ),
                       child: _YearBarChart(countsByYear: stats.countsByYear),
                     ),
                   ),
                 ],
                 const SizedBox(height: 28),
-                Text(AppTexte.of(context).statSaisonalitaet, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  AppTexte.of(context).statSaisonalitaet,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 8),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                      AppSpacing.sm,
+                    ),
                     child: _MonthBarChart(countsByMonth: stats.countsByMonth),
                   ),
                 ),
                 if (stats.topCameras.isNotEmpty) ...[
                   const SizedBox(height: 28),
-                  Text(AppTexte.of(context).statKameras, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    AppTexte.of(context).statKameras,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 8),
                   _CameraList(cameras: stats.topCameras),
                 ],
@@ -99,7 +118,6 @@ class _SummaryGrid extends StatelessWidget {
   final LibraryStats stats;
   const _SummaryGrid({required this.stats});
 
-
   static String _formatSize(int bytes) {
     const kb = 1024;
     const mb = kb * 1024;
@@ -113,7 +131,8 @@ class _SummaryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     // Tausendertrennung nach der aktiven Sprache: 1.234 gegen 1,234.
     final zahl = NumberFormat.decimalPattern(
-        Localizations.localeOf(context).toString());
+      Localizations.localeOf(context).toString(),
+    );
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -162,7 +181,11 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _StatCard({required this.icon, required this.label, required this.value});
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -210,58 +233,80 @@ class _YearBarChart extends StatelessWidget {
     final labelStep = (years.length / 12).ceil().clamp(1, years.length);
 
     return Semantics(
-      label: AppTexte.of(context).statDiagrammJahr(
-          years.map((y) => '$y: ${countsByYear[y]}').join(', ')),
+      label: AppTexte.of(
+        context,
+      ).statDiagrammJahr(years.map((y) => '$y: ${countsByYear[y]}').join(', ')),
       child: ExcludeSemantics(
         child: SizedBox(
-      height: 220,
-      child: BarChart(
-        BarChartData(
-          maxY: maxCount == 0 ? 1 : maxCount * 1.15,
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                '${years[group.x.toInt()]}\n${rod.toY.round()}',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 36)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 28,
-                getTitlesWidget: (value, meta) {
-                  final index = value.toInt();
-                  if (index < 0 || index >= years.length || index % labelStep != 0) {
-                    return const SizedBox.shrink();
-                  }
-                  return SideTitleWidget(
-                    meta: meta,
-                    child: Text('${years[index]}', style: const TextStyle(fontSize: 11)),
-                  );
-                },
-              ),
-            ),
-          ),
-          barGroups: [
-            for (var i = 0; i < years.length; i++)
-              BarChartGroupData(x: i, barRods: [
-                BarChartRodData(
-                  toY: countsByYear[years[i]]!.toDouble(),
-                  color: color,
-                  width: years.length > 20 ? 6 : 14,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+          height: 220,
+          child: BarChart(
+            BarChartData(
+              maxY: maxCount == 0 ? 1 : maxCount * 1.15,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                      BarTooltipItem(
+                        '${years[group.x.toInt()]}\n${rod.toY.round()}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                 ),
-              ]),
-          ],
-        ),
-      ),
+              ),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 36),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 ||
+                          index >= years.length ||
+                          index % labelStep != 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return SideTitleWidget(
+                        meta: meta,
+                        child: Text(
+                          '${years[index]}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              barGroups: [
+                for (var i = 0; i < years.length; i++)
+                  BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: countsByYear[years[i]]!.toDouble(),
+                        color: color,
+                        width: years.length > 20 ? 6 : 14,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(3),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -276,62 +321,86 @@ class _MonthBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.secondary;
     final maxCount = countsByMonth.values.fold(0, (a, b) => a > b ? a : b);
-    final monthFormat =
-        DateFormat.MMM(Localizations.localeOf(context).toString());
+    final monthFormat = DateFormat.MMM(
+      Localizations.localeOf(context).toString(),
+    );
 
     return Semantics(
-      label: AppTexte.of(context).statDiagrammMonat([
-        for (var m = 1; m <= 12; m++)
-          '${monthFormat.format(DateTime(2000, m))}: ${countsByMonth[m] ?? 0}'
-      ].join(', ')),
+      label: AppTexte.of(context).statDiagrammMonat(
+        [
+          for (var m = 1; m <= 12; m++)
+            '${monthFormat.format(DateTime(2000, m))}: ${countsByMonth[m] ?? 0}',
+        ].join(', '),
+      ),
       child: ExcludeSemantics(
         child: SizedBox(
-      height: 220,
-      child: BarChart(
-        BarChartData(
-          maxY: maxCount == 0 ? 1 : maxCount * 1.15,
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
-                '${monthFormat.format(DateTime(2000, group.x.toInt() + 1))}\n${rod.toY.round()}',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ),
-          ),
-          titlesData: FlTitlesData(
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 36)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 28,
-                getTitlesWidget: (value, meta) {
-                  final month = value.toInt() + 1;
-                  if (month < 1 || month > 12) return const SizedBox.shrink();
-                  return SideTitleWidget(
-                    meta: meta,
-                    child: Text(monthFormat.format(DateTime(2000, month)), style: const TextStyle(fontSize: 11)),
-                  );
-                },
-              ),
-            ),
-          ),
-          barGroups: [
-            for (var month = 1; month <= 12; month++)
-              BarChartGroupData(x: month - 1, barRods: [
-                BarChartRodData(
-                  toY: (countsByMonth[month] ?? 0).toDouble(),
-                  color: color,
-                  width: 16,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+          height: 220,
+          child: BarChart(
+            BarChartData(
+              maxY: maxCount == 0 ? 1 : maxCount * 1.15,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                      BarTooltipItem(
+                        '${monthFormat.format(DateTime(2000, group.x.toInt() + 1))}\n${rod.toY.round()}',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                 ),
-              ]),
-          ],
-        ),
-      ),
+              ),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 36),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    getTitlesWidget: (value, meta) {
+                      final month = value.toInt() + 1;
+                      if (month < 1 || month > 12) {
+                        return const SizedBox.shrink();
+                      }
+                      return SideTitleWidget(
+                        meta: meta,
+                        child: Text(
+                          monthFormat.format(DateTime(2000, month)),
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              barGroups: [
+                for (var month = 1; month <= 12; month++)
+                  BarChartGroupData(
+                    x: month - 1,
+                    barRods: [
+                      BarChartRodData(
+                        toY: (countsByMonth[month] ?? 0).toDouble(),
+                        color: color,
+                        width: 16,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(3),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -344,10 +413,13 @@ class _CameraList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxCount = cameras.map((c) => c.count).fold(0, (a, b) => a > b ? a : b);
+    final maxCount = cameras
+        .map((c) => c.count)
+        .fold(0, (a, b) => a > b ? a : b);
     final color = Theme.of(context).colorScheme.primary;
-    final numberFormat =
-        NumberFormat.decimalPattern(Localizations.localeOf(context).toString());
+    final numberFormat = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    );
 
     return Card(
       child: Padding(
@@ -356,7 +428,10 @@ class _CameraList extends StatelessWidget {
           children: [
             for (final camera in cameras)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
                     SizedBox(
@@ -379,12 +454,16 @@ class _CameraList extends StatelessWidget {
                             ),
                           ),
                           FractionallySizedBox(
-                            widthFactor: maxCount == 0 ? 0 : camera.count / maxCount,
+                            widthFactor: maxCount == 0
+                                ? 0
+                                : camera.count / maxCount,
                             child: Container(
                               height: 16,
                               decoration: BoxDecoration(
                                 color: color,
-                                borderRadius: BorderRadius.circular(AppRadius.xs),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xs,
+                                ),
                               ),
                             ),
                           ),
@@ -394,7 +473,10 @@ class _CameraList extends StatelessWidget {
                     const SizedBox(width: 12),
                     SizedBox(
                       width: 48,
-                      child: Text(numberFormat.format(camera.count), textAlign: TextAlign.right),
+                      child: Text(
+                        numberFormat.format(camera.count),
+                        textAlign: TextAlign.right,
+                      ),
                     ),
                   ],
                 ),

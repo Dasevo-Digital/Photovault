@@ -11,7 +11,12 @@ class StarRating extends StatelessWidget {
   final ValueChanged<int>? onChanged;
   final double size;
 
-  const StarRating({super.key, required this.value, this.onChanged, this.size = 20});
+  const StarRating({
+    super.key,
+    required this.value,
+    this.onChanged,
+    this.size = 20,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +27,9 @@ class StarRating extends StatelessWidget {
         for (var i = 1; i <= 5; i++)
           Semantics(
             label: onChanged == null
-                ? (i <= value ? AppTexte.of(context).sterneSternVoll(i) : AppTexte.of(context).sterneStern(i))
+                ? (i <= value
+                      ? AppTexte.of(context).sterneSternVoll(i)
+                      : AppTexte.of(context).sterneStern(i))
                 : AppTexte.of(context).sterneSetzen(i),
             button: onChanged != null,
             excludeSemantics: true,

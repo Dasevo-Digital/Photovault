@@ -49,9 +49,7 @@ void main() {
 
   group('Die Kachelliste', () {
     test('deckt das Gebiet auf jeder Stufe ab', () {
-      final gebiet = [
-        (sued: 51.8, west: 10.3, nord: 52.0, ost: 10.6)
-      ];
+      final gebiet = [(sued: 51.8, west: 10.3, nord: 52.0, ost: 10.6)];
       final kacheln = kachelListe(gebiet, von: 6, bis: 8);
       expect(kacheln.where((k) => k.z == 6), isNotEmpty);
       expect(kacheln.where((k) => k.z == 7), isNotEmpty);
@@ -61,10 +59,14 @@ void main() {
     test('zählt eine Kachel nur einmal, auch bei Überlappung', () {
       // Zwei Gebiete, die sich auf niedriger Stufe dieselbe Kachel
       // teilen. Ohne Entdopplung lüde man sie zweimal.
-      final kacheln = kachelListe([
-        (sued: 51.0, west: 10.0, nord: 51.2, ost: 10.2),
-        (sued: 51.1, west: 10.1, nord: 51.3, ost: 10.3),
-      ], von: 4, bis: 4);
+      final kacheln = kachelListe(
+        [
+          (sued: 51.0, west: 10.0, nord: 51.2, ost: 10.2),
+          (sued: 51.1, west: 10.1, nord: 51.3, ost: 10.3),
+        ],
+        von: 4,
+        bis: 4,
+      );
       final schluessel = {for (final k in kacheln) '${k.z}/${k.x}/${k.y}'};
       expect(kacheln.length, schluessel.length);
     });
@@ -72,21 +74,29 @@ void main() {
     test('der Norden bekommt die kleinere Nummer', () {
       // Die y-Achse zeigt nach unten. Wer das verwechselt, lädt ein
       // leeres Rechteck.
-      final kacheln = kachelListe([
-        (sued: 40.0, west: 10.0, nord: 55.0, ost: 11.0)
-      ], von: 5, bis: 5);
+      final kacheln = kachelListe(
+        [(sued: 40.0, west: 10.0, nord: 55.0, ost: 11.0)],
+        von: 5,
+        bis: 5,
+      );
       final ys = kacheln.map((k) => k.y).toSet();
-      expect(ys.length, greaterThan(1),
-          reason: 'fünfzehn Breitengrade sind mehr als eine Kachel');
+      expect(
+        ys.length,
+        greaterThan(1),
+        reason: 'fünfzehn Breitengrade sind mehr als eine Kachel',
+      );
     });
 
     test('die Zahl bleibt beherrschbar', () {
       // Ein Gebiet von rund 100 km Kantenlänge bis Stufe 14.
       final kacheln = kachelListe([
-        (sued: 51.5, west: 10.0, nord: 52.4, ost: 11.4)
+        (sued: 51.5, west: 10.0, nord: 52.4, ost: 11.4),
       ]);
-      expect(kacheln.length, lessThan(20000),
-          reason: 'sonst ist die obere Stufe zu hoch gewählt');
+      expect(
+        kacheln.length,
+        lessThan(20000),
+        reason: 'sonst ist die obere Stufe zu hoch gewählt',
+      );
       // ignore: avoid_print
       print('ein Gebiet von 100 km: ${kacheln.length} Kacheln');
     });

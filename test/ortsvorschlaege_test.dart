@@ -21,17 +21,24 @@ Future<ReverseGeocoder> _verzeichnis(Directory wurzel) async {
     '5\tGoslar\tGoslar\t\t51.90425\t10.42766\tP\tPPLA3\tDE\t\t06\t\t\t\t50785\t\t255\tEurope/Berlin\t2023\n',
   );
   final regionen = File(p.join(wurzel.path, 'admin1CodesASCII.txt'));
-  await regionen.writeAsString('DE.16\tBerlin\tBerlin\t1\n'
-      'DE.06\tNiedersachsen\tNiedersachsen\t5\n'
-      'US.NH\tNew Hampshire\tNew Hampshire\t2\n'
-      'US.IL\tIllinois\tIllinois\t3\n'
-      'US.MO\tMissouri\tMissouri\t4\n');
+  await regionen.writeAsString(
+    'DE.16\tBerlin\tBerlin\t1\n'
+    'DE.06\tNiedersachsen\tNiedersachsen\t5\n'
+    'US.NH\tNew Hampshire\tNew Hampshire\t2\n'
+    'US.IL\tIllinois\tIllinois\t3\n'
+    'US.MO\tMissouri\tMissouri\t4\n',
+  );
   final laender = File(p.join(wurzel.path, 'countryInfo.txt'));
-  await laender.writeAsString('# Kopf\n'
-      'DE\tDEU\t276\tDE\tDeutschland\tBerlin\t357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t1\t\t\n'
-      'US\tUSA\t840\tUS\tVereinigte Staaten\tWashington\t9629091\t327167434\tNA\t.us\tUSD\tDollar\t1\t\t\ten-US\t6252001\t\t\n');
+  await laender.writeAsString(
+    '# Kopf\n'
+    'DE\tDEU\t276\tDE\tDeutschland\tBerlin\t357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t1\t\t\n'
+    'US\tUSA\t840\tUS\tVereinigte Staaten\tWashington\t9629091\t327167434\tNA\t.us\tUSD\tDollar\t1\t\t\ten-US\t6252001\t\t\n',
+  );
   return ReverseGeocoder.loadFromFiles(
-      citiesFile: staedte, admin1File: regionen, countryFile: laender);
+    citiesFile: staedte,
+    admin1File: regionen,
+    countryFile: laender,
+  );
 }
 
 void main() {
@@ -48,7 +55,10 @@ void main() {
   test('nennt beide Berlin, nicht nur eines', () {
     final treffer = geo.sucheOrte('Berlin');
     expect(treffer.length, 2);
-    expect(treffer.map((t) => t.land), containsAll(['Deutschland', 'Vereinigte Staaten']));
+    expect(
+      treffer.map((t) => t.land),
+      containsAll(['Deutschland', 'Vereinigte Staaten']),
+    );
   });
 
   test('das grössere steht oben, wenn nichts anderes bekannt ist', () {
@@ -57,15 +67,23 @@ void main() {
 
   test('mit einem bekannten Ort entscheidet die Nähe', () {
     // Ein Foto, das schon in New Hampshire verortet war.
-    final treffer =
-        geo.sucheOrte('Berlin', naheBreite: 44.0, naheLaenge: -71.0);
+    final treffer = geo.sucheOrte(
+      'Berlin',
+      naheBreite: 44.0,
+      naheLaenge: -71.0,
+    );
     expect(treffer.first.land, 'Vereinigte Staaten');
   });
 
   test('jeder Vorschlag sagt, wo er liegt', () {
     final springfield = geo.sucheOrte('Springfield');
-    expect(springfield.map((t) => t.herkunft),
-        containsAll(['Illinois, Vereinigte Staaten', 'Missouri, Vereinigte Staaten']));
+    expect(
+      springfield.map((t) => t.herkunft),
+      containsAll([
+        'Illinois, Vereinigte Staaten',
+        'Missouri, Vereinigte Staaten',
+      ]),
+    );
     expect(springfield.first.einwohner, greaterThan(0));
   });
 

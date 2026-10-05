@@ -49,7 +49,8 @@ class Gebiet {
     for (final ring in ringe) {
       var a = 0.0;
       for (var i = 0; i + 1 < ring.length; i++) {
-        a += ring[i].laenge * ring[i + 1].breite -
+        a +=
+            ring[i].laenge * ring[i + 1].breite -
             ring[i + 1].laenge * ring[i].breite;
       }
       summe += a.abs() / 2;
@@ -156,8 +157,12 @@ class Gebietsgrenzen {
     return _kleinstesGebiet('R', breite, laenge, praefix)?.substring(2);
   }
 
-  String? _kleinstesGebiet(String art, double breite, double laenge,
-      [String? praefix]) {
+  String? _kleinstesGebiet(
+    String art,
+    double breite,
+    double laenge, [
+    String? praefix,
+  ]) {
     String? beste;
     var besteFlaeche = double.infinity;
     for (final sch in _zeilen.keys) {
@@ -210,7 +215,8 @@ class Gebietsgrenzen {
     for (final ring in gebiet.ringe) {
       var a = 0.0;
       for (var i = 0; i + 1 < ring.length; i++) {
-        a += ring[i].laenge * ring[i + 1].breite -
+        a +=
+            ring[i].laenge * ring[i + 1].breite -
             ring[i + 1].laenge * ring[i].breite;
       }
       if (a.abs() > beste) {
@@ -228,7 +234,8 @@ class Gebietsgrenzen {
 
   /// Wie weit ein Gebiet reicht – für „auf das Gebiet zoomen".
   static ({double sued, double west, double nord, double ost}) huelle(
-      Gebiet gebiet) {
+    Gebiet gebiet,
+  ) {
     var sued = 90.0, nord = -90.0, west = 180.0, ost = -180.0;
     for (final ring in gebiet.ringe) {
       for (final p in ring) {

@@ -37,8 +37,9 @@ void zierschriftenLizenzenAnmelden() {
       'EB Garamond': 'assets/fonts/OFL-EBGaramond.txt',
       'Great Vibes': 'assets/fonts/OFL-GreatVibes.txt',
     }.entries) {
-      yield LicenseEntryWithLineBreaks(
-          [e.key], await rootBundle.loadString(e.value));
+      yield LicenseEntryWithLineBreaks([
+        e.key,
+      ], await rootBundle.loadString(e.value));
     }
   });
 }
@@ -169,9 +170,21 @@ class Zierbaumfarben {
       other.staub == staub;
 
   @override
-  int get hashCode => Object.hash(grundAussen, grundInnen, holzDunkel,
-      holzHell, ranken, schildOben, schildUnten, schildRand, schrift,
-      nebenschrift, mitteRand, familienname, staub);
+  int get hashCode => Object.hash(
+    grundAussen,
+    grundInnen,
+    holzDunkel,
+    holzHell,
+    ranken,
+    schildOben,
+    schildUnten,
+    schildRand,
+    schrift,
+    nebenschrift,
+    mitteRand,
+    familienname,
+    staub,
+  );
 
   /// Die Fassung, die zum Erscheinungsbild passt.
   static Zierbaumfarben fuer(Brightness helligkeit) =>

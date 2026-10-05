@@ -68,8 +68,11 @@ void main() {
           nachbar(DateTime(2013, 7, 4, 12, 40), hamburg),
         ],
       );
-      expect(v, isEmpty,
-          reason: 'Hannover und Hamburg sind 150 km auseinander');
+      expect(
+        v,
+        isEmpty,
+        reason: 'Hannover und Hamburg sind 150 km auseinander',
+      );
     });
 
     test('schweigt, wenn kein Nachbar im Fenster liegt', () {
@@ -84,7 +87,10 @@ void main() {
       // Ein Nachbar davor und einer danach muessen beide zaehlen –
       // sonst haenge das Ergebnis daran, in welcher Reihenfolge die
       // Aufnahmen entstanden.
-      for (final versatz in [const Duration(hours: -1), const Duration(hours: 1)]) {
+      for (final versatz in [
+        const Duration(hours: -1),
+        const Duration(hours: 1),
+      ]) {
         final v = ortsvorschlaege(
           [(id: 'a', wann: DateTime(2013, 7, 4, 12))],
           [nachbar(DateTime(2013, 7, 4, 12).add(versatz), hannover)],
@@ -99,12 +105,17 @@ void main() {
       // deshalb hier hundert statt zwei.
       final ohneOrt = [
         for (var i = 0; i < 100; i++)
-          (id: 'a$i', wann: DateTime(2013, 7, 4).add(Duration(minutes: i * 10))),
+          (
+            id: 'a$i',
+            wann: DateTime(2013, 7, 4).add(Duration(minutes: i * 10)),
+          ),
       ];
       final verortet = [
         for (var i = 0; i < 100; i++)
-          nachbar(DateTime(2013, 7, 4).add(Duration(minutes: i * 10 + 5)),
-              hannover),
+          nachbar(
+            DateTime(2013, 7, 4).add(Duration(minutes: i * 10 + 5)),
+            hannover,
+          ),
       ];
       final v = ortsvorschlaege(ohneOrt, verortet);
       expect(v, hasLength(100));
@@ -114,10 +125,14 @@ void main() {
     });
 
     test('ohne Nachbarn oder ohne Suchende kommt nichts', () {
-      expect(ortsvorschlaege(const [], [nachbar(DateTime(2013), hannover)]),
-          isEmpty);
       expect(
-          ortsvorschlaege([(id: 'a', wann: DateTime(2013))], const []), isEmpty);
+        ortsvorschlaege(const [], [nachbar(DateTime(2013), hannover)]),
+        isEmpty,
+      );
+      expect(
+        ortsvorschlaege([(id: 'a', wann: DateTime(2013))], const []),
+        isEmpty,
+      );
     });
   });
 
@@ -153,19 +168,21 @@ void main() {
     test('trennt denselben Tag an verschiedenen Orten', () {
       final v = [
         Ortsvorschlag(
-            assetId: 'a',
-            breite: hannover.$1,
-            laenge: hannover.$2,
-            nachbarn: 2,
-            spanneKm: 1,
-            abstand: const Duration(minutes: 5)),
+          assetId: 'a',
+          breite: hannover.$1,
+          laenge: hannover.$2,
+          nachbarn: 2,
+          spanneKm: 1,
+          abstand: const Duration(minutes: 5),
+        ),
         Ortsvorschlag(
-            assetId: 'b',
-            breite: hamburg.$1,
-            laenge: hamburg.$2,
-            nachbarn: 2,
-            spanneKm: 1,
-            abstand: const Duration(minutes: 5)),
+          assetId: 'b',
+          breite: hamburg.$1,
+          laenge: hamburg.$2,
+          nachbarn: 2,
+          spanneKm: 1,
+          abstand: const Duration(minutes: 5),
+        ),
       ];
       final zeiten = {
         'a': DateTime(2013, 7, 4, 9),
@@ -180,12 +197,13 @@ void main() {
       // muss es sein – sonst faende ein „nein" beim naechsten Oeffnen
       // sein eigenes Buendel nicht wieder.
       Ortsvorschlag mach(String id) => Ortsvorschlag(
-          assetId: id,
-          breite: 1,
-          laenge: 1,
-          nachbarn: 1,
-          spanneKm: 0,
-          abstand: Duration.zero);
+        assetId: id,
+        breite: 1,
+        laenge: 1,
+        nachbarn: 1,
+        spanneKm: 0,
+        abstand: Duration.zero,
+      );
       final vorwaerts = Ortsbuendel(DateTime(2013), [mach('b'), mach('a')]);
       final rueckwaerts = Ortsbuendel(DateTime(2013), [mach('a'), mach('b')]);
       expect(vorwaerts.schluessel, 'a');
@@ -202,20 +220,29 @@ void main() {
       wurzel = Directory.systemTemp.createTempSync('pv_ortsvorschlag_');
       db = AppDatabase(NativeDatabase.memory());
       final staedte = File(p.join(wurzel.path, 'cities1000.txt'));
-      await staedte.writeAsString('2910831\tHannover\tHannover\t\t52.37052\t'
-          '9.73322\tP\tPPLA\tDE\t\t06\t\t\t\t515140\t\t55\tEurope/Berlin\t2023\n');
+      await staedte.writeAsString(
+        '2910831\tHannover\tHannover\t\t52.37052\t'
+        '9.73322\tP\tPPLA\tDE\t\t06\t\t\t\t515140\t\t55\tEurope/Berlin\t2023\n',
+      );
       final regionen = File(p.join(wurzel.path, 'admin1CodesASCII.txt'));
-      await regionen
-          .writeAsString('DE.06\tLower Saxony\tLower Saxony\t2862926\n');
+      await regionen.writeAsString(
+        'DE.06\tLower Saxony\tLower Saxony\t2862926\n',
+      );
       final laender = File(p.join(wurzel.path, 'countryInfo.txt'));
-      await laender.writeAsString('# Kopf\nDE\tDEU\t276\tDE\tGermany\tBerlin\t'
-          '357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t2921044\t\t\n');
+      await laender.writeAsString(
+        '# Kopf\nDE\tDEU\t276\tDE\tGermany\tBerlin\t'
+        '357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t2921044\t\t\n',
+      );
       library = LibraryState()
         ..db = db
-        ..paths =
-            await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')))
+        ..paths = await StoragePaths.forTesting(
+          Directory(p.join(wurzel.path, 'l')),
+        )
         ..geocoder = await ReverseGeocoder.loadFromFiles(
-            citiesFile: staedte, admin1File: regionen, countryFile: laender);
+          citiesFile: staedte,
+          admin1File: regionen,
+          countryFile: laender,
+        );
     });
 
     tearDown(() async {
@@ -223,21 +250,29 @@ void main() {
       wurzel.deleteSync(recursive: true);
     });
 
-    Future<void> anlegen(String id, DateTime wann,
-            {(double, double)? ort, bool gesperrt = false, bool papierkorb = false}) =>
-        db.into(db.assets).insert(AssetsCompanion.insert(
-              id: id,
-              originalFileName: '$id.jpg',
-              relativePath: 'originals/2013/07/$id.jpg',
-              checksum: 'pruef-$id',
-              type: 'IMAGE',
-              fileCreatedAt: wann,
-              importedAt: DateTime(2026),
-              latitude: Value(ort?.$1),
-              longitude: Value(ort?.$2),
-              isLocked: Value(gesperrt),
-              isTrashed: Value(papierkorb),
-            ));
+    Future<void> anlegen(
+      String id,
+      DateTime wann, {
+      (double, double)? ort,
+      bool gesperrt = false,
+      bool papierkorb = false,
+    }) => db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/2013/07/$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: wann,
+            importedAt: DateTime(2026),
+            latitude: Value(ort?.$1),
+            longitude: Value(ort?.$2),
+            isLocked: Value(gesperrt),
+            isTrashed: Value(papierkorb),
+          ),
+        );
 
     test('die Abfrage trennt verortet von unverortet', () async {
       await anlegen('ohne', DateTime(2013, 7, 4, 12));
@@ -253,8 +288,12 @@ void main() {
       // nicht ueber seine Nachbarn verraten, wo es entstand.
       await anlegen('geloescht', DateTime(2013, 7, 4, 12), papierkorb: true);
       await anlegen('gesperrt', DateTime(2013, 7, 4, 12), gesperrt: true);
-      await anlegen('gesperrtMitOrt', DateTime(2013, 7, 4, 12, 5),
-          ort: hannover, gesperrt: true);
+      await anlegen(
+        'gesperrtMitOrt',
+        DateTime(2013, 7, 4, 12, 5),
+        ort: hannover,
+        gesperrt: true,
+      );
       final daten = await db.ortsvorschlagsdaten();
       expect(daten.ohneOrt, isEmpty);
       expect(daten.verortet, isEmpty);
@@ -274,8 +313,11 @@ void main() {
       for (final id in ['a', 'b']) {
         final asset = (await db.assetById(id))!;
         expect(asset.latitude, closeTo(hannover.$1, 1e-9), reason: id);
-        expect(asset.ortGeerbt, isTrue,
-            reason: 'ein geerbter Ort ist kein gemessener');
+        expect(
+          asset.ortGeerbt,
+          isTrue,
+          reason: 'ein geerbter Ort ist kein gemessener',
+        );
         // Ohne die Ortsnamen staende die Aufnahme mit einer Koordinate
         // und ohne Namen da, und die Ortsgruppen saehen sie nicht.
         expect(asset.locationCity, 'Hannover', reason: id);
@@ -288,13 +330,17 @@ void main() {
     test('ein neu gesetzter Ort nimmt die Marke zurück', () async {
       await anlegen('a', DateTime(2013, 7, 4, 12));
       await anlegen('n', DateTime(2013, 7, 4, 12, 10), ort: hannover);
-      await library
-          .uebernimmOrtsbuendel((await library.ortsvorschlagsbuendel()).first);
+      await library.uebernimmOrtsbuendel(
+        (await library.ortsvorschlagsbuendel()).first,
+      );
       expect((await db.assetById('a'))!.ortGeerbt, isTrue);
 
       await db.setLocation('a', 53.0, 10.0);
-      expect((await db.assetById('a'))!.ortGeerbt, isFalse,
-          reason: 'wer eine Koordinate setzt, ersetzt die Vermutung');
+      expect(
+        (await db.assetById('a'))!.ortGeerbt,
+        isFalse,
+        reason: 'wer eine Koordinate setzt, ersetzt die Vermutung',
+      );
     });
 
     test('ein verworfenes Bündel kommt nicht wieder', () async {

@@ -32,74 +32,71 @@ void main() {
     expect(await db.gesichtsRueckmeldungen('p1'), isEmpty);
   });
 
-  test('Entscheidungen werden festgehalten und die Schwelle nachgeführt', () async {
-    await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
+  test(
+    'Entscheidungen werden festgehalten und die Schwelle nachgeführt',
+    () async {
+      await person('p1', 'Anna');
+      await db.merkeGesichtsEntscheidungen('p1', [
         (faceId: 'f1', accepted: true, similarity: 0.5),
         (faceId: 'f2', accepted: true, similarity: 0.7),
         (faceId: 'f3', accepted: false, similarity: 0.4),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+      ], allgemeineSchwelle: allgemein);
 
-    expect(await db.gesichtsRueckmeldungen('p1'), hasLength(3));
-    // Saubere Trennung zwischen 0,4 und 0,5 – die Mitte ist 0,45.
-    expect((await lies('p1')).similarityThreshold, closeTo(0.45, 1e-9));
-  });
+      expect(await db.gesichtsRueckmeldungen('p1'), hasLength(3));
+      // Saubere Trennung zwischen 0,4 und 0,5 – die Mitte ist 0,45.
+      expect((await lies('p1')).similarityThreshold, closeTo(0.45, 1e-9));
+    },
+  );
 
-  test('die gespeicherte Zahl stimmt mit der angezeigten Herleitung überein',
-      () async {
-    // Wären das zwei getrennte Rechnungen, könnte die Oberfläche eine
-    // andere Zahl begründen als die, nach der entschieden wird.
-    await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
+  test(
+    'die gespeicherte Zahl stimmt mit der angezeigten Herleitung überein',
+    () async {
+      // Wären das zwei getrennte Rechnungen, könnte die Oberfläche eine
+      // andere Zahl begründen als die, nach der entschieden wird.
+      await person('p1', 'Anna');
+      await db.merkeGesichtsEntscheidungen('p1', [
         (faceId: 'f1', accepted: true, similarity: 0.55),
         (faceId: 'f2', accepted: false, similarity: 0.3),
         (faceId: 'f3', accepted: false, similarity: 0.35),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+      ], allgemeineSchwelle: allgemein);
 
-    final gespeichert = (await lies('p1')).similarityThreshold;
-    final hergeleitet =
-        leiteSchwelleAb(await db.gesichtsRueckmeldungen('p1'), allgemein);
-    expect(gespeichert, hergeleitet);
-  });
+      final gespeichert = (await lies('p1')).similarityThreshold;
+      final hergeleitet = leiteSchwelleAb(
+        await db.gesichtsRueckmeldungen('p1'),
+        allgemein,
+      );
+      expect(gespeichert, hergeleitet);
+    },
+  );
 
-  test('widersprüchliche Belege lassen die Person bei der allgemeinen Schwelle',
-      () async {
-    await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
+  test(
+    'widersprüchliche Belege lassen die Person bei der allgemeinen Schwelle',
+    () async {
+      await person('p1', 'Anna');
+      await db.merkeGesichtsEntscheidungen('p1', [
         (faceId: 'f1', accepted: true, similarity: 0.45),
         (faceId: 'f2', accepted: false, similarity: 0.6),
         (faceId: 'f3', accepted: true, similarity: 0.7),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+      ], allgemeineSchwelle: allgemein);
 
-    expect((await lies('p1')).similarityThreshold, isNull,
-        reason: 'genau die allgemeine Schwelle wird als "nichts Eigenes" '
-            'gespeichert, damit sie später mitwandert');
-  });
+      expect(
+        (await lies('p1')).similarityThreshold,
+        isNull,
+        reason:
+            'genau die allgemeine Schwelle wird als "nichts Eigenes" '
+            'gespeichert, damit sie später mitwandert',
+      );
+    },
+  );
 
   test('Personen lernen unabhängig voneinander', () async {
     await person('p1', 'Anna');
     await person('p2', 'Bert');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
-        (faceId: 'f1', accepted: false, similarity: 0.5),
-        (faceId: 'f2', accepted: false, similarity: 0.45),
-        (faceId: 'f3', accepted: false, similarity: 0.2),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+    await db.merkeGesichtsEntscheidungen('p1', [
+      (faceId: 'f1', accepted: false, similarity: 0.5),
+      (faceId: 'f2', accepted: false, similarity: 0.45),
+      (faceId: 'f3', accepted: false, similarity: 0.2),
+    ], allgemeineSchwelle: allgemein);
 
     expect((await lies('p1')).similarityThreshold, isNotNull);
     expect((await lies('p2')).similarityThreshold, isNull);
@@ -108,23 +105,17 @@ void main() {
 
   test('spätere Entscheidungen verschieben die Schwelle weiter', () async {
     await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
-        (faceId: 'f1', accepted: true, similarity: 0.5),
-        (faceId: 'f2', accepted: true, similarity: 0.6),
-        (faceId: 'f3', accepted: false, similarity: 0.3),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+    await db.merkeGesichtsEntscheidungen('p1', [
+      (faceId: 'f1', accepted: true, similarity: 0.5),
+      (faceId: 'f2', accepted: true, similarity: 0.6),
+      (faceId: 'f3', accepted: false, similarity: 0.3),
+    ], allgemeineSchwelle: allgemein);
     final vorher = (await lies('p1')).similarityThreshold;
 
     // Eine neue Ablehnung dicht unter der schwächsten Bestätigung.
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [(faceId: 'f4', accepted: false, similarity: 0.48)],
-      allgemeineSchwelle: allgemein,
-    );
+    await db.merkeGesichtsEntscheidungen('p1', [
+      (faceId: 'f4', accepted: false, similarity: 0.48),
+    ], allgemeineSchwelle: allgemein);
 
     expect(await db.gesichtsRueckmeldungen('p1'), hasLength(4));
     expect((await lies('p1')).similarityThreshold, greaterThan(vorher!));
@@ -132,15 +123,11 @@ void main() {
 
   test('Verwerfen löscht die Rückmeldungen und die eigene Schwelle', () async {
     await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen(
-      'p1',
-      [
-        (faceId: 'f1', accepted: true, similarity: 0.5),
-        (faceId: 'f2', accepted: true, similarity: 0.6),
-        (faceId: 'f3', accepted: false, similarity: 0.3),
-      ],
-      allgemeineSchwelle: allgemein,
-    );
+    await db.merkeGesichtsEntscheidungen('p1', [
+      (faceId: 'f1', accepted: true, similarity: 0.5),
+      (faceId: 'f2', accepted: true, similarity: 0.6),
+      (faceId: 'f3', accepted: false, similarity: 0.3),
+    ], allgemeineSchwelle: allgemein);
     expect((await lies('p1')).similarityThreshold, isNotNull);
 
     await db.vergissGesichtsEntscheidungen('p1');
@@ -151,7 +138,11 @@ void main() {
 
   test('eine leere Liste schreibt nichts', () async {
     await person('p1', 'Anna');
-    await db.merkeGesichtsEntscheidungen('p1', const [], allgemeineSchwelle: allgemein);
+    await db.merkeGesichtsEntscheidungen(
+      'p1',
+      const [],
+      allgemeineSchwelle: allgemein,
+    );
     expect(await db.gesichtsRueckmeldungen('p1'), isEmpty);
     expect((await lies('p1')).similarityThreshold, isNull);
   });
@@ -169,21 +160,20 @@ void main() {
       // Sonst hätte der Regler in den Werkzeugen für bereits gelernte
       // Personen keine Wirkung mehr.
       await person('p1', 'Anna');
-      await db.merkeGesichtsEntscheidungen(
-        'p1',
-        [
-          (faceId: 'f1', accepted: false, similarity: 0.9),
-          (faceId: 'f2', accepted: false, similarity: 0.2),
-          (faceId: 'f3', accepted: false, similarity: 0.1),
-        ],
-        allgemeineSchwelle: 0.363,
-      );
+      await db.merkeGesichtsEntscheidungen('p1', [
+        (faceId: 'f1', accepted: false, similarity: 0.9),
+        (faceId: 'f2', accepted: false, similarity: 0.2),
+        (faceId: 'f3', accepted: false, similarity: 0.1),
+      ], allgemeineSchwelle: 0.363);
       // Gedeckelt auf allgemein + 0,15.
       expect((await lies('p1')).similarityThreshold, closeTo(0.513, 1e-9));
 
       await db.setFaceSimilarityThreshold(0.5);
-      expect((await lies('p1')).similarityThreshold, closeTo(0.65, 1e-9),
-          reason: 'der Deckel bezieht sich auf die neue allgemeine Schwelle');
+      expect(
+        (await lies('p1')).similarityThreshold,
+        closeTo(0.65, 1e-9),
+        reason: 'der Deckel bezieht sich auf die neue allgemeine Schwelle',
+      );
     });
   });
 
@@ -192,24 +182,30 @@ void main() {
     // die Erkennung. Eine von Hand benannte Person sagt nichts darüber,
     // ab welcher Ähnlichkeit hätte zugegriffen werden dürfen.
     await person('p1', 'Anna');
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'c1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 1, 1),
-          importedAt: DateTime(2024, 1, 1),
-        ));
-    await db.insertFace(FacesCompanion.insert(
-      id: 'f1',
-      assetId: 'a1',
-      boxX: 0,
-      boxY: 0,
-      boxW: 0.5,
-      boxH: 0.5,
-      personId: const Value(null),
-    ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            originalFileName: 'a1.jpg',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'c1',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 1, 1),
+            importedAt: DateTime(2024, 1, 1),
+          ),
+        );
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: 'f1',
+        assetId: 'a1',
+        boxX: 0,
+        boxY: 0,
+        boxW: 0.5,
+        boxH: 0.5,
+        personId: const Value(null),
+      ),
+    );
 
     await db.assignFacesToPerson(['f1'], 'p1');
 

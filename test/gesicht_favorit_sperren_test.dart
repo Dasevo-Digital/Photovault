@@ -42,8 +42,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_gesicht_fav_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -53,17 +54,21 @@ void main() {
       final datei = paths.absolute('originals/$id.jpg');
       datei.parent.createSync(recursive: true);
       datei.writeAsBytesSync(einPixel);
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c_$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 3, 4),
-            importedAt: DateTime(2026, 3, 4),
-            widthPx: const Value(1000),
-            heightPx: const Value(800),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/$id.jpg',
+              checksum: 'c_$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 3, 4),
+              importedAt: DateTime(2026, 3, 4),
+              widthPx: const Value(1000),
+              heightPx: const Value(800),
+            ),
+          );
     }
     assets = await db.assetsByIds(['a1', 'a2']);
   });
@@ -74,21 +79,24 @@ void main() {
   });
 
   Future<void> zeige(WidgetTester tester) async {
-    await tester.pumpWidget(ChangeNotifierProvider<LibraryState>.value(
-      value: library,
-      child: MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: FaceReviewScreen(library: library, assets: assets),
+    await tester.pumpWidget(
+      ChangeNotifierProvider<LibraryState>.value(
+        value: library,
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: FaceReviewScreen(library: library, assets: assets),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('der Favoritenknopf schaltet um und zeigt seinen Zustand',
-      (tester) async {
+  testWidgets('der Favoritenknopf schaltet um und zeigt seinen Zustand', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.byTooltip('Als Favorit markieren (F)'), findsOneWidget);
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
@@ -108,8 +116,9 @@ void main() {
     expect((await db.assetById('a1'))!.isFavorite, isFalse);
   });
 
-  testWidgets('der Favorit gilt dem gezeigten Foto, nicht dem ersten',
-      (tester) async {
+  testWidgets('der Favorit gilt dem gezeigten Foto, nicht dem ersten', (
+    tester,
+  ) async {
     // Die Gegenprobe: Nach dem Weiterblättern muss der Knopf das zweite
     // Foto meinen.
     await zeige(tester);
@@ -123,20 +132,21 @@ void main() {
     expect((await db.assetById('a1'))!.isFavorite, isFalse);
   });
 
-  testWidgets('der Weg in den gesperrten Ordner steht bereit',
-      (tester) async {
+  testWidgets('der Weg in den gesperrten Ordner steht bereit', (tester) async {
     // Ausgeführt wird er hier nicht: Er verlangt eine entsperrte
     // Passphrase über einen Dialog, und das gehört in die Prüfung des
     // Tresors (locked_folder_test.dart). Hier zählt, dass der Weg
     // ueberhaupt von dieser Ansicht aus erreichbar ist – genau das
     // fehlte.
     await zeige(tester);
-    expect(find.byTooltip('In gesperrten Ordner verschieben (verschlüsselt)'), findsOneWidget);
+    expect(
+      find.byTooltip('In gesperrten Ordner verschieben (verschlüsselt)'),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.lock_outline), findsOneWidget);
   });
 
-  testWidgets('die Taste F haelt, was der Tooltip verspricht',
-      (tester) async {
+  testWidgets('die Taste F haelt, was der Tooltip verspricht', (tester) async {
     // Der Tooltip nennt „(F)" – dieselbe Beschriftung wie im grossen
     // Betrachter. Ohne Tastenbindung waere das ein Versprechen, das die
     // Ansicht nicht haelt.

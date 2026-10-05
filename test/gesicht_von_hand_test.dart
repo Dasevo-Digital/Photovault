@@ -34,7 +34,8 @@ void main() {
     ordner = Directory.systemTemp.createTempSync('pv_gesicht_hand_');
     db = AppDatabase(NativeDatabase.memory());
     paths = await StoragePaths.forTesting(
-        Directory(p.join(ordner.path, 'library')));
+      Directory(p.join(ordner.path, 'library')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths;
@@ -47,16 +48,18 @@ void main() {
     img.fill(bild, color: img.ColorRgb8(120, 140, 160));
     foto.writeAsBytesSync(img.encodeJpg(bild));
 
-    await db.insertAsset(AssetsCompanion.insert(
-      id: 'a1',
-      relativePath: 'originals/a1.jpg',
-      originalFileName: 'a1.jpg',
-      type: 'IMAGE',
-      checksum: 'c1',
-      fileCreatedAt: DateTime(2026),
-      importedAt: DateTime(2026),
-      isTrashed: const Value(false),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: 'a1',
+        relativePath: 'originals/a1.jpg',
+        originalFileName: 'a1.jpg',
+        type: 'IMAGE',
+        checksum: 'c1',
+        fileCreatedAt: DateTime(2026),
+        importedAt: DateTime(2026),
+        isTrashed: const Value(false),
+      ),
+    );
     await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
   });
 
@@ -86,10 +89,14 @@ void main() {
     expect(g.cropRelativePath, isNotNull);
     expect(paths.absolute(g.cropRelativePath!).existsSync(), isTrue);
 
-    final person = await (db.select(db.people)..where((t) => t.id.equals('p1')))
-        .getSingle();
-    expect(person.coverFaceCropPath, g.cropRelativePath,
-        reason: 'die erste Zuordnung gibt der Person ihr Bild');
+    final person = await (db.select(
+      db.people,
+    )..where((t) => t.id.equals('p1'))).getSingle();
+    expect(
+      person.coverFaceCropPath,
+      g.cropRelativePath,
+      reason: 'die erste Zuordnung gibt der Person ihr Bild',
+    );
   });
 
   test('ein vorhandenes Profilbild wird nicht überschrieben', () async {
@@ -100,10 +107,9 @@ void main() {
       kasten: const Rect.fromLTWH(0.1, 0.1, 0.2, 0.2),
       personId: 'p1',
     );
-    final erstes = (await (db.select(db.people)
-              ..where((t) => t.id.equals('p1')))
-            .getSingle())
-        .coverFaceCropPath;
+    final erstes = (await (db.select(
+      db.people,
+    )..where((t) => t.id.equals('p1'))).getSingle()).coverFaceCropPath;
 
     await gesichtVonHandAnlegen(
       library: library,
@@ -112,42 +118,47 @@ void main() {
       kasten: const Rect.fromLTWH(0.5, 0.5, 0.2, 0.2),
       personId: 'p1',
     );
-    final zweites = (await (db.select(db.people)
-              ..where((t) => t.id.equals('p1')))
-            .getSingle())
-        .coverFaceCropPath;
+    final zweites = (await (db.select(
+      db.people,
+    )..where((t) => t.id.equals('p1'))).getSingle()).coverFaceCropPath;
 
-    expect(zweites, erstes,
-        reason: 'sonst wechselte das Profilbild bei jedem nachgetragenen '
-            'Gesicht, auch wenn das erste besser war');
+    expect(
+      zweites,
+      erstes,
+      reason:
+          'sonst wechselte das Profilbild bei jedem nachgetragenen '
+          'Gesicht, auch wenn das erste besser war',
+    );
     expect(await db.facesForAsset('a1'), hasLength(2));
   });
 
-  test('ohne Modell entsteht das Gesicht trotzdem, nur ohne Einbettung',
-      () async {
-    // Der wichtige Zweig: Der Ausschnitt liegt zu diesem Zeitpunkt bereits
-    // auf der Platte. Bräche das Anlegen hier ab, bliebe eine Datei ohne
-    // die Zeile zurück, die sie erklärt.
-    //
-    // Gemeldet wird dabei NICHTS, und das ist richtig: `ModellHalter.mit`
-    // gibt `null` zurück, wenn das Modell gar nicht installiert ist. Das
-    // ist kein Fehlschlag dieser Handlung, sondern ein Zustand des
-    // Rechners – eine Meldung dafür wäre eine, die nichts nützt.
-    Object? gemeldet;
-    final id = await gesichtVonHandAnlegen(
-      library: library,
-      assetId: 'a1',
-      bilddatei: foto,
-      kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
-      personId: 'p1',
-      beiEinbettungsfehler: (e) => gemeldet = e,
-    );
+  test(
+    'ohne Modell entsteht das Gesicht trotzdem, nur ohne Einbettung',
+    () async {
+      // Der wichtige Zweig: Der Ausschnitt liegt zu diesem Zeitpunkt bereits
+      // auf der Platte. Bräche das Anlegen hier ab, bliebe eine Datei ohne
+      // die Zeile zurück, die sie erklärt.
+      //
+      // Gemeldet wird dabei NICHTS, und das ist richtig: `ModellHalter.mit`
+      // gibt `null` zurück, wenn das Modell gar nicht installiert ist. Das
+      // ist kein Fehlschlag dieser Handlung, sondern ein Zustand des
+      // Rechners – eine Meldung dafür wäre eine, die nichts nützt.
+      Object? gemeldet;
+      final id = await gesichtVonHandAnlegen(
+        library: library,
+        assetId: 'a1',
+        bilddatei: foto,
+        kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
+        personId: 'p1',
+        beiEinbettungsfehler: (e) => gemeldet = e,
+      );
 
-    expect(id, isNotNull, reason: 'das Gesicht muss trotzdem entstehen');
-    final g = (await db.facesForAsset('a1')).single;
-    expect(g.embedding, isNull);
-    expect(gemeldet, isNull);
-  });
+      expect(id, isNotNull, reason: 'das Gesicht muss trotzdem entstehen');
+      final g = (await db.facesForAsset('a1')).single;
+      expect(g.embedding, isNull);
+      expect(gemeldet, isNull);
+    },
+  );
 
   test('ein unlesbares Bild legt gar nichts an', () async {
     // Die Gegenprobe zum Zweig oben: Hier darf NICHTS entstehen, auch keine
@@ -169,13 +180,17 @@ void main() {
   group('Wie gross ein Rahmen sein muss', () {
     test('ein Tipp ist kein Rahmen', () {
       expect(rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0, 0)), isFalse);
-      expect(rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0.004, 0.004)),
-          isFalse);
+      expect(
+        rahmenGrossGenug(const Rect.fromLTWH(0.5, 0.5, 0.004, 0.004)),
+        isFalse,
+      );
     });
 
     test('ein deutlich gezogener Rahmen genügt', () {
       expect(
-          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.05, 0.05)), isTrue);
+        rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.05, 0.05)),
+        isTrue,
+      );
       // Genau auf der Grenze wird nichts zugesichert: Rect speichert die
       // Kanten, und 0,11 minus 0,1 sind 0,009999999999999995. Für „Zug oder
       // Tipp?" ist das ohne Belang – aber es hier zu behaupten wäre eine
@@ -186,9 +201,13 @@ void main() {
       // Beide Kanten müssen reichen. Ein waagerechter Wisch über das halbe
       // Bild ergäbe sonst einen „Rahmen" ohne Höhe.
       expect(
-          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.5, 0.002)), isFalse);
+        rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.5, 0.002)),
+        isFalse,
+      );
       expect(
-          rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.002, 0.5)), isFalse);
+        rahmenGrossGenug(const Rect.fromLTWH(0.1, 0.1, 0.002, 0.5)),
+        isFalse,
+      );
     });
   });
 
@@ -202,8 +221,11 @@ void main() {
     const flaeche = Size(800, 600);
 
     test('was hingezogen wurde, kommt dort wieder heraus', () {
-      final kasten =
-          kastenAusZug(const Offset(200, 150), const Offset(400, 450), flaeche);
+      final kasten = kastenAusZug(
+        const Offset(200, 150),
+        const Offset(400, 450),
+        flaeche,
+      );
       expect(kasten.left, closeTo(0.25, 1e-9));
       expect(kasten.top, closeTo(0.25, 1e-9));
       expect(kasten.right, closeTo(0.5, 1e-9));
@@ -217,8 +239,10 @@ void main() {
       final oben = box.top * flaeche.height;
       final zurueck = kastenAusZug(
         Offset(links, oben),
-        Offset(links + box.width * flaeche.width,
-            oben + box.height * flaeche.height),
+        Offset(
+          links + box.width * flaeche.width,
+          oben + box.height * flaeche.height,
+        ),
         flaeche,
       );
       expect(zurueck.left, closeTo(box.left, 1e-9));
@@ -228,38 +252,66 @@ void main() {
     });
 
     test('die Richtung des Zuges ist egal', () {
-      final hin =
-          kastenAusZug(const Offset(200, 150), const Offset(400, 450), flaeche);
-      final zurueck =
-          kastenAusZug(const Offset(400, 450), const Offset(200, 150), flaeche);
-      expect(zurueck, hin,
-          reason: 'von rechts unten nach links oben ist derselbe Kasten');
+      final hin = kastenAusZug(
+        const Offset(200, 150),
+        const Offset(400, 450),
+        flaeche,
+      );
+      final zurueck = kastenAusZug(
+        const Offset(400, 450),
+        const Offset(200, 150),
+        flaeche,
+      );
+      expect(
+        zurueck,
+        hin,
+        reason: 'von rechts unten nach links oben ist derselbe Kasten',
+      );
     });
 
     test('was über den Rand geht, wird abgeschnitten', () {
       final kasten = kastenAusZug(
-          const Offset(-120, -90), const Offset(1600, 1200), flaeche);
-      expect(kasten, const Rect.fromLTRB(0, 0, 1, 1),
-          reason: 'ein Anteil über 1 stünde in der Datenbank und läge '
-              'in jeder Ansicht ausserhalb des Bildes');
+        const Offset(-120, -90),
+        const Offset(1600, 1200),
+        flaeche,
+      );
+      expect(
+        kasten,
+        const Rect.fromLTRB(0, 0, 1, 1),
+        reason:
+            'ein Anteil über 1 stünde in der Datenbank und läge '
+            'in jeder Ansicht ausserhalb des Bildes',
+      );
     });
 
-    test('Vorschau und gespeicherter Rahmen haben am Rand dieselben Kanten',
-        () {
-      const masse = Size(100, 80);
-      final vorschau =
-          begrenzterZug(const Offset(-20, 15), const Offset(120, 100), masse);
-      final gespeichert =
-          kastenAusZug(const Offset(-20, 15), const Offset(120, 100), masse);
+    test(
+      'Vorschau und gespeicherter Rahmen haben am Rand dieselben Kanten',
+      () {
+        const masse = Size(100, 80);
+        final vorschau = begrenzterZug(
+          const Offset(-20, 15),
+          const Offset(120, 100),
+          masse,
+        );
+        final gespeichert = kastenAusZug(
+          const Offset(-20, 15),
+          const Offset(120, 100),
+          masse,
+        );
 
-      expect(vorschau, const Rect.fromLTRB(0, 15, 100, 80));
-      expect(gespeichert, const Rect.fromLTRB(0, 15 / 80, 1, 1));
-    });
+        expect(vorschau, const Rect.fromLTRB(0, 15, 100, 80));
+        expect(gespeichert, const Rect.fromLTRB(0, 15 / 80, 1, 1));
+      },
+    );
 
-    test('ohne Fläche gibt es keinen Kasten statt einer Division durch null',
-        () {
-      expect(kastenAusZug(Offset.zero, const Offset(10, 10), Size.zero),
-          Rect.zero);
-    });
+    test(
+      'ohne Fläche gibt es keinen Kasten statt einer Division durch null',
+      () {
+        expect(
+          kastenAusZug(Offset.zero, const Offset(10, 10), Size.zero),
+          Rect.zero,
+        );
+      },
+    );
   });
 }

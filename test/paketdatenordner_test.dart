@@ -21,7 +21,8 @@ void main() {
   group('Ableitung des klassischen Ordners', () {
     test('aus einem echten Paketpfad', () {
       // Genau der Pfad, den die Windows-Sandbox gemeldet hat.
-      const imPaket = r'C:\Users\WDAGUtilityAccount\AppData\Local\Packages'
+      const imPaket =
+          r'C:\Users\WDAGUtilityAccount\AppData\Local\Packages'
           r'\PhotoVault.PhotoVault_c2mxqgqpdyab0\LocalCache\Roaming'
           r'\com.example\photo_vault';
       expect(
@@ -31,7 +32,8 @@ void main() {
     });
 
     test('Gross- und Kleinschreibung ist Windows egal', () {
-      const imPaket = r'C:\Users\X\appdata\local\packages\PV_abc'
+      const imPaket =
+          r'C:\Users\X\appdata\local\packages\PV_abc'
           r'\localcache\roaming\com.example\photo_vault';
       expect(
         LibraryLocation.klassischerDatenordner(imPaket),
@@ -42,7 +44,8 @@ void main() {
     test('ein gewoehnlicher Pfad ergibt null - da ist nichts umzuleiten', () {
       expect(
         LibraryLocation.klassischerDatenordner(
-            r'C:\Users\X\AppData\Roaming\com.example\photo_vault'),
+          r'C:\Users\X\AppData\Roaming\com.example\photo_vault',
+        ),
         isNull,
       );
     });
@@ -52,7 +55,8 @@ void main() {
       // aus dem sich ein alter Ort ableiten liesse.
       expect(
         LibraryLocation.klassischerDatenordner(
-            r'C:\Users\X\AppData\Local\Packages\Irgendwas\LocalState'),
+          r'C:\Users\X\AppData\Local\Packages\Irgendwas\LocalState',
+        ),
         isNull,
       );
     });
@@ -79,15 +83,19 @@ void main() {
     test('auch eine library.sqlite genuegt', () async {
       final alt = ordner('alt')..createSync(recursive: true);
       File(p.join(alt.path, 'library.sqlite')).writeAsBytesSync([1, 2, 3]);
-      expect((await LibraryLocation.waehleDatenordner(ordner('neu'), alt)).path,
-          alt.path);
+      expect(
+        (await LibraryLocation.waehleDatenordner(ordner('neu'), alt)).path,
+        alt.path,
+      );
     });
 
     test('und ein Modellordner ebenfalls - der ist teuer erkauft', () async {
       final alt = ordner('alt');
       Directory(p.join(alt.path, 'models')).createSync(recursive: true);
-      expect((await LibraryLocation.waehleDatenordner(ordner('neu'), alt)).path,
-          alt.path);
+      expect(
+        (await LibraryLocation.waehleDatenordner(ordner('neu'), alt)).path,
+        alt.path,
+      );
     });
 
     test('ein leerer alter Ordner zaehlt nicht', () async {
@@ -95,13 +103,19 @@ void main() {
       // eine frische Installation an einen Ort zu binden, an dem nichts ist.
       final alt = ordner('alt')..createSync(recursive: true);
       final neu = ordner('neu');
-      expect((await LibraryLocation.waehleDatenordner(neu, alt)).path, neu.path);
+      expect(
+        (await LibraryLocation.waehleDatenordner(neu, alt)).path,
+        neu.path,
+      );
       expect(neu.existsSync(), isTrue);
     });
 
     test('gar kein alter Ort: der Paketordner entsteht', () async {
       final neu = ordner('neu');
-      expect((await LibraryLocation.waehleDatenordner(neu, null)).path, neu.path);
+      expect(
+        (await LibraryLocation.waehleDatenordner(neu, null)).path,
+        neu.path,
+      );
       expect(neu.existsSync(), isTrue);
     });
 
@@ -111,7 +125,10 @@ void main() {
       File(p.join(alt.path, 'location.json')).writeAsStringSync('{}');
       final neu = ordner('neu')..createSync(recursive: true);
 
-      expect((await LibraryLocation.waehleDatenordner(neu, alt)).path, neu.path);
+      expect(
+        (await LibraryLocation.waehleDatenordner(neu, alt)).path,
+        neu.path,
+      );
     });
   });
 }

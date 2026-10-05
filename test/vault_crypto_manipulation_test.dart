@@ -49,14 +49,17 @@ void main() {
     expect(zurueck.readAsBytesSync(), inhalt);
   });
 
-  test('eine leere Datei bleibt leer – und hat trotzdem einen Abschluss', () async {
-    final ver = await verschluesselt(const []);
-    final zurueck = datei('leer_zurueck.bin');
-    await VaultCrypto.decryptFile(ver, zurueck, key);
-    expect(zurueck.lengthSync(), 0);
-    // 4 Bytes Magic plus genau ein (leerer) Abschlussblock.
-    expect(ver.lengthSync(), 4 + kopf + nonce + mac);
-  });
+  test(
+    'eine leere Datei bleibt leer – und hat trotzdem einen Abschluss',
+    () async {
+      final ver = await verschluesselt(const []);
+      final zurueck = datei('leer_zurueck.bin');
+      await VaultCrypto.decryptFile(ver, zurueck, key);
+      expect(zurueck.lengthSync(), 0);
+      // 4 Bytes Magic plus genau ein (leerer) Abschlussblock.
+      expect(ver.lengthSync(), 4 + kopf + nonce + mac);
+    },
+  );
 
   test('ein abgeschnittenes Ende fällt auf', () async {
     final ver = await verschluesselt(List.filled(3 << 20, 7));
@@ -74,8 +77,10 @@ void main() {
     // bloss die Angabe, dass es alle waren.
     final ver = await verschluesselt(List.filled(2 << 20, 3));
     final roh = ver.readAsBytesSync();
-    final ohneAbschluss =
-        datei('ohne.bin', roh.sublist(0, roh.length - (kopf + nonce + mac)));
+    final ohneAbschluss = datei(
+      'ohne.bin',
+      roh.sublist(0, roh.length - (kopf + nonce + mac)),
+    );
 
     await expectLater(
       VaultCrypto.decryptFile(ohneAbschluss, datei('z2.bin'), key),
@@ -88,8 +93,12 @@ void main() {
     final roh = ver.readAsBytesSync();
     final a = roh.sublist(4, 4 + proBlock);
     final b = roh.sublist(4 + proBlock, 4 + 2 * proBlock);
-    final getauscht = datei('tausch.bin',
-        [...roh.sublist(0, 4), ...b, ...a, ...roh.sublist(4 + 2 * proBlock)]);
+    final getauscht = datei('tausch.bin', [
+      ...roh.sublist(0, 4),
+      ...b,
+      ...a,
+      ...roh.sublist(4 + 2 * proBlock),
+    ]);
 
     await expectLater(
       VaultCrypto.decryptFile(getauscht, datei('z3.bin'), key),
@@ -97,18 +106,21 @@ void main() {
     );
   });
 
-  test('eine unplausible Blocklänge wird abgewiesen, statt sie anzufordern', () async {
-    final ver = await verschluesselt(List.filled(1024, 1));
-    final roh = ver.readAsBytesSync();
-    // Die Länge steht unverschlüsselt in der Datei – ohne Schranke ginge sie
-    // ungeprüft an read().
-    roh.setRange(4, 8, [0xFF, 0xFF, 0xFF, 0xFF]);
+  test(
+    'eine unplausible Blocklänge wird abgewiesen, statt sie anzufordern',
+    () async {
+      final ver = await verschluesselt(List.filled(1024, 1));
+      final roh = ver.readAsBytesSync();
+      // Die Länge steht unverschlüsselt in der Datei – ohne Schranke ginge sie
+      // ungeprüft an read().
+      roh.setRange(4, 8, [0xFF, 0xFF, 0xFF, 0xFF]);
 
-    await expectLater(
-      VaultCrypto.decryptFile(datei('gross.bin', roh), datei('z4.bin'), key),
-      throwsA(isA<FormatException>()),
-    );
-  });
+      await expectLater(
+        VaultCrypto.decryptFile(datei('gross.bin', roh), datei('z4.bin'), key),
+        throwsA(isA<FormatException>()),
+      );
+    },
+  );
 
   test('ein veränderter Block fällt weiterhin auf', () async {
     final ver = await verschluesselt(List.filled(1024, 9));
@@ -130,13 +142,17 @@ void main() {
     final aus = <int>[0x50, 0x56, 0x45, 0x31];
     for (var start = 0; start < inhalt.length; start += blockGroesse) {
       final teil = inhalt.sublist(
-          start, (start + blockGroesse).clamp(0, inhalt.length));
+        start,
+        (start + blockGroesse).clamp(0, inhalt.length),
+      );
       final n = cipher.newNonce();
       final box = await cipher.encrypt(teil, secretKey: key, nonce: n);
       aus
-        ..addAll((ByteData(4)..setUint32(0, teil.length, Endian.big))
-            .buffer
-            .asUint8List())
+        ..addAll(
+          (ByteData(
+            4,
+          )..setUint32(0, teil.length, Endian.big)).buffer.asUint8List(),
+        )
         ..addAll(n)
         ..addAll(box.cipherText)
         ..addAll(box.mac.bytes);
@@ -148,13 +164,23 @@ void main() {
   });
 
   test('der Kopf-Schnelltest kennt beide Fassungen', () async {
-    expect(await VaultCrypto.hasValidEncryptedHeader(await verschluesselt(const [1, 2, 3])),
-        isTrue);
     expect(
-        await VaultCrypto.hasValidEncryptedHeader(
-            datei('alt2.bin', [0x50, 0x56, 0x45, 0x31, 0, 0])),
-        isTrue);
-    expect(await VaultCrypto.hasValidEncryptedHeader(datei('fremd.bin', [1, 2, 3, 4])),
-        isFalse);
+      await VaultCrypto.hasValidEncryptedHeader(
+        await verschluesselt(const [1, 2, 3]),
+      ),
+      isTrue,
+    );
+    expect(
+      await VaultCrypto.hasValidEncryptedHeader(
+        datei('alt2.bin', [0x50, 0x56, 0x45, 0x31, 0, 0]),
+      ),
+      isTrue,
+    );
+    expect(
+      await VaultCrypto.hasValidEncryptedHeader(
+        datei('fremd.bin', [1, 2, 3, 4]),
+      ),
+      isFalse,
+    );
   });
 }

@@ -135,8 +135,10 @@ Zeitspanne? zeitspanne(Iterable<Zeitzeile> zeilen) {
   }
   if (von == null || bis == null) return null;
   if (!bis.isAfter(von)) {
-    return Zeitspanne(von.subtract(const Duration(days: 183)),
-        bis.add(const Duration(days: 183)));
+    return Zeitspanne(
+      von.subtract(const Duration(days: 183)),
+      bis.add(const Duration(days: 183)),
+    );
   }
   return Zeitspanne(von, bis);
 }
@@ -153,16 +155,15 @@ List<Zeitzeile> nachZeitSortiert(Iterable<Zeitzeile> zeilen) {
     return n != 0 ? n : a.personId.compareTo(b.personId);
   }
 
-  return zeilen.toList()
-    ..sort((a, b) {
-      final fa = a.frueheste;
-      final fb = b.frueheste;
-      if (fa == null && fb == null) return nachName(a, b);
-      if (fa == null) return 1;
-      if (fb == null) return -1;
-      final z = fa.compareTo(fb);
-      return z != 0 ? z : nachName(a, b);
-    });
+  return zeilen.toList()..sort((a, b) {
+    final fa = a.frueheste;
+    final fb = b.frueheste;
+    if (fa == null && fb == null) return nachName(a, b);
+    if (fa == null) return 1;
+    if (fb == null) return -1;
+    final z = fa.compareTo(fb);
+    return z != 0 ? z : nachName(a, b);
+  });
 }
 
 /// Die Jahreszahlen, die als Achse unter der Leiste stehen.

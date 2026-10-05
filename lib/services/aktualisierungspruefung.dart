@@ -82,7 +82,8 @@ class Aktualisierungspruefung {
     final liste = antwort.data;
     if (liste == null || liste.isEmpty) {
       throw const AktualisierungsFehler(
-          Aktualisierungsproblem.keineVeroeffentlichungen);
+        Aktualisierungsproblem.keineVeroeffentlichungen,
+      );
     }
 
     String? hoechste;

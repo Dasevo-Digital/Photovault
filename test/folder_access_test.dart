@@ -9,7 +9,9 @@ void main() {
   late Directory tempRoot;
 
   setUp(() {
-    tempRoot = Directory.systemTemp.createTempSync('photo_vault_folder_access_');
+    tempRoot = Directory.systemTemp.createTempSync(
+      'photo_vault_folder_access_',
+    );
   });
 
   tearDown(() {
@@ -24,13 +26,15 @@ void main() {
     });
 
     test('löst einen vorhandenen Ordner über den blanken Pfad auf', () async {
-      final folder = Directory(p.join(tempRoot.path, 'bibliothek'))..createSync();
+      final folder = Directory(p.join(tempRoot.path, 'bibliothek'))
+        ..createSync();
 
       expect(await access.resolveRoot(path: folder.path), folder.path);
     });
 
     test('ignoriert ein Token vollständig – der Pfad allein zählt', () async {
-      final folder = Directory(p.join(tempRoot.path, 'bibliothek'))..createSync();
+      final folder = Directory(p.join(tempRoot.path, 'bibliothek'))
+        ..createSync();
 
       // Ein (unter Linux/Windows sinnloses) macOS-Bookmark darf das Ergebnis
       // nicht verändern.

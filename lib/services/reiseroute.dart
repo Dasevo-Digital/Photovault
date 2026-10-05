@@ -44,14 +44,22 @@ List<Routenpunkt> reiseroute(
   for (final p in sortiert.skip(1)) {
     final letzter = route.last;
     if (ReverseGeocoder.haversineKm(
-            letzter.breite, letzter.laenge, p.breite, p.laenge) >=
+          letzter.breite,
+          letzter.laenge,
+          p.breite,
+          p.laenge,
+        ) >=
         mindestabstandKm) {
       route.add(p);
     }
   }
   final letzter = sortiert.last;
   if (ReverseGeocoder.haversineKm(
-          route.last.breite, route.last.laenge, letzter.breite, letzter.laenge) >
+        route.last.breite,
+        route.last.laenge,
+        letzter.breite,
+        letzter.laenge,
+      ) >
       derselbeOrtKm) {
     route.add(letzter);
   }
@@ -71,7 +79,8 @@ typedef Reisetag = ({DateTime tag, List<String> aufnahmeIds, String? ort});
 /// fehlen — an einem Tag ohne eine einzige verortete Aufnahme steht dann
 /// nichts, und das ist richtiger als der Ort vom Vortag.
 List<Reisetag> reisetage(
-    Iterable<({String id, DateTime zeit, String? stadt})> aufnahmen) {
+  Iterable<({String id, DateTime zeit, String? stadt})> aufnahmen,
+) {
   final sortiert = aufnahmen.toList()..sort((a, b) => a.zeit.compareTo(b.zeit));
   final tage = <DateTime, List<({String id, DateTime zeit, String? stadt})>>{};
   for (final a in sortiert) {
@@ -167,7 +176,11 @@ List<Aufenthaltsort> aufenthaltsorte(
     var besteEntfernung = double.infinity;
     for (var i = 0; i < gruppen.length; i++) {
       final e = ReverseGeocoder.haversineKm(
-          mitten[i].breite, mitten[i].laenge, a.breite, a.laenge);
+        mitten[i].breite,
+        mitten[i].laenge,
+        a.breite,
+        a.laenge,
+      );
       if (e <= radiusKm && e < besteEntfernung) {
         besteEntfernung = e;
         gefunden = i;
@@ -181,8 +194,10 @@ List<Aufenthaltsort> aufenthaltsorte(
     gruppen[gefunden].add(a);
     final n = gruppen[gefunden].length;
     mitten[gefunden] = (
-      breite: mitten[gefunden].breite + (a.breite - mitten[gefunden].breite) / n,
-      laenge: mitten[gefunden].laenge + (a.laenge - mitten[gefunden].laenge) / n,
+      breite:
+          mitten[gefunden].breite + (a.breite - mitten[gefunden].breite) / n,
+      laenge:
+          mitten[gefunden].laenge + (a.laenge - mitten[gefunden].laenge) / n,
     );
   }
 

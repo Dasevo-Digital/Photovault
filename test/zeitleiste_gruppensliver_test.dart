@@ -38,44 +38,47 @@ import 'package:photo_vault/widgets/timeline_grid_layout.dart';
 /// Ein Bild von einem Bildpunkt – hier zählt, **ob** dekodiert wird,
 /// nicht was dabei herauskommt.
 final _einPunktPng = base64Decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAE'
-    'hQGAhKmMIQAAAABJRU5ErkJggg==');
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAE'
+  'hQGAhKmMIQAAAABJRU5ErkJggg==',
+);
 
 const double _fensterBreite = 1600;
 const double _fensterHoehe = 1000;
 
 Rasterzeile _foto(String id, DateTime wann, {int b = 3000, int h = 2000}) =>
-    Rasterzeile.aus(AssetData(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      thumbnailRelativePath: 'thumbnails/$id.png',
-      type: 'IMAGE',
-      fileSizeBytes: 1000,
-      checksum: id,
-      fileCreatedAt: wann,
-      importedAt: wann,
-      widthPx: b,
-      heightPx: h,
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-      rating: 0,
-    ));
+    Rasterzeile.aus(
+      AssetData(
+        id: id,
+        relativePath: 'originals/$id.jpg',
+        originalFileName: '$id.jpg',
+        thumbnailRelativePath: 'thumbnails/$id.png',
+        type: 'IMAGE',
+        fileSizeBytes: 1000,
+        checksum: id,
+        fileCreatedAt: wann,
+        importedAt: wann,
+        widthPx: b,
+        heightPx: h,
+        isFavorite: false,
+        isTrashed: false,
+        isLocked: false,
+        faceScanExcluded: false,
+        gpsGeprueft: false,
+        datumGeschaetzt: false,
+        datumGeprueft: false,
+        ortGeerbt: false,
+        videobilderGeprueft: false,
+        backedUp: false,
+        autoBackedUp: false,
+        facesScanned: false,
+        ocrScanned: false,
+        aiCaptionScanned: false,
+        aiCaptionEdited: false,
+        aiTagsScanned: false,
+        isStackCover: false,
+        rating: 0,
+      ),
+    );
 
 /// Achtzig Monate à sechs Fotos: genug Gruppen, dass die meisten weit
 /// ausserhalb des Fensters liegen, und wenige genug Dateien, dass der
@@ -83,9 +86,12 @@ Rasterzeile _foto(String id, DateTime wann, {int b = 3000, int h = 2000}) =>
 final _bestand = [
   for (var m = 0; m < 80; m++)
     for (var k = 0; k < 6; k++)
-      _foto('m${m}_$k',
-          DateTime(2026, 1, 1).subtract(Duration(days: m * 31 + k)),
-          b: k.isEven ? 3000 : 2000, h: k.isEven ? 2000 : 3000),
+      _foto(
+        'm${m}_$k',
+        DateTime(2026, 1, 1).subtract(Duration(days: m * 31 + k)),
+        b: k.isEven ? 3000 : 2000,
+        h: k.isEven ? 2000 : 3000,
+      ),
 ];
 
 late StoragePaths _paths;
@@ -100,31 +106,43 @@ Future<bool> _imSpeicher(WidgetTester tester, Rasterzeile a) async {
       PaintingBinding.instance.imageCache.containsKey(schluessel);
 
   final treffer = find.byWidgetPredicate(
-      (w) => w is AssetThumbnailTile && w.asset.id == a.id);
+    (w) => w is AssetThumbnailTile && w.asset.id == a.id,
+  );
   if (treffer.evaluate().isNotEmpty) {
     final bild = tester.widget<Image>(
-        find.descendant(of: treffer.first, matching: find.byType(Image)));
+      find.descendant(of: treffer.first, matching: find.byType(Image)),
+    );
     return drin(await bild.image.obtainKey(ImageConfiguration.empty));
   }
 
   const gitter = _fensterBreite - 64;
   final quadrat = timelineRowHeightForWidth(gitter) - timelineGridSpacing;
   final reihe = zeitleisteReihen(
-      _bestand.where((x) => x.fileCreatedAt.month == a.fileCreatedAt.month &&
-          x.fileCreatedAt.year == a.fileCreatedAt.year).toList(),
-      gitter).first;
+    _bestand
+        .where(
+          (x) =>
+              x.fileCreatedAt.month == a.fileCreatedAt.month &&
+              x.fileCreatedAt.year == a.fileCreatedAt.year,
+        )
+        .toList(),
+    gitter,
+  ).first;
   for (final (kb, kh) in [
     (quadrat, quadrat),
     (reihe.plaetze.first.breite, reihe.hoehe),
   ]) {
     final m = deckendeDekodiermasse(
-        kachelBreite: kb,
-        kachelHoehe: kh,
-        bildBreite: a.widthPx,
-        bildHoehe: a.heightPx,
-        pixelverhaeltnis: 1);
-    final prov = ResizeImage.resizeIfNeeded(m.breite, m.hoehe,
-        FileImage(_paths.absolute(a.thumbnailRelativePath!)));
+      kachelBreite: kb,
+      kachelHoehe: kh,
+      bildBreite: a.widthPx,
+      bildHoehe: a.heightPx,
+      pixelverhaeltnis: 1,
+    );
+    final prov = ResizeImage.resizeIfNeeded(
+      m.breite,
+      m.hoehe,
+      FileImage(_paths.absolute(a.thumbnailRelativePath!)),
+    );
     if (drin(await prov.obtainKey(ImageConfiguration.empty))) return true;
   }
   return false;
@@ -137,8 +155,9 @@ void main() {
     wurzel = Directory.systemTemp.createTempSync('pv_gruppensliver_');
     _paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
     for (final a in _bestand) {
-      File(p.join(_paths.root.path, a.thumbnailRelativePath!))
-          .writeAsBytesSync(_einPunktPng);
+      File(
+        p.join(_paths.root.path, a.thumbnailRelativePath!),
+      ).writeAsBytesSync(_einPunktPng);
     }
   });
 
@@ -148,20 +167,22 @@ void main() {
     tester.view.physicalSize = const Size(_fensterBreite, _fensterHoehe);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: MonthGroupedAssetGrid(
-          assets: _bestand,
-          paths: _paths,
-          onTap: (_) {},
-          form: form,
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: MonthGroupedAssetGrid(
+            assets: _bestand,
+            paths: _paths,
+            onTap: (_) {},
+            form: form,
+          ),
         ),
       ),
-    ));
+    );
     for (var i = 0; i < 12; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 16));
       await tester.pump();
@@ -169,8 +190,9 @@ void main() {
   }
 
   for (final form in Zeitleistenform.values) {
-    testWidgets('${form.name}: ein Monat weit unterhalb dekodiert kein Foto',
-        (tester) async {
+    testWidgets('${form.name}: ein Monat weit unterhalb dekodiert kein Foto', (
+      tester,
+    ) async {
       PaintingBinding.instance.imageCache
         ..clear()
         ..clearLiveImages();
@@ -180,22 +202,33 @@ void main() {
       final nah = gruppen.gruppen[gruppen.schluessel.first]!.first;
       final fern = gruppen.gruppen[gruppen.schluessel.last]!.first;
       await tester.runAsync(() async {
-        expect(await _imSpeicher(tester, nah), isTrue,
-            reason: 'das erste sichtbare Foto ist nicht dekodiert - dann '
-                'misst dieser Test gar nichts');
-        expect(await _imSpeicher(tester, fern), isFalse,
-            reason: 'ein Foto aus dem aeltesten Monat wurde dekodiert, '
-                'obwohl es zehntausende Punkte unterhalb steht');
+        expect(
+          await _imSpeicher(tester, nah),
+          isTrue,
+          reason:
+              'das erste sichtbare Foto ist nicht dekodiert - dann '
+              'misst dieser Test gar nichts',
+        );
+        expect(
+          await _imSpeicher(tester, fern),
+          isFalse,
+          reason:
+              'ein Foto aus dem aeltesten Monat wurde dekodiert, '
+              'obwohl es zehntausende Punkte unterhalb steht',
+        );
       });
     });
   }
 
-  testWidgets('die Überschrift ist so hoch, wie die Rechnung annimmt',
-      (tester) async {
+  testWidgets('die Überschrift ist so hoch, wie die Rechnung annimmt', (
+    tester,
+  ) async {
     await tester.runAsync(() => zeige(tester, Zeitleistenform.quadrate));
     // Die erste Kachel beginnt unmittelbar unter der ersten Überschrift.
-    expect(tester.getTopLeft(find.byType(AssetThumbnailTile).first).dy,
-        closeTo(timelineHeaderHeight, 0.01));
+    expect(
+      tester.getTopLeft(find.byType(AssetThumbnailTile).first).dy,
+      closeTo(timelineHeaderHeight, 0.01),
+    );
   });
 
   for (final form in Zeitleistenform.values) {
@@ -204,19 +237,28 @@ void main() {
       final gruppen = monatsgruppen(_bestand);
       final ziel = gruppen.gruppen[gruppen.schluessel[40]]!.first;
       final gerechnet = timelineOffsetForAsset(
-          gruppen.schluessel, gruppen.gruppen, _fensterBreite - 64, ziel.id,
-          form: form)!;
-      final lage =
-          tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+        gruppen.schluessel,
+        gruppen.gruppen,
+        _fensterBreite - 64,
+        ziel.id,
+        form: form,
+      )!;
+      final lage = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
       // 300 Punkte davor anhalten: Danach muss das Foto genau 300 Punkte
       // unter dem oberen Rand stehen. Vorher waren es nach vierzig
       // Gruppen rund 480 Punkte weniger - zwölf je Überschrift.
       lage.jumpTo(gerechnet - 300);
       await tester.pump();
       final treffer = find.byWidgetPredicate(
-          (w) => w is AssetThumbnailTile && w.asset.id == ziel.id);
-      expect(treffer, findsOneWidget,
-          reason: 'die Rechnung liegt mehr als eine halbe Fensterhöhe daneben');
+        (w) => w is AssetThumbnailTile && w.asset.id == ziel.id,
+      );
+      expect(
+        treffer,
+        findsOneWidget,
+        reason: 'die Rechnung liegt mehr als eine halbe Fensterhöhe daneben',
+      );
       expect(tester.getTopLeft(treffer).dy, closeTo(300, 1.0));
     });
   }

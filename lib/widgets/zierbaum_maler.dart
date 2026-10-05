@@ -108,9 +108,15 @@ class ZierbaumMaler extends CustomPainter {
     // die Äste in der Luft und die Schilder hingen darunter – genau so
     // sah der erste Ausdruck aus.
     final rechteck = Rect.fromLTRB(
-        schild.links, schild.oben, schild.rechts, schild.unten);
+      schild.links,
+      schild.oben,
+      schild.rechts,
+      schild.unten,
+    );
     final rund = RRect.fromRectAndRadius(
-        rechteck, Radius.circular(schildmasse.rundung));
+      rechteck,
+      Radius.circular(schildmasse.rundung),
+    );
 
     canvas.drawRRect(
       rund,
@@ -125,8 +131,9 @@ class ZierbaumMaler extends CustomPainter {
       rund,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth =
-            istMitte ? schildmasse.randStark : schildmasse.randSchwach
+        ..strokeWidth = istMitte
+            ? schildmasse.randStark
+            : schildmasse.randSchwach
         ..color = istMitte ? farben.mitteRand : farben.schildRand,
     );
 
@@ -147,8 +154,9 @@ class ZierbaumMaler extends CustomPainter {
             color: zeile.$3,
             fontSize: zeile.$2,
             fontFamily: zierschrift,
-            fontVariations:
-                zeile == zeilen.first ? zierGewicht(istMitte ? 700 : 600) : null,
+            fontVariations: zeile == zeilen.first
+                ? zierGewicht(istMitte ? 700 : 600)
+                : null,
           ),
         ),
         textAlign: TextAlign.center,
@@ -186,15 +194,17 @@ class ZierbaumMaler extends CustomPainter {
     // Stamm lesbar bleibt.
     final y = size.height - tp.height - schildmasse.schriftName;
     canvas.drawRect(
-      Rect.fromLTWH(0, y - schildmasse.schriftName * 0.4, size.width,
-          tp.height + schildmasse.schriftName * 0.8),
+      Rect.fromLTWH(
+        0,
+        y - schildmasse.schriftName * 0.4,
+        size.width,
+        tp.height + schildmasse.schriftName * 0.8,
+      ),
       Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(0, y),
-          Offset(0, y + tp.height),
-          [farben.grundAussen.withValues(alpha: 0.0),
-           farben.grundAussen.withValues(alpha: 0.85)],
-        ),
+        ..shader = ui.Gradient.linear(Offset(0, y), Offset(0, y + tp.height), [
+          farben.grundAussen.withValues(alpha: 0.0),
+          farben.grundAussen.withValues(alpha: 0.85),
+        ]),
     );
     tp.paint(canvas, Offset((size.width - tp.width) / 2, y));
     tp.dispose();
@@ -227,7 +237,8 @@ class ZierbaumMaler extends CustomPainter {
     final ankerSchild = fokusId == null
         ? null
         : plan.schilder.where((s) => s.personId == fokusId).firstOrNull;
-    final mitte = ankerSchild?.unten ??
+    final mitte =
+        ankerSchild?.unten ??
         plan.schilder.map((s) => s.unten).reduce((a, b) => a > b ? a : b);
     // Bis zum unteren Rand. Der Familienname steht darüber, nicht
     // daneben – auf der Vorlage sitzt er genau so am Stammfuss. Ein
@@ -244,7 +255,8 @@ class ZierbaumMaler extends CustomPainter {
     _gefuellterAst(canvas, ast, unten: 26, oben: 9);
   }
 
-  void _ast(Canvas canvas, Ast ast) => _gefuellterAst(canvas, ast, unten: 3.5, oben: 8);
+  void _ast(Canvas canvas, Ast ast) =>
+      _gefuellterAst(canvas, ast, unten: 3.5, oben: 8);
 
   /// Ein Ast als **gefüllte** Form, nicht als Strich.
   ///
@@ -252,8 +264,12 @@ class ZierbaumMaler extends CustomPainter {
   /// verjüngt, sieht aus wie ein Draht. Deshalb werden zwei Ränder
   /// abgetastet – links und rechts der Kurve, mit schrumpfendem Abstand –
   /// und zu einer geschlossenen Fläche verbunden.
-  void _gefuellterAst(Canvas canvas, Ast ast,
-      {required double unten, required double oben}) {
+  void _gefuellterAst(
+    Canvas canvas,
+    Ast ast, {
+    required double unten,
+    required double oben,
+  }) {
     const schritte = 24;
     final links = <Offset>[];
     final rechts = <Offset>[];
@@ -334,7 +350,8 @@ class ZierbaumMaler extends CustomPainter {
     for (var i = 0; i < 3; i++) {
       final naechster =
           punkt + Offset(math.cos(winkel), math.sin(winkel)) * weite;
-      final steuer = punkt +
+      final steuer =
+          punkt +
           Offset(math.cos(winkel - 0.9), math.sin(winkel - 0.9)) * weite;
       pfad.quadraticBezierTo(steuer.dx, steuer.dy, naechster.dx, naechster.dy);
       punkt = naechster;
@@ -393,7 +410,8 @@ class ZierbaumMaler extends CustomPainter {
     final p2 = Offset(ast.nachX, ast.steuer2Y);
     final p3 = Offset(ast.nachX, ast.nachY);
     final u = 1 - t;
-    final ableitung = (p1 - p0) * (3 * u * u) +
+    final ableitung =
+        (p1 - p0) * (3 * u * u) +
         (p2 - p1) * (6 * u * t) +
         (p3 - p2) * (3 * t * t);
     final laenge = ableitung.distance;

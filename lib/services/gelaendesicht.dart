@@ -89,15 +89,14 @@ class Gelaendekamera {
     double? brennweite,
     Offset? mitte,
     Raumpunkt? blickpunkt,
-  }) =>
-      Gelaendekamera(
-        drehung: drehung ?? this.drehung,
-        neigung: neigung ?? this.neigung,
-        entfernung: entfernung ?? this.entfernung,
-        brennweite: brennweite ?? this.brennweite,
-        mitte: mitte ?? this.mitte,
-        blickpunkt: blickpunkt ?? this.blickpunkt,
-      );
+  }) => Gelaendekamera(
+    drehung: drehung ?? this.drehung,
+    neigung: neigung ?? this.neigung,
+    entfernung: entfernung ?? this.entfernung,
+    brennweite: brennweite ?? this.brennweite,
+    mitte: mitte ?? this.mitte,
+    blickpunkt: blickpunkt ?? this.blickpunkt,
+  );
 
   /// Wo die Kamera selbst steht – in denselben Metern wie das Netz.
   ///
@@ -154,10 +153,7 @@ class Gelaendekamera {
     final f = brennweite / tiefe;
     // Das Minus vor z2: Auf dem Bildschirm wächst y nach unten, in der
     // Landschaft wächst die Höhe nach oben.
-    return (
-      stelle: Offset(mitte.dx + x1 * f, mitte.dy - z2 * f),
-      tiefe: tiefe,
-    );
+    return (stelle: Offset(mitte.dx + x1 * f, mitte.dy - z2 * f), tiefe: tiefe);
   }
 }
 
@@ -237,12 +233,14 @@ const double meterJeGradBreite = 110540;
 ///
 /// Ohne Angabe gilt [stimmungMittag] – genau die Zahlen, die hier
 /// vorher fest standen.
-double schattierung(Raumpunkt normale,
-    [Lichtstimmung stimmung = stimmungMittag]) {
+double schattierung(
+  Raumpunkt normale, [
+  Lichtstimmung stimmung = stimmungMittag,
+]) {
   final l = stimmung.sonne;
-  final laenge = math.sqrt(normale.x * normale.x +
-      normale.y * normale.y +
-      normale.z * normale.z);
+  final laenge = math.sqrt(
+    normale.x * normale.x + normale.y * normale.y + normale.z * normale.z,
+  );
   if (laenge == 0) return 1;
   final punktprodukt =
       (normale.x * l.x + normale.y * l.y + normale.z * l.z) / laenge;
@@ -251,8 +249,10 @@ double schattierung(Raumpunkt normale,
   // war die halbe Karte am Bildschirm nicht mehr zu lesen. Und nicht bis
   // auf null abdunkeln – eine schwarze Nordflanke sieht aus wie ein Loch
   // im Gitter. Wie weit beides geht, entscheidet die Stimmung.
-  return (stimmung.grundlicht + stimmung.richtungslicht * punktprodukt)
-      .clamp(stimmung.untergrenze, 1.0);
+  return (stimmung.grundlicht + stimmung.richtungslicht * punktprodukt).clamp(
+    stimmung.untergrenze,
+    1.0,
+  );
 }
 
 /// Die Flächennormale eines Dreiecks.
@@ -263,9 +263,5 @@ Raumpunkt normale(Raumpunkt a, Raumpunkt b, Raumpunkt c) {
   final vx = c.x - a.x;
   final vy = c.y - a.y;
   final vz = c.z - a.z;
-  return (
-    x: uy * vz - uz * vy,
-    y: uz * vx - ux * vz,
-    z: ux * vy - uy * vx,
-  );
+  return (x: uy * vz - uz * vy, y: uz * vx - ux * vz, z: ux * vy - uy * vx);
 }

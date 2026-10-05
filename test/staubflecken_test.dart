@@ -15,7 +15,10 @@ import 'package:photo_vault/services/staubflecken.dart';
 /// heraus, mit 14 und der Prüfung auf eine ruhige Umgebung 0,7.
 
 /// Ein gleichmässiger Himmel mit leichtem Verlauf und etwas Rauschen.
-img.Image _himmel(int seed, {List<(double, double, double)> koerner = const []}) {
+img.Image _himmel(
+  int seed, {
+  List<(double, double, double)> koerner = const [],
+}) {
   final zufall = math.Random(seed);
   final b = img.Image(width: 800, height: 600);
   for (var y = 0; y < b.height; y++) {
@@ -58,7 +61,9 @@ img.Image _unruhig(int seed) {
 void main() {
   group('Ein einzelnes Bild', () {
     test('findet ein Korn im Himmel', () {
-      final verdachte = findeStaubverdacht(_himmel(1, koerner: [(0.30, 0.22, 6.0)]));
+      final verdachte = findeStaubverdacht(
+        _himmel(1, koerner: [(0.30, 0.22, 6.0)]),
+      );
       expect(verdachte.length, 1);
       expect(verdachte.single.x, closeTo(0.30, 0.02));
       expect(verdachte.single.y, closeTo(0.22, 0.02));
@@ -67,7 +72,8 @@ void main() {
 
     test('findet mehrere Körner', () {
       final verdachte = findeStaubverdacht(
-          _himmel(2, koerner: [(0.30, 0.22, 6.0), (0.71, 0.55, 5.0)]));
+        _himmel(2, koerner: [(0.30, 0.22, 6.0), (0.71, 0.55, 5.0)]),
+      );
       expect(verdachte.length, 2);
     });
 
@@ -104,17 +110,20 @@ void main() {
       // Der Vogel am Himmel: einmal da, sonst nie.
       final serie = [
         for (var i = 0; i < 8; i++)
-          findeStaubverdacht(_himmel(i, koerner: i == 3 ? [(0.30, 0.22, 6.0)] : const [])),
+          findeStaubverdacht(
+            _himmel(i, koerner: i == 3 ? [(0.30, 0.22, 6.0)] : const []),
+          ),
       ];
       expect(bestaetigeUeberSerie(serie), isEmpty);
     });
 
     test('knapp über der Schwelle reicht, knapp darunter nicht', () {
       List<List<Staubverdacht>> mitAnteil(int auf) => [
-            for (var i = 0; i < 10; i++)
-              findeStaubverdacht(
-                  _himmel(i, koerner: i < auf ? [(0.30, 0.22, 6.0)] : const [])),
-          ];
+        for (var i = 0; i < 10; i++)
+          findeStaubverdacht(
+            _himmel(i, koerner: i < auf ? [(0.30, 0.22, 6.0)] : const []),
+          ),
+      ];
       expect(bestaetigeUeberSerie(mitAnteil(6)).length, 1, reason: '60 %');
       expect(bestaetigeUeberSerie(mitAnteil(5)), isEmpty, reason: '50 %');
     });
@@ -123,7 +132,9 @@ void main() {
       // Sonst käme eine Gruppe auf mehr Treffer als es Aufnahmen gibt.
       final serie = [
         for (var i = 0; i < 4; i++)
-          findeStaubverdacht(_himmel(i, koerner: [(0.30, 0.22, 6.0), (0.32, 0.24, 5.0)])),
+          findeStaubverdacht(
+            _himmel(i, koerner: [(0.30, 0.22, 6.0), (0.32, 0.24, 5.0)]),
+          ),
       ];
       for (final s in bestaetigeUeberSerie(serie)) {
         expect(s.treffer, lessThanOrEqualTo(s.untersucht));
@@ -135,7 +146,14 @@ void main() {
       // auf denselben Punkt.
       final serie = [
         for (var i = 0; i < 6; i++)
-          [Staubverdacht(x: 0.300 + i * 0.001, y: 0.220, radius: 0.01, tiefe: 20)],
+          [
+            Staubverdacht(
+              x: 0.300 + i * 0.001,
+              y: 0.220,
+              radius: 0.01,
+              tiefe: 20,
+            ),
+          ],
       ];
       expect(bestaetigeUeberSerie(serie).length, 1);
     });
@@ -163,30 +181,39 @@ void main() {
     tearDown(() => db.close());
 
     Future<void> lege(String id, DateTime wann, {String kamera = 'EOS 60D'}) =>
-        db.insertAsset(AssetsCompanion.insert(
-          id: id,
-          relativePath: 'originals/$id.jpg',
-          originalFileName: '$id.jpg',
-          type: 'IMAGE',
-          fileSizeBytes: const Value(10),
-          checksum: id,
-          fileCreatedAt: wann,
-          importedAt: wann,
-          cameraModel: Value(kamera),
-        ));
+        db.insertAsset(
+          AssetsCompanion.insert(
+            id: id,
+            relativePath: 'originals/$id.jpg',
+            originalFileName: '$id.jpg',
+            type: 'IMAGE',
+            fileSizeBytes: const Value(10),
+            checksum: id,
+            fileCreatedAt: wann,
+            importedAt: wann,
+            cameraModel: Value(kamera),
+          ),
+        );
 
-    test('verteilt sich über den ganzen Zeitraum, statt die neuesten zu nehmen', () async {
-      // Staub kommt und geht mit dem Objektivwechsel. Vierzig Aufnahmen
-      // desselben Nachmittags meldeten eine Reinigung von vor drei Jahren
-      // als heutigen Befund.
-      for (var i = 0; i < 100; i++) {
-        await lege('a$i', DateTime(2020 + i ~/ 25, 1, 1 + i % 25));
-      }
-      final probe = await db.aufnahmenDerKamera('EOS 60D', 10);
-      expect(probe.length, 10);
-      final jahre = {for (final a in probe) a.fileCreatedAt.year};
-      expect(jahre.length, greaterThan(1), reason: 'sonst wäre es ein Ausschnitt');
-    });
+    test(
+      'verteilt sich über den ganzen Zeitraum, statt die neuesten zu nehmen',
+      () async {
+        // Staub kommt und geht mit dem Objektivwechsel. Vierzig Aufnahmen
+        // desselben Nachmittags meldeten eine Reinigung von vor drei Jahren
+        // als heutigen Befund.
+        for (var i = 0; i < 100; i++) {
+          await lege('a$i', DateTime(2020 + i ~/ 25, 1, 1 + i % 25));
+        }
+        final probe = await db.aufnahmenDerKamera('EOS 60D', 10);
+        expect(probe.length, 10);
+        final jahre = {for (final a in probe) a.fileCreatedAt.year};
+        expect(
+          jahre.length,
+          greaterThan(1),
+          reason: 'sonst wäre es ein Ausschnitt',
+        );
+      },
+    );
 
     test('weniger Aufnahmen als gefragt kommen vollständig', () async {
       await lege('a', DateTime(2020));

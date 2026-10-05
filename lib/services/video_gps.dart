@@ -101,8 +101,13 @@ const _xyzAtom = '©xyz';
 /// Land liegt – aus 52,4 N / 10,8 O würde 10,8 N / 52,4 O, mitten im
 /// Indischen Ozean. Genau deshalb steht es hier so ausdrücklich.
 ({double breite, double laenge})? _ausLoci(Uint8List moov) {
-  final loci = sucheKasten(moov, 0, moov.length, 'loci',
-      absteigenIn: const {'moov', 'udta', 'meta'});
+  final loci = sucheKasten(
+    moov,
+    0,
+    moov.length,
+    'loci',
+    absteigenIn: const {'moov', 'udta', 'meta'},
+  );
   if (loci == null) return null;
   var p = loci.inhaltVon + 6;
   // Über den Namen hinweg bis zur abschliessenden Null.

@@ -62,7 +62,9 @@ class Flugleiste extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     final sprache = Localizations.localeOf(context).toString();
     final eine = NumberFormat.decimalPatternDigits(
-        locale: sprache, decimalDigits: 1);
+      locale: sprache,
+      decimalDigits: 1,
+    );
 
     final anteil = ausgabeFortschritt;
 
@@ -70,7 +72,9 @@ class Flugleiste extends StatelessWidget {
       color: farben.surface.withValues(alpha: 0.88),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,8 +94,10 @@ class Flugleiste extends StatelessWidget {
                     child: Text(
                       ausgabeRest == null
                           ? t.flugVideoLaeuft((anteil * 100).round())
-                          : t.flugVideoLaeuftMitRest((anteil * 100).round(),
-                              dauerText(t, ausgabeRest!)),
+                          : t.flugVideoLaeuftMitRest(
+                              (anteil * 100).round(),
+                              dauerText(t, ausgabeRest!),
+                            ),
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
@@ -107,8 +113,11 @@ class Flugleiste extends StatelessWidget {
               // Das Profil trägt die Stelle mit, an der der Flug steht –
               // und nimmt einen Griff darauf an: Wer hineinfährt, spult.
               // Dieselbe Geste, die es für die Karte schon konnte.
-              _Flugprofil(flug: flug, fortschritt: fortschritt,
-                  beimSpulen: beimSpulen),
+              _Flugprofil(
+                flug: flug,
+                fortschritt: fortschritt,
+                beimSpulen: beimSpulen,
+              ),
             ],
             Row(
               children: [
@@ -116,15 +125,17 @@ class Flugleiste extends StatelessWidget {
                   tooltip: !imFlug
                       ? t.flugStarten
                       : laeuft
-                          ? t.flugAnhalten
-                          : (fortschritt >= 1 ? t.flugNochmal : t.flugWeiter),
-                  icon: Icon(!imFlug
-                      ? Icons.flight_takeoff
-                      : laeuft
-                          ? Icons.pause_circle_outline
-                          : (fortschritt >= 1
+                      ? t.flugAnhalten
+                      : (fortschritt >= 1 ? t.flugNochmal : t.flugWeiter),
+                  icon: Icon(
+                    !imFlug
+                        ? Icons.flight_takeoff
+                        : laeuft
+                        ? Icons.pause_circle_outline
+                        : (fortschritt >= 1
                               ? Icons.replay
-                              : Icons.play_circle_outline)),
+                              : Icons.play_circle_outline),
+                  ),
                   onPressed: beimSchalten,
                 ),
                 if (imFlug)
@@ -139,9 +150,11 @@ class Flugleiste extends StatelessWidget {
                 if (beimAusgeben != null)
                   IconButton(
                     tooltip: gibtAus ? t.flugVideoAbbrechen : t.flugVideo,
-                    icon: Icon(gibtAus
-                        ? Icons.stop_circle_outlined
-                        : Icons.movie_outlined),
+                    icon: Icon(
+                      gibtAus
+                          ? Icons.stop_circle_outlined
+                          : Icons.movie_outlined,
+                    ),
                     onPressed: beimAusgeben,
                   ),
                 Expanded(
@@ -155,8 +168,11 @@ class Flugleiste extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  t.flugKm(eine.format(
-                      (stand?.gefahrenMeter ?? flug.laengeMeter) / 1000)),
+                  t.flugKm(
+                    eine.format(
+                      (stand?.gefahrenMeter ?? flug.laengeMeter) / 1000,
+                    ),
+                  ),
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
               ],
@@ -179,8 +195,10 @@ class _Messwerte extends StatelessWidget {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
     final sprache = Localizations.localeOf(context).toString();
-    final eine =
-        NumberFormat.decimalPatternDigits(locale: sprache, decimalDigits: 1);
+    final eine = NumberFormat.decimalPatternDigits(
+      locale: sprache,
+      decimalDigits: 1,
+    );
 
     final werte = <({String name, String wert, Color? farbe})>[
       if (stand.hoeheMeter case final h?)
@@ -196,20 +214,19 @@ class _Messwerte extends StatelessWidget {
           // Bergauf und bergab unterscheiden sich schon durch das
           // Vorzeichen; die Farbe macht es auf einen Blick lesbar, ohne
           // die einzige Auskunft zu sein (siehe 18. Prüfrunde).
-          farbe: st.abs() < 1
-              ? null
-              : (st > 0 ? farben.error : farben.primary),
+          farbe: st.abs() < 1 ? null : (st > 0 ? farben.error : farben.primary),
         ),
       if (stand.seitStart case final d?)
         (name: t.flugUnterwegs, wert: _dauertext(d), farbe: null),
     ];
 
     if (werte.isEmpty) {
-      return Text(t.flugOhneZeit,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: farben.onSurfaceVariant));
+      return Text(
+        t.flugOhneZeit,
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: farben.onSurfaceVariant),
+      );
     }
 
     return Wrap(
@@ -220,22 +237,23 @@ class _Messwerte extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(w.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(color: farben.onSurfaceVariant)),
+              Text(
+                w.name,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: farben.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 w.wert,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: w.farbe,
-                      fontFeatures: const [
-                        // Ohne feste Zifferbreite zappelt jede Zahl bei
-                        // jedem Bild – zwanzig Mal in der Sekunde.
-                        ui.FontFeature.tabularFigures(),
-                      ],
-                    ),
+                  color: w.farbe,
+                  fontFeatures: const [
+                    // Ohne feste Zifferbreite zappelt jede Zahl bei
+                    // jedem Bild – zwanzig Mal in der Sekunde.
+                    ui.FontFeature.tabularFigures(),
+                  ],
+                ),
               ),
             ],
           ),
@@ -370,7 +388,10 @@ class _Flugprofilmaler extends CustomPainter {
     canvas.drawPath(gefuellt, Paint()..color = kommend.withValues(alpha: 0.5));
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, xJetzt, size.height));
-    canvas.drawPath(gefuellt, Paint()..color = gefahren.withValues(alpha: 0.35));
+    canvas.drawPath(
+      gefuellt,
+      Paint()..color = gefahren.withValues(alpha: 0.35),
+    );
     canvas.restore();
 
     canvas.drawPath(
@@ -382,8 +403,13 @@ class _Flugprofilmaler extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    canvas.drawLine(Offset(xJetzt, 0), Offset(xJetzt, size.height),
-        Paint()..color = marke..strokeWidth = 1.5);
+    canvas.drawLine(
+      Offset(xJetzt, 0),
+      Offset(xJetzt, size.height),
+      Paint()
+        ..color = marke
+        ..strokeWidth = 1.5,
+    );
   }
 
   @override
@@ -432,54 +458,59 @@ class _Flugbild extends StatelessWidget {
           : SizedBox(
               width: kante + 8,
               child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: const [
-                  BoxShadow(
-                      color: Color(0x66000000), blurRadius: 10, spreadRadius: 1),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                            maxWidth: kante, maxHeight: kante),
-                        child: Image(
-                          image: f.bild,
-                          fit: BoxFit.cover,
-                          width: kante,
-                          height: kante * 0.75,
-                          // Ein Bild, das nicht kommt, darf keinen roten
-                          // Kasten in die Landschaft setzen.
-                          errorBuilder: (_, _, _) =>
-                              const SizedBox(width: kante, height: 1),
-                        ),
-                      ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x66000000),
+                      blurRadius: 10,
+                      spreadRadius: 1,
                     ),
-                    if (f.unterschrift case final u?)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 3, bottom: 1),
-                        child: Text(
-                          u,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurface,
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: kante,
+                            maxHeight: kante,
+                          ),
+                          child: Image(
+                            image: f.bild,
+                            fit: BoxFit.cover,
+                            width: kante,
+                            height: kante * 0.75,
+                            // Ein Bild, das nicht kommt, darf keinen roten
+                            // Kasten in die Landschaft setzen.
+                            errorBuilder: (_, _, _) =>
+                                const SizedBox(width: kante, height: 1),
                           ),
                         ),
                       ),
-                  ],
+                      if (f.unterschrift case final u?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3, bottom: 1),
+                          child: Text(
+                            u,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
     );
   }
 }
@@ -509,7 +540,9 @@ class _Abspann extends StatelessWidget {
     // dann, wenn der Abspann wirklich erscheint – gefunden hat es der
     // Bedienungstest, nicht der Übersetzer.
     final zahl = NumberFormat(
-        '#,##0.0', Localizations.localeOf(context).toLanguageTag());
+      '#,##0.0',
+      Localizations.localeOf(context).toLanguageTag(),
+    );
 
     final hoch = flug.aufstiegMeter;
     final dauer = flug.gesamtdauer;
@@ -524,7 +557,9 @@ class _Abspann extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.lg,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -545,8 +580,7 @@ class _Abspann extends StatelessWidget {
                   const SizedBox(width: AppSpacing.xl),
                 ],
                 if (dauer != null)
-                  _Zahl(
-                      wert: _dauerText(dauer), was: t.flugUnterwegs),
+                  _Zahl(wert: _dauerText(dauer), was: t.flugUnterwegs),
               ],
             ),
           ],
@@ -573,13 +607,18 @@ class _Zahl extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(wert,
-            style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: farben.onSurface)),
-        Text(was,
-            style: TextStyle(fontSize: 11, color: farben.onSurfaceVariant)),
+        Text(
+          wert,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: farben.onSurface,
+          ),
+        ),
+        Text(
+          was,
+          style: TextStyle(fontSize: 11, color: farben.onSurfaceVariant),
+        ),
       ],
     );
   }

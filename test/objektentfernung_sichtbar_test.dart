@@ -29,7 +29,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_retusche_');
     db = AppDatabase(NativeDatabase.memory());
-    pfade = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    pfade = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
   });
 
   tearDown(() async {
@@ -43,15 +45,19 @@ void main() {
     final datei = pfade.absolute('originals/a1.jpg');
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(img.encodeJpg(bild));
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'c_a1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 1),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            originalFileName: 'a1.jpg',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'c_a1',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 1, 1),
+            importedAt: DateTime(2026, 1, 1),
+          ),
+        );
     return (db.select(db.assets)..where((t) => t.id.equals('a1'))).getSingle();
   }
 
@@ -65,25 +71,40 @@ void main() {
     return ordner.path;
   }
 
-  Future<void> zeige(WidgetTester tester, AssetData asset, String? modelle) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: ImageEditorScreen(
-          asset: asset, db: db, paths: pfade, modelsDir: modelle),
-    ));
+  Future<void> zeige(
+    WidgetTester tester,
+    AssetData asset,
+    String? modelle,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: ImageEditorScreen(
+          asset: asset,
+          db: db,
+          paths: pfade,
+          modelsDir: modelle,
+        ),
+      ),
+    );
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 50));
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
   }
 
-  IconButton knopf(WidgetTester tester) => tester.widget<IconButton>(find.ancestor(
-      of: find.byIcon(Icons.auto_fix_high), matching: find.byType(IconButton)));
+  IconButton knopf(WidgetTester tester) => tester.widget<IconButton>(
+    find.ancestor(
+      of: find.byIcon(Icons.auto_fix_high),
+      matching: find.byType(IconButton),
+    ),
+  );
 
-  testWidgets('ohne Modell steht der Knopf da und sagt, was fehlt',
-      (tester) async {
+  testWidgets('ohne Modell steht der Knopf da und sagt, was fehlt', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1000, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -103,8 +124,9 @@ void main() {
     });
   });
 
-  testWidgets('mit Modell ist er bedienbar und zieht den Pinsel auf',
-      (tester) async {
+  testWidgets('mit Modell ist er bedienbar und zieht den Pinsel auf', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1000, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

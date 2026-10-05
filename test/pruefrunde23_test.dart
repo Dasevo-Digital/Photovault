@@ -26,7 +26,8 @@ void main() {
     wurzel = Directory.systemTemp.createTempSync('pv23_');
     db = AppDatabase(NativeDatabase.memory());
     paths = await StoragePaths.forTesting(
-        Directory(p.join(wurzel.path, 'library')));
+      Directory(p.join(wurzel.path, 'library')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths;
@@ -43,14 +44,16 @@ void main() {
   /// geprüft wird das Vergessen, nicht das Laden.
   Future<void> legeInsBildgedaechtnis(Object schluessel) async {
     final aufnehmer = ui.PictureRecorder();
-    ui.Canvas(aufnehmer).drawRect(const ui.Rect.fromLTWH(0, 0, 8, 8),
-        ui.Paint()..color = const ui.Color(0xFFFFFFFF));
+    ui.Canvas(aufnehmer).drawRect(
+      const ui.Rect.fromLTWH(0, 0, 8, 8),
+      ui.Paint()..color = const ui.Color(0xFFFFFFFF),
+    );
     final bild = await aufnehmer.endRecording().toImage(8, 8);
     final fertig = Completer<void>();
     final strom = PaintingBinding.instance.imageCache.putIfAbsent(
-        schluessel,
-        () => OneFrameImageStreamCompleter(
-            Future.value(ImageInfo(image: bild))))!;
+      schluessel,
+      () => OneFrameImageStreamCompleter(Future.value(ImageInfo(image: bild))),
+    )!;
     late ImageStreamListener horcher;
     horcher = ImageStreamListener((_, _) {
       if (!fertig.isCompleted) fertig.complete();
@@ -70,38 +73,51 @@ void main() {
     final datei = paths.absolute('$rel$id.jpg');
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(List<int>.generate(bytes, (i) => i % 251));
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: '$rel$id.jpg',
-          checksum: 'pruef-$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026),
-          importedAt: DateTime(2026),
-          fileSizeBytes: Value(bytes),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: '$rel$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026),
+            importedAt: DateTime(2026),
+            fileSizeBytes: Value(bytes),
+          ),
+        );
     return (await db.assetById(id))!;
   }
 
   group('Sperren raeumt den Bildspeicher', () {
-    test('nach dem Sperren liegt kein dekodiertes Bild mehr im Speicher',
-        () async {
-      await library.setupVaultPin('4711');
-      final asset = await aufnahme('geheim');
+    test(
+      'nach dem Sperren liegt kein dekodiertes Bild mehr im Speicher',
+      () async {
+        await library.setupVaultPin('4711');
+        final asset = await aufnahme('geheim');
 
-      // Genau der Zustand vor dem Sperren: Die Kachel wurde eben noch
-      // gezeigt, also liegt sie dekodiert im Speicher.
-      await legeInsBildgedaechtnis(paths.absolute(asset.relativePath).path);
-      expect(imSpeicher(), greaterThan(0),
-          reason: 'ohne ein Bild im Speicher prueft der Test nichts');
+        // Genau der Zustand vor dem Sperren: Die Kachel wurde eben noch
+        // gezeigt, also liegt sie dekodiert im Speicher.
+        await legeInsBildgedaechtnis(paths.absolute(asset.relativePath).path);
+        expect(
+          imSpeicher(),
+          greaterThan(0),
+          reason: 'ohne ein Bild im Speicher prueft der Test nichts',
+        );
 
-      await library.lockAsset(asset);
+        await library.lockAsset(asset);
 
-      // Auf der Platte steht jetzt Chiffrat – und im Speicher?
-      expect(imSpeicher(), 0,
-          reason: 'Der Klartext bliebe sonst unter seinem alten Pfad '
-              'abrufbar, ohne dass je wieder ein Schluessel gebraucht wird.');
-    });
+        // Auf der Platte steht jetzt Chiffrat – und im Speicher?
+        expect(
+          imSpeicher(),
+          0,
+          reason:
+              'Der Klartext bliebe sonst unter seinem alten Pfad '
+              'abrufbar, ohne dass je wieder ein Schluessel gebraucht wird.',
+        );
+      },
+    );
 
     test('das Verlassen des gesperrten Ordners raeumt ihn ebenso', () async {
       await legeInsBildgedaechtnis('irgendein/pfad.jpg');
@@ -132,56 +148,69 @@ void main() {
         await library.decryptForViewing(rel);
       }
 
-      final ordner =
-          Directory(p.join(Directory.systemTemp.path, 'photovault_decrypt'));
+      final ordner = Directory(
+        p.join(Directory.systemTemp.path, 'photovault_decrypt'),
+      );
       final stuecke = ordner.listSync().whereType<File>().toList();
-      expect(stuecke, hasLength(5),
-          reason: 'unterhalb der Grenze wird nichts weggeworfen');
+      expect(
+        stuecke,
+        hasLength(5),
+        reason: 'unterhalb der Grenze wird nichts weggeworfen',
+      );
       final summe = stuecke.fold<int>(0, (s, f) => s + f.lengthSync());
       expect(summe, lessThan(grenze));
     });
 
-    test('ueber der Grenze bleibt der Zwischenspeicher unter der Grenze',
-        () async {
-      await library.setupVaultPin('4711');
-      final ordner =
-          Directory(p.join(Directory.systemTemp.path, 'photovault_decrypt'));
-      await ordner.create(recursive: true);
+    test(
+      'ueber der Grenze bleibt der Zwischenspeicher unter der Grenze',
+      () async {
+        await library.setupVaultPin('4711');
+        final ordner = Directory(
+          p.join(Directory.systemTemp.path, 'photovault_decrypt'),
+        );
+        await ordner.create(recursive: true);
 
-      // Zwoelf Fuellstuecke, die zusammen ueber der Grenze liegen –
-      // geschrieben, nicht entschluesselt: geprueft wird das Kuerzen.
-      const grenze = LibraryState.hoechstensImZwischenspeicher;
-      const stueckgroesse = 8 * 1024 * 1024;
-      final noetig = (grenze / stueckgroesse).ceil() + 3;
-      for (var i = 0; i < noetig; i++) {
-        final f = File(p.join(ordner.path, 'fuell$i'));
-        f.writeAsBytesSync(List<int>.filled(stueckgroesse, 7));
-        // Aufsteigende Zugriffszeit: fuell0 ist das aelteste.
-        f.setLastAccessedSync(DateTime(2020).add(Duration(days: i)));
-      }
-      final vorher = ordner
-          .listSync()
-          .whereType<File>()
-          .fold<int>(0, (s, f) => s + f.lengthSync());
-      expect(vorher, greaterThan(grenze),
-          reason: 'ohne Ueberschreitung prueft der Test nichts');
+        // Zwoelf Fuellstuecke, die zusammen ueber der Grenze liegen –
+        // geschrieben, nicht entschluesselt: geprueft wird das Kuerzen.
+        const grenze = LibraryState.hoechstensImZwischenspeicher;
+        const stueckgroesse = 8 * 1024 * 1024;
+        final noetig = (grenze / stueckgroesse).ceil() + 3;
+        for (var i = 0; i < noetig; i++) {
+          final f = File(p.join(ordner.path, 'fuell$i'));
+          f.writeAsBytesSync(List<int>.filled(stueckgroesse, 7));
+          // Aufsteigende Zugriffszeit: fuell0 ist das aelteste.
+          f.setLastAccessedSync(DateTime(2020).add(Duration(days: i)));
+        }
+        final vorher = ordner.listSync().whereType<File>().fold<int>(
+          0,
+          (s, f) => s + f.lengthSync(),
+        );
+        expect(
+          vorher,
+          greaterThan(grenze),
+          reason: 'ohne Ueberschreitung prueft der Test nichts',
+        );
 
-      // Ein echter Zulauf loest das Kuerzen aus.
-      final a = await aufnahme('neu');
-      await library.lockAsset(a);
-      await library
-          .decryptForViewing((await db.assetById('neu'))!.relativePath);
+        // Ein echter Zulauf loest das Kuerzen aus.
+        final a = await aufnahme('neu');
+        await library.lockAsset(a);
+        await library.decryptForViewing(
+          (await db.assetById('neu'))!.relativePath,
+        );
 
-      final nachher = ordner
-          .listSync()
-          .whereType<File>()
-          .fold<int>(0, (s, f) => s + f.lengthSync());
-      expect(nachher, lessThanOrEqualTo(grenze));
-      // Das juengste Fuellstueck ueberlebt, das aelteste nicht.
-      expect(
-          File(p.join(ordner.path, 'fuell${noetig - 1}')).existsSync(), isTrue);
-      expect(File(p.join(ordner.path, 'fuell0')).existsSync(), isFalse);
-    });
+        final nachher = ordner.listSync().whereType<File>().fold<int>(
+          0,
+          (s, f) => s + f.lengthSync(),
+        );
+        expect(nachher, lessThanOrEqualTo(grenze));
+        // Das juengste Fuellstueck ueberlebt, das aelteste nicht.
+        expect(
+          File(p.join(ordner.path, 'fuell${noetig - 1}')).existsSync(),
+          isTrue,
+        );
+        expect(File(p.join(ordner.path, 'fuell0')).existsSync(), isFalse);
+      },
+    );
   });
 
   group('Der Zwischenspeicher gehoert nur dem eigenen Benutzer', () {
@@ -190,16 +219,22 @@ void main() {
       await library.setupVaultPin('4711');
       final a = await aufnahme('rechte');
       await library.lockAsset(a);
-      await library
-          .decryptForViewing((await db.assetById('rechte'))!.relativePath);
+      await library.decryptForViewing(
+        (await db.assetById('rechte'))!.relativePath,
+      );
 
       final ordner = p.join(Directory.systemTemp.path, 'photovault_decrypt');
-      final argumente =
-          Platform.isMacOS ? ['-f', '%Lp', ordner] : ['-c', '%a', ordner];
+      final argumente = Platform.isMacOS
+          ? ['-f', '%Lp', ordner]
+          : ['-c', '%a', ordner];
       final ergebnis = await Process.run('stat', argumente);
-      expect((ergebnis.stdout as String).trim(), '700',
-          reason: 'Dart legt Verzeichnisse mit 0755 an – auf einem Rechner '
-              'mit mehreren Benutzern laege der Klartext offen.');
+      expect(
+        (ergebnis.stdout as String).trim(),
+        '700',
+        reason:
+            'Dart legt Verzeichnisse mit 0755 an – auf einem Rechner '
+            'mit mehreren Benutzern laege der Klartext offen.',
+      );
     });
   });
 

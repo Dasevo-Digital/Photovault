@@ -20,7 +20,13 @@ import 'package:image/image.dart' as img;
 /// diese lassen sich synthetisch erzeugen. HEIC/HEIF und alle RAW-Formate
 /// fehlen hier bewusst: sie brauchen die native macOS-Schicht
 /// (ImageConverter.swift) bzw. echte Kameradateien.
-const encodableSampleFormats = <String>['.jpg', '.png', '.tiff', '.bmp', '.gif'];
+const encodableSampleFormats = <String>[
+  '.jpg',
+  '.png',
+  '.tiff',
+  '.bmp',
+  '.gif',
+];
 
 /// Ein farbiges Testbild mit Verlauf und einem klaren Muster – der Verlauf
 /// belegt viele Tonwerte (relevant für Histogramm-/Unschärfeprüfungen), das

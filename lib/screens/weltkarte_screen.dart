@@ -120,7 +120,8 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     try {
       final daten = await rootBundle.load('assets/geo/gebiete.bin.gz');
       return _grenzen = Gebietsgrenzen.ausGepackt(
-          daten.buffer.asUint8List(daten.offsetInBytes, daten.lengthInBytes));
+        daten.buffer.asUint8List(daten.offsetInBytes, daten.lengthInBytes),
+      );
     } catch (_) {
       return null;
     }
@@ -142,7 +143,11 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     final marken = await widget.library.db.alleOrtsmarken();
     if (!mounted) return;
     final punkte = _sammle(
-        geo, besucht, marken, Localizations.localeOf(context).languageCode);
+      geo,
+      besucht,
+      marken,
+      Localizations.localeOf(context).languageCode,
+    );
     setState(() {
       _punkte = punkte;
       _flaechen = _umrisse(punkte, grenzen);
@@ -167,8 +172,10 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
       if (gebiet != null) raus.add(_Flaeche(p, gebiet));
     }
     // Grosse zuerst zeichnen: Sonst deckt Brandenburg Berlin zu.
-    raus.sort((a, b) =>
-        b.gebiet.vergleichsflaeche.compareTo(a.gebiet.vergleichsflaeche));
+    raus.sort(
+      (a, b) =>
+          b.gebiet.vergleichsflaeche.compareTo(a.gebiet.vergleichsflaeche),
+    );
     return raus;
   }
 
@@ -208,8 +215,9 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     final regionsmarken = <String, Markenart>{};
     final ortsmarken = <String, Markenart>{};
     for (final m in marken) {
-      final wert =
-          m.status == 'geplant' ? Markenart.geplant : Markenart.besucht;
+      final wert = m.status == 'geplant'
+          ? Markenart.geplant
+          : Markenart.besucht;
       switch (m.art) {
         case 'land':
           landmarken[m.schluessel.toUpperCase()] = wert;
@@ -222,7 +230,9 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           final iso = geo.isoNachName[teile[0]] ?? teile[0].toUpperCase();
           ortsmarken['$iso|${teile[2]}'] = wert;
           orte.putIfAbsent(
-              '$iso|${teile[2]}', () => (name: teile[2], iso: iso));
+            '$iso|${teile[2]}',
+            () => (name: teile[2], iso: iso),
+          );
       }
     }
 
@@ -231,47 +241,53 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     for (final iso in {...aufnahmenJeLand.keys, ...landmarken.keys}) {
       final punkt = geo.landpunkt(iso);
       if (punkt == null) continue;
-      ergebnis.add(_Kartenpunkt(
-        ebene: _Ebene.land,
-        schluessel: iso,
-        // Der angezeigte Name der Marke – auf Deutsch, wo es einen gibt.
-        // Der Schlüssel bleibt der Code, gespeichert wird nichts hiervon.
-        name: geo.laenderkatalog.nachIso(iso)?.anzeige(sprache) ?? iso,
-        breite: punkt.breite,
-        laenge: punkt.laenge,
-        aufnahmen: aufnahmenJeLand[iso] ?? 0,
-        marke: landmarken[iso],
-      ));
+      ergebnis.add(
+        _Kartenpunkt(
+          ebene: _Ebene.land,
+          schluessel: iso,
+          // Der angezeigte Name der Marke – auf Deutsch, wo es einen gibt.
+          // Der Schlüssel bleibt der Code, gespeichert wird nichts hiervon.
+          name: geo.laenderkatalog.nachIso(iso)?.anzeige(sprache) ?? iso,
+          breite: punkt.breite,
+          laenge: punkt.laenge,
+          aufnahmen: aufnahmenJeLand[iso] ?? 0,
+          marke: landmarken[iso],
+        ),
+      );
     }
 
     for (final e in regionen.entries) {
       final punkt = geo.regionspunkt(e.key);
       if (punkt == null) continue;
-      ergebnis.add(_Kartenpunkt(
-        ebene: _Ebene.region,
-        schluessel: e.key,
-        name: e.value,
-        breite: punkt.breite,
-        laenge: punkt.laenge,
-        // Eine Region gilt als belegt, sobald ein Foto sie nennt – die
-        // Zahl der Aufnahmen steht am Land, nicht hier.
-        aufnahmen: regionsmarken.containsKey(e.key) ? 0 : 1,
-        marke: regionsmarken[e.key],
-      ));
+      ergebnis.add(
+        _Kartenpunkt(
+          ebene: _Ebene.region,
+          schluessel: e.key,
+          name: e.value,
+          breite: punkt.breite,
+          laenge: punkt.laenge,
+          // Eine Region gilt als belegt, sobald ein Foto sie nennt – die
+          // Zahl der Aufnahmen steht am Land, nicht hier.
+          aufnahmen: regionsmarken.containsKey(e.key) ? 0 : 1,
+          marke: regionsmarken[e.key],
+        ),
+      );
     }
 
     for (final e in orte.entries) {
       final punkt = geo.ortspunkt(e.value.iso, e.value.name);
       if (punkt == null) continue;
-      ergebnis.add(_Kartenpunkt(
-        ebene: _Ebene.ort,
-        schluessel: e.key,
-        name: e.value.name,
-        breite: punkt.breite,
-        laenge: punkt.laenge,
-        aufnahmen: ortsmarken.containsKey(e.key) ? 0 : 1,
-        marke: ortsmarken[e.key],
-      ));
+      ergebnis.add(
+        _Kartenpunkt(
+          ebene: _Ebene.ort,
+          schluessel: e.key,
+          name: e.value.name,
+          breite: punkt.breite,
+          laenge: punkt.laenge,
+          aufnahmen: ortsmarken.containsKey(e.key) ? 0 : 1,
+          marke: ortsmarken[e.key],
+        ),
+      );
     }
 
     return ergebnis;
@@ -292,18 +308,23 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
   Future<void> _klick(ll.LatLng stelle) async {
     final geo = widget.library.geocoder;
     final t = AppTexte.of(context);
-    final ziel =
-        _ziel(stelle, geo, Localizations.localeOf(context).languageCode);
+    final ziel = _ziel(
+      stelle,
+      geo,
+      Localizations.localeOf(context).languageCode,
+    );
     if (ziel == null) {
       _sage(t.weltkarteKeinOrt);
       return;
     }
 
     // Steht dort schon eine Marke von Hand, nimmt derselbe Klick sie weg.
-    final vorhanden = _punkte?.where((p) =>
-        p.ebene == _stufe &&
-        p.schluessel == ziel.schluessel &&
-        p.marke != null);
+    final vorhanden = _punkte?.where(
+      (p) =>
+          p.ebene == _stufe &&
+          p.schluessel == ziel.schluessel &&
+          p.marke != null,
+    );
     if (vorhanden != null && vorhanden.isNotEmpty) {
       await widget.library.db.loescheOrtsmarke(_stufe.name, ziel.schluessel);
       await _laden();
@@ -313,15 +334,21 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
 
     // Was die Fotos belegen, braucht keinen Haken. Ihn trotzdem zu setzen
     // würde die Herkunft der Angabe verwischen.
-    final belegt = _punkte?.any((p) =>
-        p.ebene == _stufe && p.schluessel == ziel.schluessel && p.belegt);
+    final belegt = _punkte?.any(
+      (p) => p.ebene == _stufe && p.schluessel == ziel.schluessel && p.belegt,
+    );
     if (belegt == true && !_alsGeplant) {
       _sage(t.weltkarteSchonBelegt(ziel.anzeige));
       return;
     }
 
-    await _setze(_stufe.name, ziel.schluessel, ziel.name,
-        breite: ziel.breite, laenge: ziel.laenge);
+    await _setze(
+      _stufe.name,
+      ziel.schluessel,
+      ziel.name,
+      breite: ziel.breite,
+      laenge: ziel.laenge,
+    );
   }
 
   /// Worauf der Klick auf der eingestellten Stufe zeigt.
@@ -331,16 +358,22 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
   /// welcher Sprache sie gesetzt wurde. [anzeige] ist der übersetzte,
   /// und der gehört in die Meldung: „Marke bei Germany weggenommen" ist
   /// in einer deutschen Oberfläche keine Auskunft, sondern eine Panne.
-  ({String schluessel, String name, String anzeige, double? breite,
-      double? laenge})? _ziel(
-      ll.LatLng stelle, ReverseGeocoder? geo, String sprache) {
+  ({
+    String schluessel,
+    String name,
+    String anzeige,
+    double? breite,
+    double? laenge,
+  })?
+  _ziel(ll.LatLng stelle, ReverseGeocoder? geo, String sprache) {
     final grenzen = _grenzen;
     final iso = grenzen?.landBei(stelle.latitude, stelle.longitude);
     final treffer = geo?.lookup(stelle.latitude, stelle.longitude);
 
     switch (_stufe) {
       case _Ebene.land:
-        final code = iso ??
+        final code =
+            iso ??
             (treffer?.country == null
                 ? null
                 : geo?.isoNachName[treffer!.country!]);
@@ -355,20 +388,25 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
         );
 
       case _Ebene.region:
-        final land = iso ??
+        final land =
+            iso ??
             (treffer?.country == null
                 ? null
                 : geo?.isoNachName[treffer!.country!]);
         if (land == null) return null;
-        var code =
-            grenzen?.regionBei(stelle.latitude, stelle.longitude, imLand: land);
+        var code = grenzen?.regionBei(
+          stelle.latitude,
+          stelle.longitude,
+          imLand: land,
+        );
         code ??= treffer?.state == null
             ? null
             : geo?.regionscodes['$land|${treffer!.state}'];
         if (code == null) return null;
         // Der ausgeschriebene Name kommt aus dem Datensatz, nicht aus dem
         // Umriss – die Umrissdatei führt nur Schlüssel.
-        final name = _punkte
+        final name =
+            _punkte
                 ?.where((p) => p.ebene == _Ebene.region && p.schluessel == code)
                 .map((p) => p.name)
                 .firstOrNull ??
@@ -399,20 +437,26 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     }
   }
 
-  void _sage(String text) =>
-      melde.hinweis(text);
+  void _sage(String text) => melde.hinweis(text);
 
-  Future<void> _setze(String art, String schluessel, String name,
-      {double? breite, double? laenge}) async {
-    await widget.library.db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-      art: art,
-      schluessel: schluessel,
-      name: name,
-      status: _alsGeplant ? 'geplant' : 'besucht',
-      angelegtAm: DateTime.now(),
-      breite: Value(breite),
-      laenge: Value(laenge),
-    ));
+  Future<void> _setze(
+    String art,
+    String schluessel,
+    String name, {
+    double? breite,
+    double? laenge,
+  }) async {
+    await widget.library.db.setzeOrtsmarke(
+      OrtsmarkenCompanion.insert(
+        art: art,
+        schluessel: schluessel,
+        name: name,
+        status: _alsGeplant ? 'geplant' : 'besucht',
+        angelegtAm: DateTime.now(),
+        breite: Value(breite),
+        laenge: Value(laenge),
+      ),
+    );
     await _laden();
     if (!mounted) return;
     _sage(AppTexte.of(context).weltkarteMarkeGesetzt(name));
@@ -432,23 +476,25 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
   /// Marke weiterhin, und in der Ortsansicht stehen beide Knöpfe.
   void _ortOeffnen(_Kartenpunkt p) {
     Navigator.of(context)
-        .push(MaterialPageRoute(
-          builder: (_) => OrtsansichtScreen(
-            library: widget.library,
-            ebene: switch (p.ebene) {
-              _Ebene.land => Ortsebene.land,
-              _Ebene.region => Ortsebene.region,
-              _Ebene.ort => Ortsebene.ort,
-            },
-            // Die Weltkarte führt Orte als „ISO|Ort", die Ortsmarken und
-            // die Ortsansicht als „Land|Region|Ort". Umgerechnet wird
-            // hier, wo beide Schreibweisen bekannt sind.
-            schluessel: p.ebene == _Ebene.ort
-                ? _ortsschluessel(p)
-                : p.schluessel,
-            name: p.name,
+        .push(
+          MaterialPageRoute(
+            builder: (_) => OrtsansichtScreen(
+              library: widget.library,
+              ebene: switch (p.ebene) {
+                _Ebene.land => Ortsebene.land,
+                _Ebene.region => Ortsebene.region,
+                _Ebene.ort => Ortsebene.ort,
+              },
+              // Die Weltkarte führt Orte als „ISO|Ort", die Ortsmarken und
+              // die Ortsansicht als „Land|Region|Ort". Umgerechnet wird
+              // hier, wo beide Schreibweisen bekannt sind.
+              schluessel: p.ebene == _Ebene.ort
+                  ? _ortsschluessel(p)
+                  : p.schluessel,
+              name: p.name,
+            ),
           ),
-        ))
+        )
         .then((_) => _laden());
   }
 
@@ -470,10 +516,10 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
   /// Die Namen der drei Ebenen in derselben Reihenfolge wie auf dem
   /// Schirm – Menü und Leiste sollen nicht auseinanderlaufen.
   List<(_Ebene, String)> _ebenennamen(AppTexte t) => [
-        (_Ebene.land, t.weltkarteLaender),
-        (_Ebene.region, t.weltkarteRegionen),
-        (_Ebene.ort, t.weltkarteOrte),
-      ];
+    (_Ebene.land, t.weltkarteLaender),
+    (_Ebene.region, t.weltkarteRegionen),
+    (_Ebene.ort, t.weltkarteOrte),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -515,15 +561,19 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
                     const SizedBox(height: AppSpacing.sm),
                     Text(t.weltkarteLegendeGeplant),
                     const SizedBox(height: AppSpacing.md),
-                    Text(t.weltkarteOhneUmriss,
-                        style: Theme.of(blatt).textTheme.bodySmall),
+                    Text(
+                      t.weltkarteOhneUmriss,
+                      style: Theme.of(blatt).textTheme.bodySmall,
+                    ),
                   ],
                 ),
                 actions: [
                   TextButton(
-                      onPressed: () => Navigator.pop(blatt),
-                      child: Text(
-                          MaterialLocalizations.of(blatt).closeButtonLabel)),
+                    onPressed: () => Navigator.pop(blatt),
+                    child: Text(
+                      MaterialLocalizations.of(blatt).closeButtonLabel,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -541,45 +591,47 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
                   steuerung: _karte,
                   groesserZoom: kartenHoechsteStufe(context),
                   child: FlutterMap(
-                  mapController: _karte,
-                  options: MapOptions(
-                    initialCenter: const ll.LatLng(30, 10),
-                    initialZoom: 2,
-                    maxZoom: kartenHoechsteStufe(context),
-                    onTap: (_, stelle) => _klick(stelle),
+                    mapController: _karte,
+                    options: MapOptions(
+                      initialCenter: const ll.LatLng(30, 10),
+                      initialZoom: 2,
+                      maxZoom: kartenHoechsteStufe(context),
+                      onTap: (_, stelle) => _klick(stelle),
+                    ),
+                    children: [
+                      const Kachelschicht(),
+                      // Nur gezeichnet, nicht bedienbar: Die Frage, welches
+                      // Gebiet unter dem Zeiger liegt, beantwortet _klick
+                      // selbst – und genauer, als hitNotifier es könnte,
+                      // weil dort bei Überschneidung die kleinere Fläche
+                      // gewinnt.
+                      PolygonLayer(polygons: _polygone(context)),
+                      MarkerLayer(
+                        markers: [
+                          // Länder zuletzt, damit sie über den Orten liegen –
+                          // sonst verdeckt eine Stadt ihr eigenes Land.
+                          for (final ebene in [
+                            _Ebene.ort,
+                            _Ebene.region,
+                            _Ebene.land,
+                          ])
+                            if (_sichtbar.contains(ebene))
+                              for (final p in punkte)
+                                if (p.ebene == ebene)
+                                  Marker(
+                                    point: ll.LatLng(p.breite, p.laenge),
+                                    width: 26,
+                                    height: 26,
+                                    child: GestureDetector(
+                                      onTap: () => _ortOeffnen(p),
+                                      child: _Marke(punkt: p),
+                                    ),
+                                  ),
+                        ],
+                      ),
+                      buildMapAttribution(context),
+                    ],
                   ),
-                  children: [
-                    const Kachelschicht(),
-                    // Nur gezeichnet, nicht bedienbar: Die Frage, welches
-                    // Gebiet unter dem Zeiger liegt, beantwortet _klick
-                    // selbst – und genauer, als hitNotifier es könnte,
-                    // weil dort bei Überschneidung die kleinere Fläche
-                    // gewinnt.
-                    PolygonLayer(polygons: _polygone(context)),
-                    MarkerLayer(markers: [
-                      // Länder zuletzt, damit sie über den Orten liegen –
-                      // sonst verdeckt eine Stadt ihr eigenes Land.
-                      for (final ebene in [
-                        _Ebene.ort,
-                        _Ebene.region,
-                        _Ebene.land
-                      ])
-                        if (_sichtbar.contains(ebene))
-                          for (final p in punkte)
-                            if (p.ebene == ebene)
-                              Marker(
-                                point: ll.LatLng(p.breite, p.laenge),
-                                width: 26,
-                                height: 26,
-                                child: GestureDetector(
-                                  onTap: () => _ortOeffnen(p),
-                                  child: _Marke(punkt: p),
-                                ),
-                              ),
-                    ]),
-                    buildMapAttribution(context),
-                  ],
-                ),
                 ),
                 // Über der Karte, aber links von der Legende: Rechts
                 // unten sitzt bei flutter_map der Quellenhinweis.
@@ -629,26 +681,28 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
       final tiefe = p.ebene == _Ebene.region ? 0.6 : 1.0;
       final (fuellung, muster) = switch (p) {
         _ when p.geplant => (
-            0.06 * tiefe,
-            // Nicht const: der Konstruktor prüft die Längen selbst.
-            StrokePattern.dashed(segments: const [8, 6])
-          ),
+          0.06 * tiefe,
+          // Nicht const: der Konstruktor prüft die Längen selbst.
+          StrokePattern.dashed(segments: const [8, 6]),
+        ),
         _ when p.vonHand => (
-            0.14 * tiefe,
-            const StrokePattern.dotted(spacingFactor: 2)
-          ),
+          0.14 * tiefe,
+          const StrokePattern.dotted(spacingFactor: 2),
+        ),
         _ => (0.28 * tiefe, const StrokePattern.solid()),
       };
       for (final ring in f.gebiet.ringe) {
-        raus.add(Polygon(
-          points: [
-            for (final punkt in ring) ll.LatLng(punkt.breite, punkt.laenge)
-          ],
-          color: grundfarbe.withValues(alpha: fuellung),
-          borderColor: grundfarbe.withValues(alpha: 0.85),
-          borderStrokeWidth: p.ebene == _Ebene.land ? 1.6 : 1.2,
-          pattern: muster,
-        ));
+        raus.add(
+          Polygon(
+            points: [
+              for (final punkt in ring) ll.LatLng(punkt.breite, punkt.laenge),
+            ],
+            color: grundfarbe.withValues(alpha: fuellung),
+            borderColor: grundfarbe.withValues(alpha: 0.85),
+            borderStrokeWidth: p.ebene == _Ebene.land ? 1.6 : 1.2,
+            pattern: muster,
+          ),
+        );
       }
     }
     return raus;
@@ -694,7 +748,9 @@ class _Marke extends StatelessWidget {
                     width: groesse / 3,
                     height: groesse / 3,
                     decoration: const BoxDecoration(
-                        shape: BoxShape.circle, color: Colors.white),
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
         ),
@@ -729,7 +785,9 @@ class _Markierleiste extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           // Umbrechen statt abschneiden: In einem schmalen Fenster rutscht
           // der Geplant-Schalter in die zweite Zeile, statt zu verschwinden.
           child: Wrap(
@@ -737,8 +795,10 @@ class _Markierleiste extends StatelessWidget {
             runSpacing: AppSpacing.xs,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(t.weltkarteKlickMarkiert,
-                  style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                t.weltkarteKlickMarkiert,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
               SegmentedButton<_Ebene>(
                 segments: [
                   for (final (ebene, text) in namen)

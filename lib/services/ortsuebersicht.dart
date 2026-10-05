@@ -42,8 +42,7 @@ extension UnterortStand on Unterort {
   /// Belegt heisst: Es gibt Fotos, es steht ein Haken von Hand, oder eine
   /// Ebene tiefer steht einer. „Geplant" zählt nicht – wie überall in
   /// dieser App.
-  bool get besucht =>
-      aufnahmen > 0 || marke == Markenart.besucht || abgeleitet;
+  bool get besucht => aufnahmen > 0 || marke == Markenart.besucht || abgeleitet;
 }
 
 /// Was über einen Ort bekannt ist.
@@ -125,8 +124,9 @@ Ortsuebersicht ortsuebersicht({
         ? null
         : regionscodes['$iso|$region'];
     final ort = a.ort;
-    final ortsschluessel =
-        (ort == null || ort.isEmpty) ? null : '$land|${region ?? ''}|$ort';
+    final ortsschluessel = (ort == null || ort.isEmpty)
+        ? null
+        : '$land|${region ?? ''}|$ort';
 
     switch (ebene) {
       case Ortsebene.land:

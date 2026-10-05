@@ -32,12 +32,12 @@ class HistogramData {
   /// Leeres Histogramm (alle Zähler 0) – für den Zustand "noch nichts
   /// berechnet", damit die Anzeige nicht mit null umgehen muss.
   factory HistogramData.empty() => HistogramData(
-        luminance: List<int>.filled(histogramBinCount, 0),
-        red: List<int>.filled(histogramBinCount, 0),
-        green: List<int>.filled(histogramBinCount, 0),
-        blue: List<int>.filled(histogramBinCount, 0),
-        sampleCount: 0,
-      );
+    luminance: List<int>.filled(histogramBinCount, 0),
+    red: List<int>.filled(histogramBinCount, 0),
+    green: List<int>.filled(histogramBinCount, 0),
+    blue: List<int>.filled(histogramBinCount, 0),
+    sampleCount: 0,
+  );
 
   bool get isEmpty => sampleCount == 0;
 
@@ -311,7 +311,9 @@ class WaveformData {
 
   factory WaveformData.empty() {
     List<List<int>> leer() => List.generate(
-        waveformMaxColumns, (_) => List<int>.filled(histogramBinCount, 0));
+      waveformMaxColumns,
+      (_) => List<int>.filled(histogramBinCount, 0),
+    );
     return WaveformData(
       luminance: leer(),
       red: leer(),
@@ -330,8 +332,9 @@ class WaveformData {
 /// längster Kante liefert praktisch dieselbe Form wie das Vollbild.
 WaveformData computeWaveform(img.Image image) {
   final sampled = _stichprobe(image);
-  final spalten =
-      sampled.width < waveformMaxColumns ? sampled.width : waveformMaxColumns;
+  final spalten = sampled.width < waveformMaxColumns
+      ? sampled.width
+      : waveformMaxColumns;
 
   List<List<int>> leer() =>
       List.generate(spalten, (_) => List<int>.filled(histogramBinCount, 0));
@@ -386,8 +389,12 @@ class BildAuswertung {
   final int breite;
   final int hoehe;
 
-  const BildAuswertung(this.histogramm, this.waveform,
-      {required this.breite, required this.hoehe});
+  const BildAuswertung(
+    this.histogramm,
+    this.waveform, {
+    required this.breite,
+    required this.hoehe,
+  });
 
   /// Breite geteilt durch Höhe. Null-sicher: ein Bild ohne Höhe gibt es
   /// nicht, aber ein Teilen durch Null wäre der unangenehmere Fehler.

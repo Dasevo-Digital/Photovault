@@ -34,40 +34,44 @@ void main() {
   /// Eine Strecke über rund 40 km – gross genug, dass Hineinzoomen
   /// überhaupt einen Unterschied macht.
   List<Routenpunkt> route() => [
-        (breite: 50.10, laenge: 8.60, zeit: DateTime(2026, 7, 1, 9)),
-        (breite: 50.25, laenge: 8.75, zeit: DateTime(2026, 7, 1, 12)),
-        (breite: 50.40, laenge: 8.90, zeit: DateTime(2026, 7, 1, 15)),
-      ];
+    (breite: 50.10, laenge: 8.60, zeit: DateTime(2026, 7, 1, 9)),
+    (breite: 50.25, laenge: 8.75, zeit: DateTime(2026, 7, 1, 12)),
+    (breite: 50.40, laenge: 8.90, zeit: DateTime(2026, 7, 1, 15)),
+  ];
 
   Future<void> zeige(WidgetTester tester, {double hoehe = 240}) async {
     tester.view.physicalSize = const Size(900, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SingleChildScrollView(
-          child: Routenkarte(
-            route: route(),
-            orte: const [],
-            nachId: const {},
-            paths: paths,
-            beiOrt: (_) {},
-            hoehe: hoehe,
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Routenkarte(
+              route: route(),
+              orte: const [],
+              nachId: const {},
+              paths: paths,
+              beiOrt: (_) {},
+              hoehe: hoehe,
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  double zoom(WidgetTester tester) =>
-      tester.widget<FlutterMap>(find.byType(FlutterMap)).mapController!.camera
-          .zoom;
+  double zoom(WidgetTester tester) => tester
+      .widget<FlutterMap>(find.byType(FlutterMap))
+      .mapController!
+      .camera
+      .zoom;
 
   double hoeheDerKarte(WidgetTester tester) =>
       tester.getRect(find.byType(FlutterMap)).height;
@@ -108,33 +112,35 @@ void main() {
     expect(zoom(tester), closeTo(anfang, 0.01));
   });
 
-  testWidgets('der Vergroessern-Knopf macht die Karte hoeher und wieder klein',
-      (tester) async {
-    await zeige(tester, hoehe: 200);
-    expect(hoeheDerKarte(tester), closeTo(200, 0.5));
+  testWidgets(
+    'der Vergroessern-Knopf macht die Karte hoeher und wieder klein',
+    (tester) async {
+      await zeige(tester, hoehe: 200);
+      expect(hoeheDerKarte(tester), closeTo(200, 0.5));
 
-    await tester.tap(find.byIcon(Icons.open_in_full));
-    await tester.pump();
-    expect(hoeheDerKarte(tester), closeTo(200 * 1.8, 0.5));
+      await tester.tap(find.byIcon(Icons.open_in_full));
+      await tester.pump();
+      expect(hoeheDerKarte(tester), closeTo(200 * 1.8, 0.5));
 
-    await tester.tap(find.byIcon(Icons.open_in_full));
-    await tester.pump();
-    expect(hoeheDerKarte(tester), closeTo(200 * 2.8, 0.5));
-    // Auf der letzten Stufe bietet der Knopf den Rueckweg an.
-    expect(find.byIcon(Icons.close_fullscreen), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.open_in_full));
+      await tester.pump();
+      expect(hoeheDerKarte(tester), closeTo(200 * 2.8, 0.5));
+      // Auf der letzten Stufe bietet der Knopf den Rueckweg an.
+      expect(find.byIcon(Icons.close_fullscreen), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.close_fullscreen));
-    await tester.pump();
-    expect(hoeheDerKarte(tester), closeTo(200, 0.5));
-  });
+      await tester.tap(find.byIcon(Icons.close_fullscreen));
+      await tester.pump();
+      expect(hoeheDerKarte(tester), closeTo(200, 0.5));
+    },
+  );
 
-  testWidgets('das Mausrad gehoert weiterhin der Seite, nicht der Karte',
-      (tester) async {
+  testWidgets('das Mausrad gehoert weiterhin der Seite, nicht der Karte', (
+    tester,
+  ) async {
     // Der Grund, aus dem die Karte ueberhaupt unbeweglich war. Ein
     // Zoomknopf loest das Problem nur, wenn das Rad NICHT auch zoomt.
     await zeige(tester);
-    final optionen =
-        tester.widget<FlutterMap>(find.byType(FlutterMap)).options;
+    final optionen = tester.widget<FlutterMap>(find.byType(FlutterMap)).options;
     final flags = optionen.interactionOptions.flags;
     expect(InteractiveFlag.hasScrollWheelZoom(flags), isFalse);
     expect(InteractiveFlag.hasPinchZoom(flags), isFalse);
@@ -147,8 +153,10 @@ void main() {
     // Ueber der letzten Stufe, fuer die es Kacheln gibt, wuerde die Karte
     // grau - der Knopf muss dort aufhoeren.
     await zeige(tester);
-    final grenze =
-        tester.widget<FlutterMap>(find.byType(FlutterMap)).options.maxZoom!;
+    final grenze = tester
+        .widget<FlutterMap>(find.byType(FlutterMap))
+        .options
+        .maxZoom!;
     for (var i = 0; i < 30; i++) {
       await tester.tap(find.byIcon(Icons.add));
       await tester.pump();

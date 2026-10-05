@@ -130,15 +130,27 @@ class _KartenquellenUebersichtState extends State<KartenquellenUebersicht> {
               // Die drei mitgelieferten. Ihre Namen stehen in der
               // Oberfläche und nicht im Aufzählungstyp – deshalb hier und
               // nicht in [Kartenstil].
-              _mitgeliefert(Icons.light_mode_outlined, t.karteHell,
-                  Kartenstil.hell, Kartenansicht.hell),
-              _mitgeliefert(Icons.dark_mode_outlined, t.karteDunkel,
-                  Kartenstil.dunkel, Kartenansicht.dunkel,
-                  // Mit CARTO-Schlüssel kommen Kacheln in doppelter
-                  // Auflösung vom Server, ohne wird sie nachgebildet.
-                  hochaufloesend: cartoSchluessel != null),
-              _mitgeliefert(Icons.terrain_outlined, t.karteTopografie,
-                  Kartenstil.topo, Kartenansicht.topo),
+              _mitgeliefert(
+                Icons.light_mode_outlined,
+                t.karteHell,
+                Kartenstil.hell,
+                Kartenansicht.hell,
+              ),
+              _mitgeliefert(
+                Icons.dark_mode_outlined,
+                t.karteDunkel,
+                Kartenstil.dunkel,
+                Kartenansicht.dunkel,
+                // Mit CARTO-Schlüssel kommen Kacheln in doppelter
+                // Auflösung vom Server, ohne wird sie nachgebildet.
+                hochaufloesend: cartoSchluessel != null,
+              ),
+              _mitgeliefert(
+                Icons.terrain_outlined,
+                t.karteTopografie,
+                Kartenstil.topo,
+                Kartenansicht.topo,
+              ),
               const Divider(height: 1),
               for (final v in kartenvorlagen)
                 _Zeile(
@@ -156,8 +168,8 @@ class _KartenquellenUebersichtState extends State<KartenquellenUebersicht> {
                   // eingeschaltet IST und die Karte auf „eigene" steht –
                   // die Adresse allein sagt nur, welche Zeile gemeint
                   // wäre.
-                  standard: _standard == Kartenansicht.eigene &&
-                      eigene?.url == v.url,
+                  standard:
+                      _standard == Kartenansicht.eigene && eigene?.url == v.url,
                   seite: v.seite,
                   aufSeite: _seiteOeffnen,
                   aktion: v.sofortNutzbar

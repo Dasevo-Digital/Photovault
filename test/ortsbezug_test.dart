@@ -27,33 +27,37 @@ void main() {
     bool gesperrt = false,
   }) async {
     final id = 'a${laufend++}';
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'pruef-$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 6, 3),
-          importedAt: DateTime(2024),
-          locationCity: Value(stadt),
-          locationState: Value(region),
-          locationCountry: Value(land),
-          isTrashed: Value(papierkorb),
-          isLocked: Value(gesperrt),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'pruef-$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 6, 3),
+            importedAt: DateTime(2024),
+            locationCity: Value(stadt),
+            locationState: Value(region),
+            locationCountry: Value(land),
+            isTrashed: Value(papierkorb),
+            isLocked: Value(gesperrt),
+          ),
+        );
     return id;
   }
 
   Future<void> reiseMit(String id, List<String> ids) => db.reiseAnlegen(
-        ReisenCompanion.insert(
-          id: id,
-          name: 'Reise $id',
-          von: DateTime(2024, 6, 3),
-          bis: DateTime(2024, 6, 10),
-          angelegtAm: DateTime(2024, 7, 1),
-        ),
-        ids,
-      );
+    ReisenCompanion.insert(
+      id: id,
+      name: 'Reise $id',
+      von: DateTime(2024, 6, 3),
+      bis: DateTime(2024, 6, 10),
+      angelegtAm: DateTime(2024, 7, 1),
+    ),
+    ids,
+  );
 
   Future<void> aktivitaetMit(String id, List<String> ids) =>
       db.aktivitaetAnlegen(
@@ -183,15 +187,17 @@ void main() {
     // spüren, und genau deshalb steht dieser Test hier: Der Abstand
     // wächst mit der Bibliothek, die Zuordnungstabelle wächst nicht mit.
     Future<List<String>> plan(String tabelle, String spalte) async {
-      final zeilen = await db.customSelect(
-        'EXPLAIN QUERY PLAN '
-        'SELECT z.$spalte, a.location_city, a.location_state, '
-        '       a.location_country, COUNT(*) '
-        'FROM $tabelle z CROSS JOIN assets a ON a.id = z.asset_id '
-        'WHERE a.is_trashed = 0 AND a.is_locked = 0 '
-        'GROUP BY z.$spalte, a.location_city, a.location_state, '
-        '         a.location_country',
-      ).get();
+      final zeilen = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN '
+            'SELECT z.$spalte, a.location_city, a.location_state, '
+            '       a.location_country, COUNT(*) '
+            'FROM $tabelle z CROSS JOIN assets a ON a.id = z.asset_id '
+            'WHERE a.is_trashed = 0 AND a.is_locked = 0 '
+            'GROUP BY z.$spalte, a.location_city, a.location_state, '
+            '         a.location_country',
+          )
+          .get();
       return [for (final z in zeilen) z.read<String>('detail')];
     }
 
@@ -203,8 +209,11 @@ void main() {
       // von keine_festen_texte_test.dart.
       final quelle = File('lib/db/database.dart').readAsStringSync();
       expect(quelle, contains('CROSS JOIN assets a ON a.id = z.asset_id'));
-      expect(quelle, isNot(contains("'FROM \$tabelle z JOIN assets")),
-          reason: 'das schlichte JOIN dreht die Schleifen um');
+      expect(
+        quelle,
+        isNot(contains("'FROM \$tabelle z JOIN assets")),
+        reason: 'das schlichte JOIN dreht die Schleifen um',
+      );
     });
 
     for (final (name, tabelle, spalte) in [
@@ -214,19 +223,27 @@ void main() {
       test('$name: aussen die Zuordnung, innen die Aufnahme', () async {
         final schritte = await plan(tabelle, spalte);
         // Die erste Zeile des Plans ist die äussere Schleife.
-        expect(schritte.first, contains(tabelle),
-            reason: 'aussen muss die Zuordnungstabelle laufen:\n'
-                '${schritte.join('\n')}');
-        expect(schritte.any((s) => s.contains('SEARCH a') && s.contains('id=?')),
-            isTrue,
-            reason: 'die Aufnahme wird über ihren Schlüssel geholt:\n'
-                '${schritte.join('\n')}');
+        expect(
+          schritte.first,
+          contains(tabelle),
+          reason:
+              'aussen muss die Zuordnungstabelle laufen:\n'
+              '${schritte.join('\n')}',
+        );
+        expect(
+          schritte.any((s) => s.contains('SEARCH a') && s.contains('id=?')),
+          isTrue,
+          reason:
+              'die Aufnahme wird über ihren Schlüssel geholt:\n'
+              '${schritte.join('\n')}',
+        );
         // Und ausdrücklich NICHT der umgekehrte Weg.
         expect(
-            schritte.first.contains('assets') ||
-                schritte.first.contains('SEARCH a'),
-            isFalse,
-            reason: 'die Aufnahmen dürfen nicht die äussere Schleife sein');
+          schritte.first.contains('assets') ||
+              schritte.first.contains('SEARCH a'),
+          isFalse,
+          reason: 'die Aufnahmen dürfen nicht die äussere Schleife sein',
+        );
       });
     }
   });

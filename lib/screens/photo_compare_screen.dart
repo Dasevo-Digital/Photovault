@@ -64,8 +64,9 @@ class _PhotoCompareScreenState extends State<PhotoCompareScreen> {
   }
 
   Widget _seite(AssetData asset, TransformationController regler) {
-    final datei =
-        widget.paths.absolute(asset.previewRelativePath ?? asset.relativePath);
+    final datei = widget.paths.absolute(
+      asset.previewRelativePath ?? asset.relativePath,
+    );
     return Column(
       children: [
         Expanded(
@@ -90,12 +91,18 @@ class _PhotoCompareScreenState extends State<PhotoCompareScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs, horizontal: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.xs,
+            horizontal: AppSpacing.sm,
+          ),
           child: Text(
             asset.originalFileName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: DunkleFlaeche.zweitText, fontSize: 12),
+            style: const TextStyle(
+              color: DunkleFlaeche.zweitText,
+              fontSize: 12,
+            ),
           ),
         ),
       ],
@@ -121,8 +128,14 @@ class _PhotoCompareScreenState extends State<PhotoCompareScreen> {
         title: Text(t.vergleichTitel),
         actions: [
           IconButton(
-            tooltip: _uebereinander ? t.vergleichNebeneinander : t.vergleichUebereinander,
-            icon: Icon(_uebereinander ? Icons.view_column_outlined : Icons.view_agenda_outlined),
+            tooltip: _uebereinander
+                ? t.vergleichNebeneinander
+                : t.vergleichUebereinander,
+            icon: Icon(
+              _uebereinander
+                  ? Icons.view_column_outlined
+                  : Icons.view_agenda_outlined,
+            ),
             onPressed: () => setState(() => _uebereinander = !_uebereinander),
           ),
           IconButton(
@@ -143,11 +156,13 @@ class _PhotoCompareScreenState extends State<PhotoCompareScreen> {
         ],
       ),
       body: _uebereinander
-          ? Column(children: [
-              Expanded(child: _seite(widget.links, _sicht)),
-              const Divider(height: 1, color: DunkleFlaeche.linie),
-              Expanded(child: _seite(widget.rechts, rechterRegler)),
-            ])
+          ? Column(
+              children: [
+                Expanded(child: _seite(widget.links, _sicht)),
+                const Divider(height: 1, color: DunkleFlaeche.linie),
+                Expanded(child: _seite(widget.rechts, rechterRegler)),
+              ],
+            )
           : Row(children: seiten),
     );
   }

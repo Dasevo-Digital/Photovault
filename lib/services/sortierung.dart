@@ -51,8 +51,8 @@ const Rastersortierung rastersortierungVorgabe = Rastersortierung.aufnahmeNeu;
 /// Bildschirm zu verhindern – dieselbe Regel wie bei der Kachelstufe.
 Rastersortierung rastersortierung(int wert) =>
     wert >= 0 && wert < Rastersortierung.values.length
-        ? Rastersortierung.values[wert]
-        : rastersortierungVorgabe;
+    ? Rastersortierung.values[wert]
+    : rastersortierungVorgabe;
 
 /// Ob nach dem **Aufnahmedatum** geordnet wird.
 ///
@@ -87,17 +87,17 @@ bool sortierungAbsteigend(Rastersortierung s) =>
 /// für eine Reihenfolge, die die Ausnahme ist. Siebzig Millisekunden
 /// zahlt, wer sie einstellt; nicht jeder andere.
 String sortierungSql(Rastersortierung s) => switch (s) {
-      Rastersortierung.aufnahmeNeu => 'file_created_at DESC',
-      Rastersortierung.aufnahmeAlt => 'file_created_at ASC',
-      // Zweiter Schlüssel überall dort, wo der erste sich wiederholen
-      // kann: Zwei Dateien gleicher Grösse dürfen nicht bei jeder
-      // Abfrage die Plätze tauschen.
-      Rastersortierung.importNeu => 'imported_at DESC, file_created_at DESC',
-      Rastersortierung.name =>
-        'original_file_name COLLATE NOCASE ASC, file_created_at DESC',
-      Rastersortierung.bewertung => 'rating DESC, file_created_at DESC',
-      Rastersortierung.groesse => 'file_size_bytes DESC, file_created_at DESC',
-    };
+  Rastersortierung.aufnahmeNeu => 'file_created_at DESC',
+  Rastersortierung.aufnahmeAlt => 'file_created_at ASC',
+  // Zweiter Schlüssel überall dort, wo der erste sich wiederholen
+  // kann: Zwei Dateien gleicher Grösse dürfen nicht bei jeder
+  // Abfrage die Plätze tauschen.
+  Rastersortierung.importNeu => 'imported_at DESC, file_created_at DESC',
+  Rastersortierung.name =>
+    'original_file_name COLLATE NOCASE ASC, file_created_at DESC',
+  Rastersortierung.bewertung => 'rating DESC, file_created_at DESC',
+  Rastersortierung.groesse => 'file_size_bytes DESC, file_created_at DESC',
+};
 
 /// Dieselbe Reihenfolge als Vergleicher.
 ///
@@ -110,27 +110,28 @@ int Function(AssetData, AssetData) sortierungVergleicher(Rastersortierung s) {
       b.fileCreatedAt.compareTo(a.fileCreatedAt);
   return switch (s) {
     Rastersortierung.aufnahmeNeu => datumAb,
-    Rastersortierung.aufnahmeAlt => (a, b) =>
-        a.fileCreatedAt.compareTo(b.fileCreatedAt),
+    Rastersortierung.aufnahmeAlt => (a, b) => a.fileCreatedAt.compareTo(
+      b.fileCreatedAt,
+    ),
     Rastersortierung.importNeu => (a, b) {
-        final i = b.importedAt.compareTo(a.importedAt);
-        return i != 0 ? i : datumAb(a, b);
-      },
+      final i = b.importedAt.compareTo(a.importedAt);
+      return i != 0 ? i : datumAb(a, b);
+    },
     Rastersortierung.name => (a, b) {
-        final i = a.originalFileName
-            .toLowerCase()
-            .compareTo(b.originalFileName.toLowerCase());
-        return i != 0 ? i : datumAb(a, b);
-      },
+      final i = a.originalFileName.toLowerCase().compareTo(
+        b.originalFileName.toLowerCase(),
+      );
+      return i != 0 ? i : datumAb(a, b);
+    },
     // Ohne Bewertung steht 0 in der Spalte, nicht null - unbewertete
     // Aufnahmen landen also ans Ende, in SQL wie in Dart.
     Rastersortierung.bewertung => (a, b) {
-        final i = b.rating.compareTo(a.rating);
-        return i != 0 ? i : datumAb(a, b);
-      },
+      final i = b.rating.compareTo(a.rating);
+      return i != 0 ? i : datumAb(a, b);
+    },
     Rastersortierung.groesse => (a, b) {
-        final i = b.fileSizeBytes.compareTo(a.fileSizeBytes);
-        return i != 0 ? i : datumAb(a, b);
-      },
+      final i = b.fileSizeBytes.compareTo(a.fileSizeBytes);
+      return i != 0 ? i : datumAb(a, b);
+    },
   };
 }

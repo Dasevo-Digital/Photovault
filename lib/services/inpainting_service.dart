@@ -62,30 +62,52 @@ class InpaintingService {
     // Kontext liefert sichtbar schlechtere Füllungen, mehr verschenkt
     // Auflösung, weil der Ausschnitt auf 512 geschrumpft wird.
     final rand = math.max(48, math.max(kasten.width, kasten.height) ~/ 2);
-    final ausschnitt = quadratischerAusschnitt(kasten, rand, quelle.width, quelle.height);
+    final ausschnitt = quadratischerAusschnitt(
+      kasten,
+      rand,
+      quelle.width,
+      quelle.height,
+    );
 
-    final teilBild = img.copyCrop(quelle,
-        x: ausschnitt.left, y: ausschnitt.top,
-        width: ausschnitt.width, height: ausschnitt.height);
-    final teilMaske = img.copyCrop(maske,
-        x: ausschnitt.left, y: ausschnitt.top,
-        width: ausschnitt.width, height: ausschnitt.height);
+    final teilBild = img.copyCrop(
+      quelle,
+      x: ausschnitt.left,
+      y: ausschnitt.top,
+      width: ausschnitt.width,
+      height: ausschnitt.height,
+    );
+    final teilMaske = img.copyCrop(
+      maske,
+      x: ausschnitt.left,
+      y: ausschnitt.top,
+      width: ausschnitt.width,
+      height: ausschnitt.height,
+    );
 
-    final klein = img.copyResize(teilBild,
-        width: modellGroesse, height: modellGroesse,
-        interpolation: img.Interpolation.linear);
+    final klein = img.copyResize(
+      teilBild,
+      width: modellGroesse,
+      height: modellGroesse,
+      interpolation: img.Interpolation.linear,
+    );
     // Die Maske mit nächstem Nachbarn: Eine geglättete Maske bekäme
     // Grauwerte am Rand, und das Modell behandelt alles über 0 als „füllen".
-    final kleineMaske = img.copyResize(teilMaske,
-        width: modellGroesse, height: modellGroesse,
-        interpolation: img.Interpolation.nearest);
+    final kleineMaske = img.copyResize(
+      teilMaske,
+      width: modellGroesse,
+      height: modellGroesse,
+      interpolation: img.Interpolation.nearest,
+    );
 
     final gefuellt = await _durchlauf(klein, kleineMaske);
 
     // Zurück auf die Ausschnittgrösse und nur innerhalb der Maske einsetzen.
-    final zurueck = img.copyResize(gefuellt,
-        width: ausschnitt.width, height: ausschnitt.height,
-        interpolation: img.Interpolation.cubic);
+    final zurueck = img.copyResize(
+      gefuellt,
+      width: ausschnitt.width,
+      height: ausschnitt.height,
+      interpolation: img.Interpolation.cubic,
+    );
 
     final ergebnis = img.Image.from(quelle);
     for (var y = 0; y < ausschnitt.height; y++) {
@@ -134,7 +156,10 @@ class InpaintingService {
     // keine hunderte Megabyte liegen lässt.
     final lebend = <OrtValue>{bildTensor, maskenTensor};
     try {
-      final ausgaben = await _session.run({'image': bildTensor, 'mask': maskenTensor});
+      final ausgaben = await _session.run({
+        'image': bildTensor,
+        'mask': maskenTensor,
+      });
       lebend.addAll(ausgaben.values);
       final roh = await ausgaben['output']!.asFlattenedList();
 
@@ -145,7 +170,8 @@ class InpaintingService {
           final idx = y * n + x;
           // Ausgabe ist bereits 0..255 – hier NICHT noch einmal skalieren.
           ergebnis.setPixelRgb(
-            x, y,
+            x,
+            y,
             (roh[idx] as num).round().clamp(0, 255),
             (roh[kanal + idx] as num).round().clamp(0, 255),
             (roh[2 * kanal + idx] as num).round().clamp(0, 255),
@@ -183,7 +209,12 @@ class InpaintingService {
     }
   }
   if (rechts < 0) return null;
-  return (left: links, top: oben, width: rechts - links + 1, height: unten - oben + 1);
+  return (
+    left: links,
+    top: oben,
+    width: rechts - links + 1,
+    height: unten - oben + 1,
+  );
 }
 
 /// Erweitert [kasten] um [rand], macht ihn quadratisch und hält ihn im Bild.
@@ -201,8 +232,11 @@ class InpaintingService {
 /// nicht.
 @visibleForTesting
 ({int left, int top, int width, int height}) quadratischerAusschnitt(
-    ({int left, int top, int width, int height}) kasten,
-    int rand, int bildBreite, int bildHoehe) {
+  ({int left, int top, int width, int height}) kasten,
+  int rand,
+  int bildBreite,
+  int bildHoehe,
+) {
   var seite = math.max(kasten.width, kasten.height) + 2 * rand;
   seite = math.max(seite, InpaintingService.modellGroesse);
   seite = math.min(seite, math.min(bildBreite, bildHoehe));

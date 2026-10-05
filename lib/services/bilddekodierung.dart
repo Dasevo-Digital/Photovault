@@ -129,8 +129,10 @@ int dekodierbreite(double punkte, double pixelverhaeltnis) {
   required int? bildHoehe,
   required double pixelverhaeltnis,
 }) {
-  if (bildBreite == null || bildHoehe == null ||
-      bildBreite <= 0 || bildHoehe <= 0) {
+  if (bildBreite == null ||
+      bildHoehe == null ||
+      bildBreite <= 0 ||
+      bildHoehe <= 0) {
     return (breite: null, hoehe: null);
   }
   final breiteEndlich = kachelBreite.isFinite && kachelBreite > 0;
@@ -139,7 +141,10 @@ int dekodierbreite(double punkte, double pixelverhaeltnis) {
   // Nur eine Kante begrenzt: Dann ist sie die bindende, ob sie es
   // rechnerisch waere oder nicht - die andere ist gar nicht bekannt.
   if (!hoeheEndlich) {
-    return (breite: dekodierbreite(kachelBreite, pixelverhaeltnis), hoehe: null);
+    return (
+      breite: dekodierbreite(kachelBreite, pixelverhaeltnis),
+      hoehe: null,
+    );
   }
   if (!breiteEndlich) {
     return (breite: null, hoehe: dekodierbreite(kachelHoehe, pixelverhaeltnis));
@@ -170,7 +175,9 @@ const flutterDekodierbareEndungen = [
 bool flutterKannAnzeigen(String pfad) {
   final punkt = pfad.lastIndexOf('.');
   if (punkt < 0) return false;
-  return flutterDekodierbareEndungen.contains(pfad.substring(punkt).toLowerCase());
+  return flutterDekodierbareEndungen.contains(
+    pfad.substring(punkt).toLowerCase(),
+  );
 }
 
 /// Stellt den Bildspeicher auf eine Bibliothek in Bildschirmgrösse ein.

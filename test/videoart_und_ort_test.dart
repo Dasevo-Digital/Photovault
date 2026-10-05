@@ -60,14 +60,12 @@ void main() {
               0xFF,
               0x7F,
               ...ort.codeUnits,
-            ]));
+            ]),
+          );
     final b = BytesBuilder()
       ..add(kasten('ftyp', 'qt  '.codeUnits))
       ..add(kasten('mdat', List.filled(mdatBytes, 7)))
-      ..add(kasten('moov', [
-        ...kasten('mvhd', List.filled(100, 0)),
-        ...udta,
-      ]));
+      ..add(kasten('moov', [...kasten('mvhd', List.filled(100, 0)), ...udta]));
     return b.toBytes();
   }
 
@@ -85,8 +83,9 @@ void main() {
 
   group('Der Ort im Video', () {
     test('kommt beim Import in die Datenbank', () async {
-      final r = await imp
-          .importFile(lege('urlaub.mov', videobytes(ort: '+52.2375+10.5738')).path);
+      final r = await imp.importFile(
+        lege('urlaub.mov', videobytes(ort: '+52.2375+10.5738')).path,
+      );
       expect(r.outcome, ImportOutcome.imported);
       final asset = (await db.assetById(r.assetId!))!;
       expect(asset.type, 'VIDEO');
@@ -103,15 +102,17 @@ void main() {
     test('der Nachtrag sieht Videos an – vorher tat er das nicht', () async {
       // `assetsForLocationBackfill` filterte auf `type = 'IMAGE'` und
       // liess damit genau die Gruppe aus, bei der noch etwas zu holen war.
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'v1',
-        relativePath: 'originals/v1.mov',
-        originalFileName: 'v1.mov',
-        type: 'VIDEO',
-        checksum: 'v1',
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'v1',
+          relativePath: 'originals/v1.mov',
+          originalFileName: 'v1.mov',
+          type: 'VIDEO',
+          checksum: 'v1',
+          fileCreatedAt: DateTime(2024),
+          importedAt: DateTime(2024),
+        ),
+      );
       final offen = await db.assetsForLocationBackfill();
       expect([for (final a in offen) a.id], contains('v1'));
       expect(await db.countLocationBackfill(), 1);
@@ -132,8 +133,11 @@ void main() {
       final r = await imp.importFile(lege('IMG_0042.mov', jpegbytes()).path);
       expect(r.outcome, ImportOutcome.imported);
       final asset = (await db.assetById(r.assetId!))!;
-      expect(asset.type, 'IMAGE',
-          reason: 'die Bytes sagen JPEG, der Name sagt Video');
+      expect(
+        asset.type,
+        'IMAGE',
+        reason: 'die Bytes sagen JPEG, der Name sagt Video',
+      );
       // Und weil es als Bild durchlief, entstand auch eine Miniatur.
       expect(asset.thumbnailRelativePath, isNotNull);
     });
@@ -144,52 +148,58 @@ void main() {
       expect((await db.assetById(r.assetId!))!.type, 'VIDEO');
     });
 
-    test('der Nachlauf berichtigt, was schon in der Bibliothek liegt',
-        () async {
-      // So sieht der Bestand aus: als Video geführt, ohne Miniatur, weil
-      // der Videowandler an einem Standbild scheiterte.
-      const rel = 'originals/2024/01/alt.mov';
-      pfade.absolute(rel)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(jpegbytes());
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'alt',
-        relativePath: rel,
-        originalFileName: 'alt.mov',
-        type: 'VIDEO',
-        checksum: 'alt',
-        dateiformat: const Value('mov'),
-        durationSeconds: const Value(3.0),
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024),
-      ));
-      // Und ein echtes Video daneben, das unangetastet bleiben muss.
-      const relEcht = 'originals/2024/01/echt.mov';
-      pfade.absolute(relEcht)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(videobytes());
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'echt',
-        relativePath: relEcht,
-        originalFileName: 'echt.mov',
-        type: 'VIDEO',
-        checksum: 'echt',
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024),
-      ));
+    test(
+      'der Nachlauf berichtigt, was schon in der Bibliothek liegt',
+      () async {
+        // So sieht der Bestand aus: als Video geführt, ohne Miniatur, weil
+        // der Videowandler an einem Standbild scheiterte.
+        const rel = 'originals/2024/01/alt.mov';
+        pfade.absolute(rel)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(jpegbytes());
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: 'alt',
+            relativePath: rel,
+            originalFileName: 'alt.mov',
+            type: 'VIDEO',
+            checksum: 'alt',
+            dateiformat: const Value('mov'),
+            durationSeconds: const Value(3.0),
+            fileCreatedAt: DateTime(2024),
+            importedAt: DateTime(2024),
+          ),
+        );
+        // Und ein echtes Video daneben, das unangetastet bleiben muss.
+        const relEcht = 'originals/2024/01/echt.mov';
+        pfade.absolute(relEcht)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(videobytes());
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: 'echt',
+            relativePath: relEcht,
+            originalFileName: 'echt.mov',
+            type: 'VIDEO',
+            checksum: 'echt',
+            fileCreatedAt: DateTime(2024),
+            importedAt: DateTime(2024),
+          ),
+        );
 
-      final library = LibraryState()
-        ..db = db
-        ..paths = pfade
-        ..importService = imp;
-      await library.repariereDateiarten().drain<void>();
+        final library = LibraryState()
+          ..db = db
+          ..paths = pfade
+          ..importService = imp;
+        await library.repariereDateiarten().drain<void>();
 
-      final berichtigt = (await db.assetById('alt'))!;
-      expect(berichtigt.type, 'IMAGE');
-      expect(berichtigt.dateiformat, 'jpg');
-      // Die Laufzeit eines Standbildes ist keine Zahl, sondern keine.
-      expect(berichtigt.durationSeconds, isNull);
-      expect((await db.assetById('echt'))!.type, 'VIDEO');
-    });
+        final berichtigt = (await db.assetById('alt'))!;
+        expect(berichtigt.type, 'IMAGE');
+        expect(berichtigt.dateiformat, 'jpg');
+        // Die Laufzeit eines Standbildes ist keine Zahl, sondern keine.
+        expect(berichtigt.durationSeconds, isNull);
+        expect((await db.assetById('echt'))!.type, 'VIDEO');
+      },
+    );
   });
 }

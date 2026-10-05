@@ -27,10 +27,10 @@ import '../services/meldungsdienst.dart';
 typedef _ImageEditResult = ({Uint8List bytes, int width, int height});
 
 _ImageEditResult? _encodeResult(img.Image image) => (
-      bytes: Uint8List.fromList(img.encodeJpg(image, quality: 90)),
-      width: image.width,
-      height: image.height,
-    );
+  bytes: Uint8List.fromList(img.encodeJpg(image, quality: 90)),
+  width: image.width,
+  height: image.height,
+);
 
 /// Läuft über `compute()` in einem Hintergrund-Isolate (siehe
 /// [ImageEditorScreen]) – Dekodieren + Transformieren + JPEG-Encodieren
@@ -39,12 +39,16 @@ _ImageEditResult? _encodeResult(img.Image image) => (
 /// jedem einzelnen Dreh-/Spiegel-/Zuschneide-Tastendruck kurz einfrieren.
 _ImageEditResult? _rotateImageLeftIsolate(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
-  return decoded == null ? null : _encodeResult(img.copyRotate(decoded, angle: -90));
+  return decoded == null
+      ? null
+      : _encodeResult(img.copyRotate(decoded, angle: -90));
 }
 
 _ImageEditResult? _rotateImageRightIsolate(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
-  return decoded == null ? null : _encodeResult(img.copyRotate(decoded, angle: 90));
+  return decoded == null
+      ? null
+      : _encodeResult(img.copyRotate(decoded, angle: 90));
 }
 
 _ImageEditResult? _flipImageHorizontalIsolate(Uint8List bytes) {
@@ -61,7 +65,9 @@ typedef _StraightenArgs = ({Uint8List bytes, double grad});
 
 _ImageEditResult? _straightenImageIsolate(_StraightenArgs args) {
   final decoded = img.decodeImage(args.bytes);
-  return decoded == null ? null : _encodeResult(geradeziehen(decoded, args.grad));
+  return decoded == null
+      ? null
+      : _encodeResult(geradeziehen(decoded, args.grad));
 }
 
 typedef _PerspectiveArgs = ({Uint8List bytes, List<Offset> ecken});
@@ -73,12 +79,20 @@ _ImageEditResult? _perspectiveImageIsolate(_PerspectiveArgs args) {
   // gegenüberliegenden Seiten. Fest auf die Bildgrösse zu gehen streckte
   // ein hochkant stehendes Motiv in die Breite.
   double laenge(Offset a, Offset b) => (a - b).distance;
-  final breite = math.max(laenge(args.ecken[0], args.ecken[1]),
-      laenge(args.ecken[3], args.ecken[2]));
-  final hoehe = math.max(laenge(args.ecken[0], args.ecken[3]),
-      laenge(args.ecken[1], args.ecken[2]));
+  final breite = math.max(
+    laenge(args.ecken[0], args.ecken[1]),
+    laenge(args.ecken[3], args.ecken[2]),
+  );
+  final hoehe = math.max(
+    laenge(args.ecken[0], args.ecken[3]),
+    laenge(args.ecken[1], args.ecken[2]),
+  );
   final entzerrt = perspektivischEntzerren(
-      decoded, args.ecken, breite.round().clamp(1, 20000), hoehe.round().clamp(1, 20000));
+    decoded,
+    args.ecken,
+    breite.round().clamp(1, 20000),
+    hoehe.round().clamp(1, 20000),
+  );
   return entzerrt == null ? null : _encodeResult(entzerrt);
 }
 
@@ -87,7 +101,13 @@ typedef _CropArgs = ({Uint8List bytes, int x, int y, int width, int height});
 _ImageEditResult? _cropImageIsolate(_CropArgs args) {
   final decoded = img.decodeImage(args.bytes);
   if (decoded == null) return null;
-  final cropped = img.copyCrop(decoded, x: args.x, y: args.y, width: args.width, height: args.height);
+  final cropped = img.copyCrop(
+    decoded,
+    x: args.x,
+    y: args.y,
+    width: args.width,
+    height: args.height,
+  );
   return _encodeResult(cropped);
 }
 
@@ -138,7 +158,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   int? _currentWidth;
   int? _currentHeight;
   bool _loading = true;
-  bool _processing = false; // Dreh-/Spiegel-/Zuschneide-Operation läuft im Hintergrund-Isolate.
+  bool _processing =
+      false; // Dreh-/Spiegel-/Zuschneide-Operation läuft im Hintergrund-Isolate.
   bool _saving = false;
   String? _error;
 
@@ -168,7 +189,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
 
   Future<void> _load() async {
     try {
-      final relativePath = widget.asset.previewRelativePath ?? widget.asset.relativePath;
+      final relativePath =
+          widget.asset.previewRelativePath ?? widget.asset.relativePath;
       final bytes = await widget.paths.absolute(relativePath).readAsBytes();
       // Nur zum Ermitteln der Abmessungen – läuft einmalig beim Öffnen des
       // Editors (nicht pro Werkzeug-Klick), ein einmaliger kurzer Ruckler
@@ -220,10 +242,14 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     });
   }
 
-  void _rotateLeft() => _runEdit(() => compute(_rotateImageLeftIsolate, _currentBytes!));
-  void _rotateRight() => _runEdit(() => compute(_rotateImageRightIsolate, _currentBytes!));
-  void _flipHorizontal() => _runEdit(() => compute(_flipImageHorizontalIsolate, _currentBytes!));
-  void _flipVertical() => _runEdit(() => compute(_flipImageVerticalIsolate, _currentBytes!));
+  void _rotateLeft() =>
+      _runEdit(() => compute(_rotateImageLeftIsolate, _currentBytes!));
+  void _rotateRight() =>
+      _runEdit(() => compute(_rotateImageRightIsolate, _currentBytes!));
+  void _flipHorizontal() =>
+      _runEdit(() => compute(_flipImageHorizontalIsolate, _currentBytes!));
+  void _flipVertical() =>
+      _runEdit(() => compute(_flipImageVerticalIsolate, _currentBytes!));
 
   void _startCrop() => setState(() => _cropping = true);
 
@@ -237,7 +263,9 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       setState(() => _straightenGrad = null);
       return;
     }
-    _runEdit(() => compute(_straightenImageIsolate, (bytes: bytes, grad: grad)));
+    _runEdit(
+      () => compute(_straightenImageIsolate, (bytes: bytes, grad: grad)),
+    );
   }
 
   /// Öffnet die Perspektivkorrektur mit vier Ecken leicht innerhalb des
@@ -251,12 +279,14 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     if (scale == null || w == null || h == null) return;
     final bw = w * scale, bh = h * scale;
     const rand = 0.12;
-    setState(() => _perspektiveEcken = [
-          Offset(bw * rand, bh * rand),
-          Offset(bw * (1 - rand), bh * rand),
-          Offset(bw * (1 - rand), bh * (1 - rand)),
-          Offset(bw * rand, bh * (1 - rand)),
-        ]);
+    setState(
+      () => _perspektiveEcken = [
+        Offset(bw * rand, bh * rand),
+        Offset(bw * (1 - rand), bh * rand),
+        Offset(bw * (1 - rand), bh * (1 - rand)),
+        Offset(bw * rand, bh * (1 - rand)),
+      ],
+    );
   }
 
   void _startRetusche() => setState(() => _retuscheStriche = []);
@@ -274,8 +304,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     final bytes = _currentBytes;
     final w = _currentWidth, h = _currentHeight;
     final modelle = widget.modelsDir;
-    if (striche == null || striche.isEmpty || scale == null || bytes == null ||
-        w == null || h == null || modelle == null) {
+    if (striche == null ||
+        striche.isEmpty ||
+        scale == null ||
+        bytes == null ||
+        w == null ||
+        h == null ||
+        modelle == null) {
       return;
     }
 
@@ -290,11 +325,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       final radius = (_pinselbreite / 2 / scale).clamp(1.0, 400.0);
       for (final strich in striche) {
         for (final punkt in strich) {
-          img.fillCircle(maske,
-              x: (punkt.dx / scale).round(),
-              y: (punkt.dy / scale).round(),
-              radius: radius.round(),
-              color: img.ColorRgb8(255, 255, 255));
+          img.fillCircle(
+            maske,
+            x: (punkt.dx / scale).round(),
+            y: (punkt.dy / scale).round(),
+            radius: radius.round(),
+            color: img.ColorRgb8(255, 255, 255),
+          );
         }
       }
 
@@ -334,12 +371,15 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     if (ecken == null || scale == null || bytes == null) return;
     // Von Anzeige- in Bildkoordinaten.
     final inBild = [for (final e in ecken) Offset(e.dx / scale, e.dy / scale)];
-    _runEdit(() => compute(_perspectiveImageIsolate, (bytes: bytes, ecken: inBild)));
+    _runEdit(
+      () => compute(_perspectiveImageIsolate, (bytes: bytes, ecken: inBild)),
+    );
   }
+
   void _cancelCrop() => setState(() {
-        _cropping = false;
-        _cropRect = null;
-      });
+    _cropping = false;
+    _cropRect = null;
+  });
 
   void _applyCrop() {
     final rect = _cropRect;
@@ -347,12 +387,26 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     final bytes = _currentBytes;
     final width = _currentWidth;
     final height = _currentHeight;
-    if (rect == null || scale == null || bytes == null || width == null || height == null) return;
+    if (rect == null ||
+        scale == null ||
+        bytes == null ||
+        width == null ||
+        height == null) {
+      return;
+    }
     final x = (rect.left / scale).round().clamp(0, width - 1);
     final y = (rect.top / scale).round().clamp(0, height - 1);
     final w = (rect.width / scale).round().clamp(1, width - x);
     final h = (rect.height / scale).round().clamp(1, height - y);
-    _runEdit(() => compute(_cropImageIsolate, (bytes: bytes, x: x, y: y, width: w, height: h)));
+    _runEdit(
+      () => compute(_cropImageIsolate, (
+        bytes: bytes,
+        x: x,
+        y: y,
+        width: w,
+        height: h,
+      )),
+    );
   }
 
   Future<void> _save() async {
@@ -363,12 +417,16 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppTexte.of(context).bearbSpeichernTitel),
-        content: Text(
-          AppTexte.of(context).bearbSpeichernText,
-        ),
+        content: Text(AppTexte.of(context).bearbSpeichernText),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppTexte.of(context).allgAbbrechen)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppTexte.of(context).allgSpeichern)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).allgSpeichern),
+          ),
         ],
       ),
     );
@@ -390,7 +448,11 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       final keepsSamePath = ext == '.jpg' || ext == '.jpeg';
       final newRelativePath = keepsSamePath
           ? widget.asset.relativePath
-          : widget.paths.originalRelativePath(widget.asset.fileCreatedAt, widget.asset.id, '.jpg');
+          : widget.paths.originalRelativePath(
+              widget.asset.fileCreatedAt,
+              widget.asset.id,
+              '.jpg',
+            );
 
       final targetFile = widget.paths.absolute(newRelativePath);
       await targetFile.parent.create(recursive: true);
@@ -399,7 +461,11 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         await widget.paths.deletePermanently(widget.asset.relativePath);
       }
 
-      await widget.db.setEditedAssetFile(widget.asset.id, relativePath: newRelativePath, checksum: checksum);
+      await widget.db.setEditedAssetFile(
+        widget.asset.id,
+        relativePath: newRelativePath,
+        checksum: checksum,
+      );
 
       final importService = ImportService(widget.db, widget.paths);
       final thumbResult = await importService.generateThumbnailAndPreview(
@@ -433,89 +499,113 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     final bytes = _currentBytes;
     final width = _currentWidth;
     final height = _currentHeight;
-    if (bytes == null || width == null || height == null) return const SizedBox.shrink();
+    if (bytes == null || width == null || height == null) {
+      return const SizedBox.shrink();
+    }
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final imgW = width.toDouble();
-      final imgH = height.toDouble();
-      final scale = (constraints.maxWidth / imgW < constraints.maxHeight / imgH)
-          ? constraints.maxWidth / imgW
-          : constraints.maxHeight / imgH;
-      final displayW = imgW * scale;
-      final displayH = imgH * scale;
-      _displayScale = scale;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imgW = width.toDouble();
+        final imgH = height.toDouble();
+        final scale =
+            (constraints.maxWidth / imgW < constraints.maxHeight / imgH)
+            ? constraints.maxWidth / imgW
+            : constraints.maxHeight / imgH;
+        final displayW = imgW * scale;
+        final displayH = imgH * scale;
+        _displayScale = scale;
 
-      if (_cropping) {
-        _cropRect ??= Rect.fromLTWH(displayW * 0.1, displayH * 0.1, displayW * 0.8, displayH * 0.8);
-      }
+        if (_cropping) {
+          _cropRect ??= Rect.fromLTWH(
+            displayW * 0.1,
+            displayH * 0.1,
+            displayW * 0.8,
+            displayH * 0.8,
+          );
+        }
 
-      return Center(
-        child: SizedBox(
-          width: displayW,
-          height: displayH,
-          child: Stack(
-            children: [
-              Image.memory(bytes, width: displayW, height: displayH, fit: BoxFit.fill, gaplessPlayback: true),
-              if (_cropping && _cropRect != null)
-                _CropOverlay(
-                  imageSize: Size(displayW, displayH),
-                  rect: _cropRect!,
-                  onChanged: (r) => setState(() => _cropRect = r),
+        return Center(
+          child: SizedBox(
+            width: displayW,
+            height: displayH,
+            child: Stack(
+              children: [
+                Image.memory(
+                  bytes,
+                  width: displayW,
+                  height: displayH,
+                  fit: BoxFit.fill,
+                  gaplessPlayback: true,
                 ),
-              // Beim Geradeziehen ein Gitter: Ein schiefer Horizont lässt
-              // sich nur gegen eine Bezugslinie ausrichten, nach Gefühl
-              // trifft man ihn nicht.
-              if (_straightenGrad != null)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                        painter: _AusrichtGitter(winkelGrad: _straightenGrad!)),
+                if (_cropping && _cropRect != null)
+                  _CropOverlay(
+                    imageSize: Size(displayW, displayH),
+                    rect: _cropRect!,
+                    onChanged: (r) => setState(() => _cropRect = r),
                   ),
-                ),
-              if (_retuscheStriche != null)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: (d) => setState(
-                        () => _retuscheStriche = [..._retuscheStriche!, [d.localPosition]]),
-                    onPanUpdate: (d) => setState(() {
-                      final alle = [..._retuscheStriche!];
-                      alle[alle.length - 1] = [...alle.last, d.localPosition];
-                      _retuscheStriche = alle;
-                    }),
-                    child: CustomPaint(
-                      painter: _RetuscheMaler(_retuscheStriche!, _pinselbreite),
+                // Beim Geradeziehen ein Gitter: Ein schiefer Horizont lässt
+                // sich nur gegen eine Bezugslinie ausrichten, nach Gefühl
+                // trifft man ihn nicht.
+                if (_straightenGrad != null)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _AusrichtGitter(winkelGrad: _straightenGrad!),
+                      ),
                     ),
                   ),
-                ),
-              if (_perspektiveEcken != null)
-                _EckenUeberlagerung(
-                  ecken: _perspektiveEcken!,
-                  groesse: Size(displayW, displayH),
-                  gezogen: _gezogeneEcke,
-                  onGriff: (i) => setState(() => _gezogeneEcke = i),
-                  onZieht: (i, punkt) => setState(() {
-                    final neu = [..._perspektiveEcken!];
-                    neu[i] = Offset(
-                      punkt.dx.clamp(0.0, displayW),
-                      punkt.dy.clamp(0.0, displayH),
-                    );
-                    _perspektiveEcken = neu;
-                  }),
-                  onLoslassen: () => setState(() => _gezogeneEcke = null),
-                ),
-              if (_processing)
-                const Positioned.fill(
-                  child: ColoredBox(
-                    color: Colors.black45,
-                    child: Center(child: CircularProgressIndicator()),
+                if (_retuscheStriche != null)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: (d) => setState(
+                        () => _retuscheStriche = [
+                          ..._retuscheStriche!,
+                          [d.localPosition],
+                        ],
+                      ),
+                      onPanUpdate: (d) => setState(() {
+                        final alle = [..._retuscheStriche!];
+                        alle[alle.length - 1] = [...alle.last, d.localPosition];
+                        _retuscheStriche = alle;
+                      }),
+                      child: CustomPaint(
+                        painter: _RetuscheMaler(
+                          _retuscheStriche!,
+                          _pinselbreite,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-            ],
+                if (_perspektiveEcken != null)
+                  _EckenUeberlagerung(
+                    ecken: _perspektiveEcken!,
+                    groesse: Size(displayW, displayH),
+                    gezogen: _gezogeneEcke,
+                    onGriff: (i) => setState(() => _gezogeneEcke = i),
+                    onZieht: (i, punkt) => setState(() {
+                      final neu = [..._perspektiveEcken!];
+                      neu[i] = Offset(
+                        punkt.dx.clamp(0.0, displayW),
+                        punkt.dy.clamp(0.0, displayH),
+                      );
+                      _perspektiveEcken = neu;
+                    }),
+                    onLoslassen: () => setState(() => _gezogeneEcke = null),
+                  ),
+                if (_processing)
+                  const Positioned.fill(
+                    child: ColoredBox(
+                      color: Colors.black45,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 
   Widget _buildToolbar() {
@@ -524,8 +614,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       return Row(
         children: [
           TextButton(
-            onPressed: _processing ? null : () => setState(() => _straightenGrad = null),
-            child: Text(tt.allgAbbrechen, style: const TextStyle(color: Colors.white70)),
+            onPressed: _processing
+                ? null
+                : () => setState(() => _straightenGrad = null),
+            child: Text(
+              tt.allgAbbrechen,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           Expanded(
             child: Slider(
@@ -541,8 +636,10 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           ),
           SizedBox(
             width: 52,
-            child: Text('${_straightenGrad!.toStringAsFixed(1)}°',
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            child: Text(
+              '${_straightenGrad!.toStringAsFixed(1)}°',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
           ),
           FilledButton(
             onPressed: _processing ? null : _applyStraighten,
@@ -555,8 +652,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       return Row(
         children: [
           TextButton(
-            onPressed: _processing ? null : () => setState(() => _retuscheStriche = null),
-            child: Text(tt.allgAbbrechen, style: const TextStyle(color: Colors.white70)),
+            onPressed: _processing
+                ? null
+                : () => setState(() => _retuscheStriche = null),
+            child: Text(
+              tt.allgAbbrechen,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           IconButton(
             tooltip: tt.bearbRetuscheZurueck,
@@ -564,8 +666,12 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             icon: const Icon(Icons.undo),
             onPressed: _processing || _retuscheStriche!.isEmpty
                 ? null
-                : () => setState(() =>
-                    _retuscheStriche = _retuscheStriche!.sublist(0, _retuscheStriche!.length - 1)),
+                : () => setState(
+                    () => _retuscheStriche = _retuscheStriche!.sublist(
+                      0,
+                      _retuscheStriche!.length - 1,
+                    ),
+                  ),
           ),
           Expanded(
             child: Slider(
@@ -573,12 +679,15 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
               min: 6,
               max: 120,
               label: tt.bearbPinselbreite,
-              onChanged: _processing ? null : (v) => setState(() => _pinselbreite = v),
+              onChanged: _processing
+                  ? null
+                  : (v) => setState(() => _pinselbreite = v),
             ),
           ),
           FilledButton.icon(
-            onPressed:
-                _processing || _retuscheStriche!.isEmpty ? null : _applyRetusche,
+            onPressed: _processing || _retuscheStriche!.isEmpty
+                ? null
+                : _applyRetusche,
             icon: const Icon(Icons.auto_fix_high),
             label: Text(tt.bearbRetuscheAnwenden),
           ),
@@ -590,9 +699,14 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           TextButton.icon(
-            onPressed: _processing ? null : () => setState(() => _perspektiveEcken = null),
+            onPressed: _processing
+                ? null
+                : () => setState(() => _perspektiveEcken = null),
             icon: const Icon(Icons.close, color: Colors.white70),
-            label: Text(tt.allgAbbrechen, style: const TextStyle(color: Colors.white70)),
+            label: Text(
+              tt.allgAbbrechen,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           const SizedBox(width: 24),
           FilledButton.icon(
@@ -610,7 +724,10 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           TextButton.icon(
             onPressed: _processing ? null : _cancelCrop,
             icon: const Icon(Icons.close, color: Colors.white70),
-            label: Text(AppTexte.of(context).allgAbbrechen, style: const TextStyle(color: Colors.white70)),
+            label: Text(
+              AppTexte.of(context).allgAbbrechen,
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           const SizedBox(width: 24),
           FilledButton.icon(
@@ -643,14 +760,19 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           _retuscheMoeglich
               ? t.bearbRetusche
               : '${t.bearbRetusche} – '
-                  '${t.aufgModellNoetig(t.aufgLamaModell, t.aufgWoModelle)}',
+                    '${t.aufgModellNoetig(t.aufgLamaModell, t.aufgWoModelle)}',
           _startRetusche,
           aus: !_retuscheMoeglich,
         ),
         _toolButton(Icons.rotate_left, t.bearbLinksDrehen, _rotateLeft),
         _toolButton(Icons.rotate_right, t.bearbRechtsDrehen, _rotateRight),
         _toolButton(Icons.flip, t.bearbHorizontalSpiegeln, _flipHorizontal),
-        _toolButton(Icons.flip, t.bearbVertikalSpiegeln, _flipVertical, quarterTurns: 1),
+        _toolButton(
+          Icons.flip,
+          t.bearbVertikalSpiegeln,
+          _flipVertical,
+          quarterTurns: 1,
+        ),
       ],
     );
   }
@@ -660,8 +782,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       widget.modelsDir != null &&
       InpaintingService.isAvailable(widget.modelsDir!);
 
-  Widget _toolButton(IconData icon, String tooltip, VoidCallback onPressed,
-      {int quarterTurns = 0, bool aus = false}) {
+  Widget _toolButton(
+    IconData icon,
+    String tooltip,
+    VoidCallback onPressed, {
+    int quarterTurns = 0,
+    bool aus = false,
+  }) {
     return IconButton(
       tooltip: tooltip,
       color: Colors.white,
@@ -688,7 +815,10 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
             )
           else
@@ -703,13 +833,28 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text(_error!, style: const TextStyle(color: Colors.white70)))
-                : Column(
-                    children: [
-                      Expanded(child: Padding(padding: const EdgeInsets.all(AppSpacing.lg), child: _buildEditorArea())),
-                      Padding(padding: const EdgeInsets.symmetric(vertical: AppSpacing.md), child: _buildToolbar()),
-                    ],
+            ? Center(
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              )
+            : Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: _buildEditorArea(),
+                    ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
+                    child: _buildToolbar(),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -722,7 +867,11 @@ class _CropOverlay extends StatelessWidget {
   final Size imageSize;
   final Rect rect;
   final ValueChanged<Rect> onChanged;
-  const _CropOverlay({required this.imageSize, required this.rect, required this.onChanged});
+  const _CropOverlay({
+    required this.imageSize,
+    required this.rect,
+    required this.onChanged,
+  });
 
   static const _handleSize = 24.0;
   static const _minSize = 40.0;
@@ -740,7 +889,9 @@ class _CropOverlay extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: IgnorePointer(child: CustomPaint(painter: _CropMaskPainter(rect))),
+          child: IgnorePointer(
+            child: CustomPaint(painter: _CropMaskPainter(rect)),
+          ),
         ),
         Positioned.fromRect(
           rect: rect,
@@ -750,30 +901,64 @@ class _CropOverlay extends StatelessWidget {
               var moved = rect.shift(details.delta);
               if (moved.left < 0) moved = moved.shift(Offset(-moved.left, 0));
               if (moved.top < 0) moved = moved.shift(Offset(0, -moved.top));
-              if (moved.right > imageSize.width) moved = moved.shift(Offset(imageSize.width - moved.right, 0));
+              if (moved.right > imageSize.width) {
+                moved = moved.shift(Offset(imageSize.width - moved.right, 0));
+              }
               if (moved.bottom > imageSize.height) {
                 moved = moved.shift(Offset(0, imageSize.height - moved.bottom));
               }
               onChanged(moved);
             },
-            child: Container(decoration: BoxDecoration(border: Border.all(color: Colors.white, width: 2))),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
           ),
         ),
         _cornerHandle(
           Offset(rect.left, rect.top),
-          (delta) => _clamp(Rect.fromLTRB(rect.left + delta.dx, rect.top + delta.dy, rect.right, rect.bottom)),
+          (delta) => _clamp(
+            Rect.fromLTRB(
+              rect.left + delta.dx,
+              rect.top + delta.dy,
+              rect.right,
+              rect.bottom,
+            ),
+          ),
         ),
         _cornerHandle(
           Offset(rect.right, rect.top),
-          (delta) => _clamp(Rect.fromLTRB(rect.left, rect.top + delta.dy, rect.right + delta.dx, rect.bottom)),
+          (delta) => _clamp(
+            Rect.fromLTRB(
+              rect.left,
+              rect.top + delta.dy,
+              rect.right + delta.dx,
+              rect.bottom,
+            ),
+          ),
         ),
         _cornerHandle(
           Offset(rect.left, rect.bottom),
-          (delta) => _clamp(Rect.fromLTRB(rect.left + delta.dx, rect.top, rect.right, rect.bottom + delta.dy)),
+          (delta) => _clamp(
+            Rect.fromLTRB(
+              rect.left + delta.dx,
+              rect.top,
+              rect.right,
+              rect.bottom + delta.dy,
+            ),
+          ),
         ),
         _cornerHandle(
           Offset(rect.right, rect.bottom),
-          (delta) => _clamp(Rect.fromLTRB(rect.left, rect.top, rect.right + delta.dx, rect.bottom + delta.dy)),
+          (delta) => _clamp(
+            Rect.fromLTRB(
+              rect.left,
+              rect.top,
+              rect.right + delta.dx,
+              rect.bottom + delta.dy,
+            ),
+          ),
         ),
       ],
     );
@@ -809,14 +994,18 @@ class _CropMaskPainter extends CustomPainter {
     final inner = Path()..addRect(hole);
     final mask = Path.combine(PathOperation.difference, outer, inner);
     canvas.drawPath(mask, Paint()..color = Colors.black54);
-    canvas.drawRect(hole, Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2);
+    canvas.drawRect(
+      hole,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _CropMaskPainter oldDelegate) => oldDelegate.hole != hole;
+  bool shouldRepaint(covariant _CropMaskPainter oldDelegate) =>
+      oldDelegate.hole != hole;
 }
 
 /// Ein mitgedrehtes Gitter über dem Bild.
@@ -839,20 +1028,29 @@ class _AusrichtGitter extends CustomPainter {
     canvas.rotate(winkelGrad * math.pi / 180);
     // Über die Diagonale hinaus zeichnen, damit die Linien beim Drehen
     // nicht vor dem Bildrand enden.
-    final reichweite = math.sqrt(size.width * size.width + size.height * size.height);
+    final reichweite = math.sqrt(
+      size.width * size.width + size.height * size.height,
+    );
     const linien = 9;
     for (var i = 1; i < linien; i++) {
       final anteil = i / linien - 0.5;
-      canvas.drawLine(Offset(-reichweite / 2, anteil * reichweite),
-          Offset(reichweite / 2, anteil * reichweite), stift);
-      canvas.drawLine(Offset(anteil * reichweite, -reichweite / 2),
-          Offset(anteil * reichweite, reichweite / 2), stift);
+      canvas.drawLine(
+        Offset(-reichweite / 2, anteil * reichweite),
+        Offset(reichweite / 2, anteil * reichweite),
+        stift,
+      );
+      canvas.drawLine(
+        Offset(anteil * reichweite, -reichweite / 2),
+        Offset(anteil * reichweite, reichweite / 2),
+        stift,
+      );
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _AusrichtGitter old) => old.winkelGrad != winkelGrad;
+  bool shouldRepaint(covariant _AusrichtGitter old) =>
+      old.winkelGrad != winkelGrad;
 }
 
 /// Die vier ziehbaren Ecken der Perspektivkorrektur.
@@ -917,11 +1115,12 @@ class _EckenMaler extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final pfad = Path()..addPolygon(ecken, true);
     canvas.drawPath(
-        pfad,
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2);
+      pfad,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
     // Der Bereich ausserhalb des Vierecks wird abgedunkelt – so sieht man,
     // was nach dem Entzerren übrig bleibt.
     final aussen = Path.combine(
@@ -933,11 +1132,14 @@ class _EckenMaler extends CustomPainter {
 
     for (final ecke in ecken) {
       canvas.drawCircle(ecke, 8, Paint()..color = Colors.white);
-      canvas.drawCircle(ecke, 8,
-          Paint()
-            ..color = Colors.black54
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+      canvas.drawCircle(
+        ecke,
+        8,
+        Paint()
+          ..color = Colors.black54
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
     }
   }
 
@@ -966,7 +1168,11 @@ class _RetuscheMaler extends CustomPainter {
     for (final strich in striche) {
       if (strich.isEmpty) continue;
       if (strich.length == 1) {
-        canvas.drawCircle(strich.first, breite / 2, Paint()..color = const Color(0x99FF5252));
+        canvas.drawCircle(
+          strich.first,
+          breite / 2,
+          Paint()..color = const Color(0x99FF5252),
+        );
         continue;
       }
       final pfad = Path()..moveTo(strich.first.dx, strich.first.dy);

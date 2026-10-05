@@ -75,7 +75,10 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
       _gesamt = 0;
     });
 
-    final aufnahmen = await widget.library.db.aufnahmenDerKamera(kamera, _stichprobe);
+    final aufnahmen = await widget.library.db.aufnahmenDerKamera(
+      kamera,
+      _stichprobe,
+    );
     if (!mounted) return;
     setState(() => _gesamt = aufnahmen.length);
 
@@ -95,8 +98,9 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
       // Es geht also keine Genauigkeit verloren, nur Speicher: Das grösste
       // Original der Prüfbibliothek treibt den Arbeitssatz beim Dekodieren
       // von 328 auf 1226 MB, seine Vorschau nicht messbar.
-      final datei = widget.library.paths
-          .absolute(asset.previewRelativePath ?? asset.relativePath);
+      final datei = widget.library.paths.absolute(
+        asset.previewRelativePath ?? asset.relativePath,
+      );
       try {
         if (await datei.exists()) {
           // In einem eigenen Isolat: Die Weichzeichnung braucht knapp eine
@@ -152,9 +156,14 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
                     ),
                     items: [
                       for (final k in _kameras!)
-                        DropdownMenuItem(value: k, child: Text(k, overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(
+                          value: k,
+                          child: Text(k, overflow: TextOverflow.ellipsis),
+                        ),
                     ],
-                    onChanged: _laeuft ? null : (w) => setState(() => _kamera = w),
+                    onChanged: _laeuft
+                        ? null
+                        : (w) => setState(() => _kamera = w),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -166,7 +175,9 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
             ),
           if (_laeuft) ...[
             const SizedBox(height: AppSpacing.lg),
-            LinearProgressIndicator(value: _gesamt == 0 ? null : _erledigt / _gesamt),
+            LinearProgressIndicator(
+              value: _gesamt == 0 ? null : _erledigt / _gesamt,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(t.staubFortschritt(_erledigt, _gesamt)),
           ],
@@ -176,8 +187,9 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
             // ein Fund ruht nur auf dem, was gelesen werden konnte.
             if (_untersucht.length < _gezogen) ...[
               _Uebersprungen(
-                  uebersprungen: _gezogen - _untersucht.length,
-                  gezogen: _gezogen),
+                uebersprungen: _gezogen - _untersucht.length,
+                gezogen: _gezogen,
+              ),
               const SizedBox(height: AppSpacing.lg),
             ],
             if (_ergebnis!.isEmpty)
@@ -223,10 +235,9 @@ class _Uebersprungen extends StatelessWidget {
         Expanded(
           child: Text(
             AppTexte.of(context).staubUebersprungen(uebersprungen, gezogen),
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: farben.tertiary),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: farben.tertiary),
           ),
         ),
       ],
@@ -243,8 +254,11 @@ class _Sauber extends StatelessWidget {
     final t = AppTexte.of(context);
     return Column(
       children: [
-        Icon(Icons.check_circle_outline,
-            size: 56, color: Theme.of(context).colorScheme.primary),
+        Icon(
+          Icons.check_circle_outline,
+          size: 56,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(height: AppSpacing.md),
         Text(t.staubNichtsGefunden(untersucht), textAlign: TextAlign.center),
       ],
@@ -275,15 +289,20 @@ class _Fundliste extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.staubGefunden(stellen.length),
-            style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          t.staubGefunden(stellen.length),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: AppSpacing.md),
         Stack(
           children: [
             // Gedeckelt: Ein Original der Bibliothek misst bis zu 20383
             // Punkte und belegt ungedeckelt 317 MB.
             Image(
-              image: begrenztesBild(library.paths.absolute(vorschau), kante: 1600),
+              image: begrenztesBild(
+                library.paths.absolute(vorschau),
+                kante: 1600,
+              ),
               fit: BoxFit.contain,
             ),
             Positioned.fill(
@@ -296,8 +315,10 @@ class _Fundliste extends StatelessWidget {
           ListTile(
             dense: true,
             leading: const Icon(Icons.blur_circular_outlined),
-            title: Text('${(s.x * 100).toStringAsFixed(1)} % / '
-                '${(s.y * 100).toStringAsFixed(1)} %'),
+            title: Text(
+              '${(s.x * 100).toStringAsFixed(1)} % / '
+              '${(s.y * 100).toStringAsFixed(1)} %',
+            ),
             subtitle: Text(t.staubAufWievielen(s.treffer, s.untersucht)),
           ),
         const SizedBox(height: AppSpacing.md),
@@ -307,14 +328,16 @@ class _Fundliste extends StatelessWidget {
         OutlinedButton.icon(
           icon: const Icon(Icons.healing_outlined),
           label: Text(t.staubImEditorOeffnen),
-          onPressed: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-            builder: (_) => ImageEditorScreen(
-              asset: beispiel,
-              db: library.db,
-              paths: library.paths,
-              modelsDir: library.modelsDir,
+          onPressed: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => ImageEditorScreen(
+                asset: beispiel,
+                db: library.db,
+                paths: library.paths,
+                modelsDir: library.modelsDir,
+              ),
             ),
-          )),
+          ),
         ),
       ],
     );

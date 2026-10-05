@@ -88,8 +88,10 @@ void main() {
       for (var i = 1; i <= 5; i++) {
         vorrat.lege(_b(i), 17, i, 300);
       }
-      vorrat.raeume((b) => b.spalte.toDouble(),
-          behalten: (b, s) => b.spalte == 5);
+      vorrat.raeume(
+        (b) => b.spalte.toDouble(),
+        behalten: (b, s) => b.spalte == 5,
+      );
       // Der ferne Block 5 haette als erster fallen muessen; er ist
       // geschuetzt, also faellt stattdessen der naechste.
       expect(vorrat.bei(_b(5), 17), 5);
@@ -121,8 +123,11 @@ void main() {
     // Die echte Rechnung: Bei der feinsten Stufe sind vier Megabyte je
     // Block, also passen zwanzig hinein - von achtzig.
     const grenze = 80 * 1024 * 1024;
-    final einer = const Texturblock(spalte: 0, zeile: 0, grundstufe: 16)
-        .speicherBytes(18);
+    final einer = const Texturblock(
+      spalte: 0,
+      zeile: 0,
+      grundstufe: 16,
+    ).speicherBytes(18);
     expect(grenze ~/ einer, 20);
   });
 }

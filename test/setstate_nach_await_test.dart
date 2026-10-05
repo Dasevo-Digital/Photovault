@@ -32,7 +32,9 @@ void main() {
   bool istFunktionsgrenze(String zeile) {
     final rumpf = RegExp(r'\)\s*(async\s*\*?\s*)?(\{|=>)').hasMatch(zeile);
     if (!rumpf) return false;
-    final kontrolle = RegExp(r'\b(if|for|while|switch|catch)\s*\(').hasMatch(zeile);
+    final kontrolle = RegExp(
+      r'\b(if|for|while|switch|catch)\s*\(',
+    ).hasMatch(zeile);
     return !kontrolle;
   }
 
@@ -49,12 +51,15 @@ void main() {
   test('kein setState nach einem await ohne mounted-Prüfung', () {
     final beanstandet = <String>[];
 
-    final dateien = Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart') && !f.path.endsWith('.g.dart'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final dateien =
+        Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where(
+              (f) => f.path.endsWith('.dart') && !f.path.endsWith('.g.dart'),
+            )
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
 
     for (final datei in dateien) {
       final zeilen = datei.readAsLinesSync();
@@ -64,7 +69,10 @@ void main() {
         // Nur, was VOR dem Aufruf steht: `setState(() {` öffnet selbst eine
         // Closure und sähe sonst aus wie eine Funktionsgrenze – womit sich
         // der Wächter genau um die Fälle brächte, für die er da ist.
-        final vorAufruf = zeilen[i].substring(0, zeilen[i].indexOf('setState('));
+        final vorAufruf = zeilen[i].substring(
+          0,
+          zeilen[i].indexOf('setState('),
+        );
         // `onDeleted: () => setState(…)` – Rückruf und Aufruf in einer Zeile.
         if (istFunktionsgrenze(vorAufruf)) continue;
         // `if (mounted) setState(…)` – die Prüfung steht oft daneben.
@@ -127,7 +135,9 @@ void main() {
           // switch, sobald irgendein anderer Zweig ein await enthielt.
           if (RegExp(r'^\s*(case\b|default\s*:)').hasMatch(zeile)) {
             while (j > 0 &&
-                !RegExp(r'^\s*switch\s*\(').hasMatch(ohneKommentar(zeilen[j]))) {
+                !RegExp(
+                  r'^\s*switch\s*\(',
+                ).hasMatch(ohneKommentar(zeilen[j]))) {
               j--;
             }
             continue;
@@ -159,8 +169,12 @@ void main() {
       }
     }
 
-    expect(beanstandet, isEmpty,
-        reason: 'setState nach await ohne mounted-Prüfung:\n'
-            '${beanstandet.join('\n')}');
+    expect(
+      beanstandet,
+      isEmpty,
+      reason:
+          'setState nach await ohne mounted-Prüfung:\n'
+          '${beanstandet.join('\n')}',
+    );
   });
 }

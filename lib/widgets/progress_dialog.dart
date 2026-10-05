@@ -39,7 +39,10 @@ class ProgressDialog extends StatelessWidget {
               if (!done)
                 const LinearProgressIndicator()
               else if (failed)
-                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error)
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                )
               else
                 Icon(Icons.check_circle, color: context.semantik.erfolg),
               const SizedBox(height: 12),
@@ -48,17 +51,22 @@ class ProgressDialog extends StatelessWidget {
               // `snapshot.data` gelesen, das bei einem Fehler VOR dem ersten
               // `yield` schlicht leer blieb und trotzdem den grünen Haken
               // zeigte (Audit-Fund).
-              Text(failed
-                  ? AppTexte.of(context).fortschrittFehlgeschlagen(
-                      fehlerText?.call(snapshot.error!) ?? '${snapshot.error}')
-                  : (snapshot.data ?? '…')),
+              Text(
+                failed
+                    ? AppTexte.of(context).fortschrittFehlgeschlagen(
+                        fehlerText?.call(snapshot.error!) ??
+                            '${snapshot.error}',
+                      )
+                    : (snapshot.data ?? '…'),
+              ),
             ],
           ),
           actions: [
             if (done)
               FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(AppTexte.of(context).allgSchliessen)),
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(AppTexte.of(context).allgSchliessen),
+              ),
           ],
         );
       },

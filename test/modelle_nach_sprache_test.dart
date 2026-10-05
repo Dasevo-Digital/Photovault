@@ -49,16 +49,20 @@ void main() {
   });
 
   test('was schon geladen ist, bleibt auch auf Englisch sichtbar', () {
-    final liste = ModelCatalog.fuerSprache('en',
-        istInstalliert: (e) => e == ModelCatalog.translationEnDe);
+    final liste = ModelCatalog.fuerSprache(
+      'en',
+      istInstalliert: (e) => e == ModelCatalog.translationEnDe,
+    );
     // Sonst laegen 100 MB in der Bibliothek, die niemand mehr loswird.
     expect(liste.contains(ModelCatalog.translationEnDe), isTrue);
     expect(liste.contains(ModelCatalog.translationDeEn), isFalse);
   });
 
   test('alles installiert heisst: alles sichtbar', () {
-    expect(ModelCatalog.fuerSprache('en', istInstalliert: alles),
-        ModelCatalog.all);
+    expect(
+      ModelCatalog.fuerSprache('en', istInstalliert: alles),
+      ModelCatalog.all,
+    );
   });
 
   group('und der Bildschirm benutzt die Regel auch', () {
@@ -77,22 +81,29 @@ void main() {
       const ablage = MethodChannel('plugins.flutter.io/path_provider');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-              ablage, (_) async => Directory.systemTemp.path);
-      addTearDown(() => TestDefaultBinaryMessengerBinding
-          .instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(ablage, null));
+            ablage,
+            (_) async => Directory.systemTemp.path,
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(ablage, null),
+      );
 
       const kanal = MethodChannel('dev.fluttercommunity.plus/package_info');
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(kanal, (_) async => <String, String>{
-                'appName': 'Photo Vault',
-                'packageName': 'com.example.photoVault',
-                'version': '3.7.0',
-                'buildNumber': '1',
-              });
-      addTearDown(() => TestDefaultBinaryMessengerBinding
-          .instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(kanal, null));
+          .setMockMethodCallHandler(
+            kanal,
+            (_) async => <String, String>{
+              'appName': 'Photo Vault',
+              'packageName': 'com.example.photoVault',
+              'version': '3.7.0',
+              'buildNumber': '1',
+            },
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(kanal, null),
+      );
     });
 
     setUp(() async {
@@ -100,12 +111,14 @@ void main() {
       db = AppDatabase(NativeDatabase.memory());
       library = LibraryState()
         ..db = db
-        ..paths =
-            await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')))
+        ..paths = await StoragePaths.forTesting(
+          Directory(p.join(wurzel.path, 'l')),
+        )
         ..modelDownloadService = ModelDownloadService(
-            (Directory(p.join(wurzel.path, 'models'))
-                  ..createSync(recursive: true))
-                .path);
+          (Directory(
+            p.join(wurzel.path, 'models'),
+          )..createSync(recursive: true)).path,
+        );
     });
 
     tearDown(() async {
@@ -119,12 +132,14 @@ void main() {
       tester.view.physicalSize = const Size(1100, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: Locale(sprache),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(body: SettingsScreen(library: library)),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: Locale(sprache),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(body: SettingsScreen(library: library)),
+        ),
+      );
       Future<void> takte() async {
         for (var i = 0; i < 8; i++) {
           await tester.pump(const Duration(milliseconds: 50));
@@ -135,8 +150,10 @@ void main() {
       await takte();
       // Ueber die Suche in den Einstellungen: Die Liste ist faul, und die
       // Modellgruppe steht so weit unten, dass sie ungebaut bliebe.
-      await tester.enterText(find.byType(SearchBar),
-          sprache == 'de' ? 'KI-Modelle' : 'AI models');
+      await tester.enterText(
+        find.byType(SearchBar),
+        sprache == 'de' ? 'KI-Modelle' : 'AI models',
+      );
       await takte();
 
       final gefunden = [

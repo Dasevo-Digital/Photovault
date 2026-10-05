@@ -15,8 +15,7 @@ import 'package:sqlite3/sqlite3.dart' show sqlite3;
 void main() {
   final ordner = Platform.environment['PV_MIGRATION_DIR'];
 
-  test('drei gewachsene Bibliotheken kommen auf die neueste Fassung',
-      () async {
+  test('drei gewachsene Bibliotheken kommen auf die neueste Fassung', () async {
     if (ordner == null) {
       markTestSkipped('PV_MIGRATION_DIR nicht gesetzt');
       return;
@@ -28,7 +27,7 @@ void main() {
     // Schlechteste von beidem.
     final vorhanden = [
       for (final name in ['gross.sqlite', 'alt32.sqlite', 'alt27.sqlite'])
-        if (File('$ordner/$name').existsSync()) name
+        if (File('$ordner/$name').existsSync()) name,
     ];
     if (vorhanden.isEmpty) {
       markTestSkipped('keine der drei Vorlagen liegt in $ordner');
@@ -42,12 +41,19 @@ void main() {
       // jeweiligen Schritt wirklich noch vor sich hat – eine Kopie, die
       // laengst darueber hinaus ist, wuerde daran scheitern, ohne dass
       // etwas kaputt waere.
-      final startfassung = sqlite3.open(datei.path).select('PRAGMA user_version')
-          .first.values.first as int;
+      final startfassung =
+          sqlite3
+                  .open(datei.path)
+                  .select('PRAGMA user_version')
+                  .first
+                  .values
+                  .first
+              as int;
 
       final db = AppDatabase(NativeDatabase(datei));
       // Die erste Abfrage löst die Migration aus.
-      final vorher = await db.customSelect('SELECT count(*) AS n FROM assets')
+      final vorher = await db
+          .customSelect('SELECT count(*) AS n FROM assets')
           .map((r) => r.read<int>('n'))
           .getSingle();
       final fassung = await db
@@ -57,10 +63,13 @@ void main() {
       expect(fassung, db.schemaVersion, reason: name);
 
       final tabellen = {
-        for (final z in await db
-            .customSelect("SELECT name FROM sqlite_master WHERE type='table'")
-            .get())
-          z.data['name'] as String
+        for (final z
+            in await db
+                .customSelect(
+                  "SELECT name FROM sqlite_master WHERE type='table'",
+                )
+                .get())
+          z.data['name'] as String,
       };
       for (final erwartet in [
         'aktivitaeten',
@@ -83,7 +92,8 @@ void main() {
       // unlesbar machen.
       await db.alleAktivitaeten();
       await db.alleSpuren();
-      final nachher = await db.customSelect('SELECT count(*) AS n FROM assets')
+      final nachher = await db
+          .customSelect('SELECT count(*) AS n FROM assets')
           .map((r) => r.read<int>('n'))
           .getSingle();
       expect(nachher, vorher, reason: name);
@@ -102,15 +112,19 @@ void main() {
       // Papierkorb oder gesperrt, und beides soll die Texterkennung nicht
       // anfassen.
       final mitText = await db
-          .customSelect('SELECT count(*) AS n FROM assets '
-              "WHERE type = 'IMAGE' AND is_trashed = 0 AND is_locked = 0 "
-              "AND ocr_text IS NOT NULL AND ocr_text <> '' AND ocr_boxen IS NULL")
+          .customSelect(
+            'SELECT count(*) AS n FROM assets '
+            "WHERE type = 'IMAGE' AND is_trashed = 0 AND is_locked = 0 "
+            "AND ocr_text IS NOT NULL AND ocr_text <> '' AND ocr_boxen IS NULL",
+          )
           .map((r) => r.read<int>('n'))
           .getSingle();
       expect(offen, greaterThanOrEqualTo(mitText), reason: name);
       // ignore: avoid_print
-      print('$name: $mitText Aufnahmen mit Text, aber ohne Stellen; '
-          '$offen offen fuer die Texterkennung');
+      print(
+        '$name: $mitText Aufnahmen mit Text, aber ohne Stellen; '
+        '$offen offen fuer die Texterkennung',
+      );
       // Schema 64: die Spalte ist da und steht überall auf `false`. Das
       // ist Absicht – der erste Ortsnachtrag nach dem Umstieg geht noch
       // einmal über alles und findet dabei die Videos, an die er vorher
@@ -123,14 +137,17 @@ void main() {
       if (startfassung < 64) {
         final nochNieAngesehen = await db
             .customSelect(
-                'SELECT count(*) AS n FROM assets WHERE gps_geprueft = 0')
+              'SELECT count(*) AS n FROM assets WHERE gps_geprueft = 0',
+            )
             .map((r) => r.read<int>('n'))
             .getSingle();
         expect(nochNieAngesehen, nachher, reason: '$name: alle unangesehen');
       }
-      expect(await db.countLocationBackfill(),
-          (await db.assetsForLocationBackfill()).length,
-          reason: '$name: Zahl und Liste');
+      expect(
+        await db.countLocationBackfill(),
+        (await db.assetsForLocationBackfill()).length,
+        reason: '$name: Zahl und Liste',
+      );
 
       // Schema 64 daneben: Wie viele Aufnahmen liegen im Ordner eines
       // anderen Monats, als ihr Datum sagt (siehe [ordneAblageNeu])?

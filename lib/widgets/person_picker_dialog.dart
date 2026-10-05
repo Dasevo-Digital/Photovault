@@ -17,15 +17,15 @@ class PersonChoice {
   final bool ignorieren;
 
   PersonChoice.newPerson(this.newName)
-      : existingPersonId = null,
-        ignorieren = false;
+    : existingPersonId = null,
+      ignorieren = false;
   PersonChoice.existing(this.existingPersonId)
-      : newName = null,
-        ignorieren = false;
+    : newName = null,
+      ignorieren = false;
   const PersonChoice.ignorieren()
-      : newName = null,
-        existingPersonId = null,
-        ignorieren = true;
+    : newName = null,
+      existingPersonId = null,
+      ignorieren = true;
 }
 
 /// Zeigt einen Dialog, um ein (oder mehrere) Gesicht(er) einer neuen oder
@@ -119,26 +119,28 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
   /// Die Personen, die zur Eingabe passen – der Vorschlag immer zuerst.
   List<PersonData> get _gezeigt {
     final suche = _suche.toLowerCase();
-    final passend = [
-      for (final p in widget.existingPeople)
-        if (suche.isEmpty || p.name.toLowerCase().contains(suche)) p,
-    ]..sort((a, b) {
-        // Wer vorn ANFÄNGT, steht vor dem, bei dem es mittendrin steht:
-        // Wer „Ma" tippt, meint eher Martin als Thomas.
-        if (suche.isNotEmpty) {
-          final a0 = a.name.toLowerCase().startsWith(suche);
-          final b0 = b.name.toLowerCase().startsWith(suche);
-          if (a0 != b0) return a0 ? -1 : 1;
-        }
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
+    final passend =
+        [
+          for (final p in widget.existingPeople)
+            if (suche.isEmpty || p.name.toLowerCase().contains(suche)) p,
+        ]..sort((a, b) {
+          // Wer vorn ANFÄNGT, steht vor dem, bei dem es mittendrin steht:
+          // Wer „Ma" tippt, meint eher Martin als Thomas.
+          if (suche.isNotEmpty) {
+            final a0 = a.name.toLowerCase().startsWith(suche);
+            final b0 = b.name.toLowerCase().startsWith(suche);
+            if (a0 != b0) return a0 ? -1 : 1;
+          }
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
     final vorschlag = widget.suggestedPerson;
     if (vorschlag == null) return passend;
     final rest = passend.where((p) => p.id != vorschlag.id).toList();
     // Der Vorschlag bleibt oben – aber nur, solange die Eingabe ihn nicht
     // ausschliesst. Sonst stünde beim Tippen eines anderen Namens immer
     // noch der Vorschlag darüber und wäre die erste Zeile, die man trifft.
-    final passtNoch = _suche.isEmpty ||
+    final passtNoch =
+        _suche.isEmpty ||
         vorschlag.name.toLowerCase().contains(_suche.toLowerCase());
     return passtNoch ? [vorschlag, ...rest] : rest;
   }
@@ -165,7 +167,8 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
   }
 
   /// Ob der Knopf eine neue Person anlegen würde.
-  bool get _legtAn => _namensgleich == null && _gewaehlt == null && _suche.isNotEmpty;
+  bool get _legtAn =>
+      _namensgleich == null && _gewaehlt == null && _suche.isNotEmpty;
 
   Widget _zeile(PersonData person, {required bool istVorschlag}) {
     final bild = person.coverFaceCropPath;
@@ -183,8 +186,10 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
       ),
       title: Text(person.name, overflow: TextOverflow.ellipsis),
       subtitle: istVorschlag
-          ? Text(AppTexte.of(context).personVorschlag,
-              style: TextStyle(color: farben.primary, fontSize: 12))
+          ? Text(
+              AppTexte.of(context).personVorschlag,
+              style: TextStyle(color: farben.primary, fontSize: 12),
+            )
           : null,
       trailing: gewaehlt ? const Icon(Icons.check) : null,
       // Ein zweiter Tipp nimmt die Wahl zurück – sonst käme man aus einer
@@ -208,9 +213,12 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.currentName != null) ...[
-              Text(t.personAktuell(widget.currentName!),
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                t.personAktuell(widget.currentName!),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
             ],
             TextField(
@@ -232,7 +240,9 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
                 // Eine Wahl aus der Liste gilt nur, solange sie noch in der
                 // Liste steht. Wer weitertippt, meint jemand anderen.
                 if (_gewaehlt != null &&
-                    !_gewaehlt!.name.toLowerCase().contains(_suche.toLowerCase())) {
+                    !_gewaehlt!.name.toLowerCase().contains(
+                      _suche.toLowerCase(),
+                    )) {
                   _gewaehlt = null;
                 }
               }),
@@ -245,16 +255,22 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
             if (widget.existingPeople.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Text(t.personNochKeine,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                child: Text(
+                  t.personNochKeine,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               )
             else if (gezeigt.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Text(t.personKeinTreffer(_suche),
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                child: Text(
+                  t.personKeinTreffer(_suche),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               )
             else
               // Fest begrenzt statt mitwachsend: Ein Dialog, der bei
@@ -266,9 +282,11 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
                   child: ListView.builder(
                     shrinkWrap: true,
                     itemCount: gezeigt.length,
-                    itemBuilder: (_, i) => _zeile(gezeigt[i],
-                        istVorschlag:
-                            vorschlag != null && gezeigt[i].id == vorschlag.id),
+                    itemBuilder: (_, i) => _zeile(
+                      gezeigt[i],
+                      istVorschlag:
+                          vorschlag != null && gezeigt[i].id == vorschlag.id,
+                    ),
                   ),
                 ),
               ),
@@ -277,8 +295,9 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         if (widget.erlaubtIgnorieren)
           TextButton(
             onPressed: () =>
@@ -292,9 +311,9 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
           // Die Beschriftung sagt, was passiert: zuordnen oder neu anlegen.
           // Ein Knopf, der beides tut und nur eines sagt, legt irgendwann
           // eine zweite „Martin" an, weil sich jemand vertippt hat.
-          child: Text(_legtAn
-              ? t.personAnlegenAktion(_suche)
-              : t.personZuordnenAktion),
+          child: Text(
+            _legtAn ? t.personAnlegenAktion(_suche) : t.personZuordnenAktion,
+          ),
         ),
       ],
     );

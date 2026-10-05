@@ -16,8 +16,10 @@ void main() {
     uhr.stop();
     // Bewusst OHNE die Koordinaten: Ein Testprotokoll ist kein Ort fuer
     // den Wohnort dessen, der es laufen laesst.
-    print('Antwort nach ${uhr.elapsedMilliseconds} ms: '
-        '${ort == null ? "kein Standort" : "Standort da, +/- ${ort.genauigkeit} m"}');
+    print(
+      'Antwort nach ${uhr.elapsedMilliseconds} ms: '
+      '${ort == null ? "kein Standort" : "Standort da, +/- ${ort.genauigkeit} m"}',
+    );
     // Die Zeitgrenze im Swift-Teil sind zwoelf Sekunden.
     expect(uhr.elapsed, lessThan(const Duration(seconds: 20)));
   }, timeout: const Timeout(Duration(seconds: 60)));

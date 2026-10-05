@@ -30,8 +30,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -42,18 +43,22 @@ void main() {
 
   Future<ReisenData> anlegen() async {
     for (var i = 0; i < 5; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'r$i',
-            originalFileName: 'r$i.jpg',
-            relativePath: 'originals/r$i.jpg',
-            checksum: 'pruef-r$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 6, 14, 9 + i),
-            importedAt: DateTime(2026),
-            latitude: const Value(41.9),
-            longitude: const Value(12.5),
-            locationCity: const Value('Roma'),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'r$i',
+              originalFileName: 'r$i.jpg',
+              relativePath: 'originals/r$i.jpg',
+              checksum: 'pruef-r$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 6, 14, 9 + i),
+              importedAt: DateTime(2026),
+              latitude: const Value(41.9),
+              longitude: const Value(12.5),
+              locationCity: const Value('Roma'),
+            ),
+          );
     }
     await db.reiseAnlegen(
       ReisenCompanion.insert(
@@ -72,14 +77,16 @@ void main() {
     tester.view.physicalSize = const Size(1000, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      builder: (context, kind) => mitMeldungen(kind),
-      home: ReiseDetailScreen(library: library, reise: reise),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: (context, kind) => mitMeldungen(kind),
+        home: ReiseDetailScreen(library: library, reise: reise),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -97,18 +104,21 @@ void main() {
     expect(find.byType(ZuordnungAuswahlleiste), findsNothing);
   });
 
-  testWidgets('das Bildmenue kann auswaehlen, ohne das Titelbild zu verlieren',
-      (tester) async {
-    await zeige(tester, await anlegen());
-    await tester.longPress(find.byType(AssetThumbnailTile).first);
-    await tester.pumpAndSettle();
-    // Beide Wege stehen im selben Menue.
-    expect(find.text('Auswählen'), findsOneWidget);
-    expect(find.text('Als Titelbild'), findsOneWidget);
-  });
+  testWidgets(
+    'das Bildmenue kann auswaehlen, ohne das Titelbild zu verlieren',
+    (tester) async {
+      await zeige(tester, await anlegen());
+      await tester.longPress(find.byType(AssetThumbnailTile).first);
+      await tester.pumpAndSettle();
+      // Beide Wege stehen im selben Menue.
+      expect(find.text('Auswählen'), findsOneWidget);
+      expect(find.text('Als Titelbild'), findsOneWidget);
+    },
+  );
 
-  testWidgets('auswaehlen zeigt die Leiste mit der Reise-Beschriftung',
-      (tester) async {
+  testWidgets('auswaehlen zeigt die Leiste mit der Reise-Beschriftung', (
+    tester,
+  ) async {
     await zeige(tester, await anlegen());
     await waehle(tester, 0);
     expect(find.byType(ZuordnungAuswahlleiste), findsOneWidget);
@@ -116,8 +126,9 @@ void main() {
     expect(find.text('Aus der Reise entfernen'), findsOneWidget);
   });
 
-  testWidgets('bei laufender Auswahl waehlt ein Tipp weitere dazu',
-      (tester) async {
+  testWidgets('bei laufender Auswahl waehlt ein Tipp weitere dazu', (
+    tester,
+  ) async {
     await zeige(tester, await anlegen());
     await waehle(tester, 0);
     await tester.tap(find.byType(AssetThumbnailTile).at(1));
@@ -143,14 +154,16 @@ void main() {
     expect(find.byType(ZuordnungAuswahlleiste), findsNothing);
   });
 
-  testWidgets('eine gesperrte Zuordnung ueberlebt das Herausnehmen',
-      (tester) async {
+  testWidgets('eine gesperrte Zuordnung ueberlebt das Herausnehmen', (
+    tester,
+  ) async {
     // An der gewachsenen Bibliothek standen 33 Zuordnungen genau so auf
     // dem Spiel: Die Liste im Bild laesst Gesperrtes weg, die Zuordnung
     // besteht aber.
     final reise = await anlegen();
-    await (db.update(db.assets)..where((t) => t.id.equals('r4')))
-        .write(const AssetsCompanion(isLocked: Value(true)));
+    await (db.update(db.assets)..where((t) => t.id.equals('r4'))).write(
+      const AssetsCompanion(isLocked: Value(true)),
+    );
     await zeige(tester, reise);
     expect(find.byType(AssetThumbnailTile), findsNWidgets(4));
 
@@ -159,8 +172,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final uebrig = await db.zuordnungenDerReise(reise.id);
-    expect(uebrig, contains('r4'),
-        reason: 'die gesperrte Zuordnung darf nicht mit verschwinden');
+    expect(
+      uebrig,
+      contains('r4'),
+      reason: 'die gesperrte Zuordnung darf nicht mit verschwinden',
+    );
     expect(uebrig, hasLength(4));
   });
 

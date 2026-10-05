@@ -34,8 +34,15 @@ class _GeoCity {
   /// keinen weiteren Anhaltspunkt gibt, meint fast immer das grosse.
   final int einwohner;
 
-  const _GeoCity(this.name, this.asciiName, this.lat, this.lon,
-      this.countryCode, this.admin1Code, this.einwohner);
+  const _GeoCity(
+    this.name,
+    this.asciiName,
+    this.lat,
+    this.lon,
+    this.countryCode,
+    this.admin1Code,
+    this.einwohner,
+  );
 }
 
 /// Ein über seinen Namen gefundener Ort.
@@ -79,9 +86,9 @@ class OrtsTreffer {
 
   /// Die Zeile, die in einer Vorschlagsliste unter dem Namen steht.
   String get herkunft => [
-        if (region != null && region!.isNotEmpty) region!,
-        if (land != null && land!.isNotEmpty) land!,
-      ].join(', ');
+    if (region != null && region!.isNotEmpty) region!,
+    if (land != null && land!.isNotEmpty) land!,
+  ].join(', ');
 
   /// Ob die Angabe mehrdeutig war und die Auswahl damit eine Vermutung ist.
   bool get mehrdeutig => weitere > 0;
@@ -99,12 +106,8 @@ class OrtsTreffer {
 /// das eine lineare Suche über alle Punkte pro Foto unnötig.
 class ReverseGeocoder {
   ReverseGeocoder._(this._cities, this.laenderkatalog, this._admin1Names)
-      : _countryNames = {
-          for (final l in laenderkatalog.laender) l.iso: l.name,
-        },
-        isoNachName = {
-          for (final l in laenderkatalog.laender) l.name: l.iso,
-        } {
+    : _countryNames = {for (final l in laenderkatalog.laender) l.iso: l.name},
+      isoNachName = {for (final l in laenderkatalog.laender) l.name: l.iso} {
     for (final e in _admin1Names.entries) {
       final punkt = e.key.indexOf('.');
       if (punkt <= 0) continue;
@@ -148,8 +151,7 @@ class ReverseGeocoder {
   /// der 195 wäre eine zweite Wahrheit neben dem Datensatz, nach dem die
   /// Fotos tatsächlich eingeordnet werden – und die erste Aufnahme aus
   /// Grönland oder Puerto Rico fiele dann durch.
-  Map<String, String> get laenderverzeichnis =>
-      Map.unmodifiable(_countryNames);
+  Map<String, String> get laenderverzeichnis => Map.unmodifiable(_countryNames);
 
   /// Alle Regionen eines Landes – Code und Name, nach Namen sortiert.
   ///
@@ -193,7 +195,9 @@ class ReverseGeocoder {
       final c = _cities[i];
       if (c.countryCode == iso && c.admin1Code == admin1) treffer.add(i);
     }
-    treffer.sort((a, b) => _cities[b].einwohner.compareTo(_cities[a].einwohner));
+    treffer.sort(
+      (a, b) => _cities[b].einwohner.compareTo(_cities[a].einwohner),
+    );
     return [
       for (final i in treffer.take(hoechstens))
         (
@@ -226,7 +230,9 @@ class ReverseGeocoder {
       _punkte(_ortspunkte, '${iso.toUpperCase()}|$name');
 
   ({double breite, double laenge})? _punkte(
-      Map<String, int> index, String schluessel) {
+    Map<String, int> index,
+    String schluessel,
+  ) {
     _bauePunkte();
     final i = index[schluessel];
     return i == null ? null : (breite: _cities[i].lat, laenge: _cities[i].lon);
@@ -256,7 +262,8 @@ class ReverseGeocoder {
 
       // Die Hauptstadt schlägt jede Einwohnerzahl – sonst gewönne bei den
       // USA New York gegen Washington.
-      final istHauptstadt = hauptstaedte.containsKey('$landSchluessel|${c.name}') ||
+      final istHauptstadt =
+          hauptstaedte.containsKey('$landSchluessel|${c.name}') ||
           hauptstaedte.containsKey('$landSchluessel|${c.asciiName}');
       final gewicht = istHauptstadt ? 1 << 40 : c.einwohner;
       if (gewicht > (besteEinwohner[landSchluessel] ?? -1)) {
@@ -320,12 +327,24 @@ class ReverseGeocoder {
     // Punkt knapp außerhalb der Box liegt, in der der erste Treffer gefunden
     // wurde (die Box ist quadratisch, der gesuchte Radius aber kreisförmig).
     final safetyRadius = math.min(radius * 2, _maxRadiusDegrees);
-    final candidates = safetyRadius > radius ? _collectBox(latCell, lonCell, safetyRadius) : found;
+    final candidates = safetyRadius > radius
+        ? _collectBox(latCell, lonCell, safetyRadius)
+        : found;
 
     var bestIndex = candidates.first;
-    var bestDistanceKm = haversineKm(lat, lon, _cities[bestIndex].lat, _cities[bestIndex].lon);
+    var bestDistanceKm = haversineKm(
+      lat,
+      lon,
+      _cities[bestIndex].lat,
+      _cities[bestIndex].lon,
+    );
     for (final index in candidates.skip(1)) {
-      final distanceKm = haversineKm(lat, lon, _cities[index].lat, _cities[index].lon);
+      final distanceKm = haversineKm(
+        lat,
+        lon,
+        _cities[index].lat,
+        _cities[index].lon,
+      );
       if (distanceKm < bestDistanceKm) {
         bestDistanceKm = distanceKm;
         bestIndex = index;
@@ -352,7 +371,8 @@ class ReverseGeocoder {
     return result;
   }
 
-  static int _cellKey(int latCell, int lonCell) => (latCell + 90) * 512 + (lonCell + 180);
+  static int _cellKey(int latCell, int lonCell) =>
+      (latCell + 90) * 512 + (lonCell + 180);
 
   // ---------------------------------------------------------------------
   // Vorwärtssuche: Name -> Koordinate
@@ -371,7 +391,10 @@ class ReverseGeocoder {
     final neu = <String, List<int>>{};
     for (var i = 0; i < _cities.length; i++) {
       final stadt = _cities[i];
-      for (final name in {_normalisiere(stadt.name), _normalisiere(stadt.asciiName)}) {
+      for (final name in {
+        _normalisiere(stadt.name),
+        _normalisiere(stadt.asciiName),
+      }) {
         if (name.isEmpty) continue;
         neu.putIfAbsent(name, () => []).add(i);
       }
@@ -404,8 +427,11 @@ class ReverseGeocoder {
     double? naheBreite,
     double? naheLaenge,
   }) {
-    final treffer =
-        sucheOrte(eingabe, naheBreite: naheBreite, naheLaenge: naheLaenge);
+    final treffer = sucheOrte(
+      eingabe,
+      naheBreite: naheBreite,
+      naheLaenge: naheLaenge,
+    );
     return treffer.isEmpty ? null : treffer.first;
   }
 
@@ -432,7 +458,7 @@ class ReverseGeocoder {
     final sortiert = _sortiert(kandidaten, naheBreite, naheLaenge);
     return [
       for (final i in sortiert.take(hoechstens))
-        _alsTreffer(i, kandidaten.length - 1)
+        _alsTreffer(i, kandidaten.length - 1),
     ];
   }
 
@@ -485,12 +511,12 @@ class ReverseGeocoder {
     // Die Zusätze hinter dem Komma gegen Land und Region prüfen.
     final zusaetze = [
       for (final t in teile.skip(1))
-        if (t.isNotEmpty) _normalisiere(t)
+        if (t.isNotEmpty) _normalisiere(t),
     ];
     if (zusaetze.isEmpty) return zeilen;
     final gefiltert = [
       for (final i in zeilen)
-        if (_passtZuZusatz(_cities[i], zusaetze)) i
+        if (_passtZuZusatz(_cities[i], zusaetze)) i,
     ];
     // Passt kein einziger, gilt der Zusatz als unbrauchbar statt als
     // Ausschluss – „Berlin, Heimat" darf nicht zu „nicht gefunden"
@@ -503,13 +529,16 @@ class ReverseGeocoder {
   List<int> _sortiert(List<int> zeilen, double? breite, double? laenge) {
     final kopie = List<int>.from(zeilen);
     if (breite != null && laenge != null) {
-      kopie.sort((a, b) => haversineKm(breite, laenge, _cities[a].lat,
-              _cities[a].lon)
-          .compareTo(
-              haversineKm(breite, laenge, _cities[b].lat, _cities[b].lon)));
+      kopie.sort(
+        (a, b) => haversineKm(breite, laenge, _cities[a].lat, _cities[a].lon)
+            .compareTo(
+              haversineKm(breite, laenge, _cities[b].lat, _cities[b].lon),
+            ),
+      );
     } else {
       kopie.sort(
-          (a, b) => _cities[b].einwohner.compareTo(_cities[a].einwohner));
+        (a, b) => _cities[b].einwohner.compareTo(_cities[a].einwohner),
+      );
     }
     return kopie;
   }
@@ -531,7 +560,8 @@ class ReverseGeocoder {
     final land = _normalisiere(_countryNames[stadt.countryCode] ?? '');
     final landCode = _normalisiere(stadt.countryCode);
     final region = _normalisiere(
-        _admin1Names['${stadt.countryCode}.${stadt.admin1Code}'] ?? '');
+      _admin1Names['${stadt.countryCode}.${stadt.admin1Code}'] ?? '',
+    );
     for (final z in zusaetze) {
       if (z == landCode || (land.isNotEmpty && land == z)) return true;
       if (region.isNotEmpty && region == z) return true;
@@ -539,17 +569,25 @@ class ReverseGeocoder {
     return false;
   }
 
-
   /// Distanz zweier Koordinaten in km – öffentlich, weil auch das
   /// Automatisierungs-Regelwerk (siehe LibraryState.applyAutomationRules)
   /// eine Umkreis-Bedingung damit auswertet, nicht nur die Umkehr-
   /// Geokodierung hier.
-  static double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+  static double haversineKm(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const earthRadiusKm = 6371.0;
     final dLat = _degToRad(lat2 - lat1);
     final dLon = _degToRad(lon2 - lon1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_degToRad(lat1)) * math.cos(_degToRad(lat2)) * math.sin(dLon / 2) * math.sin(dLon / 2);
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degToRad(lat1)) *
+            math.cos(_degToRad(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
     final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadiusKm * c;
   }
@@ -601,10 +639,10 @@ class ReverseGeocoder {
       if (lat == null || lon == null) continue;
       // Einwohnerzahl fehlt in manchen Zeilen; 0 ist dann die ehrliche
       // Angabe – der Ort verliert damit nur bei Gleichstand.
-      final einwohner =
-          cols.length > 14 ? (int.tryParse(cols[14]) ?? 0) : 0;
-      result.add(_GeoCity(
-          cols[1], cols[2], lat, lon, cols[8], cols[10], einwohner));
+      final einwohner = cols.length > 14 ? (int.tryParse(cols[14]) ?? 0) : 0;
+      result.add(
+        _GeoCity(cols[1], cols[2], lat, lon, cols[8], cols[10], einwohner),
+      );
     }
     return result;
   }

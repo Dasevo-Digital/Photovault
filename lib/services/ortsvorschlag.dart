@@ -132,17 +132,23 @@ List<Ortsvorschlag> ortsvorschlaege(
     // Die Diagonale des umschliessenden Rechtecks: ein Mass, das nicht
     // davon abhaengt, welche zwei Nachbarn man vergleicht.
     final spanne = ReverseGeocoder.haversineKm(
-        minBreite, minLaenge, maxBreite, maxLaenge);
+      minBreite,
+      minLaenge,
+      maxBreite,
+      maxLaenge,
+    );
     if (spanne > regeln.spanneKm) continue;
 
-    ergebnis.add(Ortsvorschlag(
-      assetId: a.id,
-      breite: nachbarn[naechster].breite,
-      laenge: nachbarn[naechster].laenge,
-      nachbarn: bis - von,
-      spanneKm: spanne,
-      abstand: kleinsterAbstand,
-    ));
+    ergebnis.add(
+      Ortsvorschlag(
+        assetId: a.id,
+        breite: nachbarn[naechster].breite,
+        laenge: nachbarn[naechster].laenge,
+        nachbarn: bis - von,
+        spanneKm: spanne,
+        abstand: kleinsterAbstand,
+      ),
+    );
   }
   return ergebnis;
 }
@@ -174,9 +180,8 @@ class Ortsbuendel {
 
   /// Der grösste Zeitabstand im Bündel – die ehrlichste einzelne Zahl
   /// darüber, wie weit der Vorschlag trägt.
-  Duration get groessterAbstand => vorschlaege
-      .map((v) => v.abstand)
-      .reduce((a, b) => a > b ? a : b);
+  Duration get groessterAbstand =>
+      vorschlaege.map((v) => v.abstand).reduce((a, b) => a > b ? a : b);
 }
 
 /// Fasst Vorschläge zu Bündeln zusammen: gleicher Kalendertag und
@@ -186,7 +191,9 @@ class Ortsbuendel {
 /// Die Aufnahmezeiten kommen von aussen: Sie stehen in der Datenbank,
 /// nicht im Vorschlag.
 List<Ortsbuendel> buendleOrtsvorschlaege(
-    List<Ortsvorschlag> vorschlaege, Map<String, DateTime> zeiten) {
+  List<Ortsvorschlag> vorschlaege,
+  Map<String, DateTime> zeiten,
+) {
   final nach = <(int, int, int, int, int), List<Ortsvorschlag>>{};
   final tage = <(int, int, int, int, int), DateTime>{};
   for (final v in vorschlaege) {

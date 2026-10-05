@@ -11,7 +11,12 @@ library;
 import 'laenderkatalog.dart';
 
 /// Was eine Aufnahme über ihren Ort weiß, samt Anzahl.
-typedef Besuchsangabe = ({String? land, String? region, String? ort, int anzahl});
+typedef Besuchsangabe = ({
+  String? land,
+  String? region,
+  String? ort,
+  int anzahl,
+});
 
 /// Ein besuchtes Land mit der Zahl seiner Aufnahmen.
 typedef Landeintrag = ({String name, int aufnahmen});
@@ -41,8 +46,7 @@ class Reisefortschritt {
   int get laenderBesucht => laender.length;
 
   /// Anteil zwischen 0 und 1 – für den Balken.
-  double get anteil =>
-      laenderGesamt == 0 ? 0 : laenderBesucht / laenderGesamt;
+  double get anteil => laenderGesamt == 0 ? 0 : laenderBesucht / laenderGesamt;
 
   bool get istLeer => aufnahmen == 0;
 }
@@ -73,12 +77,12 @@ Reisefortschritt reisefortschritt(
     if (ort != null && ort.isNotEmpty) orte.add('$land|$region|$ort');
   }
 
-  final liste = [
-    for (final e in proLand.entries) (name: e.key, aufnahmen: e.value),
-  ]..sort((a, b) {
-      final z = b.aufnahmen.compareTo(a.aufnahmen);
-      return z != 0 ? z : a.name.compareTo(b.name);
-    });
+  final liste =
+      [for (final e in proLand.entries) (name: e.key, aufnahmen: e.value)]
+        ..sort((a, b) {
+          final z = b.aufnahmen.compareTo(a.aufnahmen);
+          return z != 0 ? z : a.name.compareTo(b.name);
+        });
 
   return Reisefortschritt(
     laender: liste,
@@ -124,7 +128,9 @@ typedef Ortsmarkenteile = ({String iso, String region, String ort});
 /// braucht, prüft das selbst – hier stillschweigend zu verwerfen hiesse,
 /// diese Orte aus dem Zähler zu streichen.
 Ortsmarkenteile? ortsmarkeZerlegen(
-    String schluessel, Map<String, String> nachIso) {
+  String schluessel,
+  Map<String, String> nachIso,
+) {
   final teile = schluessel.split('|');
   if (teile.length < 3) return null;
   return (
@@ -280,16 +286,22 @@ List<Landstand> laenderstand({
         if (m.wert != Markenart.besucht) continue;
         final punkt = m.schluessel.indexOf('.');
         if (punkt <= 0) continue;
-        merkeRegion(m.schluessel.substring(0, punkt).toUpperCase(),
-            m.schluessel);
+        merkeRegion(
+          m.schluessel.substring(0, punkt).toUpperCase(),
+          m.schluessel,
+        );
       case 'ort':
         if (m.wert != Markenart.besucht) continue;
         final teile = ortsmarkeZerlegen(m.schluessel, nachIso);
         if (teile == null) continue;
-        orte.putIfAbsent(teile.iso, () => {}).add('${teile.region}|${teile.ort}');
+        orte
+            .putIfAbsent(teile.iso, () => {})
+            .add('${teile.region}|${teile.ort}');
         if (teile.region.isNotEmpty) {
-          merkeRegion(teile.iso,
-              regionscodes['${teile.iso}|${teile.region}'] ?? teile.region);
+          merkeRegion(
+            teile.iso,
+            regionscodes['${teile.iso}|${teile.region}'] ?? teile.region,
+          );
         }
     }
   }

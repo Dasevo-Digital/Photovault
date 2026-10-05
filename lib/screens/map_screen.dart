@@ -56,9 +56,8 @@ enum Kartenansicht {
   /// Unbekanntes fällt auf [dunkel] zurück statt zu werfen – dasselbe
   /// Muster wie bei `themeMode` und `sprache`: Eine Angabe aus einer
   /// neueren Fassung darf den Start nicht verhindern.
-  static Kartenansicht ausText(String? text) => values
-      .where((a) => a.alsText == text)
-      .followedBy([dunkel]).first;
+  static Kartenansicht ausText(String? text) =>
+      values.where((a) => a.alsText == text).followedBy([dunkel]).first;
 
   /// Die Ansichten, die gerade zur Wahl stehen.
   ///
@@ -66,8 +65,10 @@ enum Kartenansicht {
   /// gilt auch für eine **gemerkte** Wahl: Wer die eigene Karte
   /// einstellt und sie später wieder löscht, fände sonst beim nächsten
   /// Start eine leere Karte ohne Hinweis vor.
-  static List<Kartenansicht> verfuegbar({required bool mitEigener}) =>
-      [for (final a in values) if (a != eigene || mitEigener) a];
+  static List<Kartenansicht> verfuegbar({required bool mitEigener}) => [
+    for (final a in values)
+      if (a != eigene || mitEigener) a,
+  ];
 }
 
 /// Zoomstufe beim Öffnen der flachen Karte ohne bestimmtes Ziel.
@@ -166,12 +167,15 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _load() async {
     // Erst die gemerkte Ansicht, dann die Orte: Sonst baute der Bildschirm
     // kurz die dunkle Karte auf und schaltete sichtbar um.
-    var gemerkt = Kartenansicht.ausText(await widget.library.db.kartenansicht());
+    var gemerkt = Kartenansicht.ausText(
+      await widget.library.db.kartenansicht(),
+    );
     // Eine gemerkte eigene Karte, die es nicht mehr gibt, führte sonst in
     // eine leere Ansicht ohne jeden Hinweis – siehe
     // [Kartenansicht.verfuegbar].
-    if (!Kartenansicht.verfuegbar(mitEigener: eigeneKarte != null)
-        .contains(gemerkt)) {
+    if (!Kartenansicht.verfuegbar(
+      mitEigener: eigeneKarte != null,
+    ).contains(gemerkt)) {
       gemerkt = Kartenansicht.dunkel;
     }
     final assets = await widget.library.db.assetsWithLocation();
@@ -189,22 +193,25 @@ class _MapScreenState extends State<MapScreen> {
 
   void _openAsset(List<AssetData> assets, AssetData asset) {
     Navigator.of(context, rootNavigator: true)
-        .push(MaterialPageRoute(
-          builder: (_) => AssetViewerScreen(
-            assets: assets,
-            initialIndex: assets.indexOf(asset),
-            paths: widget.library.paths,
-            db: widget.library.db,
-            library: widget.library,
-            onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
-            onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-            onLock: (a) async {
-              if (await ensureVaultUnlocked(context, widget.library)) {
-                await widget.library.lockAsset(a);
-              }
-            },
+        .push(
+          MaterialPageRoute(
+            builder: (_) => AssetViewerScreen(
+              assets: assets,
+              initialIndex: assets.indexOf(asset),
+              paths: widget.library.paths,
+              db: widget.library.db,
+              library: widget.library,
+              onToggleFavorite: (a) =>
+                  widget.library.db.setFavorite(a.id, !a.isFavorite),
+              onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+              onLock: (a) async {
+                if (await ensureVaultUnlocked(context, widget.library)) {
+                  await widget.library.lockAsset(a);
+                }
+              },
+            ),
           ),
-        ))
+        )
         // Nach Rückkehr neu laden – der Ort könnte in der Info-Ansicht
         // geändert oder entfernt worden sein.
         .then((_) => _load());
@@ -240,7 +247,10 @@ class _MapScreenState extends State<MapScreen> {
     return (0.3 / scale).clamp(0.0005, 0.3);
   }
 
-  Map<String, List<AssetData>> _gruppiereNachRaster(List<AssetData> assets, double gridDegrees) {
+  Map<String, List<AssetData>> _gruppiereNachRaster(
+    List<AssetData> assets,
+    double gridDegrees,
+  ) {
     final groups = <String, List<AssetData>>{};
     for (final a in assets) {
       final latKey = (a.latitude! / gridDegrees).round();
@@ -305,65 +315,76 @@ class _MapScreenState extends State<MapScreen> {
       // auch die Gruppen ändern. Dieselbe Rechnung wie auf der flachen
       // Karte, die den Schwerpunkt seit jeher benutzt.
       final mitte = schwerpunktVon(group, _koordinateVon);
-      controller.addPoint(Point(
-        id: entry.key,
-        coordinates: GlobeCoordinates(mitte.breite, mitte.laenge),
-        // Der GPU-gezeichnete Punkt selbst bleibt unsichtbar (Alpha 0) –
-        // die eigentliche Pin-Nadel ist unten ein normales Flutter-Widget
-        // (siehe labelBuilder), das sich exakt an dieselbe Position
-        // ankert, aber gestochen scharf bleibt statt als Kugel-Ellipse
-        // verzerrt zu werden.
-        style: const PointStyle(color: Colors.transparent, size: 0.1),
-        // Die Bibliothek rechnet `oben = Ort − labelOffset.dy − Höhe`,
-        // setzt also die Unterkante auf den Ort. Ein negativer Wert
-        // schiebt das Widget genau um diesen Betrag wieder nach unten,
-        // bis die Spitze auf dem Ort steht.
-        labelOffset: const Offset(0, -pinSpitzeUeberKante),
-        labelBuilder: (context, point, isHovering, isVisible) => GestureDetector(
-          // Der Globus selbst zeigt keine Straßendetails (siehe
-          // _ensureGlobeController) – ein Pin-Tap springt deshalb zur
-          // flachen Karte an dieser Stelle statt direkt das Foto zu
-          // öffnen; von dort öffnet der bekannte Foto-Marker das Bild.
-          onTap: () => _jumpToFlatMap(group),
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: _GlobePin(count: group.length),
-          ),
+      controller.addPoint(
+        Point(
+          id: entry.key,
+          coordinates: GlobeCoordinates(mitte.breite, mitte.laenge),
+          // Der GPU-gezeichnete Punkt selbst bleibt unsichtbar (Alpha 0) –
+          // die eigentliche Pin-Nadel ist unten ein normales Flutter-Widget
+          // (siehe labelBuilder), das sich exakt an dieselbe Position
+          // ankert, aber gestochen scharf bleibt statt als Kugel-Ellipse
+          // verzerrt zu werden.
+          style: const PointStyle(color: Colors.transparent, size: 0.1),
+          // Die Bibliothek rechnet `oben = Ort − labelOffset.dy − Höhe`,
+          // setzt also die Unterkante auf den Ort. Ein negativer Wert
+          // schiebt das Widget genau um diesen Betrag wieder nach unten,
+          // bis die Spitze auf dem Ort steht.
+          labelOffset: const Offset(0, -pinSpitzeUeberKante),
+          labelBuilder: (context, point, isHovering, isVisible) =>
+              GestureDetector(
+                // Der Globus selbst zeigt keine Straßendetails (siehe
+                // _ensureGlobeController) – ein Pin-Tap springt deshalb zur
+                // flachen Karte an dieser Stelle statt direkt das Foto zu
+                // öffnen; von dort öffnet der bekannte Foto-Marker das Bild.
+                onTap: () => _jumpToFlatMap(group),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: _GlobePin(count: group.length),
+                ),
+              ),
         ),
-      ));
+      );
     }
     if (_ereignisseZeigen) {
       for (final e in _ereignisse) {
-        controller.addPoint(Point(
-          // Eigener Namensraum für die Kennung: Die Fotogruppen oben
-          // nummerieren nach Rasterzelle, und zwei Punkte mit derselben
-          // Kennung überschrieben einander.
-          id: 'ereignis-${e.ereignis.id}',
-          coordinates: GlobeCoordinates(
-              e.ereignis.ortBreite!, e.ereignis.ortLaenge!),
-          style: const PointStyle(color: Colors.transparent, size: 0.1),
-          // Die Raute soll mit ihrer Mitte auf dem Ereignis sitzen, nicht
-          // mit ihrer Unterkante — siehe [rauteHalb].
-          labelOffset: const Offset(0, -rauteHalb),
-          labelBuilder: (context, point, isHovering, isVisible) => Tooltip(
-            message: [
-              e.personName,
-              if (e.ereignis.ort != null && e.ereignis.ort!.isNotEmpty)
-                e.ereignis.ort!,
-            ].join(' · '),
-            child: _GlobusEreignis(
-              symbol: LebenslaufScreen.symbol(Lebenszeile(
-                ereignisId: e.ereignis.id,
-                art: ereignisartAusText(e.ereignis.art),
-              )),
+        controller.addPoint(
+          Point(
+            // Eigener Namensraum für die Kennung: Die Fotogruppen oben
+            // nummerieren nach Rasterzelle, und zwei Punkte mit derselben
+            // Kennung überschrieben einander.
+            id: 'ereignis-${e.ereignis.id}',
+            coordinates: GlobeCoordinates(
+              e.ereignis.ortBreite!,
+              e.ereignis.ortLaenge!,
+            ),
+            style: const PointStyle(color: Colors.transparent, size: 0.1),
+            // Die Raute soll mit ihrer Mitte auf dem Ereignis sitzen, nicht
+            // mit ihrer Unterkante — siehe [rauteHalb].
+            labelOffset: const Offset(0, -rauteHalb),
+            labelBuilder: (context, point, isHovering, isVisible) => Tooltip(
+              message: [
+                e.personName,
+                if (e.ereignis.ort != null && e.ereignis.ort!.isNotEmpty)
+                  e.ereignis.ort!,
+              ].join(' · '),
+              child: _GlobusEreignis(
+                symbol: LebenslaufScreen.symbol(
+                  Lebenszeile(
+                    ereignisId: e.ereignis.id,
+                    art: ereignisartAusText(e.ereignis.art),
+                  ),
+                ),
+              ),
             ),
           ),
-        ));
+        );
       }
     }
     if (focus && groups.isNotEmpty) {
       final center = _averageCenter(located);
-      controller.focusOnCoordinates(GlobeCoordinates(center.latitude, center.longitude));
+      controller.focusOnCoordinates(
+        GlobeCoordinates(center.latitude, center.longitude),
+      );
     }
     _globePointsSynced = true;
   }
@@ -463,17 +484,32 @@ class _MapScreenState extends State<MapScreen> {
             }),
             onSelected: _setMode,
             itemBuilder: (context) => [
-              _modeMenuItem(Kartenansicht.hell, Icons.light_mode_outlined,
-                  AppTexte.of(context).karteHell),
-              _modeMenuItem(Kartenansicht.dunkel, Icons.dark_mode_outlined,
-                  AppTexte.of(context).karteDunkel),
-              _modeMenuItem(Kartenansicht.topo, Icons.terrain_outlined,
-                  AppTexte.of(context).karteTopografie),
+              _modeMenuItem(
+                Kartenansicht.hell,
+                Icons.light_mode_outlined,
+                AppTexte.of(context).karteHell,
+              ),
+              _modeMenuItem(
+                Kartenansicht.dunkel,
+                Icons.dark_mode_outlined,
+                AppTexte.of(context).karteDunkel,
+              ),
+              _modeMenuItem(
+                Kartenansicht.topo,
+                Icons.terrain_outlined,
+                AppTexte.of(context).karteTopografie,
+              ),
               if (eigeneKarte case final k?)
-                _modeMenuItem(Kartenansicht.eigene,
-                    Icons.travel_explore_outlined, k.name),
-              _modeMenuItem(Kartenansicht.globus, Icons.public,
-                  AppTexte.of(context).karteGlobus),
+                _modeMenuItem(
+                  Kartenansicht.eigene,
+                  Icons.travel_explore_outlined,
+                  k.name,
+                ),
+              _modeMenuItem(
+                Kartenansicht.globus,
+                Icons.public,
+                AppTexte.of(context).karteGlobus,
+              ),
             ],
           ),
         ],
@@ -482,7 +518,11 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  PopupMenuItem<Kartenansicht> _modeMenuItem(Kartenansicht mode, IconData icon, String label) {
+  PopupMenuItem<Kartenansicht> _modeMenuItem(
+    Kartenansicht mode,
+    IconData icon,
+    String label,
+  ) {
     return PopupMenuItem(
       value: mode,
       child: Row(
@@ -500,7 +540,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Widget _buildBody(List<AssetData>? located) {
-    if (located == null) return const Center(child: CircularProgressIndicator());
+    if (located == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (located.isEmpty) {
       return Center(
         child: Padding(
@@ -519,7 +561,9 @@ class _MapScreenState extends State<MapScreen> {
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final radius = math.min(constraints.maxWidth, constraints.maxHeight) / 2 - 16;
+                final radius =
+                    math.min(constraints.maxWidth, constraints.maxHeight) / 2 -
+                    16;
                 return Center(
                   child: FlutterEarthGlobe(
                     controller: _ensureGlobeController(),
@@ -540,19 +584,21 @@ class _MapScreenState extends State<MapScreen> {
               child: IgnorePointer(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
                         .withValues(alpha: 0.92),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
@@ -588,7 +634,10 @@ class _MapScreenState extends State<MapScreen> {
             bottom: 8,
             child: Text(
               AppTexte.of(context).karteTexturNachweis,
-              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -611,8 +660,11 @@ class _MapScreenState extends State<MapScreen> {
     // für 40 Punkte große Kreise – weit über Flutters Bildspeicher von
     // 100 MB. Sichtbar wurde das als graues Platzhalter-Symbol statt eines
     // Vorschaubilds, und zwar auf den meisten Markern.
-    final gruppen = gruppiereFuerKarte(located, _flacherZoom,
-        (a) => (breite: a.latitude!, laenge: a.longitude!));
+    final gruppen = gruppiereFuerKarte(
+      located,
+      _flacherZoom,
+      (a) => (breite: a.latitude!, laenge: a.longitude!),
+    );
     // Die flache Karte bekommt dieselbe Leiste – deshalb ein Stack um
     // sie herum. FlutterMap selbst kann keine festen Aufsätze.
     return Stack(
@@ -624,8 +676,9 @@ class _MapScreenState extends State<MapScreen> {
           child: Zoomsteuerung(
             beiNaeher: () => _flachZoomen(1),
             beiWeiter: () => _flachZoomen(-1),
-            beiStandort:
-                NativeImageConverter.standortMoeglich ? _zumStandort : null,
+            beiStandort: NativeImageConverter.standortMoeglich
+                ? _zumStandort
+                : null,
             standortLaeuft: _standortLaeuft,
             beiEreignisse: _ereignisse.isEmpty ? null : _ereignisseUmschalten,
             ereignisseAn: _ereignisseZeigen,
@@ -635,8 +688,11 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _flacheKarteBauen(List<AssetData> located,
-      Map<String, List<AssetData>> gruppen, Kartenstil stil) {
+  Widget _flacheKarteBauen(
+    List<AssetData> located,
+    Map<String, List<AssetData>> gruppen,
+    Kartenstil stil,
+  ) {
     // Der Wisch-Zoom sitzt aussen herum, damit eine Maus ohne Rad
     // (Magic Mouse) und ein Trackpad ueberhaupt zoomen koennen – die
     // Kartenbibliothek verschiebt bei solchen Gesten nur. Siehe
@@ -666,15 +722,18 @@ class _MapScreenState extends State<MapScreen> {
           Scalebar(
             alignment: Alignment.bottomLeft,
             padding: const EdgeInsets.only(
-                left: AppSpacing.md, bottom: AppSpacing.xxl),
+              left: AppSpacing.md,
+              bottom: AppSpacing.xxl,
+            ),
             lineColor: Theme.of(context).colorScheme.onSurface,
             textStyle: TextStyle(
               fontSize: 11,
               color: Theme.of(context).colorScheme.onSurface,
               shadows: [
                 Shadow(
-                    blurRadius: 3,
-                    color: Theme.of(context).colorScheme.surface),
+                  blurRadius: 3,
+                  color: Theme.of(context).colorScheme.surface,
+                ),
               ],
             ),
           ),
@@ -687,7 +746,9 @@ class _MapScreenState extends State<MapScreen> {
                 for (final e in _ereignisse)
                   Marker(
                     point: ll.LatLng(
-                        e.ereignis.ortBreite!, e.ereignis.ortLaenge!),
+                      e.ereignis.ortBreite!,
+                      e.ereignis.ortLaenge!,
+                    ),
                     width: markerGroesse,
                     height: markerGroesse,
                     alignment: Alignment.center,
@@ -699,10 +760,12 @@ class _MapScreenState extends State<MapScreen> {
                           e.ereignis.ort!,
                       ].join(' · '),
                       child: _GlobusEreignis(
-                        symbol: LebenslaufScreen.symbol(Lebenszeile(
-                          ereignisId: e.ereignis.id,
-                          art: ereignisartAusText(e.ereignis.art),
-                        )),
+                        symbol: LebenslaufScreen.symbol(
+                          Lebenszeile(
+                            ereignisId: e.ereignis.id,
+                            art: ereignisartAusText(e.ereignis.art),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -762,9 +825,7 @@ class _MapScreenState extends State<MapScreen> {
       Kartenansicht.topo => Kartenstil.topo,
       Kartenansicht.eigene => Kartenstil.eigene,
       Kartenansicht.dunkel || Kartenansicht.globus => Kartenstil.dunkel,
-    }
-        .hoechsteAnzeigeStufe
-        .toDouble();
+    }.hoechsteAnzeigeStufe.toDouble();
     if (_flacherZoom > grenze) _flacherZoom = grenze;
     if (_pendingFlatZoom != null && _pendingFlatZoom! > grenze) {
       _pendingFlatZoom = grenze;
@@ -784,8 +845,10 @@ class _MapScreenState extends State<MapScreen> {
     // gewählten Stil. Vorher stand hier fest 18 – das passte zu keiner
     // der drei Quellen und war zugleich die EINZIGE Grenze in der
     // Karte: Rad, Kneifen und Wischen kannten gar keine.
-    final neu = (kamera.zoom + schritt)
-        .clamp(kamera.minZoom ?? 1.0, kamera.maxZoom ?? 19.0);
+    final neu = (kamera.zoom + schritt).clamp(
+      kamera.minZoom ?? 1.0,
+      kamera.maxZoom ?? 19.0,
+    );
     if (neu == kamera.zoom) return;
     _flacheKarte.move(kamera.center, neu);
   }
@@ -805,8 +868,10 @@ class _MapScreenState extends State<MapScreen> {
     }
     if (_mode == Kartenansicht.globus) {
       final c = _ensureGlobeController();
-      c.focusOnCoordinates(GlobeCoordinates(ort.breite, ort.laenge),
-          animate: true);
+      c.focusOnCoordinates(
+        GlobeCoordinates(ort.breite, ort.laenge),
+        animate: true,
+      );
       // Nah genug, um die Gegend zu erkennen, aber nicht so nah, dass nur
       // noch verwaschene Textur zu sehen ist (siehe [zoomHinweisAb]).
       final ziel = math.min(zoomHinweisAb, c.maxZoom);
@@ -898,7 +963,10 @@ class _MapThumbMarker extends StatelessWidget {
             right: -2,
             top: -2,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 1),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: 1,
+              ),
               decoration: BoxDecoration(
                 color: Colors.black87,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -907,7 +975,10 @@ class _MapThumbMarker extends StatelessWidget {
               child: Text(
                 '$anzahl',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -916,14 +987,14 @@ class _MapThumbMarker extends StatelessWidget {
   }
 
   Widget _fallbackIcon() => Container(
-        color: Colors.grey.shade800,
-        alignment: Alignment.center,
-        child: Icon(
-          asset.type == 'VIDEO' ? Icons.videocam : Icons.image,
-          color: Colors.white70,
-          size: 18,
-        ),
-      );
+    color: Colors.grey.shade800,
+    alignment: Alignment.center,
+    child: Icon(
+      asset.type == 'VIDEO' ? Icons.videocam : Icons.image,
+      color: Colors.white70,
+      size: 18,
+    ),
+  );
 }
 
 /// Pin-Nadel für den Globus-Modus (statt einer vom Bibliotheks-eigenen
@@ -980,7 +1051,10 @@ class _GlobePin extends StatelessWidget {
               right: -2,
               top: -2,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: 1,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -988,7 +1062,11 @@ class _GlobePin extends StatelessWidget {
                 ),
                 child: Text(
                   '$count',
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

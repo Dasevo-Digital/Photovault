@@ -23,7 +23,8 @@ class _CameraSourcePickerDialog extends StatefulWidget {
   const _CameraSourcePickerDialog();
 
   @override
-  State<_CameraSourcePickerDialog> createState() => _CameraSourcePickerDialogState();
+  State<_CameraSourcePickerDialog> createState() =>
+      _CameraSourcePickerDialogState();
 }
 
 class _CameraSourcePickerDialogState extends State<_CameraSourcePickerDialog> {
@@ -62,30 +63,33 @@ class _CameraSourcePickerDialogState extends State<_CameraSourcePickerDialog> {
                 child: Center(child: CircularProgressIndicator()),
               )
             : sources.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                    child: Text(AppTexte.of(context).kameraKeinDatentraeger),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final source in sources)
-                        ListTile(
-                          leading: const Icon(Icons.sd_card_outlined),
-                          title: Text(source.name),
-                          subtitle: Text(
-                            source.dcimPath,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                          onTap: () => Navigator.pop(context, source.dcimPath),
-                        ),
-                    ],
-                  ),
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Text(AppTexte.of(context).kameraKeinDatentraeger),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final source in sources)
+                    ListTile(
+                      leading: const Icon(Icons.sd_card_outlined),
+                      title: Text(source.name),
+                      subtitle: Text(
+                        source.dcimPath,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      onTap: () => Navigator.pop(context, source.dcimPath),
+                    ),
+                ],
+              ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppTexte.of(context).allgAbbrechen),
+        ),
       ],
     );
   }

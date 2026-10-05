@@ -46,45 +46,54 @@ AssetData _buildAsset({
 
 void main() {
   group('Roundtrip: buildXmpPacket -> parseXmpContent', () {
-    test('Bewertung, Farbmarkierung, Beschreibung, Tags, GPS bleiben erhalten', () {
-      final asset = _buildAsset(
-        rating: 4,
-        colorLabel: 'green',
-        description: 'Sonnenuntergang am Strand',
-        latitude: 52.500171,
-        longitude: -13.409877,
-      );
-      final xml = buildXmpPacket(asset, ['Urlaub', 'Strand']);
+    test(
+      'Bewertung, Farbmarkierung, Beschreibung, Tags, GPS bleiben erhalten',
+      () {
+        final asset = _buildAsset(
+          rating: 4,
+          colorLabel: 'green',
+          description: 'Sonnenuntergang am Strand',
+          latitude: 52.500171,
+          longitude: -13.409877,
+        );
+        final xml = buildXmpPacket(asset, ['Urlaub', 'Strand']);
 
-      final fields = parseXmpContent(xml);
+        final fields = parseXmpContent(xml);
 
-      expect(fields, isNotNull);
-      expect(fields!.rating, 4);
-      expect(fields.colorLabel, 'green');
-      expect(fields.description, 'Sonnenuntergang am Strand');
-      expect(fields.tags, unorderedEquals(['Urlaub', 'Strand']));
-      expect(fields.latitude, closeTo(52.500171, 0.0001));
-      expect(fields.longitude, closeTo(-13.409877, 0.0001));
-    });
+        expect(fields, isNotNull);
+        expect(fields!.rating, 4);
+        expect(fields.colorLabel, 'green');
+        expect(fields.description, 'Sonnenuntergang am Strand');
+        expect(fields.tags, unorderedEquals(['Urlaub', 'Strand']));
+        expect(fields.latitude, closeTo(52.500171, 0.0001));
+        expect(fields.longitude, closeTo(-13.409877, 0.0001));
+      },
+    );
 
-    test('leeres Asset ohne gesetzte Felder ergibt null (nichts zu übernehmen)', () {
-      final asset = _buildAsset();
-      final xml = buildXmpPacket(asset, []);
+    test(
+      'leeres Asset ohne gesetzte Felder ergibt null (nichts zu übernehmen)',
+      () {
+        final asset = _buildAsset();
+        final xml = buildXmpPacket(asset, []);
 
-      final fields = parseXmpContent(xml);
+        final fields = parseXmpContent(xml);
 
-      expect(fields, isNull);
-    });
+        expect(fields, isNull);
+      },
+    );
 
-    test('negative GPS-Koordinaten (Süd/West) bleiben im Vorzeichen erhalten', () {
-      final asset = _buildAsset(latitude: -33.868, longitude: 151.209);
-      final xml = buildXmpPacket(asset, []);
+    test(
+      'negative GPS-Koordinaten (Süd/West) bleiben im Vorzeichen erhalten',
+      () {
+        final asset = _buildAsset(latitude: -33.868, longitude: 151.209);
+        final xml = buildXmpPacket(asset, []);
 
-      final fields = parseXmpContent(xml);
+        final fields = parseXmpContent(xml);
 
-      expect(fields!.latitude, closeTo(-33.868, 0.0001));
-      expect(fields.longitude, closeTo(151.209, 0.0001));
-    });
+        expect(fields!.latitude, closeTo(-33.868, 0.0001));
+        expect(fields.longitude, closeTo(151.209, 0.0001));
+      },
+    );
   });
 
   group('parseXmpContent gegen handgeschriebene, Lightroom-artige Dateien', () {
@@ -136,7 +145,10 @@ void main() {
 
       final fields = parseXmpContent(xml);
 
-      expect(fields, isNull); // einzig gesetztes Feld ist unbekannt -> effektiv leer
+      expect(
+        fields,
+        isNull,
+      ); // einzig gesetztes Feld ist unbekannt -> effektiv leer
     });
 
     test('kaputtes/kein XML ergibt null statt eines Fehlers', () {

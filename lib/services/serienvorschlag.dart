@@ -80,7 +80,7 @@ Future<List<List<AssetData>>> serienvorschlaege(
   for (final liste in kennungen) {
     final aufnahmen = [
       for (final id in liste)
-        if (nachKennung[id] != null) nachKennung[id]!
+        if (nachKennung[id] != null) nachKennung[id]!,
     ];
     if (aufnahmen.length < 2) continue;
     if (verworfen.contains(serienschluessel(aufnahmen))) continue;

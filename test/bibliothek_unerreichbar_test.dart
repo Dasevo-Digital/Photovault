@@ -20,17 +20,23 @@ class _Zustand extends LibraryState {
 }
 
 void main() {
-  testWidgets('nennt Bibliothek und Ort und bietet alle Wege an',
-      (tester) async {
+  testWidgets('nennt Bibliothek und Ort und bietet alle Wege an', (
+    tester,
+  ) async {
     const eintrag = Bibliothekseintrag(
-        path: '/Volumes/Platte/Fotos', token: 'x', name: 'Familie');
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildLightTheme(),
-      home: BibliothekUnerreichbarScreen(library: _Zustand(eintrag)),
-    ));
+      path: '/Volumes/Platte/Fotos',
+      token: 'x',
+      name: 'Familie',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildLightTheme(),
+        home: BibliothekUnerreichbarScreen(library: _Zustand(eintrag)),
+      ),
+    );
 
     expect(find.text('Bibliothek nicht erreichbar'), findsOneWidget);
     expect(find.textContaining('„Familie“'), findsOneWidget);
@@ -50,7 +56,10 @@ void main() {
     expect(await enthaeltBibliothek(bib.path), isFalse);
     File('${bib.path}/library.sqlite').writeAsStringSync('db');
     expect(await enthaeltBibliothek(bib.path), isTrue);
-    expect(await enthaeltBibliothek(tmp.path), isFalse,
-        reason: 'der Ordner darüber ist keine Bibliothek');
+    expect(
+      await enthaeltBibliothek(tmp.path),
+      isFalse,
+      reason: 'der Ordner darüber ist keine Bibliothek',
+    );
   });
 }

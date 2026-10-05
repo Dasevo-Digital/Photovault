@@ -32,8 +32,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -45,18 +46,22 @@ void main() {
   /// Eine Reise über drei Tage, mit einer Aufnahme je Tag.
   Future<ReisenData> anlegen() async {
     for (var i = 0; i < 3; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'r$i',
-            originalFileName: 'r$i.jpg',
-            relativePath: 'originals/r$i.jpg',
-            checksum: 'pruef-r$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 6, 14 + i, 10),
-            importedAt: DateTime(2026),
-            latitude: const Value(41.9),
-            longitude: const Value(12.5),
-            locationCity: const Value('Roma'),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'r$i',
+              originalFileName: 'r$i.jpg',
+              relativePath: 'originals/r$i.jpg',
+              checksum: 'pruef-r$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 6, 14 + i, 10),
+              importedAt: DateTime(2026),
+              latitude: const Value(41.9),
+              longitude: const Value(12.5),
+              locationCity: const Value('Roma'),
+            ),
+          );
     }
     await db.reiseAnlegen(
       ReisenCompanion.insert(
@@ -75,14 +80,16 @@ void main() {
     tester.view.physicalSize = const Size(1000, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      builder: (context, kind) => mitMeldungen(kind),
-      home: ReiseDetailScreen(library: library, reise: reise),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: (context, kind) => mitMeldungen(kind),
+        home: ReiseDetailScreen(library: library, reise: reise),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -113,15 +120,17 @@ void main() {
     expect(k.reiseId, 'reise1', reason: 'sie gehört zu dieser Reise');
     expect(k.von, DateTime(2026, 6, 14, 10));
     expect(k.bis, DateTime(2026, 6, 16, 10));
-    expect(await db.aufnahmenDerAktivitaet(k.id), hasLength(3),
-        reason: 'alle drei Aufnahmen der Reise');
+    expect(
+      await db.aufnahmenDerAktivitaet(k.id),
+      hasLength(3),
+      reason: 'alle drei Aufnahmen der Reise',
+    );
 
     // Und sie steht danach im Bildschirm.
     expect(find.textContaining('Noch keine'), findsNothing);
   });
 
-  testWidgets('ein engerer Zeitraum ergibt ein Kapitel daraus',
-      (tester) async {
+  testWidgets('ein engerer Zeitraum ergibt ein Kapitel daraus', (tester) async {
     final reise = await anlegen();
     // Denselben Weg, aber nur der erste Tag – die Aufnahmen der beiden
     // anderen Tage dürfen nicht mitkommen.

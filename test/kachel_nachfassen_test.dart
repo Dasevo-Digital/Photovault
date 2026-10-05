@@ -42,7 +42,10 @@ class _Launigg extends TileProvider {
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) {
     anfragen++;
     return _Probebild(
-        nummer: ++_naechsteNummer, scheitert: abweisen, pixel: pixel);
+      nummer: ++_naechsteNummer,
+      scheitert: abweisen,
+      pixel: pixel,
+    );
   }
 }
 
@@ -66,12 +69,15 @@ class _Probebild extends ImageProvider<_Probebild> {
 
   @override
   ImageStreamCompleter loadImage(_Probebild key, ImageDecoderCallback decode) =>
-      OneFrameImageStreamCompleter(scheitert
-          ? Future.error(Exception('Kachel abgelehnt'))
-          : SynchronousFuture(ImageInfo(image: pixel.clone())));
+      OneFrameImageStreamCompleter(
+        scheitert
+            ? Future.error(Exception('Kachel abgelehnt'))
+            : SynchronousFuture(ImageInfo(image: pixel.clone())),
+      );
 
   @override
-  bool operator ==(Object other) => other is _Probebild && other.nummer == nummer;
+  bool operator ==(Object other) =>
+      other is _Probebild && other.nummer == nummer;
 
   @override
   int get hashCode => nummer;
@@ -110,8 +116,10 @@ class _WieDasNetz extends Nachfassanbieter {
 
   @override
   ImageProvider getImageWithCancelLoadingSupport(
-          TileCoordinates c, TileLayer o, Future<void> abbruch) =>
-      getImage(c, o);
+    TileCoordinates c,
+    TileLayer o,
+    Future<void> abbruch,
+  ) => getImage(c, o);
 }
 
 @immutable
@@ -128,10 +136,13 @@ class _NachAdresse extends ImageProvider<_NachAdresse> {
 
   @override
   ImageStreamCompleter loadImage(
-          _NachAdresse key, ImageDecoderCallback decode) =>
-      OneFrameImageStreamCompleter(scheitert
-          ? Future.error(Exception('Kachel abgelehnt'))
-          : SynchronousFuture(ImageInfo(image: pixel.clone())));
+    _NachAdresse key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(
+    scheitert
+        ? Future.error(Exception('Kachel abgelehnt'))
+        : SynchronousFuture(ImageInfo(image: pixel.clone())),
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -144,8 +155,12 @@ class _NachAdresse extends ImageProvider<_NachAdresse> {
 Future<ui.Image> _einPixel() {
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      Uint8List.fromList([0, 0, 0, 255]), 1, 1, ui.PixelFormat.rgba8888,
-      fertig.complete);
+    Uint8List.fromList([0, 0, 0, 255]),
+    1,
+    1,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   return fertig.future;
 }
 
@@ -169,15 +184,15 @@ Future<void> _leise(Future<void> Function() lauf) async {
 }
 
 Widget _karte(Widget schicht) => MaterialApp(
-      home: FlutterMap(
-        options: const MapOptions(
-          initialCenter: ll.LatLng(50, 14),
-          initialZoom: 8,
-          maxZoom: 21,
-        ),
-        children: [schicht],
-      ),
-    );
+  home: FlutterMap(
+    options: const MapOptions(
+      initialCenter: ll.LatLng(50, 14),
+      initialZoom: 8,
+      maxZoom: 21,
+    ),
+    children: [schicht],
+  ),
+);
 
 void main() {
   late ui.Image pixel;
@@ -210,9 +225,9 @@ void main() {
       final anbieter = _Launigg(pixel: pixel);
       kachelAnbieterFuerTest = anbieter;
 
-      await tester.pumpWidget(_karte(
-        Builder(builder: (context) => buildMapTileLayer(context)),
-      ));
+      await tester.pumpWidget(
+        _karte(Builder(builder: (context) => buildMapTileLayer(context))),
+      );
       await tester.pump();
       final ersteRunde = anbieter.anfragen;
       expect(ersteRunde, greaterThan(0), reason: 'gar keine Kachel angefragt?');
@@ -221,14 +236,19 @@ void main() {
       for (var i = 0; i < 12; i++) {
         await tester.pump(const Duration(seconds: 5));
       }
-      expect(anbieter.anfragen, ersteRunde,
-          reason: 'Die gescheiterte Kachel wurde nie wieder versucht – '
-              'genau das ist der Befund.');
+      expect(
+        anbieter.anfragen,
+        ersteRunde,
+        reason:
+            'Die gescheiterte Kachel wurde nie wieder versucht – '
+            'genau das ist der Befund.',
+      );
     });
   });
 
-  testWidgets('mit Nachfassen kommt nach fünf Sekunden ein neuer Anlauf',
-      (tester) async {
+  testWidgets('mit Nachfassen kommt nach fünf Sekunden ein neuer Anlauf', (
+    tester,
+  ) async {
     await _leise(() async {
       final anbieter = _Launigg(pixel: pixel);
       kachelAnbieterFuerTest = anbieter;
@@ -244,13 +264,20 @@ void main() {
 
       await tester.pump(const Duration(seconds: 2));
       await tester.pump();
-      expect(anbieter.anfragen, greaterThan(ersteRunde),
-          reason: 'nach fünf Sekunden muss ein zweiter Anlauf kommen');
+      expect(
+        anbieter.anfragen,
+        greaterThan(ersteRunde),
+        reason: 'nach fünf Sekunden muss ein zweiter Anlauf kommen',
+      );
 
       // Der dritte Anlauf lässt sich länger Zeit: 15 statt 5 Sekunden.
       final zweiteRunde = anbieter.anfragen;
       await tester.pump(const Duration(seconds: 10));
-      expect(anbieter.anfragen, zweiteRunde, reason: 'zu schnell hintereinander');
+      expect(
+        anbieter.anfragen,
+        zweiteRunde,
+        reason: 'zu schnell hintereinander',
+      );
       await tester.pump(const Duration(seconds: 6));
       await tester.pump();
       expect(anbieter.anfragen, greaterThan(zweiteRunde));
@@ -261,46 +288,59 @@ void main() {
     });
   });
 
-  testWidgets('nach der Erholung fängt die nächste Störung wieder bei fünf an',
-      (tester) async {
-    await _leise(() async {
-      final anbieter = _Launigg(pixel: pixel);
-      kachelAnbieterFuerTest = anbieter;
+  testWidgets(
+    'nach der Erholung fängt die nächste Störung wieder bei fünf an',
+    (tester) async {
+      await _leise(() async {
+        final anbieter = _Launigg(pixel: pixel);
+        kachelAnbieterFuerTest = anbieter;
 
-      await tester.pumpWidget(_karte(const Kachelschicht(stil: Kartenstil.hell)));
-      await tester.pump();
+        await tester.pumpWidget(
+          _karte(const Kachelschicht(stil: Kartenstil.hell)),
+        );
+        await tester.pump();
 
-      // Der erste Anlauf nach fünf Sekunden gelingt.
-      anbieter.abweisen = false;
-      await tester.pump(const Duration(seconds: 6));
-      await tester.pump();
-      // Danach ist es still, und die Störung gilt als vorbei.
-      await tester.pump(kachelGeheiltNach + const Duration(seconds: 1));
-      final nachErholung = anbieter.anfragen;
+        // Der erste Anlauf nach fünf Sekunden gelingt.
+        anbieter.abweisen = false;
+        await tester.pump(const Duration(seconds: 6));
+        await tester.pump();
+        // Danach ist es still, und die Störung gilt als vorbei.
+        await tester.pump(kachelGeheiltNach + const Duration(seconds: 1));
+        final nachErholung = anbieter.anfragen;
 
-      // Neue Störung: ein anderer Stil lädt die Kacheln neu, und
-      // diesmal weist der Anbieter wieder ab.
-      anbieter.abweisen = true;
-      await tester.pumpWidget(_karte(const Kachelschicht(stil: Kartenstil.topo)));
-      await tester.pump();
-      expect(anbieter.anfragen, greaterThan(nachErholung),
-          reason: 'der Stilwechsel muss neu laden');
-      final neueStoerung = anbieter.anfragen;
+        // Neue Störung: ein anderer Stil lädt die Kacheln neu, und
+        // diesmal weist der Anbieter wieder ab.
+        anbieter.abweisen = true;
+        await tester.pumpWidget(
+          _karte(const Kachelschicht(stil: Kartenstil.topo)),
+        );
+        await tester.pump();
+        expect(
+          anbieter.anfragen,
+          greaterThan(nachErholung),
+          reason: 'der Stilwechsel muss neu laden',
+        );
+        final neueStoerung = anbieter.anfragen;
 
-      // Wäre die Stufe nicht zurückgesetzt, käme der nächste Anlauf
-      // erst nach fünfzehn Sekunden.
-      await tester.pump(const Duration(seconds: 4));
-      expect(anbieter.anfragen, neueStoerung, reason: 'zu früh');
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
-      expect(anbieter.anfragen, greaterThan(neueStoerung),
-          reason: 'nach der Erholung muss wieder fünf Sekunden gelten, '
-              'nicht fünfzehn');
+        // Wäre die Stufe nicht zurückgesetzt, käme der nächste Anlauf
+        // erst nach fünfzehn Sekunden.
+        await tester.pump(const Duration(seconds: 4));
+        expect(anbieter.anfragen, neueStoerung, reason: 'zu früh');
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+        expect(
+          anbieter.anfragen,
+          greaterThan(neueStoerung),
+          reason:
+              'nach der Erholung muss wieder fünf Sekunden gelten, '
+              'nicht fünfzehn',
+        );
 
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-      await tester.pump(const Duration(minutes: 2));
-    });
-  });
+        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+        await tester.pump(const Duration(minutes: 2));
+      });
+    },
+  );
 
   test('gleichzeitige Verbindungen sind gedeckelt', () async {
     // Am eigenen Server gemessen statt an einer Zusicherung abgelesen.
@@ -310,14 +350,16 @@ void main() {
     var gleichzeitig = 0;
     var hoechstens = 0;
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(server.forEach((anfrage) async {
-      gleichzeitig++;
-      if (gleichzeitig > hoechstens) hoechstens = gleichzeitig;
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      gleichzeitig--;
-      anfrage.response.add([1, 2, 3]);
-      await anfrage.response.close();
-    }));
+    unawaited(
+      server.forEach((anfrage) async {
+        gleichzeitig++;
+        if (gleichzeitig > hoechstens) hoechstens = gleichzeitig;
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+        gleichzeitig--;
+        anfrage.response.add([1, 2, 3]);
+        await anfrage.response.close();
+      }),
+    );
     addTearDown(() => server.close(force: true));
 
     final netz = kachelNetzClient();
@@ -325,8 +367,11 @@ void main() {
       for (var i = 0; i < 40; i++)
         netz.get(Uri.parse('http://127.0.0.1:${server.port}/$i.png')),
     ]);
-    expect(hoechstens, lessThanOrEqualTo(kachelVerbindungen),
-        reason: 'Es liefen $hoechstens Abrufe auf einmal');
+    expect(
+      hoechstens,
+      lessThanOrEqualTo(kachelVerbindungen),
+      reason: 'Es liefen $hoechstens Abrufe auf einmal',
+    );
     expect(hoechstens, greaterThan(1), reason: 'gar keine Nebenläufigkeit?');
   });
 
@@ -355,8 +400,9 @@ void main() {
     /// Vorher war nach dem ersten Anlauf Schluss: Wer nach fuenf
     /// Sekunden noch fehlte, fehlte bis zum Programmende. Jetzt greift
     /// die Staffel aus [kachelNachfassen] wie vorgesehen.
-    testWidgets('eine fehlende Kachel wird auch ein zweites Mal versucht',
-        (tester) async {
+    testWidgets('eine fehlende Kachel wird auch ein zweites Mal versucht', (
+      tester,
+    ) async {
       await _leise(() async {
         tester.view.physicalSize = const Size(1830, 1000);
         tester.view.devicePixelRatio = 1.0;
@@ -366,16 +412,18 @@ void main() {
         anbieter.opfer = const TileCoordinates(2159, 1349, 12);
         kachelAnbieterFuerTest = anbieter;
 
-        await tester.pumpWidget(const MaterialApp(
-          home: FlutterMap(
-            options: MapOptions(
-              initialCenter: ll.LatLng(52.2, 9.8),
-              initialZoom: 12,
-              maxZoom: 19,
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: FlutterMap(
+              options: MapOptions(
+                initialCenter: ll.LatLng(52.2, 9.8),
+                initialZoom: 12,
+                maxZoom: 19,
+              ),
+              children: [Kachelschicht(stil: Kartenstil.topo)],
             ),
-            children: [Kachelschicht(stil: Kartenstil.topo)],
           ),
-        ));
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         anbieter.gefragt.clear();
@@ -390,17 +438,22 @@ void main() {
           anbieter.gefragt.clear();
         }
 
-        expect(anlaeufe, greaterThanOrEqualTo(2),
-            reason: 'nach dem ersten Anlauf war Schluss – die Staffel '
-                '5/15/45 Sekunden wurde nie erreicht');
+        expect(
+          anlaeufe,
+          greaterThanOrEqualTo(2),
+          reason:
+              'nach dem ersten Anlauf war Schluss – die Staffel '
+              '5/15/45 Sekunden wurde nie erreicht',
+        );
 
         await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
         await tester.pump(const Duration(minutes: 2));
       });
     });
 
-    testWidgets('nur die gescheiterte Kachel bekommt einen Anhang',
-        (tester) async {
+    testWidgets('nur die gescheiterte Kachel bekommt einen Anhang', (
+      tester,
+    ) async {
       // Die Gegenprobe zur Sparsamkeit: Wuerde der Anhang an ALLE
       // Adressen gehen, zoege jedes Nachfassen den ganzen Bildschirm neu
       // ueber die Leitung. Die Kachelserver werden gespendet.
@@ -413,16 +466,18 @@ void main() {
         anbieter.opfer = const TileCoordinates(2159, 1349, 12);
         kachelAnbieterFuerTest = anbieter;
 
-        await tester.pumpWidget(const MaterialApp(
-          home: FlutterMap(
-            options: MapOptions(
-              initialCenter: ll.LatLng(52.2, 9.8),
-              initialZoom: 12,
-              maxZoom: 19,
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: FlutterMap(
+              options: MapOptions(
+                initialCenter: ll.LatLng(52.2, 9.8),
+                initialZoom: 12,
+                maxZoom: 19,
+              ),
+              children: [Kachelschicht(stil: Kartenstil.topo)],
             ),
-            children: [Kachelschicht(stil: Kartenstil.topo)],
           ),
-        ));
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         anbieter.gefragt.clear();
@@ -433,10 +488,14 @@ void main() {
         final mitAnhang = anbieter.gefragt.where((u) => u.contains('#'));
         expect(mitAnhang, hasLength(1));
         expect(mitAnhang.single, contains('/12/2159/1349'));
-        expect(anbieter.gefragt.length, greaterThan(50),
-            reason: 'der Rest des Bildes wird sehr wohl mit durchgesehen – '
-                'nur eben unter derselben Adresse und damit aus dem '
-                'Bildspeicher');
+        expect(
+          anbieter.gefragt.length,
+          greaterThan(50),
+          reason:
+              'der Rest des Bildes wird sehr wohl mit durchgesehen – '
+              'nur eben unter derselben Adresse und damit aus dem '
+              'Bildspeicher',
+        );
 
         await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
         await tester.pump(const Duration(minutes: 2));

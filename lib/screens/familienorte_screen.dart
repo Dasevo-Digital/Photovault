@@ -25,10 +25,7 @@ typedef Familienort = ({AssetData asset, Ortsgruppe gruppe});
 /// Eigener Typ und nicht in [Familienort] hineingezwängt: Ein Ereignis
 /// ist kein Foto. Es hat keine Datei, kein Vorschaubild und nichts zum
 /// Öffnen — es hat einen Namen, ein Datum und eine Art.
-typedef Ereignisort = ({
-  LebensereignisseData ereignis,
-  String personName,
-});
+typedef Ereignisort = ({LebensereignisseData ereignis, String personName});
 
 /// Die Orte einer Familie – wo sich die Verwandtschaft über die
 /// Generationen aufgehalten hat.
@@ -86,12 +83,12 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
   }
 
   String _name(AppTexte t, Ortsgruppe g) => switch (g) {
-        Ortsgruppe.ich => t.orteIch,
-        Ortsgruppe.vorfahren => t.orteVorfahren,
-        Ortsgruppe.nachkommen => t.orteNachkommen,
-        Ortsgruppe.seitenlinie => t.orteSeitenlinie,
-        Ortsgruppe.angeheiratet => t.orteAngeheiratet,
-      };
+    Ortsgruppe.ich => t.orteIch,
+    Ortsgruppe.vorfahren => t.orteVorfahren,
+    Ortsgruppe.nachkommen => t.orteNachkommen,
+    Ortsgruppe.seitenlinie => t.orteSeitenlinie,
+    Ortsgruppe.angeheiratet => t.orteAngeheiratet,
+  };
 
   /// Der Mittelpunkt, auf den die Karte beim Öffnen zeigt.
   ///
@@ -117,30 +114,33 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
   }
 
   void _oeffne(List<AssetData> gruppe) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: gruppe,
-        initialIndex: 0,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: gruppe,
+          initialIndex: 0,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    final gezeigt =
-        widget.orte.where((o) => _sichtbar.contains(o.gruppe)).toList();
+    final gezeigt = widget.orte
+        .where((o) => _sichtbar.contains(o.gruppe))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.titel)),
@@ -163,7 +163,9 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
     final vorhanden = {for (final o in widget.orte) o.gruppe};
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Wrap(
         spacing: AppSpacing.sm,
         runSpacing: AppSpacing.xs,
@@ -172,12 +174,15 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
             if (vorhanden.contains(g))
               FilterChip(
                 selected: _sichtbar.contains(g),
-                onSelected: (an) => setState(
-                    () => an ? _sichtbar.add(g) : _sichtbar.remove(g)),
+                onSelected: (an) =>
+                    setState(() => an ? _sichtbar.add(g) : _sichtbar.remove(g)),
                 avatar: CircleAvatar(
-                    backgroundColor: _farbe(context, g), radius: 7),
+                  backgroundColor: _farbe(context, g),
+                  radius: 7,
+                ),
                 label: Text(
-                    '${_name(t, g)} (${widget.orte.where((o) => o.gruppe == g).length})'),
+                  '${_name(t, g)} (${widget.orte.where((o) => o.gruppe == g).length})',
+                ),
               ),
           if (widget.ereignisse.isNotEmpty)
             FilterChip(
@@ -196,94 +201,111 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
   }
 
   Widget _karte(List<Familienort> gezeigt) {
-    final gruppen = gruppiereFuerKarte(gezeigt, _zoom,
-        (o) => (breite: o.asset.latitude!, laenge: o.asset.longitude!));
+    final gruppen = gruppiereFuerKarte(
+      gezeigt,
+      _zoom,
+      (o) => (breite: o.asset.latitude!, laenge: o.asset.longitude!),
+    );
     final hoechsteStufe = Kartenstil.dunkel.hoechsteAnzeigeStufe.toDouble();
-    return Stack(children: [
-      Positioned.fill(
-        child: WischZoom(
-          steuerung: _steuerung,
-          groesserZoom: hoechsteStufe,
-          child: FlutterMap(
-      mapController: _steuerung,
-      options: MapOptions(
-        initialCenter: _mitte(gezeigt),
-        initialZoom: _standardZoom,
-        // Sonst zoomt die Karte ueber die vorhandenen Kacheln hinaus ins
-        // Leere – siehe Kartenstil.hoechsteAnzeigeStufe.
-        maxZoom: Kartenstil.dunkel.hoechsteAnzeigeStufe.toDouble(),
-        onPositionChanged: (kamera, _) {
-          final stufe = kamera.zoom.roundToDouble();
-          if (stufe != _zoom) setState(() => _zoom = stufe);
-        },
-      ),
+    return Stack(
       children: [
-        const Kachelschicht(stil: Kartenstil.dunkel),
-        buildMapAttribution(context, stil: Kartenstil.dunkel),
-        // Die Ereignisse liegen UNTER den Fotomarken: Wo beides am
-        // selben Ort ist, soll das Foto obenauf liegen – es lässt sich
-        // öffnen, das Ereignis nicht.
-        if (_ereignisseZeigen)
-          MarkerLayer(
-            markers: [
-              for (final e in widget.ereignisse)
-                Marker(
-                  point: ll.LatLng(
-                      e.ereignis.ortBreite!, e.ereignis.ortLaenge!),
-                  width: markerGroesse,
-                  height: markerGroesse,
-                  child: Tooltip(
-                    message: [
-                      e.personName,
-                      if (e.ereignis.ort != null && e.ereignis.ort!.isNotEmpty)
-                        e.ereignis.ort!,
-                    ].join(' · '),
-                    child: _Ereignismarke(
-                      farbe: Theme.of(context).colorScheme.primaryContainer,
-                      symbol: LebenslaufScreen.symbol(Lebenszeile(
-                        ereignisId: e.ereignis.id,
-                        art: ereignisartAusText(e.ereignis.art),
-                      )),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        MarkerLayer(
-          markers: [
-            for (final gruppe in gruppen.values)
-              Marker(
-                point: ll.LatLng(
-                  gruppe.map((o) => o.asset.latitude!).reduce((a, b) => a + b) /
-                      gruppe.length,
-                  gruppe.map((o) => o.asset.longitude!).reduce((a, b) => a + b) /
-                      gruppe.length,
-                ),
-                width: markerGroesse,
-                height: markerGroesse,
-                child: GestureDetector(
-                  onTap: () => _oeffne([for (final o in gruppe) o.asset]),
-                  child: _Ortsmarke(
-                    farbe: _farbe(context, gruppe.first.gruppe),
-                    anzahl: gruppe.length,
-                  ),
-                ),
+        Positioned.fill(
+          child: WischZoom(
+            steuerung: _steuerung,
+            groesserZoom: hoechsteStufe,
+            child: FlutterMap(
+              mapController: _steuerung,
+              options: MapOptions(
+                initialCenter: _mitte(gezeigt),
+                initialZoom: _standardZoom,
+                // Sonst zoomt die Karte ueber die vorhandenen Kacheln hinaus ins
+                // Leere – siehe Kartenstil.hoechsteAnzeigeStufe.
+                maxZoom: Kartenstil.dunkel.hoechsteAnzeigeStufe.toDouble(),
+                onPositionChanged: (kamera, _) {
+                  final stufe = kamera.zoom.roundToDouble();
+                  if (stufe != _zoom) setState(() => _zoom = stufe);
+                },
               ),
-          ],
+              children: [
+                const Kachelschicht(stil: Kartenstil.dunkel),
+                buildMapAttribution(context, stil: Kartenstil.dunkel),
+                // Die Ereignisse liegen UNTER den Fotomarken: Wo beides am
+                // selben Ort ist, soll das Foto obenauf liegen – es lässt sich
+                // öffnen, das Ereignis nicht.
+                if (_ereignisseZeigen)
+                  MarkerLayer(
+                    markers: [
+                      for (final e in widget.ereignisse)
+                        Marker(
+                          point: ll.LatLng(
+                            e.ereignis.ortBreite!,
+                            e.ereignis.ortLaenge!,
+                          ),
+                          width: markerGroesse,
+                          height: markerGroesse,
+                          child: Tooltip(
+                            message: [
+                              e.personName,
+                              if (e.ereignis.ort != null &&
+                                  e.ereignis.ort!.isNotEmpty)
+                                e.ereignis.ort!,
+                            ].join(' · '),
+                            child: _Ereignismarke(
+                              farbe: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
+                              symbol: LebenslaufScreen.symbol(
+                                Lebenszeile(
+                                  ereignisId: e.ereignis.id,
+                                  art: ereignisartAusText(e.ereignis.art),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    for (final gruppe in gruppen.values)
+                      Marker(
+                        point: ll.LatLng(
+                          gruppe
+                                  .map((o) => o.asset.latitude!)
+                                  .reduce((a, b) => a + b) /
+                              gruppe.length,
+                          gruppe
+                                  .map((o) => o.asset.longitude!)
+                                  .reduce((a, b) => a + b) /
+                              gruppe.length,
+                        ),
+                        width: markerGroesse,
+                        height: markerGroesse,
+                        child: GestureDetector(
+                          onTap: () =>
+                              _oeffne([for (final o in gruppe) o.asset]),
+                          child: _Ortsmarke(
+                            farbe: _farbe(context, gruppe.first.gruppe),
+                            anzahl: gruppe.length,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          right: 8,
+          bottom: 40,
+          child: Zoomsteuerung(
+            beiNaeher: () => _zoomen(1),
+            beiWeiter: () => _zoomen(-1),
+          ),
         ),
       ],
-    ),
-        ),
-      ),
-      Positioned(
-        right: 8,
-        bottom: 40,
-        child: Zoomsteuerung(
-          beiNaeher: () => _zoomen(1),
-          beiWeiter: () => _zoomen(-1),
-        ),
-      ),
-    ]);
+    );
   }
 
   /// Ein Zoomschritt über die Knöpfe – selbst geklemmt, weil `move` die
@@ -321,11 +343,14 @@ class _Ortsmarke extends StatelessWidget {
           boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4)],
         ),
         child: anzahl > 1
-            ? Text('$anzahl',
+            ? Text(
+                '$anzahl',
                 style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold))
+                  color: Colors.black,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
             : null,
       ),
     );
@@ -363,8 +388,11 @@ class _Ereignismarke extends StatelessWidget {
           // mitgekipptes Herz oder Auto wäre schlicht schief.
           child: Transform.rotate(
             angle: -math.pi / 4,
-            child: Icon(symbol,
-                size: 12, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            child: Icon(
+              symbol,
+              size: 12,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
           ),
         ),
       ),

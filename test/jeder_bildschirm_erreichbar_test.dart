@@ -31,7 +31,9 @@ void main() {
     // value" - auf dem Mac lief er durch. Aufgefallen ist es erst beim
     // Bau von 2.2.1 auf der Windows-Maschine.
     final quellen = [
-      for (final f in Directory('lib').listSync(recursive: true).whereType<File>())
+      for (final f in Directory(
+        'lib',
+      ).listSync(recursive: true).whereType<File>())
         if (f.path.endsWith('.dart') && !f.path.endsWith('.g.dart'))
           f.readAsStringSync(),
     ];
@@ -53,16 +55,22 @@ void main() {
         // Auch eine Stelle in derselben Datei zählt: Der Kalender öffnet
         // seine Jahresansicht von nebenan, und die ist damit erreichbar.
         final benutzt = RegExp('\\b$name\\s*\\(');
-        final gefunden = quellen.any((quelle) => quelle
-            .split('\n')
-            .map((z) => z.trimLeft())
-            .any((z) => !nurErklaerung(z, name) && benutzt.hasMatch(z)));
+        final gefunden = quellen.any(
+          (quelle) => quelle
+              .split('\n')
+              .map((z) => z.trimLeft())
+              .any((z) => !nurErklaerung(z, name) && benutzt.hasMatch(z)),
+        );
         if (!gefunden) ohneAufrufer.add('$name (${datei.path})');
       }
     }
 
-    expect(ohneAufrufer, isEmpty,
-        reason: 'Bildschirme, die niemand öffnen kann:\n'
-            '${ohneAufrufer.join('\n')}');
+    expect(
+      ohneAufrufer,
+      isEmpty,
+      reason:
+          'Bildschirme, die niemand öffnen kann:\n'
+          '${ohneAufrufer.join('\n')}',
+    );
   });
 }

@@ -128,8 +128,10 @@ class DesktopImageTools {
       // ist nur der Notnagel, falls er gar nicht erst hochkommt. Deshalb
       // genügt es, das Warten zu beenden – ein Prozess, der sich selbst
       // begrenzt, muss nicht auch noch erschlagen werden.
-      final ergebnis = await Process.run(pfad, const <String>[])
-          .timeout(const Duration(seconds: 20));
+      final ergebnis = await Process.run(
+        pfad,
+        const <String>[],
+      ).timeout(const Duration(seconds: 20));
       return parseStandort(ergebnis.stdout as String);
     } on ProcessException {
       return null;
@@ -174,8 +176,8 @@ class DesktopImageTools {
 
   /// Welche Werkzeuge vorhanden sind – für die Anzeige und die Diagnose.
   static Future<Map<String, bool>> pruefeWerkzeuge() async => {
-        for (final e in (await _suche()).entries) e.key: e.value != null,
-      };
+    for (final e in (await _suche()).entries) e.key: e.value != null,
+  };
 
   /// Der vollständige Pfad, unter dem [werkzeug] gefunden wurde, oder
   /// `null`, wenn es fehlt.
@@ -214,8 +216,8 @@ class DesktopImageTools {
   @visibleForTesting
   static String dateiname(String befehl) =>
       Platform.isWindows && p.extension(befehl).isEmpty
-          ? '$befehl$_windowsEndung'
-          : befehl;
+      ? '$befehl$_windowsEndung'
+      : befehl;
 
   /// Die einzige Endung, die hier als ausführbar gilt.
   ///
@@ -341,12 +343,13 @@ class DesktopImageTools {
         // Dann das erste davon nehmen, statt an der fehlenden out.jpg zu
         // scheitern.
         if (!await File(ziel).exists()) {
-          final erstes = temp
-              .listSync()
-              .whereType<File>()
-              .where((f) => p.basename(f.path).startsWith('out-'))
-              .toList()
-            ..sort((a, b) => a.path.compareTo(b.path));
+          final erstes =
+              temp
+                  .listSync()
+                  .whereType<File>()
+                  .where((f) => p.basename(f.path).startsWith('out-'))
+                  .toList()
+                ..sort((a, b) => a.path.compareTo(b.path));
           if (erstes.isEmpty) return null;
           await erstes.first.rename(ziel);
         }
@@ -368,8 +371,10 @@ class DesktopImageTools {
       final rohBytes = await File(ziel).readAsBytes();
       // await ist wichtig: ohne würde das Future erst NACH dem catch
       // abgeschlossen und ein Fehler im Isolate entkäme der Fehlerbehandlung.
-      return await compute(_skaliereUndKodiere,
-          _SkalierAuftrag(rohBytes, maxDimension, quality));
+      return await compute(
+        _skaliereUndKodiere,
+        _SkalierAuftrag(rohBytes, maxDimension, quality),
+      );
     } catch (_) {
       return null;
     } finally {
@@ -397,20 +402,24 @@ class DesktopImageTools {
     try {
       temp = await Directory.systemTemp.createTemp('pv_depth_');
       final hauptbild = p.join(temp.path, 'primary.png');
-      final result =
-          await Process.run(werkzeug, ['--with-aux', datei.path, hauptbild]);
+      final result = await Process.run(werkzeug, [
+        '--with-aux',
+        datei.path,
+        hauptbild,
+      ]);
       if (result.exitCode != 0) return null;
-      final kandidaten = temp
-          .listSync()
-          .whereType<File>()
-          .where((f) => p.normalize(f.path) != p.normalize(hauptbild))
-          .toList()
-        ..sort((a, b) {
-          final aDepth = _istTiefenname(a.path);
-          final bDepth = _istTiefenname(b.path);
-          if (aDepth != bDepth) return aDepth ? -1 : 1;
-          return a.path.compareTo(b.path);
-        });
+      final kandidaten =
+          temp
+              .listSync()
+              .whereType<File>()
+              .where((f) => p.normalize(f.path) != p.normalize(hauptbild))
+              .toList()
+            ..sort((a, b) {
+              final aDepth = _istTiefenname(a.path);
+              final bDepth = _istTiefenname(b.path);
+              if (aDepth != bDepth) return aDepth ? -1 : 1;
+              return a.path.compareTo(b.path);
+            });
       for (final kandidat in kandidaten) {
         final decoded = img.decodeImage(await kandidat.readAsBytes());
         if (decoded == null) continue;
@@ -448,8 +457,11 @@ class DesktopImageTools {
     // Eine einfarbige Hilfsebene kann keine Auswahl beschreiben; sie ist
     // z.B. ein Alpha-Bild oder eine leere Hersteller-Metadatenebene.
     if (max - min < 2) return null;
-    final target =
-        img.Image(width: source.width, height: source.height, numChannels: 4);
+    final target = img.Image(
+      width: source.width,
+      height: source.height,
+      numChannels: 4,
+    );
     for (var y = 0; y < source.height; y++) {
       for (var x = 0; x < source.width; x++) {
         final wert =

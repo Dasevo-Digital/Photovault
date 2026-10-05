@@ -14,7 +14,11 @@ import '../services/verwandtschaftsgrad.dart';
 /// beiden Sprachen falsch würde. Deshalb ein eigener Baustein je Stufe –
 /// und ab der fünften eine ausgeschriebene Auskunft statt eines Wortes,
 /// das es nicht mehr gibt.
-String verwandtschaftText(BuildContext context, Grad grad, Geschlecht? geschlecht) {
+String verwandtschaftText(
+  BuildContext context,
+  Grad grad,
+  Geschlecht? geschlecht,
+) {
   final t = AppTexte.of(context);
   final g = auswahlwert(geschlecht);
 

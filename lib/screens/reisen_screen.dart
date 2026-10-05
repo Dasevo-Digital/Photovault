@@ -156,8 +156,10 @@ class _ReisenScreenState extends State<ReisenScreen> {
     );
     if (angabe == null || !mounted) return;
 
-    final aufnahmen =
-        await widget.library.db.aufnahmenImZeitraum(angabe.von, angabe.bis);
+    final aufnahmen = await widget.library.db.aufnahmenImZeitraum(
+      angabe.von,
+      angabe.bis,
+    );
     await widget.library.db.reiseAnlegen(
       ReisenCompanion.insert(
         id: const Uuid().v4(),
@@ -187,8 +189,10 @@ class _ReisenScreenState extends State<ReisenScreen> {
       vorgabe: reise.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db
-        .reiseAendern(reise.id, ReisenCompanion(name: Value(sauber)));
+    await widget.library.db.reiseAendern(
+      reise.id,
+      ReisenCompanion(name: Value(sauber)),
+    );
     await _laden();
   }
 
@@ -229,16 +233,22 @@ class _ReisenScreenState extends State<ReisenScreen> {
                       for (final r in andere)
                         CheckboxListTile(
                           value: gewaehlt.contains(r.id),
-                          onChanged: (an) => setzen(() => an == true
-                              ? gewaehlt.add(r.id)
-                              : gewaehlt.remove(r.id)),
+                          onChanged: (an) => setzen(
+                            () => an == true
+                                ? gewaehlt.add(r.id)
+                                : gewaehlt.remove(r.id),
+                          ),
                           title: Text(r.name),
-                          subtitle: Text(reiseUnterzeile(
-                              t, Localizations.localeOf(context),
+                          subtitle: Text(
+                            reiseUnterzeile(
+                              t,
+                              Localizations.localeOf(context),
                               von: r.von,
                               bis: r.bis,
                               naechte: naechteZwischen(von: r.von, bis: r.bis),
-                              anzahl: _anzahlen[r.id] ?? 0)),
+                              anzahl: _anzahlen[r.id] ?? 0,
+                            ),
+                          ),
                           dense: true,
                         ),
                     ],
@@ -249,12 +259,15 @@ class _ReisenScreenState extends State<ReisenScreen> {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(dialog, false),
-                child: Text(t.allgAbbrechen)),
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(t.allgAbbrechen),
+            ),
             FilledButton(
-                onPressed:
-                    gewaehlt.isEmpty ? null : () => Navigator.pop(dialog, true),
-                child: Text(t.reisenZusammenfuehren)),
+              onPressed: gewaehlt.isEmpty
+                  ? null
+                  : () => Navigator.pop(dialog, true),
+              child: Text(t.reisenZusammenfuehren),
+            ),
           ],
         ),
       ),
@@ -276,11 +289,13 @@ class _ReisenScreenState extends State<ReisenScreen> {
         content: Text(t.reisenLoeschenFrage(reise.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgEntfernen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgEntfernen),
+          ),
         ],
       ),
     );
@@ -293,12 +308,11 @@ class _ReisenScreenState extends State<ReisenScreen> {
   /// Aufnahmen. Was null wäre, fällt weg – „0 Orte" ist keine Auskunft,
   /// sondern eine Behauptung über eine Bibliothek ohne Ortsdaten.
   List<String> _kopfzahlen(AppTexte t) {
-    final orte = <String>{
-      for (final b in _orte.values)
-        ?b.ort,
-    };
-    final aufnahmen =
-        _orte.values.fold<int>(0, (summe, b) => summe + b.aufnahmen);
+    final orte = <String>{for (final b in _orte.values) ?b.ort};
+    final aufnahmen = _orte.values.fold<int>(
+      0,
+      (summe, b) => summe + b.aufnahmen,
+    );
     return [
       t.reisenAnzahl(_reisen.length),
       if (orte.isNotEmpty) t.ortsbezugOrte(orte.length),
@@ -307,9 +321,12 @@ class _ReisenScreenState extends State<ReisenScreen> {
   }
 
   Future<void> _oeffnen(ReisenData reise) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => ReiseDetailScreen(library: widget.library, reise: reise),
-    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            ReiseDetailScreen(library: widget.library, reise: reise),
+      ),
+    );
     if (mounted) await _laden();
   }
 
@@ -328,24 +345,29 @@ class _ReisenScreenState extends State<ReisenScreen> {
           IconButton(
             tooltip: t.weltkarteOeffnen,
             icon: const Icon(Icons.public),
-            onPressed: () => Navigator.of(context, rootNavigator: true)
-                .push(MaterialPageRoute(
-              builder: (_) => WeltkarteScreen(library: widget.library),
-            )),
+            onPressed: () => Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => WeltkarteScreen(library: widget.library),
+              ),
+            ),
           ),
           IconButton(
             tooltip: t.laenderTitel,
             icon: const Icon(Icons.flag_outlined),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => LaenderlisteScreen(library: widget.library),
-            )),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LaenderlisteScreen(library: widget.library),
+              ),
+            ),
           ),
           IconButton(
             tooltip: t.aktivitaetenOeffnen,
             icon: const Icon(Icons.hiking),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AktivitaetenScreen(library: widget.library),
-            )),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => AktivitaetenScreen(library: widget.library),
+              ),
+            ),
           ),
           IconButton(
             tooltip: t.reisenAktualisieren,
@@ -361,132 +383,147 @@ class _ReisenScreenState extends State<ReisenScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(t.reisenSuchtNoch,
-                      style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
+                  Text(
+                    t.reisenSuchtNoch,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             )
           : _reisen.isEmpty && _vorschlaege.isEmpty
-              ? SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: Center(
-                    child: SizedBox(
-                      width: 440,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(t.reisenLeer, textAlign: TextAlign.center),
-                          // Ohne den Datensatz kann die App gar nicht
-                          // wissen, wo etwas aufgenommen wurde – dann ist
-                          // „noch keine Reise" nur die halbe Auskunft.
-                          if (widget.library.geocoder == null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              t.fortschrittOhneGeodaten,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              : CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      sliver: SliverList.list(children: [
-                        Uebersichtskopf(
-                          symbol: Icons.luggage_outlined,
-                          titel: t.reisenTitel,
-                          zahlen: _kopfzahlen(t),
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Center(
+                child: SizedBox(
+                  width: 440,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(t.reisenLeer, textAlign: TextAlign.center),
+                      // Ohne den Datensatz kann die App gar nicht
+                      // wissen, wo etwas aufgenommen wurde – dann ist
+                      // „noch keine Reise" nur die halbe Auskunft.
+                      if (widget.library.geocoder == null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          t.fortschrittOhneGeodaten,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
-                        if (_fortschritt case final f? when !f.istLeer) ...[
-                          Card(
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              onTap: () =>
-                                  Navigator.of(context).push(MaterialPageRoute(
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverList.list(
+                    children: [
+                      Uebersichtskopf(
+                        symbol: Icons.luggage_outlined,
+                        titel: t.reisenTitel,
+                        zahlen: _kopfzahlen(t),
+                      ),
+                      if (_fortschritt case final f? when !f.istLeer) ...[
+                        Card(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
                                 builder: (_) =>
                                     LaenderlisteScreen(library: widget.library),
-                              )),
-                              child: Padding(
-                                padding: const EdgeInsets.all(AppSpacing.lg),
-                                child: Fortschrittsbalken(fortschritt: f),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                        ],
-                        if (_vorschlaege.isNotEmpty) ...[
-                          _Ueberschrift(t.reisenVorschlaege),
-                          for (final v in _vorschlaege)
-                            _Vorschlagskarte(
-                              vorschlag: v,
-                              onJa: () => _bestaetigen(v),
-                              onNein: () => _verwerfen(v),
-                            ),
-                          const SizedBox(height: AppSpacing.xl),
-                        ],
-                        if (_reisen.isNotEmpty)
-                          _Ueberschrift(t.reisenBestaetigte)
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.sm),
-                            child: Text(
-                              t.reisenLeer,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Fortschrittsbalken(fortschritt: f),
                             ),
                           ),
-                      ]),
-                    ),
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-                      sliver: Kachelraster(kacheln: [
-                        for (final r in _reisen)
-                          Reisekachel(
-                            key: ValueKey(r.id),
-                            reise: r,
-                            library: widget.library,
-                            ort: ortszeile(t, _orte[r.id],
-                                sprache: Localizations.localeOf(context)
-                                    .languageCode),
-                            onTippen: () => _oeffnen(r),
-                            befehle: [
-                              (
-                                symbol: Icons.drive_file_rename_outline,
-                                text: t.reisenUmbenennen,
-                                tun: () => _umbenennen(r),
-                              ),
-                              (
-                                symbol: Icons.merge_outlined,
-                                text: t.reisenZusammenfuehren,
-                                tun: () => _zusammenfuehren(r),
-                              ),
-                              (
-                                symbol: Icons.delete_outline,
-                                text: t.reisenLoeschen,
-                                tun: () => _loeschen(r),
-                              ),
-                            ],
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
+                      if (_vorschlaege.isNotEmpty) ...[
+                        _Ueberschrift(t.reisenVorschlaege),
+                        for (final v in _vorschlaege)
+                          _Vorschlagskarte(
+                            vorschlag: v,
+                            onJa: () => _bestaetigen(v),
+                            onNein: () => _verwerfen(v),
                           ),
-                      ]),
-                    ),
-                  ],
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
+                      if (_reisen.isNotEmpty)
+                        _Ueberschrift(t.reisenBestaetigte)
+                      else
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.sm),
+                          child: Text(
+                            t.reisenLeer,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  sliver: Kachelraster(
+                    kacheln: [
+                      for (final r in _reisen)
+                        Reisekachel(
+                          key: ValueKey(r.id),
+                          reise: r,
+                          library: widget.library,
+                          ort: ortszeile(
+                            t,
+                            _orte[r.id],
+                            sprache: Localizations.localeOf(
+                              context,
+                            ).languageCode,
+                          ),
+                          onTippen: () => _oeffnen(r),
+                          befehle: [
+                            (
+                              symbol: Icons.drive_file_rename_outline,
+                              text: t.reisenUmbenennen,
+                              tun: () => _umbenennen(r),
+                            ),
+                            (
+                              symbol: Icons.merge_outlined,
+                              text: t.reisenZusammenfuehren,
+                              tun: () => _zusammenfuehren(r),
+                            ),
+                            (
+                              symbol: Icons.delete_outline,
+                              text: t.reisenLoeschen,
+                              tun: () => _loeschen(r),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -514,9 +551,9 @@ class _Ueberschrift extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
+    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 class _Vorschlagskarte extends StatelessWidget {
@@ -546,18 +583,23 @@ class _Vorschlagskarte extends StatelessWidget {
                 Icon(Icons.luggage_outlined, color: farben.primary),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Text(vorschlag.name,
-                      style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    vorschlag.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              reiseUnterzeile(t, Localizations.localeOf(context),
-                  von: vorschlag.von,
-                  bis: vorschlag.bis,
-                  naechte: vorschlag.naechte,
-                  anzahl: vorschlag.anzahl),
+              reiseUnterzeile(
+                t,
+                Localizations.localeOf(context),
+                von: vorschlag.von,
+                bis: vorschlag.bis,
+                naechte: vorschlag.naechte,
+                anzahl: vorschlag.anzahl,
+              ),
               style: TextStyle(fontSize: 13, color: farben.onSurfaceVariant),
             ),
             if (vorschlag.orte.length > 1)
@@ -567,8 +609,10 @@ class _Vorschlagskarte extends StatelessWidget {
                   vorschlag.orte.take(6).join(' · '),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style:
-                      TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: farben.onSurfaceVariant,
+                  ),
                 ),
               ),
             const SizedBox(height: AppSpacing.md),
@@ -578,7 +622,9 @@ class _Vorschlagskarte extends StatelessWidget {
                 TextButton(onPressed: onNein, child: Text(t.reisenKeineReise)),
                 const SizedBox(width: AppSpacing.sm),
                 FilledButton(
-                    onPressed: onJa, child: Text(t.reisenIstEineReise)),
+                  onPressed: onJa,
+                  child: Text(t.reisenIstEineReise),
+                ),
               ],
             ),
           ],
@@ -644,7 +690,8 @@ class _ReisekachelState extends State<Reisekachel> {
         symbol: symbolFuerReiseartKennung(widget.reise.art),
         name: widget.reise.name,
         kennzeichen: t.reisenNaechte(
-            naechteZwischen(von: widget.reise.von, bis: widget.reise.bis)),
+          naechteZwischen(von: widget.reise.von, bis: widget.reise.bis),
+        ),
         zeitraum: jahresspanne(widget.reise.von, widget.reise.bis),
         ort: widget.ort,
         onTippen: widget.onTippen,
@@ -659,10 +706,11 @@ class _ReisekachelState extends State<Reisekachel> {
 /// Über die reinen Kalendertage gerechnet und nicht über die Differenz
 /// der Zeitpunkte: Wer Freitagabend losfährt und Sonntagmorgen
 /// zurückkommt, war zwei Nächte weg – die Stundenrechnung käme auf eine.
-int naechteZwischen({required DateTime von, required DateTime bis}) =>
-    DateTime(bis.year, bis.month, bis.day)
-        .difference(DateTime(von.year, von.month, von.day))
-        .inDays;
+int naechteZwischen({required DateTime von, required DateTime bis}) => DateTime(
+  bis.year,
+  bis.month,
+  bis.day,
+).difference(DateTime(von.year, von.month, von.day)).inDays;
 
 /// Der Zeitraum, so kurz, dass er auf ein Schildchen passt.
 ///

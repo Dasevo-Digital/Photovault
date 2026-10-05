@@ -75,8 +75,9 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     final reise = (frisch ?? _k).reiseId;
     final name = reise == null ? null : (await db.reise(reise))?.name;
     final spur = (await db.spurenDerAktivitaet(_k.id)).firstOrNull;
-    final punkte =
-        spur == null ? <SpurpunkteData>[] : await db.punkteDerSpur(spur.id);
+    final punkte = spur == null
+        ? <SpurpunkteData>[]
+        : await db.punkteDerSpur(spur.id);
     if (!mounted) return;
     setState(() {
       _aufnahmen = aufnahmen;
@@ -97,10 +98,10 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   Map<String, AssetData> get _nachId => {for (final a in _aufnahmen) a.id: a};
 
   List<({double breite, double laenge, DateTime zeit})> get _punkte => [
-        for (final a in _aufnahmen)
-          if (a.latitude != null && a.longitude != null)
-            (breite: a.latitude!, laenge: a.longitude!, zeit: a.fileCreatedAt),
-      ];
+    for (final a in _aufnahmen)
+      if (a.latitude != null && a.longitude != null)
+        (breite: a.latitude!, laenge: a.longitude!, zeit: a.fileCreatedAt),
+  ];
 
   List<Routenpunkt> get _route =>
       // Hundert Meter statt eines Kilometers: Auf einer Wanderung ist ein
@@ -108,20 +109,22 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       // zwischen Anfang und Ende.
       reiseroute(_punkte, mindestabstandKm: 0.1);
 
-  List<Aufenthaltsort> get _orte => aufenthaltsorte([
-        for (final a in _aufnahmen)
-          if (a.latitude != null && a.longitude != null)
-            (
-              id: a.id,
-              breite: a.latitude!,
-              laenge: a.longitude!,
-              zeit: a.fileCreatedAt,
-              stadt: a.locationCity,
-            ),
-      ],
-          // Zweihundert Meter: Auf fünfzehn Kilometern – dem Mass für
-          // eine Reise – wäre die ganze Wanderung ein einziger Pin.
-          radiusKm: 0.2);
+  List<Aufenthaltsort> get _orte => aufenthaltsorte(
+    [
+      for (final a in _aufnahmen)
+        if (a.latitude != null && a.longitude != null)
+          (
+            id: a.id,
+            breite: a.latitude!,
+            laenge: a.longitude!,
+            zeit: a.fileCreatedAt,
+            stadt: a.locationCity,
+          ),
+    ],
+    // Zweihundert Meter: Auf fünfzehn Kilometern – dem Mass für
+    // eine Reise – wäre die ganze Wanderung ein einziger Pin.
+    radiusKm: 0.2,
+  );
 
   double get _streckeKm => strecke(_punkte);
 
@@ -132,12 +135,13 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   /// **Was das Gerät gemessen hat, ist die Aussage.** Die Fotos ergeben
   /// eine Vermutung über den Weg; die Aufzeichnung ist der Weg.
   List<Profilpunkt> get _profil => profilpunkte([
-        for (final p in _spurpunkte)
-          (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe),
-      ]);
+    for (final p in _spurpunkte)
+      (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe),
+  ]);
 
-  List<({double breite, double laenge})> get _spurlinie =>
-      [for (final p in _spurpunkte) (breite: p.breite, laenge: p.laenge)];
+  List<({double breite, double laenge})> get _spurlinie => [
+    for (final p in _spurpunkte) (breite: p.breite, laenge: p.laenge),
+  ];
 
   /// Wo die Marke auf der Karte steht, während jemand über das Profil
   /// fährt.
@@ -225,12 +229,15 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       ],
     );
     if (!mounted) return;
-    melde.erfolg(t.spurHinzugefuegtMeldung(
+    melde.erfolg(
+      t.spurHinzugefuegtMeldung(
         name,
         NumberFormat.decimalPatternDigits(
-                locale: Localizations.localeOf(context).toString(),
-                decimalDigits: 1)
-            .format(zahlen.laengeKm)));
+          locale: Localizations.localeOf(context).toString(),
+          decimalDigits: 1,
+        ).format(zahlen.laengeKm),
+      ),
+    );
     await _laden();
   }
 
@@ -249,21 +256,28 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     // Und die Tageszeit, aus demselben Grund an derselben Stelle.
     final stimmung = await widget.library.db.gelaendeStimmungWert();
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => GelaendeScreen(
-        titel: _k.name,
-        auflage: auflage,
-        stimmung: stimmung,
-        beimStimmungswechsel: widget.library.db.setzeGelaendeStimmung,
-        beimKartenwechsel: widget.library.db.setzeGelaendeKarte,
-        wanderobjekte: _wanderobjekte,
-        fotos: _flugfotos(),
-        spur: [
-          for (final p in _spurpunkte)
-            (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe, zeit: p.zeit),
-        ],
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => GelaendeScreen(
+          titel: _k.name,
+          auflage: auflage,
+          stimmung: stimmung,
+          beimStimmungswechsel: widget.library.db.setzeGelaendeStimmung,
+          beimKartenwechsel: widget.library.db.setzeGelaendeKarte,
+          wanderobjekte: _wanderobjekte,
+          fotos: _flugfotos(),
+          spur: [
+            for (final p in _spurpunkte)
+              (
+                breite: p.breite,
+                laenge: p.laenge,
+                hoehe: p.hoehe,
+                zeit: p.zeit,
+              ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   /// Die verorteten Fotos der Aktivität – für den Ueberflug.
@@ -276,7 +290,8 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   /// zehnmal.
   List<Gelaendefoto> _flugfotos() {
     final uhrzeit = DateFormat.Hm(
-        Localizations.localeOf(context).toLanguageTag());
+      Localizations.localeOf(context).toLanguageTag(),
+    );
     return [
       for (final a in _aufnahmen)
         if (a.latitude != null &&
@@ -290,8 +305,9 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
             // `bilddekodierung_test.dart`), und 240 Punkte reichen dem
             // Flugbild.
             bild: begrenztesBild(
-                widget.library.paths.absolute(a.thumbnailRelativePath!),
-                kante: 480),
+              widget.library.paths.absolute(a.thumbnailRelativePath!),
+              kante: 480,
+            ),
             unterschrift: uhrzeit.format(a.fileCreatedAt.toLocal()),
           ),
     ];
@@ -320,7 +336,12 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
         final klient = http.Client();
         try {
           final frisch = await holeWanderobjekte(
-              sued: sued, west: west, nord: nord, ost: ost, netz: klient);
+            sued: sued,
+            west: west,
+            nord: nord,
+            ost: ost,
+            netz: klient,
+          );
           if (frisch == null) return null;
           return [
             for (final o in frisch)
@@ -330,7 +351,7 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
                 breite: o.breite,
                 laenge: o.laenge,
                 name: o.name,
-                hoehe: o.hoehe
+                hoehe: o.hoehe,
               ),
           ];
         } finally {
@@ -370,17 +391,24 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       vorgabe: _k.name,
     );
     if (sauber == null) return;
-    await widget.library.db
-        .aktivitaetAendern(_k.id, AktivitaetenCompanion(name: Value(sauber)));
+    await widget.library.db.aktivitaetAendern(
+      _k.id,
+      AktivitaetenCompanion(name: Value(sauber)),
+    );
     await _laden();
   }
 
   Future<void> _artAendern() async {
-    final gewaehlt = await frageAktivitaetsart(context,
-        db: widget.library.db, aktuell: _k.art);
+    final gewaehlt = await frageAktivitaetsart(
+      context,
+      db: widget.library.db,
+      aktuell: _k.art,
+    );
     if (gewaehlt == null) return;
-    await widget.library.db
-        .aktivitaetAendern(_k.id, AktivitaetenCompanion(art: Value(gewaehlt)));
+    await widget.library.db.aktivitaetAendern(
+      _k.id,
+      AktivitaetenCompanion(art: Value(gewaehlt)),
+    );
     await _laden();
   }
 
@@ -400,8 +428,8 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   final Set<String> _auswahl = {};
 
   void _auswahlUmschalten(String id) => setState(() {
-        if (!_auswahl.remove(id)) _auswahl.add(id);
-      });
+    if (!_auswahl.remove(id)) _auswahl.add(id);
+  });
 
   /// Nimmt die ausgewaehlten Fotos aus der Aktivitaet heraus.
   ///
@@ -416,8 +444,10 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     if (weg.isEmpty) return;
     final vorher = await widget.library.db.zuordnungenDerAktivitaet(_k.id);
     if (!mounted) return;
-    await widget.library.db
-        .setzeAufnahmenDerAktivitaet(_k.id, vorher.difference(weg));
+    await widget.library.db.setzeAufnahmenDerAktivitaet(
+      _k.id,
+      vorher.difference(weg),
+    );
     if (!mounted) return;
     setState(_auswahl.clear);
     melde.erfolg(t.aufnahmenEntferntAktivitaet(weg.length));
@@ -471,9 +501,9 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     );
     if (sauber == null) return;
     await widget.library.db.aktivitaetAendern(
-        _k.id,
-        AktivitaetenCompanion(
-            notiz: Value(sauber.isEmpty ? null : sauber)));
+      _k.id,
+      AktivitaetenCompanion(notiz: Value(sauber.isEmpty ? null : sauber)),
+    );
     await _laden();
   }
 
@@ -486,11 +516,13 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
         content: Text(t.aktivitaetenLoeschenFrage(_k.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(t.aktivitaetenLoeschen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.aktivitaetenLoeschen),
+          ),
         ],
       ),
     );
@@ -501,17 +533,19 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   }
 
   void _oeffnen(int index) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: _aufnahmen,
-        initialIndex: index,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) =>
-            widget.library.db.setFavorite(a.id, !a.isFavorite),
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: _aufnahmen,
+          initialIndex: index,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+        ),
       ),
-    ));
+    );
   }
 
   void _ortOeffnen(Aufenthaltsort ort) {
@@ -525,7 +559,9 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     final locale = Localizations.localeOf(context);
     final farben = Theme.of(context).colorScheme;
     final zahl = NumberFormat.decimalPatternDigits(
-        locale: locale.toString(), decimalDigits: 1);
+      locale: locale.toString(),
+      decimalDigits: 1,
+    );
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -543,205 +579,239 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
         // waere eine zweite Spur an einer Aktivitaet entstanden, die
         // schon eine hat, weil `_spur` noch null ist und deshalb
         // "hinzufuegen" statt "entfernen" dasteht.
-        actions: _laedt ? const [] : [
-          if (_spur != null)
-            IconButton(
-              tooltip: t.gelaendeOeffnen,
-              icon: const Icon(Icons.landscape_outlined),
-              onPressed: _gelaendeOeffnen,
-            ),
-          if (_spur == null)
-            IconButton(
-              tooltip: t.spurHinzufuegen,
-              icon: const Icon(Icons.route_outlined),
-              onPressed: _spurHinzufuegen,
-            )
-          else
-            IconButton(
-              tooltip: t.spurEntfernen,
-              icon: const Icon(Icons.wrong_location_outlined),
-              onPressed: _spurEntfernen,
-            ),
-          // **Jetzt wirklich ein Pluszeichen.** Bis hierher stand hier ein
-          // Bibliothekssymbol, mit der Begründung, der Knopf nehme Fotos
-          // auch heraus – ein Pluszeichen sage das nicht. Das stimmte,
-          // und es hat den Knopf unauffindbar gemacht: Zwischen sechs
-          // weiteren Symbolen wurde er als „Fotos hinzufügen" gelesen und
-          // deshalb gar nicht erst gesucht. Das Herausnehmen hat
-          // inzwischen einen eigenen Weg (Fotos antippen, Leiste unten),
-          // also darf der Knopf heissen, was er tut.
-          IconButton(
-            tooltip: t.aufnahmenHinzufuegen,
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            onPressed: _aufnahmenBearbeiten,
-          ),
-          IconButton(
-            tooltip: t.aktivitaetenArtAendern,
-            icon: const Icon(Icons.category_outlined),
-            onPressed: _artAendern,
-          ),
-          IconButton(
-            tooltip: t.aktivitaetenUmbenennen,
-            icon: const Icon(Icons.drive_file_rename_outline),
-            onPressed: _umbenennen,
-          ),
-          IconButton(
-            tooltip: t.aktivitaetenNotiz,
-            icon: const Icon(Icons.notes_outlined),
-            onPressed: _notiz,
-          ),
-          IconButton(
-            tooltip: t.aktivitaetenLoeschen,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _entfernen,
-          ),
-        ],
+        actions: _laedt
+            ? const []
+            : [
+                if (_spur != null)
+                  IconButton(
+                    tooltip: t.gelaendeOeffnen,
+                    icon: const Icon(Icons.landscape_outlined),
+                    onPressed: _gelaendeOeffnen,
+                  ),
+                if (_spur == null)
+                  IconButton(
+                    tooltip: t.spurHinzufuegen,
+                    icon: const Icon(Icons.route_outlined),
+                    onPressed: _spurHinzufuegen,
+                  )
+                else
+                  IconButton(
+                    tooltip: t.spurEntfernen,
+                    icon: const Icon(Icons.wrong_location_outlined),
+                    onPressed: _spurEntfernen,
+                  ),
+                // **Jetzt wirklich ein Pluszeichen.** Bis hierher stand hier ein
+                // Bibliothekssymbol, mit der Begründung, der Knopf nehme Fotos
+                // auch heraus – ein Pluszeichen sage das nicht. Das stimmte,
+                // und es hat den Knopf unauffindbar gemacht: Zwischen sechs
+                // weiteren Symbolen wurde er als „Fotos hinzufügen" gelesen und
+                // deshalb gar nicht erst gesucht. Das Herausnehmen hat
+                // inzwischen einen eigenen Weg (Fotos antippen, Leiste unten),
+                // also darf der Knopf heissen, was er tut.
+                IconButton(
+                  tooltip: t.aufnahmenHinzufuegen,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  onPressed: _aufnahmenBearbeiten,
+                ),
+                IconButton(
+                  tooltip: t.aktivitaetenArtAendern,
+                  icon: const Icon(Icons.category_outlined),
+                  onPressed: _artAendern,
+                ),
+                IconButton(
+                  tooltip: t.aktivitaetenUmbenennen,
+                  icon: const Icon(Icons.drive_file_rename_outline),
+                  onPressed: _umbenennen,
+                ),
+                IconButton(
+                  tooltip: t.aktivitaetenNotiz,
+                  icon: const Icon(Icons.notes_outlined),
+                  onPressed: _notiz,
+                ),
+                IconButton(
+                  tooltip: t.aktivitaetenLoeschen,
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _entfernen,
+                ),
+              ],
       ),
       body: _laedt
           ? const Center(child: CircularProgressIndicator())
-          : Stack(children: [
-              CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                        AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          [
-                            nameFuerKennung(t, _art),
-                            DateFormat.yMMMd(locale.toString())
-                                .format(_k.von),
-                            dauertext(t, _dauer),
-                            if (_streckeKm > 0)
-                              streckentext(t, locale, _streckeKm),
-                            t.aktivitaetenAufnahmen(_aufnahmen.length),
-                          ].join(' · '),
-                          style: TextStyle(
-                              fontSize: 13, color: farben.onSurfaceVariant),
+          : Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.sm,
                         ),
-                        if (_reisename case final r?)
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.xs),
-                            child: Text(t.aktivitaetenZuReise(r),
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: farben.onSurfaceVariant)),
-                          ),
-                        if (_route.length > 1 ||
-                            _spurlinie.length > 1) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Routenkarte(
-                            route: _route,
-                            orte: _orte,
-                            nachId: _nachId,
-                            paths: widget.library.paths,
-                            beiOrt: _ortOeffnen,
-                            hoehe: 260,
-                            spuren: [if (_spurlinie.length > 1) _spurlinie],
-                            stelle: _stelleAufKarte,
-                          ),
-                        ] else if (_aufnahmen.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(t.aktivitaetenKeineRoute,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              [
+                                nameFuerKennung(t, _art),
+                                DateFormat.yMMMd(
+                                  locale.toString(),
+                                ).format(_k.von),
+                                dauertext(t, _dauer),
+                                if (_streckeKm > 0)
+                                  streckentext(t, locale, _streckeKm),
+                                t.aktivitaetenAufnahmen(_aufnahmen.length),
+                              ].join(' · '),
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: farben.onSurfaceVariant)),
-                        ],
-                        if (_spur case final spur?) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(t.spurTitel,
-                              style: Theme.of(context).textTheme.titleSmall),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            [
-                              spur.aufstieg == null
-                                  ? t.spurKennzahlenOhneHoehe(
-                                      zahl.format(spur.laengeKm))
-                                  : t.spurKennzahlen(
-                                      zahl.format(spur.laengeKm),
-                                      spur.aufstieg!.round(),
-                                      (spur.abstieg ?? 0).round()),
-                              t.spurPunkte(spur.punktzahl),
-                            ].join(' · '),
-                            style: TextStyle(
-                                fontSize: 13, color: farben.onSurfaceVariant),
-                          ),
-                          if (_profil.length > 1) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(t.spurHoehenprofil,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: farben.onSurfaceVariant)),
-                            const SizedBox(height: AppSpacing.xs),
-                            Hoehenprofil(
-                              punkte: _profil,
-                              beschreibung: _profilbeschreibung(t, zahl),
-                              beiStelle: (i) => setState(() => _stelle = i),
+                                fontSize: 13,
+                                color: farben.onSurfaceVariant,
+                              ),
                             ),
-                          ] else
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(top: AppSpacing.xs),
-                              child: Text(t.spurOhneHoehen,
+                            if (_reisename case final r?)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpacing.xs,
+                                ),
+                                child: Text(
+                                  t.aktivitaetenZuReise(r),
                                   style: TextStyle(
+                                    fontSize: 12,
+                                    color: farben.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            if (_route.length > 1 || _spurlinie.length > 1) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Routenkarte(
+                                route: _route,
+                                orte: _orte,
+                                nachId: _nachId,
+                                paths: widget.library.paths,
+                                beiOrt: _ortOeffnen,
+                                hoehe: 260,
+                                spuren: [if (_spurlinie.length > 1) _spurlinie],
+                                stelle: _stelleAufKarte,
+                              ),
+                            ] else if (_aufnahmen.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                t.aktivitaetenKeineRoute,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: farben.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            if (_spur case final spur?) ...[
+                              const SizedBox(height: AppSpacing.md),
+                              Text(
+                                t.spurTitel,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                [
+                                  spur.aufstieg == null
+                                      ? t.spurKennzahlenOhneHoehe(
+                                          zahl.format(spur.laengeKm),
+                                        )
+                                      : t.spurKennzahlen(
+                                          zahl.format(spur.laengeKm),
+                                          spur.aufstieg!.round(),
+                                          (spur.abstieg ?? 0).round(),
+                                        ),
+                                  t.spurPunkte(spur.punktzahl),
+                                ].join(' · '),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: farben.onSurfaceVariant,
+                                ),
+                              ),
+                              if (_profil.length > 1) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  t.spurHoehenprofil,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: farben.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Hoehenprofil(
+                                  punkte: _profil,
+                                  beschreibung: _profilbeschreibung(t, zahl),
+                                  beiStelle: (i) => setState(() => _stelle = i),
+                                ),
+                              ] else
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: AppSpacing.xs,
+                                  ),
+                                  child: Text(
+                                    t.spurOhneHoehen,
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: farben.onSurfaceVariant)),
+                                      color: farben.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                            if (_k.notiz case final notiz?
+                                when notiz.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: AppSpacing.md,
+                                ),
+                                child: Text(notiz),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 160,
+                              mainAxisSpacing: 4,
+                              crossAxisSpacing: 4,
                             ),
-                        ],
-                        if (_k.notiz case final notiz? when notiz.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.md),
-                            child: Text(notiz),
-                          ),
-                      ],
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final a = _aufnahmen[index];
+                          final gewaehlt = _auswahl.contains(a.id);
+                          return AssetThumbnailTile(
+                            asset: Rasterzeile.aus(a),
+                            paths: widget.library.paths,
+                            selected: gewaehlt,
+                            // Erst auswaehlen, dann tippen: Solange nichts
+                            // gewaehlt ist, oeffnet ein Tipp den Betrachter.
+                            onTap: () => _auswahl.isEmpty
+                                ? _oeffnen(index)
+                                : _auswahlUmschalten(a.id),
+                            onLongPress: () => _auswahlUmschalten(a.id),
+                          );
+                        }, childCount: _aufnahmen.length),
+                      ),
                     ),
-                  ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.xl),
+                    ),
+                  ],
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 160,
-                      mainAxisSpacing: 4,
-                      crossAxisSpacing: 4,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final a = _aufnahmen[index];
-                        final gewaehlt = _auswahl.contains(a.id);
-                        return AssetThumbnailTile(
-                          asset: Rasterzeile.aus(a),
-                          paths: widget.library.paths,
-                          selected: gewaehlt,
-                          // Erst auswaehlen, dann tippen: Solange nichts
-                          // gewaehlt ist, oeffnet ein Tipp den Betrachter.
-                          onTap: () => _auswahl.isEmpty
-                              ? _oeffnen(index)
-                              : _auswahlUmschalten(a.id),
-                          onLongPress: () => _auswahlUmschalten(a.id),
-                        );
-                      },
-                      childCount: _aufnahmen.length,
-                    ),
+                if (_auswahl.isNotEmpty)
+                  ZuordnungAuswahlleiste(
+                    anzahl: _auswahl.length,
+                    beschriftungEntfernen: t.aufnahmenAusAktivitaetEntfernen,
+                    beiAufheben: () => setState(_auswahl.clear),
+                    beiEntfernen: _auswahlEntfernen,
                   ),
-                ),
-                const SliverToBoxAdapter(
-                    child: SizedBox(height: AppSpacing.xl)),
               ],
-              ),
-              if (_auswahl.isNotEmpty)
-                ZuordnungAuswahlleiste(
-                  anzahl: _auswahl.length,
-                  beschriftungEntfernen: t.aufnahmenAusAktivitaetEntfernen,
-                  beiAufheben: () => setState(_auswahl.clear),
-                  beiEntfernen: _auswahlEntfernen,
-                ),
-            ]),
+            ),
     );
   }
 }

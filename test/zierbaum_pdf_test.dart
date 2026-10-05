@@ -29,9 +29,14 @@ void main() {
       kante('schwager', 'schwagersVater', Verwandtschaft.elternteil),
     ]);
     const namen = {
-      'opa': 'Hans Müller', 'oma': 'Grete Müller', 'vater': 'Karl Müller',
-      'mutter': 'Erika Müller', 'ich': 'Martin Müller', 'anna': 'Anna Weber',
-      'schwager': 'Michael Weber', 'neffe': 'Tim Weber',
+      'opa': 'Hans Müller',
+      'oma': 'Grete Müller',
+      'vater': 'Karl Müller',
+      'mutter': 'Erika Müller',
+      'ich': 'Martin Müller',
+      'anna': 'Anna Weber',
+      'schwager': 'Michael Weber',
+      'neffe': 'Tim Weber',
       'schwagersVater': 'Kurt Weber',
     };
     final g = geflechtUm(netz, 'ich', namen.keys.toList());

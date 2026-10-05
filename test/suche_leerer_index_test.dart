@@ -17,15 +17,19 @@ void main() {
   tearDown(() => db.close());
 
   Future<String> aufnahme(String id) async {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'c_$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 2),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'c_$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 1, 1),
+            importedAt: DateTime(2026, 1, 2),
+          ),
+        );
     return id;
   }
 

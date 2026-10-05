@@ -49,41 +49,41 @@ int _finde(Uint8List haufen, List<int> muster, int ab) {
 }
 
 AssetData _aufnahme(String rel, int groesse, List<int> inhalt) => AssetData(
-      id: 'kb1',
-      originalFileName: 'Urlaub-Privat.jpg',
-      relativePath: rel,
-      checksum: sha256.convert(inhalt).toString(),
-      type: 'IMAGE',
-      fileCreatedAt: DateTime(2026, 5, 4),
-      importedAt: DateTime(2026),
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      fileSizeBytes: groesse,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      rating: 0,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-    );
+  id: 'kb1',
+  originalFileName: 'Urlaub-Privat.jpg',
+  relativePath: rel,
+  checksum: sha256.convert(inhalt).toString(),
+  type: 'IMAGE',
+  fileCreatedAt: DateTime(2026, 5, 4),
+  importedAt: DateTime(2026),
+  isFavorite: false,
+  isTrashed: false,
+  isLocked: false,
+  faceScanExcluded: false,
+  gpsGeprueft: false,
+  datumGeschaetzt: false,
+  datumGeprueft: false,
+  ortGeerbt: false,
+  videobilderGeprueft: false,
+  fileSizeBytes: groesse,
+  backedUp: false,
+  autoBackedUp: false,
+  facesScanned: false,
+  rating: 0,
+  ocrScanned: false,
+  aiCaptionScanned: false,
+  aiCaptionEdited: false,
+  aiTagsScanned: false,
+  isStackCover: false,
+);
 
 void main() {
-  test('kein EXIF, keine Koordinaten, keine Kamera im Kontaktblatt',
-      () async {
+  test('kein EXIF, keine Koordinaten, keine Kamera im Kontaktblatt', () async {
     final temp = Directory.systemTemp.createTempSync('pv_kb_');
     addTearDown(() => temp.deleteSync(recursive: true));
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(temp.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
 
     final bild = img.Image(width: 64, height: 48);
     img.fill(bild, color: img.ColorRgb8(20, 120, 200));
@@ -93,8 +93,10 @@ void main() {
     bild.exif.gpsIfd.gpsLongitude = 9.735603;
     final jpeg = img.encodeJpg(bild);
     // Die Quelle MUSS die Angaben tragen, sonst prüft der Test nichts.
-    expect(img.decodeImage(jpeg)!.exif.imageIfd['Make'].toString(),
-        contains('GEHEIME_KAMERA'));
+    expect(
+      img.decodeImage(jpeg)!.exif.imageIfd['Make'].toString(),
+      contains('GEHEIME_KAMERA'),
+    );
     expect(img.decodeImage(jpeg)!.exif.gpsIfd.gpsLatitude, isNotNull);
 
     const rel = 'originals/2026/urlaub.jpg';
@@ -103,16 +105,24 @@ void main() {
 
     // Ohne Vorschaubild greift das Blatt auf das Original zurück – der
     // Weg mit den meisten Beipackzetteln.
-    final ergebnis = await ContactSheetService(paths, ExportService(paths))
-        .create([_aufnahme(rel, jpeg.length, jpeg)]);
+    final ergebnis = await ContactSheetService(
+      paths,
+      ExportService(paths),
+    ).create([_aufnahme(rel, jpeg.length, jpeg)]);
     expect(ergebnis.included, 1);
 
     final ausgeschnitten = _bildAusPdf(ergebnis.bytes);
-    expect(ausgeschnitten, isNotNull,
-        reason: 'ohne eingebettetes Bild prüft der Test nichts');
+    expect(
+      ausgeschnitten,
+      isNotNull,
+      reason: 'ohne eingebettetes Bild prüft der Test nichts',
+    );
     final wieder = img.decodeImage(ausgeschnitten!)!;
-    expect(wieder.hasExif ? wieder.exif.isEmpty : true, isTrue,
-        reason: 'das Bild im PDF darf keinen EXIF-Anhang mehr tragen');
+    expect(
+      wieder.hasExif ? wieder.exif.isEmpty : true,
+      isTrue,
+      reason: 'das Bild im PDF darf keinen EXIF-Anhang mehr tragen',
+    );
     expect(wieder.exif.gpsIfd.gpsLatitude, isNull);
     expect(wieder.exif.gpsIfd.gpsLongitude, isNull);
 

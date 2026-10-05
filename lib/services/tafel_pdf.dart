@@ -88,9 +88,9 @@ Future<Uint8List> baueTafelPdf({
 /// Aufbau der Oberfläche wissen müssen, und für eine Tafel genügen
 /// Schwarz auf Weiß mit einem Akzent für die Person in der Mitte.
 ColorScheme _druckfarben(ColorScheme vorlage) => ColorScheme.fromSeed(
-      seedColor: vorlage.primary,
-      brightness: Brightness.light,
-    );
+  seedColor: vorlage.primary,
+  brightness: Brightness.light,
+);
 
 Future<ui.Image> _zeichneFaecher({
   required List<Fachplatz> plaetze,
@@ -126,7 +126,9 @@ Future<ui.Image> _zeichneFaecher({
     ellipsis: '…',
   )..layout(maxWidth: breite - 80);
   ueberschrift.paint(
-      canvas, Offset((breite - ueberschrift.width) / 2, kopfhoehe / 2 - 32));
+    canvas,
+    Offset((breite - ueberschrift.width) / 2, kopfhoehe / 2 - 32),
+  );
   ueberschrift.dispose();
 
   maleFaecher(
@@ -192,9 +194,10 @@ Future<Uint8List> baueZierbaumPdf({
     textRichtung: textRichtung,
   ).paint(canvas, Size(plan.breite, plan.hoehe));
 
-  final bild = await recorder
-      .endRecording()
-      .toImage(plan.breite.round(), plan.hoehe.round());
+  final bild = await recorder.endRecording().toImage(
+    plan.breite.round(),
+    plan.hoehe.round(),
+  );
   final png = await bild.toByteData(format: ui.ImageByteFormat.png);
   bild.dispose();
 

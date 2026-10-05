@@ -14,17 +14,16 @@ Kachelabruf abruf({
   bool dauerverbindung = true,
   bool abgebrochen = false,
   Duration dauer = const Duration(milliseconds: 90),
-}) =>
-    Kachelabruf(
-      zeit: DateTime(2026, 8, 28),
-      adresse: adresse,
-      dauer: dauer,
-      status: status,
-      fehler: fehler,
-      bytes: bytes,
-      dauerverbindung: dauerverbindung,
-      abgebrochen: abgebrochen,
-    );
+}) => Kachelabruf(
+  zeit: DateTime(2026, 8, 28),
+  adresse: adresse,
+  dauer: dauer,
+  status: status,
+  fehler: fehler,
+  bytes: bytes,
+  dauerverbindung: dauerverbindung,
+  abgebrochen: abgebrochen,
+);
 
 String kachelAdresse(int z, int x, int y) =>
     'https://tile.openstreetmap.org/$z/$x/$y.png';
@@ -39,25 +38,25 @@ void main() {
       expect(b.mittlereDauer, Duration.zero);
     });
 
-    test('trennt Abrufe, Adressen und Verbindungen – die drei Zahlen der Frage', () {
-      // Zehn Abrufe auf fünf verschiedene Kacheln, dabei zwanzig
-      // Verbindungen: Das ist genau die Lage, die von aussen nicht zu
-      // unterscheiden war.
-      final b = bilanzAus(
-        [
+    test(
+      'trennt Abrufe, Adressen und Verbindungen – die drei Zahlen der Frage',
+      () {
+        // Zehn Abrufe auf fünf verschiedene Kacheln, dabei zwanzig
+        // Verbindungen: Das ist genau die Lage, die von aussen nicht zu
+        // unterscheiden war.
+        final b = bilanzAus([
           for (var i = 0; i < 5; i++) ...[
             abruf(adresse: kachelAdresse(8, 134, i)),
             abruf(adresse: kachelAdresse(8, 134, i)),
           ],
-        ],
-        verbindungen: 20,
-      );
-      expect(b.abrufe, 10);
-      expect(b.adressen, 5);
-      expect(b.wiederholte, 5);
-      expect(b.abrufeJeAdresse, 2.0);
-      expect(b.verbindungenJeAbruf, 2.0);
-    });
+        ], verbindungen: 20);
+        expect(b.abrufe, 10);
+        expect(b.adressen, 5);
+        expect(b.wiederholte, 5);
+        expect(b.abrufeJeAdresse, 2.0);
+        expect(b.verbindungenJeAbruf, 2.0);
+      },
+    );
 
     test('zählt Statuscodes und Fehler getrennt, das Häufigste zuerst', () {
       final b = bilanzAus([
@@ -102,7 +101,10 @@ void main() {
 
   group('Kachelabruf.kachel', () {
     test('kürzt die Adresse auf Stufe/x/y', () {
-      expect(abruf(adresse: kachelAdresse(14, 8623, 5487)).kachel, '14/8623/5487');
+      expect(
+        abruf(adresse: kachelAdresse(14, 8623, 5487)).kachel,
+        '14/8623/5487',
+      );
       expect(
         abruf(adresse: 'https://tile.opentopomap.org/5/16/10.png').kachel,
         '5/16/10',
@@ -110,8 +112,10 @@ void main() {
     });
 
     test('lässt stehen, was nicht auf das Muster passt', () {
-      expect(abruf(adresse: 'https://example.org/kachel').kachel,
-          'https://example.org/kachel');
+      expect(
+        abruf(adresse: 'https://example.org/kachel').kachel,
+        'https://example.org/kachel',
+      );
     });
   });
 
@@ -120,16 +124,21 @@ void main() {
       // Ohne diese Kürzung wäre jeder Fehler einzigartig – und eine
       // Häufung von hundert gleichen Fehlern sähe aus wie hundert
       // verschiedene.
-      final a = fehlertext(ClientException(
-          'Connection closed', Uri.parse(kachelAdresse(8, 1, 1))));
-      final b = fehlertext(ClientException(
-          'Connection closed', Uri.parse(kachelAdresse(8, 1, 2))));
+      final a = fehlertext(
+        ClientException('Connection closed', Uri.parse(kachelAdresse(8, 1, 1))),
+      );
+      final b = fehlertext(
+        ClientException('Connection closed', Uri.parse(kachelAdresse(8, 1, 2))),
+      );
       expect(a, b);
       expect(a, contains('ClientException'));
     });
 
     test('behält den Typ, wenn die Meldung leer ist', () {
-      expect(fehlertext(const FormatException('')), contains('FormatException'));
+      expect(
+        fehlertext(const FormatException('')),
+        contains('FormatException'),
+      );
     });
   });
 
@@ -160,8 +169,10 @@ void main() {
       expect(m.bilanz.verworfen, 7);
       // Die ältesten sind weg, nicht die neuesten.
       expect(m.eintraege.first.adresse, kachelAdresse(8, 7, 0));
-      expect(m.eintraege.last.adresse,
-          kachelAdresse(8, kachelMitschnittGrenze + 6, 0));
+      expect(
+        m.eintraege.last.adresse,
+        kachelAdresse(8, kachelMitschnittGrenze + 6, 0),
+      );
     });
   });
 
@@ -169,8 +180,13 @@ void main() {
     test('reicht die Antwort unverändert durch', () async {
       final m = Kachelmitschnitt()..starte();
       final client = MitschnittClient(
-        MockClient((_) async => Response('Kacheldaten', 200,
-            headers: {'content-type': 'image/png'})),
+        MockClient(
+          (_) async => Response(
+            'Kacheldaten',
+            200,
+            headers: {'content-type': 'image/png'},
+          ),
+        ),
         m,
       );
       final antwort = await client.get(Uri.parse(kachelAdresse(8, 1, 1)));
@@ -193,23 +209,26 @@ void main() {
       expect(m.bilanz.geglueckt, 1);
     });
 
-    test('eine geworfene Ausnahme steht als Eintrag da und wird weitergereicht',
-        () async {
-      final m = Kachelmitschnitt()..starte();
-      final client = MitschnittClient(
-        MockClient((anfrage) async =>
-            throw ClientException('kein Netz', anfrage.url)),
-        m,
-      );
-      await expectLater(
-        client.get(Uri.parse(kachelAdresse(8, 1, 1))),
-        throwsA(isA<ClientException>()),
-      );
-      expect(m.eintraege.single.status, isNull);
-      expect(m.eintraege.single.fehler, contains('ClientException'));
-      expect(m.bilanz.fehlgeschlagen, 1);
-      expect(m.bilanz.abgebrochen, 0);
-    });
+    test(
+      'eine geworfene Ausnahme steht als Eintrag da und wird weitergereicht',
+      () async {
+        final m = Kachelmitschnitt()..starte();
+        final client = MitschnittClient(
+          MockClient(
+            (anfrage) async => throw ClientException('kein Netz', anfrage.url),
+          ),
+          m,
+        );
+        await expectLater(
+          client.get(Uri.parse(kachelAdresse(8, 1, 1))),
+          throwsA(isA<ClientException>()),
+        );
+        expect(m.eintraege.single.status, isNull);
+        expect(m.eintraege.single.fehler, contains('ClientException'));
+        expect(m.bilanz.fehlgeschlagen, 1);
+        expect(m.bilanz.abgebrochen, 0);
+      },
+    );
 
     test('schreibt nichts mit, wenn der Mitschnitt aus ist', () async {
       final m = Kachelmitschnitt();
@@ -254,49 +273,60 @@ void main() {
       expect(b.abgebrochen, 2);
     });
 
-    test('ein Abbruch beim Verbinden zählt als Abbruch, nicht als Fehlschlag',
-        () async {
-      // Der Normalfall einer Zoomfahrt: flutter_map bricht ab, was aus
-      // dem Bild läuft. An echten Servern gemessen waren das 56 von 368
-      // Abrufen – als Fehlschläge gezählt hätte die Übersicht eine
-      // gesunde Fahrt als kaputt gemeldet.
-      final m = Kachelmitschnitt()..starte();
-      final client = MitschnittClient(
-        MockClient((anfrage) async => throw ClientException(
-            'Request aborted by `abortTrigger`', anfrage.url)),
-        m,
-      );
-      await expectLater(
-        client.get(Uri.parse(kachelAdresse(8, 1, 1))),
-        throwsA(isA<ClientException>()),
-      );
-      expect(m.bilanz.abgebrochen, 1);
-      expect(m.bilanz.fehlgeschlagen, 0);
-    });
+    test(
+      'ein Abbruch beim Verbinden zählt als Abbruch, nicht als Fehlschlag',
+      () async {
+        // Der Normalfall einer Zoomfahrt: flutter_map bricht ab, was aus
+        // dem Bild läuft. An echten Servern gemessen waren das 56 von 368
+        // Abrufen – als Fehlschläge gezählt hätte die Übersicht eine
+        // gesunde Fahrt als kaputt gemeldet.
+        final m = Kachelmitschnitt()..starte();
+        final client = MitschnittClient(
+          MockClient(
+            (anfrage) async => throw ClientException(
+              'Request aborted by `abortTrigger`',
+              anfrage.url,
+            ),
+          ),
+          m,
+        );
+        await expectLater(
+          client.get(Uri.parse(kachelAdresse(8, 1, 1))),
+          throwsA(isA<ClientException>()),
+        );
+        expect(m.bilanz.abgebrochen, 1);
+        expect(m.bilanz.fehlgeschlagen, 0);
+      },
+    );
 
-    test('eine weggezogene Kachel gilt als abgebrochen, nicht als geglückt',
-        () async {
-      // flutter_map bricht den Abruf ab, wenn die Kachel beim Ziehen aus
-      // dem Bild läuft. Der Server hat mit 200 geantwortet, angekommen
-      // ist trotzdem nichts.
-      final m = Kachelmitschnitt()..starte();
-      final client = MitschnittClient(
-        MockClient.streaming((_, _) async => StreamedResponse(
+    test(
+      'eine weggezogene Kachel gilt als abgebrochen, nicht als geglückt',
+      () async {
+        // flutter_map bricht den Abruf ab, wenn die Kachel beim Ziehen aus
+        // dem Bild läuft. Der Server hat mit 200 geantwortet, angekommen
+        // ist trotzdem nichts.
+        final m = Kachelmitschnitt()..starte();
+        final client = MitschnittClient(
+          MockClient.streaming(
+            (_, _) async => StreamedResponse(
               // Ein Strom, der nie fertig wird.
               StreamController<List<int>>().stream,
               200,
-            )),
-        m,
-      );
-      final antwort = await client.send(
-          Request('GET', Uri.parse(kachelAdresse(8, 134, 85))));
-      await antwort.stream.listen((_) {}).cancel();
+            ),
+          ),
+          m,
+        );
+        final antwort = await client.send(
+          Request('GET', Uri.parse(kachelAdresse(8, 134, 85))),
+        );
+        await antwort.stream.listen((_) {}).cancel();
 
-      expect(m.eintraege.single.status, 200);
-      expect(m.eintraege.single.abgebrochen, isTrue);
-      expect(m.bilanz.abgebrochen, 1);
-      expect(m.bilanz.geglueckt, 0);
-      expect(m.bilanz.fehlgeschlagen, 0);
-    });
+        expect(m.eintraege.single.status, 200);
+        expect(m.eintraege.single.abgebrochen, isTrue);
+        expect(m.bilanz.abgebrochen, 1);
+        expect(m.bilanz.geglueckt, 0);
+        expect(m.bilanz.fehlgeschlagen, 0);
+      },
+    );
   });
 }

@@ -68,13 +68,12 @@ class NativerVideoschreiber {
     required int breite,
     required int hoehe,
     required int bilderJeSekunde,
-  }) =>
-      kanal.invokeMethod<void>('videoStart', {
-        'path': ziel,
-        'breite': breite,
-        'hoehe': hoehe,
-        'bilderJeSekunde': bilderJeSekunde,
-      });
+  }) => kanal.invokeMethod<void>('videoStart', {
+    'path': ziel,
+    'breite': breite,
+    'hoehe': hoehe,
+    'bilderJeSekunde': bilderJeSekunde,
+  });
 
   /// Hängt ein Bild an – rohe RGBA-Bildpunkte, Zeile für Zeile.
   static Future<void> bild(Uint8List rgba) =>

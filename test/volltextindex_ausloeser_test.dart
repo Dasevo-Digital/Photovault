@@ -26,22 +26,28 @@ void main() {
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> aufnahme(String id, {String? text}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c_$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 2),
-            ocrText: Value(text),
-          ));
+  Future<void> aufnahme(String id, {String? text}) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'c_$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2026, 1, 1),
+          importedAt: DateTime(2026, 1, 2),
+          ocrText: Value(text),
+        ),
+      );
 
   Future<int> zeilenImIndex(String id) async {
     final z = await db
-        .customSelect('SELECT count(*) AS n FROM asset_search_fts '
-            'WHERE asset_id = ?', variables: [Variable<String>(id)])
+        .customSelect(
+          'SELECT count(*) AS n FROM asset_search_fts '
+          'WHERE asset_id = ?',
+          variables: [Variable<String>(id)],
+        )
         .getSingle();
     return z.read<int>('n');
   }
@@ -49,7 +55,9 @@ void main() {
   /// Nimmt die Zeile aus dem Index heraus, ohne die Aufnahme anzufassen.
   /// Was danach den Index wieder füllt, kann nur der Auslöser gewesen sein.
   Future<void> indexVerstimmen(String id) => db.customStatement(
-      'DELETE FROM asset_search_fts WHERE asset_id = ?', [id]);
+    'DELETE FROM asset_search_fts WHERE asset_id = ?',
+    [id],
+  );
 
   test('ein UPDATE ohne Textänderung lässt den Index in Ruhe', () async {
     await aufnahme('a1', text: 'Bahnhof Hannover');
@@ -60,22 +68,30 @@ void main() {
 
     // Dieselbe Zeichenkette noch einmal schreiben – wie es ein Durchgang
     // tut, der nichts Neues gefunden hat.
-    await (db.update(db.assets)..where((t) => t.id.equals('a1')))
-        .write(const AssetsCompanion(ocrText: Value('Bahnhof Hannover')));
+    await (db.update(db.assets)..where((t) => t.id.equals('a1'))).write(
+      const AssetsCompanion(ocrText: Value('Bahnhof Hannover')),
+    );
 
-    expect(await zeilenImIndex('a1'), 0,
-        reason: 'Der Text ist derselbe – der Index hatte keinen Anlass.');
+    expect(
+      await zeilenImIndex('a1'),
+      0,
+      reason: 'Der Text ist derselbe – der Index hatte keinen Anlass.',
+    );
   });
 
   test('eine echte Textänderung schreibt den Index sehr wohl neu', () async {
     await aufnahme('a2', text: 'Bahnhof Hannover');
     await indexVerstimmen('a2');
 
-    await (db.update(db.assets)..where((t) => t.id.equals('a2')))
-        .write(const AssetsCompanion(ocrText: Value('Bahnhof Bremen')));
+    await (db.update(db.assets)..where((t) => t.id.equals('a2'))).write(
+      const AssetsCompanion(ocrText: Value('Bahnhof Bremen')),
+    );
 
-    expect(await zeilenImIndex('a2'), 1,
-        reason: 'Sonst fände die Suche den neuen Text nie.');
+    expect(
+      await zeilenImIndex('a2'),
+      1,
+      reason: 'Sonst fände die Suche den neuen Text nie.',
+    );
   });
 
   test('der Übergang von und nach NULL zählt als Änderung', () async {
@@ -83,28 +99,36 @@ void main() {
     // erste Beschreiben eines leeren Feldes aus.
     await aufnahme('a3');
     await indexVerstimmen('a3');
-    await (db.update(db.assets)..where((t) => t.id.equals('a3')))
-        .write(const AssetsCompanion(ocrText: Value('jetzt steht was da')));
+    await (db.update(db.assets)..where((t) => t.id.equals('a3'))).write(
+      const AssetsCompanion(ocrText: Value('jetzt steht was da')),
+    );
     expect(await zeilenImIndex('a3'), 1, reason: 'NULL -> Text');
 
     await indexVerstimmen('a3');
-    await (db.update(db.assets)..where((t) => t.id.equals('a3')))
-        .write(const AssetsCompanion(ocrText: Value(null)));
+    await (db.update(db.assets)..where((t) => t.id.equals('a3'))).write(
+      const AssetsCompanion(ocrText: Value(null)),
+    );
     expect(await zeilenImIndex('a3'), 1, reason: 'Text -> NULL');
   });
 
-  test('die Suche findet nach einer Änderung weiterhin das Richtige',
-      () async {
+  test('die Suche findet nach einer Änderung weiterhin das Richtige', () async {
     await aufnahme('a4', text: 'Leuchtturm');
-    await (db.update(db.assets)..where((t) => t.id.equals('a4')))
-        .write(const AssetsCompanion(ocrText: Value('Windrad')));
+    await (db.update(db.assets)..where((t) => t.id.equals('a4'))).write(
+      const AssetsCompanion(ocrText: Value('Windrad')),
+    );
 
-    final alt = await db.customSelect(
-        'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
-        "MATCH 'ocr_text : (\"Leuchtturm\"*)'").get();
-    final neu = await db.customSelect(
-        'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
-        "MATCH 'ocr_text : (\"Windrad\"*)'").get();
+    final alt = await db
+        .customSelect(
+          'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
+          "MATCH 'ocr_text : (\"Leuchtturm\"*)'",
+        )
+        .get();
+    final neu = await db
+        .customSelect(
+          'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts '
+          "MATCH 'ocr_text : (\"Windrad\"*)'",
+        )
+        .get();
     expect(alt, isEmpty, reason: 'Der alte Text darf nicht stehen bleiben.');
     expect(neu.length, 1);
   });

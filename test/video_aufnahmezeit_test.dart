@@ -39,8 +39,12 @@ void main() {
     temp.deleteSync(recursive: true);
   });
 
-  List<int> u32(int v) =>
-      [(v >> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
+  List<int> u32(int v) => [
+    (v >> 24) & 0xff,
+    (v >> 16) & 0xff,
+    (v >> 8) & 0xff,
+    v & 0xff,
+  ];
 
   Uint8List kasten(String art, List<int> inhalt) {
     final b = BytesBuilder()
@@ -91,26 +95,31 @@ void main() {
     return (BytesBuilder()
           ..add(kasten('ftyp', 'qt  '.codeUnits))
           ..add(kasten('mdat', List.filled(2000, 7)))
-          ..add(kasten('moov', [
-            ...kasten('mvhd', [
-              0,
-              0,
-              0,
-              0,
-              ...u32(sek),
-              ...u32(sek),
-              ...u32(1000),
-              ...u32(5000),
+          ..add(
+            kasten('moov', [
+              ...kasten('mvhd', [
+                0,
+                0,
+                0,
+                0,
+                ...u32(sek),
+                ...u32(sek),
+                ...u32(1000),
+                ...u32(5000),
+              ]),
+              if (apple.isNotEmpty) ...appleListe(apple),
             ]),
-            if (apple.isNotEmpty) ...appleListe(apple),
-          ])))
+          ))
         .toBytes();
   }
 
   int seit1904(DateTime utc) => utc.difference(DateTime.utc(1904)).inSeconds;
 
-  Future<AssetData> importiere(String name, Uint8List inhalt,
-      {DateTime? dateizeit}) async {
+  Future<AssetData> importiere(
+    String name,
+    Uint8List inhalt, {
+    DateTime? dateizeit,
+  }) async {
     final rein = Directory(p.join(temp.path, 'rein'))
       ..createSync(recursive: true);
     final datei = File(p.join(rein.path, name))..writeAsBytesSync(inhalt);
@@ -125,9 +134,7 @@ void main() {
       'a.mov',
       videobytes(
         mvhdSekunden: seit1904(DateTime.utc(2025, 9, 20, 9, 50, 21)),
-        apple: {
-          'com.apple.quicktime.creationdate': '2025-09-20T11:50:21+0200',
-        },
+        apple: {'com.apple.quicktime.creationdate': '2025-09-20T11:50:21+0200'},
       ),
       dateizeit: DateTime(2026, 8, 30, 7),
     );
@@ -165,10 +172,13 @@ void main() {
   test('Hersteller und Gerät kommen mit', () async {
     final asset = await importiere(
       'e.mov',
-      videobytes(mvhdSekunden: seit1904(DateTime.utc(2025, 1, 2, 3)), apple: {
-        'com.apple.quicktime.make': 'Apple',
-        'com.apple.quicktime.model': 'iPhone 13 Pro',
-      }),
+      videobytes(
+        mvhdSekunden: seit1904(DateTime.utc(2025, 1, 2, 3)),
+        apple: {
+          'com.apple.quicktime.make': 'Apple',
+          'com.apple.quicktime.model': 'iPhone 13 Pro',
+        },
+      ),
     );
     expect(asset.cameraMake, 'Apple');
     expect(asset.cameraModel, 'iPhone 13 Pro');
@@ -195,16 +205,18 @@ void main() {
       final jpg = File(p.join(rein.path, 'g.jpg'))
         ..writeAsBytesSync(Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9]));
       await imp.importFile(jpg.path);
-      final namen =
-          (await db.assetsFuerDatumskorrektur()).map((a) => a.originalFileName);
+      final namen = (await db.assetsFuerDatumskorrektur()).map(
+        (a) => a.originalFileName,
+      );
       expect(namen, isNot(contains('g.jpg')));
     });
 
     test('der Papierkorb bleibt unangetastet', () async {
       final asset = await importiere('h.mp4', videobytes());
       await db.moveToTrash([asset.id]);
-      final namen =
-          (await db.assetsFuerDatumskorrektur()).map((a) => a.originalFileName);
+      final namen = (await db.assetsFuerDatumskorrektur()).map(
+        (a) => a.originalFileName,
+      );
       expect(namen, isNot(contains('h.mp4')));
     });
   });

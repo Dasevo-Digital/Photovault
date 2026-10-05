@@ -36,26 +36,34 @@ void main() {
     mitOffenerMenge.forEach((pfad, menge) {
       final quelle = File(pfad).readAsStringSync();
       expect(
-        quelle.contains(RegExp(
-            r'\}\s*finally\s*\{\s*for\s*\(final\s+\w+\s+in\s+' + menge + r'\)')),
+        quelle.contains(
+          RegExp(
+            r'\}\s*finally\s*\{\s*for\s*\(final\s+\w+\s+in\s+' + menge + r'\)',
+          ),
+        ),
         isTrue,
-        reason: '$pfad führt „$menge" mit, leert die Menge aber nicht mehr in '
+        reason:
+            '$pfad führt „$menge" mit, leert die Menge aber nicht mehr in '
             'einem finally – damit fällt die Ausnahme unten in sich zusammen.',
       );
     });
   });
 
   test('jede Tensor-Freigabe steht in einem finally', () {
-    final dienste = Directory('lib/services')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))
-        .where((f) => f.readAsStringSync().contains('OrtValue'))
-        .toList()
-      ..sort((a, b) => a.path.compareTo(b.path));
+    final dienste =
+        Directory('lib/services')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))
+            .where((f) => f.readAsStringSync().contains('OrtValue'))
+            .toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
 
-    expect(dienste, isNotEmpty,
-        reason: 'Kein Dienst mit OrtValue gefunden – stimmt der Pfad noch?');
+    expect(
+      dienste,
+      isNotEmpty,
+      reason: 'Kein Dienst mit OrtValue gefunden – stimmt der Pfad noch?',
+    );
 
     final verstoesse = <String>[];
 
@@ -102,7 +110,8 @@ void main() {
     expect(
       verstoesse,
       isEmpty,
-      reason: 'Diese Freigaben stehen ausserhalb eines finally-Blocks und '
+      reason:
+          'Diese Freigaben stehen ausserhalb eines finally-Blocks und '
           'unterbleiben deshalb, sobald der Aufruf davor wirft:\n'
           '${verstoesse.join('\n')}',
     );

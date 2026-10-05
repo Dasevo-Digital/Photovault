@@ -70,8 +70,10 @@ class SchwebevorschauBereich extends StatefulWidget {
 }
 
 class _SchwebevorschauBereichState extends State<SchwebevorschauBereich> {
-  late final _Videovorschau _vorschau =
-      _Videovorschau(db: widget.db, paths: widget.paths);
+  late final _Videovorschau _vorschau = _Videovorschau(
+    db: widget.db,
+    paths: widget.paths,
+  );
 
   @override
   void dispose() {

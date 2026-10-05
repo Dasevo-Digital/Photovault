@@ -39,18 +39,24 @@ const double timelineGridSpacing = 4.0;
 const double timelineGridHorizontalPadding =
     24.0; // 12px links + rechts (SliverPadding)
 
-int timelineColumnsForWidth(double gridWidth,
-    {double kachelbreite = timelineGridMaxCrossAxisExtent}) {
+int timelineColumnsForWidth(
+  double gridWidth, {
+  double kachelbreite = timelineGridMaxCrossAxisExtent,
+}) {
   final availableWidth = gridWidth - timelineGridHorizontalPadding;
   final count = (availableWidth / (kachelbreite + timelineGridSpacing)).ceil();
   return count < 1 ? 1 : count;
 }
 
-double timelineRowHeightForWidth(double gridWidth,
-    {double kachelbreite = timelineGridMaxCrossAxisExtent}) {
+double timelineRowHeightForWidth(
+  double gridWidth, {
+  double kachelbreite = timelineGridMaxCrossAxisExtent,
+}) {
   final availableWidth = gridWidth - timelineGridHorizontalPadding;
-  final columns =
-      timelineColumnsForWidth(gridWidth, kachelbreite: kachelbreite);
+  final columns = timelineColumnsForWidth(
+    gridWidth,
+    kachelbreite: kachelbreite,
+  );
   final usable = availableWidth - timelineGridSpacing * (columns - 1);
   final tileExtent = usable / columns;
   return tileExtent + timelineGridSpacing;
@@ -76,8 +82,11 @@ double seitenverhaeltnisVon(Rasterzeile a) {
 /// [kachelbreite] – die eingestellte Kachelstufe – wirkt hier als
 /// **Zielhöhe** der Reihen. So bleibt der vorhandene Zoom sinnvoll, statt
 /// dass die neue Form einen zweiten Regler braucht.
-List<Bildreihe> zeitleisteReihen(List<Rasterzeile> gruppe, double gridWidth,
-    {double kachelbreite = timelineGridMaxCrossAxisExtent}) {
+List<Bildreihe> zeitleisteReihen(
+  List<Rasterzeile> gruppe,
+  double gridWidth, {
+  double kachelbreite = timelineGridMaxCrossAxisExtent,
+}) {
   return bildreihen(
     seitenverhaeltnisse: [for (final a in gruppe) seitenverhaeltnisVon(a)],
     breite: gridWidth - timelineGridHorizontalPadding,
@@ -100,16 +109,27 @@ double timelineMonthGroupHeight(
   final kopf = mitUeberschrift ? timelineHeaderHeight : 0.0;
   if (mitTagen) {
     return kopf +
-        tageszeilenHoehe(zeitleisteTageszeilen(gruppe, gridWidth,
-            kachelbreite: kachelbreite, form: form));
+        tageszeilenHoehe(
+          zeitleisteTageszeilen(
+            gruppe,
+            gridWidth,
+            kachelbreite: kachelbreite,
+            form: form,
+          ),
+        );
   }
   if (form == Zeitleistenform.reihen) {
-    final reihen =
-        zeitleisteReihen(gruppe, gridWidth, kachelbreite: kachelbreite);
+    final reihen = zeitleisteReihen(
+      gruppe,
+      gridWidth,
+      kachelbreite: kachelbreite,
+    );
     return kopf + reihenGesamthoehe(reihen, timelineGridSpacing);
   }
-  final columns =
-      timelineColumnsForWidth(gridWidth, kachelbreite: kachelbreite);
+  final columns = timelineColumnsForWidth(
+    gridWidth,
+    kachelbreite: kachelbreite,
+  );
   final rows = (gruppe.length / columns).ceil();
   // Die Zeilenhöhe trägt den Abstand UNTER sich. Hinter der letzten Zeile
   // gibt es keinen – sonst zählte jede Monatsgruppe vier Punkte zu viel,
@@ -140,25 +160,48 @@ double? timelineOffsetForAsset(
           timelineHeaderHeight +
           (mitTagen
               ? _abstandBisTageszeile(
-                  zeitleisteTageszeilen(group, gridWidth,
-                      kachelbreite: kachelbreite, form: form),
-                  indexInGroup)
+                  zeitleisteTageszeilen(
+                    group,
+                    gridWidth,
+                    kachelbreite: kachelbreite,
+                    form: form,
+                  ),
+                  indexInGroup,
+                )
               : _abstandBisZeile(
-                  group, indexInGroup, gridWidth, kachelbreite, form));
+                  group,
+                  indexInGroup,
+                  gridWidth,
+                  kachelbreite,
+                  form,
+                ));
     }
-    offset += timelineMonthGroupHeight(group, gridWidth,
-        kachelbreite: kachelbreite, form: form, mitTagen: mitTagen);
+    offset += timelineMonthGroupHeight(
+      group,
+      gridWidth,
+      kachelbreite: kachelbreite,
+      form: form,
+      mitTagen: mitTagen,
+    );
   }
   return null;
 }
 
 /// Wie weit die Zeile, in der [indexInGroup] steht, unterhalb der
 /// Monatsüberschrift beginnt.
-double _abstandBisZeile(List<Rasterzeile> gruppe, int indexInGroup,
-    double gridWidth, double kachelbreite, Zeitleistenform form) {
+double _abstandBisZeile(
+  List<Rasterzeile> gruppe,
+  int indexInGroup,
+  double gridWidth,
+  double kachelbreite,
+  Zeitleistenform form,
+) {
   if (form == Zeitleistenform.reihen) {
-    final reihen =
-        zeitleisteReihen(gruppe, gridWidth, kachelbreite: kachelbreite);
+    final reihen = zeitleisteReihen(
+      gruppe,
+      gridWidth,
+      kachelbreite: kachelbreite,
+    );
     var oben = 0.0;
     for (final r in reihen) {
       if (indexInGroup <= r.letzterIndex) return oben;
@@ -166,8 +209,10 @@ double _abstandBisZeile(List<Rasterzeile> gruppe, int indexInGroup,
     }
     return oben;
   }
-  final columns =
-      timelineColumnsForWidth(gridWidth, kachelbreite: kachelbreite);
+  final columns = timelineColumnsForWidth(
+    gridWidth,
+    kachelbreite: kachelbreite,
+  );
   final zeile = indexInGroup ~/ columns;
   return zeile *
       timelineRowHeightForWidth(gridWidth, kachelbreite: kachelbreite);
@@ -289,28 +334,45 @@ int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 ///
 /// Bei Quadraten dieselbe Spaltenzahl und Kante wie im Monatsraster – ein
 /// Foto ist in beiden Gliederungen gleich gross.
-List<Bildreihe> _reihenDesTages(List<Rasterzeile> gruppe, int von, int bis,
-    double gridWidth, double kachelbreite, Zeitleistenform form) {
+List<Bildreihe> _reihenDesTages(
+  List<Rasterzeile> gruppe,
+  int von,
+  int bis,
+  double gridWidth,
+  double kachelbreite,
+  Zeitleistenform form,
+) {
   if (form == Zeitleistenform.reihen) {
     return [
-      for (final r in zeitleisteReihen(gruppe.sublist(von, bis + 1), gridWidth,
-          kachelbreite: kachelbreite))
-        Bildreihe(hoehe: r.hoehe, plaetze: [
-          for (final p in r.plaetze) (index: p.index + von, breite: p.breite),
-        ]),
+      for (final r in zeitleisteReihen(
+        gruppe.sublist(von, bis + 1),
+        gridWidth,
+        kachelbreite: kachelbreite,
+      ))
+        Bildreihe(
+          hoehe: r.hoehe,
+          plaetze: [
+            for (final p in r.plaetze) (index: p.index + von, breite: p.breite),
+          ],
+        ),
     ];
   }
-  final spalten =
-      timelineColumnsForWidth(gridWidth, kachelbreite: kachelbreite);
+  final spalten = timelineColumnsForWidth(
+    gridWidth,
+    kachelbreite: kachelbreite,
+  );
   final kante =
       timelineRowHeightForWidth(gridWidth, kachelbreite: kachelbreite) -
-          timelineGridSpacing;
+      timelineGridSpacing;
   return [
     for (var anfang = von; anfang <= bis; anfang += spalten)
-      Bildreihe(hoehe: kante, plaetze: [
-        for (var i = anfang; i <= bis && i < anfang + spalten; i++)
-          (index: i, breite: kante),
-      ]),
+      Bildreihe(
+        hoehe: kante,
+        plaetze: [
+          for (var i = anfang; i <= bis && i < anfang + spalten; i++)
+            (index: i, breite: kante),
+        ],
+      ),
   ];
 }
 
@@ -354,8 +416,14 @@ List<Tageszeile> zeitleisteTageszeilen(
         _tagesschluessel(gruppe[bis + 1].fileCreatedAt) == tag) {
       bis++;
     }
-    final reihen =
-        _reihenDesTages(gruppe, von, bis, gridWidth, kachelbreite, form);
+    final reihen = _reihenDesTages(
+      gruppe,
+      von,
+      bis,
+      gridWidth,
+      kachelbreite,
+      form,
+    );
     if (reihen.length == 1) {
       final b = _reihenbreite(reihen.single);
       // Ein halber Punkt Spiel: Eine bündige Reihe ist auf die Breite
@@ -366,8 +434,9 @@ List<Tageszeile> zeitleisteTageszeilen(
         schliessen();
       }
       belegt = offen.isEmpty ? b : belegt + timelineTagesabstand + b;
-      offen
-          .add(Tagesblock(von: von, bis: bis, reihe: reihen.single, breite: b));
+      offen.add(
+        Tagesblock(von: von, bis: bis, reihe: reihen.single, breite: b),
+      );
     } else {
       schliessen();
       zeilen.add(TageskopfZeile(von: von, bis: bis));
@@ -410,6 +479,6 @@ double _abstandBisTageszeile(List<Tageszeile> zeilen, int indexInGroup) {
 /// Wie viele Fotos in jeder Zeile stehen, Überschriften ausgelassen – die
 /// Reihenlängen für die Pfeiltasten (siehe `nachbarkachel`).
 List<int> tageszeilenLaengen(List<Tageszeile> zeilen) => [
-      for (final z in zeilen)
-        if (z.anzahl > 0) z.anzahl,
-    ];
+  for (final z in zeilen)
+    if (z.anzahl > 0) z.anzahl,
+];

@@ -33,20 +33,24 @@ void main() {
     DateTime? wann,
   }) async {
     final id = 'a${laufend++}';
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'pruef-$id',
-          type: typ,
-          fileCreatedAt: wann ?? DateTime(2026, 5, 1),
-          importedAt: DateTime(2026, 5, 1),
-          description: Value(beschreibung),
-          ocrText: Value(ocr),
-          isFavorite: Value(favorit),
-          isTrashed: Value(papierkorb),
-          isLocked: Value(gesperrt),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'pruef-$id',
+            type: typ,
+            fileCreatedAt: wann ?? DateTime(2026, 5, 1),
+            importedAt: DateTime(2026, 5, 1),
+            description: Value(beschreibung),
+            ocrText: Value(ocr),
+            isFavorite: Value(favorit),
+            isTrashed: Value(papierkorb),
+            isLocked: Value(gesperrt),
+          ),
+        );
     return id;
   }
 
@@ -66,17 +70,26 @@ void main() {
     'nur Videos': const SearchFilters(mediaType: MediaTypeFilter.video),
     'nur Bilder': const SearchFilters(mediaType: MediaTypeFilter.image),
     'Text „Hund"': const SearchFilters(
-        query: 'Hund', textMode: SearchTextMode.description),
+      query: 'Hund',
+      textMode: SearchTextMode.description,
+    ),
     'Text „Garten"': const SearchFilters(
-        query: 'Garten', textMode: SearchTextMode.description),
+      query: 'Garten',
+      textMode: SearchTextMode.description,
+    ),
     'Text ohne Treffer': const SearchFilters(
-        query: 'Nashorn', textMode: SearchTextMode.description),
+      query: 'Nashorn',
+      textMode: SearchTextMode.description,
+    ),
     'Texterkennung': const SearchFilters(
-        query: 'Ausfahrt', textMode: SearchTextMode.ocr),
+      query: 'Ausfahrt',
+      textMode: SearchTextMode.ocr,
+    ),
     'Text und Favorit': const SearchFilters(
-        query: 'Hund',
-        textMode: SearchTextMode.description,
-        favoritesOnly: true),
+      query: 'Hund',
+      textMode: SearchTextMode.description,
+      favoritesOnly: true,
+    ),
   };
 
   group('gezaehlt ist gefunden', () {
@@ -85,8 +98,11 @@ void main() {
         await bestand();
         final gefunden = await db.searchAssets(fall.value);
         final gezaehlt = await db.countSearchResults(fall.value);
-        expect(gezaehlt, gefunden.length,
-            reason: 'die Zahl verspricht etwas anderes als die Liste');
+        expect(
+          gezaehlt,
+          gefunden.length,
+          reason: 'die Zahl verspricht etwas anderes als die Liste',
+        );
       });
     }
   });
@@ -97,23 +113,32 @@ void main() {
     expect(await db.countSearchResults(const SearchFilters()), 5);
   });
 
-  test('eine leere Vorauswahl ergibt null, ohne die Datenbank zu fragen',
-      () async {
-    await bestand();
-    expect(
-        await db.countSearchResults(const SearchFilters(),
-            restrictToIds: const []),
-        0);
-  });
+  test(
+    'eine leere Vorauswahl ergibt null, ohne die Datenbank zu fragen',
+    () async {
+      await bestand();
+      expect(
+        await db.countSearchResults(
+          const SearchFilters(),
+          restrictToIds: const [],
+        ),
+        0,
+      );
+    },
+  );
 
   test('eine Vorauswahl schneidet mit dem Textfilter', () async {
     final einer = await foto(beschreibung: 'Hund am Strand');
     await foto(beschreibung: 'Hund im Garten');
     expect(
-        await db.countSearchResults(
-            const SearchFilters(
-                query: 'Hund', textMode: SearchTextMode.description),
-            restrictToIds: [einer]),
-        1);
+      await db.countSearchResults(
+        const SearchFilters(
+          query: 'Hund',
+          textMode: SearchTextMode.description,
+        ),
+        restrictToIds: [einer],
+      ),
+      1,
+    );
   });
 }

@@ -18,16 +18,16 @@ void main() {
   ///          kind1      kind2
   ///                   enkel
   Verwandtschaftsnetz sippe() => Verwandtschaftsnetz([
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('vater', 'opaV', Verwandtschaft.elternteil),
-        kante('vater', 'omaV', Verwandtschaft.elternteil),
-        kante('mutter', 'opaM', Verwandtschaft.elternteil),
-        kante('mutter', 'omaM', Verwandtschaft.elternteil),
-        kante('kind1', 'ich', Verwandtschaft.elternteil),
-        kante('kind2', 'ich', Verwandtschaft.elternteil),
-        kante('enkel', 'kind2', Verwandtschaft.elternteil),
-      ]);
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('vater', 'opaV', Verwandtschaft.elternteil),
+    kante('vater', 'omaV', Verwandtschaft.elternteil),
+    kante('mutter', 'opaM', Verwandtschaft.elternteil),
+    kante('mutter', 'omaM', Verwandtschaft.elternteil),
+    kante('kind1', 'ich', Verwandtschaft.elternteil),
+    kante('kind2', 'ich', Verwandtschaft.elternteil),
+    kante('enkel', 'kind2', Verwandtschaft.elternteil),
+  ]);
 
   final reihenfolge = [
     'opaV',
@@ -47,8 +47,9 @@ void main() {
   Sanduhr bau([Verwandtschaftsnetz? netz]) =>
       ordneSanduhr(netz ?? sippe(), 'ich', ordnung);
 
-  Map<String, Sanduhrknoten> nachId(Sanduhr s) =>
-      {for (final k in s.knoten) k.personId: k};
+  Map<String, Sanduhrknoten> nachId(Sanduhr s) => {
+    for (final k in s.knoten) k.personId: k,
+  };
 
   group('Reihen', () {
     test('die gewählte Person sitzt in der Taille', () {
@@ -88,26 +89,31 @@ void main() {
       for (final e in proReihe.entries) {
         final spalten = e.value..sort();
         for (var i = 1; i < spalten.length; i++) {
-          expect(spalten[i] - spalten[i - 1], greaterThanOrEqualTo(1.0),
-              reason: 'Reihe ${e.key}: ${spalten[i - 1]} und ${spalten[i]}');
+          expect(
+            spalten[i] - spalten[i - 1],
+            greaterThanOrEqualTo(1.0),
+            reason: 'Reihe ${e.key}: ${spalten[i - 1]} und ${spalten[i]}',
+          );
         }
       }
     });
 
-    test('jeder Vorfahr steht über seinem Kind, nicht irgendwo in der Reihe',
-        () {
-      // Der Kern der Sache. Die Großeltern väterlicherseits müssen den
-      // Vater einrahmen, nicht die Mutter.
-      final k = nachId(bau());
-      final vater = k['vater']!.spalte;
-      expect(k['opaV']!.spalte, lessThan(vater));
-      expect(k['omaV']!.spalte, greaterThan(vater));
-      final mutter = k['mutter']!.spalte;
-      expect(k['opaM']!.spalte, lessThan(mutter));
-      expect(k['omaM']!.spalte, greaterThan(mutter));
-      // Und die beiden Paare dürfen sich nicht kreuzen.
-      expect(k['omaV']!.spalte, lessThan(k['opaM']!.spalte));
-    });
+    test(
+      'jeder Vorfahr steht über seinem Kind, nicht irgendwo in der Reihe',
+      () {
+        // Der Kern der Sache. Die Großeltern väterlicherseits müssen den
+        // Vater einrahmen, nicht die Mutter.
+        final k = nachId(bau());
+        final vater = k['vater']!.spalte;
+        expect(k['opaV']!.spalte, lessThan(vater));
+        expect(k['omaV']!.spalte, greaterThan(vater));
+        final mutter = k['mutter']!.spalte;
+        expect(k['opaM']!.spalte, lessThan(mutter));
+        expect(k['omaM']!.spalte, greaterThan(mutter));
+        // Und die beiden Paare dürfen sich nicht kreuzen.
+        expect(k['omaV']!.spalte, lessThan(k['opaM']!.spalte));
+      },
+    );
 
     test('ein Elternteil sitzt mittig über seinen Kindern', () {
       final k = nachId(bau());
@@ -192,16 +198,16 @@ void seitenlinienTests() {
   ///     ├ caesar ── emma        dora ── felix
   ///     │  └ gustav              └ heidi
   Verwandtschaftsnetz bestand() => Verwandtschaftsnetz([
-        kante('caesar', 'anton', Verwandtschaft.elternteil),
-        kante('caesar', 'berta', Verwandtschaft.elternteil),
-        kante('dora', 'anton', Verwandtschaft.elternteil),
-        kante('dora', 'berta', Verwandtschaft.elternteil),
-        kante('gustav', 'caesar', Verwandtschaft.elternteil),
-        kante('heidi', 'dora', Verwandtschaft.elternteil),
-        kante('heidi', 'felix', Verwandtschaft.elternteil),
-        partnerKanteFuer('emma', 'caesar'),
-        partnerKanteFuer('felix', 'dora'),
-      ]);
+    kante('caesar', 'anton', Verwandtschaft.elternteil),
+    kante('caesar', 'berta', Verwandtschaft.elternteil),
+    kante('dora', 'anton', Verwandtschaft.elternteil),
+    kante('dora', 'berta', Verwandtschaft.elternteil),
+    kante('gustav', 'caesar', Verwandtschaft.elternteil),
+    kante('heidi', 'dora', Verwandtschaft.elternteil),
+    kante('heidi', 'felix', Verwandtschaft.elternteil),
+    partnerKanteFuer('emma', 'caesar'),
+    partnerKanteFuer('felix', 'dora'),
+  ]);
 
   const ordnung = {
     'anton': 0,
@@ -249,23 +255,29 @@ void seitenlinienTests() {
 
     test('das Geschwister hängt an denselben Eltern, mit eigenen Kanten', () {
       final s = mitSeite();
-      final vonPersonC =
-          s.kanten.where((k) => k.vonId == 'dora').map((k) => k.zuId).toSet();
-      expect(vonPersonC, containsAll({'anton', 'berta'}),
-          reason: 'ohne diese Kanten schwebte das Geschwister ohne Anschluss');
+      final vonPersonC = s.kanten
+          .where((k) => k.vonId == 'dora')
+          .map((k) => k.zuId)
+          .toSet();
+      expect(
+        vonPersonC,
+        containsAll({'anton', 'berta'}),
+        reason: 'ohne diese Kanten schwebte das Geschwister ohne Anschluss',
+      );
     });
 
     test('in keiner Reihe überlappen sich zwei Kästen', () {
       final s = mitSeite();
       for (var r = s.obersteReihe; r <= s.untersteReihe; r++) {
-        final spalten = s.knoten
-            .where((k) => k.reihe == r)
-            .map((k) => k.spalte)
-            .toList()
-          ..sort();
+        final spalten =
+            s.knoten.where((k) => k.reihe == r).map((k) => k.spalte).toList()
+              ..sort();
         for (var i = 1; i < spalten.length; i++) {
-          expect(spalten[i] - spalten[i - 1], greaterThanOrEqualTo(1.0),
-              reason: 'Reihe $r: ${spalten[i - 1]} und ${spalten[i]}');
+          expect(
+            spalten[i] - spalten[i - 1],
+            greaterThanOrEqualTo(1.0),
+            reason: 'Reihe $r: ${spalten[i - 1]} und ${spalten[i]}',
+          );
         }
       }
     });
@@ -275,25 +287,35 @@ void seitenlinienTests() {
       final caesar = s.knoten.firstWhere((k) => k.personId == 'caesar');
       final anton = s.knoten.firstWhere((k) => k.personId == 'anton');
       final berta = s.knoten.firstWhere((k) => k.personId == 'berta');
-      expect((anton.spalte + berta.spalte) / 2, closeTo(caesar.spalte, 0.001),
-          reason: 'die Eltern rahmen die gewählte Person, nicht die Gruppe');
+      expect(
+        (anton.spalte + berta.spalte) / 2,
+        closeTo(caesar.spalte, 0.001),
+        reason: 'die Eltern rahmen die gewählte Person, nicht die Gruppe',
+      );
     });
 
-    test('ein Halbgeschwister bekommt nur die Kante zum gemeinsamen Elternteil',
-        () {
-      final netz = Verwandtschaftsnetz([
-        kante('caesar', 'anton', Verwandtschaft.elternteil),
-        kante('caesar', 'berta', Verwandtschaft.elternteil),
-        // Halb: nur anton gemeinsam.
-        kante('halb', 'anton', Verwandtschaft.elternteil),
-        kante('halb', 'fremd', Verwandtschaft.elternteil),
-      ]);
-      final s = ordneSanduhr(netz, 'caesar', rang);
-      final vonHalb =
-          s.kanten.where((k) => k.vonId == 'halb').map((k) => k.zuId).toSet();
-      expect(vonHalb, equals({'anton'}),
-          reason: 'der zweite Elternteil steht nicht im Bild');
-    });
+    test(
+      'ein Halbgeschwister bekommt nur die Kante zum gemeinsamen Elternteil',
+      () {
+        final netz = Verwandtschaftsnetz([
+          kante('caesar', 'anton', Verwandtschaft.elternteil),
+          kante('caesar', 'berta', Verwandtschaft.elternteil),
+          // Halb: nur anton gemeinsam.
+          kante('halb', 'anton', Verwandtschaft.elternteil),
+          kante('halb', 'fremd', Verwandtschaft.elternteil),
+        ]);
+        final s = ordneSanduhr(netz, 'caesar', rang);
+        final vonHalb = s.kanten
+            .where((k) => k.vonId == 'halb')
+            .map((k) => k.zuId)
+            .toSet();
+        expect(
+          vonHalb,
+          equals({'anton'}),
+          reason: 'der zweite Elternteil steht nicht im Bild',
+        );
+      },
+    );
 
     test('ohne Geschwister ändert der Schalter nichts', () {
       final netz = Verwandtschaftsnetz([

@@ -21,8 +21,11 @@ class SimilarPhotosScreen extends StatefulWidget {
   final LibraryState library;
   final AssetData sourceAsset;
 
-  const SimilarPhotosScreen(
-      {super.key, required this.library, required this.sourceAsset});
+  const SimilarPhotosScreen({
+    super.key,
+    required this.library,
+    required this.sourceAsset,
+  });
 
   @override
   State<SimilarPhotosScreen> createState() => _SimilarPhotosScreenState();
@@ -34,12 +37,16 @@ class _SimilarPhotosScreenState extends State<SimilarPhotosScreen> {
   late final Future<List<AssetData>> _resultsFuture = _computeSimilar();
 
   Future<List<AssetData>> _computeSimilar() async {
-    final sourceEmbedding =
-        await widget.library.db.embeddingForAsset(widget.sourceAsset.id);
+    final sourceEmbedding = await widget.library.db.embeddingForAsset(
+      widget.sourceAsset.id,
+    );
     if (sourceEmbedding == null) return [];
     final embeddings = await widget.library.cachedEmbeddings();
-    final ranked = ClipService.rankBySimilarity(sourceEmbedding, embeddings,
-        topK: _maxResults + 1);
+    final ranked = ClipService.rankBySimilarity(
+      sourceEmbedding,
+      embeddings,
+      topK: _maxResults + 1,
+    );
     final ids = ranked
         .map((e) => e.key)
         .where((id) => id != widget.sourceAsset.id)
@@ -98,24 +105,28 @@ class _SimilarPhotosScreenState extends State<SimilarPhotosScreen> {
               return AssetThumbnailTile(
                 asset: Rasterzeile.aus(asset),
                 paths: widget.library.paths,
-                onTap: () => Navigator.of(context, rootNavigator: true)
-                    .push(MaterialPageRoute(
-                  builder: (_) => AssetViewerScreen(
-                    assets: results,
-                    initialIndex: index,
-                    paths: widget.library.paths,
-                    db: widget.library.db,
-                    library: widget.library,
-                    onToggleFavorite: (a) =>
-                        widget.library.db.setFavorite(a.id, !a.isFavorite),
-                    onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-                    onLock: (a) async {
-                      if (await ensureVaultUnlocked(context, widget.library)) {
-                        await widget.library.lockAsset(a);
-                      }
-                    },
+                onTap: () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => AssetViewerScreen(
+                      assets: results,
+                      initialIndex: index,
+                      paths: widget.library.paths,
+                      db: widget.library.db,
+                      library: widget.library,
+                      onToggleFavorite: (a) =>
+                          widget.library.db.setFavorite(a.id, !a.isFavorite),
+                      onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+                      onLock: (a) async {
+                        if (await ensureVaultUnlocked(
+                          context,
+                          widget.library,
+                        )) {
+                          await widget.library.lockAsset(a);
+                        }
+                      },
+                    ),
                   ),
-                )),
+                ),
               );
             },
           );

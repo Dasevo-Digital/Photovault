@@ -17,14 +17,18 @@ void main() {
   test('die Kennung ist kein Platzhalter', () {
     expect(netzkennung, isNot(contains('example')));
     expect(netzkennung, isNot(contains('unknown')));
-    expect(netzkennung, isNot(contains('@')),
-        reason: 'keine Adresse im Kopf, der an fremde Server geht');
+    expect(
+      netzkennung,
+      isNot(contains('@')),
+      reason: 'keine Adresse im Kopf, der an fremde Server geht',
+    );
     expect(kartenNetzkennung, 'flutter_map ($netzkennung)');
   });
 
   for (final stil in Kartenstil.values) {
-    testWidgets('die Kachelschicht ($stil) schickt die Kennung',
-        (tester) async {
+    testWidgets('die Kachelschicht ($stil) schickt die Kennung', (
+      tester,
+    ) async {
       // Ein eigener Anbieter statt des gemeinsamen: flutter_map setzt den
       // Kopf nur, wenn er noch fehlt (`putIfAbsent`). Ein Anbieter, den
       // vorher schon eine andere Schicht gefüllt hat, bewiese nichts.
@@ -33,13 +37,17 @@ void main() {
       kachelAnbieterFuerTest = anbieter;
 
       late TileLayer gebaut;
-      await tester.pumpWidget(Directionality(
-        textDirection: TextDirection.ltr,
-        child: Builder(builder: (context) {
-          gebaut = buildMapTileLayer(context, stil: stil);
-          return const SizedBox();
-        }),
-      ));
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Builder(
+            builder: (context) {
+              gebaut = buildMapTileLayer(context, stil: stil);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
 
       expect(gebaut.tileProvider, same(anbieter));
       expect(anbieter.headers['User-Agent'], kartenNetzkennung);
@@ -52,10 +60,11 @@ void main() {
     // muss deshalb aus netzkennung.dart kommen.
     final vonHand = RegExp(r'''['"]User-Agent['"]\s*:\s*['"]''');
     final funde = <String>[];
-    for (final datei in Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
       final zeilen = datei.readAsLinesSync();
       for (var i = 0; i < zeilen.length; i++) {
         if (vonHand.hasMatch(zeilen[i])) funde.add('${datei.path}:${i + 1}');

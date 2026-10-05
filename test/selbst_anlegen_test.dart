@@ -28,19 +28,24 @@ void main() {
     temp.deleteSync(recursive: true);
   });
 
-  Future<void> foto(String id, DateTime wann,
-          {bool gesperrt = false, bool papierkorb = false}) =>
-      db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id.jpg',
-        originalFileName: '$id.jpg',
-        type: 'IMAGE',
-        checksum: id,
-        fileCreatedAt: wann,
-        importedAt: wann,
-        isLocked: Value(gesperrt),
-        isTrashed: Value(papierkorb),
-      ));
+  Future<void> foto(
+    String id,
+    DateTime wann, {
+    bool gesperrt = false,
+    bool papierkorb = false,
+  }) => db.insertAsset(
+    AssetsCompanion.insert(
+      id: id,
+      relativePath: 'originals/$id.jpg',
+      originalFileName: '$id.jpg',
+      type: 'IMAGE',
+      checksum: id,
+      fileCreatedAt: wann,
+      importedAt: wann,
+      isLocked: Value(gesperrt),
+      isTrashed: Value(papierkorb),
+    ),
+  );
 
   group('die Aufnahmen eines Zeitraums', () {
     test('einschliesslich beider Randtage', () async {
@@ -52,7 +57,9 @@ void main() {
       await foto('danach', DateTime(2026, 6, 15, 0, 1));
 
       final drin = await db.aufnahmenImZeitraum(
-          DateTime(2026, 6, 12), DateTime(2026, 6, 14));
+        DateTime(2026, 6, 12),
+        DateTime(2026, 6, 14),
+      );
       expect(drin.map((a) => a.id).toSet(), {'frueh', 'spaet'});
     });
 
@@ -64,42 +71,55 @@ void main() {
       await foto('papierkorb', DateTime(2026, 6, 13, 12), papierkorb: true);
 
       final drin = await db.aufnahmenImZeitraum(
-          DateTime(2026, 6, 13), DateTime(2026, 6, 13));
+        DateTime(2026, 6, 13),
+        DateTime(2026, 6, 13),
+      );
       expect(drin.map((a) => a.id).toSet(), {'offen'});
     });
 
     test('ein Tag ohne Fotos gibt eine leere Liste, keinen Fehler', () async {
       expect(
-          await db.aufnahmenImZeitraum(
-              DateTime(2026, 1, 1), DateTime(2026, 1, 1)),
-          isEmpty);
+        await db.aufnahmenImZeitraum(
+          DateTime(2026, 1, 1),
+          DateTime(2026, 1, 1),
+        ),
+        isEmpty,
+      );
     });
   });
 
   group('der Dialog', () {
-    Future<Zeitraumangabe?> zeige(WidgetTester tester,
-        {bool mitArt = false}) async {
+    Future<Zeitraumangabe?> zeige(
+      WidgetTester tester, {
+      bool mitArt = false,
+    }) async {
       Zeitraumangabe? ergebnis;
-      await tester.pumpWidget(MaterialApp(
-        // Mit dem App-Thema und nicht mit dem nackten: Der Dialog faerbt
-        // "kein Foto" ueber AppSemantik.warnung, und die Erweiterung
-        // haengt am Thema.
-        theme: buildLightTheme(),
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Builder(
-          builder: (context) => Scaffold(
-            body: Center(
-              child: ElevatedButton(
-                onPressed: () async => ergebnis = await frageZeitraum(
-                    context, titel: 'Anlegen', db: db, mitArt: mitArt),
-                child: const Text('los'),
+      await tester.pumpWidget(
+        MaterialApp(
+          // Mit dem App-Thema und nicht mit dem nackten: Der Dialog faerbt
+          // "kein Foto" ueber AppSemantik.warnung, und die Erweiterung
+          // haengt am Thema.
+          theme: buildLightTheme(),
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () async => ergebnis = await frageZeitraum(
+                    context,
+                    titel: 'Anlegen',
+                    db: db,
+                    mitArt: mitArt,
+                  ),
+                  child: const Text('los'),
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.tap(find.text('los'));
       await tester.pumpAndSettle();
       return ergebnis;
@@ -110,17 +130,20 @@ void main() {
       // leerer Streifen dasteht.
       await zeige(tester);
       final knopf = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'Übernehmen'));
+        find.widgetWithText(FilledButton, 'Übernehmen'),
+      );
       expect(knopf.onPressed, isNull);
 
       await tester.enterText(find.byType(TextField), 'Harzwoche');
       await tester.pumpAndSettle();
       expect(
-          tester
-              .widget<FilledButton>(
-                  find.widgetWithText(FilledButton, 'Übernehmen'))
-              .onPressed,
-          isNotNull);
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Übernehmen'),
+            )
+            .onPressed,
+        isNotNull,
+      );
     });
 
     testWidgets('die Zahl der Fotos steht schon im Fenster', (tester) async {
@@ -138,8 +161,9 @@ void main() {
       expect(find.text('Kein Foto in diesem Zeitraum'), findsOneWidget);
     });
 
-    testWidgets('nach der Art wird nur gefragt, wo sie gebraucht wird',
-        (tester) async {
+    testWidgets('nach der Art wird nur gefragt, wo sie gebraucht wird', (
+      tester,
+    ) async {
       await zeige(tester);
       expect(find.text('Art'), findsNothing, reason: 'eine Reise hat keine');
       await tester.tap(find.text('Abbrechen'));

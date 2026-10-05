@@ -45,8 +45,10 @@ void main() {
       // kurze gemessene Strecke belegt keinen kurzen Weg – ein
       // Spaziergang liesse sich also nur behaupten, nicht zeigen.
       expect(vermuteArt(3, const Duration(hours: 1)), Aktivitaetsart.wanderung);
-      expect(vermuteArt(0.3, const Duration(hours: 1)),
-          Aktivitaetsart.besichtigung);
+      expect(
+        vermuteArt(0.3, const Duration(hours: 1)),
+        Aktivitaetsart.besichtigung,
+      );
     });
   });
 
@@ -77,24 +79,26 @@ void main() {
     setUp(() => db = AppDatabase(NativeDatabase.memory()));
     tearDown(() => db.close());
 
-    Future<void> aktivitaet(String id, String art) =>
-        db.aktivitaetAnlegen(
-            AktivitaetenCompanion.insert(
-              id: id,
-              name: id,
-              art: art,
-              von: DateTime(2026, 6, 1, 9),
-              bis: DateTime(2026, 6, 1, 12),
-              angelegtAm: DateTime(2026),
-            ),
-            const []);
+    Future<void> aktivitaet(String id, String art) => db.aktivitaetAnlegen(
+      AktivitaetenCompanion.insert(
+        id: id,
+        name: id,
+        art: art,
+        von: DateTime(2026, 6, 1, 9),
+        bis: DateTime(2026, 6, 1, 12),
+        angelegtAm: DateTime(2026),
+      ),
+      const [],
+    );
 
     test('nur die, die keine mitgelieferte sind', () async {
       await aktivitaet('a', 'wanderung');
       await aktivitaet('b', 'Konzert');
       await aktivitaet('c', 'Spaziergang mit Hund');
-      expect(await db.eigeneAktivitaetsarten(),
-          ['Konzert', 'Spaziergang mit Hund']);
+      expect(await db.eigeneAktivitaetsarten(), [
+        'Konzert',
+        'Spaziergang mit Hund',
+      ]);
     });
 
     test('jede nur einmal', () async {
@@ -113,7 +117,9 @@ void main() {
       // Grund, warum er hier steht statt in einem Kommentar allein.
       await aktivitaet('a', 'Konzert');
       await db.aktivitaetAendern(
-          'a', const AktivitaetenCompanion(art: Value('ausflug')));
+        'a',
+        const AktivitaetenCompanion(art: Value('ausflug')),
+      );
       expect(await db.eigeneAktivitaetsarten(), isEmpty);
     });
   });

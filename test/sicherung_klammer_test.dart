@@ -22,14 +22,19 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-        id: 'a1',
-        relativePath: 'x',
-        originalFileName: 'x',
-        type: 'IMAGE',
-        checksum: 'c1',
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024)));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            relativePath: 'x',
+            originalFileName: 'x',
+            type: 'IMAGE',
+            checksum: 'c1',
+            fileCreatedAt: DateTime(2024),
+            importedAt: DateTime(2024),
+          ),
+        );
   });
   tearDown(() => db.close());
 
@@ -38,18 +43,18 @@ void main() {
           .read<int>('n');
 
   Future<void> gutesGesicht(String id) => db.customInsert(
-        'INSERT OR IGNORE INTO faces '
-        '(id, asset_id, box_x, box_y, box_w, box_h, is_ignored) '
-        'VALUES (?,?,?,?,?,?,0)',
-        variables: [
-          Variable(id),
-          const Variable('a1'),
-          const Variable(0.1),
-          const Variable(0.1),
-          const Variable(0.1),
-          const Variable(0.1),
-        ],
-      );
+    'INSERT OR IGNORE INTO faces '
+    '(id, asset_id, box_x, box_y, box_w, box_h, is_ignored) '
+    'VALUES (?,?,?,?,?,?,0)',
+    variables: [
+      Variable(id),
+      const Variable('a1'),
+      const Variable(0.1),
+      const Variable(0.1),
+      const Variable(0.1),
+      const Variable(0.1),
+    ],
+  );
 
   test('eine gescheiterte Anweisung vergiftet die Klammer nicht', () async {
     Object? gefangen;
@@ -57,18 +62,26 @@ void main() {
       await gutesGesicht('davor');
       try {
         // NOT NULL verletzt und ohne `OR IGNORE` – muss werfen.
-        await db.customInsert('INSERT INTO faces (id) VALUES (?)',
-            variables: [const Variable('kaputt')]);
+        await db.customInsert(
+          'INSERT INTO faces (id) VALUES (?)',
+          variables: [const Variable('kaputt')],
+        );
       } catch (e) {
         gefangen = e;
       }
       await gutesGesicht('danach');
     });
 
-    expect(gefangen, isA<SqliteException>(),
-        reason: 'die Anweisung muss wirklich gescheitert sein');
-    expect(await gesichter(), 2,
-        reason: 'was vor und was nach dem Fehlschlag kam, steht beides da');
+    expect(
+      gefangen,
+      isA<SqliteException>(),
+      reason: 'die Anweisung muss wirklich gescheitert sein',
+    );
+    expect(
+      await gesichter(),
+      2,
+      reason: 'was vor und was nach dem Fehlschlag kam, steht beides da',
+    );
   });
 
   test('`OR IGNORE` schluckt eine verletzte Bedingung wortlos', () async {
@@ -76,8 +89,10 @@ void main() {
     // Der Befehl dort trägt `OR IGNORE`, und der wirft gar nicht erst.
     // Wer das nicht weiss, sucht den Fehler später an der falschen Stelle.
     await db.transaction(() async {
-      await db.customInsert('INSERT OR IGNORE INTO faces (id) VALUES (?)',
-          variables: [const Variable('leer')]);
+      await db.customInsert(
+        'INSERT OR IGNORE INTO faces (id) VALUES (?)',
+        variables: [const Variable('leer')],
+      );
       await gutesGesicht('gut');
     });
     expect(await gesichter(), 1, reason: 'nur das gute Gesicht kam an');

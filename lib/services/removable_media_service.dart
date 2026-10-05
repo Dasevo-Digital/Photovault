@@ -40,7 +40,12 @@ class RemovableMediaService {
         if (entity is! Directory) continue;
         final dcim = await _findDcimFolder(entity);
         if (dcim != null) {
-          sources.add(DetectedMediaSource(name: p.basename(entity.path), dcimPath: dcim.path));
+          sources.add(
+            DetectedMediaSource(
+              name: p.basename(entity.path),
+              dcimPath: dcim.path,
+            ),
+          );
         }
       }
     } catch (_) {
@@ -56,7 +61,8 @@ class RemovableMediaService {
   Future<Directory?> _findDcimFolder(Directory volume) async {
     try {
       await for (final entity in volume.list(followLinks: false)) {
-        if (entity is Directory && p.basename(entity.path).toUpperCase() == 'DCIM') {
+        if (entity is Directory &&
+            p.basename(entity.path).toUpperCase() == 'DCIM') {
           return entity;
         }
       }

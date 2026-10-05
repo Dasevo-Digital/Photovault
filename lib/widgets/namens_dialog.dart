@@ -100,11 +100,13 @@ class _NamensDialogState extends State<_NamensDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(
-            onPressed: () => Navigator.pop(context, _steuerung.text),
-            child: Text(widget.uebernehmen)),
+          onPressed: () => Navigator.pop(context, _steuerung.text),
+          child: Text(widget.uebernehmen),
+        ),
       ],
     );
   }
@@ -188,8 +190,10 @@ class MitTextsteuerungen extends StatefulWidget {
 }
 
 class _MitTextsteuerungenState extends State<MitTextsteuerungen> {
-  late final _steuerungen =
-      List.generate(widget.anzahl, (_) => TextEditingController());
+  late final _steuerungen = List.generate(
+    widget.anzahl,
+    (_) => TextEditingController(),
+  );
 
   @override
   void dispose() {

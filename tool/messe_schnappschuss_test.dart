@@ -32,8 +32,14 @@ void main() {
         .select('SELECT id, checksum FROM assets')
         .map((z) => (z['id'] as String, z['checksum'] as String))
         .toList();
-    for (final t in ['faces', 'people', 'spurpunkte', 'reise_aufnahmen',
-                     'aktivitaet_aufnahmen', 'develop_settings']) {
+    for (final t in [
+      'faces',
+      'people',
+      'spurpunkte',
+      'reise_aufnahmen',
+      'aktivitaet_aufnahmen',
+      'develop_settings',
+    ]) {
       final n = roh.select('SELECT count(*) AS n FROM "$t"').first['n'];
       print('  $t: $n');
     }
@@ -41,28 +47,38 @@ void main() {
 
     final temp = Directory.systemTemp.createTempSync('pv_schnapp_');
     addTearDown(() => temp.deleteSync(recursive: true));
-    final ziel = AppDatabase(NativeDatabase(File(p.join(temp.path, 'ziel.sqlite'))));
+    final ziel = AppDatabase(
+      NativeDatabase(File(p.join(temp.path, 'ziel.sqlite'))),
+    );
     addTearDown(ziel.close);
-    final pfade = await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib')));
+    final pfade = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'lib')),
+    );
 
-    await ziel.batch((b) => b.insertAll(ziel.assets, [
-          for (var i = 0; i < aufnahmen.length; i++)
-            AssetsCompanion.insert(
-              id: 'neu-$i',
-              relativePath: 'originals/neu-$i.jpg',
-              originalFileName: 'neu-$i.jpg',
-              type: 'IMAGE',
-              checksum: aufnahmen[i].$2,
-              fileCreatedAt: DateTime(2024),
-              importedAt: DateTime(2024),
-            ),
-        ]));
+    await ziel.batch(
+      (b) => b.insertAll(ziel.assets, [
+        for (var i = 0; i < aufnahmen.length; i++)
+          AssetsCompanion.insert(
+            id: 'neu-$i',
+            relativePath: 'originals/neu-$i.jpg',
+            originalFileName: 'neu-$i.jpg',
+            type: 'IMAGE',
+            checksum: aufnahmen[i].$2,
+            fileCreatedAt: DateTime(2024),
+            importedAt: DateTime(2024),
+          ),
+      ]),
+    );
 
     final uhr = Stopwatch()..start();
-    final zeilen =
-        await BackupService(ziel, pfade).uebernimmAusSchnappschuss(schnappschuss);
+    final zeilen = await BackupService(
+      ziel,
+      pfade,
+    ).uebernimmAusSchnappschuss(schnappschuss);
     uhr.stop();
-    print('\n$zeilen Zeilen in ${uhr.elapsedMilliseconds} ms '
-        '(${(uhr.elapsedMicroseconds / zeilen / 1000).toStringAsFixed(3)} ms je Zeile)');
+    print(
+      '\n$zeilen Zeilen in ${uhr.elapsedMilliseconds} ms '
+      '(${(uhr.elapsedMicroseconds / zeilen / 1000).toStringAsFixed(3)} ms je Zeile)',
+    );
   }, timeout: const Timeout(Duration(minutes: 30)));
 }

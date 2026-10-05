@@ -70,7 +70,9 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
         _error = null;
         _coverIndexByGroup
           ..clear()
-          ..addEntries(groups.indexed.map((e) => MapEntry(e.$1, _defaultCoverIndex(e.$2))));
+          ..addEntries(
+            groups.indexed.map((e) => MapEntry(e.$1, _defaultCoverIndex(e.$2))),
+          );
       });
     } catch (e) {
       if (!mounted) return;
@@ -143,11 +145,9 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       await widget.library.db.transaction(() async {
         for (var i = _groups.length - 1; i >= 0; i--) {
           final gruppe = _groups[i];
-          await widget.library.db.createStack(
-            const Uuid().v4(),
-            [for (final a in gruppe) a.id],
-            gruppe[_coverIndexByGroup[i] ?? 0].id,
-          );
+          await widget.library.db.createStack(const Uuid().v4(), [
+            for (final a in gruppe) a.id,
+          ], gruppe[_coverIndexByGroup[i] ?? 0].id);
         }
       });
       widget.library.serienGeleert();
@@ -172,7 +172,10 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
     final t = AppTexte.of(context);
     final anzahl = _groups.length;
     final ja = await confirmDialog(
-        context, t.stapelAlleFrageTitel, t.stapelAlleFrage(anzahl));
+      context,
+      t.stapelAlleFrageTitel,
+      t.stapelAlleFrage(anzahl),
+    );
     if (ja) await _uebernimmAlle();
   }
 
@@ -193,10 +196,12 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.done_all),
-                label: Text(AppTexte.of(context)
-                    .stapelAlleUebernehmen(_groups.length)),
+                label: Text(
+                  AppTexte.of(context).stapelAlleUebernehmen(_groups.length),
+                ),
               ),
             ),
         ],
@@ -204,10 +209,18 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
             child: Text(
               AppTexte.of(context).stapelErklaerung,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const Divider(height: 16),
@@ -223,8 +236,10 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Text(_error!.satz(AppTexte.of(context)),
-              textAlign: TextAlign.center),
+          child: Text(
+            _error!.satz(AppTexte.of(context)),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -232,7 +247,10 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Text(AppTexte.of(context).stapelKeine, textAlign: TextAlign.center),
+          child: Text(
+            AppTexte.of(context).stapelKeine,
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -250,20 +268,26 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(AppTexte.of(context).stapelSerie(groupIndex + 1, group.length),
-                        style: Theme.of(context).textTheme.titleSmall),
+                    child: Text(
+                      AppTexte.of(
+                        context,
+                      ).stapelSerie(groupIndex + 1, group.length),
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                   ),
                   // Vor dem Verwerfen: erst ansehen, wer blinzelt.
                   TextButton.icon(
-                    onPressed: () => Navigator.of(context, rootNavigator: true).push(
-                      MaterialPageRoute(
-                        builder: (_) => SerienvergleichScreen(
-                            library: widget.library, serie: group),
-                      ),
-                    ),
+                    onPressed: () =>
+                        Navigator.of(context, rootNavigator: true).push(
+                          MaterialPageRoute(
+                            builder: (_) => SerienvergleichScreen(
+                              library: widget.library,
+                              serie: group,
+                            ),
+                          ),
+                        ),
                     icon: const Icon(Icons.face_retouching_natural, size: 18),
-                    label:
-                        Text(AppTexte.of(context).serienvergleichOeffnen),
+                    label: Text(AppTexte.of(context).serienvergleichOeffnen),
                   ),
                   TextButton(
                     onPressed: () => _discardGroup(groupIndex),
@@ -295,13 +319,20 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 border: isCover
-                                    ? Border.all(color: Theme.of(context).colorScheme.primary, width: 3)
+                                    ? Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        width: 3,
+                                      )
                                     : null,
                               ),
                               child: AssetThumbnailTile(
                                 asset: Rasterzeile.aus(asset),
                                 paths: widget.library.paths,
-                                onTap: () => setState(() => _coverIndexByGroup[groupIndex] = index),
+                                onTap: () => setState(
+                                  () => _coverIndexByGroup[groupIndex] = index,
+                                ),
                               ),
                             ),
                           ),
@@ -315,7 +346,9 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
                                 padding: const EdgeInsets.all(AppSpacing.xs),
                                 child: Icon(
                                   isCover ? Icons.star : Icons.star_border,
-                                  color: isCover ? Colors.amber : Colors.white70,
+                                  color: isCover
+                                      ? Colors.amber
+                                      : Colors.white70,
                                   size: 16,
                                 ),
                               ),

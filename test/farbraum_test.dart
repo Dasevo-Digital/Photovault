@@ -43,7 +43,8 @@ void main() {
     expect(
       quelle,
       contains('CGColorSpace(name: CGColorSpace.displayP3)'),
-      reason: 'ohne einen weiten Ausgabefarbraum bettet ImageIO gar kein '
+      reason:
+          'ohne einen weiten Ausgabefarbraum bettet ImageIO gar kein '
           'Profil ein, und jede Aufnahme wird als sRGB gelesen',
     );
   });
@@ -52,14 +53,22 @@ void main() {
     // Der Fehler war nicht, dass sRGB falsch gewesen wäre – sondern dass
     // die Entscheidung dreimal getroffen wurde. Sie steht jetzt einmal.
     final stellen = 'ausgabefarbraum'.allMatches(quelle).length;
-    expect(stellen, greaterThanOrEqualTo(4),
-        reason: 'eine Erklärung und drei Verwendungen');
+    expect(
+      stellen,
+      greaterThanOrEqualTo(4),
+      reason: 'eine Erklärung und drei Verwendungen',
+    );
 
     // Und keine davon legt sich daneben noch einmal selbst fest.
-    final rumpf = quelle.substring(quelle.indexOf('class ImageConverterChannel'));
+    final rumpf = quelle.substring(
+      quelle.indexOf('class ImageConverterChannel'),
+    );
     for (final stelle in _renderAufrufe(rumpf)) {
-      expect(stelle, contains('colorSpace: colorSpace'),
-          reason: 'createCGImage soll den gemeinsamen Raum nehmen:\n$stelle');
+      expect(
+        stelle,
+        contains('colorSpace: colorSpace'),
+        reason: 'createCGImage soll den gemeinsamen Raum nehmen:\n$stelle',
+      );
     }
   });
 
@@ -70,11 +79,15 @@ void main() {
     // Stünde hier P3, zeigte die Vorschau beim Ziehen am Regler etwas
     // anderes als das gerenderte Ergebnis.
     final abschnitt = quelle.substring(
-        quelle.indexOf('func applyCurveAndMixer'),
-        quelle.indexOf('func applyCurveAndMixer') + 900);
+      quelle.indexOf('func applyCurveAndMixer'),
+      quelle.indexOf('func applyCurveAndMixer') + 900,
+    );
     expect(abschnitt, contains('CGColorSpace(name: CGColorSpace.sRGB)'));
-    expect(abschnitt, contains('Arbeitsfarbraum'),
-        reason: 'der Unterschied muss dort stehen, wo er gilt');
+    expect(
+      abschnitt,
+      contains('Arbeitsfarbraum'),
+      reason: 'der Unterschied muss dort stehen, wo er gilt',
+    );
   });
 
   test('die Swift-Liste der RAW-Endungen deckt sich weiter mit Dart', () {
@@ -84,8 +97,12 @@ void main() {
     // Format auf einem Weg entwickelt wird und auf dem anderen nicht.
     final dart = File('lib/services/raw_formats.dart').readAsStringSync();
     final dartEndungen = RegExp(r"'(\.[a-z0-9]+)'")
-        .allMatches(dart.substring(dart.indexOf('rawImageExtensions'),
-            dart.indexOf('/// Dieselben Endungen ohne Punkt')))
+        .allMatches(
+          dart.substring(
+            dart.indexOf('rawImageExtensions'),
+            dart.indexOf('/// Dieselben Endungen ohne Punkt'),
+          ),
+        )
         .map((m) => m.group(1)!)
         .toSet();
     expect(dartEndungen.length, greaterThan(20), reason: 'Liste gefunden?');
@@ -95,8 +112,11 @@ void main() {
       for (final e in dartEndungen)
         if (!swiftAbschnitt.contains('"${e.substring(1)}"')) e,
     ];
-    expect(fehlend, isEmpty,
-        reason: 'diese Endungen kennt nur die Dart-Seite: $fehlend');
+    expect(
+      fehlend,
+      isEmpty,
+      reason: 'diese Endungen kennt nur die Dart-Seite: $fehlend',
+    );
   });
 
   group('Der Weg zur Miniatur behält das Profil', () {
@@ -106,18 +126,26 @@ void main() {
       final bild = img.Image(width: 900, height: 600);
       img.fill(bild, color: img.ColorRgb8(200, 120, 60));
       bild.iccProfile = img.IccProfile(
-          'ICC_PROFILE', img.IccProfileCompression.none,
-          Uint8List.fromList(List<int>.generate(538, (i) => i % 256)));
+        'ICC_PROFILE',
+        img.IccProfileCompression.none,
+        Uint8List.fromList(List<int>.generate(538, (i) => i % 256)),
+      );
       return bild;
     }
 
     test('decodeAndResizeThumbnail wirft es nicht weg', () {
-      final quelle = Uint8List.fromList(img.encodeJpg(mitProfil(), quality: 90));
+      final quelle = Uint8List.fromList(
+        img.encodeJpg(mitProfil(), quality: 90),
+      );
       final ergebnis = decodeAndResizeThumbnail(quelle)!;
       final mini = img.decodeImage(ergebnis.jpegBytes)!;
-      expect(mini.iccProfile, isNotNull,
-          reason: 'sonst ist jede Miniatur eines P3-Fotos stillschweigend '
-              'sRGB – und das Raster zeigt andere Farben als der Betrachter');
+      expect(
+        mini.iccProfile,
+        isNotNull,
+        reason:
+            'sonst ist jede Miniatur eines P3-Fotos stillschweigend '
+            'sRGB – und das Raster zeigt andere Farben als der Betrachter',
+      );
       expect(mini.iccProfile!.data.length, 538);
       // Und die Miniatur ist trotzdem eine Miniatur.
       expect(mini.width, 400);
@@ -127,7 +155,8 @@ void main() {
       final ohne = img.Image(width: 900, height: 600);
       img.fill(ohne, color: img.ColorRgb8(10, 20, 30));
       final ergebnis = decodeAndResizeThumbnail(
-          Uint8List.fromList(img.encodeJpg(ohne, quality: 90)))!;
+        Uint8List.fromList(img.encodeJpg(ohne, quality: 90)),
+      )!;
       expect(img.decodeImage(ergebnis.jpegBytes)!.iccProfile, isNull);
     });
   });

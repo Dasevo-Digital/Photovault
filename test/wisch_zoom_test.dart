@@ -35,11 +35,13 @@ void main() {
 
     test('die Grenzen halten', () {
       expect(
-          wischZoomStufe(
-              startZoom: 8, wischWegY: -10000, groesserZoom: 19),
-          19);
+        wischZoomStufe(startZoom: 8, wischWegY: -10000, groesserZoom: 19),
+        19,
+      );
       expect(
-          wischZoomStufe(startZoom: 8, wischWegY: 10000, kleinsterZoom: 2), 2);
+        wischZoomStufe(startZoom: 8, wischWegY: 10000, kleinsterZoom: 2),
+        2,
+      );
     });
 
     test('Kneifen wird als solches erkannt', () {
@@ -55,7 +57,10 @@ void main() {
   group('An der echten Karte', () {
     late MapController steuerung;
 
-    Future<void> karteAufbauen(WidgetTester tester, {bool mitZoom = true}) async {
+    Future<void> karteAufbauen(
+      WidgetTester tester, {
+      bool mitZoom = true,
+    }) async {
       steuerung = MapController();
       final karte = FlutterMap(
         mapController: steuerung,
@@ -65,44 +70,58 @@ void main() {
         ),
         children: const [],
       );
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: 600,
-            height: 400,
-            child: mitZoom
-                ? WischZoom(steuerung: steuerung, child: karte)
-                : karte,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 600,
+              height: 400,
+              child: mitZoom
+                  ? WischZoom(steuerung: steuerung, child: karte)
+                  : karte,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
     }
 
     /// Genau das, was macOS bei einer Wischgeste auf einer Tastflaeche
     /// schickt: eine Pan-Zoom-Folge, kein Radschritt.
-    Future<void> wischen(WidgetTester tester,
-        {required double wegY, double skala = 1.0}) async {
-      final geste = await tester.createGesture(kind: PointerDeviceKind.trackpad);
+    Future<void> wischen(
+      WidgetTester tester, {
+      required double wegY,
+      double skala = 1.0,
+    }) async {
+      final geste = await tester.createGesture(
+        kind: PointerDeviceKind.trackpad,
+      );
       await geste.panZoomStart(const Offset(300, 200));
       for (var i = 1; i <= 5; i++) {
-        await geste.panZoomUpdate(const Offset(300, 200),
-            pan: Offset(0, wegY * i / 5), scale: skala);
+        await geste.panZoomUpdate(
+          const Offset(300, 200),
+          pan: Offset(0, wegY * i / 5),
+          scale: skala,
+        );
         await tester.pump(const Duration(milliseconds: 16));
       }
       await geste.panZoomEnd();
       await tester.pumpAndSettle();
     }
 
-    testWidgets('ohne WischZoom verschiebt es nur - der Ausgangsbefund',
-        (tester) async {
+    testWidgets('ohne WischZoom verschiebt es nur - der Ausgangsbefund', (
+      tester,
+    ) async {
       // Die Gegenprobe. Ohne sie belegte der Test darunter nur, dass die
       // Karte zoomt - nicht, dass es an dieser Ergaenzung liegt.
       await karteAufbauen(tester, mitZoom: false);
       await wischen(tester, wegY: -100);
       expect(steuerung.camera.zoom, 8.0, reason: 'ab Werk zoomt es nicht');
-      expect(steuerung.camera.center.latitude, isNot(51.0),
-          reason: 'ab Werk verschiebt es');
+      expect(
+        steuerung.camera.center.latitude,
+        isNot(51.0),
+        reason: 'ab Werk verschiebt es',
+      );
     });
 
     testWidgets('mit WischZoom wird gezoomt statt verschoben', (tester) async {
@@ -127,8 +146,11 @@ void main() {
       // sich beide - und die Mitte bliebe faelschlich festgenagelt.
       await karteAufbauen(tester);
       await wischen(tester, wegY: 0, skala: 2.0);
-      expect(steuerung.camera.zoom, greaterThan(8.0),
-          reason: 'das Kneifen selbst muss weiter wirken');
+      expect(
+        steuerung.camera.zoom,
+        greaterThan(8.0),
+        reason: 'das Kneifen selbst muss weiter wirken',
+      );
     });
   });
 }

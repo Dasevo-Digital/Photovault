@@ -81,8 +81,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final richtung = switch ((vorher, nachher)) {
       ('de', 'en') => aiTagVocabularyEnglisch,
       ('en', 'de') => {
-          for (final e in aiTagVocabularyEnglisch.entries) e.value: e.key
-        },
+        for (final e in aiTagVocabularyEnglisch.entries) e.value: e.key,
+      },
       _ => null,
     };
     if (richtung == null || !mounted) return;
@@ -108,9 +108,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(t.spracheVokabularText(betroffen.length, vorhandene.length)),
             if (eigene > 0) ...[
               const SizedBox(height: 10),
-              Text(t.spracheVokabularSelbstAngelegt(eigene),
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              Text(
+                t.spracheVokabularSelbstAngelegt(eigene),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ],
         ),
@@ -209,9 +212,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setzeCartoSchluessel(eingabe);
     if (!mounted) return;
     setState(() {});
-    melde.erfolg(eingabe.isEmpty
-        ? AppTexte.of(context).einstCartoEntfernt
-        : AppTexte.of(context).einstCartoGespeichert);
+    melde.erfolg(
+      eingabe.isEmpty
+          ? AppTexte.of(context).einstCartoEntfernt
+          : AppTexte.of(context).einstCartoGespeichert,
+    );
   }
 
   Future<void> _addAiTagVocabularyTerm() async {
@@ -258,9 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _reloadBackupKeyState() =>
       setState(() => _hasBackupKeyFuture = widget.library.db.hasBackupKey());
   void _reloadBackupSettings() => setState(
-      () => _backupSettingsFuture = widget.library.db.backupSettingsRow());
+    () => _backupSettingsFuture = widget.library.db.backupSettingsRow(),
+  );
   void _reloadTrashSettings() => setState(
-      () => _trashSettingsFuture = widget.library.db.trashSettingsRow());
+    () => _trashSettingsFuture = widget.library.db.trashSettingsRow(),
+  );
 
   Future<void> _refresh() async {
     final belegt = await widget.library.paths.belegung();
@@ -276,9 +283,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Datum in der Schreibweise der aktiven Sprache – 17.08.2026 gegen
   /// 8/17/2026. Vorher stand hier `${d}.${m}.${y}` von Hand zusammengesetzt,
   /// was in jeder Sprache deutsch aussah.
-  String _datum(DateTime zeitpunkt) =>
-      DateFormat.yMd(Localizations.localeOf(context).toString())
-          .format(zeitpunkt);
+  String _datum(DateTime zeitpunkt) => DateFormat.yMd(
+    Localizations.localeOf(context).toString(),
+  ).format(zeitpunkt);
 
   String _datumZeit(DateTime zeitpunkt) {
     final sprache = Localizations.localeOf(context).toString();
@@ -298,7 +305,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       BackupPruefungBrauchtPassphrase() => t.backupPassphraseNoetig,
       BackupOrdnerFehlt() => t.backupOrdnerFehlt,
       AktualisierungsFehler(
-        problem: Aktualisierungsproblem.keineVeroeffentlichungen
+        problem: Aktualisierungsproblem.keineVeroeffentlichungen,
       ) =>
         t.aktualisierungKeineVeroeffentlichungen,
       AktualisierungsFehler(problem: Aktualisierungsproblem.keineVersion) =>
@@ -306,7 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ModellDownloadFehler(
         :final datei,
         erhalten: final erhalten?,
-        erwartet: final erwartet?
+        erwartet: final erwartet?,
       ) =>
         t.downloadPruefsummeFehler(datei, erhalten, erwartet),
       ModellDownloadFehler(:final datei, :final ursache) =>
@@ -386,37 +393,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      builder: (context) => StatefulBuilder(builder: (context, setBlattState) {
-        blattSetState = setBlattState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(AppTexte.of(context).einstModellePruefenTitel,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              Text(AppTexte.of(context).einstModellePruefenLaeuft(laeuft),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        );
-      }),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setBlattState) {
+          blattSetState = setBlattState;
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  AppTexte.of(context).einstModellePruefenTitel,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 8),
+                Text(
+                  AppTexte.of(context).einstModellePruefenLaeuft(laeuft),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     List<Modellbefund> befunde = const [];
     try {
-      befunde =
-          await widget.library.modelDownloadService.pruefeAlleInstallierten(
-        ModelCatalog.all,
-        fortschritt: (datei) {
-          laeuft = datei;
-          blattSetState?.call(() {});
-        },
-      );
+      befunde = await widget.library.modelDownloadService
+          .pruefeAlleInstallierten(
+            ModelCatalog.all,
+            fortschritt: (datei) {
+              laeuft = datei;
+              blattSetState?.call(() {});
+            },
+          );
     } finally {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
@@ -431,7 +445,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     if (auffaellig.isEmpty) {
       melde.erfolg(
-          AppTexte.of(context).einstModellePruefenAlleGut(befunde.length));
+        AppTexte.of(context).einstModellePruefenAlleGut(befunde.length),
+      );
       return;
     }
     // Ein Fund gehört nicht in eine Meldung, die nach acht Sekunden
@@ -451,15 +466,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Text(
-                    '${b.dateiname} – ${_zustandstext(context, b.zustand)}',
-                    style: Theme.of(context).textTheme.bodySmall),
+                  '${b.dateiname} – ${_zustandstext(context, b.zustand)}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
           ],
         ),
         actions: [
           FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppTexte.of(context).allgSchliessen)),
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppTexte.of(context).allgSchliessen),
+          ),
         ],
       ),
     );
@@ -469,8 +486,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       switch (zustand) {
         Modellzustand.fehlt => AppTexte.of(context).einstModellZustandFehlt,
         Modellzustand.zuKurz => AppTexte.of(context).einstModellZustandZuKurz,
-        Modellzustand.weichtAb =>
-          AppTexte.of(context).einstModellZustandWeichtAb,
+        Modellzustand.weichtAb => AppTexte.of(
+          context,
+        ).einstModellZustandWeichtAb,
         // Kommt hier nicht an – `auffaellig` filtert ihn weg. Ein
         // `default` würde einen neuen Zustand stillschweigend schlucken.
         Modellzustand.stimmt => '',
@@ -489,41 +507,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      builder: (context) => StatefulBuilder(builder: (context, setSheetState) {
-        sheetSetState = setSheetState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                  AppTexte.of(context).einstModellLaedt(
-                      modellTitel(AppTexte.of(context), entry.id)),
-                  style: Theme.of(context).textTheme.titleMedium),
-              // Bei einer Reihe steht sonst zwoelfmal dasselbe Fenster da
-              // und man weiss nicht, wie weit es noch ist.
-              if (_reihenstand != null) ...[
-                const SizedBox(height: 4),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          sheetSetState = setSheetState;
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Text(
-                  AppTexte.of(context).einstAlleModelleLaeuft(
-                      _reihenstand!.$1, _reihenstand!.$2),
-                  style: Theme.of(context).textTheme.bodySmall,
+                  AppTexte.of(context).einstModellLaedt(
+                    modellTitel(AppTexte.of(context), entry.id),
+                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
+                // Bei einer Reihe steht sonst zwoelfmal dasselbe Fenster da
+                // und man weiss nicht, wie weit es noch ist.
+                if (_reihenstand != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    AppTexte.of(context).einstAlleModelleLaeuft(
+                      _reihenstand!.$1,
+                      _reihenstand!.$2,
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: progress > 0 ? progress : null),
+                const SizedBox(height: 8),
+                Text('${(progress * 100).toStringAsFixed(0)} %'),
               ],
-              const SizedBox(height: 12),
-              LinearProgressIndicator(value: progress > 0 ? progress : null),
-              const SizedBox(height: 8),
-              Text('${(progress * 100).toStringAsFixed(0)} %'),
-            ],
-          ),
-        );
-      }),
+            ),
+          );
+        },
+      ),
     );
 
     try {
-      await for (final p
-          in widget.library.modelDownloadService.download(entry)) {
+      await for (final p in widget.library.modelDownloadService.download(
+        entry,
+      )) {
         progress = p.fraction;
         sheetSetState?.call(() {});
       }
@@ -576,25 +601,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      builder: (context) => StatefulBuilder(builder: (context, setSheetState) {
-        sheetSetState = setSheetState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(AppTexte.of(context).einstGeoLaedt,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                  value: _geoDataProgress > 0 ? _geoDataProgress : null),
-              const SizedBox(height: 8),
-              Text('${(_geoDataProgress * 100).toStringAsFixed(0)} %'),
-            ],
-          ),
-        );
-      }),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          sheetSetState = setSheetState;
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  AppTexte.of(context).einstGeoLaedt,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: _geoDataProgress > 0 ? _geoDataProgress : null,
+                ),
+                const SizedBox(height: 8),
+                Text('${(_geoDataProgress * 100).toStringAsFixed(0)} %'),
+              ],
+            ),
+          );
+        },
+      ),
     );
 
     try {
@@ -643,10 +673,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // Den tatsächlichen Grund nennen statt auf die Internetverbindung
         // zu raten: Beim ersten Fehlerbericht bestand die Verbindung
         // durchaus, die Abfrage war schlicht falsch gestellt.
-        setState(() => _aktualisierungsfehler = AppTexte.of(context)
-            .einstAktualisierungFehler(e is DioException
-                ? (e.message ?? e.type.name)
-                : _fehlertext(context, e)));
+        setState(
+          () => _aktualisierungsfehler = AppTexte.of(context)
+              .einstAktualisierungFehler(
+                e is DioException
+                    ? (e.message ?? e.type.name)
+                    : _fehlertext(context, e),
+              ),
+        );
       }
     } finally {
       if (mounted) setState(() => _pruefeAktualisierung = false);
@@ -658,41 +692,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dialogMessage: AppTexte.of(context).einstUeberwachtAuswahl,
     );
     if (picked == null || !mounted) return;
-    await widget.library.db
-        .setzeUeberwachtenOrdner(pfad: picked.path, token: picked.token);
+    await widget.library.db.setzeUeberwachtenOrdner(
+      pfad: picked.path,
+      token: picked.token,
+    );
     if (!mounted) return;
-    setState(() =>
-        _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner());
+    setState(
+      () => _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner(),
+    );
     final neue = await widget.library.pruefeUeberwachtenOrdner();
     if (!mounted) return;
-    melde.hinweis(neue > 0
-        ? AppTexte.of(context).einstUeberwachtUebernommen(neue)
-        : AppTexte.of(context).einstUeberwachtNichtsNeues);
+    melde.hinweis(
+      neue > 0
+          ? AppTexte.of(context).einstUeberwachtUebernommen(neue)
+          : AppTexte.of(context).einstUeberwachtNichtsNeues,
+    );
   }
 
   Future<void> _beendeUeberwachung() async {
     await widget.library.db.setzeUeberwachtenOrdner(pfad: null, token: null);
     if (!mounted) return;
-    setState(() =>
-        _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner());
+    setState(
+      () => _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner(),
+    );
   }
 
   Future<void> _wechsleBibliothek(BibliothekMitZustand ziel) async {
     final bestaetigt = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title:
-            Text(AppTexte.of(context).einstBibWechselnTitel(ziel.eintrag.name)),
-        content: Text(
-          AppTexte.of(context).einstBibWechselnText,
+        title: Text(
+          AppTexte.of(context).einstBibWechselnTitel(ziel.eintrag.name),
         ),
+        content: Text(AppTexte.of(context).einstBibWechselnText),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).einstBibWechselnAktion)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).einstBibWechselnAktion),
+          ),
         ],
       ),
     );
@@ -726,9 +767,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await LibraryLocation.fuegeHinzu(picked);
     if (!mounted) return;
     setState(() => _bibliothekenFuture = LibraryLocation.bekannte());
-    melde.erfolg(vorhanden
-        ? AppTexte.of(context).einstBibBestehendHinzugefuegt
-        : AppTexte.of(context).einstBibLeerHinzugefuegt);
+    melde.erfolg(
+      vorhanden
+          ? AppTexte.of(context).einstBibBestehendHinzugefuegt
+          : AppTexte.of(context).einstBibLeerHinzugefuegt,
+    );
   }
 
   /// Streicht einen Eintrag aus der Liste. Die Fotos bleiben, wo sie sind.
@@ -736,18 +779,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final bestaetigt = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title:
-            Text(AppTexte.of(context).einstBibEntfernenTitel(b.eintrag.name)),
-        content: Text(
-          AppTexte.of(context).einstBibEntfernenText,
+        title: Text(
+          AppTexte.of(context).einstBibEntfernenTitel(b.eintrag.name),
         ),
+        content: Text(AppTexte.of(context).einstBibEntfernenText),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).allgEntfernen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).allgEntfernen),
+          ),
         ],
       ),
     );
@@ -792,16 +836,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppTexte.of(context).einstSpeicherortZuruecksetzenTitel),
-        content: Text(
-          AppTexte.of(context).einstSpeicherortZuruecksetzenText,
-        ),
+        content: Text(AppTexte.of(context).einstSpeicherortZuruecksetzenText),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).einstZuruecksetzen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).einstZuruecksetzen),
+          ),
         ],
       ),
     );
@@ -841,35 +885,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       barrierDismissible: false,
       builder: (context) {
         Widget inhalt(BibliotheksVerschiebefortschritt? wert) => Semantics(
-              label: loadingText,
-              value: wert?.anteil == null
-                  ? null
-                  : '${(wert!.anteil! * 100).round()} %',
-              child: SizedBox(
-                width: 360,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(loadingText),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(value: wert?.anteil),
-                    if (wert != null) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        AppTexte.of(context).einstSpeicherortFortschritt(
-                          groessentext(wert.kopierteBytes),
-                          groessentext(wert.gesamtBytes),
-                          wert.kopierteDateien,
-                          wert.gesamtDateien,
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
+          label: loadingText,
+          value: wert?.anteil == null
+              ? null
+              : '${(wert!.anteil! * 100).round()} %',
+          child: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(loadingText),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(value: wert?.anteil),
+                if (wert != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    AppTexte.of(context).einstSpeicherortFortschritt(
+                      groessentext(wert.kopierteBytes),
+                      groessentext(wert.gesamtBytes),
+                      wert.kopierteDateien,
+                      wert.gesamtDateien,
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
 
         return AlertDialog(
           content: progress == null
@@ -894,8 +938,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(restartMessage!),
           actions: [
             FilledButton(
-                onPressed: () => exit(0),
-                child: Text(AppTexte.of(context).allgSchliessen)),
+              onPressed: () => exit(0),
+              child: Text(AppTexte.of(context).allgSchliessen),
+            ),
           ],
         ),
       );
@@ -940,8 +985,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _openLockedFolder() async {
     final ok = await ensureVaultUnlocked(context, widget.library);
     if (!ok || !mounted) return;
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => LockedFolderScreen(library: widget.library)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockedFolderScreen(library: widget.library),
+      ),
+    );
   }
 
   Future<void> _changePin() async {
@@ -959,16 +1007,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppTexte.of(context).einstGesperrtAufloesenTitel),
-        content: Text(
-          AppTexte.of(context).einstGesperrtAufloesenText,
-        ),
+        content: Text(AppTexte.of(context).einstGesperrtAufloesenText),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).allgEntfernen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).allgEntfernen),
+          ),
         ],
       ),
     );
@@ -1016,13 +1064,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String? passphrase;
     if (await File(p.join(wurzel, 'vault.key')).exists()) {
       if (!mounted) return;
-      passphrase = await showEnterPassphraseDialog(context,
-          title: AppTexte.of(context).einstBackupPassphraseEingeben);
+      passphrase = await showEnterPassphraseDialog(
+        context,
+        title: AppTexte.of(context).einstBackupPassphraseEingeben,
+      );
       if (passphrase == null) return;
     }
 
-    final generationen =
-        await widget.library.backupService.autoBackupGenerations(wurzel);
+    final generationen = await widget.library.backupService
+        .autoBackupGenerations(wurzel);
     if (!mounted) return;
     final generation = await _waehleWiederherstellungspunkt(generationen);
     if (!mounted) return;
@@ -1039,9 +1089,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: t.einstBackupWiederherstellenLaeuft,
           fehlerText: (e) => _fehlertext(dialogContext, e),
           stream: widget.library.backupService
-              .restoreFromBackup(wurzel, widget.library.importService,
-                  passphrase: passphrase,
-                  generationSnapshotPath: generation?.snapshotPath)
+              .restoreFromBackup(
+                wurzel,
+                widget.library.importService,
+                passphrase: passphrase,
+                generationSnapshotPath: generation?.snapshotPath,
+              )
               .map((p) => _wiederherstellZeile(t, p)),
         );
       },
@@ -1053,7 +1106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Backups existieren keine Generationen; dann bleibt der zusätzliche
   /// Dialog bewusst aus dem Weg.
   Future<BackupGeneration?> _waehleWiederherstellungspunkt(
-      List<BackupGeneration> generationen) async {
+    List<BackupGeneration> generationen,
+  ) async {
     if (generationen.isEmpty) return null;
     final t = AppTexte.of(context);
     return showModalBottomSheet<BackupGeneration?>(
@@ -1065,9 +1119,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
-              child: Text(t.einstBackupWiederherstellungspunktTitel,
-                  style: Theme.of(sheetContext).textTheme.titleLarge),
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: Text(
+                t.einstBackupWiederherstellungspunktTitel,
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.restore),
@@ -1079,8 +1139,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             for (final generation in generationen)
               ListTile(
                 leading: const Icon(Icons.history),
-                title: Text(t.einstBackupGenerationZeit(
-                    _datumZeit(generation.createdAt))),
+                title: Text(
+                  t.einstBackupGenerationZeit(_datumZeit(generation.createdAt)),
+                ),
                 subtitle: Text(t.einstBackupGenerationText),
                 onTap: () => Navigator.pop(sheetContext, generation),
               ),
@@ -1099,8 +1160,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String? passphrase;
     if (await File(p.join(wurzel, 'vault.key')).exists()) {
       if (!mounted) return;
-      passphrase = await showEnterPassphraseDialog(context,
-          title: AppTexte.of(context).einstBackupPassphraseEingeben);
+      passphrase = await showEnterPassphraseDialog(
+        context,
+        title: AppTexte.of(context).einstBackupPassphraseEingeben,
+      );
       if (passphrase == null) return;
     }
     if (!mounted) return;
@@ -1112,9 +1175,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (dialog) => ProgressDialog(
         title: t.einstBackupPruefungLaeuft,
         fehlerText: (e) => _fehlertext(dialog, e),
-        stream: BackupPruefdienst()
-            .pruefe(wurzel, passphrase: passphrase)
-            .map((fortschritt) {
+        stream: BackupPruefdienst().pruefe(wurzel, passphrase: passphrase).map((
+          fortschritt,
+        ) {
           letzter = fortschritt;
           return _backupPruefZeile(t, fortschritt);
         }),
@@ -1124,8 +1187,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (letzter!.erfolgreich) {
       melde.erfolg(t.einstBackupPruefungErfolgreich(letzter!.gueltig));
     } else {
-      melde.warnung(t.einstBackupPruefungFehler(
-          letzter!.gueltig, letzter!.fehlend, letzter!.beschaedigt));
+      melde.warnung(
+        t.einstBackupPruefungFehler(
+          letzter!.gueltig,
+          letzter!.fehlend,
+          letzter!.beschaedigt,
+        ),
+      );
     }
   }
 
@@ -1149,16 +1217,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppTexte.of(context).einstBackupEntschluesselnTitel),
-        content: Text(
-          AppTexte.of(context).einstBackupEntschluesselnText,
-        ),
+        content: Text(AppTexte.of(context).einstBackupEntschluesselnText),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).allgEntfernen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).allgEntfernen),
+          ),
         ],
       ),
     );
@@ -1197,126 +1265,128 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Zierde: Sie ist das, wonach die Suche oben sucht, und der einzige
   /// Hinweis darauf, was in einer zugeklappten Gruppe steckt.
   List<_Gruppe> _gruppen(AppTexte t) => [
-        _Gruppe(
-          icon: Icons.contrast_outlined,
-          titel: t.einstAbschnittErscheinungsbild,
-          beschreibung: t.einstBeschrErscheinungsbild,
-          inhalt: _gruppeErscheinungsbild,
-        ),
-        _Gruppe(
-          icon: Icons.translate_outlined,
-          titel: t.spracheTitel,
-          beschreibung: t.einstBeschrSprache,
-          inhalt: _gruppeSprache,
-        ),
-        _Gruppe(
-          icon: Icons.folder_special_outlined,
-          titel: t.einstUeberwachtTitel,
-          beschreibung: t.einstBeschrUeberwacht,
-          inhalt: _gruppeUeberwacht,
-        ),
-        _Gruppe(
-          icon: Icons.photo_library_outlined,
-          titel: t.einstBibListe,
-          beschreibung: t.einstBeschrBibliotheken,
-          inhalt: _gruppeBibliotheken,
-        ),
-        _Gruppe(
-          icon: Icons.sd_storage_outlined,
-          titel: t.einstSpeicherortTitel,
-          beschreibung: t.einstBeschrSpeicherort,
-          inhalt: _gruppeSpeicherort,
-        ),
-        _Gruppe(
-          icon: Icons.memory_outlined,
-          titel: t.einstAbschnittModelle,
-          beschreibung: t.einstBeschrModelle,
-          inhalt: _gruppeModelle,
-        ),
-        _Gruppe(
-          icon: Icons.autorenew_outlined,
-          titel: t.einstAbschnittHintergrund,
-          beschreibung: t.einstBeschrHintergrund,
-          inhalt: _gruppeHintergrund,
-        ),
-        _Gruppe(
-          icon: Icons.sell_outlined,
-          titel: t.einstAbschnittVokabular,
-          beschreibung: t.einstBeschrVokabular,
-          inhalt: _gruppeVokabular,
-        ),
-        _Gruppe(
-          icon: Icons.public_outlined,
-          titel: t.einstAbschnittStandortdaten,
-          beschreibung: t.einstBeschrStandortdaten,
-          inhalt: _gruppeStandortdaten,
-        ),
-        _Gruppe(
-          icon: Icons.map_outlined,
-          titel: t.einstAbschnittKarte,
-          beschreibung: t.einstBeschrKarte,
-          inhalt: _gruppeKarte,
-        ),
-        _Gruppe(
-          icon: Icons.lock_outline,
-          titel: t.einstAbschnittGesperrterOrdner,
-          beschreibung: t.einstBeschrGesperrt,
-          inhalt: _gruppeGesperrt,
-        ),
-        _Gruppe(
-          icon: Icons.key_outlined,
-          titel: t.einstBackupVerschluesselungTitel,
-          beschreibung: t.einstBeschrBackupSchluessel,
-          inhalt: _gruppeBackupSchluessel,
-        ),
-        _Gruppe(
-          icon: Icons.cloud_upload_outlined,
-          titel: t.einstAbschnittManuellesBackup,
-          beschreibung: t.einstBeschrBackupManuell,
-          inhalt: _gruppeBackupManuell,
-        ),
-        _Gruppe(
-          icon: Icons.schedule_outlined,
-          titel: t.einstAbschnittAutoBackup,
-          beschreibung: t.einstBeschrBackupAuto,
-          inhalt: _gruppeBackupAuto,
-        ),
-        _Gruppe(
-          icon: Icons.delete_sweep_outlined,
-          titel: t.einstAbschnittPapierkorb,
-          beschreibung: t.einstBeschrPapierkorb,
-          inhalt: _gruppePapierkorb,
-        ),
-        _Gruppe(
-          icon: Icons.warning_amber_outlined,
-          titel: t.einstAbschnittGefahrenzone,
-          beschreibung: t.einstBeschrGefahr,
-          inhalt: _gruppeGefahr,
-        ),
-        // Die Tafel gab es schon; erreichbar war sie nur über „?" – eine
-        // Taste, die nirgends stand. Hier ist sie auffindbar, und die
-        // Suche oben findet sie mit (Befund der 19. Prüfrunde).
-        _Gruppe(
-          icon: Icons.keyboard_outlined,
-          titel: t.kuerzelTitel,
-          beschreibung: t.einstBeschrKuerzel,
-          inhalt: _gruppeKuerzel,
-        ),
-        _Gruppe(
-          icon: Icons.info_outline,
-          titel: t.einstUeberTitel,
-          beschreibung: t.einstBeschrUeber,
-          inhalt: _gruppeUeber,
-        ),
-      ];
+    _Gruppe(
+      icon: Icons.contrast_outlined,
+      titel: t.einstAbschnittErscheinungsbild,
+      beschreibung: t.einstBeschrErscheinungsbild,
+      inhalt: _gruppeErscheinungsbild,
+    ),
+    _Gruppe(
+      icon: Icons.translate_outlined,
+      titel: t.spracheTitel,
+      beschreibung: t.einstBeschrSprache,
+      inhalt: _gruppeSprache,
+    ),
+    _Gruppe(
+      icon: Icons.folder_special_outlined,
+      titel: t.einstUeberwachtTitel,
+      beschreibung: t.einstBeschrUeberwacht,
+      inhalt: _gruppeUeberwacht,
+    ),
+    _Gruppe(
+      icon: Icons.photo_library_outlined,
+      titel: t.einstBibListe,
+      beschreibung: t.einstBeschrBibliotheken,
+      inhalt: _gruppeBibliotheken,
+    ),
+    _Gruppe(
+      icon: Icons.sd_storage_outlined,
+      titel: t.einstSpeicherortTitel,
+      beschreibung: t.einstBeschrSpeicherort,
+      inhalt: _gruppeSpeicherort,
+    ),
+    _Gruppe(
+      icon: Icons.memory_outlined,
+      titel: t.einstAbschnittModelle,
+      beschreibung: t.einstBeschrModelle,
+      inhalt: _gruppeModelle,
+    ),
+    _Gruppe(
+      icon: Icons.autorenew_outlined,
+      titel: t.einstAbschnittHintergrund,
+      beschreibung: t.einstBeschrHintergrund,
+      inhalt: _gruppeHintergrund,
+    ),
+    _Gruppe(
+      icon: Icons.sell_outlined,
+      titel: t.einstAbschnittVokabular,
+      beschreibung: t.einstBeschrVokabular,
+      inhalt: _gruppeVokabular,
+    ),
+    _Gruppe(
+      icon: Icons.public_outlined,
+      titel: t.einstAbschnittStandortdaten,
+      beschreibung: t.einstBeschrStandortdaten,
+      inhalt: _gruppeStandortdaten,
+    ),
+    _Gruppe(
+      icon: Icons.map_outlined,
+      titel: t.einstAbschnittKarte,
+      beschreibung: t.einstBeschrKarte,
+      inhalt: _gruppeKarte,
+    ),
+    _Gruppe(
+      icon: Icons.lock_outline,
+      titel: t.einstAbschnittGesperrterOrdner,
+      beschreibung: t.einstBeschrGesperrt,
+      inhalt: _gruppeGesperrt,
+    ),
+    _Gruppe(
+      icon: Icons.key_outlined,
+      titel: t.einstBackupVerschluesselungTitel,
+      beschreibung: t.einstBeschrBackupSchluessel,
+      inhalt: _gruppeBackupSchluessel,
+    ),
+    _Gruppe(
+      icon: Icons.cloud_upload_outlined,
+      titel: t.einstAbschnittManuellesBackup,
+      beschreibung: t.einstBeschrBackupManuell,
+      inhalt: _gruppeBackupManuell,
+    ),
+    _Gruppe(
+      icon: Icons.schedule_outlined,
+      titel: t.einstAbschnittAutoBackup,
+      beschreibung: t.einstBeschrBackupAuto,
+      inhalt: _gruppeBackupAuto,
+    ),
+    _Gruppe(
+      icon: Icons.delete_sweep_outlined,
+      titel: t.einstAbschnittPapierkorb,
+      beschreibung: t.einstBeschrPapierkorb,
+      inhalt: _gruppePapierkorb,
+    ),
+    _Gruppe(
+      icon: Icons.warning_amber_outlined,
+      titel: t.einstAbschnittGefahrenzone,
+      beschreibung: t.einstBeschrGefahr,
+      inhalt: _gruppeGefahr,
+    ),
+    // Die Tafel gab es schon; erreichbar war sie nur über „?" – eine
+    // Taste, die nirgends stand. Hier ist sie auffindbar, und die
+    // Suche oben findet sie mit (Befund der 19. Prüfrunde).
+    _Gruppe(
+      icon: Icons.keyboard_outlined,
+      titel: t.kuerzelTitel,
+      beschreibung: t.einstBeschrKuerzel,
+      inhalt: _gruppeKuerzel,
+    ),
+    _Gruppe(
+      icon: Icons.info_outline,
+      titel: t.einstUeberTitel,
+      beschreibung: t.einstBeschrUeber,
+      inhalt: _gruppeUeber,
+    ),
+  ];
 
   List<Widget> _gruppeKuerzel() => const [
-        Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-          child: Tastenkuerzeltafel(),
-        ),
-      ];
+    Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Tastenkuerzeltafel(),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1373,605 +1443,635 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   List<Widget> _gruppeErscheinungsbild() => [
-        Card(
-          child: StreamBuilder<AppSettingsData?>(
-            stream: widget.library.db.watchAppSettings(),
-            builder: (context, snapshot) {
-              final mode = themeModeFromString(snapshot.data?.themeMode);
-              return ListTile(
-                leading: const Icon(Icons.contrast_outlined),
-                title: Text(AppTexte.of(context).einstDesign),
-                subtitle: SegmentedButton<ThemeMode>(
-                  segments: [
-                    ButtonSegment(
-                        value: ThemeMode.light,
-                        label: Text(AppTexte.of(context).einstDesignHell),
-                        icon: const Icon(Icons.light_mode_outlined)),
-                    ButtonSegment(
-                        value: ThemeMode.dark,
-                        label: Text(AppTexte.of(context).einstDesignDunkel),
-                        icon: const Icon(Icons.dark_mode_outlined)),
-                    ButtonSegment(
-                        value: ThemeMode.system,
-                        label: Text(AppTexte.of(context).einstDesignSystem),
-                        icon: const Icon(Icons.brightness_auto_outlined)),
-                  ],
-                  selected: {mode},
-                  onSelectionChanged: (selection) => widget.library.db
-                      .setThemeMode(themeModeToString(selection.first)),
+    Card(
+      child: StreamBuilder<AppSettingsData?>(
+        stream: widget.library.db.watchAppSettings(),
+        builder: (context, snapshot) {
+          final mode = themeModeFromString(snapshot.data?.themeMode);
+          return ListTile(
+            leading: const Icon(Icons.contrast_outlined),
+            title: Text(AppTexte.of(context).einstDesign),
+            subtitle: SegmentedButton<ThemeMode>(
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text(AppTexte.of(context).einstDesignHell),
+                  icon: const Icon(Icons.light_mode_outlined),
                 ),
-              );
-            },
-          ),
-        ),
-        // Die Schwebe-Vorschau steht beim Erscheinungsbild und nicht bei
-        // den Videos: Sie aendert nicht, wie ein Video abgespielt wird,
-        // sondern wie sich die Kachelwand anfuehlt.
-        Card(
-          child: StreamBuilder<AppSettingsData?>(
-            stream: widget.library.db.watchAppSettings(),
-            builder: (context, snapshot) {
-              final t = AppTexte.of(context);
-              return SwitchListTile(
-                secondary: const Icon(Icons.slow_motion_video_outlined),
-                title: Text(t.einstSchwebeVorschauTitel),
-                subtitle: Text(t.einstSchwebeVorschauText),
-                value: snapshot.data?.schwebeVorschau ?? true,
-                onChanged: (an) => widget.library.db.setzeSchwebeVorschau(an),
-              );
-            },
-          ),
-        ),
-      ];
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text(AppTexte.of(context).einstDesignDunkel),
+                  icon: const Icon(Icons.dark_mode_outlined),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text(AppTexte.of(context).einstDesignSystem),
+                  icon: const Icon(Icons.brightness_auto_outlined),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (selection) => widget.library.db.setThemeMode(
+                themeModeToString(selection.first),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+    // Die Schwebe-Vorschau steht beim Erscheinungsbild und nicht bei
+    // den Videos: Sie aendert nicht, wie ein Video abgespielt wird,
+    // sondern wie sich die Kachelwand anfuehlt.
+    Card(
+      child: StreamBuilder<AppSettingsData?>(
+        stream: widget.library.db.watchAppSettings(),
+        builder: (context, snapshot) {
+          final t = AppTexte.of(context);
+          return SwitchListTile(
+            secondary: const Icon(Icons.slow_motion_video_outlined),
+            title: Text(t.einstSchwebeVorschauTitel),
+            subtitle: Text(t.einstSchwebeVorschauText),
+            value: snapshot.data?.schwebeVorschau ?? true,
+            onChanged: (an) => widget.library.db.setzeSchwebeVorschau(an),
+          );
+        },
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeSprache() => [
-        Card(
-          child: StreamBuilder<AppSettingsData?>(
-            stream: widget.library.db.watchAppSettings(),
-            builder: (context, snapshot) {
-              final t = AppTexte.of(context);
-              final aktuell = snapshot.data?.sprache ?? 'system';
-              return ListTile(
-                leading: const Icon(Icons.translate_outlined),
-                title: Text(t.spracheTitel),
-                isThreeLine: true,
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 6),
-                    SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(
-                            value: 'system', label: Text(t.spracheSystem)),
-                        // Sprachnamen stehen bewusst in ihrer eigenen Sprache
-                        // da – wer die Oberfläche nicht versteht, findet
-                        // "English" trotzdem, "Englisch" womöglich nicht.
-                        ButtonSegment(
-                            value: 'de', label: Text(t.spracheDeutsch)),
-                        ButtonSegment(
-                            value: 'en', label: Text(t.spracheEnglisch)),
-                      ],
-                      selected: {aktuell},
-                      showSelectedIcon: false,
-                      onSelectionChanged: (auswahl) =>
-                          _wechsleSprache(auswahl.first),
+    Card(
+      child: StreamBuilder<AppSettingsData?>(
+        stream: widget.library.db.watchAppSettings(),
+        builder: (context, snapshot) {
+          final t = AppTexte.of(context);
+          final aktuell = snapshot.data?.sprache ?? 'system';
+          return ListTile(
+            leading: const Icon(Icons.translate_outlined),
+            title: Text(t.spracheTitel),
+            isThreeLine: true,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 6),
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                      value: 'system',
+                      label: Text(t.spracheSystem),
                     ),
-                    const SizedBox(height: 6),
-                    Text(t.spracheHinweis,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant)),
+                    // Sprachnamen stehen bewusst in ihrer eigenen Sprache
+                    // da – wer die Oberfläche nicht versteht, findet
+                    // "English" trotzdem, "Englisch" womöglich nicht.
+                    ButtonSegment(value: 'de', label: Text(t.spracheDeutsch)),
+                    ButtonSegment(value: 'en', label: Text(t.spracheEnglisch)),
                   ],
+                  selected: {aktuell},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (auswahl) =>
+                      _wechsleSprache(auswahl.first),
                 ),
-              );
-            },
-          ),
-        ),
-      ];
+                const SizedBox(height: 6),
+                Text(
+                  t.spracheHinweis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeUeberwacht() => [
-        Card(
-          child: FutureBuilder<({String pfad, String? token})?>(
-            future: _ueberwachterOrdnerFuture,
-            builder: (context, snapshot) {
-              final eintrag = snapshot.data;
-              return Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.folder_special_outlined),
-                    title: Text(eintrag == null
-                        ? AppTexte.of(context).einstUeberwachtKeiner
-                        : eintrag.pfad),
-                    subtitle: Text(eintrag == null
-                        ? AppTexte.of(context).einstUeberwachtErklaerung
-                        : AppTexte.of(context).einstUeberwachtAktiv),
-                    isThreeLine: eintrag == null,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _waehleUeberwachtenOrdner,
-                            icon: const Icon(Icons.folder_open_outlined),
-                            label: Text(eintrag == null
-                                ? AppTexte.of(context).einstUeberwachtWaehlen
-                                : AppTexte.of(context)
-                                    .einstUeberwachtAndererWaehlen),
-                          ),
-                        ),
-                        if (eintrag != null) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _beendeUeberwachung,
-                              icon: const Icon(Icons.stop_circle_outlined),
-                              label: Text(
-                                  AppTexte.of(context).einstUeberwachtBeenden),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppeBibliotheken() => [
-        Card(
-          child: FutureBuilder<List<BibliothekMitZustand>>(
-            future: _bibliothekenFuture,
-            builder: (context, snapshot) {
-              final eintraege = snapshot.data;
-              if (eintraege == null) {
-                return const Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
-                  child:
-                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                );
-              }
-              return Column(
-                children: [
-                  for (final b in eintraege)
-                    ListTile(
-                      leading: Icon(
-                        b.istAktiv
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
-                        color: b.istAktiv
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      title: Text(
-                        b.eintrag.name,
-                        style: b.erreichbar
-                            ? null
-                            : TextStyle(color: Theme.of(context).disabledColor),
-                      ),
-                      subtitle: Text(
-                        b.erreichbar
-                            ? b.eintrag.path
-                            : AppTexte.of(context).einstBibNichtGefunden,
-                      ),
-                      // `enabled` steuert die Einfärbung, nicht die
-                      // Antippbarkeit: Die aktive Bibliothek ist zwar nicht
-                      // antippbar (man ist ja schon drin), darf aber nicht
-                      // ausgegraut erscheinen – ausgegraut heißt hier
-                      // "nicht erreichbar".
-                      enabled: b.erreichbar,
-                      onTap: b.erreichbar && !b.istAktiv
-                          ? () => _wechsleBibliothek(b)
-                          : null,
-                      // Der Standardordner lässt sich nicht entfernen: Er
-                      // wird erzeugt, nicht gespeichert, und es gibt ihn
-                      // immer. Ihm einen Knopf zu geben, der nichts tut,
-                      // war der Fehler der ersten Fassung.
-                      trailing: b.istAktiv
-                          ? Text(AppTexte.of(context).einstBibAktiv)
-                          : b.entfernbar
-                              ? IconButton(
-                                  icon: const Icon(Icons.playlist_remove),
-                                  tooltip: AppTexte.of(context)
-                                      .einstBibAusListeEntfernen,
-                                  onPressed: () => _entferneBibliothek(b),
-                                )
-                              : Text(
-                                  AppTexte.of(context).einstBibImmerVorhanden,
-                                  style: const TextStyle(fontSize: 12)),
-                    ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _bibliothekHinzufuegen,
-                            icon: const Icon(Icons.library_add_outlined),
-                            label:
-                                Text(AppTexte.of(context).einstBibHinzufuegen),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                    child: Text(
-                      AppTexte.of(context).einstBibWechselHinweis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppeSpeicherort() => [
-        Card(
-          child: Column(
+    Card(
+      child: FutureBuilder<({String pfad, String? token})?>(
+        future: _ueberwachterOrdnerFuture,
+        builder: (context, snapshot) {
+          final eintrag = snapshot.data;
+          return Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(AppTexte.of(context).einstSpeicherort),
-                subtitle: Text(widget.library.paths.root.path),
-                trailing: IconButton(
-                  icon: const Icon(Icons.open_in_new),
-                  tooltip: AppTexte.of(context).einstImFinderAnzeigen,
-                  onPressed: () =>
-                      _openInFinder(widget.library.paths.root.path),
+                leading: const Icon(Icons.folder_special_outlined),
+                title: Text(
+                  eintrag == null
+                      ? AppTexte.of(context).einstUeberwachtKeiner
+                      : eintrag.pfad,
+                ),
+                subtitle: Text(
+                  eintrag == null
+                      ? AppTexte.of(context).einstUeberwachtErklaerung
+                      : AppTexte.of(context).einstUeberwachtAktiv,
+                ),
+                isThreeLine: eintrag == null,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _waehleUeberwachtenOrdner,
+                        icon: const Icon(Icons.folder_open_outlined),
+                        label: Text(
+                          eintrag == null
+                              ? AppTexte.of(context).einstUeberwachtWaehlen
+                              : AppTexte.of(
+                                  context,
+                                ).einstUeberwachtAndererWaehlen,
+                        ),
+                      ),
+                    ),
+                    if (eintrag != null) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _beendeUeberwachung,
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: Text(
+                            AppTexte.of(context).einstUeberwachtBeenden,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppeBibliotheken() => [
+    Card(
+      child: FutureBuilder<List<BibliothekMitZustand>>(
+        future: _bibliothekenFuture,
+        builder: (context, snapshot) {
+          final eintraege = snapshot.data;
+          if (eintraege == null) {
+            return const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          return Column(
+            children: [
+              for (final b in eintraege)
+                ListTile(
+                  leading: Icon(
+                    b.istAktiv
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: b.istAktiv
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  title: Text(
+                    b.eintrag.name,
+                    style: b.erreichbar
+                        ? null
+                        : TextStyle(color: Theme.of(context).disabledColor),
+                  ),
+                  subtitle: Text(
+                    b.erreichbar
+                        ? b.eintrag.path
+                        : AppTexte.of(context).einstBibNichtGefunden,
+                  ),
+                  // `enabled` steuert die Einfärbung, nicht die
+                  // Antippbarkeit: Die aktive Bibliothek ist zwar nicht
+                  // antippbar (man ist ja schon drin), darf aber nicht
+                  // ausgegraut erscheinen – ausgegraut heißt hier
+                  // "nicht erreichbar".
+                  enabled: b.erreichbar,
+                  onTap: b.erreichbar && !b.istAktiv
+                      ? () => _wechsleBibliothek(b)
+                      : null,
+                  // Der Standardordner lässt sich nicht entfernen: Er
+                  // wird erzeugt, nicht gespeichert, und es gibt ihn
+                  // immer. Ihm einen Knopf zu geben, der nichts tut,
+                  // war der Fehler der ersten Fassung.
+                  trailing: b.istAktiv
+                      ? Text(AppTexte.of(context).einstBibAktiv)
+                      : b.entfernbar
+                      ? IconButton(
+                          icon: const Icon(Icons.playlist_remove),
+                          tooltip: AppTexte.of(
+                            context,
+                          ).einstBibAusListeEntfernen,
+                          onPressed: () => _entferneBibliothek(b),
+                        )
+                      : Text(
+                          AppTexte.of(context).einstBibImmerVorhanden,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                ),
               const Divider(height: 1),
-              FutureBuilder<bool>(
-                future: _isCustomLocationFuture,
-                builder: (context, snapshot) {
-                  final isCustom = snapshot.data ?? false;
-                  return Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _bibliothekHinzufuegen,
+                        icon: const Icon(Icons.library_add_outlined),
+                        label: Text(AppTexte.of(context).einstBibHinzufuegen),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  0,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
+                child: Text(
+                  AppTexte.of(context).einstBibWechselHinweis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppeSpeicherort() => [
+    Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: Text(AppTexte.of(context).einstSpeicherort),
+            subtitle: Text(widget.library.paths.root.path),
+            trailing: IconButton(
+              icon: const Icon(Icons.open_in_new),
+              tooltip: AppTexte.of(context).einstImFinderAnzeigen,
+              onPressed: () => _openInFinder(widget.library.paths.root.path),
+            ),
+          ),
+          const Divider(height: 1),
+          FutureBuilder<bool>(
+            future: _isCustomLocationFuture,
+            builder: (context, snapshot) {
+              final isCustom = snapshot.data ?? false;
+              return Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _changeLibraryLocation,
+                        icon: const Icon(Icons.drive_file_move_outline),
+                        label: Text(AppTexte.of(context).einstAendern),
+                      ),
+                    ),
+                    if (isCustom) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _resetLibraryLocation,
+                          icon: const Icon(Icons.restart_alt),
+                          label: Text(AppTexte.of(context).einstZuruecksetzen),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+          // **Aufgeschlüsselt und nicht als eine Zahl.** Hier stand
+          // allein die Summe der Originale; im Finder war der Ordner
+          // deutlich grösser, und niemand konnte sehen, warum. Die
+          // Teile, die die App selbst anlegt – Vorschauen,
+          // Miniaturen, Gesichtsausschnitte, die Datenbank – sind
+          // gerade die, die man beurteilen will.
+          if (_belegung == null)
+            ListTile(
+              leading: const Icon(Icons.sd_storage_outlined),
+              title: Text(AppTexte.of(context).einstSpeicherbedarf),
+              subtitle: Text(AppTexte.of(context).einstWirdBerechnet),
+            )
+          else
+            ExpansionTile(
+              leading: const Icon(Icons.sd_storage_outlined),
+              title: Text(AppTexte.of(context).einstSpeicherbedarf),
+              subtitle: Text(groessentext(_belegung!.gesamt)),
+              childrenPadding: const EdgeInsets.only(
+                left: AppSpacing.xxl,
+                right: AppSpacing.lg,
+                bottom: AppSpacing.sm,
+              ),
+              children: [
+                for (final posten in _belegung!.posten)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _changeLibraryLocation,
-                            icon: const Icon(Icons.drive_file_move_outline),
-                            label: Text(AppTexte.of(context).einstAendern),
+                          child: Text(
+                            belegungName(AppTexte.of(context), posten.name),
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
-                        if (isCustom) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _resetLibraryLocation,
-                              icon: const Icon(Icons.restart_alt),
-                              label:
-                                  Text(AppTexte.of(context).einstZuruecksetzen),
-                            ),
-                          ),
-                        ],
+                        Text(
+                          groessentext(posten.bytes),
+                          // Ziffern in einer Spalte gehören
+                          // untereinander.
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
                       ],
                     ),
-                  );
-                },
-              ),
-              // **Aufgeschlüsselt und nicht als eine Zahl.** Hier stand
-              // allein die Summe der Originale; im Finder war der Ordner
-              // deutlich grösser, und niemand konnte sehen, warum. Die
-              // Teile, die die App selbst anlegt – Vorschauen,
-              // Miniaturen, Gesichtsausschnitte, die Datenbank – sind
-              // gerade die, die man beurteilen will.
-              if (_belegung == null)
-                ListTile(
-                  leading: const Icon(Icons.sd_storage_outlined),
-                  title: Text(AppTexte.of(context).einstSpeicherbedarf),
-                  subtitle: Text(AppTexte.of(context).einstWirdBerechnet),
-                )
-              else
-                ExpansionTile(
-                  leading: const Icon(Icons.sd_storage_outlined),
-                  title: Text(AppTexte.of(context).einstSpeicherbedarf),
-                  subtitle: Text(groessentext(_belegung!.gesamt)),
-                  childrenPadding: const EdgeInsets.only(
-                      left: AppSpacing.xxl,
-                      right: AppSpacing.lg,
-                      bottom: AppSpacing.sm),
-                  children: [
-                    for (final posten in _belegung!.posten)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                belegungName(AppTexte.of(context), posten.name),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            Text(
-                              groessentext(posten.bytes),
-                              // Ziffern in einer Spalte gehören
-                              // untereinander.
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                      fontFeatures: const [
-                                    FontFeature.tabularFigures()
-                                  ],
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-            ],
-          ),
-        ),
-      ];
+                  ),
+              ],
+            ),
+        ],
+      ),
+    ),
+  ];
 
   /// Die Modelle, die zur eingestellten Oberflächensprache passen –
   /// siehe [ModelCatalog.fuerSprache].
   List<ModelCatalogEntry> _modelle(BuildContext context) =>
-      ModelCatalog.fuerSprache(Localizations.localeOf(context).languageCode,
-          istInstalliert: widget.library.isModelInstalled);
+      ModelCatalog.fuerSprache(
+        Localizations.localeOf(context).languageCode,
+        istInstalliert: widget.library.isModelInstalled,
+      );
 
   List<Widget> _gruppeModelle() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstKiHinweis,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstKiHinweis,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        FutureBuilder<bool>(
-          key: const ValueKey('auto-analyse'),
-          future: widget.library.db.autoAnalyzeAfterImportEnabled(),
-          builder: (context, snapshot) {
-            final an = snapshot.data ?? true;
-            return Card(
-              child: SwitchListTile(
-                value: an,
-                onChanged: (v) async {
-                  await widget.library.db.setAutoAnalyzeAfterImport(v);
-                  if (mounted) setState(() {});
-                },
-                secondary: const Icon(Icons.schedule_outlined),
-                title: Text(AppTexte.of(context).einstAutoAnalyseTitel),
-                isThreeLine: true,
-                subtitle: Text(
-                  AppTexte.of(context).einstAutoAnalyseText,
-                ),
-              ),
-            );
-          },
-        ),
-        // Beide Schalter übersetzen zwischen Englisch und Deutsch. Steht die
-        // Oberfläche auf Englisch, sind sie gegenstandslos: Beschreibungen
-        // und Vokabular liegen dann bereits in der Sprache vor, in der man
-        // sucht. Ausgeblendet statt wirkungslos angeboten – die gespeicherte
-        // Einstellung bleibt erhalten und ist beim Zurückwechseln wieder da.
-        if (Localizations.localeOf(context).languageCode == 'de') ...[
-          _uebersetzungsSchalter(
-            icon: Icons.translate_outlined,
-            titel: AppTexte.of(context).einstUebersetzeBeschreibungTitel,
-            beschreibung: AppTexte.of(context).einstUebersetzeBeschreibungText,
-            installiert: widget.library.uebersetzungEnDeHalter.installiert,
-            lesen: widget.library.db.uebersetzeBeschreibungen,
-            schreiben: widget.library.db.setzeUebersetzeBeschreibungen,
-          ),
-          _uebersetzungsSchalter(
-            icon: Icons.search_outlined,
-            titel: AppTexte.of(context).einstUebersetzeSucheTitel,
-            beschreibung: AppTexte.of(context).einstUebersetzeSucheText,
-            installiert: widget.library.uebersetzungDeEnHalter.installiert,
-            lesen: widget.library.db.uebersetzeSucheUndTags,
-            schreiben: (an) async {
-              await widget.library.db.setzeUebersetzeSucheUndTags(an);
-              // Die zwischengespeicherten Begriffs-Vektoren stammen sonst
-              // noch aus der anderen Sprache und die Umstellung bliebe bis
-              // zum nächsten Programmstart wirkungslos.
-              widget.library.aiTaggingService.leereBegriffsCache();
+      ),
+    ),
+    FutureBuilder<bool>(
+      key: const ValueKey('auto-analyse'),
+      future: widget.library.db.autoAnalyzeAfterImportEnabled(),
+      builder: (context, snapshot) {
+        final an = snapshot.data ?? true;
+        return Card(
+          child: SwitchListTile(
+            value: an,
+            onChanged: (v) async {
+              await widget.library.db.setAutoAnalyzeAfterImport(v);
+              if (mounted) setState(() {});
             },
+            secondary: const Icon(Icons.schedule_outlined),
+            title: Text(AppTexte.of(context).einstAutoAnalyseTitel),
+            isThreeLine: true,
+            subtitle: Text(AppTexte.of(context).einstAutoAnalyseText),
           ),
-        ],
-        const SizedBox(height: 12),
-        // Zwoelf Modelle einzeln anzutippen und jedes Mal zu warten, war
-        // der erste Weg, den ein neuer Nutzer vor sich hatte - einen Knopf
-        // dafuer gab es nicht. Er laedt nur, was fehlt: Wer die
-        // Uebersetzung nicht braucht, loescht sie danach einmal und
-        // bekommt sie nicht wieder aufgedraengt.
-        Builder(builder: (context) {
-          final fehlende = [
-            for (final e in _modelle(context))
-              if (!widget.library.isModelInstalled(e)) e,
-          ];
-          return Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                onPressed: (fehlende.isEmpty || _downloading.isNotEmpty)
-                    ? null
-                    : () => _alleModelleLaden(fehlende),
-                label: Text(fehlende.isEmpty
+        );
+      },
+    ),
+    // Beide Schalter übersetzen zwischen Englisch und Deutsch. Steht die
+    // Oberfläche auf Englisch, sind sie gegenstandslos: Beschreibungen
+    // und Vokabular liegen dann bereits in der Sprache vor, in der man
+    // sucht. Ausgeblendet statt wirkungslos angeboten – die gespeicherte
+    // Einstellung bleibt erhalten und ist beim Zurückwechseln wieder da.
+    if (Localizations.localeOf(context).languageCode == 'de') ...[
+      _uebersetzungsSchalter(
+        icon: Icons.translate_outlined,
+        titel: AppTexte.of(context).einstUebersetzeBeschreibungTitel,
+        beschreibung: AppTexte.of(context).einstUebersetzeBeschreibungText,
+        installiert: widget.library.uebersetzungEnDeHalter.installiert,
+        lesen: widget.library.db.uebersetzeBeschreibungen,
+        schreiben: widget.library.db.setzeUebersetzeBeschreibungen,
+      ),
+      _uebersetzungsSchalter(
+        icon: Icons.search_outlined,
+        titel: AppTexte.of(context).einstUebersetzeSucheTitel,
+        beschreibung: AppTexte.of(context).einstUebersetzeSucheText,
+        installiert: widget.library.uebersetzungDeEnHalter.installiert,
+        lesen: widget.library.db.uebersetzeSucheUndTags,
+        schreiben: (an) async {
+          await widget.library.db.setzeUebersetzeSucheUndTags(an);
+          // Die zwischengespeicherten Begriffs-Vektoren stammen sonst
+          // noch aus der anderen Sprache und die Umstellung bliebe bis
+          // zum nächsten Programmstart wirkungslos.
+          widget.library.aiTaggingService.leereBegriffsCache();
+        },
+      ),
+    ],
+    const SizedBox(height: 12),
+    // Zwoelf Modelle einzeln anzutippen und jedes Mal zu warten, war
+    // der erste Weg, den ein neuer Nutzer vor sich hatte - einen Knopf
+    // dafuer gab es nicht. Er laedt nur, was fehlt: Wer die
+    // Uebersetzung nicht braucht, loescht sie danach einmal und
+    // bekommt sie nicht wieder aufgedraengt.
+    Builder(
+      builder: (context) {
+        final fehlende = [
+          for (final e in _modelle(context))
+            if (!widget.library.isModelInstalled(e)) e,
+        ];
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.cloud_download_outlined, size: 18),
+              onPressed: (fehlende.isEmpty || _downloading.isNotEmpty)
+                  ? null
+                  : () => _alleModelleLaden(fehlende),
+              label: Text(
+                fehlende.isEmpty
                     ? AppTexte.of(context).einstAlleModelleDa
-                    : AppTexte.of(context)
-                        .einstAlleModelleLaden(fehlende.length)),
+                    : AppTexte.of(
+                        context,
+                      ).einstAlleModelleLaden(fehlende.length),
               ),
             ),
-          );
-        }),
-        for (final entry in _modelle(context))
-          _ModelCard(
-            entry: entry,
-            installed: widget.library.isModelInstalled(entry),
-            downloading: _downloading.contains(entry.id),
-            groesse: widget.library.isModelInstalled(entry)
-                ? groessentext(
-                    widget.library.modelDownloadService.belegteBytes(entry))
-                : null,
-            onDownload: () => _downloadModel(entry),
-            onDelete: () => _deleteModel(entry),
           ),
-        // Der Modellordner wächst schnell auf über ein Gigabyte, ohne dass
-        // das bisher irgendwo stand.
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(
-            AppTexte.of(context).einstModelleBelegterPlatz(groessentext(
-                widget.library.modelDownloadService.gesamteBytes())),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
+        );
+      },
+    ),
+    for (final entry in _modelle(context))
+      _ModelCard(
+        entry: entry,
+        installed: widget.library.isModelInstalled(entry),
+        downloading: _downloading.contains(entry.id),
+        groesse: widget.library.isModelInstalled(entry)
+            ? groessentext(
+                widget.library.modelDownloadService.belegteBytes(entry),
+              )
+            : null,
+        onDownload: () => _downloadModel(entry),
+        onDelete: () => _deleteModel(entry),
+      ),
+    // Der Modellordner wächst schnell auf über ein Gigabyte, ohne dass
+    // das bisher irgendwo stand.
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Text(
+        AppTexte.of(context).einstModelleBelegterPlatz(
+          groessentext(widget.library.modelDownloadService.gesamteBytes()),
         ),
-        // Die Prüfsumme im Katalog wirkte bis zur 21. Prüfrunde genau
-        // einmal – beim Herunterladen. Danach entschied allein, ob die
-        // Datei da ist. Hier ist der Weg, sie noch einmal zu befragen.
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.verified_outlined),
-            title: Text(AppTexte.of(context).einstModellePruefenTitel),
-            subtitle: Text(AppTexte.of(context).einstModellePruefenText),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _pruefeModelle,
-          ),
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.face_outlined),
-            title: Text(AppTexte.of(context).einstGesichtserkennungAktiv),
-            subtitle: Text(widget.library.faceDetectionAvailable
-                ? (widget.library.faceRecognitionAvailable
+      ),
+    ),
+    // Die Prüfsumme im Katalog wirkte bis zur 21. Prüfrunde genau
+    // einmal – beim Herunterladen. Danach entschied allein, ob die
+    // Datei da ist. Hier ist der Weg, sie noch einmal zu befragen.
+    Card(
+      child: ListTile(
+        leading: const Icon(Icons.verified_outlined),
+        title: Text(AppTexte.of(context).einstModellePruefenTitel),
+        subtitle: Text(AppTexte.of(context).einstModellePruefenText),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _pruefeModelle,
+      ),
+    ),
+    const SizedBox(height: 12),
+    Card(
+      child: ListTile(
+        leading: const Icon(Icons.face_outlined),
+        title: Text(AppTexte.of(context).einstGesichtserkennungAktiv),
+        subtitle: Text(
+          widget.library.faceDetectionAvailable
+              ? (widget.library.faceRecognitionAvailable
                     ? AppTexte.of(context).einstGesichtserkennungBeides
                     : AppTexte.of(context).einstNurErkennung)
-                : AppTexte.of(context).einstGesichtserkennungInaktiv),
-          ),
+              : AppTexte.of(context).einstGesichtserkennungInaktiv,
         ),
-      ];
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeHintergrund() => [
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.pending_actions_outlined),
-            title: Text(AppTexte.of(context).einstAufgabenTitel),
-            subtitle: Text(AppTexte.of(context).einstAufgabenText),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) =>
-                      BackgroundTasksScreen(library: widget.library)),
-            ),
+    Card(
+      child: ListTile(
+        leading: const Icon(Icons.pending_actions_outlined),
+        title: Text(AppTexte.of(context).einstAufgabenTitel),
+        subtitle: Text(AppTexte.of(context).einstAufgabenText),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => BackgroundTasksScreen(library: widget.library),
           ),
         ),
-      ];
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeVokabular() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstVokabularText,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstVokabularText,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StreamBuilder<List<AiTagVocabularyData>>(
-                  stream: widget.library.db.watchAiTagVocabulary(),
-                  builder: (context, snapshot) {
-                    final terms = snapshot.data ?? [];
-                    if (terms.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final entry in terms)
-                            InputChip(
-                              label: Text(entry.term),
-                              onDeleted: () =>
-                                  widget.library.db.removeAiTagTerm(entry.id),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _aiTagVocabularyController,
-                        decoration: InputDecoration(
-                          hintText:
-                              AppTexte.of(context).einstBegriffHinzufuegenFeld,
-                          isDense: true,
-                          border: const OutlineInputBorder(),
+      ),
+    ),
+    Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            StreamBuilder<List<AiTagVocabularyData>>(
+              stream: widget.library.db.watchAiTagVocabulary(),
+              builder: (context, snapshot) {
+                final terms = snapshot.data ?? [];
+                if (terms.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final entry in terms)
+                        InputChip(
+                          label: Text(entry.term),
+                          onDeleted: () =>
+                              widget.library.db.removeAiTagTerm(entry.id),
                         ),
-                        onSubmitted: (_) => _addAiTagVocabularyTerm(),
-                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _aiTagVocabularyController,
+                    decoration: InputDecoration(
+                      hintText: AppTexte.of(
+                        context,
+                      ).einstBegriffHinzufuegenFeld,
+                      isDense: true,
+                      border: const OutlineInputBorder(),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: AppTexte.of(context).einstBegriffHinzufuegen,
-                      onPressed: _addAiTagVocabularyTerm,
-                    ),
-                  ],
+                    onSubmitted: (_) => _addAiTagVocabularyTerm(),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: AppTexte.of(context).einstBegriffHinzufuegen,
+                  onPressed: _addAiTagVocabularyTerm,
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    ),
+    // Der Weg zurück. Er steht hier und nicht bei den Werkzeugen,
+    // weil er zum Vokabular gehört: Wer die Begriffe ändert, will
+    // meist auch die damit vergebenen Schlagwörter neu haben.
+    FutureBuilder<int>(
+      future: widget.library.db.kiTagAnzahl(),
+      builder: (context, schnappschuss) {
+        final anzahl = schnappschuss.data;
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.auto_delete_outlined),
+          title: Text(AppTexte.of(context).einstKiTagsZurueck),
+          subtitle: Text(
+            anzahl == null
+                ? AppTexte.of(context).einstKiTagsZurueckText
+                : AppTexte.of(context).einstKiTagsZurueckAnzahl(anzahl),
           ),
-        ),
-        // Der Weg zurück. Er steht hier und nicht bei den Werkzeugen,
-        // weil er zum Vokabular gehört: Wer die Begriffe ändert, will
-        // meist auch die damit vergebenen Schlagwörter neu haben.
-        FutureBuilder<int>(
-          future: widget.library.db.kiTagAnzahl(),
-          builder: (context, schnappschuss) {
-            final anzahl = schnappschuss.data;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.auto_delete_outlined),
-              title: Text(AppTexte.of(context).einstKiTagsZurueck),
-              subtitle: Text(anzahl == null
-                  ? AppTexte.of(context).einstKiTagsZurueckText
-                  : AppTexte.of(context).einstKiTagsZurueckAnzahl(anzahl)),
-              enabled: anzahl != null && anzahl > 0,
-              onTap: anzahl == null || anzahl == 0
-                  ? null
-                  : () => _nimmKiTagsZurueck(anzahl),
-            );
-          },
-        ),
-      ];
+          enabled: anzahl != null && anzahl > 0,
+          onTap: anzahl == null || anzahl == 0
+              ? null
+              : () => _nimmKiTagsZurueck(anzahl),
+        );
+      },
+    ),
+  ];
 
   /// Nimmt alle von der Bilderkennung vergebenen Schlagwörter zurück.
   ///
@@ -2016,7 +2116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final verortete = await widget.library.db.assetsWithLocation();
     if (!mounted) return;
     final gebiete = gebieteAus([
-      for (final a in verortete) (breite: a.latitude!, laenge: a.longitude!)
+      for (final a in verortete) (breite: a.latitude!, laenge: a.longitude!),
     ]);
     if (gebiete.isEmpty) {
       melde.warnung(t.einstVorladenKeineOrte);
@@ -2031,8 +2131,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Der gerade gewaehlte Stil, nicht ein fest verdrahteter: Der
     // Speicher haengt an der Adresse, und eine fuer Topo geladene Kachel
     // hilft der hellen Karte nicht.
-    final stil = switch (
-        Kartenansicht.ausText(await widget.library.db.kartenansicht())) {
+    final stil = switch (Kartenansicht.ausText(
+      await widget.library.db.kartenansicht(),
+    )) {
       Kartenansicht.hell => Kartenstil.hell,
       Kartenansicht.topo => Kartenstil.topo,
       // Ohne diese Zeile lüde der Vorrat für die eigene Quelle
@@ -2050,8 +2151,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(t.einstVorladenTitel),
         // Zahl UND geschätzte Grösse: „29.039 Kacheln" sagt niemandem
         // etwas, „rund 850 MB" schon.
-        content: Text(t.einstVorladenFrage(gebiete.length, kacheln.length,
-            (kacheln.length * 30 / 1024).round())),
+        content: Text(
+          t.einstVorladenFrage(
+            gebiete.length,
+            kacheln.length,
+            (kacheln.length * 30 / 1024).round(),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
@@ -2067,19 +2173,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (ja != true || !mounted) return;
 
     await _vorratLauf?.cancel();
-    _vorratLauf =
-        ladeVorrat(gebiete, stil, von: stufen.von, bis: stufen.bis).listen(
-      (stand) {
-        if (mounted) setState(() => _vorrat = stand);
-      },
-      onDone: () {
-        final stand = _vorrat;
-        if (mounted) setState(() => _vorrat = null);
-        if (stand != null) {
-          melde.erfolg(t.einstVorladenFertig(stand.geladen, stand.fehler));
-        }
-      },
-    );
+    _vorratLauf = ladeVorrat(gebiete, stil, von: stufen.von, bis: stufen.bis)
+        .listen(
+          (stand) {
+            if (mounted) setState(() => _vorrat = stand);
+          },
+          onDone: () {
+            final stand = _vorrat;
+            if (mounted) setState(() => _vorrat = null);
+            if (stand != null) {
+              melde.erfolg(t.einstVorladenFertig(stand.geladen, stand.fehler));
+            }
+          },
+        );
   }
 
   Future<void> _nimmKiTagsZurueck(int anzahl) async {
@@ -2129,16 +2235,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.public_outlined,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.public_outlined,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
                 t.einstKartenNetzHinweis,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -2149,8 +2258,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Text(
           t.einstCartoText,
           style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
       Card(
@@ -2200,8 +2310,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Text(
                 t.einstCartoQuelle,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -2227,8 +2338,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onChanged: _karteScharfSetzen,
       ),
       const Divider(height: AppSpacing.xl),
-      Text(t.einstKartenquellenTitel,
-          style: Theme.of(context).textTheme.titleSmall),
+      Text(
+        t.einstKartenquellenTitel,
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
       KartenquellenUebersicht(
         library: widget.library,
         // Eine Vorlage mit Schlüssel kann die Übersicht nicht selbst
@@ -2238,14 +2351,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _eigeneKarte.currentState?.vorlageEinsetzen(v);
           final ziel = _eigeneKarte.currentContext;
           if (ziel != null) {
-            unawaited(Scrollable.ensureVisible(ziel,
-                duration: const Duration(milliseconds: 250), alignment: 0.1));
+            unawaited(
+              Scrollable.ensureVisible(
+                ziel,
+                duration: const Duration(milliseconds: 250),
+                alignment: 0.1,
+              ),
+            );
           }
         },
       ),
       const Divider(height: AppSpacing.xl),
-      Text(t.einstEigeneKarteTitel,
-          style: Theme.of(context).textTheme.titleSmall),
+      Text(
+        t.einstEigeneKarteTitel,
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
       EigeneKarteEinstellung(key: _eigeneKarte, library: widget.library),
       const Divider(height: AppSpacing.xl),
       // Der Vorrat. Er steht bei der Karte und nicht bei den Werkzeugen,
@@ -2255,9 +2375,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.download_for_offline_outlined),
         title: Text(t.einstVorladenTitel),
-        subtitle: Text(_vorrat == null
-            ? t.einstVorladenText
-            : t.einstVorladenStand(_vorrat!.fertig, _vorrat!.gesamt)),
+        subtitle: Text(
+          _vorrat == null
+              ? t.einstVorladenText
+              : t.einstVorladenStand(_vorrat!.fertig, _vorrat!.gesamt),
+        ),
         trailing: _vorrat == null
             ? const Icon(Icons.chevron_right)
             : SizedBox(
@@ -2290,235 +2412,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   List<Widget> _gruppeStandortdaten() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstOrteText,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstOrteText,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-        Card(
-          child: ListTile(
-            leading: Icon(
-              widget.library.geoDataAvailable
-                  ? Icons.check_circle
-                  : Icons.cloud_download_outlined,
-              color: widget.library.geoDataAvailable
-                  ? context.semantik.erfolg
-                  : null,
-            ),
-            title: Text(AppTexte.of(context).einstGeoTitel),
-            subtitle: Text(
-              AppTexte.of(context).einstGeoText(GeoDataCatalog.license),
-            ),
-            trailing: _downloadingGeoData
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : widget.library.geoDataAvailable
-                    ? IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: AppTexte.of(context).einstGeoLoeschen,
-                        onPressed: _deleteGeoData,
-                      )
-                    : FilledButton(
-                        onPressed: _downloadGeoData,
-                        child: Text(AppTexte.of(context).allgHerunterladen)),
-          ),
+      ),
+    ),
+    Card(
+      child: ListTile(
+        leading: Icon(
+          widget.library.geoDataAvailable
+              ? Icons.check_circle
+              : Icons.cloud_download_outlined,
+          color: widget.library.geoDataAvailable
+              ? context.semantik.erfolg
+              : null,
         ),
-      ];
+        title: Text(AppTexte.of(context).einstGeoTitel),
+        subtitle: Text(
+          AppTexte.of(context).einstGeoText(GeoDataCatalog.license),
+        ),
+        trailing: _downloadingGeoData
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : widget.library.geoDataAvailable
+            ? IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: AppTexte.of(context).einstGeoLoeschen,
+                onPressed: _deleteGeoData,
+              )
+            : FilledButton(
+                onPressed: _downloadGeoData,
+                child: Text(AppTexte.of(context).allgHerunterladen),
+              ),
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeGesperrt() => [
-        Card(
-          child: FutureBuilder<bool>(
-            future: _hasPinSetFuture,
-            builder: (context, snapshot) {
-              final hasPin = snapshot.data ?? false;
-              if (!hasPin) {
-                return ListTile(
-                  leading: const Icon(Icons.enhanced_encryption_outlined),
-                  title: Text(AppTexte.of(context).einstPinEinrichten),
-                  subtitle: Text(
-                    AppTexte.of(context).einstGesperrtText,
-                  ),
-                  isThreeLine: true,
-                  trailing: FilledButton(
-                      onPressed: _setupPin,
-                      child: Text(AppTexte.of(context).allgEinrichten)),
-                );
-              }
-              final unlocked = widget.library.vaultUnlockedThisSession;
-              return Column(
-                children: [
-                  ListTile(
-                    leading: Icon(unlocked
-                        ? Icons.lock_open_outlined
-                        : Icons.lock_outline),
-                    title: Text(AppTexte.of(context).einstGesperrterOrdner),
-                    subtitle: Text(unlocked
-                        ? AppTexte.of(context).einstGesperrtEntsperrt
-                        : AppTexte.of(context).einstPinEingerichtet),
-                    trailing: FilledButton.icon(
-                      onPressed: _openLockedFolder,
-                      icon: const Icon(Icons.lock_open_outlined),
-                      label: Text(AppTexte.of(context).einstGesperrtOeffnen),
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  FutureBuilder<PrivacySettingsData?>(
-                    future: widget.library.db.privacySettingsRow(),
-                    builder: (context, privacy) => SwitchListTile(
-                      secondary: const Icon(Icons.visibility_off_outlined),
-                      title:
-                          Text(AppTexte.of(context).einstPrivateMetadatenTitel),
-                      subtitle:
-                          Text(AppTexte.of(context).einstPrivateMetadatenText),
-                      value: privacy.data?.protectMetadata ?? true,
-                      onChanged: (value) async {
-                        await widget.library.db
-                            .setProtectPrivateMetadata(value);
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                              onPressed: _changePin,
-                              child:
-                                  Text(AppTexte.of(context).einstPinAendern)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton(
-                              onPressed: _removePin,
-                              child:
-                                  Text(AppTexte.of(context).einstPinEntfernen)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (unlocked)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: TextButton.icon(
-                          onPressed: _lockVaultSession,
-                          icon: const Icon(Icons.lock_clock_outlined),
-                          label: Text(AppTexte.of(context).einstSitzungSperren),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppeBackupSchluessel() => [
-        Card(
-          child: FutureBuilder<bool>(
-            future: _hasBackupKeyFuture,
-            builder: (context, snapshot) {
-              final hasKey = snapshot.data ?? false;
-              if (!hasKey) {
-                return ListTile(
-                  leading: const Icon(Icons.enhanced_encryption_outlined),
-                  title: Text(AppTexte.of(context).einstPassphraseEinrichten),
-                  subtitle: Text(
-                    AppTexte.of(context).einstBackupVerschluesselungText,
-                  ),
-                  isThreeLine: true,
-                  trailing: FilledButton(
-                      onPressed: _setupBackupPassphrase,
-                      child: Text(AppTexte.of(context).allgEinrichten)),
-                );
-              }
-              final unlocked = widget.library.backupKeyAvailableThisSession;
-              return Column(
-                children: [
-                  ListTile(
-                    leading: Icon(unlocked
-                        ? Icons.lock_open_outlined
-                        : Icons.lock_outline),
-                    title: Text(AppTexte.of(context).einstBackupPassphrase),
-                    subtitle: Text(unlocked
-                        ? AppTexte.of(context).einstBackupEntsperrt
-                        : AppTexte.of(context).einstBackupGesperrt),
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                              onPressed: _changeBackupPassphrase,
-                              child: Text(
-                                  AppTexte.of(context).einstBackupAendern)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton(
-                              onPressed: _removeBackupEncryption,
-                              child: Text(AppTexte.of(context).allgEntfernen)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppeBackupManuell() => [
-        Card(
-          child: Column(
+    Card(
+      child: FutureBuilder<bool>(
+        future: _hasPinSetFuture,
+        builder: (context, snapshot) {
+          final hasPin = snapshot.data ?? false;
+          if (!hasPin) {
+            return ListTile(
+              leading: const Icon(Icons.enhanced_encryption_outlined),
+              title: Text(AppTexte.of(context).einstPinEinrichten),
+              subtitle: Text(AppTexte.of(context).einstGesperrtText),
+              isThreeLine: true,
+              trailing: FilledButton(
+                onPressed: _setupPin,
+                child: Text(AppTexte.of(context).allgEinrichten),
+              ),
+            );
+          }
+          final unlocked = widget.library.vaultUnlockedThisSession;
+          return Column(
             children: [
               ListTile(
-                leading: const Icon(Icons.history),
-                title: Text(AppTexte.of(context).einstLetztesBackup),
-                subtitle: Text(_lastBackup == null
-                    ? AppTexte.of(context).einstBackupNieGesichert
-                    : AppTexte.of(context).einstBackupZusammenfassung(
-                        _datum(_lastBackup!.performedAt),
-                        _lastBackup!.fileCount,
-                        _lastBackup!.destinationPath)),
+                leading: Icon(
+                  unlocked ? Icons.lock_open_outlined : Icons.lock_outline,
+                ),
+                title: Text(AppTexte.of(context).einstGesperrterOrdner),
+                subtitle: Text(
+                  unlocked
+                      ? AppTexte.of(context).einstGesperrtEntsperrt
+                      : AppTexte.of(context).einstPinEingerichtet,
+                ),
+                trailing: FilledButton.icon(
+                  onPressed: _openLockedFolder,
+                  icon: const Icon(Icons.lock_open_outlined),
+                  label: Text(AppTexte.of(context).einstGesperrtOeffnen),
+                ),
               ),
               const Divider(height: 1),
-              CheckboxListTile(
-                value: _encryptManualBackup,
-                onChanged: (v) =>
-                    setState(() => _encryptManualBackup = v ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                title: Text(AppTexte.of(context).einstBackupVerschluesseln),
-                subtitle:
-                    Text(AppTexte.of(context).einstBackupPassphraseAbfrage),
-              ),
-              // Was mitkommt und was nicht. Der Hinweis stand nirgends, und
-              // der Unterschied ist erheblich: Ohne Passphrase liegt kein
-              // Schnappschuss der Datenbank in der Sicherung, und damit
-              // kämen Personen, Stammbaum, Reisen und Aktivitäten beim
-              // Zurückspielen nicht wieder (Befund der 19. Prüfrunde).
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.md),
-                child: Text(
-                  AppTexte.of(context).einstBackupManuellHinweis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+              FutureBuilder<PrivacySettingsData?>(
+                future: widget.library.db.privacySettingsRow(),
+                builder: (context, privacy) => SwitchListTile(
+                  secondary: const Icon(Icons.visibility_off_outlined),
+                  title: Text(AppTexte.of(context).einstPrivateMetadatenTitel),
+                  subtitle: Text(
+                    AppTexte.of(context).einstPrivateMetadatenText,
+                  ),
+                  value: privacy.data?.protectMetadata ?? true,
+                  onChanged: (value) async {
+                    await widget.library.db.setProtectPrivateMetadata(value);
+                    if (mounted) setState(() {});
+                  },
                 ),
               ),
               const Divider(height: 1),
@@ -2527,491 +2515,699 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _runBackup,
-                        icon: const Icon(Icons.backup_outlined),
-                        label: Text(AppTexte.of(context).einstJetztSichern),
+                      child: OutlinedButton(
+                        onPressed: _changePin,
+                        child: Text(AppTexte.of(context).einstPinAendern),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _runRestore,
-                        icon: const Icon(Icons.settings_backup_restore),
-                        label: Text(AppTexte.of(context).einstWiederherstellen),
+                      child: OutlinedButton(
+                        onPressed: _removePin,
+                        child: Text(AppTexte.of(context).einstPinEntfernen),
                       ),
                     ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _pruefeBackup,
-                    icon: const Icon(Icons.fact_check_outlined),
-                    label: Text(AppTexte.of(context).einstBackupPruefen),
+              if (unlocked)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    0,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: _lockVaultSession,
+                      icon: const Icon(Icons.lock_clock_outlined),
+                      label: Text(AppTexte.of(context).einstSitzungSperren),
+                    ),
                   ),
                 ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppeBackupSchluessel() => [
+    Card(
+      child: FutureBuilder<bool>(
+        future: _hasBackupKeyFuture,
+        builder: (context, snapshot) {
+          final hasKey = snapshot.data ?? false;
+          if (!hasKey) {
+            return ListTile(
+              leading: const Icon(Icons.enhanced_encryption_outlined),
+              title: Text(AppTexte.of(context).einstPassphraseEinrichten),
+              subtitle: Text(
+                AppTexte.of(context).einstBackupVerschluesselungText,
               ),
+              isThreeLine: true,
+              trailing: FilledButton(
+                onPressed: _setupBackupPassphrase,
+                child: Text(AppTexte.of(context).allgEinrichten),
+              ),
+            );
+          }
+          final unlocked = widget.library.backupKeyAvailableThisSession;
+          return Column(
+            children: [
+              ListTile(
+                leading: Icon(
+                  unlocked ? Icons.lock_open_outlined : Icons.lock_outline,
+                ),
+                title: Text(AppTexte.of(context).einstBackupPassphrase),
+                subtitle: Text(
+                  unlocked
+                      ? AppTexte.of(context).einstBackupEntsperrt
+                      : AppTexte.of(context).einstBackupGesperrt,
+                ),
+              ),
+              const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
-                child: Text(
-                  AppTexte.of(context).einstBackupZielHinweis,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _changeBackupPassphrase,
+                        child: Text(AppTexte.of(context).einstBackupAendern),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _removeBackupEncryption,
+                        child: Text(AppTexte.of(context).allgEntfernen),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-        ),
-      ];
+          );
+        },
+      ),
+    ),
+  ];
 
-  List<Widget> _gruppeBackupAuto() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstBackupAutoHinweis,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
-        Card(
-          child: FutureBuilder<BackupSettingsData?>(
-            future: _backupSettingsFuture,
-            builder: (context, snapshot) {
-              final config = snapshot.data;
-              final enabled = config?.autoBackupEnabled ?? false;
-              final destination = config?.autoBackupDestination;
-              final intervalHours = config?.autoBackupIntervalHours ?? 24;
-              final maxMbPerRun = config?.autoBackupMaxMbPerRun ?? 0;
-              final lastRun = config?.lastAutoBackupAt;
-              final keyReady = widget.library.backupKeyAvailableThisSession;
-
-              return Column(
-                children: [
-                  SwitchListTile(
-                    value: enabled,
-                    onChanged: destination == null
-                        ? null
-                        : (v) async {
-                            await widget.library.db
-                                .setAutoBackupConfig(enabled: v);
-                            if (mounted) _reloadBackupSettings();
-                          },
-                    title: Text(AppTexte.of(context).allgAktiv),
-                    subtitle: Text(destination ??
-                        AppTexte.of(context).einstBackupZuerstZiel),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(AppTexte.of(context).einstZielordner),
-                    subtitle: Text(destination ??
-                        AppTexte.of(context).einstBackupKeinOrdner),
-                    trailing: OutlinedButton(
-                      onPressed: () async {
-                        final picked =
-                            await FilePicker.platform.getDirectoryPath(
-                          dialogTitle:
-                              AppTexte.of(context).einstBackupAutoZielWaehlen,
-                        );
-                        if (picked == null) return;
-                        await widget.library.db.setAutoBackupConfig(
-                            enabled: enabled, destination: picked);
-                        if (mounted) _reloadBackupSettings();
-                      },
-                      child: Text(AppTexte.of(context).einstWaehlen),
+  List<Widget> _gruppeBackupManuell() => [
+    Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(AppTexte.of(context).einstLetztesBackup),
+            subtitle: Text(
+              _lastBackup == null
+                  ? AppTexte.of(context).einstBackupNieGesichert
+                  : AppTexte.of(context).einstBackupZusammenfassung(
+                      _datum(_lastBackup!.performedAt),
+                      _lastBackup!.fileCount,
+                      _lastBackup!.destinationPath,
                     ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.schedule_outlined),
-                    title: Text(AppTexte.of(context).einstIntervall),
-                    trailing: DropdownButton<int>(
-                      value: intervalHours,
-                      items: [
-                        DropdownMenuItem(
-                            value: 1,
-                            child: Text(AppTexte.of(context).einstStuendlich)),
-                        DropdownMenuItem(
-                            value: 6,
-                            child: Text(AppTexte.of(context)
-                                .einstIntervallSechsStunden)),
-                        DropdownMenuItem(
-                            value: 24,
-                            child: Text(AppTexte.of(context).einstTaeglich)),
-                        DropdownMenuItem(
-                            value: 168,
-                            child:
-                                Text(AppTexte.of(context).einstWoechentlich)),
-                      ],
-                      onChanged: (v) async {
-                        if (v == null) return;
-                        await widget.library.db.setAutoBackupConfig(
-                            enabled: enabled, intervalHours: v);
-                        if (mounted) _reloadBackupSettings();
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.history_outlined),
-                    title:
-                        Text(AppTexte.of(context).einstBackupGenerationenTitel),
-                    subtitle: Text(
-                      AppTexte.of(context).einstBackupGenerationenText,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    isThreeLine: true,
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.speed_outlined),
-                    title: Text(AppTexte.of(context).einstMengeJeLauf),
-                    subtitle: Text(
-                      AppTexte.of(context).einstBackupGrenzeText,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    isThreeLine: true,
-                    trailing: DropdownButton<int>(
-                      value: maxMbPerRun,
-                      items: [
-                        DropdownMenuItem(
-                            value: 0,
-                            child: Text(AppTexte.of(context).einstUnbegrenzt)),
-                        const DropdownMenuItem(
-                            value: 500, child: Text('500 MB')),
-                        const DropdownMenuItem(
-                            value: 2000, child: Text('2 GB')),
-                        const DropdownMenuItem(
-                            value: 10000, child: Text('10 GB')),
-                      ],
-                      onChanged: (v) async {
-                        if (v == null) return;
-                        await widget.library.db.setAutoBackupMaxMbPerRun(v);
-                        if (mounted) _reloadBackupSettings();
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.history),
-                    title: Text(AppTexte.of(context).einstLetzterLauf),
-                    subtitle: Text(lastRun == null
-                        ? AppTexte.of(context).einstNieAusgefuehrt
-                        : _datumZeit(lastRun)),
-                  ),
-                  if (enabled && !keyReady)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
-                          AppSpacing.sm, AppSpacing.lg, AppSpacing.xs),
-                      child: Text(
-                        AppTexte.of(context).einstBackupPassphraseGesperrt,
-                        style: TextStyle(
-                            fontSize: 12, color: context.semantik.warnung),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed:
-                            destination == null ? null : _runAutoBackupNow,
-                        icon: const Icon(Icons.sync),
-                        label: Text(
-                            AppTexte.of(context).einstJetztSynchronisieren),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppePapierkorb() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstPapierkorbText,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
-        Card(
-          child: FutureBuilder<TrashSettingsData?>(
-            future: _trashSettingsFuture,
-            builder: (context, snapshot) {
-              final config = snapshot.data;
-              final enabled = config?.autoDeleteEnabled ?? false;
-              final afterDays = config?.autoDeleteAfterDays ?? 30;
-              final lastRun = config?.lastPurgeAt;
-
-              return Column(
-                children: [
-                  // **Der Weg in den Papierkorb selbst.** Er fehlte seit
-                  // dem ersten Commit: TrashScreen war vollständig
-                  // gebaut - Wiederherstellen, endgültig Löschen, leerer
-                  // Zustand, alle Texte - und wurde von keiner einzigen
-                  // Stelle aufgerufen. Gelöschte Fotos lagen also in
-                  // einem Behälter, den niemand öffnen konnte, bis die
-                  // automatische Leerung sie nach dreissig Tagen
-                  // endgültig entfernte. Die Duplikatsuche versprach
-                  // dabei ausdrücklich „über den Papierkorb
-                  // wiederherstellbar".
-                  //
-                  // Hier und nicht in der Leiste: Der gesperrte Ordner
-                  // wird ebenso von den Einstellungen aus geöffnet, und
-                  // seine Einstellung steht daneben.
-                  StreamBuilder<Papierkorbumfang>(
-                    // **Wieviel Platz hier liegt, stand nirgends.** An
-                    // einer gewachsenen Bibliothek waren es 619
-                    // Aufnahmen und 6,01 GB – sieben Prozent des
-                    // Bestands, unsichtbar. Die Zahl der Fotos allein
-                    // sagt darüber nichts: 619 Bildschirmfotos wären
-                    // ein Bruchteil davon.
-                    //
-                    // Beides rechnet die Datenbank, statt jede Zeile des
-                    // Papierkorbs herzuschicken: 0,3 statt 13,0 ms je
-                    // Abo, und dieser Aufbau läuft bei jeder Meldung des
-                    // Bibliothekszustands.
-                    stream: widget.library.db.watchPapierkorbUmfang(),
-                    builder: (context, papierkorb) {
-                      final anzahl = papierkorb.data?.anzahl ?? 0;
-                      final platz = papierkorb.data?.bytes ?? 0;
-                      return ListTile(
-                        leading: const Icon(Icons.delete_outline),
-                        title: Text(AppTexte.of(context).papierkorbTitel),
-                        subtitle: Text(anzahl == 0
-                            ? AppTexte.of(context).papierkorbLeer
-                            : AppTexte.of(context)
-                                .papierkorbUmfang(anzahl, groessentext(platz))),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () =>
-                            Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => TrashScreen(library: widget.library),
-                        )),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    value: enabled,
-                    onChanged: (v) async {
-                      await widget.library.db
-                          .setTrashAutoDeleteConfig(enabled: v);
-                      if (mounted) _reloadTrashSettings();
-                    },
-                    title: Text(AppTexte.of(context).allgAktiv),
-                    subtitle: Text(AppTexte.of(context).einstPapierkorbAus),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.timelapse_outlined),
-                    title: Text(AppTexte.of(context).einstNachTagen),
-                    trailing: DropdownButton<int>(
-                      value: afterDays,
-                      items: [
-                        for (final tage in [7, 14, 30, 60, 90])
-                          DropdownMenuItem(
-                              value: tage,
-                              child: Text(AppTexte.of(context)
-                                  .einstTageDropdown(tage))),
-                      ],
-                      onChanged: (v) async {
-                        if (v == null) return;
-                        await widget.library.db.setTrashAutoDeleteConfig(
-                            enabled: enabled, afterDays: v);
-                        if (mounted) _reloadTrashSettings();
-                      },
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.history),
-                    title: Text(AppTexte.of(context).einstLetzterLauf),
-                    subtitle: Text(lastRun == null
-                        ? AppTexte.of(context).einstNieAusgefuehrt
-                        : _datumZeit(lastRun)),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
-
-  List<Widget> _gruppeGefahr() => [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Text(
-            AppTexte.of(context).einstResetText,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ),
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            side: BorderSide(
-                color:
-                    Theme.of(context).colorScheme.error.withValues(alpha: 0.4)),
-          ),
-          child: ListTile(
-            leading: Icon(Icons.warning_amber_outlined,
-                color: Theme.of(context).colorScheme.error),
-            title: Text(AppTexte.of(context).einstResetTitel),
-            subtitle: Text(AppTexte.of(context).einstResetKurz),
-            trailing: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error),
-              onPressed: _resetDatabase,
-              child: Text(AppTexte.of(context).einstResetKnopf),
             ),
           ),
+          const Divider(height: 1),
+          CheckboxListTile(
+            value: _encryptManualBackup,
+            onChanged: (v) => setState(() => _encryptManualBackup = v ?? false),
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(AppTexte.of(context).einstBackupVerschluesseln),
+            subtitle: Text(AppTexte.of(context).einstBackupPassphraseAbfrage),
+          ),
+          // Was mitkommt und was nicht. Der Hinweis stand nirgends, und
+          // der Unterschied ist erheblich: Ohne Passphrase liegt kein
+          // Schnappschuss der Datenbank in der Sicherung, und damit
+          // kämen Personen, Stammbaum, Reisen und Aktivitäten beim
+          // Zurückspielen nicht wieder (Befund der 19. Prüfrunde).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
+            child: Text(
+              AppTexte.of(context).einstBackupManuellHinweis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _runBackup,
+                    icon: const Icon(Icons.backup_outlined),
+                    label: Text(AppTexte.of(context).einstJetztSichern),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _runRestore,
+                    icon: const Icon(Icons.settings_backup_restore),
+                    label: Text(AppTexte.of(context).einstWiederherstellen),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _pruefeBackup,
+                icon: const Icon(Icons.fact_check_outlined),
+                label: Text(AppTexte.of(context).einstBackupPruefen),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Text(
+              AppTexte.of(context).einstBackupZielHinweis,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppeBackupAuto() => [
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstBackupAutoHinweis,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-      ];
+      ),
+    ),
+    Card(
+      child: FutureBuilder<BackupSettingsData?>(
+        future: _backupSettingsFuture,
+        builder: (context, snapshot) {
+          final config = snapshot.data;
+          final enabled = config?.autoBackupEnabled ?? false;
+          final destination = config?.autoBackupDestination;
+          final intervalHours = config?.autoBackupIntervalHours ?? 24;
+          final maxMbPerRun = config?.autoBackupMaxMbPerRun ?? 0;
+          final lastRun = config?.lastAutoBackupAt;
+          final keyReady = widget.library.backupKeyAvailableThisSession;
+
+          return Column(
+            children: [
+              SwitchListTile(
+                value: enabled,
+                onChanged: destination == null
+                    ? null
+                    : (v) async {
+                        await widget.library.db.setAutoBackupConfig(enabled: v);
+                        if (mounted) _reloadBackupSettings();
+                      },
+                title: Text(AppTexte.of(context).allgAktiv),
+                subtitle: Text(
+                  destination ?? AppTexte.of(context).einstBackupZuerstZiel,
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(AppTexte.of(context).einstZielordner),
+                subtitle: Text(
+                  destination ?? AppTexte.of(context).einstBackupKeinOrdner,
+                ),
+                trailing: OutlinedButton(
+                  onPressed: () async {
+                    final picked = await FilePicker.platform.getDirectoryPath(
+                      dialogTitle: AppTexte.of(
+                        context,
+                      ).einstBackupAutoZielWaehlen,
+                    );
+                    if (picked == null) return;
+                    await widget.library.db.setAutoBackupConfig(
+                      enabled: enabled,
+                      destination: picked,
+                    );
+                    if (mounted) _reloadBackupSettings();
+                  },
+                  child: Text(AppTexte.of(context).einstWaehlen),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.schedule_outlined),
+                title: Text(AppTexte.of(context).einstIntervall),
+                trailing: DropdownButton<int>(
+                  value: intervalHours,
+                  items: [
+                    DropdownMenuItem(
+                      value: 1,
+                      child: Text(AppTexte.of(context).einstStuendlich),
+                    ),
+                    DropdownMenuItem(
+                      value: 6,
+                      child: Text(
+                        AppTexte.of(context).einstIntervallSechsStunden,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 24,
+                      child: Text(AppTexte.of(context).einstTaeglich),
+                    ),
+                    DropdownMenuItem(
+                      value: 168,
+                      child: Text(AppTexte.of(context).einstWoechentlich),
+                    ),
+                  ],
+                  onChanged: (v) async {
+                    if (v == null) return;
+                    await widget.library.db.setAutoBackupConfig(
+                      enabled: enabled,
+                      intervalHours: v,
+                    );
+                    if (mounted) _reloadBackupSettings();
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.history_outlined),
+                title: Text(AppTexte.of(context).einstBackupGenerationenTitel),
+                subtitle: Text(
+                  AppTexte.of(context).einstBackupGenerationenText,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                isThreeLine: true,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.speed_outlined),
+                title: Text(AppTexte.of(context).einstMengeJeLauf),
+                subtitle: Text(
+                  AppTexte.of(context).einstBackupGrenzeText,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                isThreeLine: true,
+                trailing: DropdownButton<int>(
+                  value: maxMbPerRun,
+                  items: [
+                    DropdownMenuItem(
+                      value: 0,
+                      child: Text(AppTexte.of(context).einstUnbegrenzt),
+                    ),
+                    const DropdownMenuItem(value: 500, child: Text('500 MB')),
+                    const DropdownMenuItem(value: 2000, child: Text('2 GB')),
+                    const DropdownMenuItem(value: 10000, child: Text('10 GB')),
+                  ],
+                  onChanged: (v) async {
+                    if (v == null) return;
+                    await widget.library.db.setAutoBackupMaxMbPerRun(v);
+                    if (mounted) _reloadBackupSettings();
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.history),
+                title: Text(AppTexte.of(context).einstLetzterLauf),
+                subtitle: Text(
+                  lastRun == null
+                      ? AppTexte.of(context).einstNieAusgefuehrt
+                      : _datumZeit(lastRun),
+                ),
+              ),
+              if (enabled && !keyReady)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.xs,
+                  ),
+                  child: Text(
+                    AppTexte.of(context).einstBackupPassphraseGesperrt,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.semantik.warnung,
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: destination == null ? null : _runAutoBackupNow,
+                    icon: const Icon(Icons.sync),
+                    label: Text(AppTexte.of(context).einstJetztSynchronisieren),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppePapierkorb() => [
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstPapierkorbText,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ),
+    Card(
+      child: FutureBuilder<TrashSettingsData?>(
+        future: _trashSettingsFuture,
+        builder: (context, snapshot) {
+          final config = snapshot.data;
+          final enabled = config?.autoDeleteEnabled ?? false;
+          final afterDays = config?.autoDeleteAfterDays ?? 30;
+          final lastRun = config?.lastPurgeAt;
+
+          return Column(
+            children: [
+              // **Der Weg in den Papierkorb selbst.** Er fehlte seit
+              // dem ersten Commit: TrashScreen war vollständig
+              // gebaut - Wiederherstellen, endgültig Löschen, leerer
+              // Zustand, alle Texte - und wurde von keiner einzigen
+              // Stelle aufgerufen. Gelöschte Fotos lagen also in
+              // einem Behälter, den niemand öffnen konnte, bis die
+              // automatische Leerung sie nach dreissig Tagen
+              // endgültig entfernte. Die Duplikatsuche versprach
+              // dabei ausdrücklich „über den Papierkorb
+              // wiederherstellbar".
+              //
+              // Hier und nicht in der Leiste: Der gesperrte Ordner
+              // wird ebenso von den Einstellungen aus geöffnet, und
+              // seine Einstellung steht daneben.
+              StreamBuilder<Papierkorbumfang>(
+                // **Wieviel Platz hier liegt, stand nirgends.** An
+                // einer gewachsenen Bibliothek waren es 619
+                // Aufnahmen und 6,01 GB – sieben Prozent des
+                // Bestands, unsichtbar. Die Zahl der Fotos allein
+                // sagt darüber nichts: 619 Bildschirmfotos wären
+                // ein Bruchteil davon.
+                //
+                // Beides rechnet die Datenbank, statt jede Zeile des
+                // Papierkorbs herzuschicken: 0,3 statt 13,0 ms je
+                // Abo, und dieser Aufbau läuft bei jeder Meldung des
+                // Bibliothekszustands.
+                stream: widget.library.db.watchPapierkorbUmfang(),
+                builder: (context, papierkorb) {
+                  final anzahl = papierkorb.data?.anzahl ?? 0;
+                  final platz = papierkorb.data?.bytes ?? 0;
+                  return ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: Text(AppTexte.of(context).papierkorbTitel),
+                    subtitle: Text(
+                      anzahl == 0
+                          ? AppTexte.of(context).papierkorbLeer
+                          : AppTexte.of(
+                              context,
+                            ).papierkorbUmfang(anzahl, groessentext(platz)),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => TrashScreen(library: widget.library),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              SwitchListTile(
+                value: enabled,
+                onChanged: (v) async {
+                  await widget.library.db.setTrashAutoDeleteConfig(enabled: v);
+                  if (mounted) _reloadTrashSettings();
+                },
+                title: Text(AppTexte.of(context).allgAktiv),
+                subtitle: Text(AppTexte.of(context).einstPapierkorbAus),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.timelapse_outlined),
+                title: Text(AppTexte.of(context).einstNachTagen),
+                trailing: DropdownButton<int>(
+                  value: afterDays,
+                  items: [
+                    for (final tage in [7, 14, 30, 60, 90])
+                      DropdownMenuItem(
+                        value: tage,
+                        child: Text(
+                          AppTexte.of(context).einstTageDropdown(tage),
+                        ),
+                      ),
+                  ],
+                  onChanged: (v) async {
+                    if (v == null) return;
+                    await widget.library.db.setTrashAutoDeleteConfig(
+                      enabled: enabled,
+                      afterDays: v,
+                    );
+                    if (mounted) _reloadTrashSettings();
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.history),
+                title: Text(AppTexte.of(context).einstLetzterLauf),
+                subtitle: Text(
+                  lastRun == null
+                      ? AppTexte.of(context).einstNieAusgefuehrt
+                      : _datumZeit(lastRun),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
+
+  List<Widget> _gruppeGefahr() => [
+    Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Text(
+        AppTexte.of(context).einstResetText,
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    ),
+    Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(
+          Icons.warning_amber_outlined,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: Text(AppTexte.of(context).einstResetTitel),
+        subtitle: Text(AppTexte.of(context).einstResetKurz),
+        trailing: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: _resetDatabase,
+          child: Text(AppTexte.of(context).einstResetKnopf),
+        ),
+      ),
+    ),
+  ];
 
   List<Widget> _gruppeUeber() => [
-        Card(
-          child: FutureBuilder<PackageInfo>(
-            future: _versionFuture,
-            builder: (context, snapshot) {
-              final info = snapshot.data;
-              final version = info?.version ?? '…';
-              // Dieselbe Auswahl wie in der Modellgruppe: Sonst stuende
-              // hier auf Englisch fuer immer „9 von 11".
-              final katalog = _modelle(context);
-              final modelle = katalog
-                  .where((e) => widget.library.isModelInstalled(e))
-                  .toList();
-              return Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text('Photo Vault $version'),
-                    subtitle: Text(info == null
-                        ? ''
-                        : AppTexte.of(context).einstBauZeile(
-                            info.buildNumber,
-                            Platform.operatingSystem,
-                            Platform.operatingSystemVersion)),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.storage_outlined),
-                    title: Text(AppTexte.of(context).einstDatenbank),
-                    subtitle: Text(AppTexte.of(context)
-                        .einstDatenbankStand(widget.library.db.schemaVersion)),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.memory_outlined),
-                    title: Text(modelle.isEmpty
-                        ? AppTexte.of(context).einstKeineModelle
-                        : AppTexte.of(context).einstModelleGeladen(
-                            modelle.length, katalog.length)),
-                    subtitle: Text(modelle.isEmpty
-                        ? AppTexte.of(context).einstModelleUnbenutzt
-                        : modelle
-                            .map((e) => modellTitel(AppTexte.of(context), e.id))
-                            .join(' · ')),
-                    isThreeLine: modelle.isNotEmpty,
-                  ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
-                    child: Text(
-                      AppTexte.of(context).einstAktualisierungHinweis,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                  if (_aktualisierungsstand != null)
-                    ListTile(
-                      leading: Icon(
-                        _aktualisierungsstand!.istNeuereVerfuegbar
-                            ? Icons.new_releases_outlined
-                            : Icons.check_circle_outline,
-                        color: _aktualisierungsstand!.istNeuereVerfuegbar
-                            ? Theme.of(context).colorScheme.primary
-                            : context.semantik.erfolg,
-                      ),
-                      title: Text(_aktualisierungsstand!.istNeuereVerfuegbar
-                          ? AppTexte.of(context).einstAktualisierungNeuer(
-                              _aktualisierungsstand!.neueste)
-                          : AppTexte.of(context).einstAktualisierungAktuell),
-                      subtitle: _aktualisierungsstand!.istNeuereVerfuegbar
-                          ? Text(_aktualisierungsstand!.seitenUrl ?? '')
-                          : null,
-                    ),
-                  if (_aktualisierungsfehler != null)
-                    ListTile(
-                      leading: const Icon(Icons.cloud_off_outlined),
-                      title: Text(_aktualisierungsfehler!),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: (_pruefeAktualisierung || info == null)
-                                ? null
-                                : () => _sucheAktualisierung(version),
-                            icon: _pruefeAktualisierung
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2))
-                                : const Icon(Icons.system_update_alt_outlined),
-                            label: Text(AppTexte.of(context)
-                                .einstNachAktualisierungSuchen),
-                          ),
+    Card(
+      child: FutureBuilder<PackageInfo>(
+        future: _versionFuture,
+        builder: (context, snapshot) {
+          final info = snapshot.data;
+          final version = info?.version ?? '…';
+          // Dieselbe Auswahl wie in der Modellgruppe: Sonst stuende
+          // hier auf Englisch fuer immer „9 von 11".
+          final katalog = _modelle(context);
+          final modelle = katalog
+              .where((e) => widget.library.isModelInstalled(e))
+              .toList();
+          return Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text('Photo Vault $version'),
+                subtitle: Text(
+                  info == null
+                      ? ''
+                      : AppTexte.of(context).einstBauZeile(
+                          info.buildNumber,
+                          Platform.operatingSystem,
+                          Platform.operatingSystemVersion,
                         ),
-                      ],
-                    ),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.storage_outlined),
+                title: Text(AppTexte.of(context).einstDatenbank),
+                subtitle: Text(
+                  AppTexte.of(
+                    context,
+                  ).einstDatenbankStand(widget.library.db.schemaVersion),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.memory_outlined),
+                title: Text(
+                  modelle.isEmpty
+                      ? AppTexte.of(context).einstKeineModelle
+                      : AppTexte.of(
+                          context,
+                        ).einstModelleGeladen(modelle.length, katalog.length),
+                ),
+                subtitle: Text(
+                  modelle.isEmpty
+                      ? AppTexte.of(context).einstModelleUnbenutzt
+                      : modelle
+                            .map((e) => modellTitel(AppTexte.of(context), e.id))
+                            .join(' · '),
+                ),
+                isThreeLine: modelle.isNotEmpty,
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: Text(
+                  AppTexte.of(context).einstAktualisierungHinweis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  const Divider(height: 1),
-                  // **Der Weg zu den Lizenzen.** Die App liefert seit dem
-                  // Zierbaum zwei Schriften mit, und die SIL Open Font
-                  // License verlangt, dass ihr Text mitgeht. Er ging
-                  // mit – nur konnte ihn niemand lesen: Es gab keine
-                  // Übersicht, in der die angemeldeten Lizenzen
-                  // aufgetaucht wären. Eine Datei im Paket, die
-                  // unerreichbar ist, erfüllt die Auflage dem Buchstaben
-                  // nach und dem Sinn nach nicht.
-                  ListTile(
-                    leading: const Icon(Icons.gavel_outlined),
-                    title: Text(AppTexte.of(context).einstLizenzen),
-                    subtitle: Text(AppTexte.of(context).einstLizenzenText),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => showLicensePage(
-                      context: context,
-                      applicationName: 'Photo Vault',
-                      applicationVersion: version,
-                    ),
+                ),
+              ),
+              if (_aktualisierungsstand != null)
+                ListTile(
+                  leading: Icon(
+                    _aktualisierungsstand!.istNeuereVerfuegbar
+                        ? Icons.new_releases_outlined
+                        : Icons.check_circle_outline,
+                    color: _aktualisierungsstand!.istNeuereVerfuegbar
+                        ? Theme.of(context).colorScheme.primary
+                        : context.semantik.erfolg,
                   ),
-                ],
-              );
-            },
-          ),
-        ),
-      ];
+                  title: Text(
+                    _aktualisierungsstand!.istNeuereVerfuegbar
+                        ? AppTexte.of(context).einstAktualisierungNeuer(
+                            _aktualisierungsstand!.neueste,
+                          )
+                        : AppTexte.of(context).einstAktualisierungAktuell,
+                  ),
+                  subtitle: _aktualisierungsstand!.istNeuereVerfuegbar
+                      ? Text(_aktualisierungsstand!.seitenUrl ?? '')
+                      : null,
+                ),
+              if (_aktualisierungsfehler != null)
+                ListTile(
+                  leading: const Icon(Icons.cloud_off_outlined),
+                  title: Text(_aktualisierungsfehler!),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: (_pruefeAktualisierung || info == null)
+                            ? null
+                            : () => _sucheAktualisierung(version),
+                        icon: _pruefeAktualisierung
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.system_update_alt_outlined),
+                        label: Text(
+                          AppTexte.of(context).einstNachAktualisierungSuchen,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // **Der Weg zu den Lizenzen.** Die App liefert seit dem
+              // Zierbaum zwei Schriften mit, und die SIL Open Font
+              // License verlangt, dass ihr Text mitgeht. Er ging
+              // mit – nur konnte ihn niemand lesen: Es gab keine
+              // Übersicht, in der die angemeldeten Lizenzen
+              // aufgetaucht wären. Eine Datei im Paket, die
+              // unerreichbar ist, erfüllt die Auflage dem Buchstaben
+              // nach und dem Sinn nach nicht.
+              ListTile(
+                leading: const Icon(Icons.gavel_outlined),
+                title: Text(AppTexte.of(context).einstLizenzen),
+                subtitle: Text(AppTexte.of(context).einstLizenzenText),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showLicensePage(
+                  context: context,
+                  applicationName: 'Photo Vault',
+                  applicationVersion: version,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  ];
 
   /// Ein Schalter für eine Übersetzungsrichtung.
   ///
@@ -3049,8 +3245,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : AppTexte.of(context).einstModellNichtGeladen(beschreibung),
               style: TextStyle(
                 fontSize: 12,
-                color:
-                    installiert ? null : Theme.of(context).colorScheme.outline,
+                color: installiert
+                    ? null
+                    : Theme.of(context).colorScheme.outline,
               ),
             ),
           ),
@@ -3090,27 +3287,32 @@ class _ModelCard extends StatelessWidget {
           color: installed ? context.semantik.erfolg : null,
         ),
         title: Text(modellTitel(AppTexte.of(context), entry.id)),
-        subtitle: Text([
-          modellBeschreibung(AppTexte.of(context), entry.id),
-          AppTexte.of(context).einstModellLizenzZeile(
-                  modellLizenz(AppTexte.of(context), entry.id)) +
-              (groesse != null ? ' · $groesse' : ''),
-        ].join('\n')),
+        subtitle: Text(
+          [
+            modellBeschreibung(AppTexte.of(context), entry.id),
+            AppTexte.of(context).einstModellLizenzZeile(
+                  modellLizenz(AppTexte.of(context), entry.id),
+                ) +
+                (groesse != null ? ' · $groesse' : ''),
+          ].join('\n'),
+        ),
         isThreeLine: true,
         trailing: downloading
             ? const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2))
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             : installed
-                ? IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: AppTexte.of(context).einstModellLoeschen,
-                    onPressed: onDelete,
-                  )
-                : FilledButton(
-                    onPressed: onDownload,
-                    child: Text(AppTexte.of(context).allgHerunterladen)),
+            ? IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: AppTexte.of(context).einstModellLoeschen,
+                onPressed: onDelete,
+              )
+            : FilledButton(
+                onPressed: onDownload,
+                child: Text(AppTexte.of(context).allgHerunterladen),
+              ),
       ),
     );
   }
@@ -3175,16 +3377,20 @@ class _GruppenKarte extends StatelessWidget {
         title: Text(
           gruppe.titel,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: farben.primary,
-                fontWeight: FontWeight.w600,
-              ),
+            color: farben.primary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         subtitle: Text(
           gruppe.beschreibung,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         childrenPadding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         children: gruppe.inhalt(),
       ),

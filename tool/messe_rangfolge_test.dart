@@ -46,8 +46,11 @@ List<(String, double)> _berechneRanking(_RankingArgs args) {
     offset = end;
   }
   return [
-    for (final e in ClipService.rankBySimilarity(query, candidates,
-        topK: args.topK))
+    for (final e in ClipService.rankBySimilarity(
+      query,
+      candidates,
+      topK: args.topK,
+    ))
       (e.key, e.value),
   ];
 }
@@ -60,7 +63,8 @@ Future<List<(String, double)>> _imIsolat(
   final ids = candidates.keys.toList(growable: false);
   final lengths = [for (final id in ids) candidates[id]!.length];
   final packed = Float32List(
-      query.length + lengths.fold<int>(0, (sum, length) => sum + length));
+    query.length + lengths.fold<int>(0, (sum, length) => sum + length),
+  );
   packed.setRange(0, query.length, query);
   var offset = query.length;
   for (final id in ids) {
@@ -68,16 +72,13 @@ Future<List<(String, double)>> _imIsolat(
     packed.setRange(offset, offset + vector.length, vector);
     offset += vector.length;
   }
-  return compute(
-    _berechneRanking,
-    (
-      vectors: TransferableTypedData.fromList([packed.buffer.asUint8List()]),
-      queryLength: query.length,
-      ids: ids,
-      lengths: lengths,
-      topK: topK,
-    ),
-  );
+  return compute(_berechneRanking, (
+    vectors: TransferableTypedData.fromList([packed.buffer.asUint8List()]),
+    queryLength: query.length,
+    ids: ids,
+    lengths: lengths,
+    topK: topK,
+  ));
 }
 
 Future<double> misst(Future<void> Function() was, {int laeufe = 10}) async {
@@ -111,16 +112,19 @@ void main() {
         .get();
     final alle = <String, Float32List>{
       for (final z in zeilen)
-        z.read<String>('asset_id'):
-            Float32List.sublistView(z.read<Uint8List>('vector'))
+        z.read<String>('asset_id'): Float32List.sublistView(
+          z.read<Uint8List>('vector'),
+        ),
     };
     if (alle.isEmpty) {
       print('Keine Einbettungen in dieser Bibliothek.');
       return;
     }
     final abfrage = alle.values.first;
-    print('\n${alle.length} Einbettungen, je ${abfrage.length} Zahlen '
-        '(${(alle.length * abfrage.length * 4 / 1024 / 1024).toStringAsFixed(1)} MB)\n');
+    print(
+      '\n${alle.length} Einbettungen, je ${abfrage.length} Zahlen '
+      '(${(alle.length * abfrage.length * 4 / 1024 / 1024).toStringAsFixed(1)} MB)\n',
+    );
 
     print('Kandidaten   an Ort und Stelle      im Isolat   Unterschied');
     print('-' * 62);
@@ -132,10 +136,12 @@ void main() {
       final dort = await misst(() async {
         await _imIsolat(abfrage, teil, topK: 200);
       });
-      print('${n.toString().padLeft(9)}'
-          '${hier.toStringAsFixed(1).padLeft(17)} ms'
-          '${dort.toStringAsFixed(1).padLeft(13)} ms'
-          '${'${(dort - hier) >= 0 ? '+' : ''}${(dort - hier).toStringAsFixed(1)} ms'.padLeft(14)}');
+      print(
+        '${n.toString().padLeft(9)}'
+        '${hier.toStringAsFixed(1).padLeft(17)} ms'
+        '${dort.toStringAsFixed(1).padLeft(13)} ms'
+        '${'${(dort - hier) >= 0 ? '+' : ''}${(dort - hier).toStringAsFixed(1)} ms'.padLeft(14)}',
+      );
     }
   });
 }

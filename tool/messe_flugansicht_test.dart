@@ -34,8 +34,13 @@ void main() {
       }
     }
     final gitter = Hoehengitter(
-      spalten: n, zeilen: n, hoehen: h,
-      nord: 51.90, sued: 51.80, west: 10.55, ost: 10.71,
+      spalten: n,
+      zeilen: n,
+      hoehen: h,
+      nord: 51.90,
+      sued: 51.80,
+      west: 10.55,
+      ost: 10.71,
     );
     final netz = baueNetz(gitter, kante: 96, grundstufe: 15);
     print('${netz.bloecke.length} Bloecke');
@@ -65,13 +70,15 @@ void main() {
     }
     print('${linie.length} Spurpunkte');
 
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Gelaendeansicht(netz: netz, spur: linie, spurwerte: werte),
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Gelaendeansicht(netz: netz, spur: linie, spurwerte: werte),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.flight_takeoff));
     await tester.pump();
@@ -82,8 +89,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 33));
     }
     uhr.stop();
-    print('ganze Ansicht im Flug: '
-        '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
-        'je Bild (Debug-Zeit)');
+    print(
+      'ganze Ansicht im Flug: '
+      '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
+      'je Bild (Debug-Zeit)',
+    );
   });
 }

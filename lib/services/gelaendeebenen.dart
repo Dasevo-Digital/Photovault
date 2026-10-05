@@ -71,11 +71,13 @@ class Kartenebene {
 /// Bildpunkt, und die Höhen darunter kommen ohnehin nur bis Stufe 15.
 const luftbildEbene = Kartenebene(
   name: 'esri-weltbild',
-  urlVorlage: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+  urlVorlage:
+      'https://server.arcgisonline.com/ArcGIS/rest/services/'
       'World_Imagery/MapServer/tile/{z}/{y}/{x}',
   hoechsteStufe: 18,
   nennung: 'Esri, Maxar, Earthstar Geographics',
-  seite: 'https://www.arcgis.com/home/item.html'
+  seite:
+      'https://www.arcgis.com/home/item.html'
       '?id=10df2279f9684e4a9f6a7f08febac2a9',
 );
 
@@ -97,22 +99,26 @@ const wanderwegeEbene = Kartenebene(
 /// Strassen und Wege als Linienzeichnung über dem Luftbild.
 const strassenEbene = Kartenebene(
   name: 'esri-verkehr',
-  urlVorlage: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+  urlVorlage:
+      'https://server.arcgisonline.com/ArcGIS/rest/services/'
       'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
   hoechsteStufe: 18,
   nennung: 'Esri, HERE, Garmin',
-  seite: 'https://www.arcgis.com/home/item.html'
+  seite:
+      'https://www.arcgis.com/home/item.html'
       '?id=00f90f3f3c9141e4bea329679b257142',
 );
 
 /// Ortsnamen, Grenzen und Beschriftung.
 const orteEbene = Kartenebene(
   name: 'esri-orte',
-  urlVorlage: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+  urlVorlage:
+      'https://server.arcgisonline.com/ArcGIS/rest/services/'
       'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   hoechsteStufe: 18,
   nennung: 'Esri, HERE, Garmin, © OpenStreetMap contributors',
-  seite: 'https://www.arcgis.com/home/item.html'
+  seite:
+      'https://www.arcgis.com/home/item.html'
       '?id=97fa1365da1e43eabb90d0364326bc2d',
 );
 
@@ -135,12 +141,12 @@ enum Gelaendegrund {
 
   /// Der Kartenstil dahinter – `null` beim Luftbild, das keiner ist.
   Kartenstil? get stil => switch (this) {
-        Gelaendegrund.wanderkarte => Kartenstil.topo,
-        Gelaendegrund.hell => Kartenstil.hell,
-        Gelaendegrund.dunkel => Kartenstil.dunkel,
-        Gelaendegrund.eigene => Kartenstil.eigene,
-        Gelaendegrund.luftbild => null,
-      };
+    Gelaendegrund.wanderkarte => Kartenstil.topo,
+    Gelaendegrund.hell => Kartenstil.hell,
+    Gelaendegrund.dunkel => Kartenstil.dunkel,
+    Gelaendegrund.eigene => Kartenstil.eigene,
+    Gelaendegrund.luftbild => null,
+  };
 
   /// Wie fein ein Block dieser Quelle zugemutet werden darf.
   ///
@@ -150,15 +156,15 @@ enum Gelaendegrund {
   /// ist es **eine** Kachel je Block statt vier, und das schafft derselbe
   /// Server. Esri liefert aus einem Auslieferungsnetz und verträgt 18.
   int get hoechsteStufe => switch (this) {
-        Gelaendegrund.wanderkarte => 16,
-        Gelaendegrund.hell => 17,
-        Gelaendegrund.dunkel => 17,
-        // Was jemand selbst einträgt, ist meistens ein eigener Server
-        // oder ein bezahlter Dienst – aber wissen kann die App das nicht.
-        // Deshalb zurückhaltend.
-        Gelaendegrund.eigene => 16,
-        Gelaendegrund.luftbild => 18,
-      };
+    Gelaendegrund.wanderkarte => 16,
+    Gelaendegrund.hell => 17,
+    Gelaendegrund.dunkel => 17,
+    // Was jemand selbst einträgt, ist meistens ein eigener Server
+    // oder ein bezahlter Dienst – aber wissen kann die App das nicht.
+    // Deshalb zurückhaltend.
+    Gelaendegrund.eigene => 16,
+    Gelaendegrund.luftbild => 18,
+  };
 
   Kartenebene get ebene {
     if (this == Gelaendegrund.luftbild) return luftbildEbene;
@@ -167,7 +173,9 @@ enum Gelaendegrund {
       name: s.name,
       urlVorlage: s.kachelUrl
           .replaceAll(
-              '{s}', s.unterbereiche.isEmpty ? '' : s.unterbereiche.first)
+            '{s}',
+            s.unterbereiche.isEmpty ? '' : s.unterbereiche.first,
+          )
           .replaceAll('{r}', ''),
       hoechsteStufe: hoechsteStufe,
       nennung: s.namensnennung,
@@ -226,15 +234,14 @@ class Gelaendekarte {
   /// Nicht null: Ein senkrecht aufgenommenes Luftbild verrät von der
   /// Steilheit eines Hangs kaum etwas, und ohne jede Schattierung sähe
   /// die Landschaft aus wie eine gewellte Tapete.
-  double get reliefstaerke =>
-      grund == Gelaendegrund.luftbild ? 0.45 : 1.0;
+  double get reliefstaerke => grund == Gelaendegrund.luftbild ? 0.45 : 1.0;
 
   /// Die Ebenen von unten nach oben.
   List<Kartenebene> get ebenen => [
-        grund.ebene,
-        if (wege) ...[wanderwegeEbene, strassenEbene],
-        if (beschriftung) orteEbene,
-      ];
+    grund.ebene,
+    if (wege) ...[wanderwegeEbene, strassenEbene],
+    if (beschriftung) orteEbene,
+  ];
 
   /// Die Namensnennung aller beteiligten Quellen, jede genau einmal.
   ///
@@ -262,14 +269,13 @@ class Gelaendekarte {
     bool? beschriftung,
     bool? hoehenlinien,
     bool? wanderobjekte,
-  }) =>
-      Gelaendekarte(
-        grund: grund ?? this.grund,
-        wege: wege ?? this.wege,
-        beschriftung: beschriftung ?? this.beschriftung,
-        hoehenlinien: hoehenlinien ?? this.hoehenlinien,
-        wanderobjekte: wanderobjekte ?? this.wanderobjekte,
-      );
+  }) => Gelaendekarte(
+    grund: grund ?? this.grund,
+    wege: wege ?? this.wege,
+    beschriftung: beschriftung ?? this.beschriftung,
+    hoehenlinien: hoehenlinien ?? this.hoehenlinien,
+    wanderobjekte: wanderobjekte ?? this.wanderobjekte,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -291,7 +297,7 @@ class Gelaendekarte {
 /// Ein Name aus einer älteren Fassung könnte einer sein, den es nicht
 /// mehr gibt. Eine Nummer ausserhalb der Reihe fällt auf die Vorgabe
 /// zurück.
-Gelaendegrund gelaendegrundAus(int nr) => nr >= 0 &&
-        nr < Gelaendegrund.values.length
+Gelaendegrund gelaendegrundAus(int nr) =>
+    nr >= 0 && nr < Gelaendegrund.values.length
     ? Gelaendegrund.values[nr]
     : Gelaendegrund.wanderkarte;

@@ -43,8 +43,8 @@ class FaecherAnsicht extends StatelessWidget {
         // Der Halbkreis öffnet sich nach oben, die Mitte sitzt also unten.
         // Der Radius ist durch beides begrenzt: halbe Breite und volle
         // Höhe.
-        final radius = math.min(platz.maxWidth / 2, platz.maxHeight) -
-            AppSpacing.xl;
+        final radius =
+            math.min(platz.maxWidth / 2, platz.maxHeight) - AppSpacing.xl;
         final ringBreite = radius / (_ringe + 1);
         // Ein Halbkreis ist doppelt so breit wie hoch. Ist die Fläche
         // höher als das, bliebe oben ein leeres Band, wenn der Fußpunkt
@@ -66,8 +66,11 @@ class FaecherAnsicht extends StatelessWidget {
                 onTapUp: (d) {
                   final rel = d.localPosition - mitte;
                   final winkel = math.atan2(rel.dy, rel.dx);
-                  final getroffen =
-                      platzBei(plaetze, winkel, rel.distance / ringBreite);
+                  final getroffen = platzBei(
+                    plaetze,
+                    winkel,
+                    rel.distance / ringBreite,
+                  );
                   final id = getroffen?.personId;
                   if (id != null) onTippen(id);
                 },
@@ -107,18 +110,20 @@ class FaecherAnsicht extends StatelessWidget {
         mitte.dx + abstand * math.cos(p.mittelWinkel),
         mitte.dy + abstand * math.sin(p.mittelWinkel),
       );
-      felder.add(Positioned(
-        left: punkt.dx - 24,
-        top: punkt.dy - 12,
-        width: 48,
-        height: 24,
-        child: Semantics(
-          label: person.name,
-          button: true,
-          onTap: () => onTippen(person.id),
-          child: const SizedBox.expand(),
+      felder.add(
+        Positioned(
+          left: punkt.dx - 24,
+          top: punkt.dy - 12,
+          width: 48,
+          height: 24,
+          child: Semantics(
+            label: person.name,
+            button: true,
+            onTap: () => onTippen(person.id),
+            child: const SizedBox.expand(),
+          ),
         ),
-      ));
+      );
     }
     return felder;
   }
@@ -191,14 +196,24 @@ class _FaecherMaler extends CustomPainter {
     final pfad = Path();
     if (p.ring == 0) {
       // Die Mitte ist kein Ring, sondern ein halber Kreis.
-      pfad.addArc(Rect.fromCircle(center: mitte, radius: aussen),
-          p.vonWinkel, p.oeffnung);
+      pfad.addArc(
+        Rect.fromCircle(center: mitte, radius: aussen),
+        p.vonWinkel,
+        p.oeffnung,
+      );
       pfad.close();
     } else {
-      pfad.addArc(Rect.fromCircle(center: mitte, radius: aussen),
-          p.vonWinkel, p.oeffnung);
-      pfad.arcTo(Rect.fromCircle(center: mitte, radius: innen),
-          p.vonWinkel + p.oeffnung, -p.oeffnung, false);
+      pfad.addArc(
+        Rect.fromCircle(center: mitte, radius: aussen),
+        p.vonWinkel,
+        p.oeffnung,
+      );
+      pfad.arcTo(
+        Rect.fromCircle(center: mitte, radius: innen),
+        p.vonWinkel + p.oeffnung,
+        -p.oeffnung,
+        false,
+      );
       pfad.close();
     }
 
@@ -217,8 +232,8 @@ class _FaecherMaler extends CustomPainter {
         ..color = p.istLeer
             ? farben.surfaceContainerLowest
             : p.ring == 0
-                ? farben.primaryContainer
-                : farben.surfaceContainerHighest,
+            ? farben.primaryContainer
+            : farben.surfaceContainerHighest,
     );
     canvas.drawPath(
       p.istLeer ? _gestrichelt(pfad) : pfad,
@@ -228,8 +243,8 @@ class _FaecherMaler extends CustomPainter {
         ..color = p.ring == 0
             ? farben.primary
             : p.istLeer
-                ? farben.outline
-                : farben.outlineVariant,
+            ? farben.outline
+            : farben.outlineVariant,
     );
 
     final person = p.personId == null ? null : personen[p.personId];
@@ -238,7 +253,12 @@ class _FaecherMaler extends CustomPainter {
   }
 
   void _maleText(
-      Canvas canvas, Fachplatz p, PersonData person, double innen, double aussen) {
+    Canvas canvas,
+    Fachplatz p,
+    PersonData person,
+    double innen,
+    double aussen,
+  ) {
     final spanne = lebensspanne(person.geburtsdatum, person.sterbedatum);
     // Nach außen wird der Platz enger; ab dem dritten Ring bleibt nur der
     // erste Namensteil, und das Lebensdatum entfällt ganz. Lieber ein
@@ -247,27 +267,31 @@ class _FaecherMaler extends CustomPainter {
     final name = knapp ? person.name.split(' ').first : person.name;
 
     final maler = TextPainter(
-      text: TextSpan(children: [
-        TextSpan(
-          text: name,
-          style: TextStyle(
-            color: p.ring == 0 ? farben.onPrimaryContainer : farben.onSurface,
-            fontSize: (p.ring == 0 ? 14 : (knapp ? 9.5 : 11)) * schriftFaktor,
-            fontWeight: p.ring == 0 ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
-        if (spanne != null && !knapp)
+      text: TextSpan(
+        children: [
           TextSpan(
-            text: '\n$spanne',
-            // onSurfaceVariant statt outline: Gegen die Ringfläche
-            // gemessen kam outline auf 3,48:1 im hellen und 3,89:1 im
-            // dunklen Modus – für 9 Punkt hohe Schrift zu wenig,
-            // gefordert sind 4,5:1. „outline" ist als Linienfarbe
-            // gedacht, nicht als Textfarbe.
+            text: name,
             style: TextStyle(
-                color: farben.onSurfaceVariant, fontSize: 9 * schriftFaktor),
+              color: p.ring == 0 ? farben.onPrimaryContainer : farben.onSurface,
+              fontSize: (p.ring == 0 ? 14 : (knapp ? 9.5 : 11)) * schriftFaktor,
+              fontWeight: p.ring == 0 ? FontWeight.w600 : FontWeight.w500,
+            ),
           ),
-      ]),
+          if (spanne != null && !knapp)
+            TextSpan(
+              text: '\n$spanne',
+              // onSurfaceVariant statt outline: Gegen die Ringfläche
+              // gemessen kam outline auf 3,48:1 im hellen und 3,89:1 im
+              // dunklen Modus – für 9 Punkt hohe Schrift zu wenig,
+              // gefordert sind 4,5:1. „outline" ist als Linienfarbe
+              // gedacht, nicht als Textfarbe.
+              style: TextStyle(
+                color: farben.onSurfaceVariant,
+                fontSize: 9 * schriftFaktor,
+              ),
+            ),
+        ],
+      ),
       textAlign: TextAlign.center,
       textDirection: textRichtung,
       maxLines: 2,
@@ -277,8 +301,10 @@ class _FaecherMaler extends CustomPainter {
     canvas.save();
     if (p.ring == 0) {
       // In der Mitte waagerecht, knapp über dem Fußpunkt.
-      canvas.translate(mitte.dx - maler.width / 2,
-          mitte.dy - aussen / 2 - maler.height / 2);
+      canvas.translate(
+        mitte.dx - maler.width / 2,
+        mitte.dy - aussen / 2 - maler.height / 2,
+      );
     } else {
       // In den Ringen entlang des Radius. Auf der linken Hälfte wäre die
       // Schrift sonst auf dem Kopf – dort wird sie um 180 Grad gedreht

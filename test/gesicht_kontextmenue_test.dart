@@ -29,7 +29,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_gesicht_kontext_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -39,39 +41,47 @@ void main() {
     // der zählt im Test als Ausnahme.
     final datei = paths.absolute('originals/a1.jpg');
     datei.parent.createSync(recursive: true);
-    datei.writeAsBytesSync(Uint8List.fromList([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
-      0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-      0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
-      0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
-      0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-      0x42, 0x60, 0x82,
-    ]));
+    datei.writeAsBytesSync(
+      Uint8List.fromList([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, //
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+        0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+        0x42, 0x60, 0x82,
+      ]),
+    );
 
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'c1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 1),
-          // Gesetzt, damit nicht die Datei dekodiert werden muss.
-          widthPx: const Value(1000),
-          heightPx: const Value(800),
-        ));
-    await db.insertFace(FacesCompanion.insert(
-      id: 'f1',
-      assetId: 'a1',
-      boxX: 0.1,
-      boxY: 0.1,
-      boxW: 0.3,
-      boxH: 0.3,
-      cropRelativePath: const Value('faces/f1.jpg'),
-    ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            originalFileName: 'a1.jpg',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'c1',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 1, 1),
+            importedAt: DateTime(2026, 1, 1),
+            // Gesetzt, damit nicht die Datei dekodiert werden muss.
+            widthPx: const Value(1000),
+            heightPx: const Value(800),
+          ),
+        );
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: 'f1',
+        assetId: 'a1',
+        boxX: 0.1,
+        boxY: 0.1,
+        boxW: 0.3,
+        boxH: 0.3,
+        cropRelativePath: const Value('faces/f1.jpg'),
+      ),
+    );
     asset = (await db.assetById('a1'))!;
   });
 
@@ -85,17 +95,19 @@ void main() {
   /// initState läuft nicht erneut – und der Bildschirm zeigt weiter den
   /// alten Datenbankstand.
   Future<void> zeige(WidgetTester tester, {Object? neuAufbauen}) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: FaceReviewScreen(
-        key: ValueKey(neuAufbauen ?? 'erst'),
-        library: library,
-        assets: [asset],
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: FaceReviewScreen(
+          key: ValueKey(neuAufbauen ?? 'erst'),
+          library: library,
+          assets: [asset],
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -112,7 +124,9 @@ void main() {
 
   Future<void> rechtsklick(WidgetTester tester, Offset stelle) async {
     final maus = await tester.createGesture(
-        kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
     await maus.down(stelle);
     await maus.up();
     await tester.pumpAndSettle();
@@ -131,8 +145,9 @@ void main() {
     expect(find.text('Gesicht manuell hinzufügen'), findsOneWidget);
   });
 
-  testWidgets('das Menü unterscheidet Rahmen von freier Fläche',
-      (tester) async {
+  testWidgets('das Menü unterscheidet Rahmen von freier Fläche', (
+    tester,
+  ) async {
     await zeige(tester);
 
     // Auf dem Gesicht: die gesichtsbezogenen Einträge.
@@ -144,13 +159,17 @@ void main() {
 
     // Daneben: nur, was das ganze Foto betrifft.
     await rechtsklick(tester, const Offset(700, 500));
-    expect(find.text('Erkennung löschen'), findsNothing,
-        reason: 'ohne Gesicht gibt es nichts zu löschen');
+    expect(
+      find.text('Erkennung löschen'),
+      findsNothing,
+      reason: 'ohne Gesicht gibt es nichts zu löschen',
+    );
     expect(find.text('Gesicht manuell hinzufügen'), findsOneWidget);
   });
 
-  testWidgets('„Ignorieren" wirkt und der Rahmen wechselt die Beschriftung',
-      (tester) async {
+  testWidgets('„Ignorieren" wirkt und der Rahmen wechselt die Beschriftung', (
+    tester,
+  ) async {
     await zeige(tester);
     await rechtsklick(tester, tester.getCenter(find.text('Unbenannt')));
     await tester.tap(find.text('Ignorieren'));
@@ -165,8 +184,9 @@ void main() {
     expect(find.text('Ignorieren'), findsNothing);
   });
 
-  testWidgets('„Erkennung löschen" entfernt Zeile und Ausschnittdatei',
-      (tester) async {
+  testWidgets('„Erkennung löschen" entfernt Zeile und Ausschnittdatei', (
+    tester,
+  ) async {
     // Die Datei mitzunehmen ist der Punkt: Bliebe sie liegen, wäre der
     // Platz nicht frei, und das ist der einzige Vorteil des Löschens
     // gegenüber dem Beiseitelegen.
@@ -184,8 +204,9 @@ void main() {
     expect(ausschnitt.existsSync(), isFalse);
   });
 
-  testWidgets('„Zuordnung lösen" gibt es nur bei benannten Gesichtern',
-      (tester) async {
+  testWidgets('„Zuordnung lösen" gibt es nur bei benannten Gesichtern', (
+    tester,
+  ) async {
     await zeige(tester);
     await rechtsklick(tester, tester.getCenter(find.text('Unbenannt')));
     expect(find.text('Zuordnung lösen'), findsNothing);
@@ -206,8 +227,9 @@ void main() {
     expect(f.isIgnored, isFalse, reason: 'das Gesicht selbst bleibt');
   });
 
-  testWidgets('„Gesicht manuell hinzufügen" schaltet den Modus ein',
-      (tester) async {
+  testWidgets('„Gesicht manuell hinzufügen" schaltet den Modus ein', (
+    tester,
+  ) async {
     // Bisher war das nur über das Symbol oben rechts erreichbar – und der
     // Leertext des Rasters schickt die Leute genau hierher.
     await zeige(tester);
@@ -218,8 +240,9 @@ void main() {
     expect(find.textContaining('Ziehe ein Rechteck'), findsOneWidget);
   });
 
-  testWidgets('die Rahmen lassen sich aus- und wieder einblenden',
-      (tester) async {
+  testWidgets('die Rahmen lassen sich aus- und wieder einblenden', (
+    tester,
+  ) async {
     // Bei einem Gruppenfoto liegen schnell ein Dutzend Kästen über dem
     // Bild – dann sieht man die Rahmen und nicht mehr das Foto.
     await zeige(tester);
@@ -234,8 +257,9 @@ void main() {
     expect(find.text('Unbenannt'), findsOneWidget);
   });
 
-  testWidgets('ausgeblendete Rahmen findet man über den Rechtsklick zurück',
-      (tester) async {
+  testWidgets('ausgeblendete Rahmen findet man über den Rechtsklick zurück', (
+    tester,
+  ) async {
     // Sind die Rahmen weg, sucht man den Weg zurück dort, wo man gerade
     // hinsieht – nicht in der Titelleiste.
     await zeige(tester);

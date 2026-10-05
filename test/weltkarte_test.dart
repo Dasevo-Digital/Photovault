@@ -29,10 +29,12 @@ Future<ReverseGeocoder> _geokodierer(Directory wurzel) async {
     '3169070\tRoma\tRoma\t\t41.89193\t12.51133\tP\tPPLC\tIT\t\t07\t\t\t\t2318895\t\t20\tEurope/Rome\t2023\n',
   );
   final regionen = File(p.join(wurzel.path, 'admin1CodesASCII.txt'));
-  await regionen.writeAsString('DE.16\tBerlin\tBerlin\t2950157\n'
-      'DE.04\tHamburg\tHamburg\t2911297\n'
-      'IT.07\tLazio\tLazio\t3174976\n'
-      'FR.11\tIle-de-France\tIle-de-France\t3012874\n');
+  await regionen.writeAsString(
+    'DE.16\tBerlin\tBerlin\t2950157\n'
+    'DE.04\tHamburg\tHamburg\t2911297\n'
+    'IT.07\tLazio\tLazio\t3174976\n'
+    'FR.11\tIle-de-France\tIle-de-France\t3012874\n',
+  );
   final laender = File(p.join(wurzel.path, 'countryInfo.txt'));
   await laender.writeAsString(
     '# Kopfzeile\n'
@@ -41,7 +43,10 @@ Future<ReverseGeocoder> _geokodierer(Directory wurzel) async {
     'FR\tFRA\t250\tFR\tFrankreich\tParis\t547030\t66987244\tEU\t.fr\tEUR\tEuro\t33\t\t\tfr-FR\t3017382\t\t\n',
   );
   return ReverseGeocoder.loadFromFiles(
-      citiesFile: staedte, admin1File: regionen, countryFile: laender);
+    citiesFile: staedte,
+    admin1File: regionen,
+    countryFile: laender,
+  );
 }
 
 void main() {
@@ -56,8 +61,9 @@ void main() {
     geo = await _geokodierer(tempRoot);
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')))
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'lib')),
+      )
       ..geocoder = geo;
   });
 
@@ -69,31 +75,40 @@ void main() {
     tempRoot.deleteSync(recursive: true);
   });
 
-  Future<void> aufnahme(String id,
-          {String? land, String? region, String? ort}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2024, 6, 3),
-            importedAt: DateTime(2024),
-            latitude: const Value(53.55),
-            longitude: const Value(9.99),
-            locationCountry: Value(land),
-            locationState: Value(region),
-            locationCity: Value(ort),
-          ));
+  Future<void> aufnahme(
+    String id, {
+    String? land,
+    String? region,
+    String? ort,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2024, 6, 3),
+          importedAt: DateTime(2024),
+          latitude: const Value(53.55),
+          longitude: const Value(9.99),
+          locationCountry: Value(land),
+          locationState: Value(region),
+          locationCity: Value(ort),
+        ),
+      );
 
   Future<void> zeige(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      builder: (context, kind) => mitMeldungen(kind),
-      home: WeltkarteScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        builder: (context, kind) => mitMeldungen(kind),
+        home: WeltkarteScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -127,10 +142,15 @@ void main() {
     });
   });
 
-  testWidgets('fuer jedes belegte Land, jede Region und jeden Ort ein Punkt',
-      (tester) async {
-    await aufnahme('a1',
-        land: 'Deutschland', region: 'Hamburg', ort: 'Hamburg');
+  testWidgets('fuer jedes belegte Land, jede Region und jeden Ort ein Punkt', (
+    tester,
+  ) async {
+    await aufnahme(
+      'a1',
+      land: 'Deutschland',
+      region: 'Hamburg',
+      ort: 'Hamburg',
+    );
     await zeige(tester);
     // Land, Region und Ort – drei Ebenen, drei Marken. „Hamburg" zweimal,
     // weil die Stadt zugleich ihre Region ist.
@@ -139,8 +159,12 @@ void main() {
   });
 
   testWidgets('die Ebenen lassen sich einzeln abschalten', (tester) async {
-    await aufnahme('a1',
-        land: 'Deutschland', region: 'Hamburg', ort: 'Hamburg');
+    await aufnahme(
+      'a1',
+      land: 'Deutschland',
+      region: 'Hamburg',
+      ort: 'Hamburg',
+    );
     await zeige(tester);
     expect(find.byTooltip('Deutschland'), findsOneWidget);
 
@@ -227,13 +251,15 @@ void main() {
     // greift nur der Abstand – bei Stufe 2 ist ganz Deutschland keine 30
     // Bildpunkte hoch, zwei Klicks hinein wären also immer ein
     // Doppelklick, gleichgültig wie lange dazwischen gewartet wird.
-    await db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-      art: 'land',
-      schluessel: 'DE',
-      name: 'Deutschland',
-      status: 'besucht',
-      angelegtAm: DateTime(2024),
-    ));
+    await db.setzeOrtsmarke(
+      OrtsmarkenCompanion.insert(
+        art: 'land',
+        schluessel: 'DE',
+        name: 'Deutschland',
+        status: 'besucht',
+        angelegtAm: DateTime(2024),
+      ),
+    );
     await zeige(tester);
     expect(await db.alleOrtsmarken(), hasLength(1));
 
@@ -253,8 +279,9 @@ void main() {
     expect(letzteMeldung(), 'An dieser Stelle kennt der Datensatz keinen Ort.');
   });
 
-  testWidgets('auf der Stufe Region trifft derselbe Klick das Bundesland',
-      (tester) async {
+  testWidgets('auf der Stufe Region trifft derselbe Klick das Bundesland', (
+    tester,
+  ) async {
     await zeige(tester);
     await tester.tap(find.text('Regionen'));
     await tester.pumpAndSettle();
@@ -274,8 +301,9 @@ void main() {
     expect((await db.alleOrtsmarken()).single.status, 'geplant');
   });
 
-  testWidgets('was die Fotos belegen, bekommt keinen Haken von Hand',
-      (tester) async {
+  testWidgets('was die Fotos belegen, bekommt keinen Haken von Hand', (
+    tester,
+  ) async {
     await aufnahme('a1', land: 'Deutschland');
     await zeige(tester);
     // München und nicht Kassel: Der Landpunkt sitzt auf Berlin, und
@@ -294,13 +322,15 @@ void main() {
     // einer Fotokarte als „welchen Haken setze ich". Das Blatt mit den
     // Markierknöpfen ist deshalb entfallen; die Ortsansicht trägt sie
     // ohnehin, und ein zweiter Weg zum Markieren wäre einer zu viel.
-    await db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-      art: 'land',
-      schluessel: 'IT',
-      name: 'Italien',
-      status: 'besucht',
-      angelegtAm: DateTime(2024),
-    ));
+    await db.setzeOrtsmarke(
+      OrtsmarkenCompanion.insert(
+        art: 'land',
+        schluessel: 'IT',
+        name: 'Italien',
+        status: 'besucht',
+        angelegtAm: DateTime(2024),
+      ),
+    );
     await zeige(tester);
     expect(find.byTooltip('Italien'), findsOneWidget);
 
@@ -309,20 +339,23 @@ void main() {
     expect(find.byType(OrtsansichtScreen), findsOneWidget);
     // Und dort steht der Haken, den die Karte zeigt.
     expect(
-        tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Besucht'))
-            .selected,
-        isTrue);
+      tester
+          .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Besucht'))
+          .selected,
+      isTrue,
+    );
   });
 
   testWidgets('und die Marke laesst sich dort zuruecknehmen', (tester) async {
-    await db.setzeOrtsmarke(OrtsmarkenCompanion.insert(
-      art: 'land',
-      schluessel: 'IT',
-      name: 'Italien',
-      status: 'besucht',
-      angelegtAm: DateTime(2024),
-    ));
+    await db.setzeOrtsmarke(
+      OrtsmarkenCompanion.insert(
+        art: 'land',
+        schluessel: 'IT',
+        name: 'Italien',
+        status: 'besucht',
+        angelegtAm: DateTime(2024),
+      ),
+    );
     await zeige(tester);
     await tester.tap(find.byTooltip('Italien'));
     await tester.pumpAndSettle();
@@ -340,8 +373,9 @@ void main() {
     expect(find.byTooltip('Italien'), findsNothing);
   });
 
-  testWidgets('ohne Datensatz bleibt die Karte leer statt zu werfen',
-      (tester) async {
+  testWidgets('ohne Datensatz bleibt die Karte leer statt zu werfen', (
+    tester,
+  ) async {
     library.geocoder = null;
     await zeige(tester);
     expect(find.byType(FlutterMap), findsOneWidget);

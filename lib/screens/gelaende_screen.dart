@@ -77,7 +77,8 @@ class GelaendeScreen extends StatefulWidget {
     required double west,
     required double nord,
     required double ost,
-  })? wanderobjekte;
+  })?
+  wanderobjekte;
 
   /// Die Fotos der Aktivität, mit Ort und Zeit.
   ///
@@ -141,23 +142,27 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   }
 
   PopupMenuItem<_Kartenwahl> _grundEintrag(
-          Gelaendegrund grund, IconData symbol, String name) =>
-      PopupMenuItem(
-        value: _Kartenwahl.grund(grund),
-        child: Row(
-          children: [
-            Icon(symbol,
-                size: 18,
-                color: grund == _auflage.grund
-                    ? Theme.of(context).colorScheme.primary
-                    : null),
-            const SizedBox(width: AppSpacing.sm),
-            // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
-            // Rand des Menues - in der englischen Fassung noch weiter.
-            Flexible(child: Text(name)),
-          ],
+    Gelaendegrund grund,
+    IconData symbol,
+    String name,
+  ) => PopupMenuItem(
+    value: _Kartenwahl.grund(grund),
+    child: Row(
+      children: [
+        Icon(
+          symbol,
+          size: 18,
+          color: grund == _auflage.grund
+              ? Theme.of(context).colorScheme.primary
+              : null,
         ),
-      );
+        const SizedBox(width: AppSpacing.sm),
+        // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
+        // Rand des Menues - in der englischen Fassung noch weiter.
+        Flexible(child: Text(name)),
+      ],
+    ),
+  );
 
   /// Eine Ebene zum An- und Abschalten.
   ///
@@ -167,40 +172,48 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// dazu, zwischen ihnen hin und her zu gehen, um eine Wirkung zu
   /// beurteilen.
   PopupMenuItem<_Kartenwahl> _ebeneEintrag(
-          _Ebenenschalter welche, bool an, String name) =>
-      PopupMenuItem(
-        value: _Kartenwahl.ebene(welche),
-        child: Row(
-          children: [
-            Icon(an ? Icons.check_box_outlined : Icons.check_box_outline_blank,
-                size: 18,
-                color: an ? Theme.of(context).colorScheme.primary : null),
-            const SizedBox(width: AppSpacing.sm),
-            // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
-            // Rand des Menues - in der englischen Fassung noch weiter.
-            Flexible(child: Text(name)),
-          ],
+    _Ebenenschalter welche,
+    bool an,
+    String name,
+  ) => PopupMenuItem(
+    value: _Kartenwahl.ebene(welche),
+    child: Row(
+      children: [
+        Icon(
+          an ? Icons.check_box_outlined : Icons.check_box_outline_blank,
+          size: 18,
+          color: an ? Theme.of(context).colorScheme.primary : null,
         ),
-      );
+        const SizedBox(width: AppSpacing.sm),
+        // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
+        // Rand des Menues - in der englischen Fassung noch weiter.
+        Flexible(child: Text(name)),
+      ],
+    ),
+  );
 
   PopupMenuItem<Tageszeit> _stimmungEintrag(
-          Tageszeit zeit, IconData symbol, String name) =>
-      PopupMenuItem(
-        value: zeit,
-        child: Row(
-          children: [
-            Icon(symbol,
-                size: 18,
-                color: zeit == _stimmung
-                    ? Theme.of(context).colorScheme.primary
-                    : null),
-            const SizedBox(width: AppSpacing.sm),
-            // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
-            // Rand des Menues - in der englischen Fassung noch weiter.
-            Flexible(child: Text(name)),
-          ],
+    Tageszeit zeit,
+    IconData symbol,
+    String name,
+  ) => PopupMenuItem(
+    value: zeit,
+    child: Row(
+      children: [
+        Icon(
+          symbol,
+          size: 18,
+          color: zeit == _stimmung
+              ? Theme.of(context).colorScheme.primary
+              : null,
         ),
-      );
+        const SizedBox(width: AppSpacing.sm),
+        // Ohne `Flexible` laeuft „Strassen und Ortsnamen" ueber den
+        // Rand des Menues - in der englischen Fassung noch weiter.
+        Flexible(child: Text(name)),
+      ],
+    ),
+  );
 
   /// Wechselt die Tageszeit – **ohne irgendetwas nachzuladen**.
   ///
@@ -238,17 +251,21 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// seine Grundfarbe davon abhängt, ob überhaupt eine Karte darauf
   /// liegt (siehe [gelaendeGrundfarbe]).
   Future<void> _kartenwahl(_Kartenwahl wahl) => _auflageWechseln(switch (wahl) {
-        _Kartenwahl(grund: final g?) => _auflage.kopieMit(grund: g),
-        _Kartenwahl(ebene: _Ebenenschalter.wege) =>
-          _auflage.kopieMit(wege: !_auflage.wege),
-        _Kartenwahl(ebene: _Ebenenschalter.beschriftung) =>
-          _auflage.kopieMit(beschriftung: !_auflage.beschriftung),
-        _Kartenwahl(ebene: _Ebenenschalter.hoehenlinien) =>
-          _auflage.kopieMit(hoehenlinien: !_auflage.hoehenlinien),
-        _Kartenwahl(ebene: _Ebenenschalter.wanderobjekte) =>
-          _auflage.kopieMit(wanderobjekte: !_auflage.wanderobjekte),
-        _ => _auflage,
-      });
+    _Kartenwahl(grund: final g?) => _auflage.kopieMit(grund: g),
+    _Kartenwahl(ebene: _Ebenenschalter.wege) => _auflage.kopieMit(
+      wege: !_auflage.wege,
+    ),
+    _Kartenwahl(ebene: _Ebenenschalter.beschriftung) => _auflage.kopieMit(
+      beschriftung: !_auflage.beschriftung,
+    ),
+    _Kartenwahl(ebene: _Ebenenschalter.hoehenlinien) => _auflage.kopieMit(
+      hoehenlinien: !_auflage.hoehenlinien,
+    ),
+    _Kartenwahl(ebene: _Ebenenschalter.wanderobjekte) => _auflage.kopieMit(
+      wanderobjekte: !_auflage.wanderobjekte,
+    ),
+    _ => _auflage,
+  });
 
   Future<void> _auflageWechseln(Gelaendekarte neu) async {
     if (neu == _auflage) return;
@@ -265,13 +282,16 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         _gitter != null &&
         _netz != null &&
         _ausschnitt != null) {
-      unawaited(_schilderHolen(
+      unawaited(
+        _schilderHolen(
           gitter: _gitter!,
           netz: _netz!,
           sued: _ausschnitt!.sued,
           west: _ausschnitt!.west,
           nord: _ausschnitt!.nord,
-          ost: _ausschnitt!.ost));
+          ost: _ausschnitt!.ost,
+        ),
+      );
     }
     // Ohne gemerktes Gitter gab es noch keinen erfolgreichen Lauf – dann
     // ist der volle Weg der richtige.
@@ -279,26 +299,29 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
 
     setState(() => _laedt = true);
     final netz = widget.netz ?? http.Client();
-    final MapCachingProvider? speicher =
-        widget.netz == null ? null : const DisabledMapCachingProvider();
+    final MapCachingProvider? speicher = widget.netz == null
+        ? null
+        : const DisabledMapCachingProvider();
     try {
       final karte = await ladeKartenbild(
-          sued: aus.sued,
-          west: aus.west,
-          nord: aus.nord,
-          ost: aus.ost,
-          netz: netz,
-          karte: neu,
-          hoehen: gitter,
-          speicher: speicher);
+        sued: aus.sued,
+        west: aus.west,
+        nord: aus.nord,
+        ost: aus.ost,
+        netz: netz,
+        karte: neu,
+        hoehen: gitter,
+        speicher: speicher,
+      );
       if (!mounted) {
         karte?.dispose();
         return;
       }
       final gebaut = baueNetz(
         gitter,
-        grundfarbe:
-            karte == null ? gelaendeGrundfarbe : const Color(0xFFFFFFFF),
+        grundfarbe: karte == null
+            ? gelaendeGrundfarbe
+            : const Color(0xFFFFFFFF),
         stimmung: stimmungFuer(_stimmung),
         reliefstaerke: neu.reliefstaerke,
       );
@@ -333,8 +356,9 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   Future<void> _laden() async {
     setState(() => _laedt = true);
     final netz = widget.netz ?? http.Client();
-    final MapCachingProvider? speicher =
-        widget.netz == null ? null : const DisabledMapCachingProvider();
+    final MapCachingProvider? speicher = widget.netz == null
+        ? null
+        : const DisabledMapCachingProvider();
     try {
       var sued = double.infinity;
       var nord = double.negativeInfinity;
@@ -360,12 +384,13 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
       ost += randL;
 
       final gitter = await ladeHoehengitter(
-          sued: sued,
-          west: west,
-          nord: nord,
-          ost: ost,
-          netz: netz,
-          speicher: speicher);
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: netz,
+        speicher: speicher,
+      );
       if (!mounted) return;
       if (gitter == null) {
         setState(() {
@@ -375,14 +400,15 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         return;
       }
       final karte = await ladeKartenbild(
-          sued: sued,
-          west: west,
-          nord: nord,
-          ost: ost,
-          netz: netz,
-          karte: _auflage,
-          hoehen: gitter,
-          speicher: speicher);
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: netz,
+        karte: _auflage,
+        hoehen: gitter,
+        speicher: speicher,
+      );
       if (!mounted) {
         karte?.dispose();
         return;
@@ -392,7 +418,9 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
       // die Grundfarbe Weiss sein (siehe [gelaendeGrundfarbe]).
       final gebaut = baueNetz(
         gitter,
-        grundfarbe: karte == null ? gelaendeGrundfarbe : const Color(0xFFFFFFFF),
+        grundfarbe: karte == null
+            ? gelaendeGrundfarbe
+            : const Color(0xFFFFFFFF),
         stimmung: stimmungFuer(_stimmung),
         reliefstaerke: _auflage.reliefstaerke,
       );
@@ -414,13 +442,16 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
       if (fotos.isNotEmpty && mounted) {
         setState(() => _flugfotos = fotos);
       }
-      unawaited(_schilderHolen(
+      unawaited(
+        _schilderHolen(
           gitter: gitter,
           netz: gebaut,
           sued: sued,
           west: west,
           nord: nord,
-          ost: ost));
+          ost: ost,
+        ),
+      );
     } finally {
       if (widget.netz == null) netz.close();
     }
@@ -443,25 +474,29 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   }) async {
     final holen = widget.wanderobjekte;
     if (holen == null || !_auflage.wanderobjekte) return;
-    final punkte =
-        await holen(sued: sued, west: west, nord: nord, ost: ost);
+    final punkte = await holen(sued: sued, west: west, nord: nord, ost: ost);
     if (!mounted || punkte.isEmpty) return;
     final schilder = <Gelaendeschild>[];
     for (final p in punkte) {
       final h = gitter.anOrt(p.breite, p.laenge);
       if (h == null) continue;
-      schilder.add(Gelaendeschild(
-        art: p.art,
-        beschriftung: _beschriftung(p),
-        ort: (
-          x: ((p.laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
-              netz.breiteMeter,
-          y: (0.5 - (gitter.nord - p.breite) / (gitter.nord - gitter.sued)) *
-              netz.hoeheMeter,
-          z: (h - netz.mittlereHoehe) * gelaendeUeberhoehung +
-              schildHoeheMeter * gelaendeUeberhoehung,
+      schilder.add(
+        Gelaendeschild(
+          art: p.art,
+          beschriftung: _beschriftung(p),
+          ort: (
+            x:
+                ((p.laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
+                netz.breiteMeter,
+            y:
+                (0.5 - (gitter.nord - p.breite) / (gitter.nord - gitter.sued)) *
+                netz.hoeheMeter,
+            z:
+                (h - netz.mittlereHoehe) * gelaendeUeberhoehung +
+                schildHoeheMeter * gelaendeUeberhoehung,
+          ),
         ),
-      ));
+      );
     }
     setState(() => _schilder = schilder);
   }
@@ -531,20 +566,25 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// Grenze richtet sich nach der Ausdehnung der Spur: ein Zwanzigstel,
   /// mindestens hundert Meter.
   List<Flugfoto> _fotosAufDieSpur(
-      List<Raumpunkt> linie, List<double> streckeJePunkt) {
+    List<Raumpunkt> linie,
+    List<double> streckeJePunkt,
+  ) {
     if (linie.isEmpty || widget.fotos.isEmpty) return const [];
     final gitter = _gitter;
     final netz = _netz;
     if (gitter == null || netz == null) return const [];
     final grenze = math.max(
-        100.0, math.max(netz.breiteMeter, netz.hoeheMeter) / 20);
+      100.0,
+      math.max(netz.breiteMeter, netz.hoeheMeter) / 20,
+    );
 
     final aus = <Flugfoto>[];
     for (final f in widget.fotos) {
-      final x = ((f.laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
+      final x =
+          ((f.laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
           netz.breiteMeter;
-      final y = (0.5 -
-              (gitter.nord - f.breite) / (gitter.nord - gitter.sued)) *
+      final y =
+          (0.5 - (gitter.nord - f.breite) / (gitter.nord - gitter.sued)) *
           netz.hoeheMeter;
       var beste = double.infinity;
       var stelle = 0.0;
@@ -585,7 +625,9 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// ohne dass irgendwo etwas abstürzt. Deshalb der gemeinsame Rückgabe-
   /// wert und der Merkposten in [Gelaendeflug].
   ({List<Raumpunkt> linie, List<Flugwert> werte}) _spurInMeter(
-      Hoehengitter gitter, Gelaendenetz netz) {
+    Hoehengitter gitter,
+    Gelaendenetz netz,
+  ) {
     // **Der Nullpunkt kommt aus dem Netz.** Er wird dort aus dem ganzen
     // Gitter gerechnet; ihn hier ein zweites Mal aus einem anders
     // beschnittenen Gitter zu rechnen hiesse, die Spur um die Differenz
@@ -628,28 +670,55 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
             icon: const Icon(Icons.layers_outlined),
             onSelected: _kartenwahl,
             itemBuilder: (context) => [
-              _grundEintrag(Gelaendegrund.luftbild, Icons.satellite_alt_outlined,
-                  t.karteLuftbild),
-              _grundEintrag(Gelaendegrund.wanderkarte, Icons.terrain_outlined,
-                  t.karteTopografie),
               _grundEintrag(
-                  Gelaendegrund.hell, Icons.light_mode_outlined, t.karteHell),
-              _grundEintrag(Gelaendegrund.dunkel, Icons.dark_mode_outlined,
-                  t.karteDunkel),
+                Gelaendegrund.luftbild,
+                Icons.satellite_alt_outlined,
+                t.karteLuftbild,
+              ),
+              _grundEintrag(
+                Gelaendegrund.wanderkarte,
+                Icons.terrain_outlined,
+                t.karteTopografie,
+              ),
+              _grundEintrag(
+                Gelaendegrund.hell,
+                Icons.light_mode_outlined,
+                t.karteHell,
+              ),
+              _grundEintrag(
+                Gelaendegrund.dunkel,
+                Icons.dark_mode_outlined,
+                t.karteDunkel,
+              ),
               // Die eigene Quelle nur, wenn es eine gibt – ein Eintrag,
               // der auf OpenStreetMap zurückfiele, wäre eine Lüge.
               if (eigeneKarte != null)
-                _grundEintrag(Gelaendegrund.eigene,
-                    Icons.travel_explore_outlined, eigeneKarte!.name),
+                _grundEintrag(
+                  Gelaendegrund.eigene,
+                  Icons.travel_explore_outlined,
+                  eigeneKarte!.name,
+                ),
               const PopupMenuDivider(),
-              _ebeneEintrag(_Ebenenschalter.wege, _auflage.wege,
-                  t.gelaendeEbeneWege),
-              _ebeneEintrag(_Ebenenschalter.beschriftung,
-                  _auflage.beschriftung, t.gelaendeEbeneBeschriftung),
-              _ebeneEintrag(_Ebenenschalter.hoehenlinien,
-                  _auflage.hoehenlinien, t.gelaendeEbeneHoehenlinien),
-              _ebeneEintrag(_Ebenenschalter.wanderobjekte,
-                  _auflage.wanderobjekte, t.gelaendeEbeneWanderobjekte),
+              _ebeneEintrag(
+                _Ebenenschalter.wege,
+                _auflage.wege,
+                t.gelaendeEbeneWege,
+              ),
+              _ebeneEintrag(
+                _Ebenenschalter.beschriftung,
+                _auflage.beschriftung,
+                t.gelaendeEbeneBeschriftung,
+              ),
+              _ebeneEintrag(
+                _Ebenenschalter.hoehenlinien,
+                _auflage.hoehenlinien,
+                t.gelaendeEbeneHoehenlinien,
+              ),
+              _ebeneEintrag(
+                _Ebenenschalter.wanderobjekte,
+                _auflage.wanderobjekte,
+                t.gelaendeEbeneWanderobjekte,
+              ),
             ],
           ),
           // Die Tageszeit daneben, gleiche Machart. Sie beantwortet eine
@@ -662,14 +731,26 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
             icon: const Icon(Icons.wb_twilight_outlined),
             onSelected: _stimmungWechseln,
             itemBuilder: (context) => [
-              _stimmungEintrag(Tageszeit.morgen, Icons.wb_twilight_outlined,
-                  t.stimmungMorgen),
               _stimmungEintrag(
-                  Tageszeit.mittag, Icons.wb_sunny_outlined, t.stimmungMittag),
-              _stimmungEintrag(Tageszeit.abend, Icons.wb_incandescent_outlined,
-                  t.stimmungAbend),
-              _stimmungEintrag(Tageszeit.blaueStunde,
-                  Icons.nights_stay_outlined, t.stimmungBlaueStunde),
+                Tageszeit.morgen,
+                Icons.wb_twilight_outlined,
+                t.stimmungMorgen,
+              ),
+              _stimmungEintrag(
+                Tageszeit.mittag,
+                Icons.wb_sunny_outlined,
+                t.stimmungMittag,
+              ),
+              _stimmungEintrag(
+                Tageszeit.abend,
+                Icons.wb_incandescent_outlined,
+                t.stimmungAbend,
+              ),
+              _stimmungEintrag(
+                Tageszeit.blaueStunde,
+                Icons.nights_stay_outlined,
+                t.stimmungBlaueStunde,
+              ),
             ],
           ),
         ],
@@ -681,69 +762,71 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(t.gelaendeLaedt,
-                      style: TextStyle(color: farben.onSurfaceVariant)),
+                  Text(
+                    t.gelaendeLaedt,
+                    style: TextStyle(color: farben.onSurfaceVariant),
+                  ),
                 ],
               ),
             )
           : _netz == null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: SizedBox(
-                      width: 420,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(t.gelaendeNichts,
-                              textAlign: TextAlign.center),
-                          const SizedBox(height: AppSpacing.lg),
-                          FilledButton(
-                            onPressed: _laden,
-                            child: Text(t.gelaendeErneut),
-                          ),
-                        ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: SizedBox(
+                  width: 420,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(t.gelaendeNichts, textAlign: TextAlign.center),
+                      const SizedBox(height: AppSpacing.lg),
+                      FilledButton(
+                        onPressed: _laden,
+                        child: Text(t.gelaendeErneut),
                       ),
-                    ),
+                    ],
                   ),
-                )
-              // Die Fussnoten gehen MIT hinein und liegen nicht darüber:
-              // Die Flugleiste sitzt am unteren Rand der Ansicht, und ein
-              // zweiter Stapel mit `bottom:` landete genau auf ihrem
-              // Startknopf.
-              : Gelaendeansicht(
-                  // Ein neuer Schlüssel bei jedem Stilwechsel: Sonst
-                  // behielte die Ansicht ihren Texturvorrat aus der
-                  // alten Karte, und der Bildschirm zeigte
-                  // Luftbildkacheln über einer Wanderkarte.
-                  key: ValueKey(_auflage),
-                  netz: _netz!,
-                  spur: _spurImRaum,
-                  spurwerte: _spurwerte,
-                  karte: _karte,
-                  auflage: _auflage,
-                  hoehen: _gitter,
-                  schilder: _schilder,
-                  fotos: _flugfotos,
-                  namensnennung:
-                      '${t.gelaendeNamensnennung} · ${_auflage.nennung}',
-                  beimVideoZiel: _videoAuftrag,
-                  netzKlient: widget.netz,
-                  stimmung: stimmungFuer(_stimmung),
-                  fussnoten: [
-                    _Fussnote([
-                      t.gelaendeBedienung,
-                      t.gelaendeUeberhoeht(
-                          gelaendeUeberhoehung.toStringAsFixed(0)),
-                    ].join(' · ')),
-                    // Die Namensnennung sagt genau, was im Bild steht:
-                    // Wer die Wegeebene abschaltet, soll Waymarked
-                    // Trails nicht mehr genannt sehen. Eine
-                    // Lizenzauflage ist keine Zierleiste.
-                    _Fussnote(
-                        '${t.gelaendeNamensnennung} · ${_auflage.nennung}'),
-                  ],
                 ),
+              ),
+            )
+          // Die Fussnoten gehen MIT hinein und liegen nicht darüber:
+          // Die Flugleiste sitzt am unteren Rand der Ansicht, und ein
+          // zweiter Stapel mit `bottom:` landete genau auf ihrem
+          // Startknopf.
+          : Gelaendeansicht(
+              // Ein neuer Schlüssel bei jedem Stilwechsel: Sonst
+              // behielte die Ansicht ihren Texturvorrat aus der
+              // alten Karte, und der Bildschirm zeigte
+              // Luftbildkacheln über einer Wanderkarte.
+              key: ValueKey(_auflage),
+              netz: _netz!,
+              spur: _spurImRaum,
+              spurwerte: _spurwerte,
+              karte: _karte,
+              auflage: _auflage,
+              hoehen: _gitter,
+              schilder: _schilder,
+              fotos: _flugfotos,
+              namensnennung: '${t.gelaendeNamensnennung} · ${_auflage.nennung}',
+              beimVideoZiel: _videoAuftrag,
+              netzKlient: widget.netz,
+              stimmung: stimmungFuer(_stimmung),
+              fussnoten: [
+                _Fussnote(
+                  [
+                    t.gelaendeBedienung,
+                    t.gelaendeUeberhoeht(
+                      gelaendeUeberhoehung.toStringAsFixed(0),
+                    ),
+                  ].join(' · '),
+                ),
+                // Die Namensnennung sagt genau, was im Bild steht:
+                // Wer die Wegeebene abschaltet, soll Waymarked
+                // Trails nicht mehr genannt sehen. Eine
+                // Lizenzauflage ist keine Zierleiste.
+                _Fussnote('${t.gelaendeNamensnennung} · ${_auflage.nennung}'),
+              ],
+            ),
     );
   }
 }
@@ -764,21 +847,18 @@ class _Fussnote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: Theme.of(context)
-            .colorScheme
-            .surface
-            .withValues(alpha: 0.75),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: schriftgroesse,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
+    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: schriftgroesse,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Welche Ebene ein Menüeintrag umschaltet.
@@ -821,7 +901,11 @@ class _VideoDialogState extends State<_VideoDialog> {
   /// Kantenlänge davon abhängt, wie gross gerade das Fenster war, ist
   /// beim Weitergeben eine Überraschung – und auf einem Bildschirm mit
   /// doppelter Punktdichte wäre es 3840 breit und viermal so teuer.
-  static const _groessen = <(int, int)>[(1280, 720), (1920, 1080), (2560, 1440)];
+  static const _groessen = <(int, int)>[
+    (1280, 720),
+    (1920, 1080),
+    (2560, 1440),
+  ];
 
   int _grad = 1;
   late double _sekunden;
@@ -847,8 +931,10 @@ class _VideoDialogState extends State<_VideoDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t.flugVideoAufloesung,
-                style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              t.flugVideoAufloesung,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: AppSpacing.xs),
             SegmentedButton<int>(
               segments: [
@@ -863,8 +949,10 @@ class _VideoDialogState extends State<_VideoDialog> {
               onSelectionChanged: (w) => setState(() => _grad = w.first),
             ),
             const SizedBox(height: AppSpacing.md),
-            Text(t.flugVideoDauer,
-                style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              t.flugVideoDauer,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             Row(
               children: [
                 Expanded(
@@ -877,8 +965,10 @@ class _VideoDialogState extends State<_VideoDialog> {
                     onChanged: (w) => setState(() => _sekunden = w),
                   ),
                 ),
-                Text(t.flugVideoDauerWert(_sekunden.round()),
-                    style: Theme.of(context).textTheme.labelMedium),
+                Text(
+                  t.flugVideoDauerWert(_sekunden.round()),
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -887,8 +977,10 @@ class _VideoDialogState extends State<_VideoDialog> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text(t.flugVideoWaehrenddessen,
-                style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              t.flugVideoWaehrenddessen,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
       ),
@@ -898,8 +990,9 @@ class _VideoDialogState extends State<_VideoDialog> {
           child: Text(t.allgAbbrechen),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(
-              (breite: breite, hoehe: hoehe, sekunden: _sekunden.round())),
+          onPressed: () => Navigator.of(
+            context,
+          ).pop((breite: breite, hoehe: hoehe, sekunden: _sekunden.round())),
           child: Text(t.flugVideoWeiter),
         ),
       ],

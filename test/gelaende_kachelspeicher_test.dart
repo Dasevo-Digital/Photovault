@@ -29,7 +29,12 @@ Future<Uint8List> _kachel() async {
   }
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      rgba, kante, kante, ui.PixelFormat.rgba8888, fertig.complete);
+    rgba,
+    kante,
+    kante,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   final bild = await fertig.future;
   final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
   bild.dispose();
@@ -39,8 +44,8 @@ Future<Uint8List> _kachel() async {
 /// Ein Kachelspeicher im Arbeitsspeicher – dieselbe Schnittstelle wie der
 /// echte, nur nachzählbar.
 class _Speicher implements MapCachingProvider {
-  final Map<String, ({Uint8List bytes, CachedMapTileMetadata metadata})> inhalt =
-      {};
+  final Map<String, ({Uint8List bytes, CachedMapTileMetadata metadata})>
+  inhalt = {};
   var gelesen = 0;
   var geschrieben = 0;
 
@@ -71,12 +76,13 @@ void main() {
   // Ein winziger Ausschnitt, damit es bei wenigen Kacheln bleibt.
   Future<Hoehengitter?> lade(MockClient netz, MapCachingProvider sp) =>
       ladeHoehengitter(
-          sued: 50.610,
-          west: 9.860,
-          nord: 50.612,
-          ost: 9.862,
-          netz: netz,
-          speicher: sp);
+        sued: 50.610,
+        west: 9.860,
+        nord: 50.612,
+        ost: 9.862,
+        netz: netz,
+        speicher: sp,
+      );
 
   test('beim zweiten Mal fragt sie den Server nicht mehr', () async {
     final sp = _Speicher();
@@ -89,12 +95,18 @@ void main() {
     expect(await lade(netz, sp), isNotNull);
     final ersteRunde = abrufe;
     expect(ersteRunde, greaterThan(0));
-    expect(sp.geschrieben, ersteRunde,
-        reason: 'jede geholte Kachel landet im Speicher');
+    expect(
+      sp.geschrieben,
+      ersteRunde,
+      reason: 'jede geholte Kachel landet im Speicher',
+    );
 
     expect(await lade(netz, sp), isNotNull);
-    expect(abrufe, ersteRunde,
-        reason: 'die zweite Runde kam vollständig aus dem Speicher');
+    expect(
+      abrufe,
+      ersteRunde,
+      reason: 'die zweite Runde kam vollständig aus dem Speicher',
+    );
   });
 
   test('ein 404 von OpenTopoMap ist kein endgueltiges Nein', () async {
@@ -109,10 +121,16 @@ void main() {
           : http.Response.bytes(kachel, 200);
     });
 
-    expect(await lade(netz, sp), isNotNull,
-        reason: 'nach dem zweiten Versuch ist die Kachel da');
-    expect(versuche.values.every((n) => n == 2), isTrue,
-        reason: 'jede Kachel wurde genau einmal wiederholt');
+    expect(
+      await lade(netz, sp),
+      isNotNull,
+      reason: 'nach dem zweiten Versuch ist die Kachel da',
+    );
+    expect(
+      versuche.values.every((n) => n == 2),
+      isTrue,
+      reason: 'jede Kachel wurde genau einmal wiederholt',
+    );
   });
 
   test('ein 403 wird nicht wiederholt', () async {
@@ -126,8 +144,11 @@ void main() {
     });
 
     expect(await lade(netz, sp), isNull);
-    expect(versuche.values.every((n) => n == 1), isTrue,
-        reason: '403 heisst nein, nicht „gleich wieder"');
+    expect(
+      versuche.values.every((n) => n == 1),
+      isTrue,
+      reason: '403 heisst nein, nicht „gleich wieder"',
+    );
   });
 
   test('ohne Netz gilt die abgelaufene Kachel', () async {
@@ -142,15 +163,19 @@ void main() {
       sp.inhalt[e.key] = (
         bytes: e.value.bytes,
         metadata: CachedMapTileMetadata(
-            staleAt: DateTime.timestamp().subtract(const Duration(days: 1)),
-            lastModified: null,
-            etag: null),
+          staleAt: DateTime.timestamp().subtract(const Duration(days: 1)),
+          lastModified: null,
+          etag: null,
+        ),
       );
     }
 
     final ohneNetz = MockClient((_) async => throw const _KeinNetz());
-    expect(await lade(ohneNetz, sp), isNotNull,
-        reason: 'eine alte Kachel ist besser als eine leere Landschaft');
+    expect(
+      await lade(ohneNetz, sp),
+      isNotNull,
+      reason: 'eine alte Kachel ist besser als eine leere Landschaft',
+    );
   });
 }
 

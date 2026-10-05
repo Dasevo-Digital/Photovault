@@ -18,22 +18,24 @@ void main() {
   const panelBreite = 340.0;
 
   Future<void> zeige(WidgetTester tester, double breite) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SizedBox(
-          width: breite,
-          child: const MiniLocationMap(
-            latitude: null,
-            longitude: null,
-            height: 200,
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SizedBox(
+            width: breite,
+            child: const MiniLocationMap(
+              latitude: null,
+              longitude: null,
+              height: 200,
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -43,23 +45,28 @@ void main() {
   /// nimmt – die Auflage gilt aber fuer JEDEN Stil, und der laengste
   /// Text ist der von OpenTopoMap.
   Future<void> zeigeStil(
-      WidgetTester tester, Kartenstil stil, double breite) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SizedBox(
-          width: breite,
-          height: 200,
-          child: Builder(
-            builder: (context) =>
-                Stack(children: [buildMapAttribution(context, stil: stil)]),
+    WidgetTester tester,
+    Kartenstil stil,
+    double breite,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SizedBox(
+            width: breite,
+            height: 200,
+            child: Builder(
+              builder: (context) =>
+                  Stack(children: [buildMapAttribution(context, stil: stil)]),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -82,9 +89,14 @@ void main() {
 
   testWidgets('deckt die Karte nicht zu', (tester) async {
     await zeige(tester, panelBreite);
-    final breite = tester.getSize(find.text(Kartenstil.dunkel.namensnennung)).width;
-    expect(breite, lessThan(panelBreite * 2 / 3),
-        reason: 'sonst liegt sie über der halben Karte');
+    final breite = tester
+        .getSize(find.text(Kartenstil.dunkel.namensnennung))
+        .width;
+    expect(
+      breite,
+      lessThan(panelBreite * 2 / 3),
+      reason: 'sonst liegt sie über der halben Karte',
+    );
   });
 
   /// Die eigentliche Auflage gilt fuer JEDEN Stil, nicht nur den dunklen.
@@ -93,14 +105,18 @@ void main() {
   /// darf nicht unvollstaendig sein. Genau das ist hier schon einmal
   /// passiert (siehe Kopf der Datei).
   for (final stil in Kartenstil.values) {
-    testWidgets('${stil.name}: Namensnennung passt in die Info-Ansicht',
-        (tester) async {
+    testWidgets('${stil.name}: Namensnennung passt in die Info-Ansicht', (
+      tester,
+    ) async {
       await zeigeStil(tester, stil, panelBreite);
       expect(tester.takeException(), isNull);
       expect(find.text(stil.namensnennung), findsOneWidget);
       final breite = tester.getSize(find.text(stil.namensnennung)).width;
-      expect(breite, lessThanOrEqualTo(panelBreite * 2 / 3),
-          reason: 'sonst liegt sie ueber der halben Karte');
+      expect(
+        breite,
+        lessThanOrEqualTo(panelBreite * 2 / 3),
+        reason: 'sonst liegt sie ueber der halben Karte',
+      );
     });
   }
 
@@ -122,15 +138,27 @@ void main() {
     //
     // Ohne eigene Angabe war ausserdem keine Anzeigegrenze abzuleiten -
     // und ohne die zoomt die Karte ins Nichts, siehe zoomgrenze_test.
-    expect(Kartenstil.topo.hoechsteEchteStufe, 17,
-        reason: 'darueber kommt eine einfarbige Kachel');
-    expect(Kartenstil.hell.hoechsteEchteStufe, 19,
-        reason: 'ab 20 antwortet OSM mit 400');
-    expect(Kartenstil.dunkel.hoechsteEchteStufe, 19,
-        reason: 'ohne Schluessel liefert OSM die Kacheln');
+    expect(
+      Kartenstil.topo.hoechsteEchteStufe,
+      17,
+      reason: 'darueber kommt eine einfarbige Kachel',
+    );
+    expect(
+      Kartenstil.hell.hoechsteEchteStufe,
+      19,
+      reason: 'ab 20 antwortet OSM mit 400',
+    );
+    expect(
+      Kartenstil.dunkel.hoechsteEchteStufe,
+      19,
+      reason: 'ohne Schluessel liefert OSM die Kacheln',
+    );
     setzeCartoSchluessel('probe');
-    expect(Kartenstil.dunkel.hoechsteEchteStufe, 20,
-        reason: 'CARTO liefert auf 20 noch gezeichnete Kacheln');
+    expect(
+      Kartenstil.dunkel.hoechsteEchteStufe,
+      20,
+      reason: 'CARTO liefert auf 20 noch gezeichnete Kacheln',
+    );
     setzeCartoSchluessel(null);
     for (final stil in Kartenstil.values) {
       expect(stil.hoechsteEchteStufe, isNotNull, reason: stil.name);

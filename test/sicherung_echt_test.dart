@@ -25,39 +25,52 @@ import 'package:sqlite3/sqlite3.dart';
 void main() {
   final ordner = Platform.environment['PV_MIGRATION_DIR'];
 
-  test('eine gewachsene Bibliothek kommt vollständig zurück', () async {
-    if (ordner == null) {
-      markTestSkipped('PV_MIGRATION_DIR nicht gesetzt');
-      return;
-    }
-    final schnappschuss = File(p.join(ordner, 'gross.sqlite'));
-    expect(schnappschuss.existsSync(), isTrue, reason: 'gross.sqlite fehlt');
+  test(
+    'eine gewachsene Bibliothek kommt vollständig zurück',
+    () async {
+      if (ordner == null) {
+        markTestSkipped('PV_MIGRATION_DIR nicht gesetzt');
+        return;
+      }
+      final schnappschuss = File(p.join(ordner, 'gross.sqlite'));
+      expect(schnappschuss.existsSync(), isTrue, reason: 'gross.sqlite fehlt');
 
-    // Was drinsteht – gelesen wie ein Schnappschuss, also ohne Migration.
-    final roh = sqlite3.open(schnappschuss.path, mode: OpenMode.readOnly);
-    int zahlIn(String tabelle) =>
-        roh.select('SELECT count(*) AS n FROM "$tabelle"').first['n'] as int;
-    final erwartet = {
-      for (final t in ['people', 'faces', 'person_beziehungen', 'reisen',
-                       'reise_aufnahmen', 'aktivitaeten', 'aktivitaet_aufnahmen',
-                       'ortsmarken', 'duplikat_ausnahmen'])
-        t: zahlIn(t),
-    };
-    final aufnahmen = roh
-        .select('SELECT id, checksum FROM assets')
-        .map((z) => (z['id'] as String, z['checksum'] as String))
-        .toList();
-    roh.close();
+      // Was drinsteht – gelesen wie ein Schnappschuss, also ohne Migration.
+      final roh = sqlite3.open(schnappschuss.path, mode: OpenMode.readOnly);
+      int zahlIn(String tabelle) =>
+          roh.select('SELECT count(*) AS n FROM "$tabelle"').first['n'] as int;
+      final erwartet = {
+        for (final t in [
+          'people',
+          'faces',
+          'person_beziehungen',
+          'reisen',
+          'reise_aufnahmen',
+          'aktivitaeten',
+          'aktivitaet_aufnahmen',
+          'ortsmarken',
+          'duplikat_ausnahmen',
+        ])
+          t: zahlIn(t),
+      };
+      final aufnahmen = roh
+          .select('SELECT id, checksum FROM assets')
+          .map((z) => (z['id'] as String, z['checksum'] as String))
+          .toList();
+      roh.close();
 
-    // Die Zielbibliothek so, wie sie nach dem Zurückspielen der Dateien
-    // aussieht: dieselben Prüfsummen, neue Kennungen.
-    final temp = Directory.systemTemp.createTempSync('pv_sich_echt_');
-    addTearDown(() => temp.deleteSync(recursive: true));
-    final ziel = AppDatabase(NativeDatabase.memory());
-    addTearDown(ziel.close);
-    final pfade = await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib')));
+      // Die Zielbibliothek so, wie sie nach dem Zurückspielen der Dateien
+      // aussieht: dieselben Prüfsummen, neue Kennungen.
+      final temp = Directory.systemTemp.createTempSync('pv_sich_echt_');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final ziel = AppDatabase(NativeDatabase.memory());
+      addTearDown(ziel.close);
+      final pfade = await StoragePaths.forTesting(
+        Directory(p.join(temp.path, 'lib')),
+      );
 
-    await ziel.batch((b) => b.insertAll(ziel.assets, [
+      await ziel.batch(
+        (b) => b.insertAll(ziel.assets, [
           for (var i = 0; i < aufnahmen.length; i++)
             AssetsCompanion.insert(
               id: 'neu-$i',
@@ -68,34 +81,47 @@ void main() {
               fileCreatedAt: DateTime(2024),
               importedAt: DateTime(2024),
             ),
-        ]));
+        ]),
+      );
 
-    final uhr = Stopwatch()..start();
-    final zeilen = await BackupService(ziel, pfade)
-        .uebernimmAusSchnappschuss(schnappschuss);
-    uhr.stop();
+      final uhr = Stopwatch()..start();
+      final zeilen = await BackupService(
+        ziel,
+        pfade,
+      ).uebernimmAusSchnappschuss(schnappschuss);
+      uhr.stop();
 
-    Future<int> zahlAus(String tabelle) async => (await ziel
-            .customSelect('SELECT count(*) AS n FROM "$tabelle"')
-            .getSingle())
-        .read<int>('n');
+      Future<int> zahlAus(String tabelle) async =>
+          (await ziel
+                  .customSelect('SELECT count(*) AS n FROM "$tabelle"')
+                  .getSingle())
+              .read<int>('n');
 
-    for (final eintrag in erwartet.entries) {
-      expect(await zahlAus(eintrag.key), eintrag.value,
-          reason: '${eintrag.key} kam nicht vollständig zurück');
-    }
-    expect(zeilen, greaterThan(0));
+      for (final eintrag in erwartet.entries) {
+        expect(
+          await zahlAus(eintrag.key),
+          eintrag.value,
+          reason: '${eintrag.key} kam nicht vollständig zurück',
+        );
+      }
+      expect(zeilen, greaterThan(0));
 
-    // Die Zuordnung muss über die Prüfsumme gelaufen sein: kein Gesicht
-    // darf an einer Kennung hängen, die es hier nicht gibt.
-    final verwaist = await ziel
-        .customSelect('SELECT count(*) AS n FROM faces f '
-            'LEFT JOIN assets a ON a.id = f.asset_id WHERE a.id IS NULL')
-        .getSingle();
-    expect(verwaist.read<int>('n'), 0);
+      // Die Zuordnung muss über die Prüfsumme gelaufen sein: kein Gesicht
+      // darf an einer Kennung hängen, die es hier nicht gibt.
+      final verwaist = await ziel
+          .customSelect(
+            'SELECT count(*) AS n FROM faces f '
+            'LEFT JOIN assets a ON a.id = f.asset_id WHERE a.id IS NULL',
+          )
+          .getSingle();
+      expect(verwaist.read<int>('n'), 0);
 
-    // ignore: avoid_print
-    print('Übernahme: $zeilen Zeilen in ${uhr.elapsedMilliseconds} ms '
-        '(${erwartet['faces']} Gesichter, ${erwartet['people']} Personen)');
-  }, timeout: const Timeout(Duration(minutes: 5)));
+      // ignore: avoid_print
+      print(
+        'Übernahme: $zeilen Zeilen in ${uhr.elapsedMilliseconds} ms '
+        '(${erwartet['faces']} Gesichter, ${erwartet['people']} Personen)',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+  );
 }

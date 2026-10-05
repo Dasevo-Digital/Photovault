@@ -45,8 +45,9 @@ List<double> videostandbildstellen(double? dauerSekunden) {
   // Etwa alle zwanzig Sekunden ein Bild, gedeckelt. Zwei ist das Minimum,
   // sobald ueberhaupt gegriffen wird: Ein einzelnes weiteres Bild waere
   // eine zweite Stichprobe, keine Abdeckung.
-  final gewuenscht = (dauerSekunden / 20).round().clamp(2, videoStandbilderHoechstens);
-  return [
-    for (var i = 1; i <= gewuenscht; i++) i / (gewuenscht + 1),
-  ];
+  final gewuenscht = (dauerSekunden / 20).round().clamp(
+    2,
+    videoStandbilderHoechstens,
+  );
+  return [for (var i = 1; i <= gewuenscht; i++) i / (gewuenscht + 1)];
 }

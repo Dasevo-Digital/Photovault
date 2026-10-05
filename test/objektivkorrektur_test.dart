@@ -19,14 +19,13 @@ void main() {
   /// nativer Anbindung bräuchte – geprüft wird die Vollständigkeit der
   /// Texte, nicht die Verdrahtung.
   String hinweis(AppTexte t, Objektivkorrekturstand stand) => switch (stand) {
-        Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
-        Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
-        Objektivkorrekturstand.nichtInDatenbank =>
-          t.entwObjektivkorrekturUnbekanntesObjektiv,
-        Objektivkorrekturstand.nichtLesbar =>
-          t.entwObjektivkorrekturNichtLesbar,
-        Objektivkorrekturstand.unbekannt => t.entwObjektivkorrekturHinweis,
-      };
+    Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
+    Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
+    Objektivkorrekturstand.nichtInDatenbank =>
+      t.entwObjektivkorrekturUnbekanntesObjektiv,
+    Objektivkorrekturstand.nichtLesbar => t.entwObjektivkorrekturNichtLesbar,
+    Objektivkorrekturstand.unbekannt => t.entwObjektivkorrekturHinweis,
+  };
 
   for (final sprache in [AppTexteDe(), AppTexteEn()]) {
     test('jeder Stand hat einen eigenen Satz (${sprache.localeName})', () {
@@ -34,8 +33,11 @@ void main() {
       for (final stand in Objektivkorrekturstand.values) {
         final text = hinweis(sprache, stand);
         expect(text, isNotEmpty, reason: 'für $stand fehlt ein Text');
-        expect(saetze.add(text), isTrue,
-            reason: '$stand sagt dasselbe wie ein anderer Stand');
+        expect(
+          saetze.add(text),
+          isTrue,
+          reason: '$stand sagt dasselbe wie ein anderer Stand',
+        );
       }
     });
   }
@@ -45,12 +47,11 @@ void main() {
     // nichts bewirkt, soll ausgegraut sein – aber solange die Antwort noch
     // aussteht, bleibt er bedienbar.
     bool bedienbar(Objektivkorrekturstand stand) => switch (stand) {
-          Objektivkorrekturstand.keinRaw ||
-          Objektivkorrekturstand.nichtInDatenbank ||
-          Objektivkorrekturstand.nichtLesbar =>
-            false,
-          _ => true,
-        };
+      Objektivkorrekturstand.keinRaw ||
+      Objektivkorrekturstand.nichtInDatenbank ||
+      Objektivkorrekturstand.nichtLesbar => false,
+      _ => true,
+    };
 
     expect(bedienbar(Objektivkorrekturstand.verfuegbar), isTrue);
     expect(bedienbar(Objektivkorrekturstand.unbekannt), isTrue);
@@ -64,7 +65,8 @@ void main() {
     // dann „unbekannt" liefern und nicht etwa fälschlich „kein RAW".
     TestWidgetsFlutterBinding.ensureInitialized();
     final stand = await NativeImageConverter.lensCorrectionStatus(
-        File('/gibt/es/nicht.dng'));
+      File('/gibt/es/nicht.dng'),
+    );
     expect(stand, Objektivkorrekturstand.unbekannt);
   });
 }

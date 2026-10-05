@@ -59,9 +59,10 @@ void main() {
       for (var dx = -20; dx <= 20; dx++) {
         final d = math.sqrt(dx * dx + dy * dy);
         if (d > r * 1.8) continue;
-        final neu = (b.getPixel(mx + dx, my + dy).r - 55 * math.exp(-(d * d) / (r * r)))
-            .clamp(0, 255)
-            .toInt();
+        final neu =
+            (b.getPixel(mx + dx, my + dy).r - 55 * math.exp(-(d * d) / (r * r)))
+                .clamp(0, 255)
+                .toInt();
         b.setPixelRgb(mx + dx, my + dy, neu, neu, neu);
       }
     }
@@ -80,69 +81,79 @@ void main() {
     pfade.absolute(vorschau)
       ..createSync(recursive: true)
       ..writeAsBytesSync(himmelMitKorn(id.hashCode));
-    await db.insertAsset(AssetsCompanion.insert(
-      id: id,
-      relativePath: original,
-      originalFileName: '$id.CR3',
-      type: 'IMAGE',
-      checksum: id,
-      fileCreatedAt: wann,
-      importedAt: wann,
-      cameraModel: const Value('Canon EOS R10'),
-      dateiformat: const Value('cr3'),
-      previewRelativePath: Value(vorschau),
-      thumbnailRelativePath: Value(vorschau),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: id,
+        relativePath: original,
+        originalFileName: '$id.CR3',
+        type: 'IMAGE',
+        checksum: id,
+        fileCreatedAt: wann,
+        importedAt: wann,
+        cameraModel: const Value('Canon EOS R10'),
+        dateiformat: const Value('cr3'),
+        previewRelativePath: Value(vorschau),
+        thumbnailRelativePath: Value(vorschau),
+      ),
+    );
   }
 
-  testWidgets('eine Serie aus RAW-Aufnahmen wird untersucht, nicht übersprungen',
-      (tester) async {
-    for (var i = 0; i < 8; i++) {
-      await legeRaw('r$i', DateTime(2024, 1, 1 + i));
-    }
-
-    tester.view.physicalSize = const Size(900, 2600);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: StaubsucheScreen(library: library),
-    ));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    await tester.tap(find.byType(DropdownButtonFormField<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Canon EOS R10').last);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Suchen'));
-
-    // Jede Aufnahme geht durch ein eigenes Isolat (`compute`), und das
-    // braucht die **echte** Ereignisschleife: `pump` dreht nur die
-    // Testuhr weiter, und der Lauf käme über „0 von 8" nie hinaus.
-    for (var i = 0; i < 120; i++) {
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
-      await tester.pump();
-      // Nach dem Ergebnis suchen, nicht nach einer Wendung, die schon im
-      // Erklärungstext oben steht.
-      if (find.textContaining('untersuchten Aufnahmen').evaluate().isNotEmpty) {
-        break;
+  testWidgets(
+    'eine Serie aus RAW-Aufnahmen wird untersucht, nicht übersprungen',
+    (tester) async {
+      for (var i = 0; i < 8; i++) {
+        await legeRaw('r$i', DateTime(2024, 1, 1 + i));
       }
-    }
 
-    // Der Befund selbst: acht Aufnahmen mit demselben Korn an derselben
-    // Stelle. Vor der Umstellung stand hier „Auf 0 untersuchten Aufnahmen
-    // wurde kein Sensorstaub gefunden."
-    expect(find.textContaining('kein Sensorstaub'), findsNothing);
-    expect(find.textContaining('Stelle, die immer wieder'), findsOneWidget);
-    // Die Zahl dahinter: alle acht, nicht ein Rest.
-    expect(find.textContaining('auf 8 von 8'), findsOneWidget);
-  });
+      tester.view.physicalSize = const Size(900, 2600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: StaubsucheScreen(library: library),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Canon EOS R10').last);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Suchen'));
+
+      // Jede Aufnahme geht durch ein eigenes Isolat (`compute`), und das
+      // braucht die **echte** Ereignisschleife: `pump` dreht nur die
+      // Testuhr weiter, und der Lauf käme über „0 von 8" nie hinaus.
+      for (var i = 0; i < 120; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+        // Nach dem Ergebnis suchen, nicht nach einer Wendung, die schon im
+        // Erklärungstext oben steht.
+        if (find
+            .textContaining('untersuchten Aufnahmen')
+            .evaluate()
+            .isNotEmpty) {
+          break;
+        }
+      }
+
+      // Der Befund selbst: acht Aufnahmen mit demselben Korn an derselben
+      // Stelle. Vor der Umstellung stand hier „Auf 0 untersuchten Aufnahmen
+      // wurde kein Sensorstaub gefunden."
+      expect(find.textContaining('kein Sensorstaub'), findsNothing);
+      expect(find.textContaining('Stelle, die immer wieder'), findsOneWidget);
+      // Die Zahl dahinter: alle acht, nicht ein Rest.
+      expect(find.textContaining('auf 8 von 8'), findsOneWidget);
+    },
+  );
 
   testWidgets('was nicht gelesen werden konnte, steht dabei', (tester) async {
     // „Kein Sensorstaub gefunden" nach fünf von vierzig Aufnahmen ist keine
@@ -160,12 +171,14 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: StaubsucheScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: StaubsucheScreen(library: library),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -177,7 +190,8 @@ void main() {
 
     for (var i = 0; i < 120; i++) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump();
       if (find.textContaining('übersprungen').evaluate().isNotEmpty) break;
     }

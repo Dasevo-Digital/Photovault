@@ -82,7 +82,12 @@ const _aufgabe = 'What does the image describe?';
 /// hier.
 class FlorenceCaptioningService {
   FlorenceCaptioningService._(
-      this._vision, this._embed, this._encoder, this._decoder, this._tokenizer);
+    this._vision,
+    this._embed,
+    this._encoder,
+    this._decoder,
+    this._tokenizer,
+  );
 
   final OrtSession _vision;
   final OrtSession _embed;
@@ -114,14 +119,22 @@ class FlorenceCaptioningService {
   static Future<FlorenceCaptioningService> load(String modelsDir) async {
     final ort = OnnxRuntime();
     return FlorenceCaptioningService._(
-      await ort.createSession('$modelsDir/florence_vision.onnx',
-          options: modelloptionen()),
-      await ort.createSession('$modelsDir/florence_embed.onnx',
-          options: modelloptionen()),
-      await ort.createSession('$modelsDir/florence_encoder.onnx',
-          options: modelloptionen()),
-      await ort.createSession('$modelsDir/florence_decoder.onnx',
-          options: modelloptionen()),
+      await ort.createSession(
+        '$modelsDir/florence_vision.onnx',
+        options: modelloptionen(),
+      ),
+      await ort.createSession(
+        '$modelsDir/florence_embed.onnx',
+        options: modelloptionen(),
+      ),
+      await ort.createSession(
+        '$modelsDir/florence_encoder.onnx',
+        options: modelloptionen(),
+      ),
+      await ort.createSession(
+        '$modelsDir/florence_decoder.onnx',
+        options: modelloptionen(),
+      ),
       await BartTokenizer.loadFromFiles(
         vocabJsonPath: '$modelsDir/florence_vocab.json',
         mergesTxtPath: '$modelsDir/florence_merges.txt',
@@ -130,10 +143,12 @@ class FlorenceCaptioningService {
   }
 
   Float32List _pixel(img.Image decoded) {
-    final skaliert = img.copyResize(decoded,
-        width: _bildGroesse,
-        height: _bildGroesse,
-        interpolation: img.Interpolation.cubic);
+    final skaliert = img.copyResize(
+      decoded,
+      width: _bildGroesse,
+      height: _bildGroesse,
+      interpolation: img.Interpolation.cubic,
+    );
     final chw = Float32List(3 * _bildGroesse * _bildGroesse);
     var i = 0;
     for (var c = 0; c < 3; c++) {
@@ -163,8 +178,12 @@ class FlorenceCaptioningService {
 
     try {
       // --- Bild -> Merkmale -------------------------------------------
-      final pixel = await OrtValue.fromList(
-          _pixel(decoded), [1, 3, _bildGroesse, _bildGroesse]);
+      final pixel = await OrtValue.fromList(_pixel(decoded), [
+        1,
+        3,
+        _bildGroesse,
+        _bildGroesse,
+      ]);
       offen.add(pixel);
       final sicht = await _vision.run({'pixel_values': pixel});
       offen.addAll(sicht.values);
@@ -175,8 +194,10 @@ class FlorenceCaptioningService {
 
       // --- Aufgabenfrage -> Einbettung --------------------------------
       final frageIds = _tokenizer.encode(_aufgabe);
-      final frageTensor =
-          await OrtValue.fromList(Int64List.fromList(frageIds), [1, frageIds.length]);
+      final frageTensor = await OrtValue.fromList(
+        Int64List.fromList(frageIds),
+        [1, frageIds.length],
+      );
       offen.add(frageTensor);
       final frageAus = await _embed.run({'input_ids': frageTensor});
       offen.addAll(frageAus.values);
@@ -201,11 +222,15 @@ class FlorenceCaptioningService {
 
       final eingabe = await OrtValue.fromList(zusammen, [1, gesamt, 768]);
       final maske = await OrtValue.fromList(
-          Int64List.fromList(List.filled(gesamt, 1)), [1, gesamt]);
+        Int64List.fromList(List.filled(gesamt, 1)),
+        [1, gesamt],
+      );
       offen.add(eingabe);
       offen.add(maske);
-      final encAus =
-          await _encoder.run({'inputs_embeds': eingabe, 'attention_mask': maske});
+      final encAus = await _encoder.run({
+        'inputs_embeds': eingabe,
+        'attention_mask': maske,
+      });
       offen.addAll(encAus.values);
       await gib(eingabe);
       final encZustand = encAus['last_hidden_state']!;
@@ -218,11 +243,16 @@ class FlorenceCaptioningService {
       var past = <String, OrtValue>{};
       for (var i = 0; i < _lagen; i++) {
         for (final kv in ['key', 'value']) {
-          final d = await OrtValue.fromList(
-              Float32List(0), [1, _koepfe, 0, _kopfBreite]);
+          final d = await OrtValue.fromList(Float32List(0), [
+            1,
+            _koepfe,
+            0,
+            _kopfBreite,
+          ]);
           final e = await OrtValue.fromList(
-              Float32List(_koepfe * gesamt * _kopfBreite),
-              [1, _koepfe, gesamt, _kopfBreite]);
+            Float32List(_koepfe * gesamt * _kopfBreite),
+            [1, _koepfe, gesamt, _kopfBreite],
+          );
           offen.add(d);
           offen.add(e);
           past['past_key_values.$i.decoder.$kv'] = d;
@@ -235,8 +265,10 @@ class FlorenceCaptioningService {
 
       for (var schritt = 0; schritt < _maxNeueToken; schritt++) {
         final eingang = mitCache ? [erzeugt.last] : erzeugt;
-        final idTensor =
-            await OrtValue.fromList(Int64List.fromList(eingang), [1, eingang.length]);
+        final idTensor = await OrtValue.fromList(Int64List.fromList(eingang), [
+          1,
+          eingang.length,
+        ]);
         offen.add(idTensor);
         final embAus = await _embed.run({'input_ids': idTensor});
         offen.addAll(embAus.values);

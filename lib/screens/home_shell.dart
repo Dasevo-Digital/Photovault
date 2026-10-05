@@ -80,14 +80,19 @@ class _RestoreQueueBanner extends StatelessWidget {
             onTap: oeffnen,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.auto_awesome_outlined, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                      child: Text(text,
-                          style: Theme.of(context).textTheme.bodySmall)),
+                    child: Text(
+                      text,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                   const Icon(Icons.chevron_right, size: 18),
                 ],
               ),
@@ -107,17 +112,21 @@ class _Laufzeile extends StatelessWidget {
   final double? anteil;
   final String text;
   final VoidCallback abbrechen;
-  const _Laufzeile(
-      {required this.anteil, required this.text, required this.abbrechen});
+  const _Laufzeile({
+    required this.anteil,
+    required this.text,
+    required this.abbrechen,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
-          left: AppSpacing.lg,
-          right: AppSpacing.sm,
-          top: AppSpacing.sm,
-          bottom: AppSpacing.sm),
+        left: AppSpacing.lg,
+        right: AppSpacing.sm,
+        top: AppSpacing.sm,
+        bottom: AppSpacing.sm,
+      ),
       child: Row(
         children: [
           SizedBox(
@@ -127,10 +136,12 @@ class _Laufzeile extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Text(text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           TextButton(
             onPressed: abbrechen,
@@ -210,8 +221,11 @@ class _HoverNavIcon extends StatefulWidget {
   final IconData icon;
   final String label;
   final double size;
-  const _HoverNavIcon(
-      {required this.icon, required this.label, this.size = 24});
+  const _HoverNavIcon({
+    required this.icon,
+    required this.label,
+    this.size = 24,
+  });
 
   @override
   State<_HoverNavIcon> createState() => _HoverNavIconState();
@@ -286,8 +300,9 @@ class _HomeShellState extends State<HomeShell> {
   /// Hier und nicht in `main.dart`: Dort gibt es die [LibraryState] noch
   /// nicht als Feld, sondern erst im Aufbau. Hier liegt sie am Widget, und
   /// dieser Bildschirm ist die ganze Sitzung über da.
-  late final Tresorwaechter _tresor =
-      Tresorwaechter(widget.library.sperreTresor)..horche();
+  late final Tresorwaechter _tresor = Tresorwaechter(
+    widget.library.sperreTresor,
+  )..horche();
 
   /// Zähler, den das Zeitleisten-Symbol hochzählt. Die Zeitleiste springt
   /// bei jeder Änderung zu den neuesten Fotos.
@@ -306,10 +321,16 @@ class _HomeShellState extends State<HomeShell> {
   // hohen Fenster winzig oben zusammengedrängt, mit viel ungenutztem Platz
   // darunter bis zum Import-Button.
   List<NavigationRailDestination> _buildDestinations(
-      AppTexte t, double iconSize, double itemPadding) {
+    AppTexte t,
+    double iconSize,
+    double itemPadding,
+  ) {
     final labels = _destinationLabels(t);
     NavigationRailDestination dest(
-        IconData outlined, IconData filled, String label) {
+      IconData outlined,
+      IconData filled,
+      String label,
+    ) {
       return NavigationRailDestination(
         icon: _HoverNavIcon(icon: outlined, label: label, size: iconSize),
         selectedIcon: _HoverNavIcon(icon: filled, label: label, size: iconSize),
@@ -320,8 +341,11 @@ class _HomeShellState extends State<HomeShell> {
 
     return [
       for (var i = 0; i < labels.length; i++)
-        dest(_destinationIconsOutlined[i], _destinationIconsFilled[i],
-            labels[i]),
+        dest(
+          _destinationIconsOutlined[i],
+          _destinationIconsFilled[i],
+          labels[i],
+        ),
     ];
   }
 
@@ -334,18 +358,18 @@ class _HomeShellState extends State<HomeShell> {
   /// jedem Aufbau neu geholt werden – die Reihenfolge bleibt aber genau
   /// die eine Quelle der Wahrheit, die sie vorher war.
   static List<String> _destinationLabels(AppTexte t) => [
-        t.navTimeline,
-        t.navErkunden,
-        t.navKalender,
-        t.navKarte,
-        t.navReisen,
-        t.navSuche,
-        t.navPersonen,
-        t.navStammbaum,
-        t.navAlben,
-        t.navWerkzeuge,
-        t.navEinstellungen,
-      ];
+    t.navTimeline,
+    t.navErkunden,
+    t.navKalender,
+    t.navKarte,
+    t.navReisen,
+    t.navSuche,
+    t.navPersonen,
+    t.navStammbaum,
+    t.navAlben,
+    t.navWerkzeuge,
+    t.navEinstellungen,
+  ];
   static const _destinationIconsOutlined = [
     Icons.photo_outlined,
     Icons.explore_outlined,
@@ -417,9 +441,11 @@ class _HomeShellState extends State<HomeShell> {
             const Divider(height: 1),
             for (final i in weitere)
               ListTile(
-                leading: Icon(i == _seite.value
-                    ? _destinationIconsFilled[i]
-                    : _destinationIconsOutlined[i]),
+                leading: Icon(
+                  i == _seite.value
+                      ? _destinationIconsFilled[i]
+                      : _destinationIconsOutlined[i],
+                ),
                 title: Text(labels[i]),
                 selected: i == _seite.value,
                 onTap: () => Navigator.pop(context, i),
@@ -527,8 +553,9 @@ class _HomeShellState extends State<HomeShell> {
 
   void _showShortcutsOverview() {
     showDialog<void>(
-        context: context,
-        builder: (context) => const _ShortcutsOverviewDialog());
+      context: context,
+      builder: (context) => const _ShortcutsOverviewDialog(),
+    );
   }
 
   @override
@@ -630,116 +657,132 @@ class _HomeShellState extends State<HomeShell> {
             children: [
               _RestoreQueueBanner(
                 library: widget.library,
-                oeffnen: () => _bereich.currentState?.push(MaterialPageRoute(
-                  builder: (_) => RestoreQueueScreen(library: widget.library),
-                )),
+                oeffnen: () => _bereich.currentState?.push(
+                  MaterialPageRoute(
+                    builder: (_) => RestoreQueueScreen(library: widget.library),
+                  ),
+                ),
               ),
               _AnalyseBanner(library: widget.library),
-              Expanded(child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Skaliert Icon-Größe und Abstand zwischen den 9 Einträgen mit der
-                  // verfügbaren Fensterhöhe: bei einem hohen Fenster/Bildschirm
-                  // stünden sie sonst winzig oben gedrängt, mit viel ungenutztem
-                  // Platz darunter bis zum Import-Button. 700px ist die Bezugshöhe,
-                  // ab der die Rail genau wie zuvor (Icon-Größe 24, kein Extra-
-                  // Abstand) aussieht; die Obergrenze verhindert unangemessen große
-                  // Icons auf sehr hohen Bildschirmen.
-                  final railScale =
-                      (constraints.maxHeight / 700).clamp(1.0, 1.8);
-                  final railIconSize = 24.0 * railScale;
-                  final railItemPadding = 10.0 * (railScale - 1.0);
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Skaliert Icon-Größe und Abstand zwischen den 9 Einträgen mit der
+                    // verfügbaren Fensterhöhe: bei einem hohen Fenster/Bildschirm
+                    // stünden sie sonst winzig oben gedrängt, mit viel ungenutztem
+                    // Platz darunter bis zum Import-Button. 700px ist die Bezugshöhe,
+                    // ab der die Rail genau wie zuvor (Icon-Größe 24, kein Extra-
+                    // Abstand) aussieht; die Obergrenze verhindert unangemessen große
+                    // Icons auf sehr hohen Bildschirmen.
+                    final railScale = (constraints.maxHeight / 700).clamp(
+                      1.0,
+                      1.8,
+                    );
+                    final railIconSize = 24.0 * railScale;
+                    final railItemPadding = 10.0 * (railScale - 1.0);
 
-                  return Row(
-                    children: [
-                      if (wide)
-                        NavigationRail(
-                          selectedIndex: seite,
-                          onDestinationSelected: _zielGewaehlt,
-                          // "selected" statt "all": bei 9 Einträgen würde die Rail mit
-                          // Label unter jedem Icon bei normaler Fensterhöhe überlaufen.
-                          labelType: NavigationRailLabelType.selected,
-                          leading: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image(
-                                  image: const AssetImage(
-                                      'assets/icon/app_icon.png'),
-                                  width: 32 * railScale,
-                                  height: 32 * railScale,
-                                ),
-                                // Name der geöffneten Bibliothek – erst, wenn es
-                                // überhaupt mehr als eine gibt. Ohne diesen
-                                // Hinweis ist nach einem Wechsel nicht
-                                // erkennbar, worin man gerade arbeitet.
-                                if (widget.library.aktiveBibliothek !=
-                                    null) ...[
-                                  const SizedBox(height: 4),
-                                  SizedBox(
-                                    width: 72,
-                                    child: Tooltip(
-                                      message: t.geoeffneteBibliothek(
-                                          widget.library.aktiveBibliothek!),
-                                      child: Text(
-                                        widget.library.aktiveBibliothek!,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                            ),
+                    return Row(
+                      children: [
+                        if (wide)
+                          NavigationRail(
+                            selectedIndex: seite,
+                            onDestinationSelected: _zielGewaehlt,
+                            // "selected" statt "all": bei 9 Einträgen würde die Rail mit
+                            // Label unter jedem Icon bei normaler Fensterhöhe überlaufen.
+                            labelType: NavigationRailLabelType.selected,
+                            leading: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.md,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image(
+                                    image: const AssetImage(
+                                      'assets/icon/app_icon.png',
+                                    ),
+                                    width: 32 * railScale,
+                                    height: 32 * railScale,
+                                  ),
+                                  // Name der geöffneten Bibliothek – erst, wenn es
+                                  // überhaupt mehr als eine gibt. Ohne diesen
+                                  // Hinweis ist nach einem Wechsel nicht
+                                  // erkennbar, worin man gerade arbeitet.
+                                  if (widget.library.aktiveBibliothek !=
+                                      null) ...[
+                                    const SizedBox(height: 4),
+                                    SizedBox(
+                                      width: 72,
+                                      child: Tooltip(
+                                        message: t.geoeffneteBibliothek(
+                                          widget.library.aktiveBibliothek!,
+                                        ),
+                                        child: Text(
+                                          widget.library.aktiveBibliothek!,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
-                          ),
-                          destinations: _buildDestinations(
-                              t, railIconSize, railItemPadding),
-                          trailing: Expanded(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.lg),
-                                child: FloatingActionButton(
-                                  heroTag: 'import-rail',
-                                  tooltip: t.importierenTooltip,
-                                  onPressed: () =>
-                                      showImportSheet(context, widget.library),
-                                  child: const Icon(
-                                      Icons.add_photo_alternate_outlined),
+                            destinations: _buildDestinations(
+                              t,
+                              railIconSize,
+                              railItemPadding,
+                            ),
+                            trailing: Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpacing.lg,
+                                  ),
+                                  child: FloatingActionButton(
+                                    heroTag: 'import-rail',
+                                    tooltip: t.importierenTooltip,
+                                    onPressed: () => showImportSheet(
+                                      context,
+                                      widget.library,
+                                    ),
+                                    child: const Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                        if (wide) const VerticalDivider(width: 1),
+                        // Der eigentliche Umbau: Die Seite liegt in einem
+                        // eigenen Navigator, damit alles, was von ihr aus
+                        // geöffnet wird, **neben** der Leiste steht statt
+                        // über ihr. Wer die ganze Fläche will, schiebt auf
+                        // den Navigator des Fensters – siehe [Arbeitsbereich].
+                        Expanded(
+                          child: Arbeitsbereich(
+                            seite: _seite,
+                            auchBei: widget.library,
+                            navigatorSchluessel: _bereich,
+                            bauen: _seiteBauen,
+                          ),
                         ),
-                      if (wide) const VerticalDivider(width: 1),
-                      // Der eigentliche Umbau: Die Seite liegt in einem
-                      // eigenen Navigator, damit alles, was von ihr aus
-                      // geöffnet wird, **neben** der Leiste steht statt
-                      // über ihr. Wer die ganze Fläche will, schiebt auf
-                      // den Navigator des Fensters – siehe [Arbeitsbereich].
-                      Expanded(
-                        child: Arbeitsbereich(
-                          seite: _seite,
-                          auchBei: widget.library,
-                          navigatorSchluessel: _bereich,
-                          bauen: _seiteBauen,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              )),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ],
           ),
           bottomNavigationBar: wide
@@ -806,18 +849,17 @@ class _CommandPaletteDelegate extends SearchDelegate<int?> {
 
   @override
   List<Widget> buildActions(BuildContext context) => [
-        if (query.isNotEmpty)
-          IconButton(
-            tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-            onPressed: () => query = '',
-            icon: const Icon(Icons.clear),
-          ),
-      ];
+    if (query.isNotEmpty)
+      IconButton(
+        tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+        onPressed: () => query = '',
+        icon: const Icon(Icons.clear),
+      ),
+  ];
 
   @override
-  Widget buildLeading(BuildContext context) => BackButton(
-        onPressed: () => close(context, null),
-      );
+  Widget buildLeading(BuildContext context) =>
+      BackButton(onPressed: () => close(context, null));
 
   @override
   Widget buildResults(BuildContext context) => _list(context);
@@ -861,8 +903,9 @@ class _ShortcutsOverviewDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgSchliessen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgSchliessen),
+        ),
       ],
     );
   }

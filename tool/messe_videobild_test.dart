@@ -24,14 +24,17 @@ void main() {
           var uhr = Stopwatch()..start();
           final sammler = ui.PictureRecorder();
           final leinwand = ui.Canvas(sammler);
-          leinwand.drawRect(ui.Rect.fromLTWH(0, 0, b.toDouble(), h.toDouble()),
-              ui.Paint()..color = Colors.indigo);
+          leinwand.drawRect(
+            ui.Rect.fromLTWH(0, 0, b.toDouble(), h.toDouble()),
+            ui.Paint()..color = Colors.indigo,
+          );
           // Etwas Geometrie, damit nicht eine leere Fläche gemessen wird.
           for (var k = 0; k < 400; k++) {
             leinwand.drawCircle(
-                Offset(b * (k % 20) / 20, h * (k ~/ 20) / 20),
-                12 + (k % 7) * 3,
-                ui.Paint()..color = Colors.white.withValues(alpha: 0.5));
+              Offset(b * (k % 20) / 20, h * (k ~/ 20) / 20),
+              12 + (k % 7) * 3,
+              ui.Paint()..color = Colors.white.withValues(alpha: 0.5),
+            );
           }
           final aufnahme = sammler.endRecording();
           if (!warm) malen += uhr.elapsedMicroseconds;
@@ -46,16 +49,20 @@ void main() {
           if (!warm) holen += uhr.elapsedMicroseconds;
           bild.dispose();
           if (i == 0) {
-            print('${b}x$h: ${(roh!.lengthInBytes / 1024 / 1024).toStringAsFixed(1)} MB je Bild');
+            print(
+              '${b}x$h: ${(roh!.lengthInBytes / 1024 / 1024).toStringAsFixed(1)} MB je Bild',
+            );
           }
         }
         double ms(int us) => us / laeufe / 1000;
-        print('${b}x$h  malen ${ms(malen).toStringAsFixed(1)} ms · '
-            'rastern ${ms(rastern).toStringAsFixed(1)} ms · '
-            'holen ${ms(holen).toStringAsFixed(1)} ms · '
-            'zusammen ${ms(malen + rastern + holen).toStringAsFixed(1)} ms'
-            ' -> 1800 Bilder in '
-            '${(ms(malen + rastern + holen) * 1800 / 1000).toStringAsFixed(0)} s');
+        print(
+          '${b}x$h  malen ${ms(malen).toStringAsFixed(1)} ms · '
+          'rastern ${ms(rastern).toStringAsFixed(1)} ms · '
+          'holen ${ms(holen).toStringAsFixed(1)} ms · '
+          'zusammen ${ms(malen + rastern + holen).toStringAsFixed(1)} ms'
+          ' -> 1800 Bilder in '
+          '${(ms(malen + rastern + holen) * 1800 / 1000).toStringAsFixed(0)} s',
+        );
       });
     }
     expect(math.pi, greaterThan(3));

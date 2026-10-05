@@ -21,7 +21,8 @@ void main() {
 
   /// Stellt die Frage so, wie sie nativ hereinkommt.
   Future<Object?> frage() async {
-    final binaer = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final binaer =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     Object? antwort;
     await binaer.handlePlatformMessage(
       BeendenWaechter.kanalName,
@@ -47,12 +48,15 @@ void main() {
     expect(await frage(), isFalse);
   });
 
-  test('eine Ausnahme auf dem Weg zum Dialog verhindert das Beenden nicht', () async {
-    // Sonst liesse sich die App nach einem Fehler in der Oberfläche nur noch
-    // über die Aktivitätsanzeige schliessen.
-    waechter.horche(() async => throw StateError('kein Fenster da'));
-    expect(await frage(), isTrue);
-  });
+  test(
+    'eine Ausnahme auf dem Weg zum Dialog verhindert das Beenden nicht',
+    () async {
+      // Sonst liesse sich die App nach einem Fehler in der Oberfläche nur noch
+      // über die Aktivitätsanzeige schliessen.
+      waechter.horche(() async => throw StateError('kein Fenster da'));
+      expect(await frage(), isTrue);
+    },
+  );
 
   test('auf eine unbekannte Methode antwortet der Wächter nicht', () async {
     var gefragt = false;
@@ -61,10 +65,13 @@ void main() {
       return false;
     });
 
-    final binaer = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final binaer =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     await binaer.handlePlatformMessage(
       BeendenWaechter.kanalName,
-      const StandardMethodCodec().encodeMethodCall(const MethodCall('irgendwas')),
+      const StandardMethodCodec().encodeMethodCall(
+        const MethodCall('irgendwas'),
+      ),
       (_) {},
     );
 
@@ -93,17 +100,20 @@ void main() {
 
     Future<bool?> zeige(WidgetTester tester, {required String knopf}) async {
       bool? ergebnis;
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Builder(
-          builder: (context) => TextButton(
-            onPressed: () async => ergebnis = await zeigeBeendenFrage(context, library),
-            child: const Text('fragen'),
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async =>
+                  ergebnis = await zeigeBeendenFrage(context, library),
+              child: const Text('fragen'),
+            ),
           ),
         ),
-      ));
+      );
       await tester.tap(find.text('fragen'));
       await tester.pumpAndSettle();
 

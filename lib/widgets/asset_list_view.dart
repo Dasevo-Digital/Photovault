@@ -94,18 +94,18 @@ class AssetListView extends StatefulWidget {
 /// Hier und nicht in der Aufzählung: [Listenspalte] gehört zum Dienst und
 /// kennt keine Sprache – dieselbe Trennung wie beim Modellkatalog.
 String listenspaltenName(AppTexte t, Listenspalte s) => switch (s) {
-      Listenspalte.dateiname => t.listeSpalteDateiname,
-      Listenspalte.datum => t.listeSpalteDatum,
-      Listenspalte.kamera => t.listeSpalteKamera,
-      Listenspalte.objektiv => t.listeSpalteObjektiv,
-      Listenspalte.belichtung => t.listeSpalteBelichtung,
-      Listenspalte.bewertung => t.listeSpalteBewertung,
-      Listenspalte.farbe => t.listeSpalteFarbe,
-      Listenspalte.masse => t.listeSpalteMasse,
-      Listenspalte.groesse => t.listeSpalteGroesse,
-      Listenspalte.art => t.listeSpalteArt,
-      Listenspalte.ort => t.listeSpalteOrt,
-    };
+  Listenspalte.dateiname => t.listeSpalteDateiname,
+  Listenspalte.datum => t.listeSpalteDatum,
+  Listenspalte.kamera => t.listeSpalteKamera,
+  Listenspalte.objektiv => t.listeSpalteObjektiv,
+  Listenspalte.belichtung => t.listeSpalteBelichtung,
+  Listenspalte.bewertung => t.listeSpalteBewertung,
+  Listenspalte.farbe => t.listeSpalteFarbe,
+  Listenspalte.masse => t.listeSpalteMasse,
+  Listenspalte.groesse => t.listeSpalteGroesse,
+  Listenspalte.art => t.listeSpalteArt,
+  Listenspalte.ort => t.listeSpalteOrt,
+};
 
 class _AssetListViewState extends State<AssetListView> {
   final _scrollController = ScrollController();
@@ -142,8 +142,11 @@ class _AssetListViewState extends State<AssetListView> {
   void _nachOben() {
     if (!mounted || !_scrollController.hasClients) return;
     if (_scrollController.offset <= 0) return;
-    _scrollController.animateTo(0,
-        duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+    );
   }
 
   double _breiteVon(Listenspalte s) =>
@@ -169,8 +172,11 @@ class _AssetListViewState extends State<AssetListView> {
 
   @override
   Widget build(BuildContext context) {
-    final gruppen = gruppiereAssets(widget.assets, widget.gruppierung,
-        absteigend: widget.absteigend);
+    final gruppen = gruppiereAssets(
+      widget.assets,
+      widget.gruppierung,
+      absteigend: widget.absteigend,
+    );
 
     // Eine flache Liste aus Kopfzeilen und Fotos: So bleibt das Bauen
     // faul, auch wenn eine Gruppe mehrere tausend Fotos enthält.
@@ -208,7 +214,9 @@ class _AssetListViewState extends State<AssetListView> {
                   }),
                   onZiehen: (dx) => setState(() {
                     _ziehbreite = (_ziehbreite + dx).clamp(
-                        listenspalteMindestbreite, listenspalteHoechstbreite);
+                      listenspalteMindestbreite,
+                      listenspalteHoechstbreite,
+                    );
                   }),
                   onZiehEnde: () {
                     final s = _amZiehen;
@@ -228,7 +236,8 @@ class _AssetListViewState extends State<AssetListView> {
                       final eintrag = eintraege[index];
                       if (eintrag is String) {
                         return _Kopfzeile(
-                            titel: widget._gruppentitel(context, eintrag));
+                          titel: widget._gruppentitel(context, eintrag),
+                        );
                       }
                       final asset = eintrag as AssetData;
                       return _Zeile(
@@ -279,9 +288,9 @@ class _Kopfleiste extends StatelessWidget {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
     final stil = Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: farben.onSurfaceVariant,
-        );
+      fontWeight: FontWeight.w600,
+      color: farben.onSurfaceVariant,
+    );
     return Container(
       // Feste Hoehe: Die Ziehgriffe zwischen den Spalten sollen ueber die
       // ganze Zeile gehen, und dafuer brauchen sie eine, an der sie sich
@@ -302,8 +311,12 @@ class _Kopfleiste extends StatelessWidget {
               width: breiteVon(s) - _griffbreite,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(listenspaltenName(t, s),
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: stil),
+                child: Text(
+                  listenspaltenName(t, s),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: stil,
+                ),
               ),
             ),
             _Ziehgriff(
@@ -319,8 +332,11 @@ class _Kopfleiste extends StatelessWidget {
           // sucht man es.
           PopupMenuButton<Listenspalte>(
             tooltip: t.listeSpalten,
-            icon: Icon(Icons.view_column_outlined,
-                size: 18, color: farben.onSurfaceVariant),
+            icon: Icon(
+              Icons.view_column_outlined,
+              size: 18,
+              color: farben.onSurfaceVariant,
+            ),
             onSelected: onUmschalten,
             itemBuilder: (context) => [
               for (final s in Listenspalte.values)
@@ -399,12 +415,15 @@ class _Kopfzeile extends StatelessWidget {
       width: double.infinity,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Text(titel,
-          style: Theme.of(context)
-              .textTheme
-              .titleSmall
-              ?.copyWith(fontWeight: FontWeight.w600)),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Text(
+        titel,
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -446,7 +465,9 @@ class _Zeile extends StatelessWidget {
     }
     final zeit = asset.exposureTimeSeconds;
     if (zeit != null && zeit > 0) {
-      teile.add(zeit >= 1 ? '${zeit.toStringAsFixed(1)} s' : '1/${(1 / zeit).round()}');
+      teile.add(
+        zeit >= 1 ? '${zeit.toStringAsFixed(1)} s' : '1/${(1 / zeit).round()}',
+      );
     }
     if (asset.iso != null) teile.add('ISO ${asset.iso}');
     return teile.join(' · ');
@@ -471,96 +492,117 @@ class _Zeile extends StatelessWidget {
 
     /// Text in einer Spalte – schmal, grau und mit fluchtenden Ziffern.
     Widget text(String wert, {bool ziffern = false}) => Text(
-          wert.isEmpty ? '—' : wert,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: farben.onSurfaceVariant,
-            fontSize: 12,
-            fontFeatures:
-                ziffern ? const [FontFeature.tabularFigures()] : null,
-          ),
-        );
+      wert.isEmpty ? '—' : wert,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: farben.onSurfaceVariant,
+        fontSize: 12,
+        fontFeatures: ziffern ? const [FontFeature.tabularFigures()] : null,
+      ),
+    );
 
     Widget inhalt(Listenspalte s) => switch (s) {
-          Listenspalte.dateiname => Text(asset.originalFileName,
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-          // Die Uhrzeit weicht dem Vermerk, wenn das Datum geraten ist:
-          // Sie waere hier die genaueste Angabe der ganzen Zeile und
-          // zugleich die einzige, die sicher nicht stimmt. Und die
-          // Listenansicht ist die Stelle, an der jemand Daten
-          // nebeneinander liest - dort faellt eine Reihe gleicher
-          // Zeitstempel ueberhaupt erst auf.
-          Listenspalte.datum => text(
-              asset.datumGeschaetzt
-                  ? '${DateFormat.yMd(sprache).format(asset.fileCreatedAt)} '
-                      '(${AppTexte.of(context).infoDatumGeschaetztKurz})'
-                  : DateFormat.yMd(sprache).add_Hm().format(asset.fileCreatedAt),
-              ziffern: true),
-          Listenspalte.kamera => text(kamerabezeichnung(asset) ?? ''),
-          Listenspalte.objektiv => text(asset.lensModel ?? ''),
-          Listenspalte.belichtung => text(_belichtung(), ziffern: true),
-          // Die Sterne sind das einzige, was nicht schrumpft, wenn die
-          // Spalte schmaler wird - ohne den Deckel laeuft die Reihe bei
-          // der Mindestbreite ueber ihren Rand hinaus.
-          Listenspalte.bewertung => FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: StarRating(value: asset.rating, size: 14),
-            ),
-          Listenspalte.farbe => asset.colorLabel == null
-              ? text('')
-              : Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorLabelSwatches[asset.colorLabel!] ??
-                          farben.outlineVariant,
-                    ),
+      Listenspalte.dateiname => Text(
+        asset.originalFileName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      // Die Uhrzeit weicht dem Vermerk, wenn das Datum geraten ist:
+      // Sie waere hier die genaueste Angabe der ganzen Zeile und
+      // zugleich die einzige, die sicher nicht stimmt. Und die
+      // Listenansicht ist die Stelle, an der jemand Daten
+      // nebeneinander liest - dort faellt eine Reihe gleicher
+      // Zeitstempel ueberhaupt erst auf.
+      Listenspalte.datum => text(
+        asset.datumGeschaetzt
+            ? '${DateFormat.yMd(sprache).format(asset.fileCreatedAt)} '
+                  '(${AppTexte.of(context).infoDatumGeschaetztKurz})'
+            : DateFormat.yMd(sprache).add_Hm().format(asset.fileCreatedAt),
+        ziffern: true,
+      ),
+      Listenspalte.kamera => text(kamerabezeichnung(asset) ?? ''),
+      Listenspalte.objektiv => text(asset.lensModel ?? ''),
+      Listenspalte.belichtung => text(_belichtung(), ziffern: true),
+      // Die Sterne sind das einzige, was nicht schrumpft, wenn die
+      // Spalte schmaler wird - ohne den Deckel laeuft die Reihe bei
+      // der Mindestbreite ueber ihren Rand hinaus.
+      Listenspalte.bewertung => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: StarRating(value: asset.rating, size: 14),
+      ),
+      Listenspalte.farbe =>
+        asset.colorLabel == null
+            ? text('')
+            : Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        colorLabelSwatches[asset.colorLabel!] ??
+                        farben.outlineVariant,
                   ),
                 ),
-          Listenspalte.masse =>
-            text(asset.widthPx == null || asset.heightPx == null
-                ? ''
-                : '${asset.widthPx} × ${asset.heightPx}', ziffern: true),
-          Listenspalte.groesse => text(
-              asset.fileSizeBytes <= 0 ? '' : groessentext(asset.fileSizeBytes),
-              ziffern: true),
-          Listenspalte.art =>
-            text(asset.type == 'VIDEO' ? t.allgVideo : t.allgFoto),
-          Listenspalte.ort => text(_ort()),
-        };
+              ),
+      Listenspalte.masse => text(
+        asset.widthPx == null || asset.heightPx == null
+            ? ''
+            : '${asset.widthPx} × ${asset.heightPx}',
+        ziffern: true,
+      ),
+      Listenspalte.groesse => text(
+        asset.fileSizeBytes <= 0 ? '' : groessentext(asset.fileSizeBytes),
+        ziffern: true,
+      ),
+      Listenspalte.art => text(
+        asset.type == 'VIDEO' ? t.allgVideo : t.allgFoto,
+      ),
+      Listenspalte.ort => text(_ort()),
+    };
 
     return Material(
       color: ausgewaehlt
           ? farben.primaryContainer
           : hervorgehoben
-              ? farben.surfaceContainerHigh
-              : Colors.transparent,
+          ? farben.surfaceContainerHigh
+          : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.only(
-              left: AppSpacing.md, top: AppSpacing.xs, bottom: AppSpacing.xs),
+            left: AppSpacing.md,
+            top: AppSpacing.xs,
+            bottom: AppSpacing.xs,
+          ),
           child: Row(
             children: [
               SizedBox(
                 width: 48,
                 height: 36,
                 child: thumb == null
-                    ? Icon(Icons.image_outlined, size: 18, color: farben.outline)
+                    ? Icon(
+                        Icons.image_outlined,
+                        size: 18,
+                        color: farben.outline,
+                      )
                     : ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                         child: Image.file(
                           paths.absolute(thumb),
                           fit: BoxFit.cover,
-                          cacheWidth: (48 * MediaQuery.devicePixelRatioOf(context)).round(),
-                          errorBuilder: (_, _, _) =>
-                              Icon(Icons.broken_image_outlined, size: 18, color: farben.outline),
+                          cacheWidth:
+                              (48 * MediaQuery.devicePixelRatioOf(context))
+                                  .round(),
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.broken_image_outlined,
+                            size: 18,
+                            color: farben.outline,
+                          ),
                         ),
                       ),
               ),

@@ -71,7 +71,9 @@ CameraInfo parseExifCameraInfo(Map<String, IfdTag> tags) {
   int? readInt(String key) {
     final values = tags[key]?.values;
     if (values is IfdInts && values.ints.isNotEmpty) return values.ints.first;
-    if (values is IfdRatios && values.ratios.isNotEmpty) return values.ratios.first.toInt();
+    if (values is IfdRatios && values.ratios.isNotEmpty) {
+      return values.ratios.first.toInt();
+    }
     return null;
   }
 

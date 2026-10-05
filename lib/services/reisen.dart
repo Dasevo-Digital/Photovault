@@ -44,9 +44,9 @@ enum Reiseart {
   String get kennung => name;
 
   static Reiseart aus(String s) => Reiseart.values.firstWhere(
-        (a) => a.name == s,
-        orElse: () => Reiseart.reise,
-      );
+    (a) => a.name == s,
+    orElse: () => Reiseart.reise,
+  );
 }
 
 /// Die Vorgabe für eine neue oder eine bestehende Reise ohne Angabe.
@@ -115,10 +115,11 @@ class Reisevorschlag {
   /// Wie viele Nächte dazwischen liegen – gerechnet über Kalendertage,
   /// nicht über 24-Stunden-Abschnitte. Wer am Freitagabend losfährt und
   /// am Samstagmorgen zurückkommt, war eine Nacht weg.
-  int get naechte =>
-      DateTime(bis.year, bis.month, bis.day)
-          .difference(DateTime(von.year, von.month, von.day))
-          .inDays;
+  int get naechte => DateTime(
+    bis.year,
+    bis.month,
+    bis.day,
+  ).difference(DateTime(von.year, von.month, von.day)).inDays;
 
   int get anzahl => aufnahmeIds.length;
 
@@ -146,12 +147,19 @@ class Reisevorschlag {
   final tageJeZelle = <String, Set<int>>{};
   final punkteJeZelle = <String, List<Reiseaufnahme>>{};
   for (final a in aufnahmen) {
-    final zelle = '${(a.breite / zuhauseRaster).floor()}'
+    final zelle =
+        '${(a.breite / zuhauseRaster).floor()}'
         '|${(a.laenge / zuhauseRaster).floor()}';
     tageJeZelle
         .putIfAbsent(zelle, () => <int>{})
-        .add(DateTime(a.zeit.year, a.zeit.month, a.zeit.day)
-            .millisecondsSinceEpoch ~/ 86400000);
+        .add(
+          DateTime(
+                a.zeit.year,
+                a.zeit.month,
+                a.zeit.day,
+              ).millisecondsSinceEpoch ~/
+              86400000,
+        );
     punkteJeZelle.putIfAbsent(zelle, () => []).add(a);
   }
   if (tageJeZelle.isEmpty) return null;
@@ -243,7 +251,11 @@ List<Reisevorschlag> erkenneReisen(
     for (final a in aufnahmen)
       if (!bekannteIds.contains(a.id) &&
           ReverseGeocoder.haversineKm(
-                  a.breite, a.laenge, heim.breite, heim.laenge) >=
+                a.breite,
+                a.laenge,
+                heim.breite,
+                heim.laenge,
+              ) >=
               mindestabstandKm)
         a,
   ]..sort((a, b) => a.zeit.compareTo(b.zeit));
@@ -260,9 +272,11 @@ List<Reisevorschlag> erkenneReisen(
     final bis = lauf.last.zeit;
     // Mindestens eine Nacht. Ein Tagesausflug ist keine Reise – und wer
     // ihn als solche führen will, kann ihn von Hand anlegen.
-    final naechte = DateTime(bis.year, bis.month, bis.day)
-        .difference(DateTime(von.year, von.month, von.day))
-        .inDays;
+    final naechte = DateTime(
+      bis.year,
+      bis.month,
+      bis.day,
+    ).difference(DateTime(von.year, von.month, von.day)).inDays;
     if (naechte < 1) {
       lauf = [];
       return;

@@ -19,7 +19,11 @@ Float32List _randomUnitVector(math.Random rand, int dim) {
   return v;
 }
 
-Float32List _nearDuplicateOf(Float32List base, math.Random rand, {double noiseScale = 0.02}) {
+Float32List _nearDuplicateOf(
+  Float32List base,
+  math.Random rand, {
+  double noiseScale = 0.02,
+}) {
   final dim = base.length;
   final v = Float32List(dim);
   var normSq = 0.0;
@@ -46,7 +50,10 @@ double _cosine(Float32List a, Float32List b) {
 /// Referenz-Implementierung (Alle-gegen-alle) für den Korrektheitsvergleich –
 /// bewusst unabhängig von der Produktionslogik in duplicates_screen.dart neu
 /// geschrieben, damit ein Fehler dort sich nicht selbst bestätigt.
-List<Set<String>> _exhaustiveDuplicateGroups(Map<String, Float32List> embeddings, double threshold) {
+List<Set<String>> _exhaustiveDuplicateGroups(
+  Map<String, Float32List> embeddings,
+  double threshold,
+) {
   final ids = embeddings.keys.toList();
   final parent = {for (final id in ids) id: id};
   String find(String x) {
@@ -86,7 +93,8 @@ void main() {
     const dim = 64;
     const noiseCount = 3000;
     final embeddings = <String, Float32List>{
-      for (var i = 0; i < noiseCount; i++) 'noise_$i': _randomUnitVector(rand, dim),
+      for (var i = 0; i < noiseCount; i++)
+        'noise_$i': _randomUnitVector(rand, dim),
     };
 
     final plantedPairs = <(String, String)>[];
@@ -100,93 +108,129 @@ void main() {
     }
 
     const threshold = 0.92;
-    final groups = findDuplicateGroups(DuplicateSearchParams(embeddings, threshold));
+    final groups = findDuplicateGroups(
+      DuplicateSearchParams(embeddings, threshold),
+    );
 
     for (final (a, b) in plantedPairs) {
       final found = groups.any((g) => g.contains(a) && g.contains(b));
-      expect(found, isTrue, reason: 'Geplantes Duplikat-Paar $a/$b wurde nicht gefunden.');
+      expect(
+        found,
+        isTrue,
+        reason: 'Geplantes Duplikat-Paar $a/$b wurde nicht gefunden.',
+      );
     }
   });
 
-  test('stimmt bei den geplanten Duplikaten mit der Alle-gegen-alle-Referenz überein', () {
-    final rand = math.Random(99);
-    const dim = 64;
-    final embeddings = <String, Float32List>{
-      for (var i = 0; i < 800; i++) 'noise_$i': _randomUnitVector(rand, dim),
-    };
-    final base = _randomUnitVector(rand, dim);
-    embeddings['dup_a'] = base;
-    embeddings['dup_b'] = _nearDuplicateOf(base, rand);
-
-    const threshold = 0.92;
-    final reference = _exhaustiveDuplicateGroups(embeddings, threshold);
-    final actual = findDuplicateGroups(DuplicateSearchParams(embeddings, threshold));
-
-    final referenceGroup = reference.singleWhere((g) => g.contains('dup_a'));
-    final actualGroup = actual.singleWhere((g) => g.contains('dup_a'));
-    expect(actualGroup.toSet(), referenceGroup);
-  });
-
-  test('vergleicht bei größeren Bibliotheken nur einen Bruchteil aller Paare', () {
-    // Früher stoppte dieser Test die Zeit beider Verfahren und verlangte
-    // einen Faktor 3. Das misst aber nicht die Vorfilterung, sondern die
-    // Auslastung der Maschine – und schlug entsprechend sporadisch fehl.
-    // Gemessen wird jetzt die Arbeit selbst: wie viele Paare überhaupt zum
-    // Vergleich kommen. Diese Zahl ist bei festem Seed deterministisch.
-    // Der Bauplan gibt die Schranke vor: Jede Projektion kann je Eintrag
-    // höchstens `_slidingWindow - 1` Nachbarn beisteuern, also
-    // Projektionen mal Fenster. Seit die Einstellung von 2x200 auf 32x16
-    // umgestellt ist (siehe `_projectionCount` – 2x200 fand nur die
-    // Hälfte aller Duplikatgruppen), sind das höchstens 512 je Foto.
-    // Entscheidend ist nicht die Zahl selbst, sondern dass sie eine
-    // KONSTANTE ist: Die Vorfilterung wächst linear, der
-    // Alle-gegen-alle-Vergleich quadratisch. Genau das prüfen wir, bei
-    // zwei Größen, damit das Wachstum sichtbar wird.
-    const proFoto = 512;
-    for (final n in [2500, 5000]) {
-      final rand = math.Random(7);
+  test(
+    'stimmt bei den geplanten Duplikaten mit der Alle-gegen-alle-Referenz überein',
+    () {
+      final rand = math.Random(99);
       const dim = 64;
-      final vectors = [for (var i = 0; i < n; i++) _randomUnitVector(rand, dim)];
+      final embeddings = <String, Float32List>{
+        for (var i = 0; i < 800; i++) 'noise_$i': _randomUnitVector(rand, dim),
+      };
+      final base = _randomUnitVector(rand, dim);
+      embeddings['dup_a'] = base;
+      embeddings['dup_b'] = _nearDuplicateOf(base, rand);
 
-      final vorgefiltert = candidateIndexPairs(vectors).length;
-      final alleGegenAlle = n * (n - 1) ~/ 2;
+      const threshold = 0.92;
+      final reference = _exhaustiveDuplicateGroups(embeddings, threshold);
+      final actual = findDuplicateGroups(
+        DuplicateSearchParams(embeddings, threshold),
+      );
 
-      // ignore: avoid_print
-      print('n=$n: Vorfilterung $vorgefiltert Paare, '
+      final referenceGroup = reference.singleWhere((g) => g.contains('dup_a'));
+      final actualGroup = actual.singleWhere((g) => g.contains('dup_a'));
+      expect(actualGroup.toSet(), referenceGroup);
+    },
+  );
+
+  test(
+    'vergleicht bei größeren Bibliotheken nur einen Bruchteil aller Paare',
+    () {
+      // Früher stoppte dieser Test die Zeit beider Verfahren und verlangte
+      // einen Faktor 3. Das misst aber nicht die Vorfilterung, sondern die
+      // Auslastung der Maschine – und schlug entsprechend sporadisch fehl.
+      // Gemessen wird jetzt die Arbeit selbst: wie viele Paare überhaupt zum
+      // Vergleich kommen. Diese Zahl ist bei festem Seed deterministisch.
+      // Der Bauplan gibt die Schranke vor: Jede Projektion kann je Eintrag
+      // höchstens `_slidingWindow - 1` Nachbarn beisteuern, also
+      // Projektionen mal Fenster. Seit die Einstellung von 2x200 auf 32x16
+      // umgestellt ist (siehe `_projectionCount` – 2x200 fand nur die
+      // Hälfte aller Duplikatgruppen), sind das höchstens 512 je Foto.
+      // Entscheidend ist nicht die Zahl selbst, sondern dass sie eine
+      // KONSTANTE ist: Die Vorfilterung wächst linear, der
+      // Alle-gegen-alle-Vergleich quadratisch. Genau das prüfen wir, bei
+      // zwei Größen, damit das Wachstum sichtbar wird.
+      const proFoto = 512;
+      for (final n in [2500, 5000]) {
+        final rand = math.Random(7);
+        const dim = 64;
+        final vectors = [
+          for (var i = 0; i < n; i++) _randomUnitVector(rand, dim),
+        ];
+
+        final vorgefiltert = candidateIndexPairs(vectors).length;
+        final alleGegenAlle = n * (n - 1) ~/ 2;
+
+        // ignore: avoid_print
+        print(
+          'n=$n: Vorfilterung $vorgefiltert Paare, '
           'Alle-gegen-alle $alleGegenAlle Paare '
           '(Faktor ${(alleGegenAlle / vorgefiltert).toStringAsFixed(1)}, '
-          '${(vorgefiltert / n).round()} je Foto)');
+          '${(vorgefiltert / n).round()} je Foto)',
+        );
 
-      expect(vorgefiltert, lessThanOrEqualTo(n * proFoto),
-          reason: 'die Vorfilterung wächst bei n=$n nicht mehr linear');
-      expect(vorgefiltert * 2, lessThan(alleGegenAlle),
-          reason: 'bei n=$n spart die Vorfilterung nichts mehr');
-    }
-  });
+        expect(
+          vorgefiltert,
+          lessThanOrEqualTo(n * proFoto),
+          reason: 'die Vorfilterung wächst bei n=$n nicht mehr linear',
+        );
+        expect(
+          vorgefiltert * 2,
+          lessThan(alleGegenAlle),
+          reason: 'bei n=$n spart die Vorfilterung nichts mehr',
+        );
+      }
+    },
+  );
 
   group('findBurstGroups', () {
-    test('gruppiert nur Fotos, die sowohl ähnlich sind ALS AUCH zeitlich nah beieinander liegen', () {
-      final rand = math.Random(11);
-      const dim = 64;
-      final base = _randomUnitVector(rand, dim);
-      final anchor = DateTime(2026, 6, 1, 12, 0, 0);
+    test(
+      'gruppiert nur Fotos, die sowohl ähnlich sind ALS AUCH zeitlich nah beieinander liegen',
+      () {
+        final rand = math.Random(11);
+        const dim = 64;
+        final base = _randomUnitVector(rand, dim);
+        final anchor = DateTime(2026, 6, 1, 12, 0, 0);
 
-      final embeddings = <String, Float32List>{
-        'burst_a': base,
-        'burst_b': _nearDuplicateOf(base, rand), // ähnlich + nah dran
-        'far_away_but_similar': _nearDuplicateOf(base, rand), // ähnlich, aber weit weg in der Zeit
-      };
-      final fileCreatedAt = <String, DateTime>{
-        'burst_a': anchor,
-        'burst_b': anchor.add(const Duration(seconds: 2)),
-        'far_away_but_similar': anchor.add(const Duration(days: 30)),
-      };
+        final embeddings = <String, Float32List>{
+          'burst_a': base,
+          'burst_b': _nearDuplicateOf(base, rand), // ähnlich + nah dran
+          'far_away_but_similar': _nearDuplicateOf(
+            base,
+            rand,
+          ), // ähnlich, aber weit weg in der Zeit
+        };
+        final fileCreatedAt = <String, DateTime>{
+          'burst_a': anchor,
+          'burst_b': anchor.add(const Duration(seconds: 2)),
+          'far_away_but_similar': anchor.add(const Duration(days: 30)),
+        };
 
-      final groups = findBurstGroups(BurstSearchParams(embeddings, fileCreatedAt, maxGap: const Duration(seconds: 30)));
+        final groups = findBurstGroups(
+          BurstSearchParams(
+            embeddings,
+            fileCreatedAt,
+            maxGap: const Duration(seconds: 30),
+          ),
+        );
 
-      expect(groups, hasLength(1));
-      expect(groups.single.toSet(), {'burst_a', 'burst_b'});
-    });
+        expect(groups, hasLength(1));
+        expect(groups.single.toSet(), {'burst_a', 'burst_b'});
+      },
+    );
 
     test('Fotos ohne bekanntes Aufnahmedatum werden nie gruppiert', () {
       final rand = math.Random(12);
@@ -200,30 +244,41 @@ void main() {
       // 'b' hat kein Datum in der Map.
       final fileCreatedAt = <String, DateTime>{'a': DateTime(2026, 1, 1)};
 
-      final groups = findBurstGroups(BurstSearchParams(embeddings, fileCreatedAt));
+      final groups = findBurstGroups(
+        BurstSearchParams(embeddings, fileCreatedAt),
+      );
 
       expect(groups, isEmpty);
     });
 
-    test('ähnliche, aber zu weit auseinanderliegende Fotos bilden keine Gruppe', () {
-      final rand = math.Random(13);
-      const dim = 64;
-      final base = _randomUnitVector(rand, dim);
-      final anchor = DateTime(2026, 6, 1);
+    test(
+      'ähnliche, aber zu weit auseinanderliegende Fotos bilden keine Gruppe',
+      () {
+        final rand = math.Random(13);
+        const dim = 64;
+        final base = _randomUnitVector(rand, dim);
+        final anchor = DateTime(2026, 6, 1);
 
-      final embeddings = <String, Float32List>{
-        'a': base,
-        'b': _nearDuplicateOf(base, rand),
-      };
-      final fileCreatedAt = <String, DateTime>{
-        'a': anchor,
-        'b': anchor.add(const Duration(minutes: 5)),
-      };
+        final embeddings = <String, Float32List>{
+          'a': base,
+          'b': _nearDuplicateOf(base, rand),
+        };
+        final fileCreatedAt = <String, DateTime>{
+          'a': anchor,
+          'b': anchor.add(const Duration(minutes: 5)),
+        };
 
-      final groups = findBurstGroups(BurstSearchParams(embeddings, fileCreatedAt, maxGap: const Duration(seconds: 30)));
+        final groups = findBurstGroups(
+          BurstSearchParams(
+            embeddings,
+            fileCreatedAt,
+            maxGap: const Duration(seconds: 30),
+          ),
+        );
 
-      expect(groups, isEmpty);
-    });
+        expect(groups, isEmpty);
+      },
+    );
   });
 
   group('der Zeitfilter der Serien', () {
@@ -274,11 +329,18 @@ void main() {
       final gefunden = findBurstGroups(BurstSearchParams(einbettungen, zeiten));
 
       // Die Referenz: jedes Paar wirklich vergleichen.
-      final referenz = _alleSerienPaare(einbettungen, zeiten,
-          const Duration(seconds: 30), 0.92);
+      final referenz = _alleSerienPaare(
+        einbettungen,
+        zeiten,
+        const Duration(seconds: 30),
+        0.92,
+      );
 
-      expect(_alsMengen(gefunden), _alsMengen(referenz),
-          reason: 'die Serienerkennung darf nichts mehr uebersehen');
+      expect(
+        _alsMengen(gefunden),
+        _alsMengen(referenz),
+        reason: 'die Serienerkennung darf nichts mehr uebersehen',
+      );
       // Vierzig geplante Serien, keine mehr und keine weniger. Der alte
       // Weg ueber die Projektionen fand hier 45: Er sah nur einen Teil
       // der Paare und zerlegte Serien deshalb in Bruchstuecke.
@@ -294,8 +356,11 @@ void main() {
       final zeitstempel = List<DateTime?>.generate(n, (_) => gleich);
       final paare = zeitnachbarPaare(zeitstempel, const Duration(seconds: 30));
 
-      expect(paare.length, lessThanOrEqualTo(n * zeitnachbarnDeckel),
-          reason: 'ohne Deckel waere das quadratisch');
+      expect(
+        paare.length,
+        lessThanOrEqualTo(n * zeitnachbarnDeckel),
+        reason: 'ohne Deckel waere das quadratisch',
+      );
       // Die Gegenprobe: ohne Deckel waeren es n*(n-1)/2 = 719.400.
       expect(paare.length, lessThan(719400));
     });
@@ -311,9 +376,7 @@ void main() {
       ];
       final paare = zeitnachbarPaare(zeitstempel, const Duration(seconds: 30));
       const n = 5;
-      final alsPaare = {
-        for (final p in paare) (p ~/ n, p % n),
-      };
+      final alsPaare = {for (final p in paare) (p ~/ n, p % n)};
       expect(alsPaare, {(0, 1), (0, 2), (1, 2)});
     });
   });
@@ -321,7 +384,11 @@ void main() {
 
 /// Ein Vektor nahe an [basis] - fuer geplante Serien.
 Float32List _mitRauschen(
-    Float32List basis, math.Random rand, double staerke, int dim) {
+  Float32List basis,
+  math.Random rand,
+  double staerke,
+  int dim,
+) {
   final v = Float32List(dim);
   var q = 0.0;
   for (var i = 0; i < dim; i++) {
@@ -336,8 +403,12 @@ Float32List _mitRauschen(
 }
 
 /// Die Referenz: Serien aus WIRKLICH allen Paaren, ohne jede Vorfilterung.
-List<List<String>> _alleSerienPaare(Map<String, Float32List> einbettungen,
-    Map<String, DateTime> zeiten, Duration fenster, double schwelle) {
+List<List<String>> _alleSerienPaare(
+  Map<String, Float32List> einbettungen,
+  Map<String, DateTime> zeiten,
+  Duration fenster,
+  double schwelle,
+) {
   final ids = einbettungen.keys.toList();
   final n = ids.length;
   final eltern = List<int>.generate(n, (i) => i);
@@ -368,5 +439,6 @@ List<List<String>> _alleSerienPaare(Map<String, Float32List> einbettungen,
   return haufen.values.where((g) => g.length >= 2).toList();
 }
 
-Set<Set<String>> _alsMengen(List<List<String>> gruppen) =>
-    {for (final g in gruppen) g.toSet()};
+Set<Set<String>> _alsMengen(List<List<String>> gruppen) => {
+  for (final g in gruppen) g.toSet(),
+};

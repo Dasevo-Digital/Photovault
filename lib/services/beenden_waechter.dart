@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 /// ein Navigator oder eine laufende Auswertung nötig wären.
 class BeendenWaechter {
   BeendenWaechter({MethodChannel? kanal})
-      : _kanal = kanal ?? const MethodChannel(kanalName);
+    : _kanal = kanal ?? const MethodChannel(kanalName);
 
   static const kanalName = 'photo_vault/beenden';
   static const methode = 'darfBeenden';

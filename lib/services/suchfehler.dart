@@ -26,7 +26,7 @@ class Suchfehlerstand {
 
   /// Der Satz dazu, in der Sprache, die gerade gilt.
   String satz(AppTexte t) => switch (grund) {
-        Suchfehler.clipFehlt => t.allgClipNoetigKurz,
-        Suchfehler.gescheitert => t.allgSucheFehlgeschlagen(einzelheit ?? ''),
-      };
+    Suchfehler.clipFehlt => t.allgClipNoetigKurz,
+    Suchfehler.gescheitert => t.allgSucheFehlgeschlagen(einzelheit ?? ''),
+  };
 }

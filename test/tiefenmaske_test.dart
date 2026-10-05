@@ -25,15 +25,20 @@ void main() {
     expect(e.png, isNull);
   });
 
-  test('bei HEIC ohne lesbare Auxiliary-Ebene bleibt der Zustand erklärbar',
-      () async {
-    if (Platform.isMacOS) return; // dort wird wirklich nachgesehen
-    final e = await NativeImageConverter.tiefenmaske(lege('portraet.heic'));
-    expect(e.stand, Tiefenmaskenstand.nichtAufDieserPlattform,
+  test(
+    'bei HEIC ohne lesbare Auxiliary-Ebene bleibt der Zustand erklärbar',
+    () async {
+      if (Platform.isMacOS) return; // dort wird wirklich nachgesehen
+      final e = await NativeImageConverter.tiefenmaske(lege('portraet.heic'));
+      expect(
+        e.stand,
+        Tiefenmaskenstand.nichtAufDieserPlattform,
         reason:
-            'die Datei könnte Tiefendaten tragen; das Werkzeug las aber keine');
-    expect(e.png, isNull);
-  });
+            'die Datei könnte Tiefendaten tragen; das Werkzeug las aber keine',
+      );
+      expect(e.png, isNull);
+    },
+  );
 
   test('die Endungsliste bleibt bei dem, was Tiefendaten tragen kann', () {
     // RAW-Dateien tragen keine - die Tiefenkarte entsteht aus zwei

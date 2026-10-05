@@ -18,7 +18,10 @@ class ExportPresetsScreen extends StatelessWidget {
   final LibraryState library;
   const ExportPresetsScreen({super.key, required this.library});
 
-  Future<void> _bearbeiten(BuildContext context, {ExportPresetData? bestehend}) async {
+  Future<void> _bearbeiten(
+    BuildContext context, {
+    ExportPresetData? bestehend,
+  }) async {
     // Die belegten Namen wandern in den Editor, statt erst beim Speichern
     // an der `unique`-Spalte aufzulaufen: Der Nutzer soll es erfahren,
     // während er tippt, nicht als Absturz danach.
@@ -46,11 +49,13 @@ class ExportPresetsScreen extends StatelessWidget {
         content: Text(t.exportVorgabeLoeschenText(vorgabe.name)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(t.allgLoeschen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.allgLoeschen),
+          ),
         ],
       ),
     );
@@ -150,12 +155,15 @@ class _VorgabeEditor extends StatefulWidget {
 }
 
 class _VorgabeEditorState extends State<_VorgabeEditor> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.bestehend?.name ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.bestehend?.name ?? '',
+  );
   late final TextEditingController _muster = TextEditingController(
-      text: widget.bestehend?.namensmuster ?? Namensbaustein.name.muster);
-  late final TextEditingController _kante =
-      TextEditingController(text: widget.bestehend?.maxKante?.toString() ?? '');
+    text: widget.bestehend?.namensmuster ?? Namensbaustein.name.muster,
+  );
+  late final TextEditingController _kante = TextEditingController(
+    text: widget.bestehend?.maxKante?.toString() ?? '',
+  );
 
   late bool _nachJpeg = widget.bestehend?.nachJpeg ?? true;
   late double _qualitaet = widget.bestehend?.qualitaet ?? 0.9;
@@ -218,9 +226,11 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     return AlertDialog(
-      title: Text(widget.bestehend == null
-          ? t.exportVorgabeNeuTitel
-          : t.exportVorgabeBearbeitenTitel),
+      title: Text(
+        widget.bestehend == null
+            ? t.exportVorgabeNeuTitel
+            : t.exportVorgabeBearbeitenTitel,
+      ),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(
@@ -251,8 +261,10 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Text(t.exportVorgabeQualitaet((_qualitaet * 100).round()),
-                    style: Theme.of(context).textTheme.labelLarge),
+                Text(
+                  t.exportVorgabeQualitaet((_qualitaet * 100).round()),
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
                 Slider(
                   value: _qualitaet,
                   min: 0.4,
@@ -282,15 +294,19 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
                         final neu = '${_muster.text}${baustein.muster}';
                         _muster.value = TextEditingValue(
                           text: neu,
-                          selection: TextSelection.collapsed(offset: neu.length),
+                          selection: TextSelection.collapsed(
+                            offset: neu.length,
+                          ),
                         );
                       },
                     ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text(t.exportVorgabeMusterHinweis,
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                t.exportVorgabeMusterHinweis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const Divider(height: AppSpacing.xxl),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -301,8 +317,10 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
               ),
               if (_fehler != null) ...[
                 const SizedBox(height: AppSpacing.sm),
-                Text(_fehler!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _fehler!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
             ],
           ),
@@ -310,8 +328,9 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(onPressed: _speichern, child: Text(t.allgSpeichern)),
       ],
     );

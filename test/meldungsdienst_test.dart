@@ -19,8 +19,10 @@ void main() {
     test('mit Knopf dauert es doppelt so lang', () {
       // Vier Sekunden reichen zum Lesen, nicht zum Lesen *und* Handeln.
       expect(meldungsdauer(Meldungsart.hinweis), const Duration(seconds: 4));
-      expect(meldungsdauer(Meldungsart.hinweis, mitAktion: true),
-          const Duration(seconds: 8));
+      expect(
+        meldungsdauer(Meldungsart.hinweis, mitAktion: true),
+        const Duration(seconds: 8),
+      );
     });
 
     test('eine Warnung bleibt auch ohne Knopf länger', () {
@@ -39,25 +41,40 @@ void main() {
 
     test('gleicher Wortlaut und gleiche Art', () {
       expect(
-          gehtAufIn(steht, Meldungsart.warnung, 'Datei nicht lesbar',
-              hatAktion: false),
-          isTrue);
+        gehtAufIn(
+          steht,
+          Meldungsart.warnung,
+          'Datei nicht lesbar',
+          hatAktion: false,
+        ),
+        isTrue,
+      );
     });
 
     test('andere Art ist eine andere Meldung', () {
       expect(
-          gehtAufIn(steht, Meldungsart.fehler, 'Datei nicht lesbar',
-              hatAktion: false),
-          isFalse);
+        gehtAufIn(
+          steht,
+          Meldungsart.fehler,
+          'Datei nicht lesbar',
+          hatAktion: false,
+        ),
+        isFalse,
+      );
     });
 
     test('eine Meldung mit Knopf geht nie auf – in keine Richtung', () {
       // Der Knopf gehört zu genau einem Vorgang. „Rückgängig" an einer
       // zusammengefassten Meldung nähme die falsche Löschung zurück.
       expect(
-          gehtAufIn(steht, Meldungsart.warnung, 'Datei nicht lesbar',
-              hatAktion: true),
-          isFalse);
+        gehtAufIn(
+          steht,
+          Meldungsart.warnung,
+          'Datei nicht lesbar',
+          hatAktion: true,
+        ),
+        isFalse,
+      );
       final mitKnopf = Meldung(
         nummer: 2,
         art: Meldungsart.warnung,
@@ -66,9 +83,14 @@ void main() {
         aktion: (beschriftung: 'Rückgängig', beiDruck: () {}),
       );
       expect(
-          gehtAufIn(mitKnopf, Meldungsart.warnung, 'Datei nicht lesbar',
-              hatAktion: false),
-          isFalse);
+        gehtAufIn(
+          mitKnopf,
+          Meldungsart.warnung,
+          'Datei nicht lesbar',
+          hatAktion: false,
+        ),
+        isFalse,
+      );
     });
   });
 
@@ -113,8 +135,12 @@ void main() {
       for (var i = 1; i <= 6; i++) {
         d.hinweis('Meldung $i');
       }
-      expect(d.sichtbare.map((m) => m.text),
-          ['Meldung 3', 'Meldung 4', 'Meldung 5', 'Meldung 6']);
+      expect(d.sichtbare.map((m) => m.text), [
+        'Meldung 3',
+        'Meldung 4',
+        'Meldung 5',
+        'Meldung 6',
+      ]);
       expect(d.verlauf, hasLength(6));
       // Neueste zuerst – so liest man einen Verlauf.
       expect(d.verlauf.first.text, 'Meldung 6');

@@ -96,8 +96,12 @@ XmpFields? parseXmpContent(String xmlContent) {
 
   final latRaw = findAttribute('exif:GPSLatitude');
   final lngRaw = findAttribute('exif:GPSLongitude');
-  final latitude = latRaw != null ? _parseXmpGps(latRaw, isLatitude: true) : null;
-  final longitude = lngRaw != null ? _parseXmpGps(lngRaw, isLatitude: false) : null;
+  final latitude = latRaw != null
+      ? _parseXmpGps(latRaw, isLatitude: true)
+      : null;
+  final longitude = lngRaw != null
+      ? _parseXmpGps(lngRaw, isLatitude: false)
+      : null;
 
   String? description;
   final descriptionElement = findChild('dc:description');
@@ -159,13 +163,15 @@ List<Gesichtsregion> _regionen(XmlDocument doc) {
     if (x == null || y == null || w == null || h == null) continue;
     if (w <= 0 || h <= 0) continue;
 
-    gefunden.add(Gesichtsregion.ausMitte(
-      name: name,
-      mitteX: x,
-      mitteY: y,
-      breite: w,
-      hoehe: h,
-    ));
+    gefunden.add(
+      Gesichtsregion.ausMitte(
+        name: name,
+        mitteX: x,
+        mitteY: y,
+        breite: w,
+        hoehe: h,
+      ),
+    );
   }
   return gefunden;
 }
@@ -256,20 +262,22 @@ String? xmpAusBytes(Uint8List bytes) {
 /// zusätzliche Farbe, die photo_vaults feste 5er-Palette nicht kennt) statt
 /// eines rätselhaften internen Werts.
 String? _internalColorLabel(String xmpLabel) => switch (xmpLabel) {
-      'Red' => 'red',
-      'Yellow' => 'yellow',
-      'Green' => 'green',
-      'Blue' => 'blue',
-      'Purple' => 'purple',
-      _ => null,
-    };
+  'Red' => 'red',
+  'Yellow' => 'yellow',
+  'Green' => 'green',
+  'Blue' => 'blue',
+  'Purple' => 'purple',
+  _ => null,
+};
 
 /// Umkehrung von `_toXmpGps` in xmp_writer.dart (Format
 /// `"Grad,Minuten.mmmmmmR"`, R = Himmelsrichtung N/S/E/W). Gibt `null` bei
 /// nicht parsbaren Werten zurück, statt zu werfen – ein einzelnes
 /// kaputtes GPS-Feld soll nicht den ganzen Sidecar unbrauchbar machen.
 double? _parseXmpGps(String value, {required bool isLatitude}) {
-  final match = RegExp(r'^(\d+),(\d+(?:\.\d+)?)([NSEW])$').firstMatch(value.trim());
+  final match = RegExp(
+    r'^(\d+),(\d+(?:\.\d+)?)([NSEW])$',
+  ).firstMatch(value.trim());
   if (match == null) return null;
   final degrees = double.tryParse(match.group(1)!);
   final minutes = double.tryParse(match.group(2)!);

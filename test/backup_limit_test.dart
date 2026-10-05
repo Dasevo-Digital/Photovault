@@ -22,7 +22,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_backup_limit_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
   });
@@ -34,7 +36,8 @@ void main() {
 
   /// Legt [anzahl] Fotos mit je [bytes] Nutzdaten an.
   Future<void> importiere(int anzahl, {int bytes = 100 * 1024}) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
     for (var i = 0; i < anzahl; i++) {
       final f = File(p.join(incoming.path, 'foto_$i.jpg'));
       await f.writeAsBytes(List.filled(bytes, i % 256));
@@ -43,7 +46,9 @@ void main() {
   }
 
   int dateienImZiel(Directory ziel) {
-    final originals = Directory(p.join(ziel.path, 'PhotoVault-Backup', 'originals'));
+    final originals = Directory(
+      p.join(ziel.path, 'PhotoVault-Backup', 'originals'),
+    );
     if (!originals.existsSync()) return 0;
     return originals
         .listSync(recursive: true)
@@ -62,30 +67,42 @@ void main() {
     expect(await db.assetsNotBackedUp(), isEmpty);
   });
 
-  test('mit Grenze wird nur ein Teil gesichert, der Rest bleibt offen', () async {
-    // 5 Fotos à 100 KB, Grenze 250 KB -> nach 3 Dateien ist die Grenze
-    // überschritten, die vierte startet nicht mehr.
+  test(
+    'mit Grenze wird nur ein Teil gesichert, der Rest bleibt offen',
+    () async {
+      // 5 Fotos à 100 KB, Grenze 250 KB -> nach 3 Dateien ist die Grenze
+      // überschritten, die vierte startet nicht mehr.
+      await importiere(5, bytes: 100 * 1024);
+      final ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
+
+      await backupService
+          .performBackup(ziel.path, maxBytesPerRun: 250 * 1024)
+          .drain<void>();
+
+      final geschrieben = dateienImZiel(ziel);
+      expect(geschrieben, lessThan(5), reason: 'die Grenze muss greifen');
+      expect(
+        geschrieben,
+        greaterThan(0),
+        reason: 'etwas muss gesichert werden',
+      );
+
+      final offen = await db.assetsNotBackedUp();
+      expect(
+        offen,
+        hasLength(5 - geschrieben),
+        reason: 'nicht Gesichertes darf NICHT als gesichert markiert sein',
+      );
+    },
+  );
+
+  test('der nächste Lauf holt den Rest nach', () async {
     await importiere(5, bytes: 100 * 1024);
     final ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
 
     await backupService
         .performBackup(ziel.path, maxBytesPerRun: 250 * 1024)
         .drain<void>();
-
-    final geschrieben = dateienImZiel(ziel);
-    expect(geschrieben, lessThan(5), reason: 'die Grenze muss greifen');
-    expect(geschrieben, greaterThan(0), reason: 'etwas muss gesichert werden');
-
-    final offen = await db.assetsNotBackedUp();
-    expect(offen, hasLength(5 - geschrieben),
-        reason: 'nicht Gesichertes darf NICHT als gesichert markiert sein');
-  });
-
-  test('der nächste Lauf holt den Rest nach', () async {
-    await importiere(5, bytes: 100 * 1024);
-    final ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
-
-    await backupService.performBackup(ziel.path, maxBytesPerRun: 250 * 1024).drain<void>();
     final nachErstem = dateienImZiel(ziel);
 
     // Zweiter Lauf ohne Grenze: alles Übrige.
@@ -100,11 +117,16 @@ void main() {
     await importiere(5, bytes: 100 * 1024);
     final ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
 
-    await backupService.performBackup(ziel.path, maxBytesPerRun: 250 * 1024).drain<void>();
+    await backupService
+        .performBackup(ziel.path, maxBytesPerRun: 250 * 1024)
+        .drain<void>();
 
     final bericht = await db.lastBackupRecord();
-    expect(bericht!.fileCount, dateienImZiel(ziel),
-        reason: 'der Bericht darf nicht mehr behaupten, als geschafft wurde');
+    expect(
+      bericht!.fileCount,
+      dateienImZiel(ziel),
+      reason: 'der Bericht darf nicht mehr behaupten, als geschafft wurde',
+    );
   });
 
   test('im Ziel bleiben keine Zwischendateien liegen', () async {

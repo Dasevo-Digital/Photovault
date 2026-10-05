@@ -81,7 +81,9 @@ List<Bildreihe> bildreihen({
       // Voll genug. Ein einzelnes sehr breites Panorama landet hier schon
       // beim ersten Durchgang und bekommt damit seine eigene Reihe – was
       // richtig ist: Neben ihm wäre für nichts anderes Platz.
-      reihen.add(_reihe(seitenverhaeltnisse, beginn, i, hoehe, breite, abstand));
+      reihen.add(
+        _reihe(seitenverhaeltnisse, beginn, i, hoehe, breite, abstand),
+      );
       beginn = i + 1;
       summeVerhaeltnisse = 0;
     }
@@ -89,8 +91,14 @@ List<Bildreihe> bildreihen({
 
   // Was übrig bleibt, behält die Zielhöhe.
   if (beginn < seitenverhaeltnisse.length) {
-    reihen.add(_letzteReihe(
-        seitenverhaeltnisse, beginn, seitenverhaeltnisse.length - 1, zielhoehe));
+    reihen.add(
+      _letzteReihe(
+        seitenverhaeltnisse,
+        beginn,
+        seitenverhaeltnisse.length - 1,
+        zielhoehe,
+      ),
+    );
   }
   return reihen;
 }
@@ -114,8 +122,14 @@ double reihenGesamthoehe(List<Bildreihe> reihen, double abstand) {
 double _gesundesVerhaeltnis(double v) =>
     v.isFinite && v > 0 ? v : seitenverhaeltnisVorgabe;
 
-Bildreihe _reihe(List<double> verhaeltnisse, int von, int bis, double hoehe,
-    double breite, double abstand) {
+Bildreihe _reihe(
+  List<double> verhaeltnisse,
+  int von,
+  int bis,
+  double hoehe,
+  double breite,
+  double abstand,
+) {
   final plaetze = <Bildplatz>[];
   var belegt = 0.0;
   for (var i = von; i <= bis; i++) {
@@ -133,7 +147,11 @@ Bildreihe _reihe(List<double> verhaeltnisse, int von, int bis, double hoehe,
 }
 
 Bildreihe _letzteReihe(
-    List<double> verhaeltnisse, int von, int bis, double hoehe) {
+  List<double> verhaeltnisse,
+  int von,
+  int bis,
+  double hoehe,
+) {
   return Bildreihe(
     hoehe: hoehe,
     plaetze: [

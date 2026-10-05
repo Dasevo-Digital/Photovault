@@ -145,12 +145,7 @@ typedef Flugfoto = ({
 /// Video haben will: Ein Video zum Verschicken darf kleiner sein, eines
 /// für einen grossen Bildschirm grösser, und wie lange man zusehen mag,
 /// entscheidet nicht die Länge der Wanderung.
-typedef Videoauftrag = ({
-  File ziel,
-  int breite,
-  int hoehe,
-  Duration dauer,
-});
+typedef Videoauftrag = ({File ziel, int breite, int hoehe, Duration dauer});
 
 /// Die fertig gerechneten Dreiecke – einmal je Gitter, nicht je Bild.
 ///
@@ -226,8 +221,12 @@ int passendeGrundstufe({
 }) {
   for (var z = feinste; z > 0; z--) {
     final n = texturbloecke(
-            sued: sued, west: west, nord: nord, ost: ost, grundstufe: z)
-        .length;
+      sued: sued,
+      west: west,
+      nord: nord,
+      ost: ost,
+      grundstufe: z,
+    ).length;
     if (n <= gelaendeHoechstensBloecke) return z;
   }
   return 1;
@@ -267,18 +266,21 @@ Gelaendenetz baueNetz(
   final spanne = gitter.spanne;
   final mittlereHoehe = (spanne.tief + spanne.hoch) / 2;
 
-  final stufe = grundstufe ??
+  final stufe =
+      grundstufe ??
       passendeGrundstufe(
-          sued: gitter.sued,
-          west: gitter.west,
-          nord: gitter.nord,
-          ost: gitter.ost);
+        sued: gitter.sued,
+        west: gitter.west,
+        nord: gitter.nord,
+        ost: gitter.ost,
+      );
   final bloecke = texturbloecke(
-      sued: gitter.sued,
-      west: gitter.west,
-      nord: gitter.nord,
-      ost: gitter.ost,
-      grundstufe: stufe);
+    sued: gitter.sued,
+    west: gitter.west,
+    nord: gitter.nord,
+    ost: gitter.ost,
+    grundstufe: stufe,
+  );
 
   // So viele Maschen je Block, dass die Landschaft insgesamt etwa so fein
   // bleibt wie bisher: [kante] Punkte über die längere Seite des
@@ -320,9 +322,11 @@ Gelaendenetz baueNetz(
     Raumpunkt punkt(double breite, double laenge) {
       final h = gitter.anOrt(breite, laenge) ?? mittlereHoehe;
       return (
-        x: ((laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
+        x:
+            ((laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
             breiteMeter,
-        y: (0.5 - (gitter.nord - breite) / (gitter.nord - gitter.sued)) *
+        y:
+            (0.5 - (gitter.nord - breite) / (gitter.nord - gitter.sued)) *
             hoeheMeter,
         z: (h - mittlereHoehe) * ueberhoehung,
       );
@@ -344,10 +348,14 @@ Gelaendenetz baueNetz(
     // der Zahl: Sie hängt allein an der Breite der **Spalte** und der
     // Höhe der **Zeile**, und die sind für alle Blöcke einer Spalte
     // beziehungsweise Zeile dieselben.
-    final maschenX =
-        math.max(1, (maschen * (ost - west) / (b.ost - b.west)).round());
-    final maschenY =
-        math.max(1, (maschen * (nord - sued) / (b.nord - b.sued)).round());
+    final maschenX = math.max(
+      1,
+      (maschen * (ost - west) / (b.ost - b.west)).round(),
+    );
+    final maschenY = math.max(
+      1,
+      (maschen * (nord - sued) / (b.nord - b.sued)).round(),
+    );
     final felder = maschenX * maschenY;
     final ecken = Float32List(felder * 2 * 3 * 3);
     final texturstellen = Float32List(felder * 2 * 3 * 2);
@@ -395,15 +403,19 @@ Gelaendenetz baueNetz(
         // Zwei Dreiecke je Feld, jedes mit seiner eigenen Schattierung.
         // Eine Schattierung je Eckpunkt sähe weicher aus und verwischte
         // genau die Kanten, die ein Gelände lesbar machen.
-        final f1 = _farbe(grundfarbe,
-            _gedaempft(schattierung(normale(a, bb, c), stimmung), reliefstaerke),
-            stimmung);
+        final f1 = _farbe(
+          grundfarbe,
+          _gedaempft(schattierung(normale(a, bb, c), stimmung), reliefstaerke),
+          stimmung,
+        );
         lege(a, b0, l0, f1);
         lege(bb, b0, l1, f1);
         lege(c, b1, l0, f1);
-        final f2 = _farbe(grundfarbe,
-            _gedaempft(schattierung(normale(bb, d, c), stimmung), reliefstaerke),
-            stimmung);
+        final f2 = _farbe(
+          grundfarbe,
+          _gedaempft(schattierung(normale(bb, d, c), stimmung), reliefstaerke),
+          stimmung,
+        );
         lege(bb, b0, l1, f2);
         lege(d, b1, l1, f2);
         lege(c, b1, l0, f2);
@@ -419,21 +431,23 @@ Gelaendenetz baueNetz(
     }
     final nw = punkt(nord, west);
     final so = punkt(sued, ost);
-    netze.add(Blocknetz(
-      block: b,
-      ecken: ecken,
-      texturstellen: texturstellen,
-      farben: farben,
-      randnaehe: randnaehe,
-      mitteX: mitte.x,
-      mitteY: mitte.y,
-      westM: nw.x,
-      ostM: so.x,
-      suedM: so.y,
-      nordM: nw.y,
-      tiefM: tiefM,
-      hochM: hochM,
-    ));
+    netze.add(
+      Blocknetz(
+        block: b,
+        ecken: ecken,
+        texturstellen: texturstellen,
+        farben: farben,
+        randnaehe: randnaehe,
+        mitteX: mitte.x,
+        mitteY: mitte.y,
+        westM: nw.x,
+        ostM: so.x,
+        suedM: so.y,
+        nordM: nw.y,
+        tiefM: tiefM,
+        hochM: hochM,
+      ),
+    );
   }
 
   return Gelaendenetz(
@@ -473,8 +487,11 @@ double _gedaempft(double licht, double staerke) =>
 /// die blaue Stunde kalt. Sie multipliziert wie die Helligkeit, faerbt
 /// also auch die Karte mit – deshalb steht sie in [Lichtstimmung]
 /// zurueckhaltend.
-int _farbe(Color grund, double licht,
-    [Lichtstimmung stimmung = stimmungMittag]) {
+int _farbe(
+  Color grund,
+  double licht, [
+  Lichtstimmung stimmung = stimmungMittag,
+]) {
   final l = stimmung.lichtfarbe;
   int kanal(double v, double ton) =>
       (v * licht * ton * 255).round().clamp(0, 255);
@@ -528,7 +545,10 @@ bool blockImBild(Blocknetz b, Gelaendekamera kamera, Size size) {
     if (p.stelle.dy > unten) unten = p.stelle.dy;
   }
   if (davor == 0) return false;
-  return rechts >= 0 && links <= size.width && unten >= 0 && oben <= size.height;
+  return rechts >= 0 &&
+      links <= size.width &&
+      unten >= 0 &&
+      oben <= size.height;
 }
 
 /// Welche Blöcke im Bild stehen, wie weit sie weg sind und wie fein
@@ -547,9 +567,9 @@ bool blockImBild(Blocknetz b, Gelaendekamera kamera, Size size) {
 /// als sie, kommen gar nicht erst auf die Liste: Für sie wäre ein
 /// eigener Abruf ein Bild, das genauso aussieht.
 List<Blockwunsch> bloeckeImBild(
-Gelaendenetz netz,
-Gelaendekamera kamera,
-Size size, {
+  Gelaendenetz netz,
+  Gelaendekamera kamera,
+  Size size, {
   double schaerfe = 1.0,
   double? uebersichtAufloesung,
 }) {
@@ -582,8 +602,7 @@ Size size, {
 /// Wie viele Blöcke bei dieser Kameraeinstellung ins Bild ragen.
 ///
 /// Nur zum Messen und Prüfen – das Zeichnen fragt [blockImBild] selbst.
-int bloeckeAnzahlImBild(
-    Gelaendenetz netz, Gelaendekamera kamera, Size size) {
+int bloeckeAnzahlImBild(Gelaendenetz netz, Gelaendekamera kamera, Size size) {
   var n = 0;
   for (final b in netz.bloecke) {
     if (blockImBild(b, kamera, size)) n++;

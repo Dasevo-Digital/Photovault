@@ -41,8 +41,9 @@ Future<bool> showTypedConfirmDialog(
                     text: AppTexte.of(context).bestaetigTippeVor,
                     children: [
                       TextSpan(
-                          text: confirmationWord,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                        text: confirmationWord,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       TextSpan(text: AppTexte.of(context).bestaetigTippeNach),
                     ],
                   ),
@@ -58,11 +59,13 @@ Future<bool> showTypedConfirmDialog(
             ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(AppTexte.of(context).allgAbbrechen)),
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(AppTexte.of(context).allgAbbrechen),
+              ),
               FilledButton(
-                style:
-                    FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
                 onPressed: matches ? () => Navigator.pop(context, true) : null,
                 child: Text(confirmLabel!),
               ),

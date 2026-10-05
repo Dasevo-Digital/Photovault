@@ -66,8 +66,11 @@ int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 /// Fotos ohne Kameraangabe am Ende. Nach Häufigkeit zu sortieren wäre
 /// verlockend, ist aber unbrauchbar: Die Reihenfolge änderte sich dann bei
 /// jedem Import, und man müsste die gesuchte Kamera jedes Mal neu suchen.
-List<Assetgruppe> gruppiereAssets(List<AssetData> assets, ListenGruppierung art,
-    {bool absteigend = true}) {
+List<Assetgruppe> gruppiereAssets(
+  List<AssetData> assets,
+  ListenGruppierung art, {
+  bool absteigend = true,
+}) {
   if (art == ListenGruppierung.keine) {
     return assets.isEmpty ? const [] : [Assetgruppe('', assets)];
   }
@@ -89,9 +92,11 @@ List<Assetgruppe> gruppiereAssets(List<AssetData> assets, ListenGruppierung art,
     case ListenGruppierung.monat:
     case ListenGruppierung.tag:
       // In dieselbe Richtung wie die Aufnahmen darin – wie im Raster.
-      schluessel.sort((a, b) => absteigend
-          ? int.parse(b).compareTo(int.parse(a))
-          : int.parse(a).compareTo(int.parse(b)));
+      schluessel.sort(
+        (a, b) => absteigend
+            ? int.parse(b).compareTo(int.parse(a))
+            : int.parse(a).compareTo(int.parse(b)),
+      );
     case ListenGruppierung.kamera:
       schluessel.sort((a, b) {
         // Ohne Kameraangabe immer ans Ende, unabhängig vom Alphabet.

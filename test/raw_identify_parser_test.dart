@@ -8,8 +8,9 @@ import 'package:photo_vault/services/raw_identify_parser.dart';
 /// erfundener Beispieltext würde nur beweisen, dass der Parser die eigenen
 /// Annahmen erfüllt.
 void main() {
-  final echt =
-      File('test/fixtures/werkzeuge/raw_identify_eos_r10.txt').readAsStringSync();
+  final echt = File(
+    'test/fixtures/werkzeuge/raw_identify_eos_r10.txt',
+  ).readAsStringSync();
 
   group('raw-identify, echte Ausgabe', () {
     test('Kamera samt Hersteller im Modellnamen', () {
@@ -37,12 +38,18 @@ void main() {
     test('Zeitstempel', () {
       // „Fri Aug 19 19:19:28 2022" – ImageIO las an derselben Datei
       // 2022:08:19 19:19:28.
-      expect(parseRawIdentify(echt).zeitpunkt, DateTime(2022, 8, 19, 19, 19, 28));
+      expect(
+        parseRawIdentify(echt).zeitpunkt,
+        DateTime(2022, 8, 19, 19, 19, 28),
+      );
     });
 
-    test('FocalLengthIn35mmFormat: 0 heisst „nicht überliefert", nicht 0 mm', () {
-      expect(parseRawIdentify(echt).kamera.focalLength35mm, isNull);
-    });
+    test(
+      'FocalLengthIn35mmFormat: 0 heisst „nicht überliefert", nicht 0 mm',
+      () {
+        expect(parseRawIdentify(echt).kamera.focalLength35mm, isNull);
+      },
+    );
 
     test('Blitzkorrektur wird nicht als Belichtungskorrektur gelesen', () {
       // Die Ausgabe enthält „Flash exposure compensation: 0.00 EV".
@@ -57,23 +64,32 @@ void main() {
     });
 
     test('Fehlermeldung statt Werten ergibt nichts', () {
-      expect(parseRawIdentify('Cannot open file: No such file').isEmpty, isTrue);
+      expect(
+        parseRawIdentify('Cannot open file: No such file').isEmpty,
+        isTrue,
+      );
     });
 
     test('Belichtung auch als Sekundenangabe', () {
-      expect(parseRawIdentify('Shutter: 2.0 sec').kamera.exposureTimeSeconds,
-          closeTo(2.0, 0.001));
+      expect(
+        parseRawIdentify('Shutter: 2.0 sec').kamera.exposureTimeSeconds,
+        closeTo(2.0, 0.001),
+      );
     });
 
     test('Zeitstempel 1970 gilt als fehlend', () {
       // LibRaw setzt bei fehlendem Datum 0 ein.
-      expect(parseRawIdentify('Timestamp: Thu Jan  1 01:00:00 1970').zeitpunkt,
-          isNull);
+      expect(
+        parseRawIdentify('Timestamp: Thu Jan  1 01:00:00 1970').zeitpunkt,
+        isNull,
+      );
     });
 
     test('Kamerakennung wird abgeschnitten', () {
-      expect(parseRawIdentify('Camera: Nikon Z 6 ID: 0x123').kamera.model,
-          'Nikon Z 6');
+      expect(
+        parseRawIdentify('Camera: Nikon Z 6 ID: 0x123').kamera.model,
+        'Nikon Z 6',
+      );
     });
   });
 }

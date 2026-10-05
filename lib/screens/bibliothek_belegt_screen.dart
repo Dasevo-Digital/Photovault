@@ -65,22 +65,27 @@ class _BibliothekBelegtScreenState extends State<BibliothekBelegtScreen> {
             ? [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xxl, vertical: AppSpacing.sm),
+                    horizontal: AppSpacing.xxl,
+                    vertical: AppSpacing.sm,
+                  ),
                   child: Text(texte.sperreAuswahlLeer),
                 ),
               ]
             : [
                 for (final b in andere)
                   SimpleDialogOption(
-                    onPressed:
-                        b.erreichbar ? () => Navigator.pop(context, b) : null,
+                    onPressed: b.erreichbar
+                        ? () => Navigator.pop(context, b)
+                        : null,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
                       enabled: b.erreichbar,
                       title: Text(b.eintrag.name),
-                      subtitle: Text(b.erreichbar
-                          ? b.eintrag.path
-                          : texte.einstBibNichtGefunden),
+                      subtitle: Text(
+                        b.erreichbar
+                            ? b.eintrag.path
+                            : texte.einstBibNichtGefunden,
+                      ),
                     ),
                   ),
               ],
@@ -114,8 +119,11 @@ class _BibliothekBelegtScreenState extends State<BibliothekBelegtScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.lock_outline,
-                    size: 48, color: farben.onSurfaceVariant),
+                Icon(
+                  Icons.lock_outline,
+                  size: 48,
+                  color: farben.onSurfaceVariant,
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 Text(
                   texte.sperreTitel,
@@ -139,11 +147,15 @@ class _BibliothekBelegtScreenState extends State<BibliothekBelegtScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(texte.sperreOrt,
-                            style: Theme.of(context).textTheme.labelSmall),
+                        Text(
+                          texte.sperreOrt,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
                         const SizedBox(height: AppSpacing.xs),
-                        SelectableText(ort,
-                            style: Theme.of(context).textTheme.bodySmall),
+                        SelectableText(
+                          ort,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
@@ -153,10 +165,9 @@ class _BibliothekBelegtScreenState extends State<BibliothekBelegtScreen> {
                   Text(
                     texte.sperreNochBelegt,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: farben.error),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: farben.error),
                   ),
                 ],
                 const SizedBox(height: AppSpacing.xxl),

@@ -18,12 +18,17 @@ void main() {
   late AppDatabase db;
 
   Future<void> gesicht(String faceId, String assetId, {String? person}) async {
-    await db.insertFace(FacesCompanion.insert(
-      id: faceId,
-      assetId: assetId,
-      boxX: .1, boxY: .1, boxW: .2, boxH: .2,
-      cropRelativePath: Value('faces/$faceId.jpg'),
-    ));
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: faceId,
+        assetId: assetId,
+        boxX: .1,
+        boxY: .1,
+        boxW: .2,
+        boxH: .2,
+        cropRelativePath: Value('faces/$faceId.jpg'),
+      ),
+    );
     if (person != null) await db.assignFacesToPerson([faceId], person);
   }
 
@@ -31,15 +36,19 @@ void main() {
     tempRoot = Directory.systemTemp.createTempSync('pv_sperren_');
     db = AppDatabase(NativeDatabase.memory());
     for (final id in ['geheim', 'offen']) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c_$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026),
-            importedAt: DateTime(2026),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/$id.jpg',
+              checksum: 'c_$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026),
+              importedAt: DateTime(2026),
+            ),
+          );
     }
     await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
   });

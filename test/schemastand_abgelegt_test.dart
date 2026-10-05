@@ -17,10 +17,13 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final fassung = db.schemaVersion;
-    final datei =
-        File('drift_schemas/default/drift_schema_v$fassung.json');
-    expect(datei.existsSync(), isTrue,
-        reason: 'Schema $fassung ist nicht abgelegt – '
-            '`dart run drift_dev make-migrations` aufrufen');
+    final datei = File('drift_schemas/default/drift_schema_v$fassung.json');
+    expect(
+      datei.existsSync(),
+      isTrue,
+      reason:
+          'Schema $fassung ist nicht abgelegt – '
+          '`dart run drift_dev make-migrations` aufrufen',
+    );
   });
 }

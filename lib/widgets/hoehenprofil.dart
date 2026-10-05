@@ -89,7 +89,9 @@ class _HoehenprofilState extends State<Hoehenprofil> {
     if (widget.punkte.isEmpty) return const SizedBox.shrink();
 
     final zahl = NumberFormat.decimalPatternDigits(
-        locale: locale.toString(), decimalDigits: 1);
+      locale: locale.toString(),
+      decimalDigits: 1,
+    );
 
     return Semantics(
       // `container: true`, damit die Beschreibung einen eigenen Knoten
@@ -126,14 +128,18 @@ class _HoehenprofilState extends State<Hoehenprofil> {
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm, vertical: 2),
+                        horizontal: AppSpacing.sm,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: farben.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                       child: Text(
-                        t.spurStelle(zahl.format(widget.punkte[i].km),
-                            widget.punkte[i].hoehe.round()),
+                        t.spurStelle(
+                          zahl.format(widget.punkte[i].km),
+                          widget.punkte[i].hoehe.round(),
+                        ),
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ),
@@ -217,13 +223,17 @@ class _Profilmaler extends CustomPainter {
     if (stelle case final i? when i >= 0 && i < punkte.length) {
       final xx = x(punkte[i].km);
       canvas.drawLine(
-          Offset(xx, 0),
-          Offset(xx, size.height),
-          Paint()
-            ..color = marke
-            ..strokeWidth = 1);
+        Offset(xx, 0),
+        Offset(xx, size.height),
+        Paint()
+          ..color = marke
+          ..strokeWidth = 1,
+      );
       canvas.drawCircle(
-          Offset(xx, y(punkte[i].hoehe)), 4, Paint()..color = marke);
+        Offset(xx, y(punkte[i].hoehe)),
+        4,
+        Paint()..color = marke,
+      );
     }
 
     _beschriftung(canvas, '${hoch.round()} m', const Offset(4, 2));
@@ -232,7 +242,10 @@ class _Profilmaler extends CustomPainter {
 
   void _beschriftung(Canvas canvas, String text, Offset stelle) {
     final maler = TextPainter(
-      text: TextSpan(text: text, style: TextStyle(fontSize: 10, color: linie)),
+      text: TextSpan(
+        text: text,
+        style: TextStyle(fontSize: 10, color: linie),
+      ),
       textDirection: ui.TextDirection.ltr,
     )..layout();
     maler.paint(canvas, stelle);

@@ -31,9 +31,10 @@ Aufnahmedaten parseRawIdentify(String ausgabe) {
   String? feld(String name) {
     // Zeilenanfang ODER nach einem Tabulator: Die Abschnitte „EXIF:" und
     // „Makernotes:" rücken ihre Zeilen ein.
-    final treffer = RegExp('^[\\t ]*${RegExp.escape(name)}:[\\t ]*(.*)\$',
-            multiLine: true)
-        .firstMatch(ausgabe);
+    final treffer = RegExp(
+      '^[\\t ]*${RegExp.escape(name)}:[\\t ]*(.*)\$',
+      multiLine: true,
+    ).firstMatch(ausgabe);
     final wert = treffer?.group(1)?.trim();
     return (wert == null || wert.isEmpty) ? null : wert;
   }
@@ -59,7 +60,9 @@ Aufnahmedaten parseRawIdentify(String ausgabe) {
 
   // „Normalized Make/Model: =Canon/EOS R10= CamMaker ID: 8"
   String? hersteller;
-  final norm = RegExp(r'Normalized Make/Model:\s*=([^/]*)/').firstMatch(ausgabe);
+  final norm = RegExp(
+    r'Normalized Make/Model:\s*=([^/]*)/',
+  ).firstMatch(ausgabe);
   if (norm != null) {
     final h = norm.group(1)!.trim();
     if (h.isNotEmpty) hersteller = h;
@@ -68,14 +71,17 @@ Aufnahmedaten parseRawIdentify(String ausgabe) {
   // Objektiv: Die EXIF-Fassung zuerst. Der Abschnitt „Makernotes" führt
   // dieselbe Angabe oft mit abweichender Schreibweise („EF 50mm" gegen
   // „EF50mm"); EXIF ist das, was auch ImageIO liefert.
-  final objektivEx = RegExp(r'^EXIF:$(.*?)^\S', multiLine: true, dotAll: true)
-      .firstMatch(ausgabe);
+  final objektivEx = RegExp(
+    r'^EXIF:$(.*?)^\S',
+    multiLine: true,
+    dotAll: true,
+  ).firstMatch(ausgabe);
   String? objektiv;
   if (objektivEx != null) {
-    objektiv = RegExp(r'^[\t ]*Lens:[\t ]*(.*)$', multiLine: true)
-        .firstMatch(objektivEx.group(1)!)
-        ?.group(1)
-        ?.trim();
+    objektiv = RegExp(
+      r'^[\t ]*Lens:[\t ]*(.*)$',
+      multiLine: true,
+    ).firstMatch(objektivEx.group(1)!)?.group(1)?.trim();
   }
   objektiv ??= feld('Lens');
   if (objektiv != null && objektiv.isEmpty) objektiv = null;
@@ -85,8 +91,9 @@ Aufnahmedaten parseRawIdentify(String ausgabe) {
   final sh = feld('Shutter');
   if (sh != null) {
     final bruch = RegExp(r'1/(\d+(?:\.\d+)?)').firstMatch(sh);
-    belichtung =
-        bruch != null ? 1.0 / double.parse(bruch.group(1)!) : zahlAus(sh);
+    belichtung = bruch != null
+        ? 1.0 / double.parse(bruch.group(1)!)
+        : zahlAus(sh);
   }
 
   // „FocalLengthIn35mmFormat: 0 mm" heisst „nicht überliefert", nicht „0 mm".
@@ -112,8 +119,18 @@ Aufnahmedaten parseRawIdentify(String ausgabe) {
 }
 
 const _monate = {
-  'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-  'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
+  'Jan': 1,
+  'Feb': 2,
+  'Mar': 3,
+  'Apr': 4,
+  'May': 5,
+  'Jun': 6,
+  'Jul': 7,
+  'Aug': 8,
+  'Sep': 9,
+  'Oct': 10,
+  'Nov': 11,
+  'Dec': 12,
 };
 
 /// „Fri Aug 19 19:19:28 2022" – das Format von `ctime`.
@@ -122,9 +139,10 @@ const _monate = {
 /// englisch, `intl` würde sie nach der eingestellten Sprache erwarten.
 DateTime? _zeitstempel(String? text) {
   if (text == null) return null;
-  final m = RegExp(r'^\w{3}\s+(\w{3})\s+(\d{1,2})\s+'
-          r'(\d{2}):(\d{2}):(\d{2})\s+(\d{4})$')
-      .firstMatch(text.trim());
+  final m = RegExp(
+    r'^\w{3}\s+(\w{3})\s+(\d{1,2})\s+'
+    r'(\d{2}):(\d{2}):(\d{2})\s+(\d{4})$',
+  ).firstMatch(text.trim());
   if (m == null) return null;
   final monat = _monate[m.group(1)];
   if (monat == null) return null;
@@ -135,6 +153,12 @@ DateTime? _zeitstempel(String? text) {
   // aus Digitalkameras, die es 1990 noch nicht gab – alles darunter ist
   // kein Datum, sondern ein fehlendes.
   if (jahr < 1990) return null;
-  return DateTime(jahr, monat, int.parse(m.group(2)!), int.parse(m.group(3)!),
-      int.parse(m.group(4)!), int.parse(m.group(5)!));
+  return DateTime(
+    jahr,
+    monat,
+    int.parse(m.group(2)!),
+    int.parse(m.group(3)!),
+    int.parse(m.group(4)!),
+    int.parse(m.group(5)!),
+  );
 }

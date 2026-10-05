@@ -43,17 +43,17 @@ Future<Zeitraumangabe?> frageZeitraum(
   DateTime? von,
   DateTime? bis,
   String? name,
-}) =>
-    showDialog<Zeitraumangabe>(
-      context: context,
-      builder: (dialog) => _ZeitraumDialog(
-          titel: titel,
-          db: db,
-          mitArt: mitArt,
-          von: von,
-          bis: bis,
-          name: name),
-    );
+}) => showDialog<Zeitraumangabe>(
+  context: context,
+  builder: (dialog) => _ZeitraumDialog(
+    titel: titel,
+    db: db,
+    mitArt: mitArt,
+    von: von,
+    bis: bis,
+    name: name,
+  ),
+);
 
 class _ZeitraumDialog extends StatefulWidget {
   final String titel;
@@ -67,13 +67,14 @@ class _ZeitraumDialog extends StatefulWidget {
   final DateTime? bis;
   final String? name;
 
-  const _ZeitraumDialog(
-      {required this.titel,
-      required this.db,
-      required this.mitArt,
-      this.von,
-      this.bis,
-      this.name});
+  const _ZeitraumDialog({
+    required this.titel,
+    required this.db,
+    required this.mitArt,
+    this.von,
+    this.bis,
+    this.name,
+  });
 
   @override
   State<_ZeitraumDialog> createState() => _ZeitraumDialogState();
@@ -165,8 +166,11 @@ class _ZeitraumDialogState extends State<_ZeitraumDialog> {
               // selbst eingetragenen Arten und den Weg zu einer neuen.
               InkWell(
                 onTap: () async {
-                  final gewaehlt = await frageAktivitaetsart(context,
-                      db: widget.db, aktuell: _art);
+                  final gewaehlt = await frageAktivitaetsart(
+                    context,
+                    db: widget.db,
+                    aktuell: _art,
+                  );
                   if (!mounted || gewaehlt == null) return;
                   setState(() => _art = gewaehlt);
                 },
@@ -175,43 +179,47 @@ class _ZeitraumDialogState extends State<_ZeitraumDialog> {
                     labelText: t.zeitraumArt,
                     border: const OutlineInputBorder(),
                   ),
-                  child: Row(children: [
-                    Icon(symbolFuerKennung(_art), size: 18),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: Text(nameFuerKennung(t, _art))),
-                    const Icon(Icons.arrow_drop_down),
-                  ]),
+                  child: Row(
+                    children: [
+                      Icon(symbolFuerKennung(_art), size: 18),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(child: Text(nameFuerKennung(t, _art))),
+                      const Icon(Icons.arrow_drop_down),
+                    ],
+                  ),
                 ),
               ),
             ],
             const SizedBox(height: AppSpacing.md),
-            Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.event, size: 18),
-                  label: Text(format.format(_von)),
-                  onPressed: () => _waehleDatum(anfang: true),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.event, size: 18),
+                    label: Text(format.format(_von)),
+                    onPressed: () => _waehleDatum(anfang: true),
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              const Icon(Icons.arrow_forward, size: 16),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.event, size: 18),
-                  label: Text(format.format(_bis)),
-                  onPressed: () => _waehleDatum(anfang: false),
+                const SizedBox(width: AppSpacing.sm),
+                const Icon(Icons.arrow_forward, size: 16),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.event, size: 18),
+                    label: Text(format.format(_bis)),
+                    onPressed: () => _waehleDatum(anfang: false),
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              _anzahl == null
-                  ? t.zeitraumZaehlt
-                  : t.zeitraumFotos(_anzahl!),
+              _anzahl == null ? t.zeitraumZaehlt : t.zeitraumFotos(_anzahl!),
               style: TextStyle(
                 fontSize: 12,
-                color: _anzahl == 0 ? context.semantik.warnung : farben.onSurfaceVariant,
+                color: _anzahl == 0
+                    ? context.semantik.warnung
+                    : farben.onSurfaceVariant,
               ),
             ),
           ],
@@ -227,15 +235,12 @@ class _ZeitraumDialogState extends State<_ZeitraumDialog> {
           // sind erlaubt: Wer den Zeitraum kennt und die Bilder erst noch
           // importiert, soll den Eintrag schon anlegen dürfen.
           onPressed: gueltig
-              ? () => Navigator.pop(
-                    context,
-                    (
-                      name: _name.text.trim(),
-                      von: _von,
-                      bis: _bis,
-                      art: widget.mitArt ? _art : null,
-                    ),
-                  )
+              ? () => Navigator.pop(context, (
+                  name: _name.text.trim(),
+                  von: _von,
+                  bis: _bis,
+                  art: widget.mitArt ? _art : null,
+                ))
               : null,
           child: Text(t.allgUebernehmen),
         ),

@@ -30,7 +30,8 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_orte_');
     paths = await StoragePaths.forTesting(
-        Directory(p.join(tempRoot.path, 'library')));
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
@@ -51,27 +52,40 @@ void main() {
     final datei = paths.absolute(relativ);
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(inhalt);
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: name,
-          originalFileName: name,
-          relativePath: relativ,
-          checksum: name,
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 6, 1),
-          importedAt: DateTime(2026, 6, 1),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: name,
+            originalFileName: name,
+            relativePath: relativ,
+            checksum: name,
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 6, 1),
+            importedAt: DateTime(2026, 6, 1),
+          ),
+        );
   }
 
   test('der Nachholvorgang traegt den Ort einer CR3 ein', () async {
     await aufnahme(
-        'mit_ort.cr3',
-        cr3Mit(gpsVerzeichnis(
+      'mit_ort.cr3',
+      cr3Mit(
+        gpsVerzeichnis(
           breite: beispielBreite,
           breiteRef: 'N',
           laenge: beispielLaenge,
           laengeRef: 'E',
-        )));
-    await aufnahme('ohne_ort.jpg', [0xFF, 0xD8, 0xFF, 0xE0, ...List.filled(64, 0)]);
+        ),
+      ),
+    );
+    await aufnahme('ohne_ort.jpg', [
+      0xFF,
+      0xD8,
+      0xFF,
+      0xE0,
+      ...List.filled(64, 0),
+    ]);
 
     expect(await db.countLocationBackfill(), 2);
 
@@ -85,10 +99,16 @@ void main() {
     // er nachgesehen hat, und die gewoehnliche Zahl faellt danach auf
     // null. Gefragt ist hier aber, wer einen ORT bekommen hat – und das
     // ist genau die CR3.
-    expect(await db.countLocationBackfill(alle: true), 1,
-        reason: 'genau die CR3 hat einen Ort bekommen');
-    expect(await db.countLocationBackfill(), 0,
-        reason: 'beide sind angesehen, keine steht mehr an');
+    expect(
+      await db.countLocationBackfill(alle: true),
+      1,
+      reason: 'genau die CR3 hat einen Ort bekommen',
+    );
+    expect(
+      await db.countLocationBackfill(),
+      0,
+      reason: 'beide sind angesehen, keine steht mehr an',
+    );
     expect((await db.assetById('ohne_ort.jpg'))!.latitude, isNull);
 
     final zeile = await db.assetById('mit_ort.cr3');

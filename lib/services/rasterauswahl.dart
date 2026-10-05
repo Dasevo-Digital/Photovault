@@ -154,12 +154,21 @@ String? nachbarkachel({
         final gruppe = gruppen[gruppenIndex];
         final ziel = runter ? index + spalten : index - spalten;
         if (runter ? ziel < gruppe.length : ziel >= 0) return gruppe[ziel];
-        return _inNachbargruppe(gruppen, gruppenIndex + (runter ? 1 : -1),
-            index % spalten, spalten, null,
-            ersteZeile: runter);
+        return _inNachbargruppe(
+          gruppen,
+          gruppenIndex + (runter ? 1 : -1),
+          index % spalten,
+          spalten,
+          null,
+          ersteZeile: runter,
+        );
       }
-      final laengen = _laengenFuer(reihenlaengen, gruppenIndex, spalten,
-          gruppen[gruppenIndex].length);
+      final laengen = _laengenFuer(
+        reihenlaengen,
+        gruppenIndex,
+        spalten,
+        gruppen[gruppenIndex].length,
+      );
       final (reihe, stelle) = _reiheUndStelle(laengen, index);
       final nachbarreihe = reihe + (runter ? 1 : -1);
       if (nachbarreihe >= 0 && nachbarreihe < laengen.length) {
@@ -167,19 +176,29 @@ String? nachbarkachel({
         for (var r = 0; r < nachbarreihe; r++) {
           anfang += laengen[r];
         }
-        final versatz =
-            stelle < laengen[nachbarreihe] ? stelle : laengen[nachbarreihe] - 1;
+        final versatz = stelle < laengen[nachbarreihe]
+            ? stelle
+            : laengen[nachbarreihe] - 1;
         return gruppen[gruppenIndex][anfang + versatz];
       }
-      return _inNachbargruppe(gruppen, gruppenIndex + (runter ? 1 : -1),
-          stelle, spalten, reihenlaengen,
-          ersteZeile: runter);
+      return _inNachbargruppe(
+        gruppen,
+        gruppenIndex + (runter ? 1 : -1),
+        stelle,
+        spalten,
+        reihenlaengen,
+        ersteZeile: runter,
+      );
   }
 }
 
 /// Die Reihenlängen einer Gruppe – gegebene, oder die des festen Rasters.
-List<int> _laengenFuer(List<List<int>>? reihenlaengen, int gruppenIndex,
-    int spalten, int anzahl) {
+List<int> _laengenFuer(
+  List<List<int>>? reihenlaengen,
+  int gruppenIndex,
+  int spalten,
+  int anzahl,
+) {
   if (reihenlaengen != null &&
       gruppenIndex < reihenlaengen.length &&
       reihenlaengen[gruppenIndex].isNotEmpty) {
@@ -187,10 +206,7 @@ List<int> _laengenFuer(List<List<int>>? reihenlaengen, int gruppenIndex,
   }
   final volle = anzahl ~/ spalten;
   final rest = anzahl % spalten;
-  return [
-    for (var i = 0; i < volle; i++) spalten,
-    if (rest > 0) rest,
-  ];
+  return [for (var i = 0; i < volle; i++) spalten, if (rest > 0) rest];
 }
 
 /// In welcher Reihe [index] steht und an welcher Stelle darin.
@@ -251,12 +267,12 @@ List<String> tastenziel(Set<String> auswahl, String? aktiveKachel) {
 /// Taste. Eine fünfte Taste dazuzuerfinden hiesse, eine Gewohnheit zu brechen,
 /// die Umsteiger mitbringen. Violett bleibt der Maus.
 String? farbmarkeFuerZiffer(LogicalKeyboardKey taste) => switch (taste) {
-      LogicalKeyboardKey.digit6 || LogicalKeyboardKey.numpad6 => 'red',
-      LogicalKeyboardKey.digit7 || LogicalKeyboardKey.numpad7 => 'yellow',
-      LogicalKeyboardKey.digit8 || LogicalKeyboardKey.numpad8 => 'green',
-      LogicalKeyboardKey.digit9 || LogicalKeyboardKey.numpad9 => 'blue',
-      _ => null,
-    };
+  LogicalKeyboardKey.digit6 || LogicalKeyboardKey.numpad6 => 'red',
+  LogicalKeyboardKey.digit7 || LogicalKeyboardKey.numpad7 => 'yellow',
+  LogicalKeyboardKey.digit8 || LogicalKeyboardKey.numpad8 => 'green',
+  LogicalKeyboardKey.digit9 || LogicalKeyboardKey.numpad9 => 'blue',
+  _ => null,
+};
 
 /// Die Bewertung zu einer Zifferntaste 0–5, oder `null` für jede andere Taste.
 ///
@@ -265,11 +281,11 @@ String? farbmarkeFuerZiffer(LogicalKeyboardKey taste) => switch (taste) {
 /// dafür, dass niemand die Taste haben wollte. Gemeldet in der Prüfrunde
 /// vom 04.09.2026.
 int? bewertungFuerZiffer(LogicalKeyboardKey taste) => switch (taste) {
-      LogicalKeyboardKey.digit0 || LogicalKeyboardKey.numpad0 => 0,
-      LogicalKeyboardKey.digit1 || LogicalKeyboardKey.numpad1 => 1,
-      LogicalKeyboardKey.digit2 || LogicalKeyboardKey.numpad2 => 2,
-      LogicalKeyboardKey.digit3 || LogicalKeyboardKey.numpad3 => 3,
-      LogicalKeyboardKey.digit4 || LogicalKeyboardKey.numpad4 => 4,
-      LogicalKeyboardKey.digit5 || LogicalKeyboardKey.numpad5 => 5,
-      _ => null,
-    };
+  LogicalKeyboardKey.digit0 || LogicalKeyboardKey.numpad0 => 0,
+  LogicalKeyboardKey.digit1 || LogicalKeyboardKey.numpad1 => 1,
+  LogicalKeyboardKey.digit2 || LogicalKeyboardKey.numpad2 => 2,
+  LogicalKeyboardKey.digit3 || LogicalKeyboardKey.numpad3 => 3,
+  LogicalKeyboardKey.digit4 || LogicalKeyboardKey.numpad4 => 4,
+  LogicalKeyboardKey.digit5 || LogicalKeyboardKey.numpad5 => 5,
+  _ => null,
+};

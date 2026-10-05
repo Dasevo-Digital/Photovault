@@ -24,13 +24,15 @@ class ModellDownloadFehler implements Exception {
   /// Gesetzt, wenn die Übertragung selbst fehlschlug.
   final String? ursache;
 
-  const ModellDownloadFehler.pruefsumme(this.datei, this.erhalten, this.erwartet)
-      : ursache = null;
+  const ModellDownloadFehler.pruefsumme(
+    this.datei,
+    this.erhalten,
+    this.erwartet,
+  ) : ursache = null;
   const ModellDownloadFehler.uebertragung(this.datei, this.ursache)
-      : erhalten = null,
-        erwartet = null;
+    : erhalten = null,
+      erwartet = null;
 }
-
 
 class ModelDownloadProgress {
   final String fileName;
@@ -83,10 +85,12 @@ class ModelDownloadService {
     this.modelsDir, {
     Duration verbindungsGrenze = const Duration(seconds: 30),
     Duration datenGrenze = const Duration(seconds: 60),
-  }) : _dio = Dio(BaseOptions(
-          connectTimeout: verbindungsGrenze,
-          receiveTimeout: datenGrenze,
-        ));
+  }) : _dio = Dio(
+         BaseOptions(
+           connectTimeout: verbindungsGrenze,
+           receiveTimeout: datenGrenze,
+         ),
+       );
 
   final String modelsDir;
   final Dio _dio;
@@ -123,104 +127,119 @@ class ModelDownloadService {
   /// laufend den Byte-Fortschritt der jeweils aktiven Datei.
   Stream<ModelDownloadProgress> download(ModelCatalogEntry entry) {
     late StreamController<ModelDownloadProgress> controller;
-    controller = StreamController<ModelDownloadProgress>(onListen: () async {
-      for (final file in entry.files) {
-        final targetPath = p.join(modelsDir, file.fileName);
-        final tmpPath = '$targetPath.part';
-        final erwartet = file.sha256.toLowerCase();
+    controller = StreamController<ModelDownloadProgress>(
+      onListen: () async {
+        for (final file in entry.files) {
+          final targetPath = p.join(modelsDir, file.fileName);
+          final tmpPath = '$targetPath.part';
+          final erwartet = file.sha256.toLowerCase();
 
-        Object? letzterFehler;
-        String? letzteFalscheSumme;
+          Object? letzterFehler;
+          String? letzteFalscheSumme;
 
-        // Mehrere Anläufe, und zwar dort weiter, wo der vorige aufhörte.
-        // Vorher verwarf ein einziger Abbruch alles Geladene: Bei
-        // clip_image_encoder.onnx sind das 352 MB, die komplett noch einmal
-        // durch die Leitung mussten. Die Prüfsumme unten bleibt die
-        // Garantie – geht beim Fortsetzen irgendetwas schief, fällt es
-        // dort auf und der Versuch beginnt von vorn.
-        for (var versuch = 1; versuch <= _versuche; versuch++) {
-          // Ein Zug statt zweier: `exists()` und danach `length()` sind zwei
-          // Blicke auf die Platte, und dazwischen kann die Datei weg sein.
-          // Genau daran ist der erste Lauf dieses Tests gescheitert.
-          var schonDa = 0;
-          try {
-            schonDa = await File(tmpPath).length();
-          } on FileSystemException {
-            schonDa = 0;
-          }
-          try {
-            await _dio.download(
-              file.url,
-              tmpPath,
-              // Ohne das wäre der Fortschritt nach jedem Abbruch weg – und
-              // damit der ganze Sinn dieser Schleife.
-              deleteOnError: false,
-              fileAccessMode:
-                  schonDa > 0 ? FileAccessMode.append : FileAccessMode.write,
-              options: Options(
-                headers: schonDa > 0 ? {'range': 'bytes=$schonDa-'} : null,
-                // Beim Fortsetzen wird 206 VERLANGT. Ein Server, der Range
-                // nicht kann, antwortet mit 200 und dem ganzen Inhalt – der
-                // würde an die halbe Datei angehängt und ergäbe Unsinn.
-                // Lieber hier scheitern und unten von vorn anfangen.
-                validateStatus: (s) =>
-                    s != null && (schonDa > 0 ? s == 206 : s == 200),
-              ),
-              onReceiveProgress: (received, total) {
-                controller.add(ModelDownloadProgress(
-                  file.fileName,
-                  schonDa + received,
-                  total > 0 ? schonDa + total : total,
-                ));
-              },
-            );
+          // Mehrere Anläufe, und zwar dort weiter, wo der vorige aufhörte.
+          // Vorher verwarf ein einziger Abbruch alles Geladene: Bei
+          // clip_image_encoder.onnx sind das 352 MB, die komplett noch einmal
+          // durch die Leitung mussten. Die Prüfsumme unten bleibt die
+          // Garantie – geht beim Fortsetzen irgendetwas schief, fällt es
+          // dort auf und der Versuch beginnt von vorn.
+          for (var versuch = 1; versuch <= _versuche; versuch++) {
+            // Ein Zug statt zweier: `exists()` und danach `length()` sind zwei
+            // Blicke auf die Platte, und dazwischen kann die Datei weg sein.
+            // Genau daran ist der erste Lauf dieses Tests gescheitert.
+            var schonDa = 0;
+            try {
+              schonDa = await File(tmpPath).length();
+            } on FileSystemException {
+              schonDa = 0;
+            }
+            try {
+              await _dio.download(
+                file.url,
+                tmpPath,
+                // Ohne das wäre der Fortschritt nach jedem Abbruch weg – und
+                // damit der ganze Sinn dieser Schleife.
+                deleteOnError: false,
+                fileAccessMode: schonDa > 0
+                    ? FileAccessMode.append
+                    : FileAccessMode.write,
+                options: Options(
+                  headers: schonDa > 0 ? {'range': 'bytes=$schonDa-'} : null,
+                  // Beim Fortsetzen wird 206 VERLANGT. Ein Server, der Range
+                  // nicht kann, antwortet mit 200 und dem ganzen Inhalt – der
+                  // würde an die halbe Datei angehängt und ergäbe Unsinn.
+                  // Lieber hier scheitern und unten von vorn anfangen.
+                  validateStatus: (s) =>
+                      s != null && (schonDa > 0 ? s == 206 : s == 200),
+                ),
+                onReceiveProgress: (received, total) {
+                  controller.add(
+                    ModelDownloadProgress(
+                      file.fileName,
+                      schonDa + received,
+                      total > 0 ? schonDa + total : total,
+                    ),
+                  );
+                },
+              );
 
-            final tatsaechlich = await _sha256OfFile(File(tmpPath));
-            if (tatsaechlich == erwartet) {
-              await File(tmpPath).rename(targetPath);
+              final tatsaechlich = await _sha256OfFile(File(tmpPath));
+              if (tatsaechlich == erwartet) {
+                await File(tmpPath).rename(targetPath);
+                letzterFehler = null;
+                letzteFalscheSumme = null;
+                break;
+              }
+
+              // Falsche Prüfsumme: Der Rumpf ist unbrauchbar, ein weiterer
+              // Anlauf darf nicht darauf aufsetzen.
+              letzteFalscheSumme = tatsaechlich;
               letzterFehler = null;
+              if (await File(tmpPath).exists()) await File(tmpPath).delete();
+            } catch (e) {
+              letzterFehler = e;
               letzteFalscheSumme = null;
-              break;
-            }
-
-            // Falsche Prüfsumme: Der Rumpf ist unbrauchbar, ein weiterer
-            // Anlauf darf nicht darauf aufsetzen.
-            letzteFalscheSumme = tatsaechlich;
-            letzterFehler = null;
-            if (await File(tmpPath).exists()) await File(tmpPath).delete();
-          } catch (e) {
-            letzterFehler = e;
-            letzteFalscheSumme = null;
-            // Wurde das Fortsetzen abgelehnt, ist die halbe Datei wertlos;
-            // bei einem gewöhnlichen Abbruch bleibt sie als Vorschuss für
-            // den nächsten Anlauf liegen.
-            final abgelehnt = e is DioException &&
-                e.response != null &&
-                e.response!.statusCode != 206 &&
-                schonDa > 0;
-            if (abgelehnt && await File(tmpPath).exists()) {
-              await File(tmpPath).delete();
+              // Wurde das Fortsetzen abgelehnt, ist die halbe Datei wertlos;
+              // bei einem gewöhnlichen Abbruch bleibt sie als Vorschuss für
+              // den nächsten Anlauf liegen.
+              final abgelehnt =
+                  e is DioException &&
+                  e.response != null &&
+                  e.response!.statusCode != 206 &&
+                  schonDa > 0;
+              if (abgelehnt && await File(tmpPath).exists()) {
+                await File(tmpPath).delete();
+              }
             }
           }
-        }
 
-        if (letzteFalscheSumme != null) {
-          controller.addError(ModellDownloadFehler.pruefsumme(
-              file.fileName, letzteFalscheSumme, erwartet));
-          await controller.close();
-          return;
+          if (letzteFalscheSumme != null) {
+            controller.addError(
+              ModellDownloadFehler.pruefsumme(
+                file.fileName,
+                letzteFalscheSumme,
+                erwartet,
+              ),
+            );
+            await controller.close();
+            return;
+          }
+          if (letzterFehler != null) {
+            final rest = File(tmpPath);
+            if (await rest.exists()) await rest.delete();
+            controller.addError(
+              ModellDownloadFehler.uebertragung(
+                file.fileName,
+                '$letzterFehler',
+              ),
+            );
+            await controller.close();
+            return;
+          }
         }
-        if (letzterFehler != null) {
-          final rest = File(tmpPath);
-          if (await rest.exists()) await rest.delete();
-          controller.addError(ModellDownloadFehler.uebertragung(
-              file.fileName, '$letzterFehler'));
-          await controller.close();
-          return;
-        }
-      }
-      await controller.close();
-    });
+        await controller.close();
+      },
+    );
     return controller.stream;
   }
 
@@ -251,11 +270,14 @@ class ModelDownloadService {
         continue;
       }
       final tatsaechlich = await _sha256OfFile(datei);
-      befunde.add(Modellbefund(
+      befunde.add(
+        Modellbefund(
           f.fileName,
           tatsaechlich == f.sha256.toLowerCase()
               ? Modellzustand.stimmt
-              : Modellzustand.weichtAb));
+              : Modellzustand.weichtAb,
+        ),
+      );
     }
     return befunde;
   }
@@ -267,15 +289,17 @@ class ModelDownloadService {
   /// über alle Modelle rund 2,6 Sekunden (CLIP allein 1,12 s für 606 MB);
   /// deshalb hängt er an einem Knopf und nicht am Programmstart.
   Future<List<Modellbefund>> pruefeAlleInstallierten(
-      List<ModelCatalogEntry> eintraege,
-      {void Function(String dateiname)? fortschritt}) async {
+    List<ModelCatalogEntry> eintraege, {
+    void Function(String dateiname)? fortschritt,
+  }) async {
     final befunde = <Modellbefund>[];
     for (final eintrag in eintraege) {
       // Nicht `isEntryInstalled`: Das ist gerade die Prüfung, die hier
       // schärfer wiederholt wird – eine zu kurze Datei soll im Bericht
       // stehen und nicht dazu führen, dass der Eintrag übersprungen wird.
-      final irgendwasDa = eintrag.files
-          .any((f) => File(p.join(modelsDir, f.fileName)).existsSync());
+      final irgendwasDa = eintrag.files.any(
+        (f) => File(p.join(modelsDir, f.fileName)).existsSync(),
+      );
       if (!irgendwasDa) continue;
       for (final f in eintrag.files) {
         fortschritt?.call(f.fileName);
@@ -387,7 +411,9 @@ class ModelDownloadService {
           await f.delete();
         }
       } catch (e) {
-        debugPrint('Abgelöste Modelldatei $name liess sich nicht entfernen: $e');
+        debugPrint(
+          'Abgelöste Modelldatei $name liess sich nicht entfernen: $e',
+        );
       }
     }
     return bytes;

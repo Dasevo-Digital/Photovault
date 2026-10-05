@@ -21,7 +21,10 @@ void main() {
 
     test('zusammen gedrückt gewinnt die Umschalttaste', () {
       expect(
-        klickartAus({LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.metaLeft}),
+        klickartAus({
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.metaLeft,
+        }),
         Klickart.bereich,
       );
     });
@@ -67,7 +70,12 @@ void main() {
     ];
 
     String? geh(String von, Rasterrichtung r, {int spalten = 3}) =>
-        nachbarkachel(gruppen: gruppen, von: von, richtung: r, spalten: spalten);
+        nachbarkachel(
+          gruppen: gruppen,
+          von: von,
+          richtung: r,
+          spalten: spalten,
+        );
 
     test('links und rechts laufen über die Monatsgrenze', () {
       expect(geh('a7', Rasterrichtung.rechts), 'b1');
@@ -89,28 +97,34 @@ void main() {
       expect(geh('a4', Rasterrichtung.hoch), 'a1');
     });
 
-    test('runter aus der letzten Zeile landet im nächsten Monat, gleiche Spalte', () {
-      // a5 steht in Spalte 1 (0-basiert) der zweiten Zeile; unter ihm ist
-      // nichts mehr, also erste Zeile des Folgemonats, Spalte 1.
-      expect(geh('a5', Rasterrichtung.runter), 'b2');
-    });
+    test(
+      'runter aus der letzten Zeile landet im nächsten Monat, gleiche Spalte',
+      () {
+        // a5 steht in Spalte 1 (0-basiert) der zweiten Zeile; unter ihm ist
+        // nichts mehr, also erste Zeile des Folgemonats, Spalte 1.
+        expect(geh('a5', Rasterrichtung.runter), 'b2');
+      },
+    );
 
-    test('runter rückt auf die letzte belegte Kachel, wenn die Spalte fehlt', () {
-      // b1..b4 bei drei Spalten: zweite Zeile hat nur b4 (Spalte 0). Von a6
-      // (Spalte 2) aus gibt es dort keine Spalte 2.
-      expect(
-        nachbarkachel(
-          gruppen: [
-            ['a1', 'a2', 'a3'],
-            ['b1', 'b2'],
-          ],
-          von: 'a3',
-          richtung: Rasterrichtung.runter,
-          spalten: 3,
-        ),
-        'b2',
-      );
-    });
+    test(
+      'runter rückt auf die letzte belegte Kachel, wenn die Spalte fehlt',
+      () {
+        // b1..b4 bei drei Spalten: zweite Zeile hat nur b4 (Spalte 0). Von a6
+        // (Spalte 2) aus gibt es dort keine Spalte 2.
+        expect(
+          nachbarkachel(
+            gruppen: [
+              ['a1', 'a2', 'a3'],
+              ['b1', 'b2'],
+            ],
+            von: 'a3',
+            richtung: Rasterrichtung.runter,
+            spalten: 3,
+          ),
+          'b2',
+        );
+      },
+    );
 
     test('hoch aus der ersten Zeile landet in der letzten Zeile davor', () {
       // b2 steht in Spalte 1; letzte Zeile des Vormonats beginnt bei a7
@@ -189,7 +203,8 @@ void main() {
         LogicalKeyboardKey.digit9,
       ]) {
         final beides =
-            bewertungFuerZiffer(taste) != null && farbmarkeFuerZiffer(taste) != null;
+            bewertungFuerZiffer(taste) != null &&
+            farbmarkeFuerZiffer(taste) != null;
         expect(beides, isFalse, reason: '$taste wäre doppelt belegt');
       }
     });

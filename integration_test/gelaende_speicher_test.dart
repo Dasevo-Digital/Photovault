@@ -40,65 +40,106 @@ class _ZaehlenderClient extends http.BaseClient {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('beim zweiten Oeffnen kommt die Landschaft von der Platte',
-      (tester) async {
-    kartenSpeicherEinrichten();
-    expect(BuiltInMapCachingProvider.getOrCreateInstance().isSupported, isTrue,
-        reason: 'ohne Speicher hat die Messung keinen Gegenstand');
+  testWidgets(
+    'beim zweiten Oeffnen kommt die Landschaft von der Platte',
+    (tester) async {
+      kartenSpeicherEinrichten();
+      expect(
+        BuiltInMapCachingProvider.getOrCreateInstance().isSupported,
+        isTrue,
+        reason: 'ohne Speicher hat die Messung keinen Gegenstand',
+      );
 
-    // Ein kleiner Ausschnitt im Harz – wenige Kacheln, echte Höhen.
-    const sued = 51.780, west = 10.590, nord = 51.810, ost = 10.640;
+      // Ein kleiner Ausschnitt im Harz – wenige Kacheln, echte Höhen.
+      const sued = 51.780, west = 10.590, nord = 51.810, ost = 10.640;
 
-    final erste = _ZaehlenderClient();
-    final u = Stopwatch()..start();
-    final gitter = await ladeHoehengitter(
-        sued: sued, west: west, nord: nord, ost: ost, netz: erste);
-    final karte = await ladeKartenbild(
-        sued: sued, west: west, nord: nord, ost: ost, netz: erste);
-    final tErste = u.elapsedMilliseconds;
-    erste.close();
-
-    expect(gitter, isNotNull, reason: 'ohne Netz ist nichts zu messen');
-    print('1. Oeffnen: ${erste.abrufe} Abrufe, $tErste ms');
-    karte?.dispose();
-
-    // Zweites Öffnen – ein frischer Client, wie ihn ein neu geöffneter
-    // Bildschirm auch anlegt. Der Speicher ist derselbe.
-    final zweite = _ZaehlenderClient();
-    u.reset();
-    final gitter2 = await ladeHoehengitter(
-        sued: sued, west: west, nord: nord, ost: ost, netz: zweite);
-    final karte2 = await ladeKartenbild(
-        sued: sued, west: west, nord: nord, ost: ost, netz: zweite);
-    final tZweite = u.elapsedMilliseconds;
-    zweite.close();
-
-    print('2. Oeffnen: ${zweite.abrufe} Abrufe, $tZweite ms');
-    expect(gitter2, isNotNull);
-    expect(karte2, isNotNull);
-    karte2?.dispose();
-
-    expect(zweite.abrufe, 0,
-        reason: 'das zweite Oeffnen darf keinen Server mehr fragen');
-    expect(tZweite, lessThan(tErste),
-        reason: 'von der Platte muss schneller sein als aus dem Netz');
-  }, timeout: const Timeout(Duration(minutes: 3)));
-
-  testWidgets('ohne Netz gilt, was auf der Platte liegt', (tester) async {
-    kartenSpeicherEinrichten();
-    // Derselbe Ausschnitt wie oben – die Kacheln liegen jetzt dort.
-    const sued = 51.780, west = 10.590, nord = 51.810, ost = 10.640;
-
-    final gitter = await ladeHoehengitter(
+      final erste = _ZaehlenderClient();
+      final u = Stopwatch()..start();
+      final gitter = await ladeHoehengitter(
         sued: sued,
         west: west,
         nord: nord,
         ost: ost,
-        netz: _OhneNetz());
-    expect(gitter, isNotNull,
-        reason: 'wer unterwegs keinen Empfang hat, soll seine Wanderung '
-            'trotzdem im Gelaende sehen');
-  }, timeout: const Timeout(Duration(minutes: 2)));
+        netz: erste,
+      );
+      final karte = await ladeKartenbild(
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: erste,
+      );
+      final tErste = u.elapsedMilliseconds;
+      erste.close();
+
+      expect(gitter, isNotNull, reason: 'ohne Netz ist nichts zu messen');
+      print('1. Oeffnen: ${erste.abrufe} Abrufe, $tErste ms');
+      karte?.dispose();
+
+      // Zweites Öffnen – ein frischer Client, wie ihn ein neu geöffneter
+      // Bildschirm auch anlegt. Der Speicher ist derselbe.
+      final zweite = _ZaehlenderClient();
+      u.reset();
+      final gitter2 = await ladeHoehengitter(
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: zweite,
+      );
+      final karte2 = await ladeKartenbild(
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: zweite,
+      );
+      final tZweite = u.elapsedMilliseconds;
+      zweite.close();
+
+      print('2. Oeffnen: ${zweite.abrufe} Abrufe, $tZweite ms');
+      expect(gitter2, isNotNull);
+      expect(karte2, isNotNull);
+      karte2?.dispose();
+
+      expect(
+        zweite.abrufe,
+        0,
+        reason: 'das zweite Oeffnen darf keinen Server mehr fragen',
+      );
+      expect(
+        tZweite,
+        lessThan(tErste),
+        reason: 'von der Platte muss schneller sein als aus dem Netz',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  testWidgets(
+    'ohne Netz gilt, was auf der Platte liegt',
+    (tester) async {
+      kartenSpeicherEinrichten();
+      // Derselbe Ausschnitt wie oben – die Kacheln liegen jetzt dort.
+      const sued = 51.780, west = 10.590, nord = 51.810, ost = 10.640;
+
+      final gitter = await ladeHoehengitter(
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        netz: _OhneNetz(),
+      );
+      expect(
+        gitter,
+        isNotNull,
+        reason:
+            'wer unterwegs keinen Empfang hat, soll seine Wanderung '
+            'trotzdem im Gelaende sehen',
+      );
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 }
 
 /// Ein Client, der sich verhält wie ein Gerät im Funkloch.

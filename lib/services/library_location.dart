@@ -31,8 +31,11 @@ class BibliotheksVerschiebefortschritt {
 /// Paar, das [LibraryLocation.pickFolder] liefert; [name] dient nur der
 /// Anzeige und ist standardmäßig der Ordnername.
 class Bibliothekseintrag {
-  const Bibliothekseintrag(
-      {required this.path, this.token, required this.name});
+  const Bibliothekseintrag({
+    required this.path,
+    this.token,
+    required this.name,
+  });
 
   final String path;
   final String? token;
@@ -105,8 +108,10 @@ class LibraryLocation {
   /// gibt – dieselbe Begründung wie bei [StoragePaths.forTesting].
   /// [zuruecksetzenFuerTests] stellt den Auslieferungszustand wieder her.
   @visibleForTesting
-  static void nutzeFuerTests(
-      {required Directory anker, FolderAccess? zugriff}) {
+  static void nutzeFuerTests({
+    required Directory anker,
+    FolderAccess? zugriff,
+  }) {
     _ankerFuerTests = anker;
     if (zugriff != null) _access = zugriff;
   }
@@ -182,11 +187,14 @@ class LibraryLocation {
             case final f?)
           Directory(p.join(f, 'PhotoVault')),
     ];
-    final gewaehlt = await uebernimmFruehereKennung(neu, frueher,
-        // Im MSIX-Paket nicht: Was ein Paket ausserhalb seines Behälters
-        // neu anlegt, leitet Windows in den Behälter um. Ein Umbenennen
-        // dorthin landete also nicht da, wo es hin soll.
-        umbenennen: alt == null);
+    final gewaehlt = await uebernimmFruehereKennung(
+      neu,
+      frueher,
+      // Im MSIX-Paket nicht: Was ein Paket ausserhalb seines Behälters
+      // neu anlegt, leitet Windows in den Behälter um. Ein Umbenennen
+      // dorthin landete also nicht da, wo es hin soll.
+      umbenennen: alt == null,
+    );
     if (gewaehlt.path != neu.path) return gewaehlt;
     return waehleDatenordner(
       neu,
@@ -211,8 +219,10 @@ class LibraryLocation {
   /// Kennung aussieht. Reine Zeichenkettenarbeit, damit sie für alle drei
   /// Plattformen auf einem Rechner prüfbar ist.
   @visibleForTesting
-  static String? fruehererSupportordner(String supportPfad,
-      {required String plattform}) {
+  static String? fruehererSupportordner(
+    String supportPfad, {
+    required String plattform,
+  }) {
     final windows = plattform == 'windows';
     final trenner = windows ? r'\' : '/';
     final teile = supportPfad.split(trenner);
@@ -228,9 +238,11 @@ class LibraryLocation {
         case 'linux':
           if (teil != 'de.dasevo.photovault') return null;
           // Im Flatpak hiess der Behälter anders als das Programm.
-          final imFlatpak = i >= 2 && teile[i - 1] == 'app' &&
-              teile[i - 2] == '.var';
-          return imFlatpak ? 'com.example.PhotoVault' : 'com.example.photo_vault';
+          final imFlatpak =
+              i >= 2 && teile[i - 1] == 'app' && teile[i - 2] == '.var';
+          return imFlatpak
+              ? 'com.example.PhotoVault'
+              : 'com.example.photo_vault';
         case 'windows':
           // Zwei Teile: <CompanyName>\<ProductName>.
           final klein = teil.toLowerCase();
@@ -272,8 +284,10 @@ class LibraryLocation {
   /// Funktion den alten Ordner.
   @visibleForTesting
   static Future<Directory> uebernimmFruehereKennung(
-      Directory neu, List<Directory> frueher,
-      {bool umbenennen = true}) async {
+    Directory neu,
+    List<Directory> frueher, {
+    bool umbenennen = true,
+  }) async {
     if (await _siehtNachDatenAus(neu)) return neu;
     for (final alt in frueher) {
       if (!await _siehtNachDatenAus(alt)) continue;
@@ -305,7 +319,9 @@ class LibraryLocation {
   /// Tageslage eine andere Bibliothek öffnet.
   @visibleForTesting
   static Future<Directory> waehleDatenordner(
-      Directory imPaket, Directory? klassisch) async {
+    Directory imPaket,
+    Directory? klassisch,
+  ) async {
     if (klassisch != null &&
         !await imPaket.exists() &&
         await _siehtNachDatenAus(klassisch)) {
@@ -378,7 +394,7 @@ class LibraryLocation {
   /// Fehlt die Datei oder ist sie unlesbar, ist die Liste leer – die App
   /// arbeitet dann im Standardordner.
   static Future<({String? aktiv, List<Bibliothekseintrag> liste})>
-      _leseKonfig() async {
+  _leseKonfig() async {
     final configFile = await _configFile();
     if (!await configFile.exists()) {
       return (aktiv: null, liste: <Bibliothekseintrag>[]);
@@ -415,7 +431,9 @@ class LibraryLocation {
   /// das nur der Ordnerdialog wieder erzeugen kann. Selten, aber teuer –
   /// und ein Umbenennen kostet nichts.
   static Future<void> _schreibeKonfig(
-      String? aktiv, List<Bibliothekseintrag> liste) async {
+    String? aktiv,
+    List<Bibliothekseintrag> liste,
+  ) async {
     final configFile = await _configFile();
     if (aktiv == null && liste.isEmpty) {
       if (await configFile.exists()) await configFile.delete();
@@ -456,19 +474,22 @@ class LibraryLocation {
   /// nur für die App, die es angelegt hat – nach dem Wechsel der Kennung
   /// muss jeder externe Ordner einmal neu freigegeben werden.
   static Future<({Directory wurzel, Bibliothekseintrag? unerreichbar})>
-      wurzelMitBefund() async {
+  wurzelMitBefund() async {
     final konfig = await _leseKonfig();
     final aktiv = konfig.aktiv;
     if (aktiv == null) return (wurzel: await _anchorDir(), unerreichbar: null);
 
-    final eintrag =
-        konfig.liste.where((e) => p.equals(e.path, aktiv)).firstOrNull;
+    final eintrag = konfig.liste
+        .where((e) => p.equals(e.path, aktiv))
+        .firstOrNull;
     if (eintrag == null) {
       return (wurzel: await _anchorDir(), unerreichbar: null);
     }
 
-    final resolved =
-        await _access.resolveRoot(path: eintrag.path, token: eintrag.token);
+    final resolved = await _access.resolveRoot(
+      path: eintrag.path,
+      token: eintrag.token,
+    );
     // Ordner nicht mehr erreichbar (gelöscht/umbenannt, Laufwerk nicht
     // eingebunden, Bookmark ungültig) – auf den Standardordner
     // zurückfallen, statt die App gar nicht erst starten zu lassen.
@@ -497,12 +518,14 @@ class LibraryLocation {
       final erreichbar = p.equals(e.path, standard.path)
           ? true
           : (await _access.resolveRoot(path: e.path, token: e.token)) != null;
-      ergebnis.add(BibliothekMitZustand(
-        eintrag: e,
-        erreichbar: erreichbar,
-        istAktiv: p.equals(e.path, aktiv),
-        istStandard: p.equals(e.path, standard.path),
-      ));
+      ergebnis.add(
+        BibliothekMitZustand(
+          eintrag: e,
+          erreichbar: erreichbar,
+          istAktiv: p.equals(e.path, aktiv),
+          istStandard: p.equals(e.path, standard.path),
+        ),
+      );
     }
     return ergebnis;
   }
@@ -535,8 +558,10 @@ class LibraryLocation {
   /// verschieben. Enthält er bereits eine `library.sqlite`, ist es eine
   /// bestehende Bibliothek; ist er leer, entsteht beim ersten Öffnen eine
   /// neue (siehe [AppDatabase.open], das die Datei anlegt).
-  static Future<Bibliothekseintrag> fuegeHinzu(PickedFolder picked,
-      {String? name}) async {
+  static Future<Bibliothekseintrag> fuegeHinzu(
+    PickedFolder picked, {
+    String? name,
+  }) async {
     final konfig = await _leseKonfig();
     final eintrag = Bibliothekseintrag(
       path: picked.path,
@@ -615,15 +640,18 @@ class LibraryLocation {
     final neuerEintrag = Bibliothekseintrag(
       path: picked.path,
       token: picked.token,
-      name: konfig.liste
+      name:
+          konfig.liste
               .where((e) => p.equals(e.path, oldRoot.path))
               .map((e) => e.name)
               .firstOrNull ??
           p.basename(picked.path),
     );
     await _schreibeKonfig(picked.path, [
-      ...konfig.liste.where((e) =>
-          !p.equals(e.path, oldRoot.path) && !p.equals(e.path, picked.path)),
+      ...konfig.liste.where(
+        (e) =>
+            !p.equals(e.path, oldRoot.path) && !p.equals(e.path, picked.path),
+      ),
       neuerEintrag,
     ]);
     return picked.path;
@@ -693,12 +721,14 @@ class LibraryLocation {
     void melde({bool erzwingen = false}) {
       if (!erzwingen && kopierteBytes - zuletztGemeldet < 1024 * 1024) return;
       zuletztGemeldet = kopierteBytes;
-      onProgress?.call(BibliotheksVerschiebefortschritt(
-        kopierteBytes: kopierteBytes,
-        gesamtBytes: gesamtBytes,
-        kopierteDateien: kopierteDateien,
-        gesamtDateien: dateien.length,
-      ));
+      onProgress?.call(
+        BibliotheksVerschiebefortschritt(
+          kopierteBytes: kopierteBytes,
+          gesamtBytes: gesamtBytes,
+          kopierteDateien: kopierteDateien,
+          gesamtDateien: dateien.length,
+        ),
+      );
     }
 
     melde(erzwingen: true);

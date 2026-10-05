@@ -23,13 +23,13 @@ void main() {
   // Ein gemischter Satz, wie ihn die echte Bibliothek liefert: überwiegend
   // quer (3:2), dazwischen Hochformate (2:3) und ein Quadrat.
   List<double> gemischt(int n) => [
-        for (var i = 0; i < n; i++)
-          switch (i % 5) {
-            0 || 1 || 2 => 3 / 2,
-            3 => 2 / 3,
-            _ => 1.0,
-          }
-      ];
+    for (var i = 0; i < n; i++)
+      switch (i % 5) {
+        0 || 1 || 2 => 3 / 2,
+        3 => 2 / 3,
+        _ => 1.0,
+      },
+  ];
 
   group('Bündigkeit', () {
     test('jede volle Reihe füllt die Breite auf den Punkt', () {
@@ -42,8 +42,11 @@ void main() {
       expect(reihen.length, greaterThan(1));
       // Die letzte Reihe ist absichtlich nicht gestreckt.
       for (final r in reihen.take(reihen.length - 1)) {
-        expect(_belegteBreite(r, abstand), closeTo(breite, 0.0001),
-            reason: 'Reihe ab Index ${r.ersterIndex} ist nicht bündig');
+        expect(
+          _belegteBreite(r, abstand),
+          closeTo(breite, 0.0001),
+          reason: 'Reihe ab Index ${r.ersterIndex} ist nicht bündig',
+        );
       }
     });
 
@@ -125,23 +128,27 @@ void main() {
   group('Was schiefgehen kann', () {
     test('leere Liste ergibt keine Reihe statt einer Ausnahme', () {
       expect(
-          bildreihen(
-              seitenverhaeltnisse: const [],
-              breite: breite,
-              zielhoehe: zielhoehe,
-              abstand: abstand),
-          isEmpty);
+        bildreihen(
+          seitenverhaeltnisse: const [],
+          breite: breite,
+          zielhoehe: zielhoehe,
+          abstand: abstand,
+        ),
+        isEmpty,
+      );
     });
 
     test('Breite null ergibt keine Reihe', () {
       // Ein Widget wird beim ersten Aufbau durchaus mit 0 vermessen.
       expect(
-          bildreihen(
-              seitenverhaeltnisse: gemischt(10),
-              breite: 0,
-              zielhoehe: zielhoehe,
-              abstand: abstand),
-          isEmpty);
+        bildreihen(
+          seitenverhaeltnisse: gemischt(10),
+          breite: 0,
+          zielhoehe: zielhoehe,
+          abstand: abstand,
+        ),
+        isEmpty,
+      );
     });
 
     test('ein kaputtes Seitenverhältnis fällt auf 3:2 zurück', () {
@@ -156,9 +163,11 @@ void main() {
         );
         expect(reihen, hasLength(1), reason: 'bei $kaputt');
         expect(reihen.single.hoehe.isFinite, isTrue, reason: 'bei $kaputt');
-        expect(reihen.single.plaetze.single.breite,
-            closeTo(zielhoehe * seitenverhaeltnisVorgabe, 0.0001),
-            reason: 'bei $kaputt');
+        expect(
+          reihen.single.plaetze.single.breite,
+          closeTo(zielhoehe * seitenverhaeltnisVorgabe, 0.0001),
+          reason: 'bei $kaputt',
+        );
       }
     });
   });

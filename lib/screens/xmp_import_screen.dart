@@ -10,7 +10,14 @@ import '../services/xmp_regionen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 
-enum _XmpDiffField { rating, colorLabel, description, tags, location, gesichter }
+enum _XmpDiffField {
+  rating,
+  colorLabel,
+  description,
+  tags,
+  location,
+  gesichter,
+}
 
 class _XmpDiff {
   final AssetData asset;
@@ -88,90 +95,115 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
 
       for (final asset in assets) {
         if (asset.isTrashed || asset.isLocked) continue;
-        final sidecarPath = widget.library.paths.xmpSidecarPath(asset.relativePath);
+        final sidecarPath = widget.library.paths.xmpSidecarPath(
+          asset.relativePath,
+        );
         final sidecarFile = widget.library.paths.absolute(sidecarPath);
         var fields = parseXmpFile(sidecarFile);
         if (fields != null) {
           sidecarsFound++;
         } else {
           fields = parseEingebettetesXmp(
-              widget.library.paths.absolute(asset.relativePath));
+            widget.library.paths.absolute(asset.relativePath),
+          );
           if (fields != null) eingebettetFound++;
         }
         if (fields == null) continue;
 
         if (fields.rating != null && fields.rating != asset.rating) {
-          diffs.add(_XmpDiff(
-            asset: asset,
-            field: _XmpDiffField.rating,
-            currentValueDisplay: '${asset.rating}',
-            xmpValueDisplay: '${fields.rating}',
-            xmpFields: fields,
-          ));
+          diffs.add(
+            _XmpDiff(
+              asset: asset,
+              field: _XmpDiffField.rating,
+              currentValueDisplay: '${asset.rating}',
+              xmpValueDisplay: '${fields.rating}',
+              xmpFields: fields,
+            ),
+          );
         }
-        if (fields.colorLabel != null && fields.colorLabel != asset.colorLabel) {
-          diffs.add(_XmpDiff(
-            asset: asset,
-            field: _XmpDiffField.colorLabel,
-            currentValueDisplay: asset.colorLabel ?? '–',
-            xmpValueDisplay: fields.colorLabel!,
-            xmpFields: fields,
-          ));
+        if (fields.colorLabel != null &&
+            fields.colorLabel != asset.colorLabel) {
+          diffs.add(
+            _XmpDiff(
+              asset: asset,
+              field: _XmpDiffField.colorLabel,
+              currentValueDisplay: asset.colorLabel ?? '–',
+              xmpValueDisplay: fields.colorLabel!,
+              xmpFields: fields,
+            ),
+          );
         }
-        if (fields.description != null && fields.description != asset.description) {
-          diffs.add(_XmpDiff(
-            asset: asset,
-            field: _XmpDiffField.description,
-            currentValueDisplay: asset.description ?? '–',
-            xmpValueDisplay: fields.description!,
-            xmpFields: fields,
-          ));
+        if (fields.description != null &&
+            fields.description != asset.description) {
+          diffs.add(
+            _XmpDiff(
+              asset: asset,
+              field: _XmpDiffField.description,
+              currentValueDisplay: asset.description ?? '–',
+              xmpValueDisplay: fields.description!,
+              xmpFields: fields,
+            ),
+          );
         }
         if (fields.tags != null) {
-          final currentTags = (await widget.library.db.tagsForAsset(asset.id)).map((t) => t.name).toSet();
-          final newTags = fields.tags!.where((t) => !currentTags.contains(t)).toList();
+          final currentTags = (await widget.library.db.tagsForAsset(
+            asset.id,
+          )).map((t) => t.name).toSet();
+          final newTags = fields.tags!
+              .where((t) => !currentTags.contains(t))
+              .toList();
           if (newTags.isNotEmpty) {
-            diffs.add(_XmpDiff(
-              asset: asset,
-              field: _XmpDiffField.tags,
-              currentValueDisplay: currentTags.isEmpty ? '–' : currentTags.join(', '),
-              xmpValueDisplay: newTags.join(', '),
-              xmpFields: fields,
-            ));
+            diffs.add(
+              _XmpDiff(
+                asset: asset,
+                field: _XmpDiffField.tags,
+                currentValueDisplay: currentTags.isEmpty
+                    ? '–'
+                    : currentTags.join(', '),
+                xmpValueDisplay: newTags.join(', '),
+                xmpFields: fields,
+              ),
+            );
           }
         }
         if (fields.latitude != null && fields.longitude != null) {
-          final samePosition = asset.latitude != null &&
+          final samePosition =
+              asset.latitude != null &&
               asset.longitude != null &&
               (asset.latitude! - fields.latitude!).abs() < 0.0001 &&
               (asset.longitude! - fields.longitude!).abs() < 0.0001;
           if (!samePosition) {
-            diffs.add(_XmpDiff(
-              asset: asset,
-              field: _XmpDiffField.location,
-              currentValueDisplay: asset.latitude != null
-                  ? '${asset.latitude!.toStringAsFixed(5)}, ${asset.longitude!.toStringAsFixed(5)}'
-                  : '–',
-              xmpValueDisplay: '${fields.latitude!.toStringAsFixed(5)}, ${fields.longitude!.toStringAsFixed(5)}',
-              xmpFields: fields,
-            ));
+            diffs.add(
+              _XmpDiff(
+                asset: asset,
+                field: _XmpDiffField.location,
+                currentValueDisplay: asset.latitude != null
+                    ? '${asset.latitude!.toStringAsFixed(5)}, ${asset.longitude!.toStringAsFixed(5)}'
+                    : '–',
+                xmpValueDisplay:
+                    '${fields.latitude!.toStringAsFixed(5)}, ${fields.longitude!.toStringAsFixed(5)}',
+                xmpFields: fields,
+              ),
+            );
           }
         }
         if (fields.gesichter.isNotEmpty) {
           final zuordnung = await _gesichterZuordnen(asset, fields.gesichter);
           if (zuordnung.isNotEmpty) {
-            diffs.add(_XmpDiff(
-              asset: asset,
-              field: _XmpDiffField.gesichter,
-              // Leer, und der Satz entsteht erst beim Zeichnen: Hier läuft
-              // eine Schleife mit await darin, und AppTexte.of(context) über
-              // eine solche Grenze hinweg zu holen ist genau das, wovor
-              // use_build_context_synchronously warnt.
-              currentValueDisplay: '',
-              xmpValueDisplay: zuordnung.map((z) => z.name).join(', '),
-              xmpFields: fields,
-              zuordnung: zuordnung,
-            ));
+            diffs.add(
+              _XmpDiff(
+                asset: asset,
+                field: _XmpDiffField.gesichter,
+                // Leer, und der Satz entsteht erst beim Zeichnen: Hier läuft
+                // eine Schleife mit await darin, und AppTexte.of(context) über
+                // eine solche Grenze hinweg zu holen ist genau das, wovor
+                // use_build_context_synchronously warnt.
+                currentValueDisplay: '',
+                xmpValueDisplay: zuordnung.map((z) => z.name).join(', '),
+                xmpFields: fields,
+                zuordnung: zuordnung,
+              ),
+            );
           }
         }
       }
@@ -185,7 +217,9 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppTexte.of(context).xmpEinlesenFehlgeschlagen('$e'));
+      setState(
+        () => _error = AppTexte.of(context).xmpEinlesenFehlgeschlagen('$e'),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -202,9 +236,9 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
     AssetData asset,
     List<Gesichtsregion> regionen,
   ) async {
-    final gesichter = (await widget.library.db.facesForAsset(asset.id))
-        .where((g) => g.personId == null && !g.isIgnored)
-        .toList();
+    final gesichter = (await widget.library.db.facesForAsset(
+      asset.id,
+    )).where((g) => g.personId == null && !g.isIgnored).toList();
     if (gesichter.isEmpty) return const [];
     final paare = regionenZuordnen(regionen, [
       for (final g in gesichter)
@@ -227,25 +261,44 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       if (p.name.toLowerCase() == name.toLowerCase()) return p.id;
     }
     final id = const Uuid().v4();
-    await widget.library.db.createPerson(PeopleCompanion.insert(id: id, name: name));
+    await widget.library.db.createPerson(
+      PeopleCompanion.insert(id: id, name: name),
+    );
     return id;
   }
 
   Future<void> _apply(_XmpDiff diff) async {
     switch (diff.field) {
       case _XmpDiffField.rating:
-        await widget.library.db.setRating(diff.asset.id, diff.xmpFields.rating!);
+        await widget.library.db.setRating(
+          diff.asset.id,
+          diff.xmpFields.rating!,
+        );
       case _XmpDiffField.colorLabel:
-        await widget.library.db.setColorLabel(diff.asset.id, diff.xmpFields.colorLabel);
+        await widget.library.db.setColorLabel(
+          diff.asset.id,
+          diff.xmpFields.colorLabel,
+        );
       case _XmpDiffField.description:
-        await widget.library.db.setDescription(diff.asset.id, diff.xmpFields.description!);
+        await widget.library.db.setDescription(
+          diff.asset.id,
+          diff.xmpFields.description!,
+        );
       case _XmpDiffField.tags:
-        final currentTags = (await widget.library.db.tagsForAsset(diff.asset.id)).map((t) => t.name).toSet();
+        final currentTags = (await widget.library.db.tagsForAsset(
+          diff.asset.id,
+        )).map((t) => t.name).toSet();
         for (final tag in diff.xmpFields.tags!) {
-          if (!currentTags.contains(tag)) await widget.library.db.tagAsset(diff.asset.id, tag);
+          if (!currentTags.contains(tag)) {
+            await widget.library.db.tagAsset(diff.asset.id, tag);
+          }
         }
       case _XmpDiffField.location:
-        await widget.library.db.setLocation(diff.asset.id, diff.xmpFields.latitude, diff.xmpFields.longitude);
+        await widget.library.db.setLocation(
+          diff.asset.id,
+          diff.xmpFields.latitude,
+          diff.xmpFields.longitude,
+        );
       case _XmpDiffField.gesichter:
         for (final z in diff.zuordnung) {
           final personId = await _personFuer(z.name);
@@ -262,13 +315,13 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
   }
 
   String _fieldLabel(AppTexte t, _XmpDiffField field) => switch (field) {
-        _XmpDiffField.rating => t.xmpFeldBewertung,
-        _XmpDiffField.colorLabel => t.xmpFeldFarbmarkierung,
-        _XmpDiffField.description => t.xmpFeldBeschreibung,
-        _XmpDiffField.tags => t.xmpFeldNeueTags,
-        _XmpDiffField.location => t.xmpFeldStandort,
-        _XmpDiffField.gesichter => t.xmpFeldGesichter,
-      };
+    _XmpDiffField.rating => t.xmpFeldBewertung,
+    _XmpDiffField.colorLabel => t.xmpFeldFarbmarkierung,
+    _XmpDiffField.description => t.xmpFeldBeschreibung,
+    _XmpDiffField.tags => t.xmpFeldNeueTags,
+    _XmpDiffField.location => t.xmpFeldStandort,
+    _XmpDiffField.gesichter => t.xmpFeldGesichter,
+  };
 
   /// Die Zeile unter dem Dateinamen. Gesichter fallen aus dem Schema
   /// „alt → neu": Dort steht links keine Angabe, sondern eine Zahl.
@@ -290,7 +343,10 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
           if (_diffs.isNotEmpty)
             TextButton(
               onPressed: _applyAll,
-              child: Text(AppTexte.of(context).xmpAlleUebernehmen, style: const TextStyle(color: Colors.white)),
+              child: Text(
+                AppTexte.of(context).xmpAlleUebernehmen,
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -320,13 +376,18 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle_outline, size: 56, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.check_circle_outline,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
               Text(
                 _sidecarsFound + _eingebettetFound == 0
                     ? AppTexte.of(context).xmpKeineSidecars
-                    : AppTexte.of(context)
-                        .xmpKeineAbweichungen(_sidecarsFound + _eingebettetFound),
+                    : AppTexte.of(context).xmpKeineAbweichungen(
+                        _sidecarsFound + _eingebettetFound,
+                      ),
                 textAlign: TextAlign.center,
               ),
             ],

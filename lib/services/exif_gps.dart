@@ -26,7 +26,9 @@ import 'package:exif/exif.dart';
   // Grobe Plausibilitätsprüfung – schützt vor kaputten/leeren EXIF-Blöcken,
   // die technisch gültige, aber unsinnige Ratios enthalten (z.B. 0/0).
   if (latitude.isNaN || longitude.isNaN) return null;
-  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
 
   return (latitude: latitude, longitude: longitude);
 }

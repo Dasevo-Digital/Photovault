@@ -35,7 +35,10 @@ void main() {
 
   test('die Spaltenzahl richtet sich nach dem Bild, gedeckelt', () {
     // Ein breites Bild bekommt die volle Zahl.
-    expect(computeWaveform(halbeHalbe(800, 100)).columnCount, waveformMaxColumns);
+    expect(
+      computeWaveform(halbeHalbe(800, 100)).columnCount,
+      waveformMaxColumns,
+    );
     // Ein schmales genau seine Breite – fest 256 zu nehmen liesse Spalten
     // leer, und die Lücken sähen wie Bildinhalt aus.
     expect(computeWaveform(halbeHalbe(64, 32)).columnCount, 64);
@@ -117,7 +120,9 @@ void main() {
   });
 
   test('unlesbare Bytes ergeben null statt eines Absturzes', () {
-    expect(computeBildAuswertung(img.encodePng(img.Image(width: 1, height: 1))),
-        isNotNull);
+    expect(
+      computeBildAuswertung(img.encodePng(img.Image(width: 1, height: 1))),
+      isNotNull,
+    );
   });
 }

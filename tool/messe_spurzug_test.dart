@@ -21,14 +21,20 @@ Hoehengitter _gitter(int n) {
   final h = Float32List(n * n);
   for (var y = 0; y < n; y++) {
     for (var x = 0; x < n; x++) {
-      h[y * n + x] = 400 +
+      h[y * n + x] =
+          400 +
           220 * math.sin(x / 9.0) * math.cos(y / 7.0) +
           90 * math.sin((x + y) / 21.0);
     }
   }
   return Hoehengitter(
-    spalten: n, zeilen: n, hoehen: h,
-    nord: 51.90, sued: 51.80, west: 10.55, ost: 10.71,
+    spalten: n,
+    zeilen: n,
+    hoehen: h,
+    nord: 51.90,
+    sued: 51.80,
+    west: 10.55,
+    ost: 10.71,
   );
 }
 
@@ -47,13 +53,13 @@ void main() {
     // Eine Spur in der Groessenordnung der echten Wanderung, quer durchs
     // Gelaende gelegt.
     List<Raumpunkt> spurMit(int n) => [
-          for (var i = 0; i < n; i++)
-            (
-              x: -2000 + 4000 * i / n + 300 * math.sin(i / 40),
-              y: -1800 + 3600 * i / n + 300 * math.cos(i / 33),
-              z: 520 + 90 * math.sin(i / 25),
-            ),
-        ];
+      for (var i = 0; i < n; i++)
+        (
+          x: -2000 + 4000 * i / n + 300 * math.sin(i / 40),
+          y: -1800 + 3600 * i / n + 300 * math.cos(i / 33),
+          z: 520 + 90 * math.sin(i / 25),
+        ),
+    ];
 
     for (final n in [0, 500, 2000, 3965]) {
       final spur = spurMit(n);
@@ -78,9 +84,11 @@ void main() {
         }
         uhr.stop();
         final je = uhr.elapsedMicroseconds / laeufe / 1000;
-        print('${n.toString().padLeft(5)} Punkte'
-            '${imFlug ? ", im Flug " : ", stehend"}   '
-            '${je.toStringAsFixed(2).padLeft(6)} ms je Bild');
+        print(
+          '${n.toString().padLeft(5)} Punkte'
+          '${imFlug ? ", im Flug " : ", stehend"}   '
+          '${je.toStringAsFixed(2).padLeft(6)} ms je Bild',
+        );
       }
     }
   });

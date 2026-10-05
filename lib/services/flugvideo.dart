@@ -185,7 +185,7 @@ Future<Videoergebnis> schreibeFlugvideo({
   required int hoehe,
   required Duration dauer,
   required void Function(ui.Canvas leinwand, ui.Size flaeche, double t)
-      maleBild,
+  maleBild,
   Future<void> Function(double t)? vorBild,
   int bilderJeSekunde = videoBilderJeSekunde,
   void Function(double anteil)? fortschritt,
@@ -204,7 +204,10 @@ Future<Videoergebnis> schreibeFlugvideo({
     // ein Programmierfehler, kein Zustand, in den jemand gerät. Und die
     // Prüfung steht **vor** allem anderen, damit kein Prozess und keine
     // Datei entsteht, die gleich wieder wegzuräumen wären.
-    return (ausgang: Videoausgang.fehler, meldung: 'size=${b}x$h frames=$bilder');
+    return (
+      ausgang: Videoausgang.fehler,
+      meldung: 'size=${b}x$h frames=$bilder',
+    );
   }
 
   final ueberNativ =

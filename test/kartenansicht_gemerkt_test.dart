@@ -13,9 +13,13 @@ void main() {
   group('Vom Text zur Ansicht und zurueck', () {
     test('jede Ansicht traegt einen eigenen Text', () {
       final texte = Kartenansicht.values.map((a) => a.alsText).toSet();
-      expect(texte, hasLength(Kartenansicht.values.length),
-          reason: 'zwei gleiche Texte hiessen, dass eine Wahl eine andere '
-              'zurueckliest');
+      expect(
+        texte,
+        hasLength(Kartenansicht.values.length),
+        reason:
+            'zwei gleiche Texte hiessen, dass eine Wahl eine andere '
+            'zurueckliest',
+      );
     });
 
     test('was gespeichert wurde, kommt zurueck', () {
@@ -46,23 +50,31 @@ void main() {
     tearDown(() => db.close());
 
     test('ohne Zutun steht dort die dunkle Karte', () async {
-      expect(Kartenansicht.ausText(await db.kartenansicht()),
-          Kartenansicht.dunkel);
+      expect(
+        Kartenansicht.ausText(await db.kartenansicht()),
+        Kartenansicht.dunkel,
+      );
     });
 
     test('eine Wahl bleibt stehen', () async {
       await db.setzeKartenansicht(Kartenansicht.topo.alsText);
-      expect(Kartenansicht.ausText(await db.kartenansicht()),
-          Kartenansicht.topo);
+      expect(
+        Kartenansicht.ausText(await db.kartenansicht()),
+        Kartenansicht.topo,
+      );
     });
 
-    test('eine zweite Wahl ueberschreibt die erste, ohne Zeile zu doppeln',
-        () async {
-      await db.setzeKartenansicht(Kartenansicht.hell.alsText);
-      await db.setzeKartenansicht(Kartenansicht.globus.alsText);
-      expect(Kartenansicht.ausText(await db.kartenansicht()),
-          Kartenansicht.globus);
-    });
+    test(
+      'eine zweite Wahl ueberschreibt die erste, ohne Zeile zu doppeln',
+      () async {
+        await db.setzeKartenansicht(Kartenansicht.hell.alsText);
+        await db.setzeKartenansicht(Kartenansicht.globus.alsText);
+        expect(
+          Kartenansicht.ausText(await db.kartenansicht()),
+          Kartenansicht.globus,
+        );
+      },
+    );
 
     test('das Merken loescht die uebrigen Einstellungen nicht', () async {
       // `insertOnConflictUpdate` mit einem halb gefuellten Companion ist

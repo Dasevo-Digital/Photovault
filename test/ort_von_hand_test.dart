@@ -41,7 +41,9 @@ void main() {
       '2910831\tHannover\tHannover\t\t52.37052\t9.73322\tP\tPPLA\tDE\t\t06\t\t\t\t515140\t\t55\tEurope/Berlin\t2023\n',
     );
     final regionen = File(p.join(wurzel.path, 'admin1CodesASCII.txt'));
-    await regionen.writeAsString('DE.06\tLower Saxony\tLower Saxony\t2862926\n');
+    await regionen.writeAsString(
+      'DE.06\tLower Saxony\tLower Saxony\t2862926\n',
+    );
     final laender = File(p.join(wurzel.path, 'countryInfo.txt'));
     await laender.writeAsString(
       '# Kopf\n'
@@ -49,9 +51,14 @@ void main() {
     );
     library = LibraryState()
       ..db = db
-      ..paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')))
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      )
       ..geocoder = await ReverseGeocoder.loadFromFiles(
-          citiesFile: staedte, admin1File: regionen, countryFile: laender);
+        citiesFile: staedte,
+        admin1File: regionen,
+        countryFile: laender,
+      );
   });
 
   tearDown(() async {
@@ -60,21 +67,24 @@ void main() {
   });
 
   /// Eine Aufnahme, wie die TG-810 sie hinterlassen hat.
-  Future<void> phantom(String id) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.JPG',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2013, 6, 3),
-            importedAt: DateTime(2026),
-            latitude: const Value(36.098),
-            longitude: const Value(68.656),
-            locationCountry: const Value('Afghanistan'),
-            locationState: const Value('Baghlan'),
-            locationCity: const Value('Baghlān'),
-          ));
+  Future<void> phantom(String id) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.JPG',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2013, 6, 3),
+          importedAt: DateTime(2026),
+          latitude: const Value(36.098),
+          longitude: const Value(68.656),
+          locationCountry: const Value('Afghanistan'),
+          locationState: const Value('Baghlan'),
+          locationCity: const Value('Baghlān'),
+        ),
+      );
 
   Future<AssetData> zeile(String id) async => (await db.assetById(id))!;
 
@@ -85,8 +95,11 @@ void main() {
     final a = await zeile('a');
     expect(a.locationCity, 'Hannover');
     expect(a.locationState, 'Lower Saxony');
-    expect(a.locationCountry, 'Germany',
-        reason: 'sonst zaehlte die Aufnahme weiter fuer Afghanistan');
+    expect(
+      a.locationCountry,
+      'Germany',
+      reason: 'sonst zaehlte die Aufnahme weiter fuer Afghanistan',
+    );
   });
 
   test('ein entfernter Ort laesst auch keinen Namen zurueck', () async {
@@ -106,7 +119,10 @@ void main() {
       await phantom('a$i');
     }
     await library.setzeOrtVonHand(
-        [for (var i = 0; i < 5; i++) 'a$i'], null, null);
+      [for (var i = 0; i < 5; i++) 'a$i'],
+      null,
+      null,
+    );
     for (var i = 0; i < 5; i++) {
       expect((await zeile('a$i')).locationCountry, isNull);
     }
@@ -122,8 +138,11 @@ void main() {
 
     final a = await zeile('a');
     expect(a.latitude, closeTo(52.37052, 1e-6));
-    expect(a.locationCountry, isNull,
-        reason: 'lieber gar kein Name als der alte, falsche');
+    expect(
+      a.locationCountry,
+      isNull,
+      reason: 'lieber gar kein Name als der alte, falsche',
+    );
   });
 
   test('der Nachtrag findet die geleerte Zeile wieder', () async {
@@ -146,23 +165,25 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      locale: const Locale('de'),
-      home: ChangeNotifierProvider<LibraryState>.value(
-        value: library,
-        child: Builder(
-          builder: (context) => Scaffold(
-            body: TextButton(
-              onPressed: () =>
-                  runBatchEditMetadataDialog(context, library, ['a', 'b']),
-              child: const Text('auf'),
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        locale: const Locale('de'),
+        home: ChangeNotifierProvider<LibraryState>.value(
+          value: library,
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () =>
+                    runBatchEditMetadataDialog(context, library, ['a', 'b']),
+                child: const Text('auf'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('auf'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -191,8 +212,12 @@ void main() {
     await phantom('a1');
     await phantom('a2');
     await phantom('fremd');
-    await db.setLocationNamesBulk(['a1', 'a2'],
-        country: 'Germany', state: 'Lower Saxony', city: 'Goslar');
+    await db.setLocationNamesBulk(
+      ['a1', 'a2'],
+      country: 'Germany',
+      state: 'Lower Saxony',
+      city: 'Goslar',
+    );
     for (final id in ['a1', 'a2']) {
       final a = await db.assetById(id);
       expect(a!.locationCountry, 'Germany');

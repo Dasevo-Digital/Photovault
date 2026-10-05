@@ -28,13 +28,16 @@ class RestoreService {
   static const overlap = 16;
   static const scaleFactor = 4;
 
-  static bool isAvailable(String modelsDir) => File('$modelsDir/real_esrgan_x4.onnx').existsSync();
+  static bool isAvailable(String modelsDir) =>
+      File('$modelsDir/real_esrgan_x4.onnx').existsSync();
 
   static Future<RestoreService> load(String modelsDir) async {
     final ort = OnnxRuntime();
     final session = await ort.createSession(
       '$modelsDir/real_esrgan_x4.onnx',
-      options: modelloptionen(providers: [OrtProvider.CORE_ML, OrtProvider.CPU]),
+      options: modelloptionen(
+        providers: [OrtProvider.CORE_ML, OrtProvider.CPU],
+      ),
     );
     return RestoreService._(session);
   }
@@ -94,9 +97,17 @@ class RestoreService {
         final rowBase = y * outWidth;
         for (var x = 0; x < outWidth; x++) {
           final pixelIdx = rowBase + x;
-          final r = ((outputRaw[pixelIdx] as num).toDouble() * 255).round().clamp(0, 255);
-          final g = ((outputRaw[channelSize + pixelIdx] as num).toDouble() * 255).round().clamp(0, 255);
-          final b = ((outputRaw[2 * channelSize + pixelIdx] as num).toDouble() * 255).round().clamp(0, 255);
+          final r = ((outputRaw[pixelIdx] as num).toDouble() * 255)
+              .round()
+              .clamp(0, 255);
+          final g =
+              ((outputRaw[channelSize + pixelIdx] as num).toDouble() * 255)
+                  .round()
+                  .clamp(0, 255);
+          final b =
+              ((outputRaw[2 * channelSize + pixelIdx] as num).toDouble() * 255)
+                  .round()
+                  .clamp(0, 255);
           result.setPixelRgb(x, y, r, g, b);
         }
       }

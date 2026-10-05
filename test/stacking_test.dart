@@ -19,9 +19,13 @@ void main() {
   var nextByte = 0;
 
   setUp(() async {
-    tempRoot = Directory.systemTemp.createTempSync('photo_vault_stacking_test_');
+    tempRoot = Directory.systemTemp.createTempSync(
+      'photo_vault_stacking_test_',
+    );
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -31,36 +35,41 @@ void main() {
   });
 
   Future<AssetData> importPhoto(String name) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-    final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
+    final file = File(p.join(incoming.path, name))
+      ..writeAsBytesSync([1, 2, 3, nextByte++]);
     final result = await import.importFile(file.path);
     expect(result.outcome, ImportOutcome.imported);
     return (await db.assetById(result.assetId!))!;
   }
 
-  test('createStack markiert nur das Titelbild als Cover und setzt stackSize dort', () async {
-    final a = await importPhoto('a.jpg');
-    final b = await importPhoto('b.jpg');
-    final c = await importPhoto('c.jpg');
+  test(
+    'createStack markiert nur das Titelbild als Cover und setzt stackSize dort',
+    () async {
+      final a = await importPhoto('a.jpg');
+      final b = await importPhoto('b.jpg');
+      final c = await importPhoto('c.jpg');
 
-    await db.createStack('stack-1', [a.id, b.id, c.id], b.id);
+      await db.createStack('stack-1', [a.id, b.id, c.id], b.id);
 
-    final refreshedA = (await db.assetById(a.id))!;
-    final refreshedB = (await db.assetById(b.id))!;
-    final refreshedC = (await db.assetById(c.id))!;
+      final refreshedA = (await db.assetById(a.id))!;
+      final refreshedB = (await db.assetById(b.id))!;
+      final refreshedC = (await db.assetById(c.id))!;
 
-    expect(refreshedA.stackId, 'stack-1');
-    expect(refreshedA.isStackCover, isFalse);
-    expect(refreshedA.stackSize, isNull);
+      expect(refreshedA.stackId, 'stack-1');
+      expect(refreshedA.isStackCover, isFalse);
+      expect(refreshedA.stackSize, isNull);
 
-    expect(refreshedB.stackId, 'stack-1');
-    expect(refreshedB.isStackCover, isTrue);
-    expect(refreshedB.stackSize, 3);
+      expect(refreshedB.stackId, 'stack-1');
+      expect(refreshedB.isStackCover, isTrue);
+      expect(refreshedB.stackSize, 3);
 
-    expect(refreshedC.stackId, 'stack-1');
-    expect(refreshedC.isStackCover, isFalse);
-    expect(refreshedC.stackSize, isNull);
-  });
+      expect(refreshedC.stackId, 'stack-1');
+      expect(refreshedC.isStackCover, isFalse);
+      expect(refreshedC.stackSize, isNull);
+    },
+  );
 
   test('assetsInStack liefert alle Mitglieder eines Stapels', () async {
     final a = await importPhoto('a.jpg');
@@ -73,31 +82,37 @@ void main() {
     expect(members.map((m) => m.id).toSet(), {a.id, b.id});
   });
 
-  test('unstackAssets löst den Stapel wieder auf – alle Mitglieder wieder einzeln sichtbar', () async {
-    final a = await importPhoto('a.jpg');
-    final b = await importPhoto('b.jpg');
-    await db.createStack('stack-1', [a.id, b.id], a.id);
+  test(
+    'unstackAssets löst den Stapel wieder auf – alle Mitglieder wieder einzeln sichtbar',
+    () async {
+      final a = await importPhoto('a.jpg');
+      final b = await importPhoto('b.jpg');
+      await db.createStack('stack-1', [a.id, b.id], a.id);
 
-    await db.unstackAssets('stack-1');
+      await db.unstackAssets('stack-1');
 
-    for (final id in [a.id, b.id]) {
-      final asset = (await db.assetById(id))!;
-      expect(asset.stackId, isNull);
-      expect(asset.isStackCover, isFalse);
-      expect(asset.stackSize, isNull);
-    }
-  });
+      for (final id in [a.id, b.id]) {
+        final asset = (await db.assetById(id))!;
+        expect(asset.stackId, isNull);
+        expect(asset.isStackCover, isFalse);
+        expect(asset.stackSize, isNull);
+      }
+    },
+  );
 
-  test('watchTimeline zeigt nur das Titelbild eines Stapels, nicht die übrigen Mitglieder', () async {
-    final cover = await importPhoto('cover.jpg');
-    final hidden = await importPhoto('hidden.jpg');
-    final unrelated = await importPhoto('unrelated.jpg');
-    await db.createStack('stack-1', [cover.id, hidden.id], cover.id);
+  test(
+    'watchTimeline zeigt nur das Titelbild eines Stapels, nicht die übrigen Mitglieder',
+    () async {
+      final cover = await importPhoto('cover.jpg');
+      final hidden = await importPhoto('hidden.jpg');
+      final unrelated = await importPhoto('unrelated.jpg');
+      await db.createStack('stack-1', [cover.id, hidden.id], cover.id);
 
-    final timeline = await db.watchTimeline().first;
+      final timeline = await db.watchTimeline().first;
 
-    expect(timeline.map((a) => a.id).toSet(), {cover.id, unrelated.id});
-  });
+      expect(timeline.map((a) => a.id).toSet(), {cover.id, unrelated.id});
+    },
+  );
 
   test('searchAssets zeigt nur das Titelbild eines Stapels', () async {
     final cover = await importPhoto('cover.jpg');
@@ -109,14 +124,17 @@ void main() {
     expect(results.map((a) => a.id), [cover.id]);
   });
 
-  test('nach unstackAssets tauchen wieder alle Mitglieder einzeln in watchTimeline auf', () async {
-    final a = await importPhoto('a.jpg');
-    final b = await importPhoto('b.jpg');
-    await db.createStack('stack-1', [a.id, b.id], a.id);
-    await db.unstackAssets('stack-1');
+  test(
+    'nach unstackAssets tauchen wieder alle Mitglieder einzeln in watchTimeline auf',
+    () async {
+      final a = await importPhoto('a.jpg');
+      final b = await importPhoto('b.jpg');
+      await db.createStack('stack-1', [a.id, b.id], a.id);
+      await db.unstackAssets('stack-1');
 
-    final timeline = await db.watchTimeline().first;
+      final timeline = await db.watchTimeline().first;
 
-    expect(timeline.map((t) => t.id).toSet(), {a.id, b.id});
-  });
+      expect(timeline.map((t) => t.id).toSet(), {a.id, b.id});
+    },
+  );
 }

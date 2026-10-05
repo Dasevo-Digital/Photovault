@@ -83,7 +83,8 @@ List<Gebiet> gebieteAus(
     var gefunden = false;
     for (var i = 0; i < gebiete.length; i++) {
       final g = gebiete[i];
-      final nahDran = ort.breite >= g.sued - abstand &&
+      final nahDran =
+          ort.breite >= g.sued - abstand &&
           ort.breite <= g.nord + abstand &&
           ort.laenge >= g.west - abstand &&
           ort.laenge <= g.ost + abstand;
@@ -102,7 +103,7 @@ List<Gebiet> gebieteAus(
         sued: ort.breite,
         west: ort.laenge,
         nord: ort.breite,
-        ost: ort.laenge
+        ost: ort.laenge,
       ));
     }
   }
@@ -113,7 +114,7 @@ List<Gebiet> gebieteAus(
         west: (g.west - rand).clamp(-180.0, 180.0),
         nord: (g.nord + rand).clamp(-85.0, 85.0),
         ost: (g.ost + rand).clamp(-180.0, 180.0),
-      )
+      ),
   ];
 }
 
@@ -233,13 +234,15 @@ Stream<Vorratsstand> ladeVorrat(
             fertig: fertig,
             gesamt: kacheln.length,
             geladen: geladen,
-            fehler: fehler
+            fehler: fehler,
           );
           continue;
         }
       }
-      final antwort = await client.get(Uri.parse(url),
-          headers: const {'User-Agent': kartenNetzkennung});
+      final antwort = await client.get(
+        Uri.parse(url),
+        headers: const {'User-Agent': kartenNetzkennung},
+      );
       if (antwort.statusCode == 200 && antwort.bodyBytes.isNotEmpty) {
         if (lager.isSupported) {
           await lager.putTile(
@@ -263,7 +266,7 @@ Stream<Vorratsstand> ladeVorrat(
       fertig: fertig,
       gesamt: kacheln.length,
       geladen: geladen,
-      fehler: fehler
+      fehler: fehler,
     );
   }
 }

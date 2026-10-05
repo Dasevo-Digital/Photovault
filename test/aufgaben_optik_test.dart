@@ -33,7 +33,8 @@ void main() {
   late AppDatabase db;
   late LibraryState library;
 
-  ModellHalter<T> halter<T>(String name, {required bool installiert}) => ModellHalter<T>(
+  ModellHalter<T> halter<T>(String name, {required bool installiert}) =>
+      ModellHalter<T>(
         name: name,
         installiert: installiert,
         laden: () async => throw StateError('im Test wird nichts geladen'),
@@ -43,18 +44,26 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_aufgaben_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
       ..backupService = BackupService(db, paths)
       // Gemischt: So sind beide Zustände der Leiste im Bild – bedienbar und
       // abgeschaltet, weil ein Modell fehlt.
-      ..faceEngineHalter = halter<FaceEngineService>('Gesichter', installiert: true)
+      ..faceEngineHalter = halter<FaceEngineService>(
+        'Gesichter',
+        installiert: true,
+      )
       ..eyeStateHalter = halter<EyeStateService>('Augen', installiert: false)
       ..clipBildHalter = halter<ClipService>('CLIP-Bild', installiert: false)
       ..clipTextHalter = halter<ClipService>('CLIP-Text', installiert: false)
-      ..captioningHalter = halter<FlorenceCaptioningService>('Bildbeschreibung', installiert: false)
+      ..captioningHalter = halter<FlorenceCaptioningService>(
+        'Bildbeschreibung',
+        installiert: false,
+      )
       // Ausdrücklich gesetzt: Ohne das hinge die Karte an
       // Platform.isMacOS und der Test prüfte je nach Rechner etwas
       // anderes.
@@ -70,32 +79,40 @@ void main() {
     tester.view.physicalSize = groesse;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      // Das echte Thema der App, nicht ein zusammengestelltes: Die Karten
-      // greifen über context.semantik auf eine Theme-Erweiterung zu, die
-      // sonst fehlt – und die Farbrollen sollen genau die geprüften sein.
-      theme: buildDarkTheme(),
-      home: BackgroundTasksScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        // Das echte Thema der App, nicht ein zusammengestelltes: Die Karten
+        // greifen über context.semantik auf eine Theme-Erweiterung zu, die
+        // sonst fehlt – und die Farbrollen sollen genau die geprüften sein.
+        theme: buildDarkTheme(),
+        home: BackgroundTasksScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('die Karten bauen ohne Überlauf – auch im schmalen Fenster', (tester) async {
+  testWidgets('die Karten bauen ohne Überlauf – auch im schmalen Fenster', (
+    tester,
+  ) async {
     // 640 Punkte ist die kleinste Breite, in der das Hauptfenster noch
     // sinnvoll bedienbar ist.
     await zeige(tester, const Size(640, 900));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('die Karten bauen ohne Überlauf – im breiten Fenster', (tester) async {
+  testWidgets('die Karten bauen ohne Überlauf – im breiten Fenster', (
+    tester,
+  ) async {
     await zeige(tester, const Size(1600, 1000));
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('jede Karte hat Symbol, Zahlenpaar und Aktionsleiste', (tester) async {
+  testWidgets('jede Karte hat Symbol, Zahlenpaar und Aktionsleiste', (
+    tester,
+  ) async {
     await zeige(tester, const Size(1000, 900));
 
     // Die Zahlenzeile: „Aktiv" steht auf jeder sichtbaren Karte, deren
@@ -107,8 +124,11 @@ void main() {
     final ersteLeiste = find.byIcon(Icons.image_search).first;
     final leisteMitte = tester.getCenter(ersteLeiste);
     final karteMitte = tester.getCenter(find.byType(Card).first);
-    expect(leisteMitte.dx, greaterThan(karteMitte.dx),
-        reason: 'die Aktionsleiste gehört an den rechten Rand der Karte');
+    expect(
+      leisteMitte.dx,
+      greaterThan(karteMitte.dx),
+      reason: 'die Aktionsleiste gehört an den rechten Rand der Karte',
+    );
   });
 
   testWidgets('jede Karte nennt die Zahl der offenen Fotos', (tester) async {
@@ -116,22 +136,27 @@ void main() {
     // zählen seit der Warteschlange Aufgaben, nicht Fotos. Ohne diese
     // Zeile wäre die nützlichste Zahl der Seite verschwunden.
     for (var i = 0; i < 3; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'o$i',
-            originalFileName: 'o$i.jpg',
-            relativePath: 'originals/o$i.jpg',
-            checksum: 'o$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'o$i',
+              originalFileName: 'o$i.jpg',
+              relativePath: 'originals/o$i.jpg',
+              checksum: 'o$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 1, 1),
+              importedAt: DateTime(2026, 1, 1),
+            ),
+          );
     }
     await zeige(tester, const Size(1400, 2600));
     expect(find.text('3 Fotos offen'), findsWidgets);
   });
 
-  testWidgets('„offen" steht nur da, wo die Zahl auch auf null gehen kann',
-      (tester) async {
+  testWidgets('„offen" steht nur da, wo die Zahl auch auf null gehen kann', (
+    tester,
+  ) async {
     // Der Fund der 17. Prüfrunde. Drei Karten zählten Kandidaten und
     // nannten es „offen": Orte einlesen zeigte 5838, Kameradaten 842,
     // Live-Photo-Paare 6804 – und nach einem vollständig geglückten
@@ -142,13 +167,23 @@ void main() {
     // „Betrifft: n" verspricht nichts, was nicht eintritt.
     await zeige(tester, const Size(1400, 2600));
     final texte = AppTexte.of(tester.element(find.byType(Scaffold).first));
-    const kandidaten = {'orte', 'kameradaten', 'livephotos', 'aufnahmedatum',
-        'entwickelt', 'xmp'};
+    const kandidaten = {
+      'orte',
+      'kameradaten',
+      'livephotos',
+      'aufnahmedatum',
+      'entwickelt',
+      'xmp',
+    };
     for (final aufgabe in aufgabenliste(texte, library)) {
       if (!kandidaten.contains(aufgabe.schluessel)) continue;
-      expect(aufgabe.offenLabel, texte.aufgBetrifft,
-          reason: 'Die Aufgabe "${aufgabe.schluessel}" zählt Fotos, die sie '
-              'ansieht – nicht Fotos, die danach fertig sind.');
+      expect(
+        aufgabe.offenLabel,
+        texte.aufgBetrifft,
+        reason:
+            'Die Aufgabe "${aufgabe.schluessel}" zählt Fotos, die sie '
+            'ansieht – nicht Fotos, die danach fertig sind.',
+      );
     }
   });
 
@@ -165,8 +200,9 @@ void main() {
     expect(find.text('Aufgabe erstellen'), findsOneWidget);
   });
 
-  testWidgets('was sich neu rechnen lässt, bietet auch „Alle" an',
-      (tester) async {
+  testWidgets('was sich neu rechnen lässt, bietet auch „Alle" an', (
+    tester,
+  ) async {
     // Gemeldeter Fehler: Die Karte „CLIP-Embeddings" hatte nur „Starten".
     // Das rechnet ausschliesslich fehlende Fotos – nach der Umstellung
     // der Bildvorverarbeitung also fast nichts, und es sah trotzdem nach
@@ -188,7 +224,9 @@ void main() {
     }
   });
 
-  testWidgets('eine Aufgabe ohne Modell zeigt den Grund statt der Zahlen', (tester) async {
+  testWidgets('eine Aufgabe ohne Modell zeigt den Grund statt der Zahlen', (
+    tester,
+  ) async {
     // Hoch genug, dass die Liste alle Karten baut – find greift nur auf
     // Gebautes zu, und die CLIP-Karten liegen weit unten.
     await zeige(tester, const Size(1000, 2600));
@@ -201,15 +239,19 @@ void main() {
     // „Wartend" stehen auf 0 – es läuft ja nichts –, und die Zahl der
     // offenen Fotos steht in der Zeile darunter.
     for (var i = 0; i < 3; i++) {
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: 'a$i',
-            originalFileName: 'a$i.jpg',
-            relativePath: 'originals/a$i.jpg',
-            checksum: 'c$i',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 1, 1),
-            importedAt: DateTime(2026, 1, 1),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'a$i',
+              originalFileName: 'a$i.jpg',
+              relativePath: 'originals/a$i.jpg',
+              checksum: 'c$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 1, 1),
+              importedAt: DateTime(2026, 1, 1),
+            ),
+          );
     }
     await zeige(tester, const Size(1000, 2600));
 
@@ -218,10 +260,15 @@ void main() {
       matching: find.byType(Card),
     );
     expect(ocrKarte, findsOneWidget, reason: 'die Karte muss gebaut sein');
-    expect(find.descendant(of: ocrKarte, matching: find.text('0')), findsNWidgets(2),
-        reason: 'Aktiv und Wartend zählen Aufgaben – hier läuft keine');
-    expect(find.descendant(of: ocrKarte, matching: find.text('3 Fotos offen')),
-        findsOneWidget);
+    expect(
+      find.descendant(of: ocrKarte, matching: find.text('0')),
+      findsNWidgets(2),
+      reason: 'Aktiv und Wartend zählen Aufgaben – hier läuft keine',
+    );
+    expect(
+      find.descendant(of: ocrKarte, matching: find.text('3 Fotos offen')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('so sieht die Karte aus', (tester) async {

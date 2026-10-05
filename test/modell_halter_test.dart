@@ -13,7 +13,8 @@ void main() {
     ModellHalter<String> halter,
     List<String> verlauf,
     void Function() ladenFreigeben,
-  }) baueHalter({bool installiert = true, bool langsam = false}) {
+  })
+  baueHalter({bool installiert = true, bool langsam = false}) {
     final verlauf = <String>[];
     var zaehler = 0;
     final tor = Completer<void>();
@@ -62,8 +63,11 @@ void main() {
     h.ladenFreigeben();
     final ergebnisse = await Future.wait([a, b]);
 
-    expect(h.verlauf, ['laden#1'],
-        reason: 'sonst lägen zwei Sitzungen desselben Modells im Speicher');
+    expect(
+      h.verlauf,
+      ['laden#1'],
+      reason: 'sonst lägen zwei Sitzungen desselben Modells im Speicher',
+    );
     expect(ergebnisse, ['modell#1', 'modell#1']);
   });
 
@@ -79,8 +83,11 @@ void main() {
     // Mitten in der Arbeit: Freigeben muss abgelehnt werden.
     await Future<void>.delayed(Duration.zero);
     expect(h.halter.nutzer, 1);
-    expect(await h.halter.freigebenWennUnbenutzt(), isFalse,
-        reason: 'Entsorgen während einer laufenden Inferenz stürzt ab');
+    expect(
+      await h.halter.freigebenWennUnbenutzt(),
+      isFalse,
+      reason: 'Entsorgen während einer laufenden Inferenz stürzt ab',
+    );
     expect(h.verlauf, ['laden#1']);
 
     tor.complete();
@@ -121,8 +128,11 @@ void main() {
     h.halter.zurueckgeben();
     h.halter.zurueckgeben(); // versehentlich doppelt
     h.halter.zurueckgeben();
-    expect(h.halter.nutzer, 0,
-        reason: 'ein negativer Zähler würde spätere Leihen ungeschützt lassen');
+    expect(
+      h.halter.nutzer,
+      0,
+      reason: 'ein negativer Zähler würde spätere Leihen ungeschützt lassen',
+    );
   });
 
   test('ohne installierte Dateien passiert nichts', () async {
@@ -139,29 +149,35 @@ void main() {
       h.halter.mit<void>((m) async => throw StateError('Inferenz kaputt')),
       throwsStateError,
     );
-    expect(h.halter.nutzer, 0,
-        reason: 'sonst liesse sich das Modell nie wieder freigeben');
+    expect(
+      h.halter.nutzer,
+      0,
+      reason: 'sonst liesse sich das Modell nie wieder freigeben',
+    );
     expect(await h.halter.freigebenWennUnbenutzt(), isTrue);
   });
 
-  test('eine fehlgeschlagene Ladung blockiert spätere Versuche nicht', () async {
-    var versuch = 0;
-    final halter = ModellHalter<String>(
-      name: 'wacklig',
-      installiert: true,
-      laden: () async {
-        versuch++;
-        if (versuch == 1) throw StateError('Datei beschädigt');
-        return 'modell';
-      },
-      entsorgen: (_) async {},
-    );
+  test(
+    'eine fehlgeschlagene Ladung blockiert spätere Versuche nicht',
+    () async {
+      var versuch = 0;
+      final halter = ModellHalter<String>(
+        name: 'wacklig',
+        installiert: true,
+        laden: () async {
+          versuch++;
+          if (versuch == 1) throw StateError('Datei beschädigt');
+          return 'modell';
+        },
+        entsorgen: (_) async {},
+      );
 
-    await expectLater(halter.mit((m) async => m), throwsStateError);
-    expect(halter.istGeladen, isFalse);
+      await expectLater(halter.mit((m) async => m), throwsStateError);
+      expect(halter.istGeladen, isFalse);
 
-    // Zweiter Anlauf muss durchkommen.
-    expect(await halter.mit((m) async => m), 'modell');
-    expect(versuch, 2);
-  });
+      // Zweiter Anlauf muss durchkommen.
+      expect(await halter.mit((m) async => m), 'modell');
+      expect(versuch, 2);
+    },
+  );
 }

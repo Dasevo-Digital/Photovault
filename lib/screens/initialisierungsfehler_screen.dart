@@ -17,10 +17,12 @@ class InitialisierungsfehlerScreen extends StatefulWidget {
   final Future<void> Function() erneutVersuchen;
 
   @override
-  State<InitialisierungsfehlerScreen> createState() => _InitialisierungsfehlerScreenState();
+  State<InitialisierungsfehlerScreen> createState() =>
+      _InitialisierungsfehlerScreenState();
 }
 
-class _InitialisierungsfehlerScreenState extends State<InitialisierungsfehlerScreen> {
+class _InitialisierungsfehlerScreenState
+    extends State<InitialisierungsfehlerScreen> {
   bool _laeuft = false;
 
   Future<void> _erneut() async {
@@ -42,14 +44,25 @@ class _InitialisierungsfehlerScreenState extends State<InitialisierungsfehlerScr
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 56, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 56,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(height: AppSpacing.lg),
-                Text(t.startFehlerTitel, style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+                Text(
+                  t.startFehlerTitel,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(t.startFehlerText, textAlign: TextAlign.center),
                 const SizedBox(height: AppSpacing.lg),
-                SelectableText(widget.fehler,
-                    style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+                SelectableText(
+                  widget.fehler,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 FilledButton.icon(
                   onPressed: _laeuft ? null : _erneut,

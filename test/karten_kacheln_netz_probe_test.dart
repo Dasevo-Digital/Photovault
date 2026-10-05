@@ -23,7 +23,8 @@ const _hintergrund = 0xFFE0E0E0;
 
 Future<double> _grauAnteil(WidgetTester tester) async {
   final grenze = tester.renderObject<RenderRepaintBoundary>(
-      find.byKey(const ValueKey('rahmen')));
+    find.byKey(const ValueKey('rahmen')),
+  );
   final bild = await grenze.toImage();
   final daten = await bild.toByteData(format: ui.ImageByteFormat.rawRgba);
   final b = daten!.buffer.asUint8List();
@@ -45,19 +46,21 @@ Future<double> _probe(
 }) async {
   late double anteil;
   await tester.runAsync(() async {
-    await tester.pumpWidget(MaterialApp(
-      home: RepaintBoundary(
-        key: const ValueKey('rahmen'),
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: const ll.LatLng(50.0, 14.0),
-            initialZoom: zoom,
-            maxZoom: stil.hoechsteAnzeigeStufe.toDouble(),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RepaintBoundary(
+          key: const ValueKey('rahmen'),
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: const ll.LatLng(50.0, 14.0),
+              initialZoom: zoom,
+              maxZoom: stil.hoechsteAnzeigeStufe.toDouble(),
+            ),
+            children: [Kachelschicht(stil: stil)],
           ),
-          children: [Kachelschicht(stil: stil)],
         ),
       ),
-    ));
+    );
     final ende = DateTime.now().add(warten);
     while (DateTime.now().isBefore(ende)) {
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -105,8 +108,12 @@ void main() {
       (Kartenstil.dunkel, 19.0),
       (Kartenstil.topo, 17.0),
     ]) {
-      final anteil = await _probe(tester, stil,
-          zoom: zoom, warten: const Duration(seconds: 12));
+      final anteil = await _probe(
+        tester,
+        stil,
+        zoom: zoom,
+        warten: const Duration(seconds: 12),
+      );
       // ignore: avoid_print
       print('${stil.name} z$zoom: ${(anteil * 100).toStringAsFixed(1)} % grau');
     }

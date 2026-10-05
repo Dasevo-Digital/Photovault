@@ -250,8 +250,11 @@ Hoehengitter gitterAusKacheln({
       for (var x = 0; x < kante; x++) {
         final i = (y * kante + x) * 4;
         if (i + 2 >= k.rgba.length) continue;
-        hoehen[(sy + y) * spalten + sx + x] =
-            hoeheAusFarbe(k.rgba[i], k.rgba[i + 1], k.rgba[i + 2]);
+        hoehen[(sy + y) * spalten + sx + x] = hoeheAusFarbe(
+          k.rgba[i],
+          k.rgba[i + 1],
+          k.rgba[i + 2],
+        );
       }
     }
   }
@@ -269,17 +272,20 @@ Hoehengitter gitterAusKacheln({
 
 /// Die Adressen der Kacheln eines Bereichs.
 List<({int z, int x, int y})> kacheladressen(
-        ({int zoom, int x0, int y0, int x1, int y1}) bereich) =>
-    [
-      for (var y = bereich.y0; y <= bereich.y1; y++)
-        for (var x = bereich.x0; x <= bereich.x1; x++)
-          (z: bereich.zoom, x: x, y: y),
-    ];
+  ({int zoom, int x0, int y0, int x1, int y1}) bereich,
+) => [
+  for (var y = bereich.y0; y <= bereich.y1; y++)
+    for (var x = bereich.x0; x <= bereich.x1; x++)
+      (z: bereich.zoom, x: x, y: y),
+];
 
 /// Setzt die Adresse in die Vorlage ein.
-String kacheladresse(int z, int x, int y,
-        {String vorlage = gelaendeKachelUrl}) =>
-    vorlage
-        .replaceAll('{z}', '$z')
-        .replaceAll('{x}', '$x')
-        .replaceAll('{y}', '$y');
+String kacheladresse(
+  int z,
+  int x,
+  int y, {
+  String vorlage = gelaendeKachelUrl,
+}) => vorlage
+    .replaceAll('{z}', '$z')
+    .replaceAll('{x}', '$x')
+    .replaceAll('{y}', '$y');

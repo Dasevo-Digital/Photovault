@@ -12,13 +12,22 @@ import 'package:photo_vault/services/verwandtschaftsgrad.dart';
 /// in einem FAM-Datensatz ankommt und dass keine Verweisnummer ins Leere
 /// zeigt.
 void main() {
-  GedcomPerson p(String id, String name,
-          {Geschlecht? g, DateTime? geb, DateTime? tod}) =>
-      (id: id, name: name, geschlecht: g, geburt: geb, tod: tod);
+  GedcomPerson p(
+    String id,
+    String name, {
+    Geschlecht? g,
+    DateTime? geb,
+    DateTime? tod,
+  }) => (id: id, name: name, geschlecht: g, geburt: geb, tod: tod);
 
   final personen = [
-    p('opa', 'Hans Meier', g: Geschlecht.maennlich, geb: DateTime(1931, 4, 2),
-        tod: DateTime(2004, 11, 9)),
+    p(
+      'opa',
+      'Hans Meier',
+      g: Geschlecht.maennlich,
+      geb: DateTime(1931, 4, 2),
+      tod: DateTime(2004, 11, 9),
+    ),
     p('oma', 'Grete Meier', g: Geschlecht.weiblich, geb: DateTime(1934, 7, 15)),
     p('vater', 'Karl Meier', g: Geschlecht.maennlich),
     p('mutter', 'Eva Meier', g: Geschlecht.weiblich),
@@ -35,8 +44,8 @@ void main() {
     kante('kind', 'mutter', Verwandtschaft.elternteil),
   ]);
 
-  String datei() => schreibeGedcom(personen, netz,
-      erzeuger: 'PhotoVault', version: '0.11.0');
+  String datei() =>
+      schreibeGedcom(personen, netz, erzeuger: 'PhotoVault', version: '0.11.0');
 
   List<String> zeilen() => datei().split('\r\n')..removeLast();
 
@@ -102,7 +111,9 @@ void main() {
       final mitKindern = f.where((x) => x.kinder.isNotEmpty).toList();
       expect(mitKindern, hasLength(2));
       expect(
-          mitKindern.map((x) => x.kinder.single), containsAll(['vater', 'kind']));
+        mitKindern.map((x) => x.kinder.single),
+        containsAll(['vater', 'kind']),
+      );
     });
 
     test('behält ein Paar ohne gemeinsame Kinder', () {
@@ -138,8 +149,11 @@ void main() {
         for (final l in z)
           if (l.contains('@') && !l.startsWith('0 ')) l.split('@')[1],
       };
-      expect(benutzt.difference(vergeben), isEmpty,
-          reason: 'ein Verweis ohne Datensatz macht die Datei unbrauchbar');
+      expect(
+        benutzt.difference(vergeben),
+        isEmpty,
+        reason: 'ein Verweis ohne Datensatz macht die Datei unbrauchbar',
+      );
     });
 
     test('jede Verwandtschaft kommt an', () {
@@ -160,8 +174,12 @@ void main() {
   });
 
   test('leerer Bestand ergibt eine gültige, leere Datei', () {
-    final leer = schreibeGedcom([], Verwandtschaftsnetz([]),
-        erzeuger: 'PhotoVault', version: '0.11.0');
+    final leer = schreibeGedcom(
+      [],
+      Verwandtschaftsnetz([]),
+      erzeuger: 'PhotoVault',
+      version: '0.11.0',
+    );
     expect(leer, startsWith('0 HEAD'));
     expect(leer.trimRight(), endsWith('0 TRLR'));
   });

@@ -14,13 +14,19 @@ Future<void> main(List<String> args) async {
     exitCode = 2;
     return;
   }
-  final pfade =
-      File(args[0]).readAsLinesSync().where((z) => z.trim().isNotEmpty);
+  final pfade = File(
+    args[0],
+  ).readAsLinesSync().where((z) => z.trim().isNotEmpty);
   for (final pfad in pfade) {
     final ort = await leseCr3Gps(File(pfad));
-    stdout.writeln(ort == null
-        ? [pfad, 'KEIN_GPS'].join('|')
-        : [pfad, ort.breite.toStringAsFixed(8), ort.laenge.toStringAsFixed(8)]
-            .join('|'));
+    stdout.writeln(
+      ort == null
+          ? [pfad, 'KEIN_GPS'].join('|')
+          : [
+              pfad,
+              ort.breite.toStringAsFixed(8),
+              ort.laenge.toStringAsFixed(8),
+            ].join('|'),
+    );
   }
 }

@@ -13,16 +13,23 @@ import 'package:photo_vault/services/clip_service.dart';
 /// tabelle daneben wurde nur beim Sprachwechsel benutzt.
 void main() {
   group('Der Begriff, der eingebettet wird', () {
-    test('nimmt die von Hand geprüfte Übersetzung, nicht die Maschine', () async {
-      var maschineGefragt = false;
-      final aus = await begriffFuerModell('Geburtstagstorte', (t) async {
-        maschineGefragt = true;
-        return 'MASCHINE';
-      });
-      expect(aus, 'a photo of birthday cake.');
-      expect(maschineGefragt, isFalse,
-          reason: 'für geprüfte Begriffe darf die Maschine nicht gefragt werden');
-    });
+    test(
+      'nimmt die von Hand geprüfte Übersetzung, nicht die Maschine',
+      () async {
+        var maschineGefragt = false;
+        final aus = await begriffFuerModell('Geburtstagstorte', (t) async {
+          maschineGefragt = true;
+          return 'MASCHINE';
+        });
+        expect(aus, 'a photo of birthday cake.');
+        expect(
+          maschineGefragt,
+          isFalse,
+          reason:
+              'für geprüfte Begriffe darf die Maschine nicht gefragt werden',
+        );
+      },
+    );
 
     test('lässt einen bereits englischen Begriff stehen', () async {
       var maschineGefragt = false;
@@ -31,8 +38,11 @@ void main() {
         return 'MASCHINE';
       });
       expect(aus, 'a photo of beach.');
-      expect(maschineGefragt, isFalse,
-          reason: 'sonst übersetzte die Maschine Englisch nach Englisch');
+      expect(
+        maschineGefragt,
+        isFalse,
+        reason: 'sonst übersetzte die Maschine Englisch nach Englisch',
+      );
     });
 
     test('fragt die Maschine nur für selbst hinzugefügte Begriffe', () async {
@@ -43,21 +53,28 @@ void main() {
       expect(aus, 'a photo of summer camp.');
     });
 
-    test('ohne Übersetzer bleibt der Begriff, aber die Schablone greift', () async {
-      expect(await begriffFuerModell('Ferienlager', null),
-          'a photo of ferienlager.');
-    });
+    test(
+      'ohne Übersetzer bleibt der Begriff, aber die Schablone greift',
+      () async {
+        expect(
+          await begriffFuerModell('Ferienlager', null),
+          'a photo of ferienlager.',
+        );
+      },
+    );
 
-    test('jeder Begriff des Standardvokabulars hat eine geprüfte Entsprechung',
-        () async {
-      for (final begriff in defaultAiTagVocabulary) {
-        final aus = await begriffFuerModell(begriff, (_) async {
-          fail('für „$begriff" fehlt die geprüfte Übersetzung');
-        });
-        expect(aus, startsWith('a photo of '));
-        expect(aus, endsWith('.'));
-      }
-    });
+    test(
+      'jeder Begriff des Standardvokabulars hat eine geprüfte Entsprechung',
+      () async {
+        for (final begriff in defaultAiTagVocabulary) {
+          final aus = await begriffFuerModell(begriff, (_) async {
+            fail('für „$begriff" fehlt die geprüfte Übersetzung');
+          });
+          expect(aus, startsWith('a photo of '));
+          expect(aus, endsWith('.'));
+        }
+      },
+    );
   });
 
   group('Die Satzschablone', () {
@@ -88,7 +105,12 @@ void main() {
     }
 
     test('liefert immer genau 224x224', () {
-      for (final (b, h) in [(3000, 2000), (2000, 3000), (500, 500), (100, 4000)]) {
+      for (final (b, h) in [
+        (3000, 2000),
+        (2000, 3000),
+        (500, 500),
+        (100, 4000),
+      ]) {
         final aus = aufClipGroesse(img.Image(width: b, height: h));
         expect((aus.width, aus.height), (224, 224), reason: '$b x $h');
       }
@@ -105,28 +127,35 @@ void main() {
       // 336 x 224; zugeschnitten wird waagerecht. Die Streifenhöhe muss
       // 20 * 224/2000 = 2,24 Punkte betragen – dieselbe wie bei einem
       // quadratischen Ausschnitt derselben Quelle.
-      final quadrat = aufClipGroesse(img.copyCrop(quelle,
-          x: 1000, y: 0, width: 2000, height: 2000));
+      final quadrat = aufClipGroesse(
+        img.copyCrop(quelle, x: 1000, y: 0, width: 2000, height: 2000),
+      );
       var gleich = 0;
       for (var y = 0; y < 224; y++) {
         if (aus.getPixel(112, y).r == quadrat.getPixel(112, y).r) gleich++;
       }
-      expect(gleich, greaterThan(200),
-          reason: 'der mittige Ausschnitt muss demselben Bild entsprechen');
+      expect(
+        gleich,
+        greaterThan(200),
+        reason: 'der mittige Ausschnitt muss demselben Bild entsprechen',
+      );
     });
 
-    test('ein extrem schmales Bild wird nicht verzerrt, sondern beschnitten', () {
-      // 1026x1824 kam in der Prüfstichprobe wirklich vor. Gestaucht würde
-      // es fast auf die halbe Breite zusammengedrückt.
-      final aus = aufClipGroesse(streifen(1026, 1824));
-      expect((aus.width, aus.height), (224, 224));
-      // Streifen bleiben Streifen: eine Zeile ist in sich einfarbig.
-      for (final y in [10, 60, 150]) {
-        final erste = aus.getPixel(0, y).r;
-        for (final x in [50, 112, 200]) {
-          expect(aus.getPixel(x, y).r, erste);
+    test(
+      'ein extrem schmales Bild wird nicht verzerrt, sondern beschnitten',
+      () {
+        // 1026x1824 kam in der Prüfstichprobe wirklich vor. Gestaucht würde
+        // es fast auf die halbe Breite zusammengedrückt.
+        final aus = aufClipGroesse(streifen(1026, 1824));
+        expect((aus.width, aus.height), (224, 224));
+        // Streifen bleiben Streifen: eine Zeile ist in sich einfarbig.
+        for (final y in [10, 60, 150]) {
+          final erste = aus.getPixel(0, y).r;
+          for (final x in [50, 112, 200]) {
+            expect(aus.getPixel(x, y).r, erste);
+          }
         }
-      }
-    });
+      },
+    );
   });
 }

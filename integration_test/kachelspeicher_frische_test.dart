@@ -25,17 +25,22 @@ import 'package:photo_vault/widgets/mini_location_map.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('eine kurzlebige Kachel bleibt trotzdem lange frisch',
-      (tester) async {
+  testWidgets('eine kurzlebige Kachel bleibt trotzdem lange frisch', (
+    tester,
+  ) async {
     kartenSpeicherEinrichten();
     final speicher = BuiltInMapCachingProvider.getOrCreateInstance();
-    expect(speicher.isSupported, isTrue,
-        reason: 'ohne Speicher hat die Messung keinen Gegenstand');
+    expect(
+      speicher.isSupported,
+      isTrue,
+      reason: 'ohne Speicher hat die Messung keinen Gegenstand',
+    );
 
     // Genau die Kopfzeilen, die OpenTopoMap einer frisch gerenderten
     // Kachel mitgibt: 3,5 Stunden Haltbarkeit.
     const kurz = 12590;
-    final url = 'https://example.invalid/probe/${DateTime.now().microsecondsSinceEpoch}.png';
+    final url =
+        'https://example.invalid/probe/${DateTime.now().microsecondsSinceEpoch}.png';
 
     await speicher.putTile(
       url: url,
@@ -60,16 +65,25 @@ void main() {
     final rest = haltbarBis.difference(DateTime.now());
 
     print('Kopfzeile sagt:      ${(kurz / 3600).toStringAsFixed(1)} h');
-    print('Tatsaechlich frisch: ${rest.inDays} Tage '
-        '(${rest.inHours} h)');
+    print(
+      'Tatsaechlich frisch: ${rest.inDays} Tage '
+      '(${rest.inHours} h)',
+    );
     print('Eingestellt:         ${kartenKachelFrische.inDays} Tage');
 
     // Der Kern: Die kurze Angabe des Servers darf NICHT gewinnen.
-    expect(rest.inHours, greaterThan(kurz ~/ 3600 * 2),
-        reason: 'sonst wirkt die Uebersteuerung gar nicht');
-    expect(rest.inDays, closeTo(kartenKachelFrische.inDays, 1),
-        reason: 'die Frische soll unserer Einstellung folgen, '
-            'nicht der Kopfzeile');
+    expect(
+      rest.inHours,
+      greaterThan(kurz ~/ 3600 * 2),
+      reason: 'sonst wirkt die Uebersteuerung gar nicht',
+    );
+    expect(
+      rest.inDays,
+      closeTo(kartenKachelFrische.inDays, 1),
+      reason:
+          'die Frische soll unserer Einstellung folgen, '
+          'nicht der Kopfzeile',
+    );
     expect(abgelegt.metadata.isStale, isFalse);
   });
 }

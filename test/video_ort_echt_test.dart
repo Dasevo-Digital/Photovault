@@ -36,19 +36,22 @@ void main() {
 
     final db = AppDatabase(NativeDatabase(datenbank));
     addTearDown(db.close);
-    final pfade =
-        await StoragePaths.forTesting(Directory(p.join(ordner, 'library')));
+    final pfade = await StoragePaths.forTesting(
+      Directory(p.join(ordner, 'library')),
+    );
     final library = LibraryState()
       ..db = db
       ..paths = pfade
       ..importService = ImportService(db, pfade);
 
-    Future<int> mitOrt(String art) async => (await db
-            .customSelect(
-                "SELECT count(*) AS n FROM assets WHERE type = '$art' "
-                'AND latitude IS NOT NULL')
-            .getSingle())
-        .read<int>('n');
+    Future<int> mitOrt(String art) async =>
+        (await db
+                .customSelect(
+                  "SELECT count(*) AS n FROM assets WHERE type = '$art' "
+                  'AND latitude IS NOT NULL',
+                )
+                .getSingle())
+            .read<int>('n');
 
     final vorherVideo = await mitOrt('VIDEO');
     final uhr = Stopwatch()..start();
@@ -57,22 +60,33 @@ void main() {
     final nachherVideo = await mitOrt('VIDEO');
 
     // ignore: avoid_print
-    print('Videos mit Ort: $vorherVideo -> $nachherVideo '
-        '(${uhr.elapsedMilliseconds} ms)');
-    expect(nachherVideo, greaterThan(vorherVideo),
-        reason: 'der Lauf muss Orte dazugewinnen');
+    print(
+      'Videos mit Ort: $vorherVideo -> $nachherVideo '
+      '(${uhr.elapsedMilliseconds} ms)',
+    );
+    expect(
+      nachherVideo,
+      greaterThan(vorherVideo),
+      reason: 'der Lauf muss Orte dazugewinnen',
+    );
 
     // Und die Dateiarten: Was in Wahrheit ein Standbild ist, muss danach
     // als Bild geführt werden.
-    final vorherVideos = (await db
-            .customSelect("SELECT count(*) AS n FROM assets WHERE type='VIDEO'")
-            .getSingle())
-        .read<int>('n');
+    final vorherVideos =
+        (await db
+                .customSelect(
+                  "SELECT count(*) AS n FROM assets WHERE type='VIDEO'",
+                )
+                .getSingle())
+            .read<int>('n');
     await library.repariereDateiarten().drain<void>();
-    final nachherVideos = (await db
-            .customSelect("SELECT count(*) AS n FROM assets WHERE type='VIDEO'")
-            .getSingle())
-        .read<int>('n');
+    final nachherVideos =
+        (await db
+                .customSelect(
+                  "SELECT count(*) AS n FROM assets WHERE type='VIDEO'",
+                )
+                .getSingle())
+            .read<int>('n');
     // ignore: avoid_print
     print('als Video geführt: $vorherVideos -> $nachherVideos');
     expect(nachherVideos, lessThan(vorherVideos));
@@ -80,11 +94,13 @@ void main() {
     // Danach greift für die berichtigten Aufnahmen der gewöhnliche
     // EXIF-Weg – ein zweiter Lauf holt ihre Orte nach.
     await library.backfillLocations().drain<void>();
-    final gesamtMitOrt = (await db
-            .customSelect(
-                'SELECT count(*) AS n FROM assets WHERE latitude IS NOT NULL')
-            .getSingle())
-        .read<int>('n');
+    final gesamtMitOrt =
+        (await db
+                .customSelect(
+                  'SELECT count(*) AS n FROM assets WHERE latitude IS NOT NULL',
+                )
+                .getSingle())
+            .read<int>('n');
     // ignore: avoid_print
     print('Aufnahmen mit Ort insgesamt: $gesamtMitOrt');
   }, timeout: const Timeout(Duration(minutes: 10)));

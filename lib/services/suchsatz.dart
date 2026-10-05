@@ -94,7 +94,11 @@ class Satzdeutung {
 
   final List<Satzfund> funde;
 
-  const Satzdeutung({required this.filter, required this.rest, required this.funde});
+  const Satzdeutung({
+    required this.filter,
+    required this.rest,
+    required this.funde,
+  });
 
   bool get hatVerstanden => funde.isNotEmpty;
 }
@@ -118,8 +122,12 @@ Satzdeutung deuteSuchsatz(
   final funde = <Satzfund>[];
 
   /// Schneidet den ersten Treffer aus [rest] heraus und merkt ihn.
-  bool nimm(RegExp muster, Satzfundart art, String Function(Match) wert,
-      SearchFilters Function(SearchFilters f, Match m) anwenden) {
+  bool nimm(
+    RegExp muster,
+    Satzfundart art,
+    String Function(Match) wert,
+    SearchFilters Function(SearchFilters f, Match m) anwenden,
+  ) {
     final treffer = muster.firstMatch(rest);
     if (treffer == null) return false;
     filter = anwenden(filter, treffer);
@@ -157,11 +165,11 @@ Satzdeutung deuteSuchsatz(
     (f, _) => f.copyWith(favoritesOnly: true),
   );
   nimm(
-    RegExp(r'\b(videos?|filme?n?)\b', caseSensitive: false),
-    Satzfundart.medienart,
-    (_) => 'Video',
-    (f, _) => f.copyWith(mediaType: MediaTypeFilter.video),
-  ) ||
+        RegExp(r'\b(videos?|filme?n?)\b', caseSensitive: false),
+        Satzfundart.medienart,
+        (_) => 'Video',
+        (f, _) => f.copyWith(mediaType: MediaTypeFilter.video),
+      ) ||
       nimm(
         RegExp(r'\b(fotos?|bilder n?|bilder|photos?)\b', caseSensitive: false),
         Satzfundart.medienart,
@@ -187,11 +195,11 @@ Satzdeutung deuteSuchsatz(
   // die Richtung dagegen eindeutig: Wer "ab ISO 1600" sagt, meint das
   // Rauschen nach oben.
   nimm(
-    RegExp(r'\bab\s*iso\s*(\d{2,6})\b', caseSensitive: false),
-    Satzfundart.iso,
-    (m) => 'ab ${m.group(1)}',
-    (f, m) => f.copyWith(minIso: int.parse(m.group(1)!)),
-  ) ||
+        RegExp(r'\bab\s*iso\s*(\d{2,6})\b', caseSensitive: false),
+        Satzfundart.iso,
+        (m) => 'ab ${m.group(1)}',
+        (f, m) => f.copyWith(minIso: int.parse(m.group(1)!)),
+      ) ||
       nimm(
         RegExp(r'\bbis\s*iso\s*(\d{2,6})\b', caseSensitive: false),
         Satzfundart.iso,
@@ -203,16 +211,20 @@ Satzdeutung deuteSuchsatz(
         Satzfundart.iso,
         (m) => m.group(1)!,
         (f, m) => f.copyWith(
-            minIso: int.parse(m.group(1)!), maxIso: int.parse(m.group(1)!)),
+          minIso: int.parse(m.group(1)!),
+          maxIso: int.parse(m.group(1)!),
+        ),
       );
 
   // --- Herkunft des Datums --------------------------------------------
   // Der Weg zu den 1097 Aufnahmen, deren Zeitstempel aus dem Dateisystem
   // stammt (siehe [Assets.datumGeschaetzt]).
   nimm(
-    RegExp(r'\b(gesch(ä|ae)tzte[nrs]?\s+datum|gesch(ä|ae)tzte[nrs]?\s+daten|'
-        r'estimated\s+dates?)\b',
-        caseSensitive: false),
+    RegExp(
+      r'\b(gesch(ä|ae)tzte[nrs]?\s+datum|gesch(ä|ae)tzte[nrs]?\s+daten|'
+      r'estimated\s+dates?)\b',
+      caseSensitive: false,
+    ),
     Satzfundart.datumsherkunft,
     (_) => '',
     (f, _) => f.copyWith(nurGeschaetztesDatum: true),
@@ -246,8 +258,10 @@ Satzdeutung deuteSuchsatz(
         ..sort((a, b) => b.value.length.compareTo(a.value.length));
       for (final b in sortiert) {
         if (b.value.trim().isEmpty) continue;
-        final muster = RegExp('(?<![\\wäöüß])${RegExp.escape(b.value)}(?![\\wäöüß])',
-            caseSensitive: false);
+        final muster = RegExp(
+          '(?<![\\wäöüß])${RegExp.escape(b.value)}(?![\\wäöüß])',
+          caseSensitive: false,
+        );
         final treffer = muster.firstMatch(uebrig);
         if (treffer == null) continue;
         f = anwenden(f, b.key);
@@ -256,18 +270,36 @@ Satzdeutung deuteSuchsatz(
       }
     }
 
-    suche(vokabular.personen.entries, Satzfundart.person,
-        (f, id) => f.copyWith(personIds: [...f.personIds, id]));
-    suche(vokabular.schlagwoerter.entries, Satzfundart.schlagwort,
-        (f, id) => f.copyWith(tagIds: [...f.tagIds, id]));
-    suche([for (final k in vokabular.kameras) MapEntry(k, k)], Satzfundart.kamera,
-        (f, k) => f.copyWith(cameraModel: k));
-    suche([for (final o in vokabular.staedte) MapEntry(o, o)], Satzfundart.ort,
-        (f, o) => f.copyWith(locationCity: o));
-    suche([for (final o in vokabular.regionen) MapEntry(o, o)], Satzfundart.ort,
-        (f, o) => f.copyWith(locationState: o));
-    suche([for (final o in vokabular.laender) MapEntry(o, o)], Satzfundart.ort,
-        (f, o) => f.copyWith(locationCountry: o));
+    suche(
+      vokabular.personen.entries,
+      Satzfundart.person,
+      (f, id) => f.copyWith(personIds: [...f.personIds, id]),
+    );
+    suche(
+      vokabular.schlagwoerter.entries,
+      Satzfundart.schlagwort,
+      (f, id) => f.copyWith(tagIds: [...f.tagIds, id]),
+    );
+    suche(
+      [for (final k in vokabular.kameras) MapEntry(k, k)],
+      Satzfundart.kamera,
+      (f, k) => f.copyWith(cameraModel: k),
+    );
+    suche(
+      [for (final o in vokabular.staedte) MapEntry(o, o)],
+      Satzfundart.ort,
+      (f, o) => f.copyWith(locationCity: o),
+    );
+    suche(
+      [for (final o in vokabular.regionen) MapEntry(o, o)],
+      Satzfundart.ort,
+      (f, o) => f.copyWith(locationState: o),
+    );
+    suche(
+      [for (final o in vokabular.laender) MapEntry(o, o)],
+      Satzfundart.ort,
+      (f, o) => f.copyWith(locationCountry: o),
+    );
 
     return (rest: uebrig, funde: gefunden, filter: f);
   }
@@ -281,7 +313,11 @@ Satzdeutung deuteSuchsatz(
   final uebrig = rest
       .split(RegExp(r'\s+'))
       .where((w) => w.trim().isNotEmpty)
-      .where((w) => !_fuellwoerter.contains(w.toLowerCase().replaceAll(RegExp(r'[.,!?]'), '')))
+      .where(
+        (w) => !_fuellwoerter.contains(
+          w.toLowerCase().replaceAll(RegExp(r'[.,!?]'), ''),
+        ),
+      )
       .join(' ')
       .trim();
 
@@ -321,13 +357,64 @@ const _farbwoerter = {
 /// Wörter ohne eigenen Aussagewert. Bleiben sie als Suchbegriff stehen,
 /// sucht die Bildsuche nach „mit" und findet nichts Sinnvolles.
 const _fuellwoerter = {
-  'mit', 'von', 'aus', 'im', 'in', 'am', 'an', 'der', 'die', 'das', 'den',
-  'dem', 'ein', 'eine', 'einen', 'einem', 'und', 'auf', 'bei', 'zu', 'zum',
-  'zur', 'alle', 'allen', 'wo', 'ist', 'sind', 'war', 'waren', 'ich',
-  'mir', 'mich', 'vom', 'beim', 'für', 'fuer', 'nach', 'meine', 'meinen',
-  'unser', 'unsere', 'unseren', 'es', 'da',
-  'with', 'from', 'the', 'of', 'on', 'at',
-  'my', 'me', 'show', 'zeig', 'zeige', 'suche', 'finde', 'find',
+  'mit',
+  'von',
+  'aus',
+  'im',
+  'in',
+  'am',
+  'an',
+  'der',
+  'die',
+  'das',
+  'den',
+  'dem',
+  'ein',
+  'eine',
+  'einen',
+  'einem',
+  'und',
+  'auf',
+  'bei',
+  'zu',
+  'zum',
+  'zur',
+  'alle',
+  'allen',
+  'wo',
+  'ist',
+  'sind',
+  'war',
+  'waren',
+  'ich',
+  'mir',
+  'mich',
+  'vom',
+  'beim',
+  'für',
+  'fuer',
+  'nach',
+  'meine',
+  'meinen',
+  'unser',
+  'unsere',
+  'unseren',
+  'es',
+  'da',
+  'with',
+  'from',
+  'the',
+  'of',
+  'on',
+  'at',
+  'my',
+  'me',
+  'show',
+  'zeig',
+  'zeige',
+  'suche',
+  'finde',
+  'find',
 };
 
 /// Ein erkannter Zeitraum samt der Stelle, an der er im Satz stand.
@@ -338,23 +425,52 @@ class _Zeitfund {
   final String beschreibung;
   final int start;
   final int ende;
-  const _Zeitfund(this.von, this.bis, this.wortlaut, this.beschreibung, this.start, this.ende);
+  const _Zeitfund(
+    this.von,
+    this.bis,
+    this.wortlaut,
+    this.beschreibung,
+    this.start,
+    this.ende,
+  );
 }
 
 const _monate = {
-  'januar': 1, 'january': 1, 'februar': 2, 'february': 2, 'märz': 3,
-  'maerz': 3, 'march': 3, 'april': 4, 'mai': 5, 'may': 5, 'juni': 6,
-  'june': 6, 'juli': 7, 'july': 7, 'august': 8, 'september': 9,
-  'oktober': 10, 'october': 10, 'november': 11, 'dezember': 12,
+  'januar': 1,
+  'january': 1,
+  'februar': 2,
+  'february': 2,
+  'märz': 3,
+  'maerz': 3,
+  'march': 3,
+  'april': 4,
+  'mai': 5,
+  'may': 5,
+  'juni': 6,
+  'june': 6,
+  'juli': 7,
+  'july': 7,
+  'august': 8,
+  'september': 9,
+  'oktober': 10,
+  'october': 10,
+  'november': 11,
+  'dezember': 12,
   'december': 12,
 };
 
 /// Meteorologische Jahreszeiten: ganze Monate, damit „Sommer 2019" einen
 /// Zeitraum ergibt, dessen Grenzen man nachrechnen kann.
 const _jahreszeiten = {
-  'frühling': [3, 5], 'fruehling': [3, 5], 'frühjahr': [3, 5], 'spring': [3, 5],
-  'sommer': [6, 8], 'summer': [6, 8],
-  'herbst': [9, 11], 'autumn': [9, 11], 'fall': [9, 11],
+  'frühling': [3, 5],
+  'fruehling': [3, 5],
+  'frühjahr': [3, 5],
+  'spring': [3, 5],
+  'sommer': [6, 8],
+  'summer': [6, 8],
+  'herbst': [9, 11],
+  'autumn': [9, 11],
+  'fall': [9, 11],
   'winter': [12, 2],
 };
 
@@ -420,17 +536,31 @@ _Zeitfund? _deuteZeit(String satz, DateTime heute) {
   ).firstMatch(satz);
   if (jahrRelativ != null) {
     final wort = jahrRelativ.group(1)!.toLowerCase();
-    final jahr = wort.startsWith('diese') || wort == 'this' ? heute.year : heute.year - 1;
-    return _Zeitfund(DateTime(jahr), DateTime(jahr, 12, 31), jahrRelativ.group(0)!,
-        '$jahr', jahrRelativ.start, jahrRelativ.end);
+    final jahr = wort.startsWith('diese') || wort == 'this'
+        ? heute.year
+        : heute.year - 1;
+    return _Zeitfund(
+      DateTime(jahr),
+      DateTime(jahr, 12, 31),
+      jahrRelativ.group(0)!,
+      '$jahr',
+      jahrRelativ.start,
+      jahrRelativ.end,
+    );
   }
 
   // Eine nackte Jahreszahl.
   final jahrTreffer = RegExp(r'\b((?:19|20)\d\d)\b').firstMatch(satz);
   if (jahrTreffer != null) {
     final jahr = int.parse(jahrTreffer.group(1)!);
-    return _Zeitfund(DateTime(jahr), DateTime(jahr, 12, 31), jahrTreffer.group(0)!,
-        '$jahr', jahrTreffer.start, jahrTreffer.end);
+    return _Zeitfund(
+      DateTime(jahr),
+      DateTime(jahr, 12, 31),
+      jahrTreffer.group(0)!,
+      '$jahr',
+      jahrTreffer.start,
+      jahrTreffer.end,
+    );
   }
 
   return null;
@@ -440,8 +570,16 @@ _Zeitfund _jahreszeitfund(List<int> spanne, int jahr, Match treffer) {
   final vonMonat = spanne[0], bisMonat = spanne[1];
   // Der Winter läuft über den Jahreswechsel: Dezember gehört zum Winter des
   // FOLGENDEN Jahres, so wie „Winter 2020" den Dezember 2019 einschliesst.
-  final von = vonMonat > bisMonat ? DateTime(jahr - 1, vonMonat) : DateTime(jahr, vonMonat);
+  final von = vonMonat > bisMonat
+      ? DateTime(jahr - 1, vonMonat)
+      : DateTime(jahr, vonMonat);
   final bis = DateTime(jahr, bisMonat + 1).subtract(const Duration(days: 1));
-  return _Zeitfund(von, bis, treffer.group(0)!,
-      '${treffer.group(treffer.groupCount)} $jahr', treffer.start, treffer.end);
+  return _Zeitfund(
+    von,
+    bis,
+    treffer.group(0)!,
+    '${treffer.group(treffer.groupCount)} $jahr',
+    treffer.start,
+    treffer.end,
+  );
 }

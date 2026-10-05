@@ -15,7 +15,8 @@ class ClipTokenizer {
   ClipTokenizer._(this._vocab, this._merges, this._byteEncoder);
 
   final Map<String, int> _vocab;
-  final Map<String, int> _merges; // "tokenA tokenB" -> Rang (niedriger = zuerst mergen)
+  final Map<String, int>
+  _merges; // "tokenA tokenB" -> Rang (niedriger = zuerst mergen)
   final Map<int, String> _byteEncoder;
 
   static const contextLength = 77;
@@ -32,7 +33,9 @@ class ClipTokenizer {
     required String vocabJsonPath,
     required String mergesTxtPath,
   }) async {
-    final vocabRaw = jsonDecode(await File(vocabJsonPath).readAsString()) as Map<String, dynamic>;
+    final vocabRaw =
+        jsonDecode(await File(vocabJsonPath).readAsString())
+            as Map<String, dynamic>;
     final vocab = vocabRaw.map((k, v) => MapEntry(k, v as int));
 
     final mergesLines = await File(mergesTxtPath).readAsLines();
@@ -54,9 +57,18 @@ class ClipTokenizer {
   /// ist). Rein algorithmisch, benötigt keine externen Daten.
   static Map<int, String> _buildByteEncoder() {
     final bs = <int>[
-      ...List.generate('~'.codeUnitAt(0) - '!'.codeUnitAt(0) + 1, (i) => '!'.codeUnitAt(0) + i),
-      ...List.generate('¬'.codeUnitAt(0) - '¡'.codeUnitAt(0) + 1, (i) => '¡'.codeUnitAt(0) + i),
-      ...List.generate('ÿ'.codeUnitAt(0) - '®'.codeUnitAt(0) + 1, (i) => '®'.codeUnitAt(0) + i),
+      ...List.generate(
+        '~'.codeUnitAt(0) - '!'.codeUnitAt(0) + 1,
+        (i) => '!'.codeUnitAt(0) + i,
+      ),
+      ...List.generate(
+        '¬'.codeUnitAt(0) - '¡'.codeUnitAt(0) + 1,
+        (i) => '¡'.codeUnitAt(0) + i,
+      ),
+      ...List.generate(
+        'ÿ'.codeUnitAt(0) - '®'.codeUnitAt(0) + 1,
+        (i) => '®'.codeUnitAt(0) + i,
+      ),
     ];
     final bsSet = bs.toSet();
     final cs = List<int>.from(bs);
@@ -68,7 +80,9 @@ class ClipTokenizer {
         n++;
       }
     }
-    return {for (var i = 0; i < bs.length; i++) bs[i]: String.fromCharCode(cs[i])};
+    return {
+      for (var i = 0; i < bs.length; i++) bs[i]: String.fromCharCode(cs[i]),
+    };
   }
 
   List<String> _byteEncodeWord(String word) {
@@ -154,5 +168,6 @@ class ClipTokenizer {
 extension _Characters on String {
   /// Zerlegt einen bereits Byte-encodierten String in seine einzelnen
   /// (Unicode-)Zeichen, ohne Surrogate-Paare zu zerreißen.
-  List<String> characters() => runes.map((r) => String.fromCharCode(r)).toList();
+  List<String> characters() =>
+      runes.map((r) => String.fromCharCode(r)).toList();
 }

@@ -29,7 +29,9 @@ class CalendarScreen extends StatelessWidget {
     return StreamBuilder<Map<int, int>>(
       stream: library.db.watchAssetCountsByYear(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final countByYear = snapshot.data!;
         if (countByYear.isEmpty) {
           return Center(child: Text(AppTexte.of(context).kalenderLeer));
@@ -56,10 +58,12 @@ class CalendarScreen extends StatelessWidget {
               // Erst der Monat, dann die Fotos: Ein Jahrgang von 1.400
               // Aufnahmen ist als eine Liste keine Übersicht mehr, und ein
               // bestimmter Monat war darin nur durch Scrollen zu finden.
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) =>
-                    MonatsuebersichtScreen(library: library, jahr: year),
-              )),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MonatsuebersichtScreen(library: library, jahr: year),
+                ),
+              ),
             );
           },
         );
@@ -119,9 +123,9 @@ class _YearCardState extends State<_YearCard> {
                 return Image.file(
                   widget.library.paths.absolute(thumbPath),
                   fit: BoxFit.cover,
-                  cacheWidth: (_kachelKante *
-                          MediaQuery.devicePixelRatioOf(context))
-                      .round(),
+                  cacheWidth:
+                      (_kachelKante * MediaQuery.devicePixelRatioOf(context))
+                          .round(),
                   errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 );
               },
@@ -201,9 +205,11 @@ class MonatsuebersichtScreen extends StatelessWidget {
           TextButton.icon(
             icon: const Icon(Icons.photo_library_outlined, size: 18),
             label: Text(t.kalenderGanzesJahr),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => YearDetailScreen(library: library, year: jahr),
-            )),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => YearDetailScreen(library: library, year: jahr),
+              ),
+            ),
           ),
         ],
       ),
@@ -236,10 +242,15 @@ class MonatsuebersichtScreen extends StatelessWidget {
                 assetCount: proMonat[monat]!,
                 library: library,
                 titelbild: () => library.db.newestAssetForMonth(jahr, monat),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => YearDetailScreen(
-                      library: library, year: jahr, monat: monat),
-                )),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => YearDetailScreen(
+                      library: library,
+                      year: jahr,
+                      monat: monat,
+                    ),
+                  ),
+                ),
               );
             },
           );
@@ -314,8 +325,8 @@ class _YearDetailScreenState extends State<YearDetailScreen>
   bool get _nachTag => widget.monat != null;
 
   ({List<int> schluessel, Map<int, List<Rasterzeile>> gruppen}) _gruppen(
-          List<Rasterzeile> a) =>
-      _nachTag ? tagesgruppen(a) : monatsgruppen(a);
+    List<Rasterzeile> a,
+  ) => _nachTag ? tagesgruppen(a) : monatsgruppen(a);
 
   /// Die schmalen Zeilen fürs Raster, aus den vollen abgeleitet.
   ///
@@ -347,7 +358,9 @@ class _YearDetailScreenState extends State<YearDetailScreen>
   @override
   List<List<String>> get rasterGruppen {
     final m = _gruppen(_zeilenFuer(_geladen));
-    return [for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id]];
+    return [
+      for (final k in m.schluessel) [for (final a in m.gruppen[k]!) a.id],
+    ];
   }
 
   @override
@@ -362,28 +375,32 @@ class _YearDetailScreenState extends State<YearDetailScreen>
       rasterGruppeUmschalten(kennungen);
 
   void _openViewer(List<AssetData> assets, AssetData asset) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: assets,
-        initialIndex: assets.indexOf(asset),
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: assets,
+          initialIndex: assets.indexOf(asset),
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   String _titel(BuildContext context) {
     if (widget.monat == null) return '${widget.year}';
-    return DateFormat.yMMMM(Localizations.localeOf(context).toString())
-        .format(DateTime(widget.year, widget.monat!));
+    return DateFormat.yMMMM(
+      Localizations.localeOf(context).toString(),
+    ).format(DateTime(widget.year, widget.monat!));
   }
 
   Future<void> _deleteSelected() async {
@@ -406,95 +423,140 @@ class _YearDetailScreenState extends State<YearDetailScreen>
         // Der Schlüssel muss den Monat mittragen, sonst lieferte der
         // Halter beim Wechsel von Juli nach August weiter den Juli.
         stream: _jahresstrom.hole(
-            widget.year * 100 + (widget.monat ?? 0),
-            () => widget.monat == null
-                ? widget.library.db.watchTimelineForYear(widget.year)
-                : widget.library.db
-                    .watchTimelineForMonth(widget.year, widget.monat!)),
+          widget.year * 100 + (widget.monat ?? 0),
+          () => widget.monat == null
+              ? widget.library.db.watchTimelineForYear(widget.year)
+              : widget.library.db.watchTimelineForMonth(
+                  widget.year,
+                  widget.monat!,
+                ),
+        ),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final yearAssets = snapshot.data!;
           _geladen = yearAssets;
           if (yearAssets.isEmpty) {
             return Center(child: Text(AppTexte.of(context).kalenderJahrLeer));
           }
           return mitTastatur(
-              kind: Stack(
-            children: [
-              LayoutBuilder(builder: (context, constraints) {
-                final zeilen = _zeilenFuer(yearAssets);
-                _spalten = rasterSpaltenzahl(
-                  constraints.maxWidth,
-                  mitZeitstrahl: rasterMitZeitstrahl(
-                      _gruppen(zeilen).schluessel.length),
-                );
-                return MonthGroupedAssetGrid(
-                  nachTag: _nachTag,
-                  assets: zeilen,
-                  paths: widget.library.paths,
-                  selectedIds: _selected,
-                  aktiveKachelId: aktiveKachel,
-                  onLongPress: (asset) => _toggle(asset.id),
-                  onHeaderTap: (gruppe) => _toggleGruppe(
-                      [for (final z in gruppe) z.id]),
-                  onTap: (z) {
-                    final voll = _vollZu(z);
-                    if (voll != null) rasterKlick(voll);
+            kind: Stack(
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final zeilen = _zeilenFuer(yearAssets);
+                    _spalten = rasterSpaltenzahl(
+                      constraints.maxWidth,
+                      mitZeitstrahl: rasterMitZeitstrahl(
+                        _gruppen(zeilen).schluessel.length,
+                      ),
+                    );
+                    return MonthGroupedAssetGrid(
+                      nachTag: _nachTag,
+                      assets: zeilen,
+                      paths: widget.library.paths,
+                      selectedIds: _selected,
+                      aktiveKachelId: aktiveKachel,
+                      onLongPress: (asset) => _toggle(asset.id),
+                      onHeaderTap: (gruppe) =>
+                          _toggleGruppe([for (final z in gruppe) z.id]),
+                      onTap: (z) {
+                        final voll = _vollZu(z);
+                        if (voll != null) rasterKlick(voll);
+                      },
+                    );
                   },
-                );
-              }),
-              if (_selected.isNotEmpty)
-                SelectionActionBar(
-                  count: _selected.length,
-                  onClear: () => setState(_selected.clear),
-                  onCompare: vergleichsAktion(context, widget.library, _selected.toList()),
-
-                  onPasteDevelop: widget.library.hatKopierteEntwicklung
-
-                      ? () async {
-
-                          await runBatchPasteDevelop(context, widget.library, _selected.toList());
-
-                          if (mounted) setState(_selected.clear);
-
-                        }
-
-                      : null,
-                  onApplyPreset: () =>
-                      runBatchApplyPreset(context, widget.library, _selected.toList()),
-                  onFavorite: () async {
-                    await runBatchFavorite(widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onAddToAlbum: () async {
-                    await runBatchAddToAlbumDialog(context, widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onTag: () async {
-                    await runBatchTagDialog(context, widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onSetRating: () async {
-                    await runBatchSetRating(context, widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onSetColorLabel: () async {
-                    await runBatchSetColorLabel(context, widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onEditMetadata: () async {
-                    await runBatchEditMetadataDialog(context, widget.library, _selected.toList());
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onExport: () async {
-                    final selectedAssets = yearAssets.where((a) => _selected.contains(a.id)).toList();
-                    await runBatchExport(context, widget.library, selectedAssets);
-                    if (mounted) setState(_selected.clear);
-                  },
-                  onDelete: _deleteSelected,
                 ),
-            ],
-          ));
+                if (_selected.isNotEmpty)
+                  SelectionActionBar(
+                    count: _selected.length,
+                    onClear: () => setState(_selected.clear),
+                    onCompare: vergleichsAktion(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    ),
+
+                    onPasteDevelop: widget.library.hatKopierteEntwicklung
+                        ? () async {
+                            await runBatchPasteDevelop(
+                              context,
+                              widget.library,
+                              _selected.toList(),
+                            );
+
+                            if (mounted) setState(_selected.clear);
+                          }
+                        : null,
+                    onApplyPreset: () => runBatchApplyPreset(
+                      context,
+                      widget.library,
+                      _selected.toList(),
+                    ),
+                    onFavorite: () async {
+                      await runBatchFavorite(
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onAddToAlbum: () async {
+                      await runBatchAddToAlbumDialog(
+                        context,
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onTag: () async {
+                      await runBatchTagDialog(
+                        context,
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onSetRating: () async {
+                      await runBatchSetRating(
+                        context,
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onSetColorLabel: () async {
+                      await runBatchSetColorLabel(
+                        context,
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onEditMetadata: () async {
+                      await runBatchEditMetadataDialog(
+                        context,
+                        widget.library,
+                        _selected.toList(),
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onExport: () async {
+                      final selectedAssets = yearAssets
+                          .where((a) => _selected.contains(a.id))
+                          .toList();
+                      await runBatchExport(
+                        context,
+                        widget.library,
+                        selectedAssets,
+                      );
+                      if (mounted) setState(_selected.clear);
+                    },
+                    onDelete: _deleteSelected,
+                  ),
+              ],
+            ),
+          );
         },
       ),
     );

@@ -31,19 +31,22 @@ Float32List _vector(List<double> base, {double noise = 0.0, int seed = 0}) {
 
 void main() {
   group('clusterFaces', () {
-    test('gruppiert Gesichter mit sehr ähnlichem Embedding zu einem Cluster', () {
-      const base = [1.0, 0.0, 0.0, 0.0];
-      final input = FaceClusterInput({
-        'a': _vector(base, noise: 0.01, seed: 1),
-        'b': _vector(base, noise: 0.01, seed: 2),
-        'c': _vector(base, noise: 0.01, seed: 3),
-      }, 0.9);
+    test(
+      'gruppiert Gesichter mit sehr ähnlichem Embedding zu einem Cluster',
+      () {
+        const base = [1.0, 0.0, 0.0, 0.0];
+        final input = FaceClusterInput({
+          'a': _vector(base, noise: 0.01, seed: 1),
+          'b': _vector(base, noise: 0.01, seed: 2),
+          'c': _vector(base, noise: 0.01, seed: 3),
+        }, 0.9);
 
-      final clusters = clusterFaces(input);
+        final clusters = clusterFaces(input);
 
-      expect(clusters, hasLength(1));
-      expect(clusters.single, unorderedEquals(['a', 'b', 'c']));
-    });
+        expect(clusters, hasLength(1));
+        expect(clusters.single, unorderedEquals(['a', 'b', 'c']));
+      },
+    );
 
     test('hält deutlich unterschiedliche Gesichter in getrennten Clustern', () {
       final input = FaceClusterInput({
@@ -59,23 +62,28 @@ void main() {
       // List/Set.== sind referenzbasiert, nicht inhaltsbasiert – deshalb
       // über kanonische, sortierte Strings statt Sammlungs-Gleichheit
       // vergleichen.
-      final signatures = clusters.map((c) => (List.of(c)..sort()).join(',')).toSet();
+      final signatures = clusters
+          .map((c) => (List.of(c)..sort()).join(','))
+          .toSet();
       expect(signatures, contains('a1,a2'));
       expect(signatures, contains('b1,b2'));
     });
 
-    test('schließt Einzelgesichter ohne ähnliches Gegenstück aus (Singletons)', () {
-      final input = FaceClusterInput({
-        'a1': _vector([1.0, 0.0, 0.0, 0.0], noise: 0.01, seed: 1),
-        'a2': _vector([1.0, 0.0, 0.0, 0.0], noise: 0.01, seed: 2),
-        'lonely': _vector([0.0, 0.0, 1.0, 0.0]),
-      }, 0.9);
+    test(
+      'schließt Einzelgesichter ohne ähnliches Gegenstück aus (Singletons)',
+      () {
+        final input = FaceClusterInput({
+          'a1': _vector([1.0, 0.0, 0.0, 0.0], noise: 0.01, seed: 1),
+          'a2': _vector([1.0, 0.0, 0.0, 0.0], noise: 0.01, seed: 2),
+          'lonely': _vector([0.0, 0.0, 1.0, 0.0]),
+        }, 0.9);
 
-      final clusters = clusterFaces(input);
+        final clusters = clusterFaces(input);
 
-      expect(clusters, hasLength(1));
-      expect(clusters.single, unorderedEquals(['a1', 'a2']));
-    });
+        expect(clusters, hasLength(1));
+        expect(clusters.single, unorderedEquals(['a1', 'a2']));
+      },
+    );
 
     test('respektiert die Schwellenwert-Grenze', () {
       // Kosinus-Ähnlichkeit der beiden Vektoren liegt klar unter 0.99,

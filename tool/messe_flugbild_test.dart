@@ -23,14 +23,20 @@ Hoehengitter _gitter(int n) {
   final h = Float32List(n * n);
   for (var y = 0; y < n; y++) {
     for (var x = 0; x < n; x++) {
-      h[y * n + x] = 400 +
+      h[y * n + x] =
+          400 +
           220 * math.sin(x / 9.0) * math.cos(y / 7.0) +
           90 * math.sin((x + y) / 21.0);
     }
   }
   return Hoehengitter(
-    spalten: n, zeilen: n, hoehen: h,
-    nord: 51.90, sued: 51.80, west: 10.55, ost: 10.71,
+    spalten: n,
+    zeilen: n,
+    hoehen: h,
+    nord: 51.90,
+    sued: 51.80,
+    west: 10.55,
+    ost: 10.71,
   );
 }
 
@@ -57,10 +63,12 @@ void main() {
         summe += bloeckeImBild(netz, kamera, flaeche).length;
       }
       uhr.stop();
-      print('Stufe $stufe: ${netz.bloecke.length} Bloecke, '
-          '${summe ~/ laeufe} gewuenscht, '
-          '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(3)} ms '
-          'je Bild');
+      print(
+        'Stufe $stufe: ${netz.bloecke.length} Bloecke, '
+        '${summe ~/ laeufe} gewuenscht, '
+        '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(3)} ms '
+        'je Bild',
+      );
     }
   });
 
@@ -88,9 +96,11 @@ void main() {
       lader.brauche(wunsch);
     }
     uhr.stop();
-    print('brauche(${wunsch.length}): '
-        '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(3)} ms '
-        'je Bild');
+    print(
+      'brauche(${wunsch.length}): '
+      '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(3)} ms '
+      'je Bild',
+    );
     lader.schliessen();
   });
 }

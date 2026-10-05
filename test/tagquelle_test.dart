@@ -26,7 +26,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_tagquelle_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'l')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'l')),
+    );
     imp = ImportService(db, paths);
   });
 
@@ -36,24 +38,31 @@ void main() {
   });
 
   Future<String> foto(String name) async {
-    final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
-    final r = await imp.importFile((File(p.join(inc.path, '$name.jpg'))
-          ..writeAsBytesSync(List.filled(64, name.codeUnitAt(0))))
-        .path);
+    final inc = Directory(p.join(tempRoot.path, 'in'))
+      ..createSync(recursive: true);
+    final r = await imp.importFile(
+      (File(
+        p.join(inc.path, '$name.jpg'),
+      )..writeAsBytesSync(List.filled(64, name.codeUnitAt(0)))).path,
+    );
     return r.assetId!;
   }
 
-  Future<Set<String>> namen(String id) async =>
-      {for (final t in await db.tagsForAsset(id)) t.name};
+  Future<Set<String>> namen(String id) async => {
+    for (final t in await db.tagsForAsset(id)) t.name,
+  };
 
   Future<Map<String, String>> quellen(String id) async {
-    final rows = await db.customSelect(
-      'SELECT t.name AS name, at.quelle AS quelle FROM asset_tags at '
-      'JOIN tags t ON t.id = at.tag_id WHERE at.asset_id = ?',
-      variables: [Variable<String>(id)],
-    ).get();
+    final rows = await db
+        .customSelect(
+          'SELECT t.name AS name, at.quelle AS quelle FROM asset_tags at '
+          'JOIN tags t ON t.id = at.tag_id WHERE at.asset_id = ?',
+          variables: [Variable<String>(id)],
+        )
+        .get();
     return {
-      for (final r in rows) r.data['name'] as String: r.data['quelle'] as String,
+      for (final r in rows)
+        r.data['name'] as String: r.data['quelle'] as String,
     };
   }
 
@@ -102,11 +111,17 @@ void main() {
 
       await db.clearDerivedContentData([id]);
 
-      expect(await namen(id), {'Weihnachten 2019'},
-          reason: 'was die Bilderkennung aus dem Bild gelesen hat, ist weg');
+      expect(
+        await namen(id),
+        {'Weihnachten 2019'},
+        reason: 'was die Bilderkennung aus dem Bild gelesen hat, ist weg',
+      );
       final danach = (await db.select(db.assets).get()).single;
-      expect(danach.aiTagsScanned, isFalse,
-          reason: 'damit nach dem Entsperren neu verschlagwortet wird');
+      expect(
+        danach.aiTagsScanned,
+        isFalse,
+        reason: 'damit nach dem Entsperren neu verschlagwortet wird',
+      );
     });
 
     test('ein anderes Foto bleibt unberuehrt', () async {
@@ -129,11 +144,17 @@ void main() {
       await db.tagAsset(id, 'Strand', quelle: Tagquelle.ki);
       await db.tagAsset(id, 'Kreta 2018');
 
-      expect((await db.allTagNamesByAssetId())[id]!.toSet(),
-          {'Strand', 'Kreta 2018'});
-      expect((await db.kiTagNamesByAssetId())[id], {'Strand'},
-          reason: 'sonst käme nach einer Rücksicherung alles als '
-              'Handvergabe zurück und stünde wieder im Klartext');
+      expect((await db.allTagNamesByAssetId())[id]!.toSet(), {
+        'Strand',
+        'Kreta 2018',
+      });
+      expect(
+        (await db.kiTagNamesByAssetId())[id],
+        {'Strand'},
+        reason:
+            'sonst käme nach einer Rücksicherung alles als '
+            'Handvergabe zurück und stünde wieder im Klartext',
+      );
     });
   });
 }

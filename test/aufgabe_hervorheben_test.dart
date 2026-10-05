@@ -28,8 +28,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_hervorheben_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -45,27 +46,30 @@ void main() {
     tester.view.physicalSize = const Size(1000, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home:
-          BackgroundTasksScreen(library: library, hervorheben: hervorheben),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: BackgroundTasksScreen(library: library, hervorheben: hervorheben),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
   const datum = 'Herkunft der Aufnahmedaten';
 
-  testWidgets('ohne Verweis liegt die Aufgabe ausserhalb des Fensters',
-      (tester) async {
+  testWidgets('ohne Verweis liegt die Aufgabe ausserhalb des Fensters', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.text(datum), findsNothing);
   });
 
-  testWidgets('mit Verweis steht sie oben und trägt einen Rahmen',
-      (tester) async {
+  testWidgets('mit Verweis steht sie oben und trägt einen Rahmen', (
+    tester,
+  ) async {
     await zeige(tester, hervorheben: 'datumsherkunft');
 
     expect(find.text(datum), findsOneWidget);
@@ -76,18 +80,22 @@ void main() {
     expect(ihre, lessThan(sonstErste));
 
     // Und der Rahmen sitzt an ihrer Karte, nicht an einer beliebigen.
-    final karte = tester.widget<Card>(find
-        .ancestor(of: find.text(datum), matching: find.byType(Card))
-        .first);
+    final karte = tester.widget<Card>(
+      find.ancestor(of: find.text(datum), matching: find.byType(Card)).first,
+    );
     final rand = (karte.shape! as RoundedRectangleBorder).side;
     expect(rand.width, 2);
     expect(rand.color, buildDarkTheme().colorScheme.primary);
 
     // Die Nachbarkarte bleibt, wie sie war.
-    final nachbar = tester.widget<Card>(find
-        .ancestor(
-            of: find.text('Gesichter scannen'), matching: find.byType(Card))
-        .first);
+    final nachbar = tester.widget<Card>(
+      find
+          .ancestor(
+            of: find.text('Gesichter scannen'),
+            matching: find.byType(Card),
+          )
+          .first,
+    );
     expect(nachbar.shape, isNull);
   });
 

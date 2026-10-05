@@ -61,8 +61,9 @@ void main() {
     expect(await videoausgabeMoeglich(), isTrue);
   });
 
-  testWidgets('ein gefundenes ffmpeg laesst sich trotzdem nicht starten',
-      (tester) async {
+  testWidgets('ein gefundenes ffmpeg laesst sich trotzdem nicht starten', (
+    tester,
+  ) async {
     final pfad = await ffmpegPfad();
     print('ffmpegPfad(): $pfad');
     if (pfad == null) {
@@ -75,18 +76,23 @@ void main() {
     }
     // Der Sandkasten: `stat()` gelingt (deshalb findet die Suche es),
     // `execve` nicht.
-    expect(File(pfad).existsSync(), isTrue,
-        reason: 'gefunden wurde es ja – daran lag es nie');
+    expect(
+      File(pfad).existsSync(),
+      isTrue,
+      reason: 'gefunden wurde es ja – daran lag es nie',
+    );
     await expectLater(
       Process.start(pfad, const ['-version']),
       throwsA(isA<ProcessException>()),
-      reason: 'wenn das hier durchgeht, ist der Sandkasten weg – dann '
+      reason:
+          'wenn das hier durchgeht, ist der Sandkasten weg – dann '
           'gehoert dieser Test geprueft, nicht geloescht',
     );
   });
 
-  testWidgets('es entsteht ein Video, das das System wieder lesen kann',
-      (tester) async {
+  testWidgets('es entsteht ein Video, das das System wieder lesen kann', (
+    tester,
+  ) async {
     final ziel = File('${ordner.path}/flug.mp4');
     final uhr = Stopwatch()..start();
     late Videoergebnis ergebnis;
@@ -100,25 +106,40 @@ void main() {
       );
     });
     uhr.stop();
-    expect(ergebnis.ausgang, Videoausgang.fertig, reason: '${ergebnis.meldung}');
+    expect(
+      ergebnis.ausgang,
+      Videoausgang.fertig,
+      reason: '${ergebnis.meldung}',
+    );
     expect(ziel.existsSync(), isTrue);
     final groesse = ziel.lengthSync();
-    print('${(groesse / 1024).round()} kB in '
-        '${(uhr.elapsedMilliseconds / 1000).toStringAsFixed(1)} s '
-        'fuer 60 Bilder in 640x360');
-    expect(groesse, greaterThan(10000), reason: 'eine Datei von wenigen '
-        'Bytes ist keine');
+    print(
+      '${(groesse / 1024).round()} kB in '
+      '${(uhr.elapsedMilliseconds / 1000).toStringAsFixed(1)} s '
+      'fuer 60 Bilder in 640x360',
+    );
+    expect(
+      groesse,
+      greaterThan(10000),
+      reason:
+          'eine Datei von wenigen '
+          'Bytes ist keine',
+    );
 
     // **Der eigentliche Beleg.** Eine Datei, die entsteht, ist noch keine,
     // die sich abspielen laesst. AVFoundation liest sie hier selbst
     // wieder ein – dieselbe Stelle, die auch die Vorschaubilder der
     // Mediathek macht.
     final gelesen = await tester.runAsync(
-        () => NativeImageConverter.generateVideoThumbnail(ziel, maxDimension: 320));
+      () =>
+          NativeImageConverter.generateVideoThumbnail(ziel, maxDimension: 320),
+    );
     expect(gelesen, isNotNull, reason: 'das System kann die Datei nicht lesen');
     expect(gelesen!.jpegBytes.length, greaterThan(1000));
     expect(gelesen.durationSeconds, isNotNull);
-    print('AVFoundation liest: ${gelesen.durationSeconds!.toStringAsFixed(2)} s');
+    print(
+      'AVFoundation liest: ${gelesen.durationSeconds!.toStringAsFixed(2)} s',
+    );
     expect(gelesen.durationSeconds, closeTo(2.0, 0.15));
   });
 

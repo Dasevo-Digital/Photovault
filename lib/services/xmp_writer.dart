@@ -34,7 +34,9 @@ String buildXmpPacket(
     nest: () {
       builder.element(
         'rdf:RDF',
-        attributes: {'xmlns:rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
+        attributes: {
+          'xmlns:rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+        },
         nest: () {
           builder.element(
             'rdf:Description',
@@ -46,22 +48,34 @@ String buildXmpPacket(
               'xmlns:tiff': 'http://ns.adobe.com/tiff/1.0/',
               'xmlns:aux': 'http://ns.adobe.com/exif/1.0/aux/',
               if (gesichter.isNotEmpty) ...{
-                'xmlns:mwg-rs': 'http://www.metadataworkinggroup.com/schemas/regions/',
+                'xmlns:mwg-rs':
+                    'http://www.metadataworkinggroup.com/schemas/regions/',
                 'xmlns:stArea': 'http://ns.adobe.com/xmp/sType/Area#',
                 'xmlns:stDim': 'http://ns.adobe.com/xap/1.0/sType/Dimensions#',
               },
               if (asset.rating > 0) 'xmp:Rating': '${asset.rating}',
-              if (asset.colorLabel != null) 'xmp:Label': _xmpLabelName(asset.colorLabel!),
+              if (asset.colorLabel != null)
+                'xmp:Label': _xmpLabelName(asset.colorLabel!),
               if (asset.cameraMake != null) 'tiff:Make': asset.cameraMake!,
               if (asset.cameraModel != null) 'tiff:Model': asset.cameraModel!,
               if (asset.lensModel != null) 'aux:Lens': asset.lensModel!,
-              if (asset.focalLengthMm != null) 'exif:FocalLength': _toRational(asset.focalLengthMm!),
-              if (asset.fNumber != null) 'exif:FNumber': _toRational(asset.fNumber!),
+              if (asset.focalLengthMm != null)
+                'exif:FocalLength': _toRational(asset.focalLengthMm!),
+              if (asset.fNumber != null)
+                'exif:FNumber': _toRational(asset.fNumber!),
               if (asset.iso != null) 'exif:ISOSpeedRatings': '${asset.iso}',
               if (asset.exposureTimeSeconds != null)
                 'exif:ExposureTime': _toRational(asset.exposureTimeSeconds!),
-              if (asset.latitude != null) 'exif:GPSLatitude': _toXmpGps(asset.latitude!, isLatitude: true),
-              if (asset.longitude != null) 'exif:GPSLongitude': _toXmpGps(asset.longitude!, isLatitude: false),
+              if (asset.latitude != null)
+                'exif:GPSLatitude': _toXmpGps(
+                  asset.latitude!,
+                  isLatitude: true,
+                ),
+              if (asset.longitude != null)
+                'exif:GPSLongitude': _toXmpGps(
+                  asset.longitude!,
+                  isLatitude: false,
+                ),
             },
             nest: () {
               final description = asset.description;
@@ -111,19 +125,26 @@ String buildXmpPacket(
 ///
 /// `stArea:x`/`stArea:y` sind die **Mitte** der Region, nicht ihre linke
 /// obere Ecke. Siehe [Gesichtsregion].
-void _regionen(XmlBuilder builder, AssetData asset, List<Gesichtsregion> gesichter) {
+void _regionen(
+  XmlBuilder builder,
+  AssetData asset,
+  List<Gesichtsregion> gesichter,
+) {
   builder.element(
     'mwg-rs:Regions',
     attributes: {'rdf:parseType': 'Resource'},
     nest: () {
       final w = asset.widthPx, h = asset.heightPx;
       if (w != null && h != null && w > 0 && h > 0) {
-        builder.element('mwg-rs:AppliedToDimensions', attributes: {
-          'rdf:parseType': 'Resource',
-          'stDim:w': '$w',
-          'stDim:h': '$h',
-          'stDim:unit': 'pixel',
-        });
+        builder.element(
+          'mwg-rs:AppliedToDimensions',
+          attributes: {
+            'rdf:parseType': 'Resource',
+            'stDim:w': '$w',
+            'stDim:h': '$h',
+            'stDim:unit': 'pixel',
+          },
+        );
       }
       builder.element(
         'mwg-rs:RegionList',
@@ -137,14 +158,17 @@ void _regionen(XmlBuilder builder, AssetData asset, List<Gesichtsregion> gesicht
                 nest: () {
                   builder.element('mwg-rs:Name', nest: g.name);
                   builder.element('mwg-rs:Type', nest: 'Face');
-                  builder.element('mwg-rs:Area', attributes: {
-                    'rdf:parseType': 'Resource',
-                    'stArea:x': _anteil(g.mitteX),
-                    'stArea:y': _anteil(g.mitteY),
-                    'stArea:w': _anteil(g.breite),
-                    'stArea:h': _anteil(g.hoehe),
-                    'stArea:unit': 'normalized',
-                  });
+                  builder.element(
+                    'mwg-rs:Area',
+                    attributes: {
+                      'rdf:parseType': 'Resource',
+                      'stArea:x': _anteil(g.mitteX),
+                      'stArea:y': _anteil(g.mitteY),
+                      'stArea:w': _anteil(g.breite),
+                      'stArea:h': _anteil(g.hoehe),
+                      'stArea:unit': 'normalized',
+                    },
+                  );
                 },
               );
             }
@@ -163,13 +187,13 @@ String _anteil(double wert) => wert.clamp(0.0, 1.0).toStringAsFixed(6);
 /// intern verwendeten Schlüssels (siehe `colorLabelSwatches` in
 /// color_label_picker.dart).
 String _xmpLabelName(String colorLabel) => switch (colorLabel) {
-      'red' => 'Red',
-      'yellow' => 'Yellow',
-      'green' => 'Green',
-      'blue' => 'Blue',
-      'purple' => 'Purple',
-      _ => colorLabel,
-    };
+  'red' => 'Red',
+  'yellow' => 'Yellow',
+  'green' => 'Green',
+  'blue' => 'Blue',
+  'purple' => 'Purple',
+  _ => colorLabel,
+};
 
 /// XMPs EXIF-Schema erwartet rationale Zahlen als `"Zähler/Nenner"`-Strings
 /// (z.B. `"50/1"`, `"18/10"`), keine Dezimalzahlen – [precision] bestimmt

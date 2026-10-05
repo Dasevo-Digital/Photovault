@@ -50,8 +50,11 @@ void main() {
     final wahl = Platform.environment['PV_WAHL'];
     final breite = double.tryParse(Platform.environment['PV_BREITE'] ?? '');
     final laenge = double.tryParse(Platform.environment['PV_LAENGE'] ?? '');
-    if (dbPfad == null || geo == null || wahl == null ||
-        breite == null || laenge == null) {
+    if (dbPfad == null ||
+        geo == null ||
+        wahl == null ||
+        breite == null ||
+        laenge == null) {
       markTestSkipped('PV_DB/PV_GEO/PV_WAHL/PV_BREITE/PV_LAENGE fehlen');
       return;
     }
@@ -73,17 +76,19 @@ void main() {
     final treffer = geocoder.lookup(breite, laenge);
     print('Ziel: ${treffer?.city}, ${treffer?.state}, ${treffer?.country}');
 
-    final ids = (await db
-            .customSelect('SELECT id FROM assets WHERE $wahl')
-            .map((r) => r.read<String>('id'))
-            .get())
-        .toList();
+    final ids =
+        (await db
+                .customSelect('SELECT id FROM assets WHERE $wahl')
+                .map((r) => r.read<String>('id'))
+                .get())
+            .toList();
     print('${ids.length} Aufnahmen betroffen');
 
     final vorher = await db
         .customSelect(
-            'SELECT location_country AS l, count(*) AS n FROM assets '
-            'WHERE $wahl GROUP BY 1')
+          'SELECT location_country AS l, count(*) AS n FROM assets '
+          'WHERE $wahl GROUP BY 1',
+        )
         .map((r) => '${r.read<String?>('l') ?? '(ohne)'}: ${r.read<int>('n')}')
         .get();
     print('vorher: ${vorher.join(' · ')}');
@@ -96,12 +101,15 @@ void main() {
 
     final nachher = await db
         .customSelect(
-            'SELECT location_country AS l, location_state AS s, '
-            'location_city AS o, count(*) AS n FROM assets '
-            'WHERE $wahl GROUP BY 1,2,3')
-        .map((r) =>
-            '${r.read<String?>('o')}, ${r.read<String?>('s')}, '
-            '${r.read<String?>('l')}: ${r.read<int>('n')}')
+          'SELECT location_country AS l, location_state AS s, '
+          'location_city AS o, count(*) AS n FROM assets '
+          'WHERE $wahl GROUP BY 1,2,3',
+        )
+        .map(
+          (r) =>
+              '${r.read<String?>('o')}, ${r.read<String?>('s')}, '
+              '${r.read<String?>('l')}: ${r.read<int>('n')}',
+        )
         .get();
     print('nachher: ${nachher.join(' · ')}');
   });

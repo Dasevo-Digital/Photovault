@@ -23,7 +23,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('photo_vault_reset_test_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library_root', 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library_root', 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -32,36 +34,57 @@ void main() {
     if (tempRoot.existsSync()) tempRoot.deleteSync(recursive: true);
   });
 
-  test('löscht library.sqlite samt WAL/SHM und den gesamten library-Ordner', () async {
-    final libraryRoot = Directory(p.join(tempRoot.path, 'library_root'));
+  test(
+    'löscht library.sqlite samt WAL/SHM und den gesamten library-Ordner',
+    () async {
+      final libraryRoot = Directory(p.join(tempRoot.path, 'library_root'));
 
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-    final photo = File(p.join(incoming.path, 'a.jpg'))..writeAsBytesSync([1, 2, 3, nextByte++]);
-    final result = await import.importFile(photo.path);
-    expect(result.outcome, ImportOutcome.imported);
-    expect(paths.originalsDir.listSync(recursive: true).whereType<File>(), isNotEmpty);
+      final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+        ..createSync(recursive: true);
+      final photo = File(p.join(incoming.path, 'a.jpg'))
+        ..writeAsBytesSync([1, 2, 3, nextByte++]);
+      final result = await import.importFile(photo.path);
+      expect(result.outcome, ImportOutcome.imported);
+      expect(
+        paths.originalsDir.listSync(recursive: true).whereType<File>(),
+        isNotEmpty,
+      );
 
-    final dbFile = File(p.join(libraryRoot.path, 'library.sqlite'))..createSync(recursive: true);
-    final walFile = File('${dbFile.path}-wal')..createSync();
-    final shmFile = File('${dbFile.path}-shm')..createSync();
+      final dbFile = File(p.join(libraryRoot.path, 'library.sqlite'))
+        ..createSync(recursive: true);
+      final walFile = File('${dbFile.path}-wal')..createSync();
+      final shmFile = File('${dbFile.path}-shm')..createSync();
 
-    // Nachbar-Ordner außerhalb der Bibliothek (steht z.B. für den separaten
-    // KI-Modell-Ordner) – darf vom Reset nicht berührt werden.
-    final modelsDir = Directory(p.join(tempRoot.path, 'models'))..createSync(recursive: true);
-    final modelFile = File(p.join(modelsDir.path, 'yunet.onnx'))..writeAsBytesSync([9, 9, 9]);
+      // Nachbar-Ordner außerhalb der Bibliothek (steht z.B. für den separaten
+      // KI-Modell-Ordner) – darf vom Reset nicht berührt werden.
+      final modelsDir = Directory(p.join(tempRoot.path, 'models'))
+        ..createSync(recursive: true);
+      final modelFile = File(p.join(modelsDir.path, 'yunet.onnx'))
+        ..writeAsBytesSync([9, 9, 9]);
 
-    await LibraryState.eraseLibraryDataAt(libraryRoot);
+      await LibraryState.eraseLibraryDataAt(libraryRoot);
 
-    expect(dbFile.existsSync(), isFalse);
-    expect(walFile.existsSync(), isFalse);
-    expect(shmFile.existsSync(), isFalse);
-    expect(Directory(p.join(libraryRoot.path, 'library')).existsSync(), isFalse);
-    expect(modelFile.existsSync(), isTrue);
-  });
+      expect(dbFile.existsSync(), isFalse);
+      expect(walFile.existsSync(), isFalse);
+      expect(shmFile.existsSync(), isFalse);
+      expect(
+        Directory(p.join(libraryRoot.path, 'library')).existsSync(),
+        isFalse,
+      );
+      expect(modelFile.existsSync(), isTrue);
+    },
+  );
 
-  test('funktioniert auch, wenn noch keine Datenbank-/WAL-Dateien existieren', () async {
-    final emptyRoot = Directory(p.join(tempRoot.path, 'nie_verwendet'))..createSync(recursive: true);
-    await LibraryState.eraseLibraryDataAt(emptyRoot);
-    expect(emptyRoot.existsSync(), isTrue); // das Wurzelverzeichnis selbst bleibt bestehen
-  });
+  test(
+    'funktioniert auch, wenn noch keine Datenbank-/WAL-Dateien existieren',
+    () async {
+      final emptyRoot = Directory(p.join(tempRoot.path, 'nie_verwendet'))
+        ..createSync(recursive: true);
+      await LibraryState.eraseLibraryDataAt(emptyRoot);
+      expect(
+        emptyRoot.existsSync(),
+        isTrue,
+      ); // das Wurzelverzeichnis selbst bleibt bestehen
+    },
+  );
 }

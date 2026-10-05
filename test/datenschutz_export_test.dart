@@ -57,7 +57,8 @@ void main() {
       wurzel = Directory.systemTemp.createTempSync('pv_datenschutz_');
       db = AppDatabase(NativeDatabase.memory());
       paths = await StoragePaths.forTesting(
-          Directory(p.join(wurzel.path, 'library')));
+        Directory(p.join(wurzel.path, 'library')),
+      );
       ziel = Directory(p.join(wurzel.path, 'aus'))..createSync();
     });
 
@@ -71,46 +72,66 @@ void main() {
       final datei = paths.absolute(relativ);
       await datei.parent.create(recursive: true);
       datei.writeAsBytesSync(List<int>.generate(2048, (i) => i % 251));
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: name,
-            relativePath: relativ,
-            checksum: 'c_$id',
-            type: typ,
-            fileCreatedAt: DateTime(2026, 5, 1),
-            importedAt: DateTime(2026, 5, 2),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: name,
+              relativePath: relativ,
+              checksum: 'c_$id',
+              type: typ,
+              fileCreatedAt: DateTime(2026, 5, 1),
+              importedAt: DateTime(2026, 5, 2),
+            ),
+          );
       return (db.select(db.assets)..where((t) => t.id.equals(id))).getSingle();
     }
 
-    test('ein Video wird ausgelassen statt unverändert ausgeliefert',
-        () async {
+    test('ein Video wird ausgelassen statt unverändert ausgeliefert', () async {
       final video = await aufnahme('v1', 'strand.mp4', 'VIDEO');
 
       await expectLater(
-        ExportService(paths).exportAsset(video, ziel.path,
-            vorgabe: Exportvorgabe.datenschutz()),
-        throwsA(isA<DatenschutzNichtMoeglich>()
-            .having((e) => e.dateiname, 'dateiname', 'strand.mp4')),
+        ExportService(
+          paths,
+        ).exportAsset(video, ziel.path, vorgabe: Exportvorgabe.datenschutz()),
+        throwsA(
+          isA<DatenschutzNichtMoeglich>().having(
+            (e) => e.dateiname,
+            'dateiname',
+            'strand.mp4',
+          ),
+        ),
       );
-      expect(ziel.listSync(), isEmpty,
-          reason: 'Am Zielort darf nichts liegen – auch keine halbe Kopie.');
+      expect(
+        ziel.listSync(),
+        isEmpty,
+        reason: 'Am Zielort darf nichts liegen – auch keine halbe Kopie.',
+      );
     });
 
-    test('die Gegenprobe: eine Grössenvorgabe kopiert dasselbe Video sehr wohl',
-        () async {
-      final video = await aufnahme('v2', 'strand.mp4', 'VIDEO');
+    test(
+      'die Gegenprobe: eine Grössenvorgabe kopiert dasselbe Video sehr wohl',
+      () async {
+        final video = await aufnahme('v2', 'strand.mp4', 'VIDEO');
 
-      final name = await ExportService(paths).exportAsset(video, ziel.path,
-          vorgabe: const Exportvorgabe(nachJpeg: true, maxKante: 2048));
+        final name = await ExportService(paths).exportAsset(
+          video,
+          ziel.path,
+          vorgabe: const Exportvorgabe(nachJpeg: true, maxKante: 2048),
+        );
 
-      final ergebnis = File(p.join(ziel.path, name));
-      expect(ergebnis.existsSync(), isTrue);
-      expect(ergebnis.readAsBytesSync(),
+        final ergebnis = File(p.join(ziel.path, name));
+        expect(ergebnis.existsSync(), isTrue);
+        expect(
+          ergebnis.readAsBytesSync(),
           paths.absolute(video.relativePath).readAsBytesSync(),
-          reason: 'Ohne Datenschutzvorgabe bleibt „nichts auslassen" richtig: '
+          reason:
+              'Ohne Datenschutzvorgabe bleibt „nichts auslassen" richtig: '
               'Ein Video, das keine Grössenvorgabe annehmen kann, geht '
-              'unverändert mit.');
-    });
+              'unverändert mit.',
+        );
+      },
+    );
   });
 }

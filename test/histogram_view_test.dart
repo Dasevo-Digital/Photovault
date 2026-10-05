@@ -27,15 +27,20 @@ Future<({int nonBlack, int colored, int total})> _measure(
   WidgetTester tester,
   GlobalKey key,
 ) async {
-  final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+  final boundary =
+      key.currentContext!.findRenderObject() as RenderRepaintBoundary;
   // toImage()/toByteData() sind echte, asynchrone Engine-Aufrufe – im
   // Widget-Test läuft die Zeit sonst simuliert weiter und das Future würde
   // nie abgeschlossen (der Test hinge). runAsync() gibt ihnen echte Zeit.
-  final bytes = await tester.runAsync(() async {
-    final image = await boundary.toImage();
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    return byteData!.buffer.asUint8List();
-  }) as Uint8List;
+  final bytes =
+      await tester.runAsync(() async {
+            final image = await boundary.toImage();
+            final byteData = await image.toByteData(
+              format: ui.ImageByteFormat.rawRgba,
+            );
+            return byteData!.buffer.asUint8List();
+          })
+          as Uint8List;
 
   var nonBlack = 0;
   var colored = 0;
@@ -50,7 +55,11 @@ Future<({int nonBlack, int colored, int total})> _measure(
   return (nonBlack: nonBlack, colored: colored, total: bytes.length ~/ 4);
 }
 
-Future<void> _pumpView(WidgetTester tester, GlobalKey key, HistogramData? data) async {
+Future<void> _pumpView(
+  WidgetTester tester,
+  GlobalKey key,
+  HistogramData? data,
+) async {
   await tester.pumpWidget(
     MaterialApp(
       locale: const Locale('de'),
@@ -71,23 +80,32 @@ Future<void> _pumpView(WidgetTester tester, GlobalKey key, HistogramData? data) 
 }
 
 void main() {
-  testWidgets('zeichnet im Helligkeitsmodus sichtbare, überwiegend graue Pixel', (tester) async {
-    final key = GlobalKey();
-    await _pumpView(tester, key, _sampleData());
+  testWidgets(
+    'zeichnet im Helligkeitsmodus sichtbare, überwiegend graue Pixel',
+    (tester) async {
+      final key = GlobalKey();
+      await _pumpView(tester, key, _sampleData());
 
-    final result = await _measure(tester, key);
+      final result = await _measure(tester, key);
 
-    expect(result.nonBlack, greaterThan(0), reason: 'es muss überhaupt etwas gezeichnet werden');
-    // Die Luminanzfläche ist weiß – nennenswert farbige Pixel dürfen hier
-    // nicht auftreten (die kämen nur aus den RGB-Kurven).
-    expect(
-      result.colored / result.total,
-      lessThan(0.02),
-      reason: 'Helligkeitsmodus zeichnet keine farbigen Kurven',
-    );
-  });
+      expect(
+        result.nonBlack,
+        greaterThan(0),
+        reason: 'es muss überhaupt etwas gezeichnet werden',
+      );
+      // Die Luminanzfläche ist weiß – nennenswert farbige Pixel dürfen hier
+      // nicht auftreten (die kämen nur aus den RGB-Kurven).
+      expect(
+        result.colored / result.total,
+        lessThan(0.02),
+        reason: 'Helligkeitsmodus zeichnet keine farbigen Kurven',
+      );
+    },
+  );
 
-  testWidgets('nach Umschalten auf RGB werden farbige Kurven gezeichnet', (tester) async {
+  testWidgets('nach Umschalten auf RGB werden farbige Kurven gezeichnet', (
+    tester,
+  ) async {
     final key = GlobalKey();
     await _pumpView(tester, key, _sampleData());
 
@@ -106,7 +124,9 @@ void main() {
     expect(after.colored / after.total, greaterThan(0.02));
   });
 
-  testWidgets('lässt sich wieder auf Helligkeit zurückschalten', (tester) async {
+  testWidgets('lässt sich wieder auf Helligkeit zurückschalten', (
+    tester,
+  ) async {
     final key = GlobalKey();
     await _pumpView(tester, key, _sampleData());
 
@@ -121,17 +141,22 @@ void main() {
     expect(luminance.colored, lessThan(rgb.colored));
   });
 
-  testWidgets('zeigt einen Hinweis statt einer leeren Fläche, solange keine Daten vorliegen', (tester) async {
-    final key = GlobalKey();
-    await _pumpView(tester, key, null);
+  testWidgets(
+    'zeigt einen Hinweis statt einer leeren Fläche, solange keine Daten vorliegen',
+    (tester) async {
+      final key = GlobalKey();
+      await _pumpView(tester, key, null);
 
-    expect(find.text('Noch keine Vorschau'), findsOneWidget);
-    // Die Umschalter bleiben trotzdem bedienbar sichtbar.
-    expect(find.text('Helligkeit'), findsOneWidget);
-    expect(find.text('RGB'), findsOneWidget);
-  });
+      expect(find.text('Noch keine Vorschau'), findsOneWidget);
+      // Die Umschalter bleiben trotzdem bedienbar sichtbar.
+      expect(find.text('Helligkeit'), findsOneWidget);
+      expect(find.text('RGB'), findsOneWidget);
+    },
+  );
 
-  testWidgets('behandelt ein leeres Histogramm wie fehlende Daten', (tester) async {
+  testWidgets('behandelt ein leeres Histogramm wie fehlende Daten', (
+    tester,
+  ) async {
     final key = GlobalKey();
     await _pumpView(tester, key, HistogramData.empty());
 

@@ -26,17 +26,21 @@ void main(List<String> args) {
     final tDek = DateTime.now().difference(t0).inMilliseconds;
     final nachDek = rssMb();
     if (bild == null) {
-      stdout.writeln('${_kurz(pfad)}  ${(bytes.length / 1e6).toStringAsFixed(1)} MB '
-          '-> NICHT DEKODIERBAR ($tDek ms)');
+      stdout.writeln(
+        '${_kurz(pfad)}  ${(bytes.length / 1e6).toStringAsFixed(1)} MB '
+        '-> NICHT DEKODIERBAR ($tDek ms)',
+      );
       continue;
     }
     final t1 = DateTime.now();
     final verdachte = findeStaubverdacht(bild);
     final tSuche = DateTime.now().difference(t1).inMilliseconds;
-    stdout.writeln('${_kurz(pfad)}  ${bild.width}x${bild.height}  '
-        'dekodieren $tDek ms  suchen $tSuche ms  '
-        'RSS $vorher->$nachDek->${rssMb()} MB  '
-        'Verdachte ${verdachte.length}');
+    stdout.writeln(
+      '${_kurz(pfad)}  ${bild.width}x${bild.height}  '
+      'dekodieren $tDek ms  suchen $tSuche ms  '
+      'RSS $vorher->$nachDek->${rssMb()} MB  '
+      'Verdachte ${verdachte.length}',
+    );
   }
 }
 

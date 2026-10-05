@@ -21,53 +21,85 @@ import 'package:photo_vault/services/xmp_writer.dart';
 /// niemandem aufgefallen war.
 
 AssetData _foto({int? breite, int? hoehe}) => AssetData(
-      id: 'a',
-      relativePath: 'originals/a.jpg',
-      originalFileName: 'a.jpg',
-      type: 'IMAGE',
-      fileSizeBytes: 1000,
-      checksum: 'a',
-      fileCreatedAt: DateTime(2026, 8, 1),
-      importedAt: DateTime(2026, 8, 1),
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-      rating: 0,
-      widthPx: breite,
-      heightPx: hoehe,
-    );
+  id: 'a',
+  relativePath: 'originals/a.jpg',
+  originalFileName: 'a.jpg',
+  type: 'IMAGE',
+  fileSizeBytes: 1000,
+  checksum: 'a',
+  fileCreatedAt: DateTime(2026, 8, 1),
+  importedAt: DateTime(2026, 8, 1),
+  isFavorite: false,
+  isTrashed: false,
+  isLocked: false,
+  faceScanExcluded: false,
+  gpsGeprueft: false,
+  datumGeschaetzt: false,
+  datumGeprueft: false,
+  ortGeerbt: false,
+  videobilderGeprueft: false,
+  backedUp: false,
+  autoBackedUp: false,
+  facesScanned: false,
+  ocrScanned: false,
+  aiCaptionScanned: false,
+  aiCaptionEdited: false,
+  aiTagsScanned: false,
+  isStackCover: false,
+  rating: 0,
+  widthPx: breite,
+  heightPx: hoehe,
+);
 
 void main() {
   group('Rundlauf', () {
     test('geschriebene Regionen kommen unverändert zurück', () {
       final vorher = [
-        const Gesichtsregion(name: 'Anna', links: 0.10, oben: 0.20, breite: 0.15, hoehe: 0.20),
-        const Gesichtsregion(name: 'Bernd', links: 0.60, oben: 0.25, breite: 0.12, hoehe: 0.18),
+        const Gesichtsregion(
+          name: 'Anna',
+          links: 0.10,
+          oben: 0.20,
+          breite: 0.15,
+          hoehe: 0.20,
+        ),
+        const Gesichtsregion(
+          name: 'Bernd',
+          links: 0.60,
+          oben: 0.25,
+          breite: 0.12,
+          hoehe: 0.18,
+        ),
       ];
-      final paket = buildXmpPacket(_foto(breite: 4000, hoehe: 3000), const [], gesichter: vorher);
+      final paket = buildXmpPacket(
+        _foto(breite: 4000, hoehe: 3000),
+        const [],
+        gesichter: vorher,
+      );
       final zurueck = parseXmpContent(paket)!.gesichter;
 
       expect(zurueck.length, 2);
       for (var i = 0; i < 2; i++) {
         expect(zurueck[i].name, vorher[i].name);
-        expect(zurueck[i].links, closeTo(vorher[i].links, 1e-5), reason: vorher[i].name);
-        expect(zurueck[i].oben, closeTo(vorher[i].oben, 1e-5), reason: vorher[i].name);
-        expect(zurueck[i].breite, closeTo(vorher[i].breite, 1e-5), reason: vorher[i].name);
-        expect(zurueck[i].hoehe, closeTo(vorher[i].hoehe, 1e-5), reason: vorher[i].name);
+        expect(
+          zurueck[i].links,
+          closeTo(vorher[i].links, 1e-5),
+          reason: vorher[i].name,
+        );
+        expect(
+          zurueck[i].oben,
+          closeTo(vorher[i].oben, 1e-5),
+          reason: vorher[i].name,
+        );
+        expect(
+          zurueck[i].breite,
+          closeTo(vorher[i].breite, 1e-5),
+          reason: vorher[i].name,
+        );
+        expect(
+          zurueck[i].hoehe,
+          closeTo(vorher[i].hoehe, 1e-5),
+          reason: vorher[i].name,
+        );
       }
     });
 
@@ -75,9 +107,19 @@ void main() {
       // Die eine Verwechslung, die nicht auffällt: Der Kasten sässe um eine
       // halbe Gesichtsbreite verschoben und sähe in einem Gruppenbild
       // trotzdem plausibel aus. Deshalb steht die Zahl hier ausgeschrieben.
-      final paket = buildXmpPacket(_foto(), const [], gesichter: [
-        const Gesichtsregion(name: 'Anna', links: 0.10, oben: 0.20, breite: 0.20, hoehe: 0.40),
-      ]);
+      final paket = buildXmpPacket(
+        _foto(),
+        const [],
+        gesichter: [
+          const Gesichtsregion(
+            name: 'Anna',
+            links: 0.10,
+            oben: 0.20,
+            breite: 0.20,
+            hoehe: 0.40,
+          ),
+        ],
+      );
       expect(paket, contains('stArea:x="0.200000"'));
       expect(paket, contains('stArea:y="0.400000"'));
       expect(paket, contains('stArea:w="0.200000"'));
@@ -91,13 +133,35 @@ void main() {
     });
 
     test('die Bildmasse stehen dabei, sobald sie bekannt sind', () {
-      final mit = buildXmpPacket(_foto(breite: 4000, hoehe: 3000), const [],
-          gesichter: [const Gesichtsregion(name: 'A', links: 0, oben: 0, breite: 0.1, hoehe: 0.1)]);
+      final mit = buildXmpPacket(
+        _foto(breite: 4000, hoehe: 3000),
+        const [],
+        gesichter: [
+          const Gesichtsregion(
+            name: 'A',
+            links: 0,
+            oben: 0,
+            breite: 0.1,
+            hoehe: 0.1,
+          ),
+        ],
+      );
       expect(mit, contains('stDim:w="4000"'));
       expect(mit, contains('stDim:h="3000"'));
 
-      final ohne = buildXmpPacket(_foto(), const [],
-          gesichter: [const Gesichtsregion(name: 'A', links: 0, oben: 0, breite: 0.1, hoehe: 0.1)]);
+      final ohne = buildXmpPacket(
+        _foto(),
+        const [],
+        gesichter: [
+          const Gesichtsregion(
+            name: 'A',
+            links: 0,
+            oben: 0,
+            breite: 0.1,
+            hoehe: 0.1,
+          ),
+        ],
+      );
       expect(ohne.contains('AppliedToDimensions'), isFalse);
     });
 
@@ -105,7 +169,15 @@ void main() {
       final paket = buildXmpPacket(
         _foto(),
         const ['Urlaub', 'Strand'],
-        gesichter: [const Gesichtsregion(name: 'Anna', links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2)],
+        gesichter: [
+          const Gesichtsregion(
+            name: 'Anna',
+            links: 0.1,
+            oben: 0.1,
+            breite: 0.2,
+            hoehe: 0.2,
+          ),
+        ],
       );
       final felder = parseXmpContent(paket)!;
       expect(felder.tags, ['Urlaub', 'Strand']);
@@ -116,7 +188,8 @@ void main() {
   group('Fremde Pakete lesen', () {
     /// Ein Ausschnitt in Lightroom-Schreibweise: Regionen in einem eigenen
     /// Description-Block, Namensräume verteilt.
-    String fremd(String regionen) => '''
+    String fremd(String regionen) =>
+        '''
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="4"/>
@@ -134,7 +207,13 @@ $regionen
  </rdf:RDF>
 </x:xmpmeta>''';
 
-    String region(String name, {String typ = 'Face', String x = '0.5', String y = '0.5'}) => '''
+    String region(
+      String name, {
+      String typ = 'Face',
+      String x = '0.5',
+      String y = '0.5',
+    }) =>
+        '''
       <rdf:li rdf:parseType="Resource">
        <mwg-rs:Name>$name</mwg-rs:Name>
        <mwg-rs:Type>$typ</mwg-rs:Type>
@@ -150,9 +229,9 @@ $regionen
     });
 
     test('überspringt, was kein Gesicht ist', () {
-      final felder = parseXmpContent(fremd(
-        '${region('Anna')}\n${region('Rex', typ: 'Pet', x: '0.2')}',
-      ))!;
+      final felder = parseXmpContent(
+        fremd('${region('Anna')}\n${region('Rex', typ: 'Pet', x: '0.2')}'),
+      )!;
       expect([for (final g in felder.gesichter) g.name], ['Anna']);
     });
 
@@ -162,11 +241,18 @@ $regionen
        <mwg-rs:Type>Face</mwg-rs:Type>
        <mwg-rs:Area stArea:x="0.5" stArea:y="0.5" stArea:w="0.2" stArea:h="0.2"/>
       </rdf:li>''';
-      expect(parseXmpContent(fremd('${region('Anna')}\n$ohneNamen'))!.gesichter.length, 1);
+      expect(
+        parseXmpContent(
+          fremd('${region('Anna')}\n$ohneNamen'),
+        )!.gesichter.length,
+        1,
+      );
     });
 
     test('eine Region am Bildrand wird beschnitten statt negativ', () {
-      final felder = parseXmpContent(fremd(region('Rand', x: '0.02', y: '0.02')))!;
+      final felder = parseXmpContent(
+        fremd(region('Rand', x: '0.02', y: '0.02')),
+      )!;
       expect(felder.gesichter.single.links, 0.0);
       expect(felder.gesichter.single.oben, 0.0);
     });
@@ -206,12 +292,18 @@ $regionen
     test('ohne Paket kommt null zurück, nicht ein halber Fund', () {
       expect(xmpAusBytes(Uint8List.fromList(List.filled(500, 0x42))), isNull);
       // Anfang ohne Ende ist kein Paket.
-      expect(xmpAusBytes(Uint8List.fromList(utf8.encode('<x:xmpmeta abgeschnitten'))), isNull);
+      expect(
+        xmpAusBytes(
+          Uint8List.fromList(utf8.encode('<x:xmpmeta abgeschnitten')),
+        ),
+        isNull,
+      );
     });
 
     test('liest aus einer echten Datei und hält die Suchtiefe ein', () {
       final paket = buildXmpPacket(_foto(), const ['Vorne']);
-      final datei = File('${tempRoot.path}/vorne.jpg')..writeAsBytesSync(mitPaket(paket));
+      final datei = File('${tempRoot.path}/vorne.jpg')
+        ..writeAsBytesSync(mitPaket(paket));
       expect(parseEingebettetesXmp(datei)!.tags, ['Vorne']);
 
       // Dasselbe Paket jenseits der Suchtiefe: bewusst nicht gefunden.
@@ -221,14 +313,25 @@ $regionen
     });
 
     test('eine fehlende Datei ergibt null', () {
-      expect(parseEingebettetesXmp(File('${tempRoot.path}/gibtesnicht.jpg')), isNull);
+      expect(
+        parseEingebettetesXmp(File('${tempRoot.path}/gibtesnicht.jpg')),
+        isNull,
+      );
     });
   });
 
   group('Regionen den Gesichtern zuordnen', () {
     test('trifft den überlappenden Kasten', () {
       final paare = regionenZuordnen(
-        [const Gesichtsregion(name: 'Anna', links: 0.10, oben: 0.10, breite: 0.20, hoehe: 0.20)],
+        [
+          const Gesichtsregion(
+            name: 'Anna',
+            links: 0.10,
+            oben: 0.10,
+            breite: 0.20,
+            hoehe: 0.20,
+          ),
+        ],
         [
           (links: 0.60, oben: 0.60, breite: 0.20, hoehe: 0.20),
           (links: 0.12, oben: 0.12, breite: 0.20, hoehe: 0.20),
@@ -243,8 +346,20 @@ $regionen
       // nach abgearbeitet bekäme die erste Region den falschen Kopf.
       final paare = regionenZuordnen(
         [
-          const Gesichtsregion(name: 'Links', links: 0.10, oben: 0.30, breite: 0.20, hoehe: 0.20),
-          const Gesichtsregion(name: 'Rechts', links: 0.50, oben: 0.30, breite: 0.20, hoehe: 0.20),
+          const Gesichtsregion(
+            name: 'Links',
+            links: 0.10,
+            oben: 0.30,
+            breite: 0.20,
+            hoehe: 0.20,
+          ),
+          const Gesichtsregion(
+            name: 'Rechts',
+            links: 0.50,
+            oben: 0.30,
+            breite: 0.20,
+            hoehe: 0.20,
+          ),
         ],
         [
           (links: 0.52, oben: 0.31, breite: 0.20, hoehe: 0.20),
@@ -257,7 +372,15 @@ $regionen
 
     test('zu geringe Überdeckung bleibt unvergeben', () {
       final paare = regionenZuordnen(
-        [const Gesichtsregion(name: 'Anna', links: 0.0, oben: 0.0, breite: 0.10, hoehe: 0.10)],
+        [
+          const Gesichtsregion(
+            name: 'Anna',
+            links: 0.0,
+            oben: 0.0,
+            breite: 0.10,
+            hoehe: 0.10,
+          ),
+        ],
         [(links: 0.80, oben: 0.80, breite: 0.10, hoehe: 0.10)],
       );
       expect(paare, isEmpty);
@@ -266,29 +389,57 @@ $regionen
     test('jeder Kasten wird höchstens einmal vergeben', () {
       final paare = regionenZuordnen(
         [
-          const Gesichtsregion(name: 'A', links: 0.10, oben: 0.10, breite: 0.20, hoehe: 0.20),
-          const Gesichtsregion(name: 'B', links: 0.11, oben: 0.11, breite: 0.20, hoehe: 0.20),
+          const Gesichtsregion(
+            name: 'A',
+            links: 0.10,
+            oben: 0.10,
+            breite: 0.20,
+            hoehe: 0.20,
+          ),
+          const Gesichtsregion(
+            name: 'B',
+            links: 0.11,
+            oben: 0.11,
+            breite: 0.20,
+            hoehe: 0.20,
+          ),
         ],
         [(links: 0.10, oben: 0.10, breite: 0.20, hoehe: 0.20)],
       );
       expect(paare.length, 1);
-      expect(paare.single.$2.name, 'A', reason: 'die stärkere Überdeckung gewinnt');
+      expect(
+        paare.single.$2.name,
+        'A',
+        reason: 'die stärkere Überdeckung gewinnt',
+      );
     });
 
     test('dieselbe Eingabe ergibt immer dieselbe Zuordnung', () {
       List<String> lauf() => [
-            for (final (k, r) in regionenZuordnen(
-              [
-                const Gesichtsregion(name: 'A', links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
-                const Gesichtsregion(name: 'B', links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
-              ],
-              [
-                (links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
-                (links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
-              ],
-            ))
-              '$k:${r.name}',
-          ];
+        for (final (k, r) in regionenZuordnen(
+          [
+            const Gesichtsregion(
+              name: 'A',
+              links: 0.1,
+              oben: 0.1,
+              breite: 0.2,
+              hoehe: 0.2,
+            ),
+            const Gesichtsregion(
+              name: 'B',
+              links: 0.1,
+              oben: 0.1,
+              breite: 0.2,
+              hoehe: 0.2,
+            ),
+          ],
+          [
+            (links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
+            (links: 0.1, oben: 0.1, breite: 0.2, hoehe: 0.2),
+          ],
+        ))
+          '$k:${r.name}',
+      ];
       expect(lauf(), lauf());
     });
   });
@@ -298,29 +449,38 @@ $regionen
     setUp(() => db = AppDatabase(NativeDatabase.memory()));
     tearDown(() => db.close());
 
-    Future<void> legeGesicht(String id, {String? personId, bool ignoriert = false}) =>
-        db.into(db.faces).insert(FacesCompanion.insert(
-              id: id,
-              assetId: 'a',
-              boxX: 0.1,
-              boxY: 0.1,
-              boxW: 0.2,
-              boxH: 0.2,
-              personId: Value(personId),
-              isIgnored: Value(ignoriert),
-            ));
+    Future<void> legeGesicht(
+      String id, {
+      String? personId,
+      bool ignoriert = false,
+    }) => db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: id,
+            assetId: 'a',
+            boxX: 0.1,
+            boxY: 0.1,
+            boxW: 0.2,
+            boxH: 0.2,
+            personId: Value(personId),
+            isIgnored: Value(ignoriert),
+          ),
+        );
 
     setUp(() async {
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'a',
-        relativePath: 'originals/a.jpg',
-        originalFileName: 'a.jpg',
-        type: 'IMAGE',
-        fileSizeBytes: const Value(10),
-        checksum: 'a',
-        fileCreatedAt: DateTime(2026, 8, 1),
-        importedAt: DateTime(2026, 8, 1),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'a',
+          relativePath: 'originals/a.jpg',
+          originalFileName: 'a.jpg',
+          type: 'IMAGE',
+          fileSizeBytes: const Value(10),
+          checksum: 'a',
+          fileCreatedAt: DateTime(2026, 8, 1),
+          importedAt: DateTime(2026, 8, 1),
+        ),
+      );
       await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
     });
 
@@ -338,10 +498,13 @@ $regionen
       expect(alle['a']!.single.name, 'Anna');
     });
 
-    test('ohne benannte Gesichter kommt eine leere Liste, kein Fehler', () async {
-      await legeGesicht('f2');
-      expect(await db.gesichtsregionenVon('a'), isEmpty);
-      expect(await db.alleGesichtsregionen(), isEmpty);
-    });
+    test(
+      'ohne benannte Gesichter kommt eine leere Liste, kein Fehler',
+      () async {
+        await legeGesicht('f2');
+        expect(await db.gesichtsregionenVon('a'), isEmpty);
+        expect(await db.alleGesichtsregionen(), isEmpty);
+      },
+    );
   });
 }

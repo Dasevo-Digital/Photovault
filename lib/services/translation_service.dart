@@ -44,7 +44,12 @@ enum Uebersetzungsrichtung {
 /// Die Modelle sind optional; ohne sie bleibt alles beim bisherigen
 /// Verhalten (englische Beschreibungen, englische Suche).
 class TranslationService {
-  TranslationService._(this._encoder, this._decoder, this._tokenizer, this.richtung);
+  TranslationService._(
+    this._encoder,
+    this._decoder,
+    this._tokenizer,
+    this.richtung,
+  );
 
   final OrtSession _encoder;
   final OrtSession _decoder;
@@ -74,11 +79,17 @@ class TranslationService {
     Uebersetzungsrichtung richtung,
   ) async {
     final ort = OnnxRuntime();
-    final encoder = await ort.createSession('$modelsDir/${richtung.encoderDatei}',
-        options: modelloptionen());
-    final decoder = await ort.createSession('$modelsDir/${richtung.decoderDatei}',
-        options: modelloptionen());
-    final tokenizer = await MarianTokenizer.loadFromFile('$modelsDir/$_vokabularDatei');
+    final encoder = await ort.createSession(
+      '$modelsDir/${richtung.encoderDatei}',
+      options: modelloptionen(),
+    );
+    final decoder = await ort.createSession(
+      '$modelsDir/${richtung.decoderDatei}',
+      options: modelloptionen(),
+    );
+    final tokenizer = await MarianTokenizer.loadFromFile(
+      '$modelsDir/$_vokabularDatei',
+    );
     return TranslationService._(encoder, decoder, tokenizer, richtung);
   }
 
@@ -104,12 +115,17 @@ class TranslationService {
       final eingabeIds = _tokenizer.encode(text);
       final laenge = eingabeIds.length;
 
-      final inputIds = await OrtValue.fromList(Int64List.fromList(eingabeIds), [1, laenge]);
+      final inputIds = await OrtValue.fromList(Int64List.fromList(eingabeIds), [
+        1,
+        laenge,
+      ]);
       final maske = await OrtValue.fromList(
         Int64List.fromList(List<int>.filled(laenge, 1)),
         [1, laenge],
       );
-      liveTensors..add(inputIds)..add(maske);
+      liveTensors
+        ..add(inputIds)
+        ..add(maske);
 
       final encoderAusgabe = await _encoder.run({
         'input_ids': inputIds,
@@ -128,8 +144,10 @@ class TranslationService {
 
       for (var schritt = 0; schritt < _maxSchritte; schritt++) {
         final folge = <int>[MarianTokenizer.padId, ...erzeugt];
-        final decoderIds =
-            await OrtValue.fromList(Int64List.fromList(folge), [1, folge.length]);
+        final decoderIds = await OrtValue.fromList(Int64List.fromList(folge), [
+          1,
+          folge.length,
+        ]);
         liveTensors.add(decoderIds);
 
         final ausgabe = await _decoder.run({

@@ -49,12 +49,16 @@ class FamilienstatistikScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final zahl = NumberFormat.decimalPattern(
-        Localizations.localeOf(context).toString());
-    final einStelle = NumberFormat('#,##0.#',
-        Localizations.localeOf(context).toString());
+      Localizations.localeOf(context).toString(),
+    );
+    final einStelle = NumberFormat(
+      '#,##0.#',
+      Localizations.localeOf(context).toString(),
+    );
 
-    String jahre(double? wert) =>
-        wert == null ? t.famstatOhneWert : t.famstatJahre(einStelle.format(wert));
+    String jahre(double? wert) => wert == null
+        ? t.famstatOhneWert
+        : t.famstatJahre(einStelle.format(wert));
 
     return Scaffold(
       appBar: AppBar(
@@ -63,11 +67,15 @@ class FamilienstatistikScreen extends StatelessWidget {
           preferredSize: const Size.fromHeight(20),
           child: Padding(
             padding: const EdgeInsets.only(
-                left: AppSpacing.lg, bottom: AppSpacing.sm),
+              left: AppSpacing.lg,
+              bottom: AppSpacing.sm,
+            ),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text(fokusName,
-                  style: Theme.of(context).textTheme.bodySmall),
+              child: Text(
+                fokusName,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ),
           ),
         ),
@@ -108,8 +116,9 @@ class FamilienstatistikScreen extends StatelessWidget {
                           symbol: Icons.date_range_outlined,
                           titel: t.famstatZeitraum,
                           wert: t.famstatVonBis(
-                              '${_kleinstes(foto.jeJahr.keys)}',
-                              '${_groesstes(foto.jeJahr.keys)}'),
+                            '${_kleinstes(foto.jeJahr.keys)}',
+                            '${_groesstes(foto.jeJahr.keys)}',
+                          ),
                           unten: t.famstatInJahren(foto.jeJahr.length),
                         ),
                     ],
@@ -120,8 +129,12 @@ class FamilienstatistikScreen extends StatelessWidget {
                     _Ueberschrift(t.famstatAufnahmenJeJahr),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(AppSpacing.sm,
-                            AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.sm,
+                          AppSpacing.xl,
+                          AppSpacing.xl,
+                          AppSpacing.sm,
+                        ),
                         child: _Jahresdiagramm(werte: foto.jeJahr),
                       ),
                     ),
@@ -152,8 +165,10 @@ class FamilienstatistikScreen extends StatelessWidget {
                         symbol: Icons.hourglass_bottom_outlined,
                         titel: t.famstatLebensalter,
                         wert: jahre(statistik.sterbealter.durchschnitt),
-                        unten: t.famstatSpanne(statistik.sterbealter.kleinstes!,
-                            statistik.sterbealter.groesstes!),
+                        unten: t.famstatSpanne(
+                          statistik.sterbealter.kleinstes!,
+                          statistik.sterbealter.groesstes!,
+                        ),
                       ),
                     if (!statistik.heiratsalter.istLeer)
                       _Kachel(
@@ -161,7 +176,8 @@ class FamilienstatistikScreen extends StatelessWidget {
                         titel: t.famstatHeiratsalter,
                         wert: jahre(statistik.heiratsalter.durchschnitt),
                         unten: t.famstatEingerechnet(
-                            statistik.heiratsalter.anzahl),
+                          statistik.heiratsalter.anzahl,
+                        ),
                       ),
                     if (statistik.nachnamen.isNotEmpty)
                       _Kachel(
@@ -183,23 +199,30 @@ class FamilienstatistikScreen extends StatelessWidget {
                 if (statistik.sterbealter.nichtGezaehlt > 0)
                   _Einschraenkung(
                     text: t.famstatOhneSterbedatum(
-                        statistik.sterbealter.nichtGezaehlt),
+                      statistik.sterbealter.nichtGezaehlt,
+                    ),
                     grund: t.famstatWarumOhneSterbedatum,
                   ),
                 if (statistik.heiratsalter.nichtGezaehlt > 0)
                   _Einschraenkung(
                     text: t.famstatOhneGeburtsdatum(
-                        statistik.heiratsalter.nichtGezaehlt),
+                      statistik.heiratsalter.nichtGezaehlt,
+                    ),
                   ),
 
                 if (statistik.alterJeGeneration.isNotEmpty) ...[
                   _Ueberschrift(t.famstatAlterJeGeneration),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.sm,
-                          AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.sm,
+                        AppSpacing.xl,
+                        AppSpacing.xl,
+                        AppSpacing.sm,
+                      ),
                       child: _GenerationenDiagramm(
-                          werte: statistik.alterJeGeneration),
+                        werte: statistik.alterJeGeneration,
+                      ),
                     ),
                   ),
                   _Fussnote(t.famstatGenerationHinweis),
@@ -208,10 +231,15 @@ class FamilienstatistikScreen extends StatelessWidget {
                 _Ueberschrift(t.famstatKinderzahl),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.sm,
-                        AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm,
+                      AppSpacing.xl,
+                      AppSpacing.xl,
+                      AppSpacing.sm,
+                    ),
                     child: _KinderDiagramm(
-                        verteilung: statistik.kinderverteilung),
+                      verteilung: statistik.kinderverteilung,
+                    ),
                   ),
                 ),
                 _Fussnote(t.famstatKinderHinweis),
@@ -238,9 +266,9 @@ class _Ueberschrift extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.only(top: oben, bottom: AppSpacing.sm),
-        child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-      );
+    padding: EdgeInsets.only(top: oben, bottom: AppSpacing.sm),
+    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+  );
 }
 
 int _kleinstes(Iterable<int> werte) => werte.reduce((a, b) => a < b ? a : b);
@@ -252,13 +280,14 @@ class _Fussnote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: AppSpacing.sm),
-        child: Text(
-          text,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-        ),
-      );
+    padding: const EdgeInsets.only(top: AppSpacing.sm),
+    child: Text(
+      text,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    ),
+  );
 }
 
 /// Was in einer Zahl **nicht** steckt.
@@ -298,7 +327,9 @@ class _Einschraenkung extends StatelessWidget {
                       child: Text(
                         grund!,
                         style: TextStyle(
-                            fontSize: 12, color: farben.onSurfaceVariant),
+                          fontSize: 12,
+                          color: farben.onSurfaceVariant,
+                        ),
                       ),
                     ),
                 ],
@@ -340,18 +371,30 @@ class _Kachel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(titel,
-                        style: TextStyle(
-                            fontSize: 12, color: farben.onSurfaceVariant)),
-                    Text(wert,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text(
+                      titel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      wert,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (unten != null)
-                      Text(unten!,
-                          style: TextStyle(
-                              fontSize: 11, color: farben.onSurfaceVariant)),
+                      Text(
+                        unten!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: farben.onSurfaceVariant,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -372,15 +415,19 @@ class _GenerationenDiagramm extends StatelessWidget {
     final t = AppTexte.of(context);
     final farbe = Theme.of(context).colorScheme.primary;
     final stufen = werte.keys.toList()..sort();
-    final hoechstes = werte.values
-        .fold<double>(0, (a, b) => (b.durchschnitt ?? 0) > a ? b.durchschnitt! : a);
+    final hoechstes = werte.values.fold<double>(
+      0,
+      (a, b) => (b.durchschnitt ?? 0) > a ? b.durchschnitt! : a,
+    );
 
     return Semantics(
-      label: t.famstatDiagrammGenerationen([
-        for (final s in stufen)
-          '${t.famstatGeneration(s)}: '
-              '${werte[s]!.durchschnitt!.round()}'
-      ].join(', ')),
+      label: t.famstatDiagrammGenerationen(
+        [
+          for (final s in stufen)
+            '${t.famstatGeneration(s)}: '
+                '${werte[s]!.durchschnitt!.round()}',
+        ].join(', '),
+      ),
       child: ExcludeSemantics(
         child: SizedBox(
           height: 220,
@@ -395,19 +442,23 @@ class _GenerationenDiagramm extends StatelessWidget {
                     '${t.famstatGeneration(stufen[gruppe.x.toInt()])}\n'
                     '${stab.toY.round()}',
                     const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 36)),
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 36),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -419,8 +470,10 @@ class _GenerationenDiagramm extends StatelessWidget {
                       }
                       return SideTitleWidget(
                         meta: meta,
-                        child: Text(t.famstatGenerationKurz(stufen[i]),
-                            style: const TextStyle(fontSize: 11)),
+                        child: Text(
+                          t.famstatGenerationKurz(stufen[i]),
+                          style: const TextStyle(fontSize: 11),
+                        ),
                       );
                     },
                   ),
@@ -428,15 +481,19 @@ class _GenerationenDiagramm extends StatelessWidget {
               ),
               barGroups: [
                 for (var i = 0; i < stufen.length; i++)
-                  BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(
-                      toY: werte[stufen[i]]!.durchschnitt!,
-                      color: farbe,
-                      width: 20,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(3)),
-                    ),
-                  ]),
+                  BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: werte[stufen[i]]!.durchschnitt!,
+                        color: farbe,
+                        width: 20,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(3),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -457,17 +514,17 @@ class _KinderDiagramm extends StatelessWidget {
     // Lückenlos von null bis zur höchsten vorkommenden Kinderzahl: Eine
     // fehlende Spalte in der Mitte („niemand hat genau drei") ist selbst
     // eine Aussage und darf nicht wegfallen.
-    final hoechste =
-        verteilung.keys.fold<int>(0, (a, b) => b > a ? b : a);
+    final hoechste = verteilung.keys.fold<int>(0, (a, b) => b > a ? b : a);
     final stufen = [for (var k = 0; k <= hoechste; k++) k];
-    final hoechstes =
-        verteilung.values.fold<int>(0, (a, b) => b > a ? b : a);
+    final hoechstes = verteilung.values.fold<int>(0, (a, b) => b > a ? b : a);
 
     return Semantics(
-      label: t.famstatDiagrammKinder([
-        for (final k in stufen)
-          '${t.famstatKinderAchse(k)}: ${verteilung[k] ?? 0}'
-      ].join(', ')),
+      label: t.famstatDiagrammKinder(
+        [
+          for (final k in stufen)
+            '${t.famstatKinderAchse(k)}: ${verteilung[k] ?? 0}',
+        ].join(', '),
+      ),
       child: ExcludeSemantics(
         child: SizedBox(
           height: 200,
@@ -482,19 +539,23 @@ class _KinderDiagramm extends StatelessWidget {
                     '${t.famstatKinderAchse(stufen[gruppe.x.toInt()])}\n'
                     '${stab.toY.round()}',
                     const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 36)),
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 36),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -506,8 +567,10 @@ class _KinderDiagramm extends StatelessWidget {
                       }
                       return SideTitleWidget(
                         meta: meta,
-                        child: Text('${stufen[i]}',
-                            style: const TextStyle(fontSize: 11)),
+                        child: Text(
+                          '${stufen[i]}',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                       );
                     },
                   ),
@@ -515,15 +578,19 @@ class _KinderDiagramm extends StatelessWidget {
               ),
               barGroups: [
                 for (var i = 0; i < stufen.length; i++)
-                  BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(
-                      toY: (verteilung[stufen[i]] ?? 0).toDouble(),
-                      color: farbe,
-                      width: 20,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(3)),
-                    ),
-                  ]),
+                  BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: (verteilung[stufen[i]] ?? 0).toDouble(),
+                        color: farbe,
+                        width: 20,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(3),
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -540,7 +607,10 @@ class _Namensliste extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final farbe = Theme.of(context).colorScheme.primary;
-    final hoechstes = eintraege.fold<int>(0, (a, e) => e.anzahl > a ? e.anzahl : a);
+    final hoechstes = eintraege.fold<int>(
+      0,
+      (a, e) => e.anzahl > a ? e.anzahl : a,
+    );
 
     return Card(
       child: Padding(
@@ -550,14 +620,18 @@ class _Namensliste extends StatelessWidget {
             for (final e in eintraege)
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg, vertical: 6),
+                  horizontal: AppSpacing.lg,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
                     SizedBox(
                       width: 150,
-                      child: Text(e.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13)),
+                      child: Text(
+                        e.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                     Expanded(
                       child: Stack(
@@ -567,19 +641,20 @@ class _Namensliste extends StatelessWidget {
                             height: 16,
                             decoration: BoxDecoration(
                               color: farbe.withValues(alpha: 0.12),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.xs),
+                              borderRadius: BorderRadius.circular(AppRadius.xs),
                             ),
                           ),
                           FractionallySizedBox(
-                            widthFactor:
-                                hoechstes == 0 ? 0 : e.anzahl / hoechstes,
+                            widthFactor: hoechstes == 0
+                                ? 0
+                                : e.anzahl / hoechstes,
                             child: Container(
                               height: 16,
                               decoration: BoxDecoration(
                                 color: farbe,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.xs),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xs,
+                                ),
                               ),
                             ),
                           ),
@@ -589,9 +664,11 @@ class _Namensliste extends StatelessWidget {
                     const SizedBox(width: AppSpacing.md),
                     SizedBox(
                       width: 32,
-                      child: Text('${e.anzahl}',
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(fontSize: 13)),
+                      child: Text(
+                        '${e.anzahl}',
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
                   ],
                 ),
@@ -641,25 +718,34 @@ class _Jahresdiagramm extends StatelessWidget {
             ),
           ),
           titlesData: FlTitlesData(
-            leftTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 24,
                 getTitlesWidget: (wert, meta) {
                   final i = wert.toInt();
-                  if (i < 0 || i >= jahre.length) return const SizedBox.shrink();
+                  if (i < 0 || i >= jahre.length) {
+                    return const SizedBox.shrink();
+                  }
                   if (i % schritt != 0) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Text('${jahre[i]}',
-                        style: TextStyle(
-                            fontSize: 10, color: farben.onSurfaceVariant)),
+                    child: Text(
+                      '${jahre[i]}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -669,14 +755,17 @@ class _Jahresdiagramm extends StatelessWidget {
           borderData: FlBorderData(show: false),
           barGroups: [
             for (var i = 0; i < jahre.length; i++)
-              BarChartGroupData(x: i, barRods: [
-                BarChartRodData(
-                  toY: (werte[jahre[i]] ?? 0).toDouble(),
-                  color: farben.primary,
-                  width: jahre.length > 20 ? 6 : 14,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                ),
-              ]),
+              BarChartGroupData(
+                x: i,
+                barRods: [
+                  BarChartRodData(
+                    toY: (werte[jahre[i]] ?? 0).toDouble(),
+                    color: farben.primary,
+                    width: jahre.length > 20 ? 6 : 14,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -735,9 +824,13 @@ class _Personenliste extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Text('${b.aufnahmen}',
-                        style: TextStyle(
-                            fontSize: 12, color: farben.onSurfaceVariant)),
+                    Text(
+                      '${b.aufnahmen}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -765,11 +858,11 @@ class _Paarliste extends StatelessWidget {
             ListTile(
               dense: true,
               leading: const Icon(Icons.people_outline, size: 20),
-              title: Text(
-                  '${namen[p.a] ?? p.a} · ${namen[p.b] ?? p.b}'),
-              trailing: Text('${p.aufnahmen}',
-                  style:
-                      TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+              title: Text('${namen[p.a] ?? p.a} · ${namen[p.b] ?? p.b}'),
+              trailing: Text(
+                '${p.aufnahmen}',
+                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+              ),
             ),
         ],
       ),

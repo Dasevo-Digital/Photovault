@@ -16,23 +16,31 @@ void main() {
   tearDown(() => db.close());
 
   Future<String> asset(String id) async {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
-          checksum: 'c_$id',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2024, 1, 1),
-          importedAt: DateTime(2024, 1, 1),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.jpg',
+            relativePath: 'originals/$id.jpg',
+            checksum: 'c_$id',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2024, 1, 1),
+            importedAt: DateTime(2024, 1, 1),
+          ),
+        );
     return id;
   }
 
   Future<List<String>> tagsVon(String assetId) async {
-    final rows = await (db.select(db.assetTags)..where((t) => t.assetId.equals(assetId))).get();
+    final rows = await (db.select(
+      db.assetTags,
+    )..where((t) => t.assetId.equals(assetId))).get();
     final namen = <String>[];
     for (final r in rows) {
-      final tag = await (db.select(db.tags)..where((t) => t.id.equals(r.tagId))).getSingleOrNull();
+      final tag = await (db.select(
+        db.tags,
+      )..where((t) => t.id.equals(r.tagId))).getSingleOrNull();
       if (tag != null) namen.add(tag.name);
     }
     return namen..sort();
@@ -73,7 +81,10 @@ void main() {
       await db.tagAsset(a, 'Strand');
       expect(await tagsVon(a), ['Hund', 'Strand']);
 
-      final anzahl = await db.uebersetzeVokabular({'Hund': 'Dog', 'Strand': 'Beach'});
+      final anzahl = await db.uebersetzeVokabular({
+        'Hund': 'Dog',
+        'Strand': 'Beach',
+      });
 
       expect(anzahl, 2);
       expect(await tagsVon(a), ['Beach', 'Dog']);
@@ -85,7 +96,9 @@ void main() {
       // Schlagwort nicht angefasst werden.
       final a = await asset('a');
       await db.tagAsset(a, 'Hund');
-      await (db.delete(db.aiTagVocabulary)..where((t) => t.term.equals('Hund'))).go();
+      await (db.delete(
+        db.aiTagVocabulary,
+      )..where((t) => t.term.equals('Hund'))).go();
 
       final anzahl = await db.uebersetzeVokabular({'Hund': 'Dog'});
 
@@ -102,11 +115,14 @@ void main() {
       expect(anzahl, 1);
       expect(await db.aiTagVocabularyTerms(), contains('Dog'));
       expect(await db.aiTagVocabularyTerms(), isNot(contains('Hund')));
-      expect(await tagsVon(a), ['Dog'], reason: 'die Zuordnung folgt über die ID');
+      expect(await tagsVon(a), [
+        'Dog',
+      ], reason: 'die Zuordnung folgt über die ID');
     });
 
     test('selbst hinzugefügte Begriffe bleiben unverändert', () async {
-      await db.into(db.aiTagVocabulary)
+      await db
+          .into(db.aiTagVocabulary)
           .insert(AiTagVocabularyCompanion.insert(term: 'Oma Elses Garten'));
 
       await db.uebersetzeVokabular({'Hund': 'Dog'});
@@ -124,7 +140,9 @@ void main() {
       // Umstellung mit einem Constraint-Fehler ab.
       // 'Hund' bringt die Startbestückung schon mit; 'Dog' legt der Nutzer
       // von Hand an – genau daraus entsteht die Kollision.
-      await db.into(db.aiTagVocabulary).insert(AiTagVocabularyCompanion.insert(term: 'Dog'));
+      await db
+          .into(db.aiTagVocabulary)
+          .insert(AiTagVocabularyCompanion.insert(term: 'Dog'));
 
       final a = await asset('a');
       final b = await asset('b');
@@ -136,14 +154,18 @@ void main() {
       final begriffe = await db.aiTagVocabularyTerms();
       expect(begriffe.where((t) => t == 'Dog'), hasLength(1));
       expect(begriffe, isNot(contains('Hund')));
-      expect(await tagsVon(a), ['Dog'], reason: 'das Foto behält sein Schlagwort');
+      expect(await tagsVon(a), [
+        'Dog',
+      ], reason: 'das Foto behält sein Schlagwort');
       expect(await tagsVon(b), ['Dog']);
     });
 
     test('ein Foto mit beiden Schlagwörtern bekommt danach eines', () async {
       // 'Hund' bringt die Startbestückung schon mit; 'Dog' legt der Nutzer
       // von Hand an – genau daraus entsteht die Kollision.
-      await db.into(db.aiTagVocabulary).insert(AiTagVocabularyCompanion.insert(term: 'Dog'));
+      await db
+          .into(db.aiTagVocabulary)
+          .insert(AiTagVocabularyCompanion.insert(term: 'Dog'));
 
       final a = await asset('a');
       await db.tagAsset(a, 'Hund');
@@ -160,56 +182,79 @@ void main() {
       // Die Stelle, die man übersieht: aiTagTerm ist eine Textspalte mit
       // exaktem Namensbezug. Bliebe sie stehen, hörte die Regel lautlos auf
       // zu feuern.
-      await db.into(db.automationRules).insert(AutomationRulesCompanion.insert(
-        id: 'r1',
-        name: 'Hundefotos markieren',
-        triggerType: 'aiTag',
-        aiTagTerm: const Value('Hund'),
-      ));
+      await db
+          .into(db.automationRules)
+          .insert(
+            AutomationRulesCompanion.insert(
+              id: 'r1',
+              name: 'Hundefotos markieren',
+              triggerType: 'aiTag',
+              aiTagTerm: const Value('Hund'),
+            ),
+          );
 
       await db.uebersetzeVokabular({'Hund': 'Dog'});
 
-      final regel =
-          await (db.select(db.automationRules)..where((t) => t.id.equals('r1'))).getSingle();
+      final regel = await (db.select(
+        db.automationRules,
+      )..where((t) => t.id.equals('r1'))).getSingle();
       expect(regel.aiTagTerm, 'Dog');
     });
 
     test('Regeln zu anderen Begriffen bleiben unberührt', () async {
-      await db.into(db.automationRules).insert(AutomationRulesCompanion.insert(
-        id: 'r1',
-        name: 'Katzenfotos',
-        triggerType: 'aiTag',
-        aiTagTerm: const Value('Katze'),
-      ));
+      await db
+          .into(db.automationRules)
+          .insert(
+            AutomationRulesCompanion.insert(
+              id: 'r1',
+              name: 'Katzenfotos',
+              triggerType: 'aiTag',
+              aiTagTerm: const Value('Katze'),
+            ),
+          );
 
       await db.uebersetzeVokabular({'Hund': 'Dog'});
 
-      final regel =
-          await (db.select(db.automationRules)..where((t) => t.id.equals('r1'))).getSingle();
+      final regel = await (db.select(
+        db.automationRules,
+      )..where((t) => t.id.equals('r1'))).getSingle();
       expect(regel.aiTagTerm, 'Katze');
     });
   });
 
-  test('ein vollständiger Wechsel und zurück landet wieder am Anfang', () async {
-    // Die härteste Zusage: Nichts geht verloren, auch nicht über zwei
-    // Umstellungen hinweg.
-    final a = await asset('a');
-    await db.tagAsset(a, 'Sonnenuntergang');
-    await db.tagAsset(a, 'Meer');
+  test(
+    'ein vollständiger Wechsel und zurück landet wieder am Anfang',
+    () async {
+      // Die härteste Zusage: Nichts geht verloren, auch nicht über zwei
+      // Umstellungen hinweg.
+      final a = await asset('a');
+      await db.tagAsset(a, 'Sonnenuntergang');
+      await db.tagAsset(a, 'Meer');
 
-    await db.uebersetzeVokabular(aiTagVocabularyEnglisch);
-    expect(await tagsVon(a), ['Sea', 'Sunset']);
+      await db.uebersetzeVokabular(aiTagVocabularyEnglisch);
+      expect(await tagsVon(a), ['Sea', 'Sunset']);
 
-    final zurueck = {for (final e in aiTagVocabularyEnglisch.entries) e.value: e.key};
-    await db.uebersetzeVokabular(zurueck);
+      final zurueck = {
+        for (final e in aiTagVocabularyEnglisch.entries) e.value: e.key,
+      };
+      await db.uebersetzeVokabular(zurueck);
 
-    expect(await tagsVon(a), ['Meer', 'Sonnenuntergang']);
-    expect((await db.aiTagVocabularyTerms()).toSet(), defaultAiTagVocabulary.toSet());
-  });
+      expect(await tagsVon(a), ['Meer', 'Sonnenuntergang']);
+      expect(
+        (await db.aiTagVocabularyTerms()).toSet(),
+        defaultAiTagVocabulary.toSet(),
+      );
+    },
+  );
 
   test('eigene Begriffe werden richtig gezählt', () async {
-    await db.into(db.aiTagVocabulary).insert(AiTagVocabularyCompanion.insert(term: 'Segeln'));
+    await db
+        .into(db.aiTagVocabulary)
+        .insert(AiTagVocabularyCompanion.insert(term: 'Segeln'));
 
-    expect(await db.zaehleEigeneVokabelbegriffe(defaultAiTagVocabulary.toSet()), 1);
+    expect(
+      await db.zaehleEigeneVokabelbegriffe(defaultAiTagVocabulary.toSet()),
+      1,
+    );
   });
 }

@@ -15,24 +15,24 @@ import '../theme/app_spacing.dart';
 import 'namens_dialog.dart';
 
 IconData symbolFuerArt(Aktivitaetsart art) => switch (art) {
-      Aktivitaetsart.spaziergang => Icons.directions_walk,
-      Aktivitaetsart.wanderung => Icons.hiking,
-      Aktivitaetsart.radtour => Icons.directions_bike,
-      Aktivitaetsart.ausflug => Icons.directions_car_outlined,
-      Aktivitaetsart.besichtigung => Icons.museum_outlined,
-      Aktivitaetsart.bootsfahrt => Icons.directions_boat_outlined,
-      Aktivitaetsart.sonstiges => Icons.explore_outlined,
-    };
+  Aktivitaetsart.spaziergang => Icons.directions_walk,
+  Aktivitaetsart.wanderung => Icons.hiking,
+  Aktivitaetsart.radtour => Icons.directions_bike,
+  Aktivitaetsart.ausflug => Icons.directions_car_outlined,
+  Aktivitaetsart.besichtigung => Icons.museum_outlined,
+  Aktivitaetsart.bootsfahrt => Icons.directions_boat_outlined,
+  Aktivitaetsart.sonstiges => Icons.explore_outlined,
+};
 
 String nameFuerArt(AppTexte t, Aktivitaetsart art) => switch (art) {
-      Aktivitaetsart.spaziergang => t.aktArtSpaziergang,
-      Aktivitaetsart.wanderung => t.aktArtWanderung,
-      Aktivitaetsart.radtour => t.aktArtRadtour,
-      Aktivitaetsart.ausflug => t.aktArtAusflug,
-      Aktivitaetsart.besichtigung => t.aktArtBesichtigung,
-      Aktivitaetsart.bootsfahrt => t.aktArtBootsfahrt,
-      Aktivitaetsart.sonstiges => t.aktArtSonstiges,
-    };
+  Aktivitaetsart.spaziergang => t.aktArtSpaziergang,
+  Aktivitaetsart.wanderung => t.aktArtWanderung,
+  Aktivitaetsart.radtour => t.aktArtRadtour,
+  Aktivitaetsart.ausflug => t.aktArtAusflug,
+  Aktivitaetsart.besichtigung => t.aktArtBesichtigung,
+  Aktivitaetsart.bootsfahrt => t.aktArtBootsfahrt,
+  Aktivitaetsart.sonstiges => t.aktArtSonstiges,
+};
 
 /// Das Symbol zu einer Kennung aus der Datenbank – auch zu einer selbst
 /// eingetragenen.
@@ -55,8 +55,9 @@ String nameFuerKennung(AppTexte t, String kennung) => istBekannteArt(kennung)
 
 /// Die Namen der mitgelieferten Arten – für den Abgleich in
 /// [eigeneArtKennung].
-Map<Aktivitaetsart, String> bekannteArtnamen(AppTexte t) =>
-    {for (final a in Aktivitaetsart.values) a: nameFuerArt(t, a)};
+Map<Aktivitaetsart, String> bekannteArtnamen(AppTexte t) => {
+  for (final a in Aktivitaetsart.values) a: nameFuerArt(t, a),
+};
 
 /// Eine Dauer, wie man sie sagt: „3 h 20 min", unter einer Stunde nur
 /// die Minuten.
@@ -75,10 +76,12 @@ String dauertext(AppTexte t, Duration d) {
 /// Über [NumberFormat] und nicht über `toStringAsFixed`: Das Komma
 /// gehört zur Sprache, und „12.4 km" liest sich auf Deutsch falsch.
 String streckentext(AppTexte t, Locale locale, double km) =>
-    t.aktivitaetenStrecke(NumberFormat.decimalPatternDigits(
-      locale: locale.toString(),
-      decimalDigits: 1,
-    ).format(km));
+    t.aktivitaetenStrecke(
+      NumberFormat.decimalPatternDigits(
+        locale: locale.toString(),
+        decimalDigits: 1,
+      ).format(km),
+    );
 
 /// Fragt nach der Art einer Aktivität und gibt ihre Kennung zurück.
 ///
@@ -101,13 +104,13 @@ Future<String?> frageAktivitaetsart(
   if (!context.mounted) return null;
 
   Widget zeile(String kennung) => Row(
-        children: [
-          Icon(symbolFuerKennung(kennung)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text(nameFuerKennung(t, kennung))),
-          if (kennung == aktuell) const Icon(Icons.check, size: 18),
-        ],
-      );
+    children: [
+      Icon(symbolFuerKennung(kennung)),
+      const SizedBox(width: AppSpacing.md),
+      Expanded(child: Text(nameFuerKennung(t, kennung))),
+      if (kennung == aktuell) const Icon(Icons.check, size: 18),
+    ],
+  );
 
   final wahl = await showDialog<String>(
     context: context,

@@ -23,8 +23,7 @@ void main() {
     final abgeschlossen = Completer<void>();
     final strom = PaintingBinding.instance.imageCache.putIfAbsent(
       schluessel,
-      () => OneFrameImageStreamCompleter(
-          Future.value(ImageInfo(image: bild))),
+      () => OneFrameImageStreamCompleter(Future.value(ImageInfo(image: bild))),
     )!;
     late ImageStreamListener horcher;
     horcher = ImageStreamListener((_, _) {
@@ -44,8 +43,11 @@ void main() {
 
     await lege('originals/a1.jpg');
     await lege('developed/a1.jpg');
-    expect(speicher.currentSize + speicher.liveImageCount, greaterThan(0),
-        reason: 'ohne einen gefuellten Speicher prueft der Test nichts');
+    expect(
+      speicher.currentSize + speicher.liveImageCount,
+      greaterThan(0),
+      reason: 'ohne einen gefuellten Speicher prueft der Test nichts',
+    );
 
     vergissAlleBilder();
     expect(speicher.currentSize, 0);
@@ -58,6 +60,8 @@ void main() {
 Future<ui.Image> _einBild() {
   final recorder = ui.PictureRecorder();
   ui.Canvas(recorder).drawRect(
-      const ui.Rect.fromLTWH(0, 0, 1, 1), ui.Paint()..color = const ui.Color(0xFFFFFFFF));
+    const ui.Rect.fromLTWH(0, 0, 1, 1),
+    ui.Paint()..color = const ui.Color(0xFFFFFFFF),
+  );
   return recorder.endRecording().toImage(1, 1);
 }

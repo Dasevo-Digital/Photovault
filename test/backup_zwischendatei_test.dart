@@ -27,7 +27,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_backup_zwischen_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     importService = ImportService(db, paths);
   });
 
@@ -71,14 +73,20 @@ void main() {
 
     final meldungen = await dienst.performBackup(ziel.path).toList();
 
-    expect(gesicherteDateien(ziel).length, 3,
-        reason: 'trotz untauglichem Zwischenlager muss alles ankommen');
-    expect(meldungen.where((m) => m.fehlgeschlagen != null), isEmpty,
-        reason: 'der Ausweichweg ist kein Fehlschlag');
+    expect(
+      gesicherteDateien(ziel).length,
+      3,
+      reason: 'trotz untauglichem Zwischenlager muss alles ankommen',
+    );
+    expect(
+      meldungen.where((m) => m.fehlgeschlagen != null),
+      isEmpty,
+      reason: 'der Ausweichweg ist kein Fehlschlag',
+    );
     // Nichts darf liegenbleiben.
-    final reste = Directory(p.join(ziel.path, 'PhotoVault-Backup'))
-        .listSync(recursive: true)
-        .where((e) => e.path.endsWith('.pv-teil'));
+    final reste = Directory(
+      p.join(ziel.path, 'PhotoVault-Backup'),
+    ).listSync(recursive: true).where((e) => e.path.endsWith('.pv-teil'));
     expect(reste, isEmpty, reason: 'Zwischendateien müssen weg sein');
   });
 
@@ -91,17 +99,28 @@ void main() {
     // blockiert. Welche das trifft, ist gleich - eine von dreien.
     final alle = await db.assetsNotBackedUp();
     final opfer = alle.first;
-    final blockiert = p.join(ziel.path, 'PhotoVault-Backup', 'originals',
-        opfer.relativePath.replaceFirst('originals${Platform.pathSeparator}', ''));
+    final blockiert = p.join(
+      ziel.path,
+      'PhotoVault-Backup',
+      'originals',
+      opfer.relativePath.replaceFirst('originals${Platform.pathSeparator}', ''),
+    );
     Directory(blockiert).createSync(recursive: true);
 
     final meldungen = await dienst.performBackup(ziel.path).toList();
 
-    expect(meldungen.last.fehlgeschlagen, 1,
-        reason: 'der Ausfall muss gemeldet werden, sonst sieht der Lauf '
-            'vollständig aus');
-    expect(gesicherteDateien(ziel).length, 2,
-        reason: 'die anderen beiden müssen durchgelaufen sein');
+    expect(
+      meldungen.last.fehlgeschlagen,
+      1,
+      reason:
+          'der Ausfall muss gemeldet werden, sonst sieht der Lauf '
+          'vollständig aus',
+    );
+    expect(
+      gesicherteDateien(ziel).length,
+      2,
+      reason: 'die anderen beiden müssen durchgelaufen sein',
+    );
 
     // Der wichtigste Teil: Was nicht geschrieben wurde, darf nicht als
     // gesichert markiert sein - sonst ginge es dauerhaft verloren.
@@ -119,33 +138,49 @@ void main() {
     final ziel = zielOrdner();
     final dienst = BackupService(db, paths);
     final opfer = (await db.assetsNotBackedUp()).first;
-    Directory(p.join(ziel.path, 'PhotoVault-Backup', 'originals',
-            opfer.relativePath
-                .replaceFirst('originals${Platform.pathSeparator}', '')))
-        .createSync(recursive: true);
+    Directory(
+      p.join(
+        ziel.path,
+        'PhotoVault-Backup',
+        'originals',
+        opfer.relativePath.replaceFirst(
+          'originals${Platform.pathSeparator}',
+          '',
+        ),
+      ),
+    ).createSync(recursive: true);
 
     await dienst.performBackup(ziel.path).toList();
 
-    expect(dienst.zwischenlagerGrenze, isNull,
-        reason: 'ein Zielfehler darf das Zwischenlager nicht abwerten');
+    expect(
+      dienst.zwischenlagerGrenze,
+      isNull,
+      reason: 'ein Zielfehler darf das Zwischenlager nicht abwerten',
+    );
   });
 
   test('ein untaugliches Zwischenlager wird geeicht', () async {
     await importiere(1);
-    final dienst = BackupService(db, paths,
-        zwischenlager: Directory(p.join(tempRoot.path, 'gibtesnicht')));
+    final dienst = BackupService(
+      db,
+      paths,
+      zwischenlager: Directory(p.join(tempRoot.path, 'gibtesnicht')),
+    );
     await dienst.performBackup(zielOrdner().path).toList();
-    expect(dienst.zwischenlagerGrenze, isNotNull,
-        reason: 'sonst versucht es die naechste grosse Datei wieder');
+    expect(
+      dienst.zwischenlagerGrenze,
+      isNotNull,
+      reason: 'sonst versucht es die naechste grosse Datei wieder',
+    );
   });
 
   test('ohne Zwischenfall bleibt keine .pv-teil-Datei zurueck', () async {
     await importiere(2);
     final ziel = zielOrdner();
     await BackupService(db, paths).performBackup(ziel.path).toList();
-    final reste = Directory(p.join(ziel.path, 'PhotoVault-Backup'))
-        .listSync(recursive: true)
-        .where((e) => e.path.endsWith('.pv-teil'));
+    final reste = Directory(
+      p.join(ziel.path, 'PhotoVault-Backup'),
+    ).listSync(recursive: true).where((e) => e.path.endsWith('.pv-teil'));
     expect(reste, isEmpty);
   });
 }

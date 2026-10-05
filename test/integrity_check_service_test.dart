@@ -14,8 +14,12 @@ void main() {
   late StoragePaths paths;
 
   setUp(() async {
-    tempRoot = Directory.systemTemp.createTempSync('photo_vault_integrity_check_test_');
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    tempRoot = Directory.systemTemp.createTempSync(
+      'photo_vault_integrity_check_test_',
+    );
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
   });
 
   tearDown(() {
@@ -26,7 +30,9 @@ void main() {
   /// würde die Wettlauf-Kulanzfrist (< 60s) jede frisch im Test geschriebene
   /// Datei als "gerade importiert" ignorieren.
   void backdate(File file) {
-    file.setLastModifiedSync(DateTime.now().subtract(const Duration(minutes: 5)));
+    file.setLastModifiedSync(
+      DateTime.now().subtract(const Duration(minutes: 5)),
+    );
   }
 
   test('erkennt eine fehlende Originaldatei', () async {
@@ -76,7 +82,8 @@ void main() {
   });
 
   test('erkennt eine verwaiste Datei ohne DB-Zeile', () async {
-    final orphan = paths.absolute('originals/orphan.jpg')..writeAsBytesSync([1, 2, 3]);
+    final orphan = paths.absolute('originals/orphan.jpg')
+      ..writeAsBytesSync([1, 2, 3]);
     backdate(orphan);
 
     final params = IntegrityCheckParams(
@@ -90,11 +97,15 @@ void main() {
     final report = await runIntegrityCheck(params);
 
     expect(report.orphanedFiles, hasLength(1));
-    expect(report.orphanedFiles.single.relativePath, p.join('originals', 'orphan.jpg'));
+    expect(
+      report.orphanedFiles.single.relativePath,
+      p.join('originals', 'orphan.jpg'),
+    );
   });
 
   test('ignoriert .DS_Store und .xmp-Sidecars als "verwaist"', () async {
-    final dsStore = paths.absolute('originals/.DS_Store')..writeAsBytesSync([1]);
+    final dsStore = paths.absolute('originals/.DS_Store')
+      ..writeAsBytesSync([1]);
     final sidecar = paths.absolute('originals/a1.xmp')..writeAsBytesSync([1]);
     backdate(dsStore);
     backdate(sidecar);
@@ -112,53 +123,65 @@ void main() {
     expect(report.orphanedFiles, isEmpty);
   });
 
-  test('ignoriert frisch geschriebene Dateien (Wettlauf mit laufendem Import)', () async {
-    // Kein backdate() – die Datei hat den echten "jetzt"-Zeitstempel.
-    paths.absolute('originals/fresh.jpg').writeAsBytesSync([1, 2, 3]);
+  test(
+    'ignoriert frisch geschriebene Dateien (Wettlauf mit laufendem Import)',
+    () async {
+      // Kein backdate() – die Datei hat den echten "jetzt"-Zeitstempel.
+      paths.absolute('originals/fresh.jpg').writeAsBytesSync([1, 2, 3]);
 
-    final params = IntegrityCheckParams(
-      libraryRootPath: paths.root.path,
-      assets: const [],
-      faceCrops: const [],
-      masks: const [],
-      verifyChecksums: false,
-    );
+      final params = IntegrityCheckParams(
+        libraryRootPath: paths.root.path,
+        assets: const [],
+        faceCrops: const [],
+        masks: const [],
+        verifyChecksums: false,
+      );
 
-    final report = await runIntegrityCheck(params);
+      final report = await runIntegrityCheck(params);
 
-    expect(report.orphanedFiles, isEmpty);
-  });
+      expect(report.orphanedFiles, isEmpty);
+    },
+  );
 
-  test('erkennt eine Prüfsummen-Abweichung, wenn verifyChecksums aktiv ist', () async {
-    final file = paths.absolute('originals/a1.jpg')..writeAsBytesSync([1, 2, 3]);
-    final realChecksum = sha256.convert(file.readAsBytesSync()).toString();
+  test(
+    'erkennt eine Prüfsummen-Abweichung, wenn verifyChecksums aktiv ist',
+    () async {
+      final file = paths.absolute('originals/a1.jpg')
+        ..writeAsBytesSync([1, 2, 3]);
+      final realChecksum = sha256.convert(file.readAsBytesSync()).toString();
 
-    final params = IntegrityCheckParams(
-      libraryRootPath: paths.root.path,
-      assets: [
-        const AssetPathSnapshot(
-          assetId: 'a1',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'ein-falscher-checksum-wert',
-          isLocked: false,
-        ),
-      ],
-      faceCrops: const [],
-      masks: const [],
-      verifyChecksums: true,
-    );
+      final params = IntegrityCheckParams(
+        libraryRootPath: paths.root.path,
+        assets: [
+          const AssetPathSnapshot(
+            assetId: 'a1',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'ein-falscher-checksum-wert',
+            isLocked: false,
+          ),
+        ],
+        faceCrops: const [],
+        masks: const [],
+        verifyChecksums: true,
+      );
 
-    final report = await runIntegrityCheck(params);
+      final report = await runIntegrityCheck(params);
 
-    expect(report.checksumMismatches, hasLength(1));
-    expect(report.checksumMismatches.single.assetId, 'a1');
-    // Gegenprobe: die echte Prüfsumme hätte keine Abweichung ergeben.
-    expect(realChecksum, isNot('ein-falscher-checksum-wert'));
-  });
+      expect(report.checksumMismatches, hasLength(1));
+      expect(report.checksumMismatches.single.assetId, 'a1');
+      // Gegenprobe: die echte Prüfsumme hätte keine Abweichung ergeben.
+      expect(realChecksum, isNot('ein-falscher-checksum-wert'));
+    },
+  );
 
   test('überspringt den Prüfsummen-Vergleich für gesperrte Assets', () async {
-    final file = paths.absolute('originals/a1.jpg')..writeAsBytesSync([1, 2, 3]);
-    file.writeAsBytesSync([9, 9, 9]); // definitiv nicht die gespeicherte Prüfsumme
+    final file = paths.absolute('originals/a1.jpg')
+      ..writeAsBytesSync([1, 2, 3]);
+    file.writeAsBytesSync([
+      9,
+      9,
+      9,
+    ]); // definitiv nicht die gespeicherte Prüfsumme
 
     final params = IntegrityCheckParams(
       libraryRootPath: paths.root.path,
@@ -182,20 +205,28 @@ void main() {
     expect(report.encryptedHeaderIssues, hasLength(1));
   });
 
-  test('meldet fehlende Gesichts-Crops und Masken mit dem richtigen Kind', () async {
-    final params = IntegrityCheckParams(
-      libraryRootPath: paths.root.path,
-      assets: const [],
-      faceCrops: const [FaceCropSnapshot(faceId: 'f1', relativePath: 'faces/f1.jpg')],
-      masks: const [MaskSnapshot(maskId: 42, relativePath: 'masks/42.png')],
-      verifyChecksums: false,
-    );
+  test(
+    'meldet fehlende Gesichts-Crops und Masken mit dem richtigen Kind',
+    () async {
+      final params = IntegrityCheckParams(
+        libraryRootPath: paths.root.path,
+        assets: const [],
+        faceCrops: const [
+          FaceCropSnapshot(faceId: 'f1', relativePath: 'faces/f1.jpg'),
+        ],
+        masks: const [MaskSnapshot(maskId: 42, relativePath: 'masks/42.png')],
+        verifyChecksums: false,
+      );
 
-    final report = await runIntegrityCheck(params);
+      final report = await runIntegrityCheck(params);
 
-    expect(report.missingFiles, hasLength(2));
-    expect(report.missingFiles.map((i) => i.kind), containsAll([MissingFileKind.faceCrop, MissingFileKind.mask]));
-  });
+      expect(report.missingFiles, hasLength(2));
+      expect(
+        report.missingFiles.map((i) => i.kind),
+        containsAll([MissingFileKind.faceCrop, MissingFileKind.mask]),
+      );
+    },
+  );
 
   test('ein sauberes Ergebnis ist isClean', () async {
     paths.absolute('originals/a1.jpg').writeAsBytesSync([1, 2, 3]);

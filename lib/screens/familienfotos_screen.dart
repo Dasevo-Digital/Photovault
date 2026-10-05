@@ -42,22 +42,25 @@ class FamilienfotosScreen extends StatelessWidget {
         itemBuilder: (context, index) => AssetThumbnailTile(
           asset: Rasterzeile.aus(assets[index]),
           paths: library.paths,
-          onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-            builder: (_) => AssetViewerScreen(
-              assets: assets,
-              initialIndex: index,
-              paths: library.paths,
-              db: library.db,
-              library: library,
-              onToggleFavorite: (a) => library.db.setFavorite(a.id, !a.isFavorite),
-              onDelete: (a) => library.db.moveToTrash([a.id]),
-              onLock: (a) async {
-                if (await ensureVaultUnlocked(context, library)) {
-                  await library.lockAsset(a);
-                }
-              },
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => AssetViewerScreen(
+                assets: assets,
+                initialIndex: index,
+                paths: library.paths,
+                db: library.db,
+                library: library,
+                onToggleFavorite: (a) =>
+                    library.db.setFavorite(a.id, !a.isFavorite),
+                onDelete: (a) => library.db.moveToTrash([a.id]),
+                onLock: (a) async {
+                  if (await ensureVaultUnlocked(context, library)) {
+                    await library.lockAsset(a);
+                  }
+                },
+              ),
             ),
-          )),
+          ),
         ),
       ),
     );

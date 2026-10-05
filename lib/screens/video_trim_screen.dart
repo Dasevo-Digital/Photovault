@@ -20,7 +20,12 @@ class VideoTrimScreen extends StatefulWidget {
   final AppDatabase db;
   final StoragePaths paths;
 
-  const VideoTrimScreen({super.key, required this.asset, required this.db, required this.paths});
+  const VideoTrimScreen({
+    super.key,
+    required this.asset,
+    required this.db,
+    required this.paths,
+  });
 
   @override
   State<VideoTrimScreen> createState() => _VideoTrimScreenState();
@@ -42,7 +47,9 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   Future<void> _init() async {
     final controller = VideoPlaybackController();
     _controller = controller;
-    final ok = await controller.open(widget.paths.absolute(widget.asset.relativePath));
+    final ok = await controller.open(
+      widget.paths.absolute(widget.asset.relativePath),
+    );
     if (!mounted) return;
     if (!ok) {
       // Ohne diese Prüfung bliebe der Ladekreis für immer stehen, weil
@@ -69,7 +76,8 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     super.dispose();
   }
 
-  double get _durationSeconds => (_controller?.duration.inMilliseconds ?? 0) / 1000;
+  double get _durationSeconds =>
+      (_controller?.duration.inMilliseconds ?? 0) / 1000;
 
   String _formatSeconds(double seconds) {
     final duration = Duration(milliseconds: (seconds * 1000).round());
@@ -83,7 +91,9 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     if (range == null) return;
     setState(() => _saving = true);
 
-    final outputRelativePath = widget.paths.trimmedRelativePath(widget.asset.id);
+    final outputRelativePath = widget.paths.trimmedRelativePath(
+      widget.asset.id,
+    );
     final outputFile = widget.paths.absolute(outputRelativePath);
     await outputFile.parent.create(recursive: true);
 
@@ -114,7 +124,9 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
 
   Future<void> _reset() async {
     await widget.db.resetVideoTrim(widget.asset.id);
-    final trimmedFile = widget.paths.absolute(widget.paths.trimmedRelativePath(widget.asset.id));
+    final trimmedFile = widget.paths.absolute(
+      widget.paths.trimmedRelativePath(widget.asset.id),
+    );
     if (await trimmedFile.exists()) await trimmedFile.delete();
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -133,7 +145,10 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
           if (_hasExistingTrim)
             TextButton(
               onPressed: _saving ? null : _reset,
-              child: Text(AppTexte.of(context).einstZuruecksetzen, style: const TextStyle(color: Colors.white70)),
+              child: Text(
+                AppTexte.of(context).einstZuruecksetzen,
+                style: const TextStyle(color: Colors.white70),
+              ),
             ),
           if (_saving)
             const Padding(
@@ -141,11 +156,18 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
             )
           else
-            IconButton(icon: const Icon(Icons.check), tooltip: AppTexte.of(context).allgSpeichern, onPressed: _save),
+            IconButton(
+              icon: const Icon(Icons.check),
+              tooltip: AppTexte.of(context).allgSpeichern,
+              onPressed: _save,
+            ),
         ],
       ),
       body: SafeArea(
@@ -153,9 +175,11 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
             ? Center(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: Text(_fehler!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70)),
+                  child: Text(
+                    _fehler!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
                 ),
               )
             : controller == null || !controller.isReady || range == null
@@ -171,14 +195,23 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.lg,
+                    ),
                     child: Column(
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(_formatSeconds(range.start), style: const TextStyle(color: Colors.white70)),
-                            Text(_formatSeconds(range.end), style: const TextStyle(color: Colors.white70)),
+                            Text(
+                              _formatSeconds(range.start),
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                            Text(
+                              _formatSeconds(range.end),
+                              style: const TextStyle(color: Colors.white70),
+                            ),
                           ],
                         ),
                         RangeSlider(

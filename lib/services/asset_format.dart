@@ -52,8 +52,7 @@ bool assetHasLocation(AssetData asset) =>
     hatOrt(asset.latitude, asset.longitude);
 
 /// Siehe [formatKuerzel] fuer den Grund der Trennung.
-bool hatOrt(double? breite, double? laenge) =>
-    breite != null && laenge != null;
+bool hatOrt(double? breite, double? laenge) => breite != null && laenge != null;
 
 /// Ob [asset] ein Panoramafoto ist (sehr breites Seitenverhältnis) – für die
 /// Vollbildansicht, die solche Fotos pan-/zoombar statt mit großen
@@ -97,9 +96,13 @@ bool isEquirectangular360(AssetData asset) {
 String? cameraLabel(AssetData asset) {
   final make = asset.cameraMake?.trim();
   final model = asset.cameraModel?.trim();
-  if (make == null || make.isEmpty) return (model == null || model.isEmpty) ? null : model;
+  if (make == null || make.isEmpty) {
+    return (model == null || model.isEmpty) ? null : model;
+  }
   if (model == null || model.isEmpty) return make;
-  return model.toLowerCase().startsWith(make.toLowerCase()) ? model : '$make $model';
+  return model.toLowerCase().startsWith(make.toLowerCase())
+      ? model
+      : '$make $model';
 }
 
 String formatFocalLength(double mm) {
@@ -149,15 +152,16 @@ String formatExposureBias(double ev) {
 /// Telefonen ist die echte Brennweite (5,7 mm) eine Zahl, mit der niemand
 /// etwas anfangen kann.
 List<String> aufnahmewerte(AssetData asset) => [
-      if (asset.iso != null) 'ISO ${asset.iso}',
-      if (asset.focalLength35mm != null)
-        formatFocalLength(asset.focalLength35mm!)
-      else if (asset.focalLengthMm != null)
-        formatFocalLength(asset.focalLengthMm!),
-      if (asset.exposureBiasEv != null) formatExposureBias(asset.exposureBiasEv!),
-      if (asset.fNumber != null) formatFNumber(asset.fNumber!),
-      if (asset.exposureTimeSeconds != null) formatExposureTime(asset.exposureTimeSeconds!),
-    ];
+  if (asset.iso != null) 'ISO ${asset.iso}',
+  if (asset.focalLength35mm != null)
+    formatFocalLength(asset.focalLength35mm!)
+  else if (asset.focalLengthMm != null)
+    formatFocalLength(asset.focalLengthMm!),
+  if (asset.exposureBiasEv != null) formatExposureBias(asset.exposureBiasEv!),
+  if (asset.fNumber != null) formatFNumber(asset.fNumber!),
+  if (asset.exposureTimeSeconds != null)
+    formatExposureTime(asset.exposureTimeSeconds!),
+];
 
 /// Kehrt [formatExposureTime] um – akzeptiert sowohl Brüche ("1/125") als
 /// auch Dezimalwerte ("0.5" oder "0,5"), für das Belichtungszeit-Feld im

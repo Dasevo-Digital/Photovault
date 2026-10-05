@@ -79,9 +79,13 @@ void main() {
   test('die Gesamtsumme erfasst auch Dateien ausserhalb des Katalogs', () {
     lege(eintrag.files.first.fileName, 2048);
     lege('uraltes_modell.onnx', 5000);
-    expect(dienst.gesamteBytes(), 7048,
-        reason: 'sonst unterschlüge die Anzeige gerade die Altlasten, '
-            'wegen derer man nachsieht');
+    expect(
+      dienst.gesamteBytes(),
+      7048,
+      reason:
+          'sonst unterschlüge die Anzeige gerade die Altlasten, '
+          'wegen derer man nachsieht',
+    );
   });
 
   test('ein fehlender Ordner ergibt null statt eines Fehlers', () {

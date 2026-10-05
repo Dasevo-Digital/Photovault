@@ -28,10 +28,10 @@ import 'package:exif/exif.dart';
 /// Auslösezeitpunkt, `OffsetTimeDigitized` zur Digitalisierung, `OffsetTime`
 /// zum Änderungszeitpunkt.
 int? zeitversatzAusTags(Map<String, IfdTag> tags) => zeitversatzAusText(
-      tags['EXIF OffsetTimeOriginal']?.printable ??
-          tags['EXIF OffsetTimeDigitized']?.printable ??
-          tags['EXIF OffsetTime']?.printable,
-    );
+  tags['EXIF OffsetTimeOriginal']?.printable ??
+      tags['EXIF OffsetTimeDigitized']?.printable ??
+      tags['EXIF OffsetTime']?.printable,
+);
 
 /// Wandelt `"+02:00"`, `"-04:30"` oder `"Z"` in Minuten.
 ///
@@ -59,8 +59,9 @@ int? zeitversatzAusText(String? text) {
   if (roh.isEmpty) return null;
   if (roh == 'Z') return 0;
 
-  final treffer =
-      RegExp(r'^([+-])(\d{1,2}):?(\d{2})$').firstMatch(roh.replaceAll(' ', ''));
+  final treffer = RegExp(
+    r'^([+-])(\d{1,2}):?(\d{2})$',
+  ).firstMatch(roh.replaceAll(' ', ''));
   if (treffer == null) return null;
   final stunden = int.parse(treffer.group(2)!);
   final minuten = int.parse(treffer.group(3)!);

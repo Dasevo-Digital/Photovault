@@ -110,7 +110,11 @@ List<List<String>> findDuplicateGroups(DuplicateSearchParams params) {
   final embeddings = params.embeddings;
   final ids = embeddings.keys.toList(growable: false);
   final n = ids.length;
-  final vectors = List<Float32List>.generate(n, (i) => embeddings[ids[i]]!, growable: false);
+  final vectors = List<Float32List>.generate(
+    n,
+    (i) => embeddings[ids[i]]!,
+    growable: false,
+  );
 
   final parent = List<int>.generate(n, (i) => i, growable: false);
   int find(int x) {
@@ -152,8 +156,16 @@ List<List<String>> findBurstGroups(BurstSearchParams params) {
   final embeddings = params.embeddings;
   final ids = embeddings.keys.toList(growable: false);
   final n = ids.length;
-  final vectors = List<Float32List>.generate(n, (i) => embeddings[ids[i]]!, growable: false);
-  final timestamps = List<DateTime?>.generate(n, (i) => params.fileCreatedAt[ids[i]], growable: false);
+  final vectors = List<Float32List>.generate(
+    n,
+    (i) => embeddings[ids[i]]!,
+    growable: false,
+  );
+  final timestamps = List<DateTime?>.generate(
+    n,
+    (i) => params.fileCreatedAt[ids[i]],
+    growable: false,
+  );
 
   final parent = List<int>.generate(n, (i) => i, growable: false);
   int find(int x) {
@@ -188,7 +200,9 @@ List<List<String>> findBurstGroups(BurstSearchParams params) {
   for (final packed in zeitnachbarPaare(timestamps, params.maxGap)) {
     final i = packed ~/ n;
     final j = packed % n;
-    if (_cosineSimilarity(vectors[i], vectors[j]) >= params.threshold) union(i, j);
+    if (_cosineSimilarity(vectors[i], vectors[j]) >= params.threshold) {
+      union(i, j);
+    }
   }
 
   return _resolveClusters(parent, n, ids);
@@ -205,7 +219,7 @@ List<int> zeitnachbarPaare(List<DateTime?> zeitstempel, Duration maxGap) {
   final n = zeitstempel.length;
   final datiert = [
     for (var i = 0; i < n; i++)
-      if (zeitstempel[i] != null) i
+      if (zeitstempel[i] != null) i,
   ]..sort((a, b) => zeitstempel[a]!.compareTo(zeitstempel[b]!));
 
   final paare = <int>[];
@@ -307,7 +321,8 @@ Float32List _randomDirection(int dim, int seed) {
 /// Ähnlichkeit für einzelne Paare braucht (nicht nur die Gruppenbildung
 /// hier) – z.B. um einer gefundenen externen Übereinstimmung einen
 /// konkreten Ähnlichkeitswert für die Anzeige mitzugeben.
-double cosineSimilarity(Float32List a, Float32List b) => _cosineSimilarity(a, b);
+double cosineSimilarity(Float32List a, Float32List b) =>
+    _cosineSimilarity(a, b);
 
 double _cosineSimilarity(Float32List a, Float32List b) {
   var dot = 0.0;

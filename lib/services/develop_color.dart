@@ -86,18 +86,18 @@ class ToneCurve {
   static const neutral = ToneCurve();
 
   List<CurvePoint> kanal(CurveChannel c) => switch (c) {
-        CurveChannel.zusammen => zusammen,
-        CurveChannel.rot => rot,
-        CurveChannel.gruen => gruen,
-        CurveChannel.blau => blau,
-      };
+    CurveChannel.zusammen => zusammen,
+    CurveChannel.rot => rot,
+    CurveChannel.gruen => gruen,
+    CurveChannel.blau => blau,
+  };
 
   ToneCurve mitKanal(CurveChannel c, List<CurvePoint> punkte) => ToneCurve(
-        zusammen: c == CurveChannel.zusammen ? punkte : zusammen,
-        rot: c == CurveChannel.rot ? punkte : rot,
-        gruen: c == CurveChannel.gruen ? punkte : gruen,
-        blau: c == CurveChannel.blau ? punkte : blau,
-      );
+    zusammen: c == CurveChannel.zusammen ? punkte : zusammen,
+    rot: c == CurveChannel.rot ? punkte : rot,
+    gruen: c == CurveChannel.gruen ? punkte : gruen,
+    blau: c == CurveChannel.blau ? punkte : blau,
+  );
 
   /// Ob die Kurve nichts bewirkt. Wird sie hier erkannt, entfällt der
   /// Filter bzw. die Textur komplett, statt eine Identität mitzurechnen.
@@ -112,10 +112,9 @@ class ToneCurve {
   }
 
   Map<String, dynamic> toJson() => {
-        for (final c in CurveChannel.values)
-          if (!_istGerade(kanal(c)))
-            c.name: [for (final p in kanal(c)) p.toJson()],
-      };
+    for (final c in CurveChannel.values)
+      if (!_istGerade(kanal(c))) c.name: [for (final p in kanal(c)) p.toJson()],
+  };
 
   static ToneCurve fromJson(Map<String, dynamic> json) {
     List<CurvePoint> lies(CurveChannel c) {
@@ -150,8 +149,8 @@ class ToneCurve {
 
   @override
   int get hashCode => Object.hashAll([
-        for (final c in CurveChannel.values) Object.hashAll(kanal(c)),
-      ]);
+    for (final c in CurveChannel.values) Object.hashAll(kanal(c)),
+  ]);
 
   static bool _gleich(List<CurvePoint> a, List<CurvePoint> b) {
     if (a.length != b.length) return false;
@@ -208,16 +207,16 @@ class BandAnpassung {
   bool get istNeutral => farbton == 0 && saettigung == 0 && helligkeit == 0;
 
   Map<String, dynamic> toJson() => {
-        if (farbton != 0) 'h': farbton,
-        if (saettigung != 0) 's': saettigung,
-        if (helligkeit != 0) 'l': helligkeit,
-      };
+    if (farbton != 0) 'h': farbton,
+    if (saettigung != 0) 's': saettigung,
+    if (helligkeit != 0) 'l': helligkeit,
+  };
 
   static BandAnpassung fromJson(Map<String, dynamic> json) => BandAnpassung(
-        farbton: (json['h'] as num?)?.toDouble() ?? 0,
-        saettigung: (json['s'] as num?)?.toDouble() ?? 0,
-        helligkeit: (json['l'] as num?)?.toDouble() ?? 0,
-      );
+    farbton: (json['h'] as num?)?.toDouble() ?? 0,
+    saettigung: (json['s'] as num?)?.toDouble() ?? 0,
+    helligkeit: (json['l'] as num?)?.toDouble() ?? 0,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -270,15 +269,15 @@ class ColorMixer {
   bool get istNeutral => baender.values.every((a) => a.istNeutral);
 
   Map<String, dynamic> toJson() => {
-        for (final e in baender.entries)
-          if (!e.value.istNeutral) e.key.name: e.value.toJson(),
-      };
+    for (final e in baender.entries)
+      if (!e.value.istNeutral) e.key.name: e.value.toJson(),
+  };
 
   static ColorMixer fromJson(Map<String, dynamic> json) => ColorMixer({
-        for (final b in ColorBand.values)
-          if (json[b.name] is Map)
-            b: BandAnpassung.fromJson(json[b.name] as Map<String, dynamic>),
-      });
+    for (final b in ColorBand.values)
+      if (json[b.name] is Map)
+        b: BandAnpassung.fromJson(json[b.name] as Map<String, dynamic>),
+  });
 
   String encode() => jsonEncode(toJson());
 
@@ -290,10 +289,12 @@ class ColorMixer {
   /// Neubau des Farbwürfels auslösen. Siehe [ToneCurve.==].
   @override
   bool operator ==(Object other) =>
-      other is ColorMixer && ColorBand.values.every((b) => band(b) == other.band(b));
+      other is ColorMixer &&
+      ColorBand.values.every((b) => band(b) == other.band(b));
 
   @override
-  int get hashCode => Object.hashAll([for (final b in ColorBand.values) band(b)]);
+  int get hashCode =>
+      Object.hashAll([for (final b in ColorBand.values) band(b)]);
 }
 
 // --- Lesen aus der Datenbank ---------------------------------------------
@@ -391,7 +392,8 @@ double evaluateCurve(List<CurvePoint> punkte, double x) {
   final t2 = t * t;
   final t3 = t2 * t;
 
-  final wert = (2 * t3 - 3 * t2 + 1) * p[k].output +
+  final wert =
+      (2 * t3 - 3 * t2 + 1) * p[k].output +
       (t3 - 2 * t2 + t) * h * m[k] +
       (-2 * t3 + 3 * t2) * p[k + 1].output +
       (t3 - t2) * h * m[k + 1];
@@ -410,9 +412,18 @@ Float32List buildCurveLut(ToneCurve kurve) {
   for (var i = 0; i < curveLutSize; i++) {
     final eingang = i / (curveLutSize - 1);
     // Erst der Farbkanal, dann der Zusammen-Kanal – siehe ToneCurve.
-    tabelle[i * 3] = evaluateCurve(kurve.zusammen, evaluateCurve(kurve.rot, eingang));
-    tabelle[i * 3 + 1] = evaluateCurve(kurve.zusammen, evaluateCurve(kurve.gruen, eingang));
-    tabelle[i * 3 + 2] = evaluateCurve(kurve.zusammen, evaluateCurve(kurve.blau, eingang));
+    tabelle[i * 3] = evaluateCurve(
+      kurve.zusammen,
+      evaluateCurve(kurve.rot, eingang),
+    );
+    tabelle[i * 3 + 1] = evaluateCurve(
+      kurve.zusammen,
+      evaluateCurve(kurve.gruen, eingang),
+    );
+    tabelle[i * 3 + 2] = evaluateCurve(
+      kurve.zusammen,
+      evaluateCurve(kurve.blau, eingang),
+    );
   }
   return tabelle;
 }
@@ -498,8 +509,9 @@ List<double> _mische(ColorMixer mixer, double h, double s, double l) {
   return _hslZuRgb(neuH, neuS, neuL.clamp(0.0, 1.0));
 }
 
-List<double> _blende(List<double> a, List<double> b, double t) =>
-    [for (var i = 0; i < 3; i++) a[i] + (b[i] - a[i]) * t];
+List<double> _blende(List<double> a, List<double> b, double t) => [
+  for (var i = 0; i < 3; i++) a[i] + (b[i] - a[i]) * t,
+];
 
 /// Baut den Farbwürfel für [mixer]: [colorCubeSize]³ Stützstellen, je
 /// RGBA-Fließkomma.
@@ -576,7 +588,10 @@ int colorCubeStripWidth(int size) => size * size;
 /// nebeneinanderlegen. Rot läuft innerhalb einer Scheibe waagerecht, Grün
 /// senkrecht, Blau wählt die Scheibe – der Shader interpoliert zwischen zwei
 /// benachbarten Scheiben von Hand.
-Uint8List packColorCubeForTexture(Float32List wuerfel, {int size = colorCubeSize}) {
+Uint8List packColorCubeForTexture(
+  Float32List wuerfel, {
+  int size = colorCubeSize,
+}) {
   final breite = colorCubeStripWidth(size);
   final bytes = Uint8List(breite * size * 4);
 
@@ -631,11 +646,7 @@ List<double> _hslZuRgb(double h, double s, double l) {
   final p = 2 * l - q;
   final hk = (h % 360) / 360;
 
-  return [
-    _kanal(p, q, hk + 1 / 3),
-    _kanal(p, q, hk),
-    _kanal(p, q, hk - 1 / 3),
-  ];
+  return [_kanal(p, q, hk + 1 / 3), _kanal(p, q, hk), _kanal(p, q, hk - 1 / 3)];
 }
 
 double _kanal(double p, double q, double t) {

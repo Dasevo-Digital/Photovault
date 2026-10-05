@@ -43,7 +43,10 @@ class _TrashScreenState extends State<TrashScreen> {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppTexte.of(context).allgAbbrechen)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () => Navigator.pop(context, true),
@@ -65,9 +68,11 @@ class _TrashScreenState extends State<TrashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selected.isEmpty
-            ? AppTexte.of(context).papierkorbTitel
-            : AppTexte.of(context).papierkorbAusgewaehlt(_selected.length)),
+        title: Text(
+          _selected.isEmpty
+              ? AppTexte.of(context).papierkorbTitel
+              : AppTexte.of(context).papierkorbAusgewaehlt(_selected.length),
+        ),
         // Wieviel hier liegt, stand bisher nirgends – weder hier noch in
         // den Einstellungen. An einer gewachsenen Bibliothek waren es
         // 6,01 GB, sieben Prozent des Bestands. Unter dem Titel und nicht
@@ -83,18 +88,26 @@ class _TrashScreenState extends State<TrashScreen> {
                     final liegend = papierkorb.data ?? const <AssetData>[];
                     if (liegend.isEmpty) return const SizedBox(height: 20);
                     final platz = liegend.fold<int>(
-                        0, (summe, a) => summe + a.fileSizeBytes);
+                      0,
+                      (summe, a) => summe + a.fileSizeBytes,
+                    );
                     return Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: Padding(
                         padding: const EdgeInsets.only(
-                            left: AppSpacing.md, bottom: AppSpacing.sm),
+                          left: AppSpacing.md,
+                          bottom: AppSpacing.sm,
+                        ),
                         child: Text(
                           AppTexte.of(context).papierkorbUmfang(
-                              liegend.length, groessentext(platz)),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onSurfaceVariant,
+                            liegend.length,
+                            groessentext(platz),
+                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ),
@@ -118,14 +131,19 @@ class _TrashScreenState extends State<TrashScreen> {
               icon: const Icon(Icons.delete_forever_outlined),
               onPressed: () async {
                 final confirm = await _confirm(
-                    AppTexte.of(context).papierkorbEndgueltigTitel, AppTexte.of(context).papierkorbEndgueltigText(_selected.length));
+                  AppTexte.of(context).papierkorbEndgueltigTitel,
+                  AppTexte.of(
+                    context,
+                  ).papierkorbEndgueltigText(_selected.length),
+                );
                 if (confirm != true) return;
                 // Gezielt und nicht die ganze Tabelle: Hier stand
                 // `select(assets).get()` und danach ein Filter in Dart -
                 // um drei Fotos zu entfernen, wurde die gesamte
                 // Bibliothek in den Speicher geholt.
-                final toDelete =
-                    await widget.library.db.assetsByIds(_selected.toList());
+                final toDelete = await widget.library.db.assetsByIds(
+                  _selected.toList(),
+                );
                 await _permanentlyDelete(toDelete);
                 if (!mounted) return;
                 setState(() => _selected.clear());
@@ -139,7 +157,10 @@ class _TrashScreenState extends State<TrashScreen> {
         builder: (context, snapshot) {
           final assets = snapshot.data ?? [];
           if (assets.isEmpty) {
-            return EmptyState(icon: Icons.delete_outline, message: AppTexte.of(context).papierkorbLeer);
+            return EmptyState(
+              icon: Icons.delete_outline,
+              message: AppTexte.of(context).papierkorbLeer,
+            );
           }
           return Column(
             children: [
@@ -148,20 +169,26 @@ class _TrashScreenState extends State<TrashScreen> {
               // genau der Befund der 16. Prüfrunde war.
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(
                         AppTexte.of(context).papierkorbHinweis,
                         style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -176,94 +203,109 @@ class _TrashScreenState extends State<TrashScreen> {
   }
 
   Widget _raster(List<AssetData> assets) => GridView.builder(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: _kachelBreite,
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 4,
-            ),
-            itemCount: assets.length,
-            itemBuilder: (context, index) {
-              final asset = assets[index];
-              final isSelected = _selected.contains(asset.id);
-              return GestureDetector(
-                onLongPress: () => setState(
-                    () => isSelected ? _selected.remove(asset.id) : _selected.add(asset.id)),
-                onTap: () {
-                  if (_selected.isNotEmpty) {
-                    setState(() => isSelected ? _selected.remove(asset.id) : _selected.add(asset.id));
-                  } else {
-                    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                      builder: (_) => AssetViewerScreen(
-                        assets: assets,
-                        initialIndex: index,
-                        paths: widget.library.paths,
-                        db: widget.library.db,
-                        library: widget.library,
-                      ),
-                    ));
-                  }
-                },
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    asset.thumbnailRelativePath != null
-                        ? Image.file(
-                            widget.library.paths.absolute(asset.thumbnailRelativePath!),
-                            fit: BoxFit.cover,
-                            // Auf Kachelgröße dekodieren statt auf die
-                            // volle Vorschaugröße: Die Vorschau ist 400 px
-                            // breit, die Kachel höchstens 160. Ohne diese
-                            // Angabe liegt das 2,4-Fache im Bildspeicher
-                            // (gemessen an echten Vorschaubildern:
-                            // 2,37x Speicher, 1,53x Dekodierzeit,
-                            // Prüfrunde 8) – dasselbe, was das Raster der
-                            // Zeitleiste längst tut.
-                            cacheWidth: (_kachelBreite *
-                                    MediaQuery.devicePixelRatioOf(context))
-                                .round(),
-                            errorBuilder: (_, _, _) => Container(color: Colors.grey.shade900),
-                          )
-                        : Container(
-                            color: Colors.grey.shade900,
-                            child: const Icon(Icons.image_outlined, color: Colors.white24),
-                          ),
-                    if (isSelected)
-                      Container(
-                        color: Colors.black45,
-                        child: const Icon(Icons.check_circle, color: Colors.white),
-                      ),
-                    // **Sichtbar, nicht versteckt.** Bis hierher gab es
-                    // das Wiederherstellen nur nach einem langen Druck –
-                    // eine Geste, die niemandem gesagt wird. Der
-                    // Papierkorb sah damit aus wie eine Galerie ohne
-                    // Ausgang. Die Auswahl über lange Drücken bleibt für
-                    // mehrere Fotos auf einmal.
-                    if (_selected.isEmpty)
-                      Positioned(
-                        right: 2,
-                        bottom: 2,
-                        child: Tooltip(
-                          message: AppTexte.of(context).einstWiederherstellen,
-                          child: Material(
-                            color: Colors.black54,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () => widget.library
-                                  .ausPapierkorbHolen([asset.id]),
-                              child: const Padding(
-                                padding: EdgeInsets.all(6),
-                                child: Icon(Icons.restore_from_trash_outlined,
-                                    size: 20, color: Colors.white),
-                              ),
-                            ),
-                          ),
+    padding: const EdgeInsets.all(AppSpacing.md),
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: _kachelBreite,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+    ),
+    itemCount: assets.length,
+    itemBuilder: (context, index) {
+      final asset = assets[index];
+      final isSelected = _selected.contains(asset.id);
+      return GestureDetector(
+        onLongPress: () => setState(
+          () =>
+              isSelected ? _selected.remove(asset.id) : _selected.add(asset.id),
+        ),
+        onTap: () {
+          if (_selected.isNotEmpty) {
+            setState(
+              () => isSelected
+                  ? _selected.remove(asset.id)
+                  : _selected.add(asset.id),
+            );
+          } else {
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (_) => AssetViewerScreen(
+                  assets: assets,
+                  initialIndex: index,
+                  paths: widget.library.paths,
+                  db: widget.library.db,
+                  library: widget.library,
+                ),
+              ),
+            );
+          }
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            asset.thumbnailRelativePath != null
+                ? Image.file(
+                    widget.library.paths.absolute(asset.thumbnailRelativePath!),
+                    fit: BoxFit.cover,
+                    // Auf Kachelgröße dekodieren statt auf die
+                    // volle Vorschaugröße: Die Vorschau ist 400 px
+                    // breit, die Kachel höchstens 160. Ohne diese
+                    // Angabe liegt das 2,4-Fache im Bildspeicher
+                    // (gemessen an echten Vorschaubildern:
+                    // 2,37x Speicher, 1,53x Dekodierzeit,
+                    // Prüfrunde 8) – dasselbe, was das Raster der
+                    // Zeitleiste längst tut.
+                    cacheWidth:
+                        (_kachelBreite * MediaQuery.devicePixelRatioOf(context))
+                            .round(),
+                    errorBuilder: (_, _, _) =>
+                        Container(color: Colors.grey.shade900),
+                  )
+                : Container(
+                    color: Colors.grey.shade900,
+                    child: const Icon(
+                      Icons.image_outlined,
+                      color: Colors.white24,
+                    ),
+                  ),
+            if (isSelected)
+              Container(
+                color: Colors.black45,
+                child: const Icon(Icons.check_circle, color: Colors.white),
+              ),
+            // **Sichtbar, nicht versteckt.** Bis hierher gab es
+            // das Wiederherstellen nur nach einem langen Druck –
+            // eine Geste, die niemandem gesagt wird. Der
+            // Papierkorb sah damit aus wie eine Galerie ohne
+            // Ausgang. Die Auswahl über lange Drücken bleibt für
+            // mehrere Fotos auf einmal.
+            if (_selected.isEmpty)
+              Positioned(
+                right: 2,
+                bottom: 2,
+                child: Tooltip(
+                  message: AppTexte.of(context).einstWiederherstellen,
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () =>
+                          widget.library.ausPapierkorbHolen([asset.id]),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.restore_from_trash_outlined,
+                          size: 20,
+                          color: Colors.white,
                         ),
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              );
-            },
+              ),
+          ],
+        ),
       );
+    },
+  );
 }

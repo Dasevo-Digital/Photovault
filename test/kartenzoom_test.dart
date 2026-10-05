@@ -63,7 +63,8 @@ void main() {
     expect(
       ohne,
       isEmpty,
-      reason: 'Diese Karten lassen sich verschieben, aber nicht auf jedem '
+      reason:
+          'Diese Karten lassen sich verschieben, aber nicht auf jedem '
           'Gerät zoomen. Eine Magic Mouse hat kein Rad, und eine einfache '
           'Maus hat gar keine Zoomgeste:\n${ohne.join('\n')}',
     );
@@ -84,26 +85,28 @@ void main() {
 
   group('Zoomsteuerung', () {
     Widget rahmen(Widget kind) => MaterialApp(
-          locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
-          supportedLocales: AppTexte.supportedLocales,
-          home: Scaffold(body: kind),
-        );
+      locale: const Locale('de'),
+      localizationsDelegates: AppTexte.localizationsDelegates,
+      supportedLocales: AppTexte.supportedLocales,
+      home: Scaffold(body: kind),
+    );
 
     testWidgets('beide Zoomknöpfe melden ihren Druck', (tester) async {
       var naeher = 0, weiter = 0;
-      await tester.pumpWidget(rahmen(Zoomsteuerung(
-        beiNaeher: () => naeher++,
-        beiWeiter: () => weiter++,
-      )));
+      await tester.pumpWidget(
+        rahmen(
+          Zoomsteuerung(beiNaeher: () => naeher++, beiWeiter: () => weiter++),
+        ),
+      );
       await tester.tap(find.byIcon(Icons.add));
       await tester.tap(find.byIcon(Icons.remove));
       expect(naeher, 1);
       expect(weiter, 1);
     });
 
-    testWidgets('ohne Standort und ohne Ereignisse bleiben zwei Knöpfe',
-        (tester) async {
+    testWidgets('ohne Standort und ohne Ereignisse bleiben zwei Knöpfe', (
+      tester,
+    ) async {
       // Ein Knopf, der nichts tun kann, wäre schlechter als keiner.
       await tester.pumpWidget(rahmen(const Zoomsteuerung()));
       expect(find.byIcon(Icons.my_location), findsNothing);
@@ -121,13 +124,21 @@ void main() {
     for (final datei in quelldateien()) {
       final quelle = datei.readAsStringSync();
       if (!quelle.contains('zoomregel: nur Knoepfe')) continue;
-      expect(quelle.contains('Zoomsteuerung('), isTrue,
-          reason: '${datei.path}: ohne Wischen sind die Knoepfe der '
-              'einzige Weg zu zoomen - sie muessen da sein');
-      expect(quelle.contains('InteractiveFlag.drag'), isTrue,
-          reason: '${datei.path}: die Ausnahme ist fuer Karten, die nur '
-              'das Ziehen annehmen; wer Rad und Kneifen nimmt, hat das '
-              'Rollproblem nicht und braucht die Ausnahme nicht');
+      expect(
+        quelle.contains('Zoomsteuerung('),
+        isTrue,
+        reason:
+            '${datei.path}: ohne Wischen sind die Knoepfe der '
+            'einzige Weg zu zoomen - sie muessen da sein',
+      );
+      expect(
+        quelle.contains('InteractiveFlag.drag'),
+        isTrue,
+        reason:
+            '${datei.path}: die Ausnahme ist fuer Karten, die nur '
+            'das Ziehen annehmen; wer Rad und Kneifen nimmt, hat das '
+            'Rollproblem nicht und braucht die Ausnahme nicht',
+      );
     }
   });
 }

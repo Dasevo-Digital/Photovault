@@ -25,7 +25,9 @@ void main() {
   group('plattformneutral', () {
     test('findet nichts, wo nichts ist', () async {
       expect(
-          await DesktopImageTools.imPfad('gibt-es-ganz-sicher-nicht-xyz'), isFalse);
+        await DesktopImageTools.imPfad('gibt-es-ganz-sicher-nicht-xyz'),
+        isFalse,
+      );
     });
 
     test('ein gleichnamiges Verzeichnis gilt nicht als Werkzeug', () async {
@@ -64,8 +66,10 @@ void main() {
       // ffprobe muss einzeln dabeistehen: videoDauer ruft ausschliesslich
       // ffprobe auf, nur ffmpeg zu prüfen behauptete eine ungeprüfte
       // Verfügbarkeit.
-      expect(DesktopImageTools.werkzeuge.keys,
-          containsAll(['heif-dec', 'dcraw_emu', 'ffmpeg', 'ffprobe']));
+      expect(
+        DesktopImageTools.werkzeuge.keys,
+        containsAll(['heif-dec', 'dcraw_emu', 'ffmpeg', 'ffprobe']),
+      );
       for (final zweck in DesktopImageTools.werkzeuge.values) {
         expect(zweck, isNotEmpty);
       }
@@ -79,8 +83,11 @@ void main() {
       // auspackte. Betrifft Linux genauso.
       for (final e in ['.heic', '.heif', '.avif', '.avifs']) {
         expect(DesktopImageTools.libheifEndungen, contains(e));
-        expect(heicAndRawExtensions, contains(e),
-            reason: 'sonst käme die Datei gar nicht erst hier an');
+        expect(
+          heicAndRawExtensions,
+          contains(e),
+          reason: 'sonst käme die Datei gar nicht erst hier an',
+        );
       }
       // Und umgekehrt: Nichts, was libheif nimmt, darf gleichzeitig als
       // RAW gelten – sonst entschiede die Reihenfolge der Prüfung.
@@ -95,8 +102,10 @@ void main() {
       // Windows nicht – dort gibt es ausschliesslich heif-dec.exe. Wer nur
       // den alten Namen kennt, findet unter Windows nichts, und jedes
       // iPhone-Foto bliebe unsichtbar.
-      expect(DesktopImageTools.alternativNamen['heif-dec'],
-          ['heif-dec', 'heif-convert']);
+      expect(DesktopImageTools.alternativNamen['heif-dec'], [
+        'heif-dec',
+        'heif-convert',
+      ]);
 
       // Jeder alternative Name muss zu einem bekannten Werkzeug gehören –
       // sonst suchte die Schicht nach etwas, das sie nie aufruft.
@@ -114,7 +123,8 @@ void main() {
     test('eine nicht ausführbare Datei gilt nicht als Werkzeug', () async {
       final temp = Directory.systemTemp.createTempSync('pv_pfad2_');
       addTearDown(() => temp.deleteSync(recursive: true));
-      final datei = File('${temp.path}/ffmpeg')..writeAsStringSync('kein Programm');
+      final datei = File('${temp.path}/ffmpeg')
+        ..writeAsStringSync('kein Programm');
 
       expect(await DesktopImageTools.imPfad(datei.path), isFalse);
 
@@ -138,8 +148,10 @@ void main() {
       // Suche und Aufruf gehen beide durch dateiname(). Ohne diese Regel
       // würde ein vollständiger Pfad zu „ffmpeg.exe.exe" und liefe ins
       // Leere – und zwar erst zur Laufzeit, nicht beim Bauen.
-      expect(DesktopImageTools.dateiname(r'C:\Werkzeuge\ffmpeg.exe'),
-          r'C:\Werkzeuge\ffmpeg.exe');
+      expect(
+        DesktopImageTools.dateiname(r'C:\Werkzeuge\ffmpeg.exe'),
+        r'C:\Werkzeuge\ffmpeg.exe',
+      );
     });
 
     test('eine Datei ohne .exe gilt nicht als Werkzeug', () async {

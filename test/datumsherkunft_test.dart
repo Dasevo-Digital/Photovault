@@ -44,8 +44,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_datumsherkunft_');
     eingang = Directory(p.join(wurzel.path, 'eingang'))..createSync();
-    paths =
-        await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     db = AppDatabase(NativeDatabase.memory());
     importService = ImportService(db, paths);
     library = LibraryState()
@@ -75,7 +76,11 @@ void main() {
     return img.encodeJpg(bild);
   }
 
-  Future<AssetData> importiere(String name, {DateTime? datum, int inhalt = 0}) async {
+  Future<AssetData> importiere(
+    String name, {
+    DateTime? datum,
+    int inhalt = 0,
+  }) async {
     final datei = File(p.join(eingang.path, name))
       ..writeAsBytesSync(jpeg(datum: datum, inhalt: inhalt));
     final ergebnis = await importService.importFile(datei.path);
@@ -85,34 +90,48 @@ void main() {
 
   /// Eine Aufnahme, wie sie vor Schema 75 in der Datenbank stand: mit
   /// geratenem Datum, aber ohne jeden Vermerk darüber.
-  Future<void> altbestand(String id, DateTime wann,
-          {bool geschaetzt = false}) =>
-      db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        originalFileName: '$id.jpg',
-        relativePath: 'originals/2006/08/$id.jpg',
-        checksum: 'pruef-$id',
-        type: 'IMAGE',
-        fileCreatedAt: wann,
-        importedAt: DateTime(2026),
-        datumGeschaetzt: Value(geschaetzt),
-      ));
+  Future<void> altbestand(
+    String id,
+    DateTime wann, {
+    bool geschaetzt = false,
+  }) => db.insertAsset(
+    AssetsCompanion.insert(
+      id: id,
+      originalFileName: '$id.jpg',
+      relativePath: 'originals/2006/08/$id.jpg',
+      checksum: 'pruef-$id',
+      type: 'IMAGE',
+      fileCreatedAt: wann,
+      importedAt: DateTime(2026),
+      datumGeschaetzt: Value(geschaetzt),
+    ),
+  );
 
   group('beim Import', () {
     test('eine Datei ohne Aufnahmedatum wird als geschätzt vermerkt', () async {
       final a = await importiere('ohne.jpg');
-      expect(a.datumGeschaetzt, isTrue,
-          reason: 'der Wert stammt aus lastModified(), nicht aus der Datei');
-      expect(a.datumGeprueft, isTrue,
-          reason: 'nachgesehen wurde gerade eben – der Nachtrag darf sie '
-              'überspringen');
+      expect(
+        a.datumGeschaetzt,
+        isTrue,
+        reason: 'der Wert stammt aus lastModified(), nicht aus der Datei',
+      );
+      expect(
+        a.datumGeprueft,
+        isTrue,
+        reason:
+            'nachgesehen wurde gerade eben – der Nachtrag darf sie '
+            'überspringen',
+      );
     });
 
     test('eine Datei MIT Aufnahmedatum wird nicht vermerkt', () async {
       // Die Gegenprobe zum vorigen Test: Stünde die Marke immer, wäre sie
       // keine Auskunft, sondern ein Aufdruck.
-      final a = await importiere('mit.jpg',
-          datum: DateTime(2013, 7, 4, 15, 22, 8), inhalt: 1);
+      final a = await importiere(
+        'mit.jpg',
+        datum: DateTime(2013, 7, 4, 15, 22, 8),
+        inhalt: 1,
+      );
       expect(a.datumGeschaetzt, isFalse);
       expect(a.fileCreatedAt, DateTime(2013, 7, 4, 15, 22, 8));
     });
@@ -133,65 +152,83 @@ void main() {
       await legeAb('ohne');
       await legeAb('mit', datum: DateTime(2013, 7, 4, 15, 22, 8), inhalt: 1);
 
-      expect(await db.countDatumsherkunft(), 2,
-          reason: 'vor dem Lauf ist bei keiner nachgesehen worden');
+      expect(
+        await db.countDatumsherkunft(),
+        2,
+        reason: 'vor dem Lauf ist bei keiner nachgesehen worden',
+      );
       await for (final _ in library.backfillDatumsherkunft()) {}
 
       expect((await db.assetById('ohne'))!.datumGeschaetzt, isTrue);
       expect((await db.assetById('mit'))!.datumGeschaetzt, isFalse);
-      expect(await db.countDatumsherkunft(), 0,
-          reason: 'ein zweiter Lauf hätte nichts mehr zu tun');
+      expect(
+        await db.countDatumsherkunft(),
+        0,
+        reason: 'ein zweiter Lauf hätte nichts mehr zu tun',
+      );
     });
 
-    test('eine fehlende Datei bleibt ungeprüft statt als geschätzt zu gelten',
-        () async {
-      // „Nicht da" heisst nicht „ohne Datum". Würde sie hier markiert,
-      // wäre die Marke eine Behauptung über eine Datei, die niemand
-      // gelesen hat – und ein späterer Lauf käme nie wieder auf sie
-      // zurück.
-      await altbestand('verschwunden', DateTime(2006, 8, 27));
-      await for (final _ in library.backfillDatumsherkunft()) {}
+    test(
+      'eine fehlende Datei bleibt ungeprüft statt als geschätzt zu gelten',
+      () async {
+        // „Nicht da" heisst nicht „ohne Datum". Würde sie hier markiert,
+        // wäre die Marke eine Behauptung über eine Datei, die niemand
+        // gelesen hat – und ein späterer Lauf käme nie wieder auf sie
+        // zurück.
+        await altbestand('verschwunden', DateTime(2006, 8, 27));
+        await for (final _ in library.backfillDatumsherkunft()) {}
 
-      final a = (await db.assetById('verschwunden'))!;
-      expect(a.datumGeschaetzt, isFalse);
-      expect(a.datumGeprueft, isFalse);
-      expect(await db.countDatumsherkunft(), 1);
-    });
+        final a = (await db.assetById('verschwunden'))!;
+        expect(a.datumGeschaetzt, isFalse);
+        expect(a.datumGeprueft, isFalse);
+        expect(await db.countDatumsherkunft(), 1);
+      },
+    );
 
-    test('eine Datei, die niemand lesen kann, gilt nicht als datenlos',
-        () async {
-      // **Der Fund, der diesen Zweig erzwungen hat.** Der erste Lauf über
-      // die echte Bibliothek meldete 2806 Aufnahmen ohne Datum – darunter
-      // ALLE 909 CR3. Vier davon mit exiftool gegengelesen: alle vier
-      // tragen ein DateTimeOriginal. Die Ursache war nicht die Datei,
-      // sondern der Leser – CR3 ist ein ISO-BMFF-Container, `package:exif`
-      // liest dort nichts, und der native Rückfall braucht einen
-      // Method-Channel, den es im Prüflauf nicht gibt.
-      //
-      // Hier nachgestellt mit einer CR3-Endung über Bytes, die kein
-      // Format sind: Ein Fehlschlag des Werkzeugs darf keine Aussage über
-      // die Datei werden.
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'roh',
-        originalFileName: 'roh.cr3',
-        relativePath: 'originals/2006/08/roh.cr3',
-        checksum: 'pruef-roh',
-        type: 'IMAGE',
-        fileCreatedAt: DateTime(2006, 8, 27),
-        importedAt: DateTime(2026),
-      ));
-      final datei = paths.absolute('originals/2006/08/roh.cr3');
-      await datei.parent.create(recursive: true);
-      await datei.writeAsBytes(List<int>.filled(64, 7));
+    test(
+      'eine Datei, die niemand lesen kann, gilt nicht als datenlos',
+      () async {
+        // **Der Fund, der diesen Zweig erzwungen hat.** Der erste Lauf über
+        // die echte Bibliothek meldete 2806 Aufnahmen ohne Datum – darunter
+        // ALLE 909 CR3. Vier davon mit exiftool gegengelesen: alle vier
+        // tragen ein DateTimeOriginal. Die Ursache war nicht die Datei,
+        // sondern der Leser – CR3 ist ein ISO-BMFF-Container, `package:exif`
+        // liest dort nichts, und der native Rückfall braucht einen
+        // Method-Channel, den es im Prüflauf nicht gibt.
+        //
+        // Hier nachgestellt mit einer CR3-Endung über Bytes, die kein
+        // Format sind: Ein Fehlschlag des Werkzeugs darf keine Aussage über
+        // die Datei werden.
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: 'roh',
+            originalFileName: 'roh.cr3',
+            relativePath: 'originals/2006/08/roh.cr3',
+            checksum: 'pruef-roh',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2006, 8, 27),
+            importedAt: DateTime(2026),
+          ),
+        );
+        final datei = paths.absolute('originals/2006/08/roh.cr3');
+        await datei.parent.create(recursive: true);
+        await datei.writeAsBytes(List<int>.filled(64, 7));
 
-      await for (final _ in library.backfillDatumsherkunft()) {}
+        await for (final _ in library.backfillDatumsherkunft()) {}
 
-      final a = (await db.assetById('roh'))!;
-      expect(a.datumGeschaetzt, isFalse,
-          reason: '909 richtig datierte CR3 haetten sonst eine Marke bekommen');
-      expect(a.datumGeprueft, isFalse,
-          reason: 'sie soll im naechsten Lauf wieder drankommen');
-    });
+        final a = (await db.assetById('roh'))!;
+        expect(
+          a.datumGeschaetzt,
+          isFalse,
+          reason: '909 richtig datierte CR3 haetten sonst eine Marke bekommen',
+        );
+        expect(
+          a.datumGeprueft,
+          isFalse,
+          reason: 'sie soll im naechsten Lauf wieder drankommen',
+        );
+      },
+    );
 
     test('eine CR3 wird nicht erst ganz gelesen', () async {
       // `package:exif` liefert bei CR3 nichts – nachgezaehlt an der
@@ -204,15 +241,17 @@ void main() {
       // Kopf etwas anderes als der Name, MUSS doch ganz gelesen werden –
       // sonst rutschte ein Standbild unter falschem Namen durch, so wie
       // die 31 JPEGs, die in dieser Bibliothek `.mov` heissen.
-      await db.insertAsset(AssetsCompanion.insert(
-        id: 'getarnt',
-        originalFileName: 'getarnt.cr3',
-        relativePath: 'originals/2006/08/getarnt.cr3',
-        checksum: 'pruef-getarnt',
-        type: 'IMAGE',
-        fileCreatedAt: DateTime(2006, 8, 27),
-        importedAt: DateTime(2026),
-      ));
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'getarnt',
+          originalFileName: 'getarnt.cr3',
+          relativePath: 'originals/2006/08/getarnt.cr3',
+          checksum: 'pruef-getarnt',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2006, 8, 27),
+          importedAt: DateTime(2026),
+        ),
+      );
       final datei = paths.absolute('originals/2006/08/getarnt.cr3');
       await datei.parent.create(recursive: true);
       await datei.writeAsBytes(jpeg(datum: DateTime(2013, 7, 4, 15, 22, 8)));
@@ -221,12 +260,14 @@ void main() {
 
       final a = (await db.assetById('getarnt'))!;
       expect(a.datumGeprueft, isTrue);
-      expect(a.datumGeschaetzt, isFalse,
-          reason: 'das JPEG traegt ein Datum, der Name luegt nur');
+      expect(
+        a.datumGeschaetzt,
+        isFalse,
+        reason: 'das JPEG traegt ein Datum, der Name luegt nur',
+      );
     });
 
-    test('ein zweiter Lauf mit „alle" nimmt die Marke wieder zurück',
-        () async {
+    test('ein zweiter Lauf mit „alle" nimmt die Marke wieder zurück', () async {
       // Der Weg für Dateien, die ausserhalb der App nachträglich ein
       // Datum bekommen haben. Ohne das Zurücknehmen bliebe die Marke für
       // immer stehen, obwohl der Grund weg ist.
@@ -263,8 +304,11 @@ void main() {
     await altbestand('gemessen', DateTime(2006, 8, 27, 14, 12, 3));
 
     final treffer = await db.assetsOnThisDay(heute);
-    expect([for (final a in treffer) a.id], ['gemessen'],
-        reason: 'ohne den Filter stünden hier beide');
+    expect(
+      [for (final a in treffer) a.id],
+      ['gemessen'],
+      reason: 'ohne den Filter stünden hier beide',
+    );
   });
 
   test('die Serienerkennung übergeht geschätzte Daten', () async {
@@ -287,17 +331,22 @@ void main() {
     };
 
     final gruppen = await serienvorschlaege(db, einbettungen);
-    final drin = {for (final g in gruppen) ...[for (final a in g) a.id]};
-    expect(drin, {'m1', 'm2'},
-        reason: 'die drei geschätzten dürfen gar nicht erst zusammenfinden');
+    final drin = {
+      for (final g in gruppen) ...[for (final a in g) a.id],
+    };
+    expect(drin, {
+      'm1',
+      'm2',
+    }, reason: 'die drei geschätzten dürfen gar nicht erst zusammenfinden');
   });
 
   test('der Suchfilter findet genau die geschätzten', () async {
     await altbestand('geraten', DateTime(2006, 8, 27), geschaetzt: true);
     await altbestand('gemessen', DateTime(2006, 8, 27, 14, 12, 3));
 
-    final treffer = await db
-        .searchAssets(const SearchFilters(nurGeschaetztesDatum: true));
+    final treffer = await db.searchAssets(
+      const SearchFilters(nurGeschaetztesDatum: true),
+    );
     expect([for (final a in treffer) a.id], ['geraten']);
 
     // Ohne den Filter stehen beide da – sonst prüfte der Test nur, dass
@@ -310,7 +359,9 @@ void main() {
     expect(SearchFilters.fromJson(f.toJson()).nurGeschaetztesDatum, isTrue);
     // Und eine Suche von vor der Änderung liest sich weiter, ohne den
     // Filter versehentlich einzuschalten.
-    expect(SearchFilters.fromJson(const <String, dynamic>{})
-        .nurGeschaetztesDatum, isFalse);
+    expect(
+      SearchFilters.fromJson(const <String, dynamic>{}).nurGeschaetztesDatum,
+      isFalse,
+    );
   });
 }

@@ -42,23 +42,32 @@ class FaceClusterSuggestion {
 class FaceClusterReviewScreen extends StatefulWidget {
   final LibraryState library;
   final List<FaceClusterSuggestion> suggestions;
-  const FaceClusterReviewScreen({super.key, required this.library, required this.suggestions});
+  const FaceClusterReviewScreen({
+    super.key,
+    required this.library,
+    required this.suggestions,
+  });
 
   @override
-  State<FaceClusterReviewScreen> createState() => _FaceClusterReviewScreenState();
+  State<FaceClusterReviewScreen> createState() =>
+      _FaceClusterReviewScreenState();
 }
 
 class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
   late final List<FaceClusterSuggestion> _pending = List.of(widget.suggestions);
 
   Future<void> _assign(FaceClusterSuggestion cluster) async {
-    final people = await widget.library.db.select(widget.library.db.people).get();
+    final people = await widget.library.db
+        .select(widget.library.db.people)
+        .get();
     if (!mounted) return;
     final choice = await showPersonPickerDialog(
       context,
       people,
       paths: widget.library.paths,
-      title: AppTexte.of(context).clusterGesichterZuordnen(cluster.faces.length),
+      title: AppTexte.of(
+        context,
+      ).clusterGesichterZuordnen(cluster.faces.length),
       suggestedPerson: cluster.suggestedPerson,
     );
     if (choice == null) return;
@@ -72,7 +81,10 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
     } else {
       personId = choice.existingPersonId!;
     }
-    await widget.library.db.assignFacesToPerson(cluster.faces.map((f) => f.id).toList(), personId);
+    await widget.library.db.assignFacesToPerson(
+      cluster.faces.map((f) => f.id).toList(),
+      personId,
+    );
 
     // Gab es einen Vorschlag, ist die Wahl des Nutzers ein Urteil darüber:
     // dieselbe Person = bestätigt, eine andere = abgelehnt.
@@ -85,17 +97,13 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
     final vorschlag = cluster.suggestedPerson;
     final aehnlichkeit = cluster.similarity;
     if (vorschlag != null && aehnlichkeit != null) {
-      await widget.library.db.merkeGesichtsEntscheidungen(
-        vorschlag.id,
-        [
-          (
-            faceId: cluster.faces.first.id,
-            accepted: personId == vorschlag.id,
-            similarity: aehnlichkeit,
-          ),
-        ],
-        allgemeineSchwelle: widget.library.faceSimilarityThreshold,
-      );
+      await widget.library.db.merkeGesichtsEntscheidungen(vorschlag.id, [
+        (
+          faceId: cluster.faces.first.id,
+          accepted: personId == vorschlag.id,
+          similarity: aehnlichkeit,
+        ),
+      ], allgemeineSchwelle: widget.library.faceSimilarityThreshold);
     }
 
     if (mounted) setState(() => _pending.remove(cluster));
@@ -105,7 +113,8 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
   /// hier bewusst nichts festgehalten. Als Ablehnung gewertet würde jeder
   /// übersprungene Vorschlag die Schwelle der vorgeschlagenen Person
   /// hochziehen, obwohl der Nutzer gar keine Aussage gemacht hat.
-  void _skip(FaceClusterSuggestion cluster) => setState(() => _pending.remove(cluster));
+  void _skip(FaceClusterSuggestion cluster) =>
+      setState(() => _pending.remove(cluster));
 
   /// Die ganze Gruppe beiseitelegen.
   ///
@@ -119,8 +128,10 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
   /// sagt „das ist keine Person", nicht „diese Gesichter gehören nicht
   /// zusammen". Deshalb wird, wie beim Überspringen, nichts gelernt.
   Future<void> _ignorieren(FaceClusterSuggestion cluster) async {
-    await widget.library.db
-        .setFacesIgnored(cluster.faces.map((f) => f.id).toList(), true);
+    await widget.library.db.setFacesIgnored(
+      cluster.faces.map((f) => f.id).toList(),
+      true,
+    );
     if (mounted) setState(() => _pending.remove(cluster));
   }
 
@@ -132,7 +143,10 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Text(AppTexte.of(context).clusterFertig, textAlign: TextAlign.center),
+                child: Text(
+                  AppTexte.of(context).clusterFertig,
+                  textAlign: TextAlign.center,
+                ),
               ),
             )
           : ListView.builder(
@@ -156,7 +170,9 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                   child: face.cropRelativePath != null
                                       ? Image.file(
-                                          widget.library.paths.absolute(face.cropRelativePath!),
+                                          widget.library.paths.absolute(
+                                            face.cropRelativePath!,
+                                          ),
                                           width: 56,
                                           height: 56,
                                           fit: BoxFit.cover,
@@ -164,26 +180,42 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
                                           // dem Schirm – das Achtfache an
                                           // Bildspeicher für nichts
                                           // (Prüfrunde 8).
-                                          cacheWidth: (56 *
-                                                  MediaQuery.devicePixelRatioOf(
-                                                      context))
-                                              .round(),
+                                          cacheWidth:
+                                              (56 *
+                                                      MediaQuery.devicePixelRatioOf(
+                                                        context,
+                                                      ))
+                                                  .round(),
                                         )
                                       : const SizedBox(width: 56, height: 56),
                                 ),
                               ),
                             if (cluster.faces.length > 6)
-                              Text('+${cluster.faces.length - 6}',
-                                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                              Text(
+                                '+${cluster.faces.length - 6}',
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(AppTexte.of(context).clusterGesichterAnzahl(cluster.faces.length)),
+                        Text(
+                          AppTexte.of(
+                            context,
+                          ).clusterGesichterAnzahl(cluster.faces.length),
+                        ),
                         if (cluster.suggestedPerson != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Chip(
-                              label: Text(AppTexte.of(context).clusterAehnlichZu(cluster.suggestedPerson!.name)),
+                              label: Text(
+                                AppTexte.of(context).clusterAehnlichZu(
+                                  cluster.suggestedPerson!.name,
+                                ),
+                              ),
                               visualDensity: VisualDensity.compact,
                             ),
                           ),
@@ -191,7 +223,9 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
                         Row(
                           children: [
                             IconButton(
-                              tooltip: AppTexte.of(context).clusterIgnorierenTooltip,
+                              tooltip: AppTexte.of(
+                                context,
+                              ).clusterIgnorierenTooltip,
                               icon: const Icon(Icons.visibility_off_outlined),
                               onPressed: () => _ignorieren(cluster),
                             ),
@@ -199,14 +233,18 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
                             Expanded(
                               child: OutlinedButton(
                                 onPressed: () => _skip(cluster),
-                                child: Text(AppTexte.of(context).clusterUeberspringen),
+                                child: Text(
+                                  AppTexte.of(context).clusterUeberspringen,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: FilledButton(
                                 onPressed: () => _assign(cluster),
-                                child: Text(AppTexte.of(context).personZuordnenAktion),
+                                child: Text(
+                                  AppTexte.of(context).personZuordnenAktion,
+                                ),
                               ),
                             ),
                           ],

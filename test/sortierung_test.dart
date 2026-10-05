@@ -41,8 +41,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -57,44 +58,52 @@ void main() {
     String? name,
     int rating = 0,
     int bytes = 0,
-  }) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: name ?? '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: wann,
-            importedAt: importiert ?? wann,
-            rating: Value(rating),
-            fileSizeBytes: Value(bytes),
-          ));
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: name ?? '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: wann,
+          importedAt: importiert ?? wann,
+          rating: Value(rating),
+          fileSizeBytes: Value(bytes),
+        ),
+      );
 
   /// Drei Aufnahmen, bei denen jede Reihenfolge eine andere Abfolge ergibt.
   Future<void> dreiVerschiedene() async {
-    await aufnahme('alt',
-        wann: DateTime(2019, 3, 4),
-        importiert: DateTime(2026, 1, 1),
-        name: 'ccc.jpg',
-        rating: 5,
-        bytes: 100);
-    await aufnahme('mitte',
-        wann: DateTime(2022, 7, 9),
-        importiert: DateTime(2024, 1, 1),
-        name: 'aaa.jpg',
-        rating: 1,
-        bytes: 900);
-    await aufnahme('neu',
-        wann: DateTime(2025, 11, 2),
-        importiert: DateTime(2025, 1, 1),
-        name: 'bbb.jpg',
-        rating: 3,
-        bytes: 500);
+    await aufnahme(
+      'alt',
+      wann: DateTime(2019, 3, 4),
+      importiert: DateTime(2026, 1, 1),
+      name: 'ccc.jpg',
+      rating: 5,
+      bytes: 100,
+    );
+    await aufnahme(
+      'mitte',
+      wann: DateTime(2022, 7, 9),
+      importiert: DateTime(2024, 1, 1),
+      name: 'aaa.jpg',
+      rating: 1,
+      bytes: 900,
+    );
+    await aufnahme(
+      'neu',
+      wann: DateTime(2025, 11, 2),
+      importiert: DateTime(2025, 1, 1),
+      name: 'bbb.jpg',
+      rating: 3,
+      bytes: 500,
+    );
   }
 
   Future<List<String>> ausDb(Rastersortierung s) async {
-    final zeilen =
-        await db.watchRasterzeilen(sortierung: s).first;
+    final zeilen = await db.watchRasterzeilen(sortierung: s).first;
     return [for (final z in zeilen) z.id];
   }
 
@@ -110,8 +119,11 @@ void main() {
   test('jede Reihenfolge ordnet die Kachelwand anders', () async {
     await dreiVerschiedene();
     for (final eintrag in erwartet.entries) {
-      expect(await ausDb(eintrag.key), eintrag.value,
-          reason: 'watchRasterzeilen mit ${eintrag.key.name}');
+      expect(
+        await ausDb(eintrag.key),
+        eintrag.value,
+        reason: 'watchRasterzeilen mit ${eintrag.key.name}',
+      );
     }
   });
 
@@ -119,8 +131,11 @@ void main() {
     await dreiVerschiedene();
     for (final s in Rastersortierung.values) {
       final voll = await db.watchTimeline(sortierung: s).first;
-      expect([for (final a in voll) a.id], erwartet[s],
-          reason: 'watchTimeline mit ${s.name}');
+      expect(
+        [for (final a in voll) a.id],
+        erwartet[s],
+        reason: 'watchTimeline mit ${s.name}',
+      );
     }
   });
 
@@ -128,10 +143,12 @@ void main() {
     await dreiVerschiedene();
     final alle = await db.watchTimeline().first;
     for (final s in Rastersortierung.values) {
-      final sortiert = List<AssetData>.of(alle)
-        ..sort(sortierungVergleicher(s));
-      expect([for (final a in sortiert) a.id], erwartet[s],
-          reason: 'Vergleicher fuer ${s.name}');
+      final sortiert = List<AssetData>.of(alle)..sort(sortierungVergleicher(s));
+      expect(
+        [for (final a in sortiert) a.id],
+        erwartet[s],
+        reason: 'Vergleicher fuer ${s.name}',
+      );
     }
   });
 
@@ -162,43 +179,46 @@ void main() {
 
   test('die Monate laufen in dieselbe Richtung wie die Fotos', () {
     Rasterzeile z(String id, DateTime wann) => Rasterzeile(
-          id: id,
-          type: 'IMAGE',
-          originalFileName: '$id.jpg',
-          relativePath: 'o/$id.jpg',
-          thumbnailRelativePath: null,
-          fileCreatedAt: wann,
-          durationSeconds: null,
-          isFavorite: false,
-          isStackCover: false,
-          stackId: null,
-          stackSize: null,
-          linkedAssetId: null,
-          rating: 0,
-          colorLabel: null,
-          widthPx: null,
-          heightPx: null,
-          latitude: null,
-          longitude: null,
-          cameraMake: null,
-          isLocked: false,
-        );
+      id: id,
+      type: 'IMAGE',
+      originalFileName: '$id.jpg',
+      relativePath: 'o/$id.jpg',
+      thumbnailRelativePath: null,
+      fileCreatedAt: wann,
+      durationSeconds: null,
+      isFavorite: false,
+      isStackCover: false,
+      stackId: null,
+      stackSize: null,
+      linkedAssetId: null,
+      rating: 0,
+      colorLabel: null,
+      widthPx: null,
+      heightPx: null,
+      latitude: null,
+      longitude: null,
+      cameraMake: null,
+      isLocked: false,
+    );
     final liste = [
       z('a', DateTime(2020, 1, 5)),
       z('b', DateTime(2021, 6, 5)),
       z('c', DateTime(2022, 9, 5)),
     ];
     expect(monatsgruppen(liste).schluessel, [202209, 202106, 202001]);
-    expect(monatsgruppen(liste, absteigend: false).schluessel,
-        [202001, 202106, 202209]);
+    expect(monatsgruppen(liste, absteigend: false).schluessel, [
+      202001,
+      202106,
+      202209,
+    ]);
   });
 
   Widget rahmen(Widget kind) => MaterialApp(
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        locale: const Locale('de'),
-        home: kind,
-      );
+    localizationsDelegates: AppTexte.localizationsDelegates,
+    supportedLocales: AppTexte.supportedLocales,
+    locale: const Locale('de'),
+    home: kind,
+  );
 
   Future<void> abbauen(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox.shrink());
@@ -211,12 +231,14 @@ void main() {
     await db.setzeZeitleisteSortierung(Rastersortierung.aufnahmeAlt);
 
     await tester.pumpWidget(
-        rahmen(Scaffold(body: TimelineScreen(library: library))));
+      rahmen(Scaffold(body: TimelineScreen(library: library))),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    final raster =
-        tester.widget<MonthGroupedAssetGrid>(find.byType(MonthGroupedAssetGrid));
+    final raster = tester.widget<MonthGroupedAssetGrid>(
+      find.byType(MonthGroupedAssetGrid),
+    );
     expect([for (final a in raster.assets) a.id], ['alt', 'mitte', 'neu']);
     // Aufsteigend heisst: auch die Monate laufen vorwaerts.
     expect(raster.absteigend, isFalse);
@@ -224,18 +246,19 @@ void main() {
     await abbauen(tester);
   });
 
-  testWidgets('ohne Zeitbezug faellt die Monatsgliederung weg',
-      (tester) async {
+  testWidgets('ohne Zeitbezug faellt die Monatsgliederung weg', (tester) async {
     await dreiVerschiedene();
     await db.setzeZeitleisteSortierung(Rastersortierung.groesse);
 
     await tester.pumpWidget(
-        rahmen(Scaffold(body: TimelineScreen(library: library))));
+      rahmen(Scaffold(body: TimelineScreen(library: library))),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    final raster =
-        tester.widget<MonthGroupedAssetGrid>(find.byType(MonthGroupedAssetGrid));
+    final raster = tester.widget<MonthGroupedAssetGrid>(
+      find.byType(MonthGroupedAssetGrid),
+    );
     expect([for (final a in raster.assets) a.id], ['mitte', 'neu', 'alt']);
     // Der eigentliche Fund: Eine Ueberschrift „Juli 2022" ueber einer nach
     // Dateigroesse sortierten Gruppe waere eine falsche Auskunft.
@@ -251,11 +274,15 @@ void main() {
     addTearDown(tester.view.reset);
     await dreiVerschiedene();
 
-    await db.createSavedSearch('s1', 'nur Fotos',
-        const SearchFilters(mediaType: MediaTypeFilter.image));
+    await db.createSavedSearch(
+      's1',
+      'nur Fotos',
+      const SearchFilters(mediaType: MediaTypeFilter.image),
+    );
 
-    await tester
-        .pumpWidget(rahmen(Scaffold(body: SearchScreen(library: library))));
+    await tester.pumpWidget(
+      rahmen(Scaffold(body: SearchScreen(library: library))),
+    );
     // Kein pumpAndSettle: Der Bildschirm haengt an einem drift-Strom
     // (gespeicherte Suchen), und der kommt nie zur Ruhe.
     await tester.pump();
@@ -273,14 +300,16 @@ void main() {
     // Beschriftung sitzt im Menue neben dem Haken, und ein Tipp auf ihre
     // Mitte trifft die Schaltflaeche nur zufaellig.
     Finder menueEintrag(String text) => find.ancestor(
-        of: find.text(text),
-        matching: find.byType(CheckedPopupMenuItem<Object>));
+      of: find.text(text),
+      matching: find.byType(CheckedPopupMenuItem<Object>),
+    );
 
     List<String> kacheln() => [
-          for (final k in tester.widgetList<AssetThumbnailTile>(
-              find.byType(AssetThumbnailTile)))
-            k.asset.id
-        ];
+      for (final k in tester.widgetList<AssetThumbnailTile>(
+        find.byType(AssetThumbnailTile),
+      ))
+        k.asset.id,
+    ];
     expect(kacheln(), ['neu', 'mitte', 'alt']);
 
     // Umstellen auf Dateiname A-Z.

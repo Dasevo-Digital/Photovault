@@ -36,9 +36,13 @@ void main() {
     var nextByte = 0;
 
     setUp(() async {
-      tempRoot = Directory.systemTemp.createTempSync('photo_vault_asset_format_test_');
+      tempRoot = Directory.systemTemp.createTempSync(
+        'photo_vault_asset_format_test_',
+      );
       db = AppDatabase(NativeDatabase.memory());
-      final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+      final paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'library')),
+      );
       import = ImportService(db, paths);
     });
 
@@ -48,8 +52,10 @@ void main() {
     });
 
     Future<AssetData> importPhoto(String name) async {
-      final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-      final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+      final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+        ..createSync(recursive: true);
+      final file = File(p.join(incoming.path, name))
+        ..writeAsBytesSync([1, 2, 3, nextByte++]);
       final result = await import.importFile(file.path);
       expect(result.outcome, ImportOutcome.imported);
       return (await db.assetById(result.assetId!))!;
@@ -62,9 +68,12 @@ void main() {
       expect(assetFormatLabel(await importPhoto('foto.heic')), 'HEIC');
     });
 
-    test('liefert ein leeres Kürzel für Videos (eigenes Icon zeigt das schon)', () async {
-      expect(assetFormatLabel(await importPhoto('clip.mp4')), '');
-    });
+    test(
+      'liefert ein leeres Kürzel für Videos (eigenes Icon zeigt das schon)',
+      () async {
+        expect(assetFormatLabel(await importPhoto('clip.mp4')), '');
+      },
+    );
 
     test('assetHasLocation prüft auf gesetzte Koordinaten', () async {
       final withoutGps = await importPhoto('foto.jpg');
@@ -75,40 +84,49 @@ void main() {
       expect(assetHasLocation(withGps), isTrue);
     });
 
-    test('isPanorama erkennt sehr breite Seitenverhältnisse ab 2.5:1', () async {
-      final asset = await importPhoto('foto.jpg');
+    test(
+      'isPanorama erkennt sehr breite Seitenverhältnisse ab 2.5:1',
+      () async {
+        final asset = await importPhoto('foto.jpg');
 
-      await db.updateThumbnailInfo(asset.id, widthPx: 1200, heightPx: 800);
-      expect(isPanorama((await db.assetById(asset.id))!), isFalse);
+        await db.updateThumbnailInfo(asset.id, widthPx: 1200, heightPx: 800);
+        expect(isPanorama((await db.assetById(asset.id))!), isFalse);
 
-      await db.updateThumbnailInfo(asset.id, widthPx: 6000, heightPx: 2000);
-      expect(isPanorama((await db.assetById(asset.id))!), isTrue);
-    });
+        await db.updateThumbnailInfo(asset.id, widthPx: 6000, heightPx: 2000);
+        expect(isPanorama((await db.assetById(asset.id))!), isTrue);
+      },
+    );
 
     test('isPanorama ist false ohne gespeicherte Maße (alte Assets)', () async {
       final asset = await importPhoto('foto.jpg');
       expect(isPanorama(asset), isFalse);
     });
 
-    test('isEquirectangular360 erkennt nur Seitenverhältnisse nahe 2:1', () async {
-      final asset = await importPhoto('foto.jpg');
+    test(
+      'isEquirectangular360 erkennt nur Seitenverhältnisse nahe 2:1',
+      () async {
+        final asset = await importPhoto('foto.jpg');
 
-      await db.updateThumbnailInfo(asset.id, widthPx: 4000, heightPx: 2000);
-      expect(isEquirectangular360((await db.assetById(asset.id))!), isTrue);
+        await db.updateThumbnailInfo(asset.id, widthPx: 4000, heightPx: 2000);
+        expect(isEquirectangular360((await db.assetById(asset.id))!), isTrue);
 
-      // Genau an der 2.5:1-Schwelle von isPanorama liegt AUSSERHALB des
-      // 360°-Fensters – die beiden Erkennungen überschneiden sich bewusst
-      // (fast) nicht.
-      await db.updateThumbnailInfo(asset.id, widthPx: 5000, heightPx: 2000);
-      expect(isEquirectangular360((await db.assetById(asset.id))!), isFalse);
+        // Genau an der 2.5:1-Schwelle von isPanorama liegt AUSSERHALB des
+        // 360°-Fensters – die beiden Erkennungen überschneiden sich bewusst
+        // (fast) nicht.
+        await db.updateThumbnailInfo(asset.id, widthPx: 5000, heightPx: 2000);
+        expect(isEquirectangular360((await db.assetById(asset.id))!), isFalse);
 
-      await db.updateThumbnailInfo(asset.id, widthPx: 1800, heightPx: 1200);
-      expect(isEquirectangular360((await db.assetById(asset.id))!), isFalse);
-    });
+        await db.updateThumbnailInfo(asset.id, widthPx: 1800, heightPx: 1200);
+        expect(isEquirectangular360((await db.assetById(asset.id))!), isFalse);
+      },
+    );
 
-    test('isEquirectangular360 ist false ohne gespeicherte Maße (alte Assets)', () async {
-      final asset = await importPhoto('foto.jpg');
-      expect(isEquirectangular360(asset), isFalse);
-    });
+    test(
+      'isEquirectangular360 ist false ohne gespeicherte Maße (alte Assets)',
+      () async {
+        final asset = await importPhoto('foto.jpg');
+        expect(isEquirectangular360(asset), isFalse);
+      },
+    );
   });
 }

@@ -28,8 +28,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -37,8 +38,7 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<void> aktivitaet(String id, String name, String art,
-          DateTime wann) =>
+  Future<void> aktivitaet(String id, String name, String art, DateTime wann) =>
       db.aktivitaetAnlegen(
         AktivitaetenCompanion.insert(
           id: id,
@@ -55,13 +55,15 @@ void main() {
     tester.view.physicalSize = const Size(1400, 2600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(body: ExploreScreen(library: library)),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(body: ExploreScreen(library: library)),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
@@ -73,11 +75,21 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  testWidgets('der Abschnitt steht da und trägt die Aktivitäten',
-      (tester) async {
-    await aktivitaet('a1', 'Wanderung Feldberg', 'wanderung',
-        DateTime(2026, 7, 12, 9));
-    await aktivitaet('a2', 'Radtour am See', 'radtour', DateTime(2026, 6, 3, 8));
+  testWidgets('der Abschnitt steht da und trägt die Aktivitäten', (
+    tester,
+  ) async {
+    await aktivitaet(
+      'a1',
+      'Wanderung Feldberg',
+      'wanderung',
+      DateTime(2026, 7, 12, 9),
+    );
+    await aktivitaet(
+      'a2',
+      'Radtour am See',
+      'radtour',
+      DateTime(2026, 6, 3, 8),
+    );
     await zeige(tester);
 
     expect(find.text('Aktivitäten'), findsOneWidget);
@@ -109,8 +121,9 @@ void main() {
     await abbauen(tester);
   });
 
-  testWidgets('ohne Aktivität steht der Abschnitt gar nicht da',
-      (tester) async {
+  testWidgets('ohne Aktivität steht der Abschnitt gar nicht da', (
+    tester,
+  ) async {
     // **Die Regel hat sich geaendert.** Vorher stand unter der
     // Ueberschrift ein Satz („Noch keine Aktivität") und daneben ein
     // Knopf „Alle anzeigen", der in eine leere Liste fuehrte. Fuenf
@@ -123,8 +136,12 @@ void main() {
   });
 
   testWidgets('eine Kachel führt in die Aktivität', (tester) async {
-    await aktivitaet('a1', 'Wanderung Feldberg', 'wanderung',
-        DateTime(2026, 7, 12, 9));
+    await aktivitaet(
+      'a1',
+      'Wanderung Feldberg',
+      'wanderung',
+      DateTime(2026, 7, 12, 9),
+    );
     await zeige(tester);
 
     await tester.tap(find.text('Wanderung Feldberg'));
@@ -139,8 +156,10 @@ void main() {
     await aktivitaet('neu', 'Neue Tour', 'radtour', DateTime(2026, 8, 1, 9));
     await zeige(tester);
 
-    expect(tester.getRect(find.text('Neue Tour')).left,
-        lessThan(tester.getRect(find.text('Alte Tour')).left));
+    expect(
+      tester.getRect(find.text('Neue Tour')).left,
+      lessThan(tester.getRect(find.text('Alte Tour')).left),
+    );
     await abbauen(tester);
   });
 }

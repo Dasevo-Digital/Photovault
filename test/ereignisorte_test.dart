@@ -18,29 +18,39 @@ void main() {
   Future<void> personAnlegen(String id) =>
       db.createPerson(PeopleCompanion.insert(id: id, name: 'Person $id'));
 
-  Future<void> ereignis(String id,
-      {String? ort, double? breite, double? laenge}) =>
-      db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-        id: id,
-        personId: 'p1',
-        art: 'hochzeit',
-        ort: Value(ort),
-        ortBreite: Value(breite),
-        ortLaenge: Value(laenge),
-      ));
+  Future<void> ereignis(
+    String id, {
+    String? ort,
+    double? breite,
+    double? laenge,
+  }) => db.fuegeEreignisHinzu(
+    LebensereignisseCompanion.insert(
+      id: id,
+      personId: 'p1',
+      art: 'hochzeit',
+      ort: Value(ort),
+      ortBreite: Value(breite),
+      ortLaenge: Value(laenge),
+    ),
+  );
 
   setUp(() => personAnlegen('p1'));
 
-  test('ohne Koordinate heisst: hat einen Ortsnamen, aber keinen Punkt',
-      () async {
-    await ereignis('e1', ort: 'Berlin');
-    await ereignis('e2', ort: 'Wien', breite: 48.2, laenge: 16.37);
-    await ereignis('e3');
+  test(
+    'ohne Koordinate heisst: hat einen Ortsnamen, aber keinen Punkt',
+    () async {
+      await ereignis('e1', ort: 'Berlin');
+      await ereignis('e2', ort: 'Wien', breite: 48.2, laenge: 16.37);
+      await ereignis('e3');
 
-    final offen = await db.ereignisseOhneKoordinate();
-    expect(offen.map((e) => e.id), ['e1'],
-        reason: 'e2 hat schon einen Punkt, e3 gar keinen Ort');
-  });
+      final offen = await db.ereignisseOhneKoordinate();
+      expect(
+        offen.map((e) => e.id),
+        ['e1'],
+        reason: 'e2 hat schon einen Punkt, e3 gar keinen Ort',
+      );
+    },
+  );
 
   test('ein leerer Ortsname zaehlt nicht als Ort', () async {
     // Sonst liefe die Ortssuche bei jedem Start über Zeilen, in denen
@@ -57,8 +67,11 @@ void main() {
     expect(mit, hasLength(1));
     expect(mit.single.ortBreite, closeTo(52.52, 0.001));
     expect(mit.single.ortLaenge, closeTo(13.41, 0.001));
-    expect(mit.single.ort, 'Berlin',
-        reason: 'der aufgeschriebene Name bleibt unangetastet');
+    expect(
+      mit.single.ort,
+      'Berlin',
+      reason: 'der aufgeschriebene Name bleibt unangetastet',
+    );
   });
 
   test('eine gesetzte Koordinate faellt aus dem Nachtragen heraus', () async {
@@ -69,8 +82,11 @@ void main() {
     expect(await db.ereignisseOhneKoordinate(), hasLength(1));
 
     await db.setzeEreignisort('e1', breite: 39.79, laenge: -89.64);
-    expect(await db.ereignisseOhneKoordinate(), isEmpty,
-        reason: 'ab jetzt gilt die Berichtigung');
+    expect(
+      await db.ereignisseOhneKoordinate(),
+      isEmpty,
+      reason: 'ab jetzt gilt die Berichtigung',
+    );
   });
 
   test('eine Koordinate laesst sich auch wieder wegnehmen', () async {
@@ -82,8 +98,11 @@ void main() {
 
     expect(await db.ereignisseMitKoordinate(), isEmpty);
     final offen = await db.ereignisseOhneKoordinate();
-    expect(offen.single.ort, 'Berlin',
-        reason: 'der Name bleibt, nur der Punkt ist weg');
+    expect(
+      offen.single.ort,
+      'Berlin',
+      reason: 'der Name bleibt, nur der Punkt ist weg',
+    );
   });
 
   test('die Fassung mit den Ortsspalten ist erreicht', () async {

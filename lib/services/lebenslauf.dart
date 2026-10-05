@@ -17,11 +17,11 @@ enum Ereignisart { hochzeit, umzug, beruf, ausbildung, sonstiges }
 String ereignisartZuText(Ereignisart a) => a.name;
 
 Ereignisart ereignisartAusText(String text) => Ereignisart.values.firstWhere(
-      (a) => a.name == text,
-      // Ein unbekannter Wert – etwa aus einer neueren Fassung – wird zu
-      // „sonstiges“ statt zu einem Absturz. Der Eintrag bleibt lesbar.
-      orElse: () => Ereignisart.sonstiges,
-    );
+  (a) => a.name == text,
+  // Ein unbekannter Wert – etwa aus einer neueren Fassung – wird zu
+  // „sonstiges“ statt zu einem Absturz. Der Eintrag bleibt lesbar.
+  orElse: () => Ereignisart.sonstiges,
+);
 
 /// Eine Zeile im Lebenslauf.
 class Lebenszeile {

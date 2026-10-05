@@ -36,8 +36,7 @@ double wischZoomStufe({
 }
 
 /// Ob diese Geste ein Wischen ist und kein Kneifen.
-bool istWischen(double skala) =>
-    (skala - 1).abs() <= wischKneifSchwelle;
+bool istWischen(double skala) => (skala - 1).abs() <= wischKneifSchwelle;
 
 /// Legt Wisch-Zoom über eine Karte.
 ///
@@ -101,35 +100,35 @@ class _WischZoomState extends State<WischZoom> {
 
   @override
   Widget build(BuildContext context) => Listener(
-        onPointerPanZoomStart: (_) {
-          final kamera = widget.steuerung.camera;
-          _startZoom = kamera.zoom;
-          _startMitte = kamera.center;
-        },
-        onPointerPanZoomUpdate: (ereignis) {
-          final startZoom = _startZoom;
-          final startMitte = _startMitte;
-          if (startZoom == null || startMitte == null) return;
-          if (!istWischen(ereignis.scale)) return;
+    onPointerPanZoomStart: (_) {
+      final kamera = widget.steuerung.camera;
+      _startZoom = kamera.zoom;
+      _startMitte = kamera.center;
+    },
+    onPointerPanZoomUpdate: (ereignis) {
+      final startZoom = _startZoom;
+      final startMitte = _startMitte;
+      if (startZoom == null || startMitte == null) return;
+      if (!istWischen(ereignis.scale)) return;
 
-          final neu = wischZoomStufe(
-            startZoom: startZoom,
-            wischWegY: ereignis.pan.dy,
-            kleinsterZoom: widget.kleinsterZoom,
-            groesserZoom: widget.groesserZoom,
-          );
-          // Die Mitte wird ausdrücklich mitgesetzt: Sie nimmt zurück,
-          // was die Karte aus derselben Geste als Verschiebung gemacht
-          // hat. Und zwar NACH ihr – siehe die Erklärung oben.
-          scheduleMicrotask(() {
-            if (!mounted || _startZoom == null) return;
-            widget.steuerung.move(startMitte, neu);
-          });
-        },
-        onPointerPanZoomEnd: (_) {
-          _startZoom = null;
-          _startMitte = null;
-        },
-        child: widget.child,
+      final neu = wischZoomStufe(
+        startZoom: startZoom,
+        wischWegY: ereignis.pan.dy,
+        kleinsterZoom: widget.kleinsterZoom,
+        groesserZoom: widget.groesserZoom,
       );
+      // Die Mitte wird ausdrücklich mitgesetzt: Sie nimmt zurück,
+      // was die Karte aus derselben Geste als Verschiebung gemacht
+      // hat. Und zwar NACH ihr – siehe die Erklärung oben.
+      scheduleMicrotask(() {
+        if (!mounted || _startZoom == null) return;
+        widget.steuerung.move(startMitte, neu);
+      });
+    },
+    onPointerPanZoomEnd: (_) {
+      _startZoom = null;
+      _startMitte = null;
+    },
+    child: widget.child,
+  );
 }

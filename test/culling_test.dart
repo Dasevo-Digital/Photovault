@@ -20,7 +20,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('photo_vault_culling_test_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     import = ImportService(db, paths);
   });
 
@@ -30,11 +32,15 @@ void main() {
   });
 
   Future<AssetData> importPhoto(String name, {DateTime? createdAt}) async {
-    final incoming = Directory(p.join(tempRoot.path, 'incoming'))..createSync(recursive: true);
-    final file = File(p.join(incoming.path, name))..writeAsBytesSync([1, 2, 3, nextByte++]);
+    final incoming = Directory(p.join(tempRoot.path, 'incoming'))
+      ..createSync(recursive: true);
+    final file = File(p.join(incoming.path, name))
+      ..writeAsBytesSync([1, 2, 3, nextByte++]);
     final result = await import.importFile(file.path);
     expect(result.outcome, ImportOutcome.imported);
-    if (createdAt != null) await db.setFileCreatedAt(result.assetId!, createdAt);
+    if (createdAt != null) {
+      await db.setFileCreatedAt(result.assetId!, createdAt);
+    }
     return (await db.assetById(result.assetId!))!;
   }
 

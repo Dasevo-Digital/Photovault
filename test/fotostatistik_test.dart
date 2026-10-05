@@ -2,9 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/fotostatistik.dart';
 
 /// Die Auswertung der Bilder statt der Kirchenbücher.
-Fotoauftritt _a(String person, String bild, int jahr,
-        [int monat = 6, int tag = 1]) =>
-    (personId: person, assetId: bild, zeit: DateTime(jahr, monat, tag));
+Fotoauftritt _a(
+  String person,
+  String bild,
+  int jahr, [
+  int monat = 6,
+  int tag = 1,
+]) => (personId: person, assetId: bild, zeit: DateTime(jahr, monat, tag));
 
 void main() {
   test('ohne Auftritte ist die Auswertung leer, nicht falsch', () {
@@ -54,8 +58,7 @@ void main() {
     expect(s.personen.single.aufnahmen, 1);
   });
 
-  test('erste und letzte Aufnahme, und wie viele Jahre dazwischen liegen',
-      () {
+  test('erste und letzte Aufnahme, und wie viele Jahre dazwischen liegen', () {
     final s = fotostatistik(
       auftritte: [
         _a('anna', 'b2', 2026, 8, 20),
@@ -93,9 +96,12 @@ void main() {
   test('gemeinsame Auftritte, Paar nur einmal', () {
     final s = fotostatistik(
       auftritte: [
-        _a('anna', 'b1', 2020), _a('bert', 'b1', 2020),
-        _a('anna', 'b2', 2021), _a('bert', 'b2', 2021),
-        _a('anna', 'b3', 2022), _a('cara', 'b3', 2022),
+        _a('anna', 'b1', 2020),
+        _a('bert', 'b1', 2020),
+        _a('anna', 'b2', 2021),
+        _a('bert', 'b2', 2021),
+        _a('anna', 'b3', 2022),
+        _a('cara', 'b3', 2022),
       ],
       betrachtet: {'anna', 'bert', 'cara'},
     );
@@ -131,9 +137,7 @@ void main() {
 
   test('die Zahl der Paare laesst sich deckeln', () {
     final s = fotostatistik(
-      auftritte: [
-        for (var i = 0; i < 5; i++) _a('p$i', 'gruppe', 2020),
-      ],
+      auftritte: [for (var i = 0; i < 5; i++) _a('p$i', 'gruppe', 2020)],
       betrachtet: {for (var i = 0; i < 5; i++) 'p$i'},
       hoechstensPaare: 3,
     );
@@ -144,10 +148,7 @@ void main() {
   test('bei gleicher Zahl entscheidet der Name, nicht der Zufall', () {
     // Ohne feste Reihenfolge sprangen die Zeilen bei jedem Aufbau.
     final s = fotostatistik(
-      auftritte: [
-        _a('zora', 'b1', 2020),
-        _a('anna', 'b2', 2020),
-      ],
+      auftritte: [_a('zora', 'b1', 2020), _a('anna', 'b2', 2020)],
       betrachtet: {'zora', 'anna'},
     );
     expect([for (final p in s.personen) p.personId], ['anna', 'zora']);
@@ -156,7 +157,8 @@ void main() {
   test('die Jahresverteilung zaehlt Bilder, nicht Gesichter', () {
     final s = fotostatistik(
       auftritte: [
-        _a('a', 'b1', 2020), _a('b', 'b1', 2020),
+        _a('a', 'b1', 2020),
+        _a('b', 'b1', 2020),
         _a('a', 'b2', 2020),
         _a('a', 'b3', 2021),
       ],

@@ -96,8 +96,14 @@ Future<void> _ladeSchrift(WidgetTester tester) async {
 String? _sucheSymbolschrift() {
   var ordner = File(Platform.resolvedExecutable).parent;
   for (var i = 0; i < 8; i++) {
-    final kandidat = File(p.join(
-        ordner.path, 'artifacts', 'material_fonts', 'MaterialIcons-Regular.otf'));
+    final kandidat = File(
+      p.join(
+        ordner.path,
+        'artifacts',
+        'material_fonts',
+        'MaterialIcons-Regular.otf',
+      ),
+    );
     if (kandidat.existsSync()) return kandidat.path;
     final oben = ordner.parent;
     if (oben.path == ordner.path) break;
@@ -133,7 +139,9 @@ void main() {
     // ein Werkzeug, kein Auslieferungscode, und braucht denselben
     // Wegwerf-Speicherort wie ein Test.
     // ignore: invalid_use_of_visible_for_testing_member
-    final paths = await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -143,36 +151,42 @@ void main() {
     // dass alle Eigenheiten der Ansicht sichtbar werden: zwei Elternteile
     // je Zweig, Geschwister, Partner, Kinder, ein Adoptivelternteil und
     // eine Seitenlinie mit Nichte.
-    for (final (id, name, jahr, tot, g) in <(String, String, int, int?, String?)>[
-      ('urgross1', 'Wilhelm Hauser', 1878, 1951, 'm'),
-      ('urgross2', 'Therese Hauser', 1881, 1962, 'w'),
-      ('opa', 'Friedrich Hauser', 1907, 1984, 'm'),
-      ('oma', 'Elisabeth Hauser', 1911, 1996, 'w'),
-      ('opa2', 'Karl Brandt', 1905, 1978, 'm'),
-      ('oma2', 'Johanna Brandt', 1913, 2001, 'w'),
-      ('vater', 'Ernst Hauser', 1938, 2019, 'm'),
-      ('mutter', 'Margarete Hauser', 1941, null, 'w'),
-      ('ziehmutter', 'Hedwig Vogt', 1936, 2011, 'w'),
-      ('ich', 'Anna Hauser', 1968, null, 'w'),
-      ('bruder', 'Thomas Hauser', 1971, null, 'm'),
-      ('gatte', 'Peter Reimann', 1965, null, 'm'),
-      ('schwaegerin', 'Ruth Hauser', 1974, null, 'w'),
-      ('kind1', 'Lena Reimann', 1996, null, 'w'),
-      ('kind2', 'Jonas Reimann', 1999, null, 'm'),
-      ('nichte', 'Sophie Hauser', 2001, null, 'w'),
-      ('enkel', 'Mia Reimann', 2022, null, 'w'),
-    ]) {
-      await db.createPerson(PeopleCompanion.insert(
-        id: id,
-        name: name,
-        geburtsdatum: Value(DateTime(jahr)),
-        sterbedatum: Value(tot == null ? null : DateTime(tot)),
-        geschlecht: Value(g),
-      ));
+    for (final (id, name, jahr, tot, g)
+        in <(String, String, int, int?, String?)>[
+          ('urgross1', 'Wilhelm Hauser', 1878, 1951, 'm'),
+          ('urgross2', 'Therese Hauser', 1881, 1962, 'w'),
+          ('opa', 'Friedrich Hauser', 1907, 1984, 'm'),
+          ('oma', 'Elisabeth Hauser', 1911, 1996, 'w'),
+          ('opa2', 'Karl Brandt', 1905, 1978, 'm'),
+          ('oma2', 'Johanna Brandt', 1913, 2001, 'w'),
+          ('vater', 'Ernst Hauser', 1938, 2019, 'm'),
+          ('mutter', 'Margarete Hauser', 1941, null, 'w'),
+          ('ziehmutter', 'Hedwig Vogt', 1936, 2011, 'w'),
+          ('ich', 'Anna Hauser', 1968, null, 'w'),
+          ('bruder', 'Thomas Hauser', 1971, null, 'm'),
+          ('gatte', 'Peter Reimann', 1965, null, 'm'),
+          ('schwaegerin', 'Ruth Hauser', 1974, null, 'w'),
+          ('kind1', 'Lena Reimann', 1996, null, 'w'),
+          ('kind2', 'Jonas Reimann', 1999, null, 'm'),
+          ('nichte', 'Sophie Hauser', 2001, null, 'w'),
+          ('enkel', 'Mia Reimann', 2022, null, 'w'),
+        ]) {
+      await db.createPerson(
+        PeopleCompanion.insert(
+          id: id,
+          name: name,
+          geburtsdatum: Value(DateTime(jahr)),
+          sterbedatum: Value(tot == null ? null : DateTime(tot)),
+          geschlecht: Value(g),
+        ),
+      );
     }
 
-    Future<void> eltern(String kind, String e, [Verwandtschaft art = Verwandtschaft.elternteil]) =>
-        db.fuegeBeziehungHinzu(kind, e, art);
+    Future<void> eltern(
+      String kind,
+      String e, [
+      Verwandtschaft art = Verwandtschaft.elternteil,
+    ]) => db.fuegeBeziehungHinzu(kind, e, art);
 
     await eltern('opa', 'urgross1');
     await eltern('opa', 'urgross2');
@@ -195,7 +209,11 @@ void main() {
     await eltern('enkel', 'kind1');
     await db.fuegeBeziehungHinzu('ich', 'gatte', Verwandtschaft.partner);
     await db.fuegeBeziehungHinzu('vater', 'mutter', Verwandtschaft.partner);
-    await db.fuegeBeziehungHinzu('bruder', 'schwaegerin', Verwandtschaft.partner);
+    await db.fuegeBeziehungHinzu(
+      'bruder',
+      'schwaegerin',
+      Verwandtschaft.partner,
+    );
   });
 
   tearDown(() async {
@@ -203,25 +221,32 @@ void main() {
     temp.deleteSync(recursive: true);
   });
 
-  Future<void> zeige(WidgetTester tester, {Size groesse = const Size(_breite, _hoehe)}) async {
+  Future<void> zeige(
+    WidgetTester tester, {
+    Size groesse = const Size(_breite, _hoehe),
+  }) async {
     await _ladeSchrift(tester);
     tester.view.physicalSize = groesse;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     final thema = buildDarkTheme();
-    await tester.pumpWidget(MaterialApp(
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: thema.copyWith(
-        textTheme: thema.textTheme.apply(fontFamily: 'Beschriftung'),
-        primaryTextTheme: thema.primaryTextTheme.apply(fontFamily: 'Beschriftung'),
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: thema.copyWith(
+          textTheme: thema.textTheme.apply(fontFamily: 'Beschriftung'),
+          primaryTextTheme: thema.primaryTextTheme.apply(
+            fontFamily: 'Beschriftung',
+          ),
+        ),
+        home: RepaintBoundary(
+          child: StammbaumScreen(library: library, startPersonId: 'ich'),
+        ),
       ),
-      home: RepaintBoundary(
-        child: StammbaumScreen(library: library, startPersonId: 'ich'),
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -234,7 +259,11 @@ void main() {
     // Flacher als die übrigen: Der Ausschnitt um eine Person ist breit
     // und niedrig, in einem 4:3-Fenster bliebe oben und unten viel Leere.
     await zeige(tester, groesse: const Size(_breite, 820));
-    await _schreibe(tester, find.byType(RepaintBoundary).first, 'stammbaum.png');
+    await _schreibe(
+      tester,
+      find.byType(RepaintBoundary).first,
+      'stammbaum.png',
+    );
   });
 
   // Vom Fächer gibt es bewusst KEINE Aufnahme. Er beschriftet seine Ringe
@@ -249,12 +278,20 @@ void main() {
   testWidgets('Stammbaum – Sanduhr', (tester) async {
     await zeige(tester, groesse: const Size(_breite, 1050));
     await waehleSicht(tester, 'Sanduhr');
-    await _schreibe(tester, find.byType(RepaintBoundary).first, 'stammbaum-sanduhr.png');
+    await _schreibe(
+      tester,
+      find.byType(RepaintBoundary).first,
+      'stammbaum-sanduhr.png',
+    );
   });
 
   testWidgets('Stammbaum – Verwandte', (tester) async {
     await zeige(tester);
     await waehleSicht(tester, 'Verwandte');
-    await _schreibe(tester, find.byType(RepaintBoundary).first, 'stammbaum-verwandte.png');
+    await _schreibe(
+      tester,
+      find.byType(RepaintBoundary).first,
+      'stammbaum-verwandte.png',
+    );
   });
 }

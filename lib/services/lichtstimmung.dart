@@ -160,9 +160,10 @@ const List<Lichtstimmung> lichtstimmungen = [
 ];
 
 /// Die Stimmung zu einer Tageszeit.
-Lichtstimmung stimmungFuer(Tageszeit zeit) =>
-    lichtstimmungen.firstWhere((s) => s.zeit == zeit,
-        orElse: () => stimmungMittag);
+Lichtstimmung stimmungFuer(Tageszeit zeit) => lichtstimmungen.firstWhere(
+  (s) => s.zeit == zeit,
+  orElse: () => stimmungMittag,
+);
 
 /// Die Tageszeit zu einer gemerkten Nummer.
 ///

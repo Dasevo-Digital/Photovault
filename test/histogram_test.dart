@@ -34,16 +34,19 @@ void main() {
     expect(histogram.blue[255], 16 * 16);
   });
 
-  test('reines Rot trifft nur den Rot-Kanal, Luminanz folgt der Luma-Gewichtung', () {
-    final histogram = computeHistogram(_solid(8, 8, 255, 0, 0));
+  test(
+    'reines Rot trifft nur den Rot-Kanal, Luminanz folgt der Luma-Gewichtung',
+    () {
+      final histogram = computeHistogram(_solid(8, 8, 255, 0, 0));
 
-    expect(histogram.red[255], 8 * 8);
-    expect(histogram.green[0], 8 * 8);
-    expect(histogram.blue[0], 8 * 8);
-    // 0,299 * 255 = 76,2 -> gerundet 76. Ein ungewichteter Mittelwert läge
-    // bei 85 – genau der Unterschied, den dieser Test absichert.
-    expect(histogram.luminance[76], 8 * 8);
-  });
+      expect(histogram.red[255], 8 * 8);
+      expect(histogram.green[0], 8 * 8);
+      expect(histogram.blue[0], 8 * 8);
+      // 0,299 * 255 = 76,2 -> gerundet 76. Ein ungewichteter Mittelwert läge
+      // bei 85 – genau der Unterschied, den dieser Test absichert.
+      expect(histogram.luminance[76], 8 * 8);
+    },
+  );
 
   test('reines Grün ist heller als reines Blau (Luma-Gewichtung)', () {
     final green = computeHistogram(_solid(8, 8, 0, 255, 0));
@@ -80,7 +83,11 @@ void main() {
     final histogram = computeHistogram(image);
 
     final usedBins = histogram.luminance.where((v) => v > 0).length;
-    expect(usedBins, greaterThan(200), reason: 'ein voller Verlauf sollte fast alle Stufen belegen');
+    expect(
+      usedBins,
+      greaterThan(200),
+      reason: 'ein voller Verlauf sollte fast alle Stufen belegen',
+    );
   });
 
   test('große Bilder werden vor der Auswertung heruntergerechnet', () {
@@ -97,7 +104,10 @@ void main() {
     final histogram = computeHistogram(_solid(10, 10, 255, 0, 0));
 
     expect(histogram.peakOf([histogram.red]), 100);
-    expect(histogram.peakOf([histogram.red, histogram.green, histogram.blue]), 100);
+    expect(
+      histogram.peakOf([histogram.red, histogram.green, histogram.blue]),
+      100,
+    );
   });
 
   test('leeres Histogramm meldet sich als leer', () {
@@ -118,20 +128,26 @@ void main() {
   });
 
   test('computeHistogramFromBytes gibt null für undekodierbare Daten', () {
-    expect(computeHistogramFromBytes(Uint8List.fromList('kein Bild'.codeUnits)), isNull);
+    expect(
+      computeHistogramFromBytes(Uint8List.fromList('kein Bild'.codeUnits)),
+      isNull,
+    );
   });
 
   // Der Entwickeln-Screen ruft die Berechnung über compute() auf, damit sie
   // den UI-Thread nicht blockiert. Das Ergebnis muss dafür zwischen Isolates
   // übertragbar sein – dieser Test würde fehlschlagen, falls HistogramData
   // je etwas Nicht-Übertragbares aufnimmt.
-  test('das Ergebnis lässt sich über compute() aus einem Isolate zurückgeben', () async {
-    final bytes = img.encodePng(_solid(24, 24, 10, 200, 30));
+  test(
+    'das Ergebnis lässt sich über compute() aus einem Isolate zurückgeben',
+    () async {
+      final bytes = img.encodePng(_solid(24, 24, 10, 200, 30));
 
-    final histogram = await compute(computeHistogramFromBytes, bytes);
+      final histogram = await compute(computeHistogramFromBytes, bytes);
 
-    expect(histogram, isNotNull);
-    expect(histogram!.sampleCount, 24 * 24);
-    expect(histogram.green[200], 24 * 24);
-  });
+      expect(histogram, isNotNull);
+      expect(histogram!.sampleCount, 24 * 24);
+      expect(histogram.green[200], 24 * 24);
+    },
+  );
 }

@@ -38,12 +38,14 @@ void main() {
     test('ist null, wenn der Server selbst doppelt auflöst', () {
       // Eine Adresse mit {r} bekommt die feineren Kacheln geliefert; die
       // Stufe verschiebt sich dann gar nicht.
-      setzeEigeneKarte(const Eigenkarte(
-        name: 'Mit r',
-        url: 'https://beispiel.de/{z}/{x}/{y}{r}.png',
-        nennung: '© Beispiel',
-        zugestimmt: true,
-      ));
+      setzeEigeneKarte(
+        const Eigenkarte(
+          name: 'Mit r',
+          url: 'https://beispiel.de/{z}/{x}/{y}{r}.png',
+          nennung: '© Beispiel',
+          zugestimmt: true,
+        ),
+      );
       expect(stufenversatz(Kartenstil.eigene, 2.0), 0);
     });
 
@@ -82,11 +84,17 @@ void main() {
       const punktdichte = 2.0;
       final s = vorratStufen(Kartenstil.hell, punktdichte);
       final versatz = stufenversatz(Kartenstil.hell, punktdichte);
-      for (var anzeige = vorratKleinsteStufe;
-          anzeige <= vorratGroessteStufe;
-          anzeige++) {
+      for (
+        var anzeige = vorratKleinsteStufe;
+        anzeige <= vorratGroessteStufe;
+        anzeige++
+      ) {
         final gefragt = anzeige + versatz;
-        expect(gefragt, greaterThanOrEqualTo(s.von), reason: 'Anzeige $anzeige');
+        expect(
+          gefragt,
+          greaterThanOrEqualTo(s.von),
+          reason: 'Anzeige $anzeige',
+        );
         expect(gefragt, lessThanOrEqualTo(s.bis), reason: 'Anzeige $anzeige');
       }
     });

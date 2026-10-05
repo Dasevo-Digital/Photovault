@@ -15,33 +15,33 @@ void main() {
   /// Baut den Editor und gibt einen Zugriff auf den jeweils letzten Stand
   /// zurück. Feste Grösse, damit sich Bildschirmkoordinaten ausrechnen
   /// lassen: Das Raster ist quadratisch, also 300×300.
-  Future<({ToneCurve Function() stand, int Function() endeGezaehlt})> baueEditor(
-    WidgetTester tester, {
-    ToneCurve start = ToneCurve.neutral,
-  }) async {
+  Future<({ToneCurve Function() stand, int Function() endeGezaehlt})>
+  baueEditor(WidgetTester tester, {ToneCurve start = ToneCurve.neutral}) async {
     var aktuell = start;
     var enden = 0;
 
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 300,
-            child: StatefulBuilder(
-              builder: (context, setState) => ToneCurveEditor(
-                curve: aktuell,
-                histogram: null,
-                onChanged: (k) => setState(() => aktuell = k),
-                onChangeEnd: () => enden++,
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 300,
+              child: StatefulBuilder(
+                builder: (context, setState) => ToneCurveEditor(
+                  curve: aktuell,
+                  histogram: null,
+                  onChanged: (k) => setState(() => aktuell = k),
+                  onChangeEnd: () => enden++,
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     return (stand: () => aktuell, endeGezaehlt: () => enden);
   }
 
@@ -60,8 +60,9 @@ void main() {
     expect(find.text('Tonwertkurve'), findsOneWidget);
   });
 
-  testWidgets('Ziehen in der Fläche legt einen Punkt an und meldet das Ende',
-      (tester) async {
+  testWidgets('Ziehen in der Fläche legt einen Punkt an und meldet das Ende', (
+    tester,
+  ) async {
     final e = await baueEditor(tester);
 
     await tester.dragFrom(stelle(tester, 0.5, 0.5), const Offset(0, -30));
@@ -71,11 +72,16 @@ void main() {
     expect(punkte, hasLength(3), reason: 'zwei Enden plus der neue Punkt');
     expect(punkte[1].input, closeTo(0.5, 0.05));
     expect(punkte[1].output, greaterThan(0.5), reason: 'nach oben gezogen');
-    expect(e.endeGezaehlt(), 1, reason: 'ein nativer Render nach dem Loslassen');
+    expect(
+      e.endeGezaehlt(),
+      1,
+      reason: 'ein nativer Render nach dem Loslassen',
+    );
   });
 
-  testWidgets('ein Endpunkt bleibt am Rand und lässt sich nur heben',
-      (tester) async {
+  testWidgets('ein Endpunkt bleibt am Rand und lässt sich nur heben', (
+    tester,
+  ) async {
     // Sonst hätte die Kurve einen Bereich ohne Definition – links von
     // einem nach innen gezogenen Startpunkt wüsste niemand, was gilt.
     final e = await baueEditor(tester);
@@ -94,12 +100,14 @@ void main() {
   testWidgets('ein Punkt überholt seine Nachbarn nicht', (tester) async {
     // Eine unsortierte Punktfolge wäre für die Interpolation ein Bruch:
     // Zwei Punkte auf derselben Senkrechten ergäben eine Division durch null.
-    const start = ToneCurve(zusammen: [
-      CurvePoint(0, 0),
-      CurvePoint(0.3, 0.3),
-      CurvePoint(0.6, 0.6),
-      CurvePoint(1, 1),
-    ]);
+    const start = ToneCurve(
+      zusammen: [
+        CurvePoint(0, 0),
+        CurvePoint(0.3, 0.3),
+        CurvePoint(0.6, 0.6),
+        CurvePoint(1, 1),
+      ],
+    );
     final e = await baueEditor(tester, start: start);
 
     // Den mittleren Punkt weit nach rechts über seinen Nachbarn hinaus.
@@ -108,18 +116,20 @@ void main() {
 
     final punkte = e.stand().zusammen;
     for (var i = 1; i < punkte.length; i++) {
-      expect(punkte[i].input, greaterThan(punkte[i - 1].input),
-          reason: 'die Folge muss geordnet bleiben: $punkte');
+      expect(
+        punkte[i].input,
+        greaterThan(punkte[i - 1].input),
+        reason: 'die Folge muss geordnet bleiben: $punkte',
+      );
     }
   });
 
-  testWidgets('langes Drücken entfernt einen Punkt, aber kein Ende',
-      (tester) async {
-    const start = ToneCurve(zusammen: [
-      CurvePoint(0, 0),
-      CurvePoint(0.5, 0.7),
-      CurvePoint(1, 1),
-    ]);
+  testWidgets('langes Drücken entfernt einen Punkt, aber kein Ende', (
+    tester,
+  ) async {
+    const start = ToneCurve(
+      zusammen: [CurvePoint(0, 0), CurvePoint(0.5, 0.7), CurvePoint(1, 1)],
+    );
     final e = await baueEditor(tester, start: start);
 
     await tester.longPressAt(stelle(tester, 0, 0));
@@ -132,8 +142,9 @@ void main() {
     expect(e.stand().istNeutral, isTrue);
   });
 
-  testWidgets('der Kanalwechsel lässt die anderen Kanäle unberührt',
-      (tester) async {
+  testWidgets('der Kanalwechsel lässt die anderen Kanäle unberührt', (
+    tester,
+  ) async {
     final e = await baueEditor(tester);
 
     await tester.tap(find.text('R'));
@@ -147,8 +158,9 @@ void main() {
     expect(e.stand().zusammen, hasLength(2));
   });
 
-  testWidgets('"Kanal zurücksetzen" wirkt nur auf den sichtbaren Kanal',
-      (tester) async {
+  testWidgets('"Kanal zurücksetzen" wirkt nur auf den sichtbaren Kanal', (
+    tester,
+  ) async {
     const start = ToneCurve(
       zusammen: [CurvePoint(0, 0), CurvePoint(0.4, 0.8), CurvePoint(1, 1)],
       blau: [CurvePoint(0, 0.1), CurvePoint(1, 1)],
@@ -162,38 +174,45 @@ void main() {
     expect(e.stand().blau.first.output, 0.1, reason: 'Blau war nicht gemeint');
   });
 
-  testWidgets('bei neutralem Kanal ist Zurücksetzen abgeschaltet', (tester) async {
+  testWidgets('bei neutralem Kanal ist Zurücksetzen abgeschaltet', (
+    tester,
+  ) async {
     await baueEditor(tester);
-    final knopf = tester.widget<TextButton>(find.widgetWithText(TextButton, 'Zurücksetzen'));
+    final knopf = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Zurücksetzen'),
+    );
     expect(knopf.onPressed, isNull);
   });
 
   group('Farbmischer', () {
-    Future<({ColorMixer Function() stand, int Function() endeGezaehlt})> baueMischer(
+    Future<({ColorMixer Function() stand, int Function() endeGezaehlt})>
+    baueMischer(
       WidgetTester tester, {
       ColorMixer start = ColorMixer.neutral,
     }) async {
       var aktuell = start;
       var enden = 0;
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 300,
-              child: StatefulBuilder(
-                builder: (context, setState) => ColorMixerPanel(
-                  mixer: aktuell,
-                  onChanged: (m) => setState(() => aktuell = m),
-                  onChangeEnd: () => enden++,
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(
+                  builder: (context, setState) => ColorMixerPanel(
+                    mixer: aktuell,
+                    onChanged: (m) => setState(() => aktuell = m),
+                    onChangeEnd: () => enden++,
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ));
+      );
       return (stand: () => aktuell, endeGezaehlt: () => enden);
     }
 
@@ -221,7 +240,9 @@ void main() {
       expect(e.endeGezaehlt(), 1);
     });
 
-    testWidgets('"Band zurücksetzen" räumt nur dieses eine Band', (tester) async {
+    testWidgets('"Band zurücksetzen" räumt nur dieses eine Band', (
+      tester,
+    ) async {
       const start = ColorMixer({
         ColorBand.rot: BandAnpassung(farbton: 0.5),
         ColorBand.blau: BandAnpassung(saettigung: -0.5),
@@ -236,10 +257,13 @@ void main() {
       expect(e.stand().band(ColorBand.blau).saettigung, -0.5);
     });
 
-    testWidgets('bei neutralem Band ist Zurücksetzen abgeschaltet', (tester) async {
+    testWidgets('bei neutralem Band ist Zurücksetzen abgeschaltet', (
+      tester,
+    ) async {
       await baueMischer(tester);
-      final knopf =
-          tester.widget<TextButton>(find.widgetWithText(TextButton, 'Zurücksetzen'));
+      final knopf = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Zurücksetzen'),
+      );
       expect(knopf.onPressed, isNull);
     });
   });

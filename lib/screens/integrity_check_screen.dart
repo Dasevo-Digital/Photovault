@@ -76,7 +76,8 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
               FaceCropSnapshot(faceId: f.id, relativePath: f.cropRelativePath!),
         ],
         masks: [
-          for (final m in masks) MaskSnapshot(maskId: m.id, relativePath: m.maskRelativePath),
+          for (final m in masks)
+            MaskSnapshot(maskId: m.id, relativePath: m.maskRelativePath),
         ],
         verifyChecksums: _verifyChecksums,
       );
@@ -96,7 +97,9 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = AppTexte.of(context).integPruefungFehlgeschlagen('$e'));
+      setState(
+        () => _error = AppTexte.of(context).integPruefungFehlgeschlagen('$e'),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -122,9 +125,13 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
     return (pfad: pfad, gesperrt: eintrag.gesperrt);
   }
 
-
   /// Das kleine Bild in der Zeile. Faellt still auf das Zeichen zurueck.
-  Widget _zeilenbild(String? pfad, {required bool gesperrt, required IconData ersatz, required Color farbe}) {
+  Widget _zeilenbild(
+    String? pfad, {
+    required bool gesperrt,
+    required IconData ersatz,
+    required Color farbe,
+  }) {
     if (pfad == null || gesperrt || !flutterKannAnzeigen(pfad)) {
       return Icon(ersatz, color: farbe);
     }
@@ -162,14 +169,18 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                   constraints: const BoxConstraints(maxHeight: 420),
                   child: Image(
                     image: begrenztesBild(
-                        widget.library.paths.absolute(pfad), kante: 840),
+                      widget.library.paths.absolute(pfad),
+                      kante: 840,
+                    ),
                     fit: BoxFit.contain,
                     errorBuilder: (_, _, _) => Text(t.integKeineVorschau),
                   ),
                 ),
               const SizedBox(height: AppSpacing.md),
-              Text(pfad ?? '',
-                  style: Theme.of(dialogKontext).textTheme.bodySmall),
+              Text(
+                pfad ?? '',
+                style: Theme.of(dialogKontext).textTheme.bodySmall,
+              ),
             ],
           ),
         ),
@@ -211,14 +222,14 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
     final confirmed = await confirmDialog(
       context,
       AppTexte.of(context).integAusDbEntfernenTitel,
-      vorschau: _bestaetigungsbild(sicht?.pfad,
-          gesperrt: sicht?.gesperrt ?? false),
+      vorschau: _bestaetigungsbild(
+        sicht?.pfad,
+        gesperrt: sicht?.gesperrt ?? false,
+      ),
       switch (issue.kind) {
-        MissingFileKind.original =>
-          AppTexte.of(context).integOriginalFehlt,
+        MissingFileKind.original => AppTexte.of(context).integOriginalFehlt,
         MissingFileKind.mask => AppTexte.of(context).integMaskeFehlt,
-        MissingFileKind.faceCrop =>
-          AppTexte.of(context).integCropFehlt,
+        MissingFileKind.faceCrop => AppTexte.of(context).integCropFehlt,
         _ => AppTexte.of(context).integPfadEntfernt,
       },
     );
@@ -288,13 +299,15 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       }
     }
     if (!mounted) return;
-    setState(() => _report = IntegrityCheckReport(
-          missingFiles: report.missingFiles,
-          orphanedFiles: const [],
-          checksumMismatches: report.checksumMismatches,
-          encryptedHeaderIssues: report.encryptedHeaderIssues,
-          filesScanned: report.filesScanned,
-        ));
+    setState(
+      () => _report = IntegrityCheckReport(
+        missingFiles: report.missingFiles,
+        orphanedFiles: const [],
+        checksumMismatches: report.checksumMismatches,
+        encryptedHeaderIssues: report.encryptedHeaderIssues,
+        filesScanned: report.filesScanned,
+      ),
+    );
     melde.erfolg(AppTexte.of(context).integVerwaisteGeloescht(geloescht));
   }
 
@@ -302,51 +315,57 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       ? '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(1)} GB'
       : '${(bytes / 1024 / 1024).round()} MB';
 
-  IntegrityCheckReport _withoutMissing(IntegrityCheckReport report, MissingFileIssue issue) =>
-      IntegrityCheckReport(
-        missingFiles: report.missingFiles.where((i) => i != issue).toList(),
-        orphanedFiles: report.orphanedFiles,
-        checksumMismatches: report.checksumMismatches,
-        encryptedHeaderIssues: report.encryptedHeaderIssues,
-        filesScanned: report.filesScanned,
-      );
+  IntegrityCheckReport _withoutMissing(
+    IntegrityCheckReport report,
+    MissingFileIssue issue,
+  ) => IntegrityCheckReport(
+    missingFiles: report.missingFiles.where((i) => i != issue).toList(),
+    orphanedFiles: report.orphanedFiles,
+    checksumMismatches: report.checksumMismatches,
+    encryptedHeaderIssues: report.encryptedHeaderIssues,
+    filesScanned: report.filesScanned,
+  );
 
-  IntegrityCheckReport _withoutOrphan(IntegrityCheckReport report, OrphanedFileIssue issue) =>
-      IntegrityCheckReport(
-        missingFiles: report.missingFiles,
-        orphanedFiles: report.orphanedFiles.where((i) => i != issue).toList(),
-        checksumMismatches: report.checksumMismatches,
-        encryptedHeaderIssues: report.encryptedHeaderIssues,
-        filesScanned: report.filesScanned,
-      );
+  IntegrityCheckReport _withoutOrphan(
+    IntegrityCheckReport report,
+    OrphanedFileIssue issue,
+  ) => IntegrityCheckReport(
+    missingFiles: report.missingFiles,
+    orphanedFiles: report.orphanedFiles.where((i) => i != issue).toList(),
+    checksumMismatches: report.checksumMismatches,
+    encryptedHeaderIssues: report.encryptedHeaderIssues,
+    filesScanned: report.filesScanned,
+  );
 
   Future<void> _openAsset(String assetId) async {
     final asset = await widget.library.db.assetById(assetId);
     if (asset == null || !mounted) return;
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: [asset],
-        initialIndex: 0,
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: [asset],
+          initialIndex: 0,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+        ),
       ),
-    ));
+    );
   }
 
   /// Die Art der fehlenden Datei in der Oberflächensprache. Wie beim
   /// Modellkatalog wandert der Text nicht in die Aufzählung selbst –
   /// `MissingFileKind` stammt aus dem Dienst und kennt keinen Kontext.
   String _kindLabel(AppTexte t, MissingFileKind kind) => switch (kind) {
-        MissingFileKind.original => t.integArtOriginal,
-        MissingFileKind.thumbnail => t.integArtThumbnail,
-        MissingFileKind.preview => t.integArtVorschau,
-        MissingFileKind.developed => t.integArtEntwickelt,
-        MissingFileKind.restored => t.integArtRestauriert,
-        MissingFileKind.trimmed => t.integArtVideoZuschnitt,
-        MissingFileKind.faceCrop => t.integArtGesichtsCrop,
-        MissingFileKind.mask => t.integArtMaske,
-      };
+    MissingFileKind.original => t.integArtOriginal,
+    MissingFileKind.thumbnail => t.integArtThumbnail,
+    MissingFileKind.preview => t.integArtVorschau,
+    MissingFileKind.developed => t.integArtEntwickelt,
+    MissingFileKind.restored => t.integArtRestauriert,
+    MissingFileKind.trimmed => t.integArtVideoZuschnitt,
+    MissingFileKind.faceCrop => t.integArtGesichtsCrop,
+    MissingFileKind.mask => t.integArtMaske,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -364,13 +383,16 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
             child: CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(AppTexte.of(context).integPruefsummen),
-              subtitle: Text(
-                AppTexte.of(context).integPruefsummenHinweis,
-              ),
+              subtitle: Text(AppTexte.of(context).integPruefsummenHinweis),
               value: _verifyChecksums,
               onChanged: _loading
                   ? null
@@ -406,9 +428,15 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle_outline, size: 56, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.check_circle_outline,
+                size: 56,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
-              Text(AppTexte.of(context).integKeineProbleme(report.filesScanned)),
+              Text(
+                AppTexte.of(context).integKeineProbleme(report.filesScanned),
+              ),
             ],
           ),
         ),
@@ -419,40 +447,56 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       children: [
         if (report.missingFiles.isNotEmpty)
           _Section(
-            title: AppTexte.of(context).integFehlendeDateien(report.missingFiles.length),
+            title: AppTexte.of(
+              context,
+            ).integFehlendeDateien(report.missingFiles.length),
             gesamt: report.missingFiles.length,
             children: [
-              for (final issue in report.missingFiles.take(_maxZeilenJeAbschnitt))
-                Builder(builder: (context) {
-                  // Die Datei ist weg, die Zeile steht noch - zu sehen
-                  // gibt es das Vorschaubild der Aufnahme.
-                  final sicht = _vorschauFuer(issue);
-                  final knopf =
-                      _ansehenKnopf(sicht?.pfad, gesperrt: sicht?.gesperrt ?? false);
-                  return ListTile(
-                    leading: _zeilenbild(sicht?.pfad,
+              for (final issue in report.missingFiles.take(
+                _maxZeilenJeAbschnitt,
+              ))
+                Builder(
+                  builder: (context) {
+                    // Die Datei ist weg, die Zeile steht noch - zu sehen
+                    // gibt es das Vorschaubild der Aufnahme.
+                    final sicht = _vorschauFuer(issue);
+                    final knopf = _ansehenKnopf(
+                      sicht?.pfad,
+                      gesperrt: sicht?.gesperrt ?? false,
+                    );
+                    return ListTile(
+                      leading: _zeilenbild(
+                        sicht?.pfad,
                         gesperrt: sicht?.gesperrt ?? false,
                         ersatz: Icons.error_outline,
-                        farbe: context.semantik.warnung),
-                    title: Text(issue.relativePath),
-                    subtitle: Text(_kindLabel(AppTexte.of(context), issue.kind)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ?knopf,
-                        TextButton(
-                          onPressed: () => _removeMissingFromDb(issue),
-                          child: Text(AppTexte.of(context).integAusDbEntfernen),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                        farbe: context.semantik.warnung,
+                      ),
+                      title: Text(issue.relativePath),
+                      subtitle: Text(
+                        _kindLabel(AppTexte.of(context), issue.kind),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ?knopf,
+                          TextButton(
+                            onPressed: () => _removeMissingFromDb(issue),
+                            child: Text(
+                              AppTexte.of(context).integAusDbEntfernen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         if (report.orphanedFiles.isNotEmpty)
           _Section(
-            title: AppTexte.of(context).integVerwaisteDateien(report.orphanedFiles.length),
+            title: AppTexte.of(
+              context,
+            ).integVerwaisteDateien(report.orphanedFiles.length),
             gesamt: report.orphanedFiles.length,
             aktion: TextButton.icon(
               onPressed: _deleteAllOrphaned,
@@ -460,41 +504,58 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
               label: Text(AppTexte.of(context).integAlleVerwaistenLoeschen),
             ),
             children: [
-              for (final issue in report.orphanedFiles.take(_maxZeilenJeAbschnitt))
-                Builder(builder: (context) {
-                  // Hier ist es umgekehrt: Die Zeile fehlt, die Datei
-                  // liegt da - zu sehen gibt es sie selbst.
-                  final knopf =
-                      _ansehenKnopf(issue.relativePath, gesperrt: false);
-                  return ListTile(
-                    leading: _zeilenbild(issue.relativePath,
+              for (final issue in report.orphanedFiles.take(
+                _maxZeilenJeAbschnitt,
+              ))
+                Builder(
+                  builder: (context) {
+                    // Hier ist es umgekehrt: Die Zeile fehlt, die Datei
+                    // liegt da - zu sehen gibt es sie selbst.
+                    final knopf = _ansehenKnopf(
+                      issue.relativePath,
+                      gesperrt: false,
+                    );
+                    return ListTile(
+                      leading: _zeilenbild(
+                        issue.relativePath,
                         gesperrt: false,
                         ersatz: Icons.help_outline,
-                        farbe: context.semantik.warnung),
-                    title: Text(issue.relativePath),
-                    subtitle: Text('${(issue.sizeBytes / 1024).round()} KB'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ?knopf,
-                        TextButton(
-                          onPressed: () => _deleteOrphanedFile(issue),
-                          child: Text(AppTexte.of(context).integDateiLoeschen),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                        farbe: context.semantik.warnung,
+                      ),
+                      title: Text(issue.relativePath),
+                      subtitle: Text('${(issue.sizeBytes / 1024).round()} KB'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ?knopf,
+                          TextButton(
+                            onPressed: () => _deleteOrphanedFile(issue),
+                            child: Text(
+                              AppTexte.of(context).integDateiLoeschen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         if (report.checksumMismatches.isNotEmpty)
           _Section(
-            title: AppTexte.of(context).integAbweichungen(report.checksumMismatches.length),
+            title: AppTexte.of(
+              context,
+            ).integAbweichungen(report.checksumMismatches.length),
             gesamt: report.checksumMismatches.length,
             children: [
-              for (final issue in report.checksumMismatches.take(_maxZeilenJeAbschnitt))
+              for (final issue in report.checksumMismatches.take(
+                _maxZeilenJeAbschnitt,
+              ))
                 ListTile(
-                  leading: Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error),
+                  leading: Icon(
+                    Icons.warning_amber,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   title: Text(issue.relativePath),
                   subtitle: Text(AppTexte.of(context).integInhaltGeaendert),
                   trailing: TextButton(
@@ -506,12 +567,19 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
           ),
         if (report.encryptedHeaderIssues.isNotEmpty)
           _Section(
-            title: AppTexte.of(context).integHeaderProbleme(report.encryptedHeaderIssues.length),
+            title: AppTexte.of(
+              context,
+            ).integHeaderProbleme(report.encryptedHeaderIssues.length),
             gesamt: report.encryptedHeaderIssues.length,
             children: [
-              for (final issue in report.encryptedHeaderIssues.take(_maxZeilenJeAbschnitt))
+              for (final issue in report.encryptedHeaderIssues.take(
+                _maxZeilenJeAbschnitt,
+              ))
                 ListTile(
-                  leading: Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error),
+                  leading: Icon(
+                    Icons.warning_amber,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   title: Text(issue.relativePath),
                   subtitle: Text(AppTexte.of(context).integBeschaedigt),
                 ),
@@ -562,26 +630,31 @@ class _Section extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(title,
-                      style: Theme.of(context).textTheme.titleSmall),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
                 ?aktion,
               ],
             ),
           ),
           Card(
-            child: Column(children: [
-              ...children,
-              if (rest > 0)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Text(
-                    AppTexte.of(context)
-                        .integWeitereEintraege(rest, children.length),
-                    style: Theme.of(context).textTheme.bodySmall,
+            child: Column(
+              children: [
+                ...children,
+                if (rest > 0)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(
+                      AppTexte.of(
+                        context,
+                      ).integWeitereEintraege(rest, children.length),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
-                ),
-            ]),
+              ],
+            ),
           ),
         ],
       ),

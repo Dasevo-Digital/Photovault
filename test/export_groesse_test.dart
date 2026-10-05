@@ -23,7 +23,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_export_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     imp = ImportService(db, paths);
     exporter = ExportService(paths);
     ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
@@ -35,7 +37,8 @@ void main() {
   });
 
   Future<AssetData> importiere(String name, List<int> bytes) async {
-    final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
+    final inc = Directory(p.join(tempRoot.path, 'in'))
+      ..createSync(recursive: true);
     final f = File(p.join(inc.path, name))..writeAsBytesSync(bytes);
     final r = await imp.importFile(f.path);
     return (await db.assetById(r.assetId!))!;
@@ -48,8 +51,11 @@ void main() {
     final name = await exporter.exportAsset(asset, ziel.path);
 
     expect(name, 'urlaub.jpg', reason: 'Name und Endung bleiben');
-    expect(File(p.join(ziel.path, name)).readAsBytesSync(), inhalt,
-        reason: 'ohne Grössenvorgabe wird byteweise kopiert');
+    expect(
+      File(p.join(ziel.path, name)).readAsBytesSync(),
+      inhalt,
+      reason: 'ohne Grössenvorgabe wird byteweise kopiert',
+    );
   });
 
   test('neben dem Original entsteht eine XMP-Datei', () async {
@@ -77,8 +83,11 @@ void main() {
         .where((g) => g.maxKante != null)
         .map((g) => g.maxKante!)
         .toList();
-    expect(kanten, [4096, 2048, 1024],
-        reason: 'absteigend, damit die Liste von "gross" nach "klein" liest');
+    expect(kanten, [
+      4096,
+      2048,
+      1024,
+    ], reason: 'absteigend, damit die Liste von "gross" nach "klein" liest');
     // Die Beschriftungen stehen seit der Übersetzung nicht mehr im Enum,
     // sondern in den Sprachdateien – geprüft wird jetzt, dass für jeden Wert
     // wirklich einer dort steht und keiner durch die Nachschlagetabelle
@@ -94,8 +103,11 @@ void main() {
     final asset = await importiere('film.mov', [9, 9, 9, 9]);
     expect(asset.type, 'VIDEO');
 
-    final name = await exporter.exportAsset(asset, ziel.path,
-        groesse: Exportgroesse.web);
+    final name = await exporter.exportAsset(
+      asset,
+      ziel.path,
+      groesse: Exportgroesse.web,
+    );
 
     expect(name, 'film.mov', reason: 'Endung und Inhalt bleiben');
     expect(File(p.join(ziel.path, name)).readAsBytesSync(), [9, 9, 9, 9]);

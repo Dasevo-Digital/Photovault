@@ -164,7 +164,8 @@ enum Kartenstil {
   /// der Angabe vergrössert flutter_map die Kachel von Stufe 17.
   topo(
     kachelUrl: 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
-    namensnennung: '© OpenStreetMap contributors, SRTM | © opentopomap.org (CC-BY-SA)',
+    namensnennung:
+        '© OpenStreetMap contributors, SRTM | © opentopomap.org (CC-BY-SA)',
     seite: 'https://opentopomap.org/about',
     hoechsteEchteStufe: 17,
   ),
@@ -276,6 +277,7 @@ enum Kartenstil {
 
 const _osmKacheln = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const _osmNennung = '© OpenStreetMap contributors';
+
 /// Die CARTO-Adresse **einschliesslich** des Schlüsselparameters – der
 /// Schlüssel selbst wird angehängt (siehe [Kartenstil.kachelUrl]).
 const _cartoKacheln =
@@ -558,9 +560,11 @@ class ZeitgrenzeClient extends BaseClient {
     // Der eigene Auslöser der Karte muss weiter durchschlagen – siehe
     // Klassenkommentar.
     if (anfrage case Abortable(:final abortTrigger?)) {
-      unawaited(abortTrigger.whenComplete(() {
-        if (!abbruch.isCompleted) abbruch.complete();
-      }));
+      unawaited(
+        abortTrigger.whenComplete(() {
+          if (!abbruch.isCompleted) abbruch.complete();
+        }),
+      );
     }
     stelleUhr();
 
@@ -571,26 +575,37 @@ class ZeitgrenzeClient extends BaseClient {
           // landen unveraendert im Kachelmitschnitt, neben denen von
           // dart:io, und werden nicht uebersetzt.
           ClientException(
-              'Aborted: no response within ${frist.inSeconds} s', anfrage.url),
+            'Aborted: no response within ${frist.inSeconds} s',
+            anfrage.url,
+          ),
           spur,
         );
       }
       Error.throwWithStackTrace(fehler, spur);
     }
 
-    final kopie = AbortableStreamedRequest(anfrage.method, anfrage.url,
-        abortTrigger: abbruch.future)
-      ..followRedirects = anfrage.followRedirects
-      ..headers.addAll(anfrage.headers)
-      ..maxRedirects = anfrage.maxRedirects
-      ..persistentConnection = anfrage.persistentConnection;
+    final kopie =
+        AbortableStreamedRequest(
+            anfrage.method,
+            anfrage.url,
+            abortTrigger: abbruch.future,
+          )
+          ..followRedirects = anfrage.followRedirects
+          ..headers.addAll(anfrage.headers)
+          ..maxRedirects = anfrage.maxRedirects
+          ..persistentConnection = anfrage.persistentConnection;
     if (anfrage.contentLength != null) {
       kopie.contentLength = anfrage.contentLength;
     }
-    unawaited(anfrage.finalize().forEach(kopie.sink.add).then(
-          (_) => kopie.sink.close(),
-          onError: (Object f, StackTrace s) => kopie.sink.addError(f, s),
-        ));
+    unawaited(
+      anfrage
+          .finalize()
+          .forEach(kopie.sink.add)
+          .then(
+            (_) => kopie.sink.close(),
+            onError: (Object f, StackTrace s) => kopie.sink.addError(f, s),
+          ),
+    );
 
     final StreamedResponse antwort;
     try {
@@ -613,10 +628,12 @@ class ZeitgrenzeClient extends BaseClient {
         ausschalten();
         if (wegenFrist) {
           durchgereicht.addError(
-              ClientException(
-                  'Aborted: response body stalled for ${frist.inSeconds} s',
-                  anfrage.url),
-              spur);
+            ClientException(
+              'Aborted: response body stalled for ${frist.inSeconds} s',
+              anfrage.url,
+            ),
+            spur,
+          );
         } else {
           durchgereicht.addError(fehler, spur);
         }
@@ -729,7 +746,7 @@ class FragmentloserSpeicher implements MapCachingProvider {
   /// „Binding has not yet been initialized" um. Genau so ist es beim
   /// ersten Anlauf passiert.
   FragmentloserSpeicher.spaet([MapCachingProvider Function()? bauen])
-      : _bauen = bauen ?? kartenKachelspeicher;
+    : _bauen = bauen ?? kartenKachelspeicher;
 
   final MapCachingProvider Function() _bauen;
   MapCachingProvider? _gebaut;
@@ -872,7 +889,7 @@ class Offlinerueckfall extends BaseClient {
 
 class Nachfassanbieter extends NetworkTileProvider {
   Nachfassanbieter({super.httpClient, FragmentloserSpeicher? lager})
-      : super(cachingProvider: lager ?? kachelLager());
+    : super(cachingProvider: lager ?? kachelLager());
 
   /// Kachel -> wie oft sie schon gescheitert ist. Nur Einträge für
   /// Kacheln, die tatsächlich fehlgeschlagen sind.
@@ -928,23 +945,25 @@ Client? _kachelNetz;
 /// Öffentlich, damit ein Prüfstand ihn gegen einen eigenen Server
 /// laufen lassen kann – die Deckelung ist sonst nirgends abzulesen.
 Client kachelNetzClient() => _kachelNetz ??= Offlinerueckfall(
-      RetryClient(
-        // Die Frist sitzt UNTER dem Mitschnitt und IM RetryClient: unter
-        // dem Mitschnitt, damit ein abgelaufener Abruf dort als Fehlschlag
-        // steht und nicht als Abruf, den es nie gab; im RetryClient, damit
-        // ein schweigender Server einen zweiten Anlauf bekommt, statt die
-        // Kachel gleich grau zu lassen.
-        MitschnittClient(ZeitgrenzeClient(IOClient(kachelHttpClient())),
-            Kachelmitschnitt.instanz),
-        retries: kachelVersuche,
-        when: (antwort) => kachelNochmalVersuchen(antwort.statusCode),
-        whenError: (fehler, _) => kachelFehlerNochmalVersuchen(fehler),
-        delay: kachelWartezeit,
-      ),
-      // Ganz aussen: erst wenn alle Wiederholungen durch sind, wird auf
-      // die Platte zurueckgefallen. Siehe [Offlinerueckfall].
-      kachelLager(),
-    );
+  RetryClient(
+    // Die Frist sitzt UNTER dem Mitschnitt und IM RetryClient: unter
+    // dem Mitschnitt, damit ein abgelaufener Abruf dort als Fehlschlag
+    // steht und nicht als Abruf, den es nie gab; im RetryClient, damit
+    // ein schweigender Server einen zweiten Anlauf bekommt, statt die
+    // Kachel gleich grau zu lassen.
+    MitschnittClient(
+      ZeitgrenzeClient(IOClient(kachelHttpClient())),
+      Kachelmitschnitt.instanz,
+    ),
+    retries: kachelVersuche,
+    when: (antwort) => kachelNochmalVersuchen(antwort.statusCode),
+    whenError: (fehler, _) => kachelFehlerNochmalVersuchen(fehler),
+    delay: kachelWartezeit,
+  ),
+  // Ganz aussen: erst wenn alle Wiederholungen durch sind, wird auf
+  // die Platte zurueckgefallen. Siehe [Offlinerueckfall].
+  kachelLager(),
+);
 
 /// Der `HttpClient` unter allem: gedeckelte Verbindungszahl – und eine
 /// Verbindungsfabrik, deren einzige Aufgabe das Zählen ist.
@@ -990,7 +1009,10 @@ HttpClient kachelHttpClient() => HttpClient()
 /// `HttpClient` erst `CONNECT` und baut den TLS-Tunnel danach selbst auf.
 @visibleForTesting
 Future<ConnectionTask<Socket>> kachelVerbindung(
-    Uri ziel, String? proxyRechner, int? proxyTor) {
+  Uri ziel,
+  String? proxyRechner,
+  int? proxyTor,
+) {
   Kachelmitschnitt.instanz.verbindungGeoeffnet();
   if (proxyRechner != null) {
     return Socket.startConnect(proxyRechner, proxyTor!);
@@ -1077,61 +1099,63 @@ const kachelDrossel = Duration(milliseconds: 200);
 final TileUpdateTransformer kachelTakt = _takt(kachelDrossel);
 
 TileUpdateTransformer _takt(Duration abstand) =>
-    StreamTransformer<TileUpdateEvent, TileUpdateEvent>(
-        (quelle, beiFehlerAbbrechen) {
-  Timer? uhr;
-  TileUpdateEvent? nachzureichen;
-  late final StreamController<TileUpdateEvent> ausgang;
-  StreamSubscription<TileUpdateEvent>? eingang;
+    StreamTransformer<TileUpdateEvent, TileUpdateEvent>((
+      quelle,
+      beiFehlerAbbrechen,
+    ) {
+      Timer? uhr;
+      TileUpdateEvent? nachzureichen;
+      late final StreamController<TileUpdateEvent> ausgang;
+      StreamSubscription<TileUpdateEvent>? eingang;
 
-  void ausschalten() {
-    uhr?.cancel();
-    uhr = null;
-    nachzureichen = null;
-  }
+      void ausschalten() {
+        uhr?.cancel();
+        uhr = null;
+        nachzureichen = null;
+      }
 
-  void durchlassen(TileUpdateEvent ereignis) {
-    ausgang.add(ereignis);
-    uhr = Timer(abstand, () {
-      uhr = null;
-      final offen = nachzureichen;
-      nachzureichen = null;
-      if (offen != null) durchlassen(offen);
-    });
-  }
+      void durchlassen(TileUpdateEvent ereignis) {
+        ausgang.add(ereignis);
+        uhr = Timer(abstand, () {
+          uhr = null;
+          final offen = nachzureichen;
+          nachzureichen = null;
+          if (offen != null) durchlassen(offen);
+        });
+      }
 
-  ausgang = StreamController<TileUpdateEvent>(
-    sync: true,
-    onListen: () {
-      eingang = quelle.listen(
-        (ereignis) {
-          // Ein Tipp bewegt die Karte nicht – genau wie bei den
-          // eingebauten Umformern.
-          if (ereignis.wasTriggeredByTap()) return;
-          if (uhr == null) {
-            durchlassen(ereignis);
-          } else {
-            nachzureichen = ereignis;
-          }
+      ausgang = StreamController<TileUpdateEvent>(
+        sync: true,
+        onListen: () {
+          eingang = quelle.listen(
+            (ereignis) {
+              // Ein Tipp bewegt die Karte nicht – genau wie bei den
+              // eingebauten Umformern.
+              if (ereignis.wasTriggeredByTap()) return;
+              if (uhr == null) {
+                durchlassen(ereignis);
+              } else {
+                nachzureichen = ereignis;
+              }
+            },
+            onError: ausgang.addError,
+            onDone: () {
+              ausschalten();
+              ausgang.close();
+            },
+            cancelOnError: beiFehlerAbbrechen,
+          );
         },
-        onError: ausgang.addError,
-        onDone: () {
+        onPause: () => eingang?.pause(),
+        onResume: () => eingang?.resume(),
+        onCancel: () {
           ausschalten();
-          ausgang.close();
+          return eingang?.cancel();
         },
-        cancelOnError: beiFehlerAbbrechen,
       );
-    },
-    onPause: () => eingang?.pause(),
-    onResume: () => eingang?.resume(),
-    onCancel: () {
-      ausschalten();
-      return eingang?.cancel();
-    },
-  );
 
-  return ausgang.stream.listen(null, cancelOnError: beiFehlerAbbrechen);
-});
+      return ausgang.stream.listen(null, cancelOnError: beiFehlerAbbrechen);
+    });
 
 /// Untergeschobener Anbieter für Tests – sonst `null`.
 ///
@@ -1214,8 +1238,7 @@ TileLayer buildMapTileLayer(
     // Abschaltbar, seit der Preis gemessen ist: 2,6-mal so viele Kacheln
     // je Bildschirm (165 statt 63 auf 1440×900). Siehe
     // `AppSettings.karteHochaufloesend`.
-    retinaMode:
-        _karteHochaufloesend && RetinaMode.isHighDensity(context),
+    retinaMode: _karteHochaufloesend && RetinaMode.isHighDensity(context),
     // OpenTopoMap bittet ausdrücklich um einen aussagekräftigen
     // User-Agent statt der Vorgabe der Bibliothek (siehe [netzkennung]).
     userAgentPackageName: netzkennung,
@@ -1349,17 +1372,17 @@ class _KachelschichtState extends State<Kachelschicht> {
 
   @override
   Widget build(BuildContext context) => buildMapTileLayer(
-        context,
-        stil: widget.stil,
-        runde: _runde,
-        beiFehler: _kachelGescheitert,
-      );
+    context,
+    stil: widget.stil,
+    runde: _runde,
+    beiFehler: _kachelGescheitert,
+  );
 }
 
 Kartenstil _ausTheme(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? Kartenstil.dunkel
-        : Kartenstil.hell;
+    ? Kartenstil.dunkel
+    : Kartenstil.hell;
 
 /// Die höchste Zoomstufe, die für den gerade geltenden Stil sinnvoll ist.
 ///
@@ -1446,8 +1469,7 @@ class _MiniLocationMapState extends State<MiniLocationMap> {
   /// den Wischzoom.
   final _steuerung = MapController();
 
-  bool get _hasLocation =>
-      widget.latitude != null && widget.longitude != null;
+  bool get _hasLocation => widget.latitude != null && widget.longitude != null;
 
   /// Ein Zoomschritt über die Knöpfe.
   ///
@@ -1485,34 +1507,42 @@ class _MiniLocationMapState extends State<MiniLocationMap> {
               steuerung: _steuerung,
               groesserZoom: hoechsteStufe,
               child: FlutterMap(
-              mapController: _steuerung,
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom: _hasLocation ? _pinZoom : _defaultZoom,
-                // Auch hier: ohne Grenze zoomt die Karte ueber die
-                // vorhandenen Kacheln hinaus – siehe
-                // [Kartenstil.hoechsteAnzeigeStufe].
-                maxZoom: hoechsteStufe,
-                onTap: !editable
-                    ? null
-                    : (_, point) =>
-                        widget.onLocationChanged!(point.latitude, point.longitude),
-              ),
-              children: [
-                const Kachelschicht(),
-                buildMapAttribution(context),
-                if (_hasLocation)
-                  MarkerLayer(markers: [
-                    Marker(
-                      point: center,
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.topCenter,
-                      child: const Icon(Icons.location_pin, color: Colors.redAccent, size: 32),
+                mapController: _steuerung,
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: _hasLocation ? _pinZoom : _defaultZoom,
+                  // Auch hier: ohne Grenze zoomt die Karte ueber die
+                  // vorhandenen Kacheln hinaus – siehe
+                  // [Kartenstil.hoechsteAnzeigeStufe].
+                  maxZoom: hoechsteStufe,
+                  onTap: !editable
+                      ? null
+                      : (_, point) => widget.onLocationChanged!(
+                          point.latitude,
+                          point.longitude,
+                        ),
+                ),
+                children: [
+                  const Kachelschicht(),
+                  buildMapAttribution(context),
+                  if (_hasLocation)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: center,
+                          width: 32,
+                          height: 32,
+                          alignment: Alignment.topCenter,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: Colors.redAccent,
+                            size: 32,
+                          ),
+                        ),
+                      ],
                     ),
-                  ]),
-              ],
-            ),
+                ],
+              ),
             ),
             // Die beiden Knöpfe – der Weg, der immer geht, egal welches
             // Zeigegerät angeschlossen ist.
@@ -1535,7 +1565,9 @@ class _MiniLocationMapState extends State<MiniLocationMap> {
                         child: Text(
                           AppTexte.of(context).karteTippenFuerOrt,
                           style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w600),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -1571,13 +1603,15 @@ class _Zoomknoepfe extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _Knopf(
-              symbol: Icons.add,
-              hinweis: t.karteHineinzoomen,
-              beiDruck: beiNaeher),
+            symbol: Icons.add,
+            hinweis: t.karteHineinzoomen,
+            beiDruck: beiNaeher,
+          ),
           _Knopf(
-              symbol: Icons.remove,
-              hinweis: t.karteHerauszoomen,
-              beiDruck: beiWeiter),
+            symbol: Icons.remove,
+            hinweis: t.karteHerauszoomen,
+            beiDruck: beiWeiter,
+          ),
         ],
       ),
     );
@@ -1589,19 +1623,25 @@ class _Knopf extends StatelessWidget {
   final String hinweis;
   final VoidCallback beiDruck;
 
-  const _Knopf(
-      {required this.symbol, required this.hinweis, required this.beiDruck});
+  const _Knopf({
+    required this.symbol,
+    required this.hinweis,
+    required this.beiDruck,
+  });
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: hinweis,
-        child: InkWell(
-          onTap: beiDruck,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(symbol,
-                size: 18, color: Theme.of(context).colorScheme.onSurface),
-          ),
+    message: hinweis,
+    child: InkWell(
+      onTap: beiDruck,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          symbol,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
-      );
+      ),
+    ),
+  );
 }

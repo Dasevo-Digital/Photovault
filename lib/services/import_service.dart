@@ -54,7 +54,8 @@ const _videoExtensions = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'};
 const int videoStandbildKante = 2048;
 
 ({Uint8List jpegBytes, int width, int height})? decodeAndResizeThumbnail(
-    Uint8List bytes) {
+  Uint8List bytes,
+) {
   img.Image? decoded;
   try {
     decoded = img.decodeImage(bytes);
@@ -127,8 +128,11 @@ class ImportService {
     try {
       final ext = p.extension(filePath).toLowerCase();
       if (!_imageExtensions.contains(ext) && !_videoExtensions.contains(ext)) {
-        return ImportResult(filePath, ImportOutcome.failed,
-            error: 'Nicht unterstütztes Format');
+        return ImportResult(
+          filePath,
+          ImportOutcome.failed,
+          error: 'Nicht unterstütztes Format',
+        );
       }
       final sourceFile = File(filePath);
       // **Die Bytes schlagen den Namen.** In der Prüfbibliothek trugen 31
@@ -151,8 +155,8 @@ class ImportService {
       // Panorama sein; es für den Hash komplett im Dart-Heap zu halten ist
       // unnötig. EXIF wird unten ebenfalls über den dateibasierten Leser
       // geholt, und die Dekodierung begrenzt ihren eigenen Lebenszyklus.
-      final checksum =
-          (await sha256.bind(sourceFile.openRead()).first).toString();
+      final checksum = (await sha256.bind(sourceFile.openRead()).first)
+          .toString();
 
       if (await _db.checksumExists(checksum)) {
         return ImportResult(filePath, ImportOutcome.duplicateSkipped);
@@ -174,8 +178,9 @@ class ImportService {
       // und 309 Aufnahmezeitpunkte, die in der Datei standen und nie in
       // der Datenbank ankamen – kein einziges der 440 Videos war richtig
       // datiert.
-      final videoMeta =
-          isImage ? leereVideometadaten : await leseVideoMetadaten(sourceFile);
+      final videoMeta = isImage
+          ? leereVideometadaten
+          : await leseVideoMetadaten(sourceFile);
       final videoOrt = _alsGps(videoMeta.ort);
       // Der Zeitstempel der Datei ist der letzte Ausweg, nicht der zweite:
       // Er ist nach jedem Kopieren, Sichern und Zurückholen der Zeitpunkt
@@ -188,8 +193,11 @@ class ImportService {
       final gemessenesDatum = exifMeta.date ?? videoMeta.zeit?.zeitpunkt;
       final fileCreatedAt = gemessenesDatum ?? await sourceFile.lastModified();
 
-      final relativePath =
-          _paths.originalRelativePath(fileCreatedAt, assetId, ext);
+      final relativePath = _paths.originalRelativePath(
+        fileCreatedAt,
+        assetId,
+        ext,
+      );
       final targetFile = _paths.absolute(relativePath);
       unvollstaendigesOriginal = targetFile;
       await targetFile.parent.create(recursive: true);
@@ -201,39 +209,41 @@ class ImportService {
           ? await generateThumbnailAndPreview(targetFile, assetId, ext)
           : await generateVideoThumbnail(targetFile, assetId);
 
-      await _db.insertAsset(AssetsCompanion.insert(
-        id: assetId,
-        originalFileName: p.basename(filePath),
-        relativePath: relativePath,
-        checksum: checksum,
-        type: isImage ? 'IMAGE' : 'VIDEO',
-        // Aus DEM Namen, unter dem die Datei kam - nicht aus dem
-        // Ablagepfad. Der Ablagepfad traegt eine vereinheitlichte Endung,
-        // und dann stuende bei jedem Foto dasselbe Format.
-        dateiformat: Value(dateiformatAus(p.basename(filePath))),
-        fileCreatedAt: fileCreatedAt,
-        datumGeschaetzt: Value(gemessenesDatum == null),
-        zeitversatzMinuten: Value(exifMeta.versatzMinuten),
-        // Nachgesehen wurde gerade eben – der Nachtrag braucht diese
-        // Datei nie wieder anzufassen.
-        datumGeprueft: const Value(true),
-        importedAt: DateTime.now(),
-        thumbnailRelativePath: Value(thumbResult.thumbnailRelativePath),
-        previewRelativePath: Value(thumbResult.previewRelativePath),
-        widthPx: Value(thumbResult.width),
-        heightPx: Value(thumbResult.height),
-        durationSeconds: Value(thumbResult.durationSeconds),
-        fileSizeBytes: Value(fileSizeBytes),
-        latitude: Value(exifMeta.gps?.latitude ?? videoOrt?.latitude),
-        longitude: Value(exifMeta.gps?.longitude ?? videoOrt?.longitude),
-        cameraMake: Value(exifMeta.camera.make ?? videoMeta.hersteller),
-        cameraModel: Value(exifMeta.camera.model ?? videoMeta.geraet),
-        lensModel: Value(exifMeta.camera.lensModel),
-        focalLengthMm: Value(exifMeta.camera.focalLengthMm),
-        fNumber: Value(exifMeta.camera.fNumber),
-        iso: Value(exifMeta.camera.iso),
-        exposureTimeSeconds: Value(exifMeta.camera.exposureTimeSeconds),
-      ));
+      await _db.insertAsset(
+        AssetsCompanion.insert(
+          id: assetId,
+          originalFileName: p.basename(filePath),
+          relativePath: relativePath,
+          checksum: checksum,
+          type: isImage ? 'IMAGE' : 'VIDEO',
+          // Aus DEM Namen, unter dem die Datei kam - nicht aus dem
+          // Ablagepfad. Der Ablagepfad traegt eine vereinheitlichte Endung,
+          // und dann stuende bei jedem Foto dasselbe Format.
+          dateiformat: Value(dateiformatAus(p.basename(filePath))),
+          fileCreatedAt: fileCreatedAt,
+          datumGeschaetzt: Value(gemessenesDatum == null),
+          zeitversatzMinuten: Value(exifMeta.versatzMinuten),
+          // Nachgesehen wurde gerade eben – der Nachtrag braucht diese
+          // Datei nie wieder anzufassen.
+          datumGeprueft: const Value(true),
+          importedAt: DateTime.now(),
+          thumbnailRelativePath: Value(thumbResult.thumbnailRelativePath),
+          previewRelativePath: Value(thumbResult.previewRelativePath),
+          widthPx: Value(thumbResult.width),
+          heightPx: Value(thumbResult.height),
+          durationSeconds: Value(thumbResult.durationSeconds),
+          fileSizeBytes: Value(fileSizeBytes),
+          latitude: Value(exifMeta.gps?.latitude ?? videoOrt?.latitude),
+          longitude: Value(exifMeta.gps?.longitude ?? videoOrt?.longitude),
+          cameraMake: Value(exifMeta.camera.make ?? videoMeta.hersteller),
+          cameraModel: Value(exifMeta.camera.model ?? videoMeta.geraet),
+          lensModel: Value(exifMeta.camera.lensModel),
+          focalLengthMm: Value(exifMeta.camera.focalLengthMm),
+          fNumber: Value(exifMeta.camera.fNumber),
+          iso: Value(exifMeta.camera.iso),
+          exposureTimeSeconds: Value(exifMeta.camera.exposureTimeSeconds),
+        ),
+      );
       datenbankEintragGespeichert = true;
 
       return ImportResult(filePath, ImportOutcome.imported, assetId: assetId);
@@ -242,7 +252,9 @@ class ImportService {
       // Datei in der Bibliothek zurückbleiben.
       if (!datenbankEintragGespeichert && unvollstaendigeAssetId != null) {
         await _raeumeImportresteAuf(
-            unvollstaendigeAssetId, unvollstaendigesOriginal);
+          unvollstaendigeAssetId,
+          unvollstaendigesOriginal,
+        );
       }
       return ImportResult(filePath, ImportOutcome.failed, error: e.toString());
     }
@@ -284,7 +296,8 @@ class ImportService {
     // Bibliothek liegt eine HEIC-Datei unter dem Namen `.jpg`, und ohne
     // diese Zeile bekäme sie weder Vorschaubild noch Bildmasse.
     final inhalt = await inhaltskennung(sourceFile, alreadyReadBytes);
-    final needsNativeConversion = heicAndRawExtensions.contains(ext) ||
+    final needsNativeConversion =
+        heicAndRawExtensions.contains(ext) ||
         (inhalt != null && heicAndRawExtensions.contains(inhalt));
 
     // Große direkt darstellbare Bilder werden ebenfalls nativ auf eine
@@ -296,8 +309,10 @@ class ImportService {
 
     Uint8List? convertedBytes;
     if (needsNativeConversion || forceBoundedDecode) {
-      convertedBytes = await NativeImageConverter.convertToJpegBytes(sourceFile,
-          maxDimension: 2048);
+      convertedBytes = await NativeImageConverter.convertToJpegBytes(
+        sourceFile,
+        maxDimension: 2048,
+      );
     }
 
     final bytesToDecode =
@@ -356,9 +371,13 @@ class ImportService {
   /// Miniaturgrösse: Die Miniatur entsteht daraus, die Vorschau bleibt
   /// gross genug für Gesichtserkennung und Texterkennung.
   Future<ThumbnailResult> generateVideoThumbnail(
-      File sourceFile, String assetId) async {
-    final native = await NativeImageConverter.generateVideoThumbnail(sourceFile,
-        maxDimension: videoStandbildKante);
+    File sourceFile,
+    String assetId,
+  ) async {
+    final native = await NativeImageConverter.generateVideoThumbnail(
+      sourceFile,
+      maxDimension: videoStandbildKante,
+    );
     if (native == null) return const ThumbnailResult();
 
     final result = await compute(decodeAndResizeThumbnail, native.jpegBytes);
@@ -389,7 +408,8 @@ class ImportService {
   /// wurden). Gibt `null` zurück, wenn keine GPS-Daten vorhanden sind oder
   /// die Datei nicht gelesen werden kann.
   Future<({double latitude, double longitude})?> readGpsLocation(
-      File file) async {
+    File file,
+  ) async {
     final endung = p.extension(file.path).toLowerCase();
     // CR3 zuerst, und dann nicht weiter: `package:exif` liest dort
     // nachweislich gar nichts, ein `readAsBytes` über 31 MB wäre also
@@ -426,12 +446,14 @@ class ImportService {
   /// Beides, weil beides vorkommt: die gewöhnliche `.cr3`, und die Datei,
   /// deren Name etwas anderes behauptet (siehe [inhaltskennung]).
   static Future<bool> _istCr3(
-          File datei, Uint8List? bytes, String endung) async =>
-      endung == '.cr3' || (await inhaltskennung(datei, bytes)) == '.cr3';
+    File datei,
+    Uint8List? bytes,
+    String endung,
+  ) async => endung == '.cr3' || (await inhaltskennung(datei, bytes)) == '.cr3';
 
   static ({double latitude, double longitude})? _alsGps(
-          ({double breite, double laenge})? ort) =>
-      ort == null ? null : (latitude: ort.breite, longitude: ort.laenge);
+    ({double breite, double laenge})? ort,
+  ) => ort == null ? null : (latitude: ort.breite, longitude: ort.laenge);
 
   /// Importiert rekursiv alle unterstützten Dateien aus einem Ordner
   /// (z.B. beim Einbinden einer externen SSD oder eines Kamera-Backups).
@@ -492,7 +514,8 @@ class ImportService {
     // Der native Rückfall unten hilft hier nicht: ImageIO wurde nie nach
     // dem GPS-Wörterbuch gefragt, und `raw-identify` gibt gar keines aus.
     // Siehe [leseCr3Gps].
-    final gps = parseExifGps(tags) ??
+    final gps =
+        parseExifGps(tags) ??
         (await _istCr3(datei, null, endung)
             ? _alsGps(await leseCr3Gps(datei))
             : null);
@@ -508,23 +531,33 @@ class ImportService {
     // gesucht hat. Nur bei einem echten WIDERSPRUCH, nicht bei jeder
     // HEIC-Datei ohne Tags: Sonst löste ein Screenshot ohne EXIF-Daten
     // einen Prozessstart je Datei aus.
-    final widerspruch = datum == null &&
+    final widerspruch =
+        datum == null &&
         kamera.isEmpty &&
         !heicAndRawExtensions.contains(endung) &&
-        heicAndRawExtensions
-            .contains((await inhaltskennung(datei, null)) ?? endung);
+        heicAndRawExtensions.contains(
+          (await inhaltskennung(datei, null)) ?? endung,
+        );
     if (widerspruch ||
         (datum == null &&
             kamera.isEmpty &&
             rawImageExtensions.contains(endung))) {
       final nativ = await NativeImageConverter.readCameraMetadata(datei);
       if (!nativ.isEmpty) {
-        return _ExifMetadata(nativ.zeitpunkt, gps, nativ.kamera,
-            versatzMinuten: zeitversatzAusTags(tags));
+        return _ExifMetadata(
+          nativ.zeitpunkt,
+          gps,
+          nativ.kamera,
+          versatzMinuten: zeitversatzAusTags(tags),
+        );
       }
     }
-    return _ExifMetadata(datum, gps, kamera,
-        versatzMinuten: zeitversatzAusTags(tags));
+    return _ExifMetadata(
+      datum,
+      gps,
+      kamera,
+      versatzMinuten: zeitversatzAusTags(tags),
+    );
   }
 
   /// Liest nur die Kamera-/Objektiv-Angaben aus den EXIF-Daten einer bereits
@@ -717,9 +750,9 @@ class Datumsbefund {
 
   const Datumsbefund(this.zeitpunkt, {this.versatzMinuten}) : lesbar = true;
   const Datumsbefund.unlesbar()
-      : zeitpunkt = null,
-        versatzMinuten = null,
-        lesbar = false;
+    : zeitpunkt = null,
+      versatzMinuten = null,
+      lesbar = false;
 
   /// Die Datei wurde gelesen und trägt kein Aufnahmedatum – nur dann ist
   /// ein Datum in der Datenbank geraten.

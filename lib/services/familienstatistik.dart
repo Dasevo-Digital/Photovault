@@ -40,8 +40,8 @@ int? alterInJahren(DateTime? von, DateTime? bis) {
   if (von == null || bis == null) return null;
   if (bis.isBefore(von)) return null;
   var jahre = bis.year - von.year;
-  final geburtstagWar = bis.month > von.month ||
-      (bis.month == von.month && bis.day >= von.day);
+  final geburtstagWar =
+      bis.month > von.month || (bis.month == von.month && bis.day >= von.day);
   if (!geburtstagWar) jahre--;
   return jahre < 0 ? null : jahre;
 }
@@ -157,12 +157,14 @@ List<({String name, int anzahl})> haeufigkeiten(
     if (n == null || n.isEmpty) continue;
     gezaehlt[n] = (gezaehlt[n] ?? 0) + 1;
   }
-  final liste = [
-    for (final e in gezaehlt.entries) (name: e.key, anzahl: e.value),
-  ]..sort((a, b) {
-      final z = b.anzahl.compareTo(a.anzahl);
-      return z != 0 ? z : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+  final liste =
+      [for (final e in gezaehlt.entries) (name: e.key, anzahl: e.value)]
+        ..sort((a, b) {
+          final z = b.anzahl.compareTo(a.anzahl);
+          return z != 0
+              ? z
+              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
   return liste.take(hoechstens).toList();
 }
 
@@ -236,8 +238,9 @@ Familienstatistik familienstatistik({
     if (stufe == null) continue;
     belegt.putIfAbsent(stufe, () => []).add(p);
   }
-  final aelteste =
-      belegt.keys.isEmpty ? 0 : belegt.keys.reduce((a, b) => a < b ? a : b);
+  final aelteste = belegt.keys.isEmpty
+      ? 0
+      : belegt.keys.reduce((a, b) => a < b ? a : b);
 
   // Die erste datierte Hochzeit je Person. Zweite Ehen bleiben außen
   // vor: „Heiratsalter" meint den Schritt in die erste Ehe, und ein
@@ -261,12 +264,14 @@ Familienstatistik familienstatistik({
 
   return Familienstatistik(
     personen: personen.length,
-    sterbealter:
-        Altersauswertung.aus([for (final p in personen) alterInJahren(p.geburt, p.tod)]),
+    sterbealter: Altersauswertung.aus([
+      for (final p in personen) alterInJahren(p.geburt, p.tod),
+    ]),
     alterJeGeneration: {
       for (final e in belegt.entries)
-        if (Altersauswertung.aus(
-                [for (final p in e.value) alterInJahren(p.geburt, p.tod)])
+        if (Altersauswertung.aus([
+              for (final p in e.value) alterInJahren(p.geburt, p.tod),
+            ])
             case final a when !a.istLeer)
           e.key - aelteste + 1: a,
     },
@@ -276,9 +281,11 @@ Familienstatistik familienstatistik({
           alterInJahren(p.geburt, ersteHochzeit[p.id]),
     ]),
     kinderverteilung: kinder,
-    nachnamen:
-        haeufigkeiten([for (final p in personen) namensteile(p.name).nachname]),
-    vornamen:
-        haeufigkeiten([for (final p in personen) namensteile(p.name).vorname]),
+    nachnamen: haeufigkeiten([
+      for (final p in personen) namensteile(p.name).nachname,
+    ]),
+    vornamen: haeufigkeiten([
+      for (final p in personen) namensteile(p.name).vorname,
+    ]),
   );
 }

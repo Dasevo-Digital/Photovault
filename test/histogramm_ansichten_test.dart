@@ -23,7 +23,8 @@ void main() {
       for (var x = 0; x < 400; x++) {
         final t = x / 399;
         bild.setPixelRgb(
-          x, y,
+          x,
+          y,
           (t * 255).round(),
           (t * 200).round(),
           (t * 120).round(),
@@ -35,23 +36,25 @@ void main() {
 
   Future<void> zeige(WidgetTester tester) async {
     final bild = testbild();
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 360,
-            child: HistogramView(
-              data: computeHistogram(bild),
-              waveform: computeWaveform(bild),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 360,
+              child: HistogramView(
+                data: computeHistogram(bild),
+                waveform: computeWaveform(bild),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -64,20 +67,25 @@ void main() {
     }
   });
 
-  testWidgets('ohne Waveform-Daten bleibt der Kasten leer statt zu stürzen',
-      (tester) async {
+  testWidgets('ohne Waveform-Daten bleibt der Kasten leer statt zu stürzen', (
+    tester,
+  ) async {
     // Der Zustand direkt nach dem Öffnen: Das Histogramm ist da, die
     // Waveform noch nicht.
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SizedBox(
-            width: 360, child: HistogramView(data: computeHistogram(testbild()))),
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SizedBox(
+            width: 360,
+            child: HistogramView(data: computeHistogram(testbild())),
+          ),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Waveform'));
     await tester.pumpAndSettle();

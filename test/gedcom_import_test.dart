@@ -25,10 +25,12 @@ void main() {
       liesGedcom(utf8.encode(inhalt), texte: t);
 
   /// Baut eine Datei aus Zeilen – mit dem Kopf, den jede echte hat.
-  String datei(List<String> zeilen, {String kodierung = 'UTF-8'}) =>
-      ['0 HEAD', '1 CHAR $kodierung', ...zeilen, '0 TRLR']
-          .map((z) => '$z\r\n')
-          .join();
+  String datei(List<String> zeilen, {String kodierung = 'UTF-8'}) => [
+    '0 HEAD',
+    '1 CHAR $kodierung',
+    ...zeilen,
+    '0 TRLR',
+  ].map((z) => '$z\r\n').join();
 
   const einfach = [
     '0 @I1@ INDI',
@@ -64,46 +66,54 @@ void main() {
       expect(hans.geburt, DateTime(1931, 4, 2));
       expect(hans.tod, DateTime(2004, 11, 9));
       expect(e.personen[1].geschlecht, Geschlecht.weiblich);
-      expect(e.personen[2].geschlecht, isNull,
-          reason: 'ohne SEX bleibt es offen, statt zu raten');
+      expect(
+        e.personen[2].geschlecht,
+        isNull,
+        reason: 'ohne SEX bleibt es offen, statt zu raten',
+      );
     });
 
     test('macht aus der Familie wieder Kanten', () {
       final e = lies(datei(einfach));
       expect(
-          e.kanten,
-          containsAll([
-            partnerKanteFuer('I1', 'I2'),
-            kante('I3', 'I1', Verwandtschaft.elternteil),
-            kante('I3', 'I2', Verwandtschaft.elternteil),
-          ]));
+        e.kanten,
+        containsAll([
+          partnerKanteFuer('I1', 'I2'),
+          kante('I3', 'I1', Verwandtschaft.elternteil),
+          kante('I3', 'I2', Verwandtschaft.elternteil),
+        ]),
+      );
       expect(e.kanten, hasLength(3));
     });
 
     test('die Partnerkante steht in ihrer gespeicherten Form', () {
       // Sonst entstünden für dasselbe Paar je nach Reihenfolge in der
       // Datei zwei verschiedene Zeilen.
-      final e = lies(datei([
-        '0 @I2@ INDI',
-        '1 NAME B /B/',
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '0 @F1@ FAM',
-        '1 HUSB @I2@',
-        '1 WIFE @I1@',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I2@ INDI',
+          '1 NAME B /B/',
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '0 @F1@ FAM',
+          '1 HUSB @I2@',
+          '1 WIFE @I1@',
+        ]),
+      );
       expect(e.kanten.single.personId, 'I1');
     });
 
     test('ein Verweis ins Leere wird uebersprungen, nicht geworfen', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '0 @F1@ FAM',
-        '1 HUSB @I1@',
-        '1 WIFE @I99@',
-        '1 CHIL @I98@',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '0 @F1@ FAM',
+          '1 HUSB @I1@',
+          '1 WIFE @I99@',
+          '1 CHIL @I98@',
+        ]),
+      );
       expect(e.kanten, isEmpty);
       expect(e.personen, hasLength(1));
     });
@@ -129,26 +139,25 @@ void main() {
     test('GIVN und SURN gelten nur, wenn die Zeile leer blieb', () {
       // Fremde Programme schreiben oft beides. Beides zu nehmen ergäbe
       // „Anna Meier Anna Meier".
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Anna /Meier/',
-        '2 GIVN Anna',
-        '2 SURN Meier',
-        '0 @I2@ INDI',
-        '1 NAME',
-        '2 GIVN Berta',
-        '2 SURN Schulz',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Anna /Meier/',
+          '2 GIVN Anna',
+          '2 SURN Meier',
+          '0 @I2@ INDI',
+          '1 NAME',
+          '2 GIVN Berta',
+          '2 SURN Schulz',
+        ]),
+      );
       expect(e.personen[0].name, 'Anna Meier');
       expect(e.personen[1].name, 'Berta Schulz');
     });
 
     test('eine Person ohne Namen wird trotzdem angelegt', () {
       // Sie hängt an Verwandtschaften, die sonst mitverschwänden.
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 SEX M',
-      ]));
+      final e = lies(datei(['0 @I1@ INDI', '1 SEX M']));
       expect(e.personen.single.name, t.ohneNamen);
       expect(e.hinweiseMit(GedcomHinweisart.ohneNamen), 1);
     });
@@ -185,20 +194,24 @@ void main() {
     });
 
     test('ein ungenaues Datum kommt in den Bericht', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Anna /Meier/',
-        '1 BIRT',
-        '2 DATE ABT 1900',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Anna /Meier/',
+          '1 BIRT',
+          '2 DATE ABT 1900',
+        ]),
+      );
       expect(e.personen.single.geburt, isNull);
       expect(e.hinweiseMit(GedcomHinweisart.ungenauesDatum), 1);
       expect(e.hinweise.single.einzelheit, contains('ABT 1900'));
     });
 
     test('eine vorangestellte Kalenderangabe stoert nicht', () {
-      expect(deuteDatum('@#DGREGORIAN@ 12 MAY 1875').datum,
-          DateTime(1875, 5, 12));
+      expect(
+        deuteDatum('@#DGREGORIAN@ 12 MAY 1875').datum,
+        DateTime(1875, 5, 12),
+      );
     });
 
     test('Doppeljahre gelten als ungenau', () {
@@ -210,8 +223,11 @@ void main() {
     test('ein leeres Datum ist kein Hinweis', () {
       final d = deuteDatum('   ');
       expect(d.datum, isNull);
-      expect(d.ungenau, isFalse,
-          reason: 'nichts anzugeben ist keine ungenaue Angabe');
+      expect(
+        d.ungenau,
+        isFalse,
+        reason: 'nichts anzugeben ist keine ungenaue Angabe',
+      );
     });
   });
 
@@ -221,8 +237,9 @@ void main() {
       // Ohne diesen Weg ginge gerade der Ortsname verloren, der in
       // fremden Dateien am häufigsten steht.
       final e = lies(datei(einfach));
-      final geburtsort = e.personen.first.ereignisse
-          .firstWhere((x) => x.notiz == t.geburtsort);
+      final geburtsort = e.personen.first.ereignisse.firstWhere(
+        (x) => x.notiz == t.geburtsort,
+      );
       expect(geburtsort.ort, 'Hamburg');
       expect(geburtsort.datum, DateTime(1931, 4, 2));
       expect(geburtsort.art, Ereignisart.sonstiges);
@@ -232,8 +249,9 @@ void main() {
       // Sonst stünde neben jeder Geburt eine leere zweite Zeile.
       final e = lies(datei(einfach));
       expect(
-          e.personen.first.ereignisse.where((x) => x.notiz == t.sterbeort),
-          isEmpty);
+        e.personen.first.ereignisse.where((x) => x.notiz == t.sterbeort),
+        isEmpty,
+      );
     });
 
     test('die Hochzeit geht an beide Partner', () {
@@ -252,24 +270,27 @@ void main() {
     });
 
     test('Beruf und Ausbildung bekommen ihre Art', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '1 OCCU Schmied',
-        '2 PLAC Kiel',
-        '1 EDUC Volksschule',
-        '1 RESI',
-        '2 DATE 1962',
-        '2 PLAC Bremen',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '1 OCCU Schmied',
+          '2 PLAC Kiel',
+          '1 EDUC Volksschule',
+          '1 RESI',
+          '2 DATE 1962',
+          '2 PLAC Bremen',
+        ]),
+      );
       final arten = {for (final x in e.personen.single.ereignisse) x.art};
       expect(arten, {
         Ereignisart.beruf,
         Ereignisart.ausbildung,
         Ereignisart.umzug,
       });
-      final beruf = e.personen.single.ereignisse
-          .firstWhere((x) => x.art == Ereignisart.beruf);
+      final beruf = e.personen.single.ereignisse.firstWhere(
+        (x) => x.art == Ereignisart.beruf,
+      );
       expect(beruf.notiz, 'Schmied');
       expect(beruf.ort, 'Kiel');
     });
@@ -277,30 +298,34 @@ void main() {
 
   group('Adoptiv- und Pflegekanten', () {
     test('PEDI wird gelesen', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Vater /V/',
-        '0 @I2@ INDI',
-        '1 NAME Kind /K/',
-        '1 FAMC @F1@',
-        '2 PEDI adopted',
-        '0 @F1@ FAM',
-        '1 HUSB @I1@',
-        '1 CHIL @I2@',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Vater /V/',
+          '0 @I2@ INDI',
+          '1 NAME Kind /K/',
+          '1 FAMC @F1@',
+          '2 PEDI adopted',
+          '0 @F1@ FAM',
+          '1 HUSB @I1@',
+          '1 CHIL @I2@',
+        ]),
+      );
       expect(e.kanten.single.art, Verwandtschaft.adoptivelternteil);
     });
 
     test('ohne PEDI ist es die leibliche Verbindung', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Vater /V/',
-        '0 @I2@ INDI',
-        '1 NAME Kind /K/',
-        '0 @F1@ FAM',
-        '1 HUSB @I1@',
-        '1 CHIL @I2@',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Vater /V/',
+          '0 @I2@ INDI',
+          '1 NAME Kind /K/',
+          '0 @F1@ FAM',
+          '1 HUSB @I1@',
+          '1 CHIL @I2@',
+        ]),
+      );
       expect(e.kanten.single.art, Verwandtschaft.elternteil);
     });
   });
@@ -310,31 +335,38 @@ void main() {
       // Der Fall, der ohne Prüfung erst viel später auffällt: Jede
       // Auswertung nach oben liefe endlos, und die Datei ist dann längst
       // eingelesen.
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '0 @I2@ INDI',
-        '1 NAME B /B/',
-        '0 @F1@ FAM',
-        '1 HUSB @I1@',
-        '1 CHIL @I2@',
-        '0 @F2@ FAM',
-        '1 HUSB @I2@',
-        '1 CHIL @I1@',
-      ]));
-      expect(e.kanten, hasLength(1),
-          reason: 'die erste Kante steht, die schliessende nicht');
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '0 @I2@ INDI',
+          '1 NAME B /B/',
+          '0 @F1@ FAM',
+          '1 HUSB @I1@',
+          '1 CHIL @I2@',
+          '0 @F2@ FAM',
+          '1 HUSB @I2@',
+          '1 CHIL @I1@',
+        ]),
+      );
+      expect(
+        e.kanten,
+        hasLength(1),
+        reason: 'die erste Kante steht, die schliessende nicht',
+      );
       expect(e.hinweiseMit(GedcomHinweisart.kreisVerhindert), 1);
     });
 
     test('eine Person als eigenes Kind wird abgewiesen', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '0 @F1@ FAM',
-        '1 HUSB @I1@',
-        '1 CHIL @I1@',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '0 @F1@ FAM',
+          '1 HUSB @I1@',
+          '1 CHIL @I1@',
+        ]),
+      );
       expect(e.kanten, isEmpty);
       expect(e.hinweiseMit(GedcomHinweisart.kreisVerhindert), 1);
     });
@@ -342,14 +374,16 @@ void main() {
     test('Unbekanntes wird uebersprungen, nicht geworfen', () {
       // Eine fremde Datei wegen eines einzigen Sondertags abzulehnen
       // hiesse, die brauchbaren dreihundert Personen mit wegzuwerfen.
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME A /A/',
-        '1 _FSID KWZQ-1234',
-        '1 SOUR @S1@',
-        '0 @S1@ SOUR',
-        '1 TITL Kirchenbuch',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME A /A/',
+          '1 _FSID KWZQ-1234',
+          '1 SOUR @S1@',
+          '0 @S1@ SOUR',
+          '1 TITL Kirchenbuch',
+        ]),
+      );
       expect(e.personen, hasLength(1));
       expect(e.hinweiseMit(GedcomHinweisart.uebersprungen), 2);
     });
@@ -358,28 +392,42 @@ void main() {
       // Zwei Datensätze mit derselben Verweisnummer: Die zweite Person
       // wäre über ihre Kennung nicht mehr erreichbar, und jeder Verweis
       // darauf zeigte auf die erste.
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Anna /Meier/',
-        '0 @I1@ INDI',
-        '1 NAME Berta /Schulz/',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Anna /Meier/',
+          '0 @I1@ INDI',
+          '1 NAME Berta /Schulz/',
+        ]),
+      );
       expect(e.personen, hasLength(1));
       expect(e.personen.single.name, 'Anna Meier');
     });
 
     test('ohne HEAD wird abgelehnt', () {
       expect(
-          () => liesGedcom(utf8.encode('0 @I1@ INDI\r\n0 TRLR\r\n'), texte: t),
-          throwsA(isA<GedcomAbbruchFehler>().having(
-              (e) => e.grund, 'grund', GedcomAbbruch.keinKopf)));
+        () => liesGedcom(utf8.encode('0 @I1@ INDI\r\n0 TRLR\r\n'), texte: t),
+        throwsA(
+          isA<GedcomAbbruchFehler>().having(
+            (e) => e.grund,
+            'grund',
+            GedcomAbbruch.keinKopf,
+          ),
+        ),
+      );
     });
 
     test('eine Datei ohne Personen wird abgelehnt', () {
       expect(
-          () => lies(datei(['0 @S1@ SOUR', '1 TITL Nichts'])),
-          throwsA(isA<GedcomAbbruchFehler>().having(
-              (e) => e.grund, 'grund', GedcomAbbruch.keinePersonen)));
+        () => lies(datei(['0 @S1@ SOUR', '1 TITL Nichts'])),
+        throwsA(
+          isA<GedcomAbbruchFehler>().having(
+            (e) => e.grund,
+            'grund',
+            GedcomAbbruch.keinePersonen,
+          ),
+        ),
+      );
     });
   });
 
@@ -396,8 +444,7 @@ void main() {
       for (final zeichen in datei([
         '0 @I1@ INDI',
         '1 NAME Franz /Müller/',
-      ], kodierung: 'ANSI')
-          .codeUnits) {
+      ], kodierung: 'ANSI').codeUnits) {
         bytes.add(zeichen <= 0xFF ? zeichen : 0x3F);
       }
       expect(liesGedcom(bytes, texte: t).personen.single.name, 'Franz Müller');
@@ -416,17 +463,26 @@ void main() {
       // Zeichen VOR den Buchstaben stellt. Ein zerschossener Nachname
       // fällt niemandem mehr auf, wenn er erst in der Datenbank steht.
       expect(
-          () => lies(datei(einfach, kodierung: 'ANSEL')),
-          throwsA(isA<GedcomAbbruchFehler>()
+        () => lies(datei(einfach, kodierung: 'ANSEL')),
+        throwsA(
+          isA<GedcomAbbruchFehler>()
               .having((e) => e.grund, 'grund', GedcomAbbruch.kodierung)
-              .having((e) => e.einzelheit, 'einzelheit', 'ANSEL')));
+              .having((e) => e.einzelheit, 'einzelheit', 'ANSEL'),
+        ),
+      );
     });
 
     test('UTF-16 wird an der Byte-Marke abgelehnt', () {
       expect(
-          () => liesGedcom([0xFF, 0xFE, 0x30, 0x00], texte: t),
-          throwsA(isA<GedcomAbbruchFehler>()
-              .having((e) => e.grund, 'grund', GedcomAbbruch.kodierung)));
+        () => liesGedcom([0xFF, 0xFE, 0x30, 0x00], texte: t),
+        throwsA(
+          isA<GedcomAbbruchFehler>().having(
+            (e) => e.grund,
+            'grund',
+            GedcomAbbruch.kodierung,
+          ),
+        ),
+      );
     });
 
     test('eine falsche Kopfangabe fuehrt nicht zum Absturz', () {
@@ -443,16 +499,20 @@ void main() {
 
   group('Fortsetzungszeilen', () {
     test('CONT und CONC setzen den Wert fort', () {
-      final e = lies(datei([
-        '0 @I1@ INDI',
-        '1 NAME Anna /Meier-',
-        '2 CONC Schulz/',
-        '1 OCCU Lehrerin',
-        '2 CONT an der Volksschule',
-      ]));
+      final e = lies(
+        datei([
+          '0 @I1@ INDI',
+          '1 NAME Anna /Meier-',
+          '2 CONC Schulz/',
+          '1 OCCU Lehrerin',
+          '2 CONT an der Volksschule',
+        ]),
+      );
       expect(e.personen.single.name, 'Anna Meier-Schulz');
-      expect(e.personen.single.ereignisse.single.notiz,
-          'Lehrerin\nan der Volksschule');
+      expect(
+        e.personen.single.ereignisse.single.notiz,
+        'Lehrerin\nan der Volksschule',
+      );
     });
   });
 
@@ -460,16 +520,28 @@ void main() {
     // Der Test, den kein einzelner Fall ersetzt: ausgeben, wieder
     // einlesen, vergleichen. Er prüft beide Seiten gegeneinander, und er
     // läuft ohne fremde Datei.
-    GedcomPerson p(String id, String name,
-            {Geschlecht? g, DateTime? geb, DateTime? tod}) =>
-        (id: id, name: name, geschlecht: g, geburt: geb, tod: tod);
+    GedcomPerson p(
+      String id,
+      String name, {
+      Geschlecht? g,
+      DateTime? geb,
+      DateTime? tod,
+    }) => (id: id, name: name, geschlecht: g, geburt: geb, tod: tod);
 
     final personen = [
-      p('opa', 'Hans Meier',
-          g: Geschlecht.maennlich,
-          geb: DateTime(1931, 4, 2),
-          tod: DateTime(2004, 11, 9)),
-      p('oma', 'Grete Meier', g: Geschlecht.weiblich, geb: DateTime(1934, 7, 15)),
+      p(
+        'opa',
+        'Hans Meier',
+        g: Geschlecht.maennlich,
+        geb: DateTime(1931, 4, 2),
+        tod: DateTime(2004, 11, 9),
+      ),
+      p(
+        'oma',
+        'Grete Meier',
+        g: Geschlecht.weiblich,
+        geb: DateTime(1934, 7, 15),
+      ),
       p('vater', 'Karl Meier', g: Geschlecht.maennlich),
       p('mutter', 'Eva Meier', g: Geschlecht.weiblich),
       p('kind', 'Lena', g: Geschlecht.weiblich),
@@ -488,13 +560,21 @@ void main() {
       kante('pflege', 'mutter', Verwandtschaft.pflegeelternteil),
     ]);
 
-    GedcomEingelesen rundlauf() => lies(schreibeGedcom(personen, netz,
-        erzeuger: gedcomErzeuger, version: '1.10.5'));
+    GedcomEingelesen rundlauf() => lies(
+      schreibeGedcom(
+        personen,
+        netz,
+        erzeuger: gedcomErzeuger,
+        version: '1.10.5',
+      ),
+    );
 
     test('alle Personen kommen zurueck', () {
       final e = rundlauf();
-      expect(e.personen.map((x) => x.name).toSet(),
-          personen.map((x) => x.name).toSet());
+      expect(
+        e.personen.map((x) => x.name).toSet(),
+        personen.map((x) => x.name).toSet(),
+      );
     });
 
     test('Geschlecht und Lebensdaten bleiben erhalten', () {
@@ -503,8 +583,11 @@ void main() {
       expect(nach['Hans Meier']!.geburt, DateTime(1931, 4, 2));
       expect(nach['Hans Meier']!.tod, DateTime(2004, 11, 9));
       expect(nach['Grete Meier']!.geschlecht, Geschlecht.weiblich);
-      expect(nach['Niemand']!.geschlecht, isNull,
-          reason: 'GEDCOM kennt nur F, M und U – aus U wird wieder nichts');
+      expect(
+        nach['Niemand']!.geschlecht,
+        isNull,
+        reason: 'GEDCOM kennt nur F, M und U – aus U wird wieder nichts',
+      );
     });
 
     test('jede Verwandtschaft kommt zurueck', () {
@@ -521,7 +604,7 @@ void main() {
           if (k.art == Verwandtschaft.partner)
             '${([name[k.personId]!, name[k.andereId]!]..sort()).join('|')}|partner'
           else
-            '${name[k.personId]}|${name[k.andereId]}|${k.art.name}'
+            '${name[k.personId]}|${name[k.andereId]}|${k.art.name}',
       };
       expect(nach, {
         'Grete Meier|Hans Meier|partner',
@@ -539,8 +622,12 @@ void main() {
       // Gegenprobe zur vorigen Zeile, mit dem Grund davor: Ohne `2 PEDI`
       // im Export käme Jonas als leibliches Kind zurück – und niemand
       // sähe der Bibliothek an, dass die Angabe verändert wurde.
-      final ausgabe = schreibeGedcom(personen, netz,
-          erzeuger: gedcomErzeuger, version: '1.10.5');
+      final ausgabe = schreibeGedcom(
+        personen,
+        netz,
+        erzeuger: gedcomErzeuger,
+        version: '1.10.5',
+      );
       expect(ausgabe, contains('2 PEDI foster'));
     });
 
@@ -626,8 +713,11 @@ void main() {
     test('das ungefaehre Geburtsjahr bleibt leer und wird gemeldet', () {
       final e = fremd();
       expect(e.personen.first.geburt, isNull);
-      expect(e.personen.first.tod, DateTime(1945, 2, 3),
-          reason: 'das genaue Sterbedatum daneben wird sehr wohl übernommen');
+      expect(
+        e.personen.first.tod,
+        DateTime(1945, 2, 3),
+        reason: 'das genaue Sterbedatum daneben wird sehr wohl übernommen',
+      );
       expect(e.hinweiseMit(GedcomHinweisart.ungenauesDatum), 1);
     });
 
@@ -636,19 +726,18 @@ void main() {
       // hängen an derselben Zeile, aber nur eines von beiden ist
       // unbrauchbar. Königsberg heisst heute anders – umso mehr Grund,
       // den aufgeschriebenen Namen zu behalten.
-      final ort = fremd()
-          .personen
-          .first
-          .ereignisse
-          .firstWhere((x) => x.notiz == t.geburtsort);
+      final ort = fremd().personen.first.ereignisse.firstWhere(
+        (x) => x.notiz == t.geburtsort,
+      );
       expect(ort.ort, 'Königsberg');
       expect(ort.datum, isNull);
     });
 
     test('die Adoption kommt an', () {
       final e = fremd();
-      final adoptiv = e.kanten
-          .where((k) => k.art == Verwandtschaft.adoptivelternteil);
+      final adoptiv = e.kanten.where(
+        (k) => k.art == Verwandtschaft.adoptivelternteil,
+      );
       expect(adoptiv, hasLength(2), reason: 'beide Elternteile der Familie');
     });
 
@@ -659,8 +748,7 @@ void main() {
       // CHAN ist Verwaltung des fremden Programms und steht bewusst
       // NICHT im Bericht – sonst verdeckte das Erwartbare das
       // Bemerkenswerte.
-      expect(
-          e.hinweise.where((h) => h.einzelheit.endsWith('CHAN')), isEmpty);
+      expect(e.hinweise.where((h) => h.einzelheit.endsWith('CHAN')), isEmpty);
     });
   });
 
@@ -692,16 +780,25 @@ void main() {
 
     test('eine Kante ohne beide Enden faellt weg', () {
       expect(
-          mitNeuenKennungen(
-              [kante('I2', 'I9', Verwandtschaft.elternteil)], {'I2': 'aaa'}),
-          isEmpty);
+        mitNeuenKennungen(
+          [kante('I2', 'I9', Verwandtschaft.elternteil)],
+          {'I2': 'aaa'},
+        ),
+        isEmpty,
+      );
     });
   });
 
   group('Doppelte', () {
     ({String kennung, String name, DateTime? geburt}) v(
-            String kennung, String name, [int? jahr]) =>
-        (kennung: kennung, name: name, geburt: jahr == null ? null : DateTime(jahr));
+      String kennung,
+      String name, [
+      int? jahr,
+    ]) => (
+      kennung: kennung,
+      name: name,
+      geburt: jahr == null ? null : DateTime(jahr),
+    );
 
     test('gleicher Name und gleiches Jahr gelten als Verdacht', () {
       final treffer = moeglicheDoppelte(
@@ -715,20 +812,27 @@ void main() {
     test('gleicher Name ohne jedes Jahr zaehlt auch', () {
       // Bei Urgroßeltern kennt kaum jemand das Jahr – und genau dort
       // passiert das doppelte Anlegen.
-      expect(moeglicheDoppelte([v('n1', 'Oma')], [v('b1', 'Oma')]),
-          hasLength(1));
+      expect(
+        moeglicheDoppelte([v('n1', 'Oma')], [v('b1', 'Oma')]),
+        hasLength(1),
+      );
     });
 
     test('ein bekanntes gegen ein unbekanntes Jahr ist kein Verdacht', () {
-      expect(moeglicheDoppelte([v('n1', 'Oma', 1900)], [v('b1', 'Oma')]),
-          isEmpty);
+      expect(
+        moeglicheDoppelte([v('n1', 'Oma', 1900)], [v('b1', 'Oma')]),
+        isEmpty,
+      );
     });
 
     test('verschiedene Namen bleiben ungenannt', () {
       expect(
-          moeglicheDoppelte([v('n1', 'Hans Meier', 1931)],
-              [v('b1', 'Hans Meyer', 1931)]),
-          isEmpty);
+        moeglicheDoppelte(
+          [v('n1', 'Hans Meier', 1931)],
+          [v('b1', 'Hans Meyer', 1931)],
+        ),
+        isEmpty,
+      );
     });
   });
 }

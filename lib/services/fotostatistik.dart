@@ -120,17 +120,19 @@ Fotostatistik fotostatistik({
   for (final e in jePerson.entries) {
     final zeiten = [for (final a in e.value) a.zeit]..sort();
     final g = geburt[e.key];
-    bilanzen.add(Personenbilanz(
-      personId: e.key,
-      // Verschiedene Aufnahmen, nicht Gesichter: Ein Bild, auf dem
-      // dieselbe Person zweimal erkannt wurde, ist trotzdem ein Bild.
-      aufnahmen: {for (final a in e.value) a.assetId}.length,
-      erste: zeiten.first,
-      letzte: zeiten.last,
-      jahre: {for (final z in zeiten) z.year}.length,
-      alterErste: alterInJahren(g, zeiten.first),
-      alterLetzte: alterInJahren(g, zeiten.last),
-    ));
+    bilanzen.add(
+      Personenbilanz(
+        personId: e.key,
+        // Verschiedene Aufnahmen, nicht Gesichter: Ein Bild, auf dem
+        // dieselbe Person zweimal erkannt wurde, ist trotzdem ein Bild.
+        aufnahmen: {for (final a in e.value) a.assetId}.length,
+        erste: zeiten.first,
+        letzte: zeiten.last,
+        jahre: {for (final z in zeiten) z.year}.length,
+        alterErste: alterInJahren(g, zeiten.first),
+        alterLetzte: alterInJahren(g, zeiten.last),
+      ),
+    );
   }
   bilanzen.sort((a, b) {
     final z = b.aufnahmen.compareTo(a.aufnahmen);
@@ -151,15 +153,16 @@ Fotostatistik fotostatistik({
       }
     }
   }
-  final paare = <Gemeinsam>[
-    for (final e in paarzahl.entries)
-      (a: e.key.a, b: e.key.b, aufnahmen: e.value),
-  ]..sort((x, y) {
-      final z = y.aufnahmen.compareTo(x.aufnahmen);
-      if (z != 0) return z;
-      final za = x.a.compareTo(y.a);
-      return za != 0 ? za : x.b.compareTo(y.b);
-    });
+  final paare =
+      <Gemeinsam>[
+        for (final e in paarzahl.entries)
+          (a: e.key.a, b: e.key.b, aufnahmen: e.value),
+      ]..sort((x, y) {
+        final z = y.aufnahmen.compareTo(x.aufnahmen);
+        if (z != 0) return z;
+        final za = x.a.compareTo(y.a);
+        return za != 0 ? za : x.b.compareTo(y.b);
+      });
 
   return Fotostatistik(
     personen: bilanzen,

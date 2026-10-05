@@ -16,15 +16,15 @@ void main() {
   ///        |
   ///   kind, schwester
   Verwandtschaftsnetz familie() => Verwandtschaftsnetz([
-        partnerKanteFuer('opa', 'oma'),
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-        kante('vater', 'oma', Verwandtschaft.elternteil),
-        partnerKanteFuer('vater', 'mutter'),
-        kante('kind', 'vater', Verwandtschaft.elternteil),
-        kante('kind', 'mutter', Verwandtschaft.elternteil),
-        kante('schwester', 'vater', Verwandtschaft.elternteil),
-        kante('schwester', 'mutter', Verwandtschaft.elternteil),
-      ]);
+    partnerKanteFuer('opa', 'oma'),
+    kante('vater', 'opa', Verwandtschaft.elternteil),
+    kante('vater', 'oma', Verwandtschaft.elternteil),
+    partnerKanteFuer('vater', 'mutter'),
+    kante('kind', 'vater', Verwandtschaft.elternteil),
+    kante('kind', 'mutter', Verwandtschaft.elternteil),
+    kante('schwester', 'vater', Verwandtschaft.elternteil),
+    kante('schwester', 'mutter', Verwandtschaft.elternteil),
+  ]);
 
   group('Verwandtschaftsnetz', () {
     test('liest die Gegenrichtung aus derselben Kante', () {
@@ -33,11 +33,14 @@ void main() {
       expect(netz.kinder('vater'), {'kind', 'schwester'});
     });
 
-    test('Partnerschaft gilt in beide Richtungen, obwohl nur einmal gespeichert', () {
-      final netz = familie();
-      expect(netz.partner('vater'), {'mutter'});
-      expect(netz.partner('mutter'), {'vater'});
-    });
+    test(
+      'Partnerschaft gilt in beide Richtungen, obwohl nur einmal gespeichert',
+      () {
+        final netz = familie();
+        expect(netz.partner('vater'), {'mutter'});
+        expect(netz.partner('mutter'), {'vater'});
+      },
+    );
 
     test('Geschwister sind die weiteren Kinder der eigenen Eltern', () {
       expect(familie().geschwister('kind'), {'schwester'});
@@ -57,8 +60,11 @@ void main() {
       final netz = familie();
       expect(netz.istVorfahreVon('opa', 'kind'), isTrue);
       expect(netz.istVorfahreVon('kind', 'opa'), isFalse);
-      expect(netz.istVorfahreVon('kind', 'kind'), isTrue,
-          reason: 'die Person selbst zählt mit');
+      expect(
+        netz.istVorfahreVon('kind', 'kind'),
+        isTrue,
+        reason: 'die Person selbst zählt mit',
+      );
     });
 
     test('kommt aus einem bereits vorhandenen Kreis zurück', () {
@@ -74,38 +80,55 @@ void main() {
 
   group('partnerKanteFuer', () {
     test('ergibt dieselbe Kante, egal in welcher Richtung eingegeben', () {
-      expect(partnerKanteFuer('anna', 'bert'), partnerKanteFuer('bert', 'anna'));
+      expect(
+        partnerKanteFuer('anna', 'bert'),
+        partnerKanteFuer('bert', 'anna'),
+      );
     });
   });
 
   group('pruefeBeziehung', () {
     test('lässt eine neue Verwandtschaft zu', () {
-      expect(pruefeBeziehung(familie(), 'kind', 'fremd', Verwandtschaft.elternteil), isNull);
+      expect(
+        pruefeBeziehung(familie(), 'kind', 'fremd', Verwandtschaft.elternteil),
+        isNull,
+      );
     });
 
     test('weist eine Person mit sich selbst ab', () {
-      expect(pruefeBeziehung(familie(), 'kind', 'kind', Verwandtschaft.elternteil),
-          Beziehungsfehler.mitSichSelbst);
+      expect(
+        pruefeBeziehung(familie(), 'kind', 'kind', Verwandtschaft.elternteil),
+        Beziehungsfehler.mitSichSelbst,
+      );
     });
 
     test('weist einen Kreis ab', () {
       // „kind" als Elternteil von „opa" wäre ein Kreis über drei Stufen.
-      expect(pruefeBeziehung(familie(), 'opa', 'kind', Verwandtschaft.elternteil),
-          Beziehungsfehler.kreis);
+      expect(
+        pruefeBeziehung(familie(), 'opa', 'kind', Verwandtschaft.elternteil),
+        Beziehungsfehler.kreis,
+      );
     });
 
     test('erkennt eine bereits eingetragene Verwandtschaft', () {
-      expect(pruefeBeziehung(familie(), 'kind', 'vater', Verwandtschaft.elternteil),
-          Beziehungsfehler.schonVorhanden);
+      expect(
+        pruefeBeziehung(familie(), 'kind', 'vater', Verwandtschaft.elternteil),
+        Beziehungsfehler.schonVorhanden,
+      );
       // Auch in der Gegenrichtung, in der die Kante gar nicht steht.
-      expect(pruefeBeziehung(familie(), 'mutter', 'vater', Verwandtschaft.partner),
-          Beziehungsfehler.schonVorhanden);
+      expect(
+        pruefeBeziehung(familie(), 'mutter', 'vater', Verwandtschaft.partner),
+        Beziehungsfehler.schonVorhanden,
+      );
     });
 
     test('eine Partnerschaft darf einen Kreis nicht auslösen', () {
       // Partner sind ungerichtet – zwischen ihnen kann es keinen Kreis
       // geben, auch nicht zwischen Vorfahr und Nachkomme.
-      expect(pruefeBeziehung(familie(), 'opa', 'kind', Verwandtschaft.partner), isNull);
+      expect(
+        pruefeBeziehung(familie(), 'opa', 'kind', Verwandtschaft.partner),
+        isNull,
+      );
     });
   });
 
@@ -122,7 +145,10 @@ void main() {
 
     test('hält die vorgegebene Reihenfolge ein', () {
       final a = ausschnittUm(familie(), 'vater', ['opa', 'oma']);
-      expect(a.eltern, ['opa', 'oma'], reason: 'nicht die Reihenfolge der Kanten');
+      expect(a.eltern, [
+        'opa',
+        'oma',
+      ], reason: 'nicht die Reihenfolge der Kanten');
     });
 
     test('meldet Verwandtschaft, die außerhalb des Ausschnitts liegt', () {
@@ -148,7 +174,12 @@ void main() {
         kante('halb', 'vater', Verwandtschaft.elternteil),
         kante('halb', 'andereMutter', Verwandtschaft.elternteil),
       ]);
-      final a = ausschnittUm(netz, 'kind', ['vater', 'kind', 'halb', 'andereMutter']);
+      final a = ausschnittUm(netz, 'kind', [
+        'vater',
+        'kind',
+        'halb',
+        'andereMutter',
+      ]);
       expect(a.geschwister, ['halb']);
       expect(a.weitereOben['halb'], isTrue);
     });
@@ -161,7 +192,9 @@ void main() {
         kante('deins', 'du', Verwandtschaft.elternteil),
       ]);
       final a = ausschnittUm(netz, 'ich', ['ich', 'du', 'unser', 'deins']);
-      expect(a.kinder, ['unser'], reason: 'nur die eigenen Kinder stehen unten');
+      expect(a.kinder, [
+        'unser',
+      ], reason: 'nur die eigenen Kinder stehen unten');
       expect(a.weitereUnten['du'], isTrue);
     });
 
@@ -173,7 +206,10 @@ void main() {
 
   group('lebensspanne', () {
     test('nennt beide Jahre', () {
-      expect(lebensspanne(DateTime(1931, 4, 2), DateTime(2004, 11, 9)), '1931–2004');
+      expect(
+        lebensspanne(DateTime(1931, 4, 2), DateTime(2004, 11, 9)),
+        '1931–2004',
+      );
     });
 
     test('kommt mit nur einer Angabe aus', () {
@@ -205,8 +241,17 @@ void main() {
       kante('kind', 'ich', Verwandtschaft.elternteil),
     ]);
     const alle = [
-      'gattin', 'ich', 'kind', 'mutter', 'neffe', 'oma', 'onkel', 'opa',
-      'schwester', 'schwiegervater', 'vater',
+      'gattin',
+      'ich',
+      'kind',
+      'mutter',
+      'neffe',
+      'oma',
+      'onkel',
+      'opa',
+      'schwester',
+      'schwiegervater',
+      'vater',
     ];
 
     test('ohne Anforderung bleibt der Ausschnitt so schmal wie bisher', () {
@@ -270,8 +315,11 @@ void main() {
             if (anderer == ich) continue;
             final grad = bestimmeGrad(familie, ich, anderer);
             if (grad.art == Gradart.schwager) {
-              expect(a.schwaeger, contains(anderer),
-                  reason: '$anderer ist $ich seine Schwaegerschaft');
+              expect(
+                a.schwaeger,
+                contains(anderer),
+                reason: '$anderer ist $ich seine Schwaegerschaft',
+              );
             }
           }
         }
@@ -290,7 +338,12 @@ void main() {
           partnerKanteFuer('schwester', 'schwager'),
         ]);
         const wer = [
-          'gattin', 'ich', 'schwager', 'schwester', 'schwiegervater', 'vater'
+          'gattin',
+          'ich',
+          'schwager',
+          'schwester',
+          'schwiegervater',
+          'vater',
         ];
         final a = ausschnittUm(doppelt, 'ich', wer, seitenlinien: true);
         // Zwei Wege zu derselben Person – „Partner meiner Schwester" und
@@ -299,9 +352,15 @@ void main() {
         // Und nicht zusaetzlich unter den Schwiegereltern oder sonstwo.
         expect(a.schwiegereltern, ['schwiegervater']);
         final alleGezeigt = [
-          ...a.eltern, ...a.geschwister, ...a.partner, ...a.kinder,
-          ...a.grosseltern, ...a.onkelTanten, ...a.neffenNichten,
-          ...a.schwiegereltern, ...a.schwaeger,
+          ...a.eltern,
+          ...a.geschwister,
+          ...a.partner,
+          ...a.kinder,
+          ...a.grosseltern,
+          ...a.onkelTanten,
+          ...a.neffenNichten,
+          ...a.schwiegereltern,
+          ...a.schwaeger,
         ];
         expect(alleGezeigt.toSet().length, alleGezeigt.length);
       });
@@ -318,9 +377,12 @@ void main() {
         kante('kind', 'ich', Verwandtschaft.elternteil),
         kante('kind', 'schwester', Verwandtschaft.elternteil),
       ]);
-      final a = ausschnittUm(
-          verzwickt, 'ich', const ['ich', 'kind', 'schwester', 'vater'],
-          seitenlinien: true);
+      final a = ausschnittUm(verzwickt, 'ich', const [
+        'ich',
+        'kind',
+        'schwester',
+        'vater',
+      ], seitenlinien: true);
       expect(a.kinder, ['kind']);
       // „kind" steht schon als eigenes Kind da – nicht noch einmal als
       // Neffe.
@@ -344,9 +406,12 @@ void main() {
         kante('vater', 'ahnin', Verwandtschaft.elternteil),
         kante('mutter', 'ahnin', Verwandtschaft.elternteil),
       ]);
-      final a = ausschnittUm(cousins, 'ich',
-          const ['ahnin', 'ich', 'mutter', 'vater'],
-          seitenlinien: true);
+      final a = ausschnittUm(cousins, 'ich', const [
+        'ahnin',
+        'ich',
+        'mutter',
+        'vater',
+      ], seitenlinien: true);
       expect(a.grosseltern, ['ahnin']);
     });
 

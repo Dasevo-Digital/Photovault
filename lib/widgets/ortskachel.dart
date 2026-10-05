@@ -33,7 +33,10 @@ class Uebersichtskopf extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final farben = Theme.of(context).colorScheme;
-    final gefuellt = [for (final z in zahlen) if (z.isNotEmpty) z];
+    final gefuellt = [
+      for (final z in zahlen)
+        if (z.isNotEmpty) z,
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       child: Row(
@@ -60,7 +63,9 @@ class Uebersichtskopf extends StatelessWidget {
                     child: Text(
                       gefuellt.join(' • '),
                       style: TextStyle(
-                          fontSize: 13, color: farben.onSurfaceVariant),
+                        fontSize: 13,
+                        color: farben.onSurfaceVariant,
+                      ),
                     ),
                   ),
               ],
@@ -179,12 +184,18 @@ class Ortskachel extends StatelessWidget {
                 children: [
                   if (bild case final b?)
                     AssetThumbnailTile(
-                        asset: Rasterzeile.aus(b), paths: paths, onTap: onTippen)
+                      asset: Rasterzeile.aus(b),
+                      paths: paths,
+                      onTap: onTippen,
+                    )
                   else
                     ColoredBox(
                       color: farben.surfaceContainerHighest,
-                      child: Icon(symbol,
-                          size: 40, color: farben.onSurfaceVariant),
+                      child: Icon(
+                        symbol,
+                        size: 40,
+                        color: farben.onSurfaceVariant,
+                      ),
                     ),
                   Positioned(
                     top: AppSpacing.sm,
@@ -203,7 +214,11 @@ class Ortskachel extends StatelessWidget {
               height: MediaQuery.textScalerOf(context).scale(_textblockHoehe),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.md, AppSpacing.sm, AppSpacing.md),
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -240,11 +255,13 @@ class Ortskachel extends StatelessWidget {
                                 for (final b in befehle)
                                   PopupMenuItem(
                                     value: b,
-                                    child: Row(children: [
-                                      Icon(b.symbol, size: 18),
-                                      const SizedBox(width: AppSpacing.md),
-                                      Text(b.text),
-                                    ]),
+                                    child: Row(
+                                      children: [
+                                        Icon(b.symbol, size: 18),
+                                        const SizedBox(width: AppSpacing.md),
+                                        Text(b.text),
+                                      ],
+                                    ),
                                   ),
                               ],
                             ),
@@ -256,8 +273,11 @@ class Ortskachel extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.place_outlined,
-                              size: 15, color: farben.onSurfaceVariant),
+                          Icon(
+                            Icons.place_outlined,
+                            size: 15,
+                            color: farben.onSurfaceVariant,
+                          ),
                           const SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Text(
@@ -309,7 +329,9 @@ class _Schildchen extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -320,9 +342,10 @@ class _Schildchen extends StatelessWidget {
             Text(
               text,
               style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: farben.onSurface),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: farben.onSurface,
+              ),
             ),
           ],
         ),
@@ -353,17 +376,17 @@ class Kachelraster extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SliverGrid(
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: kachelBreite,
-          mainAxisSpacing: AppSpacing.lg,
-          crossAxisSpacing: AppSpacing.lg,
-          mainAxisExtent: kachelHoehe(context),
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, i) => kacheln[i],
-          childCount: kacheln.length,
-        ),
-      );
+    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: kachelBreite,
+      mainAxisSpacing: AppSpacing.lg,
+      crossAxisSpacing: AppSpacing.lg,
+      mainAxisExtent: kachelHoehe(context),
+    ),
+    delegate: SliverChildBuilderDelegate(
+      (context, i) => kacheln[i],
+      childCount: kacheln.length,
+    ),
+  );
 }
 
 /// Die Höhe einer Kachel.

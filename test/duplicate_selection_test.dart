@@ -144,10 +144,17 @@ void main() {
       final v = berechneLoeschVorschau([
         [foto('a1', schaerfe: 5), foto('a2', schaerfe: 90)],
         [foto('f1', favorit: true), foto('f2', favorit: true)], // übersprungen
-        [foto('c1', schaerfe: 10), foto('c2', schaerfe: 20), foto('c3', schaerfe: 30)],
+        [
+          foto('c1', schaerfe: 10),
+          foto('c2', schaerfe: 20),
+          foto('c3', schaerfe: 30),
+        ],
       ]);
 
-      expect(v.zuLoeschen.map((e) => e.id), unorderedEquals(['a1', 'c1', 'c2']));
+      expect(
+        v.zuLoeschen.map((e) => e.id),
+        unorderedEquals(['a1', 'c1', 'c2']),
+      );
       expect(v.uebersprungeneGruppen, 1);
     });
 

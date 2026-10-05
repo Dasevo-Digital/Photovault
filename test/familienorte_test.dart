@@ -23,8 +23,11 @@ void main() {
   group('gruppeFuer', () {
     test('ordnet jede Richtung ihrer Gruppe zu', () {
       expect(gruppeFuer(grade['mutter']!), Ortsgruppe.vorfahren);
-      expect(gruppeFuer(grade['onkel']!), Ortsgruppe.vorfahren,
-          reason: 'Geschwister eines Vorfahren gehören nach oben');
+      expect(
+        gruppeFuer(grade['onkel']!),
+        Ortsgruppe.vorfahren,
+        reason: 'Geschwister eines Vorfahren gehören nach oben',
+      );
       expect(gruppeFuer(grade['sohn']!), Ortsgruppe.nachkommen);
       expect(gruppeFuer(grade['neffe']!), Ortsgruppe.nachkommen);
       expect(gruppeFuer(grade['bruder']!), Ortsgruppe.seitenlinie);
@@ -38,20 +41,28 @@ void main() {
     test('die nächste Verwandtschaft gewinnt', () {
       // Ein Foto mit der Urgroßmutter UND dem eigenen Kind ist in erster
       // Linie eines vom eigenen Kind.
-      expect(gruppeFuerFoto(['uropa', 'sohn'], grade, fokus: 'ich'),
-          Ortsgruppe.nachkommen);
-      expect(gruppeFuerFoto(['cousine', 'mutter'], grade, fokus: 'ich'),
-          Ortsgruppe.vorfahren);
+      expect(
+        gruppeFuerFoto(['uropa', 'sohn'], grade, fokus: 'ich'),
+        Ortsgruppe.nachkommen,
+      );
+      expect(
+        gruppeFuerFoto(['cousine', 'mutter'], grade, fokus: 'ich'),
+        Ortsgruppe.vorfahren,
+      );
     });
 
     test('die Person selbst schlägt alles', () {
-      expect(gruppeFuerFoto(['ich', 'sohn'], grade, fokus: 'ich'),
-          Ortsgruppe.ich);
+      expect(
+        gruppeFuerFoto(['ich', 'sohn'], grade, fokus: 'ich'),
+        Ortsgruppe.ich,
+      );
     });
 
     test('Unbekannte auf dem Foto ändern nichts', () {
-      expect(gruppeFuerFoto(['fremd', 'mutter'], grade, fokus: 'ich'),
-          Ortsgruppe.vorfahren);
+      expect(
+        gruppeFuerFoto(['fremd', 'mutter'], grade, fokus: 'ich'),
+        Ortsgruppe.vorfahren,
+      );
     });
 
     test('ohne Verwandte gibt es keine Gruppe', () {

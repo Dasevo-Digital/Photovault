@@ -45,8 +45,10 @@ void main() {
   test('neutrale Einstellungen lassen das Bild, wie es ist', () async {
     final quelle = legeGrau('grau.png');
 
-    final bytes = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments());
+    final bytes = await DevelopRender.rendere(
+      quelle,
+      adjustments: const DevelopAdjustments(),
+    );
 
     expect(bytes, isNotNull, reason: 'der Shader-Weg lieferte gar nichts');
     // JPEG rundet, deshalb eine kleine Toleranz – aber es muss dasselbe
@@ -54,36 +56,46 @@ void main() {
     expect(mittlereHelligkeit(bytes!), closeTo(128, 3));
   });
 
-  test('Belichtung hellt auf, und zwar in der richtigen Grössenordnung',
-      () async {
-    final quelle = legeGrau('grau.png');
+  test(
+    'Belichtung hellt auf, und zwar in der richtigen Grössenordnung',
+    () async {
+      final quelle = legeGrau('grau.png');
 
-    final neutral = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments());
-    final heller = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments(exposure: 1));
-    final dunkler = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments(exposure: -1));
+      final neutral = await DevelopRender.rendere(
+        quelle,
+        adjustments: const DevelopAdjustments(),
+      );
+      final heller = await DevelopRender.rendere(
+        quelle,
+        adjustments: const DevelopAdjustments(exposure: 1),
+      );
+      final dunkler = await DevelopRender.rendere(
+        quelle,
+        adjustments: const DevelopAdjustments(exposure: -1),
+      );
 
-    final n = mittlereHelligkeit(neutral!);
-    final h = mittlereHelligkeit(heller!);
-    final d = mittlereHelligkeit(dunkler!);
+      final n = mittlereHelligkeit(neutral!);
+      final h = mittlereHelligkeit(heller!);
+      final d = mittlereHelligkeit(dunkler!);
 
-    expect(h, greaterThan(n + 20), reason: '+1 EV muss sichtbar aufhellen');
-    expect(d, lessThan(n - 20), reason: '-1 EV muss sichtbar abdunkeln');
-    // +1 EV verdoppelt die Lichtmenge; nach der sRGB-Kennlinie landet
-    // mittleres Grau (128) dabei etwa bei 180. Die Grenzen sind weit
-    // genug, um Rundung zu erlauben, und eng genug, um eine Rechnung in
-    // der falschen Farbraum-Domäne auffallen zu lassen.
-    expect(h, inInclusiveRange(165, 195));
-  });
+      expect(h, greaterThan(n + 20), reason: '+1 EV muss sichtbar aufhellen');
+      expect(d, lessThan(n - 20), reason: '-1 EV muss sichtbar abdunkeln');
+      // +1 EV verdoppelt die Lichtmenge; nach der sRGB-Kennlinie landet
+      // mittleres Grau (128) dabei etwa bei 180. Die Grenzen sind weit
+      // genug, um Rundung zu erlauben, und eng genug, um eine Rechnung in
+      // der falschen Farbraum-Domäne auffallen zu lassen.
+      expect(h, inInclusiveRange(165, 195));
+    },
+  );
 
   test('das Ergebnis behält die Maße des Ausgangsbildes', () async {
     final quelle = legeGrau('gross.png', kante: 640);
 
-    final bytes = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments(contrast: 0.3),
-        maxDimension: 320);
+    final bytes = await DevelopRender.rendere(
+      quelle,
+      adjustments: const DevelopAdjustments(contrast: 0.3),
+      maxDimension: 320,
+    );
 
     final bild = img.decodeImage(bytes!)!;
     expect(bild.width, 320);
@@ -93,17 +105,24 @@ void main() {
   test('Desktop-Filter verändern Kanten und Vignette auch ohne Core Image', () {
     final bild = img.Image(width: 40, height: 40, numChannels: 4);
     img.fill(bild, color: img.ColorRgba8(140, 140, 140, 255));
-    img.fillRect(bild,
-        x1: 14,
-        y1: 14,
-        x2: 25,
-        y2: 25,
-        color: img.ColorRgba8(220, 220, 220, 255));
+    img.fillRect(
+      bild,
+      x1: 14,
+      y1: 14,
+      x2: 25,
+      y2: 25,
+      color: img.ColorRgba8(220, 220, 220, 255),
+    );
     final beforeEdge = bild.getPixel(13, 20).luminance;
     final beforeCorner = bild.getPixel(0, 0).luminance;
 
-    wendeDesktopDevelopFilterAn(bild,
-        sharpness: 0.7, noiseReduction: 0.2, clarity: 0.5, vignette: 0.8);
+    wendeDesktopDevelopFilterAn(
+      bild,
+      sharpness: 0.7,
+      noiseReduction: 0.2,
+      clarity: 0.5,
+      vignette: 0.8,
+    );
 
     expect(bild.getPixel(0, 0).luminance, lessThan(beforeCorner));
     expect(bild.getPixel(13, 20).luminance, isNot(beforeEdge));
@@ -115,12 +134,14 @@ void main() {
     // Maske: linke Hälfte deckend, rechte Hälfte durchsichtig.
     final maske = img.Image(width: 200, height: 200, numChannels: 4);
     img.fill(maske, color: img.ColorRgba8(0, 0, 0, 0));
-    img.fillRect(maske,
-        x1: 0,
-        y1: 0,
-        x2: 99,
-        y2: 199,
-        color: img.ColorRgba8(255, 255, 255, 255));
+    img.fillRect(
+      maske,
+      x1: 0,
+      y1: 0,
+      x2: 99,
+      y2: 199,
+      color: img.ColorRgba8(255, 255, 255, 255),
+    );
     final maskeDatei = File(p.join(temp.path, 'maske.png'))
       ..writeAsBytesSync(img.encodePng(maske));
 
@@ -139,8 +160,11 @@ void main() {
     final links = bild.getPixel(40, 100).luminance;
     final rechts = bild.getPixel(160, 100).luminance;
 
-    expect(links, greaterThan(rechts + 30),
-        reason: 'die Maskenwirkung ist über das ganze Bild gelaufen');
+    expect(
+      links,
+      greaterThan(rechts + 30),
+      reason: 'die Maskenwirkung ist über das ganze Bild gelaufen',
+    );
     expect(rechts, closeTo(128, 6), reason: 'ausserhalb der Maske unverändert');
   });
 
@@ -150,18 +174,30 @@ void main() {
     // nicht - eine Verwechslung der beiden faellt damit auf.
     final hell = legeGrau('hell.png', wert: 230);
 
-    final neutral = await DevelopRender.rendere(hell,
-        adjustments: const DevelopAdjustments());
-    final zurueck = await DevelopRender.rendere(hell,
-        adjustments: const DevelopAdjustments(highlights: -1));
-    final mitSchatten = await DevelopRender.rendere(hell,
-        adjustments: const DevelopAdjustments(shadows: -1));
+    final neutral = await DevelopRender.rendere(
+      hell,
+      adjustments: const DevelopAdjustments(),
+    );
+    final zurueck = await DevelopRender.rendere(
+      hell,
+      adjustments: const DevelopAdjustments(highlights: -1),
+    );
+    final mitSchatten = await DevelopRender.rendere(
+      hell,
+      adjustments: const DevelopAdjustments(shadows: -1),
+    );
 
     final n = mittlereHelligkeit(neutral!);
-    expect(mittlereHelligkeit(zurueck!), lessThan(n - 10),
-        reason: 'Lichter -1 muss eine helle Flaeche deutlich absenken');
-    expect(mittlereHelligkeit(mitSchatten!), closeTo(n, 6),
-        reason: 'der Schatten-Regler darf hier fast nichts tun');
+    expect(
+      mittlereHelligkeit(zurueck!),
+      lessThan(n - 10),
+      reason: 'Lichter -1 muss eine helle Flaeche deutlich absenken',
+    );
+    expect(
+      mittlereHelligkeit(mitSchatten!),
+      closeTo(n, 6),
+      reason: 'der Schatten-Regler darf hier fast nichts tun',
+    );
   });
 
   test('Lichter heben helle Flaechen auch an', () async {
@@ -172,13 +208,19 @@ void main() {
     // Gemessen an dieser Stelle: 220 neutral -> 244 bei Lichter +1.
     final hell = legeGrau('hell2.png', wert: 220);
 
-    final neutral = await DevelopRender.rendere(hell,
-        adjustments: const DevelopAdjustments());
-    final heller = await DevelopRender.rendere(hell,
-        adjustments: const DevelopAdjustments(highlights: 1));
+    final neutral = await DevelopRender.rendere(
+      hell,
+      adjustments: const DevelopAdjustments(),
+    );
+    final heller = await DevelopRender.rendere(
+      hell,
+      adjustments: const DevelopAdjustments(highlights: 1),
+    );
 
-    expect(mittlereHelligkeit(heller!),
-        greaterThan(mittlereHelligkeit(neutral!) + 10));
+    expect(
+      mittlereHelligkeit(heller!),
+      greaterThan(mittlereHelligkeit(neutral!) + 10),
+    );
   });
 
   test('Mitteltoene bleiben unberuehrt', () {
@@ -188,10 +230,15 @@ void main() {
     return () async {
       final grau = legeGrau('mitte.png', wert: 128);
       for (final wert in [-1.0, 1.0]) {
-        final raus = await DevelopRender.rendere(grau,
-            adjustments: DevelopAdjustments(highlights: wert));
-        expect(mittlereHelligkeit(raus!), closeTo(128, 2),
-            reason: 'Lichter $wert darf Mitteltoene nicht anfassen');
+        final raus = await DevelopRender.rendere(
+          grau,
+          adjustments: DevelopAdjustments(highlights: wert),
+        );
+        expect(
+          mittlereHelligkeit(raus!),
+          closeTo(128, 2),
+          reason: 'Lichter $wert darf Mitteltoene nicht anfassen',
+        );
       }
     }();
   });
@@ -208,13 +255,21 @@ void main() {
     // bzw. blau sein.
     final bild = img.Image(width: 128, height: 128);
     img.fill(bild, color: img.ColorRgb8(255, 255, 255));
-    img.fillRect(bild,
-        x1: 0, y1: 0, x2: 63, y2: 127, color: img.ColorRgb8(0, 0, 0));
+    img.fillRect(
+      bild,
+      x1: 0,
+      y1: 0,
+      x2: 63,
+      y2: 127,
+      color: img.ColorRgb8(0, 0, 0),
+    );
     final quelle = File(p.join(temp.path, 'extrem.png'))
       ..writeAsBytesSync(img.encodePng(bild));
 
-    final bytes = await DevelopRender.rendere(quelle,
-        adjustments: const DevelopAdjustments());
+    final bytes = await DevelopRender.rendere(
+      quelle,
+      adjustments: const DevelopAdjustments(),
+    );
     final raus = img.decodeImage(bytes!)!;
 
     // In der Mitte je Haelfte nachsehen - die Kante selbst ist durch die
@@ -222,11 +277,17 @@ void main() {
     final schwarz = raus.getPixel(20, 64);
     final weiss = raus.getPixel(108, 64);
     expect(schwarz.r, lessThan(40), reason: 'Schwarz muss schwarz bleiben');
-    expect(schwarz.b, lessThan(80),
-        reason: 'blau eingefaerbt heisst: die Warnung ist im Renderpfad an');
+    expect(
+      schwarz.b,
+      lessThan(80),
+      reason: 'blau eingefaerbt heisst: die Warnung ist im Renderpfad an',
+    );
     expect(weiss.r, greaterThan(215), reason: 'Weiss muss weiss bleiben');
-    expect(weiss.g, greaterThan(215),
-        reason: 'nur rot heisst: die Warnung ist im Renderpfad an');
+    expect(
+      weiss.g,
+      greaterThan(215),
+      reason: 'nur rot heisst: die Warnung ist im Renderpfad an',
+    );
   });
 
   test('ein grosses Bild kommt in Zielgroesse heraus', () async {
@@ -239,12 +300,18 @@ void main() {
     // 96 MB, fuer zwei Zahlen, die im Dateikopf stehen. Die kleinen
     // Testbilder gingen an dem Zweig vorbei.
     final datei = legeGrau('gross.png', kante: 2000);
-    final raus = await DevelopRender.rendere(datei,
-        adjustments: const DevelopAdjustments(), maxDimension: 800);
+    final raus = await DevelopRender.rendere(
+      datei,
+      adjustments: const DevelopAdjustments(),
+      maxDimension: 800,
+    );
     expect(raus, isNotNull);
     final gerendert = img.decodeJpg(raus!)!;
-    expect(gerendert.width, 800,
-        reason: 'sonst wurde in Originalgroesse gerechnet');
+    expect(
+      gerendert.width,
+      800,
+      reason: 'sonst wurde in Originalgroesse gerechnet',
+    );
     expect(gerendert.height, 800, reason: 'quadratisch bleibt quadratisch');
   });
 
@@ -253,8 +320,11 @@ void main() {
     // kostete aber Speicher - und aus einem 256er Bild wuerde ein 800er,
     // das nur weicher aussieht.
     final datei = legeGrau('klein.png', kante: 256);
-    final raus = await DevelopRender.rendere(datei,
-        adjustments: const DevelopAdjustments(), maxDimension: 800);
+    final raus = await DevelopRender.rendere(
+      datei,
+      adjustments: const DevelopAdjustments(),
+      maxDimension: 800,
+    );
     expect(raus, isNotNull);
     expect(img.decodeJpg(raus!)!.width, 256);
   });
@@ -262,8 +332,10 @@ void main() {
   test('setzt jeden angebotenen Desktop-Regler um', () {
     expect(DevelopRender.ohneWirkung, isEmpty);
     expect(
-        DevelopRender.gesetztOhneWirkung(
-            const DevelopAdjustments(sharpness: 0.5, vignette: -0.3)),
-        isEmpty);
+      DevelopRender.gesetztOhneWirkung(
+        const DevelopAdjustments(sharpness: 0.5, vignette: -0.3),
+      ),
+      isEmpty,
+    );
   });
 }

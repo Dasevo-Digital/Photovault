@@ -31,8 +31,9 @@ void main() {
   Future<LibraryState> gebaut() async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
-    final paths =
-        await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     await db.saveEmbedding('a1', Float32List.fromList([1, 0]));
     return LibraryState()
       ..db = db
@@ -52,15 +53,22 @@ void main() {
       // zählbar.
       library.cachedEmbeddings();
       zeit.flushMicrotasks();
-      expect(zeit.pendingTimers, isNotEmpty,
-          reason: 'ohne laufende Uhr prueft der Rest nichts');
+      expect(
+        zeit.pendingTimers,
+        isNotEmpty,
+        reason: 'ohne laufende Uhr prueft der Rest nichts',
+      );
       library.dispose();
       zeit.flushMicrotasks();
       offen = zeit.pendingTimers.length;
     });
 
-    expect(offen, 0,
-        reason: 'nach dem Abbau darf keine Uhr mehr laufen – sie hielte '
-            'sonst die abgebaute LibraryState samt Einbettungen fest');
+    expect(
+      offen,
+      0,
+      reason:
+          'nach dem Abbau darf keine Uhr mehr laufen – sie hielte '
+          'sonst die abgebaute LibraryState samt Einbettungen fest',
+    );
   });
 }

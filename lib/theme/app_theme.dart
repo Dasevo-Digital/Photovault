@@ -76,9 +76,9 @@ class AppSemantik extends ThemeExtension<AppSemantik> {
 
   @override
   AppSemantik copyWith({Color? warnung, Color? erfolg}) => AppSemantik(
-        warnung: warnung ?? this.warnung,
-        erfolg: erfolg ?? this.erfolg,
-      );
+    warnung: warnung ?? this.warnung,
+    erfolg: erfolg ?? this.erfolg,
+  );
 
   @override
   AppSemantik lerp(covariant AppSemantik? other, double t) => other == null
@@ -161,8 +161,10 @@ ColorScheme _schema(Brightness helligkeit) {
     brightness: helligkeit,
     dynamicSchemeVariant: DynamicSchemeVariant.neutral,
   );
-  final akzent =
-      ColorScheme.fromSeed(seedColor: _saatfarbe, brightness: helligkeit);
+  final akzent = ColorScheme.fromSeed(
+    seedColor: _saatfarbe,
+    brightness: helligkeit,
+  );
   return flaechen.copyWith(
     primary: akzent.primary,
     onPrimary: akzent.onPrimary,
@@ -213,8 +215,7 @@ ThemeData _grundthema(Brightness helligkeit, AppSemantik semantik) {
   );
 }
 
-ThemeData buildLightTheme() =>
-    _grundthema(Brightness.light, AppSemantik._hell);
+ThemeData buildLightTheme() => _grundthema(Brightness.light, AppSemantik._hell);
 
 ThemeData buildDarkTheme() => _grundthema(Brightness.dark, AppSemantik._dunkel);
 

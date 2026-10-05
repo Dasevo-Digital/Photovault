@@ -48,12 +48,12 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('photo_vault/image_convert'),
-      (aufruf) async => switch (aufruf.method) {
-        'lensCorrectionStatus' => 'keinRaw',
-        _ => null,
-      },
-    );
+          const MethodChannel('photo_vault/image_convert'),
+          (aufruf) async => switch (aufruf.method) {
+            'lensCorrectionStatus' => 'keinRaw',
+            _ => null,
+          },
+        );
 
     // Ein echtes Bild auf der Platte: Ohne Vorschaubytes zeigt der
     // Bildschirm einen Ladering statt des Editors, und die Geste haette
@@ -64,24 +64,30 @@ void main() {
     img.fill(bild, color: img.ColorRgb8(120, 140, 160));
     await datei.writeAsBytes(img.encodePng(bild));
 
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'c1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 3, 5),
-          importedAt: DateTime(2026, 3, 6),
-          widthPx: const Value(4000),
-          heightPx: const Value(2000),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            originalFileName: 'a1.jpg',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'c1',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 3, 5),
+            importedAt: DateTime(2026, 3, 6),
+            widthPx: const Value(4000),
+            heightPx: const Value(2000),
+          ),
+        );
     foto = (await db.assetById('a1'))!;
   });
 
   tearDown(() async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-            const MethodChannel('photo_vault/image_convert'), null);
+          const MethodChannel('photo_vault/image_convert'),
+          null,
+        );
     await db.close();
     wurzel.deleteSync(recursive: true);
   });
@@ -103,13 +109,15 @@ void main() {
     // `runAsync`: Sonst haengt das `await` wortlos und im Bild stuende
     // bis zum Schluss ein Ladering.
     await tester.runAsync(() async {
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: DevelopScreen(asset: foto, db: db, paths: paths),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: DevelopScreen(asset: foto, db: db, paths: paths),
+        ),
+      );
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 25));
         await Future<void>.delayed(const Duration(milliseconds: 5));
@@ -125,13 +133,18 @@ void main() {
 
   /// Der Maskeneditor: der einzige Zieh-Empfaenger im Bild.
   Finder derEditor() => find.byWidgetPredicate(
-      (w) => w is GestureDetector && w.onPanStart != null);
+    (w) => w is GestureDetector && w.onPanStart != null,
+  );
 
   /// Der Knopf "Fertig" ist genau dann bedienbar, wenn eine Form
   /// entstanden ist - er ist der ehrlichste Zeuge dafuer.
   bool fertigBedienbar(WidgetTester tester) {
-    final knopf = tester.widget<FilledButton>(find.ancestor(
-        of: find.text('Fertig'), matching: find.byType(FilledButton)));
+    final knopf = tester.widget<FilledButton>(
+      find.ancestor(
+        of: find.text('Fertig'),
+        matching: find.byType(FilledButton),
+      ),
+    );
     return knopf.onPressed != null;
   }
 
@@ -159,11 +172,17 @@ void main() {
     testWidgets('Rechteck', (tester) async {
       await zeige(tester);
       await werkzeug(tester, 'Rechteck');
-      expect(fertigBedienbar(tester), isFalse,
-          reason: 'ohne Geste gibt es noch keine Form');
+      expect(
+        fertigBedienbar(tester),
+        isFalse,
+        reason: 'ohne Geste gibt es noch keine Form',
+      );
       await ziehe(tester);
-      expect(fertigBedienbar(tester), isTrue,
-          reason: 'das Ziehen hat kein Rechteck erzeugt');
+      expect(
+        fertigBedienbar(tester),
+        isTrue,
+        reason: 'das Ziehen hat kein Rechteck erzeugt',
+      );
       await abbauen(tester);
     });
 
@@ -207,8 +226,11 @@ void main() {
         }
       });
       await takte(tester, 15);
-      expect(fertigBedienbar(tester), isTrue,
-          reason: 'der Tipp hat keine Farbauswahl erzeugt');
+      expect(
+        fertigBedienbar(tester),
+        isTrue,
+        reason: 'der Tipp hat keine Farbauswahl erzeugt',
+      );
       await abbauen(tester);
     });
   });

@@ -37,16 +37,54 @@ import 'package:photo_vault/widgets/timeline_grid_layout.dart';
 /// Abgefragt, nicht ausgedacht – damit das Bild zeigt, was der Nutzer
 /// wirklich sähe: viel Hochformat vom Telefon, dazwischen Querformate.
 const _masse = [
-  [1536, 2048], [1536, 2048], [1536, 2048], [1536, 2048], [1536, 2048],
-  [1536, 2048], [1536, 2048], [1536, 2048], [1536, 2048], [1536, 2048],
-  [2048, 1536], [1536, 2048], [1536, 2048], [1080, 1920], [1536, 2048],
-  [1536, 2048], [2048, 1536], [1152, 2048], [1152, 2048], [1536, 2048],
-  [2048, 1536], [1536, 2048], [1536, 2048], [1536, 2048], [1536, 2048],
-  [1536, 2048], [1536, 2048], [1536, 2048], [1308, 1744], [1536, 2048],
-  [720, 1280], [1536, 2048], [1600, 900], [1200, 1600], [1600, 900],
-  [1600, 900], [576, 1024], [1600, 900], [1600, 900], [1600, 1200],
-  [1200, 1600], [1600, 900], [1600, 900], [1600, 900], [2048, 1706],
-  [4032, 2268], [4032, 2268], [4032, 2268],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [2048, 1536],
+  [1536, 2048],
+  [1536, 2048],
+  [1080, 1920],
+  [1536, 2048],
+  [1536, 2048],
+  [2048, 1536],
+  [1152, 2048],
+  [1152, 2048],
+  [1536, 2048],
+  [2048, 1536],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1536, 2048],
+  [1308, 1744],
+  [1536, 2048],
+  [720, 1280],
+  [1536, 2048],
+  [1600, 900],
+  [1200, 1600],
+  [1600, 900],
+  [1600, 900],
+  [576, 1024],
+  [1600, 900],
+  [1600, 900],
+  [1600, 1200],
+  [1200, 1600],
+  [1600, 900],
+  [1600, 900],
+  [1600, 900],
+  [2048, 1706],
+  [4032, 2268],
+  [4032, 2268],
+  [4032, 2268],
 ];
 
 void main() {
@@ -87,34 +125,41 @@ void main() {
         const lang = 200;
         final kurz = b > h ? (200 * h / b).round() : (200 * b / h).round();
         final bild = img.Image(
-            width: b > h ? lang : kurz, height: b > h ? kurz : lang);
+          width: b > h ? lang : kurz,
+          height: b > h ? kurz : lang,
+        );
         // Eine Farbe je Kachel, dazu ein heller Balken am oberen Rand:
         // Wuerde etwas beschnitten, fehlte er.
         final ton = (i * 47) % 256;
-        img.fill(bild,
-            color: img.ColorRgb8(60 + ton ~/ 2, 90, 200 - ton ~/ 2));
-        img.fillRect(bild,
-            x1: 0,
-            y1: 0,
-            x2: bild.width - 1,
-            y2: (bild.height * 0.12).round(),
-            color: img.ColorRgb8(240, 240, 240));
+        img.fill(bild, color: img.ColorRgb8(60 + ton ~/ 2, 90, 200 - ton ~/ 2));
+        img.fillRect(
+          bild,
+          x1: 0,
+          y1: 0,
+          x2: bild.width - 1,
+          y2: (bild.height * 0.12).round(),
+          color: img.ColorRgb8(240, 240, 240),
+        );
         final rel = 'thumbs/t$i.png';
         final datei = paths.absolute(rel);
         await datei.parent.create(recursive: true);
         await datei.writeAsBytes(img.encodePng(bild));
-        await db.into(db.assets).insert(AssetsCompanion.insert(
-              id: 'a$i',
-              originalFileName: 'a$i.jpg',
-              relativePath: 'o/a$i.jpg',
-              checksum: 'c$i',
-              type: 'IMAGE',
-              fileCreatedAt: DateTime(2026, 3, 20 - i ~/ 24),
-              importedAt: DateTime(2026),
-              thumbnailRelativePath: Value(rel),
-              widthPx: Value(b),
-              heightPx: Value(h),
-            ));
+        await db
+            .into(db.assets)
+            .insert(
+              AssetsCompanion.insert(
+                id: 'a$i',
+                originalFileName: 'a$i.jpg',
+                relativePath: 'o/a$i.jpg',
+                checksum: 'c$i',
+                type: 'IMAGE',
+                fileCreatedAt: DateTime(2026, 3, 20 - i ~/ 24),
+                importedAt: DateTime(2026),
+                thumbnailRelativePath: Value(rel),
+                widthPx: Value(b),
+                heightPx: Value(h),
+              ),
+            );
       }
     });
 
@@ -135,22 +180,24 @@ void main() {
       // Ausserhalb bleibt das Bild leer, und uebrig bleiben nur die
       // Abzeichen darueber - so sah der erste Durchgang aus.
       await tester.runAsync(() async {
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: Scaffold(
-          body: RepaintBoundary(
-            child: MonthGroupedAssetGrid(
-              assets: [for (final x in assets) Rasterzeile.aus(x)],
-              paths: paths,
-              onTap: (_) {},
-              form: form,
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppTexte.localizationsDelegates,
+            supportedLocales: AppTexte.supportedLocales,
+            theme: buildDarkTheme(),
+            home: Scaffold(
+              body: RepaintBoundary(
+                child: MonthGroupedAssetGrid(
+                  assets: [for (final x in assets) Rasterzeile.aus(x)],
+                  paths: paths,
+                  onTap: (_) {},
+                  form: form,
+                ),
+              ),
             ),
           ),
-        ),
-      ));
+        );
         for (var i = 0; i < 20; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 50));
           await tester.pump();
@@ -160,9 +207,9 @@ void main() {
 
       // ignore: avoid_print
       print('>> ${form.name} gepumpt');
-      final grenze = tester
-          .firstElement(find.byType(RepaintBoundary))
-          .renderObject! as RenderRepaintBoundary;
+      final grenze =
+          tester.firstElement(find.byType(RepaintBoundary)).renderObject!
+              as RenderRepaintBoundary;
       await tester.runAsync(() async {
         final bild = await grenze.toImage(pixelRatio: 1.0);
         final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
@@ -171,8 +218,10 @@ void main() {
         await datei.parent.create(recursive: true);
         await datei.writeAsBytes(daten!.buffer.asUint8List());
         // ignore: avoid_print
-        print('geschrieben: ${datei.path} '
-            '(${daten.lengthInBytes ~/ 1024} KB)');
+        print(
+          'geschrieben: ${datei.path} '
+          '(${daten.lengthInBytes ~/ 1024} KB)',
+        );
       });
     }
   });

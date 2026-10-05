@@ -27,7 +27,8 @@ void main() {
     expect(
       rc,
       contains(r'VALUE "CompanyName", "de.dasevo" "\0"'),
-      reason: 'Eine Änderung verschiebt %APPDATA%\\<CompanyName>\\… und '
+      reason:
+          'Eine Änderung verschiebt %APPDATA%\\<CompanyName>\\… und '
           'damit die Bibliothek bestehender Installationen. Nur zusammen '
           'mit einer Umzugslogik ändern (siehe '
           'LibraryLocation.fruehererSupportordner).',
@@ -38,7 +39,8 @@ void main() {
     expect(
       rc,
       contains(r'VALUE "ProductName", "photovault" "\0"'),
-      reason: 'Trotz des technisch aussehenden Namens: Er ist Teil des '
+      reason:
+          'Trotz des technisch aussehenden Namens: Er ist Teil des '
           'Pfades. Der sichtbare Name steht in FileDescription.',
     );
   });
@@ -47,8 +49,11 @@ void main() {
     // Das Fenster hiess "photo_vault" – dasselbe Versäumnis wie unter
     // Linux, wo es bis 1.8.3 so stand.
     final main = File('windows/runner/main.cpp').readAsStringSync();
-    expect(main, contains('window.Create(L"Photo Vault"'),
-        reason: 'sonst steht in der Taskleiste wieder der technische Name');
+    expect(
+      main,
+      contains('window.Create(L"Photo Vault"'),
+      reason: 'sonst steht in der Taskleiste wieder der technische Name',
+    );
   });
 
   test('der sichtbare Name steht auch in der Dateibeschreibung', () {
@@ -57,33 +62,42 @@ void main() {
     expect(rc, contains(r'VALUE "FileDescription", "Photo Vault" "\0"'));
   });
 
-  test('das Programmsymbol ist nicht mehr das von Flutter mitgelieferte',
-      () async {
-    // Das Standardsymbol ist Flutters blaues Logo. Es fällt beim ersten
-    // Start nicht auf – wohl aber in der Taskleiste, im Startmenü und in
-    // jedem Bildschirmfoto.
-    final ico = File('windows/runner/resources/app_icon.ico');
-    expect(ico.existsSync(), isTrue);
+  test(
+    'das Programmsymbol ist nicht mehr das von Flutter mitgelieferte',
+    () async {
+      // Das Standardsymbol ist Flutters blaues Logo. Es fällt beim ersten
+      // Start nicht auf – wohl aber in der Taskleiste, im Startmenü und in
+      // jedem Bildschirmfoto.
+      final ico = File('windows/runner/resources/app_icon.ico');
+      expect(ico.existsSync(), isTrue);
 
-    // Nicht über die Dateigrösse geprüft, sondern über den Inhalt: Das
-    // Symbol stammt aus derselben Vorlage wie das von macOS, also muss
-    // die 256er-Stufe Byte für Byte der dortigen entsprechen.
-    final bytes = await ico.readAsBytes();
-    final gross = await File(
-            'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png')
-        .readAsBytes();
-    expect(bytes.length, greaterThan(gross.length),
-        reason: 'die .ico muss mindestens die 256er-Stufe enthalten');
+      // Nicht über die Dateigrösse geprüft, sondern über den Inhalt: Das
+      // Symbol stammt aus derselben Vorlage wie das von macOS, also muss
+      // die 256er-Stufe Byte für Byte der dortigen entsprechen.
+      final bytes = await ico.readAsBytes();
+      final gross = await File(
+        'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png',
+      ).readAsBytes();
+      expect(
+        bytes.length,
+        greaterThan(gross.length),
+        reason: 'die .ico muss mindestens die 256er-Stufe enthalten',
+      );
 
-    // Nach dem ersten Vorkommen der PNG-Signatur suchen und von dort an
-    // vergleichen wäre zu lasch – hier wird die Stufe gesucht, die genau
-    // so lang ist wie die macOS-Vorlage.
-    final gefunden = _enthaelt(bytes, gross);
-    expect(gefunden, isTrue,
-        reason: 'die .ico enthält nicht dieselbe Bildvorlage wie macOS – '
+      // Nach dem ersten Vorkommen der PNG-Signatur suchen und von dort an
+      // vergleichen wäre zu lasch – hier wird die Stufe gesucht, die genau
+      // so lang ist wie die macOS-Vorlage.
+      final gefunden = _enthaelt(bytes, gross);
+      expect(
+        gefunden,
+        isTrue,
+        reason:
+            'die .ico enthält nicht dieselbe Bildvorlage wie macOS – '
             'entweder ist sie noch das Flutter-Symbol oder aus einer '
-            'anderen Quelle erzeugt worden');
-  });
+            'anderen Quelle erzeugt worden',
+      );
+    },
+  );
 }
 
 /// Ob [heuhaufen] die Bytefolge [nadel] enthält.

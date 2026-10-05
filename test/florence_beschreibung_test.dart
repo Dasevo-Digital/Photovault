@@ -45,28 +45,35 @@ void main() {
     });
     tearDown(() => temp.deleteSync(recursive: true));
 
-    test('entfernt die drei Dateien des Vorgängers und meldet die Bytes',
-        () async {
-      // Sie stehen in keinem Katalogeintrag mehr und liessen sich deshalb
-      // auch nicht mehr über die Modellverwaltung löschen.
-      for (final (name, groesse) in [
-        ('caption_encoder.onnx', 1000),
-        ('caption_decoder.onnx', 2000),
-        ('caption_vocab.json', 50),
-      ]) {
-        File('${temp.path}/$name').writeAsBytesSync(List.filled(groesse, 0));
-      }
-      File('${temp.path}/clip_image_encoder.onnx').writeAsBytesSync([1, 2, 3]);
+    test(
+      'entfernt die drei Dateien des Vorgängers und meldet die Bytes',
+      () async {
+        // Sie stehen in keinem Katalogeintrag mehr und liessen sich deshalb
+        // auch nicht mehr über die Modellverwaltung löschen.
+        for (final (name, groesse) in [
+          ('caption_encoder.onnx', 1000),
+          ('caption_decoder.onnx', 2000),
+          ('caption_vocab.json', 50),
+        ]) {
+          File('${temp.path}/$name').writeAsBytesSync(List.filled(groesse, 0));
+        }
+        File(
+          '${temp.path}/clip_image_encoder.onnx',
+        ).writeAsBytesSync([1, 2, 3]);
 
-      final dienst = ModelDownloadService(temp.path);
-      expect(await dienst.raeumeAbgeloesteModelle(), 3050);
+        final dienst = ModelDownloadService(temp.path);
+        expect(await dienst.raeumeAbgeloesteModelle(), 3050);
 
-      expect(File('${temp.path}/caption_encoder.onnx').existsSync(), isFalse);
-      expect(File('${temp.path}/caption_decoder.onnx').existsSync(), isFalse);
-      expect(File('${temp.path}/caption_vocab.json').existsSync(), isFalse);
-      expect(File('${temp.path}/clip_image_encoder.onnx').existsSync(), isTrue,
-          reason: 'andere Modelle bleiben unangetastet');
-    });
+        expect(File('${temp.path}/caption_encoder.onnx').existsSync(), isFalse);
+        expect(File('${temp.path}/caption_decoder.onnx').existsSync(), isFalse);
+        expect(File('${temp.path}/caption_vocab.json').existsSync(), isFalse);
+        expect(
+          File('${temp.path}/clip_image_encoder.onnx').existsSync(),
+          isTrue,
+          reason: 'andere Modelle bleiben unangetastet',
+        );
+      },
+    );
 
     test('ein zweiter Lauf findet nichts mehr und stört nicht', () async {
       final dienst = ModelDownloadService(temp.path);

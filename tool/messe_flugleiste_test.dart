@@ -60,24 +60,26 @@ void main() {
 
     final flug = Gelaendeflug(linie, werte: werte);
     var fortschritt = 0.0;
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: StatefulBuilder(
-          builder: (context, setzen) => Flugleiste(
-            flug: flug,
-            stand: flug.bei(fortschritt),
-            fortschritt: fortschritt,
-            laeuft: true,
-            imFlug: Platform.environment['PV_OHNE'] == null,
-            beimSchalten: () {},
-            beimBeenden: () {},
-            beimSpulen: (w) => setzen(() => fortschritt = w),
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setzen) => Flugleiste(
+              flug: flug,
+              stand: flug.bei(fortschritt),
+              fortschritt: fortschritt,
+              laeuft: true,
+              imFlug: Platform.environment['PV_OHNE'] == null,
+              beimSchalten: () {},
+              beimBeenden: () {},
+              beimSpulen: (w) => setzen(() => fortschritt = w),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // Wie ein laufender Flug: den Fortschritt bewegen und neu bauen.
@@ -92,8 +94,10 @@ void main() {
       await tester.pump();
     }
     uhr.stop();
-    print('Neubau der Flugleiste: '
-        '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
-        'je Bild (Debug-Zeit)');
+    print(
+      'Neubau der Flugleiste: '
+      '${(uhr.elapsedMicroseconds / laeufe / 1000).toStringAsFixed(2)} ms '
+      'je Bild (Debug-Zeit)',
+    );
   });
 }

@@ -27,7 +27,6 @@ typedef Personenkern = ({String personId, Float32List kern});
 /// Wer vorgeschlagen wird und wie sicher.
 typedef Personentreffer = ({String personId, double aehnlichkeit});
 
-
 /// Fasst die Einbettungen je Person zu einem Kern zusammen.
 ///
 /// Personen ohne eine einzige Einbettung fallen heraus – für sie lässt sich

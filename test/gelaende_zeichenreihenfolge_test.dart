@@ -42,8 +42,13 @@ Hoehengitter _zweiRuecken() {
     }
   }
   return Hoehengitter(
-    spalten: _n, zeilen: _n, hoehen: h,
-    nord: 51.90, sued: 51.80, west: 10.55, ost: 10.71,
+    spalten: _n,
+    zeilen: _n,
+    hoehen: h,
+    nord: 51.90,
+    sued: 51.80,
+    west: 10.55,
+    ost: 10.71,
   );
 }
 
@@ -58,7 +63,12 @@ Future<ui.Image> _rotBlau() {
   }
   final fertig = Completer<ui.Image>();
   ui.decodeImageFromPixels(
-      daten, 1, 8, ui.PixelFormat.rgba8888, fertig.complete);
+    daten,
+    1,
+    8,
+    ui.PixelFormat.rgba8888,
+    fertig.complete,
+  );
   return fertig.future;
 }
 
@@ -78,8 +88,11 @@ void main() {
       for (final b in netz.bloecke) {
         if (b.eckenzahl > groesster) groesster = b.eckenzahl;
       }
-      expect(groesster, lessThanOrEqualTo(65536),
-          reason: 'Kante $kante ergibt einen Block mit $groesster Eckpunkten');
+      expect(
+        groesster,
+        lessThanOrEqualTo(65536),
+        reason: 'Kante $kante ergibt einen Block mit $groesster Eckpunkten',
+      );
     }
   });
 
@@ -96,13 +109,13 @@ void main() {
     // ueberhaupt gestellt war. Die Ruecken stehen bei y = +2750 (Norden)
     // und y = -2750 (Sueden).
     Gelaendekamera kamera(double drehung, double y) => Gelaendekamera(
-          drehung: drehung,
-          neigung: 0.10,
-          entfernung: 2500,
-          brennweite: 700,
-          mitte: const Offset(300, 200),
-          blickpunkt: (x: 0.0, y: y, z: -400.0),
-        );
+      drehung: drehung,
+      neigung: 0.10,
+      entfernung: 2500,
+      brennweite: 700,
+      mitte: const Offset(300, 200),
+      blickpunkt: (x: 0.0, y: y, z: -400.0),
+    );
 
     // `toImage` ist echte Arbeit ausserhalb der Testbuehne: ohne
     // `runAsync` kehrt das `await` nie zurueck und der Lauf haengt
@@ -142,12 +155,20 @@ void main() {
         }
         final fremd = fall.blauGewinnt ? rot : blau;
         final eigen = fall.blauGewinnt ? blau : rot;
-        expect(eigen, greaterThan(0),
-            reason: '${fall.name}: der nahe Ruecken ist gar nicht zu sehen - '
-                'dann prueft dieser Test nichts');
-        expect(fremd, 0,
-            reason: '${fall.name}: der FERNE Ruecken steht in $fremd von '
-                '${fremd + eigen} Proben ueber dem nahen');
+        expect(
+          eigen,
+          greaterThan(0),
+          reason:
+              '${fall.name}: der nahe Ruecken ist gar nicht zu sehen - '
+              'dann prueft dieser Test nichts',
+        );
+        expect(
+          fremd,
+          0,
+          reason:
+              '${fall.name}: der FERNE Ruecken steht in $fremd von '
+              '${fremd + eigen} Proben ueber dem nahen',
+        );
       }
     });
   });

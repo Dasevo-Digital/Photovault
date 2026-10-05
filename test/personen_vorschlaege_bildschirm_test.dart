@@ -27,32 +27,40 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_vorschlag_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
       ..backupService = BackupService(db, paths);
 
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a1',
-          originalFileName: 'a1.jpg',
-          relativePath: 'originals/a1.jpg',
-          checksum: 'c1',
-          type: 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1, 1),
-          importedAt: DateTime(2026, 1, 1),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a1',
+            originalFileName: 'a1.jpg',
+            relativePath: 'originals/a1.jpg',
+            checksum: 'c1',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 1, 1),
+            importedAt: DateTime(2026, 1, 1),
+          ),
+        );
     await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
     for (var i = 0; i < 3; i++) {
-      await db.insertFace(FacesCompanion.insert(
-        id: 'f$i',
-        assetId: 'a1',
-        boxX: 0.1 * i,
-        boxY: 0.1,
-        boxW: 0.2,
-        boxH: 0.2,
-        cropRelativePath: Value('faces/f$i.jpg'),
-      ));
+      await db.insertFace(
+        FacesCompanion.insert(
+          id: 'f$i',
+          assetId: 'a1',
+          boxX: 0.1 * i,
+          boxY: 0.1,
+          boxW: 0.2,
+          boxH: 0.2,
+          cropRelativePath: Value('faces/f$i.jpg'),
+        ),
+      );
     }
   });
 
@@ -66,26 +74,29 @@ void main() {
 
   Future<void> zeige(WidgetTester tester) async {
     final faces = await db.facesForAsset('a1');
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: PersonSuggestionsScreen(
-        library: library,
-        person: await person(),
-        vorschlaege: [
-          (gesicht: faces[0], aehnlichkeit: 0.91),
-          (gesicht: faces[1], aehnlichkeit: 0.75),
-          (gesicht: faces[2], aehnlichkeit: 0.62),
-        ],
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: PersonSuggestionsScreen(
+          library: library,
+          person: await person(),
+          vorschlaege: [
+            (gesicht: faces[0], aehnlichkeit: 0.91),
+            (gesicht: faces[1], aehnlichkeit: 0.75),
+            (gesicht: faces[2], aehnlichkeit: 0.62),
+          ],
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('alles ist vorausgewählt und der Knopf nennt die Zahl',
-      (tester) async {
+  testWidgets('alles ist vorausgewählt und der Knopf nennt die Zahl', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.text('3 Gesichter zuordnen'), findsOneWidget);
   });
@@ -114,23 +125,28 @@ void main() {
     expect(zugeordnet, {'f0', 'f1'});
   });
 
-  testWidgets('auch die Ablehnung wird festgehalten und verschiebt die Schwelle',
-      (tester) async {
-    // Der eigentliche Punkt. Ohne den abgelehnten Eintrag bliebe die
-    // Schwelle stehen und der Fehlgriff käme wieder.
-    expect((await person()).similarityThreshold, isNull);
+  testWidgets(
+    'auch die Ablehnung wird festgehalten und verschiebt die Schwelle',
+    (tester) async {
+      // Der eigentliche Punkt. Ohne den abgelehnten Eintrag bliebe die
+      // Schwelle stehen und der Fehlgriff käme wieder.
+      expect((await person()).similarityThreshold, isNull);
 
-    await zeige(tester);
-    await tester.tapAt(tester.getCenter(find.text('0.62')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('2 Gesichter zuordnen'));
-    await tester.pumpAndSettle();
+      await zeige(tester);
+      await tester.tapAt(tester.getCenter(find.text('0.62')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('2 Gesichter zuordnen'));
+      await tester.pumpAndSettle();
 
-    final rueckmeldungen = await db.gesichtsRueckmeldungen('p1');
-    expect(rueckmeldungen, hasLength(3),
-        reason: 'alle drei Entscheidungen zählen, nicht nur die zwei Ja');
-    expect((await person()).similarityThreshold, isNotNull);
-  });
+      final rueckmeldungen = await db.gesichtsRueckmeldungen('p1');
+      expect(
+        rueckmeldungen,
+        hasLength(3),
+        reason: 'alle drei Entscheidungen zählen, nicht nur die zwei Ja',
+      );
+      expect((await person()).similarityThreshold, isNotNull);
+    },
+  );
 
   testWidgets('auch ohne eine einzige Zuordnung wird gelernt', (tester) async {
     await zeige(tester);
@@ -140,7 +156,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(await db.facesForPerson('p1'), isEmpty);
-    expect(await db.gesichtsRueckmeldungen('p1'), hasLength(3),
-        reason: 'drei Ablehnungen sind eine Aussage');
+    expect(
+      await db.gesichtsRueckmeldungen('p1'),
+      hasLength(3),
+      reason: 'drei Ablehnungen sind eine Aussage',
+    );
   });
 }

@@ -37,7 +37,11 @@ List<int> _tileStarts(int length, int tileSize, int stride) {
 /// Zerlegt [source] in überlappende Kacheln der Größe [tileSize] (Rand
 /// [overlap] Pixel geteilt mit dem jeweiligen Nachbarn). Für ein reales
 /// 12-48-MP-Foto mit 512px-Kacheln typischerweise mehrere Dutzend Kacheln.
-List<Tile> splitIntoTiles(img.Image source, {required int tileSize, required int overlap}) {
+List<Tile> splitIntoTiles(
+  img.Image source, {
+  required int tileSize,
+  required int overlap,
+}) {
   assert(tileSize > overlap, 'tileSize muss größer als overlap sein');
   final stride = tileSize - overlap;
   final xs = _tileStarts(source.width, tileSize, stride);
@@ -47,7 +51,13 @@ List<Tile> splitIntoTiles(img.Image source, {required int tileSize, required int
     for (final x in xs) {
       final w = math.min(tileSize, source.width - x);
       final h = math.min(tileSize, source.height - y);
-      tiles.add(Tile(x: x, y: y, image: img.copyCrop(source, x: x, y: y, width: w, height: h)));
+      tiles.add(
+        Tile(
+          x: x,
+          y: y,
+          image: img.copyCrop(source, x: x, y: y, width: w, height: h),
+        ),
+      );
     }
   }
   return tiles;
@@ -78,11 +88,15 @@ Float32List _tileWeights({
   for (var y = 0; y < height; y++) {
     var wy = 1.0;
     if (!touchesTop && fy > 0 && y < fy) wy = (y + 1) / fy;
-    if (!touchesBottom && fy > 0 && y >= height - fy) wy = math.min(wy, (height - y) / fy);
+    if (!touchesBottom && fy > 0 && y >= height - fy) {
+      wy = math.min(wy, (height - y) / fy);
+    }
     for (var x = 0; x < width; x++) {
       var wx = 1.0;
       if (!touchesLeft && fx > 0 && x < fx) wx = (x + 1) / fx;
-      if (!touchesRight && fx > 0 && x >= width - fx) wx = math.min(wx, (width - x) / fx);
+      if (!touchesRight && fx > 0 && x >= width - fx) {
+        wx = math.min(wx, (width - x) / fx);
+      }
       weights[y * width + x] = wx * wy;
     }
   }
@@ -160,7 +174,9 @@ Future<img.Image> processInTiles(
     for (var x = 0; x < outWidth; x++) {
       final idx = rowBase + x;
       final w = weightSum[idx];
-      if (w <= 0) continue; // Bei voller Kachel-Abdeckung sollte das nie vorkommen.
+      if (w <= 0) {
+        continue; // Bei voller Kachel-Abdeckung sollte das nie vorkommen.
+      }
       result.setPixelRgb(
         x,
         y,

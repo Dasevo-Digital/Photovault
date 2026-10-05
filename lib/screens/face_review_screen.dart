@@ -147,8 +147,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Datei, die tatsächlich angezeigt/für Crops verwendet wird: die
   /// konvertierte Vorschau, falls das Originalformat (z.B. HEIC/DNG) von
   /// Flutter nicht direkt gerendert werden kann – sonst das Original.
-  File get _displayFile =>
-      widget.library.paths.absolute(_asset.previewRelativePath ?? _asset.relativePath);
+  File get _displayFile => widget.library.paths.absolute(
+    _asset.previewRelativePath ?? _asset.relativePath,
+  );
 
   /// Seitenverhältnis eines Fotos, dessen Maße nicht in der Datenbank
   /// stehen (in der Praxis eine Handvoll Altfälle).
@@ -192,10 +193,14 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     setState(() => _loading = true);
     final gefragtesAsset = _asset.id;
     final faces = await widget.library.db.facesForAsset(_asset.id);
-    final people = await widget.library.db.select(widget.library.db.people).get();
+    final people = await widget.library.db
+        .select(widget.library.db.people)
+        .get();
 
     double? aspect;
-    if (_asset.widthPx != null && _asset.heightPx != null && _asset.heightPx! > 0) {
+    if (_asset.widthPx != null &&
+        _asset.heightPx != null &&
+        _asset.heightPx! > 0) {
       aspect = _asset.widthPx! / _asset.heightPx!;
     } else {
       aspect = await _seitenverhaeltnisAusDatei();
@@ -227,13 +232,19 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       return;
     }
 
-    final people = await widget.library.db.select(widget.library.db.people).get();
+    final people = await widget.library.db
+        .select(widget.library.db.people)
+        .get();
     // Wer könnte das sein? Die Einbettung liegt am Gesicht, die Rechnung
     // gab es längst - sie stand nur in der Sammelzuordnung fest.
-    final vorschlag = await widget.library
-        .personenvorschlag(face.embedding, ausser: face.personId);
+    final vorschlag = await widget.library.personenvorschlag(
+      face.embedding,
+      ausser: face.personId,
+    );
     if (!mounted) return;
-    final currentName = face.personId != null ? _personNames[face.personId] : null;
+    final currentName = face.personId != null
+        ? _personNames[face.personId]
+        : null;
     final choice = await showPersonPickerDialog(
       context,
       people,
@@ -259,7 +270,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(PeopleCompanion.insert(id: personId, name: choice.newName!));
+      await widget.library.db.createPerson(
+        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      );
     } else {
       personId = choice.existingPersonId!;
     }
@@ -278,32 +291,44 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   Future<void> _kontextmenue(Offset position, FaceData? face) async {
     final t = AppTexte.of(context);
     final wo = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final unbenannte = _faces.where((f) => f.personId == null && !f.isIgnored).length;
+    final unbenannte = _faces
+        .where((f) => f.personId == null && !f.isIgnored)
+        .length;
 
     final wahl = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromRect(position & Size.zero, Offset.zero & wo.size),
+      position: RelativeRect.fromRect(
+        position & Size.zero,
+        Offset.zero & wo.size,
+      ),
       items: [
         if (face != null) ...[
           if (!face.isIgnored)
             PopupMenuItem(
               value: 'benennen',
               child: _eintrag(
-                  Icons.person_add_alt_1,
-                  face.personId != null
-                      ? t.gesichtUmbenennen
-                      : t.gesichtBenennen),
+                Icons.person_add_alt_1,
+                face.personId != null ? t.gesichtUmbenennen : t.gesichtBenennen,
+              ),
             ),
           if (face.personId != null)
             PopupMenuItem(
               value: 'loesen',
-              child: _eintrag(Icons.person_off_outlined, t.gesichtZuordnungLoesen),
+              child: _eintrag(
+                Icons.person_off_outlined,
+                t.gesichtZuordnungLoesen,
+              ),
             ),
           PopupMenuItem(
             value: face.isIgnored ? 'zurueck' : 'ignorieren',
             child: _eintrag(
-                face.isIgnored ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                face.isIgnored ? t.gesichtNichtMehrIgnorieren : t.gesichtIgnorieren),
+              face.isIgnored
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              face.isIgnored
+                  ? t.gesichtNichtMehrIgnorieren
+                  : t.gesichtIgnorieren,
+            ),
           ),
           PopupMenuItem(
             value: 'loeschen',
@@ -316,18 +341,28 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         PopupMenuItem(
           value: 'rahmen',
           child: _eintrag(
-              _rahmenSichtbar ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              _rahmenSichtbar ? t.gesichtRahmenAusblenden : t.gesichtRahmenEinblenden),
+            _rahmenSichtbar
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            _rahmenSichtbar
+                ? t.gesichtRahmenAusblenden
+                : t.gesichtRahmenEinblenden,
+          ),
         ),
         PopupMenuItem(
           value: 'hinzufuegen',
-          child: _eintrag(Icons.add_a_photo_outlined, t.gesichtManuellHinzufuegen),
+          child: _eintrag(
+            Icons.add_a_photo_outlined,
+            t.gesichtManuellHinzufuegen,
+          ),
         ),
         PopupMenuItem(
           value: 'alleIgnorieren',
           enabled: unbenannte > 0,
-          child: _eintrag(Icons.visibility_off_outlined,
-              t.gesichtAlleUnbenanntenIgnorieren(unbenannte)),
+          child: _eintrag(
+            Icons.visibility_off_outlined,
+            t.gesichtAlleUnbenanntenIgnorieren(unbenannte),
+          ),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
@@ -340,12 +375,13 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         PopupMenuItem(
           value: 'nichtMehrSuchen',
           child: _eintrag(
-              _asset.faceScanExcluded
-                  ? Icons.person_search_outlined
-                  : Icons.search_off_outlined,
-              _asset.faceScanExcluded
-                  ? t.gesichtWiederDurchsuchen
-                  : t.gesichtNichtMehrDurchsuchen),
+            _asset.faceScanExcluded
+                ? Icons.person_search_outlined
+                : Icons.search_off_outlined,
+            _asset.faceScanExcluded
+                ? t.gesichtWiederDurchsuchen
+                : t.gesichtNichtMehrDurchsuchen,
+          ),
         ),
         PopupMenuItem(
           value: 'fotoLoeschen',
@@ -379,10 +415,10 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
           _dragCurrent = null;
         });
       case 'alleIgnorieren':
-        await widget.library.db.setFacesIgnored(
-          [for (final f in _faces) if (f.personId == null && !f.isIgnored) f.id],
-          true,
-        );
+        await widget.library.db.setFacesIgnored([
+          for (final f in _faces)
+            if (f.personId == null && !f.isIgnored) f.id,
+        ], true);
         _load();
       case 'info':
         setState(() => _infoSichtbar = true);
@@ -411,9 +447,11 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     // Die Zeile in der eigenen Liste nachziehen: Sie stammt aus dem
     // aufrufenden Bildschirm und weiss von der Änderung nichts.
     setState(() => _assets[_index] = _asset.copyWith(isFavorite: neuerWert));
-    melde.erfolg(neuerWert
-        ? AppTexte.of(context).gesichtFavoritGesetzt
-        : AppTexte.of(context).gesichtFavoritEntfernt);
+    melde.erfolg(
+      neuerWert
+          ? AppTexte.of(context).gesichtFavoritGesetzt
+          : AppTexte.of(context).gesichtFavoritEntfernt,
+    );
   }
 
   /// Das Foto in den gesperrten Ordner legen.
@@ -461,14 +499,16 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Suchen, nicht dem Gefundenen.
   Future<void> _durchsuchenUmschalten() async {
     final neuerWert = !_asset.faceScanExcluded;
-    await widget.library.db
-        .setzeGesichtssucheAusgenommen(_asset.id, neuerWert);
+    await widget.library.db.setzeGesichtssucheAusgenommen(_asset.id, neuerWert);
     if (!mounted) return;
-    setState(() =>
-        _assets[_index] = _asset.copyWith(faceScanExcluded: neuerWert));
-    melde.erfolg(neuerWert
-        ? AppTexte.of(context).gesichtNichtMehrDurchsuchtHinweis
-        : AppTexte.of(context).gesichtWiederDurchsuchtHinweis);
+    setState(
+      () => _assets[_index] = _asset.copyWith(faceScanExcluded: neuerWert),
+    );
+    melde.erfolg(
+      neuerWert
+          ? AppTexte.of(context).gesichtNichtMehrDurchsuchtHinweis
+          : AppTexte.of(context).gesichtWiederDurchsuchtHinweis,
+    );
   }
 
   Future<void> _loescheFoto() async {
@@ -480,11 +520,13 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         content: Text(t.loeschenHinweis(1)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen)),
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.allgLoeschen)),
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgLoeschen),
+          ),
         ],
       ),
     );
@@ -513,25 +555,35 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Eine Menüzeile. Der Text ist [Flexible], weil ein Popup-Menü seine
   /// Breite begrenzt und eine feste Zeile sonst überläuft – genau das
   /// passierte beim längsten Eintrag.
-  Widget _eintrag(IconData icon, String text) => Row(children: [
-        Icon(icon, size: 20),
-        const SizedBox(width: 12),
-        Flexible(child: Text(text)),
-      ]);
+  Widget _eintrag(IconData icon, String text) => Row(
+    children: [
+      Icon(icon, size: 20),
+      const SizedBox(width: 12),
+      Flexible(child: Text(text)),
+    ],
+  );
 
   Future<void> _finishManualBox(Rect normalizedRect) async {
-    final people = await widget.library.db.select(widget.library.db.people).get();
+    final people = await widget.library.db
+        .select(widget.library.db.people)
+        .get();
     if (!mounted) return;
     // Kein Vorschlag: Der Rahmen ist gerade erst aufgezogen, eine
     // Einbettung dazu gibt es noch nicht. Sie entsteht weiter unten.
-    final choice = await showPersonPickerDialog(context, people,
-        paths: widget.library.paths, title: AppTexte.of(context).gesichtNeuBenennen);
+    final choice = await showPersonPickerDialog(
+      context,
+      people,
+      paths: widget.library.paths,
+      title: AppTexte.of(context).gesichtNeuBenennen,
+    );
     if (choice == null) return;
 
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(PeopleCompanion.insert(id: personId, name: choice.newName!));
+      await widget.library.db.createPerson(
+        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      );
     } else {
       personId = choice.existingPersonId!;
     }
@@ -545,7 +597,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       kasten: normalizedRect,
       personId: personId,
       beiEinbettungsfehler: (e) {
-        if (mounted) melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+        if (mounted) {
+          melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+        }
       },
     );
 
@@ -569,13 +623,19 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       title: Row(
         children: [
           Flexible(
-            child: Text(_asset.originalFileName, overflow: TextOverflow.ellipsis),
+            child: Text(
+              _asset.originalFileName,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (mehrere) ...[
             const SizedBox(width: 12),
             Text(
               AppTexte.of(context).gesichtPosition(_index + 1, _assets.length),
-              style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 12),
+              style: const TextStyle(
+                color: DunkleFlaeche.hinweis,
+                fontSize: 12,
+              ),
             ),
           ],
         ],
@@ -598,9 +658,11 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
             tooltip: _rahmenSichtbar
                 ? AppTexte.of(context).gesichtRahmenAusblenden
                 : AppTexte.of(context).gesichtRahmenEinblenden,
-            icon: Icon(_rahmenSichtbar
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined),
+            icon: Icon(
+              _rahmenSichtbar
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+            ),
             onPressed: () => setState(() => _rahmenSichtbar = !_rahmenSichtbar),
           ),
         if (!gesperrt)
@@ -624,9 +686,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
             tooltip: _asset.isFavorite
                 ? AppTexte.of(context).viewerFavoritEntfernen
                 : AppTexte.of(context).viewerFavoritSetzen,
-            icon: Icon(_asset.isFavorite
-                ? Icons.favorite
-                : Icons.favorite_border),
+            icon: Icon(
+              _asset.isFavorite ? Icons.favorite : Icons.favorite_border,
+            ),
             onPressed: _favoritUmschalten,
           ),
           IconButton(
@@ -725,90 +787,107 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
 
   Widget _fotoFlaeche(BuildContext context) {
     return _loading || _aspectRatio == null
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: AspectRatio(
-                aspectRatio: _aspectRatio!,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final w = constraints.maxWidth;
-                    final h = constraints.maxHeight;
-                    return GestureDetector(
-                      // Rechtsklick auf die freie Fläche. Liegt auf
-                      // derselben Geste wie das Aufziehen, damit beides
-                      // dieselbe Fläche abdeckt.
-                      onSecondaryTapDown: (d) => _kontextmenue(d.globalPosition, null),
-                      onPanStart: _addMode ? (d) => setState(() {
+        ? const Center(child: CircularProgressIndicator())
+        : Center(
+            child: AspectRatio(
+              aspectRatio: _aspectRatio!,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  final h = constraints.maxHeight;
+                  return GestureDetector(
+                    // Rechtsklick auf die freie Fläche. Liegt auf
+                    // derselben Geste wie das Aufziehen, damit beides
+                    // dieselbe Fläche abdeckt.
+                    onSecondaryTapDown: (d) =>
+                        _kontextmenue(d.globalPosition, null),
+                    onPanStart: _addMode
+                        ? (d) => setState(() {
                             _dragStart = d.localPosition;
                             _dragCurrent = d.localPosition;
-                          }) : null,
-                      onPanUpdate: _addMode ? (d) => setState(() => _dragCurrent = d.localPosition) : null,
-                      onPanEnd: _addMode
-                          ? (_) {
-                              if (_dragStart == null || _dragCurrent == null) return;
-                              final rect = Rect.fromPoints(_dragStart!, _dragCurrent!);
-                              if (rect.width < 10 || rect.height < 10) {
-                                setState(() {
-                                  _dragStart = null;
-                                  _dragCurrent = null;
-                                });
-                                return;
-                              }
-                              final normalized = Rect.fromLTWH(
-                                (rect.left / w).clamp(0.0, 1.0),
-                                (rect.top / h).clamp(0.0, 1.0),
-                                (rect.width / w).clamp(0.0, 1.0),
-                                (rect.height / h).clamp(0.0, 1.0),
-                              );
-                              _finishManualBox(normalized);
+                          })
+                        : null,
+                    onPanUpdate: _addMode
+                        ? (d) => setState(() => _dragCurrent = d.localPosition)
+                        : null,
+                    onPanEnd: _addMode
+                        ? (_) {
+                            if (_dragStart == null || _dragCurrent == null) {
+                              return;
                             }
-                          : null,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.file(
-                            _displayFile,
-                            fit: BoxFit.fill,
-                            // Nur so gross dekodieren, wie es angezeigt wird.
-                            // Dieser Bildschirm kann nicht zoomen (anders als
-                            // der Vollbildbetrachter, wo die volle Auflösung
-                            // gebraucht wird) – ein 48-Megapixel-Foto voll zu
-                            // dekodieren kostet 183 MB statt 22 MB, gemessen.
-                            // Beim Durchblättern summiert sich das über den
-                            // Bildcache.
-                            // In Stufen (siehe [dekodierbreite]): Diese
-                            // Ansicht zeigt die volle Vorschau, und ihre
-                            // Breite hängt am Fenster. Ohne die Stufen
-                            // wird beim Ziehen am Rand bei jedem
-                            // Zwischenschritt neu dekodiert – hier ist
-                            // das kein Vorschaubild, sondern das grosse.
-                            cacheWidth: dekodierbreite(
-                                w, MediaQuery.devicePixelRatioOf(context)),
+                            final rect = Rect.fromPoints(
+                              _dragStart!,
+                              _dragCurrent!,
+                            );
+                            if (rect.width < 10 || rect.height < 10) {
+                              setState(() {
+                                _dragStart = null;
+                                _dragCurrent = null;
+                              });
+                              return;
+                            }
+                            final normalized = Rect.fromLTWH(
+                              (rect.left / w).clamp(0.0, 1.0),
+                              (rect.top / h).clamp(0.0, 1.0),
+                              (rect.width / w).clamp(0.0, 1.0),
+                              (rect.height / h).clamp(0.0, 1.0),
+                            );
+                            _finishManualBox(normalized);
+                          }
+                        : null,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(
+                          _displayFile,
+                          fit: BoxFit.fill,
+                          // Nur so gross dekodieren, wie es angezeigt wird.
+                          // Dieser Bildschirm kann nicht zoomen (anders als
+                          // der Vollbildbetrachter, wo die volle Auflösung
+                          // gebraucht wird) – ein 48-Megapixel-Foto voll zu
+                          // dekodieren kostet 183 MB statt 22 MB, gemessen.
+                          // Beim Durchblättern summiert sich das über den
+                          // Bildcache.
+                          // In Stufen (siehe [dekodierbreite]): Diese
+                          // Ansicht zeigt die volle Vorschau, und ihre
+                          // Breite hängt am Fenster. Ohne die Stufen
+                          // wird beim Ziehen am Rand bei jedem
+                          // Zwischenschritt neu dekodiert – hier ist
+                          // das kein Vorschaubild, sondern das grosse.
+                          cacheWidth: dekodierbreite(
+                            w,
+                            MediaQuery.devicePixelRatioOf(context),
                           ),
-                          if (_rahmenSichtbar)
-                            for (final face in _faces)
-                              Gesichtsrahmen(
-                                gesicht: face,
-                                personName: _personNames[face.personId],
-                                flaeche: Size(w, h),
-                                beiTipp: () => _tapFace(face),
-                                beiMenue: (stelle) => _kontextmenue(stelle, face),
-                              ),
-                          if (_addMode && _dragStart != null && _dragCurrent != null)
-                            Positioned.fromRect(
-                              rect: Rect.fromPoints(_dragStart!, _dragCurrent!),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.cyanAccent, width: 2),
+                        ),
+                        if (_rahmenSichtbar)
+                          for (final face in _faces)
+                            Gesichtsrahmen(
+                              gesicht: face,
+                              personName: _personNames[face.personId],
+                              flaeche: Size(w, h),
+                              beiTipp: () => _tapFace(face),
+                              beiMenue: (stelle) => _kontextmenue(stelle, face),
+                            ),
+                        if (_addMode &&
+                            _dragStart != null &&
+                            _dragCurrent != null)
+                          Positioned.fromRect(
+                            rect: Rect.fromPoints(_dragStart!, _dragCurrent!),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.cyanAccent,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            );
+            ),
+          );
   }
 }

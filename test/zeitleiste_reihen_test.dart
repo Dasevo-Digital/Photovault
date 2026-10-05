@@ -29,66 +29,78 @@ import 'package:photo_vault/widgets/timeline_grid_layout.dart';
 
 /// Eine Aufnahme mit Massen - mehr sieht die Anordnung nicht an.
 Rasterzeile _foto(String id, DateTime wann, {int? breite, int? hoehe}) =>
-    Rasterzeile.aus(AssetData(
-      id: id,
-      relativePath: 'originals/$id.jpg',
-      originalFileName: '$id.jpg',
-      type: 'IMAGE',
-      fileSizeBytes: 1000,
-      checksum: id,
-      fileCreatedAt: wann,
-      importedAt: wann,
-      widthPx: breite,
-      heightPx: hoehe,
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-      rating: 0,
-    ));
+    Rasterzeile.aus(
+      AssetData(
+        id: id,
+        relativePath: 'originals/$id.jpg',
+        originalFileName: '$id.jpg',
+        type: 'IMAGE',
+        fileSizeBytes: 1000,
+        checksum: id,
+        fileCreatedAt: wann,
+        importedAt: wann,
+        widthPx: breite,
+        heightPx: hoehe,
+        isFavorite: false,
+        isTrashed: false,
+        isLocked: false,
+        faceScanExcluded: false,
+        gpsGeprueft: false,
+        datumGeschaetzt: false,
+        datumGeprueft: false,
+        ortGeerbt: false,
+        videobilderGeprueft: false,
+        backedUp: false,
+        autoBackedUp: false,
+        facesScanned: false,
+        ocrScanned: false,
+        aiCaptionScanned: false,
+        aiCaptionEdited: false,
+        aiTagsScanned: false,
+        isStackCover: false,
+        rating: 0,
+      ),
+    );
 
 void main() {
   group('Das Seitenverhältnis kommt aus der Datenbank', () {
     test('aus Breite und Höhe', () {
       expect(
-          seitenverhaeltnisVon(
-              _foto('a', DateTime(2026), breite: 3000, hoehe: 2000)),
-          closeTo(1.5, 0.0001));
+        seitenverhaeltnisVon(
+          _foto('a', DateTime(2026), breite: 3000, hoehe: 2000),
+        ),
+        closeTo(1.5, 0.0001),
+      );
       expect(
-          seitenverhaeltnisVon(
-              _foto('b', DateTime(2026), breite: 2000, hoehe: 3000)),
-          closeTo(2 / 3, 0.0001));
+        seitenverhaeltnisVon(
+          _foto('b', DateTime(2026), breite: 2000, hoehe: 3000),
+        ),
+        closeTo(2 / 3, 0.0001),
+      );
     });
 
     test('fehlen sie, gilt das Kleinbildformat', () {
       // 2 von 8098 Aufnahmen der echten Bibliothek haben keine Masse.
-      expect(seitenverhaeltnisVon(_foto('c', DateTime(2026))),
-          seitenverhaeltnisVorgabe);
       expect(
-          seitenverhaeltnisVon(
-              _foto('d', DateTime(2026), breite: 0, hoehe: 100)),
-          seitenverhaeltnisVorgabe);
+        seitenverhaeltnisVon(_foto('c', DateTime(2026))),
+        seitenverhaeltnisVorgabe,
+      );
+      expect(
+        seitenverhaeltnisVon(_foto('d', DateTime(2026), breite: 0, hoehe: 100)),
+        seitenverhaeltnisVorgabe,
+      );
     });
   });
 
   group('Der Zeitstrahl rechnet, statt zu schätzen', () {
     final gruppe = [
       for (var i = 0; i < 25; i++)
-        _foto('f$i', DateTime(2026, 3, 1),
-            breite: i.isEven ? 3000 : 2000, hoehe: i.isEven ? 2000 : 3000)
+        _foto(
+          'f$i',
+          DateTime(2026, 3, 1),
+          breite: i.isEven ? 3000 : 2000,
+          hoehe: i.isEven ? 2000 : 3000,
+        ),
     ];
     final gruppen = {202603: gruppe};
     const keys = [202603];
@@ -97,8 +109,10 @@ void main() {
       final reihen = zeitleisteReihen(gruppe, 1200);
       expect(
         timelineMonthGroupHeight(gruppe, 1200, form: Zeitleistenform.reihen),
-        closeTo(timelineHeaderHeight +
-            reihenGesamthoehe(reihen, timelineGridSpacing), 0.0001),
+        closeTo(
+          timelineHeaderHeight + reihenGesamthoehe(reihen, timelineGridSpacing),
+          0.0001,
+        ),
       );
     });
 
@@ -111,8 +125,13 @@ void main() {
         for (final platz in r.plaetze) {
           final erwartet = timelineHeaderHeight + oben;
           expect(
-            timelineOffsetForAsset(keys, gruppen, 1200, 'f${platz.index}',
-                form: Zeitleistenform.reihen),
+            timelineOffsetForAsset(
+              keys,
+              gruppen,
+              1200,
+              'f${platz.index}',
+              form: Zeitleistenform.reihen,
+            ),
             closeTo(erwartet, 0.0001),
             reason: 'f${platz.index} steht in der Reihe ab ${r.ersterIndex}',
           );
@@ -123,9 +142,15 @@ void main() {
 
     test('ein unbekanntes Foto ergibt null statt einer geratenen Stelle', () {
       expect(
-          timelineOffsetForAsset(keys, gruppen, 1200, 'gibtsnicht',
-              form: Zeitleistenform.reihen),
-          isNull);
+        timelineOffsetForAsset(
+          keys,
+          gruppen,
+          1200,
+          'gibtsnicht',
+          form: Zeitleistenform.reihen,
+        ),
+        isNull,
+      );
     });
 
     test('die Quadrate rechnen unverändert weiter', () {
@@ -140,10 +165,11 @@ void main() {
         // Abzug – vier Punkte je Monatsgruppe, die sich über die
         // Bibliothek auf 164 summierten.
         closeTo(
-            timelineHeaderHeight +
-                zeilen * timelineRowHeightForWidth(1200) -
-                timelineGridSpacing,
-            0.0001),
+          timelineHeaderHeight +
+              zeilen * timelineRowHeightForWidth(1200) -
+              timelineGridSpacing,
+          0.0001,
+        ),
       );
     });
   });
@@ -161,12 +187,12 @@ void main() {
     ];
 
     String? geh(String von, Rasterrichtung richtung) => nachbarkachel(
-          gruppen: gruppen,
-          von: von,
-          richtung: richtung,
-          spalten: 3,
-          reihenlaengen: laengen,
-        );
+      gruppen: gruppen,
+      von: von,
+      richtung: richtung,
+      spalten: 3,
+      reihenlaengen: laengen,
+    );
 
     test('runter geht in die Reihe darunter, an dieselbe Stelle', () {
       // a1 ist Stelle 0 der ersten Reihe; darunter beginnt die zweite mit a4.
@@ -174,10 +200,13 @@ void main() {
       expect(geh('a2', Rasterrichtung.runter), 'a5');
     });
 
-    test('ist die Stelle in der Reihe darunter nicht besetzt, rueckt es auf', () {
-      // a3 ist Stelle 2; die zweite Reihe hat nur zwei Fotos.
-      expect(geh('a3', Rasterrichtung.runter), 'a5');
-    });
+    test(
+      'ist die Stelle in der Reihe darunter nicht besetzt, rueckt es auf',
+      () {
+        // a3 ist Stelle 2; die zweite Reihe hat nur zwei Fotos.
+        expect(geh('a3', Rasterrichtung.runter), 'a5');
+      },
+    );
 
     test('hoch geht zurueck, ebenfalls stellengetreu', () {
       expect(geh('a6', Rasterrichtung.hoch), 'a4');
@@ -208,22 +237,27 @@ void main() {
       library = LibraryState()
         ..db = db
         ..paths = await StoragePaths.forTesting(
-            Directory(p.join(wurzel.path, 'l')));
+          Directory(p.join(wurzel.path, 'l')),
+        );
       for (var monat = 1; monat <= 3; monat++) {
         for (var k = 0; k < 6; k++) {
           final id = 'm${monat}_$k';
-          await db.into(db.assets).insert(AssetsCompanion.insert(
-                id: id,
-                originalFileName: '$id.jpg',
-                relativePath: 'o/$id.jpg',
-                checksum: 'c$id',
-                type: 'IMAGE',
-                fileCreatedAt: DateTime(2026, monat, 5 + k),
-                importedAt: DateTime(2026),
-                thumbnailRelativePath: Value('t/$id.jpg'),
-                widthPx: Value(k.isEven ? 3000 : 2000),
-                heightPx: Value(k.isEven ? 2000 : 3000),
-              ));
+          await db
+              .into(db.assets)
+              .insert(
+                AssetsCompanion.insert(
+                  id: id,
+                  originalFileName: '$id.jpg',
+                  relativePath: 'o/$id.jpg',
+                  checksum: 'c$id',
+                  type: 'IMAGE',
+                  fileCreatedAt: DateTime(2026, monat, 5 + k),
+                  importedAt: DateTime(2026),
+                  thumbnailRelativePath: Value('t/$id.jpg'),
+                  widthPx: Value(k.isEven ? 3000 : 2000),
+                  heightPx: Value(k.isEven ? 2000 : 3000),
+                ),
+              );
         }
       }
     });
@@ -237,13 +271,15 @@ void main() {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: Scaffold(body: TimelineScreen(library: library)),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: Scaffold(body: TimelineScreen(library: library)),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
     }
@@ -271,8 +307,11 @@ void main() {
           .toList();
       expect(kacheln, isNotEmpty);
       final erste = tester.getRect(find.byType(AssetThumbnailTile).first);
-      expect(erste.width, closeTo(erste.height, 0.01),
-          reason: 'im Quadratraster ist jede Kachel quadratisch');
+      expect(
+        erste.width,
+        closeTo(erste.height, 0.01),
+        reason: 'im Quadratraster ist jede Kachel quadratisch',
+      );
       await abbauen(tester);
     });
 
@@ -284,9 +323,10 @@ void main() {
       // In den Reihen trägt jedes Foto sein eigenes Verhältnis; wären
       // hier wieder Quadrate, stimmte die Form nur dem Namen nach.
       final masse = [
-        for (final r in tester
-            .widgetList<AssetThumbnailTile>(find.byType(AssetThumbnailTile)))
-          tester.getRect(find.byWidget(r))
+        for (final r in tester.widgetList<AssetThumbnailTile>(
+          find.byType(AssetThumbnailTile),
+        ))
+          tester.getRect(find.byWidget(r)),
       ];
       expect(masse.any((r) => (r.width - r.height).abs() > 1), isTrue);
 

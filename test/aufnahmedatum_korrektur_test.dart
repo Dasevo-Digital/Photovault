@@ -24,7 +24,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_datum_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -60,16 +62,18 @@ void main() {
     final datei = paths.absolute(rel);
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(img.encodeJpg(bild));
-    await db.insertAsset(AssetsCompanion.insert(
-      id: id,
-      originalFileName: '$id$endung',
-      relativePath: rel,
-      checksum: id,
-      type: 'IMAGE',
-      fileCreatedAt: inDerDatenbank,
-      importedAt: DateTime.now(),
-      fileSizeBytes: const Value(1),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: id,
+        originalFileName: '$id$endung',
+        relativePath: rel,
+        checksum: id,
+        type: 'IMAGE',
+        fileCreatedAt: inDerDatenbank,
+        importedAt: DateTime.now(),
+        fileSizeBytes: const Value(1),
+      ),
+    );
     return rel;
   }
 
@@ -194,8 +198,10 @@ void main() {
       await db.moveToTrash(['p1']);
       // Der normale Lauf lässt es liegen – das ist Absicht.
       await lauf();
-      expect((await db.assetById('p1'))!.fileCreatedAt,
-          DateTime(2026, 5, 8, 23, 40));
+      expect(
+        (await db.assetById('p1'))!.fileCreatedAt,
+        DateTime(2026, 5, 8, 23, 40),
+      );
 
       await library.ausPapierkorbHolen(['p1']);
 

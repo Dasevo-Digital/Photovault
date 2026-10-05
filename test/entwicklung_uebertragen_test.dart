@@ -22,7 +22,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_uebertrag_');
     db = AppDatabase(NativeDatabase.memory());
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     imp = ImportService(db, paths);
     lib = LibraryState()
       ..db = db
@@ -35,8 +37,10 @@ void main() {
   });
 
   Future<String> importiere(String name, int fuellung) async {
-    final inc = Directory(p.join(tempRoot.path, 'in'))..createSync(recursive: true);
-    final f = File(p.join(inc.path, name))..writeAsBytesSync(List.filled(64, fuellung));
+    final inc = Directory(p.join(tempRoot.path, 'in'))
+      ..createSync(recursive: true);
+    final f = File(p.join(inc.path, name))
+      ..writeAsBytesSync(List.filled(64, fuellung));
     return (await imp.importFile(f.path)).assetId!;
   }
 
@@ -79,20 +83,22 @@ void main() {
     final id = await importiere('ungespeichert.jpg', 9);
     expect(await db.developSettingsForAsset(id), isNull);
 
-    lib.setzeKopierteEntwicklung(DevelopSettingsData(
-      assetId: id,
-      exposure: 0.75,
-      contrast: -0.2,
-      shadows: 0,
-      highlights: 0,
-      sharpness: 0,
-      noiseReduction: 0,
-      clarity: 0,
-      vignette: 0,
-      lutStrength: 1,
-      lensCorrectionEnabled: true,
-      updatedAt: DateTime.now(),
-    ));
+    lib.setzeKopierteEntwicklung(
+      DevelopSettingsData(
+        assetId: id,
+        exposure: 0.75,
+        contrast: -0.2,
+        shadows: 0,
+        highlights: 0,
+        sharpness: 0,
+        noiseReduction: 0,
+        clarity: 0,
+        vignette: 0,
+        lutStrength: 1,
+        lensCorrectionEnabled: true,
+        updatedAt: DateTime.now(),
+      ),
+    );
 
     expect(lib.hatKopierteEntwicklung, isTrue);
     expect(lib.kopierteEntwicklung!.exposure, 0.75);
@@ -116,9 +122,13 @@ void main() {
 
     // Der Zähler im Fortschritt gibt die tatsächlich bearbeiteten Fotos an.
     final schritte = await lib.uebertrageEntwicklung([gesperrt]).toList();
-    expect(schritte.first.total, 0,
-        reason: 'ein gesperrtes Foto liegt verschlüsselt vor und darf nicht '
-            'entwickelt werden');
+    expect(
+      schritte.first.total,
+      0,
+      reason:
+          'ein gesperrtes Foto liegt verschlüsselt vor und darf nicht '
+          'entwickelt werden',
+    );
     expect(await db.developSettingsForAsset(gesperrt), isNull);
   });
 
@@ -128,9 +138,13 @@ void main() {
     await lib.kopiereEntwicklungVon(quelle);
 
     final schritte = await lib.uebertrageEntwicklung([quelle]).toList();
-    expect(schritte.first.total, 0,
-        reason: 'sich selbst zu überschreiben hätte nur einen Verlaufseintrag '
-            'ohne Änderung zur Folge');
+    expect(
+      schritte.first.total,
+      0,
+      reason:
+          'sich selbst zu überschreiben hätte nur einen Verlaufseintrag '
+          'ohne Änderung zur Folge',
+    );
   });
 
   test('Masken des Quellfotos wandern nicht mit', () async {
@@ -151,8 +165,12 @@ void main() {
     final ziel = await importiere('ohnemaske.jpg', 8);
     await lib.uebertrageEntwicklung([ziel]).drain<void>();
 
-    expect(await db.masksForAsset(ziel), isEmpty,
-        reason: 'eine Maske umschliesst einen Ort im Quellbild und hätte im '
-            'Zielbild keine Entsprechung');
+    expect(
+      await db.masksForAsset(ziel),
+      isEmpty,
+      reason:
+          'eine Maske umschliesst einen Ort im Quellbild und hätte im '
+          'Zielbild keine Entsprechung',
+    );
   });
 }

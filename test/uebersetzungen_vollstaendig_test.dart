@@ -30,10 +30,16 @@ void main() {
     final nurDeutsch = schluessel(de).difference(schluessel(en));
     final nurEnglisch = schluessel(en).difference(schluessel(de));
 
-    expect(nurDeutsch, isEmpty,
-        reason: 'diese Texte fehlen auf Englisch: ${nurDeutsch.join(', ')}');
-    expect(nurEnglisch, isEmpty,
-        reason: 'diese Texte gibt es nur auf Englisch: ${nurEnglisch.join(', ')}');
+    expect(
+      nurDeutsch,
+      isEmpty,
+      reason: 'diese Texte fehlen auf Englisch: ${nurDeutsch.join(', ')}',
+    );
+    expect(
+      nurEnglisch,
+      isEmpty,
+      reason: 'diese Texte gibt es nur auf Englisch: ${nurEnglisch.join(', ')}',
+    );
   });
 
   test('kein Text ist leer geblieben', () {
@@ -50,8 +56,11 @@ void main() {
     final datei = File('lib/l10n/fehlende_uebersetzungen.txt');
     if (!datei.existsSync()) return;
     final inhalt = jsonDecode(datei.readAsStringSync()) as Map<String, dynamic>;
-    expect(inhalt, isEmpty,
-        reason: 'noch nicht übersetzt: ${inhalt.values.join(', ')}');
+    expect(
+      inhalt,
+      isEmpty,
+      reason: 'noch nicht übersetzt: ${inhalt.values.join(', ')}',
+    );
   });
 
   /// Die Platzhalter eines Textbausteins.
@@ -85,8 +94,11 @@ void main() {
     // Übersetzungsfehler, sondern einen Satz mit einer Lücke – etwa
     // „Exportiert:" ohne die Dateinamen.
     for (final k in schluessel(de)) {
-      expect(platzhalter(en[k] as String), platzhalter(de[k] as String),
-          reason: 'unterschiedliche Platzhalter bei „$k"');
+      expect(
+        platzhalter(en[k] as String),
+        platzhalter(de[k] as String),
+        reason: 'unterschiedliche Platzhalter bei „$k"',
+      );
     }
   });
 

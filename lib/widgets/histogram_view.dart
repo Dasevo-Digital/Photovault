@@ -69,20 +69,27 @@ class _HistogramViewState extends State<HistogramView> {
     final welle = widget.waveform;
     final istWelle =
         _mode == HistogramMode.waveform || _mode == HistogramMode.parade;
-    final leer = istWelle ? welle == null || welle.isEmpty : data == null || data.isEmpty;
+    final leer = istWelle
+        ? welle == null || welle.isEmpty
+        : data == null || data.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(AppTexte.of(context).histogrammTitel,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              AppTexte.of(context).histogrammTitel,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
             if (widget.isStale)
               const SizedBox(
                 width: 12,
                 height: 12,
-                child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white38),
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: Colors.white38,
+                ),
               ),
           ],
         ),
@@ -99,7 +106,10 @@ class _HistogramViewState extends State<HistogramView> {
               ? Center(
                   child: Text(
                     AppTexte.of(context).histogrammKeineVorschau,
-                    style: const TextStyle(color: DunkleFlaeche.hinweis, fontSize: 11),
+                    style: const TextStyle(
+                      color: DunkleFlaeche.hinweis,
+                      fontSize: 11,
+                    ),
                   ),
                 )
               : Stack(
@@ -108,7 +118,9 @@ class _HistogramViewState extends State<HistogramView> {
                     CustomPaint(
                       painter: istWelle
                           ? _WaveformPainter(
-                              data: welle!, parade: _mode == HistogramMode.parade)
+                              data: welle!,
+                              parade: _mode == HistogramMode.parade,
+                            )
                           : _HistogramPainter(data: data!, mode: _mode),
                       size: Size.infinite,
                     ),
@@ -133,8 +145,10 @@ class _HistogramViewState extends State<HistogramView> {
           segments: [
             ButtonSegment(
               value: HistogramMode.luminance,
-              label: Text(AppTexte.of(context).histogrammHelligkeit,
-                  style: const TextStyle(fontSize: 11)),
+              label: Text(
+                AppTexte.of(context).histogrammHelligkeit,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
             const ButtonSegment(
               value: HistogramMode.rgb,
@@ -142,17 +156,22 @@ class _HistogramViewState extends State<HistogramView> {
             ),
             ButtonSegment(
               value: HistogramMode.waveform,
-              label: Text(AppTexte.of(context).histogrammWaveform,
-                  style: const TextStyle(fontSize: 11)),
+              label: Text(
+                AppTexte.of(context).histogrammWaveform,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
             ButtonSegment(
               value: HistogramMode.parade,
-              label: Text(AppTexte.of(context).histogrammParade,
-                  style: const TextStyle(fontSize: 11)),
+              label: Text(
+                AppTexte.of(context).histogrammParade,
+                style: const TextStyle(fontSize: 11),
+              ),
             ),
           ],
           selected: {_mode},
-          onSelectionChanged: (selection) => setState(() => _mode = selection.first),
+          onSelectionChanged: (selection) =>
+              setState(() => _mode = selection.first),
           showSelectedIcon: false,
         ),
       ],
@@ -179,16 +198,22 @@ class _Beschneidungsmarken extends StatelessWidget {
   }
 
   Widget _balken(Color farbe, Alignment wo) => Align(
-        alignment: wo,
-        child: Container(width: 3, color: farbe),
-      );
+    alignment: wo,
+    child: Container(width: 3, color: farbe),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final links = _farbe(beschneidung.tiefenRot, beschneidung.tiefenGruen,
-        beschneidung.tiefenBlau);
-    final rechts = _farbe(beschneidung.lichterRot, beschneidung.lichterGruen,
-        beschneidung.lichterBlau);
+    final links = _farbe(
+      beschneidung.tiefenRot,
+      beschneidung.tiefenGruen,
+      beschneidung.tiefenBlau,
+    );
+    final rechts = _farbe(
+      beschneidung.lichterRot,
+      beschneidung.lichterGruen,
+      beschneidung.lichterBlau,
+    );
     if (links == null && rechts == null) return const SizedBox.shrink();
     return IgnorePointer(
       child: Stack(
@@ -214,7 +239,13 @@ class _HistogramPainter extends CustomPainter {
 
     if (mode == HistogramMode.luminance) {
       final peak = data.peakOf([data.luminance]);
-      _paintChannel(canvas, size, data.luminance, peak, Colors.white.withValues(alpha: 0.75));
+      _paintChannel(
+        canvas,
+        size,
+        data.luminance,
+        peak,
+        Colors.white.withValues(alpha: 0.75),
+      );
     } else {
       // Gemeinsame Bezugshöhe über alle drei Kanäle, sonst wären die
       // Kurven zueinander nicht mehr vergleichbar (jeder Kanal würde auf
@@ -222,9 +253,30 @@ class _HistogramPainter extends CustomPainter {
       final peak = data.peakOf([data.red, data.green, data.blue]);
       // Additiv überlagert (Plus-Blendmode): wo sich alle drei Kanäle
       // decken, entsteht Weiß – das übliche Lightroom-/darktable-Bild.
-      _paintChannel(canvas, size, data.red, peak, const Color(0xFFFF4444), blend: BlendMode.plus);
-      _paintChannel(canvas, size, data.green, peak, const Color(0xFF44FF44), blend: BlendMode.plus);
-      _paintChannel(canvas, size, data.blue, peak, const Color(0xFF4488FF), blend: BlendMode.plus);
+      _paintChannel(
+        canvas,
+        size,
+        data.red,
+        peak,
+        const Color(0xFFFF4444),
+        blend: BlendMode.plus,
+      );
+      _paintChannel(
+        canvas,
+        size,
+        data.green,
+        peak,
+        const Color(0xFF44FF44),
+        blend: BlendMode.plus,
+      );
+      _paintChannel(
+        canvas,
+        size,
+        data.blue,
+        peak,
+        const Color(0xFF4488FF),
+        blend: BlendMode.plus,
+      );
     }
   }
 
@@ -246,8 +298,7 @@ class _HistogramPainter extends CustomPainter {
     int peak,
     Color color, {
     BlendMode blend = BlendMode.srcOver,
-  }) =>
-      paintHistogramSilhouette(canvas, size, bins, peak, color, blend: blend);
+  }) => paintHistogramSilhouette(canvas, size, bins, peak, color, blend: blend);
 
   @override
   bool shouldRepaint(covariant _HistogramPainter oldDelegate) =>

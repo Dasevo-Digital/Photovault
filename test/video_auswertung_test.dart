@@ -35,48 +35,50 @@ void main() {
     required String art,
     String? vorschau,
     String? miniatur = 'thumbnails/x.jpg',
-  }) =>
-      db.insertAsset(AssetsCompanion.insert(
-        id: id,
-        relativePath: 'originals/$id',
-        originalFileName: id,
-        type: art,
-        checksum: id,
-        fileCreatedAt: DateTime(2024),
-        importedAt: DateTime(2024),
-        thumbnailRelativePath: Value(miniatur),
-        previewRelativePath: Value(vorschau),
-      ));
+  }) => db.insertAsset(
+    AssetsCompanion.insert(
+      id: id,
+      relativePath: 'originals/$id',
+      originalFileName: id,
+      type: art,
+      checksum: id,
+      fileCreatedAt: DateTime(2024),
+      importedAt: DateTime(2024),
+      thumbnailRelativePath: Value(miniatur),
+      previewRelativePath: Value(vorschau),
+    ),
+  );
 
   /// Alle Stufen, die aus dem Bildinhalt etwas rechnen – jede mit ihrer
   /// Liste und ihrer Zählung, denn die beiden liefen in diesem Projekt
   /// schon einmal auseinander (siehe background_task_counts_test.dart).
-  final stufen = <String, (Future<List<AssetData>> Function(), Future<int> Function())>{
-    'Texterkennung': (
-      () => db.assetsForOcrBackfill(),
-      () => db.countOcrBackfill()
-    ),
-    'Beschreibung': (
-      () => db.assetsForCaptionBackfill(),
-      () => db.countCaptionBackfill()
-    ),
-    'Unschärfe': (
-      () => db.assetsForBlurBackfill(),
-      () => db.countBlurBackfill()
-    ),
-    'Gesichter': (
-      () => db.assetsForFaceScan(onlyNew: true),
-      () => db.countFaceScan(onlyNew: true)
-    ),
-    'Einbettung': (
-      () => db.assetsForEmbeddingBackfill(),
-      () => db.countEmbeddingBackfill()
-    ),
-    'KI-Schlagwörter': (
-      () => db.assetsForAiTagging(onlyUntagged: true),
-      () => db.countAiTagging(onlyUntagged: true)
-    ),
-  };
+  final stufen =
+      <String, (Future<List<AssetData>> Function(), Future<int> Function())>{
+        'Texterkennung': (
+          () => db.assetsForOcrBackfill(),
+          () => db.countOcrBackfill(),
+        ),
+        'Beschreibung': (
+          () => db.assetsForCaptionBackfill(),
+          () => db.countCaptionBackfill(),
+        ),
+        'Unschärfe': (
+          () => db.assetsForBlurBackfill(),
+          () => db.countBlurBackfill(),
+        ),
+        'Gesichter': (
+          () => db.assetsForFaceScan(onlyNew: true),
+          () => db.countFaceScan(onlyNew: true),
+        ),
+        'Einbettung': (
+          () => db.assetsForEmbeddingBackfill(),
+          () => db.countEmbeddingBackfill(),
+        ),
+        'KI-Schlagwörter': (
+          () => db.assetsForAiTagging(onlyUntagged: true),
+          () => db.countAiTagging(onlyUntagged: true),
+        ),
+      };
 
   group('Ein Video mit Standbild', () {
     setUp(() => lege('v', art: 'VIDEO', vorschau: 'previews/v.jpg'));
@@ -84,8 +86,11 @@ void main() {
     stufen.forEach((name, paar) {
       test('$name sieht es an', () async {
         final liste = await paar.$1();
-        expect([for (final a in liste) a.id], contains('v'),
-            reason: '$name liess Videos bisher aus');
+        expect(
+          [for (final a in liste) a.id],
+          contains('v'),
+          reason: '$name liess Videos bisher aus',
+        );
         expect(await paar.$2(), 1, reason: '$name: Zählung und Liste');
       });
     });
@@ -114,8 +119,11 @@ void main() {
 
     stufen.forEach((name, paar) {
       test('$name sieht es weiterhin an', () async {
-        expect([for (final a in await paar.$1()) a.id], contains('f'),
-            reason: name);
+        expect(
+          [for (final a in await paar.$1()) a.id],
+          contains('f'),
+          reason: name,
+        );
       });
     });
   });
@@ -186,22 +194,29 @@ void main() {
       // Prioritätsliste vor dem Original. Sobald Videos eine bekamen,
       // hätte der Betrachter ein unbewegliches Bild gezeigt.
       expect(
-          displayRelativePath(bau(art: 'VIDEO', vorschau: 'previews/a.jpg')),
-          'originals/a');
+        displayRelativePath(bau(art: 'VIDEO', vorschau: 'previews/a.jpg')),
+        'originals/a',
+      );
     });
 
     test('ein Zuschnitt gewinnt weiterhin – das ist ein Film', () {
       expect(
-          displayRelativePath(bau(
-              art: 'VIDEO',
-              vorschau: 'previews/a.jpg',
-              zuschnitt: 'trimmed/a.mov')),
-          'trimmed/a.mov');
+        displayRelativePath(
+          bau(
+            art: 'VIDEO',
+            vorschau: 'previews/a.jpg',
+            zuschnitt: 'trimmed/a.mov',
+          ),
+        ),
+        'trimmed/a.mov',
+      );
     });
 
     test('bei einem Foto zählt die Vorschau wie bisher', () {
-      expect(displayRelativePath(bau(art: 'IMAGE', vorschau: 'previews/a.jpg')),
-          'previews/a.jpg');
+      expect(
+        displayRelativePath(bau(art: 'IMAGE', vorschau: 'previews/a.jpg')),
+        'previews/a.jpg',
+      );
     });
   });
 }

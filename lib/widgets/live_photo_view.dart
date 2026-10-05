@@ -15,7 +15,11 @@ import 'video_playback.dart';
 class LivePhotoView extends StatefulWidget {
   final File imageFile;
   final File videoFile;
-  const LivePhotoView({super.key, required this.imageFile, required this.videoFile});
+  const LivePhotoView({
+    super.key,
+    required this.imageFile,
+    required this.videoFile,
+  });
 
   @override
   State<LivePhotoView> createState() => _LivePhotoViewState();
@@ -72,7 +76,9 @@ class _LivePhotoViewState extends State<LivePhotoView> {
   }
 
   void _onHoldStart() {
-    if (_loopMode) return; // Play-Button hat Vorrang, Halten soll nichts abbrechen.
+    if (_loopMode) {
+      return; // Play-Button hat Vorrang, Halten soll nichts abbrechen.
+    }
     _startPlayback(loop: false);
   }
 
@@ -106,10 +112,7 @@ class _LivePhotoViewState extends State<LivePhotoView> {
         alignment: Alignment.center,
         fit: StackFit.expand,
         children: [
-          Image(
-            image: begrenztesBild(widget.imageFile),
-            fit: BoxFit.contain,
-          ),
+          Image(image: begrenztesBild(widget.imageFile), fit: BoxFit.contain),
           if (showVideo)
             AspectRatio(
               aspectRatio: _controller!.aspectRatio,
@@ -122,7 +125,10 @@ class _LivePhotoViewState extends State<LivePhotoView> {
               top: 16,
               left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -132,7 +138,14 @@ class _LivePhotoViewState extends State<LivePhotoView> {
                   children: [
                     Icon(Icons.motion_photos_on, color: Colors.white, size: 16),
                     SizedBox(width: 4),
-                    Text('LIVE', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(
+                      'LIVE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -150,7 +163,10 @@ class _LivePhotoViewState extends State<LivePhotoView> {
             right: 16,
             child: IconButton.filled(
               style: IconButton.styleFrom(backgroundColor: Colors.black54),
-              icon: Icon(_loopMode ? Icons.pause : Icons.play_arrow, color: Colors.white),
+              icon: Icon(
+                _loopMode ? Icons.pause : Icons.play_arrow,
+                color: Colors.white,
+              ),
               tooltip: _loopMode
                   ? AppTexte.of(context).liveWiedergabeStoppen
                   : AppTexte.of(context).liveDauerschleife,

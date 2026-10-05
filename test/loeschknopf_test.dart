@@ -15,33 +15,46 @@ void main() {
     ('hell', buildLightTheme()),
     ('dunkel', buildDarkTheme()),
   ]) {
-    testWidgets('der Loeschknopf traegt die Fehlerfarbe ($name)',
-        (tester) async {
+    testWidgets('der Loeschknopf traegt die Fehlerfarbe ($name)', (
+      tester,
+    ) async {
       late BuildContext ctx;
-      await tester.pumpWidget(MaterialApp(
-        theme: thema,
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Builder(builder: (context) {
-          ctx = context;
-          return const SizedBox.shrink();
-        }),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: thema,
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
 
       // Nicht abwarten: Der Dialog gibt erst zurück, wenn geklickt wird.
       unawaitedDialog(ctx);
       await tester.pumpAndSettle();
 
-      final knopf = tester.widget<FilledButton>(find.widgetWithText(
-          FilledButton, AppTexte.of(ctx).allgLoeschen));
+      final knopf = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, AppTexte.of(ctx).allgLoeschen),
+      );
       final schema = thema.colorScheme;
       final zustand = <WidgetState>{};
-      expect(knopf.style?.backgroundColor?.resolve(zustand), schema.error,
-          reason: 'nicht Colors.red');
-      expect(knopf.style?.foregroundColor?.resolve(zustand), schema.onError,
-          reason: 'wer nur den Grund tauscht, laesst die Schrift auf der '
-              'Vorgabe stehen – und die ist fuer eine andere Farbe gedacht');
+      expect(
+        knopf.style?.backgroundColor?.resolve(zustand),
+        schema.error,
+        reason: 'nicht Colors.red',
+      );
+      expect(
+        knopf.style?.foregroundColor?.resolve(zustand),
+        schema.onError,
+        reason:
+            'wer nur den Grund tauscht, laesst die Schrift auf der '
+            'Vorgabe stehen – und die ist fuer eine andere Farbe gedacht',
+      );
     });
   }
 }

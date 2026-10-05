@@ -24,37 +24,39 @@ void main() {
   late StoragePaths paths;
 
   AssetData asset(String id) => AssetData(
-        id: id,
-        relativePath: 'originals/$id.png',
-        originalFileName: '$id.png',
-        type: 'IMAGE',
-        fileSizeBytes: 100,
-        checksum: id,
-        fileCreatedAt: DateTime(2026, 1, 1),
-        importedAt: DateTime(2026, 1, 1),
-        isFavorite: false,
-        isTrashed: false,
-        isLocked: false,
-        faceScanExcluded: false,
-        gpsGeprueft: false,
-        datumGeschaetzt: false,
-        datumGeprueft: false,
-        ortGeerbt: false,
-        videobilderGeprueft: false,
-        backedUp: false,
-        autoBackedUp: false,
-        facesScanned: false,
-        ocrScanned: false,
-        aiCaptionScanned: false,
-        aiCaptionEdited: false,
-        aiTagsScanned: false,
-        isStackCover: false,
-        rating: 0,
-      );
+    id: id,
+    relativePath: 'originals/$id.png',
+    originalFileName: '$id.png',
+    type: 'IMAGE',
+    fileSizeBytes: 100,
+    checksum: id,
+    fileCreatedAt: DateTime(2026, 1, 1),
+    importedAt: DateTime(2026, 1, 1),
+    isFavorite: false,
+    isTrashed: false,
+    isLocked: false,
+    faceScanExcluded: false,
+    gpsGeprueft: false,
+    datumGeschaetzt: false,
+    datumGeprueft: false,
+    ortGeerbt: false,
+    videobilderGeprueft: false,
+    backedUp: false,
+    autoBackedUp: false,
+    facesScanned: false,
+    ocrScanned: false,
+    aiCaptionScanned: false,
+    aiCaptionEdited: false,
+    aiTagsScanned: false,
+    isStackCover: false,
+    rating: 0,
+  );
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_vergleich_');
-    paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+    paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'library')),
+    );
     for (final id in ['a', 'b']) {
       final datei = paths.absolute('originals/$id.png');
       datei.parent.createSync(recursive: true);
@@ -67,13 +69,19 @@ void main() {
   tearDown(() => tempRoot.deleteSync(recursive: true));
 
   Future<void> zeige(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: PhotoCompareScreen(links: asset('a'), rechts: asset('b'), paths: paths),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: PhotoCompareScreen(
+          links: asset('a'),
+          rechts: asset('b'),
+          paths: paths,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -84,8 +92,11 @@ void main() {
 
   /// Genau das, was macOS bei einer Wischgeste auf einer Tastflaeche
   /// schickt: eine Pan-Zoom-Folge, kein Radschritt.
-  Future<void> wischen(WidgetTester tester, Offset stelle,
-      {required double wegY}) async {
+  Future<void> wischen(
+    WidgetTester tester,
+    Offset stelle, {
+    required double wegY,
+  }) async {
     final geste = await tester.createGesture(kind: PointerDeviceKind.trackpad);
     await geste.panZoomStart(stelle);
     for (var i = 1; i <= 5; i++) {
@@ -109,8 +120,11 @@ void main() {
     await wischen(tester, stelle, wegY: -120);
 
     final nachher = regler(tester).first.value.getMaxScaleOnAxis();
-    expect(nachher, greaterThan(vorher),
-        reason: 'nach oben wischen muss vergroessern');
+    expect(
+      nachher,
+      greaterThan(vorher),
+      reason: 'nach oben wischen muss vergroessern',
+    );
   });
 
   testWidgets('nach unten wischen zoomt wieder heraus', (tester) async {
@@ -119,8 +133,10 @@ void main() {
     await wischen(tester, stelle, wegY: -200);
     final vergroessert = regler(tester).first.value.getMaxScaleOnAxis();
     await wischen(tester, stelle, wegY: 120);
-    expect(regler(tester).first.value.getMaxScaleOnAxis(),
-        lessThan(vergroessert));
+    expect(
+      regler(tester).first.value.getMaxScaleOnAxis(),
+      lessThan(vergroessert),
+    );
   });
 
   testWidgets('beide Fotos stehen mit ihrem Namen da', (tester) async {
@@ -130,12 +146,16 @@ void main() {
     expect(find.byType(InteractiveViewer), findsNWidgets(2));
   });
 
-  testWidgets('gekoppelt teilen sich beide Seiten denselben Regler',
-      (tester) async {
+  testWidgets('gekoppelt teilen sich beide Seiten denselben Regler', (
+    tester,
+  ) async {
     await zeige(tester);
     final r = regler(tester);
-    expect(identical(r[0], r[1]), isTrue,
-        reason: 'ein Regler für beide – das IST die Kopplung');
+    expect(
+      identical(r[0], r[1]),
+      isTrue,
+      reason: 'ein Regler für beide – das IST die Kopplung',
+    );
   });
 
   testWidgets('was links gezoomt wird, gilt rechts genauso', (tester) async {
@@ -160,15 +180,17 @@ void main() {
     expect(regler(tester)[1].value.getMaxScaleOnAxis(), closeTo(1.0, 1e-9));
   });
 
-  testWidgets('beim erneuten Koppeln übernimmt die linke Sicht',
-      (tester) async {
+  testWidgets('beim erneuten Koppeln übernimmt die linke Sicht', (
+    tester,
+  ) async {
     // Sonst spränge die rechte Seite auf einen alten Ausschnitt zurück,
     // und man müsste sie von Hand nachziehen – genau das, was die
     // Kopplung ersparen soll.
     await zeige(tester);
     await tester.tap(find.byTooltip('Ansichten entkoppeln'));
     await tester.pumpAndSettle();
-    regler(tester)[0].value = Matrix4.identity()..scaleByDouble(2.5, 2.5, 2.5, 1.0);
+    regler(tester)[0].value = Matrix4.identity()
+      ..scaleByDouble(2.5, 2.5, 2.5, 1.0);
     await tester.pump();
 
     await tester.tap(find.byTooltip('Ansichten koppeln'));
@@ -178,7 +200,8 @@ void main() {
 
   testWidgets('Zurücksetzen bringt beide auf Anfang', (tester) async {
     await zeige(tester);
-    regler(tester)[0].value = Matrix4.identity()..scaleByDouble(5.0, 5.0, 5.0, 1.0);
+    regler(tester)[0].value = Matrix4.identity()
+      ..scaleByDouble(5.0, 5.0, 5.0, 1.0);
     await tester.pump();
 
     await tester.tap(find.byTooltip('Zoom zurücksetzen'));

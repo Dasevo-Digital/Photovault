@@ -47,7 +47,11 @@ void main() {
       // Antwort über der falschen Weltgegend – deshalb steht die
       // Reihenfolge hier ausdrücklich.
       final a = overpassAbfrage(
-          sued: 51.828, west: 10.628, nord: 51.858, ost: 10.656);
+        sued: 51.828,
+        west: 10.628,
+        nord: 51.858,
+        ost: 10.656,
+      );
       expect(a, contains('(51.828,10.628,51.858,10.656)'));
       for (final m in wanderMerkmale) {
         expect(a, contains('["${m.schluessel}"="${m.wert}"]'));
@@ -71,8 +75,7 @@ void main() {
     });
 
     test('liest Höhen mit und ohne Komma', () {
-      final berg =
-          punkte.firstWhere((p) => p.name == 'Unterer Meineckenberg');
+      final berg = punkte.firstWhere((p) => p.name == 'Unterer Meineckenberg');
       expect(berg.hoehe, closeTo(565.9, 0.01));
       expect(berg.art, Wanderart.gipfel);
       // Und eine, die als Zahl statt als Text kommt.
@@ -83,8 +86,10 @@ void main() {
       // Die Ilsefälle tragen zugleich `tourism=attraction` und
       // `waterway=waterfall`. „Attraktion" sagt nichts, „Wasserfall"
       // alles – die Reihenfolge in [wanderMerkmale] entscheidet.
-      expect(punkte.firstWhere((p) => p.name == 'Ilsefälle').art,
-          Wanderart.wasserfall);
+      expect(
+        punkte.firstWhere((p) => p.name == 'Ilsefälle').art,
+        Wanderart.wasserfall,
+      );
     });
 
     test('ein Wegweiser ohne Namen kommt trotzdem, aber ohne Text', () {
@@ -121,9 +126,11 @@ void main() {
       // Sonst stünde ein Merkmal in [wanderMerkmale], das der Zerleger
       // nie erzeugt - und niemand merkte es.
       for (final m in wanderMerkmale) {
-        final eins = ausOverpass('{"elements":[{"type":"node","id":1,'
-            '"lat":51.0,"lon":10.0,'
-            '"tags":{"${m.schluessel}":"${m.wert}"}}]}');
+        final eins = ausOverpass(
+          '{"elements":[{"type":"node","id":1,'
+          '"lat":51.0,"lon":10.0,'
+          '"tags":{"${m.schluessel}":"${m.wert}"}}]}',
+        );
         expect(eins, hasLength(1), reason: '${m.schluessel}=${m.wert}');
         expect(eins.first.art, m.art);
       }

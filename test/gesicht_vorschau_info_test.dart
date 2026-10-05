@@ -44,7 +44,9 @@ void main() {
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_vorschau_info_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'lib')));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(tempRoot.path, 'lib')),
+    );
     library = LibraryState()
       ..db = db
       ..paths = paths
@@ -54,29 +56,35 @@ void main() {
       final datei = paths.absolute('originals/$id.jpg');
       datei.parent.createSync(recursive: true);
       datei.writeAsBytesSync(einPixel);
-      await db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'c_$id',
-            type: 'IMAGE',
-            fileCreatedAt: DateTime(2026, 3, 4),
-            importedAt: DateTime(2026, 3, 4),
-            // Gesetzt, damit das Seitenverhältnis nicht aus der Datei
-            // gelesen werden muss.
-            widthPx: const Value(1000),
-            heightPx: const Value(800),
-          ));
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/$id.jpg',
+              checksum: 'c_$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 3, 4),
+              importedAt: DateTime(2026, 3, 4),
+              // Gesetzt, damit das Seitenverhältnis nicht aus der Datei
+              // gelesen werden muss.
+              widthPx: const Value(1000),
+              heightPx: const Value(800),
+            ),
+          );
     }
-    await db.insertFace(FacesCompanion.insert(
-      id: 'f1',
-      assetId: 'a1',
-      boxX: 0.1,
-      boxY: 0.1,
-      boxW: 0.3,
-      boxH: 0.3,
-      cropRelativePath: const Value('faces/f1.jpg'),
-    ));
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: 'f1',
+        assetId: 'a1',
+        boxX: 0.1,
+        boxY: 0.1,
+        boxW: 0.3,
+        boxH: 0.3,
+        cropRelativePath: const Value('faces/f1.jpg'),
+      ),
+    );
     assets = await db.assetsByIds(['a1', 'a2']);
   });
 
@@ -86,16 +94,18 @@ void main() {
   });
 
   Future<void> zeige(WidgetTester tester) async {
-    await tester.pumpWidget(ChangeNotifierProvider<LibraryState>.value(
-      value: library,
-      child: MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        theme: buildDarkTheme(),
-        home: FaceReviewScreen(library: library, assets: assets),
+    await tester.pumpWidget(
+      ChangeNotifierProvider<LibraryState>.value(
+        value: library,
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: FaceReviewScreen(library: library, assets: assets),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -109,8 +119,9 @@ void main() {
     });
   }
 
-  testWidgets('die Info-Ansicht lässt sich öffnen und zeigt die Metadaten',
-      (tester) async {
+  testWidgets('die Info-Ansicht lässt sich öffnen und zeigt die Metadaten', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.text('Info'), findsNothing, reason: 'anfangs zugeklappt');
 
@@ -137,8 +148,9 @@ void main() {
     expect(find.text('a1.jpg'), findsNothing);
   });
 
-  testWidgets('Foto löschen fragt vorher nach und tut ohne Zustimmung nichts',
-      (tester) async {
+  testWidgets('Foto löschen fragt vorher nach und tut ohne Zustimmung nichts', (
+    tester,
+  ) async {
     await zeige(tester);
     await tester.tap(find.byTooltip('Foto löschen'));
     await tester.pumpAndSettle();

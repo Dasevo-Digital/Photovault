@@ -67,8 +67,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'l')),
+      );
     await _fuellen(db);
   });
 
@@ -107,26 +108,30 @@ void main() {
   for (final breite in [600.0, 820.0, 1100.0]) {
     for (final skalierung in [1.0, 1.6, 2.0]) {
       for (final eintrag in bildschirme.entries) {
-        testWidgets('${eintrag.key} bei ${skalierung}x auf ${breite.round()}',
-            (tester) async {
+        testWidgets('${eintrag.key} bei ${skalierung}x auf ${breite.round()}', (
+          tester,
+        ) async {
           tester.view.physicalSize = Size(breite, 900);
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.reset);
-          await tester.pumpWidget(MaterialApp(
-            locale: const Locale('de'),
-            localizationsDelegates: AppTexte.localizationsDelegates,
-            supportedLocales: AppTexte.supportedLocales,
-            theme: buildDarkTheme(),
-            builder: (context, kind) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: TextScaler.linear(skalierung)),
-              child: kind!,
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('de'),
+              localizationsDelegates: AppTexte.localizationsDelegates,
+              supportedLocales: AppTexte.supportedLocales,
+              theme: buildDarkTheme(),
+              builder: (context, kind) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.linear(skalierung)),
+                child: kind!,
+              ),
+              // Der Rahmen, in dem jeder dieser Bildschirme im Betrieb
+              // steht – manche bringen ihr eigenes Gerüst mit, andere
+              // nicht, und ohne eines fehlt ihnen die Material-Fläche.
+              home: Scaffold(body: eintrag.value(library)),
             ),
-            // Der Rahmen, in dem jeder dieser Bildschirme im Betrieb
-            // steht – manche bringen ihr eigenes Gerüst mit, andere
-            // nicht, und ohne eines fehlt ihnen die Material-Fläche.
-            home: Scaffold(body: eintrag.value(library)),
-          ));
+          );
           // Kein `pumpAndSettle`: Mehrere dieser Bildschirme zeigen
           // beim Laden einen Kreisel, und der wird nie fertig.
           for (var i = 0; i < 12; i++) {
@@ -135,8 +140,11 @@ void main() {
           final fehler = tester.takeException();
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump(const Duration(milliseconds: 1));
-          expect(fehler, isNull,
-              reason: '${eintrag.key} bei $skalierung auf $breite');
+          expect(
+            fehler,
+            isNull,
+            reason: '${eintrag.key} bei $skalierung auf $breite',
+          );
         });
       }
     }
@@ -147,30 +155,45 @@ void main() {
 /// absichtlich langen Namen, denn eine kurze Beschriftung läuft nie über.
 Future<void> _fuellen(AppDatabase db) async {
   for (var i = 0; i < 12; i++) {
-    await db.into(db.assets).insert(AssetsCompanion.insert(
-          id: 'a$i',
-          originalFileName: 'DSC_0000$i.jpg',
-          relativePath: 'originals/a$i.jpg',
-          checksum: 'c$i',
-          type: i == 11 ? 'VIDEO' : 'IMAGE',
-          fileCreatedAt: DateTime(2026, 1 + i % 12, 1 + i),
-          importedAt: DateTime(2026),
-          fileSizeBytes: Value(1000 + i),
-          cameraMake: const Value('Panasonic'),
-          cameraModel: const Value('Lumix DC-G9 Mark II'),
-          latitude: Value(52.3 + i / 100),
-          longitude: Value(9.7 + i / 100),
-          locationCity: const Value('Braunschweig'),
-          locationCountry: const Value('Deutschland'),
-          isTrashed: Value(i == 10),
-        ));
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'a$i',
+            originalFileName: 'DSC_0000$i.jpg',
+            relativePath: 'originals/a$i.jpg',
+            checksum: 'c$i',
+            type: i == 11 ? 'VIDEO' : 'IMAGE',
+            fileCreatedAt: DateTime(2026, 1 + i % 12, 1 + i),
+            importedAt: DateTime(2026),
+            fileSizeBytes: Value(1000 + i),
+            cameraMake: const Value('Panasonic'),
+            cameraModel: const Value('Lumix DC-G9 Mark II'),
+            latitude: Value(52.3 + i / 100),
+            longitude: Value(9.7 + i / 100),
+            locationCity: const Value('Braunschweig'),
+            locationCountry: const Value('Deutschland'),
+            isTrashed: Value(i == 10),
+          ),
+        );
   }
   for (var i = 0; i < 4; i++) {
-    await db.into(db.people).insert(PeopleCompanion.insert(
-        id: 'p$i', name: 'Marie-Christine Oberhauser-Schmitt $i'));
-    await db.into(db.albums).insert(AlbumsCompanion.insert(
-        id: 'al$i',
-        name: 'Sommerurlaub Norwegen und Schweden $i',
-        createdAt: DateTime(2026)));
+    await db
+        .into(db.people)
+        .insert(
+          PeopleCompanion.insert(
+            id: 'p$i',
+            name: 'Marie-Christine Oberhauser-Schmitt $i',
+          ),
+        );
+    await db
+        .into(db.albums)
+        .insert(
+          AlbumsCompanion.insert(
+            id: 'al$i',
+            name: 'Sommerurlaub Norwegen und Schweden $i',
+            createdAt: DateTime(2026),
+          ),
+        );
   }
 }

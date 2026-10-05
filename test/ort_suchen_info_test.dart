@@ -51,28 +51,34 @@ void main() {
     );
     final admin1 = File(p.join(temp.path, 'admin1.txt'));
     await admin1.writeAsString(
-        'DE.06\tNiedersachsen\tNiedersachsen\t1\nUS.IL\tIllinois\tIllinois\t2\nUS.MO\tMissouri\tMissouri\t3\n');
+      'DE.06\tNiedersachsen\tNiedersachsen\t1\nUS.IL\tIllinois\tIllinois\t2\nUS.MO\tMissouri\tMissouri\t3\n',
+    );
     final laender = File(p.join(temp.path, 'countryInfo.txt'));
     await laender.writeAsString(
       'DE\tDEU\t276\tDE\tDeutschland\tBerlin\t357021\t82927922\tEU\t.de\tEUR\tEuro\t49\t\t\tde-DE\t2921044\t\t\n'
       'US\tUSA\t840\tUS\tVereinigte Staaten\tWashington\t9629091\t327167434\tNA\t.us\tUSD\tDollar\t1\t\t\ten-US\t6252001\t\t\n',
     );
     return ReverseGeocoder.loadFromFiles(
-        citiesFile: orte, admin1File: admin1, countryFile: laender);
+      citiesFile: orte,
+      admin1File: admin1,
+      countryFile: laender,
+    );
   }
 
   Future<AssetData> foto({double? breite, double? laenge}) async {
-    await db.insertAsset(AssetsCompanion.insert(
-      id: 'a',
-      relativePath: 'originals/a.jpg',
-      originalFileName: 'a.jpg',
-      type: 'IMAGE',
-      checksum: 'a',
-      fileCreatedAt: DateTime(2026, 5, 1),
-      importedAt: DateTime(2026, 5, 1),
-      latitude: Value(breite),
-      longitude: Value(laenge),
-    ));
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: 'a',
+        relativePath: 'originals/a.jpg',
+        originalFileName: 'a.jpg',
+        type: 'IMAGE',
+        checksum: 'a',
+        fileCreatedAt: DateTime(2026, 5, 1),
+        importedAt: DateTime(2026, 5, 1),
+        latitude: Value(breite),
+        longitude: Value(laenge),
+      ),
+    );
     return (await db.assetById('a'))!;
   }
 
@@ -86,23 +92,25 @@ void main() {
     tester.view.physicalSize = const Size(900, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(ChangeNotifierProvider<LibraryState>.value(
-      value: library,
-      child: MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: AssetInfoSheet(
-            asset: asset,
-            db: db,
-            paths: paths,
-            onUpdated: (_) {},
-            onClose: () {},
+    await tester.pumpWidget(
+      ChangeNotifierProvider<LibraryState>.value(
+        value: library,
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AssetInfoSheet(
+              asset: asset,
+              db: db,
+              paths: paths,
+              onUpdated: (_) {},
+              onClose: () {},
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -128,8 +136,9 @@ void main() {
     expect(melde.verlauf.last.text, contains('Deutschland'));
   });
 
-  testWidgets('bei mehreren gleichen Namen sagt die Meldung es',
-      (tester) async {
+  testWidgets('bei mehreren gleichen Namen sagt die Meldung es', (
+    tester,
+  ) async {
     // **Der Kern der Ehrlichkeit hier.** „Springfield" gibt es in den USA
     // über zwanzig Mal; eine Koordinate ohne diesen Hinweis sähe aus wie
     // eine Tatsache.
@@ -138,12 +147,16 @@ void main() {
     await tippeOrt(tester, 'Springfield');
 
     expect((await db.assetById('a'))!.latitude, isNotNull);
-    expect(melde.verlauf.last.text, contains('1'),
-        reason: 'die Zahl der uebrigen gleichen Namens gehoert in die Meldung');
+    expect(
+      melde.verlauf.last.text,
+      contains('1'),
+      reason: 'die Zahl der uebrigen gleichen Namens gehoert in die Meldung',
+    );
   });
 
-  testWidgets('der bisherige Ort entscheidet bei Mehrdeutigkeit',
-      (tester) async {
+  testWidgets('der bisherige Ort entscheidet bei Mehrdeutigkeit', (
+    tester,
+  ) async {
     // Springfield/Illinois ist das KLEINERE der beiden. Es gewinnt nur,
     // weil das Foto schon in der Naehe lag – sonst gaebe die
     // Einwohnerzahl den Ausschlag.
@@ -159,13 +172,17 @@ void main() {
     await zeige(tester, await foto());
     await tippeOrt(tester, 'Gut Hohenrode');
 
-    expect((await db.assetById('a'))!.latitude, isNull,
-        reason: 'lieber kein Ort als ein geratener');
+    expect(
+      (await db.assetById('a'))!.latitude,
+      isNull,
+      reason: 'lieber kein Ort als ein geratener',
+    );
     expect(melde.verlauf.last.art, Meldungsart.warnung);
   });
 
-  testWidgets('ohne Ortsverzeichnis sagt die App, woran es liegt',
-      (tester) async {
+  testWidgets('ohne Ortsverzeichnis sagt die App, woran es liegt', (
+    tester,
+  ) async {
     // Der Datensatz ist ein freiwilliger Download – ohne ihn darf nichts
     // werfen und nichts stillschweigend geschehen.
     library.geocoder = null;

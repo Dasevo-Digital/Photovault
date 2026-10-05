@@ -23,25 +23,36 @@ class AlbumsScreen extends StatelessWidget {
       // Die Steuerung gehört dem Fenster, nicht diesem Aufruf – siehe
       // [MitTextsteuerung].
       builder: (context) => MitTextsteuerung(
-          builder: (context, ctrl) => AlertDialog(
-        title: Text(AppTexte.of(context).albumNeu),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: InputDecoration(labelText: AppTexte.of(context).albumName),
+        builder: (context, ctrl) => AlertDialog(
+          title: Text(AppTexte.of(context).albumNeu),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: AppTexte.of(context).albumName,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppTexte.of(context).allgAbbrechen),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              child: Text(AppTexte.of(context).allgErstellen),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppTexte.of(context).allgAbbrechen)),
-          FilledButton(onPressed: () => Navigator.pop(context, ctrl.text.trim()), child: Text(AppTexte.of(context).allgErstellen)),
-                ],
-              )),
+      ),
     );
     if (name != null && name.isNotEmpty) {
-      await library.db.createAlbum(AlbumsCompanion.insert(
-        id: const Uuid().v4(),
-        name: name,
-        createdAt: DateTime.now(),
-      ));
+      await library.db.createAlbum(
+        AlbumsCompanion.insert(
+          id: const Uuid().v4(),
+          name: name,
+          createdAt: DateTime.now(),
+        ),
+      );
     }
   }
 
@@ -71,9 +82,11 @@ class AlbumsScreen extends StatelessWidget {
                         Text(AppTexte.of(context).albenLeer),
                         const SizedBox(height: AppSpacing.md),
                         // Auch hier: sagen, wo das Fehlende herkommt.
-                        Text(AppTexte.of(context).albenIntelligentWoher,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall),
+                        Text(
+                          AppTexte.of(context).albenIntelligentWoher,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ],
                     ),
                   ),
@@ -105,13 +118,15 @@ class AlbumsScreen extends StatelessWidget {
                       bauen: (context, i) => _Albumkachel(
                         album: albums[i],
                         library: library,
-                        onTippen: () =>
-                            Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => AlbumDetailScreen(
+                        onTippen: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => AlbumDetailScreen(
                               library: library,
                               albumId: albums[i].id,
-                              albumName: albums[i].name),
-                        )),
+                              albumName: albums[i].name,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -133,12 +148,16 @@ class _Abschnitt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
-          child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        0,
+      ),
+      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+    ),
+  );
 }
 
 /// Das Kachelraster – einmal fuer beide Albumarten, damit sie gleich
@@ -150,17 +169,17 @@ class _Kachelfeld extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SliverPadding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 220,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.1,
-          ),
-          delegate: SliverChildBuilderDelegate(bauen, childCount: anzahl),
-        ),
-      );
+    padding: const EdgeInsets.all(AppSpacing.lg),
+    sliver: SliverGrid(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.1,
+      ),
+      delegate: SliverChildBuilderDelegate(bauen, childCount: anzahl),
+    ),
+  );
 }
 
 /// Ein intelligentes Album – eine gespeicherte Suche als Kachel.
@@ -186,20 +205,29 @@ class _IntelligentesAlbum extends StatelessWidget {
 
   Future<void> _loeschen(BuildContext context) async {
     final t = AppTexte.of(context);
-    if (!await confirmDialog(context, t.albumIntelligentLoeschen,
-        t.albumIntelligentLoeschenFrage(eintrag.name))) {
+    if (!await confirmDialog(
+      context,
+      t.albumIntelligentLoeschen,
+      t.albumIntelligentLoeschenFrage(eintrag.name),
+    )) {
       return;
     }
     await library.db.deleteSavedSearch(eintrag.id);
   }
 
   void _oeffnen(BuildContext context) {
-    final SearchFilters filter =
-        library.db.decodeSavedSearchFilters(eintrag.filtersJson);
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => SearchScreen(
-          library: library, startFilter: filter, titel: eintrag.name),
-    ));
+    final SearchFilters filter = library.db.decodeSavedSearchFilters(
+      eintrag.filtersJson,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SearchScreen(
+          library: library,
+          startFilter: filter,
+          titel: eintrag.name,
+        ),
+      ),
+    );
   }
 
   @override
@@ -219,8 +247,11 @@ class _IntelligentesAlbum extends StatelessWidget {
                 child: Stack(
                   children: [
                     Center(
-                      child: Icon(Icons.auto_awesome_outlined,
-                          size: 40, color: farben.primary),
+                      child: Icon(
+                        Icons.auto_awesome_outlined,
+                        size: 40,
+                        color: farben.primary,
+                      ),
                     ),
                     Align(
                       alignment: Alignment.topRight,
@@ -237,11 +268,13 @@ class _IntelligentesAlbum extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Text(eintrag.name,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall),
+              child: Text(
+                eintrag.name,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
             ),
           ],
         ),
@@ -274,8 +307,9 @@ class _AlbumkachelState extends State<_Albumkachel> {
   /// Einmal geholt und festgehalten: Der Strom der Alben baut die Liste
   /// bei jeder Änderung neu, und ein Future im `build` fragte dann jedes
   /// Mal von vorn.
-  late Future<AssetData?> _titelbild =
-      widget.library.db.albumTitelbild(widget.album);
+  late Future<AssetData?> _titelbild = widget.library.db.albumTitelbild(
+    widget.album,
+  );
 
   @override
   void didUpdateWidget(_Albumkachel alt) {
@@ -307,8 +341,11 @@ class _AlbumkachelState extends State<_Albumkachel> {
                   if (bild == null) {
                     return ColoredBox(
                       color: farben.surfaceContainerHighest,
-                      child: Icon(Icons.photo_album_outlined,
-                          size: 40, color: farben.onSurfaceVariant),
+                      child: Icon(
+                        Icons.photo_album_outlined,
+                        size: 40,
+                        color: farben.onSurfaceVariant,
+                      ),
                     );
                   }
                   return AssetThumbnailTile(
@@ -325,11 +362,13 @@ class _AlbumkachelState extends State<_Albumkachel> {
             // 1,6-facher Schrift).
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Text(widget.album.name,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall),
+              child: Text(
+                widget.album.name,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
             ),
           ],
         ),

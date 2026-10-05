@@ -31,9 +31,7 @@ const rawImageExtensions = {
 /// Abgeleitet und nicht abgeschrieben: Eine zweite Liste von Hand wäre
 /// die naheliegendste Art, dass beide auseinanderlaufen, ohne dass es
 /// jemandem auffällt.
-final rawDateiformate = {
-  for (final e in rawImageExtensions) e.substring(1),
-};
+final rawDateiformate = {for (final e in rawImageExtensions) e.substring(1)};
 
 /// Das Dateiformat eines Namens – kleingeschrieben, ohne Punkt.
 ///

@@ -32,28 +32,28 @@ void main() {
     tester.view.physicalSize = const Size(1200, 2600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      home: Scaffold(
-        body: SingleChildScrollView(
-          child: KartenquellenUebersicht(
-            library: library,
-            aufVorlage: gereicht.add,
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: KartenquellenUebersicht(
+              library: library,
+              aufVorlage: gereicht.add,
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
   /// Die Zeile einer Quelle – von ihrem Namen aus zum ListTile hinauf.
-  Finder zeile(String name) => find.ancestor(
-        of: find.text(name),
-        matching: find.byType(ListTile),
-      );
+  Finder zeile(String name) =>
+      find.ancestor(of: find.text(name), matching: find.byType(ListTile));
 
   testWidgets('alle mitgelieferten Karten stehen drin', (tester) async {
     await zeige(tester);
@@ -77,8 +77,9 @@ void main() {
     expect(find.textContaining('bis Stufe 20 · rund 9 m'), findsWidgets);
   });
 
-  testWidgets('gemessen und behauptet werden auseinandergehalten',
-      (tester) async {
+  testWidgets('gemessen und behauptet werden auseinandergehalten', (
+    tester,
+  ) async {
     await zeige(tester);
     expect(find.textContaining('nachgemessen'), findsWidgets);
     expect(find.textContaining('laut Anbieter'), findsWidgets);
@@ -86,9 +87,13 @@ void main() {
 
   testWidgets('wo ein Schluessel noetig ist, steht es dabei', (tester) async {
     await zeige(tester);
-    final mitSchluessel =
-        kartenvorlagen.where((v) => v.brauchtSchluessel).length;
-    expect(find.textContaining('Schlüssel nötig'), findsNWidgets(mitSchluessel));
+    final mitSchluessel = kartenvorlagen
+        .where((v) => v.brauchtSchluessel)
+        .length;
+    expect(
+      find.textContaining('Schlüssel nötig'),
+      findsNWidgets(mitSchluessel),
+    );
   });
 
   testWidgets('die Namensnennung jedes Anbieters steht dabei', (tester) async {
@@ -107,7 +112,9 @@ void main() {
     for (final v in kartenvorlagen) {
       expect(
         find.descendant(
-            of: zeile(v.name), matching: find.byIcon(Icons.open_in_new)),
+          of: zeile(v.name),
+          matching: find.byIcon(Icons.open_in_new),
+        ),
         findsOneWidget,
         reason: v.name,
       );
@@ -115,24 +122,30 @@ void main() {
     for (final name in ['Hell', 'Dunkel', 'Topografie']) {
       expect(
         find.descendant(
-            of: zeile(name), matching: find.byIcon(Icons.open_in_new)),
+          of: zeile(name),
+          matching: find.byIcon(Icons.open_in_new),
+        ),
         findsOneWidget,
         reason: name,
       );
     }
   });
 
-  testWidgets('eine Vorlage ohne Schluessel laesst sich einschalten',
-      (tester) async {
+  testWidgets('eine Vorlage ohne Schluessel laesst sich einschalten', (
+    tester,
+  ) async {
     await zeige(tester);
     final v = kartenvorlagen.firstWhere((v) => v.sofortNutzbar);
-    await tester.tap(find.descendant(
-        of: zeile(v.name), matching: find.text('Übernehmen')));
+    await tester.tap(
+      find.descendant(of: zeile(v.name), matching: find.text('Übernehmen')),
+    );
     await tester.pumpAndSettle();
 
     // Erst die Warnung, und zwar dieselbe wie im Formular darunter.
-    expect(find.text('Bevor du eine fremde Kartenquelle einschaltest'),
-        findsOneWidget);
+    expect(
+      find.text('Bevor du eine fremde Kartenquelle einschaltest'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Verstanden, einschalten'));
     await tester.pumpAndSettle();
 
@@ -145,12 +158,14 @@ void main() {
     expect(await db.kartenansicht(), 'eigene');
   });
 
-  testWidgets('wer die Warnung abbricht, hat nichts eingeschaltet',
-      (tester) async {
+  testWidgets('wer die Warnung abbricht, hat nichts eingeschaltet', (
+    tester,
+  ) async {
     await zeige(tester);
     final v = kartenvorlagen.firstWhere((v) => v.sofortNutzbar);
-    await tester.tap(find.descendant(
-        of: zeile(v.name), matching: find.text('Übernehmen')));
+    await tester.tap(
+      find.descendant(of: zeile(v.name), matching: find.text('Übernehmen')),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Abbrechen'));
     await tester.pumpAndSettle();
@@ -160,50 +175,69 @@ void main() {
     expect(await db.kartenansicht(), isNot('eigene'));
   });
 
-  testWidgets('eine Vorlage mit Schluessel wandert ins Formular',
-      (tester) async {
+  testWidgets('eine Vorlage mit Schluessel wandert ins Formular', (
+    tester,
+  ) async {
     // Sie laesst sich NICHT mit einem Klick einschalten - in ihrer
     // Adresse stuende sonst die Schluesselmarke, und der Anbieter
     // antwortete mit einem Rechtefehler.
     await zeige(tester);
     final v = kartenvorlagen.firstWhere((v) => v.brauchtSchluessel);
-    expect(find.descendant(of: zeile(v.name), matching: find.text('Übernehmen')),
-        findsNothing);
+    expect(
+      find.descendant(of: zeile(v.name), matching: find.text('Übernehmen')),
+      findsNothing,
+    );
     await tester.tap(
-        find.descendant(of: zeile(v.name), matching: find.text('Eintragen')));
+      find.descendant(of: zeile(v.name), matching: find.text('Eintragen')),
+    );
     await tester.pumpAndSettle();
 
     expect(gereicht, [v]);
     expect(await db.eigeneKarteWert(), isNull);
   });
 
-  testWidgets('die gemerkte Ansicht traegt die Marke und keinen Knopf',
-      (tester) async {
+  testWidgets('die gemerkte Ansicht traegt die Marke und keinen Knopf', (
+    tester,
+  ) async {
     await db.setzeKartenansicht('topo');
     await zeige(tester);
-    expect(find.descendant(of: zeile('Topografie'), matching: find.text('Standard')),
-        findsOneWidget);
     expect(
-        find.descendant(
-            of: zeile('Topografie'), matching: find.text('Als Standard')),
-        findsNothing);
+      find.descendant(of: zeile('Topografie'), matching: find.text('Standard')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: zeile('Topografie'),
+        matching: find.text('Als Standard'),
+      ),
+      findsNothing,
+    );
     // Die anderen tragen ihn sehr wohl.
-    expect(find.descendant(of: zeile('Hell'), matching: find.text('Als Standard')),
-        findsOneWidget);
+    expect(
+      find.descendant(of: zeile('Hell'), matching: find.text('Als Standard')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('eine mitgelieferte Karte laesst sich zum Standard machen',
-      (tester) async {
+  testWidgets('eine mitgelieferte Karte laesst sich zum Standard machen', (
+    tester,
+  ) async {
     await db.setzeKartenansicht('dunkel');
     await zeige(tester);
-    await tester.tap(find.descendant(
-        of: zeile('Topografie'), matching: find.text('Als Standard')));
+    await tester.tap(
+      find.descendant(
+        of: zeile('Topografie'),
+        matching: find.text('Als Standard'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(await db.kartenansicht(), 'topo');
     // Und die Marke wandert mit, ohne dass der Bildschirm neu aufgebaut
     // wird.
-    expect(find.descendant(of: zeile('Topografie'), matching: find.text('Standard')),
-        findsOneWidget);
+    expect(
+      find.descendant(of: zeile('Topografie'), matching: find.text('Standard')),
+      findsOneWidget,
+    );
   });
 
   group('Adressen', () {

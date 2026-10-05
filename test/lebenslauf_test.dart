@@ -55,7 +55,10 @@ void main() {
     // Nur daran erkennt die Anzeige, dass sie sich hier nicht löschen
     // lassen – sie stehen an der Person.
     final zeilen = lebenslauf(
-        geburt: DateTime(1931), tod: DateTime(2004), ereignisse: []);
+      geburt: DateTime(1931),
+      tod: DateTime(2004),
+      ereignisse: [],
+    );
     expect(zeilen.every((z) => z.ereignisId == null), isTrue);
   });
 

@@ -16,34 +16,36 @@ import 'package:photo_vault/widgets/month_grouped_asset_grid.dart';
 
 import 'dart:io';
 
-Rasterzeile _asset(String id, DateTime wann) => Rasterzeile.aus(AssetData(
-      id: id,
-      originalFileName: '$id.jpg',
-      relativePath: 'o/$id.jpg',
-      checksum: 'c$id',
-      type: 'IMAGE',
-      fileCreatedAt: wann,
-      importedAt: wann,
-      isFavorite: false,
-      isTrashed: false,
-      isLocked: false,
-      faceScanExcluded: false,
-      gpsGeprueft: false,
-      datumGeschaetzt: false,
-      datumGeprueft: false,
-      ortGeerbt: false,
-      videobilderGeprueft: false,
-      fileSizeBytes: 100,
-      backedUp: false,
-      autoBackedUp: false,
-      facesScanned: false,
-      rating: 0,
-      ocrScanned: false,
-      aiCaptionScanned: false,
-      aiCaptionEdited: false,
-      aiTagsScanned: false,
-      isStackCover: false,
-    ));
+Rasterzeile _asset(String id, DateTime wann) => Rasterzeile.aus(
+  AssetData(
+    id: id,
+    originalFileName: '$id.jpg',
+    relativePath: 'o/$id.jpg',
+    checksum: 'c$id',
+    type: 'IMAGE',
+    fileCreatedAt: wann,
+    importedAt: wann,
+    isFavorite: false,
+    isTrashed: false,
+    isLocked: false,
+    faceScanExcluded: false,
+    gpsGeprueft: false,
+    datumGeschaetzt: false,
+    datumGeprueft: false,
+    ortGeerbt: false,
+    videobilderGeprueft: false,
+    fileSizeBytes: 100,
+    backedUp: false,
+    autoBackedUp: false,
+    facesScanned: false,
+    rating: 0,
+    ocrScanned: false,
+    aiCaptionScanned: false,
+    aiCaptionEdited: false,
+    aiTagsScanned: false,
+    isStackCover: false,
+  ),
+);
 
 void main() {
   setUpAll(initializeDateFormatting);
@@ -60,38 +62,43 @@ void main() {
 
   /// Drei Monate mit je zwei Aufnahmen.
   List<Rasterzeile> daten() => [
-        for (var m = 3; m >= 1; m--)
-          for (var t = 2; t >= 1; t--)
-            _asset('a$m$t', DateTime(2026, m, t * 10)),
-      ];
+    for (var m = 3; m >= 1; m--)
+      for (var t = 2; t >= 1; t--) _asset('a$m$t', DateTime(2026, m, t * 10)),
+  ];
 
   testWidgets('dieselbe Liste wird nicht zweimal gruppiert', (tester) async {
     final liste = daten();
     var aufbauten = 0;
 
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: StatefulBuilder(
-          builder: (context, setzen) {
-            aufbauten++;
-            return Column(
-              children: [
-                ElevatedButton(
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setzen) {
+              aufbauten++;
+              return Column(
+                children: [
+                  ElevatedButton(
                     onPressed: () => setzen(() {}),
-                    child: const Text('neu')),
-                Expanded(
-                  child: MonthGroupedAssetGrid(
-                      assets: liste, paths: paths, onTap: (_) {}),
-                ),
-              ],
-            );
-          },
+                    child: const Text('neu'),
+                  ),
+                  Expanded(
+                    child: MonthGroupedAssetGrid(
+                      assets: liste,
+                      paths: paths,
+                      onTap: (_) {},
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
-    ));
+    );
 
     final zustand = tester.state(find.byType(MonthGroupedAssetGrid));
     final ersteGruppen = (zustand as dynamic).lastGroupsFuerTest;
@@ -102,30 +109,38 @@ void main() {
     await tester.pump();
     expect(aufbauten, greaterThan(1), reason: 'es wurde gar nicht neu gebaut');
 
-    expect(identical((zustand as dynamic).lastGroupsFuerTest, ersteGruppen),
-        isTrue,
-        reason: 'die Gruppierung lief ein zweites Mal, obwohl sich an der '
-            'Liste nichts geändert hat');
+    expect(
+      identical((zustand as dynamic).lastGroupsFuerTest, ersteGruppen),
+      isTrue,
+      reason:
+          'die Gruppierung lief ein zweites Mal, obwohl sich an der '
+          'Liste nichts geändert hat',
+    );
   });
 
   testWidgets('eine neue Liste wird sehr wohl neu gruppiert', (tester) async {
     var liste = daten();
 
     late StateSetter setzen;
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: Scaffold(
-        body: StatefulBuilder(
-          builder: (context, s) {
-            setzen = s;
-            return MonthGroupedAssetGrid(
-                assets: liste, paths: paths, onTap: (_) {});
-          },
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, s) {
+              setzen = s;
+              return MonthGroupedAssetGrid(
+                assets: liste,
+                paths: paths,
+                onTap: (_) {},
+              );
+            },
+          ),
         ),
       ),
-    ));
+    );
 
     final zustand = tester.state(find.byType(MonthGroupedAssetGrid));
     final vorher = (zustand as dynamic).lastGroupsFuerTest;
@@ -135,8 +150,11 @@ void main() {
     await tester.pump();
 
     final nachher = (zustand as dynamic).lastGroupsFuerTest;
-    expect(identical(nachher, vorher), isFalse,
-        reason: 'eine geänderte Liste muss neu gruppiert werden');
+    expect(
+      identical(nachher, vorher),
+      isFalse,
+      reason: 'eine geänderte Liste muss neu gruppiert werden',
+    );
     expect(nachher.length, isNot(0));
   });
 }

@@ -19,7 +19,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   test('CLIP-Text-Embedding ausgeben', () async {
-    final ordner = Platform.environment['PV_MODELLE'] ??
+    final ordner =
+        Platform.environment['PV_MODELLE'] ??
         '${Platform.environment['HOME']}/.var/app/de.dasevo.photovault/data'
             '/de.dasevo.photovault/PhotoVault/models';
 
@@ -28,7 +29,9 @@ void main() {
       return;
     }
 
-    print('LC_NUMERIC=${Platform.environment['LC_NUMERIC'] ?? '(nicht gesetzt)'}');
+    print(
+      'LC_NUMERIC=${Platform.environment['LC_NUMERIC'] ?? '(nicht gesetzt)'}',
+    );
 
     final dienst = await ClipService.load(ordner, bild: false, text: true);
     final v = await dienst.embedText('ein rotes Fahrrad vor einer Hauswand');

@@ -47,15 +47,18 @@ double _kosinus(Float32List a, Float32List b) {
 void main() {
   test('Stellschrauben des Vorfilters', () {
     final db = sqlite3.open(
-        'file:${Platform.environment['PV_DB']}?mode=ro', uri: true);
+      'file:${Platform.environment['PV_DB']}?mode=ro',
+      uri: true,
+    );
     final einbettungen = <String, Float32List>{};
     for (final z in db.select('''
         SELECT e.asset_id AS id, e.vector AS v FROM image_embeddings e
         JOIN assets a ON a.id = e.asset_id
         WHERE a.is_trashed = 0 AND a.is_locked = 0 ORDER BY e.asset_id''')) {
       final roh = z['v'] as Uint8List;
-      einbettungen[z['id'] as String] = Float32List.fromList(Float32List.view(
-          roh.buffer, roh.offsetInBytes, roh.lengthInBytes ~/ 4));
+      einbettungen[z['id'] as String] = Float32List.fromList(
+        Float32List.view(roh.buffer, roh.offsetInBytes, roh.lengthInBytes ~/ 4),
+      );
     }
     db.close();
     final alle = einbettungen.keys.toList();
@@ -67,19 +70,22 @@ void main() {
     const laeufe = 20;
     const gezeigt = 60;
     final abfragen = [
-      for (var i = 0; i < laeufe; i++) alle[zufall.nextInt(alle.length)]
+      for (var i = 0; i < laeufe; i++) alle[zufall.nextInt(alle.length)],
     ];
     final sollJeAbfrage = <List<String>>[];
     for (final id in abfragen) {
       final q = einbettungen[id]!;
-      final rang = einbettungen.entries
-          .map((e) => MapEntry(e.key, _kosinus(q, e.value)))
-          .toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
+      final rang =
+          einbettungen.entries
+              .map((e) => MapEntry(e.key, _kosinus(q, e.value)))
+              .toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
       sollJeAbfrage.add(rang.take(gezeigt).map((e) => e.key).toList());
     }
 
-    debugPrint('Tab x Bit  Nachbarbits   Kandidaten   Trefferquote top-$gezeigt');
+    debugPrint(
+      'Tab x Bit  Nachbarbits   Kandidaten   Trefferquote top-$gezeigt',
+    );
     for (final (tabellen, bits) in [
       (8, 8),
       (16, 8),
@@ -96,7 +102,9 @@ void main() {
         for (var t = 0; t < tabellen; t++) {
           eimer
               .putIfAbsent(
-                  (t << bits) | _signatur(v, t, bits, 32), () => <String>[])
+                (t << bits) | _signatur(v, t, bits, 32),
+                () => <String>[],
+              )
               .add(id);
         }
       }
@@ -119,11 +127,13 @@ void main() {
           soll += sollJeAbfrage[i].length;
         }
         final anteil = kand / abfragen.length / alle.length * 100;
-        debugPrint('${tabellen.toString().padLeft(3)} x $bits  '
-            '${(nachbarn ? "alle" : "keine").padRight(11)}  '
-            '${(kand / abfragen.length).round().toString().padLeft(6)} '
-            '(${anteil.toStringAsFixed(0).padLeft(3)} %)   '
-            '${(treffer / soll * 100).toStringAsFixed(1)} %');
+        debugPrint(
+          '${tabellen.toString().padLeft(3)} x $bits  '
+          '${(nachbarn ? "alle" : "keine").padRight(11)}  '
+          '${(kand / abfragen.length).round().toString().padLeft(6)} '
+          '(${anteil.toStringAsFixed(0).padLeft(3)} %)   '
+          '${(treffer / soll * 100).toStringAsFixed(1)} %',
+        );
       }
     }
   }, timeout: const Timeout(Duration(minutes: 20)));

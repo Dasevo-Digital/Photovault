@@ -87,9 +87,9 @@ class ExploreScreen extends StatelessWidget {
           _MemoriesSection(library: library),
           _Streifenabschnitt<PersonData>(
             titel: AppTexte.of(context).erkundenPersonen,
-            onAlleAnzeigen: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => PeopleScreen(library: library),
-            )),
+            onAlleAnzeigen: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PeopleScreen(library: library)),
+            ),
             hoehe: 96,
             // 64 Punkte Profilbild, der Rest ist Abstand und Name.
             textanteil: 32,
@@ -105,9 +105,9 @@ class ExploreScreen extends StatelessWidget {
           // ich, und wie lange".
           _Streifenabschnitt<ReisenData>(
             titel: AppTexte.of(context).erkundenReisen,
-            onAlleAnzeigen: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ReisenScreen(library: library),
-            )),
+            onAlleAnzeigen: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => ReisenScreen(library: library)),
+            ),
             hoehe: 92,
             // Rand, Symbol und Abstand sind fest; Name und Jahr sind Schrift.
             textanteil: 36,
@@ -123,22 +123,25 @@ class ExploreScreen extends StatelessWidget {
           // Tag darin – wer das eine sucht, hat das andere im Sinn.
           _Streifenabschnitt<AktivitaetenData>(
             titel: AppTexte.of(context).erkundenAktivitaeten,
-            onAlleAnzeigen: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AktivitaetenScreen(library: library),
-            )),
+            onAlleAnzeigen: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => AktivitaetenScreen(library: library),
+              ),
+            ),
             hoehe: 92,
             // Rand, Symbol und Abstand sind fest; Name und Jahr sind Schrift.
             textanteil: 36,
             kachelbreite: 190,
             hoechstens: _hoechstensKacheln,
             strom: (_) => library.db.watchAktivitaeten(),
-            kachel: (context, gezeigt, index) => _Aktivitaetskachel(library: library, k: gezeigt[index]),
+            kachel: (context, gezeigt, index) =>
+                _Aktivitaetskachel(library: library, k: gezeigt[index]),
           ),
           _Streifenabschnitt<AlbumData>(
             titel: AppTexte.of(context).erkundenLetzteAlben,
-            onAlleAnzeigen: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AlbumsScreen(library: library),
-            )),
+            onAlleAnzeigen: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => AlbumsScreen(library: library)),
+            ),
             hoehe: 150,
             // Die Vorschau bekommt, was übrig bleibt; darunter steht der Name.
             textanteil: 26,
@@ -154,9 +157,11 @@ class ExploreScreen extends StatelessWidget {
           // Bibliothek ganz ohne Fotos ist eine Auskunft, kein Zufall.
           _Streifenabschnitt<AssetData>(
             titel: AppTexte.of(context).erkundenLetzteFotos,
-            onAlleAnzeigen: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => TimelineScreen(library: library),
-            )),
+            onAlleAnzeigen: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TimelineScreen(library: library),
+              ),
+            ),
             hoehe: 140,
             // Reine Bildkacheln, keine Schrift.
             textanteil: 0,
@@ -170,7 +175,10 @@ class ExploreScreen extends StatelessWidget {
             strom: (anzahl) => library.db.watchTimeline(limit: anzahl),
             leerHinweis: AppTexte.of(context).erkundenKeineFotos,
             kachel: (context, gezeigt, index) => _Fotokachel(
-                library: library, alle: gezeigt, asset: gezeigt[index]),
+              library: library,
+              alle: gezeigt,
+              asset: gezeigt[index],
+            ),
           ),
           _Papierkorbzeile(library: library),
         ],
@@ -195,16 +203,21 @@ class _SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
-          child: Text(title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium),
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
         Flexible(
           child: TextButton(
             onPressed: onShowAll,
-            child: Text(AppTexte.of(context).allgAlleAnzeigen,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              AppTexte.of(context).allgAlleAnzeigen,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ],
@@ -221,7 +234,14 @@ class _EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: Center(child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -305,7 +325,8 @@ class _StreifenabschnittState<T> extends State<_Streifenabschnitt<T>> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final hoehe = widget.hoehe -
+        final hoehe =
+            widget.hoehe -
             widget.textanteil +
             MediaQuery.textScalerOf(context).scale(widget.textanteil);
         final anzahl = streifenAnzahl(
@@ -315,8 +336,10 @@ class _StreifenabschnittState<T> extends State<_Streifenabschnitt<T>> {
           hoechstens: widget.hoechstens,
         );
         return StreamBuilder<List<T>>(
-          stream: _strom.hole(widget.anzahlImStrom ? anzahl : true,
-              () => widget.strom(anzahl)),
+          stream: _strom.hole(
+            widget.anzahlImStrom ? anzahl : true,
+            () => widget.strom(anzahl),
+          ),
           builder: (context, schnappschuss) {
             final alle = schnappschuss.data ?? const [];
             if (alle.isEmpty && widget.leerHinweis == null) {
@@ -331,7 +354,9 @@ class _StreifenabschnittState<T> extends State<_Streifenabschnitt<T>> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _SectionHeader(
-                    title: widget.titel, onShowAll: widget.onAlleAnzeigen),
+                  title: widget.titel,
+                  onShowAll: widget.onAlleAnzeigen,
+                ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: hoehe,
@@ -366,9 +391,11 @@ class _Personenkachel extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(32),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PersonDetailScreen(library: library, person: person),
-      )),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PersonDetailScreen(library: library, person: person),
+        ),
+      ),
       child: SizedBox(
         width: 76,
         child: Column(
@@ -402,8 +429,11 @@ class _Fotokachel extends StatelessWidget {
   /// Die ganze Reihe – im Vollbild blättert man durch sie weiter.
   final List<AssetData> alle;
   final AssetData asset;
-  const _Fotokachel(
-      {required this.library, required this.alle, required this.asset});
+  const _Fotokachel({
+    required this.library,
+    required this.alle,
+    required this.asset,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -414,23 +444,25 @@ class _Fotokachel extends StatelessWidget {
         child: AssetThumbnailTile(
           asset: Rasterzeile.aus(asset),
           paths: library.paths,
-          onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-            builder: (_) => AssetViewerScreen(
-              assets: alle,
-              initialIndex: alle.indexOf(asset),
-              paths: library.paths,
-              db: library.db,
-              library: library,
-              onToggleFavorite: (a) =>
-                  library.db.setFavorite(a.id, !a.isFavorite),
-              onDelete: (a) => library.db.moveToTrash([a.id]),
-              onLock: (a) async {
-                if (await ensureVaultUnlocked(context, library)) {
-                  await library.lockAsset(a);
-                }
-              },
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => AssetViewerScreen(
+                assets: alle,
+                initialIndex: alle.indexOf(asset),
+                paths: library.paths,
+                db: library.db,
+                library: library,
+                onToggleFavorite: (a) =>
+                    library.db.setFavorite(a.id, !a.isFavorite),
+                onDelete: (a) => library.db.moveToTrash([a.id]),
+                onLock: (a) async {
+                  if (await ensureVaultUnlocked(context, library)) {
+                    await library.lockAsset(a);
+                  }
+                },
+              ),
             ),
-          )),
+          ),
         ),
       ),
     );
@@ -452,8 +484,9 @@ class _OrteAbschnitt extends StatefulWidget {
 }
 
 class _OrteAbschnittState extends State<_OrteAbschnitt> {
-  late final Future<bool> _hatOrte =
-      widget.library.db.countAssetsWithLocation().then((n) => n > 0);
+  late final Future<bool> _hatOrte = widget.library.db
+      .countAssetsWithLocation()
+      .then((n) => n > 0);
 
   @override
   Widget build(BuildContext context) {
@@ -466,9 +499,11 @@ class _OrteAbschnittState extends State<_OrteAbschnitt> {
           children: [
             _SectionHeader(
               title: AppTexte.of(context).erkundenOrte,
-              onShowAll: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => MapScreen(library: widget.library),
-              )),
+              onShowAll: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MapScreen(library: widget.library),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             _LocationsPreview(library: widget.library),
@@ -496,7 +531,8 @@ class _LocationsPreviewState extends State<_LocationsPreview> {
   // bei jedem Rebuild (z.B. durch den übergeordneten Consumer<LibraryState>)
   // ein NEUES Future anstoßen – der FutureBuilder würde jedes Mal kurz in
   // den Ladezustand zurückfallen und die Abfrage unnötig wiederholen.
-  late final Future<List<AssetData>> _locatedFuture = widget.library.db.assetsWithLocation();
+  late final Future<List<AssetData>> _locatedFuture = widget.library.db
+      .assetsWithLocation();
 
   ll.LatLng _averageCenter(List<AssetData> assets) {
     var latSum = 0.0, lngSum = 0.0;
@@ -515,20 +551,26 @@ class _LocationsPreviewState extends State<_LocationsPreview> {
         final located = snapshot.data ?? [];
         return InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => MapScreen(library: widget.library),
-          )),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => MapScreen(library: widget.library),
+            ),
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: SizedBox(
               height: 160,
               child: located.isEmpty
                   ? Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: Text(
                         AppTexte.of(context).ohneOrtLeer,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     )
                   // IgnorePointer: die Vorschau soll nur als Ganzes zur
@@ -542,14 +584,17 @@ class _LocationsPreviewState extends State<_LocationsPreview> {
                           // Sonst zoomt die Karte ueber die
                           // vorhandenen Kacheln hinaus ins Leere –
                           // siehe Kartenstil.hoechsteAnzeigeStufe.
-                          maxZoom: Kartenstil.dunkel.hoechsteAnzeigeStufe.toDouble(),
+                          maxZoom: Kartenstil.dunkel.hoechsteAnzeigeStufe
+                              .toDouble(),
                         ),
                         children: [
                           const Kachelschicht(),
                           buildMapAttribution(context),
                           MarkerLayer(
                             markers: [
-                              for (final a in located.take(_previewLocationMarkerCount))
+                              for (final a in located.take(
+                                _previewLocationMarkerCount,
+                              ))
                                 Marker(
                                   point: ll.LatLng(a.latitude!, a.longitude!),
                                   width: 10,
@@ -557,8 +602,13 @@ class _LocationsPreviewState extends State<_LocationsPreview> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Theme.of(context).colorScheme.primary,
-                                      border: Border.all(color: Colors.white, width: 1.5),
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -582,7 +632,11 @@ class _LocationGroup {
   final String? country;
   final AssetData cover;
   int count = 1;
-  _LocationGroup({required this.city, required this.country, required this.cover});
+  _LocationGroup({
+    required this.city,
+    required this.country,
+    required this.cover,
+  });
 }
 
 /// Zeigt die per Umkehr-Geokodierung erkannten Orte (siehe ReverseGeocoder)
@@ -597,7 +651,8 @@ class _LocationGroupsStrip extends StatefulWidget {
 }
 
 class _LocationGroupsStripState extends State<_LocationGroupsStrip> {
-  late final Future<List<AssetData>> _resolvedFuture = widget.library.db.assetsWithResolvedLocation();
+  late final Future<List<AssetData>> _resolvedFuture = widget.library.db
+      .assetsWithResolvedLocation();
 
   /// [assets] kommt bereits absteigend nach Aufnahmedatum sortiert aus der
   /// Datenbank – das erste Vorkommen je Ort ist damit automatisch das
@@ -608,7 +663,11 @@ class _LocationGroupsStripState extends State<_LocationGroupsStrip> {
       final key = '${a.locationCity}|${a.locationCountry ?? ''}';
       final existing = groups[key];
       if (existing == null) {
-        groups[key] = _LocationGroup(city: a.locationCity!, country: a.locationCountry, cover: a);
+        groups[key] = _LocationGroup(
+          city: a.locationCity!,
+          country: a.locationCountry,
+          cover: a,
+        );
       } else {
         existing.count++;
       }
@@ -630,13 +689,17 @@ class _LocationGroupsStripState extends State<_LocationGroupsStrip> {
               height: 150,
             );
           }
-          final groups = _groupByPlace(assets).take(_previewLocationGroupCount).toList();
+          final groups = _groupByPlace(
+            assets,
+          ).take(_previewLocationGroupCount).toList();
           return ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: groups.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) =>
-                _LocationGroupTile(library: widget.library, group: groups[index]),
+            itemBuilder: (context, index) => _LocationGroupTile(
+              library: widget.library,
+              group: groups[index],
+            ),
           );
         },
       ),
@@ -654,22 +717,24 @@ class _LocationGroupTile extends StatelessWidget {
       SearchFilters(locationCity: group.city, locationCountry: group.country),
     );
     if (results.isEmpty || !context.mounted) return;
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: results,
-        initialIndex: 0,
-        paths: library.paths,
-        db: library.db,
-        library: library,
-        onToggleFavorite: (a) => library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, library)) {
-            await library.lockAsset(a);
-          }
-        },
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: results,
+          initialIndex: 0,
+          paths: library.paths,
+          db: library.db,
+          library: library,
+          onToggleFavorite: (a) => library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, library)) {
+              await library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -692,12 +757,18 @@ class _LocationGroupTile extends StatelessWidget {
                       ? Image.file(
                           library.paths.absolute(thumbPath),
                           fit: BoxFit.cover,
-                          cacheWidth: (_kartenKante *
-                                  MediaQuery.devicePixelRatioOf(context))
-                              .round(),
-                          errorBuilder: (_, _, _) => const Icon(Icons.location_city_outlined, size: 32),
+                          cacheWidth:
+                              (_kartenKante *
+                                      MediaQuery.devicePixelRatioOf(context))
+                                  .round(),
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.location_city_outlined,
+                            size: 32,
+                          ),
                         )
-                      : const Center(child: Icon(Icons.location_city_outlined, size: 32)),
+                      : const Center(
+                          child: Icon(Icons.location_city_outlined, size: 32),
+                        ),
                 ),
               ),
             ),
@@ -710,11 +781,16 @@ class _LocationGroupTile extends StatelessWidget {
             ),
             if (group.country != null)
               Text(
-                landAnzeige(group.country,
-                    Localizations.localeOf(context).languageCode),
+                landAnzeige(
+                  group.country,
+                  Localizations.localeOf(context).languageCode,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
@@ -736,9 +812,11 @@ class _Reisekachel extends StatelessWidget {
         : '${reise.von.year}–${reise.bis.year}';
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ReiseDetailScreen(library: library, reise: reise),
-      )),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ReiseDetailScreen(library: library, reise: reise),
+        ),
+      ),
       child: Container(
         width: 190,
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -752,12 +830,16 @@ class _Reisekachel extends StatelessWidget {
           children: [
             Icon(Icons.luggage, color: farben.primary, size: 20),
             const SizedBox(height: AppSpacing.xs),
-            Text(reise.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(jahr,
-                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+            Text(
+              reise.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              jahr,
+              style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+            ),
           ],
         ),
       ),
@@ -776,9 +858,12 @@ class _Aktivitaetskachel extends StatelessWidget {
     final farben = Theme.of(context).colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => AktivitaetDetailScreen(library: library, aktivitaet: k),
-      )),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              AktivitaetDetailScreen(library: library, aktivitaet: k),
+        ),
+      ),
       child: Container(
         width: 190,
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -795,14 +880,18 @@ class _Aktivitaetskachel extends StatelessWidget {
             // wissen will.
             Icon(symbolFuerKennung(k.art), color: farben.primary, size: 20),
             const SizedBox(height: AppSpacing.xs),
-            Text(k.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text(nameFuerKennung(t, k.art),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+            Text(
+              k.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              nameFuerKennung(t, k.art),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+            ),
           ],
         ),
       ),
@@ -825,16 +914,22 @@ class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
   // in einer horizontalen Liste erzeugt – ein inline in build() erzeugtes
   // Future würde hier bei jedem Rebuild ERNEUT pro sichtbarem Album
   // abgefragt (statt einmal beim Erzeugen der Kachel).
-  late final Future<List<AssetData>> _assetsFuture = widget.library.db.assetsInAlbumOnce(widget.album.id);
+  late final Future<List<AssetData>> _assetsFuture = widget.library.db
+      .assetsInAlbumOnce(widget.album.id);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) =>
-            AlbumDetailScreen(library: widget.library, albumId: widget.album.id, albumName: widget.album.name),
-      )),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AlbumDetailScreen(
+            library: widget.library,
+            albumId: widget.album.id,
+            albumName: widget.album.name,
+          ),
+        ),
+      ),
       child: SizedBox(
         width: 120,
         child: Column(
@@ -849,20 +944,34 @@ class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
                     final assets = snapshot.data ?? [];
                     final cover = assets.isEmpty
                         ? null
-                        : assets.reduce((a, b) => a.fileCreatedAt.isAfter(b.fileCreatedAt) ? a : b);
+                        : assets.reduce(
+                            (a, b) => a.fileCreatedAt.isAfter(b.fileCreatedAt)
+                                ? a
+                                : b,
+                          );
                     final thumbPath = cover?.thumbnailRelativePath;
                     return Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       child: thumbPath != null
                           ? Image.file(
                               widget.library.paths.absolute(thumbPath),
                               fit: BoxFit.cover,
-                              cacheWidth: (_kartenKante *
-                                      MediaQuery.devicePixelRatioOf(context))
-                                  .round(),
-                              errorBuilder: (_, _, _) => const Icon(Icons.photo_album_outlined, size: 32),
+                              cacheWidth:
+                                  (_kartenKante *
+                                          MediaQuery.devicePixelRatioOf(
+                                            context,
+                                          ))
+                                      .round(),
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.photo_album_outlined,
+                                size: 32,
+                              ),
                             )
-                          : const Center(child: Icon(Icons.photo_album_outlined, size: 32)),
+                          : const Center(
+                              child: Icon(Icons.photo_album_outlined, size: 32),
+                            ),
                     );
                   },
                 ),
@@ -902,8 +1011,9 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
   Future<Rueckblick<AssetData>> _laden() async {
     final db = widget.library.db;
     final amTag = await db.assetsOnThisDay(_heute);
-    final imMonat =
-        amTag.isEmpty ? await db.assetsInDiesemMonat(_heute) : <AssetData>[];
+    final imMonat = amTag.isEmpty
+        ? await db.assetsInDiesemMonat(_heute)
+        : <AssetData>[];
     return waehleRueckblick(
       amTag: amTag,
       imMonat: imMonat,
@@ -912,23 +1022,30 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
     );
   }
 
-  void _openMemory(BuildContext context, List<AssetData> assets, AssetData asset) {
-    Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) => AssetViewerScreen(
-        assets: assets,
-        initialIndex: assets.indexOf(asset),
-        paths: widget.library.paths,
-        db: widget.library.db,
-        library: widget.library,
-        onToggleFavorite: (a) => widget.library.db.setFavorite(a.id, !a.isFavorite),
-        onDelete: (a) => widget.library.db.moveToTrash([a.id]),
-        onLock: (a) async {
-          if (await ensureVaultUnlocked(context, widget.library)) {
-            await widget.library.lockAsset(a);
-          }
-        },
+  void _openMemory(
+    BuildContext context,
+    List<AssetData> assets,
+    AssetData asset,
+  ) {
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: assets,
+          initialIndex: assets.indexOf(asset),
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.setFavorite(a.id, !a.isFavorite),
+          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onLock: (a) async {
+            if (await ensureVaultUnlocked(context, widget.library)) {
+              await widget.library.lockAsset(a);
+            }
+          },
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -938,20 +1055,21 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
       future: _rueckblick,
       builder: (context, snapshot) {
         final rueckblick = snapshot.data;
-        if (rueckblick == null ||
-            rueckblick.art == Rueckblickart.keiner) {
+        if (rueckblick == null || rueckblick.art == Rueckblickart.keiner) {
           return const SizedBox.shrink();
         }
         final letzte = rueckblick.gruppen.last.jahreHer;
-        final monat = DateFormat.MMMM(Localizations.localeOf(context)
-                .toString())
-            .format(_heute);
+        final monat = DateFormat.MMMM(
+          Localizations.localeOf(context).toString(),
+        ).format(_heute);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t.erkundenErinnerungen,
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              t.erkundenErinnerungen,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             for (final gruppe in rueckblick.gruppen) ...[
               Padding(
@@ -1031,13 +1149,13 @@ class _PapierkorbzeileState extends State<_Papierkorbzeile> {
           child: ListTile(
             leading: const Icon(Icons.delete_outline),
             title: Text(t.papierkorbTitel),
-            subtitle: Text(anzahl == 0
-                ? t.papierkorbLeer
-                : t.papierkorbAnzahl(anzahl)),
+            subtitle: Text(
+              anzahl == 0 ? t.papierkorbLeer : t.papierkorbAnzahl(anzahl),
+            ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => TrashScreen(library: library),
-            )),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => TrashScreen(library: library)),
+            ),
           ),
         );
       },

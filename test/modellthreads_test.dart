@@ -39,10 +39,9 @@ void main() {
     // NIRGENDS gestellt wurde. Ein Prüfstand auf [modellThreads] allein
     // saehe nicht, ob ein siebzehntes Modell sie wieder vergisst.
     final ohne = <String>[];
-    for (final datei in Directory('lib/services')
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei in Directory(
+      'lib/services',
+    ).listSync().whereType<File>().where((f) => f.path.endsWith('.dart'))) {
       final quelle = datei.readAsStringSync();
       var ab = 0;
       while (true) {
@@ -53,19 +52,27 @@ void main() {
         // von 300 Zeichen deckt auch den umgebrochenen Fall ab.
         final ende = (i + 300).clamp(0, quelle.length);
         if (!quelle.substring(i, ende).contains('modelloptionen(')) {
-          ohne.add('${datei.path}: ${quelle.substring(i, (i + 60).clamp(0, quelle.length))}');
+          ohne.add(
+            '${datei.path}: ${quelle.substring(i, (i + 60).clamp(0, quelle.length))}',
+          );
         }
       }
     }
-    expect(ohne, isEmpty,
-        reason: 'ohne Optionen nimmt ORT alle Kerne:\n${ohne.join('\n')}');
+    expect(
+      ohne,
+      isEmpty,
+      reason: 'ohne Optionen nimmt ORT alle Kerne:\n${ohne.join('\n')}',
+    );
   });
 
   test('die Optionen tragen die Zahl wirklich', () {
     final o = modelloptionen();
     expect(o.intraOpNumThreads, modellThreads());
-    expect(o.intraOpNumThreads, lessThan(Platform.numberOfProcessors),
-        reason: 'auf dieser Maschine muss mindestens ein Kern frei bleiben');
+    expect(
+      o.intraOpNumThreads,
+      lessThan(Platform.numberOfProcessors),
+      reason: 'auf dieser Maschine muss mindestens ein Kern frei bleiben',
+    );
     // Die zweite Zahl wirkt nur bei ORT_PARALLEL, das hier nirgends
     // eingestellt ist – ausdruecklich auf eins, damit eine kuenftige
     // Voreinstellung nicht unbemerkt Kerne belegt.

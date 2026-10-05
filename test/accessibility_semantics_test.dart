@@ -27,8 +27,12 @@ void main() {
     late StoragePaths paths;
 
     setUp(() async {
-      tempRoot = Directory.systemTemp.createTempSync('photo_vault_thumb_semantics_test_');
-      paths = await StoragePaths.forTesting(Directory(p.join(tempRoot.path, 'library')));
+      tempRoot = Directory.systemTemp.createTempSync(
+        'photo_vault_thumb_semantics_test_',
+      );
+      paths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'library')),
+      );
     });
 
     tearDown(() {
@@ -75,34 +79,47 @@ void main() {
     testWidgets('Label nennt Typ, Dateiname und Datum', (tester) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: AssetThumbnailTile(asset: Rasterzeile.aus(buildAsset(type: 'IMAGE')), paths: paths, onTap: () {}),
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AssetThumbnailTile(
+              asset: Rasterzeile.aus(buildAsset(type: 'IMAGE')),
+              paths: paths,
+              onTap: () {},
+            ),
+          ),
         ),
-      ));
+      );
 
-      expect(find.bySemanticsLabel('Foto IMG_0001.jpg, 12. März 2025'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Foto IMG_0001.jpg, 12. März 2025'),
+        findsOneWidget,
+      );
       handle.dispose();
     });
 
     testWidgets('Favorit und Bewertung fließen ins Label ein', (tester) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: AssetThumbnailTile(
-            asset: Rasterzeile.aus(buildAsset(type: 'IMAGE', isFavorite: true, rating: 4)),
-            paths: paths,
-            onTap: () {},
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AssetThumbnailTile(
+              asset: Rasterzeile.aus(
+                buildAsset(type: 'IMAGE', isFavorite: true, rating: 4),
+              ),
+              paths: paths,
+              onTap: () {},
+            ),
           ),
         ),
-      ));
+      );
 
       expect(
         find.bySemanticsLabel(
@@ -116,74 +133,116 @@ void main() {
     testWidgets('Video-Typ und Dauer fließen ins Label ein', (tester) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: AssetThumbnailTile(
-            asset: Rasterzeile.aus(buildAsset(type: 'VIDEO', durationSeconds: 95)),
-            paths: paths,
-            onTap: () {},
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AssetThumbnailTile(
+              asset: Rasterzeile.aus(
+                buildAsset(type: 'VIDEO', durationSeconds: 95),
+              ),
+              paths: paths,
+              onTap: () {},
+            ),
           ),
         ),
-      ));
+      );
 
-      expect(find.bySemanticsLabel('Video IMG_0001.jpg, 12. März 2025, 1:35'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Video IMG_0001.jpg, 12. März 2025, 1:35'),
+        findsOneWidget,
+      );
       handle.dispose();
     });
   });
 
   group('StarRating Semantics', () {
-    testWidgets('antippbar: jeder Stern trägt ein Setzen-Label', (tester) async {
+    testWidgets('antippbar: jeder Stern trägt ein Setzen-Label', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(body: StarRating(value: 3, onChanged: (_) {})),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(body: StarRating(value: 3, onChanged: (_) {})),
+        ),
+      );
 
       for (var i = 1; i <= 5; i++) {
-        expect(find.bySemanticsLabel('Bewertung: $i von 5 Sternen setzen'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Bewertung: $i von 5 Sternen setzen'),
+          findsOneWidget,
+        );
       }
       handle.dispose();
     });
 
-    testWidgets('rein anzeigend: Label nennt Füllstatus statt Aktion', (tester) async {
+    testWidgets('rein anzeigend: Label nennt Füllstatus statt Aktion', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(const MaterialApp(
-        locale: Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(body: StarRating(value: 2)),
-      ));
+      await tester.pumpWidget(
+        const MaterialApp(
+          locale: Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(body: StarRating(value: 2)),
+        ),
+      );
 
-      expect(find.bySemanticsLabel('Stern 1 von 5, ausgefüllt'), findsOneWidget);
-      expect(find.bySemanticsLabel('Stern 2 von 5, ausgefüllt'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Stern 1 von 5, ausgefüllt'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Stern 2 von 5, ausgefüllt'),
+        findsOneWidget,
+      );
       expect(find.bySemanticsLabel('Stern 3 von 5'), findsOneWidget);
       handle.dispose();
     });
   });
 
   group('ColorLabelPicker Semantics', () {
-    testWidgets('jede Farbe trägt ein deutsches Label, Auswahl ist erkennbar', (tester) async {
+    testWidgets('jede Farbe trägt ein deutsches Label, Auswahl ist erkennbar', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
 
-      await tester.pumpWidget(MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(body: ColorLabelPicker(value: 'green', onChanged: (_) {})),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: ColorLabelPicker(value: 'green', onChanged: (_) {}),
+          ),
+        ),
+      );
 
       expect(find.bySemanticsLabel('Grün, ausgewählt'), findsOneWidget);
-      expect(find.bySemanticsLabel('Farbmarkierung Rot setzen'), findsOneWidget);
-      expect(find.bySemanticsLabel('Farbmarkierung Gelb setzen'), findsOneWidget);
-      expect(find.bySemanticsLabel('Farbmarkierung Blau setzen'), findsOneWidget);
-      expect(find.bySemanticsLabel('Farbmarkierung Violett setzen'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Farbmarkierung Rot setzen'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Farbmarkierung Gelb setzen'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Farbmarkierung Blau setzen'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Farbmarkierung Violett setzen'),
+        findsOneWidget,
+      );
       handle.dispose();
     });
   });

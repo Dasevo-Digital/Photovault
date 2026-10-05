@@ -62,71 +62,85 @@ void main() {
     expect(restored.maxSharpnessScore, original.maxSharpnessScore);
   });
 
-  test('copyWith mit clear-Flags löscht die neuen optionalen Filterfelder gezielt', () {
-    const filled = SearchFilters(
-      minRating: 4,
-      minIso: 100,
-      maxIso: 1600,
-      minFNumber: 1.4,
-      maxFNumber: 8.0,
-      minFocalLengthMm: 24,
-      maxFocalLengthMm: 200,
-      maxSharpnessScore: 100.0,
-    );
+  test(
+    'copyWith mit clear-Flags löscht die neuen optionalen Filterfelder gezielt',
+    () {
+      const filled = SearchFilters(
+        minRating: 4,
+        minIso: 100,
+        maxIso: 1600,
+        minFNumber: 1.4,
+        maxFNumber: 8.0,
+        minFocalLengthMm: 24,
+        maxFocalLengthMm: 200,
+        maxSharpnessScore: 100.0,
+      );
 
-    final cleared = filled.copyWith(
-      clearMinRating: true,
-      clearMinIso: true,
-      clearMaxIso: true,
-      clearMinFNumber: true,
-      clearMaxFNumber: true,
-      clearMinFocalLengthMm: true,
-      clearMaxFocalLengthMm: true,
-      clearMaxSharpnessScore: true,
-    );
+      final cleared = filled.copyWith(
+        clearMinRating: true,
+        clearMinIso: true,
+        clearMaxIso: true,
+        clearMinFNumber: true,
+        clearMaxFNumber: true,
+        clearMinFocalLengthMm: true,
+        clearMaxFocalLengthMm: true,
+        clearMaxSharpnessScore: true,
+      );
 
-    expect(cleared.minRating, isNull);
-    expect(cleared.minIso, isNull);
-    expect(cleared.maxIso, isNull);
-    expect(cleared.minFNumber, isNull);
-    expect(cleared.maxFNumber, isNull);
-    expect(cleared.minFocalLengthMm, isNull);
-    expect(cleared.maxFocalLengthMm, isNull);
-    expect(cleared.maxSharpnessScore, isNull);
-    expect(cleared.isEmpty, isTrue);
-  });
+      expect(cleared.minRating, isNull);
+      expect(cleared.minIso, isNull);
+      expect(cleared.maxIso, isNull);
+      expect(cleared.minFNumber, isNull);
+      expect(cleared.maxFNumber, isNull);
+      expect(cleared.minFocalLengthMm, isNull);
+      expect(cleared.maxFocalLengthMm, isNull);
+      expect(cleared.maxSharpnessScore, isNull);
+      expect(cleared.isEmpty, isTrue);
+    },
+  );
 
-  test('leere/unbekannte Felder im JSON fallen sicher auf die Standardwerte zurück', () {
-    final restored = SearchFilters.fromJson(const {});
-    expect(restored.isEmpty, isTrue);
-  });
+  test(
+    'leere/unbekannte Felder im JSON fallen sicher auf die Standardwerte zurück',
+    () {
+      final restored = SearchFilters.fromJson(const {});
+      expect(restored.isEmpty, isTrue);
+    },
+  );
 
   test('beschädigtes JSON liefert leere Filter statt abzustürzen', () async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.decodeSavedSearchFilters('{ das ist kein json'), const SearchFilters());
+    expect(
+      db.decodeSavedSearchFilters('{ das ist kein json'),
+      const SearchFilters(),
+    );
   });
 
-  test('createSavedSearch/watchSavedSearches/deleteSavedSearch funktionieren zusammen', () async {
-    final tempRoot = Directory.systemTemp.createTempSync('photo_vault_saved_search_test_');
-    addTearDown(() => tempRoot.deleteSync(recursive: true));
+  test(
+    'createSavedSearch/watchSavedSearches/deleteSavedSearch funktionieren zusammen',
+    () async {
+      final tempRoot = Directory.systemTemp.createTempSync(
+        'photo_vault_saved_search_test_',
+      );
+      addTearDown(() => tempRoot.deleteSync(recursive: true));
 
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
 
-    const filters = SearchFilters(favoritesOnly: true, query: 'Strand');
-    final id = const Uuid().v4();
-    await db.createSavedSearch(id, 'Strandfotos', filters);
+      const filters = SearchFilters(favoritesOnly: true, query: 'Strand');
+      final id = const Uuid().v4();
+      await db.createSavedSearch(id, 'Strandfotos', filters);
 
-    final saved = await db.watchSavedSearches().first;
-    expect(saved, hasLength(1));
-    expect(saved.single.name, 'Strandfotos');
-    final decoded = db.decodeSavedSearchFilters(saved.single.filtersJson);
-    expect(decoded.favoritesOnly, isTrue);
-    expect(decoded.query, 'Strand');
+      final saved = await db.watchSavedSearches().first;
+      expect(saved, hasLength(1));
+      expect(saved.single.name, 'Strandfotos');
+      final decoded = db.decodeSavedSearchFilters(saved.single.filtersJson);
+      expect(decoded.favoritesOnly, isTrue);
+      expect(decoded.query, 'Strand');
 
-    await db.deleteSavedSearch(id);
-    expect(await db.watchSavedSearches().first, isEmpty);
-  });
+      await db.deleteSavedSearch(id);
+      expect(await db.watchSavedSearches().first, isEmpty);
+    },
+  );
 }

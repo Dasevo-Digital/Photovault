@@ -114,13 +114,16 @@ class Listenspaltenwahl {
       // leere Flaeche ohne Weg zurueck.
       if (spalten.length <= 1) return this;
       return Listenspaltenwahl(
-        spalten: [for (final x in spalten) if (x != s) x],
+        spalten: [
+          for (final x in spalten)
+            if (x != s) x,
+        ],
         breiten: breiten,
       );
     }
     final neu = [
       for (final x in Listenspalte.values)
-        if (x == s || spalten.contains(x)) x
+        if (x == s || spalten.contains(x)) x,
     ];
     return Listenspaltenwahl(spalten: neu, breiten: breiten);
   }
@@ -140,11 +143,9 @@ class Listenspaltenwahl {
   /// Spalte dazwischenrutscht, würde sonst alle gemerkten Wahlen
   /// verschieben.
   String alsText() => jsonEncode({
-        'spalten': [for (final s in spalten) s.name],
-        'breiten': {
-          for (final e in breiten.entries) e.key.name: e.value,
-        },
-      });
+    'spalten': [for (final s in spalten) s.name],
+    'breiten': {for (final e in breiten.entries) e.key.name: e.value},
+  });
 
   /// Liest zurück, was [alsText] geschrieben hat.
   ///
@@ -170,7 +171,9 @@ class Listenspaltenwahl {
           final b = e.value;
           if (s != null && b is num) {
             breiten[s] = b.toDouble().clamp(
-                listenspalteMindestbreite, listenspalteHoechstbreite);
+              listenspalteMindestbreite,
+              listenspalteHoechstbreite,
+            );
           }
         }
       }

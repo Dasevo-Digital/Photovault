@@ -32,8 +32,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -60,11 +61,13 @@ void main() {
   }
 
   Future<void> huelle(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      home: HomeShell(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: HomeShell(library: library),
+      ),
+    );
     await tester.pump();
   }
 
@@ -82,33 +85,45 @@ void main() {
   }
 
   /// Öffnet etwas so, wie es eine Seite tut: über ihren eigenen Kontext.
-  Future<void> oeffne(WidgetTester tester,
-      {required bool ganzesFenster}) async {
+  Future<void> oeffne(
+    WidgetTester tester, {
+    required bool ganzesFenster,
+  }) async {
     final kontext = tester.element(find.byType(TimelineScreen));
-    unawaited(Navigator.of(kontext, rootNavigator: ganzesFenster).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const Scaffold(body: Text('Unterseite')),
+    unawaited(
+      Navigator.of(kontext, rootNavigator: ganzesFenster).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Unterseite')),
+        ),
       ),
-    ));
+    );
     await ruhe(tester);
   }
 
-  testWidgets('was eine Seite oeffnet, laesst die Leiste stehen',
-      (tester) async {
+  testWidgets('was eine Seite oeffnet, laesst die Leiste stehen', (
+    tester,
+  ) async {
     await huelle(tester);
     expect(find.byType(NavigationRail), findsOneWidget);
 
     await oeffne(tester, ganzesFenster: false);
 
-    expect(find.text('Unterseite'), findsOneWidget,
-        reason: 'Die Unterseite ist da.');
-    expect(find.byType(NavigationRail), findsOneWidget,
-        reason: 'Und die Leiste steht daneben, statt verdeckt zu sein.');
+    expect(
+      find.text('Unterseite'),
+      findsOneWidget,
+      reason: 'Die Unterseite ist da.',
+    );
+    expect(
+      find.byType(NavigationRail),
+      findsOneWidget,
+      reason: 'Und die Leiste steht daneben, statt verdeckt zu sein.',
+    );
     await abbauen(tester);
   });
 
-  testWidgets('die Gegenprobe: Vollbild verdeckt die Leiste sehr wohl',
-      (tester) async {
+  testWidgets('die Gegenprobe: Vollbild verdeckt die Leiste sehr wohl', (
+    tester,
+  ) async {
     await huelle(tester);
     await oeffne(tester, ganzesFenster: true);
 
@@ -116,14 +131,19 @@ void main() {
     // `findsNothing` heisst hier „nicht mehr zu sehen": Die Hülle bleibt
     // unter der Vollbildseite im Baum, aber beiseitegestellt, und danach
     // sucht ein Finder von sich aus nicht.
-    expect(find.byType(NavigationRail), findsNothing,
-        reason: 'Wer das ganze Fenster verlangt, bekommt es – der 3D-Flug '
-            'und die Vollbildansicht gehen genau diesen Weg.');
+    expect(
+      find.byType(NavigationRail),
+      findsNothing,
+      reason:
+          'Wer das ganze Fenster verlangt, bekommt es – der 3D-Flug '
+          'und die Vollbildansicht gehen genau diesen Weg.',
+    );
     await abbauen(tester);
   });
 
-  testWidgets('ein Wechsel des Bereichs schliesst die offene Seite',
-      (tester) async {
+  testWidgets('ein Wechsel des Bereichs schliesst die offene Seite', (
+    tester,
+  ) async {
     await huelle(tester);
     await oeffne(tester, ganzesFenster: false);
 
@@ -132,14 +152,18 @@ void main() {
     await tester.tap(find.byIcon(Icons.photo_album_outlined));
     await ruhe(tester);
 
-    expect(find.text('Unterseite'), findsNothing,
-        reason: 'Sonst zeigte die Leiste einen Bereich an, den niemand sieht.');
+    expect(
+      find.text('Unterseite'),
+      findsNothing,
+      reason: 'Sonst zeigte die Leiste einen Bereich an, den niemand sieht.',
+    );
     expect(find.byType(AlbumsScreen), findsOneWidget);
     await abbauen(tester);
   });
 
-  testWidgets('dasselbe Ziel noch einmal fuehrt zurueck zur Uebersicht',
-      (tester) async {
+  testWidgets('dasselbe Ziel noch einmal fuehrt zurueck zur Uebersicht', (
+    tester,
+  ) async {
     await huelle(tester);
     await oeffne(tester, ganzesFenster: false);
 
@@ -148,14 +172,18 @@ void main() {
     await tester.tap(find.byIcon(Icons.photo));
     await ruhe(tester);
 
-    expect(find.text('Unterseite'), findsNothing,
-        reason: 'Vorher war das eine tote Taste.');
+    expect(
+      find.text('Unterseite'),
+      findsNothing,
+      reason: 'Vorher war das eine tote Taste.',
+    );
     expect(find.byType(TimelineScreen), findsOneWidget);
     await abbauen(tester);
   });
 
-  testWidgets('schmale Fenster zeigen vier Hauptziele und ein Mehr-Menü',
-      (tester) async {
+  testWidgets('schmale Fenster zeigen vier Hauptziele und ein Mehr-Menü', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(600, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -178,8 +206,9 @@ void main() {
   /// offene Gesichter und will den Weg zu den Personen anbieten, ohne den
   /// Gruppierlauf ein zweites Mal zu bauen. Dafür gibt es
   /// [LibraryState.zeigeBereich]; hier steht, dass die Hülle darauf hört.
-  testWidgets('ein Bereichswunsch von unten schaltet die Leiste um',
-      (tester) async {
+  testWidgets('ein Bereichswunsch von unten schaltet die Leiste um', (
+    tester,
+  ) async {
     await huelle(tester);
     await oeffne(tester, ganzesFenster: false);
     expect(find.text('Unterseite'), findsOneWidget);
@@ -197,8 +226,11 @@ void main() {
     await ruhe(tester);
 
     expect(find.byType(AlbumsScreen), findsOneWidget);
-    expect(find.text('Unterseite'), findsNothing,
-        reason: 'Der Wechsel raeumt den Bereich auf wie ein Tippen auch.');
+    expect(
+      find.text('Unterseite'),
+      findsNothing,
+      reason: 'Der Wechsel raeumt den Bereich auf wie ein Tippen auch.',
+    );
     await abbauen(tester);
   });
 

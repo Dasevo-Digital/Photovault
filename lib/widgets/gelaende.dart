@@ -299,10 +299,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     final g = widget.hoehen;
     final netz = widget.netz;
     if (g == null || netz.breiteMeter <= 0 || netz.hoeheMeter <= 0) return null;
-    final laenge = netz.west +
-        (x / netz.breiteMeter + 0.5) * (netz.ost - netz.west);
-    final breite = netz.nord -
-        (0.5 - y / netz.hoeheMeter) * (netz.nord - netz.sued);
+    final laenge =
+        netz.west + (x / netz.breiteMeter + 0.5) * (netz.ost - netz.west);
+    final breite =
+        netz.nord - (0.5 - y / netz.hoeheMeter) * (netz.nord - netz.sued);
     final h = g.anOrt(breite, laenge);
     if (h == null) return null;
     return (h - netz.mittlereHoehe) * gelaendeUeberhoehung;
@@ -443,8 +443,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       return;
     }
     if (!mounted) return;
-    final auftrag =
-        await widget.beimVideoZiel?.call(_uhr.duration ?? _dauer());
+    final auftrag = await widget.beimVideoZiel?.call(_uhr.duration ?? _dauer());
     if (auftrag == null || !mounted) return;
     final ziel = auftrag.ziel;
 
@@ -547,12 +546,14 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     if (lader == null) return;
     final breite = (_videoauftrag?.breite ?? 1920).toDouble();
     final hoehe = (_videoauftrag?.hoehe ?? 1080).toDouble();
-    lader.brauche(bloeckeImBild(
-      widget.netz,
-      _videokamera(zeit, breite, hoehe),
-      Size(breite, hoehe),
-      uebersichtAufloesung: _uebersichtAufloesung,
-    ));
+    lader.brauche(
+      bloeckeImBild(
+        widget.netz,
+        _videokamera(zeit, breite, hoehe),
+        Size(breite, hoehe),
+        uebersichtAufloesung: _uebersichtAufloesung,
+      ),
+    );
     // **Nur auf das warten, was man sieht.** Vorher stand hier
     // `ruhe(700 ms)` – warten, bis der Lader gar nichts mehr zu tun hat.
     // Das tritt im Flug nie ein: Ein Bild will über fünfhundert Blöcke,
@@ -566,8 +567,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
 
   /// Die Kamera für ein Videobild – dieselbe Rechnung wie am Bildschirm.
   Gelaendekamera _videokamera(double zeit, double breite, double hoehe) {
-    final ausdehnung =
-        math.max(widget.netz.breiteMeter, widget.netz.hoeheMeter);
+    final ausdehnung = math.max(
+      widget.netz.breiteMeter,
+      widget.netz.hoeheMeter,
+    );
     final abschnitt = _abschnittBei(zeit);
     final stand = _flug.bei(abschnitt.flug);
     final brennweite = math.min(breite, hoehe) * 1.1;
@@ -582,9 +585,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       drehung: stand.drehung,
       neigung: _neigung,
       entfernung: Gelaendeflug.flugabstand(
-          ausdehnung: ausdehnung,
-          kante: gelaendeGitterkante,
-          brennweite: brennweite),
+        ausdehnung: ausdehnung,
+        kante: gelaendeGitterkante,
+        brennweite: brennweite,
+      ),
       brennweite: brennweite,
       mitte: Offset(breite / 2, hoehe * 0.62),
       blickpunkt: stand.blickpunkt,
@@ -592,20 +596,34 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     // Dieselbe Anhebung wie am Bildschirm: Ein Video, das durch den Berg
     // fliegt, waere derselbe Fehler in haltbar.
     if (abschnitt.einflug < 1) {
-      return _ueberDemBoden(_zwischenKamera(uebersicht, flugkamera,
-          Curves.easeInOutCubic.transform(abschnitt.einflug)));
+      return _ueberDemBoden(
+        _zwischenKamera(
+          uebersicht,
+          flugkamera,
+          Curves.easeInOutCubic.transform(abschnitt.einflug),
+        ),
+      );
     }
     if (abschnitt.abspann > 0) {
-      return _ueberDemBoden(_zwischenKamera(flugkamera, uebersicht,
-          Curves.easeInOutCubic.transform(abschnitt.abspann)));
+      return _ueberDemBoden(
+        _zwischenKamera(
+          flugkamera,
+          uebersicht,
+          Curves.easeInOutCubic.transform(abschnitt.abspann),
+        ),
+      );
     }
     return _ueberDemBoden(flugkamera);
   }
 
   /// Malt ein einzelnes Videobild – dieselbe Rechnung wie am Bildschirm,
   /// nur auf eine feste Leinwand statt in ein Fenster.
-  void _videobild(ui.Canvas leinwand, ui.Size flaeche, double zeit,
-      Map<double, ui.Image> fotos) {
+  void _videobild(
+    ui.Canvas leinwand,
+    ui.Size flaeche,
+    double zeit,
+    Map<double, ui.Image> fotos,
+  ) {
     final abschnitt = _abschnittBei(zeit);
     final stand = _flug.bei(abschnitt.flug);
     final kamera = _videokamera(zeit, flaeche.width, flaeche.height);
@@ -630,7 +648,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
           : (
               bild: bild,
               deckkraft: _fotoDeckkraft(stand.gefahrenMeter),
-              unterschrift: foto!.unterschrift
+              unterschrift: foto!.unterschrift,
             ),
       namensnennung: widget.namensnennung,
       // Sie kommen mit dem Einflug und gehen mit dem Abspann: Was der
@@ -638,14 +656,15 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       // mehr zu suchen.
       messwerte: (
         werte: _videomesswerte(stand),
-        deckkraft: Curves.easeOut.transform(abschnitt.einflug) *
+        deckkraft:
+            Curves.easeOut.transform(abschnitt.einflug) *
             (1 - Curves.easeIn.transform(abschnitt.abspann)),
       ),
       abspann: abschnitt.abspann <= 0
           ? null
           : (
               zeilen: _abspannzeilen(),
-              deckkraft: Curves.easeIn.transform(abschnitt.abspann)
+              deckkraft: Curves.easeIn.transform(abschnitt.abspann),
             ),
     ).paint(leinwand, flaeche);
   }
@@ -680,30 +699,30 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     if (breiteste == null) return const [];
     final t = AppTexte.of(context);
     final eine = NumberFormat.decimalPatternDigits(
-        locale: Localizations.localeOf(context).toString(), decimalDigits: 1);
+      locale: Localizations.localeOf(context).toString(),
+      decimalDigits: 1,
+    );
     return [
       if (stand.hoeheMeter case final h?)
         (
           name: t.flugHoehe,
           wert: t.flugMeterProfil(h.round()),
           breitester: breiteste.hoehe,
-          farbe: null
+          farbe: null,
         ),
       if (stand.tempoMeterJeSekunde case final v?)
         (
           name: t.flugTempo,
           wert: t.flugKmH(eine.format(v * 3.6)),
           breitester: breiteste.tempo,
-          farbe: null
+          farbe: null,
         ),
       if (stand.steigungProzent case final st?)
         (
           name: t.flugSteigung,
           wert: t.flugProzent(eine.format(st)),
           breitester: breiteste.steigung,
-          farbe: st.abs() < 1
-              ? null
-              : (st > 0 ? _videoBergauf : _videoBergab),
+          farbe: st.abs() < 1 ? null : (st > 0 ? _videoBergauf : _videoBergab),
         ),
     ];
   }
@@ -724,7 +743,9 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   ({String hoehe, String tempo, String steigung}) _breitesteMesswerte() {
     final t = AppTexte.of(context);
     final eine = NumberFormat.decimalPatternDigits(
-        locale: Localizations.localeOf(context).toString(), decimalDigits: 1);
+      locale: Localizations.localeOf(context).toString(),
+      decimalDigits: 1,
+    );
     String laenger(String bisher, String neu) =>
         neu.length > bisher.length ? neu : bisher;
     var hoehe = '';
@@ -748,7 +769,9 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   List<String> _abspannzeilen() {
     final t = AppTexte.of(context);
     final zahl = NumberFormat(
-        '#,##0.0', Localizations.localeOf(context).toLanguageTag());
+      '#,##0.0',
+      Localizations.localeOf(context).toLanguageTag(),
+    );
     final hoch = _flug.aufstiegMeter;
     final dauer = _flug.gesamtdauer;
     return [
@@ -816,7 +839,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// Landschaft beim Einflug einmal ganz herum – am Bild sofort zu
   /// sehen, in Zahlen nie.
   Gelaendekamera _zwischenKamera(
-      Gelaendekamera von, Gelaendekamera nach, double t) {
+    Gelaendekamera von,
+    Gelaendekamera nach,
+    double t,
+  ) {
     double misch(double a, double b) => a + (b - a) * t;
     var dd = nach.drehung - von.drehung;
     while (dd > math.pi) {
@@ -830,8 +856,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       neigung: misch(von.neigung, nach.neigung),
       entfernung: misch(von.entfernung, nach.entfernung),
       brennweite: misch(von.brennweite, nach.brennweite),
-      mitte: Offset(misch(von.mitte.dx, nach.mitte.dx),
-          misch(von.mitte.dy, nach.mitte.dy)),
+      mitte: Offset(
+        misch(von.mitte.dx, nach.mitte.dx),
+        misch(von.mitte.dy, nach.mitte.dy),
+      ),
       blickpunkt: (
         x: misch(von.blickpunkt.x, nach.blickpunkt.x),
         y: misch(von.blickpunkt.y, nach.blickpunkt.y),
@@ -881,8 +909,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         // Der Abstand richtet sich nach der Ausdehnung: Eine
         // Zwölf-Kilometer-Wanderung und ein Mittelgebirge sollen beide
         // ins Bild passen, ohne dass jemand zoomt.
-        final ausdehnung =
-            math.max(widget.netz.breiteMeter, widget.netz.hoeheMeter);
+        final ausdehnung = math.max(
+          widget.netz.breiteMeter,
+          widget.netz.hoeheMeter,
+        );
         // Am Bildschirm eingestellt: Mit dem Faktor 1,6 lag die
         // Landschaft als Briefmarke in der Mitte eines schwarzen
         // Fensters.
@@ -907,7 +937,8 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
             : Gelaendekamera(
                 drehung: stand.drehung + _flugversatz,
                 neigung: _neigung,
-                entfernung: Gelaendeflug.flugabstand(
+                entfernung:
+                    Gelaendeflug.flugabstand(
                       ausdehnung: ausdehnung,
                       kante: gelaendeGitterkante,
                       brennweite: math.min(breite, hoehe) * 1.1,
@@ -926,15 +957,23 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         // letzten Stelle wieder auf. Eine Kurve dazwischen, damit es
         // nicht ruckt: `easeInOutCubic` beschleunigt und bremst, ein
         // linearer Übergang setzte an beiden Enden hart an.
-        final kameraJetzt = _ueberDemBoden(stand == null
-            ? kamera
-            : (_abschnitt.einflug < 1
-                ? _zwischenKamera(uebersichtkamera, kamera,
-                    Curves.easeInOutCubic.transform(_abschnitt.einflug))
-                : _abschnitt.abspann > 0
-                    ? _zwischenKamera(kamera, uebersichtkamera,
-                        Curves.easeInOutCubic.transform(_abschnitt.abspann))
-                    : kamera));
+        final kameraJetzt = _ueberDemBoden(
+          stand == null
+              ? kamera
+              : (_abschnitt.einflug < 1
+                    ? _zwischenKamera(
+                        uebersichtkamera,
+                        kamera,
+                        Curves.easeInOutCubic.transform(_abschnitt.einflug),
+                      )
+                    : _abschnitt.abspann > 0
+                    ? _zwischenKamera(
+                        kamera,
+                        uebersichtkamera,
+                        Curves.easeInOutCubic.transform(_abschnitt.abspann),
+                      )
+                    : kamera),
+        );
 
         // **Sagen, was gebraucht wird – in jedem Bild.** Der Lader
         // arbeitet immer nur an einer Sache und fragt nach jedem
@@ -945,13 +984,15 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         // Wunsch ändert nichts an der Oberfläche, er setzt nur einen
         // Merkposten und stösst eine Aufgabe an. Ein zweiter Durchlauf
         // dafür wäre ein Bild Verzögerung bei jeder Bewegung.
-        _lader?.brauche(bloeckeImBild(
-          widget.netz,
-          kameraJetzt,
-          Size(breite, hoehe),
-          schaerfe: MediaQuery.devicePixelRatioOf(context),
-          uebersichtAufloesung: _uebersichtAufloesung,
-        ));
+        _lader?.brauche(
+          bloeckeImBild(
+            widget.netz,
+            kameraJetzt,
+            Size(breite, hoehe),
+            schaerfe: MediaQuery.devicePixelRatioOf(context),
+            uebersichtAufloesung: _uebersichtAufloesung,
+          ),
+        );
 
         return Stack(
           children: [
@@ -961,8 +1002,11 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                 child: Listener(
                   onPointerSignal: (e) {
                     if (e is PointerScrollEvent) {
-                      setState(() => _zoom = _zoomGrenzen(
-                          _zoom * (1 - e.scrollDelta.dy * 0.002)));
+                      setState(
+                        () => _zoom = _zoomGrenzen(
+                          _zoom * (1 - e.scrollDelta.dy * 0.002),
+                        ),
+                      );
                     }
                   },
                   // **Eine Magic Mouse hat kein Rad.** macOS meldet das
@@ -1027,12 +1071,14 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                 child: IgnorePointer(
                   child: Center(
                     child: Opacity(
-                      opacity:
-                          Curves.easeIn.transform(_abschnitt.abspann.clamp(0.0, 1.0)),
+                      opacity: Curves.easeIn.transform(
+                        _abschnitt.abspann.clamp(0.0, 1.0),
+                      ),
                       child: _Abspann(
-                          key: _Abspann.schluessel,
-                          flug: _flug,
-                          tempo: _flugtempo),
+                        key: _Abspann.schluessel,
+                        flug: _flug,
+                        tempo: _flugtempo,
+                      ),
                     ),
                   ),
                 ),
@@ -1046,8 +1092,12 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                 children: [
                   if (widget.fussnoten.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0,
-                          AppSpacing.md, AppSpacing.sm),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        0,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
                       // Beide biegsam: Die linke Fussnote erklärt die
                       // Bedienung und ist lang, die rechte trägt die
                       // Namensnennung. Auf einem schmalen Fenster passen
@@ -1073,11 +1123,13 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                       beimSchalten: _flugSchalten,
                       beimBeenden: _flugBeenden,
                       beimSpulen: _spulen,
-                      beimAusgeben:
-                          widget.beimVideoZiel == null ? null : _videoAusgeben,
+                      beimAusgeben: widget.beimVideoZiel == null
+                          ? null
+                          : _videoAusgeben,
                       gibtAus: _videoLaeuft,
-                      ausgabeFortschritt:
-                          _videoLaeuft ? _videoFortschritt : null,
+                      ausgabeFortschritt: _videoLaeuft
+                          ? _videoFortschritt
+                          : null,
                       ausgabeRest: _videoRest,
                     ),
                 ],

@@ -37,8 +37,16 @@ void main() {
           // Zurück in das ungedrehte Bild.
           final x = ecke.dx * cos + ecke.dy * sin;
           final y = -ecke.dx * sin + ecke.dy * cos;
-          expect(x.abs(), lessThanOrEqualTo(w / 2 + 1e-6), reason: '$grad Grad');
-          expect(y.abs(), lessThanOrEqualTo(h / 2 + 1e-6), reason: '$grad Grad');
+          expect(
+            x.abs(),
+            lessThanOrEqualTo(w / 2 + 1e-6),
+            reason: '$grad Grad',
+          );
+          expect(
+            y.abs(),
+            lessThanOrEqualTo(h / 2 + 1e-6),
+            reason: '$grad Grad',
+          );
         }
       }
     });
@@ -167,7 +175,8 @@ void main() {
         var vorzeichen = 0;
         for (var i = 0; i < 4; i++) {
           final a = ecken[i], b = ecken[(i + 1) % 4];
-          final kreuz = (b.dx - a.dx) * (py - a.dy) - (b.dy - a.dy) * (px - a.dx);
+          final kreuz =
+              (b.dx - a.dx) * (py - a.dy) - (b.dy - a.dy) * (px - a.dx);
           final s = kreuz > 0 ? 1 : (kreuz < 0 ? -1 : 0);
           if (s == 0) continue;
           if (vorzeichen == 0) {
@@ -196,7 +205,12 @@ void main() {
         const Offset(160, 165),
         const Offset(30, 150),
       ];
-      final entzerrt = perspektivischEntzerren(mitViereck(ecken), ecken, 120, 100)!;
+      final entzerrt = perspektivischEntzerren(
+        mitViereck(ecken),
+        ecken,
+        120,
+        100,
+      )!;
 
       expect(entzerrt.width, 120);
       expect(entzerrt.height, 100);
@@ -209,7 +223,9 @@ void main() {
         const Offset(0.05, 0.95),
       ]) {
         final p = entzerrt.getPixel(
-            (punkt.dx * 119).round(), (punkt.dy * 99).round());
+          (punkt.dx * 119).round(),
+          (punkt.dy * 99).round(),
+        );
         expect(p.r, greaterThan(150), reason: 'bei $punkt');
       }
     });
@@ -217,13 +233,19 @@ void main() {
     test('entartete Ecken ergeben null statt eines Zufallsbildes', () {
       final quelle = img.Image(width: 50, height: 50);
       expect(
-          perspektivischEntzerren(quelle, [
+        perspektivischEntzerren(
+          quelle,
+          [
             Offset.zero,
             const Offset(10, 0),
             const Offset(20, 0),
             const Offset(30, 0),
-          ], 40, 40),
-          isNull);
+          ],
+          40,
+          40,
+        ),
+        isNull,
+      );
     });
 
     test('eine unsinnige Zielgrösse wird abgelehnt', () {
@@ -232,7 +254,7 @@ void main() {
         Offset.zero,
         const Offset(40, 0),
         const Offset(40, 40),
-        const Offset(0, 40)
+        const Offset(0, 40),
       ];
       expect(perspektivischEntzerren(quelle, ecken, 0, 40), isNull);
     });

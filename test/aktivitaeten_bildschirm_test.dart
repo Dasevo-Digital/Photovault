@@ -32,8 +32,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -43,21 +44,30 @@ void main() {
   });
 
   /// Eine Aufnahme [minuten] nach 9 Uhr, [kmOst] östlich von Hannover.
-  Future<void> aufnahme(String id, int minuten, double kmOst,
-          {DateTime? tag, String? stadt}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: (tag ?? DateTime(2026, 6, 14, 9))
-                .add(Duration(minutes: minuten)),
-            importedAt: DateTime(2026),
-            latitude: const Value(52.37),
-            longitude: Value(9.73 + kmOst / 68.0),
-            locationCity: Value(stadt),
-          ));
+  Future<void> aufnahme(
+    String id,
+    int minuten,
+    double kmOst, {
+    DateTime? tag,
+    String? stadt,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: (tag ?? DateTime(2026, 6, 14, 9)).add(
+            Duration(minutes: minuten),
+          ),
+          importedAt: DateTime(2026),
+          latitude: const Value(52.37),
+          longitude: Value(9.73 + kmOst / 68.0),
+          locationCity: Value(stadt),
+        ),
+      );
 
   /// Acht Bilder über dreieinhalb Stunden und rund zehn Kilometer – eine
   /// Wanderung, wie die Erkennung sie sucht.
@@ -68,8 +78,12 @@ void main() {
     // Ein Zuhause, damit die Erkennung einen Bezugspunkt hat: viele Tage
     // an derselben Stelle schlagen eine einzelne Häufung.
     for (var i = 0; i < 40; i++) {
-      await aufnahme('h$i', 0, 0,
-          tag: DateTime(2026, 1, 1, 12).add(Duration(days: i)));
+      await aufnahme(
+        'h$i',
+        0,
+        0,
+        tag: DateTime(2026, 1, 1, 12).add(Duration(days: i)),
+      );
     }
   }
 
@@ -77,19 +91,22 @@ void main() {
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
-      supportedLocales: AppTexte.supportedLocales,
-      theme: buildDarkTheme(),
-      builder: (context, kind) => mitMeldungen(kind),
-      home: AktivitaetenScreen(library: library),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: (context, kind) => mitMeldungen(kind),
+        home: AktivitaetenScreen(library: library),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('aus einer Häufung wird ein Vorschlag mit Zahlen',
-      (tester) async {
+  testWidgets('aus einer Häufung wird ein Vorschlag mit Zahlen', (
+    tester,
+  ) async {
     await wanderung();
     await zeige(tester);
 
@@ -122,13 +139,17 @@ void main() {
     );
     await zeige(tester);
 
-    expect(find.text('Vorschläge'), findsNothing,
-        reason: 'was in einer Reise steht, ist schon zugeordnet');
+    expect(
+      find.text('Vorschläge'),
+      findsNothing,
+      reason: 'was in einer Reise steht, ist schon zugeordnet',
+    );
     expect(find.text('Goslar'), findsNothing);
   });
 
-  testWidgets('ohne die Reise steht der Vorschlag sehr wohl da',
-      (tester) async {
+  testWidgets('ohne die Reise steht der Vorschlag sehr wohl da', (
+    tester,
+  ) async {
     // Die Gegenprobe zum Test darüber: Sonst prüfte er nur, dass der
     // Bildschirm überhaupt nichts anzeigt.
     await wanderung();
@@ -136,8 +157,7 @@ void main() {
     expect(find.text('Vorschläge'), findsOneWidget);
   });
 
-  testWidgets('bestätigen legt sie an – für sich, ohne Reise',
-      (tester) async {
+  testWidgets('bestätigen legt sie an – für sich, ohne Reise', (tester) async {
     await wanderung();
     await zeige(tester);
 
@@ -161,8 +181,9 @@ void main() {
     expect(find.text('Vorschläge'), findsNothing);
   });
 
-  testWidgets('eine Wanderung im Urlaub steht unter „Auf Reisen"',
-      (tester) async {
+  testWidgets('eine Wanderung im Urlaub steht unter „Auf Reisen"', (
+    tester,
+  ) async {
     // **Angelegt wird sie im Reisebildschirm**, nicht hier: Aus einer
     // bestätigten Reise entstehen keine Vorschläge mehr (siehe oben).
     // Was dieser Test bewacht, ist die Anzeige – dass eine Aktivität mit

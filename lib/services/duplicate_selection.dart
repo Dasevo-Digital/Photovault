@@ -52,7 +52,9 @@ int _vergleiche(AssetData a, AssetData b) {
 List<AssetData> zuLoeschendeDerGruppe(List<AssetData> gruppe) {
   if (gruppe.length < 2) return const [];
 
-  final ausgezeichnet = gruppe.where((a) => a.isFavorite || a.rating > 0).length;
+  final ausgezeichnet = gruppe
+      .where((a) => a.isFavorite || a.rating > 0)
+      .length;
   if (ausgezeichnet > 1) return const [];
 
   final behalten = besterDerGruppe(gruppe);
@@ -68,7 +70,10 @@ class LoeschVorschau {
   /// ausgezeichnet sind (siehe [zuLoeschendeDerGruppe]).
   final int uebersprungeneGruppen;
 
-  const LoeschVorschau({required this.zuLoeschen, required this.uebersprungeneGruppen});
+  const LoeschVorschau({
+    required this.zuLoeschen,
+    required this.uebersprungeneGruppen,
+  });
 }
 
 LoeschVorschau berechneLoeschVorschau(List<List<AssetData>> gruppen) {
@@ -82,5 +87,8 @@ LoeschVorschau berechneLoeschVorschau(List<List<AssetData>> gruppen) {
     }
     zuLoeschen.addAll(weg);
   }
-  return LoeschVorschau(zuLoeschen: zuLoeschen, uebersprungeneGruppen: uebersprungen);
+  return LoeschVorschau(
+    zuLoeschen: zuLoeschen,
+    uebersprungeneGruppen: uebersprungen,
+  );
 }

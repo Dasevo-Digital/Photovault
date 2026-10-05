@@ -26,11 +26,18 @@ void main() {
     test('mehrere Regler in der Reihenfolge der Aufzaehlung', () {
       // Damit dieselbe Aenderung zweimal dieselbe Auskunft ergibt und
       // nicht einmal „Kontrast, Belichtung" und einmal andersherum.
-      final a = geaenderteWerkzeuge(neutral,
-          const DevelopAdjustments(contrast: 0.3, exposure: 0.5));
-      final b = geaenderteWerkzeuge(neutral,
-          const DevelopAdjustments(exposure: 0.5, contrast: 0.3));
-      expect(a, [Entwicklungswerkzeug.belichtung, Entwicklungswerkzeug.kontrast]);
+      final a = geaenderteWerkzeuge(
+        neutral,
+        const DevelopAdjustments(contrast: 0.3, exposure: 0.5),
+      );
+      final b = geaenderteWerkzeuge(
+        neutral,
+        const DevelopAdjustments(exposure: 0.5, contrast: 0.3),
+      );
+      expect(a, [
+        Entwicklungswerkzeug.belichtung,
+        Entwicklungswerkzeug.kontrast,
+      ]);
       expect(b, a);
     });
 
@@ -45,8 +52,9 @@ void main() {
       // nichts.
       expect(
         geaenderteWerkzeuge(
-            const DevelopAdjustments(exposure: 0.5),
-            const DevelopAdjustments(exposure: 0.5000000001)),
+          const DevelopAdjustments(exposure: 0.5),
+          const DevelopAdjustments(exposure: 0.5000000001),
+        ),
         isEmpty,
       );
     });
@@ -56,37 +64,48 @@ void main() {
       // Vorgang als den Wert zu verschieben.
       expect(
         geaenderteWerkzeuge(
-            neutral, const DevelopAdjustments(temperature: 5000, tint: 0)),
+          neutral,
+          const DevelopAdjustments(temperature: 5000, tint: 0),
+        ),
         [Entwicklungswerkzeug.weissabgleich],
       );
       expect(
         geaenderteWerkzeuge(
-            const DevelopAdjustments(temperature: 5000, tint: 0),
-            const DevelopAdjustments(temperature: 6500, tint: 0)),
+          const DevelopAdjustments(temperature: 5000, tint: 0),
+          const DevelopAdjustments(temperature: 6500, tint: 0),
+        ),
         [Entwicklungswerkzeug.temperatur],
       );
     });
 
     test('Kurve und Mischer werden erkannt', () {
-      const kurve = ToneCurve(zusammen: [
-        CurvePoint(0, 0),
-        CurvePoint(0.5, 0.7),
-        CurvePoint(1, 1),
-      ]);
-      expect(geaenderteWerkzeuge(neutral, const DevelopAdjustments(toneCurve: kurve)),
-          [Entwicklungswerkzeug.tonwertkurve]);
-
-      final mischer = ColorMixer.neutral
-          .mitBand(ColorBand.rot, const BandAnpassung(saettigung: 0.4));
+      const kurve = ToneCurve(
+        zusammen: [CurvePoint(0, 0), CurvePoint(0.5, 0.7), CurvePoint(1, 1)],
+      );
       expect(
-          geaenderteWerkzeuge(neutral, DevelopAdjustments(colorMixer: mischer)),
-          [Entwicklungswerkzeug.farbmischer]);
+        geaenderteWerkzeuge(
+          neutral,
+          const DevelopAdjustments(toneCurve: kurve),
+        ),
+        [Entwicklungswerkzeug.tonwertkurve],
+      );
+
+      final mischer = ColorMixer.neutral.mitBand(
+        ColorBand.rot,
+        const BandAnpassung(saettigung: 0.4),
+      );
+      expect(
+        geaenderteWerkzeuge(neutral, DevelopAdjustments(colorMixer: mischer)),
+        [Entwicklungswerkzeug.farbmischer],
+      );
     });
 
     test('die Objektivkorrektur zaehlt als Aenderung', () {
       expect(
         geaenderteWerkzeuge(
-            neutral, const DevelopAdjustments(lensCorrectionEnabled: false)),
+          neutral,
+          const DevelopAdjustments(lensCorrectionEnabled: false),
+        ),
         [Entwicklungswerkzeug.objektivkorrektur],
       );
     });
@@ -115,8 +134,10 @@ void main() {
       }
       expect(reihe, hasLength(maxSitzungsschritte));
       expect(reihe.first.stand.exposure, 0);
-      expect(reihe.last.stand.exposure,
-          closeTo((maxSitzungsschritte + 20) * 0.01, 1e-9));
+      expect(
+        reihe.last.stand.exposure,
+        closeTo((maxSitzungsschritte + 20) * 0.01, 1e-9),
+      );
     });
 
     test('jeder Schritt traegt seine Zeit', () {

@@ -63,44 +63,57 @@ void main() {
     final erster = await library.backfillLocations().toList();
     expect(erster.last.done, 2);
 
-    expect(await db.countLocationBackfill(), 0,
-        reason: 'zweimal dieselben Dateien vollständig zu lesen bringt '
-            'genau so viel wie einmal');
+    expect(
+      await db.countLocationBackfill(),
+      0,
+      reason:
+          'zweimal dieselben Dateien vollständig zu lesen bringt '
+          'genau so viel wie einmal',
+    );
     final zweiter = await library.backfillLocations().toList();
     expect(zweiter.single.total, 0);
   });
 
-  test('„Alle" sieht auch die wieder an, in denen schon gesucht wurde',
-      () async {
-    // Der Ausweg für Dateien, die ausserhalb der App nachträglich
-    // Koordinaten bekommen haben.
-    await lege('c.jpg');
-    await library.backfillLocations().drain<void>();
-    expect(await db.countLocationBackfill(), 0);
-    expect(await db.countLocationBackfill(alle: true), 1);
-    final erneut = await library.backfillLocations(alle: true).toList();
-    expect(erneut.first.total, 1);
-  });
+  test(
+    '„Alle" sieht auch die wieder an, in denen schon gesucht wurde',
+    () async {
+      // Der Ausweg für Dateien, die ausserhalb der App nachträglich
+      // Koordinaten bekommen haben.
+      await lege('c.jpg');
+      await library.backfillLocations().drain<void>();
+      expect(await db.countLocationBackfill(), 0);
+      expect(await db.countLocationBackfill(alle: true), 1);
+      final erneut = await library.backfillLocations(alle: true).toList();
+      expect(erneut.first.total, 1);
+    },
+  );
 
   test('eine frisch importierte Aufnahme steht wieder an', () async {
     await lege('d.jpg');
     await library.backfillLocations().drain<void>();
     await lege('e.jpg');
-    expect(await db.countLocationBackfill(), 1,
-        reason: 'der Vermerk gilt der Datei, nicht der Bibliothek');
+    expect(
+      await db.countLocationBackfill(),
+      1,
+      reason: 'der Vermerk gilt der Datei, nicht der Bibliothek',
+    );
   });
 
   test('Zahl und Liste laufen nicht auseinander', () async {
     await lege('f.jpg');
     await lege('g.jpg');
     for (final alle in [false, true]) {
-      expect(await db.countLocationBackfill(alle: alle),
-          (await db.assetsForLocationBackfill(alle: alle)).length);
+      expect(
+        await db.countLocationBackfill(alle: alle),
+        (await db.assetsForLocationBackfill(alle: alle)).length,
+      );
     }
     await library.backfillLocations().drain<void>();
     for (final alle in [false, true]) {
-      expect(await db.countLocationBackfill(alle: alle),
-          (await db.assetsForLocationBackfill(alle: alle)).length);
+      expect(
+        await db.countLocationBackfill(alle: alle),
+        (await db.assetsForLocationBackfill(alle: alle)).length,
+      );
     }
   });
 
@@ -125,8 +138,11 @@ void main() {
     await abo.cancel();
 
     final offen = await db.countLocationBackfill();
-    expect(offen, lessThan(4),
-        reason: 'was angesehen wurde, ist angesehen – auch nach Abbruch');
+    expect(
+      offen,
+      lessThan(4),
+      reason: 'was angesehen wurde, ist angesehen – auch nach Abbruch',
+    );
     expect(offen, greaterThan(0), reason: 'der Lauf war nicht durch');
   });
 }

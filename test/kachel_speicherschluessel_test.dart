@@ -45,9 +45,11 @@ void main() {
     test('mit Abschneiden ist es dieselbe', () {
       expect(
         BuiltInMapCachingProvider.uuidTileKeyGenerator(
-            FragmentloserSpeicher.ohneAnhang('$blank#3')),
+          FragmentloserSpeicher.ohneAnhang('$blank#3'),
+        ),
         BuiltInMapCachingProvider.uuidTileKeyGenerator(
-            FragmentloserSpeicher.ohneAnhang(blank)),
+          FragmentloserSpeicher.ohneAnhang(blank),
+        ),
       );
     });
 
@@ -59,7 +61,10 @@ void main() {
       await speicher.putTile(
         url: '$blank#2',
         metadata: CachedMapTileMetadata(
-            staleAt: DateTime.timestamp(), lastModified: null, etag: null),
+          staleAt: DateTime.timestamp(),
+          lastModified: null,
+          etag: null,
+        ),
         bytes: Uint8List(4),
       );
       expect(merker.gelesen, [blank, blank]);
@@ -101,8 +106,11 @@ void main() {
       //
       // Ohne den fragmentlosen Speicher faellt flutter_map auf den
       // blanken zurueck, und der Fehler waere still wieder da.
-      expect(Nachfassanbieter().cachingProvider, isA<FragmentloserSpeicher>(),
-          reason: 'Nachfassanbieter muss den fragmentlosen Speicher mitgeben');
+      expect(
+        Nachfassanbieter().cachingProvider,
+        isA<FragmentloserSpeicher>(),
+        reason: 'Nachfassanbieter muss den fragmentlosen Speicher mitgeben',
+      );
     });
   });
 }

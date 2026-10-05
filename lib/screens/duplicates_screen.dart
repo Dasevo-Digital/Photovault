@@ -83,7 +83,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       for (final idList in groupIdLists) {
         final assets = [
           for (final id in idList)
-            if (nachId[id] != null) nachId[id]!
+            if (nachId[id] != null) nachId[id]!,
         ];
         if (assets.length >= 2) groups.add(assets);
       }
@@ -111,9 +111,11 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
     if (vorschau.zuLoeschen.isEmpty) {
       if (!mounted) return;
-      melde.hinweis(vorschau.uebersprungeneGruppen > 0
-          ? AppTexte.of(context).duplNichtsLoeschbar
-          : AppTexte.of(context).duplNichtsZuLoeschen);
+      melde.hinweis(
+        vorschau.uebersprungeneGruppen > 0
+            ? AppTexte.of(context).duplNichtsLoeschbar
+            : AppTexte.of(context).duplNichtsZuLoeschen,
+      );
       return;
     }
 
@@ -125,8 +127,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(AppTexte.of(context).duplPapierkorbAnzahl(
-                vorschau.zuLoeschen.length, _groups.length)),
+            Text(
+              AppTexte.of(context).duplPapierkorbAnzahl(
+                vorschau.zuLoeschen.length,
+                _groups.length,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               AppTexte.of(context).duplBehaltenRegel,
@@ -135,7 +141,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             if (vorschau.uebersprungeneGruppen > 0) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                AppTexte.of(context).duplUebersprungen(vorschau.uebersprungeneGruppen),
+                AppTexte.of(
+                  context,
+                ).duplUebersprungen(vorschau.uebersprungeneGruppen),
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -147,7 +155,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppTexte.of(context).allgAbbrechen)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(AppTexte.of(context).duplInPapierkorb),
@@ -157,9 +168,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
     if (bestaetigt != true) return;
 
-    await widget.library.db.moveToTrash(vorschau.zuLoeschen.map((a) => a.id).toList());
+    await widget.library.db.moveToTrash(
+      vorschau.zuLoeschen.map((a) => a.id).toList(),
+    );
     if (!mounted) return;
-    melde.erfolg(AppTexte.of(context).duplVerschoben(vorschau.zuLoeschen.length));
+    melde.erfolg(
+      AppTexte.of(context).duplVerschoben(vorschau.zuLoeschen.length),
+    );
     await _load();
   }
 
@@ -200,11 +215,13 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         content: Text(AppTexte.of(context).duplAusnahmenFrage(_ausnahmen)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppTexte.of(context).allgAbbrechen)),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppTexte.of(context).allgAbbrechen),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppTexte.of(context).duplAusnahmenLoeschen)),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppTexte.of(context).duplAusnahmenLoeschen),
+          ),
         ],
       ),
     );
@@ -253,13 +270,19 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               children: [
                 Text(t.duplZusammenfuehrenText(gruppe.length)),
                 const SizedBox(height: AppSpacing.md),
-                Text(t.duplBehaltenAuswahl, style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  t.duplBehaltenAuswahl,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 RadioGroup<String>(
                   groupValue: behalten.id,
                   onChanged: (id) {
                     if (id == null) return;
-                    setDialogState(() => behalten =
-                        gruppe.firstWhere((asset) => asset.id == id));
+                    setDialogState(
+                      () => behalten = gruppe.firstWhere(
+                        (asset) => asset.id == id,
+                      ),
+                    );
                   },
                   child: Column(
                     children: [
@@ -268,10 +291,17 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           value: asset.id,
-                          title: Text(asset.originalFileName,
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(t.duplBehaltenDetails(
-                              asset.rating, asset.isFavorite ? 1 : 0)),
+                          title: Text(
+                            asset.originalFileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            t.duplBehaltenDetails(
+                              asset.rating,
+                              asset.isFavorite ? 1 : 0,
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -280,15 +310,22 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                   contentPadding: EdgeInsets.zero,
                   value: beschreibungenVerbinden,
                   onChanged: (value) => setDialogState(
-                      () => beschreibungenVerbinden = value ?? true),
+                    () => beschreibungenVerbinden = value ?? true,
+                  ),
                   title: Text(t.duplBeschreibungenVerbinden),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(t.allgAbbrechen)),
-            FilledButton(onPressed: () => Navigator.pop(dialog, true), child: Text(t.duplZusammenfuehren)),
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(t.allgAbbrechen),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(t.duplZusammenfuehren),
+            ),
           ],
         ),
       ),
@@ -311,9 +348,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         title: Text(AppTexte.of(context).duplTitel),
         actions: [
           TextButton.icon(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => SecondLibraryCompareScreen(library: widget.library),
-            )),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    SecondLibraryCompareScreen(library: widget.library),
+              ),
+            ),
             icon: const Icon(Icons.folder_copy_outlined),
             label: Text(AppTexte.of(context).duplZweiteBibliothek),
           ),
@@ -328,7 +368,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
             child: Row(
               children: [
                 Text(AppTexte.of(context).duplAehnlichkeit),
@@ -351,21 +396,29 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               AppTexte.of(context).duplSchwelleHinweis,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           if (!_loading && _error == null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                0,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       _groups.isEmpty
                           ? AppTexte.of(context).duplNichtsGefunden
-                          : AppTexte.of(context)
-                              .duplGefunden(_groups.length, _fotosInGruppen),
+                          : AppTexte.of(
+                              context,
+                            ).duplGefunden(_groups.length, _fotosInGruppen),
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ),
@@ -373,7 +426,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                     TextButton.icon(
                       onPressed: _ausnahmenZuruecknehmen,
                       icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                      label: Text(AppTexte.of(context).duplAusnahmenZahl(_ausnahmen)),
+                      label: Text(
+                        AppTexte.of(context).duplAusnahmenZahl(_ausnahmen),
+                      ),
                     ),
                 ],
               ),
@@ -391,8 +446,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Text(_error!.satz(AppTexte.of(context)),
-              textAlign: TextAlign.center),
+          child: Text(
+            _error!.satz(AppTexte.of(context)),
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -400,7 +457,10 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Text(AppTexte.of(context).duplKeineGruppen, textAlign: TextAlign.center),
+          child: Text(
+            AppTexte.of(context).duplKeineGruppen,
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -418,7 +478,9 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                 children: [
                   Expanded(
                     child: Text(
-                      AppTexte.of(context).duplGruppe(groupIndex + 1, group.length),
+                      AppTexte.of(
+                        context,
+                      ).duplGruppe(groupIndex + 1, group.length),
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ),
@@ -453,19 +515,27 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                             child: AssetThumbnailTile(
                               asset: Rasterzeile.aus(asset),
                               paths: widget.library.paths,
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-                                builder: (_) => AssetViewerScreen(
-                                  assets: group,
-                                  initialIndex: index,
-                                  paths: widget.library.paths,
-                                  db: widget.library.db,
-                                  library: widget.library,
-                                  onToggleFavorite: (a) =>
-                                      widget.library.db.setFavorite(a.id, !a.isFavorite),
-                                  onDelete: (a) => _moveToTrash(a, group),
-                                  onLock: (a) => _moveToLocked(a, group),
-                                ),
-                              )),
+                              onTap: () =>
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => AssetViewerScreen(
+                                        assets: group,
+                                        initialIndex: index,
+                                        paths: widget.library.paths,
+                                        db: widget.library.db,
+                                        library: widget.library,
+                                        onToggleFavorite: (a) => widget
+                                            .library
+                                            .db
+                                            .setFavorite(a.id, !a.isFavorite),
+                                        onDelete: (a) => _moveToTrash(a, group),
+                                        onLock: (a) => _moveToLocked(a, group),
+                                      ),
+                                    ),
+                                  ),
                             ),
                           ),
                           Positioned(
@@ -475,8 +545,14 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
                               color: Colors.black54,
                               shape: const CircleBorder(),
                               child: IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
-                                tooltip: AppTexte.of(context).duplVerschiebenTooltip,
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                tooltip: AppTexte.of(
+                                  context,
+                                ).duplVerschiebenTooltip,
                                 onPressed: () => _moveToTrash(asset, group),
                               ),
                             ),

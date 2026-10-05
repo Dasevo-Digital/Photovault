@@ -39,20 +39,36 @@ void main() {
       // und es entstünde wieder eine Ellipse.
       final rechteck = rasterizeMaskShape(mitte, 100, 100);
       final ellipse = rasterizeMaskShape(
-          const EllipseShape(
-              centerX: 0.5, centerY: 0.5, radiusX: 0.25, radiusY: 0.25, feather: 0),
-          100,
-          100);
+        const EllipseShape(
+          centerX: 0.5,
+          centerY: 0.5,
+          radiusX: 0.25,
+          radiusY: 0.25,
+          feather: 0,
+        ),
+        100,
+        100,
+      );
       expect(an(rechteck, 0.72, 0.72), 255, reason: 'Ecke des Rechtecks');
-      expect(an(ellipse, 0.72, 0.72), 0, reason: 'dort ist die Ellipse schon aussen');
+      expect(
+        an(ellipse, 0.72, 0.72),
+        0,
+        reason: 'dort ist die Ellipse schon aussen',
+      );
     });
 
     test('Weichzeichnung läuft von innen nach aussen aus', () {
       final m = rasterizeMaskShape(
-          const RectangleShape(
-              centerX: 0.5, centerY: 0.5, halfWidth: 0.4, halfHeight: 0.4, feather: 0.5),
-          200,
-          200);
+        const RectangleShape(
+          centerX: 0.5,
+          centerY: 0.5,
+          halfWidth: 0.4,
+          halfHeight: 0.4,
+          feather: 0.5,
+        ),
+        200,
+        200,
+      );
       final innen = an(m, 0.5, 0.5);
       final mittig = an(m, 0.75, 0.5);
       final aussen = an(m, 0.95, 0.5);
@@ -63,14 +79,28 @@ void main() {
 
     test('gedreht wandert die Ecke mit', () {
       final gerade = rasterizeMaskShape(
-          const RectangleShape(
-              centerX: 0.5, centerY: 0.5, halfWidth: 0.4, halfHeight: 0.1, feather: 0),
-          200, 200);
+        const RectangleShape(
+          centerX: 0.5,
+          centerY: 0.5,
+          halfWidth: 0.4,
+          halfHeight: 0.1,
+          feather: 0,
+        ),
+        200,
+        200,
+      );
       final quer = rasterizeMaskShape(
-          const RectangleShape(
-              centerX: 0.5, centerY: 0.5, halfWidth: 0.4, halfHeight: 0.1,
-              rotation: 1.5707963, feather: 0),
-          200, 200);
+        const RectangleShape(
+          centerX: 0.5,
+          centerY: 0.5,
+          halfWidth: 0.4,
+          halfHeight: 0.1,
+          rotation: 1.5707963,
+          feather: 0,
+        ),
+        200,
+        200,
+      );
       // Der breite Balken liegt einmal waagerecht, einmal senkrecht.
       expect(an(gerade, 0.85, 0.5), 255);
       expect(an(gerade, 0.5, 0.85), 0);
@@ -80,9 +110,15 @@ void main() {
 
     test('durch JSON und zurück ohne Verlust', () {
       const original = RectangleShape(
-          centerX: 0.3, centerY: 0.7, halfWidth: 0.2, halfHeight: 0.1,
-          rotation: 0.5, feather: 0.4);
-      final zurueck = MaskShapeDefinition.decode(original.encode()) as RectangleShape;
+        centerX: 0.3,
+        centerY: 0.7,
+        halfWidth: 0.2,
+        halfHeight: 0.1,
+        rotation: 0.5,
+        feather: 0.4,
+      );
+      final zurueck =
+          MaskShapeDefinition.decode(original.encode()) as RectangleShape;
       expect(zurueck.centerX, original.centerX);
       expect(zurueck.halfWidth, original.halfWidth);
       expect(zurueck.rotation, original.rotation);
@@ -114,10 +150,16 @@ void main() {
       // Hellblau entfernt als Grau – und die Auswahl wäre unbrauchbar.
       final m = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.15, pointY: 0.5,
-            red: 120, green: 170, blue: 230,
-            tolerance: 0.25, feather: 0),
-        90, 30,
+          pointX: 0.15,
+          pointY: 0.5,
+          red: 120,
+          green: 170,
+          blue: 230,
+          tolerance: 0.25,
+          feather: 0,
+        ),
+        90,
+        30,
         quelle: streifen(),
       );
       expect(an(m, 0.15, 0.5), 255, reason: 'die aufgenommene Farbe selbst');
@@ -128,10 +170,16 @@ void main() {
     test('eine kleine Toleranz wählt nur die eigene Farbe', () {
       final m = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.15, pointY: 0.5,
-            red: 120, green: 170, blue: 230,
-            tolerance: 0.05, feather: 0),
-        90, 30,
+          pointX: 0.15,
+          pointY: 0.5,
+          red: 120,
+          green: 170,
+          blue: 230,
+          tolerance: 0.05,
+          feather: 0,
+        ),
+        90,
+        30,
         quelle: streifen(),
       );
       expect(an(m, 0.15, 0.5), 255);
@@ -143,8 +191,14 @@ void main() {
       // eine.
       final m = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.5, pointY: 0.5, red: 10, green: 20, blue: 30),
-        20, 20,
+          pointX: 0.5,
+          pointY: 0.5,
+          red: 10,
+          green: 20,
+          blue: 30,
+        ),
+        20,
+        20,
       );
       for (var y = 0; y < 20; y++) {
         for (var x = 0; x < 20; x++) {
@@ -158,10 +212,16 @@ void main() {
       // aus der viel kleineren Vorschau.
       final m = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.15, pointY: 0.5,
-            red: 120, green: 170, blue: 230,
-            tolerance: 0.25, feather: 0),
-        900, 300,
+          pointX: 0.15,
+          pointY: 0.5,
+          red: 120,
+          green: 170,
+          blue: 230,
+          tolerance: 0.25,
+          feather: 0,
+        ),
+        900,
+        300,
         quelle: streifen(),
       );
       expect(an(m, 0.15, 0.5), 255);
@@ -171,15 +231,31 @@ void main() {
     test('Weichzeichnung erzeugt Zwischenwerte', () {
       final hart = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.15, pointY: 0.5, red: 120, green: 170, blue: 230,
-            tolerance: 0.3, feather: 0),
-        90, 30, quelle: streifen(),
+          pointX: 0.15,
+          pointY: 0.5,
+          red: 120,
+          green: 170,
+          blue: 230,
+          tolerance: 0.3,
+          feather: 0,
+        ),
+        90,
+        30,
+        quelle: streifen(),
       );
       final weich = rasterizeMaskShape(
         const ColorRangeShape(
-            pointX: 0.15, pointY: 0.5, red: 120, green: 170, blue: 230,
-            tolerance: 0.3, feather: 1),
-        90, 30, quelle: streifen(),
+          pointX: 0.15,
+          pointY: 0.5,
+          red: 120,
+          green: 170,
+          blue: 230,
+          tolerance: 0.3,
+          feather: 1,
+        ),
+        90,
+        30,
+        quelle: streifen(),
       );
       // Am dunkelblauen Streifen, der knapp innerhalb der Toleranz liegt:
       // hart voll ausgewählt, weich nur teilweise.
@@ -190,9 +266,16 @@ void main() {
 
     test('durch JSON und zurück ohne Verlust', () {
       const original = ColorRangeShape(
-          pointX: 0.2, pointY: 0.8, red: 1, green: 2, blue: 3,
-          tolerance: 0.4, feather: 0.6);
-      final zurueck = MaskShapeDefinition.decode(original.encode()) as ColorRangeShape;
+        pointX: 0.2,
+        pointY: 0.8,
+        red: 1,
+        green: 2,
+        blue: 3,
+        tolerance: 0.4,
+        feather: 0.6,
+      );
+      final zurueck =
+          MaskShapeDefinition.decode(original.encode()) as ColorRangeShape;
       expect(zurueck.red, 1);
       expect(zurueck.blue, 3);
       expect(zurueck.tolerance, closeTo(0.4, 1e-9));
@@ -201,8 +284,10 @@ void main() {
   });
 
   test('ein unbekannter Typ wird abgelehnt statt still ignoriert', () {
-    expect(() => MaskShapeDefinition.decode('{"type":"dreieck"}'),
-        throwsA(isA<ArgumentError>()));
+    expect(
+      () => MaskShapeDefinition.decode('{"type":"dreieck"}'),
+      throwsA(isA<ArgumentError>()),
+    );
   });
 
   test('der weiche Saum ist anteilig, nicht in Pixeln', () {
@@ -215,9 +300,16 @@ void main() {
     // Halbachsen herauskommen, bei einem Saum in Pixeln wäre es 1:1.
     const hw = 0.4, hh = 0.1;
     final m = rasterizeMaskShape(
-        const RectangleShape(
-            centerX: 0.5, centerY: 0.5, halfWidth: hw, halfHeight: hh, feather: 0.5),
-        400, 400);
+      const RectangleShape(
+        centerX: 0.5,
+        centerY: 0.5,
+        halfWidth: hw,
+        halfHeight: hh,
+        feather: 0.5,
+      ),
+      400,
+      400,
+    );
     int wert(int x, int y) => m.getPixel(x, y).r.toInt();
 
     var waagerecht = 200;
@@ -231,7 +323,10 @@ void main() {
 
     final breiteHalb = (waagerecht - 200) / 400;
     final hoeheHalb = (senkrecht - 200) / 400;
-    expect(breiteHalb / hoeheHalb, closeTo(hw / hh, 0.15),
-        reason: 'der Saum skaliert mit der jeweiligen Halbachse');
+    expect(
+      breiteHalb / hoeheHalb,
+      closeTo(hw / hh, 0.15),
+      reason: 'der Saum skaliert mit der jeweiligen Halbachse',
+    );
   });
 }

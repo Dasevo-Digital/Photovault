@@ -33,7 +33,9 @@ void main() {
   /// Test – und damit ununterscheidbar von einem echten Fund.
   Future<String?> hole(String werkzeug) async {
     final pfad = await DesktopImageTools.aufruf(werkzeug);
-    if (pfad == null) markTestSkipped('$werkzeug ist auf dieser Maschine nicht installiert');
+    if (pfad == null) {
+      markTestSkipped('$werkzeug ist auf dieser Maschine nicht installiert');
+    }
     return pfad;
   }
 
@@ -55,27 +57,39 @@ void main() {
     /// dass wirklich dieses Bild herauskam.
     final vorlage = File(p.join('test', 'fixtures', 'werkzeuge', 'probe.heic'));
 
-    test('wird gelesen, skaliert und behält seinen Inhalt', () async {
-      if (await hole('heif-dec') == null) return;
-      final heic = File(p.join(temp.path, 'foto.heic'));
-      heic.writeAsBytesSync(vorlage.readAsBytesSync());
+    test(
+      'wird gelesen, skaliert und behält seinen Inhalt',
+      () async {
+        if (await hole('heif-dec') == null) return;
+        final heic = File(p.join(temp.path, 'foto.heic'));
+        heic.writeAsBytesSync(vorlage.readAsBytesSync());
 
-      final jpeg = await DesktopImageTools.convertToJpeg(heic, maxDimension: 600);
+        final jpeg = await DesktopImageTools.convertToJpeg(
+          heic,
+          maxDimension: 600,
+        );
 
-      expect(jpeg, isNotNull, reason: 'HEIC blieb unlesbar – genau der Fall, '
-          'in dem unter Linux jedes iPhone-Foto unsichtbar wäre');
-      final zurueck = img.decodeImage(jpeg!)!;
-      expect(zurueck.width, 600, reason: 'auf die längste Kante skaliert');
-      expect(zurueck.height, 400);
+        expect(
+          jpeg,
+          isNotNull,
+          reason:
+              'HEIC blieb unlesbar – genau der Fall, '
+              'in dem unter Linux jedes iPhone-Foto unsichtbar wäre',
+        );
+        final zurueck = img.decodeImage(jpeg!)!;
+        expect(zurueck.width, 600, reason: 'auf die längste Kante skaliert');
+        expect(zurueck.height, 400);
 
-      // Links rot, rechts grün – wenn das stimmt, ist es wirklich unser Bild.
-      final links = zurueck.getPixel(60, 200);
-      final rechts = zurueck.getPixel(540, 200);
-      expect(links.r, greaterThan(150));
-      expect(links.g, lessThan(120));
-      expect(rechts.g, greaterThan(80));
-      expect(rechts.r, lessThan(120));
-    }, skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null);
+        // Links rot, rechts grün – wenn das stimmt, ist es wirklich unser Bild.
+        final links = zurueck.getPixel(60, 200);
+        final rechts = zurueck.getPixel(540, 200);
+        expect(links.r, greaterThan(150));
+        expect(links.g, lessThan(120));
+        expect(rechts.g, greaterThan(80));
+        expect(rechts.r, lessThan(120));
+      },
+      skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null,
+    );
   });
 
   group('AVIF', () {
@@ -85,27 +99,38 @@ void main() {
     /// darf deshalb im Repository liegen.
     final vorlage = File(p.join('test', 'fixtures', 'werkzeuge', 'probe.avif'));
 
-    test('wird über libheif gelesen, nicht über den RAW-Entwickler', () async {
-      if (await hole('heif-dec') == null) return;
-      final avif = File(p.join(temp.path, 'foto.avif'));
-      avif.writeAsBytesSync(vorlage.readAsBytesSync());
+    test(
+      'wird über libheif gelesen, nicht über den RAW-Entwickler',
+      () async {
+        if (await hole('heif-dec') == null) return;
+        final avif = File(p.join(temp.path, 'foto.avif'));
+        avif.writeAsBytesSync(vorlage.readAsBytesSync());
 
-      final jpeg = await DesktopImageTools.convertToJpeg(avif, maxDimension: 400);
+        final jpeg = await DesktopImageTools.convertToJpeg(
+          avif,
+          maxDimension: 400,
+        );
 
-      expect(jpeg, isNotNull,
-          reason: 'AVIF ohne Vorschau – genau der Zustand, in dem die Datei '
-              'an dcraw_emu ging, der kein AVIF lesen kann');
-      final zurueck = img.decodeImage(jpeg!)!;
-      expect(zurueck.width, 400);
+        expect(
+          jpeg,
+          isNotNull,
+          reason:
+              'AVIF ohne Vorschau – genau der Zustand, in dem die Datei '
+              'an dcraw_emu ging, der kein AVIF lesen kann',
+        );
+        final zurueck = img.decodeImage(jpeg!)!;
+        expect(zurueck.width, 400);
 
-      // Links rot, rechts grün – sonst ist es irgendein Bild, nicht dieses.
-      final links = zurueck.getPixel(40, 200);
-      final rechts = zurueck.getPixel(360, 200);
-      expect(links.r, greaterThan(120));
-      expect(links.g, lessThan(100));
-      expect(rechts.g, greaterThan(80));
-      expect(rechts.r, lessThan(120));
-    }, skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null);
+        // Links rot, rechts grün – sonst ist es irgendein Bild, nicht dieses.
+        final links = zurueck.getPixel(40, 200);
+        final rechts = zurueck.getPixel(360, 200);
+        expect(links.r, greaterThan(120));
+        expect(links.g, lessThan(100));
+        expect(rechts.g, greaterThan(80));
+        expect(rechts.r, lessThan(120));
+      },
+      skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null,
+    );
   });
 
   group('Aufnahmewerte aus RAW', () {
@@ -117,34 +142,43 @@ void main() {
     /// `package:exif` immer gelesen. CR3 ist ein ISO-BMFF-Container wie
     /// MP4 – erst dort liefert es NULL Tags, und erst dort wird
     /// `raw-identify` gebraucht.
-    final vorlage = File(p.join('test', 'fixtures', 'samples', 'canon_eos_r10.cr3'));
+    final vorlage = File(
+      p.join('test', 'fixtures', 'samples', 'canon_eos_r10.cr3'),
+    );
 
-    test('raw-identify liefert Kamera, Objektiv und Aufnahmezeitpunkt', () async {
-      if (await hole('raw-identify') == null) return;
-      final quelle = File(p.join(temp.path, 'aufnahme.cr3'));
-      quelle.writeAsBytesSync(vorlage.readAsBytesSync());
+    test(
+      'raw-identify liefert Kamera, Objektiv und Aufnahmezeitpunkt',
+      () async {
+        if (await hole('raw-identify') == null) return;
+        final quelle = File(p.join(temp.path, 'aufnahme.cr3'));
+        quelle.writeAsBytesSync(vorlage.readAsBytesSync());
 
-      final d = await DesktopImageTools.leseAufnahmedaten(quelle);
+        final d = await DesktopImageTools.leseAufnahmedaten(quelle);
 
-      // Dieselben Werte, die ImageIO auf macOS aus derselben Datei liest –
-      // gegeneinander gehalten, damit die Bibliothek nicht davon abhängt,
-      // auf welchem System importiert wurde.
-      expect(d.kamera.model, 'Canon EOS R10');
-      expect(d.kamera.make, 'Canon');
-      expect(d.kamera.lensModel, 'EF50mm f/1.8 STM');
-      expect(d.kamera.iso, 1600);
-      expect(d.kamera.fNumber, closeTo(1.8, 0.001));
-      expect(d.kamera.focalLengthMm, closeTo(50.0, 0.001));
-      expect(d.zeitpunkt, DateTime(2022, 8, 19, 19, 19, 28));
-    }, skip: !vorlage.existsSync()
-        ? 'test/fixtures/samples/canon_eos_r10.cr3 fehlt – tool/fetch_format_samples.sh'
-        : null);
+        // Dieselben Werte, die ImageIO auf macOS aus derselben Datei liest –
+        // gegeneinander gehalten, damit die Bibliothek nicht davon abhängt,
+        // auf welchem System importiert wurde.
+        expect(d.kamera.model, 'Canon EOS R10');
+        expect(d.kamera.make, 'Canon');
+        expect(d.kamera.lensModel, 'EF50mm f/1.8 STM');
+        expect(d.kamera.iso, 1600);
+        expect(d.kamera.fNumber, closeTo(1.8, 0.001));
+        expect(d.kamera.focalLengthMm, closeTo(50.0, 0.001));
+        expect(d.zeitpunkt, DateTime(2022, 8, 19, 19, 19, 28));
+      },
+      skip: !vorlage.existsSync()
+          ? 'test/fixtures/samples/canon_eos_r10.cr3 fehlt – tool/fetch_format_samples.sh'
+          : null,
+    );
 
-    test('fehlt das Werkzeug, kommt Leeres zurück statt einer Ausnahme', () async {
-      final unbekannt = File(p.join(temp.path, 'gibtsnicht.cr3'));
-      final d = await DesktopImageTools.leseAufnahmedaten(unbekannt);
-      expect(d.isEmpty, isTrue);
-    });
+    test(
+      'fehlt das Werkzeug, kommt Leeres zurück statt einer Ausnahme',
+      () async {
+        final unbekannt = File(p.join(temp.path, 'gibtsnicht.cr3'));
+        final d = await DesktopImageTools.leseAufnahmedaten(unbekannt);
+        expect(d.isEmpty, isTrue);
+      },
+    );
   });
 
   group('RAW', () {
@@ -154,32 +188,48 @@ void main() {
     /// mehr als der gesamte übrige Quelltext. `tool/fetch_format_samples.sh`
     /// lädt sie bei Bedarf von raw.pixls.us (CC0) und prüft die Prüfsumme.
     /// Fehlt die Datei, wird dieser Test übersprungen statt zu scheitern.
-    final vorlage = File(p.join('test', 'fixtures', 'samples', 'iphone_6s_plus.dng'));
+    final vorlage = File(
+      p.join('test', 'fixtures', 'samples', 'iphone_6s_plus.dng'),
+    );
 
-    test('wird entwickelt, skaliert und lässt das Original in Ruhe', () async {
-      if (await hole('dcraw_emu') == null) return;
-      final quelle = File(p.join(temp.path, 'aufnahme.dng'));
-      quelle.writeAsBytesSync(vorlage.readAsBytesSync());
-      final vorher = quelle.lengthSync();
-      final nachbarn = temp.listSync().length;
+    test(
+      'wird entwickelt, skaliert und lässt das Original in Ruhe',
+      () async {
+        if (await hole('dcraw_emu') == null) return;
+        final quelle = File(p.join(temp.path, 'aufnahme.dng'));
+        quelle.writeAsBytesSync(vorlage.readAsBytesSync());
+        final vorher = quelle.lengthSync();
+        final nachbarn = temp.listSync().length;
 
-      final jpeg = await DesktopImageTools.convertToJpeg(quelle, maxDimension: 800);
+        final jpeg = await DesktopImageTools.convertToJpeg(
+          quelle,
+          maxDimension: 800,
+        );
 
-      expect(jpeg, isNotNull, reason: 'RAW blieb unlesbar');
-      final bild = img.decodeImage(jpeg!)!;
-      expect(bild.width == 800 || bild.height == 800, isTrue,
-          reason: 'auf die längste Kante skaliert, war ${bild.width}x${bild.height}');
+        expect(jpeg, isNotNull, reason: 'RAW blieb unlesbar');
+        final bild = img.decodeImage(jpeg!)!;
+        expect(
+          bild.width == 800 || bild.height == 800,
+          isTrue,
+          reason:
+              'auf die längste Kante skaliert, war ${bild.width}x${bild.height}',
+        );
 
-      // Das ist der Punkt, für den die Datei überhaupt erst in den
-      // Temp-Ordner kopiert wird: dcraw_emu schreibt sein Ergebnis NEBEN
-      // die Eingabe. Täte es das in der Bibliothek, läge dort zu jedem RAW
-      // eine 36-MB-TIFF-Datei, die niemand bestellt hat.
-      expect(quelle.lengthSync(), vorher, reason: 'Original verändert');
-      expect(temp.listSync().length, nachbarn,
-          reason: 'im Ordner der Eingabe ist etwas liegen geblieben');
-    }, skip: !vorlage.existsSync()
-        ? 'RAW-Vorlage fehlt (nicht im Repository, siehe oben)'
-        : null);
+        // Das ist der Punkt, für den die Datei überhaupt erst in den
+        // Temp-Ordner kopiert wird: dcraw_emu schreibt sein Ergebnis NEBEN
+        // die Eingabe. Täte es das in der Bibliothek, läge dort zu jedem RAW
+        // eine 36-MB-TIFF-Datei, die niemand bestellt hat.
+        expect(quelle.lengthSync(), vorher, reason: 'Original verändert');
+        expect(
+          temp.listSync().length,
+          nachbarn,
+          reason: 'im Ordner der Eingabe ist etwas liegen geblieben',
+        );
+      },
+      skip: !vorlage.existsSync()
+          ? 'RAW-Vorlage fehlt (nicht im Repository, siehe oben)'
+          : null,
+    );
   });
 
   group('Video', () {
@@ -213,7 +263,10 @@ void main() {
       // Grund einzeln in der Werkzeugliste.
       if (await hole('ffprobe') == null) return;
 
-      final ergebnis = await DesktopImageTools.videoThumbnail(video, maxDimension: 320);
+      final ergebnis = await DesktopImageTools.videoThumbnail(
+        video,
+        maxDimension: 320,
+      );
 
       expect(ergebnis, isNotNull);
       final bild = img.decodeImage(ergebnis!.jpeg)!;
@@ -238,8 +291,12 @@ void main() {
       if (await hole('ffprobe') == null) return;
       final ziel = p.join(temp.path, 'kurz.mp4');
 
-      final ok = await DesktopImageTools.trimVideo(video,
-          startSekunden: 2, endSekunden: 6, zielPfad: ziel);
+      final ok = await DesktopImageTools.trimVideo(
+        video,
+        startSekunden: 2,
+        endSekunden: 6,
+        zielPfad: ziel,
+      );
 
       expect(ok, isTrue);
       expect(File(ziel).existsSync(), isTrue);

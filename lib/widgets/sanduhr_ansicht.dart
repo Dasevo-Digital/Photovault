@@ -34,17 +34,19 @@ class SanduhrAnsicht extends StatelessWidget {
   });
 
   Offset _lage(Sanduhrknoten k) => Offset(
-        (k.spalte - sanduhr.vonSpalte) * (_kastenBreite + _spaltenAbstand),
-        (k.reihe - sanduhr.obersteReihe) * (_kastenHoehe + _reihenAbstand),
-      );
+    (k.spalte - sanduhr.vonSpalte) * (_kastenBreite + _spaltenAbstand),
+    (k.reihe - sanduhr.obersteReihe) * (_kastenHoehe + _reihenAbstand),
+  );
 
   @override
   Widget build(BuildContext context) {
     final farben = Theme.of(context).colorScheme;
-    final breite = (sanduhr.bisSpalte - sanduhr.vonSpalte) *
+    final breite =
+        (sanduhr.bisSpalte - sanduhr.vonSpalte) *
             (_kastenBreite + _spaltenAbstand) +
         _kastenBreite;
-    final hoehe = (sanduhr.untersteReihe - sanduhr.obersteReihe) *
+    final hoehe =
+        (sanduhr.untersteReihe - sanduhr.obersteReihe) *
             (_kastenHoehe + _reihenAbstand) +
         _kastenHoehe;
     final lagen = {for (final k in sanduhr.knoten) k.personId: _lage(k)};
@@ -129,7 +131,9 @@ class _Kasten extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: istFokus ? farben.primaryContainer : farben.surfaceContainerLow,
+            color: istFokus
+                ? farben.primaryContainer
+                : farben.surfaceContainerLow,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
               color: istFokus ? farben.primary : farben.outlineVariant,
@@ -147,15 +151,27 @@ class _Kasten extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: istFokus ? FontWeight.w600 : FontWeight.w400,
-                  color: istFokus ? farben.onPrimaryContainer : farben.onSurface,
+                  color: istFokus
+                      ? farben.onPrimaryContainer
+                      : farben.onSurface,
                 ),
               ),
               if (spanne != null)
-                Text(spanne,
-                    style: TextStyle(fontSize: 10, color: farben.onSurfaceVariant)),
+                Text(
+                  spanne,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: farben.onSurfaceVariant,
+                  ),
+                ),
               if (istPartner)
-                Text('∞',
-                    style: TextStyle(fontSize: 10, color: farben.onSurfaceVariant)),
+                Text(
+                  '∞',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: farben.onSurfaceVariant,
+                  ),
+                ),
             ],
           ),
         ),
@@ -195,8 +211,11 @@ class _KantenMaler extends CustomPainter {
         final links = von.dx < zu.dx ? von : zu;
         final rechts = von.dx < zu.dx ? zu : von;
         final y = links.dy + _kastenHoehe / 2;
-        canvas.drawLine(Offset(links.dx + _kastenBreite, y),
-            Offset(rechts.dx, y), stift);
+        canvas.drawLine(
+          Offset(links.dx + _kastenBreite, y),
+          Offset(rechts.dx, y),
+          stift,
+        );
         continue;
       }
 

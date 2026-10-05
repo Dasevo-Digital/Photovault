@@ -21,22 +21,22 @@ void main() {
   ///   ich └ tochter ── schwiegersohn
   ///            └ enkelin
   List<Kante> grundbestand() => [
-        kante('vater', 'opa', Verwandtschaft.elternteil),
-        kante('vater', 'oma', Verwandtschaft.elternteil),
-        kante('onkel', 'opa', Verwandtschaft.elternteil),
-        kante('onkel', 'oma', Verwandtschaft.elternteil),
-        kante('opa', 'uropa', Verwandtschaft.elternteil),
-        kante('ich', 'vater', Verwandtschaft.elternteil),
-        kante('ich', 'mutter', Verwandtschaft.elternteil),
-        kante('bruder', 'vater', Verwandtschaft.elternteil),
-        kante('bruder', 'mutter', Verwandtschaft.elternteil),
-        kante('cousine', 'onkel', Verwandtschaft.elternteil),
-        kante('tochter', 'ich', Verwandtschaft.elternteil),
-        kante('enkelin', 'tochter', Verwandtschaft.elternteil),
-        partnerKanteFuer('ich', 'gattin'),
-        partnerKanteFuer('vater', 'mutter'),
-        partnerKanteFuer('tochter', 'schwiegersohn'),
-      ];
+    kante('vater', 'opa', Verwandtschaft.elternteil),
+    kante('vater', 'oma', Verwandtschaft.elternteil),
+    kante('onkel', 'opa', Verwandtschaft.elternteil),
+    kante('onkel', 'oma', Verwandtschaft.elternteil),
+    kante('opa', 'uropa', Verwandtschaft.elternteil),
+    kante('ich', 'vater', Verwandtschaft.elternteil),
+    kante('ich', 'mutter', Verwandtschaft.elternteil),
+    kante('bruder', 'vater', Verwandtschaft.elternteil),
+    kante('bruder', 'mutter', Verwandtschaft.elternteil),
+    kante('cousine', 'onkel', Verwandtschaft.elternteil),
+    kante('tochter', 'ich', Verwandtschaft.elternteil),
+    kante('enkelin', 'tochter', Verwandtschaft.elternteil),
+    partnerKanteFuer('ich', 'gattin'),
+    partnerKanteFuer('vater', 'mutter'),
+    partnerKanteFuer('tochter', 'schwiegersohn'),
+  ];
 
   Verwandtschaftsnetz netz([List<Kante>? extra]) =>
       Verwandtschaftsnetz([...grundbestand(), ...?extra]);
@@ -49,10 +49,7 @@ void main() {
     final weg = ueber == null
         ? wege.first
         : wege.firstWhere((w) => w.bezugsperson == ueber);
-    return Verwandtschaftsnetz([
-      ...grundbestand(),
-      ...kantenFuer(weg, 'neu'),
-    ]);
+    return Verwandtschaftsnetz([...grundbestand(), ...kantenFuer(weg, 'neu')]);
   }
 
   Grad gradVonNeu(Zusatzgrad art, {String? ueber}) =>
@@ -86,8 +83,11 @@ void main() {
     test('Geschwisterkind – volle Geschwister, nicht halb', () {
       final g = gradVonNeu(Zusatzgrad.geschwisterkind);
       expect(g.art, Gradart.geschwister);
-      expect(g.halb, isFalse,
-          reason: 'ein Geschwisterkind bekommt ALLE Eltern');
+      expect(
+        g.halb,
+        isFalse,
+        reason: 'ein Geschwisterkind bekommt ALLE Eltern',
+      );
     });
 
     test('Halbgeschwisterkind – ausdrücklich halb', () {
@@ -115,8 +115,10 @@ void main() {
     });
 
     test('Schwiegerelternteil', () {
-      expect(gradVonNeu(Zusatzgrad.schwiegerelternteil).art,
-          Gradart.schwiegerelternteil);
+      expect(
+        gradVonNeu(Zusatzgrad.schwiegerelternteil).art,
+        Gradart.schwiegerelternteil,
+      );
     });
 
     test('Schwiegerkind', () {
@@ -124,13 +126,17 @@ void main() {
     });
 
     test('Schwager über ein Geschwister – der Partner des Bruders', () {
-      expect(gradVonNeu(Zusatzgrad.schwager, ueber: 'bruder').art,
-          Gradart.schwager);
+      expect(
+        gradVonNeu(Zusatzgrad.schwager, ueber: 'bruder').art,
+        Gradart.schwager,
+      );
     });
 
     test('Stiefelternteil', () {
-      expect(gradVonNeu(Zusatzgrad.stiefelternteil).art,
-          Gradart.stiefelternteil);
+      expect(
+        gradVonNeu(Zusatzgrad.stiefelternteil).art,
+        Gradart.stiefelternteil,
+      );
     });
 
     test('Stiefkind', () {
@@ -146,9 +152,10 @@ void main() {
         kante('gattin', 'schwiegervater', Verwandtschaft.elternteil),
       ];
       final wege = wegeFuer(
-          Verwandtschaftsnetz([...grundbestand(), ...mitSchwiegereltern]),
-          'ich',
-          Zusatzgrad.schwager);
+        Verwandtschaftsnetz([...grundbestand(), ...mitSchwiegereltern]),
+        'ich',
+        Zusatzgrad.schwager,
+      );
       final ueberGattin = wege.where((w) => w.bezugsperson == 'gattin');
       expect(ueberGattin, hasLength(1));
       expect(ueberGattin.single.rolle, Ankerrolle.kind);
@@ -179,19 +186,25 @@ void main() {
       }
     });
 
-    test('der Onkel hängt an den Großeltern, gefragt wird nach dem Elternteil',
-        () {
-      final wege = wegeFuer(netz(), 'ich', Zusatzgrad.onkelTante);
-      // Nur der Vater hat Eltern; die Mutter fällt heraus.
-      expect(wege, hasLength(1));
-      expect(wege.single.bezugsperson, 'vater');
-      expect(wege.single.anker.toSet(), {'opa', 'oma'});
-    });
+    test(
+      'der Onkel hängt an den Großeltern, gefragt wird nach dem Elternteil',
+      () {
+        final wege = wegeFuer(netz(), 'ich', Zusatzgrad.onkelTante);
+        // Nur der Vater hat Eltern; die Mutter fällt heraus.
+        expect(wege, hasLength(1));
+        expect(wege.single.bezugsperson, 'vater');
+        expect(wege.single.anker.toSet(), {'opa', 'oma'});
+      },
+    );
 
     test('die Reihenfolge folgt der übergebenen Ordnung', () {
       final ordnung = {'mutter': 0, 'vater': 1};
-      final wege = wegeFuer(netz(), 'ich', Zusatzgrad.halbgeschwisterkind,
-          reihenfolge: (id) => ordnung[id] ?? 99);
+      final wege = wegeFuer(
+        netz(),
+        'ich',
+        Zusatzgrad.halbgeschwisterkind,
+        reihenfolge: (id) => ordnung[id] ?? 99,
+      );
       expect(wege.map((w) => w.bezugsperson).toList(), ['mutter', 'vater']);
     });
   });
@@ -224,14 +237,20 @@ void main() {
         kante('ich', 'vater', Verwandtschaft.elternteil),
       ]);
       expect(wegeFuer(nurEltern, 'ich', Zusatzgrad.onkelTante), isEmpty);
-      expect(fehlendeVoraussetzung(Zusatzgrad.onkelTante), Fehlt.grosselternteil);
+      expect(
+        fehlendeVoraussetzung(Zusatzgrad.onkelTante),
+        Fehlt.grosselternteil,
+      );
     });
   });
 
   group('Die erzeugten Kanten', () {
     test('ein Großelternteil wird Elternteil des Elternteils', () {
-      final weg = wegeFuer(netz(), 'ich', Zusatzgrad.grosselternteil)
-          .firstWhere((w) => w.bezugsperson == 'mutter');
+      final weg = wegeFuer(
+        netz(),
+        'ich',
+        Zusatzgrad.grosselternteil,
+      ).firstWhere((w) => w.bezugsperson == 'mutter');
       final kanten = kantenFuer(weg, 'neu');
       expect(kanten, hasLength(1));
       expect(kanten.single.personId, 'mutter');

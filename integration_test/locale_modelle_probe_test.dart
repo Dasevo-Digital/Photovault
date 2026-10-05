@@ -47,17 +47,23 @@ String abdruck(List<double> werte) {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  final ordner = Platform.environment['PV_MODELLE'] ??
+  final ordner =
+      Platform.environment['PV_MODELLE'] ??
       '${Platform.environment['HOME']}/.var/app/de.dasevo.photovault/data'
           '/de.dasevo.photovault/PhotoVault/models';
 
   test('Fingerabdruecke der Modelle', () async {
-    print('LC_NUMERIC=${Platform.environment['LC_NUMERIC'] ?? '(nicht gesetzt)'}');
+    print(
+      'LC_NUMERIC=${Platform.environment['LC_NUMERIC'] ?? '(nicht gesetzt)'}',
+    );
     print('MODELLE=$ordner');
 
     // --- Uebersetzung: reiner Text, keine Bildabhaengigkeit ---------------
     if (TranslationService.isAvailable(ordner, Uebersetzungsrichtung.enDe)) {
-      final d = await TranslationService.load(ordner, Uebersetzungsrichtung.enDe);
+      final d = await TranslationService.load(
+        ordner,
+        Uebersetzungsrichtung.enDe,
+      );
       final s = await d.translate('a red bicycle in front of a stone wall');
       await d.dispose();
       print('UEBERSETZUNG "$s"');

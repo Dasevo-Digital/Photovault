@@ -83,7 +83,9 @@ Videozeit? zeitAusMoov(Uint8List moov) {
   if (day != null) return (zeitpunkt: day, herkunft: Zeitherkunft.ohneZone);
 
   final mvhd = _ausMvhd(moov);
-  return mvhd == null ? null : (zeitpunkt: mvhd, herkunft: Zeitherkunft.ohneZone);
+  return mvhd == null
+      ? null
+      : (zeitpunkt: mvhd, herkunft: Zeitherkunft.ohneZone);
 }
 
 /// Hersteller und Gerät aus einem `moov`-Kasten.
@@ -104,9 +106,11 @@ Videozeit? zeitAusMoov(Uint8List moov) {
   }
 
   return (
-    hersteller: sauber(appleSchluesselwert(moov, _appleHerstellerschluessel)) ??
+    hersteller:
+        sauber(appleSchluesselwert(moov, _appleHerstellerschluessel)) ??
         sauber(udtaAnmerkung(moov, '©mak')),
-    geraet: sauber(appleSchluesselwert(moov, _appleGeraeteschluessel)) ??
+    geraet:
+        sauber(appleSchluesselwert(moov, _appleGeraeteschluessel)) ??
         sauber(udtaAnmerkung(moov, '©mod')),
   );
 }
@@ -130,7 +134,7 @@ DateTime? _ausZonentext(String? roh) {
   final normiert = mitZone == null
       ? text
       : '${text.substring(0, mitZone.start)}'
-          '${mitZone.group(1)}${mitZone.group(2)}:${mitZone.group(3)}';
+            '${mitZone.group(1)}${mitZone.group(2)}:${mitZone.group(3)}';
   if (!RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(normiert)) return null;
   return DateTime.tryParse(normiert)?.toLocal();
 }
@@ -144,8 +148,14 @@ DateTime? _ausZonentext(String? roh) {
 /// den Kopf dieser Datei. Kurz: gemessen an 28 Videos mit GPS-Zeit stand
 /// dort durchweg Ortszeit.
 DateTime? _ausMvhd(Uint8List moov) {
-  final mvhd = sucheKasten(moov, 0, moov.length, 'mvhd',
-      absteigenIn: const {'moov'}, maxTiefe: 2);
+  final mvhd = sucheKasten(
+    moov,
+    0,
+    moov.length,
+    'mvhd',
+    absteigenIn: const {'moov'},
+    maxTiefe: 2,
+  );
   if (mvhd == null) return null;
   final d = ByteData.sublistView(moov);
   final fassung = moov[mvhd.inhaltVon];
@@ -161,8 +171,14 @@ DateTime? _ausMvhd(Uint8List moov) {
   // Ohne Zone gelesen: Die Sekunden werden auf die Zeitrechnung ab 1904
   // addiert und die Wanduhr davon übernommen, nicht der Zeitpunkt.
   final wanduhr = _quicktimeNull.add(Duration(seconds: sekunden));
-  final wert = DateTime(wanduhr.year, wanduhr.month, wanduhr.day, wanduhr.hour,
-      wanduhr.minute, wanduhr.second);
+  final wert = DateTime(
+    wanduhr.year,
+    wanduhr.month,
+    wanduhr.day,
+    wanduhr.hour,
+    wanduhr.minute,
+    wanduhr.second,
+  );
   // Eine Kamera mit ungestellter Uhr schreibt hier die Sekunden seit dem
   // eigenen Einschalten – dieselbe Prüfung wie bei den EXIF-Daten.
   return wert.year < 1990 ? null : wert;
@@ -179,11 +195,10 @@ Future<Videozeit?> leseVideoZeit(File datei) async {
 
 /// Hersteller und Gerät aus [datei] – beides kann `null` sein.
 Future<({String? hersteller, String? geraet})> leseVideoKamera(
-    File datei) async {
+  File datei,
+) async {
   final moov = await kastenAusDatei(datei, 'moov');
-  return moov == null
-      ? (hersteller: null, geraet: null)
-      : kameraAusMoov(moov);
+  return moov == null ? (hersteller: null, geraet: null) : kameraAusMoov(moov);
 }
 
 /// Alles, was in einem Video an Metadaten steht, aus **einem** Lesevorgang.
@@ -199,8 +214,12 @@ typedef Videometadaten = ({
   ({double breite, double laenge})? ort,
 });
 
-const Videometadaten leereVideometadaten =
-    (zeit: null, hersteller: null, geraet: null, ort: null);
+const Videometadaten leereVideometadaten = (
+  zeit: null,
+  hersteller: null,
+  geraet: null,
+  ort: null,
+);
 
 Future<Videometadaten> leseVideoMetadaten(File datei) async {
   final moov = await kastenAusDatei(datei, 'moov');

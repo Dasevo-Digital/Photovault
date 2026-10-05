@@ -65,8 +65,10 @@ void main() {
     final grenzeN = int.tryParse(Platform.environment['PV_CACHE_N'] ?? '');
     if (grenzeN != null) _speicher.maximumSize = grenzeN;
     // ignore: avoid_print
-    print('Grenze: ${_speicher.maximumSize} Bilder, '
-        '${_mb(_speicher.maximumSizeBytes)}\n');
+    print(
+      'Grenze: ${_speicher.maximumSize} Bilder, '
+      '${_mb(_speicher.maximumSizeBytes)}\n',
+    );
 
     const fensterBreite = 1600.0;
     const fensterHoehe = 1000.0;
@@ -110,8 +112,10 @@ void main() {
               await tester.pump();
               mitschreiben();
               if (_spur != null) {
-                _spur!.add('${_speicher.currentSize}/'
-                    '${gesehenSchluessel.length}');
+                _spur!.add(
+                  '${_speicher.currentSize}/'
+                  '${gesehenSchluessel.length}',
+                );
               }
             }
           });
@@ -139,29 +143,33 @@ void main() {
         }
 
         await tester.runAsync(() async {
-          await tester.pumpWidget(MaterialApp(
-            locale: const Locale('de'),
-            localizationsDelegates: AppTexte.localizationsDelegates,
-            supportedLocales: AppTexte.supportedLocales,
-            theme: buildDarkTheme(),
-            home: Scaffold(
-              body: MonthGroupedAssetGrid(
-                // Ein eigener Schlüssel je Durchgang: Sonst behält das
-                // Raster seinen Zustand samt Scrollstelle.
-                key: ValueKey('$dpr-${form.name}'),
-                assets: zeilen,
-                paths: paths,
-                onTap: (_) {},
-                form: form,
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('de'),
+              localizationsDelegates: AppTexte.localizationsDelegates,
+              supportedLocales: AppTexte.supportedLocales,
+              theme: buildDarkTheme(),
+              home: Scaffold(
+                body: MonthGroupedAssetGrid(
+                  // Ein eigener Schlüssel je Durchgang: Sonst behält das
+                  // Raster seinen Zustand samt Scrollstelle.
+                  key: ValueKey('$dpr-${form.name}'),
+                  assets: zeilen,
+                  paths: paths,
+                  onTap: (_) {},
+                  form: form,
+                ),
               ),
             ),
-          ));
+          );
         });
         _spur = <String>[];
         final aufbau = await einpendeln();
         // ignore: avoid_print
-        print('  Verlauf (Eintraege/gesehene Schluessel): '
-            '${_spur!.take(14).join(' ')} ...');
+        print(
+          '  Verlauf (Eintraege/gesehene Schluessel): '
+          '${_spur!.take(14).join(' ')} ...',
+        );
         _spur = null;
         // ignore: avoid_print
         print('  bis der erste Bildschirm steht: $aufbau ms');
@@ -169,9 +177,11 @@ void main() {
         // Zeitstrahls setzt timelineHeaderHeight = 64 an.
         final ersteKachel = find.byType(AssetThumbnailTile).first;
         // ignore: avoid_print
-        print('  Ueberschrift misst: '
-            '${tester.getTopLeft(ersteKachel).dy.toStringAsFixed(1)} Punkte '
-            '(die Rechnung setzt $timelineHeaderHeight an)');
+        print(
+          '  Ueberschrift misst: '
+          '${tester.getTopLeft(ersteKachel).dy.toStringAsFixed(1)} Punkte '
+          '(die Rechnung setzt $timelineHeaderHeight an)',
+        );
 
         final ersteBytes = _speicher.currentSizeBytes;
         // Die Schluessel des ersten Bildschirms, aus den gezeichneten
@@ -181,18 +191,23 @@ void main() {
         await tester.runAsync(() async {
           for (final bild in tester.widgetList<Image>(find.byType(Image))) {
             schluessel.add(
-                await bild.image.obtainKey(ImageConfiguration.empty));
+              await bild.image.obtainKey(ImageConfiguration.empty),
+            );
           }
         });
         final ersteEintraege = schluessel.length;
         // ignore: avoid_print
         print('== dpr $dpr, ${form.name} ==');
         // ignore: avoid_print
-        print('  erster Bildschirm: $ersteEintraege Bilder im Baum, '
-            '${_mb(ersteBytes)}, ${_speicher.currentSize} Eintraege');
+        print(
+          '  erster Bildschirm: $ersteEintraege Bilder im Baum, '
+          '${_mb(ersteBytes)}, ${_speicher.currentSize} Eintraege',
+        );
         // ignore: avoid_print
-        print('  dafuer gebaut: ${gesehenDateien.length} Dateien unter '
-            '${gesehenSchluessel.length} Schluesseln');
+        print(
+          '  dafuer gebaut: ${gesehenDateien.length} Dateien unter '
+          '${gesehenSchluessel.length} Schluesseln',
+        );
 
         // Woher kommen die Eintraege, die niemand sieht? Wenn jeder Monat
         // seine erste Reihe baut, muesste das ERSTE FOTO JEDER Gruppe im
@@ -216,25 +231,33 @@ void main() {
               kb = kh = timelineRowHeightForWidth(gitter) - 4;
             }
             final m = deckendeDekodiermasse(
-                kachelBreite: kb,
-                kachelHoehe: kh,
-                bildBreite: a.widthPx,
-                bildHoehe: a.heightPx,
-                pixelverhaeltnis: dpr);
-            final prov = ResizeImage.resizeIfNeeded(m.breite, m.hoehe,
-                FileImage(paths.absolute(a.thumbnailRelativePath!)));
-            if (_speicher
-                .containsKey(await prov.obtainKey(ImageConfiguration.empty))) {
+              kachelBreite: kb,
+              kachelHoehe: kh,
+              bildBreite: a.widthPx,
+              bildHoehe: a.heightPx,
+              pixelverhaeltnis: dpr,
+            );
+            final prov = ResizeImage.resizeIfNeeded(
+              m.breite,
+              m.hoehe,
+              FileImage(paths.absolute(a.thumbnailRelativePath!)),
+            );
+            if (_speicher.containsKey(
+              await prov.obtainKey(ImageConfiguration.empty),
+            )) {
               drin++;
             }
           }
           // ignore: avoid_print
-          print('  Erstfoto der Monatsgruppen im Speicher: '
-              '$drin von ${g.schluessel.length}');
+          print(
+            '  Erstfoto der Monatsgruppen im Speicher: '
+            '$drin von ${g.schluessel.length}',
+          );
         });
 
-        final lage = tester.state<ScrollableState>(
-            find.byType(Scrollable).first).position;
+        final lage = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
 
         // Trifft der gerechnete Sprung? Geprueft in der Mitte der
         // Bibliothek - dort haette sich ein Fehler je Monatsgruppe schon
@@ -244,16 +267,22 @@ void main() {
         final mitte = gruppen.schluessel[gruppen.schluessel.length ~/ 2];
         final ziel = gruppen.gruppen[mitte]!.first;
         final gerechnet = timelineOffsetForAsset(
-            gruppen.schluessel, gruppen.gruppen, fensterBreite - 64, ziel.id,
-            kachelbreite: timelineGridMaxCrossAxisExtent, form: form);
+          gruppen.schluessel,
+          gruppen.gruppen,
+          fensterBreite - 64,
+          ziel.id,
+          kachelbreite: timelineGridMaxCrossAxisExtent,
+          form: form,
+        );
         if (gerechnet != null) {
           // Die Stelle suchen, an der das Foto wirklich steht: erst am
           // gerechneten Punkt nachsehen, dann in Schritten davor. Der
           // Vorlauf muss kleiner als das Fenster bleiben, sonst steht das
           // Foto unterhalb des Randes und ist gar nicht gebaut - daran
           // sind die ersten beiden Anlaeufe gescheitert.
-          final treffer = find.byWidgetPredicate((w) =>
-              w is AssetThumbnailTile && w.asset.id == ziel.id);
+          final treffer = find.byWidgetPredicate(
+            (w) => w is AssetThumbnailTile && w.asset.id == ziel.id,
+          );
           var gefunden = false;
           for (var vor = 0.0; vor <= 6000 && !gefunden; vor += 300) {
             lage.jumpTo((gerechnet - vor).clamp(0.0, lage.maxScrollExtent));
@@ -262,10 +291,12 @@ void main() {
             gefunden = true;
             final dy = tester.getTopLeft(treffer.first).dy;
             // ignore: avoid_print
-            print('  Sprung in die Mitte (Gruppe '
-                '${gruppen.schluessel.length ~/ 2} von '
-                '${gruppen.schluessel.length}): Rechnung liegt '
-                '${(vor - dy).round()} Punkte daneben');
+            print(
+              '  Sprung in die Mitte (Gruppe '
+              '${gruppen.schluessel.length ~/ 2} von '
+              '${gruppen.schluessel.length}): Rechnung liegt '
+              '${(vor - dy).round()} Punkte daneben',
+            );
           }
           if (!gefunden) {
             // ignore: avoid_print
@@ -279,8 +310,7 @@ void main() {
         var verloren = -1;
         final weiten = <int>{};
         for (var s = 1; s <= schritte; s++) {
-          lage.jumpTo(
-              (s * fensterHoehe).clamp(0.0, lage.maxScrollExtent));
+          lage.jumpTo((s * fensterHoehe).clamp(0.0, lage.maxScrollExtent));
           await ruhen(20);
           weiten.add(lage.maxScrollExtent.round());
           if (voll < 0 &&
@@ -293,23 +323,31 @@ void main() {
           if (leben < ersteEintraege && verloren < 0) verloren = s;
           if (s <= 6 || s == schritte) {
             // ignore: avoid_print
-            print('  nach $s Bildschirmen: vom ersten noch '
-                '$leben von $ersteEintraege');
+            print(
+              '  nach $s Bildschirmen: vom ersten noch '
+              '$leben von $ersteEintraege',
+            );
           }
           if (s % 4 == 0 || s == schritte) {
             // ignore: avoid_print
-            print('  nach $s Bildschirmen: ${_speicher.currentSize} Bilder, '
-                '${_mb(_speicher.currentSizeBytes)}');
+            print(
+              '  nach $s Bildschirmen: ${_speicher.currentSize} Bilder, '
+              '${_mb(_speicher.currentSizeBytes)}',
+            );
           }
         }
         // ignore: avoid_print
-        print('  Speicher voll ab Bildschirm: '
-            '${voll < 0 ? 'nie' : voll}');
+        print(
+          '  Speicher voll ab Bildschirm: '
+          '${voll < 0 ? 'nie' : voll}',
+        );
         // ignore: avoid_print
-        print('  Gesamthoehe waehrend des Scrollens: '
-            '${weiten.length} verschiedene Werte '
-            '(${weiten.reduce((a, b) => a < b ? a : b)}'
-            '..${weiten.reduce((a, b) => a > b ? a : b)})');
+        print(
+          '  Gesamthoehe waehrend des Scrollens: '
+          '${weiten.length} verschiedene Werte '
+          '(${weiten.reduce((a, b) => a < b ? a : b)}'
+          '..${weiten.reduce((a, b) => a > b ? a : b)})',
+        );
 
         // Der eigentliche Befund. Die Zahl der EINTRAEGE zu vergleichen
         // waere die Falle: Ist der Speicher voll, verdraengt jeder neue
@@ -318,12 +356,16 @@ void main() {
         // viele Schluessel des ersten Bildschirms noch da sind.
         final ueberlebt = schluessel.where(_speicher.containsKey).length;
         // ignore: avoid_print
-        print('  belegter Arbeitsspeicher: '
-            '${_mb(ProcessInfo.currentRss)}');
+        print(
+          '  belegter Arbeitsspeicher: '
+          '${_mb(ProcessInfo.currentRss)}',
+        );
         // ignore: avoid_print
-        print('  erstes Bild verdraengt ab Bildschirm: '
-            '${verloren < 0 ? 'nie' : verloren}'
-            ' - am Ende $ueberlebt von $ersteEintraege');
+        print(
+          '  erstes Bild verdraengt ab Bildschirm: '
+          '${verloren < 0 ? 'nie' : verloren}'
+          ' - am Ende $ueberlebt von $ersteEintraege',
+        );
         lage.jumpTo(0);
         final zurueck = await einpendeln();
         // ignore: avoid_print

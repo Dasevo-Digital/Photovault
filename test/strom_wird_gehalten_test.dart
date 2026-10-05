@@ -49,7 +49,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -57,16 +59,19 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<void> aufnahme(String id, DateTime wann) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: wann,
-            importedAt: wann,
-          ));
+  Future<void> aufnahme(String id, DateTime wann) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: wann,
+          importedAt: wann,
+        ),
+      );
 
   /// Baut den Baum ab und lässt den Aufräum-Timer von drift auslaufen –
   /// siehe papierkorb_bedienung_test.dart, dieselbe Falle.
@@ -77,11 +82,11 @@ void main() {
   }
 
   Widget rahmen(Widget kind) => MaterialApp(
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        locale: const Locale('de'),
-        home: kind,
-      );
+    localizationsDelegates: AppTexte.localizationsDelegates,
+    supportedLocales: AppTexte.supportedLocales,
+    locale: const Locale('de'),
+    home: kind,
+  );
 
   /// Alle Ströme, die gerade im Baum an einem StreamBuilder hängen.
   ///
@@ -89,16 +94,19 @@ void main() {
   /// `AssetData` – die Frage bleibt dieselbe: Ist es bei einem Neuaufbau
   /// noch derselbe Strom?
   List<Stream<List<T>>> stroeme<T>(WidgetTester tester) => tester
-      .widgetList<StreamBuilder<List<T>>>(
-          find.byType(StreamBuilder<List<T>>))
+      .widgetList<StreamBuilder<List<T>>>(find.byType(StreamBuilder<List<T>>))
       .map((w) => w.stream!)
       .toList();
 
-  testWidgets('die Zeitleiste behaelt ihren Strom ueber Neubauten', (tester) async {
+  testWidgets('die Zeitleiste behaelt ihren Strom ueber Neubauten', (
+    tester,
+  ) async {
     for (var i = 0; i < 3; i++) {
       await aufnahme('a$i', DateTime(2026, 5, 1 + i));
     }
-    await tester.pumpWidget(rahmen(Scaffold(body: TimelineScreen(library: library))));
+    await tester.pumpWidget(
+      rahmen(Scaffold(body: TimelineScreen(library: library))),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -112,44 +120,58 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
 
-    expect(identical(stroeme<Rasterzeile>(tester).single, vorher.single), isTrue,
-        reason: 'sonst fragt jeder Tastendruck die Datenbank erneut');
+    expect(
+      identical(stroeme<Rasterzeile>(tester).single, vorher.single),
+      isTrue,
+      reason: 'sonst fragt jeder Tastendruck die Datenbank erneut',
+    );
     await abbauen(tester);
   });
 
-  testWidgets('waechst das Ladefenster, wird sehr wohl neu gefragt', (tester) async {
+  testWidgets('waechst das Ladefenster, wird sehr wohl neu gefragt', (
+    tester,
+  ) async {
     // Die Gegenprobe. Ein Halter, der stur festhält, zeigte nach dem
     // Scrollen für immer die ersten 600 Fotos – und das wäre schlimmer als
     // die Abfragen, die er spart.
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
-    await db.batch((b) => b.insertAll(db.assets, [
-          for (var i = 0; i < 700; i++)
-            AssetsCompanion.insert(
-              id: 'f$i',
-              originalFileName: 'f$i.jpg',
-              relativePath: 'originals/f$i.jpg',
-              checksum: 'pruef-f$i',
-              type: 'IMAGE',
-              fileCreatedAt: DateTime(2026).add(Duration(hours: i)),
-              importedAt: DateTime(2026),
-            ),
-        ]));
-    await tester.pumpWidget(rahmen(Scaffold(body: TimelineScreen(library: library))));
+    await db.batch(
+      (b) => b.insertAll(db.assets, [
+        for (var i = 0; i < 700; i++)
+          AssetsCompanion.insert(
+            id: 'f$i',
+            originalFileName: 'f$i.jpg',
+            relativePath: 'originals/f$i.jpg',
+            checksum: 'pruef-f$i',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026).add(Duration(hours: i)),
+            importedAt: DateTime(2026),
+          ),
+      ]),
+    );
+    await tester.pumpWidget(
+      rahmen(Scaffold(body: TimelineScreen(library: library))),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     final vorher = stroeme<Rasterzeile>(tester).single;
     // Ans Ende des geladenen Ausschnitts – genau das, was das Fenster
     // wachsen lässt (siehe onScrollNearEnd).
-    final lage = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    final lage = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
     lage.jumpTo(lage.maxScrollExtent);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(identical(stroeme<Rasterzeile>(tester).single, vorher), isFalse,
-        reason: 'ein groesseres Fenster ist eine andere Abfrage');
+    expect(
+      identical(stroeme<Rasterzeile>(tester).single, vorher),
+      isFalse,
+      reason: 'ein groesseres Fenster ist eine andere Abfrage',
+    );
     await abbauen(tester);
   });
 
@@ -164,10 +186,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     final gefunden = stroeme<AssetData>(tester);
-    expect(gefunden.length, greaterThanOrEqualTo(2),
-        reason: 'Liste und Belegungszahl lesen beide');
-    expect(gefunden.toSet(), hasLength(1),
-        reason: 'aber aus demselben Strom');
+    expect(
+      gefunden.length,
+      greaterThanOrEqualTo(2),
+      reason: 'Liste und Belegungszahl lesen beide',
+    );
+    expect(gefunden.toSet(), hasLength(1), reason: 'aber aus demselben Strom');
     await abbauen(tester);
   });
 }

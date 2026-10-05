@@ -70,7 +70,8 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   late AssetData _asset = widget.asset;
   late final TextEditingController _descriptionController =
       TextEditingController(text: widget.asset.description ?? '');
-  late final FocusNode _descriptionFocusNode = FocusNode()..addListener(_onDescriptionFocusChange);
+  late final FocusNode _descriptionFocusNode = FocusNode()
+    ..addListener(_onDescriptionFocusChange);
   final TextEditingController _tagController = TextEditingController();
   List<TagData> _tags = [];
   List<_AssetFace> _peopleFaces = [];
@@ -90,7 +91,8 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   /// Die Vorschläge unter dem Suchfeld – höchstens sechs.
   List<OrtsTreffer> _ortVorschlaege = const [];
   late final TextEditingController _kiController = TextEditingController();
-  late final FocusNode _kiFocusNode = FocusNode()..addListener(_onKiFocusChange);
+  late final FocusNode _kiFocusNode = FocusNode()
+    ..addListener(_onKiFocusChange);
 
   @override
   void initState() {
@@ -196,27 +198,35 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     // sicher da, und die Analyse mahnt das zu Recht an.
     final bibliothek = context.read<LibraryState>();
     final faces = await widget.db.facesForAsset(_asset.id);
-    final unassigned = faces.where((f) => f.personId == null && !f.isIgnored).toList();
+    final unassigned = faces
+        .where((f) => f.personId == null && !f.isIgnored)
+        .toList();
     if (unassigned.isEmpty) {
       if (mounted) {
-        melde.hinweis(AppTexte.of(context).infoKeineUnbenannten,);
+        melde.hinweis(AppTexte.of(context).infoKeineUnbenannten);
       }
       return;
     }
     final people = await widget.db.select(widget.db.people).get();
-    final vorschlag =
-        await bibliothek.personenvorschlag(unassigned.first.embedding);
+    final vorschlag = await bibliothek.personenvorschlag(
+      unassigned.first.embedding,
+    );
     if (!mounted) return;
-    final choice = await showPersonPickerDialog(context, people,
-        paths: widget.paths,
-        suggestedPerson: vorschlag,
-        title: AppTexte.of(context).personZuordnenTitel);
+    final choice = await showPersonPickerDialog(
+      context,
+      people,
+      paths: widget.paths,
+      suggestedPerson: vorschlag,
+      title: AppTexte.of(context).personZuordnenTitel,
+    );
     if (choice == null) return;
 
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.db.createPerson(PeopleCompanion.insert(id: personId, name: choice.newName!));
+      await widget.db.createPerson(
+        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      );
     } else {
       personId = choice.existingPersonId!;
     }
@@ -229,8 +239,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   }
 
   Future<void> _saveDescription() async {
-    if (_descriptionController.text.trim() == (_asset.description ?? '')) return;
-    await widget.db.setDescription(_asset.id, _descriptionController.text.trim());
+    if (_descriptionController.text.trim() == (_asset.description ?? '')) {
+      return;
+    }
+    await widget.db.setDescription(
+      _asset.id,
+      _descriptionController.text.trim(),
+    );
     await _refresh();
   }
 
@@ -266,8 +281,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     );
     // Über LibraryState, damit die Datei in den Ordner des neuen Monats
     // mitgeht (siehe [LibraryState.setzeAufnahmedatumVonHand]).
-    await context.read<LibraryState>().setzeAufnahmedatumVonHand(
-        [_asset.id], combined);
+    await context.read<LibraryState>().setzeAufnahmedatumVonHand([
+      _asset.id,
+    ], combined);
     await _refresh();
   }
 
@@ -276,9 +292,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     // Die Datenbankschicht allein leert sie nur (siehe
     // [AppDatabase.setLocation]), und bis zur nächsten Hintergrundaufgabe
     // stünde hier gar kein Ort mehr.
-    await context
-        .read<LibraryState>()
-        .setzeOrtVonHand([_asset.id], latitude, longitude);
+    await context.read<LibraryState>().setzeOrtVonHand(
+      [_asset.id],
+      latitude,
+      longitude,
+    );
     await _refresh();
   }
 
@@ -320,10 +338,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (treffer.isEmpty) {
       treffer = [
         for (final name in geo.namensvorschlaege(text, hoechstens: 6))
-          ...geo.sucheOrte(name,
-              naheBreite: _asset.latitude,
-              naheLaenge: _asset.longitude,
-              hoechstens: 1)
+          ...geo.sucheOrte(
+            name,
+            naheBreite: _asset.latitude,
+            naheLaenge: _asset.longitude,
+            hoechstens: 1,
+          ),
       ];
     }
     setState(() => _ortVorschlaege = treffer);
@@ -335,10 +355,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (!mounted) return;
     _ortController.clear();
     setState(() => _ortVorschlaege = const []);
-    melde.erfolg(AppTexte.of(context).infoOrtGesetzt(
+    melde.erfolg(
+      AppTexte.of(context).infoOrtGesetzt(
         treffer.herkunft.isEmpty
             ? treffer.name
-            : '${treffer.name}, ${treffer.herkunft}'));
+            : '${treffer.name}, ${treffer.herkunft}',
+      ),
+    );
   }
 
   Future<void> _sucheOrt() async {
@@ -368,9 +391,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
       final bezeichnung = treffer.land == null
           ? treffer.name
           : '${treffer.name}, ${treffer.land}';
-      melde.erfolg(treffer.weitere == 0
-          ? t.infoOrtGesetzt(bezeichnung)
-          : t.infoOrtGesetztMehrdeutig(bezeichnung, treffer.weitere));
+      melde.erfolg(
+        treffer.weitere == 0
+            ? t.infoOrtGesetzt(bezeichnung)
+            : t.infoOrtGesetztMehrdeutig(bezeichnung, treffer.weitere),
+      );
     } finally {
       if (mounted) setState(() => _ortSucheLaeuft = false);
     }
@@ -383,13 +408,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
 
   /// Was an dieser Aufnahme bearbeitet ist, als Aufzaehlung.
   String _bearbeitungstext(AppTexte t) => [
-        for (final art in bearbeitungsarten(_asset))
-          switch (art) {
-            Bearbeitungsart.entwickelt => t.infoBearbeitetEntwickelt,
-            Bearbeitungsart.restauriert => t.infoBearbeitetRestauriert,
-            Bearbeitungsart.zugeschnitten => t.infoBearbeitetZugeschnitten,
-          }
-      ].join(', ');
+    for (final art in bearbeitungsarten(_asset))
+      switch (art) {
+        Bearbeitungsart.entwickelt => t.infoBearbeitetEntwickelt,
+        Bearbeitungsart.restauriert => t.infoBearbeitetRestauriert,
+        Bearbeitungsart.zugeschnitten => t.infoBearbeitetZugeschnitten,
+      },
+  ].join(', ');
 
   /// Nimmt jede Bearbeitung dieser Aufnahme zurueck – siehe
   /// [originalWiederherstellen].
@@ -400,12 +425,18 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   Future<void> _originalWiederherstellen() async {
     final t = AppTexte.of(context);
     if (!await confirmDialog(
-        context, t.infoOriginalHerstellen, t.infoOriginalHerstellenFrage,
-        bestaetigen: t.infoOriginalHerstellen)) {
+      context,
+      t.infoOriginalHerstellen,
+      t.infoOriginalHerstellenFrage,
+      bestaetigen: t.infoOriginalHerstellen,
+    )) {
       return;
     }
     await originalWiederherstellen(
-        db: widget.db, paths: widget.paths, asset: _asset);
+      db: widget.db,
+      paths: widget.paths,
+      asset: _asset,
+    );
     if (!mounted) return;
     melde.erfolg(t.infoOriginalHergestellt);
     await _refresh();
@@ -434,10 +465,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
       return;
     }
     serie.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
-    await Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(
-      builder: (_) =>
-          SerienvergleichScreen(library: library, serie: serie),
-    ));
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => SerienvergleichScreen(library: library, serie: serie),
+      ),
+    );
   }
 
   String _formatFileSize(int bytes) {
@@ -454,7 +486,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
 
   String _fileDetailsSubtitle(AssetData asset) {
     final parts = <String>[];
-    if (asset.type == 'IMAGE' && asset.widthPx != null && asset.heightPx != null) {
+    if (asset.type == 'IMAGE' &&
+        asset.widthPx != null &&
+        asset.heightPx != null) {
       final megapixels = asset.widthPx! * asset.heightPx! / 1000000;
       if (megapixels >= 0.1) {
         parts.add('${megapixels.toStringAsFixed(megapixels < 10 ? 1 : 0)} MP');
@@ -505,7 +539,8 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     // von den Umschaltknöpfen geändert – sonst spränge das Feld beim
     // Speichern zurück, sobald jemand die deutsche Fassung leert.
     final kiDeutsch = _kiDeutsch ??= _kiSpracheVorgabe(context);
-    final kiVorhanden = (asset.aiCaption ?? '').trim().isNotEmpty ||
+    final kiVorhanden =
+        (asset.aiCaption ?? '').trim().isNotEmpty ||
         (asset.aiCaptionDe ?? '').trim().isNotEmpty;
     if (!_kiFocusNode.hasFocus && _kiController.text != _kiText(kiDeutsch)) {
       _kiController.text = _kiText(kiDeutsch);
@@ -514,20 +549,34 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     // unverändert durch (siehe [landAnzeige]).
     final regionParts = [
       asset.locationState,
-      landAnzeige(asset.locationCountry,
-          Localizations.localeOf(context).languageCode),
+      landAnzeige(
+        asset.locationCountry,
+        Localizations.localeOf(context).languageCode,
+      ),
     ].whereType<String>().where((s) => s.isNotEmpty).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.xs, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xs,
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.sm,
+          ),
           child: Row(
             children: [
-              IconButton(icon: const Icon(Icons.close), tooltip: AppTexte.of(context).allgSchliessen, onPressed: widget.onClose),
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: AppTexte.of(context).allgSchliessen,
+                onPressed: widget.onClose,
+              ),
               const SizedBox(width: 4),
-              Text(AppTexte.of(context).infoTitel, style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                AppTexte.of(context).infoTitel,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ],
           ),
         ),
@@ -538,7 +587,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xl,
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                    0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -547,7 +601,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         focusNode: _descriptionFocusNode,
                         maxLines: null,
                         decoration: InputDecoration(
-                          hintText: AppTexte.of(context).infoBeschreibungHinzufuegen,
+                          hintText: AppTexte.of(
+                            context,
+                          ).infoBeschreibungHinzufuegen,
                           border: const UnderlineInputBorder(),
                           isDense: true,
                         ),
@@ -569,13 +625,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           const SizedBox(height: 6),
                           Text(
                             AppTexte.of(context).infoVideoStandbild,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ],
@@ -592,13 +647,19 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           Semantics(
                             container: true,
                             label: AppTexte.of(context).infoBewertung,
-                            child: StarRating(value: _asset.rating, onChanged: _setRating),
+                            child: StarRating(
+                              value: _asset.rating,
+                              onChanged: _setRating,
+                            ),
                           ),
                           const Spacer(),
                           Semantics(
                             container: true,
                             label: AppTexte.of(context).suchoptFarbmarkierung,
-                            child: ColorLabelPicker(value: _asset.colorLabel, onChanged: _setColorLabel),
+                            child: ColorLabelPicker(
+                              value: _asset.colorLabel,
+                              onChanged: _setColorLabel,
+                            ),
                           ),
                         ],
                       ),
@@ -606,7 +667,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
 
                       Row(
                         children: [
-                          Expanded(child: _SectionLabel(AppTexte.of(context).navPersonen)),
+                          Expanded(
+                            child: _SectionLabel(
+                              AppTexte.of(context).navPersonen,
+                            ),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add),
                             tooltip: AppTexte.of(context).personZuordnenTitel,
@@ -621,29 +686,36 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   AppTexte.of(context).infoNiemandZugeordnet,
-                                  style: TextStyle(color: onSurfaceVariant, fontSize: 13),
+                                  style: TextStyle(
+                                    color: onSurfaceVariant,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _peopleFaces.length,
-                                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final item = _peopleFaces[index];
                                   return GestureDetector(
-                                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => PersonDetailScreen(
-                                        library: context.read<LibraryState>(),
-                                        person: item.person,
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => PersonDetailScreen(
+                                          library: context.read<LibraryState>(),
+                                          person: item.person,
+                                        ),
                                       ),
-                                    )),
+                                    ),
                                     child: Column(
                                       children: [
                                         Profilbild(
                                           datei: item.cropRelativePath == null
                                               ? null
                                               : widget.paths.absolute(
-                                                  item.cropRelativePath!),
+                                                  item.cropRelativePath!,
+                                                ),
                                           radius: 26,
                                           hintergrund: Colors.grey.shade800,
                                         ),
@@ -655,7 +727,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.center,
-                                            style: const TextStyle(fontSize: 11),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -678,7 +752,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         icon: asset.datumGeschaetzt
                             ? Icons.event_busy_outlined
                             : Icons.calendar_today_outlined,
-                        title: DateFormat.yMMMd(sprache).format(asset.fileCreatedAt),
+                        title: DateFormat.yMMMd(
+                          sprache,
+                        ).format(asset.fileCreatedAt),
                         // Die Zeitzone steht hinter der Uhrzeit, nicht
                         // statt ihrer: Der Zeitstempel ist und bleibt die
                         // ORTSZEIT der Kamera, und die ist die Zeit, an
@@ -699,7 +775,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         onEdit: _pickDate,
                       ),
                       _IconDetailRow(
-                        icon: asset.type == 'VIDEO' ? Icons.videocam_outlined : Icons.image_outlined,
+                        icon: asset.type == 'VIDEO'
+                            ? Icons.videocam_outlined
+                            : Icons.image_outlined,
                         title: asset.originalFileName,
                         subtitle: _fileDetailsSubtitle(asset),
                       ),
@@ -715,11 +793,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           icon: Icons.auto_fix_high_outlined,
                           title: AppTexte.of(context).infoBearbeitet,
                           subtitle: AppTexte.of(context).infoOriginalUnberuehrt(
-                              _bearbeitungstext(AppTexte.of(context))),
+                            _bearbeitungstext(AppTexte.of(context)),
+                          ),
                           onEdit: _originalWiederherstellen,
                           editIcon: Icons.restore,
-                          editTooltip:
-                              AppTexte.of(context).infoOriginalHerstellen,
+                          editTooltip: AppTexte.of(
+                            context,
+                          ).infoOriginalHerstellen,
                         ),
                       if (kameraTitel != null || werte.isNotEmpty)
                         _Aufnahmeblock(
@@ -738,12 +818,16 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           icon: asset.ortGeerbt
                               ? Icons.share_location_outlined
                               : Icons.location_on_outlined,
-                          title: asset.locationCity ?? AppTexte.of(context).infoStandortBekannt,
+                          title:
+                              asset.locationCity ??
+                              AppTexte.of(context).infoStandortBekannt,
                           subtitle: asset.ortGeerbt
                               ? AppTexte.of(context).infoOrtGeerbt
                               : asset.locationCity != null
-                                  ? (regionParts.isEmpty ? null : regionParts.join(', '))
-                                  : AppTexte.of(context).infoOrtNichtAufgeloest,
+                              ? (regionParts.isEmpty
+                                    ? null
+                                    : regionParts.join(', '))
+                              : AppTexte.of(context).infoOrtNichtAufgeloest,
                           onEdit: _clearLocation,
                           editIcon: Icons.close,
                           editTooltip: AppTexte.of(context).infoOrtEntfernen,
@@ -751,7 +835,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                       if (asset.isStackCover && asset.stackSize != null) ...[
                         _IconDetailRow(
                           icon: Icons.filter_none_outlined,
-                          title: AppTexte.of(context).infoSerie(asset.stackSize!),
+                          title: AppTexte.of(
+                            context,
+                          ).infoSerie(asset.stackSize!),
                           subtitle: AppTexte.of(context).infoNurTitelbild,
                           onEdit: _unstack,
                           editIcon: Icons.close,
@@ -769,9 +855,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             child: TextButton.icon(
                               onPressed: _serieVergleichen,
                               icon: const Icon(
-                                  Icons.face_retouching_natural, size: 18),
-                              label: Text(AppTexte.of(context)
-                                  .serienvergleichOeffnen),
+                                Icons.face_retouching_natural,
+                                size: 18,
+                              ),
+                              label: Text(
+                                AppTexte.of(context).serienvergleichOeffnen,
+                              ),
                             ),
                           ),
                         ),
@@ -801,14 +890,20 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             child: TextField(
                               controller: _tagController,
                               decoration: InputDecoration(
-                                hintText: AppTexte.of(context).infoTagHinzufuegenPlatzhalter,
+                                hintText: AppTexte.of(
+                                  context,
+                                ).infoTagHinzufuegenPlatzhalter,
                                 isDense: true,
                                 border: const OutlineInputBorder(),
                               ),
                               onSubmitted: (_) => _addTag(),
                             ),
                           ),
-                          IconButton(icon: const Icon(Icons.add), tooltip: AppTexte.of(context).auswTagHinzufuegen, onPressed: _addTag),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            tooltip: AppTexte.of(context).auswTagHinzufuegen,
+                            onPressed: _addTag,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -820,7 +915,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                 // wo auf der Karte er liegt.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -829,8 +928,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           decoration: InputDecoration(
                             isDense: true,
                             labelText: AppTexte.of(context).infoOrtSuchen,
-                            hintText: AppTexte.of(context).infoOrtSuchenBeispiel,
-                            prefixIcon: const Icon(Icons.travel_explore, size: 20),
+                            hintText: AppTexte.of(
+                              context,
+                            ).infoOrtSuchenBeispiel,
+                            prefixIcon: const Icon(
+                              Icons.travel_explore,
+                              size: 20,
+                            ),
                             border: const OutlineInputBorder(),
                           ),
                           onChanged: _ortEingabe,
@@ -844,7 +948,10 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2))
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : const Icon(Icons.search),
                         onPressed: _ortSucheLaeuft ? null : _sucheOrt,
                       ),
@@ -859,11 +966,15 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                 if (_ortVorschlaege.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                    ),
                     child: Material(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -872,8 +983,10 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             ListTile(
                               dense: true,
                               visualDensity: VisualDensity.compact,
-                              leading: const Icon(Icons.place_outlined,
-                                  size: 18),
+                              leading: const Icon(
+                                Icons.place_outlined,
+                                size: 18,
+                              ),
                               title: Text(v.name),
                               subtitle: v.herkunft.isEmpty
                                   ? null
@@ -885,15 +998,16 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                   ? null
                                   : Text(
                                       NumberFormat.compact(
-                                              locale: Localizations.localeOf(
-                                                      context)
-                                                  .toString())
-                                          .format(v.einwohner),
+                                        locale: Localizations.localeOf(
+                                          context,
+                                        ).toString(),
+                                      ).format(v.einwohner),
                                       style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant),
+                                        fontSize: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
                               onTap: () => _ortUebernehmen(v),
                             ),
@@ -925,10 +1039,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context)
-          .textTheme
-          .labelMedium
-          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -973,7 +1086,10 @@ class _IconDetailRow extends StatelessWidget {
                 Text(title),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: TextStyle(fontSize: 12, color: onSurfaceVariant)),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(fontSize: 12, color: onSurfaceVariant),
+                  ),
                 ],
               ],
             ),
@@ -1002,7 +1118,11 @@ class _Aufnahmeblock extends StatelessWidget {
   final String? objektiv;
   final List<String> werte;
 
-  const _Aufnahmeblock({required this.kamera, required this.objektiv, required this.werte});
+  const _Aufnahmeblock({
+    required this.kamera,
+    required this.objektiv,
+    required this.werte,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1014,7 +1134,11 @@ class _Aufnahmeblock extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.camera_alt_outlined, size: 20, color: farben.onSurfaceVariant),
+            child: Icon(
+              Icons.camera_alt_outlined,
+              size: 20,
+              color: farben.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -1024,15 +1148,22 @@ class _Aufnahmeblock extends StatelessWidget {
                 if (kamera != null) Text(kamera!),
                 if (objektiv != null) ...[
                   const SizedBox(height: 2),
-                  Text(objektiv!,
-                      style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant)),
+                  Text(
+                    objektiv!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: farben.onSurfaceVariant,
+                    ),
+                  ),
                 ],
                 if (werte.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                     decoration: BoxDecoration(
                       color: farben.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
@@ -1049,7 +1180,9 @@ class _Aufnahmeblock extends StatelessWidget {
                               color: farben.onSurfaceVariant,
                               // Damit die Werte zweier Fotos untereinander
                               // fluchten, wenn man durch die Bibliothek geht.
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
                       ],
@@ -1171,10 +1304,9 @@ class _KiBeschreibung extends StatelessWidget {
             Expanded(
               child: Text(
                 vonHand ? t.infoKiBeschreibungVonHand : t.infoKiBeschreibung,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: farben.onSurfaceVariant),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: farben.onSurfaceVariant,
+                ),
               ),
             ),
             for (final istDeutsch in [true, false])
@@ -1193,9 +1325,9 @@ class _KiBeschreibung extends StatelessWidget {
           focusNode: focusNode,
           maxLines: null,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontStyle: FontStyle.italic,
-                color: farben.onSurfaceVariant,
-              ),
+            fontStyle: FontStyle.italic,
+            color: farben.onSurfaceVariant,
+          ),
           decoration: InputDecoration(
             hintText: deutsch ? t.infoKiPlatzhalterDe : t.infoKiPlatzhalterEn,
             border: const UnderlineInputBorder(),
@@ -1204,11 +1336,12 @@ class _KiBeschreibung extends StatelessWidget {
         ),
         if (vonHand) ...[
           const SizedBox(height: 4),
-          Text(t.infoKiVonHandHinweis,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(color: farben.onSurfaceVariant)),
+          Text(
+            t.infoKiVonHandHinweis,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: farben.onSurfaceVariant),
+          ),
         ],
       ],
     );
@@ -1221,7 +1354,11 @@ class _Sprachknopf extends StatelessWidget {
   final String beschriftung;
   final bool aktiv;
   final VoidCallback onTap;
-  const _Sprachknopf({required this.beschriftung, required this.aktiv, required this.onTap});
+  const _Sprachknopf({
+    required this.beschriftung,
+    required this.aktiv,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

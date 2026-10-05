@@ -19,7 +19,11 @@ class LebenslaufScreen extends StatelessWidget {
   final LibraryState library;
   final PersonData person;
 
-  const LebenslaufScreen({super.key, required this.library, required this.person});
+  const LebenslaufScreen({
+    super.key,
+    required this.library,
+    required this.person,
+  });
 
   static IconData symbol(Lebenszeile z) {
     if (z.istGeburt) return Icons.child_friendly_outlined;
@@ -51,14 +55,16 @@ class LebenslaufScreen extends StatelessWidget {
       builder: (_) => const _EreignisDialog(),
     );
     if (ergebnis == null) return;
-    await library.db.fuegeEreignisHinzu(LebensereignisseCompanion.insert(
-      id: const Uuid().v4(),
-      personId: person.id,
-      art: ereignisartZuText(ergebnis.art),
-      datum: Value(ergebnis.datum),
-      ort: Value(ergebnis.ort),
-      notiz: Value(ergebnis.notiz),
-    ));
+    await library.db.fuegeEreignisHinzu(
+      LebensereignisseCompanion.insert(
+        id: const Uuid().v4(),
+        personId: person.id,
+        art: ereignisartZuText(ergebnis.art),
+        datum: Value(ergebnis.datum),
+        ort: Value(ergebnis.ort),
+        notiz: Value(ergebnis.notiz),
+      ),
+    );
   }
 
   @override
@@ -132,8 +138,9 @@ class LebenslaufScreen extends StatelessWidget {
                           ? t.lebenslaufOhneDatum
                           : '${z.datum!.day}.${z.datum!.month}.${z.datum!.year}',
                       style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 12),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                     ),
                     // Der Ortsknopf nur, wo ein Ort steht – ohne
                     // Ortsnamen gibt es nichts zu verorten.
@@ -150,7 +157,8 @@ class LebenslaufScreen extends StatelessWidget {
                       IconButton(
                         tooltip: t.allgLoeschen,
                         icon: const Icon(Icons.close, size: 18),
-                        onPressed: () => library.db.loescheEreignis(z.ereignisId!),
+                        onPressed: () =>
+                            library.db.loescheEreignis(z.ereignisId!),
                       ),
                   ],
                 ),
@@ -212,8 +220,12 @@ class _EreignisDialogState extends State<_EreignisDialog> {
                 for (final a in Ereignisart.values)
                   DropdownMenuItem(
                     value: a,
-                    child: Text(LebenslaufScreen.beschriftung(
-                        t, Lebenszeile(art: a, ereignisId: 'x'))),
+                    child: Text(
+                      LebenslaufScreen.beschriftung(
+                        t,
+                        Lebenszeile(art: a, ereignisId: 'x'),
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -223,15 +235,19 @@ class _EreignisDialogState extends State<_EreignisDialog> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _waehleDatum,
-                    child: Text(_datum == null
-                        ? t.lebenslaufOhneDatum
-                        : '${_datum!.day}.${_datum!.month}.${_datum!.year}'),
+                    child: Text(
+                      _datum == null
+                          ? t.lebenslaufOhneDatum
+                          : '${_datum!.day}.${_datum!.month}.${_datum!.year}',
+                    ),
                   ),
                 ),
                 IconButton(
                   tooltip: t.allgEntfernen,
                   icon: const Icon(Icons.clear, size: 18),
-                  onPressed: _datum == null ? null : () => setState(() => _datum = null),
+                  onPressed: _datum == null
+                      ? null
+                      : () => setState(() => _datum = null),
                 ),
               ],
             ),
@@ -248,7 +264,9 @@ class _EreignisDialogState extends State<_EreignisDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(t.allgAbbrechen)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, (
             id: '',
@@ -300,11 +318,12 @@ class _Ortsknopf extends StatelessWidget {
                 !library.geoDataAvailable
                     ? t.lebenslaufOrtOhneVerzeichnis
                     : _verortet
-                        ? t.lebenslaufOrtErkannt
-                        : t.lebenslaufOrtUnbekannt,
+                    ? t.lebenslaufOrtErkannt
+                    : t.lebenslaufOrtUnbekannt,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               MiniLocationMap(
@@ -312,8 +331,11 @@ class _Ortsknopf extends StatelessWidget {
                 longitude: ereignis.ortLaenge,
                 height: 220,
                 onLocationChanged: (breite, laenge) async {
-                  await library.db.setzeEreignisort(ereignis.id,
-                      breite: breite, laenge: laenge);
+                  await library.db.setzeEreignisort(
+                    ereignis.id,
+                    breite: breite,
+                    laenge: laenge,
+                  );
                   if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                 },
               ),

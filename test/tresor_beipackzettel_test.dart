@@ -33,7 +33,9 @@ void main() {
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_beipack_');
     db = AppDatabase(NativeDatabase.memory());
-    pfade = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+    pfade = await StoragePaths.forTesting(
+      Directory(p.join(wurzel.path, 'lib')),
+    );
     bib = LibraryState()
       ..db = db
       ..paths = pfade;
@@ -64,7 +66,11 @@ void main() {
     final asset = await foto();
     await bib.writeXmpSidecars().drain<void>();
     final zettel = beipackzettel(asset);
-    expect(zettel.existsSync(), isTrue, reason: 'die Beilage muss erst da sein');
+    expect(
+      zettel.existsSync(),
+      isTrue,
+      reason: 'die Beilage muss erst da sein',
+    );
     expect(zettel.readAsStringSync(), contains('Termin beim Anwalt'));
 
     await bib.setupVaultPin('1234');
@@ -74,10 +80,16 @@ void main() {
     // Als Bytes gelesen, nicht als Text: Chiffrat ist kein UTF-8, und ein
     // Lesefehler wäre eine unklarere Auskunft als ein Vergleich.
     final roh = zettel.readAsBytesSync();
-    expect(String.fromCharCodes(roh.take(4)), 'PVE2',
-        reason: 'die Kennung des Tresorformats');
-    expect(String.fromCharCodes(roh), isNot(contains('Termin beim Anwalt')),
-        reason: 'die Beschreibung stand im Klartext neben dem Chiffrat');
+    expect(
+      String.fromCharCodes(roh.take(4)),
+      'PVE2',
+      reason: 'die Kennung des Tresorformats',
+    );
+    expect(
+      String.fromCharCodes(roh),
+      isNot(contains('Termin beim Anwalt')),
+      reason: 'die Beschreibung stand im Klartext neben dem Chiffrat',
+    );
     expect(String.fromCharCodes(roh), isNot(contains('Scheidung')));
   });
 
@@ -90,8 +102,11 @@ void main() {
     await bib.lockAsset(asset);
     await bib.unlockAsset((await db.assetById(asset.id))!);
 
-    expect(beipackzettel(asset).readAsBytesSync(), vorher,
-        reason: 'Byte für Byte dasselbe');
+    expect(
+      beipackzettel(asset).readAsBytesSync(),
+      vorher,
+      reason: 'Byte für Byte dasselbe',
+    );
   });
 
   test('endgültiges Löschen nimmt ihn mit', () async {

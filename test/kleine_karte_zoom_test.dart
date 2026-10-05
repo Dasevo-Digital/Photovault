@@ -15,12 +15,12 @@ import 'package:photo_vault/widgets/wisch_zoom.dart';
 /// überhaupt nicht zoomen.
 void main() {
   Widget karte() => const MaterialApp(
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: MiniLocationMap(latitude: 51.9, longitude: 10.4, height: 300),
-        ),
-      );
+    localizationsDelegates: AppTexte.localizationsDelegates,
+    supportedLocales: AppTexte.supportedLocales,
+    home: Scaffold(
+      body: MiniLocationMap(latitude: 51.9, longitude: 10.4, height: 300),
+    ),
+  );
 
   testWidgets('sie trägt beide Zoomknöpfe', (tester) async {
     await tester.pumpWidget(karte());
@@ -32,8 +32,9 @@ void main() {
   testWidgets('der Knopf ändert die Stufe wirklich', (tester) async {
     await tester.pumpWidget(karte());
     await tester.pump();
-    final steuerung =
-        tester.widget<FlutterMap>(find.byType(FlutterMap)).mapController!;
+    final steuerung = tester
+        .widget<FlutterMap>(find.byType(FlutterMap))
+        .mapController!;
     final vorher = steuerung.camera.zoom;
 
     await tester.tap(find.byIcon(Icons.add));
@@ -45,8 +46,9 @@ void main() {
     expect(steuerung.camera.zoom, vorher);
   });
 
-  testWidgets('sie hängt im Wischzoom – sonst zoomt keine Magic Mouse',
-      (tester) async {
+  testWidgets('sie hängt im Wischzoom – sonst zoomt keine Magic Mouse', (
+    tester,
+  ) async {
     await tester.pumpWidget(karte());
     await tester.pump();
     expect(find.byType(WischZoom), findsOneWidget);
@@ -61,7 +63,8 @@ void main() {
     await tester.sendEventToBinding(zeiger.panZoomStart(mitte));
     await tester.pump();
     await tester.sendEventToBinding(
-        zeiger.panZoomUpdate(mitte, pan: const Offset(0, -120)));
+      zeiger.panZoomUpdate(mitte, pan: const Offset(0, -120)),
+    );
     await tester.pump();
     await tester.sendEventToBinding(zeiger.panZoomEnd());
     await tester.pump();
@@ -70,7 +73,10 @@ void main() {
     // bleibt, was es war.
     final karteWidget = tester.widget<FlutterMap>(find.byType(FlutterMap));
     final steuerung = karteWidget.mapController!;
-    expect(steuerung.camera.zoom, greaterThan(karteWidget.options.initialZoom),
-        reason: 'Wischen nach oben muss heranzoomen');
+    expect(
+      steuerung.camera.zoom,
+      greaterThan(karteWidget.options.initialZoom),
+      reason: 'Wischen nach oben muss heranzoomen',
+    );
   });
 }

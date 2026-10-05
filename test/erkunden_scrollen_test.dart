@@ -47,8 +47,9 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     library = LibraryState()
       ..db = db
-      ..paths =
-          await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'lib')));
+      ..paths = await StoragePaths.forTesting(
+        Directory(p.join(wurzel.path, 'lib')),
+      );
   });
 
   tearDown(() async {
@@ -62,28 +63,40 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   }
 
-  Future<void> aufnahme(String id, DateTime wann,
-          {double? breite, double? laenge, bool papierkorb = false}) =>
-      db.into(db.assets).insert(AssetsCompanion.insert(
-            id: id,
-            originalFileName: '$id.jpg',
-            relativePath: 'originals/$id.jpg',
-            checksum: 'pruef-$id',
-            type: 'IMAGE',
-            fileCreatedAt: wann,
-            importedAt: wann,
-            latitude: Value(breite),
-            longitude: Value(laenge),
-            isTrashed: Value(papierkorb),
-          ));
+  Future<void> aufnahme(
+    String id,
+    DateTime wann, {
+    double? breite,
+    double? laenge,
+    bool papierkorb = false,
+  }) => db
+      .into(db.assets)
+      .insert(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: wann,
+          importedAt: wann,
+          latitude: Value(breite),
+          longitude: Value(laenge),
+          isTrashed: Value(papierkorb),
+        ),
+      );
 
   /// Eine Bibliothek, in der jeder Abschnitt etwas zu zeigen hat – sonst
   /// sind alle Streifen gleich flach, und genau die Hoehenunterschiede
   /// sind hier die Frage.
   Future<void> gefuellteBibliothek() async {
     for (var i = 0; i < 40; i++) {
-      await aufnahme('a$i', DateTime(2026, 5, 1).add(Duration(days: i)),
-          breite: 52.2 + i * 0.01, laenge: 9.8 + i * 0.01);
+      await aufnahme(
+        'a$i',
+        DateTime(2026, 5, 1).add(Duration(days: i)),
+        breite: 52.2 + i * 0.01,
+        laenge: 9.8 + i * 0.01,
+      );
     }
     // „An diesem Tag" braucht Aufnahmen von heute in frueheren Jahren –
     // und eine krumme Uhrzeit: Volle Stunden gelten seit 3.13.0 als
@@ -92,27 +105,37 @@ void main() {
     final heute = DateTime.now();
     for (var j = 1; j <= 5; j++) {
       await aufnahme(
-          'e$j', DateTime(heute.year - j, heute.month, heute.day, 12, 17),
-          breite: 52.3, laenge: 9.7);
+        'e$j',
+        DateTime(heute.year - j, heute.month, heute.day, 12, 17),
+        breite: 52.3,
+        laenge: 9.7,
+      );
     }
     for (var i = 0; i < 6; i++) {
       await aufnahme('p$i', DateTime(2026, 4, 1 + i), papierkorb: true);
     }
     for (var i = 0; i < 12; i++) {
-      await db.createPerson(PeopleCompanion.insert(id: 'per$i', name: 'Person $i'));
+      await db.createPerson(
+        PeopleCompanion.insert(id: 'per$i', name: 'Person $i'),
+      );
     }
     for (var i = 0; i < 10; i++) {
-      await db.createAlbum(AlbumsCompanion.insert(
-          id: 'alb$i', name: 'Album $i', createdAt: DateTime(2026, 3, 1 + i)));
+      await db.createAlbum(
+        AlbumsCompanion.insert(
+          id: 'alb$i',
+          name: 'Album $i',
+          createdAt: DateTime(2026, 3, 1 + i),
+        ),
+      );
     }
   }
 
   Widget rahmen(Widget kind) => MaterialApp(
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        locale: const Locale('de'),
-        home: Scaffold(body: kind),
-      );
+    localizationsDelegates: AppTexte.localizationsDelegates,
+    supportedLocales: AppTexte.supportedLocales,
+    locale: const Locale('de'),
+    home: Scaffold(body: kind),
+  );
 
   /// Die senkrechte Rollflaeche der Seite – unabhaengig davon, welches
   /// Widget sie gerade herstellt. Die waagerechten Streifen darin haben
@@ -122,8 +145,9 @@ void main() {
       .firstWhere((s) => s.position.axis == Axis.vertical)
       .position;
 
-  testWidgets('nach dem Papierkorb bleibt die Rueckfahrt an ihrem Platz',
-      (tester) async {
+  testWidgets('nach dem Papierkorb bleibt die Rueckfahrt an ihrem Platz', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1830, 1000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -156,17 +180,26 @@ void main() {
       await tester.dragFrom(mitte, const Offset(0, 120));
       await tester.pump();
       gezogen += vorher - pos.pixels;
-      expect(vorher - pos.pixels, lessThan(200),
-          reason: 'ein Zug von 120 Punkten darf die Seite nicht weiter '
-              'bewegen als 120 Punkte – gesprungen bei Zug ${i + 1}');
+      expect(
+        vorher - pos.pixels,
+        lessThan(200),
+        reason:
+            'ein Zug von 120 Punkten darf die Seite nicht weiter '
+            'bewegen als 120 Punkte – gesprungen bei Zug ${i + 1}',
+      );
     }
-    expect(gezogen, greaterThan(600), reason: 'es muss sich ueberhaupt bewegen');
+    expect(
+      gezogen,
+      greaterThan(600),
+      reason: 'es muss sich ueberhaupt bewegen',
+    );
 
     await abbauen(tester);
   });
 
-  testWidgets('die Gesamthoehe bleibt stabil, egal wo man steht',
-      (tester) async {
+  testWidgets('die Gesamthoehe bleibt stabil, egal wo man steht', (
+    tester,
+  ) async {
     // Die Ursache selbst, ohne den Umweg ueber die Rollposition: Eine
     // faule Liste schaetzte hier je nach Standort zwischen 352 und 2810.
     tester.view.physicalSize = const Size(1830, 1000);
@@ -189,9 +222,13 @@ void main() {
 
     final kleinste = gesehen.reduce((a, b) => a < b ? a : b);
     final groesste = gesehen.reduce((a, b) => a > b ? a : b);
-    expect(groesste - kleinste, lessThan(1.0),
-        reason: 'die Seite kennt ihre Hoehe, sie schaetzt sie nicht: '
-            'gesehen $gesehen');
+    expect(
+      groesste - kleinste,
+      lessThan(1.0),
+      reason:
+          'die Seite kennt ihre Hoehe, sie schaetzt sie nicht: '
+          'gesehen $gesehen',
+    );
 
     await abbauen(tester);
   });

@@ -115,8 +115,9 @@ List<Rohpunkt> liesGpxPunkte(String inhalt) {
       // `<ele>` ist der Grund für diese Stufe. Bis hierher wurde es
       // gelesen und weggeworfen – ohne Höhe gibt es kein Profil.
       final hoeheText = e.getElement('ele')?.innerText.trim();
-      final hoehe =
-          (hoeheText == null || hoeheText.isEmpty) ? null : double.tryParse(hoeheText);
+      final hoehe = (hoeheText == null || hoeheText.isEmpty)
+          ? null
+          : double.tryParse(hoeheText);
       punkte.add((zeit: zeit, breite: breite, laenge: laenge, hoehe: hoehe));
     }
   }
@@ -134,8 +135,12 @@ List<Rohpunkt> liesGpxPunkte(String inhalt) {
 double spurlaengeKm(List<({double breite, double laenge})> punkte) {
   var summe = 0.0;
   for (var i = 1; i < punkte.length; i++) {
-    summe += ReverseGeocoder.haversineKm(punkte[i - 1].breite,
-        punkte[i - 1].laenge, punkte[i].breite, punkte[i].laenge);
+    summe += ReverseGeocoder.haversineKm(
+      punkte[i - 1].breite,
+      punkte[i - 1].laenge,
+      punkte[i].breite,
+      punkte[i].laenge,
+    );
   }
   return summe;
 }
@@ -168,13 +173,20 @@ const int hoehenGlaettung = 5;
 /// Richtung des vorletzten – ein Anstieg verlöre an beiden Enden Meter,
 /// die er hatte. Auf einer gleichmässigen Steigung ändert dieses Mitteln
 /// gar nichts, und genau das soll es.
-List<double> geglaetteteHoehen(List<double> hoehen, {int fenster = hoehenGlaettung}) {
+List<double> geglaetteteHoehen(
+  List<double> hoehen, {
+  int fenster = hoehenGlaettung,
+}) {
   if (fenster <= 1 || hoehen.length < 3) return hoehen;
   final halb = fenster ~/ 2;
   return [
     for (var i = 0; i < hoehen.length; i++)
       () {
-        final h = [halb, i, hoehen.length - 1 - i].reduce((a, b) => a < b ? a : b);
+        final h = [
+          halb,
+          i,
+          hoehen.length - 1 - i,
+        ].reduce((a, b) => a < b ? a : b);
         if (h == 0) return hoehen[i];
         var summe = 0.0;
         for (var k = i - h; k <= i + h; k++) {
@@ -201,10 +213,7 @@ List<double> geglaetteteHoehen(List<double> hoehen, {int fenster = hoehenGlaettu
   double schwelle = hoehenSchwelle,
   int glaettung = hoehenGlaettung,
 }) {
-  final vorhanden = [
-    for (final h in hoehen)
-      ?h,
-  ];
+  final vorhanden = [for (final h in hoehen) ?h];
   final reihe = geglaetteteHoehen(vorhanden, fenster: glaettung);
   if (reihe.isEmpty) return (aufstieg: 0, abstieg: 0);
 
@@ -241,13 +250,18 @@ typedef Profilpunkt = ({double km, double hoehe, int index});
 /// Punkte ohne Höhe fallen heraus, **nachdem** ihre Strecke gezählt
 /// wurde: Ein Loch in den Höhenangaben ist kein Loch im Weg.
 List<Profilpunkt> profilpunkte(
-    List<({double breite, double laenge, double? hoehe})> punkte) {
+  List<({double breite, double laenge, double? hoehe})> punkte,
+) {
   final ergebnis = <Profilpunkt>[];
   var strecke = 0.0;
   for (var i = 0; i < punkte.length; i++) {
     if (i > 0) {
-      strecke += ReverseGeocoder.haversineKm(punkte[i - 1].breite,
-          punkte[i - 1].laenge, punkte[i].breite, punkte[i].laenge);
+      strecke += ReverseGeocoder.haversineKm(
+        punkte[i - 1].breite,
+        punkte[i - 1].laenge,
+        punkte[i].breite,
+        punkte[i].laenge,
+      );
     }
     final h = punkte[i].hoehe;
     if (h != null) ergebnis.add((km: strecke, hoehe: h, index: i));
@@ -272,19 +286,18 @@ typedef Spurkennzahlen = ({
 /// Rechnet die Kennzahlen einer Spur – einmal beim Einlesen, nicht bei
 /// jeder Anzeige.
 Spurkennzahlen spurkennzahlen(List<Rohpunkt> punkte) {
-  final zeiten = [
-    for (final p in punkte)
-      ?p.zeit,
-  ]..sort();
+  final zeiten = [for (final p in punkte) ?p.zeit]..sort();
   final mitHoehe = punkte.any((p) => p.hoehe != null);
-  final bilanz =
-      mitHoehe ? hoehenbilanz([for (final p in punkte) p.hoehe]) : null;
+  final bilanz = mitHoehe
+      ? hoehenbilanz([for (final p in punkte) p.hoehe])
+      : null;
   return (
     von: zeiten.isEmpty ? null : zeiten.first,
     bis: zeiten.isEmpty ? null : zeiten.last,
     punktzahl: punkte.length,
-    laengeKm: spurlaengeKm(
-        [for (final p in punkte) (breite: p.breite, laenge: p.laenge)]),
+    laengeKm: spurlaengeKm([
+      for (final p in punkte) (breite: p.breite, laenge: p.laenge),
+    ]),
     aufstieg: bilanz?.aufstieg,
     abstieg: bilanz?.abstieg,
   );
@@ -350,8 +363,7 @@ const Duration gpxRandtoleranz = Duration(minutes: 5);
   if (luecke.inMilliseconds == 0) {
     return (breite: vor.breite, laenge: vor.laenge);
   }
-  final anteil =
-      z.difference(vor.zeit).inMilliseconds / luecke.inMilliseconds;
+  final anteil = z.difference(vor.zeit).inMilliseconds / luecke.inMilliseconds;
   return (
     breite: vor.breite + (nach.breite - vor.breite) * anteil,
     laenge: vor.laenge + (nach.laenge - vor.laenge) * anteil,
@@ -364,8 +376,8 @@ const Duration gpxRandtoleranz = Duration(minutes: 5);
 /// halbe Stunden von UTC entfernt (die drei Viertelstunden-Zonen –
 /// Nepal, Chatham – fallen durch und lassen sich von Hand einstellen).
 List<Duration> gpxVersatzkandidaten() => [
-      for (var m = -14 * 60; m <= 14 * 60; m += 30) Duration(minutes: m),
-    ];
+  for (var m = -14 * 60; m <= 14 * 60; m += 30) Duration(minutes: m),
+];
 
 /// Sucht den Zeitversatz, bei dem die meisten Aufnahmen auf die Spur
 /// passen.
@@ -392,8 +404,12 @@ Duration besterVersatz(
   for (final versatz in kandidaten ?? gpxVersatzkandidaten()) {
     var treffer = 0;
     for (final z in liste) {
-      if (ortZurZeit(spur, z.add(versatz),
-              hoechsteLuecke: hoechsteLuecke, randtoleranz: randtoleranz) !=
+      if (ortZurZeit(
+            spur,
+            z.add(versatz),
+            hoechsteLuecke: hoechsteLuecke,
+            randtoleranz: randtoleranz,
+          ) !=
           null) {
         treffer++;
       }
@@ -418,12 +434,14 @@ List<Verortung> verorteAusSpur(
   Duration versatz = Duration.zero,
   Duration hoechsteLuecke = gpxHoechsteLuecke,
   Duration randtoleranz = gpxRandtoleranz,
-}) =>
-    [
-      for (final a in aufnahmen)
-        if (ortZurZeit(spur, a.zeit.add(versatz),
-                hoechsteLuecke: hoechsteLuecke,
-                randtoleranz: randtoleranz)
-            case final ort?)
-          (assetId: a.id, breite: ort.breite, laenge: ort.laenge),
-    ];
+}) => [
+  for (final a in aufnahmen)
+    if (ortZurZeit(
+          spur,
+          a.zeit.add(versatz),
+          hoechsteLuecke: hoechsteLuecke,
+          randtoleranz: randtoleranz,
+        )
+        case final ort?)
+      (assetId: a.id, breite: ort.breite, laenge: ort.laenge),
+];

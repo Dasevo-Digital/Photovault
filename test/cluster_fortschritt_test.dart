@@ -16,31 +16,37 @@ void main() {
   /// ankommen (L2-normalisiert). Die Kosinus-Ähnlichkeit ist dann der
   /// Kosinus des Winkelabstands.
   Map<String, Float32List> streuung(int anzahl) => {
-        for (var i = 0; i < anzahl; i++)
-          'f$i': Float32List.fromList([
-            math.cos(2 * math.pi * i / anzahl),
-            math.sin(2 * math.pi * i / anzahl),
-          ]),
-      };
+    for (var i = 0; i < anzahl; i++)
+      'f$i': Float32List.fromList([
+        math.cos(2 * math.pi * i / anzahl),
+        math.sin(2 * math.pi * i / anzahl),
+      ]),
+  };
 
-  test('der Anteil läuft von knapp über 0 bis 1 und niemals rückwärts', () async {
-    final gemeldet = <double>[];
-    final lauf = await starteFaceClustering(
-      streuung(300),
-      0.9,
-      beiFortschritt: gemeldet.add,
-    );
-    final gruppen = await lauf.ergebnis;
+  test(
+    'der Anteil läuft von knapp über 0 bis 1 und niemals rückwärts',
+    () async {
+      final gemeldet = <double>[];
+      final lauf = await starteFaceClustering(
+        streuung(300),
+        0.9,
+        beiFortschritt: gemeldet.add,
+      );
+      final gruppen = await lauf.ergebnis;
 
-    expect(gruppen, isNotNull);
-    expect(gemeldet, isNotEmpty);
-    expect(gemeldet.first, lessThan(0.5));
-    expect(gemeldet.last, closeTo(1.0, 1e-9));
-    for (var i = 1; i < gemeldet.length; i++) {
-      expect(gemeldet[i], greaterThanOrEqualTo(gemeldet[i - 1]),
-          reason: 'ein Balken darf nicht zurückspringen');
-    }
-  });
+      expect(gruppen, isNotNull);
+      expect(gemeldet, isNotEmpty);
+      expect(gemeldet.first, lessThan(0.5));
+      expect(gemeldet.last, closeTo(1.0, 1e-9));
+      for (var i = 1; i < gemeldet.length; i++) {
+        expect(
+          gemeldet[i],
+          greaterThanOrEqualTo(gemeldet[i - 1]),
+          reason: 'ein Balken darf nicht zurückspringen',
+        );
+      }
+    },
+  );
 
   test('der Anteil zählt Paare, nicht Zeilen', () async {
     // Der eigentliche Punkt. Nach der Hälfte der äusseren Schleife sind
@@ -59,8 +65,11 @@ void main() {
 
     // Die erste Meldung kommt nach der ersten Zeile: 399 von 79.800 Paaren
     // = 0,5 %. Nach Zeilen gerechnet wären es 0,25 %.
-    expect(gemeldet.first, greaterThan(1 / 400),
-        reason: 'die erste Zeile ist die teuerste, nicht die billigste');
+    expect(
+      gemeldet.first,
+      greaterThan(1 / 400),
+      reason: 'die erste Zeile ist die teuerste, nicht die billigste',
+    );
   });
 
   test('ein Abbruch beendet den Lauf ohne Ergebnis', () async {
@@ -82,7 +91,11 @@ void main() {
     );
 
     expect(await lauf.ergebnis, isNull);
-    expect(abgebrochen, isTrue, reason: 'der Abbruch muss mitten im Lauf erfolgt sein');
+    expect(
+      abgebrochen,
+      isTrue,
+      reason: 'der Abbruch muss mitten im Lauf erfolgt sein',
+    );
   });
 
   test('ohne Rückkanal rechnet die Funktion wie zuvor', () async {
@@ -92,9 +105,14 @@ void main() {
     final ohne = clusterFaces(FaceClusterInput(daten, 0.9));
 
     final port = ReceivePort();
-    final mit = clusterFaces(FaceClusterInput(daten, 0.9, fortschritt: port.sendPort));
+    final mit = clusterFaces(
+      FaceClusterInput(daten, 0.9, fortschritt: port.sendPort),
+    );
     port.close();
 
-    expect(mit.map((g) => g.toList()).toList(), ohne.map((g) => g.toList()).toList());
+    expect(
+      mit.map((g) => g.toList()).toList(),
+      ohne.map((g) => g.toList()).toList(),
+    );
   });
 }

@@ -49,7 +49,11 @@ class SamMaskResult {
   final double iouScore;
   final SamImageEmbedding sourceEmbedding;
 
-  const SamMaskResult({required this.logits, required this.iouScore, required this.sourceEmbedding});
+  const SamMaskResult({
+    required this.logits,
+    required this.iouScore,
+    required this.sourceEmbedding,
+  });
 }
 
 /// Kapselt On-Device-Inferenz mit einem SAM-Modell (Bild-Encoder + Prompt-/
@@ -68,7 +72,10 @@ class SegmentationService {
   final OrtSession _decoderSession;
 
   static bool _filesPresent(String modelsDir) {
-    for (final name in ['sam_vision_encoder.onnx', 'sam_prompt_mask_decoder.onnx']) {
+    for (final name in [
+      'sam_vision_encoder.onnx',
+      'sam_prompt_mask_decoder.onnx',
+    ]) {
       if (!File('$modelsDir/$name').existsSync()) return false;
     }
     return true;
@@ -78,10 +85,14 @@ class SegmentationService {
 
   static Future<SegmentationService> load(String modelsDir) async {
     final ort = OnnxRuntime();
-    final visionSession = await ort.createSession('$modelsDir/sam_vision_encoder.onnx',
-        options: modelloptionen());
-    final decoderSession = await ort.createSession('$modelsDir/sam_prompt_mask_decoder.onnx',
-        options: modelloptionen());
+    final visionSession = await ort.createSession(
+      '$modelsDir/sam_vision_encoder.onnx',
+      options: modelloptionen(),
+    );
+    final decoderSession = await ort.createSession(
+      '$modelsDir/sam_prompt_mask_decoder.onnx',
+      options: modelloptionen(),
+    );
     return SegmentationService._(visionSession, decoderSession);
   }
 
@@ -123,17 +134,28 @@ class SegmentationService {
       }
     }
 
-    final inputTensor = await OrtValue.fromList(chw, [1, 3, _samInputSize, _samInputSize]);
+    final inputTensor = await OrtValue.fromList(chw, [
+      1,
+      3,
+      _samInputSize,
+      _samInputSize,
+    ]);
     final liveTensors = <OrtValue>{inputTensor};
     try {
       final outputs = await _visionSession.run({'pixel_values': inputTensor});
       liveTensors.addAll(outputs.values);
-      final embeddingsRaw = await outputs['image_embeddings']!.asFlattenedList();
-      final positionalRaw = await outputs['image_positional_embeddings']!.asFlattenedList();
+      final embeddingsRaw = await outputs['image_embeddings']!
+          .asFlattenedList();
+      final positionalRaw = await outputs['image_positional_embeddings']!
+          .asFlattenedList();
 
       return SamImageEmbedding(
-        embeddings: Float32List.fromList(embeddingsRaw.map((e) => (e as num).toDouble()).toList()),
-        positionalEmbeddings: Float32List.fromList(positionalRaw.map((e) => (e as num).toDouble()).toList()),
+        embeddings: Float32List.fromList(
+          embeddingsRaw.map((e) => (e as num).toDouble()).toList(),
+        ),
+        positionalEmbeddings: Float32List.fromList(
+          positionalRaw.map((e) => (e as num).toDouble()).toList(),
+        ),
         scale: prep.scale,
         originalWidth: decoded.width,
         originalHeight: decoded.height,
@@ -173,14 +195,36 @@ class SegmentationService {
       labelsFlat[i] = i < foregroundPoints.length ? 1 : 0;
     }
 
-    final pointsTensor = await OrtValue.fromList(pointsFlat, [1, 1, points.length, 2]);
-    final labelsTensor = await OrtValue.fromList(labelsFlat, [1, 1, points.length]);
-    final embeddingsTensor = await OrtValue.fromList(embedding.embeddings, [1, 256, 64, 64]);
-    final positionalTensor = await OrtValue.fromList(embedding.positionalEmbeddings, [1, 256, 64, 64]);
+    final pointsTensor = await OrtValue.fromList(pointsFlat, [
+      1,
+      1,
+      points.length,
+      2,
+    ]);
+    final labelsTensor = await OrtValue.fromList(labelsFlat, [
+      1,
+      1,
+      points.length,
+    ]);
+    final embeddingsTensor = await OrtValue.fromList(embedding.embeddings, [
+      1,
+      256,
+      64,
+      64,
+    ]);
+    final positionalTensor = await OrtValue.fromList(
+      embedding.positionalEmbeddings,
+      [1, 256, 64, 64],
+    );
     // try/finally analog zu encodeImage: sichert die bis zu ~8 MB an
     // Tensoren auch bei einem Fehler mitten im Aufruf ab (Audit-Fund) –
     // relevant, da decodeMask bei jedem Punkt-Tap im Masken-Editor läuft.
-    final liveTensors = <OrtValue>{pointsTensor, labelsTensor, embeddingsTensor, positionalTensor};
+    final liveTensors = <OrtValue>{
+      pointsTensor,
+      labelsTensor,
+      embeddingsTensor,
+      positionalTensor,
+    };
 
     try {
       final outputs = await _decoderSession.run({
@@ -206,7 +250,11 @@ class SegmentationService {
         maskLogits[i] = (masksRaw[offset + i] as num).toDouble();
       }
 
-      return SamMaskResult(logits: maskLogits, iouScore: iouScores[bestIndex], sourceEmbedding: embedding);
+      return SamMaskResult(
+        logits: maskLogits,
+        iouScore: iouScores[bestIndex],
+        sourceEmbedding: embedding,
+      );
     } finally {
       for (final v in liveTensors) {
         try {
@@ -257,7 +305,13 @@ img.Image maskToOriginalResolution(SamMaskResult result) {
   );
   final resizedWidth = (embedding.originalWidth * embedding.scale).round();
   final resizedHeight = (embedding.originalHeight * embedding.scale).round();
-  final cropped = img.copyCrop(upscaledToPadded, x: 0, y: 0, width: resizedWidth, height: resizedHeight);
+  final cropped = img.copyCrop(
+    upscaledToPadded,
+    x: 0,
+    y: 0,
+    width: resizedWidth,
+    height: resizedHeight,
+  );
   return img.copyResize(
     cropped,
     width: embedding.originalWidth,
@@ -273,8 +327,18 @@ img.Image maskToOriginalResolution(SamMaskResult result) {
 /// siehe DevelopMasks.maskRelativePath). Ausgewählte (weiße) Pixel werden
 /// zu [color] mit Deckkraft [alpha], nicht ausgewählte bleiben komplett
 /// transparent.
-img.Image maskToPreviewOverlay(img.Image grayscaleMask, {required int r, required int g, required int b, int alpha = 140}) {
-  final overlay = img.Image(width: grayscaleMask.width, height: grayscaleMask.height, numChannels: 4);
+img.Image maskToPreviewOverlay(
+  img.Image grayscaleMask, {
+  required int r,
+  required int g,
+  required int b,
+  int alpha = 140,
+}) {
+  final overlay = img.Image(
+    width: grayscaleMask.width,
+    height: grayscaleMask.height,
+    numChannels: 4,
+  );
   for (var y = 0; y < grayscaleMask.height; y++) {
     for (var x = 0; x < grayscaleMask.width; x++) {
       final selected = grayscaleMask.getPixel(x, y).r > 127;
@@ -293,7 +357,12 @@ img.Image maskToPreviewOverlay(img.Image grayscaleMask, {required int r, require
 /// `compute()` vom Haupt-Isolate weg verlagert werden kann, statt bei jedem
 /// Tap kurz die UI einfrieren zu lassen.
 Uint8List renderMaskPreviewPng(SamMaskResult result) {
-  final overlay = maskToPreviewOverlay(maskToOriginalResolution(result), r: 33, g: 150, b: 243);
+  final overlay = maskToPreviewOverlay(
+    maskToOriginalResolution(result),
+    r: 33,
+    g: 150,
+    b: 243,
+  );
   return Uint8List.fromList(img.encodePng(overlay));
 }
 

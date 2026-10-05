@@ -59,14 +59,14 @@ class Meldung {
   });
 
   Meldung nochmal(DateTime zeit) => Meldung(
-        nummer: nummer,
-        art: art,
-        text: text,
-        zeit: zeit,
-        aktion: aktion,
-        dauer: dauer,
-        anzahl: anzahl + 1,
-      );
+    nummer: nummer,
+    art: art,
+    text: text,
+    zeit: zeit,
+    aktion: aktion,
+    dauer: dauer,
+    anzahl: anzahl + 1,
+  );
 }
 
 /// Wie lange eine Meldung stehen bleibt – `null` heisst: bis jemand sie
@@ -100,8 +100,12 @@ Duration? meldungsdauer(Meldungsart art, {bool mitAktion = false}) =>
 /// **Meldungen mit Knopf gehen nie ineinander auf.** Der Knopf gehört zu
 /// genau einem Vorgang; „Rückgängig" an einer zusammengefassten Meldung
 /// nähme die falsche Löschung zurück.
-bool gehtAufIn(Meldung stehende, Meldungsart art, String text,
-        {required bool hatAktion}) =>
+bool gehtAufIn(
+  Meldung stehende,
+  Meldungsart art,
+  String text, {
+  required bool hatAktion,
+}) =>
     !hatAktion &&
     stehende.aktion == null &&
     stehende.art == art &&
@@ -149,8 +153,9 @@ class Meldungsdienst extends ChangeNotifier {
   }) {
     final jetzt = DateTime.now();
 
-    final stelle = _sichtbare
-        .indexWhere((m) => gehtAufIn(m, art, text, hatAktion: aktion != null));
+    final stelle = _sichtbare.indexWhere(
+      (m) => gehtAufIn(m, art, text, hatAktion: aktion != null),
+    );
     if (stelle >= 0) {
       final gebuendelt = _sichtbare[stelle].nochmal(jetzt);
       _sichtbare[stelle] = gebuendelt;

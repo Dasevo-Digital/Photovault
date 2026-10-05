@@ -74,12 +74,15 @@ class BackupProgress {
   /// Hinweis sähe es aus, als finge der Lauf von vorne an.
   final bool ausschnitteNeu;
 
-  BackupProgress(this.done, this.total,
-      {this.currentFile,
-      this.grenzeOffen,
-      this.fehlgeschlagen,
-      this.uebernommeneZeilen,
-      this.ausschnitteNeu = false});
+  BackupProgress(
+    this.done,
+    this.total, {
+    this.currentFile,
+    this.grenzeOffen,
+    this.fehlgeschlagen,
+    this.uebernommeneZeilen,
+    this.ausschnitteNeu = false,
+  });
 }
 
 /// Kopiert die Bibliothek manuell in einen vom Nutzer gewählten Ordner.
@@ -97,7 +100,7 @@ class BackupProgress {
 /// Rechner allein mit der Passphrase wiederherstellen lässt.
 class BackupService {
   BackupService(this._db, this._paths, {Directory? zwischenlager})
-      : _festesZwischenlager = zwischenlager;
+    : _festesZwischenlager = zwischenlager;
 
   final AppDatabase _db;
   final StoragePaths _paths;
@@ -169,8 +172,10 @@ class BackupService {
         // Kein Platz (oder sonst ein Problem) im Zwischenlager. Merken,
         // damit die nächste grosse Datei den Umweg gar nicht erst geht.
         _zwischenlagerGrenze = quellGroesse;
-        debugPrint('Zwischenlager fasst $quellGroesse Bytes nicht ($e) – '
-            'ab jetzt wird neben dem Ziel geschrieben');
+        debugPrint(
+          'Zwischenlager fasst $quellGroesse Bytes nicht ($e) – '
+          'ab jetzt wird neben dem Ziel geschrieben',
+        );
         await _wegwerfen(zwischen);
       }
       if (imLager) {
@@ -226,8 +231,9 @@ class BackupService {
     SecretKey? encryptionKey,
     int maxBytesPerRun = 0,
   }) async* {
-    final backupRoot =
-        Directory(p.join(destinationRootPath, _backupFolderName));
+    final backupRoot = Directory(
+      p.join(destinationRootPath, _backupFolderName),
+    );
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
 
@@ -250,7 +256,8 @@ class BackupService {
     // Zwischenlager – warum und was passiert, wenn es nicht reicht: siehe
     // [_ueberZwischendatei]. Geht es verloren (Neustart), entsteht kein
     // Schaden: Markiert wird erst nach erfolgreicher Ablage im Ziel.
-    final staging = _festesZwischenlager ??
+    final staging =
+        _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_backup_stage_');
 
     final pending = await _db.assetsNotBackedUp();
@@ -265,12 +272,14 @@ class BackupService {
     // Backup (encryptionKey != null) würde eine im Klartext danebenliegende
     // .xmp-Datei genau die Vertraulichkeit unterlaufen, die der Nutzer mit der
     // Backup-Passphrase gerade herstellen wollte.
-    final tagsByAssetId =
-        encryptionKey == null ? await _db.allTagNamesByAssetId() : null;
+    final tagsByAssetId = encryptionKey == null
+        ? await _db.allTagNamesByAssetId()
+        : null;
     // Aus demselben Grund: Ein Name neben einem verschlüsselten Foto sagt
     // mehr aus als das Foto selbst.
-    final gesichterByAssetId =
-        encryptionKey == null ? await _db.alleGesichtsregionen() : null;
+    final gesichterByAssetId = encryptionKey == null
+        ? await _db.alleGesichtsregionen()
+        : null;
 
     yield BackupProgress(0, pending.length);
 
@@ -294,15 +303,25 @@ class BackupService {
             // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
             // sich so ein Backup auch ohne die App durchsehen lässt.
             final target = encryptionKey != null
-                ? File(p.join(
-                    backupRoot.path,
-                    VerschluesselteNamen.ordner,
-                    await VerschluesselteNamen.fuerPruefsumme(
-                        asset.checksum, encryptionKey)))
-                : File(p.join(
-                    originalsOut.path,
-                    asset.relativePath.replaceFirst(
-                        'originals${Platform.pathSeparator}', '')));
+                ? File(
+                    p.join(
+                      backupRoot.path,
+                      VerschluesselteNamen.ordner,
+                      await VerschluesselteNamen.fuerPruefsumme(
+                        asset.checksum,
+                        encryptionKey,
+                      ),
+                    ),
+                  )
+                : File(
+                    p.join(
+                      originalsOut.path,
+                      asset.relativePath.replaceFirst(
+                        'originals${Platform.pathSeparator}',
+                        '',
+                      ),
+                    ),
+                  );
             await target.parent.create(recursive: true);
 
             final quellGroesse = await source.length();
@@ -313,7 +332,10 @@ class BackupService {
               schreibe: (zwischen) async {
                 if (encryptionKey != null) {
                   await VaultCrypto.encryptFile(
-                      source, zwischen, encryptionKey);
+                    source,
+                    zwischen,
+                    encryptionKey,
+                  );
                 } else {
                   await source.copy(zwischen.path);
                 }
@@ -338,12 +360,17 @@ class BackupService {
           // dran. Gezählt wird sie trotzdem, sonst sähe ein Lauf mit
           // Ausfällen aus wie ein vollständiger.
           fehlgeschlagen++;
-          debugPrint('Sicherung von ${asset.originalFileName} '
-              'fehlgeschlagen: $e');
+          debugPrint(
+            'Sicherung von ${asset.originalFileName} '
+            'fehlgeschlagen: $e',
+          );
         }
         done++;
-        yield BackupProgress(done, pending.length,
-            currentFile: asset.originalFileName);
+        yield BackupProgress(
+          done,
+          pending.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       // Reste immer wegräumen, auch bei Fehlern – aber nur das selbst
@@ -356,8 +383,10 @@ class BackupService {
           // gesagt werden: Im Zwischenlager liegen die Dateien im
           // KLARTEXT. Bleibt es stehen, bleibt der Klartext liegen, und
           // ein stiller Fehlschlag hiesse, dass niemand davon erfaehrt.
-          debugPrint('Zwischenlager ${staging.path} nicht geloescht: $e - '
-              'es enthaelt unverschluesselte Dateien.');
+          debugPrint(
+            'Zwischenlager ${staging.path} nicht geloescht: $e - '
+            'es enthaelt unverschluesselte Dateien.',
+          );
         }
       }
     }
@@ -371,16 +400,18 @@ class BackupService {
       await _writeKeyEnvelope(backupRoot);
     }
 
-    await _db.insertBackupRecord(BackupRecordsCompanion.insert(
-      id: _uuid.v4(),
-      performedAt: DateTime.now(),
-      destinationPath: destinationRootPath,
-      // Nur die tatsächlich gesicherten Dateien zählen, nicht die geplanten –
-      // sonst behauptet der Bericht bei einem begrenzten Lauf mehr, als er
-      // geschafft hat.
-      fileCount: backedUpIds.length,
-      totalBytes: totalBytes,
-    ));
+    await _db.insertBackupRecord(
+      BackupRecordsCompanion.insert(
+        id: _uuid.v4(),
+        performedAt: DateTime.now(),
+        destinationPath: destinationRootPath,
+        // Nur die tatsächlich gesicherten Dateien zählen, nicht die geplanten –
+        // sonst behauptet der Bericht bei einem begrenzten Lauf mehr, als er
+        // geschafft hat.
+        fileCount: backedUpIds.length,
+        totalBytes: totalBytes,
+      ),
+    );
 
     // Abschließende Meldung macht sichtbar, dass noch etwas aussteht –
     // sonst wirkt ein begrenzter Lauf wie ein vollständiges Backup.
@@ -394,8 +425,11 @@ class BackupService {
     // Nach der Mengenmeldung, damit sie das letzte Wort hat: Ausgelassene
     // Dateien sind die wichtigere Nachricht.
     if (fehlgeschlagen > 0) {
-      yield BackupProgress(done, pending.length,
-          fehlgeschlagen: fehlgeschlagen);
+      yield BackupProgress(
+        done,
+        pending.length,
+        fehlgeschlagen: fehlgeschlagen,
+      );
     }
   }
 
@@ -440,8 +474,10 @@ class BackupService {
   /// **Was eine frühere Sicherung enthält, ändert sich dadurch nicht.**
   /// Wer ein Foto sperrt, nachdem es gesichert wurde, findet es weiter im
   /// Sicherungsziel: Dort wird nie gelöscht, und das ist Absicht.
-  Future<void> _writeMetadataExport(Directory backupRoot,
-      {SecretKey? encryptionKey}) async {
+  Future<void> _writeMetadataExport(
+    Directory backupRoot, {
+    SecretKey? encryptionKey,
+  }) async {
     final allAssets = await _db.assetsFuerMetadatenexport();
     final albums = await _db.select(_db.albums).get();
     // Eine einzige Abfrage für alle Tags statt einer pro Foto (N+1-Problem
@@ -504,8 +540,9 @@ class BackupService {
     };
 
     final file = File(p.join(backupRoot.path, 'metadata.json'));
-    final jsonBytes =
-        utf8.encode(const JsonEncoder.withIndent('  ').convert(export));
+    final jsonBytes = utf8.encode(
+      const JsonEncoder.withIndent('  ').convert(export),
+    );
 
     if (encryptionKey == null) {
       await file.writeAsBytes(jsonBytes);
@@ -603,10 +640,17 @@ class BackupService {
       if (await metadataFile.exists()) {
         File zuLesen = metadataFile;
         if (decryptionKey != null) {
-          entschluesselteMetadaten = File(p.join(Directory.systemTemp.path,
-              'photovault_restore_${_uuid.v4()}.json'));
+          entschluesselteMetadaten = File(
+            p.join(
+              Directory.systemTemp.path,
+              'photovault_restore_${_uuid.v4()}.json',
+            ),
+          );
           await VaultCrypto.decryptFile(
-              metadataFile, entschluesselteMetadaten, decryptionKey);
+            metadataFile,
+            entschluesselteMetadaten,
+            decryptionKey,
+          );
           zuLesen = entschluesselteMetadaten;
         }
         try {
@@ -622,7 +666,8 @@ class BackupService {
           // einzige Quelle – dann bleibt die Liste eben leer, statt zu
           // scheitern.
           debugPrint(
-              'metadata.json unlesbar, Restore läuft ohne Metadaten weiter: $e');
+            'metadata.json unlesbar, Restore läuft ohne Metadaten weiter: $e',
+          );
         }
       }
 
@@ -630,8 +675,9 @@ class BackupService {
       // im Original hatte (beim neuen Format steckt sie nicht mehr im Namen).
       final files = <({String pfad, String endung})>[];
 
-      final datenOrdner =
-          Directory(p.join(backupRootPath, VerschluesselteNamen.ordner));
+      final datenOrdner = Directory(
+        p.join(backupRootPath, VerschluesselteNamen.ordner),
+      );
       final originalsIn = Directory(p.join(backupRootPath, 'originals'));
 
       if (await datenOrdner.exists() && decryptionKey != null) {
@@ -642,13 +688,16 @@ class BackupService {
           final pruefsumme = eintrag['checksum'] as String?;
           if (pruefsumme == null) continue;
           final name = await VerschluesselteNamen.fuerPruefsumme(
-              pruefsumme, decryptionKey);
+            pruefsumme,
+            decryptionKey,
+          );
           final datei = File(p.join(datenOrdner.path, name));
           if (await datei.exists()) {
             files.add((
               pfad: datei.path,
               endung: p.extension(
-                  (eintrag['originalFileName'] as String?) ?? '.jpg'),
+                (eintrag['originalFileName'] as String?) ?? '.jpg',
+              ),
             ));
           }
         }
@@ -656,16 +705,19 @@ class BackupService {
         // Altes Format: nach Endung durchsuchen. Bei verschlüsselten Backups
         // sind die Bytes zwar Chiffretext, die Endung im Pfad blieb aber die
         // des Originals.
-        await for (final entity
-            in originalsIn.list(recursive: true, followLinks: false)) {
+        await for (final entity in originalsIn.list(
+          recursive: true,
+          followLinks: false,
+        )) {
           if (entity is File && importService.isSupported(entity.path)) {
             files.add((pfad: entity.path, endung: p.extension(entity.path)));
           }
         }
       } else {
         // Fallback: falls direkt der "originals"-Ordner selbst ausgewählt wurde.
-        for (final f in await importService
-            .collectSupportedFilesInFolder(backupRootPath)) {
+        for (final f in await importService.collectSupportedFilesInFolder(
+          backupRootPath,
+        )) {
           files.add((pfad: f, endung: p.extension(f)));
         }
       }
@@ -684,21 +736,29 @@ class BackupService {
           // von Menschen lesbare Name kommt gleich aus metadata.json über den
           // Prüfsummen-Abgleich zurück, unabhängig vom Namen dieser
           // Zwischenkopie.
-          final tempFile = File(p.join(
-            Directory.systemTemp.path,
-            'photovault_restore_${_uuid.v4()}${eintrag.endung}',
-          ));
+          final tempFile = File(
+            p.join(
+              Directory.systemTemp.path,
+              'photovault_restore_${_uuid.v4()}${eintrag.endung}',
+            ),
+          );
           try {
             await VaultCrypto.decryptFile(
-                File(filePath), tempFile, decryptionKey);
+              File(filePath),
+              tempFile,
+              decryptionKey,
+            );
             await importService.importFile(tempFile.path);
           } finally {
             if (await tempFile.exists()) await tempFile.delete();
           }
         }
         done++;
-        yield BackupProgress(done, files.length,
-            currentFile: p.basename(filePath));
+        yield BackupProgress(
+          done,
+          files.length,
+          currentFile: p.basename(filePath),
+        );
       }
 
       // Metadaten anwenden – die Datei wurde oben bereits (ggf. entschlüsselt)
@@ -720,15 +780,26 @@ class BackupService {
         // Dieselbe Sorgfalt wie bei den Metadaten oben: Ab hier liegt eine
         // vollständige Klartext-Datenbank im Temp-Verzeichnis, und die muss
         // in jedem Fall wieder verschwinden – auch bei einem Abbruch.
-        entschluesselterSchnappschuss = File(p.join(Directory.systemTemp.path,
-            'photovault_restore_${_uuid.v4()}.sqlite'));
+        entschluesselterSchnappschuss = File(
+          p.join(
+            Directory.systemTemp.path,
+            'photovault_restore_${_uuid.v4()}.sqlite',
+          ),
+        );
         try {
           await VaultCrypto.decryptFile(
-              schnappschuss, entschluesselterSchnappschuss, decryptionKey);
-          final zeilen =
-              await uebernimmAusSchnappschuss(entschluesselterSchnappschuss);
-          yield BackupProgress(files.length, files.length,
-              uebernommeneZeilen: zeilen);
+            schnappschuss,
+            entschluesselterSchnappschuss,
+            decryptionKey,
+          );
+          final zeilen = await uebernimmAusSchnappschuss(
+            entschluesselterSchnappschuss,
+          );
+          yield BackupProgress(
+            files.length,
+            files.length,
+            uebernommeneZeilen: zeilen,
+          );
           // Die Ausschnitte zu den zurückgekommenen Gesichtern neu
           // zeichnen – sonst stünden alle Namen da und kein Bild dazu.
           yield* _zeichneAusschnitteNach();
@@ -849,8 +920,9 @@ class BackupService {
           final erlaubt = zielSpalten[tabelle];
           if (erlaubt == null) continue;
           final vorhanden = quelle.select(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-              [tabelle]);
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            [tabelle],
+          );
           if (vorhanden.isEmpty) continue;
 
           // Nur Spalten, die es hier UND dort gibt – eine ältere Sicherung
@@ -883,8 +955,10 @@ class BackupService {
             }
             if (ueberspringen) continue;
             try {
-              await _db.customInsert(befehl,
-                  variables: [for (final w in werte) Variable(w)]);
+              await _db.customInsert(
+                befehl,
+                variables: [for (final w in werte) Variable(w)],
+              );
               uebernommen++;
             } catch (e) {
               // Je Zeile abgesichert – eine Zeile, die hier nicht hineinpasst
@@ -906,7 +980,8 @@ class BackupService {
         // einzeln da, also achttausend Anweisungen für eine einzige.
         final durchsucht = [
           for (final z in quelle.select(
-              'SELECT id, faces_scanned FROM assets WHERE faces_scanned = 1'))
+            'SELECT id, faces_scanned FROM assets WHERE faces_scanned = 1',
+          ))
             ?assetZuordnung[z['id'] as String],
         ];
         if (durchsucht.isNotEmpty) await _db.markFacesScanned(durchsucht);
@@ -952,21 +1027,33 @@ class BackupService {
       try {
         final asset = await _db.assetById(eintrag.key);
         if (asset != null) {
-          final datei =
-              _paths.absolute(asset.previewRelativePath ?? asset.relativePath);
+          final datei = _paths.absolute(
+            asset.previewRelativePath ?? asset.relativePath,
+          );
           if (await datei.exists()) {
             final bild = await compute(_dekodiere, await datei.readAsBytes());
             if (bild != null) {
               for (final gesicht in eintrag.value) {
                 final ausschnitt = FaceEngineService.cropFaceImage(
-                    bild,
-                    DetectedFace(gesicht.boxX, gesicht.boxY, gesicht.boxW,
-                        gesicht.boxH, 1.0));
+                  bild,
+                  DetectedFace(
+                    gesicht.boxX,
+                    gesicht.boxY,
+                    gesicht.boxW,
+                    gesicht.boxH,
+                    1.0,
+                  ),
+                );
                 final ziel = _paths.faceRelativePath(gesicht.id);
                 await FaceEngineService.saveFaceCrop(
-                    ausschnitt, _paths.absolute(ziel));
-                await _db.setzeGesichtsausschnitt(gesicht.id, ziel,
-                    schaerfe: gesichtsschaerfe(ausschnitt));
+                  ausschnitt,
+                  _paths.absolute(ziel),
+                );
+                await _db.setzeGesichtsausschnitt(
+                  gesicht.id,
+                  ziel,
+                  schaerfe: gesichtsschaerfe(ausschnitt),
+                );
               }
             }
           }
@@ -993,7 +1080,8 @@ class BackupService {
           jsonDecode(await metadataFile.readAsString()) as Map<String, dynamic>;
     } catch (e) {
       debugPrint(
-          'metadata.json konnte nicht gelesen werden, überspringe Metadaten-Import: $e');
+        'metadata.json konnte nicht gelesen werden, überspringe Metadaten-Import: $e',
+      );
       return;
     }
 
@@ -1026,7 +1114,9 @@ class BackupService {
           final originalFileName = entry['originalFileName'] as String?;
           if (originalFileName != null && originalFileName.isNotEmpty) {
             await _db.setOriginalFileName(
-                assetId, p.basename(originalFileName));
+              assetId,
+              p.basename(originalFileName),
+            );
           }
           if (entry['isFavorite'] == true) {
             await _db.setFavorite(assetId, true);
@@ -1048,9 +1138,10 @@ class BackupService {
           // ist kein Ort, sondern eine halbe Zahl.
           if (entry['latitude'] is num && entry['longitude'] is num) {
             await _db.setLocation(
-                assetId,
-                (entry['latitude'] as num).toDouble(),
-                (entry['longitude'] as num).toDouble());
+              assetId,
+              (entry['latitude'] as num).toDouble(),
+              (entry['longitude'] as num).toDouble(),
+            );
           }
           if (entry['locationCity'] is String) {
             await _db.setLocationNames(
@@ -1069,12 +1160,16 @@ class BackupService {
               if (t is String) t,
           };
           for (final tag in (entry['tags'] as List<dynamic>? ?? [])) {
-            await _db.tagAsset(assetId, tag as String,
-                quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand);
+            await _db.tagAsset(
+              assetId,
+              tag as String,
+              quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand,
+            );
           }
         } catch (e) {
           debugPrint(
-              'Metadaten-Eintrag konnte nicht angewendet werden, überspringe: $e');
+            'Metadaten-Eintrag konnte nicht angewendet werden, überspringe: $e',
+          );
         }
       }
     });
@@ -1087,16 +1182,24 @@ class BackupService {
             albumEntry['name'] as String? ?? 'Wiederhergestelltes Album';
         final checksums = (albumEntry['assetChecksums'] as List<dynamic>? ?? [])
             .cast<String>();
-        final assetIds =
-            checksums.map((c) => byChecksum[c]).whereType<String>().toList();
+        final assetIds = checksums
+            .map((c) => byChecksum[c])
+            .whereType<String>()
+            .toList();
         if (assetIds.isEmpty) continue;
         final albumId = const Uuid().v4();
-        await _db.createAlbum(AlbumsCompanion.insert(
-            id: albumId, name: name, createdAt: DateTime.now()));
+        await _db.createAlbum(
+          AlbumsCompanion.insert(
+            id: albumId,
+            name: name,
+            createdAt: DateTime.now(),
+          ),
+        );
         await _db.addAssetsToAlbum(albumId, assetIds);
       } catch (e) {
         debugPrint(
-            'Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e');
+          'Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e',
+        );
       }
     }
   }
@@ -1113,10 +1216,12 @@ class BackupService {
   /// werden nicht angeboten und können daher nicht versehentlich gewählt
   /// werden.
   Future<List<BackupGeneration>> autoBackupGenerations(
-      String backupRootPath) async {
+    String backupRootPath,
+  ) async {
     final root = Directory(backupRootPath);
-    final generations =
-        Directory(p.join(root.path, _autoBackupGenerationsFolder));
+    final generations = Directory(
+      p.join(root.path, _autoBackupGenerationsFolder),
+    );
     if (!await generations.exists()) return const [];
 
     final result = <BackupGeneration>[];
@@ -1130,11 +1235,13 @@ class BackupService {
         if (value['format'] != 1 || value['createdAt'] is! String) continue;
         final createdAt = DateTime.tryParse(value['createdAt'] as String);
         if (createdAt == null) continue;
-        result.add(BackupGeneration(
-          id: p.basename(entry.path),
-          createdAt: createdAt.toLocal(),
-          snapshotPath: snapshot.path,
-        ));
+        result.add(
+          BackupGeneration(
+            id: p.basename(entry.path),
+            createdAt: createdAt.toLocal(),
+            snapshotPath: snapshot.path,
+          ),
+        );
       } on FormatException {
         // Ein fremder oder unvollständiger Ordner ist keine Generation.
       }
@@ -1148,7 +1255,9 @@ class BackupService {
   /// Lesen einer beliebigen Datei außerhalb des gewählten Backup-Ordners
   /// führen.
   Future<File> _restoreSnapshot(
-      String backupRootPath, String? generationSnapshotPath) async {
+    String backupRootPath,
+    String? generationSnapshotPath,
+  ) async {
     if (generationSnapshotPath == null) {
       return File(p.join(backupRootPath, 'library.sqlite.enc'));
     }
@@ -1199,8 +1308,9 @@ class BackupService {
     SecretKey encryptionKey, {
     int maxBytesPerRun = 0,
   }) async* {
-    final backupRoot =
-        Directory(p.join(destinationRootPath, _autoBackupFolderName));
+    final backupRoot = Directory(
+      p.join(destinationRootPath, _autoBackupFolderName),
+    );
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
 
@@ -1208,7 +1318,8 @@ class BackupService {
     await _archiveAutoBackupGeneration(backupRoot);
     await _writeKeyEnvelope(backupRoot);
 
-    final staging = _festesZwischenlager ??
+    final staging =
+        _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_autobackup_stage_');
     final pending = await _db.assetsNotAutoBackedUp();
     var done = 0;
@@ -1232,11 +1343,16 @@ class BackupService {
           if (await source.exists()) {
             // Automatische Backups sind immer verschlüsselt – daher stets die
             // flache, namenlose Ablage (siehe VerschluesselteNamen).
-            final target = File(p.join(
+            final target = File(
+              p.join(
                 backupRoot.path,
                 VerschluesselteNamen.ordner,
                 await VerschluesselteNamen.fuerPruefsumme(
-                    asset.checksum, encryptionKey)));
+                  asset.checksum,
+                  encryptionKey,
+                ),
+              ),
+            );
             await target.parent.create(recursive: true);
             await _ueberZwischendatei(
               zwischenlager: staging,
@@ -1250,12 +1366,17 @@ class BackupService {
           autoBackedUpIds.add(asset.id);
         } catch (e) {
           fehlgeschlagen++;
-          debugPrint('Automatische Sicherung von ${asset.originalFileName} '
-              'fehlgeschlagen: $e');
+          debugPrint(
+            'Automatische Sicherung von ${asset.originalFileName} '
+            'fehlgeschlagen: $e',
+          );
         }
         done++;
-        yield BackupProgress(done, pending.length,
-            currentFile: asset.originalFileName);
+        yield BackupProgress(
+          done,
+          pending.length,
+          currentFile: asset.originalFileName,
+        );
       }
     } finally {
       if (_festesZwischenlager == null) {
@@ -1266,8 +1387,10 @@ class BackupService {
           // gesagt werden: Im Zwischenlager liegen die Dateien im
           // KLARTEXT. Bleibt es stehen, bleibt der Klartext liegen, und
           // ein stiller Fehlschlag hiesse, dass niemand davon erfaehrt.
-          debugPrint('Zwischenlager ${staging.path} nicht geloescht: $e - '
-              'es enthaelt unverschluesselte Dateien.');
+          debugPrint(
+            'Zwischenlager ${staging.path} nicht geloescht: $e - '
+            'es enthaelt unverschluesselte Dateien.',
+          );
         }
       }
     }
@@ -1277,12 +1400,18 @@ class BackupService {
     }
 
     if (abgebrochenWegenLimit) {
-      yield BackupProgress(done, pending.length,
-          grenzeOffen: pending.length - done);
+      yield BackupProgress(
+        done,
+        pending.length,
+        grenzeOffen: pending.length - done,
+      );
     }
     if (fehlgeschlagen > 0) {
-      yield BackupProgress(done, pending.length,
-          fehlgeschlagen: fehlgeschlagen);
+      yield BackupProgress(
+        done,
+        pending.length,
+        fehlgeschlagen: fehlgeschlagen,
+      );
     }
   }
 
@@ -1292,7 +1421,9 @@ class BackupService {
   /// `.sqlite`-Datei, das einen halbgeschriebenen Zustand einfangen könnte)
   /// und verschlüsselt ihn anschließend.
   Future<void> _writeEncryptedDatabaseSnapshot(
-      Directory backupRoot, SecretKey encryptionKey) async {
+    Directory backupRoot,
+    SecretKey encryptionKey,
+  ) async {
     final snapshotPath = p.join(
       Directory.systemTemp.path,
       'photovault_db_snapshot_${_uuid.v4()}.sqlite',
@@ -1317,13 +1448,16 @@ class BackupService {
     final current = File(p.join(backupRoot.path, 'library.sqlite.enc'));
     if (!await current.exists()) return;
 
-    final generations =
-        Directory(p.join(backupRoot.path, _autoBackupGenerationsFolder));
-    final generation = Directory(p.join(
-      generations.path,
-      '${DateTime.now().toUtc().toIso8601String().replaceAll(':', '')}_'
-      '${(++_autoGenerationSerial).toString().padLeft(8, '0')}_${_uuid.v4()}',
-    ));
+    final generations = Directory(
+      p.join(backupRoot.path, _autoBackupGenerationsFolder),
+    );
+    final generation = Directory(
+      p.join(
+        generations.path,
+        '${DateTime.now().toUtc().toIso8601String().replaceAll(':', '')}_'
+        '${(++_autoGenerationSerial).toString().padLeft(8, '0')}_${_uuid.v4()}',
+      ),
+    );
     await generation.create(recursive: true);
     await current.copy(p.join(generation.path, 'library.sqlite.enc'));
     await File(p.join(generation.path, 'generation.json')).writeAsString(
@@ -1368,7 +1502,9 @@ class VerschluesselteNamen {
   static const ordner = 'data';
 
   static Future<String> fuerPruefsumme(
-      String pruefsumme, SecretKey schluessel) async {
+    String pruefsumme,
+    SecretKey schluessel,
+  ) async {
     final mac = await Hmac.sha256().calculateMac(
       utf8.encode(pruefsumme),
       secretKey: schluessel,
@@ -1408,7 +1544,9 @@ void entferneGesperrteAus(String schnappschussPfad) {
     final platzhalter = List.filled(gesperrte.length, '?').join(',');
     for (final tabelle in _tabellenMitAssetId(db)) {
       db.execute(
-          'DELETE FROM "$tabelle" WHERE asset_id IN ($platzhalter)', gesperrte);
+        'DELETE FROM "$tabelle" WHERE asset_id IN ($platzhalter)',
+        gesperrte,
+      );
     }
     db.execute('DELETE FROM assets WHERE is_locked = 1');
     // Ohne das bliebe der gelöschte Inhalt in den freigewordenen Seiten der
@@ -1422,8 +1560,10 @@ void entferneGesperrteAus(String schnappschussPfad) {
 
 List<String> _tabellenMitAssetId(Database db) {
   final namen = db
-      .select("SELECT name FROM sqlite_master WHERE type = 'table' "
-          "AND name NOT LIKE 'sqlite_%'")
+      .select(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%'",
+      )
       .map((z) => z['name'] as String);
   return [
     for (final name in namen)

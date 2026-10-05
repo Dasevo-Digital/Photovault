@@ -54,8 +54,11 @@ void main() {
       expect(videostandbildstellen(100), hasLength(5));
       // Das laengste Video der Bibliothek: neun Minuten.
       expect(videostandbildstellen(540), hasLength(videoStandbilderHoechstens));
-      expect(videostandbildstellen(36000), hasLength(videoStandbilderHoechstens),
-          reason: 'auch zehn Stunden bekommen nicht mehr');
+      expect(
+        videostandbildstellen(36000),
+        hasLength(videoStandbilderHoechstens),
+        reason: 'auch zehn Stunden bekommen nicht mehr',
+      );
     });
 
     test('die Stellen liegen im Inneren und in aufsteigender Reihenfolge', () {
@@ -68,8 +71,12 @@ void main() {
         expect(stellen[i], greaterThan(stellen[i - 1]));
       }
       // Gleichmaessig verteilt: bei vier Bildern ein bis vier Fuenftel.
-      expect(videostandbildstellen(80),
-          [closeTo(0.2, 1e-9), closeTo(0.4, 1e-9), closeTo(0.6, 1e-9), closeTo(0.8, 1e-9)]);
+      expect(videostandbildstellen(80), [
+        closeTo(0.2, 1e-9),
+        closeTo(0.4, 1e-9),
+        closeTo(0.6, 1e-9),
+        closeTo(0.8, 1e-9),
+      ]);
     });
 
     test('keine Stelle wird doppelt geholt', () {
@@ -91,7 +98,8 @@ void main() {
       library = LibraryState()
         ..db = db
         ..paths = await StoragePaths.forTesting(
-            Directory(p.join(wurzel.path, 'lib')));
+          Directory(p.join(wurzel.path, 'lib')),
+        );
     });
 
     tearDown(() async {
@@ -99,23 +107,28 @@ void main() {
       wurzel.deleteSync(recursive: true);
     });
 
-    Future<void> anlegen(String id,
-            {String typ = 'VIDEO',
-            double? dauer,
-            bool gesperrt = false,
-            bool papierkorb = false}) =>
-        db.into(db.assets).insert(AssetsCompanion.insert(
-              id: id,
-              originalFileName: '$id.mov',
-              relativePath: 'originals/2025/08/$id.mov',
-              checksum: 'pruef-$id',
-              type: typ,
-              fileCreatedAt: DateTime(2025, 8, 20),
-              importedAt: DateTime(2026),
-              durationSeconds: Value(dauer),
-              isLocked: Value(gesperrt),
-              isTrashed: Value(papierkorb),
-            ));
+    Future<void> anlegen(
+      String id, {
+      String typ = 'VIDEO',
+      double? dauer,
+      bool gesperrt = false,
+      bool papierkorb = false,
+    }) => db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: id,
+            originalFileName: '$id.mov',
+            relativePath: 'originals/2025/08/$id.mov',
+            checksum: 'pruef-$id',
+            type: typ,
+            fileCreatedAt: DateTime(2025, 8, 20),
+            importedAt: DateTime(2026),
+            durationSeconds: Value(dauer),
+            isLocked: Value(gesperrt),
+            isTrashed: Value(papierkorb),
+          ),
+        );
 
     Uint8List vektor(double x) =>
         blobFromEmbeddingFloats(Float32List.fromList([x, 0, 0, 0]));
@@ -149,23 +162,31 @@ void main() {
       ]);
       expect((await db.alleVideoeinbettungen())['v'], hasLength(2));
 
-      await db.setzeVideoeinbettungen('v', [(stelle: 0.5, vector: vektor(0.9))]);
+      await db.setzeVideoeinbettungen('v', [
+        (stelle: 0.5, vector: vektor(0.9)),
+      ]);
       expect((await db.alleVideoeinbettungen())['v'], hasLength(1));
       expect((await db.assetById('v'))!.videobilderGeprueft, isTrue);
     });
 
-    test('gesperrte und gelöschte Videos liefern keine Einbettung heraus',
-        () async {
-      // Was im Bildinhalt steckt, hat in der unverschluesselten
-      // Datenbank nichts zu suchen – dieselbe Regel wie ueberall sonst
-      // bei der Auswertung.
-      await anlegen('offen', dauer: 60);
-      await anlegen('gesperrt', dauer: 60, gesperrt: true);
-      await db.setzeVideoeinbettungen('offen', [(stelle: 0.5, vector: vektor(1))]);
-      await db.setzeVideoeinbettungen('gesperrt', [(stelle: 0.5, vector: vektor(1))]);
+    test(
+      'gesperrte und gelöschte Videos liefern keine Einbettung heraus',
+      () async {
+        // Was im Bildinhalt steckt, hat in der unverschluesselten
+        // Datenbank nichts zu suchen – dieselbe Regel wie ueberall sonst
+        // bei der Auswertung.
+        await anlegen('offen', dauer: 60);
+        await anlegen('gesperrt', dauer: 60, gesperrt: true);
+        await db.setzeVideoeinbettungen('offen', [
+          (stelle: 0.5, vector: vektor(1)),
+        ]);
+        await db.setzeVideoeinbettungen('gesperrt', [
+          (stelle: 0.5, vector: vektor(1)),
+        ]);
 
-      expect((await db.alleVideoeinbettungen()).keys, ['offen']);
-    });
+        expect((await db.alleVideoeinbettungen()).keys, ['offen']);
+      },
+    );
 
     test('die Suchkandidaten tragen die Stelle im Schlüssel', () async {
       // Damit die Rangfolge jedes Standbild einzeln bewerten kann: Es
@@ -185,13 +206,15 @@ void main() {
       }
     });
 
-    test('ohne Video-Standbilder bleibt die Kandidatenliste unverändert',
-        () async {
-      // Die Gegenprobe: Der neue Weg darf den alten nicht umbauen.
-      await anlegen('foto', typ: 'IMAGE');
-      await db.saveEmbedding('foto', Float32List.fromList([1, 0, 0, 0]));
-      expect((await library.suchkandidaten()).keys, ['foto']);
-    });
+    test(
+      'ohne Video-Standbilder bleibt die Kandidatenliste unverändert',
+      () async {
+        // Die Gegenprobe: Der neue Weg darf den alten nicht umbauen.
+        await anlegen('foto', typ: 'IMAGE');
+        await db.saveEmbedding('foto', Float32List.fromList([1, 0, 0, 0]));
+        expect((await library.suchkandidaten()).keys, ['foto']);
+      },
+    );
 
     test('eine Kennung mit Raute im Namen bleibt lesbar', () async {
       // Die Kennungen sind UUIDs und enthalten keine Raute – aber der

@@ -53,8 +53,13 @@ Future<String?> gesichtVonHandAnlegen({
   final bild = gelesen;
 
   final gesichtId = const Uuid().v4();
-  final box =
-      DetectedFace(kasten.left, kasten.top, kasten.width, kasten.height, 1.0);
+  final box = DetectedFace(
+    kasten.left,
+    kasten.top,
+    kasten.width,
+    kasten.height,
+    1.0,
+  );
 
   final ausschnittPfad = library.paths.faceRelativePath(gesichtId);
   await FaceEngineService.saveFaceCrop(
@@ -73,20 +78,27 @@ Future<String?> gesichtVonHandAnlegen({
     beiEinbettungsfehler?.call(e);
   }
 
-  await library.db.insertFace(FacesCompanion.insert(
-    id: gesichtId,
-    assetId: assetId,
-    personId: Value(personId),
-    boxX: box.x,
-    boxY: box.y,
-    boxW: box.width,
-    boxH: box.height,
-    cropRelativePath: Value(ausschnittPfad),
-    embedding: einbettung != null
-        ? Value(Uint8List.view(einbettung.buffer, einbettung.offsetInBytes,
-            einbettung.lengthInBytes))
-        : const Value.absent(),
-  ));
+  await library.db.insertFace(
+    FacesCompanion.insert(
+      id: gesichtId,
+      assetId: assetId,
+      personId: Value(personId),
+      boxX: box.x,
+      boxY: box.y,
+      boxW: box.width,
+      boxH: box.height,
+      cropRelativePath: Value(ausschnittPfad),
+      embedding: einbettung != null
+          ? Value(
+              Uint8List.view(
+                einbettung.buffer,
+                einbettung.offsetInBytes,
+                einbettung.lengthInBytes,
+              ),
+            )
+          : const Value.absent(),
+    ),
+  );
   await library.db.setPersonCoverIfUnset(personId, ausschnittPfad);
   return gesichtId;
 }

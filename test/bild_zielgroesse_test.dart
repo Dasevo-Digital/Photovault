@@ -16,9 +16,13 @@ void main() {
   test('Querformat: die Breite wird begrenzt', () {
     final z = ziel(6000, 4000, 1600);
     expect(z.width, 1600);
-    expect(z.height, isNull,
-        reason: 'die Hoehe rechnet der Dekoder seitenverhaeltnistreu nach - '
-            'beide anzugeben verzerrte das Bild');
+    expect(
+      z.height,
+      isNull,
+      reason:
+          'die Hoehe rechnet der Dekoder seitenverhaeltnistreu nach - '
+          'beide anzugeben verzerrte das Bild',
+    );
   });
 
   test('Hochformat: die Hoehe wird begrenzt', () {

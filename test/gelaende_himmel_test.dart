@@ -103,8 +103,7 @@ void main() {
   );
 
   group('Die weiche Kante', () {
-    test('am Gitterrand ist das Gelände durchsichtig, in der Mitte nicht',
-        () {
+    test('am Gitterrand ist das Gelände durchsichtig, in der Mitte nicht', () {
       final netz = baueNetz(_gitter(n: 40), kante: 40);
       final randnaehe = _randnaehe(netz);
       final farben = _farben(netz);
@@ -151,8 +150,11 @@ void main() {
       for (var i = 0; i < mittag.length; i++) {
         if (mittag[i] != abend[i]) anders++;
       }
-      expect(anders, greaterThan(mittag.length ~/ 2),
-          reason: 'die Stimmung kommt im Netz nicht an');
+      expect(
+        anders,
+        greaterThan(mittag.length ~/ 2),
+        reason: 'die Stimmung kommt im Netz nicht an',
+      );
     });
 
     test('ohne Angabe entsteht genau das Mittagsnetz', () {
@@ -175,8 +177,10 @@ void main() {
         return summe / f.length;
       }
 
-      expect(mittelRotAnteil(_farben(abend)),
-          greaterThan(mittelRotAnteil(_farben(mittag))));
+      expect(
+        mittelRotAnteil(_farben(abend)),
+        greaterThan(mittelRotAnteil(_farben(mittag))),
+      );
     });
   });
 
@@ -194,8 +198,11 @@ void main() {
       final leinwand = _Mitschrift();
       maler().paint(leinwand, const Size(1000, 800));
       expect(leinwand.rechtecke, 1, reason: 'kein Himmel');
-      expect(leinwand.pinsel.first.shader, isNotNull,
-          reason: 'der Himmel ist eine Fläche statt eines Verlaufs');
+      expect(
+        leinwand.pinsel.first.shader,
+        isNotNull,
+        reason: 'der Himmel ist eine Fläche statt eines Verlaufs',
+      );
     });
 
     test('der Dunst liegt auf einer eigenen Ebene und ersetzt dort', () {
@@ -210,11 +217,17 @@ void main() {
       final bloecke = baueNetz(_gitter()).bloecke.length;
       expect(leinwand.netze, lessThanOrEqualTo(2 * bloecke));
       expect(leinwand.netze, greaterThan(1), reason: 'Gelände und Dunst');
-      expect(leinwand.netze.isEven, isTrue,
-          reason: 'zu jedem Gelände gehört sein Dunst');
+      expect(
+        leinwand.netze.isEven,
+        isTrue,
+        reason: 'zu jedem Gelände gehört sein Dunst',
+      );
       expect(leinwand.schichten, 1, reason: 'der Dunst braucht seine Ebene');
-      expect(leinwand.pinsel.last.blendMode, BlendMode.src,
-          reason: 'ohne `src` überlagert der Dunst, statt zu ersetzen');
+      expect(
+        leinwand.pinsel.last.blendMode,
+        BlendMode.src,
+        reason: 'ohne `src` überlagert der Dunst, statt zu ersetzen',
+      );
     });
 
     test('ohne Fläche wird gar kein Dunst gezeichnet', () {

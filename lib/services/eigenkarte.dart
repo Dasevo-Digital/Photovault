@@ -95,7 +95,15 @@ class Eigenkarte {
   /// `nachfassen` steht mit dabei, weil die Kachelschicht ihn als
   /// Zusatzangabe mitgibt (siehe `Kachelschicht`); die übrigen sind die
   /// der Bibliothek.
-  static const bekanntePlatzhalter = {'z', 'x', 'y', 's', 'r', 'd', 'nachfassen'};
+  static const bekanntePlatzhalter = {
+    'z',
+    'x',
+    'y',
+    's',
+    'r',
+    'd',
+    'nachfassen',
+  };
 
   /// Was an einer Adressvorlage nicht stimmt – oder `null`, wenn sie
   /// taugt. Die Kennung passt zu den Texten in der Oberfläche.
@@ -231,7 +239,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'Esri Weltbild (Luftbild)',
     seite: 'https://www.esri.com/en-us/legal/terms/full-master-agreement',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+    url:
+        'https://server.arcgisonline.com/ArcGIS/rest/services/'
         'World_Imagery/MapServer/tile/{z}/{y}/{x}',
     nennung: '© Esri, Maxar, Earthstar Geographics',
     stufe: 20,
@@ -240,7 +249,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'Esri Strassenkarte',
     seite: 'https://www.esri.com/en-us/legal/terms/full-master-agreement',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/'
+    url:
+        'https://server.arcgisonline.com/ArcGIS/rest/services/'
         'World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     nennung: '© Esri, HERE, Garmin, © OpenStreetMap contributors',
     stufe: 19,
@@ -265,7 +275,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'Mapbox Streets',
     seite: 'https://account.mapbox.com/auth/signup/',
-    url: 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/'
+    url:
+        'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/'
         '{z}/{x}/{y}?access_token=$schluesselMarke',
     nennung: '© Mapbox © OpenStreetMap contributors',
     stufe: 22,
@@ -275,7 +286,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'MapTiler Streets',
     seite: 'https://cloud.maptiler.com/account/keys/',
-    url: 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png'
+    url:
+        'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png'
         '?key=$schluesselMarke',
     nennung: '© MapTiler © OpenStreetMap contributors',
     stufe: 20,
@@ -285,7 +297,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'Thunderforest Outdoors',
     seite: 'https://www.thunderforest.com/pricing/',
-    url: 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png'
+    url:
+        'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png'
         '?apikey=$schluesselMarke',
     nennung: '© Thunderforest, © OpenStreetMap contributors',
     stufe: 22,
@@ -295,7 +308,8 @@ const kartenvorlagen = <Kartenvorlage>[
   Kartenvorlage(
     name: 'Google Karten',
     seite: 'https://developers.google.com/maps/documentation/tile/get-api-key',
-    url: 'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}'
+    url:
+        'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}'
         '?session=SITZUNG&key=$schluesselMarke',
     nennung: '© Google',
     stufe: 22,
@@ -353,7 +367,9 @@ String? schluesselAusAdresse(String adresse) {
 
 /// Setzt eine geholte Sitzung in die Adresse ein.
 String sitzungEinsetzen(String adresse, String sitzung) => adresse.replaceAll(
-    RegExp('$sitzungsparameter[^&]*'), '$sitzungsparameter$sitzung');
+  RegExp('$sitzungsparameter[^&]*'),
+  '$sitzungsparameter$sitzung',
+);
 
 /// Ergebnis von [googleSitzung].
 typedef Sitzungsantwort = ({String? sitzung, String? fehler});
@@ -389,8 +405,10 @@ Future<Sitzungsantwort> googleSitzung(
   final client = netz ?? Client();
   try {
     final antwort = await client.post(
-      Uri.parse('https://tile.googleapis.com/v1/createSession'
-          '?key=${Uri.encodeQueryComponent(schluessel.trim())}'),
+      Uri.parse(
+        'https://tile.googleapis.com/v1/createSession'
+        '?key=${Uri.encodeQueryComponent(schluessel.trim())}',
+      ),
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({
         'mapType': kartenart,

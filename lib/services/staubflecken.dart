@@ -120,17 +120,21 @@ List<Staubverdacht> findeStaubverdacht(img.Image bild) {
   final lang = math.max(bild.width, bild.height);
   final faktor = lang > staubSuchkante ? staubSuchkante / lang : 1.0;
   final klein = faktor < 1.0
-      ? img.copyResize(bild,
+      ? img.copyResize(
+          bild,
           width: (bild.width * faktor).round(),
           height: (bild.height * faktor).round(),
-          interpolation: img.Interpolation.average)
+          interpolation: img.Interpolation.average,
+        )
       : bild;
   final grau = img.grayscale(klein);
   final breite = grau.width, hoehe = grau.height;
   if (breite < 32 || hoehe < 32) return const [];
 
   final hintergrund = img.gaussianBlur(
-      img.Image.from(grau), radius: staubHintergrundradius);
+    img.Image.from(grau),
+    radius: staubHintergrundradius,
+  );
 
   // Wie viel dunkler als der Hintergrund, Punkt für Punkt.
   final tiefe = Float64List(breite * hoehe);
@@ -182,14 +186,17 @@ List<Staubverdacht> findeStaubverdacht(img.Image bild) {
         }
       }
     }
-    if (flaeche < staubMindestflaeche || flaeche > staubHoechstflaeche) continue;
+    if (flaeche < staubMindestflaeche || flaeche > staubHoechstflaeche) {
+      continue;
+    }
 
     final kastenBreite = maxx - minx + 1, kastenHoehe = maxy - miny + 1;
     final rundheit = flaeche / (kastenBreite * kastenHoehe);
     if (rundheit < staubMindestrundheit) continue;
     // Kein langes Gebilde: Ein Ast erfüllt die Rundheit im Kästchen
     // durchaus, ist aber viermal so lang wie breit.
-    final streckung = math.max(kastenBreite, kastenHoehe) /
+    final streckung =
+        math.max(kastenBreite, kastenHoehe) /
         math.min(kastenBreite, kastenHoehe);
     if (streckung > 2.0) continue;
 
@@ -212,12 +219,14 @@ List<Staubverdacht> findeStaubverdacht(img.Image bild) {
       continue;
     }
 
-    gefunden.add(Staubverdacht(
-      x: mitteX / breite,
-      y: mitteY / hoehe,
-      radius: math.sqrt(flaeche / math.pi) / kurzeKante,
-      tiefe: summeTiefe / flaeche,
-    ));
+    gefunden.add(
+      Staubverdacht(
+        x: mitteX / breite,
+        y: mitteY / hoehe,
+        radius: math.sqrt(flaeche / math.pi) / kurzeKante,
+        tiefe: summeTiefe / flaeche,
+      ),
+    );
   }
   return gefunden;
 }
@@ -296,7 +305,9 @@ List<Staubstelle> bestaetigeUeberSerie(
       var ziel = -1;
       var besteEntfernung = naehe;
       for (var g = 0; g < mittenX.length; g++) {
-        final d = math.sqrt(math.pow(mittenX[g] - v.x, 2) + math.pow(mittenY[g] - v.y, 2));
+        final d = math.sqrt(
+          math.pow(mittenX[g] - v.x, 2) + math.pow(mittenY[g] - v.y, 2),
+        );
         if (d < besteEntfernung) {
           besteEntfernung = d;
           ziel = g;
@@ -325,15 +336,16 @@ List<Staubstelle> bestaetigeUeberSerie(
   for (var g = 0; g < mittenX.length; g++) {
     final treffer = aufnahmen[g].length;
     if (treffer / proAufnahme.length < mindestanteil) continue;
-    stellen.add(Staubstelle(
-      x: mittenX[g],
-      y: mittenY[g],
-      radius: radien[g],
-      treffer: treffer,
-      untersucht: proAufnahme.length,
-    ));
+    stellen.add(
+      Staubstelle(
+        x: mittenX[g],
+        y: mittenY[g],
+        radius: radien[g],
+        treffer: treffer,
+        untersucht: proAufnahme.length,
+      ),
+    );
   }
   stellen.sort((a, b) => b.treffer.compareTo(a.treffer));
   return stellen;
 }
-
