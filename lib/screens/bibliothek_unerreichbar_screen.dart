@@ -18,6 +18,12 @@ import '../theme/app_spacing.dart';
 ///
 /// Wie [BibliothekBelegtScreen] ein Bildschirm und kein Dialog: Dahinter
 /// ist nichts geöffnet.
+/// Ob in [pfad] eine Bibliothek liegt. Ein Ordner ohne `library.sqlite`
+/// wäre beim Öffnen eine neue, leere.
+@visibleForTesting
+Future<bool> enthaeltBibliothek(String pfad) =>
+    File('$pfad${Platform.pathSeparator}library.sqlite').exists();
+
 class BibliothekUnerreichbarScreen extends StatefulWidget {
   final LibraryState library;
   const BibliothekUnerreichbarScreen({super.key, required this.library});
@@ -31,11 +37,13 @@ class _BibliothekUnerreichbarScreenState
     extends State<BibliothekUnerreichbarScreen> {
   bool _laeuft = false;
   bool _nochImmer = false;
+  bool _keineBibliothek = false;
 
   Future<void> _lauf(Future<void> Function() schritt) async {
     setState(() {
       _laeuft = true;
       _nochImmer = false;
+      _keineBibliothek = false;
     });
     await schritt();
     if (!mounted) return;
@@ -48,11 +56,20 @@ class _BibliothekUnerreichbarScreenState
   /// Der Ordnerdialog erneuert unter macOS das Security-Scoped-Bookmark.
   /// [LibraryLocation.fuegeHinzu] ersetzt dabei den Eintrag mit demselben
   /// Pfad, der Name bleibt.
+  ///
+  /// Nur ein Ordner, in dem schon eine Bibliothek liegt: Wer hier aus
+  /// Versehen den Ordner darüber wählt, bekäme sonst still eine neue,
+  /// leere Bibliothek angelegt und geöffnet – genau das, wovor dieser
+  /// Bildschirm schützen soll.
   Future<void> _freigeben(Bibliothekseintrag eintrag) async {
     final texte = AppTexte.of(context);
     final gewaehlt = await LibraryLocation.pickFolder(
         dialogMessage: texte.unerreichbarDialog(eintrag.name));
     if (gewaehlt == null || !mounted) return;
+    if (!await enthaeltBibliothek(gewaehlt.path)) {
+      if (mounted) setState(() => _keineBibliothek = true);
+      return;
+    }
     await _lauf(() async {
       final neu = await LibraryLocation.fuegeHinzu(gewaehlt, name: eintrag.name);
       await LibraryLocation.wechsleZu(neu);
@@ -109,6 +126,17 @@ class _BibliothekUnerreichbarScreenState
                     ],
                   ),
                 ),
+                if (_keineBibliothek) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    texte.unerreichbarKeineBibliothek,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: farben.error),
+                  ),
+                ],
                 if (_nochImmer) ...[
                   const SizedBox(height: AppSpacing.lg),
                   Text(

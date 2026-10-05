@@ -12924,6 +12924,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Bibliothek ist weiterhin nicht erreichbar.'**
   String get unerreichbarNochImmer;
+
+  /// No description provided for @unerreichbarKeineBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter.'**
+  String get unerreichbarKeineBibliothek;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

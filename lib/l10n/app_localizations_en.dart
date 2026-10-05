@@ -8255,4 +8255,8 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get unerreichbarNochImmer => 'The library is still not available.';
+
+  @override
+  String get unerreichbarKeineBibliothek =>
+      'This folder holds no library (no library.sqlite). Please choose the folder the library is in – not the one above or below it.';
 }

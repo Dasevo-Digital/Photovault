@@ -4956,5 +4956,6 @@
   "unerreichbarDialog": "Ordner der Bibliothek „{name}“ wählen",
   "@unerreichbarDialog": {"placeholders": {"name": {"type": "String"}}},
   "unerreichbarStandard": "Standardbibliothek öffnen",
-  "unerreichbarNochImmer": "Die Bibliothek ist weiterhin nicht erreichbar."
+  "unerreichbarNochImmer": "Die Bibliothek ist weiterhin nicht erreichbar.",
+  "unerreichbarKeineBibliothek": "In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter."
 }

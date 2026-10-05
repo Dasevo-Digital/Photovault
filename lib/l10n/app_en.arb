@@ -3874,5 +3874,6 @@
   "unerreichbarFreigeben": "Grant access to folder …",
   "unerreichbarDialog": "Choose the folder of the library “{name}”",
   "unerreichbarStandard": "Open default library",
-  "unerreichbarNochImmer": "The library is still not available."
+  "unerreichbarNochImmer": "The library is still not available.",
+  "unerreichbarKeineBibliothek": "This folder holds no library (no library.sqlite). Please choose the folder the library is in – not the one above or below it."
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
@@ -37,5 +39,18 @@ void main() {
     expect(find.text('Erneut versuchen'), findsOneWidget);
     expect(find.text('Standardbibliothek öffnen'), findsOneWidget);
     expect(find.text('Photo Vault beenden'), findsOneWidget);
+  });
+
+  test('nur ein Ordner mit Bibliothek wird angenommen', () async {
+    // Wer im Ordnerdialog den Ordner darüber erwischt, bekäme sonst eine
+    // neue, leere Bibliothek – die er dann für seine hält.
+    final tmp = Directory.systemTemp.createTempSync('pv_freigabe');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final bib = Directory('${tmp.path}/Fotos')..createSync();
+    expect(await enthaeltBibliothek(bib.path), isFalse);
+    File('${bib.path}/library.sqlite').writeAsStringSync('db');
+    expect(await enthaeltBibliothek(bib.path), isTrue);
+    expect(await enthaeltBibliothek(tmp.path), isFalse,
+        reason: 'der Ordner darüber ist keine Bibliothek');
   });
 }
