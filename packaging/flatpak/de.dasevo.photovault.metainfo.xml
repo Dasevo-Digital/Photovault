@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.22.0" date="2026-10-05">
+      <description>
+        <p>A fourth style for the tree of life: a leafy tree with gold ornaments, as a wide sheet with room for five generations.</p>
+      </description>
+    </release>
     <release version="3.21.0" date="2026-10-05">
       <description>
         <p>The tree of life now uses painted templates: a parchment tree, a pine before mountains and a sepia engraving. The names are written into the painted plates, each with its relation to the person at the trunk. Small families get a compact sheet; larger ones a wide sheet with room for a full five-generation pedigree (31 persons).</p>
