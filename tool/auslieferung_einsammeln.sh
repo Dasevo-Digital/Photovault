@@ -24,7 +24,11 @@ wurzel="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:-$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' "$wurzel/pubspec.yaml")}"
 [ -n "$version" ] || { echo "Version nicht ermittelbar." >&2; exit 1; }
 
-ziel="$HOME/Desktop/PhotoVault-Release-v$version"
+# Mit "-Upload": Ein Ordnername, der auf ".0" endet, haelt Spotlight fuer
+# ein Programm. Aeltere Ordner ohne das Suffix werden weiter gefunden.
+ziel="$HOME/Desktop/PhotoVault-Release-v$version-Upload"
+[ -d "$ziel" ] || [ ! -d "$HOME/Desktop/PhotoVault-Release-v$version" ] ||
+  ziel="$HOME/Desktop/PhotoVault-Release-v$version"
 [ -d "$ziel" ] || { echo "Auslieferungsordner fehlt: $ziel" >&2; exit 1; }
 
 echo "Auslieferung v$version -> $ziel"

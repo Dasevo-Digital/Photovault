@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.20.0" date="2026-10-05">
+      <description>
+        <p>New family tree view: the tree of life. A person stands at the trunk, and their ancestors or descendants grow upwards as branches over up to seven generations, in three styles - parchment with name scrolls, a landscape under an open sky, or heraldic shields. It can be saved as a borderless PDF up to A3, and direction, style and generations are remembered.</p>
+        <p>The application ID is now de.dasevo.photovault instead of the placeholder com.example.PhotoVault. On the first start the app takes over the data of the previous ID - in the Flatpak it keeps using the existing folder; nothing is copied or deleted. If a chosen library folder cannot be reached, the app now asks instead of quietly opening another library.</p>
+        <p>Database schema 87 (three new settings columns).</p>
+      </description>
+    </release>
     <release version="3.19.1" date="2026-10-02">
       <description>
         <p>Map tiles are now requested with the application name PhotoVault instead of the placeholder of the Flutter template, which countless sample apps send as well and which tile servers may block.</p>
