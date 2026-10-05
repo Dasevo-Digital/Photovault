@@ -4964,6 +4964,7 @@
   "lebensbaumStilPergament": "Pergament",
   "lebensbaumStilLandschaft": "Landschaft",
   "lebensbaumStilWappen": "Wappen",
+  "lebensbaumStilGold": "Gold",
   "lebensbaumGenerationen": "{anzahl} Generationen",
   "@lebensbaumGenerationen": {"placeholders": {"anzahl": {"type": "int"}}},
   "lebensbaumDrucken": "Lebensbaum als PDF",

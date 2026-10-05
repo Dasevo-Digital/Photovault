@@ -3882,6 +3882,7 @@
   "lebensbaumStilPergament": "Parchment",
   "lebensbaumStilLandschaft": "Landscape",
   "lebensbaumStilWappen": "Heraldic",
+  "lebensbaumStilGold": "Gold",
   "lebensbaumGenerationen": "{anzahl} generations",
   "lebensbaumDrucken": "Tree of life as PDF",
   "lebensbaumTitel": "The {name} family tree",

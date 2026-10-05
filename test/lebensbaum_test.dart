@@ -305,10 +305,8 @@ void main() {
           final (:vorlage, :belegung) = passendeVorlage(plan, stil);
           expect(belegung.verschwiegen, 0, reason: stil.name);
           expect(belegung.felder, hasLength(schilder));
-          expect(
-            vorlage,
-            same(lebensbaumvorlagen(stil)[generationen == 3 ? 0 : 1]),
-          );
+          final tafeln = lebensbaumvorlagen(stil);
+          expect(vorlage, same(generationen == 3 ? tafeln.first : tafeln.last));
         }
       }
     });

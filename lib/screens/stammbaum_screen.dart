@@ -1604,6 +1604,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 (Lebensbaumstil.pergament, t.lebensbaumStilPergament),
                 (Lebensbaumstil.landschaft, t.lebensbaumStilLandschaft),
                 (Lebensbaumstil.wappen, t.lebensbaumStilWappen),
+                (Lebensbaumstil.gold, t.lebensbaumStilGold),
               ])
                 DropdownMenuItem(value: stil, child: Text(name)),
             ],

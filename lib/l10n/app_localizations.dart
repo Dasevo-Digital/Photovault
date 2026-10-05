@@ -12967,6 +12967,12 @@ abstract class AppTexte {
   /// **'Wappen'**
   String get lebensbaumStilWappen;
 
+  /// No description provided for @lebensbaumStilGold.
+  ///
+  /// In de, this message translates to:
+  /// **'Gold'**
+  String get lebensbaumStilGold;
+
   /// No description provided for @lebensbaumGenerationen.
   ///
   /// In de, this message translates to:

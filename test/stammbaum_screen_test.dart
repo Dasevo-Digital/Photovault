@@ -865,7 +865,7 @@ void main() {
 
   testWidgets('jeder Stil lässt sich wählen', (tester) async {
     await zeigeLebensbaum(tester, 'kind');
-    for (final stil in ['Landschaft', 'Wappen', 'Pergament']) {
+    for (final stil in ['Landschaft', 'Wappen', 'Gold', 'Pergament']) {
       await tester.tap(find.byType(DropdownButton<Lebensbaumstil>));
       await tester.pumpAndSettle();
       await tester.tap(find.text(stil).last);

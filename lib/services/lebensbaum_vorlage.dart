@@ -18,10 +18,11 @@ import 'dart:ui';
 
 import 'lebensbaum.dart';
 
-/// Die drei Bilder, nach den Vorlagen gedruckter Stammbaumtafeln:
-/// Pergament mit Namensrollen, ein Nadelbaum vor Bergen, und die
-/// heraldische Tafel mit Wappenschilden.
-enum Lebensbaumstil { pergament, landschaft, wappen }
+/// Die Bilder, nach den Vorlagen gedruckter Stammbaumtafeln: Pergament
+/// mit Namensrollen, ein Nadelbaum vor Bergen, die heraldische Tafel mit
+/// Wappenschilden und ein Laubbaum mit Goldornamenten. Den letzten gibt
+/// es nur als grosse Tafel.
+enum Lebensbaumstil { pergament, landschaft, wappen, gold }
 
 /// Ein Schild im Bild, in Bildpunkten der Vorlage.
 class Vorlagenfeld {
@@ -319,6 +320,12 @@ final _landschaftGross = _gross(
   _landschaft.schrift,
   _landschaft.nebenschrift,
 );
+final _goldGross = _gross(
+  Lebensbaumstil.gold,
+  'assets/lebensbaum/gold_gross.jpg',
+  _pergament.schrift,
+  _pergament.nebenschrift,
+);
 final _wappenGross = _gross(
   Lebensbaumstil.wappen,
   'assets/lebensbaum/wappen_gross.jpg',
@@ -326,22 +333,18 @@ final _wappenGross = _gross(
   _wappenTafel.nebenschrift,
 );
 
-/// Die kleine Tafel eines Stils.
-Lebensbaumvorlage lebensbaumvorlage(Lebensbaumstil stil) => switch (stil) {
-  Lebensbaumstil.pergament => _pergament,
-  Lebensbaumstil.landschaft => _landschaft,
-  Lebensbaumstil.wappen => _wappenTafel,
-};
+/// Die kleinste Tafel eines Stils.
+Lebensbaumvorlage lebensbaumvorlage(Lebensbaumstil stil) =>
+    lebensbaumvorlagen(stil).first;
 
-/// Beide Tafeln eines Stils, die kleine zuerst.
-List<Lebensbaumvorlage> lebensbaumvorlagen(Lebensbaumstil stil) => [
-  lebensbaumvorlage(stil),
-  switch (stil) {
-    Lebensbaumstil.pergament => _pergamentGross,
-    Lebensbaumstil.landschaft => _landschaftGross,
-    Lebensbaumstil.wappen => _wappenGross,
-  },
-];
+/// Die Tafeln eines Stils, die kleinste zuerst.
+List<Lebensbaumvorlage> lebensbaumvorlagen(Lebensbaumstil stil) =>
+    switch (stil) {
+      Lebensbaumstil.pergament => [_pergament, _pergamentGross],
+      Lebensbaumstil.landschaft => [_landschaft, _landschaftGross],
+      Lebensbaumstil.wappen => [_wappenTafel, _wappenGross],
+      Lebensbaumstil.gold => [_goldGross],
+    };
 
 /// Die Tafel, die zur Familie passt, samt Belegung.
 ///

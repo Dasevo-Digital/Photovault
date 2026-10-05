@@ -8279,6 +8279,9 @@ class AppTexteEn extends AppTexte {
   String get lebensbaumStilWappen => 'Heraldic';
 
   @override
+  String get lebensbaumStilGold => 'Gold';
+
+  @override
   String lebensbaumGenerationen(int anzahl) {
     return '$anzahl generations';
   }
