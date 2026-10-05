@@ -27,7 +27,19 @@ import 'dart:ui';
 import 'faechertafel.dart' show elternFuerTafel;
 import 'stammbaum.dart';
 
-enum Lebensbaumrichtung { vorfahren, nachkommen }
+enum Lebensbaumrichtung {
+  vorfahren,
+  nachkommen,
+
+  /// Das Paar am Stamm, darüber links die Vorfahren der Person, rechts
+  /// die ihres Partners – und in der ersten Reihe die Geschwister beider.
+  paar,
+
+  /// Die ganze Familie Generation für Generation, wie im Zierbaum: mit
+  /// Geschwistern, Angeheirateten und deren Eltern. Ihr Plan kommt aus
+  /// dem Zierbaum, nicht aus [lebensbaumplan].
+  familie,
+}
 
 /// Breiter als so viel zu eins wird der Baum nicht, solange er dafür
 /// in die Höhe wachsen kann (siehe [lebensbaumplan]).
@@ -262,6 +274,57 @@ Lebensbaumplan lebensbaumplan(
         }
         reihe = naechste;
       }
+    case Lebensbaumrichtung.paar:
+      final partner = _partnerFuer(netz, wurzel, ordnung);
+      stamm = zweig([wurzel, ?partner], 0, null);
+      List<String> geschwister(String id) =>
+          {
+              for (final e in netz.eltern(id)) ...netz.kinder(e),
+            }.where((g) => g != wurzel && g != partner).toList()
+            ..sort((a, b) => ordnung(a).compareTo(ordnung(b)));
+      _Zweig? neu(String id, int stufe, _Zweig an) {
+        if (schilder >= hoechstensSchilder) {
+          verschwiegen++;
+          return null;
+        }
+        return zweig([id], stufe, an.schluessel);
+      }
+
+      // Aussen die Geschwister, innen die Vorfahren: Die Geschwister der
+      // Person links, die des Partners rechts, und die Linien beider
+      // treffen sich über dem Stamm.
+      final links = [for (final g in geschwister(wurzel)) ?neu(g, 1, stamm)];
+      final rechts = [
+        if (partner != null)
+          for (final g in geschwister(partner)) ?neu(g, 1, stamm),
+      ];
+      var reihe = <(_Zweig, String)>[];
+      final ahnen = <_Zweig>[];
+      for (final id in [wurzel, ?partner]) {
+        for (final elternteil in elternFuerTafel(netz, id, ordnung)) {
+          if (elternteil == null || tiefe < 1) continue;
+          final k = neu(elternteil, 2, stamm);
+          if (k == null) continue;
+          ahnen.add(k);
+          reihe.add((k, elternteil));
+        }
+      }
+      stamm.kinder.addAll([...links, ...ahnen, ...rechts]);
+      for (var stufe = 3; stufe <= tiefe + 1 && reihe.isNotEmpty; stufe++) {
+        final naechste = <(_Zweig, String)>[];
+        for (final (z, id) in reihe) {
+          for (final elternteil in elternFuerTafel(netz, id, ordnung)) {
+            if (elternteil == null) continue;
+            final k = neu(elternteil, stufe, z);
+            if (k == null) continue;
+            z.kinder.add(k);
+            naechste.add((k, elternteil));
+          }
+        }
+        reihe = naechste;
+      }
+    case Lebensbaumrichtung.familie:
+      throw ArgumentError('Die Familie kommt aus dem Zierbaum.');
     case Lebensbaumrichtung.nachkommen:
       final gesehen = <String>{wurzel};
       List<String> paar(String id) {

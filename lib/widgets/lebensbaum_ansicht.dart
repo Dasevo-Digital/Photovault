@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import '../services/lebensbaum_vorlage.dart';
+import '../services/lebensbaum_bild.dart';
 import 'lebensbaum_maler.dart';
 
 /// Der Lebensbaum auf dem Schirm.
 ///
-/// Unten das Bild der [vorlage], darüber die Namen von [LebensbaumMaler].
-/// Darüber liegt je beschriftetem Schild eine unsichtbare Fläche: zum
-/// Antippen – wer tippt, rückt die Person an den Stamm – und damit ein
-/// Bildschirmleser die Namen findet, die im Bild nur gemalt sind.
+/// Unten das Bild, darauf die Schilder, die das Bild nicht schon hat,
+/// darüber die Namen von [LebensbaumMaler]. Darüber liegt je Person eine
+/// unsichtbare Fläche: zum Antippen – wer tippt, rückt die Person an den
+/// Stamm – und damit ein Bildschirmleser die Namen findet, die im Bild
+/// nur gemalt sind.
 class LebensbaumAnsicht extends StatelessWidget {
-  final Lebensbaumvorlage vorlage;
-  final Lebensbaumbelegung belegung;
+  final Lebensbaumbild inhalt;
   final Lebensbaumschild Function(String personId) beschriftung;
   final String titel;
   final String? untertitel;
@@ -19,8 +19,7 @@ class LebensbaumAnsicht extends StatelessWidget {
 
   const LebensbaumAnsicht({
     super.key,
-    required this.vorlage,
-    required this.belegung,
+    required this.inhalt,
     required this.beschriftung,
     required this.titel,
     required this.beiTipp,
@@ -29,19 +28,15 @@ class LebensbaumAnsicht extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final flaechen = <(Rect, String)>[
-      for (final MapEntry(key: i, value: id) in belegung.felder.entries)
-        (vorlage.felder[i].rahmen, id),
-      for (final (i, r) in vorlage.wurzelflaechen(belegung).indexed)
-        (r, belegung.wurzel[i]),
-    ];
+    final vorlage = inhalt.vorlage;
+    final schildBild = vorlage.schildBild;
     return SizedBox.fromSize(
       size: vorlage.groesse,
       child: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              vorlage.bild,
+              inhalt.hintergrund,
               fit: BoxFit.fill,
               filterQuality: FilterQuality.high,
               excludeFromSemantics: true,
@@ -51,12 +46,23 @@ class LebensbaumAnsicht extends StatelessWidget {
                   frame == null ? const SizedBox.expand() : kind,
             ),
           ),
+          if (schildBild != null)
+            for (final p in inhalt.plaetze)
+              if (p.zuSetzen)
+                Positioned.fromRect(
+                  rect: p.rahmen,
+                  child: Image.asset(
+                    schildBild,
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.high,
+                    excludeFromSemantics: true,
+                  ),
+                ),
           Positioned.fill(
             child: RepaintBoundary(
               child: CustomPaint(
                 painter: LebensbaumMaler(
-                  vorlage: vorlage,
-                  belegung: belegung,
+                  inhalt: inhalt,
                   beschriftung: beschriftung,
                   titel: titel,
                   untertitel: untertitel,
@@ -65,7 +71,7 @@ class LebensbaumAnsicht extends StatelessWidget {
               ),
             ),
           ),
-          for (final (rahmen, id) in flaechen)
+          for (final (rahmen, id) in inhalt.flaechen)
             Positioned.fromRect(
               rect: rahmen,
               child: _Flaeche(

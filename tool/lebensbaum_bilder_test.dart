@@ -11,7 +11,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/lebensbaum.dart';
+import 'package:photo_vault/services/lebensbaum_bild.dart';
 import 'package:photo_vault/services/lebensbaum_vorlage.dart';
+import 'package:photo_vault/services/zierbaum.dart';
 import 'package:photo_vault/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 
@@ -37,6 +39,11 @@ void main() {
     'e3': ('Mia Wyrsch', 2010, null),
     'e4': ('Ben Wyrsch', 2012, null),
     'e5': ('Leo Wyrsch', 2015, null),
+    'schw': ('Rita Amstad', 1955, null),
+    'schwager': ('Walter Amstad', 1951, 2020),
+    'neffe': ('Urs Amstad', 1980, null),
+    'sv': ('Paul Wyrsch', 1920, 1999),
+    'sm': ('Klara Imfeld', 1924, 2010),
   };
   final netz = Verwandtschaftsnetz([
     for (final (kind, elternteil) in [
@@ -59,10 +66,18 @@ void main() {
       ('e3', 'k2'),
       ('e4', 'k2'),
       ('e5', 'k3'),
+      ('schw', 'v'),
+      ('schw', 'm'),
+      ('neffe', 'schw'),
+      ('neffe', 'schwager'),
+      ('mann', 'sv'),
+      ('mann', 'sm'),
     ])
       kante(kind, elternteil, Verwandtschaft.elternteil),
     partnerKanteFuer('ich', 'mann'),
     partnerKanteFuer('k1', 'k1p'),
+    partnerKanteFuer('schw', 'schwager'),
+    partnerKanteFuer('sv', 'sm'),
   ]);
   int ordnung(String id) => namen.keys.toList().indexOf(id);
   const bezeichnungen = {
@@ -84,6 +99,11 @@ void main() {
     'e3': 'Enkelin',
     'e4': 'Enkel',
     'e5': 'Enkel',
+    'schw': 'Schwester',
+    'schwager': 'Schwager',
+    'neffe': 'Neffe',
+    'sv': 'Schwiegervater',
+    'sm': 'Schwiegermutter',
   };
   Lebensbaumschild schild(String id) {
     final (name, geburt, tod) = namen[id]!;
@@ -96,24 +116,30 @@ void main() {
 
   Future<void> male(
     WidgetTester tester,
-    Lebensbaumplan plan,
-    Lebensbaumstil stil,
+    Lebensbaumbild inhalt,
     Lebensbaumschild Function(String) beschriftung,
     String datei,
   ) async {
-    final (:vorlage, :belegung) = passendeVorlage(plan, stil);
+    final vorlage = inhalt.vorlage;
     final ziel = Platform.environment['PV_BILDER'];
     await tester.runAsync(() async {
-      final codec = await ui.instantiateImageCodec(
-        File(vorlage.bild).readAsBytesSync(),
-      );
-      final bild = (await codec.getNextFrame()).image;
+      Future<ui.Image> lade(String pfad) async {
+        final codec = await ui.instantiateImageCodec(
+          File(pfad).readAsBytesSync(),
+        );
+        return (await codec.getNextFrame()).image;
+      }
+
+      final bild = await lade(inhalt.hintergrund);
+      final schild = vorlage.schildBild == null
+          ? null
+          : await lade(vorlage.schildBild!);
       const faktor = 2.0;
       final groesse = vorlage.groesse * faktor;
       final aufnahme = ui.PictureRecorder();
       LebensbaumMaler(
-        vorlage: vorlage,
-        belegung: belegung,
+        inhalt: inhalt,
+        schild: schild,
         beschriftung: beschriftung,
         titel: 'Stammbaum der Familie Wyrsch',
         untertitel: 'Die Vorfahren von Johanna Wyrsch',
@@ -143,7 +169,22 @@ void main() {
     });
   }
 
-  for (final richtung in Lebensbaumrichtung.values) {
+  for (final stil in Lebensbaumstil.values) {
+    testWidgets('familie – ${stil.name}', (tester) async {
+      await schriften(tester);
+      final geflecht = geflechtUm(netz, 'ich', namen.keys.toList());
+      await male(
+        tester,
+        familienbild(zierbaumplan(geflecht), grosseLebensbaumvorlage(stil)),
+        schild,
+        'lebensbaum_familie_${stil.name}.png',
+      );
+    });
+  }
+
+  for (final richtung in Lebensbaumrichtung.values.where(
+    (r) => r != Lebensbaumrichtung.familie,
+  )) {
     for (final stil in Lebensbaumstil.values) {
       testWidgets('${richtung.name} – ${stil.name}', (tester) async {
         await schriften(tester);
@@ -154,10 +195,10 @@ void main() {
           richtung: richtung,
           generationen: 3,
         );
+        final (:vorlage, :belegung) = passendeVorlage(plan, stil);
         await male(
           tester,
-          plan,
-          stil,
+          bildAusBelegung(vorlage, belegung),
           schild,
           'lebensbaum_${richtung.name}_${stil.name}.png',
         );
@@ -185,14 +226,20 @@ void main() {
         generationen: 4,
       );
       expect(plan.knoten, hasLength(31));
-      await male(tester, plan, stil, (id) {
-        final n = int.parse(id.substring(1));
-        return (
-          name: '${vornamen[n % vornamen.length]} Wyrsch',
-          lebensspanne: '${2000 - n * 9}–${2060 - n * 9}',
-          bezeichnung: 'Nr. $n',
-        );
-      }, 'lebensbaum_voll_${stil.name}.png');
+      final (:vorlage, :belegung) = passendeVorlage(plan, stil);
+      await male(
+        tester,
+        bildAusBelegung(vorlage, belegung),
+        (id) {
+          final n = int.parse(id.substring(1));
+          return (
+            name: '${vornamen[n % vornamen.length]} Wyrsch',
+            lebensspanne: '${2000 - n * 9}–${2060 - n * 9}',
+            bezeichnung: 'Nr. $n',
+          );
+        },
+        'lebensbaum_voll_${stil.name}.png',
+      );
     });
   }
 }

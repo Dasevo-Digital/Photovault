@@ -863,6 +863,32 @@ void main() {
     );
   });
 
+  testWidgets('Paar und Familie zeigen die Generationen um die Person', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'vater');
+    // Am Stamm ohne Bezeichnung – „Vater" heisst hier auch die
+    // Bezeichnung des Opas.
+    final mitte = find.bySemanticsLabel(RegExp(r'^Vater, \*1931'));
+    for (final richtung in ['Paar', 'Familie']) {
+      await tester.tap(find.text(richtung));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: richtung);
+      // Nach oben die Eltern, nach unten – nur in der Familie – das Kind.
+      expect(schild('Opa'), findsOneWidget, reason: richtung);
+      // Im Pergament steht die erste Reihe neben dem Stamm.
+      expect(
+        tester.getCenter(schild('Opa')).dy,
+        lessThan(tester.getCenter(mitte).dy + 30),
+      );
+    }
+    expect(schild('Kind'), findsOneWidget);
+    expect(
+      tester.getCenter(schild('Kind')).dy,
+      greaterThan(tester.getCenter(mitte).dy),
+    );
+  });
+
   testWidgets('jeder Stil lässt sich wählen', (tester) async {
     await zeigeLebensbaum(tester, 'kind');
     for (final stil in ['Landschaft', 'Wappen', 'Gold', 'Pergament']) {

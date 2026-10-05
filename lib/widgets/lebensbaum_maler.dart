@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../services/lebensbaum_bild.dart';
 import '../services/lebensbaum_vorlage.dart';
 import '../theme/zierbaum_farben.dart'
     show zierschrift, zierschriftGross, zierGewicht;
@@ -16,30 +17,32 @@ typedef Lebensbaumschild = ({
   String? bezeichnung,
 });
 
-/// Schreibt die Namen in die Schilder einer [Lebensbaumvorlage].
+/// Schreibt die Namen in die Schilder eines [Lebensbaumbild]s.
 ///
-/// Das Bild selbst malt er nur, wenn es ihm übergeben wird ([bild]) – auf
-/// dem Bildschirm liegt es als eigenes Widget darunter und wird von
-/// Flutter geladen und zwischengespeichert, für die Tafel gibt es kein
-/// Widget.
+/// Bild und gesetzte Schilder malt er nur, wenn sie ihm übergeben werden
+/// ([bild], [schild]) – auf dem Bildschirm liegen sie als eigene Widgets
+/// darunter und werden von Flutter geladen und zwischengespeichert, für
+/// die Tafel gibt es keine Widgets.
 class LebensbaumMaler extends CustomPainter {
-  final Lebensbaumvorlage vorlage;
-  final Lebensbaumbelegung belegung;
+  final Lebensbaumbild inhalt;
   final Lebensbaumschild Function(String personId) beschriftung;
   final String titel;
   final String? untertitel;
   final ui.Image? bild;
+  final ui.Image? schild;
   final TextDirection textRichtung;
 
   LebensbaumMaler({
-    required this.vorlage,
-    required this.belegung,
+    required this.inhalt,
     required this.beschriftung,
     required this.titel,
     this.untertitel,
     this.bild,
+    this.schild,
     this.textRichtung = TextDirection.ltr,
   });
+
+  Lebensbaumvorlage get vorlage => inhalt.vorlage;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -57,12 +60,25 @@ class LebensbaumMaler extends CustomPainter {
         Paint()..filterQuality = FilterQuality.high,
       );
     }
-    for (final MapEntry(key: i, value: id) in belegung.felder.entries) {
-      _beschrifte(canvas, vorlage.felder[i].schrift, [beschriftung(id)]);
+    final schild = this.schild;
+    for (final p in inhalt.plaetze) {
+      if (schild != null && p.zuSetzen) {
+        canvas.drawImageRect(
+          schild,
+          Rect.fromLTWH(
+            0,
+            0,
+            schild.width.toDouble(),
+            schild.height.toDouble(),
+          ),
+          p.rahmen,
+          Paint()..filterQuality = FilterQuality.high,
+        );
+      }
+      _beschrifte(canvas, p.schrift, [
+        for (final id in p.personen) beschriftung(id),
+      ], amStamm: p.amStamm);
     }
-    _beschrifte(canvas, vorlage.wurzel.schrift, [
-      for (final id in belegung.wurzel) beschriftung(id),
-    ], amStamm: true);
     _titel(canvas);
     canvas.restore();
   }
@@ -235,8 +251,8 @@ class LebensbaumMaler extends CustomPainter {
 
   @override
   bool shouldRepaint(LebensbaumMaler alt) =>
-      alt.vorlage != vorlage ||
-      alt.belegung != belegung ||
+      alt.inhalt != inhalt ||
+      alt.schild != schild ||
       alt.beschriftung != beschriftung ||
       alt.titel != titel ||
       alt.untertitel != untertitel ||

@@ -76,6 +76,17 @@ class Lebensbaumvorlage {
   final Color schrift;
   final Color nebenschrift;
 
+  /// Dasselbe Bild ohne Schilder, für die frei gesetzten Schilder der
+  /// Familie – nur bei den grossen Tafeln.
+  final String? leeresBild;
+
+  /// Ein einzelnes Schild aus dem Bild, mit Zierkante, als Vorlage für
+  /// die frei gesetzten.
+  final String? schildBild;
+
+  /// Wo frei gesetzte Schilder stehen dürfen: die Krone samt Stamm.
+  final Rect? krone;
+
   const Lebensbaumvorlage({
     required this.stil,
     required this.bild,
@@ -86,6 +97,9 @@ class Lebensbaumvorlage {
     required this.schrift,
     required this.nebenschrift,
     this.untertitel,
+    this.leeresBild,
+    this.schildBild,
+    this.krone,
   });
 
   /// Die Person an [stelle], oder `null`.
@@ -297,6 +311,9 @@ Lebensbaumvorlage _gross(
 ) => Lebensbaumvorlage(
   stil: stil,
   bild: bild,
+  leeresBild: 'assets/lebensbaum/${stil.name}_leer.jpg',
+  schildBild: 'assets/lebensbaum/${stil.name}_schild.png',
+  krone: const Rect.fromLTRB(40, 230, 1960, 1060),
   groesse: const Size(2000, 1333),
   wurzel: const Vorlagenfeld(
     Rect.fromLTRB(863, 882, 1137, 1048),
@@ -332,6 +349,10 @@ final _wappenGross = _gross(
   _wappenTafel.schrift,
   _wappenTafel.nebenschrift,
 );
+
+/// Die grosse Tafel eines Stils – die mit dem Bild ohne Schilder.
+Lebensbaumvorlage grosseLebensbaumvorlage(Lebensbaumstil stil) =>
+    lebensbaumvorlagen(stil).last;
 
 /// Die kleinste Tafel eines Stils.
 Lebensbaumvorlage lebensbaumvorlage(Lebensbaumstil stil) =>

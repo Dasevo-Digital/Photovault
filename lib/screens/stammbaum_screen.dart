@@ -24,6 +24,7 @@ import '../services/fotostatistik.dart';
 import '../services/gedcom_export.dart';
 import '../services/gedcom_import.dart';
 import '../services/lebensbaum.dart';
+import '../services/lebensbaum_bild.dart';
 import '../services/lebensbaum_vorlage.dart';
 import '../services/lebenslauf.dart';
 import '../services/zeitleiste.dart';
@@ -1565,8 +1566,8 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Der Lebensbaum – siehe [LebensbaumAnsicht].
   Widget _lebensbaum(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
-    final plan = _lebensbaumplan(fokus.id);
-    final (:vorlage, :belegung) = passendeVorlage(plan, _lebensStil);
+    final inhalt = _lebensbaumbild(fokus.id);
+    final vorlage = inhalt.vorlage;
 
     final steuerung = Padding(
       padding: const EdgeInsets.symmetric(
@@ -1587,6 +1588,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               ButtonSegment(
                 value: Lebensbaumrichtung.nachkommen,
                 label: Text(t.lebensbaumNachkommen),
+              ),
+              ButtonSegment(
+                value: Lebensbaumrichtung.paar,
+                label: Text(t.lebensbaumPaar),
+              ),
+              ButtonSegment(
+                value: Lebensbaumrichtung.familie,
+                label: Text(t.lebensbaumFamilie),
               ),
             ],
             selected: {_lebensRichtung},
@@ -1614,32 +1623,34 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               _lebensbaumMerken();
             },
           ),
-          DropdownButton<int>(
-            value: _lebensGenerationen,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (
-                var g = lebensbaumMinGenerationen + 1;
-                g <= lebensbaumMaxGenerationen;
-                g++
-              )
-                DropdownMenuItem(
-                  value: g,
-                  // Die Person am Stamm zählt mit: „4 Generationen" heisst
-                  // sie selbst und drei darüber.
-                  child: Text(t.lebensbaumGenerationen(g + 1)),
-                ),
-            ],
-            onChanged: (w) {
-              if (w == null) return;
-              setState(() => _lebensGenerationen = w);
-              _lebensbaumMerken();
-            },
-          ),
+          // Die Familie reicht so weit wie der Zierbaum, nicht weiter.
+          if (_lebensRichtung != Lebensbaumrichtung.familie)
+            DropdownButton<int>(
+              value: _lebensGenerationen,
+              underline: const SizedBox.shrink(),
+              items: [
+                for (
+                  var g = lebensbaumMinGenerationen + 1;
+                  g <= lebensbaumMaxGenerationen;
+                  g++
+                )
+                  DropdownMenuItem(
+                    value: g,
+                    // Die Person am Stamm zählt mit: „4 Generationen" heisst
+                    // sie selbst und drei darüber.
+                    child: Text(t.lebensbaumGenerationen(g + 1)),
+                  ),
+              ],
+              onChanged: (w) {
+                if (w == null) return;
+                setState(() => _lebensGenerationen = w);
+                _lebensbaumMerken();
+              },
+            ),
           IconButton(
             tooltip: t.lebensbaumDrucken,
             icon: const Icon(Icons.print_outlined),
-            onPressed: plan.knoten.length <= 1
+            onPressed: inhalt.plaetze.length <= 1
                 ? null
                 : () => _lebensbaumDrucken(fokus),
           ),
@@ -1649,17 +1660,17 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
     // Ein Stamm ohne einen einzigen Ast ist kein Baum – auch dann nicht,
     // wenn am Stamm ein Paar steht.
-    if (plan.knoten.length <= 1) {
+    if (inhalt.plaetze.length <= 1) {
       return Column(
         children: [
           steuerung,
           Expanded(
-            child: _hinweis(
-              context,
-              _lebensRichtung == Lebensbaumrichtung.vorfahren
-                  ? t.lebensbaumKeineVorfahren
-                  : t.lebensbaumKeineNachkommen,
-            ),
+            child: _hinweis(context, switch (_lebensRichtung) {
+              Lebensbaumrichtung.vorfahren ||
+              Lebensbaumrichtung.paar => t.lebensbaumKeineVorfahren,
+              Lebensbaumrichtung.nachkommen => t.lebensbaumKeineNachkommen,
+              Lebensbaumrichtung.familie => t.lebensbaumKeineFamilie,
+            }),
           ),
         ],
       );
@@ -1668,7 +1679,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     return Column(
       children: [
         steuerung,
-        if (belegung.verschwiegen > 0)
+        if (inhalt.verschwiegen > 0)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.md,
@@ -1677,7 +1688,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               AppSpacing.sm,
             ),
             child: Text(
-              t.lebensbaumAusgelassen(belegung.verschwiegen),
+              t.lebensbaumAusgelassen(inhalt.verschwiegen),
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1693,7 +1704,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               // Ganzes ansieht – und erst dann hineinzoomt.
               final schluessel =
                   '${fokus.id}|$_lebensRichtung|$_lebensGenerationen|'
-                  '${vorlage.bild}|'
+                  '${inhalt.hintergrund}|'
                   '${fenster.width.round()}x${fenster.height.round()}';
               if (_lebensEingepasst != schluessel) {
                 _lebensEingepasst = schluessel;
@@ -1719,10 +1730,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                       trackpadScrollCausesScale: true,
                       child: MediaQuery.withNoTextScaling(
                         child: LebensbaumAnsicht(
-                          vorlage: vorlage,
-                          belegung: belegung,
+                          inhalt: inhalt,
                           beschriftung: _lebensbaumschild,
-                          titel: _lebensbaumtitel(t, vorlage, belegung),
+                          titel: _lebensbaumtitel(t, inhalt),
                           untertitel: _lebensbaumuntertitel(t, fokus),
                           beiTipp: _ruecke,
                         ),
@@ -1758,17 +1768,35 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
   }
 
-  Lebensbaumplan _lebensbaumplan(String fokus) {
+  /// Was der Lebensbaum für [fokus] zeigt, in der gewählten Richtung
+  /// und im gewählten Stil.
+  ///
+  /// Die Familie kommt aus demselben Geflecht wie der Zierbaum und wird
+  /// frei in die Krone gesetzt; alles andere wird auf die gemalten
+  /// Schilder der passenden Tafel verteilt.
+  Lebensbaumbild _lebensbaumbild(String fokus) {
+    if (_lebensRichtung == Lebensbaumrichtung.familie) {
+      final geflecht = geflechtUm(_netz, fokus, [
+        for (final p in _personen) p.id,
+      ]);
+      return familienbild(
+        zierbaumplan(geflecht),
+        grosseLebensbaumvorlage(_lebensStil),
+        verschwiegen: geflecht.verschwiegen,
+      );
+    }
     final rang = {
       for (var i = 0; i < _personen.length; i++) _personen[i].id: i,
     };
-    return lebensbaumplan(
+    final plan = lebensbaumplan(
       _netz,
       fokus,
       (id) => rang[id] ?? 1 << 30,
       richtung: _lebensRichtung,
       generationen: _lebensGenerationen,
     );
+    final (:vorlage, :belegung) = passendeVorlage(plan, _lebensStil);
+    return bildAusBelegung(vorlage, belegung);
   }
 
   Lebensbaumschild _lebensbaumschild(String id) {
@@ -1787,35 +1815,33 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   ///
   /// Kurz, wo das Bild darunter noch eine Zeile hat
   /// ([Lebensbaumvorlage.untertitel]) – dort steht dann, um wen es geht.
-  String _lebensbaumtitel(
-    AppTexte t,
-    Lebensbaumvorlage vorlage,
-    Lebensbaumbelegung belegung,
-  ) {
+  String _lebensbaumtitel(AppTexte t, Lebensbaumbild inhalt) {
     final name = haeufigsterNachname([
-      for (final id in belegung.personen) _nachId[id]!.name,
+      for (final id in inhalt.personen) _nachId[id]!.name,
     ]);
     if (name == null) return t.lebensbaumTitelOhneName;
-    return vorlage.untertitel == null
+    return inhalt.vorlage.untertitel == null
         ? t.lebensbaumTitel(name)
         : t.lebensbaumTitelKurz(name);
   }
 
   /// Die Zeile unter dem Titel, wo das Bild eine hat: um wen es geht.
   String _lebensbaumuntertitel(AppTexte t, PersonData fokus) =>
-      _lebensRichtung == Lebensbaumrichtung.vorfahren
-      ? t.lebensbaumUntertitelVorfahren(fokus.name)
-      : t.lebensbaumUntertitelNachkommen(fokus.name);
+      switch (_lebensRichtung) {
+        Lebensbaumrichtung.vorfahren ||
+        Lebensbaumrichtung.paar => t.lebensbaumUntertitelVorfahren(fokus.name),
+        Lebensbaumrichtung.nachkommen => t.lebensbaumUntertitelNachkommen(
+          fokus.name,
+        ),
+        Lebensbaumrichtung.familie => t.lebensbaumUntertitelFamilie(fokus.name),
+      };
 
   /// Schreibt den Lebensbaum als PDF – das Blatt an die Wand.
   Future<void> _lebensbaumDrucken(PersonData fokus) async {
     final t = AppTexte.of(context);
     final richtung = Directionality.of(context);
-    final (:vorlage, :belegung) = passendeVorlage(
-      _lebensbaumplan(fokus.id),
-      _lebensStil,
-    );
-    final titel = _lebensbaumtitel(t, vorlage, belegung);
+    final inhalt = _lebensbaumbild(fokus.id);
+    final titel = _lebensbaumtitel(t, inhalt);
     final untertitel = _lebensbaumuntertitel(t, fokus);
     final ziel = await FilePicker.platform.saveFile(
       dialogTitle: t.lebensbaumDrucken,
@@ -1825,8 +1851,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
     if (ziel == null || !mounted) return;
     final bytes = await baueLebensbaumPdf(
-      vorlage: vorlage,
-      belegung: belegung,
+      inhalt: inhalt,
       beschriftung: _lebensbaumschild,
       titel: titel,
       untertitel: untertitel,

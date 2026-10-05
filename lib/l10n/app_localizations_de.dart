@@ -8319,6 +8319,21 @@ class AppTexteDe extends AppTexte {
   String get lebensbaumNachkommen => 'Nachkommen';
 
   @override
+  String get lebensbaumPaar => 'Paar';
+
+  @override
+  String get lebensbaumFamilie => 'Familie';
+
+  @override
+  String get lebensbaumKeineFamilie =>
+      'Für diese Person sind noch keine Verwandten eingetragen. Füge oben rechts Eltern, Geschwister, einen Partner oder Kinder hinzu.';
+
+  @override
+  String lebensbaumUntertitelFamilie(String name) {
+    return 'Die Familie von $name';
+  }
+
+  @override
   String get lebensbaumStilPergament => 'Pergament';
 
   @override

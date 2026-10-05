@@ -3,7 +3,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/lebensbaum.dart';
+import 'package:photo_vault/services/lebensbaum_bild.dart';
 import 'package:photo_vault/services/lebensbaum_vorlage.dart';
+import 'package:photo_vault/services/zierbaum.dart';
 import 'package:photo_vault/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_ansicht.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
@@ -352,6 +354,104 @@ void main() {
     });
   });
 
+  group('Paar', () {
+    test('am Stamm das Paar, links ihre, rechts seine Seite', () {
+      final n = Verwandtschaftsnetz([
+        kante('ich', 'v', Verwandtschaft.elternteil),
+        kante('ich', 'm', Verwandtschaft.elternteil),
+        kante('schw', 'v', Verwandtschaft.elternteil),
+        kante('p', 'pv', Verwandtschaft.elternteil),
+        kante('p', 'pm', Verwandtschaft.elternteil),
+        kante('pb', 'pv', Verwandtschaft.elternteil),
+        partnerKanteFuer('ich', 'p'),
+      ]);
+      const folge = ['ich', 'p', 'v', 'm', 'pv', 'pm', 'schw', 'pb'];
+      final plan = lebensbaumplan(
+        n,
+        'ich',
+        folge.indexOf,
+        richtung: Lebensbaumrichtung.paar,
+      );
+      expect(plan.wurzel.personen, ['ich', 'p']);
+      double x(String id) => plan.knoten
+          .firstWhere((k) => k.personen.contains(id))
+          .rahmen
+          .center
+          .dx;
+      int stufe(String id) =>
+          plan.knoten.firstWhere((k) => k.personen.contains(id)).stufe;
+      expect(stufe('schw'), 1);
+      expect(stufe('pb'), 1);
+      expect(stufe('v'), 2);
+      expect(stufe('pv'), 2);
+      // Aussen die Geschwister, innen die Eltern; ihre Seite links.
+      expect(x('schw'), lessThan(x('v')));
+      expect(x('m'), lessThan(x('pv')));
+      expect(x('pm'), lessThan(x('pb')));
+      keineUeberlappung(plan);
+    });
+  });
+
+  group('Familie', () {
+    for (final stil in Lebensbaumstil.values) {
+      test('${stil.name}: jede Person ein Schild in der Krone', () {
+        final n = Verwandtschaftsnetz([
+          kante('ich', 'v', Verwandtschaft.elternteil),
+          kante('ich', 'm', Verwandtschaft.elternteil),
+          kante('schw', 'v', Verwandtschaft.elternteil),
+          kante('schw', 'm', Verwandtschaft.elternteil),
+          kante('neffe', 'schw', Verwandtschaft.elternteil),
+          kante('neffe', 'schwager', Verwandtschaft.elternteil),
+          kante('p', 'pv', Verwandtschaft.elternteil),
+          kante('kind', 'ich', Verwandtschaft.elternteil),
+          partnerKanteFuer('ich', 'p'),
+          partnerKanteFuer('schw', 'schwager'),
+        ]);
+        final geflecht = geflechtUm(n, 'ich', [
+          'ich',
+          'p',
+          'v',
+          'm',
+          'schw',
+          'schwager',
+          'neffe',
+          'pv',
+          'kind',
+        ]);
+        final vorlage = grosseLebensbaumvorlage(stil);
+        final bild = familienbild(zierbaumplan(geflecht), vorlage);
+        expect(bild.hintergrund, vorlage.leeresBild);
+        expect(bild.personen.toSet(), geflecht.personen);
+        final krone = vorlage.krone!.inflate(1);
+        final rahmen = [for (final p in bild.plaetze) p.rahmen];
+        for (final (i, r) in rahmen.indexed) {
+          expect(krone.contains(r.topLeft), isTrue);
+          expect(krone.contains(r.bottomRight), isTrue);
+          for (final o in rahmen.skip(i + 1)) {
+            expect(r.overlaps(o), isFalse, reason: '$r und $o');
+          }
+        }
+        // Die Eltern stehen über der Person, der Neffe darunter.
+        double y(String id) => bild.plaetze
+            .firstWhere((p) => p.personen.contains(id))
+            .rahmen
+            .center
+            .dy;
+        expect(y('v'), lessThan(y('ich')));
+        expect(y('neffe'), greaterThan(y('schw')));
+        expect(
+          bild.personBei(
+            bild.plaetze
+                .firstWhere((p) => p.personen.contains('pv'))
+                .rahmen
+                .center,
+          ),
+          'pv',
+        );
+      });
+    }
+  });
+
   testWidgets('die Ansicht meldet den Tipp und nennt die Namen', (
     tester,
   ) async {
@@ -363,6 +463,7 @@ void main() {
     );
     final vorlage = lebensbaumvorlage(Lebensbaumstil.pergament);
     final belegung = belegeVorlage(plan, vorlage);
+    final inhalt = bildAusBelegung(vorlage, belegung);
     String? getippt;
     tester.view.physicalSize = vorlage.groesse;
     tester.view.devicePixelRatio = 1;
@@ -373,8 +474,7 @@ void main() {
         child: Align(
           alignment: Alignment.topLeft,
           child: LebensbaumAnsicht(
-            vorlage: vorlage,
-            belegung: belegung,
+            inhalt: inhalt,
             beschriftung: (id) =>
                 (name: 'Name $id', lebensspanne: null, bezeichnung: 'Grad'),
             titel: 'Titel',
@@ -391,13 +491,14 @@ void main() {
 
   test('der Maler schreibt ohne Fehler in jedes Bild', () {
     for (final stil in Lebensbaumstil.values) {
-      for (final richtung in Lebensbaumrichtung.values) {
+      for (final richtung in Lebensbaumrichtung.values.where(
+        (r) => r != Lebensbaumrichtung.familie,
+      )) {
         final plan = lebensbaumplan(netz(), 'ich', ordnung, richtung: richtung);
         final vorlage = lebensbaumvorlage(stil);
         final aufnahme = ui.PictureRecorder();
         LebensbaumMaler(
-          vorlage: vorlage,
-          belegung: belegeVorlage(plan, vorlage),
+          inhalt: bildAusBelegung(vorlage, belegeVorlage(plan, vorlage)),
           beschriftung: (id) => (
             name: 'Ein sehr langer Name $id',
             lebensspanne: '1900–1980',

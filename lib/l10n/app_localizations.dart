@@ -12949,6 +12949,30 @@ abstract class AppTexte {
   /// **'Nachkommen'**
   String get lebensbaumNachkommen;
 
+  /// No description provided for @lebensbaumPaar.
+  ///
+  /// In de, this message translates to:
+  /// **'Paar'**
+  String get lebensbaumPaar;
+
+  /// No description provided for @lebensbaumFamilie.
+  ///
+  /// In de, this message translates to:
+  /// **'Familie'**
+  String get lebensbaumFamilie;
+
+  /// No description provided for @lebensbaumKeineFamilie.
+  ///
+  /// In de, this message translates to:
+  /// **'Für diese Person sind noch keine Verwandten eingetragen. Füge oben rechts Eltern, Geschwister, einen Partner oder Kinder hinzu.'**
+  String get lebensbaumKeineFamilie;
+
+  /// No description provided for @lebensbaumUntertitelFamilie.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Familie von {name}'**
+  String lebensbaumUntertitelFamilie(String name);
+
   /// No description provided for @lebensbaumStilPergament.
   ///
   /// In de, this message translates to:

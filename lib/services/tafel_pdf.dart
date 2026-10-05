@@ -25,7 +25,7 @@ import '../widgets/faecher_ansicht.dart';
 import '../widgets/lebensbaum_maler.dart';
 import '../widgets/zierbaum_maler.dart';
 import 'faechertafel.dart';
-import 'lebensbaum_vorlage.dart';
+import 'lebensbaum_bild.dart';
 import 'stammbaum.dart';
 import 'zierbaum.dart';
 
@@ -232,25 +232,34 @@ Future<Uint8List> baueZierbaumPdf({
 /// Bildpunkte. Die Schrift dagegen wird in der vollen Grösse gesetzt und
 /// bleibt scharf.
 Future<Uint8List> baueLebensbaumPdf({
-  required Lebensbaumvorlage vorlage,
-  required Lebensbaumbelegung belegung,
+  required Lebensbaumbild inhalt,
   required Lebensbaumschild Function(String personId) beschriftung,
   required String titel,
   required String? untertitel,
   required TextDirection textRichtung,
   AssetBundle? bundle,
 }) async {
-  final daten = await (bundle ?? rootBundle).load(vorlage.bild);
-  final codec = await ui.instantiateImageCodec(daten.buffer.asUint8List());
-  final bild = (await codec.getNextFrame()).image;
-  codec.dispose();
+  final vorlage = inhalt.vorlage;
+  Future<ui.Image> lade(String asset) async {
+    final daten = await (bundle ?? rootBundle).load(asset);
+    final codec = await ui.instantiateImageCodec(daten.buffer.asUint8List());
+    final bild = (await codec.getNextFrame()).image;
+    codec.dispose();
+    return bild;
+  }
+
+  final bild = await lade(inhalt.hintergrund);
+  final schildBild = vorlage.schildBild;
+  final schild = inhalt.plaetze.any((p) => p.zuSetzen) && schildBild != null
+      ? await lade(schildBild)
+      : null;
   final breite = vorlage.groesse.width * zierbaumTafelFaktor;
   final hoehe = vorlage.groesse.height * zierbaumTafelFaktor;
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, breite, hoehe));
   LebensbaumMaler(
-    vorlage: vorlage,
-    belegung: belegung,
+    inhalt: inhalt,
+    schild: schild,
     beschriftung: beschriftung,
     titel: titel,
     untertitel: untertitel,
@@ -261,6 +270,7 @@ Future<Uint8List> baueLebensbaumPdf({
   final gross = await aufzeichnung.toImage(breite.round(), hoehe.round());
   aufzeichnung.dispose();
   bild.dispose();
+  schild?.dispose();
   final png = await gross.toByteData(format: ui.ImageByteFormat.png);
   gross.dispose();
 
