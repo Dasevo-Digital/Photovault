@@ -110,17 +110,12 @@ Lebensbaumbild bildAusBelegung(
   verschwiegen: belegung.verschwiegen,
 );
 
-/// Wie das Schildbild aufgebaut ist, als Anteile seiner Grösse: Oben die
-/// Zierkante, darunter der helle Grund, auf den geschrieben wird.
-const _schildSeitenverhaeltnis = 153 / 220;
-const _schriftLinks = 0.105;
-const _schriftOben = 0.34;
-const _schriftRechts = 0.895;
-const _schriftUnten = 0.86;
-
-/// So breit wird ein gesetztes Schild höchstens – so gross wie die
+/// So breit wird ein gesetztes Schild höchstens – etwas grösser als die
 /// gemalten der grossen Tafeln.
-const _hoechsteSchildbreite = 220.0;
+const _hoechsteSchildbreite = 260.0;
+
+/// Flacher als so viel zu eins wird ein gesetztes Schild nicht.
+const _flachstes = 0.45;
 
 /// Setzt den Zierbaum [plan] in die Krone der [vorlage].
 ///
@@ -155,12 +150,16 @@ Lebensbaumbild familienbild(
       plan.schilder.first.breite + const Zierbaummasse().partnerLuecke * 0.8;
 
   var breite = math.min(schildBreite * massstab, _hoechsteSchildbreite);
-  var hoehe = breite * _schildSeitenverhaeltnis;
+  // Ein sehr flaches Schild wird etwas gestreckt: Sonst fasst es nur
+  // Schrift, die keiner mehr lesen kann.
+  final verhaeltnis = math.max(vorlage.schildVerhaeltnis, _flachstes);
+  final innen = vorlage.schildSchrift;
+  var hoehe = breite * verhaeltnis;
   // Übereinander müssen die Generationen auch passen.
   final hoechstens = krone.height / (baender.length * 1.12);
   if (hoehe > hoechstens) {
     hoehe = hoechstens;
-    breite = hoehe / _schildSeitenverhaeltnis;
+    breite = hoehe / verhaeltnis;
   }
   double zeileY(int band) {
     final i = baender.indexOf(band);
@@ -187,10 +186,10 @@ Lebensbaumbild familienbild(
           return Lebensbaumplatz(
             rahmen: rahmen,
             schrift: Rect.fromLTRB(
-              rahmen.left + rahmen.width * _schriftLinks,
-              rahmen.top + rahmen.height * _schriftOben,
-              rahmen.left + rahmen.width * _schriftRechts,
-              rahmen.top + rahmen.height * _schriftUnten,
+              rahmen.left + rahmen.width * innen.left,
+              rahmen.top + rahmen.height * innen.top,
+              rahmen.left + rahmen.width * innen.right,
+              rahmen.top + rahmen.height * innen.bottom,
             ),
             personen: [s.personId],
             zuSetzen: true,

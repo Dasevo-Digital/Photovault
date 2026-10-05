@@ -87,6 +87,12 @@ class Lebensbaumvorlage {
   /// Wo frei gesetzte Schilder stehen dürfen: die Krone samt Stamm.
   final Rect? krone;
 
+  /// Höhe zu Breite des [schildBild]s.
+  final double schildVerhaeltnis;
+
+  /// Wo auf dem [schildBild] geschrieben wird, als Anteile seiner Grösse.
+  final Rect schildSchrift;
+
   const Lebensbaumvorlage({
     required this.stil,
     required this.bild,
@@ -100,6 +106,8 @@ class Lebensbaumvorlage {
     this.leeresBild,
     this.schildBild,
     this.krone,
+    this.schildVerhaeltnis = 0.7,
+    this.schildSchrift = const Rect.fromLTRB(0.1, 0.34, 0.9, 0.86),
   });
 
   /// Die Person an [stelle], oder `null`.
@@ -311,9 +319,13 @@ Lebensbaumvorlage _gross(
 ) => Lebensbaumvorlage(
   stil: stil,
   bild: bild,
+  // Das Bild ohne Schilder ist derselbe Baum, eigens ohne Schilder
+  // gemalt; das Schild dazu ist freigestellt und je Stil vermessen.
   leeresBild: 'assets/lebensbaum/${stil.name}_leer.jpg',
   schildBild: 'assets/lebensbaum/${stil.name}_schild.png',
-  krone: const Rect.fromLTRB(40, 230, 1960, 1060),
+  krone: const Rect.fromLTRB(60, 140, 1940, 1060),
+  schildVerhaeltnis: _schildmasse[stil]!.verhaeltnis,
+  schildSchrift: _schildmasse[stil]!.schrift,
   groesse: const Size(2000, 1333),
   wurzel: const Vorlagenfeld(
     Rect.fromLTRB(863, 882, 1137, 1048),
@@ -324,6 +336,27 @@ Lebensbaumvorlage _gross(
   schrift: schrift,
   nebenschrift: nebenschrift,
 );
+
+/// Die freigestellten Schilder: Höhe zu Breite und die helle Fläche
+/// darin, in Anteilen.
+const _schildmasse = {
+  Lebensbaumstil.landschaft: (
+    verhaeltnis: 196 / 592,
+    schrift: Rect.fromLTRB(0.14, 0.33, 0.86, 0.88),
+  ),
+  Lebensbaumstil.wappen: (
+    verhaeltnis: 299 / 596,
+    schrift: Rect.fromLTRB(0.13, 0.38, 0.89, 0.81),
+  ),
+  Lebensbaumstil.pergament: (
+    verhaeltnis: 283 / 590,
+    schrift: Rect.fromLTRB(0.10, 0.33, 0.90, 0.89),
+  ),
+  Lebensbaumstil.gold: (
+    verhaeltnis: 338 / 588,
+    schrift: Rect.fromLTRB(0.11, 0.30, 0.89, 0.84),
+  ),
+};
 
 final _pergamentGross = _gross(
   Lebensbaumstil.pergament,
