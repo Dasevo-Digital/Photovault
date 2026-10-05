@@ -12991,6 +12991,24 @@ abstract class AppTexte {
   /// **'Stammbaum'**
   String get lebensbaumTitelOhneName;
 
+  /// No description provided for @lebensbaumTitelKurz.
+  ///
+  /// In de, this message translates to:
+  /// **'Familie {name}'**
+  String lebensbaumTitelKurz(String name);
+
+  /// No description provided for @lebensbaumUntertitelVorfahren.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Vorfahren von {name}'**
+  String lebensbaumUntertitelVorfahren(String name);
+
+  /// No description provided for @lebensbaumUntertitelNachkommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Nachkommen von {name}'**
+  String lebensbaumUntertitelNachkommen(String name);
+
   /// No description provided for @lebensbaumKeineVorfahren.
   ///
   /// In de, this message translates to:

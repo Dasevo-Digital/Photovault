@@ -3,11 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/lebensbaum.dart';
+import 'package:photo_vault/services/lebensbaum_vorlage.dart';
 import 'package:photo_vault/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_ansicht.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 
-/// Der Lebensbaum: eine Linie über mehrere Generationen als gemalter Baum.
+/// Der Lebensbaum: eine Linie über mehrere Generationen auf einem
+/// gemalten Baum.
 ///
 /// Geprüft wird die Rechnung, nicht das Bild – ob sich zwei Schilder um
 /// ein paar Punkte überlappen, sieht man am Bild nicht zuverlässig. Wie es
@@ -200,45 +202,143 @@ void main() {
     expect(plan.personBei(Offset.zero), isNull);
   });
 
-  group('Maler', () {
-    for (final stil in Lebensbaumstil.values) {
-      for (final richtung in Lebensbaumrichtung.values) {
-        test('${stil.name}, ${richtung.name}: malt ohne Fehler', () {
-          const masse = Lebensbaummasse();
-          final plan = lebensbaumplan(
-            netz(),
-            'ich',
-            ordnung,
-            richtung: richtung,
-            masse: masse,
-          );
-          final aufnahme = ui.PictureRecorder();
-          LebensbaumMaler(
-            plan: plan,
-            masse: masse,
-            farben: Lebensbaumfarben.fuer(stil),
-            beschriftung: (id) => (name: id, lebensspanne: '1900–1980'),
-            titel: 'Titel',
-          ).paint(ui.Canvas(aufnahme), Size(plan.breite, plan.hoehe));
-          aufnahme.endRecording().dispose();
-        });
+  group('Vorlagen', () {
+    test('jedes Schild liegt im Bild und überlappt kein anderes', () {
+      for (final stil in Lebensbaumstil.values) {
+        final v = lebensbaumvorlage(stil);
+        final bild = Offset.zero & v.groesse;
+        final alle = [v.wurzel, ...v.felder];
+        for (final (i, f) in alle.indexed) {
+          expect(bild.contains(f.rahmen.topLeft), isTrue, reason: stil.name);
+          expect(bild.contains(f.rahmen.bottomRight), isTrue);
+          // Die Schrift bleibt im Schild.
+          expect(f.rahmen.intersect(f.schrift), f.schrift, reason: '$i');
+          for (final g in alle.skip(i + 1)) {
+            expect(
+              f.rahmen.deflate(2).overlaps(g.rahmen.deflate(2)),
+              isFalse,
+              reason: '${stil.name}: ${f.rahmen} und ${g.rahmen}',
+            );
+          }
+        }
       }
+    });
+
+    test('vier Generationen Vorfahren passen in jedes Bild', () {
+      for (final stil in Lebensbaumstil.values) {
+        expect(lebensbaumvorlage(stil).felder.length, greaterThanOrEqualTo(14));
+      }
+    });
+  });
+
+  group('Belegung', () {
+    // Eine volle Ahnentafel über drei Generationen über p1.
+    Verwandtschaftsnetz voll() => Verwandtschaftsnetz([
+      for (var n = 1; n < 8; n++) ...[
+        kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil),
+        kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil),
+      ],
+    ]);
+    int nummer(String id) => int.parse(id.substring(1));
+
+    for (final stil in Lebensbaumstil.values) {
+      test('${stil.name}: jede Person einmal, die Väterlinie links', () {
+        final vorlage = lebensbaumvorlage(stil);
+        final plan = lebensbaumplan(
+          voll(),
+          'p1',
+          nummer,
+          richtung: Lebensbaumrichtung.vorfahren,
+          generationen: 3,
+        );
+        final b = belegeVorlage(plan, vorlage);
+        expect(b.wurzel, ['p1']);
+        expect(b.verschwiegen, 0);
+        expect(b.felder.values.toSet(), {for (var n = 2; n < 16; n++) 'p$n'});
+        final mitte = vorlage.wurzel.rahmen.center.dx;
+        final nachPerson = {
+          for (final e in b.felder.entries) e.value: vorlage.felder[e.key],
+        };
+        // Die Vorfahren des Vaters (p2) tragen in jeder Generation die
+        // kleinere Hälfte der Nummern.
+        for (final MapEntry(key: id, value: f) in nachPerson.entries) {
+          final n = nummer(id);
+          final stufe = n.bitLength - 1;
+          final vaeterlich = n < (3 << (stufe - 1));
+          final x = f.rahmen.center.dx;
+          expect(
+            vaeterlich ? x <= mitte + 8 : x >= mitte - 8,
+            isTrue,
+            reason: '$id steht auf der falschen Seite',
+          );
+        }
+        // Eltern stehen nicht unter ihrem Kind.
+        for (final MapEntry(key: id, value: f) in nachPerson.entries) {
+          final kind = nummer(id) ~/ 2;
+          final unten = kind == 1 ? vorlage.wurzel : nachPerson['p$kind']!;
+          expect(
+            f.rahmen.center.dy,
+            lessThan(unten.rahmen.center.dy + 31),
+            reason: '$id unter p$kind',
+          );
+        }
+      });
     }
+
+    test('Wer keinen Platz hat, wird gezählt', () {
+      final kanten = [
+        for (var n = 1; n < 32; n++) ...[
+          kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil),
+          kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil),
+        ],
+      ];
+      final plan = lebensbaumplan(
+        Verwandtschaftsnetz(kanten),
+        'p1',
+        nummer,
+        richtung: Lebensbaumrichtung.vorfahren,
+        generationen: 5,
+      );
+      final vorlage = lebensbaumvorlage(Lebensbaumstil.pergament);
+      final b = belegeVorlage(plan, vorlage);
+      expect(b.felder, hasLength(vorlage.felder.length));
+      expect(b.verschwiegen, 62 - vorlage.felder.length);
+      // Die nahen Generationen sind vollständig.
+      for (var n = 2; n < 8; n++) {
+        expect(b.felder.values, contains('p$n'));
+      }
+    });
+
+    test('in den Nachkommen steht das Paar am Stamm', () {
+      final plan = lebensbaumplan(
+        netz(),
+        'ich',
+        ordnung,
+        richtung: Lebensbaumrichtung.nachkommen,
+      );
+      final vorlage = lebensbaumvorlage(Lebensbaumstil.wappen);
+      final b = belegeVorlage(plan, vorlage);
+      expect(b.wurzel, ['ich', 'partner']);
+      expect(b.felder.values.toSet(), {'k1', 'k2', 'e1'});
+      final flaechen = vorlage.wurzelflaechen(b);
+      expect(vorlage.personBei(b, flaechen[1].center), 'partner');
+      expect(vorlage.personBei(b, Offset.zero), isNull);
+    });
   });
 
   testWidgets('die Ansicht meldet den Tipp und nennt die Namen', (
     tester,
   ) async {
-    const masse = Lebensbaummasse();
     final plan = lebensbaumplan(
       netz(),
       'ich',
       ordnung,
       richtung: Lebensbaumrichtung.vorfahren,
-      masse: masse,
     );
+    final vorlage = lebensbaumvorlage(Lebensbaumstil.pergament);
+    final belegung = belegeVorlage(plan, vorlage);
     String? getippt;
-    tester.view.physicalSize = Size(plan.breite, plan.hoehe);
+    tester.view.physicalSize = vorlage.groesse;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -247,19 +347,41 @@ void main() {
         child: Align(
           alignment: Alignment.topLeft,
           child: LebensbaumAnsicht(
-            plan: plan,
-            masse: masse,
-            farben: Lebensbaumfarben.pergament,
-            beschriftung: (id) => (name: 'Name $id', lebensspanne: null),
+            vorlage: vorlage,
+            belegung: belegung,
+            beschriftung: (id) =>
+                (name: 'Name $id', lebensspanne: null, bezeichnung: 'Grad'),
             titel: 'Titel',
             beiTipp: (id) => getippt = id,
           ),
         ),
       ),
     );
-    final gv = plan.knoten.firstWhere((k) => k.personen.single == 'gv');
-    await tester.tapAt(gv.rahmen.center);
+    final feld = belegung.felder.entries.firstWhere((e) => e.value == 'gv');
+    await tester.tapAt(vorlage.felder[feld.key].rahmen.center);
     expect(getippt, 'gv');
-    expect(find.bySemanticsLabel('Name gv'), findsOneWidget);
+    expect(find.bySemanticsLabel('Grad, Name gv'), findsOneWidget);
+  });
+
+  test('der Maler schreibt ohne Fehler in jedes Bild', () {
+    for (final stil in Lebensbaumstil.values) {
+      for (final richtung in Lebensbaumrichtung.values) {
+        final plan = lebensbaumplan(netz(), 'ich', ordnung, richtung: richtung);
+        final vorlage = lebensbaumvorlage(stil);
+        final aufnahme = ui.PictureRecorder();
+        LebensbaumMaler(
+          vorlage: vorlage,
+          belegung: belegeVorlage(plan, vorlage),
+          beschriftung: (id) => (
+            name: 'Ein sehr langer Name $id',
+            lebensspanne: '1900–1980',
+            bezeichnung: 'Urgroßmutter',
+          ),
+          titel: 'Titel',
+          untertitel: 'Untertitel',
+        ).paint(ui.Canvas(aufnahme), vorlage.groesse);
+        aufnahme.endRecording().dispose();
+      }
+    }
   });
 }

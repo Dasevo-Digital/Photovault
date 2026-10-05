@@ -11,6 +11,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/lebensbaum.dart';
+import 'package:photo_vault/services/lebensbaum_vorlage.dart';
 import 'package:photo_vault/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 
@@ -64,12 +65,69 @@ void main() {
     partnerKanteFuer('k1', 'k1p'),
   ]);
   int ordnung(String id) => namen.keys.toList().indexOf(id);
+  const bezeichnungen = {
+    'mann': 'Partner',
+    'v': 'Vater',
+    'm': 'Mutter',
+    'gv1': 'Großvater',
+    'gm1': 'Großmutter',
+    'gv2': 'Großvater',
+    'gm2': 'Großmutter',
+    'ugv': 'Urgroßvater',
+    'ugm': 'Urgroßmutter',
+    'k1': 'Sohn',
+    'k1p': 'Schwiegertochter',
+    'k2': 'Tochter',
+    'k3': 'Sohn',
+    'e1': 'Enkel',
+    'e2': 'Enkelin',
+    'e3': 'Enkelin',
+    'e4': 'Enkel',
+    'e5': 'Enkel',
+  };
   Lebensbaumschild schild(String id) {
     final (name, geburt, tod) = namen[id]!;
     return (
       name: name,
       lebensspanne: tod == null ? '*$geburt' : '$geburt–$tod',
+      bezeichnung: bezeichnungen[id],
     );
+  }
+
+  Future<void> male(
+    WidgetTester tester,
+    Lebensbaumplan plan,
+    Lebensbaumstil stil,
+    Lebensbaumschild Function(String) beschriftung,
+    String datei,
+  ) async {
+    final vorlage = lebensbaumvorlage(stil);
+    final belegung = belegeVorlage(plan, vorlage);
+    final ziel = Platform.environment['PV_BILDER'];
+    await tester.runAsync(() async {
+      final codec = await ui.instantiateImageCodec(
+        File(vorlage.bild).readAsBytesSync(),
+      );
+      final bild = (await codec.getNextFrame()).image;
+      const faktor = 2.0;
+      final groesse = vorlage.groesse * faktor;
+      final aufnahme = ui.PictureRecorder();
+      LebensbaumMaler(
+        vorlage: vorlage,
+        belegung: belegung,
+        beschriftung: beschriftung,
+        titel: 'Stammbaum der Familie Wyrsch',
+        untertitel: 'Die Vorfahren von Johanna Wyrsch',
+        bild: bild,
+      ).paint(ui.Canvas(aufnahme), groesse);
+      final pixel = await aufnahme.endRecording().toImage(
+        groesse.width.round(),
+        groesse.height.round(),
+      );
+      if (ziel == null) return;
+      final png = await pixel.toByteData(format: ui.ImageByteFormat.png);
+      File('$ziel/$datei').writeAsBytesSync(png!.buffer.asUint8List());
+    });
   }
 
   Future<void> schriften(WidgetTester tester) async {
@@ -90,88 +148,53 @@ void main() {
     for (final stil in Lebensbaumstil.values) {
       testWidgets('${richtung.name} – ${stil.name}', (tester) async {
         await schriften(tester);
-        const masse = Lebensbaummasse();
         final plan = lebensbaumplan(
           netz,
           'ich',
           ordnung,
           richtung: richtung,
           generationen: 3,
-          masse: masse,
         );
-        final aufnahme = ui.PictureRecorder();
-        final leinwand = ui.Canvas(aufnahme);
-        LebensbaumMaler(
-          plan: plan,
-          masse: masse,
-          farben: Lebensbaumfarben.fuer(stil),
-          beschriftung: schild,
-          titel: 'Stammbaum der Familie Wyrsch',
-        ).paint(leinwand, ui.Size(plan.breite, plan.hoehe));
-        final bild = aufnahme.endRecording();
-
-        final ziel = Platform.environment['PV_BILDER'];
-        if (ziel == null) return;
-        await tester.runAsync(() async {
-          final pixel = await bild.toImage(
-            plan.breite.round(),
-            plan.hoehe.round(),
-          );
-          final png = await pixel.toByteData(format: ui.ImageByteFormat.png);
-          File(
-            '$ziel/lebensbaum_${richtung.name}_${stil.name}.png',
-          ).writeAsBytesSync(png!.buffer.asUint8List());
-        });
+        await male(
+          tester,
+          plan,
+          stil,
+          schild,
+          'lebensbaum_${richtung.name}_${stil.name}.png',
+        );
       });
     }
   }
 
-  // Eine volle Ahnentafel über vier Generationen: 31 Schilder, die
-  // oberste Reihe mit sechzehn. So voll wird es selten, aber so muss es
-  // noch lesbar bleiben.
-  testWidgets('volle Ahnentafel', (tester) async {
-    await schriften(tester);
-    final kanten = <Kante>[];
-    for (var n = 1; n < 16; n++) {
-      kanten
-        ..add(kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil))
-        ..add(kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil));
-    }
-    final voll = Verwandtschaftsnetz(kanten);
-    const vornamen = ['Anna', 'Josef', 'Maria', 'Kaspar', 'Rosa', 'Alois'];
-    const masse = Lebensbaummasse();
-    final plan = lebensbaumplan(
-      voll,
-      'p1',
-      (id) => int.parse(id.substring(1)),
-      richtung: Lebensbaumrichtung.vorfahren,
-      generationen: 4,
-      masse: masse,
-    );
-    expect(plan.knoten, hasLength(31));
-    final aufnahme = ui.PictureRecorder();
-    LebensbaumMaler(
-      plan: plan,
-      masse: masse,
-      farben: Lebensbaumfarben.pergament,
-      beschriftung: (id) {
+  // Eine volle Ahnentafel über vier Generationen: fünfzehn Personen,
+  // die oberste Reihe mit acht. So voll wird es selten, aber so muss es
+  // noch passen.
+  for (final stil in Lebensbaumstil.values) {
+    testWidgets('volle Ahnentafel – ${stil.name}', (tester) async {
+      await schriften(tester);
+      final kanten = <Kante>[];
+      for (var n = 1; n < 8; n++) {
+        kanten
+          ..add(kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil))
+          ..add(kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil));
+      }
+      const vornamen = ['Anna', 'Josef', 'Maria', 'Kaspar', 'Rosa', 'Alois'];
+      final plan = lebensbaumplan(
+        Verwandtschaftsnetz(kanten),
+        'p1',
+        (id) => int.parse(id.substring(1)),
+        richtung: Lebensbaumrichtung.vorfahren,
+        generationen: 3,
+      );
+      expect(plan.knoten, hasLength(15));
+      await male(tester, plan, stil, (id) {
         final n = int.parse(id.substring(1));
         return (
           name: '${vornamen[n % vornamen.length]} Wyrsch',
           lebensspanne: '${2000 - n * 9}–${2060 - n * 9}',
+          bezeichnung: 'Nr. $n',
         );
-      },
-      titel: 'Stammbaum der Familie Wyrsch',
-    ).paint(ui.Canvas(aufnahme), ui.Size(plan.breite, plan.hoehe));
-    final bild = aufnahme.endRecording();
-    final ziel = Platform.environment['PV_BILDER'];
-    if (ziel == null) return;
-    await tester.runAsync(() async {
-      final pixel = await bild.toImage(plan.breite.round(), plan.hoehe.round());
-      final png = await pixel.toByteData(format: ui.ImageByteFormat.png);
-      File(
-        '$ziel/lebensbaum_voll.png',
-      ).writeAsBytesSync(png!.buffer.asUint8List());
+      }, 'lebensbaum_voll_${stil.name}.png');
     });
-  });
+  }
 }

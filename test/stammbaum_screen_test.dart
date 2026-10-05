@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/lebensbaum.dart';
-import 'package:photo_vault/widgets/lebensbaum_maler.dart';
+import 'package:photo_vault/services/lebensbaum_vorlage.dart';
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/familienstatistik_screen.dart';
@@ -766,7 +766,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder schild(String name) => find.bySemanticsLabel(RegExp('^$name(,|\$)'));
+  // Vor dem Namen steht die Verwandtschaft („Großvater, Opa, …").
+  Finder schild(String name) =>
+      find.bySemanticsLabel(RegExp('(^|, )$name(,|\$)'));
 
   testWidgets('der Lebensbaum zeigt die Vorfahren über der Person', (
     tester,
@@ -775,14 +777,15 @@ void main() {
     for (final name in ['Kind', 'Vater', 'Mutter', 'Opa', 'Uropa']) {
       expect(schild(name), findsOneWidget, reason: name);
     }
-    // Die Vorfahren stehen über dem Stamm.
+    // Die Vorfahren stehen über dem Stamm – die Eltern im Pergament in
+    // der Reihe daneben, die gemalt ist, wie sie ist.
     expect(
       tester.getCenter(schild('Opa')).dy,
       lessThan(tester.getCenter(schild('Vater')).dy),
     );
     expect(
       tester.getCenter(schild('Vater')).dy,
-      lessThan(tester.getCenter(schild('Kind')).dy),
+      lessThan(tester.getCenter(schild('Kind')).dy + 20),
     );
   });
 

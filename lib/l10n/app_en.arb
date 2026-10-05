@@ -3886,6 +3886,9 @@
   "lebensbaumDrucken": "Tree of life as PDF",
   "lebensbaumTitel": "The {name} family tree",
   "lebensbaumTitelOhneName": "Family tree",
+  "lebensbaumTitelKurz": "The {name} family",
+  "lebensbaumUntertitelVorfahren": "The ancestors of {name}",
+  "lebensbaumUntertitelNachkommen": "The descendants of {name}",
   "lebensbaumKeineVorfahren": "No ancestors have been entered for this person yet. The tree of life grows upwards from them – add a parent at the top right.",
   "lebensbaumKeineNachkommen": "No children have been entered for this person yet. The tree of life grows upwards from them – add a child at the top right.",
   "lebensbaumAusgelassen": "{anzahl} more people do not fit in the picture. Show fewer generations, or tap a person further up to move them to the trunk."

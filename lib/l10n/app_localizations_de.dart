@@ -8344,6 +8344,21 @@ class AppTexteDe extends AppTexte {
   String get lebensbaumTitelOhneName => 'Stammbaum';
 
   @override
+  String lebensbaumTitelKurz(String name) {
+    return 'Familie $name';
+  }
+
+  @override
+  String lebensbaumUntertitelVorfahren(String name) {
+    return 'Die Vorfahren von $name';
+  }
+
+  @override
+  String lebensbaumUntertitelNachkommen(String name) {
+    return 'Die Nachkommen von $name';
+  }
+
+  @override
   String get lebensbaumKeineVorfahren =>
       'Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.';
 

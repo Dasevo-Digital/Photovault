@@ -12,6 +12,10 @@
 /// - **Nachkommen:** die Person (mit Partner) am Stamm, darüber ihre
 ///   Kinder, Enkel und so fort.
 ///
+/// Gezeigt wird der Plan nicht selbst: Er ist das Vorbild, nach dem die
+/// Personen auf die Schilder einer Bildvorlage verteilt werden (siehe
+/// `lebensbaum_vorlage.dart`).
+///
 /// Ausgelagert aus demselben Grund wie die Fächertafel: Ob sich zwei
 /// Schilder um ein paar Punkte überlappen, sieht man am fertigen Bild
 /// nicht zuverlässig – man rechnet es nach.

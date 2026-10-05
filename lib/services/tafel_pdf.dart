@@ -12,10 +12,10 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -25,7 +25,7 @@ import '../widgets/faecher_ansicht.dart';
 import '../widgets/lebensbaum_maler.dart';
 import '../widgets/zierbaum_maler.dart';
 import 'faechertafel.dart';
-import 'lebensbaum.dart';
+import 'lebensbaum_vorlage.dart';
 import 'stammbaum.dart';
 import 'zierbaum.dart';
 
@@ -225,37 +225,44 @@ Future<Uint8List> baueZierbaumPdf({
   return dokument.save();
 }
 
-/// Schreibt den Lebensbaum als PDF – dieselbe Zeichnung wie auf dem
-/// Schirm, dreifach vergrössert wie beim Zierbaum.
+/// Schreibt den Lebensbaum als PDF – dasselbe Bild wie auf dem Schirm,
+/// dreifach vergrössert wie beim Zierbaum.
 ///
-/// [plan] wird mit den vergrösserten Massen gerufen: Der Plan hängt an
-/// den Massen, und ein hochgerechnetes Bild des kleinen Plans wäre
-/// unscharf.
+/// Das Bild der Vorlage wird mitvergrössert; es hat nur seine eigenen
+/// Bildpunkte. Die Schrift dagegen wird in der vollen Grösse gesetzt und
+/// bleibt scharf.
 Future<Uint8List> baueLebensbaumPdf({
-  required Lebensbaumplan Function(Lebensbaummasse masse) plan,
-  required Lebensbaumfarben farben,
+  required Lebensbaumvorlage vorlage,
+  required Lebensbaumbelegung belegung,
   required Lebensbaumschild Function(String personId) beschriftung,
   required String titel,
+  required String? untertitel,
   required TextDirection textRichtung,
+  AssetBundle? bundle,
 }) async {
-  final masse = const Lebensbaummasse().mal(zierbaumTafelFaktor);
-  final p = plan(masse);
+  final daten = await (bundle ?? rootBundle).load(vorlage.bild);
+  final codec = await ui.instantiateImageCodec(daten.buffer.asUint8List());
+  final bild = (await codec.getNextFrame()).image;
+  codec.dispose();
+  final breite = vorlage.groesse.width * zierbaumTafelFaktor;
+  final hoehe = vorlage.groesse.height * zierbaumTafelFaktor;
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, p.breite, p.hoehe));
+  final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, breite, hoehe));
   LebensbaumMaler(
-    plan: p,
-    masse: masse,
-    farben: farben,
+    vorlage: vorlage,
+    belegung: belegung,
     beschriftung: beschriftung,
     titel: titel,
+    untertitel: untertitel,
+    bild: bild,
     textRichtung: textRichtung,
-  ).paint(canvas, Size(p.breite, p.hoehe));
-  final bild = await recorder.endRecording().toImage(
-    p.breite.round(),
-    p.hoehe.round(),
-  );
-  final png = await bild.toByteData(format: ui.ImageByteFormat.png);
+  ).paint(canvas, Size(breite, hoehe));
+  final aufzeichnung = recorder.endRecording();
+  final gross = await aufzeichnung.toImage(breite.round(), hoehe.round());
+  aufzeichnung.dispose();
   bild.dispose();
+  final png = await gross.toByteData(format: ui.ImageByteFormat.png);
+  gross.dispose();
 
   final dokument = pw.Document();
   final grafik = pw.MemoryImage(png!.buffer.asUint8List());
@@ -265,7 +272,7 @@ Future<Uint8List> baueLebensbaumPdf({
       // hat seinen eigenen, gemalten Grund. Auf ein festes A3 gesetzt,
       // stünden daneben weisse Streifen; als Rand darum wäre es ein
       // Passepartout, das keiner bestellt hat. Höchstens A3 gross.
-      pageFormat: _seiteFuer(p.breite, p.hoehe),
+      pageFormat: _seiteFuer(breite, hoehe),
       margin: pw.EdgeInsets.zero,
       build: (kontext) => pw.Image(grafik, fit: pw.BoxFit.fill),
     ),

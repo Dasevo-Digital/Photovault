@@ -154,6 +154,8 @@ flutter:
     - assets/globe/8k_earth_daymap.jpg
     - assets/globe/2k_stars_milky_way.jpg
     - assets/geo/gebiete.bin.gz
+    # Die drei Bilder des Lebensbaums (siehe lib/services/lebensbaum_vorlage.dart).
+    - assets/lebensbaum/
     # Die Lizenztexte der beiden Schriften unten. Sie MUESSEN mit
     # ausgeliefert werden - so verlangt es die SIL Open Font License -,
     # und sie werden zur Laufzeit in Flutters Lizenzverzeichnis

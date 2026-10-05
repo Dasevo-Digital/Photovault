@@ -1,62 +1,78 @@
 import 'package:flutter/material.dart';
 
-import '../services/lebensbaum.dart';
+import '../services/lebensbaum_vorlage.dart';
 import 'lebensbaum_maler.dart';
 
 /// Der Lebensbaum auf dem Schirm.
 ///
-/// Gemalt wird alles von [LebensbaumMaler]. Darüber liegt je Schild eine
-/// unsichtbare Fläche: zum Antippen – wer tippt, rückt die Person an den
-/// Stamm – und damit ein Bildschirmleser die Namen findet, die im Bild nur
-/// als Pinselstriche vorkommen.
+/// Unten das Bild der [vorlage], darüber die Namen von [LebensbaumMaler].
+/// Darüber liegt je beschriftetem Schild eine unsichtbare Fläche: zum
+/// Antippen – wer tippt, rückt die Person an den Stamm – und damit ein
+/// Bildschirmleser die Namen findet, die im Bild nur gemalt sind.
 class LebensbaumAnsicht extends StatelessWidget {
-  final Lebensbaumplan plan;
-  final Lebensbaummasse masse;
-  final Lebensbaumfarben farben;
+  final Lebensbaumvorlage vorlage;
+  final Lebensbaumbelegung belegung;
   final Lebensbaumschild Function(String personId) beschriftung;
   final String titel;
+  final String? untertitel;
   final ValueChanged<String> beiTipp;
 
   const LebensbaumAnsicht({
     super.key,
-    required this.plan,
-    required this.masse,
-    required this.farben,
+    required this.vorlage,
+    required this.belegung,
     required this.beschriftung,
     required this.titel,
     required this.beiTipp,
+    this.untertitel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: plan.breite,
-      height: plan.hoehe,
+    final flaechen = <(Rect, String)>[
+      for (final MapEntry(key: i, value: id) in belegung.felder.entries)
+        (vorlage.felder[i].rahmen, id),
+      for (final (i, r) in vorlage.wurzelflaechen(belegung).indexed)
+        (r, belegung.wurzel[i]),
+    ];
+    return SizedBox.fromSize(
+      size: vorlage.groesse,
       child: Stack(
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              vorlage.bild,
+              fit: BoxFit.fill,
+              filterQuality: FilterQuality.high,
+              excludeFromSemantics: true,
+              // Bis das Bild da ist, steht die Schrift auf dem Grund der
+              // Tafel statt auf einem leeren Fleck.
+              frameBuilder: (context, kind, frame, geladen) =>
+                  frame == null ? const SizedBox.expand() : kind,
+            ),
+          ),
           Positioned.fill(
             child: RepaintBoundary(
               child: CustomPaint(
                 painter: LebensbaumMaler(
-                  plan: plan,
-                  masse: masse,
-                  farben: farben,
+                  vorlage: vorlage,
+                  belegung: belegung,
                   beschriftung: beschriftung,
                   titel: titel,
+                  untertitel: untertitel,
                   textRichtung: Directionality.of(context),
                 ),
               ),
             ),
           ),
-          for (final k in plan.knoten)
-            for (var i = 0; i < k.schilder.length; i++)
-              Positioned.fromRect(
-                rect: k.schilder[i],
-                child: _Flaeche(
-                  inhalt: beschriftung(k.personen[i]),
-                  beiTipp: () => beiTipp(k.personen[i]),
-                ),
+          for (final (rahmen, id) in flaechen)
+            Positioned.fromRect(
+              rect: rahmen,
+              child: _Flaeche(
+                inhalt: beschriftung(id),
+                beiTipp: () => beiTipp(id),
               ),
+            ),
         ],
       ),
     );
@@ -73,7 +89,11 @@ class _Flaeche extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: [inhalt.name, ?inhalt.lebensspanne].join(', '),
+      label: [
+        ?inhalt.bezeichnung,
+        inhalt.name,
+        ?inhalt.lebensspanne,
+      ].join(', '),
       excludeSemantics: true,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
