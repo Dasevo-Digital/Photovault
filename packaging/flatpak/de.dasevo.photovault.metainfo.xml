@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.21.0" date="2026-10-05">
+      <description>
+        <p>The tree of life now uses painted templates: a parchment tree, a pine before mountains and a sepia engraving. The names are written into the painted plates, each with its relation to the person at the trunk. Small families get a compact sheet; larger ones a wide sheet with room for a full five-generation pedigree (31 persons).</p>
+      </description>
+    </release>
     <release version="3.20.0" date="2026-10-05">
       <description>
         <p>New family tree view: the tree of life. A person stands at the trunk, and their ancestors or descendants grow upwards as branches over up to seven generations, in three styles - parchment with name scrolls, a landscape under an open sky, or heraldic shields. It can be saved as a borderless PDF up to A3, and direction, style and generations are remembered.</p>
