@@ -244,11 +244,122 @@ final _wappenTafel = Lebensbaumvorlage(
   nebenschrift: const Color(0xFF6B5034),
 );
 
+/// Ein Schild, von dem der helle Grund bekannt ist: Darauf wird
+/// geschrieben, mit etwas Abstand zum Rand; getippt werden darf auch auf
+/// den Rahmen ringsum.
+Vorlagenfeld _innen(double l, double t, double r, double b) => Vorlagenfeld(
+  Rect.fromLTRB(l - 8, t - 8, r + 8, b + 6),
+  Rect.fromLTRB(l + 5, t + 3, r - 5, b - 3),
+);
+
+/// Die Schilder der grossen Tafeln: eine volle Ahnentafel über fünf
+/// Generationen, 2, 4, 8 und 16 Schilder in vier Reihen. Alle drei
+/// Bilder sind nach derselben Vorlage gemalt und teilen sie.
+final _grosseFelder = [
+  _innen(52, 278, 140, 343),
+  _innen(163, 271, 250, 341),
+  _innen(272, 267, 361, 335),
+  _innen(383, 263, 475, 338),
+  _innen(498, 259, 598, 337),
+  _innen(621, 257, 722, 337),
+  _innen(746, 254, 854, 336),
+  _innen(877, 253, 987, 336),
+  _innen(1012, 253, 1124, 336),
+  _innen(1148, 254, 1254, 336),
+  _innen(1278, 255, 1379, 336),
+  _innen(1402, 258, 1501, 338),
+  _innen(1524, 263, 1616, 339),
+  _innen(1639, 266, 1728, 339),
+  _innen(1750, 271, 1836, 341),
+  _innen(1859, 278, 1947, 344),
+  _innen(136, 472, 275, 549),
+  _innen(330, 467, 492, 549),
+  _innen(552, 462, 714, 545),
+  _innen(780, 461, 939, 544),
+  _innen(1061, 461, 1220, 544),
+  _innen(1287, 461, 1447, 544),
+  _innen(1507, 466, 1669, 549),
+  _innen(1725, 472, 1862, 549),
+  _innen(454, 645, 638, 734),
+  _innen(727, 645, 906, 733),
+  _innen(1104, 645, 1282, 733),
+  _innen(1365, 645, 1547, 734),
+  _innen(624, 848, 819, 941),
+  _innen(1180, 848, 1376, 940),
+];
+
+Lebensbaumvorlage _gross(
+  Lebensbaumstil stil,
+  String bild,
+  Color schrift,
+  Color nebenschrift,
+) => Lebensbaumvorlage(
+  stil: stil,
+  bild: bild,
+  groesse: const Size(2000, 1333),
+  wurzel: const Vorlagenfeld(
+    Rect.fromLTRB(863, 882, 1137, 1048),
+    Rect.fromLTRB(893, 912, 1107, 1016),
+  ),
+  felder: _grosseFelder,
+  titel: const Rect.fromLTRB(788, 1136, 1208, 1207),
+  schrift: schrift,
+  nebenschrift: nebenschrift,
+);
+
+final _pergamentGross = _gross(
+  Lebensbaumstil.pergament,
+  'assets/lebensbaum/pergament_gross.jpg',
+  _pergament.schrift,
+  _pergament.nebenschrift,
+);
+final _landschaftGross = _gross(
+  Lebensbaumstil.landschaft,
+  'assets/lebensbaum/landschaft_gross.jpg',
+  _landschaft.schrift,
+  _landschaft.nebenschrift,
+);
+final _wappenGross = _gross(
+  Lebensbaumstil.wappen,
+  'assets/lebensbaum/wappen_gross.jpg',
+  _wappenTafel.schrift,
+  _wappenTafel.nebenschrift,
+);
+
+/// Die kleine Tafel eines Stils.
 Lebensbaumvorlage lebensbaumvorlage(Lebensbaumstil stil) => switch (stil) {
   Lebensbaumstil.pergament => _pergament,
   Lebensbaumstil.landschaft => _landschaft,
   Lebensbaumstil.wappen => _wappenTafel,
 };
+
+/// Beide Tafeln eines Stils, die kleine zuerst.
+List<Lebensbaumvorlage> lebensbaumvorlagen(Lebensbaumstil stil) => [
+  lebensbaumvorlage(stil),
+  switch (stil) {
+    Lebensbaumstil.pergament => _pergamentGross,
+    Lebensbaumstil.landschaft => _landschaftGross,
+    Lebensbaumstil.wappen => _wappenGross,
+  },
+];
+
+/// Die Tafel, die zur Familie passt, samt Belegung.
+///
+/// Die kleine, solange alle Platz finden – auf der grossen stünden sonst
+/// bei einer kleinen Familie zwei Dutzend leere Schilder. Sonst die
+/// grosse, auch wenn selbst sie nicht reicht.
+({Lebensbaumvorlage vorlage, Lebensbaumbelegung belegung}) passendeVorlage(
+  Lebensbaumplan plan,
+  Lebensbaumstil stil,
+) {
+  late Lebensbaumvorlage vorlage;
+  late Lebensbaumbelegung belegung;
+  for (vorlage in lebensbaumvorlagen(stil)) {
+    belegung = belegeVorlage(plan, vorlage);
+    if (belegung.verschwiegen == plan.verschwiegen) break;
+  }
+  return (vorlage: vorlage, belegung: belegung);
+}
 
 /// Wer auf welchem Schild steht.
 class Lebensbaumbelegung {

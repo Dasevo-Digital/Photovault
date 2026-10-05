@@ -101,8 +101,7 @@ void main() {
     Lebensbaumschild Function(String) beschriftung,
     String datei,
   ) async {
-    final vorlage = lebensbaumvorlage(stil);
-    final belegung = belegeVorlage(plan, vorlage);
+    final (:vorlage, :belegung) = passendeVorlage(plan, stil);
     final ziel = Platform.environment['PV_BILDER'];
     await tester.runAsync(() async {
       final codec = await ui.instantiateImageCodec(
@@ -166,14 +165,13 @@ void main() {
     }
   }
 
-  // Eine volle Ahnentafel über vier Generationen: fünfzehn Personen,
-  // die oberste Reihe mit acht. So voll wird es selten, aber so muss es
-  // noch passen.
+  // Eine volle Ahnentafel über fünf Generationen: 31 Personen, die
+  // oberste Reihe mit sechzehn – das füllt die grosse Tafel genau.
   for (final stil in Lebensbaumstil.values) {
     testWidgets('volle Ahnentafel – ${stil.name}', (tester) async {
       await schriften(tester);
       final kanten = <Kante>[];
-      for (var n = 1; n < 8; n++) {
+      for (var n = 1; n < 16; n++) {
         kanten
           ..add(kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil))
           ..add(kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil));
@@ -184,9 +182,9 @@ void main() {
         'p1',
         (id) => int.parse(id.substring(1)),
         richtung: Lebensbaumrichtung.vorfahren,
-        generationen: 3,
+        generationen: 4,
       );
-      expect(plan.knoten, hasLength(15));
+      expect(plan.knoten, hasLength(31));
       await male(tester, plan, stil, (id) {
         final n = int.parse(id.substring(1));
         return (

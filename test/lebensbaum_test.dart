@@ -204,8 +204,10 @@ void main() {
 
   group('Vorlagen', () {
     test('jedes Schild liegt im Bild und überlappt kein anderes', () {
-      for (final stil in Lebensbaumstil.values) {
-        final v = lebensbaumvorlage(stil);
+      for (final v in [
+        for (final stil in Lebensbaumstil.values) ...lebensbaumvorlagen(stil),
+      ]) {
+        final stil = v.stil;
         final bild = Offset.zero & v.groesse;
         final alle = [v.wurzel, ...v.felder];
         for (final (i, f) in alle.indexed) {
@@ -284,6 +286,32 @@ void main() {
         }
       });
     }
+
+    test('die kleine Tafel, solange alle Platz finden, sonst die grosse', () {
+      for (final (generationen, schilder) in [(3, 14), (4, 30)]) {
+        final plan = lebensbaumplan(
+          Verwandtschaftsnetz([
+            for (var n = 1; n < 16; n++) ...[
+              kante('p$n', 'p${2 * n}', Verwandtschaft.elternteil),
+              kante('p$n', 'p${2 * n + 1}', Verwandtschaft.elternteil),
+            ],
+          ]),
+          'p1',
+          nummer,
+          richtung: Lebensbaumrichtung.vorfahren,
+          generationen: generationen,
+        );
+        for (final stil in Lebensbaumstil.values) {
+          final (:vorlage, :belegung) = passendeVorlage(plan, stil);
+          expect(belegung.verschwiegen, 0, reason: stil.name);
+          expect(belegung.felder, hasLength(schilder));
+          expect(
+            vorlage,
+            same(lebensbaumvorlagen(stil)[generationen == 3 ? 0 : 1]),
+          );
+        }
+      }
+    });
 
     test('Wer keinen Platz hat, wird gezählt', () {
       final kanten = [

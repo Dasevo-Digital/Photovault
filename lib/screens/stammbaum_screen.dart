@@ -1566,8 +1566,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   Widget _lebensbaum(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
     final plan = _lebensbaumplan(fokus.id);
-    final vorlage = lebensbaumvorlage(_lebensStil);
-    final belegung = belegeVorlage(plan, vorlage);
+    final (:vorlage, :belegung) = passendeVorlage(plan, _lebensStil);
 
     final steuerung = Padding(
       padding: const EdgeInsets.symmetric(
@@ -1693,6 +1692,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               // Ganzes ansieht – und erst dann hineinzoomt.
               final schluessel =
                   '${fokus.id}|$_lebensRichtung|$_lebensGenerationen|'
+                  '${vorlage.bild}|'
                   '${fenster.width.round()}x${fenster.height.round()}';
               if (_lebensEingepasst != schluessel) {
                 _lebensEingepasst = schluessel;
@@ -1810,8 +1810,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   Future<void> _lebensbaumDrucken(PersonData fokus) async {
     final t = AppTexte.of(context);
     final richtung = Directionality.of(context);
-    final vorlage = lebensbaumvorlage(_lebensStil);
-    final belegung = belegeVorlage(_lebensbaumplan(fokus.id), vorlage);
+    final (:vorlage, :belegung) = passendeVorlage(
+      _lebensbaumplan(fokus.id),
+      _lebensStil,
+    );
     final titel = _lebensbaumtitel(t, vorlage, belegung);
     final untertitel = _lebensbaumuntertitel(t, fokus);
     final ziel = await FilePicker.platform.saveFile(
