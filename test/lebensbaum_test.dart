@@ -354,6 +354,32 @@ void main() {
     });
   });
 
+  test('in den Nachkommen steht das Kind innen, sein Partner aussen', () {
+    final n = Verwandtschaftsnetz([
+      kante('links', 'ich', Verwandtschaft.elternteil),
+      kante('rechts', 'ich', Verwandtschaft.elternteil),
+      partnerKanteFuer('links', 'lp'),
+      partnerKanteFuer('rechts', 'rp'),
+    ]);
+    const folge = ['ich', 'links', 'rechts', 'lp', 'rp'];
+    final plan = lebensbaumplan(
+      n,
+      'ich',
+      folge.indexOf,
+      richtung: Lebensbaumrichtung.nachkommen,
+    );
+    double x(String id) {
+      final k = plan.knoten.firstWhere((k) => k.personen.contains(id));
+      return k.schilder[k.personen.indexOf(id)].center.dx;
+    }
+
+    final mitte = plan.wurzel.rahmen.center.dx;
+    expect(x('lp'), lessThan(x('links')));
+    expect(x('links'), lessThan(mitte));
+    expect(x('rechts'), lessThan(x('rp')));
+    expect(x('rechts'), greaterThan(mitte));
+  });
+
   group('Paar', () {
     test('am Stamm das Paar, links ihre, rechts seine Seite', () {
       final n = Verwandtschaftsnetz([
@@ -438,6 +464,18 @@ void main() {
             .center
             .dy;
         expect(y('v'), lessThan(y('ich')));
+        // Der Angeheiratete steht aussen, der Verwandte zum Stamm hin.
+        double x(String id) => bild.plaetze
+            .firstWhere((p) => p.personen.contains(id))
+            .rahmen
+            .center
+            .dx;
+        final stamm = vorlage.krone!.center.dx;
+        if (x('schw') < stamm) {
+          expect(x('schwager'), lessThan(x('schw')));
+        } else {
+          expect(x('schwager'), greaterThan(x('schw')));
+        }
         expect(y('neffe'), greaterThan(y('schw')));
         expect(
           bild.personBei(

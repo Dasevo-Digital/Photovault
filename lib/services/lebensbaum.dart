@@ -422,6 +422,14 @@ Lebensbaumplan lebensbaumplan(
 
   final knoten = <Lebensknoten>[];
   void sammle(_Zweig z) {
+    // **Wer abstammt, steht innen.** Über dem Stamm steht ein Paar aus
+    // Kind und Partner; der Partner ist angeheiratet und gehört nach
+    // aussen, das Kind zum Stamm hin. Links vom Stamm also Partner, Kind –
+    // rechts Kind, Partner.
+    final personen =
+        z.stufe > 0 && z.personen.length == 2 && z.mitte < stamm.mitte
+        ? z.personen.reversed.toList()
+        : z.personen;
     final y = mitteY(z.stufe);
     final gesamt = eigeneBreite(z);
     var x = z.mitte - gesamt / 2;
@@ -440,7 +448,7 @@ Lebensbaumplan lebensbaumplan(
     knoten.add(
       Lebensknoten(
         schluessel: z.schluessel,
-        personen: z.personen,
+        personen: personen,
         stufe: z.stufe,
         vorgaenger: z.vorgaenger,
         spitzen: z.spitzen,

@@ -143,6 +143,33 @@ Lebensbaumbild familienbild(
   final rechts = plan.schilder.map((s) => s.rechts).reduce(math.max);
   final mitte = (links + rechts) / 2;
   final massstab = krone.width / math.max(rechts - links, 1);
+
+  // **Wer abstammt, steht innen.** Im Zierbaum steht in jedem Haushalt
+  // der Verwandte links und der Angeheiratete rechts daneben. Links vom
+  // Stamm hiesse das: der Angeheiratete zwischen dem Verwandten und dem
+  // Stamm. Dort werden die Plätze im Haushalt deshalb gespiegelt – aber
+  // nur unterhalb der Person in der Mitte. Ab ihrer Generation aufwärts
+  // stehen über einem Angeheirateten seine eigenen Eltern, und gespiegelt
+  // stünde er nicht mehr unter ihnen.
+  final xVon = <String, double>{};
+  final haushalte = <String, List<Schild>>{};
+  for (final s in plan.schilder) {
+    (haushalte[s.haushaltId] ??= []).add(s);
+  }
+  for (final bewohner in haushalte.values) {
+    final plaetze = [for (final s in bewohner) s.mitteX]..sort();
+    final mitteHaushalt = (plaetze.first + plaetze.last) / 2;
+    final gespiegelt =
+        bewohner.length > 1 &&
+        bewohner.first.band > 0 &&
+        mitteHaushalt < plan.stammX;
+    final folge = [...bewohner]..sort((a, b) => a.mitteX.compareTo(b.mitteX));
+    for (final (i, s) in folge.indexed) {
+      xVon[s.personId] = gespiegelt
+          ? plaetze[plaetze.length - 1 - i]
+          : s.mitteX;
+    }
+  }
   // Die Lücke zwischen zwei Partnern ist die engste im Plan; ein Teil
   // davon darf das Schild breiter machen – die gemalten Schilder haben
   // ohnehin einen Rand, der wie Abstand wirkt.
@@ -177,7 +204,7 @@ Lebensbaumbild familienbild(
         () {
           final rahmen = Rect.fromCenter(
             center: Offset(
-              krone.center.dx + (s.mitteX - mitte) * massstab,
+              krone.center.dx + (xVon[s.personId]! - mitte) * massstab,
               zeileY(s.band),
             ),
             width: breite,
