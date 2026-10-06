@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.23.1" date="2026-10-06">
+      <description>
+        <p>Tree of life: in the descendants and below the centre person in the family view, children now stand towards the trunk and their partners on the outside.</p>
+      </description>
+    </release>
     <release version="3.23.0" date="2026-10-05">
       <description>
         <p>Two new views for the tree of life. Couple: the couple at the trunk, above them the ancestors of both sides and the siblings of both. Family: the whole family generation by generation, with siblings, in-laws and their parents, on trees painted without plates - the app places exactly as many plates as the family needs.</p>
