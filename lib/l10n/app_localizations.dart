@@ -13009,6 +13009,18 @@ abstract class AppTexte {
   /// **'Lebensbaum als PDF'**
   String get lebensbaumDrucken;
 
+  /// No description provided for @lebensbaumPortraitsAn.
+  ///
+  /// In de, this message translates to:
+  /// **'Porträts zeigen'**
+  String get lebensbaumPortraitsAn;
+
+  /// No description provided for @lebensbaumPortraitsAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Porträts ausblenden'**
+  String get lebensbaumPortraitsAus;
+
   /// No description provided for @lebensbaumTitel.
   ///
   /// In de, this message translates to:

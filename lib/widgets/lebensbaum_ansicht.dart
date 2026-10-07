@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../services/lebensbaum_bild.dart';
 import 'lebensbaum_maler.dart';
+import 'profilbild.dart';
 
 /// Der Lebensbaum auf dem Schirm.
 ///
@@ -17,6 +20,9 @@ class LebensbaumAnsicht extends StatelessWidget {
   final String? untertitel;
   final ValueChanged<String> beiTipp;
 
+  /// Das Porträt einer Person, oder `null`.
+  final File? Function(String personId)? portrait;
+
   const LebensbaumAnsicht({
     super.key,
     required this.inhalt,
@@ -24,12 +30,20 @@ class LebensbaumAnsicht extends StatelessWidget {
     required this.titel,
     required this.beiTipp,
     this.untertitel,
+    this.portrait,
   });
 
   @override
   Widget build(BuildContext context) {
     final vorlage = inhalt.vorlage;
     final schildBild = vorlage.schildBild;
+    final portrait = this.portrait;
+    final mitPortrait = portrait == null
+        ? null
+        : {
+            for (final id in inhalt.personen)
+              if (portrait(id) != null) id,
+          };
     return SizedBox.fromSize(
       size: vorlage.groesse,
       child: Stack(
@@ -67,10 +81,33 @@ class LebensbaumAnsicht extends StatelessWidget {
                   titel: titel,
                   untertitel: untertitel,
                   textRichtung: Directionality.of(context),
+                  mitPortrait: mitPortrait,
                 ),
               ),
             ),
           ),
+          if (portrait != null && mitPortrait != null)
+            for (final p in inhalt.plaetze)
+              for (final (kreis, id) in portraitKreise(p, mitPortrait.contains))
+                Positioned.fromRect(
+                  rect: kreis,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      position: DecorationPosition.foreground,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: vorlage.nebenschrift,
+                          width: kreis.width * 0.04,
+                        ),
+                      ),
+                      child: Profilbild(
+                        datei: portrait(id),
+                        radius: kreis.width / 2,
+                      ),
+                    ),
+                  ),
+                ),
           for (final (rahmen, id) in inhalt.flaechen)
             Positioned.fromRect(
               rect: rahmen,

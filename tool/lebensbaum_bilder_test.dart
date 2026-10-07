@@ -118,8 +118,9 @@ void main() {
     WidgetTester tester,
     Lebensbaumbild inhalt,
     Lebensbaumschild Function(String) beschriftung,
-    String datei,
-  ) async {
+    String datei, {
+    bool mitPortraits = false,
+  }) async {
     final vorlage = inhalt.vorlage;
     final ziel = Platform.environment['PV_BILDER'];
     await tester.runAsync(() async {
@@ -134,12 +135,22 @@ void main() {
       final schild = vorlage.schildBild == null
           ? null
           : await lade(vorlage.schildBild!);
+      // Statt echter Gesichter das Programmsymbol, für jede zweite Person.
+      final portraits = <String, ui.Image>{};
+      if (mitPortraits) {
+        final symbol = await lade('assets/icon/app_icon.png');
+        for (final (i, id) in inhalt.personen.indexed) {
+          if (i.isEven) portraits[id] = symbol;
+        }
+      }
       const faktor = 2.0;
       final groesse = vorlage.groesse * faktor;
       final aufnahme = ui.PictureRecorder();
       LebensbaumMaler(
         inhalt: inhalt,
         schild: schild,
+        mitPortrait: mitPortraits ? portraits.keys.toSet() : null,
+        portraits: mitPortraits ? portraits : null,
         beschriftung: beschriftung,
         titel: 'Stammbaum der Familie Wyrsch',
         untertitel: 'Die Vorfahren von Johanna Wyrsch',
@@ -178,6 +189,7 @@ void main() {
         familienbild(zierbaumplan(geflecht), grosseLebensbaumvorlage(stil)),
         schild,
         'lebensbaum_familie_${stil.name}.png',
+        mitPortraits: true,
       );
     });
   }

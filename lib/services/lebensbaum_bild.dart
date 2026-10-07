@@ -226,3 +226,45 @@ Lebensbaumbild familienbild(
     verschwiegen: verschwiegen,
   );
 }
+
+/// Wo die Porträts eines Platzes sitzen: auf seiner Oberkante, je Person
+/// eines, gleichmässig verteilt – wie ein Bildnis über einer Tafel.
+///
+/// Nur für Personen, für die [hatBild] stimmt. Ein leerer Kreis mit
+/// einem Symbol würde auf einem gemalten Baum wie ein Loch aussehen.
+List<(Rect kreis, String id)> portraitKreise(
+  Lebensbaumplatz platz,
+  bool Function(String id) hatBild,
+) {
+  final r = platz.rahmen;
+  final n = platz.personen.length;
+  final radius = math.min(r.height * 0.3, r.width / n * 0.4);
+  return [
+    for (final (i, id) in platz.personen.indexed)
+      if (hatBild(id))
+        (
+          Rect.fromCircle(
+            center: Offset(r.left + r.width * (i + 1) / (n + 1), r.top),
+            radius: radius,
+          ),
+          id,
+        ),
+  ];
+}
+
+/// Die Schriftfläche eines Platzes, unter seinen Porträts.
+Rect schriftUnterPortraits(
+  Lebensbaumplatz platz,
+  bool Function(String id) hatBild,
+) {
+  final kreise = portraitKreise(platz, hatBild);
+  if (kreise.isEmpty) return platz.schrift;
+  final unten = kreise.map((k) => k.$1.bottom).reduce(math.max) + 2;
+  if (unten <= platz.schrift.top) return platz.schrift;
+  return Rect.fromLTRB(
+    platz.schrift.left,
+    math.min(unten, platz.schrift.bottom - platz.schrift.height * 0.5),
+    platz.schrift.right,
+    platz.schrift.bottom,
+  );
+}

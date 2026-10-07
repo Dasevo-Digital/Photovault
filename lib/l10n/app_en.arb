@@ -3889,6 +3889,8 @@
   "lebensbaumStilGold": "Gold",
   "lebensbaumGenerationen": "{anzahl} generations",
   "lebensbaumDrucken": "Tree of life as PDF",
+  "lebensbaumPortraitsAn": "Show portraits",
+  "lebensbaumPortraitsAus": "Hide portraits",
   "lebensbaumTitel": "The {name} family tree",
   "lebensbaumTitelOhneName": "Family tree",
   "lebensbaumTitelKurz": "The {name} family",

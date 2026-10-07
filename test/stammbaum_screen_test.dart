@@ -910,6 +910,20 @@ void main() {
     expect(identical(inhalt(), vorher), isFalse);
   });
 
+  testWidgets('die Porträts lassen sich aus- und wieder einblenden', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'kind');
+    expect(find.byTooltip('Porträts ausblenden'), findsOneWidget);
+    await tester.tap(find.byTooltip('Porträts ausblenden'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Porträts zeigen'), findsOneWidget);
+    expect(
+      tester.widget<LebensbaumAnsicht>(find.byType(LebensbaumAnsicht)).portrait,
+      isNull,
+    );
+  });
+
   testWidgets('jeder Stil lässt sich wählen', (tester) async {
     await zeigeLebensbaum(tester, 'kind');
     for (final stil in ['Landschaft', 'Wappen', 'Gold', 'Pergament']) {

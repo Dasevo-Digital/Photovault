@@ -187,6 +187,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   Lebensbaumrichtung _lebensRichtung = Lebensbaumrichtung.vorfahren;
   Lebensbaumstil _lebensStil = Lebensbaumstil.pergament;
   int _lebensGenerationen = 4;
+
+  /// Ob die Schilder Porträts tragen – wo es eines gibt.
+  bool _lebensPortraits = true;
   final TransformationController _lebensBlick = TransformationController();
   String? _lebensEingepasst;
 
@@ -1648,6 +1651,16 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               },
             ),
           IconButton(
+            tooltip: _lebensPortraits
+                ? t.lebensbaumPortraitsAus
+                : t.lebensbaumPortraitsAn,
+            isSelected: _lebensPortraits,
+            icon: const Icon(Icons.face_outlined),
+            selectedIcon: const Icon(Icons.face),
+            onPressed: () =>
+                setState(() => _lebensPortraits = !_lebensPortraits),
+          ),
+          IconButton(
             tooltip: t.lebensbaumDrucken,
             icon: const Icon(Icons.print_outlined),
             onPressed: inhalt.plaetze.length <= 1
@@ -1735,6 +1748,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                           titel: _lebensbaumtitel(t, inhalt),
                           untertitel: _lebensbaumuntertitel(t, fokus),
                           beiTipp: _ruecke,
+                          portrait: _lebensPortraits ? _portraitVon : null,
                         ),
                       ),
                     ),
@@ -1835,6 +1849,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
   }
 
+  /// Das Gesichtsbild einer Person, wenn sie eines hat.
+  File? _portraitVon(String id) {
+    final pfad = _nachId[id]?.coverFaceCropPath;
+    return pfad == null ? null : widget.library.paths.absolute(pfad);
+  }
+
   /// Die Zeile auf dem Spruchband: der Familienname, der im Bild am
   /// häufigsten vorkommt – oder schlicht „Stammbaum", wenn es keinen
   /// gibt, statt einen beliebigen Namen zur Familie zu erklären.
@@ -1882,6 +1902,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       titel: titel,
       untertitel: untertitel,
       textRichtung: richtung,
+      portrait: _lebensPortraits ? _portraitVon : null,
     );
     await File(mitTafelEndung(ziel)).writeAsBytes(bytes);
     if (!mounted) return;

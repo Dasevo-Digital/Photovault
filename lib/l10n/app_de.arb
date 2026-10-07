@@ -4973,6 +4973,8 @@
   "lebensbaumGenerationen": "{anzahl} Generationen",
   "@lebensbaumGenerationen": {"placeholders": {"anzahl": {"type": "int"}}},
   "lebensbaumDrucken": "Lebensbaum als PDF",
+  "lebensbaumPortraitsAn": "Porträts zeigen",
+  "lebensbaumPortraitsAus": "Porträts ausblenden",
   "lebensbaumTitel": "Stammbaum der Familie {name}",
   "@lebensbaumTitel": {"placeholders": {"name": {"type": "String"}}},
   "lebensbaumTitelOhneName": "Stammbaum",

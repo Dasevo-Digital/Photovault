@@ -490,6 +490,32 @@ void main() {
     }
   });
 
+  group('Porträts', () {
+    const platz = Lebensbaumplatz(
+      rahmen: Rect.fromLTWH(100, 100, 200, 100),
+      schrift: Rect.fromLTWH(110, 110, 180, 80),
+      personen: ['a', 'b'],
+    );
+
+    test('nur wer ein Bild hat, bekommt einen Kreis – auf der Oberkante', () {
+      final kreise = portraitKreise(platz, (id) => id == 'b');
+      expect(kreise, hasLength(1));
+      final (kreis, id) = kreise.single;
+      expect(id, 'b');
+      expect(kreis.center.dy, platz.rahmen.top);
+      // Die zweite Person steht rechts.
+      expect(kreis.center.dx, greaterThan(platz.rahmen.center.dx));
+    });
+
+    test('die Schrift rückt unter die Porträts, ohne Bild bleibt sie', () {
+      expect(schriftUnterPortraits(platz, (_) => false), platz.schrift);
+      final darunter = schriftUnterPortraits(platz, (_) => true);
+      final kreis = portraitKreise(platz, (_) => true).first.$1;
+      expect(darunter.top, greaterThan(kreis.bottom));
+      expect(darunter.bottom, platz.schrift.bottom);
+    });
+  });
+
   testWidgets('die Ansicht meldet den Tipp und nennt die Namen', (
     tester,
   ) async {

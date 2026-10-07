@@ -11,6 +11,7 @@
 /// gedruckten Blatt auf.
 library;
 
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -237,9 +238,29 @@ Future<Uint8List> baueLebensbaumPdf({
   required String titel,
   required String? untertitel,
   required TextDirection textRichtung,
+  File? Function(String personId)? portrait,
   AssetBundle? bundle,
 }) async {
   final vorlage = inhalt.vorlage;
+  // Die Porträts, verkleinert gelesen: Ein Kreis auf der Tafel ist
+  // höchstens ein paar hundert Bildpunkte gross.
+  final portraits = <String, ui.Image>{};
+  if (portrait != null) {
+    for (final id in inhalt.personen) {
+      final datei = portrait(id);
+      if (datei == null || !datei.existsSync()) continue;
+      try {
+        final codec = await ui.instantiateImageCodec(
+          await datei.readAsBytes(),
+          targetWidth: 384,
+        );
+        portraits[id] = (await codec.getNextFrame()).image;
+        codec.dispose();
+      } on Object {
+        // Ein unlesbares Porträt fehlt eben – die Tafel entsteht trotzdem.
+      }
+    }
+  }
   Future<ui.Image> lade(String asset) async {
     final daten = await (bundle ?? rootBundle).load(asset);
     final codec = await ui.instantiateImageCodec(daten.buffer.asUint8List());
@@ -265,12 +286,17 @@ Future<Uint8List> baueLebensbaumPdf({
     untertitel: untertitel,
     bild: bild,
     textRichtung: textRichtung,
+    mitPortrait: portraits.keys.toSet(),
+    portraits: portraits,
   ).paint(canvas, Size(breite, hoehe));
   final aufzeichnung = recorder.endRecording();
   final gross = await aufzeichnung.toImage(breite.round(), hoehe.round());
   aufzeichnung.dispose();
   bild.dispose();
   schild?.dispose();
+  for (final p in portraits.values) {
+    p.dispose();
+  }
   final png = await gross.toByteData(format: ui.ImageByteFormat.png);
   gross.dispose();
 

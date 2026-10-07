@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
 import '../services/lebensbaum_bild.dart';
@@ -32,6 +33,17 @@ class LebensbaumMaler extends CustomPainter {
   final ui.Image? schild;
   final TextDirection textRichtung;
 
+  /// Für wen es ein Porträt gibt. Die Schrift rückt dann darunter.
+  ///
+  /// Eine Menge statt einer Prüffunktion: Die Ansicht legt sie bei jedem
+  /// Aufbau neu an, und zwei gleiche Mengen sollen keinen Neuanstrich
+  /// auslösen.
+  final Set<String>? mitPortrait;
+
+  /// Die Porträts selbst – nur für die Tafel. Auf dem Bildschirm liegen
+  /// sie als Widgets darüber.
+  final Map<String, ui.Image>? portraits;
+
   LebensbaumMaler({
     required this.inhalt,
     required this.beschriftung,
@@ -40,6 +52,8 @@ class LebensbaumMaler extends CustomPainter {
     this.bild,
     this.schild,
     this.textRichtung = TextDirection.ltr,
+    this.mitPortrait,
+    this.portraits,
   });
 
   Lebensbaumvorlage get vorlage => inhalt.vorlage;
@@ -75,12 +89,51 @@ class LebensbaumMaler extends CustomPainter {
           Paint()..filterQuality = FilterQuality.high,
         );
       }
-      _beschrifte(canvas, p.schrift, [
+      final mitPortrait = this.mitPortrait;
+      final schrift = mitPortrait == null
+          ? p.schrift
+          : schriftUnterPortraits(p, mitPortrait.contains);
+      _beschrifte(canvas, schrift, [
         for (final id in p.personen) beschriftung(id),
       ], amStamm: p.amStamm);
     }
+    final portraits = this.portraits;
+    if (portraits != null) {
+      for (final p in inhalt.plaetze) {
+        for (final (kreis, id) in portraitKreise(p, portraits.containsKey)) {
+          _portrait(canvas, kreis, portraits[id]!);
+        }
+      }
+    }
     _titel(canvas);
     canvas.restore();
+  }
+
+  /// Ein Porträt im Kreis, mit schmalem Rand in der Farbe der Schrift.
+  void _portrait(Canvas canvas, Rect kreis, ui.Image bild) {
+    final seite = math.min(bild.width, bild.height).toDouble();
+    final quelle = Rect.fromCenter(
+      center: Offset(bild.width / 2, bild.height / 2),
+      width: seite,
+      height: seite,
+    );
+    canvas
+      ..save()
+      ..clipPath(Path()..addOval(kreis))
+      ..drawImageRect(
+        bild,
+        quelle,
+        kreis,
+        Paint()..filterQuality = FilterQuality.high,
+      )
+      ..restore()
+      ..drawOval(
+        kreis,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = kreis.width * 0.04
+          ..color = vorlage.nebenschrift,
+      );
   }
 
   /// Setzt die Schrift so gross, wie das Schild sie fasst.
@@ -257,5 +310,7 @@ class LebensbaumMaler extends CustomPainter {
       alt.titel != titel ||
       alt.untertitel != untertitel ||
       alt.bild != bild ||
-      alt.textRichtung != textRichtung;
+      alt.textRichtung != textRichtung ||
+      !setEquals(alt.mitPortrait, mitPortrait) ||
+      alt.portraits != portraits;
 }

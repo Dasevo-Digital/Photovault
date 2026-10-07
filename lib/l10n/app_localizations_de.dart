@@ -8354,6 +8354,12 @@ class AppTexteDe extends AppTexte {
   String get lebensbaumDrucken => 'Lebensbaum als PDF';
 
   @override
+  String get lebensbaumPortraitsAn => 'Porträts zeigen';
+
+  @override
+  String get lebensbaumPortraitsAus => 'Porträts ausblenden';
+
+  @override
   String lebensbaumTitel(String name) {
     return 'Stammbaum der Familie $name';
   }
