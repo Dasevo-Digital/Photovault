@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/lebensbaum.dart';
 import 'package:photo_vault/services/lebensbaum_vorlage.dart';
+import 'package:photo_vault/widgets/lebensbaum_ansicht.dart';
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/familienstatistik_screen.dart';
@@ -887,6 +888,26 @@ void main() {
       tester.getCenter(schild('Kind')).dy,
       greaterThan(tester.getCenter(mitte).dy),
     );
+  });
+
+  testWidgets('ein Neuaufbau rechnet den Lebensbaum nicht neu', (tester) async {
+    await zeigeLebensbaum(tester, 'kind');
+    Object inhalt() =>
+        tester.widget<LebensbaumAnsicht>(find.byType(LebensbaumAnsicht)).inhalt;
+    final vorher = inhalt();
+    // Denselben Stil noch einmal wählen baut den Bildschirm neu – am
+    // Baum ändert das nichts.
+    await tester.tap(find.byType(DropdownButton<Lebensbaumstil>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pergament').last);
+    await tester.pumpAndSettle();
+    expect(identical(inhalt(), vorher), isTrue);
+    // Eine andere Richtung dagegen schon.
+    await tester.tap(find.text('Nachkommen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vorfahren'));
+    await tester.pumpAndSettle();
+    expect(identical(inhalt(), vorher), isFalse);
   });
 
   testWidgets('jeder Stil lässt sich wählen', (tester) async {

@@ -22,6 +22,18 @@ import 'package:photo_vault/widgets/meldungsfenster.dart';
 /// Vorschlag mit Knöpfen wird, dass „Nein" ihn dauerhaft loswird, und
 /// dass eine bestätigte Wanderung in der richtigen der beiden Listen
 /// landet.
+/// Zählt die Abfragen der Vorschaureihen.
+class _ZaehlendeDatenbank extends AppDatabase {
+  _ZaehlendeDatenbank() : super(NativeDatabase.memory());
+  var vorschauGefragt = 0;
+
+  @override
+  Future<List<AssetData>> assetsByIds(List<String> ids) {
+    vorschauGefragt++;
+    return super.assetsByIds(ids);
+  }
+}
+
 void main() {
   late Directory wurzel;
   late AppDatabase db;
@@ -29,7 +41,7 @@ void main() {
 
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_akt_');
-    db = AppDatabase(NativeDatabase.memory());
+    db = _ZaehlendeDatenbank();
     library = LibraryState()
       ..db = db
       ..paths = await StoragePaths.forTesting(
@@ -103,6 +115,39 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('ein Neuaufbau fragt die Vorschaubilder nicht neu ab', (
+    tester,
+  ) async {
+    await wanderung();
+    tester.view.physicalSize = const Size(1000, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    // Ein Zähler über dem Bildschirm: Jede Änderung baut ihn neu auf,
+    // ohne seinen Zustand zu verwerfen.
+    final neu = ValueNotifier(0);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        builder: (context, kind) => mitMeldungen(kind),
+        home: ValueListenableBuilder<int>(
+          valueListenable: neu,
+          builder: (_, _, _) => AktivitaetenScreen(library: library),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final vorher = (db as _ZaehlendeDatenbank).vorschauGefragt;
+    expect(vorher, greaterThan(0));
+    for (var i = 1; i <= 3; i++) {
+      neu.value = i;
+      await tester.pumpAndSettle();
+    }
+    expect((db as _ZaehlendeDatenbank).vorschauGefragt, vorher);
+  });
 
   testWidgets('aus einer Häufung wird ein Vorschlag mit Zahlen', (
     tester,

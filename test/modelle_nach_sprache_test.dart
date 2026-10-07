@@ -27,6 +27,19 @@ import 'package:photo_vault/state/library_state.dart';
 /// Der Sonderfall, der die Regel erst brauchbar macht: Was schon auf der
 /// Platte liegt, bleibt sichtbar. Ein verstecktes Modell ist ein Modell,
 /// das niemand mehr löschen kann.
+/// Zählt, wie oft der Einstellungsbildschirm den Schalter für die
+/// Autoanalyse abfragt.
+class _ZaehlendeDatenbank extends AppDatabase {
+  _ZaehlendeDatenbank() : super(NativeDatabase.memory());
+  var autoanalyseGefragt = 0;
+
+  @override
+  Future<bool> autoAnalyzeAfterImportEnabled() {
+    autoanalyseGefragt++;
+    return super.autoAnalyzeAfterImportEnabled();
+  }
+}
+
 void main() {
   bool nichts(ModelCatalogEntry e) => false;
   bool alles(ModelCatalogEntry e) => true;
@@ -108,7 +121,7 @@ void main() {
 
     setUp(() async {
       wurzel = Directory.systemTemp.createTempSync('pv_modellsprache_');
-      db = AppDatabase(NativeDatabase.memory());
+      db = _ZaehlendeDatenbank();
       library = LibraryState()
         ..db = db
         ..paths = await StoragePaths.forTesting(
@@ -174,6 +187,42 @@ void main() {
     testWidgets('auf Englisch steht keine da', (tester) async {
       await tester.runAsync(() async {
         expect(await titel(tester, 'en'), isEmpty);
+      });
+    });
+
+    // Die Schalter standen mit `future: abfrage()` direkt im Aufbau und
+    // fragten bei jedem Tastendruck in der Suche neu – und zeigten
+    // dazwischen kurz ihren Vorgabewert.
+    testWidgets('Tippen in der Suche fragt die Schalter nicht neu', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        tester.view.physicalSize = const Size(1100, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppTexte.localizationsDelegates,
+            supportedLocales: AppTexte.supportedLocales,
+            home: Scaffold(body: SettingsScreen(library: library)),
+          ),
+        );
+        Future<void> takte() async {
+          for (var i = 0; i < 6; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          }
+        }
+
+        for (final eingabe in ['K', 'KI', 'KI-', 'KI-M', 'KI-Mo']) {
+          await tester.enterText(find.byType(SearchBar), eingabe);
+          await takte();
+        }
+        final zaehler = (db as _ZaehlendeDatenbank).autoanalyseGefragt;
+        expect(zaehler, 1);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 1));
       });
     });
   });

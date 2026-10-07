@@ -51,6 +51,9 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+/// Die Abfragen, die [_SettingsScreenState._einmal] zwischenspeichert.
+enum _Abfrage { autoanalyse, kiTags, datenschutz, uebersetzung }
+
 class _SettingsScreenState extends State<SettingsScreen> {
   /// Der Griff zum Formular für die eigene Kartenquelle. Über ihn
   /// schreibt die Quellenübersicht darüber eine Vorlage hinein und
@@ -187,6 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Ohne das läuft das Vorladen weiter, nachdem der Bildschirm zu ist –
     // und `setState` auf einem abgeräumten Zustand wirft.
     _vorratLauf?.cancel();
+    widget.library.removeListener(_bibliothekMeldet);
     _aiTagVocabularyController.dispose();
     _suche.dispose();
     _cartoSchluessel.dispose();
@@ -256,7 +260,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _hasBackupKeyFuture = widget.library.db.hasBackupKey();
     _backupSettingsFuture = widget.library.db.backupSettingsRow();
     _trashSettingsFuture = widget.library.db.trashSettingsRow();
+    widget.library.addListener(_bibliothekMeldet);
   }
+
+  /// Die Bibliothek meldet sich beim Beginn und Ende einer Analyse. Dabei
+  /// kann sich die Zahl der KI-Schlagwörter ändern; die Schalter nicht.
+  void _bibliothekMeldet() {
+    if (mounted) _neuFragen(_Abfrage.kiTags);
+  }
+
+  /// Abfragen, die die einzelnen Schalter brauchen, je Schlüssel einmal.
+  ///
+  /// Dasselbe wie die Felder oben, nur ohne je ein eigenes Feld: Bis hier
+  /// standen fünf Schalter noch mit `future: abfrage()` direkt im Aufbau
+  /// und fragten bei jedem Tastendruck in der Einstellungssuche neu – und
+  /// zeigten dazwischen kurz ihren Vorgabewert statt des echten.
+  final _abfragen = <Object, Future<Object?>>{};
+
+  Future<T> _einmal<T>(Object schluessel, Future<T> Function() abfrage) =>
+      (_abfragen[schluessel] ??= abfrage()) as Future<T>;
+
+  /// Fragt [schluessel] beim nächsten Aufbau neu – nach einer Änderung.
+  void _neuFragen(Object schluessel) =>
+      setState(() => _abfragen.remove(schluessel));
 
   void _reloadPinState() =>
       setState(() => _hasPinSetFuture = widget.library.db.hasPinSet());
@@ -1830,7 +1856,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),
     FutureBuilder<bool>(
       key: const ValueKey('auto-analyse'),
-      future: widget.library.db.autoAnalyzeAfterImportEnabled(),
+      future: _einmal(
+        _Abfrage.autoanalyse,
+        widget.library.db.autoAnalyzeAfterImportEnabled,
+      ),
       builder: (context, snapshot) {
         final an = snapshot.data ?? true;
         return Card(
@@ -1838,7 +1867,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: an,
             onChanged: (v) async {
               await widget.library.db.setAutoAnalyzeAfterImport(v);
-              if (mounted) setState(() {});
+              if (mounted) _neuFragen(_Abfrage.autoanalyse);
             },
             secondary: const Icon(Icons.schedule_outlined),
             title: Text(AppTexte.of(context).einstAutoAnalyseTitel),
@@ -2052,7 +2081,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // weil er zum Vokabular gehört: Wer die Begriffe ändert, will
     // meist auch die damit vergebenen Schlagwörter neu haben.
     FutureBuilder<int>(
-      future: widget.library.db.kiTagAnzahl(),
+      future: _einmal(_Abfrage.kiTags, widget.library.db.kiTagAnzahl),
       builder: (context, schnappschuss) {
         final anzahl = schnappschuss.data;
         return ListTile(
@@ -2210,7 +2239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (ja != true) return;
     final entfernt = await widget.library.db.nimmKiTagsZurueck();
     if (!mounted) return;
-    setState(() {});
+    _neuFragen(_Abfrage.kiTags);
     melde.erfolg(t.einstKiTagsZurueckFertig(entfernt));
   }
 
@@ -2495,7 +2524,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 1),
               FutureBuilder<PrivacySettingsData?>(
-                future: widget.library.db.privacySettingsRow(),
+                future: _einmal(
+                  _Abfrage.datenschutz,
+                  widget.library.db.privacySettingsRow,
+                ),
                 builder: (context, privacy) => SwitchListTile(
                   secondary: const Icon(Icons.visibility_off_outlined),
                   title: Text(AppTexte.of(context).einstPrivateMetadatenTitel),
@@ -2505,7 +2537,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: privacy.data?.protectMetadata ?? true,
                   onChanged: (value) async {
                     await widget.library.db.setProtectPrivateMetadata(value);
-                    if (mounted) setState(() {});
+                    if (mounted) _neuFragen(_Abfrage.datenschutz);
                   },
                 ),
               ),
@@ -3223,8 +3255,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Future<void> Function(bool) schreiben,
   }) {
     return FutureBuilder<bool>(
-      key: ValueKey('uebersetzung-$titel'),
-      future: lesen(),
+      key: ValueKey((_Abfrage.uebersetzung, titel)),
+      future: _einmal((_Abfrage.uebersetzung, titel), lesen),
       builder: (context, snapshot) {
         final an = snapshot.data ?? false;
         return Card(
@@ -3233,7 +3265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: installiert
                 ? (v) async {
                     await schreiben(v);
-                    if (mounted) setState(() {});
+                    if (mounted) _neuFragen((_Abfrage.uebersetzung, titel));
                   }
                 : null,
             secondary: Icon(icon),

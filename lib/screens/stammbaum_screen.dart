@@ -1775,6 +1775,32 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// frei in die Krone gesetzt; alles andere wird auf die gemalten
   /// Schilder der passenden Tafel verteilt.
   Lebensbaumbild _lebensbaumbild(String fokus) {
+    // **Einmal je Stand.** Die Verteilung auf die Schilder ist eine kleine
+    // Optimierungsrechnung, und jedes neue Ergebnis ist ein neues Objekt,
+    // für das der Maler alle Schilder neu setzt – samt Probesatz der
+    // Schrift in mehreren Grössen. Gebaut wird der Bildschirm aber auch
+    // aus Gründen, die den Baum nicht betreffen. Der Netz- und
+    // Personenstand wird bei jedem Laden neu angelegt; Gleichheit der
+    // Objekte heisst also: nichts geändert.
+    final schluessel = (
+      fokus,
+      _lebensRichtung,
+      _lebensStil,
+      _lebensGenerationen,
+      // Beide vergleichen sich über ihre Identität, nicht ihren Inhalt.
+      _netz,
+      _personen,
+    );
+    final gemerkt = _lebensbaumGemerkt;
+    if (gemerkt != null && gemerkt.$1 == schluessel) return gemerkt.$2;
+    final bild = _lebensbaumbildRechnen(fokus);
+    _lebensbaumGemerkt = (schluessel, bild);
+    return bild;
+  }
+
+  (Object, Lebensbaumbild)? _lebensbaumGemerkt;
+
+  Lebensbaumbild _lebensbaumbildRechnen(String fokus) {
     if (_lebensRichtung == Lebensbaumrichtung.familie) {
       final geflecht = geflechtUm(_netz, fokus, [
         for (final p in _personen) p.id,

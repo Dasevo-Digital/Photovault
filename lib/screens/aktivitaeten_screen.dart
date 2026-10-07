@@ -533,23 +533,59 @@ class _Vorschlagskarte extends StatelessWidget {
 /// Eigenes Widget und nicht in [_Vorschlagskarte] eingebaut: Die Karte
 /// selbst ist zustandslos und soll es bleiben; das Nachladen der
 /// Aufnahmen gehört hierher.
-class _Vorschaureihe extends StatelessWidget {
+///
+/// **Mit Zustand, damit die Abfrage einmal läuft.** Zustandslos stand sie
+/// direkt im Aufbau und lief bei jedem Neuaufbau der Liste erneut – je
+/// Karte eine Abfrage, und dazwischen fiel die Reihe kurz auf null Höhe
+/// zusammen.
+class _Vorschaureihe extends StatefulWidget {
   final LibraryState library;
   final Aktivitaetsvorschlag vorschlag;
 
   const _Vorschaureihe({required this.library, required this.vorschlag});
 
   @override
+  State<_Vorschaureihe> createState() => _VorschaureiheState();
+}
+
+class _VorschaureiheState extends State<_Vorschaureihe> {
+  late List<String> _gezeigt;
+  late Future<List<AssetData>> _aufnahmen;
+
+  @override
+  void initState() {
+    super.initState();
+    _laden();
+  }
+
+  @override
+  void didUpdateWidget(_Vorschaureihe alt) {
+    super.didUpdateWidget(alt);
+    final neu = _auswahl();
+    if (neu.length != _gezeigt.length ||
+        !Iterable.generate(neu.length).every((i) => neu[i] == _gezeigt[i])) {
+      _laden();
+    }
+  }
+
+  List<String> _auswahl() =>
+      widget.vorschlag.aufnahmeIds.take(_Vorschlagskarte._bilder).toList();
+
+  void _laden() {
+    _gezeigt = _auswahl();
+    _aufnahmen = widget.library.db.assetsByIds(_gezeigt);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final gezeigt = vorschlag.aufnahmeIds
-        .take(_Vorschlagskarte._bilder)
-        .toList();
+    final library = widget.library;
+    final gezeigt = _gezeigt;
     if (gezeigt.isEmpty) return const SizedBox.shrink();
-    final weitere = vorschlag.anzahl - gezeigt.length;
+    final weitere = widget.vorschlag.anzahl - gezeigt.length;
     return SizedBox(
       height: 72,
       child: FutureBuilder<List<AssetData>>(
-        future: library.db.assetsByIds(gezeigt),
+        future: _aufnahmen,
         builder: (context, schnappschuss) {
           final aufnahmen = schnappschuss.data;
           if (aufnahmen == null) return const SizedBox.shrink();
