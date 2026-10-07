@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.24.0" date="2026-10-07">
+      <description>
+        <p>Tree of life: portraits from face recognition on the plates, also in the PDF, with a button to hide them. Settings, activities and the tree of life no longer repeat database queries and calculations on every rebuild.</p>
+      </description>
+    </release>
     <release version="3.23.1" date="2026-10-06">
       <description>
         <p>Tree of life: in the descendants and below the centre person in the family view, children now stand towards the trunk and their partners on the outside.</p>
