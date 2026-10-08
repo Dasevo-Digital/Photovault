@@ -180,6 +180,17 @@ echter Hardware.
   Stunde bleiben draussen: Das trifft der Zufall zweimal je Bibliothek,
   ein Einlesevorgang ohne Uhrzeit dagegen tausendfach – und „vor 20
   Jahren, an genau diesem Tag" wäre dann für jedes davon gelogen
+- **Familientage** – oben in Entdecken: Geburtstage, Todestage und
+  Hochzeitstage aus dem Stammbaum, heute und in den nächsten sieben
+  Tagen, mit den Fotos der Menschen darunter („Oma wäre heute 100
+  geworden"). Gedenktage, die über hundert Jahre zurückliegen, nur wenn
+  sie rund sind
+- **Rückblick und Jahresrückblick als Video** – jede Gruppe im Rückblick
+  und die besten Fotos eines Jahres lassen sich als Diashow speichern:
+  Titelkarte, langsamer Zoom und Schwenk, Überblendungen, MP4 in Full
+  HD. Der **Jahresrückblick** („Dein Jahr …") zeigt dazu Fotos, Tage,
+  Länder, den stärksten Monat, wer am häufigsten dabei war und die
+  Reisen; die Auswahl gibt zuerst jedem Monat sein bestes Foto
 - **Kalender** – Jahresübersicht mit Titelbild und Foto-/Videoanzahl je Jahr
 - **Karte** – Fotos mit GPS-Daten auf einer Karte (OpenStreetMap-Kacheln)
   oder wahlweise auf einem interaktiven 3D-Globus. Die dunkle Karte
@@ -209,6 +220,10 @@ echter Hardware.
   festhalten
 - **Favoriten, Sternebewertung (1–5) & Farbmarkierungen** (Lightroom-Stil),
   einzeln oder als Stapelaktion auf eine Auswahl
+- **Rückgängig für Stapelaktionen** – nach Favorit, Bewertung, Farbe,
+  Schlagwort oder Album auf einer Auswahl steht eine Meldung mit
+  „Rückgängig". Zurück kommt der Zustand je Foto, nicht ein gemeinsamer
+  Wert
 - **Tags & Volltextsuche** über Dateiname, Beschreibung, Tags, erkannten
   Text im Foto (OCR) sowie KI-Bildbeschreibung. Dahinter liegt ein
   FTS5-Index, den drei Auslöser mitführen – die Suche liest also nicht
@@ -225,6 +240,10 @@ echter Hardware.
   Bei „Blende 2,8" ist nicht entschieden, ob genau 2,8 oder „mindestens so
   offen" gemeint ist, und ein halbverstandener Wert liefert etwas anderes,
   ohne dass man es der Trefferliste ansieht
+- **Suche mit „ohne"** – „Anna ohne Bernd", „Berge ohne Strand": Personen
+  und Schlagwörter lassen sich ausschliessen, in den Suchoptionen und im
+  Satz. Dort nur unmittelbar vor einem bekannten Namen – vor einem
+  unbekannten Wort bleibt „ohne" Text
 - **Ein geratenes Aufnahmedatum sagt, dass es geraten ist.** Trägt eine
   Datei kein Aufnahmedatum, fällt der Import auf den Zeitstempel der Datei
   zurück – der letzte Ausweg, und nach jedem Kopieren und Zurückholen der
