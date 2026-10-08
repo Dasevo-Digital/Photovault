@@ -4035,6 +4035,108 @@ class AppDatabase extends _$AppDatabase {
         AssetsCompanion(colorLabel: Value(colorLabel)),
       );
 
+  // ---- Rückgängig für die Auswahlleiste -------------------------------
+  //
+  // Jede Stapelaktion merkt sich vorher, was sie ändert, und stellt es auf
+  // Wunsch wieder her (siehe widgets/stapel_rueckgaengig.dart). Gemerkt
+  // wird je Foto, nicht ein gemeinsamer Wert: Von 200 markierten Fotos
+  // hatten vorher vielleicht 30 schon fünf Sterne.
+
+  /// Favorit, Bewertung und Farbe je Foto, wie sie jetzt sind.
+  Future<Map<String, ({bool favorit, int bewertung, String? farbe})>>
+  markierungen(List<String> assetIds) async => {
+    for (final a in await (select(
+      assets,
+    )..where((t) => t.id.isIn(assetIds))).get())
+      a.id: (favorit: a.isFavorite, bewertung: a.rating, farbe: a.colorLabel),
+  };
+
+  /// Stellt [vorher] wieder her – gruppiert nach Wert, also so viele
+  /// Schreibvorgänge, wie es verschiedene Werte gab, nicht je Foto einen.
+  Future<void> setzeMarkierungen(
+    Map<String, ({bool favorit, int bewertung, String? farbe})> vorher,
+  ) => transaction(() async {
+    final nach =
+        <({bool favorit, int bewertung, String? farbe}), List<String>>{};
+    for (final MapEntry(key: id, value: m) in vorher.entries) {
+      (nach[m] ??= []).add(id);
+    }
+    for (final MapEntry(key: m, value: ids) in nach.entries) {
+      await (update(assets)..where((t) => t.id.isIn(ids))).write(
+        AssetsCompanion(
+          isFavorite: Value(m.favorit),
+          rating: Value(m.bewertung),
+          colorLabel: Value(m.farbe),
+        ),
+      );
+    }
+  });
+
+  /// Welche von [assetIds] das Schlagwort [tagName] schon tragen.
+  Future<Set<String>> tragenSchlagwort(
+    List<String> assetIds,
+    String tagName,
+  ) async {
+    final tag = await (select(
+      tags,
+    )..where((t) => t.name.equals(tagName))).getSingleOrNull();
+    if (tag == null) return const {};
+    return {
+      for (final z in await (select(
+        assetTags,
+      )..where((t) => t.tagId.equals(tag.id) & t.assetId.isIn(assetIds))).get())
+        z.assetId,
+    };
+  }
+
+  /// Nimmt das Schlagwort [tagName] von [assetIds] wieder ab. Hängt es
+  /// danach an keinem Foto mehr, verschwindet es ganz – es war erst eben
+  /// angelegt worden.
+  Future<void> nimmSchlagwortAb(List<String> assetIds, String tagName) =>
+      transaction(() async {
+        final tag = await (select(
+          tags,
+        )..where((t) => t.name.equals(tagName))).getSingleOrNull();
+        if (tag == null) return;
+        await (delete(assetTags)
+              ..where((t) => t.tagId.equals(tag.id) & t.assetId.isIn(assetIds)))
+            .go();
+        final rest =
+            await (select(assetTags)
+                  ..where((t) => t.tagId.equals(tag.id))
+                  ..limit(1))
+                .get();
+        if (rest.isEmpty) {
+          await (delete(tags)..where((t) => t.id.equals(tag.id))).go();
+        }
+      });
+
+  /// Welche von [assetIds] schon im Album [albumId] liegen.
+  Future<Set<String>> imAlbum(String albumId, List<String> assetIds) async => {
+    for (final z
+        in await (select(albumAssets)..where(
+              (t) => t.albumId.equals(albumId) & t.assetId.isIn(assetIds),
+            ))
+            .get())
+      z.assetId,
+  };
+
+  /// Nimmt [assetIds] aus dem Album [albumId]; mit [albumLoeschen] auch das
+  /// Album selbst – wenn es erst für diese Aktion angelegt wurde.
+  Future<void> nimmAusAlbum(
+    String albumId,
+    List<String> assetIds, {
+    bool albumLoeschen = false,
+  }) => transaction(() async {
+    await (delete(
+      albumAssets,
+    )..where((t) => t.albumId.equals(albumId) & t.assetId.isIn(assetIds))).go();
+    if (albumLoeschen) {
+      await (delete(albumAssets)..where((t) => t.albumId.equals(albumId))).go();
+      await (delete(albums)..where((t) => t.id.equals(albumId))).go();
+    }
+  });
+
   /// Setzt dieselbe Beschreibung für mehrere Assets auf einmal (Auswahlleiste
   /// "Metadaten bearbeiten") – überschreibt, statt anzuhängen.
   Future<void> setDescriptionBulk(List<String> assetIds, String description) =>

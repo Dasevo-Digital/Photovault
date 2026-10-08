@@ -5034,5 +5034,15 @@
   "aufgDdcolorModell": "das DDColor-Modell",
   "bearbKolorieren": "Einfärben",
   "bearbKolorierenFehler": "Einfärben fehlgeschlagen: {grund}",
-  "@bearbKolorierenFehler": {"placeholders": {"grund": {"type": "String"}}}
+  "@bearbKolorierenFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "auswRueckFavorit": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} als Favorit markiert",
+  "@auswRueckFavorit": {"placeholders": {"anzahl": {"type": "int"}}},
+  "auswRueckBewertung": "Bewertung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt",
+  "@auswRueckBewertung": {"placeholders": {"anzahl": {"type": "int"}}},
+  "auswRueckFarbe": "Farbmarkierung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt",
+  "@auswRueckFarbe": {"placeholders": {"anzahl": {"type": "int"}}},
+  "auswRueckSchlagwort": "„{tag}“ an {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} vergeben",
+  "@auswRueckSchlagwort": {"placeholders": {"tag": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "auswRueckAlbum": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} ins Album gelegt",
+  "@auswRueckAlbum": {"placeholders": {"anzahl": {"type": "int"}}}
 }

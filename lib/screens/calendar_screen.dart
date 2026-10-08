@@ -498,6 +498,7 @@ class _YearDetailScreenState extends State<YearDetailScreen>
                       await runBatchFavorite(
                         widget.library,
                         _selected.toList(),
+                        texte: AppTexte.of(context),
                       );
                       if (mounted) setState(_selected.clear);
                     },

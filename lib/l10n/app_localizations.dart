@@ -13284,6 +13284,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Einfärben fehlgeschlagen: {grund}'**
   String bearbKolorierenFehler(String grund);
+
+  /// No description provided for @auswRueckFavorit.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} als Favorit markiert'**
+  String auswRueckFavorit(int anzahl);
+
+  /// No description provided for @auswRueckBewertung.
+  ///
+  /// In de, this message translates to:
+  /// **'Bewertung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt'**
+  String auswRueckBewertung(int anzahl);
+
+  /// No description provided for @auswRueckFarbe.
+  ///
+  /// In de, this message translates to:
+  /// **'Farbmarkierung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt'**
+  String auswRueckFarbe(int anzahl);
+
+  /// No description provided for @auswRueckSchlagwort.
+  ///
+  /// In de, this message translates to:
+  /// **'„{tag}“ an {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} vergeben'**
+  String auswRueckSchlagwort(String tag, int anzahl);
+
+  /// No description provided for @auswRueckAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} ins Album gelegt'**
+  String auswRueckAlbum(int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

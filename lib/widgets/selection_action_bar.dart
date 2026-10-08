@@ -252,8 +252,37 @@ VoidCallback? vergleichsAktion(
   };
 }
 
-Future<void> runBatchFavorite(LibraryState library, List<String> assetIds) =>
-    library.db.setFavoriteBulk(assetIds, true);
+/// Bietet nach einer Stapelaktion an, sie zurückzunehmen.
+///
+/// **Je Foto, nicht ein gemeinsamer Wert.** Wer 200 Fotos markiert und
+/// ihnen drei Sterne gibt, hatte vorher vielleicht dreissig mit fünf;
+/// „Rückgängig“ muss diese dreissig wieder auf fünf setzen und nicht alle
+/// 200 auf null. Deshalb merkt sich jede Aktion vorher den Zustand.
+void _rueckgaengigAnbieten(
+  AppTexte? t,
+  String text,
+  Future<void> Function() zurueck,
+) {
+  if (t == null) return;
+  melde.erfolg(
+    text,
+    aktion: (beschriftung: t.allgRueckgaengig, beiDruck: () => zurueck()),
+  );
+}
+
+Future<void> runBatchFavorite(
+  LibraryState library,
+  List<String> assetIds, {
+  AppTexte? texte,
+}) async {
+  final vorher = await library.db.markierungen(assetIds);
+  await library.db.setFavoriteBulk(assetIds, true);
+  _rueckgaengigAnbieten(
+    texte,
+    texte?.auswRueckFavorit(assetIds.length) ?? '',
+    () => library.db.setzeMarkierungen(vorher),
+  );
+}
 
 /// Zeigt eine Sternereihe zur Auswahl einer gemeinsamen Bewertung für alle
 /// übergebenen Fotos ("Keine Bewertung" setzt explizit auf 0 zurück statt
@@ -284,8 +313,15 @@ Future<void> runBatchSetRating(
       ],
     ),
   );
-  if (rating == null) return;
+  if (rating == null || !context.mounted) return;
+  final t = AppTexte.of(context);
+  final vorher = await library.db.markierungen(assetIds);
   await library.db.setRatingBulk(assetIds, rating);
+  _rueckgaengigAnbieten(
+    t,
+    t.auswRueckBewertung(assetIds.length),
+    () => library.db.setzeMarkierungen(vorher),
+  );
 }
 
 /// Zeigt die Farbmarkierungs-Palette zur Auswahl einer gemeinsamen
@@ -319,8 +355,15 @@ Future<void> runBatchSetColorLabel(
       ],
     ),
   );
-  if (result == null) return;
+  if (result == null || !context.mounted) return;
+  final t = AppTexte.of(context);
+  final vorher = await library.db.markierungen(assetIds);
   await library.db.setColorLabelBulk(assetIds, result.isEmpty ? null : result);
+  _rueckgaengigAnbieten(
+    t,
+    t.auswRueckFarbe(assetIds.length),
+    () => library.db.setzeMarkierungen(vorher),
+  );
 }
 
 /// Dialog mit drei optionalen Feldern (Beschreibung, Datum, Ort) – nur
@@ -531,8 +574,20 @@ Future<void> runBatchTagDialog(
       ),
     ),
   );
-  if (tag == null || tag.isEmpty) return;
+  if (tag == null || tag.isEmpty || !context.mounted) return;
+  final t = AppTexte.of(context);
+  final schon = await library.db.tragenSchlagwort(assetIds, tag);
   await library.db.tagAssetsBulk(assetIds, tag);
+  final neu = [
+    for (final id in assetIds)
+      if (!schon.contains(id)) id,
+  ];
+  if (neu.isEmpty) return;
+  _rueckgaengigAnbieten(
+    t,
+    t.auswRueckSchlagwort(tag, neu.length),
+    () => library.db.nimmSchlagwortAb(neu, tag),
+  );
 }
 
 /// Zeigt den Album-Auswahl-Dialog und fügt die übergebenen Fotos danach dem
@@ -548,6 +603,7 @@ Future<void> runBatchAddToAlbumDialog(
   if (choice == null) return;
 
   final String albumId;
+  final neuesAlbum = choice.newName != null;
   if (choice.newName != null) {
     albumId = const Uuid().v4();
     await library.db.createAlbum(
@@ -560,7 +616,20 @@ Future<void> runBatchAddToAlbumDialog(
   } else {
     albumId = choice.existingAlbumId!;
   }
+  final schon = await library.db.imAlbum(albumId, assetIds);
   await library.db.addAssetsToAlbum(albumId, assetIds);
+  if (!context.mounted) return;
+  final t = AppTexte.of(context);
+  final neu = [
+    for (final id in assetIds)
+      if (!schon.contains(id)) id,
+  ];
+  if (neu.isEmpty) return;
+  _rueckgaengigAnbieten(
+    t,
+    t.auswRueckAlbum(neu.length),
+    () => library.db.nimmAusAlbum(albumId, neu, albumLoeschen: neuesAlbum),
+  );
 }
 
 /// Exportiert alle übergebenen Fotos in einen vom Nutzer gewählten Ordner,

@@ -3934,5 +3934,10 @@
   "modellDdcolorLizenz": "Apache 2.0 (DDColor, Kang et al.), ONNX export by edgetools",
   "aufgDdcolorModell": "the DDColor model",
   "bearbKolorieren": "Colorize",
-  "bearbKolorierenFehler": "Colorizing failed: {grund}"
+  "bearbKolorierenFehler": "Colorizing failed: {grund}",
+  "auswRueckFavorit": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}} marked as favourite",
+  "auswRueckBewertung": "Rating set for {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
+  "auswRueckFarbe": "Colour label set for {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
+  "auswRueckSchlagwort": "“{tag}” added to {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
+  "auswRueckAlbum": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}} added to the album"
 }

@@ -8546,4 +8546,59 @@ class AppTexteDe extends AppTexte {
   String bearbKolorierenFehler(String grund) {
     return 'Einfärben fehlgeschlagen: $grund';
   }
+
+  @override
+  String auswRueckFavorit(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0 als Favorit markiert';
+  }
+
+  @override
+  String auswRueckBewertung(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return 'Bewertung für $_temp0 gesetzt';
+  }
+
+  @override
+  String auswRueckFarbe(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return 'Farbmarkierung für $_temp0 gesetzt';
+  }
+
+  @override
+  String auswRueckSchlagwort(String tag, int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '„$tag“ an $_temp0 vergeben';
+  }
+
+  @override
+  String auswRueckAlbum(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0 ins Album gelegt';
+  }
 }
