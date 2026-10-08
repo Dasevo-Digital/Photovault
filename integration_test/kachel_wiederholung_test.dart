@@ -123,57 +123,53 @@ void main() {
     return fehler;
   }
 
-  testWidgets(
-    'eine einmal abgewiesene Kachel kommt trotzdem an',
-    (tester) async {
-      abweisungen = 1;
-      final fehler = await karteLaufenLassen(tester);
+  testWidgets('eine einmal abgewiesene Kachel kommt trotzdem an', (
+    tester,
+  ) async {
+    abweisungen = 1;
+    final fehler = await karteLaufenLassen(tester);
 
-      print('Kacheln angefragt: ${abrufe.length}');
-      print('Abrufe je Kachel:  ${abrufe.values.toSet().toList()..sort()}');
-      print('Fehlkacheln:       ${fehler.length}');
+    print('Kacheln angefragt: ${abrufe.length}');
+    print('Abrufe je Kachel:  ${abrufe.values.toSet().toList()..sort()}');
+    print('Fehlkacheln:       ${fehler.length}');
 
-      expect(abrufe, isNotEmpty, reason: 'sonst misst der Test nichts');
-      expect(
-        fehler,
-        isEmpty,
-        reason: 'genau das war der Fehler: ein 404 wurde zum Loch',
-      );
-      // Jede Kachel muss oefter als einmal abgerufen worden sein - sonst
-      // hat die Wiederholung gar nicht stattgefunden, und der Test bestuende
-      // aus dem falschen Grund.
-      expect(
-        abrufe.values.every((n) => n >= 2),
-        isTrue,
-        reason: 'ohne zweiten Versuch waere nichts angekommen: $abrufe',
-      );
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+    expect(abrufe, isNotEmpty, reason: 'sonst misst der Test nichts');
+    expect(
+      fehler,
+      isEmpty,
+      reason: 'genau das war der Fehler: ein 404 wurde zum Loch',
+    );
+    // Jede Kachel muss oefter als einmal abgerufen worden sein - sonst
+    // hat die Wiederholung gar nicht stattgefunden, und der Test bestuende
+    // aus dem falschen Grund.
+    expect(
+      abrufe.values.every((n) => n >= 2),
+      isTrue,
+      reason: 'ohne zweiten Versuch waere nichts angekommen: $abrufe',
+    );
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
-  testWidgets(
-    'nach den erlaubten Versuchen bleibt es beim Fehler',
-    (tester) async {
-      // Die Gegenprobe. Ohne sie belegte der Test oben nur, dass ueberhaupt
-      // wiederholt wird - nicht, dass die Zahl der Versuche begrenzt ist.
-      // Ein Client, der endlos nachfasst, waere gegenueber einem
-      // gespendeten Kachelserver das schlechtere Verhalten.
-      abweisungen = 99;
-      final fehler = await karteLaufenLassen(tester);
+  testWidgets('nach den erlaubten Versuchen bleibt es beim Fehler', (
+    tester,
+  ) async {
+    // Die Gegenprobe. Ohne sie belegte der Test oben nur, dass ueberhaupt
+    // wiederholt wird - nicht, dass die Zahl der Versuche begrenzt ist.
+    // Ein Client, der endlos nachfasst, waere gegenueber einem
+    // gespendeten Kachelserver das schlechtere Verhalten.
+    abweisungen = 99;
+    final fehler = await karteLaufenLassen(tester);
 
-      print(
-        'Abrufe je Kachel bei Dauerfehler: '
-        '${abrufe.values.toSet().toList()..sort()}',
-      );
-      expect(fehler, isNotEmpty, reason: 'der Fehlschlag muss sichtbar werden');
-      expect(
-        abrufe.values.every((n) => n <= kachelVersuche + 1),
-        isTrue,
-        reason:
-            'hoechstens ein Versuch plus $kachelVersuche '
-            'Wiederholungen: $abrufe',
-      );
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+    print(
+      'Abrufe je Kachel bei Dauerfehler: '
+      '${abrufe.values.toSet().toList()..sort()}',
+    );
+    expect(fehler, isNotEmpty, reason: 'der Fehlschlag muss sichtbar werden');
+    expect(
+      abrufe.values.every((n) => n <= kachelVersuche + 1),
+      isTrue,
+      reason:
+          'hoechstens ein Versuch plus $kachelVersuche '
+          'Wiederholungen: $abrufe',
+    );
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

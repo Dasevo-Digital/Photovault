@@ -239,19 +239,14 @@ void main() {
       );
       expect(plan.knoten, hasLength(31));
       final (:vorlage, :belegung) = passendeVorlage(plan, stil);
-      await male(
-        tester,
-        bildAusBelegung(vorlage, belegung),
-        (id) {
-          final n = int.parse(id.substring(1));
-          return (
-            name: '${vornamen[n % vornamen.length]} Wyrsch',
-            lebensspanne: '${2000 - n * 9}–${2060 - n * 9}',
-            bezeichnung: 'Nr. $n',
-          );
-        },
-        'lebensbaum_voll_${stil.name}.png',
-      );
+      await male(tester, bildAusBelegung(vorlage, belegung), (id) {
+        final n = int.parse(id.substring(1));
+        return (
+          name: '${vornamen[n % vornamen.length]} Wyrsch',
+          lebensspanne: '${2000 - n * 9}–${2060 - n * 9}',
+          bezeichnung: 'Nr. $n',
+        );
+      }, 'lebensbaum_voll_${stil.name}.png');
     });
   }
 }

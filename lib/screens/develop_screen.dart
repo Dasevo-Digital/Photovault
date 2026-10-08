@@ -2923,26 +2923,21 @@ class _DevelopScreenState extends State<DevelopScreen> {
           },
           enabled: shape is RectangleShape,
         ),
-        _shapeSlider(
-          AppTexte.of(context).entwWeichzeichnung,
-          feather,
-          0,
-          1,
-          (v) {
-            if (shape is! RectangleShape) return;
-            setState(
-              () => _draftShape = RectangleShape(
-                centerX: shape.centerX,
-                centerY: shape.centerY,
-                halfWidth: shape.halfWidth,
-                halfHeight: shape.halfHeight,
-                rotation: shape.rotation,
-                feather: v,
-              ),
-            );
-          },
-          enabled: shape is RectangleShape,
-        ),
+        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (
+          v,
+        ) {
+          if (shape is! RectangleShape) return;
+          setState(
+            () => _draftShape = RectangleShape(
+              centerX: shape.centerX,
+              centerY: shape.centerY,
+              halfWidth: shape.halfWidth,
+              halfHeight: shape.halfHeight,
+              rotation: shape.rotation,
+              feather: v,
+            ),
+          );
+        }, enabled: shape is RectangleShape),
       ],
     );
   }
@@ -3080,26 +3075,21 @@ class _DevelopScreenState extends State<DevelopScreen> {
           },
           enabled: shape is EllipseShape,
         ),
-        _shapeSlider(
-          AppTexte.of(context).entwWeichzeichnung,
-          feather,
-          0,
-          1,
-          (v) {
-            if (shape is! EllipseShape) return;
-            setState(
-              () => _draftShape = EllipseShape(
-                centerX: shape.centerX,
-                centerY: shape.centerY,
-                radiusX: shape.radiusX,
-                radiusY: shape.radiusY,
-                rotation: shape.rotation,
-                feather: v,
-              ),
-            );
-          },
-          enabled: shape is EllipseShape,
-        ),
+        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (
+          v,
+        ) {
+          if (shape is! EllipseShape) return;
+          setState(
+            () => _draftShape = EllipseShape(
+              centerX: shape.centerX,
+              centerY: shape.centerY,
+              radiusX: shape.radiusX,
+              radiusY: shape.radiusY,
+              rotation: shape.rotation,
+              feather: v,
+            ),
+          );
+        }, enabled: shape is EllipseShape),
       ],
     );
   }
@@ -3116,25 +3106,20 @@ class _DevelopScreenState extends State<DevelopScreen> {
           style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 16),
-        _shapeSlider(
-          AppTexte.of(context).entwWeichzeichnung,
-          feather,
-          0,
-          1,
-          (v) {
-            if (shape is! GradientShape) return;
-            setState(
-              () => _draftShape = GradientShape(
-                startX: shape.startX,
-                startY: shape.startY,
-                endX: shape.endX,
-                endY: shape.endY,
-                feather: v,
-              ),
-            );
-          },
-          enabled: shape is GradientShape,
-        ),
+        _shapeSlider(AppTexte.of(context).entwWeichzeichnung, feather, 0, 1, (
+          v,
+        ) {
+          if (shape is! GradientShape) return;
+          setState(
+            () => _draftShape = GradientShape(
+              startX: shape.startX,
+              startY: shape.startY,
+              endX: shape.endX,
+              endY: shape.endY,
+              feather: v,
+            ),
+          );
+        }, enabled: shape is GradientShape),
       ],
     );
   }

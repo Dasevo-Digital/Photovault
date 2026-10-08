@@ -109,118 +109,168 @@ void main() {
           }(),
         ];
   for (final ort in landschaften) {
-    testWidgets(
-      'Flug über echtes Gelände: ${ort.name}',
-      (tester) async {
-        final ziel = Directory(Platform.environment['PV_BILDER']!)
-          ..createSync(recursive: true);
-        tester.view.physicalSize = const Size(1200, 820);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+    testWidgets('Flug über echtes Gelände: ${ort.name}', (tester) async {
+      final ziel = Directory(Platform.environment['PV_BILDER']!)
+        ..createSync(recursive: true);
+      tester.view.physicalSize = const Size(1200, 820);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
 
-        final sued = ort.sued, nord = ort.nord, west = ort.west, ost = ort.ost;
+      final sued = ort.sued, nord = ort.nord, west = ort.west, ost = ort.ost;
 
-        Hoehengitter? gitter;
-        ui.Image? karte;
-        await tester.runAsync(() async {
-          // flutter_test schiebt eine Attrappe unter, die jede Anfrage mit
-          // 400 beantwortet. Für diesen einen Prüfstand echtes Netz.
-          final vorher = HttpOverrides.current;
-          HttpOverrides.global = null;
-          addTearDown(() => HttpOverrides.global = vorher);
-          final netz = http.Client();
-          gitter = await ladeHoehengitter(
-            sued: sued,
-            west: west,
-            nord: nord,
-            ost: ost,
-            netz: netz,
-            speicher: const DisabledMapCachingProvider(),
-          );
-          karte = await ladeKartenbild(
-            sued: sued,
-            west: west,
-            nord: nord,
-            ost: ost,
-            netz: netz,
-            speicher: const DisabledMapCachingProvider(),
-          );
-          netz.close();
-        });
-        if (gitter == null) {
-          markTestSkipped('Keine Höhenkacheln erreichbar');
-          return;
-        }
-        final g = gitter!;
-        stdout.writeln(
-          '${ort.name}: Gitter ${g.spalten}x${g.zeilen}, '
-          'Höhen ${g.spanne.tief.round()}..${g.spanne.hoch.round()} m, '
-          'Karte: ${karte != null}',
+      Hoehengitter? gitter;
+      ui.Image? karte;
+      await tester.runAsync(() async {
+        // flutter_test schiebt eine Attrappe unter, die jede Anfrage mit
+        // 400 beantwortet. Für diesen einen Prüfstand echtes Netz.
+        final vorher = HttpOverrides.current;
+        HttpOverrides.global = null;
+        addTearDown(() => HttpOverrides.global = vorher);
+        final netz = http.Client();
+        gitter = await ladeHoehengitter(
+          sued: sued,
+          west: west,
+          nord: nord,
+          ost: ost,
+          netz: netz,
+          speicher: const DisabledMapCachingProvider(),
         );
+        karte = await ladeKartenbild(
+          sued: sued,
+          west: west,
+          nord: nord,
+          ost: ost,
+          netz: netz,
+          speicher: const DisabledMapCachingProvider(),
+        );
+        netz.close();
+      });
+      if (gitter == null) {
+        markTestSkipped('Keine Höhenkacheln erreichbar');
+        return;
+      }
+      final g = gitter!;
+      stdout.writeln(
+        '${ort.name}: Gitter ${g.spalten}x${g.zeilen}, '
+        'Höhen ${g.spanne.tief.round()}..${g.spanne.hoch.round()} m, '
+        'Karte: ${karte != null}',
+      );
 
-        final netzDreiecke = baueNetz(
+      final netzDreiecke = baueNetz(
+        g,
+        grundfarbe: karte == null
+            ? gelaendeGrundfarbe
+            : const Color(0xFFFFFFFF),
+      );
+
+      // Eine plausible Spur: quer durchs Tal, die Höhe aus dem echten
+      // Gelände gelesen, mit Zeitstempeln im Wandertempo.
+      final start = DateTime.utc(2026, 8, 30, 8, 15);
+      final spur = <Gelaendespurpunkt>[];
+      if (echte != null) {
+        for (final (i, p) in echte.indexed) {
+          spur.add((
+            breite: p.breite,
+            laenge: p.laenge,
+            hoehe: p.hoehe ?? g.anOrt(p.breite, p.laenge),
+            zeit: start.add(Duration(seconds: i * 12)),
+          ));
+        }
+      }
+      for (var i = 0; echte == null && i <= 240; i++) {
+        final t = i / 240;
+        final breite = sued + (nord - sued) * (0.18 + 0.62 * t);
+        final laenge =
+            west +
+            (ost - west) * (0.15 + 0.7 * t + 0.08 * math.sin(t * math.pi * 3));
+        spur.add((
+          breite: breite,
+          laenge: laenge,
+          hoehe: g.anOrt(breite, laenge),
+          zeit: start.add(Duration(seconds: i * 25)),
+        ));
+      }
+
+      // Wie im Bildschirm: Linie und Werte in einem Zug.
+      final kleiner = g;
+      final mittel = netzDreiecke.mittlereHoehe;
+      final linie = <Raumpunkt>[];
+      final werte = <Flugwert>[];
+      for (final p in spur) {
+        final h = p.hoehe ?? kleiner.anOrt(p.breite, p.laenge);
+        if (h == null) continue;
+        linie.add((
+          x:
+              ((p.laenge - kleiner.west) / (kleiner.ost - kleiner.west) - 0.5) *
+              netzDreiecke.breiteMeter,
+          y:
+              (0.5 -
+                  (kleiner.nord - p.breite) / (kleiner.nord - kleiner.sued)) *
+              netzDreiecke.hoeheMeter,
+          z: (h + 2 - mittel) * gelaendeUeberhoehung,
+        ));
+        werte.add((hoehe: p.hoehe, zeit: p.zeit));
+      }
+      stdout.writeln(
+        'Spur: ${linie.length} Punkte, '
+        '${(Gelaendeflug(linie).laengeMeter / 1000).toStringAsFixed(1)} km',
+      );
+
+      final schluessel = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          locale: const Locale('de'),
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: schluessel,
+              child: Gelaendeansicht(
+                netz: netzDreiecke,
+                spur: linie,
+                spurwerte: werte,
+                karte: karte,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      Future<void> schiessen(String name) async {
+        await tester.runAsync(() async {
+          final grenze =
+              schluessel.currentContext!.findRenderObject()
+                  as RenderRepaintBoundary;
+          final bild = await grenze.toImage(pixelRatio: 1.0);
+          final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
+          File(
+            '${ziel.path}/${ort.name}-$name.png',
+          ).writeAsBytesSync(daten!.buffer.asUint8List());
+          bild.dispose();
+        });
+      }
+
+      await schiessen('e0-uebersicht');
+      await tester.tap(find.byIcon(Icons.flight_takeoff));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      for (final (n, stelle) in [(1, 0.08), (2, 0.35), (3, 0.62), (4, 0.9)]) {
+        tester.widget<Slider>(find.byType(Slider)).onChanged!(stelle);
+        await tester.pump();
+        await schiessen('e$n-bei-${(stelle * 100).round()}');
+      }
+      // Und dieselbe Stelle im Flug unter allen vier Tageszeiten. Hier
+      // entscheidet sich, was keine Zahl entscheidet: ob die
+      // Kartenbeschriftung noch lesbar ist, wenn das Relief stärker wird.
+      for (final stimmung in lichtstimmungen) {
+        final gefaerbt = baueNetz(
           g,
           grundfarbe: karte == null
               ? gelaendeGrundfarbe
               : const Color(0xFFFFFFFF),
+          stimmung: stimmung,
         );
-
-        // Eine plausible Spur: quer durchs Tal, die Höhe aus dem echten
-        // Gelände gelesen, mit Zeitstempeln im Wandertempo.
-        final start = DateTime.utc(2026, 8, 30, 8, 15);
-        final spur = <Gelaendespurpunkt>[];
-        if (echte != null) {
-          for (final (i, p) in echte.indexed) {
-            spur.add((
-              breite: p.breite,
-              laenge: p.laenge,
-              hoehe: p.hoehe ?? g.anOrt(p.breite, p.laenge),
-              zeit: start.add(Duration(seconds: i * 12)),
-            ));
-          }
-        }
-        for (var i = 0; echte == null && i <= 240; i++) {
-          final t = i / 240;
-          final breite = sued + (nord - sued) * (0.18 + 0.62 * t);
-          final laenge =
-              west +
-              (ost - west) *
-                  (0.15 + 0.7 * t + 0.08 * math.sin(t * math.pi * 3));
-          spur.add((
-            breite: breite,
-            laenge: laenge,
-            hoehe: g.anOrt(breite, laenge),
-            zeit: start.add(Duration(seconds: i * 25)),
-          ));
-        }
-
-        // Wie im Bildschirm: Linie und Werte in einem Zug.
-        final kleiner = g;
-        final mittel = netzDreiecke.mittlereHoehe;
-        final linie = <Raumpunkt>[];
-        final werte = <Flugwert>[];
-        for (final p in spur) {
-          final h = p.hoehe ?? kleiner.anOrt(p.breite, p.laenge);
-          if (h == null) continue;
-          linie.add((
-            x:
-                ((p.laenge - kleiner.west) / (kleiner.ost - kleiner.west) -
-                    0.5) *
-                netzDreiecke.breiteMeter,
-            y:
-                (0.5 -
-                    (kleiner.nord - p.breite) / (kleiner.nord - kleiner.sued)) *
-                netzDreiecke.hoeheMeter,
-            z: (h + 2 - mittel) * gelaendeUeberhoehung,
-          ));
-          werte.add((hoehe: p.hoehe, zeit: p.zeit));
-        }
-        stdout.writeln(
-          'Spur: ${linie.length} Punkte, '
-          '${(Gelaendeflug(linie).laengeMeter / 1000).toStringAsFixed(1)} km',
-        );
-
-        final schluessel = GlobalKey();
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppTexte.localizationsDelegates,
@@ -230,88 +280,32 @@ void main() {
               body: RepaintBoundary(
                 key: schluessel,
                 child: Gelaendeansicht(
-                  netz: netzDreiecke,
+                  // Eigener Schlüssel je Stimmung: Ohne ihn behält die
+                  // Ansicht ihren Zustand, ist also schon im Flug – und
+                  // der Startknopf, den wir gleich drücken wollen, ist
+                  // dann gar nicht mehr da.
+                  key: ValueKey(stimmung.zeit),
+                  netz: gefaerbt,
                   spur: linie,
                   spurwerte: werte,
                   karte: karte,
+                  stimmung: stimmung,
                 ),
               ),
             ),
           ),
         );
         await tester.pump();
-
-        Future<void> schiessen(String name) async {
-          await tester.runAsync(() async {
-            final grenze =
-                schluessel.currentContext!.findRenderObject()
-                    as RenderRepaintBoundary;
-            final bild = await grenze.toImage(pixelRatio: 1.0);
-            final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
-            File(
-              '${ziel.path}/${ort.name}-$name.png',
-            ).writeAsBytesSync(daten!.buffer.asUint8List());
-            bild.dispose();
-          });
-        }
-
-        await schiessen('e0-uebersicht');
         await tester.tap(find.byIcon(Icons.flight_takeoff));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        for (final (n, stelle) in [(1, 0.08), (2, 0.35), (3, 0.62), (4, 0.9)]) {
-          tester.widget<Slider>(find.byType(Slider)).onChanged!(stelle);
-          await tester.pump();
-          await schiessen('e$n-bei-${(stelle * 100).round()}');
-        }
-        // Und dieselbe Stelle im Flug unter allen vier Tageszeiten. Hier
-        // entscheidet sich, was keine Zahl entscheidet: ob die
-        // Kartenbeschriftung noch lesbar ist, wenn das Relief stärker wird.
-        for (final stimmung in lichtstimmungen) {
-          final gefaerbt = baueNetz(
-            g,
-            grundfarbe: karte == null
-                ? gelaendeGrundfarbe
-                : const Color(0xFFFFFFFF),
-            stimmung: stimmung,
-          );
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppTexte.localizationsDelegates,
-              supportedLocales: AppTexte.supportedLocales,
-              locale: const Locale('de'),
-              home: Scaffold(
-                body: RepaintBoundary(
-                  key: schluessel,
-                  child: Gelaendeansicht(
-                    // Eigener Schlüssel je Stimmung: Ohne ihn behält die
-                    // Ansicht ihren Zustand, ist also schon im Flug – und
-                    // der Startknopf, den wir gleich drücken wollen, ist
-                    // dann gar nicht mehr da.
-                    key: ValueKey(stimmung.zeit),
-                    netz: gefaerbt,
-                    spur: linie,
-                    spurwerte: werte,
-                    karte: karte,
-                    stimmung: stimmung,
-                  ),
-                ),
-              ),
-            ),
-          );
-          await tester.pump();
-          await tester.tap(find.byIcon(Icons.flight_takeoff));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-          tester.widget<Slider>(find.byType(Slider)).onChanged!(0.35);
-          await tester.pump();
-          await schiessen('s-${stimmung.zeit.name}');
-        }
+        tester.widget<Slider>(find.byType(Slider)).onChanged!(0.35);
+        await tester.pump();
+        await schiessen('s-${stimmung.zeit.name}');
+      }
 
-        karte?.dispose();
-        stdout.writeln('Bilder in ${ziel.path}');
-      },
-      timeout: const Timeout(Duration(minutes: 5)),
-    );
+      karte?.dispose();
+      stdout.writeln('Bilder in ${ziel.path}');
+    }, timeout: const Timeout(Duration(minutes: 5)));
   }
 }

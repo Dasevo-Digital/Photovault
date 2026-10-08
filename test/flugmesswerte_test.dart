@@ -439,28 +439,24 @@ exit 0
         );
       }
 
-      testWidgets(
-        'das ausgegebene Bild traegt die Zahlen',
-        (tester) async {
-          final ohne = await mittleresBild(tester, mitWerten: false);
-          final mit = await mittleresBild(tester, mitWerten: true);
-          // **Die Gegenprobe steckt im Aufbau.** Ohne Höhen und Zeiten gibt
-          // es nichts zu melden, und dasselbe Bild derselben Flugbahn muss
-          // dann nackt sein. Der Unterschied zwischen beiden ist genau das,
-          // was die Zahlen hinzufuegen.
-          final tafel = _unterschied(ohne, mit);
-          expect(
-            tafel,
-            isNotNull,
-            reason:
-                'das ausgegebene Bild sieht mit und ohne Messwerte gleich '
-                'aus - gerechnet und weitergereicht, aber nicht gezeichnet',
-          );
-          expect(tafel!.left, lessThan(_breite * 0.1));
-          expect(tafel.top, greaterThan(_hoehe * 0.5));
-        },
-        timeout: const Timeout(Duration(minutes: 2)),
-      );
+      testWidgets('das ausgegebene Bild traegt die Zahlen', (tester) async {
+        final ohne = await mittleresBild(tester, mitWerten: false);
+        final mit = await mittleresBild(tester, mitWerten: true);
+        // **Die Gegenprobe steckt im Aufbau.** Ohne Höhen und Zeiten gibt
+        // es nichts zu melden, und dasselbe Bild derselben Flugbahn muss
+        // dann nackt sein. Der Unterschied zwischen beiden ist genau das,
+        // was die Zahlen hinzufuegen.
+        final tafel = _unterschied(ohne, mit);
+        expect(
+          tafel,
+          isNotNull,
+          reason:
+              'das ausgegebene Bild sieht mit und ohne Messwerte gleich '
+              'aus - gerechnet und weitergereicht, aber nicht gezeichnet',
+        );
+        expect(tafel!.left, lessThan(_breite * 0.1));
+        expect(tafel.top, greaterThan(_hoehe * 0.5));
+      }, timeout: const Timeout(Duration(minutes: 2)));
     },
     skip: Platform.isWindows
         ? 'Der POSIX-ffmpeg-Doppelgänger ist unter Windows nicht ausführbar.'

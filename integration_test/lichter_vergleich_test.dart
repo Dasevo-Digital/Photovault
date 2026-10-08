@@ -37,64 +37,60 @@ void main() {
     return summe / n;
   }
 
-  test(
-    'Shader und Core Image rechnen den Lichter-Regler gleich',
-    () async {
-      if (!Platform.isMacOS) {
-        print('nur unter macOS sinnvoll - uebersprungen');
-        return;
-      }
-      final temp = Directory.systemTemp.createTempSync('pv_lichter_');
-      try {
-        // Mehrere Helligkeiten: Die Gewichtung haengt an der Luminanz, ein
-        // einzelner Wert koennte zufaellig passen.
-        for (final grundwert in [140, 190, 220, 240]) {
-          final bild = img.Image(width: 256, height: 256);
-          img.fill(bild, color: img.ColorRgb8(grundwert, grundwert, grundwert));
-          final quelle = File(p.join(temp.path, 'g$grundwert.png'))
-            ..writeAsBytesSync(img.encodePng(bild));
+  test('Shader und Core Image rechnen den Lichter-Regler gleich', () async {
+    if (!Platform.isMacOS) {
+      print('nur unter macOS sinnvoll - uebersprungen');
+      return;
+    }
+    final temp = Directory.systemTemp.createTempSync('pv_lichter_');
+    try {
+      // Mehrere Helligkeiten: Die Gewichtung haengt an der Luminanz, ein
+      // einzelner Wert koennte zufaellig passen.
+      for (final grundwert in [140, 190, 220, 240]) {
+        final bild = img.Image(width: 256, height: 256);
+        img.fill(bild, color: img.ColorRgb8(grundwert, grundwert, grundwert));
+        final quelle = File(p.join(temp.path, 'g$grundwert.png'))
+          ..writeAsBytesSync(img.encodePng(bild));
 
-          for (final lichter in [-0.5, 0.5]) {
-            final werte = DevelopAdjustments(highlights: lichter);
-            final ueberShader = await DevelopRender.rendere(
-              quelle,
-              adjustments: werte,
-            );
-            final ueberCoreImage = await NativeImageConverter.developImage(
-              quelle,
-              adjustments: werte,
-            );
+        for (final lichter in [-0.5, 0.5]) {
+          final werte = DevelopAdjustments(highlights: lichter);
+          final ueberShader = await DevelopRender.rendere(
+            quelle,
+            adjustments: werte,
+          );
+          final ueberCoreImage = await NativeImageConverter.developImage(
+            quelle,
+            adjustments: werte,
+          );
 
-            expect(ueberShader, isNotNull, reason: 'Shader lieferte nichts');
-            expect(
-              ueberCoreImage,
-              isNotNull,
-              reason: 'Core Image lieferte nichts',
-            );
+          expect(ueberShader, isNotNull, reason: 'Shader lieferte nichts');
+          expect(
+            ueberCoreImage,
+            isNotNull,
+            reason: 'Core Image lieferte nichts',
+          );
 
-            final s = mittel(ueberShader!);
-            final c = mittel(ueberCoreImage!);
-            print(
-              'Grau $grundwert, Lichter $lichter: '
-              'Shader ${s.toStringAsFixed(1)}, Core Image ${c.toStringAsFixed(1)}, '
-              'Abweichung ${(s - c).abs().toStringAsFixed(1)}',
-            );
+          final s = mittel(ueberShader!);
+          final c = mittel(ueberCoreImage!);
+          print(
+            'Grau $grundwert, Lichter $lichter: '
+            'Shader ${s.toStringAsFixed(1)}, Core Image ${c.toStringAsFixed(1)}, '
+            'Abweichung ${(s - c).abs().toStringAsFixed(1)}',
+          );
 
-            // Drei Tonwertstufen Toleranz. Das deckt JPEG-Rundung und
-            // Unterschiede im Farbraum-Handling ab, aber keine andere
-            // Formel: Bei vertauschten Grenzen der Gewichtung laegen hier
-            // zweistellige Abweichungen.
-            expect(
-              (s - c).abs(),
-              lessThan(3.0),
-              reason: 'Grau $grundwert, Lichter $lichter',
-            );
-          }
+          // Drei Tonwertstufen Toleranz. Das deckt JPEG-Rundung und
+          // Unterschiede im Farbraum-Handling ab, aber keine andere
+          // Formel: Bei vertauschten Grenzen der Gewichtung laegen hier
+          // zweistellige Abweichungen.
+          expect(
+            (s - c).abs(),
+            lessThan(3.0),
+            reason: 'Grau $grundwert, Lichter $lichter',
+          );
         }
-      } finally {
-        temp.deleteSync(recursive: true);
       }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+    } finally {
+      temp.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 }

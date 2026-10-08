@@ -38,55 +38,45 @@ String _adresse(String vorlage, int z) {
 }
 
 void main() {
-  test(
-    'die Vorlagen ohne Schluessel tragen so weit wie angegeben',
-    () async {
-      final client = Client();
-      addTearDown(client.close);
-      for (final v in kartenvorlagen.where((v) => !v.brauchtSchluessel)) {
-        final zeile = StringBuffer('${v.name.padRight(28)} (bis ${v.stufe}) ');
-        final groessen = <int, int>{};
-        for (final z in [v.stufe - 1, v.stufe, v.stufe + 1]) {
-          final antwort = await client.get(
-            Uri.parse(_adresse(v.url, z)),
-            headers: const {'User-Agent': kartenNetzkennung},
-          );
-          groessen[z] = antwort.statusCode == 200
-              ? antwort.bodyBytes.length
-              : -1;
-          zeile.write('z$z:${antwort.statusCode}/${groessen[z]}B  ');
-        }
-        // ignore: avoid_print
-        print(zeile);
-        expect(
-          groessen[v.stufe]! > 0,
-          isTrue,
-          reason: '${v.name}: die angegebene Stufe liefert nichts mehr',
+  test('die Vorlagen ohne Schluessel tragen so weit wie angegeben', () async {
+    final client = Client();
+    addTearDown(client.close);
+    for (final v in kartenvorlagen.where((v) => !v.brauchtSchluessel)) {
+      final zeile = StringBuffer('${v.name.padRight(28)} (bis ${v.stufe}) ');
+      final groessen = <int, int>{};
+      for (final z in [v.stufe - 1, v.stufe, v.stufe + 1]) {
+        final antwort = await client.get(
+          Uri.parse(_adresse(v.url, z)),
+          headers: const {'User-Agent': kartenNetzkennung},
         );
-        // Die Ersatzkachel ist bei Esri auf jeder zu hohen Stufe dieselbe
-        // und deutlich kleiner als eine echte.
-        expect(
-          groessen[v.stufe]!,
-          greaterThan(3000),
-          reason: '${v.name}: die angegebene Stufe sieht nach Ersatzkachel aus',
-        );
+        groessen[z] = antwort.statusCode == 200 ? antwort.bodyBytes.length : -1;
+        zeile.write('z$z:${antwort.statusCode}/${groessen[z]}B  ');
       }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
-
-  test(
-    'Google antwortet ohne Schluessel verstaendlich',
-    () async {
-      // Die Erfolgsseite laesst sich hier nicht pruefen – dafuer braucht es
-      // einen abrechnungsfaehigen Schluessel. Geprueft wird, dass der
-      // Fehlerweg trägt: eine Meldung statt einer Ausnahme.
-      final antwort = await googleSitzung('');
-      expect(antwort.sitzung, isNull);
-      expect(antwort.fehler, isNotNull);
       // ignore: avoid_print
-      print('Google ohne Schluessel: ${antwort.fehler}');
-    },
-    timeout: const Timeout(Duration(minutes: 1)),
-  );
+      print(zeile);
+      expect(
+        groessen[v.stufe]! > 0,
+        isTrue,
+        reason: '${v.name}: die angegebene Stufe liefert nichts mehr',
+      );
+      // Die Ersatzkachel ist bei Esri auf jeder zu hohen Stufe dieselbe
+      // und deutlich kleiner als eine echte.
+      expect(
+        groessen[v.stufe]!,
+        greaterThan(3000),
+        reason: '${v.name}: die angegebene Stufe sieht nach Ersatzkachel aus',
+      );
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
+
+  test('Google antwortet ohne Schluessel verstaendlich', () async {
+    // Die Erfolgsseite laesst sich hier nicht pruefen – dafuer braucht es
+    // einen abrechnungsfaehigen Schluessel. Geprueft wird, dass der
+    // Fehlerweg trägt: eine Meldung statt einer Ausnahme.
+    final antwort = await googleSitzung('');
+    expect(antwort.sitzung, isNull);
+    expect(antwort.fehler, isNotNull);
+    // ignore: avoid_print
+    print('Google ohne Schluessel: ${antwort.fehler}');
+  }, timeout: const Timeout(Duration(minutes: 1)));
 }

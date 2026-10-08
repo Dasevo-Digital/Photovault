@@ -137,12 +137,10 @@ void main() {
         final gefragt = <String>[];
         final bild = Float32List.fromList([1, 0, 0]);
 
-        final tags = await dienst.suggestTags(
-          _ClipAttrappe(gefragt),
-          bild,
-          ['Sonnenuntergang', 'Hund'],
-          insEnglische: (t) async => 'sollte nicht gefragt werden',
-        );
+        final tags = await dienst.suggestTags(_ClipAttrappe(gefragt), bild, [
+          'Sonnenuntergang',
+          'Hund',
+        ], insEnglische: (t) async => 'sollte nicht gefragt werden');
 
         expect(tags, [
           'Sonnenuntergang',

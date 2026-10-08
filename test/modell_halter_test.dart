@@ -63,11 +63,9 @@ void main() {
     h.ladenFreigeben();
     final ergebnisse = await Future.wait([a, b]);
 
-    expect(
-      h.verlauf,
-      ['laden#1'],
-      reason: 'sonst lägen zwei Sitzungen desselben Modells im Speicher',
-    );
+    expect(h.verlauf, [
+      'laden#1',
+    ], reason: 'sonst lägen zwei Sitzungen desselben Modells im Speicher');
     expect(ergebnisse, ['modell#1', 'modell#1']);
   });
 

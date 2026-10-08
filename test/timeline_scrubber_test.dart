@@ -327,43 +327,41 @@ void main() {
     expect(find.text('2026'), findsNothing);
   });
 
-  testWidgets(
-    'so sieht die Leiste bei schieflastigem Bestand aus',
-    (tester) async {
-      // Dieselbe Verteilung wie im Bericht. Ein Abbild statt einer
-      // Behauptung – an das echte Fenster kommt man hier nicht heran.
-      final b = _schieflastig();
-      await tester.pumpWidget(
-        MaterialApp(
-          locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
-          supportedLocales: AppTexte.supportedLocales,
-          home: Scaffold(
-            backgroundColor: const Color(0xFF202020),
-            body: Row(
-              children: [
-                const Expanded(child: SizedBox()),
-                SizedBox(
-                  width: 64,
-                  height: 700,
-                  child: TimelineScrubber(
-                    orderedKeys: b.keys,
-                    groups: b.groups,
-                    controller: ScrollController(),
-                    gridWidth: 800,
-                  ),
+  testWidgets('so sieht die Leiste bei schieflastigem Bestand aus', (
+    tester,
+  ) async {
+    // Dieselbe Verteilung wie im Bericht. Ein Abbild statt einer
+    // Behauptung – an das echte Fenster kommt man hier nicht heran.
+    final b = _schieflastig();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF202020),
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              SizedBox(
+                width: 64,
+                height: 700,
+                child: TimelineScrubber(
+                  orderedKeys: b.keys,
+                  groups: b.groups,
+                  controller: ScrollController(),
+                  gridWidth: 800,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      );
-      await tester.pump();
-      await expectLater(
-        find.byType(TimelineScrubber),
-        matchesGoldenFile('golden/zeitleiste.png'),
-      );
-    },
-    skip: nurAufReferenzplattform,
-  );
+      ),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(TimelineScrubber),
+      matchesGoldenFile('golden/zeitleiste.png'),
+    );
+  }, skip: nurAufReferenzplattform);
 }

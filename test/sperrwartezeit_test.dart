@@ -169,109 +169,99 @@ Future<void> main(List<String> argumente) async {
     );
   });
 
-  test(
-    'eine fremde Sperre lässt den Schreibvorgang nicht scheitern',
-    () async {
-      // Der zweite Zugriff ist ein eigener Prozess mit einer offenen
-      // Schreibtransaktion. Das bildet auch POSIX-Dateisperren zuverlässig ab;
-      // zwei Verbindungen desselben Prozesses tun das auf Linux nicht.
-      // **Im Hintergrund-Isolat, wie im Betrieb.** Mit dem einfachen
-      // `NativeDatabase` läuft SQLite auf demselben Isolat: Die Wartezeit
-      // blockiert dann die Ereignisschleife, und der Timer, der die Sperre
-      // gleich wieder löst, käme nie dran – der Test hinge fünf Sekunden an
-      // sich selbst und fiele.
-      //
-      // Dasselbe gilt im Betrieb, und deshalb ist es kein Testkniff,
-      // sondern der Grund, warum fünf Sekunden vertretbar sind:
-      // [AppDatabase.open] nimmt `createInBackground`, also wartet nicht
-      // die Oberfläche, sondern ein Isolat, das ohnehin nichts anderes tut.
-      final db = AppDatabase(
-        AppDatabase.mitSperrwartezeit(
-          NativeDatabase.createInBackground(
-            datei,
-            setup: AppDatabase.bereiteVerbindungVor,
-          ),
+  test('eine fremde Sperre lässt den Schreibvorgang nicht scheitern', () async {
+    // Der zweite Zugriff ist ein eigener Prozess mit einer offenen
+    // Schreibtransaktion. Das bildet auch POSIX-Dateisperren zuverlässig ab;
+    // zwei Verbindungen desselben Prozesses tun das auf Linux nicht.
+    // **Im Hintergrund-Isolat, wie im Betrieb.** Mit dem einfachen
+    // `NativeDatabase` läuft SQLite auf demselben Isolat: Die Wartezeit
+    // blockiert dann die Ereignisschleife, und der Timer, der die Sperre
+    // gleich wieder löst, käme nie dran – der Test hinge fünf Sekunden an
+    // sich selbst und fiele.
+    //
+    // Dasselbe gilt im Betrieb, und deshalb ist es kein Testkniff,
+    // sondern der Grund, warum fünf Sekunden vertretbar sind:
+    // [AppDatabase.open] nimmt `createInBackground`, also wartet nicht
+    // die Oberfläche, sondern ein Isolat, das ohnehin nichts anderes tut.
+    final db = AppDatabase(
+      AppDatabase.mitSperrwartezeit(
+        NativeDatabase.createInBackground(
+          datei,
+          setup: AppDatabase.bereiteVerbindungVor,
         ),
-      );
-      addTearDown(db.close);
-      // Erst einmal anlegen, damit beide dieselbe Datei meinen.
-      await db.customSelect('SELECT 1').get();
-      final wartezeit = await db
-          .customSelect('PRAGMA busy_timeout')
-          .getSingle();
-      expect(
-        wartezeit.data.values.first,
-        AppDatabase.sperrwartezeitMs,
-        reason: 'die Einstellung muss auch im Hintergrund-Isolat gelten',
-      );
+      ),
+    );
+    addTearDown(db.close);
+    // Erst einmal anlegen, damit beide dieselbe Datei meinen.
+    await db.customSelect('SELECT 1').get();
+    final wartezeit = await db.customSelect('PRAGMA busy_timeout').getSingle();
+    expect(
+      wartezeit.data.values.first,
+      AppDatabase.sperrwartezeitMs,
+      reason: 'die Einstellung muss auch im Hintergrund-Isolat gelten',
+    );
 
-      // Der fremde Prozess löst selbst nach kurzer Zeit. Dadurch hängt die
-      // Freigabe nicht an der Ereignisschleife des geprüften Prozesses.
-      final fremd = await sperreVonAussen(300);
+    // Der fremde Prozess löst selbst nach kurzer Zeit. Dadurch hängt die
+    // Freigabe nicht an der Ereignisschleife des geprüften Prozesses.
+    final fremd = await sperreVonAussen(300);
 
-      final uhr = Stopwatch()..start();
-      await db.insertAsset(
+    final uhr = Stopwatch()..start();
+    await db.insertAsset(
+      AssetsCompanion.insert(
+        id: 'a',
+        relativePath: 'originals/a.jpg',
+        originalFileName: 'a.jpg',
+        type: 'IMAGE',
+        checksum: 'a',
+        fileCreatedAt: DateTime(2026),
+        importedAt: DateTime(2026),
+        isTrashed: const Value(false),
+      ),
+    );
+    await gibFremdeSperre(fremd);
+    uhr.stop();
+
+    expect(
+      await db.assetById('a'),
+      isNotNull,
+      reason: 'geschrieben werden muss es, nicht abgelehnt',
+    );
+    expect(
+      uhr.elapsedMilliseconds,
+      greaterThan(100),
+      reason: 'es hat wirklich gewartet – sonst prüft dieser Test nichts',
+    );
+  }, timeout: const Timeout(Duration(seconds: 30)));
+
+  test('ohne Wartezeit scheitert derselbe Schreibvorgang', () async {
+    // Die Gegenprobe im selben Test: Mit der Vorgabe von SQLite gibt es
+    // keinen zweiten Versuch, und genau das war der Befund.
+    final db = AppDatabase(
+      NativeDatabase.createInBackground(
+        datei,
+        setup: (d) => d.execute('PRAGMA busy_timeout = 0'),
+      ),
+    );
+    addTearDown(db.close);
+    await db.customSelect('SELECT 1').get();
+
+    final fremd = await sperreVonAussen(1000);
+
+    await expectLater(
+      db.insertAsset(
         AssetsCompanion.insert(
-          id: 'a',
-          relativePath: 'originals/a.jpg',
-          originalFileName: 'a.jpg',
+          id: 'b',
+          relativePath: 'originals/b.jpg',
+          originalFileName: 'b.jpg',
           type: 'IMAGE',
-          checksum: 'a',
+          checksum: 'b',
           fileCreatedAt: DateTime(2026),
           importedAt: DateTime(2026),
           isTrashed: const Value(false),
         ),
-      );
-      await gibFremdeSperre(fremd);
-      uhr.stop();
-
-      expect(
-        await db.assetById('a'),
-        isNotNull,
-        reason: 'geschrieben werden muss es, nicht abgelehnt',
-      );
-      expect(
-        uhr.elapsedMilliseconds,
-        greaterThan(100),
-        reason: 'es hat wirklich gewartet – sonst prüft dieser Test nichts',
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
-
-  test(
-    'ohne Wartezeit scheitert derselbe Schreibvorgang',
-    () async {
-      // Die Gegenprobe im selben Test: Mit der Vorgabe von SQLite gibt es
-      // keinen zweiten Versuch, und genau das war der Befund.
-      final db = AppDatabase(
-        NativeDatabase.createInBackground(
-          datei,
-          setup: (d) => d.execute('PRAGMA busy_timeout = 0'),
-        ),
-      );
-      addTearDown(db.close);
-      await db.customSelect('SELECT 1').get();
-
-      final fremd = await sperreVonAussen(1000);
-
-      await expectLater(
-        db.insertAsset(
-          AssetsCompanion.insert(
-            id: 'b',
-            relativePath: 'originals/b.jpg',
-            originalFileName: 'b.jpg',
-            type: 'IMAGE',
-            checksum: 'b',
-            fileCreatedAt: DateTime(2026),
-            importedAt: DateTime(2026),
-            isTrashed: const Value(false),
-          ),
-        ),
-        throwsA(predicate((e) => '$e'.contains('locked'))),
-      );
-      await gibFremdeSperre(fremd);
-    },
-    timeout: const Timeout(Duration(seconds: 30)),
-  );
+      ),
+      throwsA(predicate((e) => '$e'.contains('locked'))),
+    );
+    await gibFremdeSperre(fremd);
+  }, timeout: const Timeout(Duration(seconds: 30)));
 }

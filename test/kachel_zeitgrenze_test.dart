@@ -74,48 +74,43 @@ void main() {
       timeout: const Timeout(Duration(minutes: 1)),
     );
 
-    test(
-      'mit ihr geben sich alle Abrufe nach der Frist geschlagen',
-      () async {
-        final s = await stummerServer();
-        final client = ZeitgrenzeClient(
-          IOClient(kachelHttpClient()),
-          frist: const Duration(seconds: 3),
-        );
+    test('mit ihr geben sich alle Abrufe nach der Frist geschlagen', () async {
+      final s = await stummerServer();
+      final client = ZeitgrenzeClient(
+        IOClient(kachelHttpClient()),
+        frist: const Duration(seconds: 3),
+      );
 
-        final uhr = Stopwatch()..start();
-        final ausgang = <String>[];
-        await Future.wait([
-          for (var i = 0; i < kachelVerbindungen + 4; i++)
-            client
-                .get(s.ziel)
-                .then<void>((_) => ausgang.add('antwort'))
-                .catchError((Object e) => ausgang.add('${e.runtimeType}')),
-        ]).timeout(
-          const Duration(seconds: 45),
-          onTimeout: () {
-            ausgang.add('haengt immer noch');
-            return const [];
-          },
-        );
+      final uhr = Stopwatch()..start();
+      final ausgang = <String>[];
+      await Future.wait([
+        for (var i = 0; i < kachelVerbindungen + 4; i++)
+          client
+              .get(s.ziel)
+              .then<void>((_) => ausgang.add('antwort'))
+              .catchError((Object e) => ausgang.add('${e.runtimeType}')),
+      ]).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () {
+          ausgang.add('haengt immer noch');
+          return const [];
+        },
+      );
 
-        expect(ausgang, hasLength(kachelVerbindungen + 4));
-        expect(
-          ausgang.every((e) => e == 'ClientException'),
-          isTrue,
-          reason:
-              'jeder Abruf endet als Fehlschlag, nicht als Abbruch: $ausgang',
-        );
-        expect(uhr.elapsed, lessThan(const Duration(seconds: 30)));
+      expect(ausgang, hasLength(kachelVerbindungen + 4));
+      expect(
+        ausgang.every((e) => e == 'ClientException'),
+        isTrue,
+        reason: 'jeder Abruf endet als Fehlschlag, nicht als Abbruch: $ausgang',
+      );
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 30)));
 
-        client.close();
-        for (final v in s.offen) {
-          v.destroy();
-        }
-        await s.server.close();
-      },
-      timeout: const Timeout(Duration(minutes: 2)),
-    );
+      client.close();
+      for (final v in s.offen) {
+        v.destroy();
+      }
+      await s.server.close();
+    }, timeout: const Timeout(Duration(minutes: 2)));
 
     test('und der Fehlschlag ist einer, den die Karte wiederholt', () {
       // Der Punkt der Uebersetzung: Ein RequestAbortedException waere fuer
@@ -129,34 +124,30 @@ void main() {
       expect(kachelFehlerNochmalVersuchen(fehler), isTrue);
     });
 
-    test(
-      'der eigene Abbruch der Karte bleibt ein Abbruch',
-      () async {
-        // Kacheln, die beim Ziehen aus dem Bild laufen, bricht flutter_map
-        // selbst ab. Die duerfen NICHT als Fehlschlag durchgehen, sonst
-        // wiederholt die App Bilder, die niemand mehr sieht.
-        final s = await stummerServer();
-        final client = ZeitgrenzeClient(
-          IOClient(kachelHttpClient()),
-          frist: const Duration(seconds: 30),
-        );
-        final ausloeser = Completer<void>();
-        final lauf = client.send(
-          AbortableRequest('GET', s.ziel, abortTrigger: ausloeser.future),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-        ausloeser.complete();
+    test('der eigene Abbruch der Karte bleibt ein Abbruch', () async {
+      // Kacheln, die beim Ziehen aus dem Bild laufen, bricht flutter_map
+      // selbst ab. Die duerfen NICHT als Fehlschlag durchgehen, sonst
+      // wiederholt die App Bilder, die niemand mehr sieht.
+      final s = await stummerServer();
+      final client = ZeitgrenzeClient(
+        IOClient(kachelHttpClient()),
+        frist: const Duration(seconds: 30),
+      );
+      final ausloeser = Completer<void>();
+      final lauf = client.send(
+        AbortableRequest('GET', s.ziel, abortTrigger: ausloeser.future),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      ausloeser.complete();
 
-        await expectLater(lauf, throwsA(isA<RequestAbortedException>()));
+      await expectLater(lauf, throwsA(isA<RequestAbortedException>()));
 
-        client.close();
-        for (final v in s.offen) {
-          v.destroy();
-        }
-        await s.server.close();
-      },
-      timeout: const Timeout(Duration(minutes: 1)),
-    );
+      client.close();
+      for (final v in s.offen) {
+        v.destroy();
+      }
+      await s.server.close();
+    }, timeout: const Timeout(Duration(minutes: 1)));
 
     test('eine gewoehnliche Antwort geht unveraendert durch', () async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -180,81 +171,73 @@ void main() {
       await server.close(force: true);
     });
 
-    test(
-      'ein langsamer, aber lebendiger Abruf ueberlebt',
-      () async {
-        // OpenTopoMap rendert Kacheln bei Bedarf und braucht dafuer
-        // gemessene 1,7 s. Solche Abrufe duerfen nicht abgeschnitten
-        // werden – nur die, bei denen gar nichts mehr kommt.
-        //
-        // Der Rumpf kommt dabei am Stueck an, nicht stueckweise: siehe die
-        // Messung bei [kachelZeitgrenze]. Deshalb ist es hier die zweite
-        // Uhr, die den ganzen Rumpf abdeckt, und nicht eine Frist je Stueck.
-        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-        unawaited(
-          server.forEach((anfrage) async {
-            anfrage.response.statusCode = 200;
-            for (var i = 0; i < 8; i++) {
-              anfrage.response.add(List<int>.filled(128, 3));
-              await anfrage.response.flush();
-              await Future<void>.delayed(const Duration(milliseconds: 250));
-            }
-            await anfrage.response.close();
-          }),
-        );
-        final client = ZeitgrenzeClient(
-          IOClient(kachelHttpClient()),
-          frist: const Duration(seconds: 8),
-        );
-        final uhr = Stopwatch()..start();
-        final antwort = await client.get(
-          Uri.parse('http://127.0.0.1:${server.port}/12/2148/1370.png'),
-        );
-        expect(antwort.bodyBytes, hasLength(8 * 128));
-        expect(
-          uhr.elapsed,
-          greaterThan(const Duration(seconds: 1)),
-          reason: 'der Abruf brauchte ueber eine Sekunde und kam trotzdem an',
-        );
-        client.close();
-        await server.close(force: true);
-      },
-      timeout: const Timeout(Duration(minutes: 1)),
-    );
-
-    test(
-      'ein Rumpf, der mittendrin verstummt, laeuft in die Frist',
-      () async {
-        // Die Gegenprobe dazu: Kopfzeilen da, dann nichts mehr. Ohne die
-        // zweite Uhr bliebe dieser Abruf fuer immer offen – und mit ihm die
-        // Verbindung.
-        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-        unawaited(
-          server.forEach((anfrage) async {
-            anfrage.response
-              ..statusCode = 200
-              ..contentLength = 4096
-              ..add(List<int>.filled(64, 3));
+    test('ein langsamer, aber lebendiger Abruf ueberlebt', () async {
+      // OpenTopoMap rendert Kacheln bei Bedarf und braucht dafuer
+      // gemessene 1,7 s. Solche Abrufe duerfen nicht abgeschnitten
+      // werden – nur die, bei denen gar nichts mehr kommt.
+      //
+      // Der Rumpf kommt dabei am Stueck an, nicht stueckweise: siehe die
+      // Messung bei [kachelZeitgrenze]. Deshalb ist es hier die zweite
+      // Uhr, die den ganzen Rumpf abdeckt, und nicht eine Frist je Stueck.
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      unawaited(
+        server.forEach((anfrage) async {
+          anfrage.response.statusCode = 200;
+          for (var i = 0; i < 8; i++) {
+            anfrage.response.add(List<int>.filled(128, 3));
             await anfrage.response.flush();
-            // und dann fuer immer schweigen
-          }),
-        );
-        final client = ZeitgrenzeClient(
-          IOClient(kachelHttpClient()),
-          frist: const Duration(seconds: 2),
-        );
-        final uhr = Stopwatch()..start();
-        await expectLater(
-          client.get(
-            Uri.parse('http://127.0.0.1:${server.port}/12/2148/1370.png'),
-          ),
-          throwsA(isA<ClientException>()),
-        );
-        expect(uhr.elapsed, lessThan(const Duration(seconds: 15)));
-        client.close();
-        await server.close(force: true);
-      },
-      timeout: const Timeout(Duration(minutes: 1)),
-    );
+            await Future<void>.delayed(const Duration(milliseconds: 250));
+          }
+          await anfrage.response.close();
+        }),
+      );
+      final client = ZeitgrenzeClient(
+        IOClient(kachelHttpClient()),
+        frist: const Duration(seconds: 8),
+      );
+      final uhr = Stopwatch()..start();
+      final antwort = await client.get(
+        Uri.parse('http://127.0.0.1:${server.port}/12/2148/1370.png'),
+      );
+      expect(antwort.bodyBytes, hasLength(8 * 128));
+      expect(
+        uhr.elapsed,
+        greaterThan(const Duration(seconds: 1)),
+        reason: 'der Abruf brauchte ueber eine Sekunde und kam trotzdem an',
+      );
+      client.close();
+      await server.close(force: true);
+    }, timeout: const Timeout(Duration(minutes: 1)));
+
+    test('ein Rumpf, der mittendrin verstummt, laeuft in die Frist', () async {
+      // Die Gegenprobe dazu: Kopfzeilen da, dann nichts mehr. Ohne die
+      // zweite Uhr bliebe dieser Abruf fuer immer offen – und mit ihm die
+      // Verbindung.
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      unawaited(
+        server.forEach((anfrage) async {
+          anfrage.response
+            ..statusCode = 200
+            ..contentLength = 4096
+            ..add(List<int>.filled(64, 3));
+          await anfrage.response.flush();
+          // und dann fuer immer schweigen
+        }),
+      );
+      final client = ZeitgrenzeClient(
+        IOClient(kachelHttpClient()),
+        frist: const Duration(seconds: 2),
+      );
+      final uhr = Stopwatch()..start();
+      await expectLater(
+        client.get(
+          Uri.parse('http://127.0.0.1:${server.port}/12/2148/1370.png'),
+        ),
+        throwsA(isA<ClientException>()),
+      );
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 15)));
+      client.close();
+      await server.close(force: true);
+    }, timeout: const Timeout(Duration(minutes: 1)));
   });
 }

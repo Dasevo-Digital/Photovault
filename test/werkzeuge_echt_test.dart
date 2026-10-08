@@ -57,39 +57,35 @@ void main() {
     /// dass wirklich dieses Bild herauskam.
     final vorlage = File(p.join('test', 'fixtures', 'werkzeuge', 'probe.heic'));
 
-    test(
-      'wird gelesen, skaliert und behält seinen Inhalt',
-      () async {
-        if (await hole('heif-dec') == null) return;
-        final heic = File(p.join(temp.path, 'foto.heic'));
-        heic.writeAsBytesSync(vorlage.readAsBytesSync());
+    test('wird gelesen, skaliert und behält seinen Inhalt', () async {
+      if (await hole('heif-dec') == null) return;
+      final heic = File(p.join(temp.path, 'foto.heic'));
+      heic.writeAsBytesSync(vorlage.readAsBytesSync());
 
-        final jpeg = await DesktopImageTools.convertToJpeg(
-          heic,
-          maxDimension: 600,
-        );
+      final jpeg = await DesktopImageTools.convertToJpeg(
+        heic,
+        maxDimension: 600,
+      );
 
-        expect(
-          jpeg,
-          isNotNull,
-          reason:
-              'HEIC blieb unlesbar – genau der Fall, '
-              'in dem unter Linux jedes iPhone-Foto unsichtbar wäre',
-        );
-        final zurueck = img.decodeImage(jpeg!)!;
-        expect(zurueck.width, 600, reason: 'auf die längste Kante skaliert');
-        expect(zurueck.height, 400);
+      expect(
+        jpeg,
+        isNotNull,
+        reason:
+            'HEIC blieb unlesbar – genau der Fall, '
+            'in dem unter Linux jedes iPhone-Foto unsichtbar wäre',
+      );
+      final zurueck = img.decodeImage(jpeg!)!;
+      expect(zurueck.width, 600, reason: 'auf die längste Kante skaliert');
+      expect(zurueck.height, 400);
 
-        // Links rot, rechts grün – wenn das stimmt, ist es wirklich unser Bild.
-        final links = zurueck.getPixel(60, 200);
-        final rechts = zurueck.getPixel(540, 200);
-        expect(links.r, greaterThan(150));
-        expect(links.g, lessThan(120));
-        expect(rechts.g, greaterThan(80));
-        expect(rechts.r, lessThan(120));
-      },
-      skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null,
-    );
+      // Links rot, rechts grün – wenn das stimmt, ist es wirklich unser Bild.
+      final links = zurueck.getPixel(60, 200);
+      final rechts = zurueck.getPixel(540, 200);
+      expect(links.r, greaterThan(150));
+      expect(links.g, lessThan(120));
+      expect(rechts.g, greaterThan(80));
+      expect(rechts.r, lessThan(120));
+    }, skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null);
   });
 
   group('AVIF', () {
@@ -99,38 +95,34 @@ void main() {
     /// darf deshalb im Repository liegen.
     final vorlage = File(p.join('test', 'fixtures', 'werkzeuge', 'probe.avif'));
 
-    test(
-      'wird über libheif gelesen, nicht über den RAW-Entwickler',
-      () async {
-        if (await hole('heif-dec') == null) return;
-        final avif = File(p.join(temp.path, 'foto.avif'));
-        avif.writeAsBytesSync(vorlage.readAsBytesSync());
+    test('wird über libheif gelesen, nicht über den RAW-Entwickler', () async {
+      if (await hole('heif-dec') == null) return;
+      final avif = File(p.join(temp.path, 'foto.avif'));
+      avif.writeAsBytesSync(vorlage.readAsBytesSync());
 
-        final jpeg = await DesktopImageTools.convertToJpeg(
-          avif,
-          maxDimension: 400,
-        );
+      final jpeg = await DesktopImageTools.convertToJpeg(
+        avif,
+        maxDimension: 400,
+      );
 
-        expect(
-          jpeg,
-          isNotNull,
-          reason:
-              'AVIF ohne Vorschau – genau der Zustand, in dem die Datei '
-              'an dcraw_emu ging, der kein AVIF lesen kann',
-        );
-        final zurueck = img.decodeImage(jpeg!)!;
-        expect(zurueck.width, 400);
+      expect(
+        jpeg,
+        isNotNull,
+        reason:
+            'AVIF ohne Vorschau – genau der Zustand, in dem die Datei '
+            'an dcraw_emu ging, der kein AVIF lesen kann',
+      );
+      final zurueck = img.decodeImage(jpeg!)!;
+      expect(zurueck.width, 400);
 
-        // Links rot, rechts grün – sonst ist es irgendein Bild, nicht dieses.
-        final links = zurueck.getPixel(40, 200);
-        final rechts = zurueck.getPixel(360, 200);
-        expect(links.r, greaterThan(120));
-        expect(links.g, lessThan(100));
-        expect(rechts.g, greaterThan(80));
-        expect(rechts.r, lessThan(120));
-      },
-      skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null,
-    );
+      // Links rot, rechts grün – sonst ist es irgendein Bild, nicht dieses.
+      final links = zurueck.getPixel(40, 200);
+      final rechts = zurueck.getPixel(360, 200);
+      expect(links.r, greaterThan(120));
+      expect(links.g, lessThan(100));
+      expect(rechts.g, greaterThan(80));
+      expect(rechts.r, lessThan(120));
+    }, skip: !vorlage.existsSync() ? 'Vorlage fehlt' : null);
   });
 
   group('Aufnahmewerte aus RAW', () {

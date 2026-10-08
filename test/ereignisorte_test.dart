@@ -44,11 +44,9 @@ void main() {
       await ereignis('e3');
 
       final offen = await db.ereignisseOhneKoordinate();
-      expect(
-        offen.map((e) => e.id),
-        ['e1'],
-        reason: 'e2 hat schon einen Punkt, e3 gar keinen Ort',
-      );
+      expect(offen.map((e) => e.id), [
+        'e1',
+      ], reason: 'e2 hat schon einen Punkt, e3 gar keinen Ort');
     },
   );
 

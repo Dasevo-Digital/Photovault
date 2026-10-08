@@ -128,11 +128,10 @@ void main() {
         'Nikon Z6',
         '',
       ]);
-      expect(
-        gruppen.last.assets.map((a) => a.id),
-        ['b', 'e'],
-        reason: 'ohne Kamera, in der Reihenfolge der Liste',
-      );
+      expect(gruppen.last.assets.map((a) => a.id), [
+        'b',
+        'e',
+      ], reason: 'ohne Kamera, in der Reihenfolge der Liste');
     });
 
     test('Gross- und Kleinschreibung entscheidet die Reihenfolge nicht', () {

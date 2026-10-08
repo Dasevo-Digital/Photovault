@@ -64,11 +64,9 @@ void main() {
     await foto('normal', gescannt: true);
     await db.setzeGesichtssucheAusgenommen('gemaeldewand', true);
 
-    expect(
-      await zumScan(nurNeue: false),
-      {'normal'},
-      reason: 'auch beim vollstaendigen Durchlauf uebersprungen',
-    );
+    expect(await zumScan(nurNeue: false), {
+      'normal',
+    }, reason: 'auch beim vollstaendigen Durchlauf uebersprungen');
     expect(
       await zumScan(nurNeue: true),
       isEmpty,

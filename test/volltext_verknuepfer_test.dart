@@ -51,11 +51,9 @@ void main() {
     await aufnahme('a2', 'Ein Bild vom Meer');
 
     for (final wort in ['AND', 'OR', 'NOT', 'and', 'or', 'not']) {
-      expect(
-        await suche(wort),
-        ['a1'],
-        reason: '„$wort" muss ein Wort sein, keine Verknüpfung.',
-      );
+      expect(await suche(wort), [
+        'a1',
+      ], reason: '„$wort" muss ein Wort sein, keine Verknüpfung.');
     }
   });
 

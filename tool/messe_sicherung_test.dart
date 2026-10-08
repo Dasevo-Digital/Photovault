@@ -35,71 +35,63 @@ Future<void> eintrag(AppDatabase db, String id, int n) async {
 }
 
 void main() {
-  test(
-    'Sicherung zurueckspielen: mit und ohne Klammer',
-    () async {
-      final quelle = Platform.environment['PV_DB'];
-      if (quelle == null) {
-        markTestSkipped('PV_DB nicht gesetzt');
-        return;
-      }
+  test('Sicherung zurueckspielen: mit und ohne Klammer', () async {
+    final quelle = Platform.environment['PV_DB'];
+    if (quelle == null) {
+      markTestSkipped('PV_DB nicht gesetzt');
+      return;
+    }
 
-      // Auf einer DATEI messen, nicht im Speicher: Ohne fsync gibt es
-      // keinen Unterschied zu sehen, und genau der ist die Frage.
-      final ordner = await Directory.systemTemp.createTemp('pv_sicherung');
-      Future<(AppDatabase, File)> frisch() async {
-        final ziel = File(
-          '${ordner.path}/${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    // Auf einer DATEI messen, nicht im Speicher: Ohne fsync gibt es
+    // keinen Unterschied zu sehen, und genau der ist die Frage.
+    final ordner = await Directory.systemTemp.createTemp('pv_sicherung');
+    Future<(AppDatabase, File)> frisch() async {
+      final ziel = File(
+        '${ordner.path}/${DateTime.now().microsecondsSinceEpoch}.sqlite',
+      );
+      await File(quelle).copy(ziel.path);
+      return (AppDatabase(NativeDatabase(ziel)), ziel);
+    }
+
+    for (final anzahl in [200, 1000]) {
+      print('\n=== $anzahl Aufnahmen ===');
+
+      {
+        final (db, _) = await frisch();
+        final ids =
+            (await db.customSelect('SELECT id FROM assets LIMIT $anzahl').get())
+                .map((z) => z.read<String>('id'))
+                .toList();
+        final uhr = Stopwatch()..start();
+        for (var i = 0; i < ids.length; i++) {
+          await eintrag(db, ids[i], i);
+        }
+        uhr.stop();
+        print(
+          'ohne Klammer (heute)   ${uhr.elapsedMilliseconds.toString().padLeft(6)} ms',
         );
-        await File(quelle).copy(ziel.path);
-        return (AppDatabase(NativeDatabase(ziel)), ziel);
+        await db.close();
       }
 
-      for (final anzahl in [200, 1000]) {
-        print('\n=== $anzahl Aufnahmen ===');
-
-        {
-          final (db, _) = await frisch();
-          final ids =
-              (await db
-                      .customSelect('SELECT id FROM assets LIMIT $anzahl')
-                      .get())
-                  .map((z) => z.read<String>('id'))
-                  .toList();
-          final uhr = Stopwatch()..start();
+      {
+        final (db, _) = await frisch();
+        final ids =
+            (await db.customSelect('SELECT id FROM assets LIMIT $anzahl').get())
+                .map((z) => z.read<String>('id'))
+                .toList();
+        final uhr = Stopwatch()..start();
+        await db.transaction(() async {
           for (var i = 0; i < ids.length; i++) {
             await eintrag(db, ids[i], i);
           }
-          uhr.stop();
-          print(
-            'ohne Klammer (heute)   ${uhr.elapsedMilliseconds.toString().padLeft(6)} ms',
-          );
-          await db.close();
-        }
-
-        {
-          final (db, _) = await frisch();
-          final ids =
-              (await db
-                      .customSelect('SELECT id FROM assets LIMIT $anzahl')
-                      .get())
-                  .map((z) => z.read<String>('id'))
-                  .toList();
-          final uhr = Stopwatch()..start();
-          await db.transaction(() async {
-            for (var i = 0; i < ids.length; i++) {
-              await eintrag(db, ids[i], i);
-            }
-          });
-          uhr.stop();
-          print(
-            'eine Klammer darum     ${uhr.elapsedMilliseconds.toString().padLeft(6)} ms',
-          );
-          await db.close();
-        }
+        });
+        uhr.stop();
+        print(
+          'eine Klammer darum     ${uhr.elapsedMilliseconds.toString().padLeft(6)} ms',
+        );
+        await db.close();
       }
-      await ordner.delete(recursive: true);
-    },
-    timeout: const Timeout(Duration(minutes: 20)),
-  );
+    }
+    await ordner.delete(recursive: true);
+  }, timeout: const Timeout(Duration(minutes: 20)));
 }

@@ -228,11 +228,10 @@ void main() {
       final vorher = await d2.zuordnungenDerAktivitaet('akt');
       await d2.setzeAufnahmenDerAktivitaet('akt', vorher);
 
-      expect(
-        await d2.zuordnungenDerAktivitaet('akt'),
-        {'a0', 'a1'},
-        reason: 'ohne Antippen darf nichts verschwinden',
-      );
+      expect(await d2.zuordnungenDerAktivitaet('akt'), {
+        'a0',
+        'a1',
+      }, reason: 'ohne Antippen darf nichts verschwinden');
     });
 
     test('ein einziger Haken loescht die uebrigen nicht', () async {

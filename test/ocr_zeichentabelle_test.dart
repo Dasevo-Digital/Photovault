@@ -117,11 +117,10 @@ PostProcess:
   use_space_char: true
   - C
 ''';
-    expect(
-      OcrService.zeichenAusKonfig(konfig),
-      ['A', 'B'],
-      reason: 'was nach dem Block steht, gehört nicht dazu',
-    );
+    expect(OcrService.zeichenAusKonfig(konfig), [
+      'A',
+      'B',
+    ], reason: 'was nach dem Block steht, gehört nicht dazu');
   });
 
   test('der Katalog nennt genau die Datei, die der Dienst liest', () {

@@ -1255,23 +1255,21 @@ void main() {
     );
   }, skip: nurAufReferenzplattform);
 
-  testWidgets(
-    'so sieht der Baum im hellen Erscheinungsbild aus',
-    (tester) async {
-      // Bronze auf Pergament statt Gold auf Dunkel. Nicht die dunkle
-      // Fassung mit vertauschten Werten: Dieselben Goldtöne auf hellem
-      // Grund verlieren jeden Halt.
-      tester.view.physicalSize = const Size(1000, 700);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      await zeigeHell(tester, 'kind');
-      await expectLater(
-        find.byType(StammbaumScreen),
-        matchesGoldenFile('golden/stammbaum_hell.png'),
-      );
-    },
-    skip: nurAufReferenzplattform,
-  );
+  testWidgets('so sieht der Baum im hellen Erscheinungsbild aus', (
+    tester,
+  ) async {
+    // Bronze auf Pergament statt Gold auf Dunkel. Nicht die dunkle
+    // Fassung mit vertauschten Werten: Dieselben Goldtöne auf hellem
+    // Grund verlieren jeden Halt.
+    tester.view.physicalSize = const Size(1000, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await zeigeHell(tester, 'kind');
+    await expectLater(
+      find.byType(StammbaumScreen),
+      matchesGoldenFile('golden/stammbaum_hell.png'),
+    );
+  }, skip: nurAufReferenzplattform);
 
   testWidgets('ein Schild mit beiden Mehrzeichen laeuft nicht ueber', (
     tester,

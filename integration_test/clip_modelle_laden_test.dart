@@ -74,39 +74,31 @@ void main() {
     skip: ordner.isEmpty ? 'PV_MODELLE nicht gesetzt' : null,
   );
 
-  test(
-    'der Text-Encoder laesst sich oeffnen und rechnet',
-    () async {
-      final dienst = await ClipService.load(ordner, bild: false, text: true);
-      final v = await dienst.embedText('ein rotes Fahrrad vor einer Hauswand');
-      await dienst.dispose();
-      expect(v.length, 512);
-      // Nicht nur „keine Ausnahme": Ein Vektor aus lauter Nullen kaeme
-      // ebenfalls ohne Ausnahme zurueck.
-      expect(v.any((e) => e != 0), isTrue);
-      print('TEXT ${v.take(6).map((e) => e.toStringAsFixed(6)).join(' ')}');
-    },
-    skip: ordner.isEmpty ? 'PV_MODELLE nicht gesetzt' : null,
-  );
+  test('der Text-Encoder laesst sich oeffnen und rechnet', () async {
+    final dienst = await ClipService.load(ordner, bild: false, text: true);
+    final v = await dienst.embedText('ein rotes Fahrrad vor einer Hauswand');
+    await dienst.dispose();
+    expect(v.length, 512);
+    // Nicht nur „keine Ausnahme": Ein Vektor aus lauter Nullen kaeme
+    // ebenfalls ohne Ausnahme zurueck.
+    expect(v.any((e) => e != 0), isTrue);
+    print('TEXT ${v.take(6).map((e) => e.toStringAsFixed(6)).join(' ')}');
+  }, skip: ordner.isEmpty ? 'PV_MODELLE nicht gesetzt' : null);
 
-  test(
-    'der Bild-Encoder laesst sich oeffnen und rechnet',
-    () async {
-      final dienst = await ClipService.load(ordner, bild: true, text: false);
-      // Das Pruefbild wird gerechnet und nicht geladen: Fuer den Vergleich
-      // zweier Laeufe zaehlt die Wiederholbarkeit, nicht der Bildinhalt.
-      final bild = img.Image(width: 224, height: 224);
-      for (var y = 0; y < 224; y++) {
-        for (var x = 0; x < 224; x++) {
-          bild.setPixelRgb(x, y, (x * 7) % 256, (y * 5) % 256, (x + y) % 256);
-        }
+  test('der Bild-Encoder laesst sich oeffnen und rechnet', () async {
+    final dienst = await ClipService.load(ordner, bild: true, text: false);
+    // Das Pruefbild wird gerechnet und nicht geladen: Fuer den Vergleich
+    // zweier Laeufe zaehlt die Wiederholbarkeit, nicht der Bildinhalt.
+    final bild = img.Image(width: 224, height: 224);
+    for (var y = 0; y < 224; y++) {
+      for (var x = 0; x < 224; x++) {
+        bild.setPixelRgb(x, y, (x * 7) % 256, (y * 5) % 256, (x + y) % 256);
       }
-      final v = await dienst.embedImage(bild);
-      await dienst.dispose();
-      expect(v.length, 512);
-      expect(v.any((e) => e != 0), isTrue);
-      print('BILD ${v.take(6).map((e) => e.toStringAsFixed(6)).join(' ')}');
-    },
-    skip: ordner.isEmpty ? 'PV_MODELLE nicht gesetzt' : null,
-  );
+    }
+    final v = await dienst.embedImage(bild);
+    await dienst.dispose();
+    expect(v.length, 512);
+    expect(v.any((e) => e != 0), isTrue);
+    print('BILD ${v.take(6).map((e) => e.toStringAsFixed(6)).join(' ')}');
+  }, skip: ordner.isEmpty ? 'PV_MODELLE nicht gesetzt' : null);
 }

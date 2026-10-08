@@ -39,19 +39,15 @@ void main() {
     },
   );
 
-  test(
-    'nennt jedes fehlende Werkzeug beim Namen',
-    () async {
-      final stand = await NativeImageConverter.bildwerkzeugstand();
+  test('nennt jedes fehlende Werkzeug beim Namen', () async {
+    final stand = await NativeImageConverter.bildwerkzeugstand();
 
-      // Was gemeldet wird, muss auch ein bekanntes Werkzeug sein – sonst
-      // stünde im Bildschirm ein Name, mit dem niemand etwas anfangen kann.
-      for (final name in stand.fehlende) {
-        expect(DesktopImageTools.werkzeuge.keys, contains(name));
-      }
-    },
-    skip: ueberWerkzeuge ? null : 'auf macOS gibt es keine Werkzeugliste',
-  );
+    // Was gemeldet wird, muss auch ein bekanntes Werkzeug sein – sonst
+    // stünde im Bildschirm ein Name, mit dem niemand etwas anfangen kann.
+    for (final name in stand.fehlende) {
+      expect(DesktopImageTools.werkzeuge.keys, contains(name));
+    }
+  }, skip: ueberWerkzeuge ? null : 'auf macOS gibt es keine Werkzeugliste');
 
   test('bereit und fehlende widersprechen sich nie', () async {
     final stand = await NativeImageConverter.bildwerkzeugstand();

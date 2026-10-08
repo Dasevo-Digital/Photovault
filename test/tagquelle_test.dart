@@ -111,11 +111,9 @@ void main() {
 
       await db.clearDerivedContentData([id]);
 
-      expect(
-        await namen(id),
-        {'Weihnachten 2019'},
-        reason: 'was die Bilderkennung aus dem Bild gelesen hat, ist weg',
-      );
+      expect(await namen(id), {
+        'Weihnachten 2019',
+      }, reason: 'was die Bilderkennung aus dem Bild gelesen hat, ist weg');
       final danach = (await db.select(db.assets).get()).single;
       expect(
         danach.aiTagsScanned,

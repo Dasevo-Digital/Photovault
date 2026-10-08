@@ -24,49 +24,45 @@ import 'package:photo_vault/services/videostandbilder.dart';
 ///     PV_VIDEO=/pfad/zum/video.mov \
 ///     flutter test tool/videostandbilder_probe_test.dart
 void main() {
-  test(
-    'fuenf Stellen, fuenf verschiedene Bilder',
-    () async {
-      final pfad = Platform.environment['PV_VIDEO'];
-      if (pfad == null) {
-        markTestSkipped('PV_VIDEO noetig');
-        return;
-      }
-      final datei = File(pfad);
-      final dauer = await DesktopImageTools.videoDauer(datei);
-      print('Laufzeit ${dauer?.toStringAsFixed(1)} s');
-      final stellen = videostandbildstellen(dauer);
+  test('fuenf Stellen, fuenf verschiedene Bilder', () async {
+    final pfad = Platform.environment['PV_VIDEO'];
+    if (pfad == null) {
+      markTestSkipped('PV_VIDEO noetig');
+      return;
+    }
+    final datei = File(pfad);
+    final dauer = await DesktopImageTools.videoDauer(datei);
+    print('Laufzeit ${dauer?.toStringAsFixed(1)} s');
+    final stellen = videostandbildstellen(dauer);
+    print(
+      '${stellen.length} zusaetzliche Stellen: '
+      '${[for (final s in stellen) s.toStringAsFixed(3)].join(', ')}',
+    );
+    if (stellen.isEmpty) return;
+
+    final pruefsummen = <String>[];
+    final uhr = Stopwatch()..start();
+    for (final stelle in stellen) {
+      final bild = await DesktopImageTools.videoThumbnail(
+        datei,
+        maxDimension: 2048,
+        anteil: stelle,
+      );
+      expect(bild, isNotNull, reason: 'Stelle $stelle');
+      final summe = sha256.convert(bild!.jpeg).toString().substring(0, 12);
+      pruefsummen.add(summe);
       print(
-        '${stellen.length} zusaetzliche Stellen: '
-        '${[for (final s in stellen) s.toStringAsFixed(3)].join(', ')}',
+        '  ${(stelle * 100).toStringAsFixed(0).padLeft(3)} %  '
+        '${(bild.jpeg.length / 1024).toStringAsFixed(0).padLeft(5)} kB  $summe',
       );
-      if (stellen.isEmpty) return;
+    }
+    uhr.stop();
+    print('${stellen.length} Bilder in ${uhr.elapsedMilliseconds} ms');
 
-      final pruefsummen = <String>[];
-      final uhr = Stopwatch()..start();
-      for (final stelle in stellen) {
-        final bild = await DesktopImageTools.videoThumbnail(
-          datei,
-          maxDimension: 2048,
-          anteil: stelle,
-        );
-        expect(bild, isNotNull, reason: 'Stelle $stelle');
-        final summe = sha256.convert(bild!.jpeg).toString().substring(0, 12);
-        pruefsummen.add(summe);
-        print(
-          '  ${(stelle * 100).toStringAsFixed(0).padLeft(3)} %  '
-          '${(bild.jpeg.length / 1024).toStringAsFixed(0).padLeft(5)} kB  $summe',
-        );
-      }
-      uhr.stop();
-      print('${stellen.length} Bilder in ${uhr.elapsedMilliseconds} ms');
-
-      expect(
-        pruefsummen.toSet(),
-        hasLength(pruefsummen.length),
-        reason: 'gleiche Bytes hiessen: es ist immer dasselbe Bild',
-      );
-    },
-    timeout: const Timeout(Duration(minutes: 5)),
-  );
+    expect(
+      pruefsummen.toSet(),
+      hasLength(pruefsummen.length),
+      reason: 'gleiche Bytes hiessen: es ist immer dasselbe Bild',
+    );
+  }, timeout: const Timeout(Duration(minutes: 5)));
 }
