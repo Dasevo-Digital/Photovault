@@ -8345,4 +8345,44 @@ class AppTexteEn extends AppTexte {
   String lebensbaumAusgelassen(int anzahl) {
     return '$anzahl more people do not fit in the picture. Show fewer generations, or tap a person further up to move them to the trunk.';
   }
+
+  @override
+  String get familientageTitel => 'Family days';
+
+  @override
+  String get familientagHeute => 'Today';
+
+  @override
+  String get familientagMorgen => 'Tomorrow';
+
+  @override
+  String familientagInTagen(int tage) {
+    return 'In $tage days';
+  }
+
+  @override
+  String familientagGeburtstag(String name, int jahre) {
+    return '$name turns $jahre';
+  }
+
+  @override
+  String familientagGeburtstagVerstorben(String name, int jahre) {
+    return '$name would have turned $jahre';
+  }
+
+  @override
+  String familientagTodestag(String name, int jahre) {
+    String _temp0 = intl.Intl.pluralLogic(
+      jahre,
+      locale: localeName,
+      other: '$name died $jahre years ago',
+      one: '$name died a year ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String familientagHochzeitstag(String namen, int jahre) {
+    return '$jahre years since $namen married';
+  }
 }

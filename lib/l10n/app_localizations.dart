@@ -13068,6 +13068,54 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{anzahl} weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.'**
   String lebensbaumAusgelassen(int anzahl);
+
+  /// No description provided for @familientageTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Familientage'**
+  String get familientageTitel;
+
+  /// No description provided for @familientagHeute.
+  ///
+  /// In de, this message translates to:
+  /// **'Heute'**
+  String get familientagHeute;
+
+  /// No description provided for @familientagMorgen.
+  ///
+  /// In de, this message translates to:
+  /// **'Morgen'**
+  String get familientagMorgen;
+
+  /// No description provided for @familientagInTagen.
+  ///
+  /// In de, this message translates to:
+  /// **'In {tage} Tagen'**
+  String familientagInTagen(int tage);
+
+  /// No description provided for @familientagGeburtstag.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} wird {jahre}'**
+  String familientagGeburtstag(String name, int jahre);
+
+  /// No description provided for @familientagGeburtstagVerstorben.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} wäre {jahre} geworden'**
+  String familientagGeburtstagVerstorben(String name, int jahre);
+
+  /// No description provided for @familientagTodestag.
+  ///
+  /// In de, this message translates to:
+  /// **'{jahre, plural, =1{{name} starb vor einem Jahr} other{{name} starb vor {jahre} Jahren}}'**
+  String familientagTodestag(String name, int jahre);
+
+  /// No description provided for @familientagHochzeitstag.
+  ///
+  /// In de, this message translates to:
+  /// **'{jahre}. Hochzeitstag von {namen}'**
+  String familientagHochzeitstag(String namen, int jahre);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

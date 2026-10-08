@@ -12,6 +12,7 @@ import '../services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
+import '../widgets/familientage_abschnitt.dart';
 import '../widgets/mini_location_map.dart'
     show Kachelschicht, Kartenstil, buildMapAttribution;
 import '../widgets/pin_dialogs.dart';
@@ -84,6 +85,7 @@ class ExploreScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          FamilientageAbschnitt(library: library),
           _MemoriesSection(library: library),
           _Streifenabschnitt<PersonData>(
             titel: AppTexte.of(context).erkundenPersonen,

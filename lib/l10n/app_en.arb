@@ -3898,5 +3898,13 @@
   "lebensbaumUntertitelNachkommen": "The descendants of {name}",
   "lebensbaumKeineVorfahren": "No ancestors have been entered for this person yet. The tree of life grows upwards from them – add a parent at the top right.",
   "lebensbaumKeineNachkommen": "No children have been entered for this person yet. The tree of life grows upwards from them – add a child at the top right.",
-  "lebensbaumAusgelassen": "{anzahl} more people do not fit in the picture. Show fewer generations, or tap a person further up to move them to the trunk."
+  "lebensbaumAusgelassen": "{anzahl} more people do not fit in the picture. Show fewer generations, or tap a person further up to move them to the trunk.",
+  "familientageTitel": "Family days",
+  "familientagHeute": "Today",
+  "familientagMorgen": "Tomorrow",
+  "familientagInTagen": "In {tage} days",
+  "familientagGeburtstag": "{name} turns {jahre}",
+  "familientagGeburtstagVerstorben": "{name} would have turned {jahre}",
+  "familientagTodestag": "{jahre, plural, =1{{name} died a year ago} other{{name} died {jahre} years ago}}",
+  "familientagHochzeitstag": "{jahre} years since {namen} married"
 }

@@ -4987,5 +4987,18 @@
   "lebensbaumKeineVorfahren": "Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.",
   "lebensbaumKeineNachkommen": "Für diese Person sind noch keine Kinder eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts ein Kind hinzu.",
   "lebensbaumAusgelassen": "{anzahl} weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.",
-  "@lebensbaumAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}}
+  "@lebensbaumAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "familientageTitel": "Familientage",
+  "familientagHeute": "Heute",
+  "familientagMorgen": "Morgen",
+  "familientagInTagen": "In {tage} Tagen",
+  "@familientagInTagen": {"placeholders": {"tage": {"type": "int"}}},
+  "familientagGeburtstag": "{name} wird {jahre}",
+  "@familientagGeburtstag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "familientagGeburtstagVerstorben": "{name} wäre {jahre} geworden",
+  "@familientagGeburtstagVerstorben": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "familientagTodestag": "{jahre, plural, =1{{name} starb vor einem Jahr} other{{name} starb vor {jahre} Jahren}}",
+  "@familientagTodestag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "familientagHochzeitstag": "{jahre}. Hochzeitstag von {namen}",
+  "@familientagHochzeitstag": {"placeholders": {"namen": {"type": "String"}, "jahre": {"type": "int"}}}
 }
