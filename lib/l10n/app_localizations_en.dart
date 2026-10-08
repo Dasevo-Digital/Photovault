@@ -8385,4 +8385,7 @@ class AppTexteEn extends AppTexte {
   String familientagHochzeitstag(String namen, int jahre) {
     return '$jahre years since $namen married';
   }
+
+  @override
+  String get entwLupe => 'Loupe (3×)';
 }

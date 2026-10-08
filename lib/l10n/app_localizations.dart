@@ -13116,6 +13116,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{jahre}. Hochzeitstag von {namen}'**
   String familientagHochzeitstag(String namen, int jahre);
+
+  /// No description provided for @entwLupe.
+  ///
+  /// In de, this message translates to:
+  /// **'Lupe (dreifach)'**
+  String get entwLupe;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

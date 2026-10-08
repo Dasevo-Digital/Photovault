@@ -3906,5 +3906,6 @@
   "familientagGeburtstag": "{name} turns {jahre}",
   "familientagGeburtstagVerstorben": "{name} would have turned {jahre}",
   "familientagTodestag": "{jahre, plural, =1{{name} died a year ago} other{{name} died {jahre} years ago}}",
-  "familientagHochzeitstag": "{jahre} years since {namen} married"
+  "familientagHochzeitstag": "{jahre} years since {namen} married",
+  "entwLupe": "Loupe (3×)"
 }

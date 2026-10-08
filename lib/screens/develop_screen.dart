@@ -36,6 +36,7 @@ import '../widgets/stromhalter.dart';
 import '../utils/debouncer.dart';
 import '../widgets/color_mixer_panel.dart';
 import '../widgets/develop_preview.dart';
+import '../widgets/lupe.dart';
 import '../widgets/histogram_view.dart';
 import '../widgets/tone_curve_editor.dart';
 import '../theme/app_theme.dart';
@@ -151,6 +152,10 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// Fotos - und beim naechsten Oeffnen will man das Bild sehen, nicht die
   /// Warnfarben.
   bool _beschneidungZeigen = false;
+
+  /// Ob die Lupe über der Vorschau liegt. Wie die Beschneidungswarnung ein
+  /// Blick beim Arbeiten, nicht gespeichert.
+  bool _lupe = false;
 
   // --- Live-Vorschau per GPU-Shader ------------------------------------
   // Während des Regler-Ziehens rechnet der Shader sofort auf der
@@ -2213,6 +2218,12 @@ class _DevelopScreenState extends State<DevelopScreen> {
             onPressed: _trennstrichUmschalten,
           ),
           IconButton(
+            icon: Icon(_lupe ? Icons.zoom_in : Icons.zoom_in_outlined),
+            color: _lupe ? Colors.amber : Colors.white70,
+            tooltip: AppTexte.of(context).entwLupe,
+            onPressed: () => setState(() => _lupe = !_lupe),
+          ),
+          IconButton(
             icon: Icon(
               _beschneidungZeigen
                   ? Icons.report_problem
@@ -2273,161 +2284,165 @@ class _DevelopScreenState extends State<DevelopScreen> {
                                 : const CircularProgressIndicator())
                           : _maskEditMode
                           ? _buildMaskEditor()
-                          : GestureDetector(
-                              onLongPressStart: (_) {
-                                _ensureOriginalPreviewLoaded();
-                                setState(() => _showingOriginal = true);
-                              },
-                              onLongPressEnd: (_) =>
-                                  setState(() => _showingOriginal = false),
-                              onLongPressCancel: () =>
-                                  setState(() => _showingOriginal = false),
-                              child: Stack(
-                                alignment: Alignment.bottomCenter,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(
-                                      AppSpacing.lg,
-                                    ),
-                                    child:
-                                        (_zeigeShaderVorschau &&
-                                            !_showingOriginal)
-                                        ? DevelopShaderPreview(
-                                            shader: _shader,
-                                            image: _shaderBasis!,
-                                            adjustments: _currentAdjustments(),
-                                            beschneidungZeigen:
-                                                _beschneidungZeigen,
-                                          )
-                                        : (_zeigeTrennstrich &&
+                          : Lupenbereich(
+                              aktiv: _lupe,
+                              child: GestureDetector(
+                                onLongPressStart: (_) {
+                                  _ensureOriginalPreviewLoaded();
+                                  setState(() => _showingOriginal = true);
+                                },
+                                onLongPressEnd: (_) =>
+                                    setState(() => _showingOriginal = false),
+                                onLongPressCancel: () =>
+                                    setState(() => _showingOriginal = false),
+                                child: Stack(
+                                  alignment: Alignment.bottomCenter,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(
+                                        AppSpacing.lg,
+                                      ),
+                                      child:
+                                          (_zeigeShaderVorschau &&
                                               !_showingOriginal)
-                                        ? _buildTrennstrichVergleich()
-                                        : Image.memory(
-                                            (_showingOriginal &&
-                                                    _originalPreviewBytes !=
-                                                        null)
-                                                ? _originalPreviewBytes!
-                                                : _previewBytes!,
-                                            gaplessPlayback: true,
-                                            fit: BoxFit.contain,
+                                          ? DevelopShaderPreview(
+                                              shader: _shader,
+                                              image: _shaderBasis!,
+                                              adjustments:
+                                                  _currentAdjustments(),
+                                              beschneidungZeigen:
+                                                  _beschneidungZeigen,
+                                            )
+                                          : (_zeigeTrennstrich &&
+                                                !_showingOriginal)
+                                          ? _buildTrennstrichVergleich()
+                                          : Image.memory(
+                                              (_showingOriginal &&
+                                                      _originalPreviewBytes !=
+                                                          null)
+                                                  ? _originalPreviewBytes!
+                                                  : _previewBytes!,
+                                              gaplessPlayback: true,
+                                              fit: BoxFit.contain,
+                                            ),
+                                    ),
+                                    if (_showingOriginal)
+                                      Positioned(
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: AppSpacing.xs,
                                           ),
-                                  ),
-                                  if (_showingOriginal)
-                                    Positioned(
-                                      top: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: AppSpacing.xs,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.pill,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black54,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.pill,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            AppTexte.of(context).entwOriginal,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
+                                      )
+                                    else
+                                      Positioned(
+                                        bottom: 4,
                                         child: Text(
-                                          AppTexte.of(context).entwOriginal,
+                                          AppTexte.of(context).entwVergleichen,
                                           style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
+                                            color: DunkleFlaeche.hinweis,
+                                            fontSize: 11,
                                           ),
                                         ),
                                       ),
-                                    )
-                                  else
-                                    Positioned(
-                                      bottom: 4,
-                                      child: Text(
-                                        AppTexte.of(context).entwVergleichen,
-                                        style: const TextStyle(
-                                          color: DunkleFlaeche.hinweis,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  // Der Strich ist an, aber das
-                                  // unbearbeitete Bild wird noch
-                                  // gerechnet. Ohne diesen Hinweis
-                                  // sähe der Knopf wirkungslos aus -
-                                  // und man suchte den Fehler dort.
-                                  if (_trennstrich != null &&
-                                      _originalPreviewBytes == null)
-                                    Positioned(
-                                      top: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: AppSpacing.xs,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.pill,
+                                    // Der Strich ist an, aber das
+                                    // unbearbeitete Bild wird noch
+                                    // gerechnet. Ohne diesen Hinweis
+                                    // sähe der Knopf wirkungslos aus -
+                                    // und man suchte den Fehler dort.
+                                    if (_trennstrich != null &&
+                                        _originalPreviewBytes == null)
+                                      Positioned(
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: AppSpacing.xs,
                                           ),
-                                        ),
-                                        child: Text(
-                                          AppTexte.of(
-                                            context,
-                                          ).entwTrennstrichWartet,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black54,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.pill,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            AppTexte.of(
+                                              context,
+                                            ).entwTrennstrichWartet,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  // Solange die Warnung an ist, zeigt
-                                  // der Shader das Bild - und der
-                                  // rechnet unter macOS NICHT dasselbe
-                                  // wie Core Image. Vier Regler fehlen
-                                  // darin. Wo der Shader ohnehin das
-                                  // Ergebnis erzeugt (Linux, Windows),
-                                  // gibt es nichts zu vermelden.
-                                  if (_beschneidungZeigen &&
-                                      !_dragging &&
-                                      !_showingOriginal &&
-                                      _shaderMoeglich &&
-                                      !DevelopRender.istMassgeblich)
-                                    Positioned(
-                                      top: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: AppSpacing.xs,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.pill,
+                                    // Solange die Warnung an ist, zeigt
+                                    // der Shader das Bild - und der
+                                    // rechnet unter macOS NICHT dasselbe
+                                    // wie Core Image. Vier Regler fehlen
+                                    // darin. Wo der Shader ohnehin das
+                                    // Ergebnis erzeugt (Linux, Windows),
+                                    // gibt es nichts zu vermelden.
+                                    if (_beschneidungZeigen &&
+                                        !_dragging &&
+                                        !_showingOriginal &&
+                                        _shaderMoeglich &&
+                                        !DevelopRender.istMassgeblich)
+                                      Positioned(
+                                        top: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: AppSpacing.xs,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black54,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.pill,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            AppTexte.of(
+                                              context,
+                                            ).entwBeschneidungVorschauHinweis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          AppTexte.of(
-                                            context,
-                                          ).entwBeschneidungVorschauHinweis,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
+                                      ),
+                                    if (_rendering)
+                                      const Padding(
+                                        padding: EdgeInsets.only(
+                                          bottom: AppSpacing.lg,
+                                        ),
+                                        child: SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white70,
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  if (_rendering)
-                                    const Padding(
-                                      padding: EdgeInsets.only(
-                                        bottom: AppSpacing.lg,
-                                      ),
-                                      child: SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                     ),

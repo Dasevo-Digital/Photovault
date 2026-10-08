@@ -5000,5 +5000,6 @@
   "familientagTodestag": "{jahre, plural, =1{{name} starb vor einem Jahr} other{{name} starb vor {jahre} Jahren}}",
   "@familientagTodestag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
   "familientagHochzeitstag": "{jahre}. Hochzeitstag von {namen}",
-  "@familientagHochzeitstag": {"placeholders": {"namen": {"type": "String"}, "jahre": {"type": "int"}}}
+  "@familientagHochzeitstag": {"placeholders": {"namen": {"type": "String"}, "jahre": {"type": "int"}}},
+  "entwLupe": "Lupe (dreifach)"
 }
