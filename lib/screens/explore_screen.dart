@@ -22,6 +22,7 @@ import 'aktivitaeten_screen.dart';
 import 'album_detail_screen.dart';
 import 'albums_screen.dart';
 import 'asset_viewer_screen.dart';
+import 'jahresrueckblick_screen.dart';
 import 'map_screen.dart';
 import 'people_screen.dart';
 import 'reise_detail_screen.dart';
@@ -88,6 +89,7 @@ class ExploreScreen extends StatelessWidget {
         children: [
           FamilientageAbschnitt(library: library),
           _MemoriesSection(library: library),
+          _Jahresrueckblickzeile(library: library),
           _Streifenabschnitt<PersonData>(
             titel: AppTexte.of(context).erkundenPersonen,
             onAlleAnzeigen: () => Navigator.of(context).push(
@@ -1153,6 +1155,36 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Der Weg in den Jahresrückblick.
+class _Jahresrueckblickzeile extends StatelessWidget {
+  final LibraryState library;
+  const _Jahresrueckblickzeile({required this.library});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final jahr = jahresrueckblickJahr(DateTime.now());
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          leading: const Icon(Icons.auto_awesome_outlined),
+          title: Text(t.jahresrueckblickTitel(jahr)),
+          subtitle: Text(t.jahresrueckblickUntertitel),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  JahresrueckblickScreen(library: library, jahr: jahr),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

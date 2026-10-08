@@ -3912,5 +3912,21 @@
   "diashowSpeichern": "Save slideshow as video",
   "diashowWirdErstellt": "Creating video …",
   "diashowUmfang": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
-  "diashowKeineFotos": "There are no photos here to make a slideshow from – videos and locked items are left out."
+  "diashowKeineFotos": "There are no photos here to make a slideshow from – videos and locked items are left out.",
+  "jahresrueckblickTitel": "Your year {jahr}",
+  "jahresrueckblickUntertitel": "In numbers and pictures – with people, trips and the best photos",
+  "jahresrueckblickVorjahr": "Previous year",
+  "jahresrueckblickFolgejahr": "Next year",
+  "jahresrueckblickLeer": "There are no items from {jahr}.",
+  "jahresrueckblickFotos": "Photos",
+  "jahresrueckblickVideos": "Videos",
+  "jahresrueckblickTage": "Days with photos",
+  "jahresrueckblickLaender": "Countries",
+  "jahresrueckblickOrte": "Places",
+  "jahresrueckblickStaerksterMonat": "busiest month",
+  "jahresrueckblickAuswahl": "The best photos",
+  "jahresrueckblickPersonen": "Seen most often",
+  "jahresrueckblickReisen": "Trips",
+  "jahresrueckblickAufnahmen": "{anzahl, plural, =1{1 item} other{{anzahl} items}}",
+  "jahresrueckblickUmfang": "{fotos} photos on {tage} days"
 }

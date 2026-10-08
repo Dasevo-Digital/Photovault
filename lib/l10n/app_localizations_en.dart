@@ -8412,4 +8412,67 @@ class AppTexteEn extends AppTexte {
   @override
   String get diashowKeineFotos =>
       'There are no photos here to make a slideshow from – videos and locked items are left out.';
+
+  @override
+  String jahresrueckblickTitel(int jahr) {
+    return 'Your year $jahr';
+  }
+
+  @override
+  String get jahresrueckblickUntertitel =>
+      'In numbers and pictures – with people, trips and the best photos';
+
+  @override
+  String get jahresrueckblickVorjahr => 'Previous year';
+
+  @override
+  String get jahresrueckblickFolgejahr => 'Next year';
+
+  @override
+  String jahresrueckblickLeer(int jahr) {
+    return 'There are no items from $jahr.';
+  }
+
+  @override
+  String get jahresrueckblickFotos => 'Photos';
+
+  @override
+  String get jahresrueckblickVideos => 'Videos';
+
+  @override
+  String get jahresrueckblickTage => 'Days with photos';
+
+  @override
+  String get jahresrueckblickLaender => 'Countries';
+
+  @override
+  String get jahresrueckblickOrte => 'Places';
+
+  @override
+  String get jahresrueckblickStaerksterMonat => 'busiest month';
+
+  @override
+  String get jahresrueckblickAuswahl => 'The best photos';
+
+  @override
+  String get jahresrueckblickPersonen => 'Seen most often';
+
+  @override
+  String get jahresrueckblickReisen => 'Trips';
+
+  @override
+  String jahresrueckblickAufnahmen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String jahresrueckblickUmfang(int fotos, int tage) {
+    return '$fotos photos on $tage days';
+  }
 }

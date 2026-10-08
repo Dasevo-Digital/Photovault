@@ -9383,6 +9383,50 @@ class AppDatabase extends _$AppDatabase {
     ).get()).map(Rasterzeile.ausZeile).toList();
   }
 
+  /// Die Personen, die zwischen [von] und [bis] am häufigsten auf Fotos
+  /// sind, mit der Zahl der Aufnahmen – für den Jahresrückblick.
+  ///
+  /// Gezählt werden Aufnahmen, nicht Gesichter: Wer auf einem Gruppenbild
+  /// zweimal erkannt wurde, war trotzdem nur einmal dabei.
+  Future<List<({PersonData person, int anzahl})>> personenImZeitraum(
+    DateTime von,
+    DateTime bis, {
+    int hoechstens = 8,
+  }) async {
+    final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
+    final anfang = DateTime(von.year, von.month, von.day);
+    final anzahl = faces.assetId.count(distinct: true);
+    final query =
+        selectOnly(
+            faces,
+          ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])
+          ..addColumns([faces.personId, anzahl])
+          ..where(
+            faces.personId.isNotNull() &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false) &
+                assets.fileCreatedAt.isBiggerOrEqualValue(anfang) &
+                assets.fileCreatedAt.isSmallerOrEqualValue(ende),
+          )
+          ..groupBy([faces.personId])
+          ..orderBy([OrderingTerm.desc(anzahl)])
+          ..limit(hoechstens);
+    final zeilen = await query.get();
+    final ids = [for (final z in zeilen) z.read(faces.personId)!];
+    if (ids.isEmpty) return const [];
+    final personen = {
+      for (final p in await (select(
+        people,
+      )..where((t) => t.id.isIn(ids))).get())
+        p.id: p,
+    };
+    return [
+      for (final z in zeilen)
+        if (personen[z.read(faces.personId)] case final p?)
+          (person: p, anzahl: z.read(anzahl) ?? 0),
+    ];
+  }
+
   Future<List<AssetData>> aufnahmenImZeitraum(DateTime von, DateTime bis) {
     final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
     final anfang = DateTime(von.year, von.month, von.day);

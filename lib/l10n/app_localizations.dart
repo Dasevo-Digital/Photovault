@@ -13152,6 +13152,102 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.'**
   String get diashowKeineFotos;
+
+  /// No description provided for @jahresrueckblickTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Jahr {jahr}'**
+  String jahresrueckblickTitel(int jahr);
+
+  /// No description provided for @jahresrueckblickUntertitel.
+  ///
+  /// In de, this message translates to:
+  /// **'In Zahlen und Bildern – mit Personen, Reisen und den besten Fotos'**
+  String get jahresrueckblickUntertitel;
+
+  /// No description provided for @jahresrueckblickVorjahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorjahr'**
+  String get jahresrueckblickVorjahr;
+
+  /// No description provided for @jahresrueckblickFolgejahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Folgejahr'**
+  String get jahresrueckblickFolgejahr;
+
+  /// No description provided for @jahresrueckblickLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus {jahr} gibt es keine Aufnahmen.'**
+  String jahresrueckblickLeer(int jahr);
+
+  /// No description provided for @jahresrueckblickFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos'**
+  String get jahresrueckblickFotos;
+
+  /// No description provided for @jahresrueckblickVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos'**
+  String get jahresrueckblickVideos;
+
+  /// No description provided for @jahresrueckblickTage.
+  ///
+  /// In de, this message translates to:
+  /// **'Tage mit Fotos'**
+  String get jahresrueckblickTage;
+
+  /// No description provided for @jahresrueckblickLaender.
+  ///
+  /// In de, this message translates to:
+  /// **'Länder'**
+  String get jahresrueckblickLaender;
+
+  /// No description provided for @jahresrueckblickOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'Orte'**
+  String get jahresrueckblickOrte;
+
+  /// No description provided for @jahresrueckblickStaerksterMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'stärkster Monat'**
+  String get jahresrueckblickStaerksterMonat;
+
+  /// No description provided for @jahresrueckblickAuswahl.
+  ///
+  /// In de, this message translates to:
+  /// **'Die besten Fotos'**
+  String get jahresrueckblickAuswahl;
+
+  /// No description provided for @jahresrueckblickPersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Am häufigsten dabei'**
+  String get jahresrueckblickPersonen;
+
+  /// No description provided for @jahresrueckblickReisen.
+  ///
+  /// In de, this message translates to:
+  /// **'Reisen'**
+  String get jahresrueckblickReisen;
+
+  /// No description provided for @jahresrueckblickAufnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Aufnahme} other{{anzahl} Aufnahmen}}'**
+  String jahresrueckblickAufnahmen(int anzahl);
+
+  /// No description provided for @jahresrueckblickUmfang.
+  ///
+  /// In de, this message translates to:
+  /// **'{fotos} Fotos an {tage} Tagen'**
+  String jahresrueckblickUmfang(int fotos, int tage);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

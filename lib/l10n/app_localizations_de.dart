@@ -8461,4 +8461,67 @@ class AppTexteDe extends AppTexte {
   @override
   String get diashowKeineFotos =>
       'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.';
+
+  @override
+  String jahresrueckblickTitel(int jahr) {
+    return 'Dein Jahr $jahr';
+  }
+
+  @override
+  String get jahresrueckblickUntertitel =>
+      'In Zahlen und Bildern – mit Personen, Reisen und den besten Fotos';
+
+  @override
+  String get jahresrueckblickVorjahr => 'Vorjahr';
+
+  @override
+  String get jahresrueckblickFolgejahr => 'Folgejahr';
+
+  @override
+  String jahresrueckblickLeer(int jahr) {
+    return 'Aus $jahr gibt es keine Aufnahmen.';
+  }
+
+  @override
+  String get jahresrueckblickFotos => 'Fotos';
+
+  @override
+  String get jahresrueckblickVideos => 'Videos';
+
+  @override
+  String get jahresrueckblickTage => 'Tage mit Fotos';
+
+  @override
+  String get jahresrueckblickLaender => 'Länder';
+
+  @override
+  String get jahresrueckblickOrte => 'Orte';
+
+  @override
+  String get jahresrueckblickStaerksterMonat => 'stärkster Monat';
+
+  @override
+  String get jahresrueckblickAuswahl => 'Die besten Fotos';
+
+  @override
+  String get jahresrueckblickPersonen => 'Am häufigsten dabei';
+
+  @override
+  String get jahresrueckblickReisen => 'Reisen';
+
+  @override
+  String jahresrueckblickAufnahmen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Aufnahmen',
+      one: '1 Aufnahme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String jahresrueckblickUmfang(int fotos, int tage) {
+    return '$fotos Fotos an $tage Tagen';
+  }
 }
