@@ -5044,5 +5044,9 @@
   "auswRueckSchlagwort": "„{tag}“ an {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} vergeben",
   "@auswRueckSchlagwort": {"placeholders": {"tag": {"type": "String"}, "anzahl": {"type": "int"}}},
   "auswRueckAlbum": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} ins Album gelegt",
-  "@auswRueckAlbum": {"placeholders": {"anzahl": {"type": "int"}}}
+  "@auswRueckAlbum": {"placeholders": {"anzahl": {"type": "int"}}},
+  "suchOhnePerson": "ohne Person",
+  "suchOhneSchlagwort": "ohne Schlagwort",
+  "suchoptPersonenAusschliessen": "Ein Tipp wählt eine Person, ein zweiter schließt sie aus („ohne“), ein dritter hebt beides auf.",
+  "suchoptOhneTagsHint": "Ohne diese Schlagwörter …"
 }

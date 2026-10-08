@@ -248,6 +248,12 @@ void main() {
         SearchFilters(personIds: [personA, personB]),
       );
       expect(bothPersons.map((r) => r.id), [both.id]);
+
+      // „A, aber ohne B“.
+      final aOhneB = await db.searchAssets(
+        SearchFilters(personIds: [personA], ohnePersonIds: [personB]),
+      );
+      expect(aOhneB.map((r) => r.id), [onlyAId.id]);
     },
   );
 
@@ -281,6 +287,17 @@ void main() {
 
       final noTag = await db.searchAssets(const SearchFilters(noTag: true));
       expect(noTag.map((r) => r.id), [untagged.id]);
+
+      // „Urlaub, aber ohne Strand“.
+      final ohneStrand = await db.searchAssets(
+        SearchFilters(tagIds: [urlaubTagId], ohneTagIds: [strandTagId]),
+      );
+      expect(ohneStrand.map((r) => r.id), [onlyUrlaub.id]);
+      // Und ohne alles andere: alles, was nicht Strand trägt.
+      final nurOhne = await db.searchAssets(
+        SearchFilters(ohneTagIds: [strandTagId]),
+      );
+      expect(nurOhne.map((r) => r.id).toSet(), {onlyUrlaub.id, untagged.id});
     },
   );
 

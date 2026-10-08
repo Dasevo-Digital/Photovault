@@ -8601,4 +8601,17 @@ class AppTexteDe extends AppTexte {
     );
     return '$_temp0 ins Album gelegt';
   }
+
+  @override
+  String get suchOhnePerson => 'ohne Person';
+
+  @override
+  String get suchOhneSchlagwort => 'ohne Schlagwort';
+
+  @override
+  String get suchoptPersonenAusschliessen =>
+      'Ein Tipp wählt eine Person, ein zweiter schließt sie aus („ohne“), ein dritter hebt beides auf.';
+
+  @override
+  String get suchoptOhneTagsHint => 'Ohne diese Schlagwörter …';
 }

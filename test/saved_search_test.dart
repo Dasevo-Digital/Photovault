@@ -14,6 +14,8 @@ void main() {
   test('SearchFilters übersteht die JSON-Rundreise unverändert', () {
     final original = SearchFilters(
       personIds: const ['p1', 'p2'],
+      ohnePersonIds: const ['p3'],
+      ohneTagIds: const ['t9'],
       textMode: SearchTextMode.description,
       query: 'Geburtstag',
       tagIds: const ['t1'],
@@ -43,6 +45,8 @@ void main() {
     expect(restored.textMode, original.textMode);
     expect(restored.query, original.query);
     expect(restored.tagIds, original.tagIds);
+    expect(restored.ohnePersonIds, original.ohnePersonIds);
+    expect(restored.ohneTagIds, original.ohneTagIds);
     expect(restored.cameraMake, original.cameraMake);
     expect(restored.locationCountry, original.locationCountry);
     expect(restored.locationCity, original.locationCity);

@@ -13314,6 +13314,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} ins Album gelegt'**
   String auswRueckAlbum(int anzahl);
+
+  /// No description provided for @suchOhnePerson.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne Person'**
+  String get suchOhnePerson;
+
+  /// No description provided for @suchOhneSchlagwort.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne Schlagwort'**
+  String get suchOhneSchlagwort;
+
+  /// No description provided for @suchoptPersonenAusschliessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Tipp wählt eine Person, ein zweiter schließt sie aus („ohne“), ein dritter hebt beides auf.'**
+  String get suchoptPersonenAusschliessen;
+
+  /// No description provided for @suchoptOhneTagsHint.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne diese Schlagwörter …'**
+  String get suchoptOhneTagsHint;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

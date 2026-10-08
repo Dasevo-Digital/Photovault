@@ -7584,6 +7584,25 @@ class AppDatabase extends _$AppDatabase {
       );
     }
 
+    for (final personId in filters.ohnePersonIds) {
+      wo.add(
+        notExistsQuery(
+          select(faces)..where(
+            (f) => f.assetId.equalsExp(assets.id) & f.personId.equals(personId),
+          ),
+        ),
+      );
+    }
+    for (final tagId in filters.ohneTagIds) {
+      wo.add(
+        notExistsQuery(
+          select(assetTags)..where(
+            (at) => at.assetId.equalsExp(assets.id) & at.tagId.equals(tagId),
+          ),
+        ),
+      );
+    }
+
     if (filters.noTag) {
       wo.add(
         notExistsQuery(

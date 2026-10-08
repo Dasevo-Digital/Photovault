@@ -8552,4 +8552,17 @@ class AppTexteEn extends AppTexte {
     );
     return '$_temp0 added to the album';
   }
+
+  @override
+  String get suchOhnePerson => 'without person';
+
+  @override
+  String get suchOhneSchlagwort => 'without tag';
+
+  @override
+  String get suchoptPersonenAusschliessen =>
+      'Tap once to include a person, twice to exclude them (“without”), a third time to clear.';
+
+  @override
+  String get suchoptOhneTagsHint => 'Without these tags …';
 }

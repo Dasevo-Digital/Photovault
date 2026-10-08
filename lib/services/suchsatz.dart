@@ -16,10 +16,16 @@
 /// gebraucht wird, entscheidet sich später an echten Anfragen statt an einer
 /// Vermutung.
 ///
-/// **Was er nicht kann und nicht können soll.** Verneinungen („ohne Anna"),
-/// Verknüpfungen („Anna oder Bernd"), Vergleiche („die schärfsten"). Ein
-/// halbverstandenes „ohne" wäre schlimmer als gar keines: Es lieferte
-/// genau das Gegenteil, ohne dass man es der Trefferliste ansieht.
+/// **Was er nicht kann und nicht können soll.** Verknüpfungen („Anna oder
+/// Bernd") und Vergleiche („die schärfsten").
+///
+/// **Verneinung nur eng.** Ein halbverstandenes „ohne" wäre schlimmer als
+/// gar keines: Es lieferte genau das Gegenteil, ohne dass man es der
+/// Trefferliste ansieht. Deshalb gilt „ohne" (und „without") nur, wenn
+/// **unmittelbar** danach ein Personenname oder Schlagwort aus der
+/// Bibliothek steht – „ohne Max", „ohne Strand". Es erscheint dann als
+/// eigene Marke „ohne …", sichtbar wie jede andere. „Ohne Ort" und „ohne
+/// Schlagwort" sind eigene, schon vorhandene Kriterien und bleiben es.
 library;
 
 import 'blur_detection.dart' show blurryScoreThreshold;
@@ -45,7 +51,9 @@ class Satzfund {
 
 enum Satzfundart {
   person,
+  ohnePerson,
   schlagwort,
+  ohneSchlagwort,
   kamera,
   ort,
   zeitraum,
@@ -270,6 +278,40 @@ Satzdeutung deuteSuchsatz(
       }
     }
 
+    // **Erst die Verneinungen,** sonst nähme die Suche nach „Max" das
+    // Wort weg und liesse ein einsames „ohne" im Rest stehen.
+    void ohne(
+      Iterable<MapEntry<String, String>> begriffe,
+      Satzfundart art,
+      SearchFilters Function(SearchFilters f, String schluessel) anwenden,
+    ) {
+      final sortiert = begriffe.toList()
+        ..sort((a, b) => b.value.length.compareTo(a.value.length));
+      for (final b in sortiert) {
+        if (b.value.trim().isEmpty) continue;
+        final muster = RegExp(
+          '(?<![\\wäöüß])(?:ohne|without)\\s+${RegExp.escape(b.value)}'
+          '(?![\\wäöüß])',
+          caseSensitive: false,
+        );
+        final treffer = muster.firstMatch(uebrig);
+        if (treffer == null) continue;
+        f = anwenden(f, b.key);
+        gefunden.add(Satzfund(art, treffer.group(0)!, b.value));
+        uebrig = uebrig.replaceRange(treffer.start, treffer.end, ' ');
+      }
+    }
+
+    ohne(
+      vokabular.personen.entries,
+      Satzfundart.ohnePerson,
+      (f, id) => f.copyWith(ohnePersonIds: [...f.ohnePersonIds, id]),
+    );
+    ohne(
+      vokabular.schlagwoerter.entries,
+      Satzfundart.ohneSchlagwort,
+      (f, id) => f.copyWith(ohneTagIds: [...f.ohneTagIds, id]),
+    );
     suche(
       vokabular.personen.entries,
       Satzfundart.person,

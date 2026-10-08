@@ -11,9 +11,15 @@ enum MediaTypeFilter { all, image, video }
 /// Wert handhaben lässt.
 class SearchFilters {
   final List<String> personIds;
+
+  /// Personen, die **nicht** auf dem Foto sein dürfen („Anna ohne Max").
+  final List<String> ohnePersonIds;
   final SearchTextMode textMode;
   final String query;
   final List<String> tagIds;
+
+  /// Schlagwörter, die das Foto **nicht** tragen darf.
+  final List<String> ohneTagIds;
   final bool noTag;
   final String? cameraMake;
   final String? cameraModel;
@@ -61,9 +67,11 @@ class SearchFilters {
 
   const SearchFilters({
     this.personIds = const [],
+    this.ohnePersonIds = const [],
     this.textMode = SearchTextMode.context,
     this.query = '',
     this.tagIds = const [],
+    this.ohneTagIds = const [],
     this.noTag = false,
     this.cameraMake,
     this.cameraModel,
@@ -91,8 +99,10 @@ class SearchFilters {
 
   bool get isEmpty =>
       personIds.isEmpty &&
+      ohnePersonIds.isEmpty &&
       query.trim().isEmpty &&
       tagIds.isEmpty &&
+      ohneTagIds.isEmpty &&
       !noTag &&
       cameraMake == null &&
       cameraModel == null &&
@@ -123,9 +133,11 @@ class SearchFilters {
   /// ließe sich ein einmal gesetzter Filter nie wieder entfernen.
   SearchFilters copyWith({
     List<String>? personIds,
+    List<String>? ohnePersonIds,
     SearchTextMode? textMode,
     String? query,
     List<String>? tagIds,
+    List<String>? ohneTagIds,
     bool? noTag,
     String? cameraMake,
     bool clearCameraMake = false,
@@ -168,9 +180,11 @@ class SearchFilters {
   }) {
     return SearchFilters(
       personIds: personIds ?? this.personIds,
+      ohnePersonIds: ohnePersonIds ?? this.ohnePersonIds,
       textMode: textMode ?? this.textMode,
       query: query ?? this.query,
       tagIds: tagIds ?? this.tagIds,
+      ohneTagIds: ohneTagIds ?? this.ohneTagIds,
       noTag: noTag ?? this.noTag,
       cameraMake: clearCameraMake ? null : (cameraMake ?? this.cameraMake),
       cameraModel: clearCameraModel ? null : (cameraModel ?? this.cameraModel),
@@ -215,9 +229,11 @@ class SearchFilters {
   /// Öffnen läuft die Suche live gegen die aktuelle Bibliothek.
   Map<String, dynamic> toJson() => {
     'personIds': personIds,
+    'ohnePersonIds': ohnePersonIds,
     'textMode': textMode.name,
     'query': query,
     'tagIds': tagIds,
+    'ohneTagIds': ohneTagIds,
     'noTag': noTag,
     'cameraMake': cameraMake,
     'cameraModel': cameraModel,
@@ -245,11 +261,15 @@ class SearchFilters {
 
   factory SearchFilters.fromJson(Map<String, dynamic> json) => SearchFilters(
     personIds: (json['personIds'] as List<dynamic>? ?? const []).cast<String>(),
+    ohnePersonIds: (json['ohnePersonIds'] as List<dynamic>? ?? const [])
+        .cast<String>(),
     textMode: SearchTextMode.values.byName(
       json['textMode'] as String? ?? 'context',
     ),
     query: json['query'] as String? ?? '',
     tagIds: (json['tagIds'] as List<dynamic>? ?? const []).cast<String>(),
+    ohneTagIds: (json['ohneTagIds'] as List<dynamic>? ?? const [])
+        .cast<String>(),
     noTag: json['noTag'] as bool? ?? false,
     cameraMake: json['cameraMake'] as String?,
     cameraModel: json['cameraModel'] as String?,

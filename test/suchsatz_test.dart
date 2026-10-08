@@ -108,6 +108,42 @@ void main() {
     });
   });
 
+  group('Verneinung', () {
+    test('„Anna ohne Bernd“: eine Person ein-, eine ausgeschlossen', () {
+      final d = deute('Anna ohne Bernd');
+      expect(d.filter.personIds, ['p-anna']);
+      expect(d.filter.ohnePersonIds, ['p-bernd']);
+      expect(d.rest.trim(), isEmpty);
+      expect(
+        d.funde.map((f) => f.art),
+        containsAll([Satzfundart.person, Satzfundart.ohnePerson]),
+      );
+    });
+
+    test('„Berge ohne Strand“ schliesst ein Schlagwort aus', () {
+      final d = deute('Berge ohne Strand');
+      expect(d.filter.tagIds, ['t-berg']);
+      expect(d.filter.ohneTagIds, ['t-strand']);
+    });
+
+    test('„without Marie Luise“ auch auf Englisch und mit Leerzeichen', () {
+      expect(deute('beach without Marie Luise').filter.ohnePersonIds, ['p-ml']);
+    });
+
+    test('„ohne“ vor einem unbekannten Wort bleibt unangetastet stehen', () {
+      final d = deute('Hund ohne Leine');
+      expect(d.filter.ohnePersonIds, isEmpty);
+      expect(d.filter.ohneTagIds, isEmpty);
+      expect(d.rest, contains('ohne Leine'));
+    });
+
+    test('„ohne“ allein macht aus einem Namen keinen Ausschluss', () {
+      final d = deute('Bernd ohne');
+      expect(d.filter.personIds, ['p-bernd']);
+      expect(d.filter.ohnePersonIds, isEmpty);
+    });
+  });
+
   group('Bewertung, Farbe, Art', () {
     test('„5 Sterne" wird zur Mindestbewertung', () {
       final d = deute('Fotos mit 5 Sternen');

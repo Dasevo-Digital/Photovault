@@ -36,9 +36,15 @@ class SearchOptionsSheet extends StatefulWidget {
 
 class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   late Set<String> _personIds;
+
+  /// Personen, die nicht auf dem Foto sein dürfen. Ein Tipp auf eine
+  /// Person wählt sie, ein zweiter schliesst sie aus, ein dritter hebt
+  /// beides auf.
+  late Set<String> _ohnePersonIds;
   late SearchTextMode _textMode;
   late final TextEditingController _queryController;
   late Set<String> _tagIds;
+  late Set<String> _ohneTagIds;
   late bool _noTag;
   String? _cameraMake;
   String? _cameraModel;
@@ -98,6 +104,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     super.initState();
     final f = widget.initialFilters;
     _personIds = f.personIds.toSet();
+    _ohnePersonIds = f.ohnePersonIds.toSet();
     _textMode = f.textMode;
     _queryController = TextEditingController(text: f.query)
       // Löst (wie jede andere Filteränderung) einen Rebuild aus, damit
@@ -106,6 +113,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       // setState() in onChanged.
       ..addListener(() => setState(() {}));
     _tagIds = f.tagIds.toSet();
+    _ohneTagIds = f.ohneTagIds.toSet();
     _noTag = f.noTag;
     _cameraMake = f.cameraMake;
     _cameraModel = f.cameraModel;
@@ -183,9 +191,11 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   void _clearAll() {
     setState(() {
       _personIds = {};
+      _ohnePersonIds = {};
       _textMode = SearchTextMode.context;
       _queryController.clear();
       _tagIds = {};
+      _ohneTagIds = {};
       _noTag = false;
       _cameraMake = null;
       _cameraModel = null;
@@ -216,9 +226,11 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
 
   SearchFilters _buildFilters() => SearchFilters(
     personIds: _personIds.toList(),
+    ohnePersonIds: _ohnePersonIds.toList(),
     textMode: _textMode,
     query: _queryController.text,
     tagIds: _tagIds.toList(),
+    ohneTagIds: _ohneTagIds.toList(),
     noTag: _noTag,
     cameraMake: _cameraMake,
     cameraModel: _cameraModel,
@@ -294,9 +306,12 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     });
   }
 
-  Future<void> _openTagPicker(List<TagData> allTags) async {
+  Future<void> _openTagPicker(
+    List<TagData> allTags, {
+    bool ohne = false,
+  }) async {
     var filter = '';
-    final selection = Set<String>.from(_tagIds);
+    final selection = Set<String>.from(ohne ? _ohneTagIds : _tagIds);
     final result = await showDialog<Set<String>>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -363,7 +378,17 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         },
       ),
     );
-    if (result != null && mounted) setState(() => _tagIds = result);
+    if (result != null && mounted) {
+      setState(() {
+        if (ohne) {
+          _ohneTagIds = result;
+          _tagIds.removeAll(result);
+        } else {
+          _tagIds = result;
+          _ohneTagIds.removeAll(result);
+        }
+      });
+    }
   }
 
   @override
@@ -506,6 +531,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   AppTexte.of(context).navPersonen,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(width: AppSpacing.sm),
+                Tooltip(
+                  message: AppTexte.of(context).suchoptPersonenAusschliessen,
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const Spacer(),
                 if (people.length > 6)
                   SizedBox(
@@ -548,11 +582,17 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   itemBuilder: (context, index) {
                     final person = filtered[index];
                     final selected = _personIds.contains(person.id);
+                    final ausgeschlossen = _ohnePersonIds.contains(person.id);
                     return GestureDetector(
                       onTap: () => setState(() {
-                        selected
-                            ? _personIds.remove(person.id)
-                            : _personIds.add(person.id);
+                        if (selected) {
+                          _personIds.remove(person.id);
+                          _ohnePersonIds.add(person.id);
+                        } else if (ausgeschlossen) {
+                          _ohnePersonIds.remove(person.id);
+                        } else {
+                          _personIds.add(person.id);
+                        }
                       }),
                       child: SizedBox(
                         width: 76,
@@ -571,6 +611,31 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                                   hintergrund: Colors.grey.shade800,
                                   symbolgroesse: 28,
                                 ),
+                                if (ausgeschlossen)
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.black54,
+                                      border: Border.all(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.block,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      size: 26,
+                                      semanticLabel: AppTexte.of(
+                                        context,
+                                      ).suchOhnePerson,
+                                    ),
+                                  ),
                                 if (selected)
                                   Container(
                                     width: 64,
@@ -755,12 +820,46 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                       ),
               ),
             ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: _noTag || allTags.isEmpty
+                  ? null
+                  : () => _openTagPicker(allTags, ohne: true),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  hintText: AppTexte.of(context).suchoptOhneTagsHint,
+                  prefixIcon: const Icon(Icons.block, size: 18),
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  isDense: true,
+                ),
+                child: _ohneTagIds.isEmpty
+                    ? null
+                    : Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final tag in allTags.where(
+                            (t) => _ohneTagIds.contains(t.id),
+                          ))
+                            Chip(
+                              label: Text(tag.name),
+                              onDeleted: () =>
+                                  setState(() => _ohneTagIds.remove(tag.id)),
+                            ),
+                        ],
+                      ),
+              ),
+            ),
             const SizedBox(height: 4),
             CheckboxListTile(
               value: _noTag,
               onChanged: (v) => setState(() {
                 _noTag = v ?? false;
-                if (_noTag) _tagIds = {};
+                if (_noTag) {
+                  _tagIds = {};
+                  _ohneTagIds = {};
+                }
               }),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,

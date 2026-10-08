@@ -3939,5 +3939,9 @@
   "auswRueckBewertung": "Rating set for {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
   "auswRueckFarbe": "Colour label set for {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
   "auswRueckSchlagwort": "“{tag}” added to {anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
-  "auswRueckAlbum": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}} added to the album"
+  "auswRueckAlbum": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}} added to the album",
+  "suchOhnePerson": "without person",
+  "suchOhneSchlagwort": "without tag",
+  "suchoptPersonenAusschliessen": "Tap once to include a person, twice to exclude them (“without”), a third time to clear.",
+  "suchoptOhneTagsHint": "Without these tags …"
 }

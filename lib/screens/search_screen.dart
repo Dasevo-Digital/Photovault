@@ -800,7 +800,9 @@ class _Satzmarken extends StatelessWidget {
 
   static String _artName(AppTexte t, Satzfundart art) => switch (art) {
     Satzfundart.person => t.navPersonen,
+    Satzfundart.ohnePerson => t.suchOhnePerson,
     Satzfundart.schlagwort => t.suchoptTagsTitel,
+    Satzfundart.ohneSchlagwort => t.suchOhneSchlagwort,
     Satzfundart.kamera => t.allgKamera,
     Satzfundart.ort => t.xmpFeldStandort,
     Satzfundart.zeitraum => t.famstatZeitraum,
