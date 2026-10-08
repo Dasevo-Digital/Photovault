@@ -10,6 +10,7 @@ import 'package:image/image.dart' as img;
 
 import '../services/geometry_edits.dart';
 import '../services/inpainting_service.dart';
+import '../services/kolorieren.dart';
 import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
@@ -764,6 +765,15 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
           _startRetusche,
           aus: !_retuscheMoeglich,
         ),
+        _toolButton(
+          Icons.palette_outlined,
+          _kolorierenMoeglich
+              ? t.bearbKolorieren
+              : '${t.bearbKolorieren} – '
+                    '${t.aufgModellNoetig(t.aufgDdcolorModell, t.aufgWoModelle)}',
+          _kolorieren,
+          aus: !_kolorierenMoeglich,
+        ),
         _toolButton(Icons.rotate_left, t.bearbLinksDrehen, _rotateLeft),
         _toolButton(Icons.rotate_right, t.bearbRechtsDrehen, _rotateRight),
         _toolButton(Icons.flip, t.bearbHorizontalSpiegeln, _flipHorizontal),
@@ -775,6 +785,41 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         ),
       ],
     );
+  }
+
+  /// Ob das Einfärben rechnen kann.
+  bool get _kolorierenMoeglich =>
+      widget.modelsDir != null &&
+      KolorierService.isAvailable(widget.modelsDir!);
+
+  /// Färbt das aktuelle Bild ein, siehe [KolorierService]. Wie jede andere
+  /// Bearbeitung hier erst beim Speichern endgültig.
+  Future<void> _kolorieren() async {
+    final bytes = _currentBytes;
+    final modelle = widget.modelsDir;
+    if (bytes == null || modelle == null) return;
+    setState(() => _processing = true);
+    KolorierService? dienst;
+    try {
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) throw StateError('nicht dekodierbar');
+      dienst = await KolorierService.load(modelle);
+      final ergebnis = await dienst.faerbe(decoded);
+      final kodiert = _encodeResult(ergebnis)!;
+      if (!mounted) return;
+      setState(() {
+        _currentBytes = kodiert.bytes;
+        _currentWidth = kodiert.width;
+        _currentHeight = kodiert.height;
+        _processing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _processing = false);
+      melde.fehler(AppTexte.of(context).bearbKolorierenFehler('$e'));
+    } finally {
+      await dienst?.dispose();
+    }
   }
 
   /// Ob die Objektentfernung ueberhaupt rechnen kann.

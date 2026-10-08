@@ -462,6 +462,10 @@ echter Hardware.
   was dahinter plausibel ist: Mülleimer, Stromleitung, fremder Kopf am
   Bildrand. Der Pinsel arbeitet auf dem Original, das Ergebnis bleibt
   nicht-destruktiv
+- **Einfärben** – **DDColor** gibt alten Schwarzweiss-Fotos Farbe. Das
+  Modell sagt nur die Farbe voraus, die Helligkeit kommt aus dem Original
+  in voller Auflösung – das Foto bleibt so scharf, wie es war. Im
+  Bildeditor neben der Objektentfernung
 - **Serienvergleich** – bei einer Serie stehen dieselben Gesichter
   spaltenweise nebeneinander, statt ganze Fotos zu vergleichen. Auf einem
   Gruppenbild sieht man nicht, wer blinzelt; auf den Ausschnitten sofort.

@@ -96,6 +96,7 @@ String modellTitel(AppTexte t, String id) => switch (id) {
   'eye_state_ocec' => t.modellOcecTitel,
   'neural_restore_real_esrgan_x4' => t.modellEsrganTitel,
   'inpainting_lama' => t.modellLamaTitel,
+  'colorize_ddcolor' => t.modellDdcolorTitel,
   'translation_en_de' => t.modellEnDeTitel,
   'translation_de_en' => t.modellDeEnTitel,
   'ocr_ppocr_latin' => t.modellOcrTitel,
@@ -113,6 +114,7 @@ String modellBeschreibung(AppTexte t, String id) => switch (id) {
   'eye_state_ocec' => t.modellOcecText,
   'neural_restore_real_esrgan_x4' => t.modellEsrganText,
   'inpainting_lama' => t.modellLamaText,
+  'colorize_ddcolor' => t.modellDdcolorText,
   'translation_en_de' => t.modellEnDeText,
   'translation_de_en' => t.modellDeEnText,
   'ocr_ppocr_latin' => t.modellOcrText,
@@ -128,6 +130,7 @@ String modellLizenz(AppTexte t, String id) => switch (id) {
   'eye_state_ocec' => t.modellOcecLizenz,
   'neural_restore_real_esrgan_x4' => t.modellEsrganLizenz,
   'inpainting_lama' => t.modellLamaLizenz,
+  'colorize_ddcolor' => t.modellDdcolorLizenz,
   'translation_en_de' => t.modellEnDeLizenz,
   'translation_de_en' => t.modellDeEnLizenz,
   'ocr_ppocr_latin' => t.modellOcrLizenz,
@@ -600,6 +603,28 @@ class ModelCatalog {
     ],
   );
 
+  /// Färbt alte Schwarzweiss-Fotos ein (DDColor-tiny, siehe
+  /// [KolorierService]).
+  ///
+  /// Ein ONNX-Export eines Dritten, nicht der Autoren: Die Autoren bieten
+  /// nur die PyTorch-Gewichte an. Der Export nennt die Prüfsumme der
+  /// Gewichte, aus denen er entstand (`piddnad/ddcolor_paper_tiny`), und
+  /// legt sie in float16 ab; Ein- und Ausgabe bleiben float32. In Python
+  /// an einem entfärbten Bild nachgeprüft, bevor er hier aufgenommen
+  /// wurde.
+  static const kolorieren = ModelCatalogEntry(
+    id: 'colorize_ddcolor',
+    sourceUrl: 'https://huggingface.co/edgetools/ddcolor',
+    files: [
+      ModelFile(
+        'ddcolor-tiny-fp16.onnx',
+        'https://huggingface.co/edgetools/ddcolor/resolve/main/ddcolor-tiny-fp16.onnx',
+        '2653da00dc15e54a45e5200b61dbf82ee9ceaf56b02bb9b9657569ac775e82e6',
+        135444402,
+      ),
+    ],
+  );
+
   static const all = [
     faceDetection,
     faceRecognition,
@@ -609,6 +634,7 @@ class ModelCatalog {
     eyeState,
     neuralRestore,
     inpainting,
+    kolorieren,
     translationEnDe,
     translationDeEn,
     ocrPaddle,

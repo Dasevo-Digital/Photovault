@@ -13248,6 +13248,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{fotos} Fotos an {tage} Tagen'**
   String jahresrueckblickUmfang(int fotos, int tage);
+
+  /// No description provided for @modellDdcolorTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Kolorieren (DDColor)'**
+  String get modellDdcolorTitel;
+
+  /// No description provided for @modellDdcolorText.
+  ///
+  /// In de, this message translates to:
+  /// **'Färbt alte Schwarzweiss-Fotos ein. Die Farbe rät das Modell aus dem, was im Bild zu sehen ist; die Schärfe bleibt die des Originals. Rund 130 MB, ein Foto dauert etwa eine Sekunde.'**
+  String get modellDdcolorText;
+
+  /// No description provided for @modellDdcolorLizenz.
+  ///
+  /// In de, this message translates to:
+  /// **'Apache 2.0 (DDColor, Kang u. a.), ONNX-Export von edgetools'**
+  String get modellDdcolorLizenz;
+
+  /// No description provided for @aufgDdcolorModell.
+  ///
+  /// In de, this message translates to:
+  /// **'das DDColor-Modell'**
+  String get aufgDdcolorModell;
+
+  /// No description provided for @bearbKolorieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Einfärben'**
+  String get bearbKolorieren;
+
+  /// No description provided for @bearbKolorierenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Einfärben fehlgeschlagen: {grund}'**
+  String bearbKolorierenFehler(String grund);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

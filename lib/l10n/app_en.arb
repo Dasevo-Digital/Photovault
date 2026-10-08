@@ -3928,5 +3928,11 @@
   "jahresrueckblickPersonen": "Seen most often",
   "jahresrueckblickReisen": "Trips",
   "jahresrueckblickAufnahmen": "{anzahl, plural, =1{1 item} other{{anzahl} items}}",
-  "jahresrueckblickUmfang": "{fotos} photos on {tage} days"
+  "jahresrueckblickUmfang": "{fotos} photos on {tage} days",
+  "modellDdcolorTitel": "Colorize (DDColor)",
+  "modellDdcolorText": "Adds colour to old black-and-white photos. The model guesses the colours from what is in the picture; sharpness stays that of the original. About 130 MB, one photo takes about a second.",
+  "modellDdcolorLizenz": "Apache 2.0 (DDColor, Kang et al.), ONNX export by edgetools",
+  "aufgDdcolorModell": "the DDColor model",
+  "bearbKolorieren": "Colorize",
+  "bearbKolorierenFehler": "Colorizing failed: {grund}"
 }

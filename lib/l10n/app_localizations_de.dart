@@ -8524,4 +8524,26 @@ class AppTexteDe extends AppTexte {
   String jahresrueckblickUmfang(int fotos, int tage) {
     return '$fotos Fotos an $tage Tagen';
   }
+
+  @override
+  String get modellDdcolorTitel => 'Kolorieren (DDColor)';
+
+  @override
+  String get modellDdcolorText =>
+      'Färbt alte Schwarzweiss-Fotos ein. Die Farbe rät das Modell aus dem, was im Bild zu sehen ist; die Schärfe bleibt die des Originals. Rund 130 MB, ein Foto dauert etwa eine Sekunde.';
+
+  @override
+  String get modellDdcolorLizenz =>
+      'Apache 2.0 (DDColor, Kang u. a.), ONNX-Export von edgetools';
+
+  @override
+  String get aufgDdcolorModell => 'das DDColor-Modell';
+
+  @override
+  String get bearbKolorieren => 'Einfärben';
+
+  @override
+  String bearbKolorierenFehler(String grund) {
+    return 'Einfärben fehlgeschlagen: $grund';
+  }
 }

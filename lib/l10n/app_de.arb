@@ -5027,5 +5027,12 @@
   "jahresrueckblickAufnahmen": "{anzahl, plural, =1{1 Aufnahme} other{{anzahl} Aufnahmen}}",
   "@jahresrueckblickAufnahmen": {"placeholders": {"anzahl": {"type": "int"}}},
   "jahresrueckblickUmfang": "{fotos} Fotos an {tage} Tagen",
-  "@jahresrueckblickUmfang": {"placeholders": {"fotos": {"type": "int"}, "tage": {"type": "int"}}}
+  "@jahresrueckblickUmfang": {"placeholders": {"fotos": {"type": "int"}, "tage": {"type": "int"}}},
+  "modellDdcolorTitel": "Kolorieren (DDColor)",
+  "modellDdcolorText": "Färbt alte Schwarzweiss-Fotos ein. Die Farbe rät das Modell aus dem, was im Bild zu sehen ist; die Schärfe bleibt die des Originals. Rund 130 MB, ein Foto dauert etwa eine Sekunde.",
+  "modellDdcolorLizenz": "Apache 2.0 (DDColor, Kang u. a.), ONNX-Export von edgetools",
+  "aufgDdcolorModell": "das DDColor-Modell",
+  "bearbKolorieren": "Einfärben",
+  "bearbKolorierenFehler": "Einfärben fehlgeschlagen: {grund}",
+  "@bearbKolorierenFehler": {"placeholders": {"grund": {"type": "String"}}}
 }
