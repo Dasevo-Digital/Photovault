@@ -13338,6 +13338,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Ohne diese Schlagwörter …'**
   String get suchoptOhneTagsHint;
+
+  /// No description provided for @soziogrammTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer mit wem'**
+  String get soziogrammTitel;
+
+  /// No description provided for @soziogrammLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Verbindungen: Dafür müssen zwei benannte Personen auf mindestens zwei Fotos gemeinsam zu sehen sein.'**
+  String get soziogrammLeer;
+
+  /// No description provided for @soziogrammStaerkste.
+  ///
+  /// In de, this message translates to:
+  /// **'Die engsten Verbindungen'**
+  String get soziogrammStaerkste;
+
+  /// No description provided for @soziogrammVerbindungenVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit {name} auf Fotos'**
+  String soziogrammVerbindungenVon(String name);
+
+  /// No description provided for @soziogrammGemeinsam.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}'**
+  String soziogrammGemeinsam(int anzahl);
+
+  /// No description provided for @soziogrammHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Je dicker die Linie, desto mehr gemeinsame Fotos. Ein Tipp auf eine Person zeigt ihre Verbindungen, ein Tipp auf eine Verbindung die gemeinsamen Fotos. Gezeigt werden die dreißig Personen mit den meisten Fotos.'**
+  String get soziogrammHinweis;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

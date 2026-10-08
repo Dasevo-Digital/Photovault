@@ -9965,6 +9965,27 @@ class AppDatabase extends _$AppDatabase {
     ];
   }
 
+  /// Jedes benannte Gesicht als Paar aus Person und Foto – für das
+  /// Soziogramm. Beiseitegelegte Gesichter, gelöschte und gesperrte Fotos
+  /// zählen nicht.
+  Future<List<({String personId, String assetId})>> personenAuftritte() async {
+    final abfrage =
+        selectOnly(
+            faces,
+          ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])
+          ..addColumns([faces.personId, faces.assetId])
+          ..where(
+            faces.personId.isNotNull() &
+                faces.isIgnored.equals(false) &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false),
+          );
+    return [
+      for (final z in await abfrage.get())
+        (personId: z.read(faces.personId)!, assetId: z.read(faces.assetId)!),
+    ];
+  }
+
   /// Alle selbst gesetzten Ortsmarken.
   Future<List<OrtsmarkenData>> alleOrtsmarken() => select(ortsmarken).get();
 

@@ -5048,5 +5048,13 @@
   "suchOhnePerson": "ohne Person",
   "suchOhneSchlagwort": "ohne Schlagwort",
   "suchoptPersonenAusschliessen": "Ein Tipp wählt eine Person, ein zweiter schließt sie aus („ohne“), ein dritter hebt beides auf.",
-  "suchoptOhneTagsHint": "Ohne diese Schlagwörter …"
+  "suchoptOhneTagsHint": "Ohne diese Schlagwörter …",
+  "soziogrammTitel": "Wer mit wem",
+  "soziogrammLeer": "Noch keine Verbindungen: Dafür müssen zwei benannte Personen auf mindestens zwei Fotos gemeinsam zu sehen sein.",
+  "soziogrammStaerkste": "Die engsten Verbindungen",
+  "soziogrammVerbindungenVon": "Mit {name} auf Fotos",
+  "@soziogrammVerbindungenVon": {"placeholders": {"name": {"type": "String"}}},
+  "soziogrammGemeinsam": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}",
+  "@soziogrammGemeinsam": {"placeholders": {"anzahl": {"type": "int"}}},
+  "soziogrammHinweis": "Je dicker die Linie, desto mehr gemeinsame Fotos. Ein Tipp auf eine Person zeigt ihre Verbindungen, ein Tipp auf eine Verbindung die gemeinsamen Fotos. Gezeigt werden die dreißig Personen mit den meisten Fotos."
 }

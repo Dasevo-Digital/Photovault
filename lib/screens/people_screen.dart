@@ -18,6 +18,7 @@ import '../widgets/person_picker_dialog.dart';
 import 'face_cluster_review_screen.dart';
 import 'face_review_screen.dart';
 import 'person_detail_screen.dart';
+import 'soziogramm_screen.dart';
 import 'vorschlaege_screen.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/profilbild.dart';
@@ -856,16 +857,35 @@ class _PeopleScreenState extends State<PeopleScreen>
     final t = AppTexte.of(context);
     return Column(
       children: [
-        TabBar(
-          controller: _tabs,
-          tabs: [
-            // Die Zahl der Personen kommt aus demselben Stand, den das
-            // Raster darunter zeigt – sie ist damit auch dann richtig,
-            // wenn Personen im Detailbildschirm zusammengeführt oder
-            // umbenannt werden.
-            Tab(text: _mitZahl(t.personenTab, _personenAnzahl)),
-            Tab(text: _mitZahl(t.personenUnbenannteTab, _unbenannteAnzahl)),
-            Tab(text: _mitZahl(t.personenIgnoriertTab, _ignorierteAnzahl)),
+        Row(
+          children: [
+            Expanded(
+              child: TabBar(
+                controller: _tabs,
+                tabs: [
+                  // Die Zahl der Personen kommt aus demselben Stand, den das
+                  // Raster darunter zeigt – sie ist damit auch dann richtig,
+                  // wenn Personen im Detailbildschirm zusammengeführt oder
+                  // umbenannt werden.
+                  Tab(text: _mitZahl(t.personenTab, _personenAnzahl)),
+                  Tab(
+                    text: _mitZahl(t.personenUnbenannteTab, _unbenannteAnzahl),
+                  ),
+                  Tab(
+                    text: _mitZahl(t.personenIgnoriertTab, _ignorierteAnzahl),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: t.soziogrammTitel,
+              icon: const Icon(Icons.hub_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SoziogrammScreen(library: widget.library),
+                ),
+              ),
+            ),
           ],
         ),
         Expanded(

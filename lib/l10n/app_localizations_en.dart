@@ -8565,4 +8565,34 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get suchoptOhneTagsHint => 'Without these tags …';
+
+  @override
+  String get soziogrammTitel => 'Who with whom';
+
+  @override
+  String get soziogrammLeer =>
+      'No connections yet: two named people need to appear together in at least two photos.';
+
+  @override
+  String get soziogrammStaerkste => 'The closest connections';
+
+  @override
+  String soziogrammVerbindungenVon(String name) {
+    return 'In photos with $name';
+  }
+
+  @override
+  String soziogrammGemeinsam(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soziogrammHinweis =>
+      'The thicker the line, the more photos together. Tap a person to see their connections, tap a connection to see the shared photos. Shows the thirty people with the most photos.';
 }

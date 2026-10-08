@@ -3943,5 +3943,11 @@
   "suchOhnePerson": "without person",
   "suchOhneSchlagwort": "without tag",
   "suchoptPersonenAusschliessen": "Tap once to include a person, twice to exclude them (“without”), a third time to clear.",
-  "suchoptOhneTagsHint": "Without these tags …"
+  "suchoptOhneTagsHint": "Without these tags …",
+  "soziogrammTitel": "Who with whom",
+  "soziogrammLeer": "No connections yet: two named people need to appear together in at least two photos.",
+  "soziogrammStaerkste": "The closest connections",
+  "soziogrammVerbindungenVon": "In photos with {name}",
+  "soziogrammGemeinsam": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
+  "soziogrammHinweis": "The thicker the line, the more photos together. Tap a person to see their connections, tap a connection to see the shared photos. Shows the thirty people with the most photos."
 }
