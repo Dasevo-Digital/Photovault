@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.25.0" date="2026-10-08">
+      <description>
+        <p>Family days from the family tree in Explore, a year in review, memories and the year as slideshow videos, colorizing old photos (DDColor model), a loupe when developing, undo for batch actions, search with "without" for people and tags, and a network of who appears with whom in photos.</p>
+      </description>
+    </release>
     <release version="3.24.0" date="2026-10-07">
       <description>
         <p>Tree of life: portraits from face recognition on the plates, also in the PDF, with a button to hide them. Settings, activities and the tree of life no longer repeat database queries and calculations on every rebuild.</p>
