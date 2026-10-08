@@ -3907,5 +3907,10 @@
   "familientagGeburtstagVerstorben": "{name} would have turned {jahre}",
   "familientagTodestag": "{jahre, plural, =1{{name} died a year ago} other{{name} died {jahre} years ago}}",
   "familientagHochzeitstag": "{jahre} years since {namen} married",
-  "entwLupe": "Loupe (3×)"
+  "entwLupe": "Loupe (3×)",
+  "diashowAlsVideo": "Save as video",
+  "diashowSpeichern": "Save slideshow as video",
+  "diashowWirdErstellt": "Creating video …",
+  "diashowUmfang": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
+  "diashowKeineFotos": "There are no photos here to make a slideshow from – videos and locked items are left out."
 }

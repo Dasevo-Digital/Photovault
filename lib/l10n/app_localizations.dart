@@ -13122,6 +13122,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Lupe (dreifach)'**
   String get entwLupe;
+
+  /// No description provided for @diashowAlsVideo.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Video speichern'**
+  String get diashowAlsVideo;
+
+  /// No description provided for @diashowSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Diashow als Video speichern'**
+  String get diashowSpeichern;
+
+  /// No description provided for @diashowWirdErstellt.
+  ///
+  /// In de, this message translates to:
+  /// **'Video wird erstellt …'**
+  String get diashowWirdErstellt;
+
+  /// No description provided for @diashowUmfang.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}'**
+  String diashowUmfang(int anzahl);
+
+  /// No description provided for @diashowKeineFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.'**
+  String get diashowKeineFotos;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

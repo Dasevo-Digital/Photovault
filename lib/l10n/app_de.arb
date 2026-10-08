@@ -5001,5 +5001,11 @@
   "@familientagTodestag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
   "familientagHochzeitstag": "{jahre}. Hochzeitstag von {namen}",
   "@familientagHochzeitstag": {"placeholders": {"namen": {"type": "String"}, "jahre": {"type": "int"}}},
-  "entwLupe": "Lupe (dreifach)"
+  "entwLupe": "Lupe (dreifach)",
+  "diashowAlsVideo": "Als Video speichern",
+  "diashowSpeichern": "Diashow als Video speichern",
+  "diashowWirdErstellt": "Video wird erstellt …",
+  "diashowUmfang": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}",
+  "@diashowUmfang": {"placeholders": {"anzahl": {"type": "int"}}},
+  "diashowKeineFotos": "Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen."
 }

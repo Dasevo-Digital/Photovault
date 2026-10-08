@@ -8388,4 +8388,28 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get entwLupe => 'Loupe (3×)';
+
+  @override
+  String get diashowAlsVideo => 'Save as video';
+
+  @override
+  String get diashowSpeichern => 'Save slideshow as video';
+
+  @override
+  String get diashowWirdErstellt => 'Creating video …';
+
+  @override
+  String diashowUmfang(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get diashowKeineFotos =>
+      'There are no photos here to make a slideshow from – videos and locked items are left out.';
 }

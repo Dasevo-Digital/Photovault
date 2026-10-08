@@ -8437,4 +8437,28 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get entwLupe => 'Lupe (dreifach)';
+
+  @override
+  String get diashowAlsVideo => 'Als Video speichern';
+
+  @override
+  String get diashowSpeichern => 'Diashow als Video speichern';
+
+  @override
+  String get diashowWirdErstellt => 'Video wird erstellt …';
+
+  @override
+  String diashowUmfang(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get diashowKeineFotos =>
+      'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.';
 }

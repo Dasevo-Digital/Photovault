@@ -12,6 +12,7 @@ import '../services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
+import '../widgets/diashow_export.dart';
 import '../widgets/familientage_abschnitt.dart';
 import '../widgets/mini_location_map.dart'
     show Kachelschicht, Kartenstil, buildMapAttribution;
@@ -1050,6 +1051,15 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
     );
   }
 
+  String _ueberschrift(
+    AppTexte t,
+    Rueckblickart art,
+    String monat,
+    int jahreHer,
+  ) => art == Rueckblickart.tag
+      ? t.erkundenVorJahren(jahreHer)
+      : t.erkundenImMonatVorJahren(monat, jahreHer);
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
@@ -1076,15 +1086,43 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
             for (final gruppe in rueckblick.gruppen) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Text(
-                  // Der Monatsrueckblick sagt ausdruecklich Monat: „vor
-                  // 13 Jahren" ueber einem Bild vom 3. September waere
-                  // am 12. September eine Behauptung ueber den Tag, die
-                  // niemand aufgestellt hat.
-                  rueckblick.art == Rueckblickart.tag
-                      ? t.erkundenVorJahren(gruppe.jahreHer)
-                      : t.erkundenImMonatVorJahren(monat, gruppe.jahreHer),
-                  style: Theme.of(context).textTheme.titleSmall,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        // Der Monatsrueckblick sagt ausdruecklich Monat:
+                        // „vor 13 Jahren" ueber einem Bild vom 3. September
+                        // waere am 12. September eine Behauptung ueber den
+                        // Tag, die niemand aufgestellt hat.
+                        _ueberschrift(
+                          t,
+                          rueckblick.art,
+                          monat,
+                          gruppe.jahreHer,
+                        ),
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: t.diashowAlsVideo,
+                      icon: const Icon(Icons.movie_creation_outlined),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => diashowExportieren(
+                        context,
+                        widget.library,
+                        gruppe.dinge,
+                        titel: _ueberschrift(
+                          t,
+                          rueckblick.art,
+                          monat,
+                          gruppe.jahreHer,
+                        ),
+                        untertitel: '${_heute.year - gruppe.jahreHer}',
+                        dateiname:
+                            'rueckblick-${_heute.year - gruppe.jahreHer}.mp4',
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(
