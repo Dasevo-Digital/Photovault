@@ -1092,6 +1092,20 @@ class VerworfeneOrtsvorschlaege extends Table {
   Set<Column> get primaryKey => {schluessel};
 }
 
+/// Vorschläge für den gesperrten Ordner, die abgelehnt wurden – siehe
+/// `services/dokumenterkennung.dart`.
+///
+/// **Je Aufnahme, nicht je Fund.** Wer seinen Ausweis bewusst offen
+/// liegen lässt, will ihn nicht nach jeder neuen Texterkennung wieder
+/// vorgelegt bekommen.
+class VerworfeneDokumente extends Table {
+  TextColumn get assetId => text()();
+  DateTimeColumn get verworfenAm => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {assetId};
+}
+
 /// Weitere Einbettungen eines Videos – eine je zusaetzlich ausgewertetem
 /// Standbild.
 ///
@@ -2023,6 +2037,7 @@ class _SperrWiederholung extends QueryInterceptor {
     Videoeinbettungen,
     Wanderpunkte,
     Wanderabfragen,
+    VerworfeneDokumente,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -2038,7 +2053,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 87;
+  int get schemaVersion => 88;
 
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
@@ -3268,6 +3283,10 @@ class AppDatabase extends _$AppDatabase {
           'app_settings',
           'lebensbaum_generationen',
         );
+      }
+      if (from < 88) {
+        // Leer: Abgelehnt hat noch niemand etwas.
+        await m.createTable(verworfeneDokumente);
       }
     },
   );
@@ -4759,6 +4778,39 @@ class AppDatabase extends _$AppDatabase {
       ortGeerbt: const Value(true),
     ),
   );
+
+  /// Erkannter Text aller offen liegenden Aufnahmen, deren Vorschlag für
+  /// den gesperrten Ordner nicht abgelehnt wurde – der Stoff für
+  /// `dokumentImText`.
+  ///
+  /// Nur die beiden Spalten: Der Text wird in Dart geprüft (Prüfziffern
+  /// lassen sich in SQL nicht nachrechnen), und ganze Zeilen für jedes
+  /// Foto mit Text zu laden hiesse, Tausende Datensätze für eine Handvoll
+  /// Treffer zu bauen.
+  Future<List<({String id, String text})>> texteFuerDokumentsuche() async {
+    final rows = await customSelect(
+      '''SELECT id, ocr_text FROM assets
+         WHERE is_locked = 0 AND is_trashed = 0
+           AND ocr_text IS NOT NULL AND ocr_text <> ''
+           AND id NOT IN (SELECT asset_id FROM verworfene_dokumente)''',
+      readsFrom: {assets, verworfeneDokumente},
+    ).get();
+    return [
+      for (final r in rows)
+        (id: r.read<String>('id'), text: r.read<String>('ocr_text')),
+    ];
+  }
+
+  Future<void> verwirfDokumentvorschlaege(Iterable<String> ids) => batch((b) {
+    final jetzt = DateTime.now();
+    for (final id in ids) {
+      b.insert(
+        verworfeneDokumente,
+        VerworfeneDokumenteCompanion.insert(assetId: id, verworfenAm: jetzt),
+        mode: InsertMode.insertOrReplace,
+      );
+    }
+  });
 
   Future<Set<String>> verworfeneOrtsvorschlagsschluessel() async => {
     for (final z in await select(verworfeneOrtsvorschlaege).get()) z.schluessel,

@@ -115,6 +115,10 @@ void main() {
     // Der Abspann des Ueberfluges. Ein Test muss seine Zahlen von denen
     // der Flugleiste unterscheiden koennen - beide zeigen "unterwegs".
     'gelaende-abspann',
+    // Aufdrucke, nach denen die Dokumenterkennung im erkannten Text sucht
+    // – Suchmuster, keine Oberflächentexte.
+    'FÜHRERSCHEIN',
+    'IDENTITÄTSKARTE',
   };
 
   /// Zeilen, deren Text nie ein Nutzer sieht.

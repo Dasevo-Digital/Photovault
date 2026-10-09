@@ -24546,6 +24546,237 @@ class WanderabfragenCompanion extends UpdateCompanion<WanderabfragenData> {
   }
 }
 
+class $VerworfeneDokumenteTable extends VerworfeneDokumente
+    with TableInfo<$VerworfeneDokumenteTable, VerworfeneDokumenteData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VerworfeneDokumenteTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _assetIdMeta = const VerificationMeta(
+    'assetId',
+  );
+  @override
+  late final GeneratedColumn<String> assetId = GeneratedColumn<String>(
+    'asset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _verworfenAmMeta = const VerificationMeta(
+    'verworfenAm',
+  );
+  @override
+  late final GeneratedColumn<DateTime> verworfenAm = GeneratedColumn<DateTime>(
+    'verworfen_am',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [assetId, verworfenAm];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'verworfene_dokumente';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VerworfeneDokumenteData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('asset_id')) {
+      context.handle(
+        _assetIdMeta,
+        assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('verworfen_am')) {
+      context.handle(
+        _verworfenAmMeta,
+        verworfenAm.isAcceptableOrUnknown(
+          data['verworfen_am']!,
+          _verworfenAmMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_verworfenAmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {assetId};
+  @override
+  VerworfeneDokumenteData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VerworfeneDokumenteData(
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      verworfenAm: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}verworfen_am'],
+      )!,
+    );
+  }
+
+  @override
+  $VerworfeneDokumenteTable createAlias(String alias) {
+    return $VerworfeneDokumenteTable(attachedDatabase, alias);
+  }
+}
+
+class VerworfeneDokumenteData extends DataClass
+    implements Insertable<VerworfeneDokumenteData> {
+  final String assetId;
+  final DateTime verworfenAm;
+  const VerworfeneDokumenteData({
+    required this.assetId,
+    required this.verworfenAm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['asset_id'] = Variable<String>(assetId);
+    map['verworfen_am'] = Variable<DateTime>(verworfenAm);
+    return map;
+  }
+
+  VerworfeneDokumenteCompanion toCompanion(bool nullToAbsent) {
+    return VerworfeneDokumenteCompanion(
+      assetId: Value(assetId),
+      verworfenAm: Value(verworfenAm),
+    );
+  }
+
+  factory VerworfeneDokumenteData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VerworfeneDokumenteData(
+      assetId: serializer.fromJson<String>(json['assetId']),
+      verworfenAm: serializer.fromJson<DateTime>(json['verworfenAm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'assetId': serializer.toJson<String>(assetId),
+      'verworfenAm': serializer.toJson<DateTime>(verworfenAm),
+    };
+  }
+
+  VerworfeneDokumenteData copyWith({String? assetId, DateTime? verworfenAm}) =>
+      VerworfeneDokumenteData(
+        assetId: assetId ?? this.assetId,
+        verworfenAm: verworfenAm ?? this.verworfenAm,
+      );
+  VerworfeneDokumenteData copyWithCompanion(VerworfeneDokumenteCompanion data) {
+    return VerworfeneDokumenteData(
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      verworfenAm: data.verworfenAm.present
+          ? data.verworfenAm.value
+          : this.verworfenAm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VerworfeneDokumenteData(')
+          ..write('assetId: $assetId, ')
+          ..write('verworfenAm: $verworfenAm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(assetId, verworfenAm);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VerworfeneDokumenteData &&
+          other.assetId == this.assetId &&
+          other.verworfenAm == this.verworfenAm);
+}
+
+class VerworfeneDokumenteCompanion
+    extends UpdateCompanion<VerworfeneDokumenteData> {
+  final Value<String> assetId;
+  final Value<DateTime> verworfenAm;
+  final Value<int> rowid;
+  const VerworfeneDokumenteCompanion({
+    this.assetId = const Value.absent(),
+    this.verworfenAm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VerworfeneDokumenteCompanion.insert({
+    required String assetId,
+    required DateTime verworfenAm,
+    this.rowid = const Value.absent(),
+  }) : assetId = Value(assetId),
+       verworfenAm = Value(verworfenAm);
+  static Insertable<VerworfeneDokumenteData> custom({
+    Expression<String>? assetId,
+    Expression<DateTime>? verworfenAm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (assetId != null) 'asset_id': assetId,
+      if (verworfenAm != null) 'verworfen_am': verworfenAm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VerworfeneDokumenteCompanion copyWith({
+    Value<String>? assetId,
+    Value<DateTime>? verworfenAm,
+    Value<int>? rowid,
+  }) {
+    return VerworfeneDokumenteCompanion(
+      assetId: assetId ?? this.assetId,
+      verworfenAm: verworfenAm ?? this.verworfenAm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (assetId.present) {
+      map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (verworfenAm.present) {
+      map['verworfen_am'] = Variable<DateTime>(verworfenAm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VerworfeneDokumenteCompanion(')
+          ..write('assetId: $assetId, ')
+          ..write('verworfenAm: $verworfenAm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -24622,6 +24853,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $VideoeinbettungenTable(this);
   late final $WanderpunkteTable wanderpunkte = $WanderpunkteTable(this);
   late final $WanderabfragenTable wanderabfragen = $WanderabfragenTable(this);
+  late final $VerworfeneDokumenteTable verworfeneDokumente =
+      $VerworfeneDokumenteTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -24672,6 +24905,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     videoeinbettungen,
     wanderpunkte,
     wanderabfragen,
+    verworfeneDokumente,
   ];
 }
 
@@ -37126,6 +37360,179 @@ typedef $$WanderabfragenTableProcessedTableManager =
       WanderabfragenData,
       PrefetchHooks Function()
     >;
+typedef $$VerworfeneDokumenteTableCreateCompanionBuilder =
+    VerworfeneDokumenteCompanion Function({
+      required String assetId,
+      required DateTime verworfenAm,
+      Value<int> rowid,
+    });
+typedef $$VerworfeneDokumenteTableUpdateCompanionBuilder =
+    VerworfeneDokumenteCompanion Function({
+      Value<String> assetId,
+      Value<DateTime> verworfenAm,
+      Value<int> rowid,
+    });
+
+class $$VerworfeneDokumenteTableFilterComposer
+    extends Composer<_$AppDatabase, $VerworfeneDokumenteTable> {
+  $$VerworfeneDokumenteTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get verworfenAm => $composableBuilder(
+    column: $table.verworfenAm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VerworfeneDokumenteTableOrderingComposer
+    extends Composer<_$AppDatabase, $VerworfeneDokumenteTable> {
+  $$VerworfeneDokumenteTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get verworfenAm => $composableBuilder(
+    column: $table.verworfenAm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VerworfeneDokumenteTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VerworfeneDokumenteTable> {
+  $$VerworfeneDokumenteTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get verworfenAm => $composableBuilder(
+    column: $table.verworfenAm,
+    builder: (column) => column,
+  );
+}
+
+class $$VerworfeneDokumenteTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VerworfeneDokumenteTable,
+          VerworfeneDokumenteData,
+          $$VerworfeneDokumenteTableFilterComposer,
+          $$VerworfeneDokumenteTableOrderingComposer,
+          $$VerworfeneDokumenteTableAnnotationComposer,
+          $$VerworfeneDokumenteTableCreateCompanionBuilder,
+          $$VerworfeneDokumenteTableUpdateCompanionBuilder,
+          (
+            VerworfeneDokumenteData,
+            BaseReferences<
+              _$AppDatabase,
+              $VerworfeneDokumenteTable,
+              VerworfeneDokumenteData
+            >,
+          ),
+          VerworfeneDokumenteData,
+          PrefetchHooks Function()
+        > {
+  $$VerworfeneDokumenteTableTableManager(
+    _$AppDatabase db,
+    $VerworfeneDokumenteTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VerworfeneDokumenteTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VerworfeneDokumenteTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$VerworfeneDokumenteTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> assetId = const Value.absent(),
+                Value<DateTime> verworfenAm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VerworfeneDokumenteCompanion(
+                assetId: assetId,
+                verworfenAm: verworfenAm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String assetId,
+                required DateTime verworfenAm,
+                Value<int> rowid = const Value.absent(),
+              }) => VerworfeneDokumenteCompanion.insert(
+                assetId: assetId,
+                verworfenAm: verworfenAm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $VerworfeneDokumenteTable,
+                    VerworfeneDokumenteData
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $VerworfeneDokumenteTable,
+                    VerworfeneDokumenteData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VerworfeneDokumenteTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VerworfeneDokumenteTable,
+      VerworfeneDokumenteData,
+      $$VerworfeneDokumenteTableFilterComposer,
+      $$VerworfeneDokumenteTableOrderingComposer,
+      $$VerworfeneDokumenteTableAnnotationComposer,
+      $$VerworfeneDokumenteTableCreateCompanionBuilder,
+      $$VerworfeneDokumenteTableUpdateCompanionBuilder,
+      (
+        VerworfeneDokumenteData,
+        BaseReferences<
+          _$AppDatabase,
+          $VerworfeneDokumenteTable,
+          VerworfeneDokumenteData
+        >,
+      ),
+      VerworfeneDokumenteData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -37225,4 +37632,6 @@ class $AppDatabaseManager {
       $$WanderpunkteTableTableManager(_db, _db.wanderpunkte);
   $$WanderabfragenTableTableManager get wanderabfragen =>
       $$WanderabfragenTableTableManager(_db, _db.wanderabfragen);
+  $$VerworfeneDokumenteTableTableManager get verworfeneDokumente =>
+      $$VerworfeneDokumenteTableTableManager(_db, _db.verworfeneDokumente);
 }

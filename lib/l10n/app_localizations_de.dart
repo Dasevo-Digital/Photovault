@@ -8644,4 +8644,83 @@ class AppTexteDe extends AppTexte {
   @override
   String get soziogrammHinweis =>
       'Je dicker die Linie, desto mehr gemeinsame Fotos. Ein Tipp auf eine Person zeigt ihre Verbindungen, ein Tipp auf eine Verbindung die gemeinsamen Fotos. Gezeigt werden die dreißig Personen mit den meisten Fotos.';
+
+  @override
+  String get dokumenteTitel => 'Ausweise und Karten';
+
+  @override
+  String get dokumenteEinleitung =>
+      'Diese Fotos zeigen dem erkannten Text nach einen Ausweis, einen Pass, einen Führerschein oder eine Bankkarte. Im gesperrten Ordner sind sie verschlüsselt und nur mit PIN zu sehen. Ein Tipp wählt ab, ein Doppeltipp öffnet das Foto.';
+
+  @override
+  String get dokumenteKeine =>
+      'Unter den Fotos mit erkanntem Text ist kein Ausweis und keine Karte, die offen liegt.';
+
+  @override
+  String dokumenteSperren(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos sperren',
+      one: '1 Foto sperren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dokumenteVerwerfen => 'Nicht mehr vorschlagen';
+
+  @override
+  String dokumenteGesperrt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos liegen jetzt im gesperrten Ordner',
+      one: '1 Foto liegt jetzt im gesperrten Ordner',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dokumentArtReisepass => 'Reisepass';
+
+  @override
+  String get dokumentArtAusweis => 'Ausweis';
+
+  @override
+  String get dokumentArtFuehrerschein => 'Führerschein';
+
+  @override
+  String get dokumentArtAufenthaltstitel => 'Aufenthaltstitel';
+
+  @override
+  String get dokumentArtKarte => 'Bankkarte';
+
+  @override
+  String get dokumentGrundPruefzeile => 'Prüfzeile';
+
+  @override
+  String get dokumentGrundKartennummer => 'Kartennummer';
+
+  @override
+  String get dokumentGrundSchluesselwort => 'Aufdruck';
+
+  @override
+  String get gesundheitDokumenteTitel => 'Ausweise liegen offen';
+
+  @override
+  String gesundheitDokumenteOffen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl Fotos zeigen dem Text nach einen Ausweis oder eine Karte und liegen nicht im gesperrten Ordner.',
+      one:
+          '1 Foto zeigt dem Text nach einen Ausweis oder eine Karte und liegt nicht im gesperrten Ordner.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesundheitDokumenteAnsehen => 'Ansehen';
 }

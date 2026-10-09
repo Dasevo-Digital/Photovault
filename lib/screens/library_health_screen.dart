@@ -8,6 +8,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'background_tasks_screen.dart';
+import 'dokumente_screen.dart';
 import 'home_shell.dart' show Hauptbereich;
 import 'integrity_check_screen.dart';
 import 'ortsvorschlaege_screen.dart';
@@ -38,6 +39,7 @@ class _LibraryHealthState {
     required this.videoZweitblick,
     required this.vorschlaege,
     required this.beiseiteNieVerglichen,
+    required this.dokumente,
   });
 
   final bool databaseOk;
@@ -59,6 +61,9 @@ class _LibraryHealthState {
   /// Die stille Luecke: Was beiseiteliegt, sieht der Lauf nach dem
   /// Import nicht an – und ohne Vorschlag gibt es auch keine Karte.
   final int beiseiteNieVerglichen;
+
+  /// Ausweise und Karten, die offen liegen – siehe [DokumenteScreen].
+  final int dokumente;
 }
 
 class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
@@ -87,6 +92,7 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
       widget.library.db.countVideoZweitblick(),
       widget.library.db.countVorschlaege(),
       widget.library.db.countBeiseiteNieVerglichen(),
+      ladeDokumentvorschlaege(widget.library.db),
     ]);
     final models = [
       widget.library.clipAvailable,
@@ -112,6 +118,7 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
       videoZweitblick: values[8] as int,
       vorschlaege: values[9] as int,
       beiseiteNieVerglichen: values[10] as int,
+      dokumente: (values[11] as List).length,
     );
   }
 
@@ -284,6 +291,28 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
               // Gruppen), sondern weil nirgends stand, dass etwas wartet.
               // Ein Bildschirm, der den Zustand der Bibliothek meldet, ist
               // dafür der richtige Ort.
+              // Vor allem anderen, was wartet: Hier geht es nicht um
+              // Ordnung, sondern darum, was ein anderer sehen kann.
+              if (state.dokumente > 0)
+                _StatusCard(
+                  icon: Icons.badge_outlined,
+                  color: context.semantik.warnung,
+                  title: t.gesundheitDokumenteTitel,
+                  text: t.gesundheitDokumenteOffen(state.dokumente),
+                  action: FilledButton.tonalIcon(
+                    onPressed: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DokumenteScreen(library: widget.library),
+                        ),
+                      );
+                      if (mounted) _refresh();
+                    },
+                    icon: const Icon(Icons.arrow_forward),
+                    label: Text(t.gesundheitDokumenteAnsehen),
+                  ),
+                ),
               if (state.ortsvorschlaege > 0)
                 _StatusCard(
                   icon: Icons.add_location_alt_outlined,

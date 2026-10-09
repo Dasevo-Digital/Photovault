@@ -8595,4 +8595,83 @@ class AppTexteEn extends AppTexte {
   @override
   String get soziogrammHinweis =>
       'The thicker the line, the more photos together. Tap a person to see their connections, tap a connection to see the shared photos. Shows the thirty people with the most photos.';
+
+  @override
+  String get dokumenteTitel => 'IDs and cards';
+
+  @override
+  String get dokumenteEinleitung =>
+      'Going by the recognised text, these photos show an ID card, a passport, a driving licence or a bank card. In the locked folder they are encrypted and only visible with the PIN. Tap to deselect, double-tap to open the photo.';
+
+  @override
+  String get dokumenteKeine =>
+      'No ID or card among the photos with recognised text is lying in the open.';
+
+  @override
+  String dokumenteSperren(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Lock $anzahl photos',
+      one: 'Lock 1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dokumenteVerwerfen => 'Stop suggesting';
+
+  @override
+  String dokumenteGesperrt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos are now in the locked folder',
+      one: '1 photo is now in the locked folder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dokumentArtReisepass => 'Passport';
+
+  @override
+  String get dokumentArtAusweis => 'ID card';
+
+  @override
+  String get dokumentArtFuehrerschein => 'Driving licence';
+
+  @override
+  String get dokumentArtAufenthaltstitel => 'Residence permit';
+
+  @override
+  String get dokumentArtKarte => 'Bank card';
+
+  @override
+  String get dokumentGrundPruefzeile => 'Machine-readable zone';
+
+  @override
+  String get dokumentGrundKartennummer => 'Card number';
+
+  @override
+  String get dokumentGrundSchluesselwort => 'Printed label';
+
+  @override
+  String get gesundheitDokumenteTitel => 'IDs are lying in the open';
+
+  @override
+  String gesundheitDokumenteOffen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          'Going by their text, $anzahl photos show an ID or a card and are not in the locked folder.',
+      one:
+          'Going by its text, 1 photo shows an ID or a card and is not in the locked folder.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesundheitDokumenteAnsehen => 'Review';
 }

@@ -599,6 +599,13 @@ echter Hardware.
   ausgerichteten Ausschnitt berechnet, und die Landmarken stehen nicht in
   der Zeile. Sie zu löschen hiesse, die Wiedererkennung für genau die
   gesperrten Fotos dauerhaft zu verschlechtern.
+- **Ausweise und Karten finden** – fotografierte Pässe, Personalausweise,
+  Führerscheine und Bankkarten erscheinen als Karte im Gesundheitsbildschirm
+  und lassen sich mit einem Knopf in den gesperrten Ordner legen. Erkannt
+  wird am erkannten Text, nicht am Bild: an der maschinenlesbaren Zone samt
+  Prüfziffern, an einer Kartennummer in Vierergruppen, die die Luhn-Prüfung
+  besteht, oder am Aufdruck. Was offen bleiben soll, wird einmal verworfen
+  und nicht wieder vorgeschlagen.
 - **Datenschutzexport** – ein Export, der die Metadaten abstreift: JPEG
   bis 2048 Bildpunkte, ohne EXIF, GPS oder XMP. Bekannte Gesichter werden
   unkenntlich gemacht, dazu Textzeilen, die Form und Inhalt eines

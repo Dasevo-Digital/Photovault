@@ -13374,6 +13374,108 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Je dicker die Linie, desto mehr gemeinsame Fotos. Ein Tipp auf eine Person zeigt ihre Verbindungen, ein Tipp auf eine Verbindung die gemeinsamen Fotos. Gezeigt werden die dreißig Personen mit den meisten Fotos.'**
   String get soziogrammHinweis;
+
+  /// No description provided for @dokumenteTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausweise und Karten'**
+  String get dokumenteTitel;
+
+  /// No description provided for @dokumenteEinleitung.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Fotos zeigen dem erkannten Text nach einen Ausweis, einen Pass, einen Führerschein oder eine Bankkarte. Im gesperrten Ordner sind sie verschlüsselt und nur mit PIN zu sehen. Ein Tipp wählt ab, ein Doppeltipp öffnet das Foto.'**
+  String get dokumenteEinleitung;
+
+  /// No description provided for @dokumenteKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Unter den Fotos mit erkanntem Text ist kein Ausweis und keine Karte, die offen liegt.'**
+  String get dokumenteKeine;
+
+  /// No description provided for @dokumenteSperren.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto sperren} other{{anzahl} Fotos sperren}}'**
+  String dokumenteSperren(int anzahl);
+
+  /// No description provided for @dokumenteVerwerfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr vorschlagen'**
+  String get dokumenteVerwerfen;
+
+  /// No description provided for @dokumenteGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto liegt jetzt im gesperrten Ordner} other{{anzahl} Fotos liegen jetzt im gesperrten Ordner}}'**
+  String dokumenteGesperrt(int anzahl);
+
+  /// No description provided for @dokumentArtReisepass.
+  ///
+  /// In de, this message translates to:
+  /// **'Reisepass'**
+  String get dokumentArtReisepass;
+
+  /// No description provided for @dokumentArtAusweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausweis'**
+  String get dokumentArtAusweis;
+
+  /// No description provided for @dokumentArtFuehrerschein.
+  ///
+  /// In de, this message translates to:
+  /// **'Führerschein'**
+  String get dokumentArtFuehrerschein;
+
+  /// No description provided for @dokumentArtAufenthaltstitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufenthaltstitel'**
+  String get dokumentArtAufenthaltstitel;
+
+  /// No description provided for @dokumentArtKarte.
+  ///
+  /// In de, this message translates to:
+  /// **'Bankkarte'**
+  String get dokumentArtKarte;
+
+  /// No description provided for @dokumentGrundPruefzeile.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfzeile'**
+  String get dokumentGrundPruefzeile;
+
+  /// No description provided for @dokumentGrundKartennummer.
+  ///
+  /// In de, this message translates to:
+  /// **'Kartennummer'**
+  String get dokumentGrundKartennummer;
+
+  /// No description provided for @dokumentGrundSchluesselwort.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufdruck'**
+  String get dokumentGrundSchluesselwort;
+
+  /// No description provided for @gesundheitDokumenteTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausweise liegen offen'**
+  String get gesundheitDokumenteTitel;
+
+  /// No description provided for @gesundheitDokumenteOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto zeigt dem Text nach einen Ausweis oder eine Karte und liegt nicht im gesperrten Ordner.} other{{anzahl} Fotos zeigen dem Text nach einen Ausweis oder eine Karte und liegen nicht im gesperrten Ordner.}}'**
+  String gesundheitDokumenteOffen(int anzahl);
+
+  /// No description provided for @gesundheitDokumenteAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansehen'**
+  String get gesundheitDokumenteAnsehen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
