@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
@@ -757,8 +758,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${asset.fileCreatedAt.day}.${asset.fileCreatedAt.month}.${asset.fileCreatedAt.year}',
+              // Kürzbar: Bei schmalem Fenster und voller Knopfleiste lief
+              // die Zeile sonst über (gemessen bei 800 Punkten Breite).
+              Flexible(
+                child: Text(
+                  '${asset.fileCreatedAt.day}.${asset.fileCreatedAt.month}.${asset.fileCreatedAt.year}',
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
               ),
               if (assetHasLocation(asset)) ...[
                 const SizedBox(width: 8),
@@ -962,6 +969,16 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                               _showContextMenu(details.globalPosition),
                           child: PageView.builder(
                             controller: _controller,
+                            // Kein Blättern, solange ein Rahmen aufgezogen
+                            // wird (Issue #17): Mit der Maus nimmt der
+                            // Wischer zum Blättern einen Zug schon nach
+                            // einem Punkt an, der Zeichner erst nach zwei.
+                            // Ein waagerechter Zug blätterte deshalb, das
+                            // Foto rutschte unter dem Rahmen weg, und der
+                            // blieb kleiner stehen als gezogen.
+                            physics: _gesichtAufziehen
+                                ? const NeverScrollableScrollPhysics()
+                                : null,
                             itemCount: _assets.length,
                             onPageChanged: (i) {
                               setState(() => _currentIndex = i);
@@ -1928,6 +1945,21 @@ class _AssetPageState extends State<_AssetPage> {
               behavior: malen
                   ? HitTestBehavior.opaque
                   : HitTestBehavior.deferToChild,
+              // Der Rahmen beginnt dort, wo die Maus gedrückt wurde – nicht
+              // dort, wo der Zug als Zug erkannt war. Sonst setzte die
+              // Ecke ein paar Punkte neben dem Klick an.
+              dragStartBehavior: DragStartBehavior.down,
+              // Nur Maus, Stift und Finger – nicht das Wischen auf Trackpad
+              // oder Magic Mouse (Issue #17). Ein Finger, der beim Ziehen
+              // über die Magic Mouse streicht, kam sonst als zweiter Zeiger
+              // in denselben Zug, und seit Flutter 3.22 lenkt der jüngste
+              // Zeiger: Die Ecke sprang mitten im Ziehen an seine Stelle.
+              supportedDevices: const {
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.stylus,
+                PointerDeviceKind.invertedStylus,
+                PointerDeviceKind.touch,
+              },
               onPanStart: malen
                   ? (d) => setState(() {
                       _zugAnfang = d.localPosition;

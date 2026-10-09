@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,7 +87,11 @@ void main() {
     );
   }
 
-  Future<void> zeige(WidgetTester tester, AssetData asset) async {
+  Future<void> zeige(
+    WidgetTester tester,
+    AssetData asset, {
+    List<AssetData>? alle,
+  }) async {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: bibliothek,
@@ -96,7 +101,7 @@ void main() {
           supportedLocales: AppTexte.supportedLocales,
           theme: buildDarkTheme(),
           home: AssetViewerScreen(
-            assets: [asset],
+            assets: alle ?? [asset],
             initialIndex: 0,
             paths: pfade,
             db: db,
@@ -244,4 +249,120 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(rasterDa(), isFalse, reason: 'die Taste schaltet es wieder aus');
   });
+
+  testWidgets(
+    'beim Aufziehen blättert kein Wisch weiter, und der Zug zeichnet',
+    (tester) async {
+      // Issue #17: Der Rahmen „sprang“ und wurde „auf einmal kleiner“.
+      final erstes = await foto();
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'f2',
+              originalFileName: 'f2.jpg',
+              relativePath: 'originals/f2.jpg',
+              checksum: 'pruef-f2',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 6, 15),
+              importedAt: DateTime(2026),
+              widthPx: const Value(1000),
+              heightPx: const Value(800),
+            ),
+          );
+      final zweites = (await db.assetById('f2'))!;
+      await zeige(tester, erstes, alle: [erstes, zweites]);
+      await tester.tap(find.byTooltip('Gesichter zeigen'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byTooltip('Gesicht nachtragen – Rahmen aufziehen'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final mitte = tester.getCenter(find.byType(PageView));
+      // Ein Wisch über die Oberfläche der Magic Mouse oder des Trackpads –
+      // so leicht passiert er, während man mit derselben Hand einen Rahmen
+      // zieht. Vorher blätterte er, und das Foto rutschte unter dem Rahmen
+      // weg. (Die Maus selbst blättert nie: Ziehen mit der Maus ist auf dem
+      // Desktop kein Wischen.)
+      final wisch = await tester.startGesture(
+        mitte,
+        kind: PointerDeviceKind.trackpad,
+      );
+      for (var i = 1; i <= 10; i++) {
+        await wisch.panZoomUpdate(mitte, pan: Offset(-40.0 * i, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await wisch.panZoomEnd();
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        0,
+        reason: 'beim Aufziehen blättert kein Wisch weiter',
+      );
+
+      // Und der Zug mit der Maus zieht den Rahmen auf – auch wenn mitten
+      // darin ein Finger über die Oberfläche der Magic Mouse streicht. Der
+      // kam als zweiter Zeiger an, und seit Flutter 3.22 lenkt der jüngste
+      // Zeiger einen Zug: Die Ecke sprang an seine Stelle.
+      Rect laufenderRahmen() {
+        final w = tester.widget<Positioned>(
+          find.ancestor(
+            of: find.byWidgetPredicate(
+              (w) =>
+                  w is DecoratedBox &&
+                  (w.decoration as BoxDecoration).border ==
+                      Border.all(color: Colors.orangeAccent, width: 2),
+            ),
+            matching: find.byType(Positioned),
+          ),
+        );
+        return Rect.fromLTWH(w.left!, w.top!, w.width!, w.height!);
+      }
+
+      final zug = await tester.startGesture(
+        mitte - const Offset(150, 20),
+        kind: PointerDeviceKind.mouse,
+      );
+      for (var i = 0; i < 5; i++) {
+        await zug.moveBy(const Offset(30, 4));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final vorher = laufenderRahmen();
+      final streich = await tester.startGesture(
+        mitte + const Offset(100, 100),
+        kind: PointerDeviceKind.trackpad,
+      );
+      for (var i = 1; i <= 5; i++) {
+        await streich.panZoomUpdate(
+          mitte + const Offset(100, 100),
+          pan: Offset(-30.0 * i, 20.0 * i),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await streich.panZoomEnd();
+      await tester.pump();
+      expect(
+        laufenderRahmen(),
+        vorher,
+        reason: 'der Streich über die Maus bewegt den Rahmen nicht',
+      );
+      for (var i = 0; i < 5; i++) {
+        await zug.moveBy(const Offset(30, 4));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final nachher = laufenderRahmen();
+      // Doppelt so weit gezogen, doppelt so breit – die Ecke blieb, wo sie
+      // war.
+      expect(nachher.left, closeTo(vorher.left, 0.01));
+      expect(nachher.width, closeTo(vorher.width * 2, 0.5));
+      await zug.up();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester.widget<PageView>(find.byType(PageView)).controller!.page,
+        0,
+        reason: 'beim Aufziehen wird nicht geblättert',
+      );
+      expect(find.text('Nachgetragenes Gesicht benennen'), findsOneWidget);
+    },
+  );
 }
