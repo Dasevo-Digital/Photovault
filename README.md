@@ -503,14 +503,28 @@ echter Hardware.
   Bildrand. Der Pinsel arbeitet auf dem Original, das Ergebnis bleibt
   nicht-destruktiv
 - **Kratzer und Staub in Scans finden** – im Werkzeug „Objekt
-  entfernen“ sucht ein Knopf nach Kratzern, Knicken und Staub und legt sie
-  als rote Maske über das Bild; ein Radierer nimmt heraus, was kein
-  Schaden ist, und erst „Entfernen“ lässt LaMa füllen. Gesucht wird ohne
-  Modell mit dem morphologischen Zylinderhut: Was schmaler ist als sieben
-  Bildpunkte, schlägt an; als Kratzer gilt davon nur, was lang und gerade
-  ist, als Staub nur ein harter, vereinzelter Fleck auf ruhiger Fläche.
-  Gegenprobe an 58 modernen Fotos ohne Schäden: in 46 kein Fund, in den
-  übrigen meist Kabel und Fensterkanten, im Mittel 0,04 % der Fläche.
+  entfernen“ sucht ein Knopf nach Schäden und legt sie als rote Maske über
+  das Bild; ein Radierer nimmt heraus, was kein Schaden ist, und erst
+  „Entfernen“ lässt LaMa füllen. Zwei Wege:
+  - **Mit dem Modell „Kratzer finden (Old Photos)“** (75 MB, unter
+    KI-Modelle): das U-Net aus Microsofts „Bringing Old Photos Back to
+    Life“ (MIT), nach ONNX umgewandelt mit `tool/kratzermodell/umwandeln.py`
+    – reproduzierbar, dieselbe Prüfsumme bei jedem Lauf. Es findet auch
+    geschwungene und breitere Kratzer, Knicke und Risse.
+  - **Ohne Modell** sucht ein morphologischer Zylinderhut nach langen,
+    geraden Linien und hartem, vereinzeltem Staub.
+
+  Gemessen an 58 grau gemachten Fotos mit je drei bis sechs künstlichen,
+  geschwungenen Kratzern und an denselben Fotos ohne Kratzer:
+
+  | | gefunden | davon richtig | Fehlfläche auf sauberen Fotos |
+  |---|---:|---:|---:|
+  | ohne Modell | 6 % | 22 % | 0,04 % |
+  | mit Modell (Schwelle 0,6) | 42 % | 46 % | 0,51 % |
+
+  Das Modell findet siebenmal mehr, markiert auf modernen, unbeschädigten
+  Fotos aber auch mehr Kanten – es ist auf alte Abzüge trainiert. Darum
+  bleibt es ein Vorschlag mit Radierer.
 - **Einfärben** – **DDColor** gibt alten Schwarzweiss-Fotos Farbe. Das
   Modell sagt nur die Farbe voraus, die Helligkeit kommt aus dem Original
   in voller Auflösung – das Foto bleibt so scharf, wie es war. Im

@@ -8925,4 +8925,26 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get viewerDrittelRaster => 'Drittel-Raster (R)';
+
+  @override
+  String get modellKratzerTitel => 'Kratzer finden (Old Photos)';
+
+  @override
+  String get modellKratzerText =>
+      'Findet Kratzer, Knicke und Risse in eingescannten Fotos – im Bildeditor unter „Objekt entfernen“, gefüllt wird mit LaMa. Ohne dieses Modell sucht die App nur nach langen geraden Linien und Staub. 75 MB.';
+
+  @override
+  String get modellKratzerLizenz =>
+      'MIT (Bringing Old Photos Back to Life, Microsoft), nach ONNX umgewandelt';
+
+  @override
+  String bearbKratzerModellGefunden(int stellen) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stellen,
+      locale: localeName,
+      other: '$stellen Stellen',
+      one: '1 Stelle',
+    );
+    return 'Vorschlag des Kratzer-Modells: $_temp0. Prüfen, Falsches radieren, dann anwenden.';
+  }
 }

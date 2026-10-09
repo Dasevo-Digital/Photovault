@@ -13,6 +13,7 @@ import 'package:image/image.dart' as img;
 import '../services/geometry_edits.dart';
 import '../services/inpainting_service.dart';
 import '../services/kolorieren.dart';
+import '../services/kratzermodell.dart';
 import '../services/kratzersuche.dart';
 import 'package:path/path.dart' as p;
 
@@ -336,8 +337,25 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     if (bytes == null) return;
     final t = AppTexte.of(context);
     setState(() => _processing = true);
+    final modelle = widget.modelsDir;
+    final mitModell =
+        modelle != null && KratzerModellService.isAvailable(modelle);
     try {
-      final fund = await compute(_kratzerIsolate, bytes);
+      final Kratzerfund fund;
+      if (mitModell) {
+        // Das Netz läuft über den Plattformkanal und damit nicht in einem
+        // Isolat; dekodiert wird trotzdem dort.
+        final bild = await compute(img.decodeImage, bytes);
+        if (bild == null) throw StateError('nicht dekodierbar');
+        final dienst = await KratzerModellService.load(modelle);
+        try {
+          fund = await dienst.suche(bild);
+        } finally {
+          await dienst.dispose();
+        }
+      } else {
+        fund = await compute(_kratzerIsolate, bytes);
+      }
       if (!mounted) return;
       if (fund.kratzer + fund.staub == 0) {
         setState(() => _processing = false);
@@ -356,7 +374,11 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         _radierStriche = [];
         _processing = false;
       });
-      melde.hinweis(t.bearbKratzerGefunden(fund.kratzer, fund.staub));
+      melde.hinweis(
+        mitModell
+            ? t.bearbKratzerModellGefunden(fund.kratzer)
+            : t.bearbKratzerGefunden(fund.kratzer, fund.staub),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _processing = false);

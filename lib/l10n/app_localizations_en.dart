@@ -8875,4 +8875,26 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get viewerDrittelRaster => 'Rule-of-thirds grid (R)';
+
+  @override
+  String get modellKratzerTitel => 'Find scratches (Old Photos)';
+
+  @override
+  String get modellKratzerText =>
+      'Finds scratches, creases and tears in scanned photos – in the image editor under “Remove object”, filled by LaMa. Without this model the app only looks for long straight lines and dust. 75 MB.';
+
+  @override
+  String get modellKratzerLizenz =>
+      'MIT (Bringing Old Photos Back to Life, Microsoft), converted to ONNX';
+
+  @override
+  String bearbKratzerModellGefunden(int stellen) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stellen,
+      locale: localeName,
+      other: '$stellen spots',
+      one: '1 spot',
+    );
+    return 'Scratch model suggestion: $_temp0. Check it, erase anything wrong, then apply.';
+  }
 }

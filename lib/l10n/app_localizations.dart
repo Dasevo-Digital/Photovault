@@ -13728,6 +13728,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Drittel-Raster (R)'**
   String get viewerDrittelRaster;
+
+  /// No description provided for @modellKratzerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Kratzer finden (Old Photos)'**
+  String get modellKratzerTitel;
+
+  /// No description provided for @modellKratzerText.
+  ///
+  /// In de, this message translates to:
+  /// **'Findet Kratzer, Knicke und Risse in eingescannten Fotos – im Bildeditor unter „Objekt entfernen“, gefüllt wird mit LaMa. Ohne dieses Modell sucht die App nur nach langen geraden Linien und Staub. 75 MB.'**
+  String get modellKratzerText;
+
+  /// No description provided for @modellKratzerLizenz.
+  ///
+  /// In de, this message translates to:
+  /// **'MIT (Bringing Old Photos Back to Life, Microsoft), nach ONNX umgewandelt'**
+  String get modellKratzerLizenz;
+
+  /// No description provided for @bearbKratzerModellGefunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschlag des Kratzer-Modells: {stellen, plural, =1{1 Stelle} other{{stellen} Stellen}}. Prüfen, Falsches radieren, dann anwenden.'**
+  String bearbKratzerModellGefunden(int stellen);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

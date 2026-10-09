@@ -5128,5 +5128,10 @@
   "sucheHerkunftAlle": "Alle",
   "sucheHerkunftKamera": "Aus einer Kamera",
   "sucheHerkunftEmpfangen": "Empfangen",
-  "viewerDrittelRaster": "Drittel-Raster (R)"
+  "viewerDrittelRaster": "Drittel-Raster (R)",
+  "modellKratzerTitel": "Kratzer finden (Old Photos)",
+  "modellKratzerText": "Findet Kratzer, Knicke und Risse in eingescannten Fotos – im Bildeditor unter „Objekt entfernen“, gefüllt wird mit LaMa. Ohne dieses Modell sucht die App nur nach langen geraden Linien und Staub. 75 MB.",
+  "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), nach ONNX umgewandelt",
+  "bearbKratzerModellGefunden": "Vorschlag des Kratzer-Modells: {stellen, plural, =1{1 Stelle} other{{stellen} Stellen}}. Prüfen, Falsches radieren, dann anwenden.",
+  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}}
 }

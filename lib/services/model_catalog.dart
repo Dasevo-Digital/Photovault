@@ -97,6 +97,7 @@ String modellTitel(AppTexte t, String id) => switch (id) {
   'neural_restore_real_esrgan_x4' => t.modellEsrganTitel,
   'inpainting_lama' => t.modellLamaTitel,
   'colorize_ddcolor' => t.modellDdcolorTitel,
+  'scratch_detection_bopbtl' => t.modellKratzerTitel,
   'translation_en_de' => t.modellEnDeTitel,
   'translation_de_en' => t.modellDeEnTitel,
   'ocr_ppocr_latin' => t.modellOcrTitel,
@@ -115,6 +116,7 @@ String modellBeschreibung(AppTexte t, String id) => switch (id) {
   'neural_restore_real_esrgan_x4' => t.modellEsrganText,
   'inpainting_lama' => t.modellLamaText,
   'colorize_ddcolor' => t.modellDdcolorText,
+  'scratch_detection_bopbtl' => t.modellKratzerText,
   'translation_en_de' => t.modellEnDeText,
   'translation_de_en' => t.modellDeEnText,
   'ocr_ppocr_latin' => t.modellOcrText,
@@ -131,6 +133,7 @@ String modellLizenz(AppTexte t, String id) => switch (id) {
   'neural_restore_real_esrgan_x4' => t.modellEsrganLizenz,
   'inpainting_lama' => t.modellLamaLizenz,
   'colorize_ddcolor' => t.modellDdcolorLizenz,
+  'scratch_detection_bopbtl' => t.modellKratzerLizenz,
   'translation_en_de' => t.modellEnDeLizenz,
   'translation_de_en' => t.modellDeEnLizenz,
   'ocr_ppocr_latin' => t.modellOcrLizenz,
@@ -625,6 +628,27 @@ class ModelCatalog {
     ],
   );
 
+  /// Findet Kratzer, Knicke und Risse in alten Fotos (U-Net aus „Bringing
+  /// Old Photos Back to Life“, siehe [KratzerModellService]).
+  ///
+  /// **Selbst umgewandelt und selbst abgelegt** – das einzige Modell, das
+  /// nicht von Hugging Face kommt: Die Autoren geben nur PyTorch-Gewichte
+  /// heraus, und eine ONNX-Fassung gab es nirgends. Wie die Datei entsteht,
+  /// steht in `tool/kratzermodell/umwandeln.py`; zweimal ausgeführt ergibt
+  /// es dieselbe Prüfsumme.
+  static const kratzer = ModelCatalogEntry(
+    id: 'scratch_detection_bopbtl',
+    sourceUrl: 'https://github.com/microsoft/Bringing-Old-Photos-Back-to-Life',
+    files: [
+      ModelFile(
+        'kratzererkennung_fp16.onnx',
+        'https://github.com/Dasevo-Digital/Photovault/releases/download/modell-kratzer-1/kratzererkennung_fp16.onnx',
+        '400ae32d8d00c2461186328efc4c964b2beac92b80d02b631e73549a71a235c7',
+        75404898,
+      ),
+    ],
+  );
+
   static const all = [
     faceDetection,
     faceRecognition,
@@ -635,6 +659,7 @@ class ModelCatalog {
     neuralRestore,
     inpainting,
     kolorieren,
+    kratzer,
     translationEnDe,
     translationDeEn,
     ocrPaddle,

@@ -4021,5 +4021,10 @@
   "sucheHerkunftAlle": "All",
   "sucheHerkunftKamera": "From a camera",
   "sucheHerkunftEmpfangen": "Received",
-  "viewerDrittelRaster": "Rule-of-thirds grid (R)"
+  "viewerDrittelRaster": "Rule-of-thirds grid (R)",
+  "modellKratzerTitel": "Find scratches (Old Photos)",
+  "modellKratzerText": "Finds scratches, creases and tears in scanned photos – in the image editor under “Remove object”, filled by LaMa. Without this model the app only looks for long straight lines and dust. 75 MB.",
+  "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), converted to ONNX",
+  "bearbKratzerModellGefunden": "Scratch model suggestion: {stellen, plural, =1{1 spot} other{{stellen} spots}}. Check it, erase anything wrong, then apply.",
+  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}}
 }
