@@ -37,6 +37,17 @@ class Gesichtsrahmen extends StatelessWidget {
   final VoidCallback? beiTipp;
   final void Function(Offset stelle)? beiMenue;
 
+  /// Wie viele Bildschirmpunkte ein Punkt von [flaeche] gerade misst.
+  ///
+  /// **Warum das gebraucht wird** (Issue #16). In der Vollansicht ist
+  /// [flaeche] das Foto in seinen eigenen Bildpunkten, und PhotoView
+  /// verkleinert es aufs Fenster – ein Foto von 6000 Punkten Breite auf
+  /// rund ein Achtel. Schrift und Rand, in Bildpunkten bemessen, schrumpften
+  /// mit: Ein Name war auf dem Schirm 3,5 Punkte hoch. Mit dem Massstab
+  /// werden sie in Schirmpunkten bemessen und zurückgerechnet. Dort, wo die
+  /// Fläche schon der Schirm ist, bleibt es bei 1.
+  final double massstab;
+
   const Gesichtsrahmen({
     super.key,
     required this.gesicht,
@@ -44,6 +55,7 @@ class Gesichtsrahmen extends StatelessWidget {
     required this.flaeche,
     this.beiTipp,
     this.beiMenue,
+    this.massstab = 1,
   });
 
   /// Wie weit der Finger zwischen Aufsetzen und Abheben wandern darf,
@@ -77,36 +89,45 @@ class Gesichtsrahmen extends StatelessWidget {
         beiMenue: beiMenue,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Der Rahmen wird mit dem Foto skaliert. Eine feste 11-Punkt-
-            // Schrift blieb auf grossen Vollbildfotos praktisch unlesbar.
-            final fontSize = (constraints.biggest.shortestSide * 0.16).clamp(
-              12.0,
-              22.0,
-            );
+            final m = massstab > 0 ? massstab : 1.0;
+            // In Schirmpunkten: mit dem Gesicht wachsend, aber nie unter
+            // 13 – sonst ist ein Gesicht in einer Gruppe nicht zu lesen.
+            final schirm = constraints.biggest.shortestSide * m;
+            final schrift = (schirm * 0.16).clamp(13.0, 18.0) / m;
             return Semantics(
               label: beschriftung,
               button: beiTipp != null,
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: farbeFuer(gesicht), width: 2),
+                  border: Border.all(color: farbeFuer(gesicht), width: 2 / m),
                 ),
                 alignment: Alignment.bottomLeft,
-                child: Container(
-                  color: Colors.black87,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: 2,
-                  ),
-                  child: Text(
-                    beschriftung,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: gesicht.isIgnored
-                          ? DunkleFlaeche.zweitText
-                          : DunkleFlaeche.text,
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w600,
+                // Der Name darf breiter sein als das Gesicht: In einer
+                // Gruppe ist ein Gesicht schmaler als „Anna“, und ein auf
+                // „A…“ gekürzter Name sagt nichts.
+                child: OverflowBox(
+                  alignment: Alignment.bottomLeft,
+                  minWidth: 0,
+                  maxWidth: (constraints.maxWidth > 240 / m
+                      ? constraints.maxWidth
+                      : 240 / m),
+                  child: Container(
+                    color: Colors.black87,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs / m,
+                      vertical: 2 / m,
+                    ),
+                    child: Text(
+                      beschriftung,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: gesicht.isIgnored
+                            ? DunkleFlaeche.zweitText
+                            : DunkleFlaeche.text,
+                        fontSize: schrift,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),

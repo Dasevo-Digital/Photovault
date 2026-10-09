@@ -48,7 +48,11 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<AssetData> foto({bool masse = true}) async {
+  Future<AssetData> foto({
+    bool masse = true,
+    int breite = 1000,
+    int hoehe = 800,
+  }) async {
     await db
         .into(db.assets)
         .insert(
@@ -60,8 +64,8 @@ void main() {
             type: 'IMAGE',
             fileCreatedAt: DateTime(2026, 6, 14),
             importedAt: DateTime(2026),
-            widthPx: masse ? const Value(1000) : const Value.absent(),
-            heightPx: masse ? const Value(800) : const Value.absent(),
+            widthPx: masse ? Value(breite) : const Value.absent(),
+            heightPx: masse ? Value(hoehe) : const Value.absent(),
           ),
         );
     return (await db.assetById('f1'))!;
@@ -413,4 +417,37 @@ void main() {
       expect(find.byType(AssetViewerScreen), findsOneWidget);
     },
   );
+
+  testWidgets('die Namen bleiben auf einem grossen Foto lesbar', (
+    tester,
+  ) async {
+    // Issue #16: Die Schrift war in Bildpunkten des Fotos bemessen und
+    // schrumpfte mit dem Foto. Ein Foto von 6000 Punkten Breite steht im
+    // Fenster auf rund einem Achtel – 22 Punkte wurden so unter 3.
+    await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
+    final a = await foto(breite: 6000, hoehe: 4800);
+    // Ein kleines Gesicht in einer Gruppe, 4 % der Bildbreite.
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: 'g1',
+        assetId: 'f1',
+        personId: const Value('p1'),
+        boxX: 0.4,
+        boxY: 0.4,
+        boxW: 0.04,
+        boxH: 0.05,
+      ),
+    );
+    await zeige(tester, a);
+    await tester.tap(find.byTooltip('Gesichter zeigen'));
+    await tester.pumpAndSettle();
+
+    final name = tester.getRect(find.text('Anna'));
+    expect(
+      name.height,
+      greaterThanOrEqualTo(12),
+      reason: 'Höhe auf dem Schirm',
+    );
+    expect(name.width, greaterThan(20), reason: 'nicht auf ein „A…“ gekürzt');
+  });
 }

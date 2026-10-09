@@ -1993,11 +1993,20 @@ class _AssetPageState extends State<_AssetPage> {
                   if (rahmen)
                     for (final gesicht in _gesichter)
                       if (!gesicht.isIgnored)
-                        Gesichtsrahmen(
-                          gesicht: gesicht,
-                          personName: _gesichtsnamen[gesicht.personId],
-                          flaeche: masse,
-                          beiTipp: () => _gesichtAngetippt(gesicht),
+                        // Der Massstab folgt dem Zoom: Die Namen bleiben
+                        // auf dem Schirm gleich gross (Issue #16).
+                        StreamBuilder<PhotoViewControllerValue>(
+                          stream: _zoomsteuerung.outputStateStream,
+                          builder: (context, zustand) => Gesichtsrahmen(
+                            gesicht: gesicht,
+                            personName: _gesichtsnamen[gesicht.personId],
+                            flaeche: masse,
+                            massstab:
+                                zustand.data?.scale ??
+                                _zoomsteuerung.scale ??
+                                1,
+                            beiTipp: () => _gesichtAngetippt(gesicht),
+                          ),
                         ),
                   if (textkaesten)
                     for (final stelle in _stellen)
