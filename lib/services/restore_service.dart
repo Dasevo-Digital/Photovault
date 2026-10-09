@@ -22,12 +22,30 @@ import 'modellthreads.dart';
 /// Provider (2 von 1024 Graph-Knoten sind nicht CoreML-fähig und fallen auf
 /// CPU zurück) – [load] fordert CoreML deshalb explizit an, mit CPU als
 /// Fallback, falls CoreML auf dem jeweiligen Gerät nicht verfügbar ist.
+/// Womit Real-ESRGAN rechnet: auf macOS mit CoreML, sonst auf der CPU.
+///
+/// **CoreML nur auf macOS.** Die Liste galt früher für alle Plattformen;
+/// unter Linux und Windows lehnt das Plugin einen unbekannten Anbieter
+/// aber ab, statt ihn zu überspringen („Provider is not supported:
+/// CORE_ML“). Die KI-Restaurierung scheiterte dort schon beim Laden des
+/// Modells – aufgefallen bei der Probe zu Issue #14 unter Linux.
+List<OrtProvider> restaurierungsAnbieter({bool? macos}) => [
+  if (macos ?? Platform.isMacOS) OrtProvider.CORE_ML,
+  OrtProvider.CPU,
+];
+
 class RestoreService {
   RestoreService._(this._session);
 
   final OrtSession _session;
 
-  static const tileSize = 512;
+  /// Kantenlänge einer Kachel. Mit CoreML (macOS) 512, auf der CPU 256:
+  /// Das Netz rechnet intern in vierfacher Grösse, und auf der CPU hält
+  /// ONNX Runtime die Zwischenergebnisse einer 512er-Kachel gleichzeitig –
+  /// gemessen bis 5,8 GB, worauf Linux die App auf einem Rechner mit 8 GB
+  /// beendete.
+  static int kachelGroesse({bool? macos}) =>
+      (macos ?? Platform.isMacOS) ? 512 : 256;
   static const overlap = 16;
   static const scaleFactor = 4;
 
@@ -38,9 +56,7 @@ class RestoreService {
     final ort = OnnxRuntime();
     final session = await ort.createSession(
       '$modelsDir/real_esrgan_x4.onnx',
-      options: modelloptionen(
-        providers: [OrtProvider.CORE_ML, OrtProvider.CPU],
-      ),
+      options: modelloptionen(providers: restaurierungsAnbieter()),
     );
     return RestoreService._(session);
   }
@@ -57,7 +73,7 @@ class RestoreService {
   }) {
     return processInTiles(
       source,
-      tileSize: tileSize,
+      tileSize: kachelGroesse(),
       overlap: overlap,
       scaleFactor: scaleFactor,
       infer: (kachel) => _rechneKachel(_session, kachel),
@@ -275,7 +291,7 @@ Future<void> _restaurierungImIsolat(
     if (quelle == null) Isolate.exit(a.antwort, ('fertig', null));
     final ergebnis = await processInTiles(
       quelle,
-      tileSize: RestoreService.tileSize,
+      tileSize: RestoreService.kachelGroesse(),
       overlap: RestoreService.overlap,
       scaleFactor: RestoreService.scaleFactor,
       infer: (kachel) async {
