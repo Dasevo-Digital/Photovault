@@ -8739,4 +8739,66 @@ class AppTexteDe extends AppTexte {
   @override
   String get viewerVideobildFehler =>
       'Aus dem Video ließ sich an dieser Stelle kein Bild greifen.';
+
+  @override
+  String get datierungTitel => 'Alte Fotos zeitlich einordnen';
+
+  @override
+  String get datierungEinleitung =>
+      'Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Angegeben ist eine Spanne; ist sie zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres, und das Datum bleibt als geschätzt markiert.';
+
+  @override
+  String get datierungOhneModell =>
+      'Für die Schätzung braucht es das Modell der Bildsuche (CLIP). Es lässt sich unter Einstellungen → KI-Modelle laden.';
+
+  @override
+  String get datierungKeine =>
+      'Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.';
+
+  @override
+  String datierungUm(String jahr) {
+    return 'um $jahr';
+  }
+
+  @override
+  String datierungSpanne(String von, String bis) {
+    return '$von bis $bis';
+  }
+
+  @override
+  String datierungUnsicher(String von, String bis) {
+    return 'zu unsicher ($von bis $bis)';
+  }
+
+  @override
+  String get datierungUebernehmen => 'Übernehmen';
+
+  @override
+  String get datierungIstUebernommen => 'Übernommen';
+
+  @override
+  String datierungAlleUebernehmen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Schätzungen übernehmen',
+      one: '1 Schätzung übernehmen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String datierungUebernommen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos zeitlich eingeordnet',
+      one: '1 Foto zeitlich eingeordnet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get werkzDatierungText =>
+      'Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.';
 }

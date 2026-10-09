@@ -44,6 +44,7 @@ import '../services/textstellen.dart';
 import '../services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
 import '../services/asset_display_path.dart';
+import '../services/datierung.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
@@ -1798,6 +1799,27 @@ class LibraryState extends ChangeNotifier {
     if (_laeufe[schluessel]?.offen ?? false) return;
     if (_laeufe.remove(schluessel) != null) notifyListeners();
   }
+
+  /// Die gemittelten Satzvektoren je Jahrzehnt für `schaetzeDatierung` –
+  /// `null` ohne Textmodell der Bildsuche.
+  ///
+  /// Einmal je Sitzung gerechnet: 60 Sätze durch den Textkodierer kosten
+  /// rund eine Sekunde, und sie hängen an nichts als dem Modell.
+  Future<Map<int, Float32List>?> datierungssaetze() async {
+    final schon = _datierungssaetze;
+    if (schon != null) return schon;
+    final saetze = await clipTextHalter.mit((clip) async {
+      return {
+        for (final j in datierungJahrzehnte)
+          j: mittlererVektor([
+            for (final satz in datierungsSaetze(j)) await clip.embedText(satz),
+          ]),
+      };
+    });
+    return _datierungssaetze = saetze;
+  }
+
+  Map<int, Float32List>? _datierungssaetze;
 
   /// Sichert das Bild an [position] aus [video] als eigenes Foto.
   ///

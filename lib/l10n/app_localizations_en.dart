@@ -8690,4 +8690,66 @@ class AppTexteEn extends AppTexte {
   @override
   String get viewerVideobildFehler =>
       'Could not grab a frame from the video at this point.';
+
+  @override
+  String get datierungTitel => 'Date old photos';
+
+  @override
+  String get datierungEinleitung =>
+      'These photos carry no real capture date – guessed during import or set by a scanner – and look old. Image search estimates the decade from them. A range is given; if it is too wide, the model does not know and there is nothing to apply. The middle of the year is applied, and the date stays marked as estimated.';
+
+  @override
+  String get datierungOhneModell =>
+      'The estimate needs the image search model (CLIP). You can download it under Settings → AI models.';
+
+  @override
+  String get datierungKeine =>
+      'None of the photos without a real capture date looks old.';
+
+  @override
+  String datierungUm(String jahr) {
+    return 'around $jahr';
+  }
+
+  @override
+  String datierungSpanne(String von, String bis) {
+    return '$von to $bis';
+  }
+
+  @override
+  String datierungUnsicher(String von, String bis) {
+    return 'too uncertain ($von to $bis)';
+  }
+
+  @override
+  String get datierungUebernehmen => 'Apply';
+
+  @override
+  String get datierungIstUebernommen => 'Applied';
+
+  @override
+  String datierungAlleUebernehmen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Apply $anzahl estimates',
+      one: 'Apply 1 estimate',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String datierungUebernommen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Dated $anzahl photos',
+      one: 'Dated 1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get werkzDatierungText =>
+      'Estimates the decade of scanned and undated photos – from image search, without a new model.';
 }

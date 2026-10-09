@@ -5081,5 +5081,22 @@
   "viewerVideobildGesichert": "Bild bei {stelle} als Foto gesichert – mit Datum und Ort des Videos",
   "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
   "viewerVideobildSchonDa": "Genau dieses Bild ist schon als Foto gesichert.",
-  "viewerVideobildFehler": "Aus dem Video ließ sich an dieser Stelle kein Bild greifen."
+  "viewerVideobildFehler": "Aus dem Video ließ sich an dieser Stelle kein Bild greifen.",
+  "datierungTitel": "Alte Fotos zeitlich einordnen",
+  "datierungEinleitung": "Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Angegeben ist eine Spanne; ist sie zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres, und das Datum bleibt als geschätzt markiert.",
+  "datierungOhneModell": "Für die Schätzung braucht es das Modell der Bildsuche (CLIP). Es lässt sich unter Einstellungen → KI-Modelle laden.",
+  "datierungKeine": "Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.",
+  "datierungUm": "um {jahr}",
+  "@datierungUm": {"placeholders": {"jahr": {"type": "String"}}},
+  "datierungSpanne": "{von} bis {bis}",
+  "@datierungSpanne": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "datierungUnsicher": "zu unsicher ({von} bis {bis})",
+  "@datierungUnsicher": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "datierungUebernehmen": "Übernehmen",
+  "datierungIstUebernommen": "Übernommen",
+  "datierungAlleUebernehmen": "{anzahl, plural, =1{1 Schätzung übernehmen} other{{anzahl} Schätzungen übernehmen}}",
+  "@datierungAlleUebernehmen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "datierungUebernommen": "{anzahl, plural, =1{1 Foto zeitlich eingeordnet} other{{anzahl} Fotos zeitlich eingeordnet}}",
+  "@datierungUebernommen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "werkzDatierungText": "Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell."
 }

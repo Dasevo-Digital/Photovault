@@ -10377,6 +10377,64 @@ class AppDatabase extends _$AppDatabase {
     return floatsFromEmbeddingBlob(row.vector);
   }
 
+  /// Fotos, deren Aufnahmezeit nur geraten ist ([Assets.datumGeschaetzt]),
+  /// oder die ein Scanner geschrieben hat, samt ihrem Bildvektor – der
+  /// Stoff für `schaetzeDatierung`.
+  ///
+  /// **Scans zählen mit.** Ein Flachbettscanner schreibt EXIF wie eine
+  /// Kamera, und als Aufnahmezeit steht dort der Tag des Scannens. Das
+  /// Datum ist dann nicht geraten, aber genauso falsch – und genau diese
+  /// Fotos sind die alten. Erkannt am Gerät: „scan“ im Modell (CanoScan,
+  /// ScanSnap, OpticFilm-Scanner tragen es) oder Epson, das bis auf eine
+  /// Messsucherkamera von 2004 nur Scanner baut.
+  ///
+  /// Nur die mit Vektor: Ohne ihn gibt es nichts zu schätzen, und das
+  /// Bild dafür eigens zu öffnen hiesse, die Bildsuche ein zweites Mal
+  /// zu rechnen.
+  Future<List<({AssetData asset, Float32List vektor})>>
+  datierungskandidaten() async {
+    final zeilen =
+        await (select(assets).join([
+                innerJoin(
+                  imageEmbeddings,
+                  imageEmbeddings.assetId.equalsExp(assets.id),
+                ),
+              ])
+              ..where(
+                assets.type.equals('IMAGE') &
+                    assets.isLocked.equals(false) &
+                    assets.isTrashed.equals(false) &
+                    (assets.datumGeschaetzt.equals(true) |
+                        assets.cameraModel.lower().like('%scan%') |
+                        assets.cameraModel.lower().like('%perfection%') |
+                        assets.cameraMake.lower().like('%epson%')),
+              )
+              ..orderBy([OrderingTerm.asc(assets.fileCreatedAt)]))
+            .get();
+    return [
+      for (final z in zeilen)
+        (
+          asset: z.readTable(assets),
+          vektor: floatsFromEmbeddingBlob(z.readTable(imageEmbeddings).vector),
+        ),
+    ];
+  }
+
+  /// Setzt die Aufnahmezeit auf die Mitte von [jahr] – und lässt sie als
+  /// geschätzt markiert, denn das ist sie weiterhin.
+  ///
+  /// Der 1. Juli statt des 1. Januar: Ein Foto „um 1965" an den Neujahrstag
+  /// zu legen, behauptet einen Tag, den niemand kennt, und es fiele in
+  /// jeden Jahresrückblick auf genau diesen Tag.
+  Future<void> setzeGeschaetztesJahr(String assetId, int jahr) =>
+      (update(assets)..where((t) => t.id.equals(assetId))).write(
+        AssetsCompanion(
+          fileCreatedAt: Value(DateTime(jahr, 7, 1, 12)),
+          datumGeschaetzt: const Value(true),
+          datumGeprueft: const Value(true),
+        ),
+      );
+
   /// Fotos ohne CLIP-Embedding – z.B. weil sie importiert wurden, bevor das
   /// CLIP-Modell installiert war (Embeddings werden sonst automatisch beim
   /// Import berechnet). Für das nachträgliche Berechnen in den Werkzeugen.

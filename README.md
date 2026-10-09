@@ -485,6 +485,14 @@ echter Hardware.
   Modell sagt nur die Farbe voraus, die Helligkeit kommt aus dem Original
   in voller Auflösung – das Foto bleibt so scharf, wie es war. Im
   Bildeditor neben der Objektentfernung
+- **Alte Fotos zeitlich einordnen** (Werkzeuge) – für eingescannte und
+  undatierte Fotos schätzt die Bildsuche das Jahrzehnt: Der gespeicherte
+  Bildvektor wird mit Sätzen wie „a photo taken in the 1960s“ verglichen,
+  ohne zusätzliches Modell. Angezeigt wird eine Spanne; ist sie breiter als
+  40 Jahre, gilt die Schätzung als zu unsicher und wird nicht angeboten.
+  Satzwahl und Schärfe sind an 24 datierten Fotos von 2015 bis 2025
+  ausgewählt (Mittel 2005, Spanne 22 Jahre). An echten alten Abzügen mit
+  bekanntem Datum ist die Genauigkeit noch nicht gemessen.
 - **Serienvergleich** – bei einer Serie stehen dieselben Gesichter
   spaltenweise nebeneinander, statt ganze Fotos zu vergleichen. Auf einem
   Gruppenbild sieht man nicht, wer blinzelt; auf den Ausschnitten sofort.

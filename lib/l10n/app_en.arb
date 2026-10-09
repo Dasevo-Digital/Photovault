@@ -3974,5 +3974,22 @@
   "viewerVideobildGesichert": "Frame at {stelle} saved as a photo – with the video's date and place",
   "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
   "viewerVideobildSchonDa": "This exact frame is already saved as a photo.",
-  "viewerVideobildFehler": "Could not grab a frame from the video at this point."
+  "viewerVideobildFehler": "Could not grab a frame from the video at this point.",
+  "datierungTitel": "Date old photos",
+  "datierungEinleitung": "These photos carry no real capture date – guessed during import or set by a scanner – and look old. Image search estimates the decade from them. A range is given; if it is too wide, the model does not know and there is nothing to apply. The middle of the year is applied, and the date stays marked as estimated.",
+  "datierungOhneModell": "The estimate needs the image search model (CLIP). You can download it under Settings → AI models.",
+  "datierungKeine": "None of the photos without a real capture date looks old.",
+  "datierungUm": "around {jahr}",
+  "@datierungUm": {"placeholders": {"jahr": {"type": "String"}}},
+  "datierungSpanne": "{von} to {bis}",
+  "@datierungSpanne": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "datierungUnsicher": "too uncertain ({von} to {bis})",
+  "@datierungUnsicher": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "datierungUebernehmen": "Apply",
+  "datierungIstUebernommen": "Applied",
+  "datierungAlleUebernehmen": "{anzahl, plural, =1{Apply 1 estimate} other{Apply {anzahl} estimates}}",
+  "@datierungAlleUebernehmen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "datierungUebernommen": "{anzahl, plural, =1{Dated 1 photo} other{Dated {anzahl} photos}}",
+  "@datierungUebernommen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "werkzDatierungText": "Estimates the decade of scanned and undated photos – from image search, without a new model."
 }

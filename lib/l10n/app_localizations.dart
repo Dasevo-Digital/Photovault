@@ -13500,6 +13500,78 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Aus dem Video ließ sich an dieser Stelle kein Bild greifen.'**
   String get viewerVideobildFehler;
+
+  /// No description provided for @datierungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Alte Fotos zeitlich einordnen'**
+  String get datierungTitel;
+
+  /// No description provided for @datierungEinleitung.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Angegeben ist eine Spanne; ist sie zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres, und das Datum bleibt als geschätzt markiert.'**
+  String get datierungEinleitung;
+
+  /// No description provided for @datierungOhneModell.
+  ///
+  /// In de, this message translates to:
+  /// **'Für die Schätzung braucht es das Modell der Bildsuche (CLIP). Es lässt sich unter Einstellungen → KI-Modelle laden.'**
+  String get datierungOhneModell;
+
+  /// No description provided for @datierungKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.'**
+  String get datierungKeine;
+
+  /// No description provided for @datierungUm.
+  ///
+  /// In de, this message translates to:
+  /// **'um {jahr}'**
+  String datierungUm(String jahr);
+
+  /// No description provided for @datierungSpanne.
+  ///
+  /// In de, this message translates to:
+  /// **'{von} bis {bis}'**
+  String datierungSpanne(String von, String bis);
+
+  /// No description provided for @datierungUnsicher.
+  ///
+  /// In de, this message translates to:
+  /// **'zu unsicher ({von} bis {bis})'**
+  String datierungUnsicher(String von, String bis);
+
+  /// No description provided for @datierungUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernehmen'**
+  String get datierungUebernehmen;
+
+  /// No description provided for @datierungIstUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernommen'**
+  String get datierungIstUebernommen;
+
+  /// No description provided for @datierungAlleUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Schätzung übernehmen} other{{anzahl} Schätzungen übernehmen}}'**
+  String datierungAlleUebernehmen(int anzahl);
+
+  /// No description provided for @datierungUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto zeitlich eingeordnet} other{{anzahl} Fotos zeitlich eingeordnet}}'**
+  String datierungUebernommen(int anzahl);
+
+  /// No description provided for @werkzDatierungText.
+  ///
+  /// In de, this message translates to:
+  /// **'Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.'**
+  String get werkzDatierungText;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
