@@ -258,6 +258,13 @@ echter Hardware.
   und Schlagwörter lassen sich ausschliessen, in den Suchoptionen und im
   Satz. Dort nur unmittelbar vor einem bekannten Namen – vor einem
   unbekannten Wort bleibt „ohne" Text
+- **Herkunft: aus einer Kamera oder empfangen** – ein Filter in den
+  Suchoptionen (und in Sätzen wie „selbst aufgenommen“ oder „WhatsApp“)
+  trennt eigene Aufnahmen von Empfangenem. Aus einer Kamera heisst:
+  Hersteller und Modell stehen in der Datei, und der Name ist keiner, den
+  ein Bote vergibt (WhatsApp, Signal, Telegram) oder ein Bildschirmfoto
+  trägt. Ein unverändert per AirDrop geschicktes Foto trägt die Kameradaten
+  des Absenders und zählt deshalb als „aus einer Kamera“.
 - **Ein geratenes Aufnahmedatum sagt, dass es geraten ist.** Trägt eine
   Datei kein Aufnahmedatum, fällt der Import auf den Zeitstempel der Datei
   zurück – der letzte Ausweg, und nach jedem Kopieren und Zurückholen der

@@ -37,9 +37,16 @@ void main() {
       minFocalLengthMm: 24,
       maxFocalLengthMm: 200,
       maxSharpnessScore: 100.0,
+      herkunft: Aufnahmeherkunft.empfangen,
     );
 
     final restored = SearchFilters.fromJson(original.toJson());
+    expect(restored.herkunft, Aufnahmeherkunft.empfangen);
+    expect(
+      SearchFilters.fromJson(const {}).herkunft,
+      Aufnahmeherkunft.alle,
+      reason: 'gespeichert vor dem Filter',
+    );
 
     expect(restored.personIds, original.personIds);
     expect(restored.textMode, original.textMode);

@@ -64,6 +64,7 @@ enum Satzfundart {
   schaerfe,
   iso,
   datumsherkunft,
+  herkunft,
 }
 
 /// Die Wörter, gegen die der Leser prüft – aus der Bibliothek, nicht fest
@@ -164,6 +165,30 @@ Satzdeutung deuteSuchsatz(
       break;
     }
   }
+
+  // --- Woher die Aufnahme kommt ---------------------------------------
+  // Vor der Medienart: Sonst nähme die das „Fotos“ aus „eigene Fotos“,
+  // und übrig bliebe ein „eigene“, mit dem niemand etwas anfängt.
+  nimm(
+    RegExp(
+      r'\b(selbst\s+(aufgenommen|fotografiert)\w*|eigene[n]?\s+fotos|'
+      r'taken\s+by\s+me|my\s+own\s+photos)\b',
+      caseSensitive: false,
+    ),
+    Satzfundart.herkunft,
+    (_) => '',
+    (f, _) => f.copyWith(herkunft: Aufnahmeherkunft.kamera),
+  );
+  nimm(
+    RegExp(
+      r'\b(empfangen\w*|weitergeleitet\w*|whatsapp|screenshots?|'
+      r'bildschirmfotos?|received)\b',
+      caseSensitive: false,
+    ),
+    Satzfundart.herkunft,
+    (_) => '',
+    (f, _) => f.copyWith(herkunft: Aufnahmeherkunft.empfangen),
+  );
 
   // --- Favoriten und Medienart ---------------------------------------
   nimm(

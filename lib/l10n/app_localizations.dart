@@ -13698,6 +13698,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Vorschlag: {kratzer, plural, =0{keine Kratzer} =1{1 Kratzer} other{{kratzer} Kratzer}}, {staub, plural, =0{kein Staub} =1{1 Staubkorn} other{{staub} Staubkörner}}. Prüfen, Falsches radieren, dann anwenden.'**
   String bearbKratzerGefunden(int kratzer, int staub);
+
+  /// No description provided for @sucheHerkunft.
+  ///
+  /// In de, this message translates to:
+  /// **'Herkunft'**
+  String get sucheHerkunft;
+
+  /// No description provided for @sucheHerkunftAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle'**
+  String get sucheHerkunftAlle;
+
+  /// No description provided for @sucheHerkunftKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus einer Kamera'**
+  String get sucheHerkunftKamera;
+
+  /// No description provided for @sucheHerkunftEmpfangen.
+  ///
+  /// In de, this message translates to:
+  /// **'Empfangen'**
+  String get sucheHerkunftEmpfangen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

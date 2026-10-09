@@ -5123,5 +5123,9 @@
   "bearbRadieren": "Radierer: aus dem Vorschlag herausnehmen",
   "bearbKratzerKeine": "Keine Kratzer und kein Staub gefunden.",
   "bearbKratzerGefunden": "Vorschlag: {kratzer, plural, =0{keine Kratzer} =1{1 Kratzer} other{{kratzer} Kratzer}}, {staub, plural, =0{kein Staub} =1{1 Staubkorn} other{{staub} Staubkörner}}. Prüfen, Falsches radieren, dann anwenden.",
-  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}}
+  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}},
+  "sucheHerkunft": "Herkunft",
+  "sucheHerkunftAlle": "Alle",
+  "sucheHerkunftKamera": "Aus einer Kamera",
+  "sucheHerkunftEmpfangen": "Empfangen"
 }

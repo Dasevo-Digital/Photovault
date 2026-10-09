@@ -57,6 +57,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
   late MediaTypeFilter _mediaType;
   late bool _favoritesOnly;
   late bool _nurGeschaetztesDatum;
+  late Aufnahmeherkunft _herkunft;
   late bool _notInAnyAlbum;
   int? _minRating;
   late Set<String> _colorLabels;
@@ -132,6 +133,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     _mediaType = f.mediaType;
     _favoritesOnly = f.favoritesOnly;
     _nurGeschaetztesDatum = f.nurGeschaetztesDatum;
+    _herkunft = f.herkunft;
     _notInAnyAlbum = f.notInAnyAlbum;
     _minRating = f.minRating;
     _colorLabels = f.colorLabels.toSet();
@@ -210,6 +212,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       _mediaType = MediaTypeFilter.all;
       _favoritesOnly = false;
       _nurGeschaetztesDatum = false;
+      _herkunft = Aufnahmeherkunft.alle;
       _notInAnyAlbum = false;
       _minRating = null;
       _colorLabels = {};
@@ -243,6 +246,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     mediaType: _mediaType,
     favoritesOnly: _favoritesOnly,
     nurGeschaetztesDatum: _nurGeschaetztesDatum,
+    herkunft: _herkunft,
     notInAnyAlbum: _notInAnyAlbum,
     minRating: _minRating,
     colorLabels: _colorLabels,
@@ -1376,6 +1380,33 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 title: Text(AppTexte.of(context).sucheDatumGeschaetzt),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                AppTexte.of(context).sucheHerkunft,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              SegmentedButton<Aufnahmeherkunft>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: Aufnahmeherkunft.alle,
+                    label: Text(AppTexte.of(context).sucheHerkunftAlle),
+                  ),
+                  ButtonSegment(
+                    value: Aufnahmeherkunft.kamera,
+                    icon: const Icon(Icons.photo_camera_outlined),
+                    label: Text(AppTexte.of(context).sucheHerkunftKamera),
+                  ),
+                  ButtonSegment(
+                    value: Aufnahmeherkunft.empfangen,
+                    icon: const Icon(Icons.forward_to_inbox_outlined),
+                    label: Text(AppTexte.of(context).sucheHerkunftEmpfangen),
+                  ),
+                ],
+                selected: {_herkunft},
+                onSelectionChanged: (w) => setState(() => _herkunft = w.first),
               ),
             ],
           ),

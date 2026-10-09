@@ -4016,5 +4016,9 @@
   "bearbRadieren": "Eraser: remove from the suggestion",
   "bearbKratzerKeine": "No scratches or dust found.",
   "bearbKratzerGefunden": "Suggestion: {kratzer, plural, =0{no scratches} =1{1 scratch} other{{kratzer} scratches}}, {staub, plural, =0{no dust} =1{1 dust spot} other{{staub} dust spots}}. Check it, erase anything wrong, then apply.",
-  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}}
+  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}},
+  "sucheHerkunft": "Origin",
+  "sucheHerkunftAlle": "All",
+  "sucheHerkunftKamera": "From a camera",
+  "sucheHerkunftEmpfangen": "Received"
 }

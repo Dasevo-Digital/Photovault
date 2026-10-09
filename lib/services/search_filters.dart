@@ -65,6 +65,9 @@ class SearchFilters {
   /// findet.
   final bool nurGeschaetztesDatum;
 
+  /// Aus einer Kamera oder empfangen – siehe [Aufnahmeherkunft].
+  final Aufnahmeherkunft herkunft;
+
   const SearchFilters({
     this.personIds = const [],
     this.ohnePersonIds = const [],
@@ -95,6 +98,7 @@ class SearchFilters {
     this.maxFocalLengthMm,
     this.maxSharpnessScore,
     this.nurGeschaetztesDatum = false,
+    this.herkunft = Aufnahmeherkunft.alle,
   });
 
   bool get isEmpty =>
@@ -125,7 +129,8 @@ class SearchFilters {
       minFocalLengthMm == null &&
       maxFocalLengthMm == null &&
       maxSharpnessScore == null &&
-      !nurGeschaetztesDatum;
+      !nurGeschaetztesDatum &&
+      herkunft == Aufnahmeherkunft.alle;
 
   /// Da `null` bei den optionalen String-/Zahlen-Feldern eine gültige
   /// Bedeutung hat ("kein Filter"), braucht `copyWith` für sie explizite
@@ -158,6 +163,7 @@ class SearchFilters {
     MediaTypeFilter? mediaType,
     bool? favoritesOnly,
     bool? nurGeschaetztesDatum,
+    Aufnahmeherkunft? herkunft,
     bool? notInAnyAlbum,
     int? minRating,
     bool clearMinRating = false,
@@ -203,6 +209,7 @@ class SearchFilters {
       mediaType: mediaType ?? this.mediaType,
       favoritesOnly: favoritesOnly ?? this.favoritesOnly,
       nurGeschaetztesDatum: nurGeschaetztesDatum ?? this.nurGeschaetztesDatum,
+      herkunft: herkunft ?? this.herkunft,
       notInAnyAlbum: notInAnyAlbum ?? this.notInAnyAlbum,
       minRating: clearMinRating ? null : (minRating ?? this.minRating),
       colorLabels: colorLabels ?? this.colorLabels,
@@ -246,6 +253,7 @@ class SearchFilters {
     'mediaType': mediaType.name,
     'favoritesOnly': favoritesOnly,
     'nurGeschaetztesDatum': nurGeschaetztesDatum,
+    'herkunft': herkunft.name,
     'notInAnyAlbum': notInAnyAlbum,
     'minRating': minRating,
     'colorLabels': colorLabels.toList(),
@@ -288,6 +296,10 @@ class SearchFilters {
     ),
     favoritesOnly: json['favoritesOnly'] as bool? ?? false,
     nurGeschaetztesDatum: json['nurGeschaetztesDatum'] as bool? ?? false,
+    // Unbekannt (ältere Fassung oder Tippfehler) heisst: kein Filter.
+    herkunft:
+        Aufnahmeherkunft.values.asNameMap()[json['herkunft']] ??
+        Aufnahmeherkunft.alle,
     notInAnyAlbum: json['notInAnyAlbum'] as bool? ?? false,
     minRating: json['minRating'] as int?,
     colorLabels: (json['colorLabels'] as List<dynamic>? ?? const [])
@@ -305,3 +317,32 @@ class SearchFilters {
     maxSharpnessScore: (json['maxSharpnessScore'] as num?)?.toDouble(),
   );
 }
+
+/// Woher eine Aufnahme kommt – Apples „Von mir aufgenommen“ (iOS 27),
+/// hier ohne Gerätebindung.
+///
+/// **Aus einer Kamera** heisst: Die Datei trägt Hersteller und Modell
+/// einer Kamera, und ihr Name ist keiner, den ein Bote vergibt. Alles
+/// andere gilt als **empfangen**: was über WhatsApp, Signal oder Telegram
+/// kam (die Boten streichen die Kameradaten und benennen um), Bildschirm-
+/// fotos und Bilder aus dem Netz.
+///
+/// Ein Foto, das jemand anderes mit seiner Kamera gemacht und unverändert
+/// geschickt hat – per AirDrop, als Datei –, trägt dessen Kameradaten und
+/// zählt als „aus einer Kamera“. Wem die Kamera gehörte, steht nicht in
+/// der Datei.
+enum Aufnahmeherkunft { alle, kamera, empfangen }
+
+/// Namen, die Boten und Bildschirmfotos vergeben – als `LIKE`-Muster auf
+/// den kleingeschriebenen Dateinamen.
+const botennamen = [
+  'img-%-wa%', // WhatsApp: IMG-20240512-WA0003.jpg
+  'vid-%-wa%',
+  'signal-%', // Signal: signal-2024-05-12-101500.jpg
+  'photo_____-__-__%', // Telegram: photo_2024-05-12_10-15-00.jpg
+  'video_____-__-__%',
+  'screenshot%',
+  'screen shot%',
+  'bildschirmfoto%',
+  'scr-%', // Samsung: Screenshot als SCR-…
+];

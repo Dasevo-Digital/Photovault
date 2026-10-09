@@ -8909,4 +8909,16 @@ class AppTexteDe extends AppTexte {
     );
     return 'Vorschlag: $_temp0, $_temp1. Prüfen, Falsches radieren, dann anwenden.';
   }
+
+  @override
+  String get sucheHerkunft => 'Herkunft';
+
+  @override
+  String get sucheHerkunftAlle => 'Alle';
+
+  @override
+  String get sucheHerkunftKamera => 'Aus einer Kamera';
+
+  @override
+  String get sucheHerkunftEmpfangen => 'Empfangen';
 }

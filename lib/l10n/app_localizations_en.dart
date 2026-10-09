@@ -8860,4 +8860,16 @@ class AppTexteEn extends AppTexte {
     );
     return 'Suggestion: $_temp0, $_temp1. Check it, erase anything wrong, then apply.';
   }
+
+  @override
+  String get sucheHerkunft => 'Origin';
+
+  @override
+  String get sucheHerkunftAlle => 'All';
+
+  @override
+  String get sucheHerkunftKamera => 'From a camera';
+
+  @override
+  String get sucheHerkunftEmpfangen => 'Received';
 }

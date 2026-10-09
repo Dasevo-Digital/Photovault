@@ -89,6 +89,19 @@ void main() {
       }
     });
 
+    test('Herkunft aus dem Satz', () {
+      expect(
+        deute('selbst aufgenommen').filter.herkunft,
+        Aufnahmeherkunft.kamera,
+      );
+      expect(deute('eigene Fotos').filter.herkunft, Aufnahmeherkunft.kamera);
+      for (final satz in ['WhatsApp', 'Screenshots', 'empfangene']) {
+        final d = deute(satz);
+        expect(d.filter.herkunft, Aufnahmeherkunft.empfangen, reason: satz);
+        expect(d.rest, isEmpty, reason: satz);
+      }
+    });
+
     test('ein Satz aus mehreren neuen Feldern faellt nicht auseinander', () {
       final d = deute('unscharfe Fotos ab ISO 3200 aus Berlin');
       expect(d.filter.maxSharpnessScore, isNotNull);

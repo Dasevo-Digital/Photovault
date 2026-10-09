@@ -813,6 +813,7 @@ class _Satzmarken extends StatelessWidget {
     Satzfundart.schaerfe => t.suchoptNurUnscharfe,
     Satzfundart.iso => t.suchoptIso,
     Satzfundart.datumsherkunft => t.sucheDatumGeschaetzt,
+    Satzfundart.herkunft => t.sucheHerkunft,
   };
 
   @override

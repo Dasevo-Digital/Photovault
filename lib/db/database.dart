@@ -7815,6 +7815,20 @@ class AppDatabase extends _$AppDatabase {
     if (filters.nurGeschaetztesDatum) {
       wo.add(assets.datumGeschaetzt.equals(true));
     }
+    if (filters.herkunft != Aufnahmeherkunft.alle) {
+      // `isNotNull` zuerst: Ohne Hersteller wäre `<> ''` NULL, und ein
+      // verneintes NULL bliebe NULL – die Aufnahmen ohne Kameradaten
+      // fielen dann aus beiden Antworten heraus.
+      final kamera =
+          assets.cameraMake.isNotNull() &
+          assets.cameraMake.equals('').not() &
+          CustomExpression<bool>(
+            'NOT (${[for (final m in botennamen) "lower(assets.original_file_name) LIKE '$m'"].join(' OR ')})',
+          );
+      wo.add(
+        filters.herkunft == Aufnahmeherkunft.kamera ? kamera : kamera.not(),
+      );
+    }
 
     for (final personId in filters.personIds) {
       wo.add(

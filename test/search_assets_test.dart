@@ -580,4 +580,29 @@ void main() {
       expect(results.map((r) => r.id), [needsResolve.id]);
     },
   );
+
+  test('Herkunft: aus einer Kamera oder empfangen', () async {
+    final kamera = await importPhoto('IMG_4711.jpg');
+    final whatsapp = await importPhoto('IMG-20240512-WA0003.jpg');
+    final screenshot = await importPhoto('Screenshot 2024-05-12 at 10.15.jpg');
+    final ohneDaten = await importPhoto('irgendwas.jpg');
+    final botMitKamera = await importPhoto('signal-2024-05-12-101500.jpg');
+    for (final a in [kamera, whatsapp, botMitKamera]) {
+      await db.setCameraMetadata(
+        a.id,
+        const CameraInfo(make: 'Apple', model: 'iPhone 15'),
+      );
+    }
+
+    Future<Set<String>> mit(Aufnahmeherkunft h) async => {
+      for (final r in await db.searchAssets(SearchFilters(herkunft: h))) r.id,
+    };
+    expect(await mit(Aufnahmeherkunft.kamera), {kamera.id});
+    expect(await mit(Aufnahmeherkunft.empfangen), {
+      whatsapp.id,
+      screenshot.id,
+      ohneDaten.id,
+      botMitKamera.id,
+    });
+  });
 }
