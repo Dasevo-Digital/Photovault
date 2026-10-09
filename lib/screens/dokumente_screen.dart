@@ -73,7 +73,9 @@ class _DokumenteScreenState extends State<DokumenteScreen> {
 
   Future<void> _sperren(List<Dokumentvorschlag> liste) async {
     final t = AppTexte.of(context);
-    if (!await ensureVaultUnlocked(context, widget.library)) return;
+    if (!await ensureVaultUnlocked(context, widget.library) || !mounted) {
+      return;
+    }
     setState(() => _arbeitet = true);
     var anzahl = 0;
     try {
