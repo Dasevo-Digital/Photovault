@@ -13572,6 +13572,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.'**
   String get werkzDatierungText;
+
+  /// No description provided for @diashowMusikTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Musik unterlegen?'**
+  String get diashowMusikTitel;
+
+  /// No description provided for @diashowMusikText.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Musikstück von der Platte läuft unter der Diashow – wiederholt, wenn es kürzer ist, sonst mit dem Video beendet, am Ende ausgeblendet. Das Stück wird nur in das Video geschrieben, nicht in die Bibliothek übernommen.'**
+  String get diashowMusikText;
+
+  /// No description provided for @diashowOhneMusik.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Musik'**
+  String get diashowOhneMusik;
+
+  /// No description provided for @diashowMusikWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Musik wählen …'**
+  String get diashowMusikWaehlen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

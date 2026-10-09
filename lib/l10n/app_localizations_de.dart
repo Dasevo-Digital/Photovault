@@ -8801,4 +8801,17 @@ class AppTexteDe extends AppTexte {
   @override
   String get werkzDatierungText =>
       'Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.';
+
+  @override
+  String get diashowMusikTitel => 'Musik unterlegen?';
+
+  @override
+  String get diashowMusikText =>
+      'Ein Musikstück von der Platte läuft unter der Diashow – wiederholt, wenn es kürzer ist, sonst mit dem Video beendet, am Ende ausgeblendet. Das Stück wird nur in das Video geschrieben, nicht in die Bibliothek übernommen.';
+
+  @override
+  String get diashowOhneMusik => 'Ohne Musik';
+
+  @override
+  String get diashowMusikWaehlen => 'Musik wählen …';
 }

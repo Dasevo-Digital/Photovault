@@ -332,6 +332,34 @@ class ImageConverterChannel: NSObject {
                 Flugvideoschreiber.laufend?.verwirf()
                 Flugvideoschreiber.laufend = nil
                 result(nil)
+            case "videoMitTon":
+                // Musik unter ein fertiges Video legen – siehe
+                // lib/services/tonspur.dart.
+                guard
+                    let args = call.arguments as? [String: Any],
+                    let video = args["video"] as? String,
+                    let ton = args["ton"] as? String,
+                    let ziel = args["ziel"] as? String
+                else {
+                    result(FlutterError(code: "bad_args", message: "video/ton/ziel fehlt", details: nil))
+                    return
+                }
+                let ein = (args["einblenden"] as? NSNumber)?.doubleValue ?? 1
+                let aus = (args["ausblenden"] as? NSNumber)?.doubleValue ?? 3
+                Tonunterleger.unterlege(
+                    video: URL(fileURLWithPath: video),
+                    ton: URL(fileURLWithPath: ton),
+                    ziel: URL(fileURLWithPath: ziel),
+                    einblenden: ein, ausblenden: aus
+                ) { grund in
+                    DispatchQueue.main.async {
+                        if let grund = grund {
+                            result(FlutterError(code: "video", message: grund, details: nil))
+                        } else {
+                            result(nil)
+                        }
+                    }
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -1559,6 +1587,104 @@ final class Flugvideoschreiber {
     private static func grund(_ schreiber: AVAssetWriter) -> String {
         if let fehler = schreiber.error { return "\(fehler.localizedDescription)" }
         return "AVAssetWriter im Zustand \(schreiber.status.rawValue)"
+    }
+}
+
+/// Legt eine Musikdatei unter ein fertiges Video: die Musik so oft
+/// hintereinander, bis sie das Video füllt, am Anfang ein- und am Ende
+/// ausgeblendet. Das Bild wird dabei neu kodiert – eine Tonmischung
+/// (`audioMix`) nimmt AVFoundation nur mit einer Voreinstellung an, die
+/// kodiert; die Durchreiche ließe sie stillschweigend weg.
+enum Tonunterleger {
+    static func unterlege(
+        video: URL, ton: URL, ziel: URL,
+        einblenden: Double, ausblenden: Double,
+        fertig: @escaping (String?) -> Void
+    ) {
+        let film = AVURLAsset(url: video)
+        let musik = AVURLAsset(url: ton)
+        let dauer = film.duration
+        guard
+            let bildspur = film.tracks(withMediaType: .video).first,
+            CMTimeGetSeconds(dauer) > 0
+        else {
+            fertig("Das Video hat keine Bildspur.")
+            return
+        }
+        guard let tonspur = musik.tracks(withMediaType: .audio).first else {
+            fertig("Die Musikdatei hat keine Tonspur.")
+            return
+        }
+        let stueck = musik.duration
+        guard CMTimeGetSeconds(stueck) > 0 else {
+            fertig("Die Musikdatei ist leer.")
+            return
+        }
+
+        let mischung = AVMutableComposition()
+        guard
+            let bild = mischung.addMutableTrack(
+                withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+            let klang = mischung.addMutableTrack(
+                withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        else {
+            fertig("Die Spuren ließen sich nicht anlegen.")
+            return
+        }
+        do {
+            try bild.insertTimeRange(
+                CMTimeRange(start: .zero, duration: dauer), of: bildspur, at: .zero)
+            bild.preferredTransform = bildspur.preferredTransform
+            var bei = CMTime.zero
+            while CMTimeCompare(bei, dauer) < 0 {
+                let rest = CMTimeSubtract(dauer, bei)
+                let laenge = CMTimeMinimum(stueck, rest)
+                try klang.insertTimeRange(
+                    CMTimeRange(start: .zero, duration: laenge), of: tonspur, at: bei)
+                bei = CMTimeAdd(bei, laenge)
+            }
+        } catch {
+            fertig(error.localizedDescription)
+            return
+        }
+
+        let sekunden = CMTimeGetSeconds(dauer)
+        let aus = min(ausblenden, sekunden)
+        let ein = min(einblenden, sekunden - aus)
+        let rampen = AVMutableAudioMixInputParameters(track: klang)
+        if ein > 0 {
+            rampen.setVolumeRamp(
+                fromStartVolume: 0, toEndVolume: 1,
+                timeRange: CMTimeRange(
+                    start: .zero, duration: CMTime(seconds: ein, preferredTimescale: 600)))
+        }
+        rampen.setVolumeRamp(
+            fromStartVolume: 1, toEndVolume: 0,
+            timeRange: CMTimeRange(
+                start: CMTime(seconds: sekunden - aus, preferredTimescale: 600),
+                duration: CMTime(seconds: aus, preferredTimescale: 600)))
+        let tonmischung = AVMutableAudioMix()
+        tonmischung.inputParameters = [rampen]
+
+        guard
+            let ausgabe = AVAssetExportSession(
+                asset: mischung, presetName: AVAssetExportPresetHighestQuality)
+        else {
+            fertig("Der Export ließ sich nicht anlegen.")
+            return
+        }
+        try? FileManager.default.removeItem(at: ziel)
+        ausgabe.outputURL = ziel
+        ausgabe.outputFileType = .mp4
+        ausgabe.audioMix = tonmischung
+        ausgabe.shouldOptimizeForNetworkUse = true
+        ausgabe.exportAsynchronously {
+            if ausgabe.status == .completed {
+                fertig(nil)
+            } else {
+                fertig(ausgabe.error?.localizedDescription ?? "Der Export ist gescheitert.")
+            }
+        }
     }
 }
 

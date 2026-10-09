@@ -82,6 +82,23 @@ class NativerVideoschreiber {
   /// Schliesst die Datei ab.
   static Future<void> fertig() => kanal.invokeMethod<void>('videoFertig');
 
+  /// Legt die Musik [ton] unter das fertige [video] und schreibt nach
+  /// [ziel] – siehe `services/tonspur.dart`. Wirft eine
+  /// [PlatformException], wenn AVFoundation es nicht schafft.
+  static Future<void> mitTon({
+    required String video,
+    required String ton,
+    required String ziel,
+    required double einblenden,
+    required double ausblenden,
+  }) => kanal.invokeMethod<void>('videoMitTon', {
+    'video': video,
+    'ton': ton,
+    'ziel': ziel,
+    'einblenden': einblenden,
+    'ausblenden': ausblenden,
+  });
+
   /// Bricht ab und löscht die halbe Datei. Wirft nie – ein Abbruch soll
   /// nicht daran scheitern, dass das Aufräumen scheitert.
   static Future<void> verwirf() async {

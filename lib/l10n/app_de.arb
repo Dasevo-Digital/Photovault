@@ -5098,5 +5098,9 @@
   "@datierungAlleUebernehmen": {"placeholders": {"anzahl": {"type": "int"}}},
   "datierungUebernommen": "{anzahl, plural, =1{1 Foto zeitlich eingeordnet} other{{anzahl} Fotos zeitlich eingeordnet}}",
   "@datierungUebernommen": {"placeholders": {"anzahl": {"type": "int"}}},
-  "werkzDatierungText": "Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell."
+  "werkzDatierungText": "Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.",
+  "diashowMusikTitel": "Musik unterlegen?",
+  "diashowMusikText": "Ein Musikstück von der Platte läuft unter der Diashow – wiederholt, wenn es kürzer ist, sonst mit dem Video beendet, am Ende ausgeblendet. Das Stück wird nur in das Video geschrieben, nicht in die Bibliothek übernommen.",
+  "diashowOhneMusik": "Ohne Musik",
+  "diashowMusikWaehlen": "Musik wählen …"
 }

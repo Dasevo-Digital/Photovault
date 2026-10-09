@@ -8752,4 +8752,17 @@ class AppTexteEn extends AppTexte {
   @override
   String get werkzDatierungText =>
       'Estimates the decade of scanned and undated photos – from image search, without a new model.';
+
+  @override
+  String get diashowMusikTitel => 'Add music?';
+
+  @override
+  String get diashowMusikText =>
+      'A piece of music from disk plays under the slideshow – repeated if it is shorter, otherwise ending with the video, faded out at the end. The track is only written into the video, not added to the library.';
+
+  @override
+  String get diashowOhneMusik => 'Without music';
+
+  @override
+  String get diashowMusikWaehlen => 'Choose music …';
 }

@@ -190,7 +190,10 @@ echter Hardware.
   Titelkarte, langsamer Zoom und Schwenk, Überblendungen, MP4 in Full
   HD. Der **Jahresrückblick** („Dein Jahr …") zeigt dazu Fotos, Tage,
   Länder, den stärksten Monat, wer am häufigsten dabei war und die
-  Reisen; die Auswahl gibt zuerst jedem Monat sein bestes Foto
+  Reisen; die Auswahl gibt zuerst jedem Monat sein bestes Foto.
+  Auf Wunsch läuft ein eigenes Musikstück darunter: wiederholt, wenn es
+  kürzer ist, auf die Länge des Videos geschnitten, eine Sekunde ein- und
+  drei Sekunden ausgeblendet (macOS über AVFoundation, sonst ffmpeg).
 - **Kalender** – Jahresübersicht mit Titelbild und Foto-/Videoanzahl je Jahr
 - **Karte** – Fotos mit GPS-Daten auf einer Karte (OpenStreetMap-Kacheln)
   oder wahlweise auf einem interaktiven 3D-Globus. Die dunkle Karte
