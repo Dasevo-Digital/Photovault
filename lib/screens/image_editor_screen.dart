@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show compute;
@@ -11,6 +13,7 @@ import 'package:image/image.dart' as img;
 import '../services/geometry_edits.dart';
 import '../services/inpainting_service.dart';
 import '../services/kolorieren.dart';
+import '../services/kratzersuche.dart';
 import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
@@ -116,6 +119,12 @@ _ImageEditResult? _cropImageIsolate(_CropArgs args) {
 /// [_ImageEditorScreenState._save]) – separat von den Zwischenschritten,
 /// die für eine flüssige Vorschau bewusst mit niedrigerer Qualität
 /// encodieren.
+Kratzerfund _kratzerIsolate(Uint8List bytes) {
+  final bild = img.decodeImage(bytes);
+  if (bild == null) throw StateError('nicht dekodierbar');
+  return sucheKratzer(bild);
+}
+
 Uint8List? _finalizeImageIsolate(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return null;
@@ -179,6 +188,17 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   /// heisst „Werkzeug nicht offen".
   List<List<Offset>>? _retuscheStriche;
   double _pinselbreite = 24;
+
+  /// Der Vorschlag der Kratzersuche (siehe `services/kratzersuche.dart`)
+  /// in Bildauflösung – und dasselbe als rote Fläche zum Darüberlegen.
+  img.Image? _automaske;
+  ui.Image? _automaskeBild;
+
+  /// Was aus dem Vorschlag wieder herausgenommen wird, gemalt wie die
+  /// Striche. Ein Vorschlag ohne Radierer hiesse: alles oder nichts – und
+  /// ein einziger übermalter Ast verdürbe das ganze Foto.
+  List<List<Offset>> _radierStriche = [];
+  bool _radieren = false;
   Rect? _cropRect; // In lokalen Koordinaten des angezeigten (skalierten) Bilds.
   double? _displayScale; // Bild-Pixel * _displayScale = angezeigte Koordinaten.
 
@@ -238,7 +258,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       _straightenGrad = null;
       _perspektiveEcken = null;
       _gezogeneEcke = null;
-      _retuscheStriche = null;
+      _retuscheBeenden();
       _processing = false;
     });
   }
@@ -292,6 +312,82 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
 
   void _startRetusche() => setState(() => _retuscheStriche = []);
 
+  /// Schliesst das Werkzeug „Objekt entfernen“ samt Vorschlag. Nur
+  /// innerhalb von `setState` aufrufen.
+  void _retuscheBeenden() {
+    _retuscheStriche = null;
+    _automaske = null;
+    _automaskeBild?.dispose();
+    _automaskeBild = null;
+    _radierStriche = [];
+    _radieren = false;
+  }
+
+  @override
+  void dispose() {
+    _automaskeBild?.dispose();
+    super.dispose();
+  }
+
+  /// Sucht Kratzer und Staub und legt das Ergebnis als Vorschlag über das
+  /// Bild – gefüllt wird erst mit „Anwenden“.
+  Future<void> _sucheKratzer() async {
+    final bytes = _currentBytes;
+    if (bytes == null) return;
+    final t = AppTexte.of(context);
+    setState(() => _processing = true);
+    try {
+      final fund = await compute(_kratzerIsolate, bytes);
+      if (!mounted) return;
+      if (fund.kratzer + fund.staub == 0) {
+        setState(() => _processing = false);
+        melde.hinweis(t.bearbKratzerKeine);
+        return;
+      }
+      final rot = await _alsRoteFlaeche(fund.maske);
+      if (!mounted) {
+        rot.dispose();
+        return;
+      }
+      setState(() {
+        _automaske = fund.maske;
+        _automaskeBild?.dispose();
+        _automaskeBild = rot;
+        _radierStriche = [];
+        _processing = false;
+      });
+      melde.hinweis(t.bearbKratzerGefunden(fund.kratzer, fund.staub));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _processing = false);
+      melde.fehler(t.bearbRetuscheFehler('$e'));
+    }
+  }
+
+  /// Die Maske als halbdurchsichtiges Rot, in der Farbe der Pinselstriche.
+  Future<ui.Image> _alsRoteFlaeche(img.Image maske) {
+    final punkte = Uint8List(maske.width * maske.height * 4);
+    var i = 0;
+    for (final p in maske) {
+      if (p.r > 0) {
+        punkte[i] = 0xFF;
+        punkte[i + 1] = 0x52;
+        punkte[i + 2] = 0x52;
+        punkte[i + 3] = 0x99;
+      }
+      i += 4;
+    }
+    final fertig = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      punkte,
+      maske.width,
+      maske.height,
+      ui.PixelFormat.rgba8888,
+      fertig.complete,
+    );
+    return fertig.future;
+  }
+
   /// Führt die Objektentfernung aus.
   ///
   /// Läuft NICHT über `compute()`: Die ONNX-Anbindung geht über einen
@@ -305,8 +401,9 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     final bytes = _currentBytes;
     final w = _currentWidth, h = _currentHeight;
     final modelle = widget.modelsDir;
+    final auto = _automaske;
     if (striche == null ||
-        striche.isEmpty ||
+        (striche.isEmpty && auto == null) ||
         scale == null ||
         bytes == null ||
         w == null ||
@@ -321,8 +418,22 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       final decoded = img.decodeImage(bytes);
       if (decoded == null) throw StateError('nicht dekodierbar');
 
-      // Die Striche als Graustufenmaske in Bildauflösung.
+      // Die Striche als Graustufenmaske in Bildauflösung – auf dem
+      // Vorschlag der Kratzersuche, falls es einen gibt.
       final maske = img.Image(width: w, height: h);
+      if (auto != null) {
+        final passend = auto.width == w && auto.height == h
+            ? auto
+            : img.copyResize(
+                auto,
+                width: w,
+                height: h,
+                interpolation: img.Interpolation.nearest,
+              );
+        for (final p in passend) {
+          if (p.r > 0) maske.setPixelRgb(p.x, p.y, 255, 255, 255);
+        }
+      }
       final radius = (_pinselbreite / 2 / scale).clamp(1.0, 400.0);
       for (final strich in striche) {
         for (final punkt in strich) {
@@ -332,6 +443,17 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             y: (punkt.dy / scale).round(),
             radius: radius.round(),
             color: img.ColorRgb8(255, 255, 255),
+          );
+        }
+      }
+      for (final strich in _radierStriche) {
+        for (final punkt in strich) {
+          img.fillCircle(
+            maske,
+            x: (punkt.dx / scale).round(),
+            y: (punkt.dy / scale).round(),
+            radius: radius.round(),
+            color: img.ColorRgb8(0, 0, 0),
           );
         }
       }
@@ -353,7 +475,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         _currentBytes = kodiert.bytes;
         _currentWidth = kodiert.width;
         _currentHeight = kodiert.height;
-        _retuscheStriche = null;
+        _retuscheBeenden();
         _processing = false;
       });
     } catch (e) {
@@ -559,21 +681,37 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                   Positioned.fill(
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onPanStart: (d) => setState(
-                        () => _retuscheStriche = [
-                          ..._retuscheStriche!,
-                          [d.localPosition],
-                        ],
-                      ),
+                      onPanStart: (d) => setState(() {
+                        if (_radieren) {
+                          _radierStriche = [
+                            ..._radierStriche,
+                            [d.localPosition],
+                          ];
+                        } else {
+                          _retuscheStriche = [
+                            ..._retuscheStriche!,
+                            [d.localPosition],
+                          ];
+                        }
+                      }),
                       onPanUpdate: (d) => setState(() {
-                        final alle = [..._retuscheStriche!];
+                        final alle = [
+                          ...(_radieren ? _radierStriche : _retuscheStriche!),
+                        ];
+                        if (alle.isEmpty) return;
                         alle[alle.length - 1] = [...alle.last, d.localPosition];
-                        _retuscheStriche = alle;
+                        if (_radieren) {
+                          _radierStriche = alle;
+                        } else {
+                          _retuscheStriche = alle;
+                        }
                       }),
                       child: CustomPaint(
                         painter: _RetuscheMaler(
                           _retuscheStriche!,
                           _pinselbreite,
+                          vorschlag: _automaskeBild,
+                          radiert: _radierStriche,
                         ),
                       ),
                     ),
@@ -653,26 +791,49 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       return Row(
         children: [
           TextButton(
-            onPressed: _processing
-                ? null
-                : () => setState(() => _retuscheStriche = null),
+            onPressed: _processing ? null : () => setState(_retuscheBeenden),
             child: Text(
               tt.allgAbbrechen,
               style: const TextStyle(color: Colors.white70),
             ),
           ),
           IconButton(
+            tooltip: tt.bearbKratzerSuchen,
+            color: Colors.white70,
+            icon: const Icon(Icons.healing_outlined),
+            onPressed: _processing ? null : _sucheKratzer,
+          ),
+          IconButton(
+            tooltip: tt.bearbRadieren,
+            color: Colors.white70,
+            isSelected: _radieren,
+            icon: const Icon(Icons.brush_outlined),
+            selectedIcon: const Icon(Icons.auto_fix_off),
+            onPressed: _processing
+                ? null
+                : () => setState(() => _radieren = !_radieren),
+          ),
+          IconButton(
             tooltip: tt.bearbRetuscheZurueck,
             color: Colors.white70,
             icon: const Icon(Icons.undo),
-            onPressed: _processing || _retuscheStriche!.isEmpty
+            onPressed:
+                _processing ||
+                    (_radieren ? _radierStriche : _retuscheStriche!).isEmpty
                 ? null
-                : () => setState(
-                    () => _retuscheStriche = _retuscheStriche!.sublist(
-                      0,
-                      _retuscheStriche!.length - 1,
-                    ),
-                  ),
+                : () => setState(() {
+                    if (_radieren) {
+                      _radierStriche = _radierStriche.sublist(
+                        0,
+                        _radierStriche.length - 1,
+                      );
+                    } else {
+                      _retuscheStriche = _retuscheStriche!.sublist(
+                        0,
+                        _retuscheStriche!.length - 1,
+                      );
+                    }
+                  }),
           ),
           Expanded(
             child: Slider(
@@ -686,7 +847,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             ),
           ),
           FilledButton.icon(
-            onPressed: _processing || _retuscheStriche!.isEmpty
+            onPressed:
+                _processing || (_retuscheStriche!.isEmpty && _automaske == null)
                 ? null
                 : _applyRetusche,
             icon: const Icon(Icons.auto_fix_high),
@@ -1196,10 +1358,32 @@ class _EckenMaler extends CustomPainter {
 class _RetuscheMaler extends CustomPainter {
   final List<List<Offset>> striche;
   final double breite;
-  const _RetuscheMaler(this.striche, this.breite);
+
+  /// Der Vorschlag der Kratzersuche, schon rot eingefärbt.
+  final ui.Image? vorschlag;
+
+  /// Herausgenommenes – wird aus Vorschlag und Strichen ausgespart.
+  final List<List<Offset>> radiert;
+  const _RetuscheMaler(
+    this.striche,
+    this.breite, {
+    this.vorschlag,
+    this.radiert = const [],
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Eine eigene Ebene, damit der Radierer wirklich ausspart: Mit
+    // `BlendMode.clear` direkt auf der Leinwand fräße er das Foto mit.
+    canvas.saveLayer(Offset.zero & size, Paint());
+    if (vorschlag case final bild?) {
+      canvas.drawImageRect(
+        bild,
+        Rect.fromLTWH(0, 0, bild.width.toDouble(), bild.height.toDouble()),
+        Offset.zero & size,
+        Paint()..filterQuality = FilterQuality.none,
+      );
+    }
     final stift = Paint()
       // Halbdurchsichtig, damit man sieht, was darunter liegt – man muss
       // beim Malen erkennen können, ob man das Objekt schon ganz erwischt
@@ -1226,9 +1410,35 @@ class _RetuscheMaler extends CustomPainter {
       }
       canvas.drawPath(pfad, stift);
     }
+    final radierer = Paint()
+      ..blendMode = BlendMode.clear
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = breite
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    for (final strich in radiert) {
+      if (strich.isEmpty) continue;
+      final pfad = Path()..moveTo(strich.first.dx, strich.first.dy);
+      for (final p in strich.skip(1)) {
+        pfad.lineTo(p.dx, p.dy);
+      }
+      if (strich.length == 1) {
+        canvas.drawCircle(
+          strich.first,
+          breite / 2,
+          Paint()..blendMode = BlendMode.clear,
+        );
+      } else {
+        canvas.drawPath(pfad, radierer);
+      }
+    }
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _RetuscheMaler old) =>
-      old.striche != striche || old.breite != breite;
+      old.striche != striche ||
+      old.breite != breite ||
+      old.vorschlag != vorschlag ||
+      old.radiert != radiert;
 }

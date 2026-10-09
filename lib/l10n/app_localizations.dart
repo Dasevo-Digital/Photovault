@@ -13674,6 +13674,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.'**
   String get karteAusschnittLeer;
+
+  /// No description provided for @bearbKratzerSuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'Kratzer und Staub suchen'**
+  String get bearbKratzerSuchen;
+
+  /// No description provided for @bearbRadieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Radierer: aus dem Vorschlag herausnehmen'**
+  String get bearbRadieren;
+
+  /// No description provided for @bearbKratzerKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Kratzer und kein Staub gefunden.'**
+  String get bearbKratzerKeine;
+
+  /// No description provided for @bearbKratzerGefunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschlag: {kratzer, plural, =0{keine Kratzer} =1{1 Kratzer} other{{kratzer} Kratzer}}, {staub, plural, =0{kein Staub} =1{1 Staubkorn} other{{staub} Staubkörner}}. Prüfen, Falsches radieren, dann anwenden.'**
+  String bearbKratzerGefunden(int kratzer, int staub);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

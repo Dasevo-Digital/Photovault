@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/image_editor_screen.dart';
+import 'package:photo_vault/services/meldungsdienst.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 
 /// **„Objektentfernung geht nicht."**
@@ -39,9 +40,22 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
-  Future<AssetData> aufnahme() async {
-    final bild = img.Image(width: 40, height: 30);
+  Future<AssetData> aufnahme({bool mitKratzer = false}) async {
+    final bild = img.Image(
+      width: mitKratzer ? 320 : 40,
+      height: mitKratzer ? 240 : 30,
+    );
     img.fill(bild, color: img.ColorRgb8(120, 140, 160));
+    if (mitKratzer) {
+      img.drawLine(
+        bild,
+        x1: 10,
+        y1: 20,
+        x2: 300,
+        y2: 220,
+        color: img.ColorRgb8(250, 250, 250),
+      );
+    }
     final datei = pfade.absolute('originals/a1.jpg');
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(img.encodeJpg(bild));
@@ -152,4 +166,43 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
     });
   });
+
+  testWidgets(
+    'die Kratzersuche legt einen Vorschlag an, der sich anwenden lässt',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      addTearDown(melde.verlaufLeeren);
+
+      await tester.runAsync(() async {
+        final asset = await aufnahme(mitKratzer: true);
+        await zeige(tester, asset, modellordner());
+        await tester.tapAt(tester.getCenter(find.byIcon(Icons.auto_fix_high)));
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+        FilledButton anwenden() => tester.widget<FilledButton>(
+          find.ancestor(
+            of: find.text('Entfernen'),
+            matching: find.byWidgetPredicate((w) => w is FilledButton),
+          ),
+        );
+        expect(anwenden().onPressed, isNull, reason: 'noch nichts markiert');
+
+        await tester.tap(find.byIcon(Icons.healing_outlined));
+        for (var i = 0; i < 40 && melde.sichtbare.isEmpty; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+        expect(melde.sichtbare.single.text, startsWith('Vorschlag: 1 Kratzer'));
+        await tester.pump();
+        expect(anwenden().onPressed, isNotNull, reason: 'der Vorschlag genügt');
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 1));
+      });
+    },
+  );
 }

@@ -495,6 +495,15 @@ echter Hardware.
   was dahinter plausibel ist: Mülleimer, Stromleitung, fremder Kopf am
   Bildrand. Der Pinsel arbeitet auf dem Original, das Ergebnis bleibt
   nicht-destruktiv
+- **Kratzer und Staub in Scans finden** – im Werkzeug „Objekt
+  entfernen“ sucht ein Knopf nach Kratzern, Knicken und Staub und legt sie
+  als rote Maske über das Bild; ein Radierer nimmt heraus, was kein
+  Schaden ist, und erst „Entfernen“ lässt LaMa füllen. Gesucht wird ohne
+  Modell mit dem morphologischen Zylinderhut: Was schmaler ist als sieben
+  Bildpunkte, schlägt an; als Kratzer gilt davon nur, was lang und gerade
+  ist, als Staub nur ein harter, vereinzelter Fleck auf ruhiger Fläche.
+  Gegenprobe an 58 modernen Fotos ohne Schäden: in 46 kein Fund, in den
+  übrigen meist Kabel und Fensterkanten, im Mittel 0,04 % der Fläche.
 - **Einfärben** – **DDColor** gibt alten Schwarzweiss-Fotos Farbe. Das
   Modell sagt nur die Farbe voraus, die Helligkeit kommt aus dem Original
   in voller Auflösung – das Foto bleibt so scharf, wie es war. Im

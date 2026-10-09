@@ -5118,5 +5118,10 @@
   "karteAusschnittListe": "Fotos im Ausschnitt",
   "karteImAusschnitt": "{anzahl, plural, =0{Keine Fotos im Ausschnitt} =1{1 Foto im Ausschnitt} other{{anzahl} Fotos im Ausschnitt}}",
   "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
-  "karteAusschnittLeer": "Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht."
+  "karteAusschnittLeer": "Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.",
+  "bearbKratzerSuchen": "Kratzer und Staub suchen",
+  "bearbRadieren": "Radierer: aus dem Vorschlag herausnehmen",
+  "bearbKratzerKeine": "Keine Kratzer und kein Staub gefunden.",
+  "bearbKratzerGefunden": "Vorschlag: {kratzer, plural, =0{keine Kratzer} =1{1 Kratzer} other{{kratzer} Kratzer}}, {staub, plural, =0{kein Staub} =1{1 Staubkorn} other{{staub} Staubkörner}}. Prüfen, Falsches radieren, dann anwenden.",
+  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}}
 }

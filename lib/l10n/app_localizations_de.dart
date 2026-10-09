@@ -8881,4 +8881,32 @@ class AppTexteDe extends AppTexte {
   @override
   String get karteAusschnittLeer =>
       'Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.';
+
+  @override
+  String get bearbKratzerSuchen => 'Kratzer und Staub suchen';
+
+  @override
+  String get bearbRadieren => 'Radierer: aus dem Vorschlag herausnehmen';
+
+  @override
+  String get bearbKratzerKeine => 'Keine Kratzer und kein Staub gefunden.';
+
+  @override
+  String bearbKratzerGefunden(int kratzer, int staub) {
+    String _temp0 = intl.Intl.pluralLogic(
+      kratzer,
+      locale: localeName,
+      other: '$kratzer Kratzer',
+      one: '1 Kratzer',
+      zero: 'keine Kratzer',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      staub,
+      locale: localeName,
+      other: '$staub Staubkörner',
+      one: '1 Staubkorn',
+      zero: 'kein Staub',
+    );
+    return 'Vorschlag: $_temp0, $_temp1. Prüfen, Falsches radieren, dann anwenden.';
+  }
 }

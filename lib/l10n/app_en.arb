@@ -4011,5 +4011,10 @@
   "karteAusschnittListe": "Photos in view",
   "karteImAusschnitt": "{anzahl, plural, =0{No photos in view} =1{1 photo in view} other{{anzahl} photos in view}}",
   "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
-  "karteAusschnittLeer": "No photos here. The list follows the map once it stops moving."
+  "karteAusschnittLeer": "No photos here. The list follows the map once it stops moving.",
+  "bearbKratzerSuchen": "Find scratches and dust",
+  "bearbRadieren": "Eraser: remove from the suggestion",
+  "bearbKratzerKeine": "No scratches or dust found.",
+  "bearbKratzerGefunden": "Suggestion: {kratzer, plural, =0{no scratches} =1{1 scratch} other{{kratzer} scratches}}, {staub, plural, =0{no dust} =1{1 dust spot} other{{staub} dust spots}}. Check it, erase anything wrong, then apply.",
+  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}}
 }

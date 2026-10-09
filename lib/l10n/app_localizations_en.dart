@@ -8832,4 +8832,32 @@ class AppTexteEn extends AppTexte {
   @override
   String get karteAusschnittLeer =>
       'No photos here. The list follows the map once it stops moving.';
+
+  @override
+  String get bearbKratzerSuchen => 'Find scratches and dust';
+
+  @override
+  String get bearbRadieren => 'Eraser: remove from the suggestion';
+
+  @override
+  String get bearbKratzerKeine => 'No scratches or dust found.';
+
+  @override
+  String bearbKratzerGefunden(int kratzer, int staub) {
+    String _temp0 = intl.Intl.pluralLogic(
+      kratzer,
+      locale: localeName,
+      other: '$kratzer scratches',
+      one: '1 scratch',
+      zero: 'no scratches',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      staub,
+      locale: localeName,
+      other: '$staub dust spots',
+      one: '1 dust spot',
+      zero: 'no dust',
+    );
+    return 'Suggestion: $_temp0, $_temp1. Check it, erase anything wrong, then apply.';
+  }
 }
