@@ -40,9 +40,13 @@ step() {
 }
 
 step tool/pruefe_repository_datenschutz.sh
+# Erst die Pakete, wie in der CI: In einer frischen Kopie fehlt sonst
+# .dart_tool, und dart format nimmt ohne analysis_options und Sprachversion
+# andere Regeln – sauberer Code gilt dann als unformatiert.
+step flutter pub get
 # Dieselben Ordner wie in der CI. Die erzeugten Dateien (drift,
 # Übersetzungen) sind mit gemeint: Beide Generatoren schreiben bereits
 # formatiert.
 step dart format --output=none --set-exit-if-changed lib test tool integration_test docs
-step bash -c "flutter pub get && flutter analyze && flutter test"
+step bash -c "flutter analyze && flutter test"
 echo "pre-push: all checks passed" >&2

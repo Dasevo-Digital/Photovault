@@ -29,10 +29,14 @@ jobs:
         with:
           flutter-version: "3.47.6"
           channel: stable
+      # Erst die Pakete: Ohne sie findet dart format die analysis_options
+      # (include von flutter_lints) und die Sprachversion nicht und
+      # formatiert nach anderen Regeln – dann gilt sauberer Code als falsch.
+      - run: flutter pub get
       - name: Formatierung
         run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs
       - name: Analyse und Tests
-        run: flutter pub get && flutter analyze && flutter test
+        run: flutter analyze && flutter test
 
   # Kompiliert die nativen Teile, damit ein kaputter Plattform-Build vor dem
   # Release auffällt. Unter Windows reicht dafür `flutter build windows`:
