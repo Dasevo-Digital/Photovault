@@ -201,6 +201,11 @@ echter Hardware.
   und bleibt, bis man sie wieder vergisst; jede lässt sich als Video
   speichern.
 - **Kalender** – Jahresübersicht mit Titelbild und Foto-/Videoanzahl je Jahr
+- **Fotos im Kartenausschnitt** – ein Knopf über der flachen Karte
+  stellt die Fotos des gerade sichtbaren Ausschnitts als Liste daneben
+  (schmal: darunter), jüngstes zuerst. Die Liste folgt der Karte, sobald
+  sie eine Viertelsekunde stillsteht, und rechnet auch über die
+  Datumsgrenze hinweg richtig.
 - **Karte** – Fotos mit GPS-Daten auf einer Karte (OpenStreetMap-Kacheln)
   oder wahlweise auf einem interaktiven 3D-Globus. Die dunkle Karte
   zeichnet dieselben OpenStreetMap-Kacheln umgefärbt – **ohne Anmeldung

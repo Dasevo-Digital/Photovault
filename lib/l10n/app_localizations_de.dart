@@ -8862,4 +8862,23 @@ class AppTexteDe extends AppTexte {
     );
     return '$name $jahr · $_temp0';
   }
+
+  @override
+  String get karteAusschnittListe => 'Fotos im Ausschnitt';
+
+  @override
+  String karteImAusschnitt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos im Ausschnitt',
+      one: '1 Foto im Ausschnitt',
+      zero: 'Keine Fotos im Ausschnitt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get karteAusschnittLeer =>
+      'Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.';
 }

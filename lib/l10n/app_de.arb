@@ -5114,5 +5114,9 @@
   "erinnerungenVergessen": "Nicht mehr merken",
   "erinnerungenSchoensteReisen": "Die schönsten Reisen",
   "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 Lieblingsfoto} other{{anzahl} Lieblingsfotos}}",
-  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}}
+  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "karteAusschnittListe": "Fotos im Ausschnitt",
+  "karteImAusschnitt": "{anzahl, plural, =0{Keine Fotos im Ausschnitt} =1{1 Foto im Ausschnitt} other{{anzahl} Fotos im Ausschnitt}}",
+  "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "karteAusschnittLeer": "Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht."
 }

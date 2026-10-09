@@ -13656,6 +13656,24 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{name} {jahr} · {anzahl, plural, =1{1 Lieblingsfoto} other{{anzahl} Lieblingsfotos}}'**
   String erinnerungenReise(String name, String jahr, int anzahl);
+
+  /// No description provided for @karteAusschnittListe.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos im Ausschnitt'**
+  String get karteAusschnittListe;
+
+  /// No description provided for @karteImAusschnitt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine Fotos im Ausschnitt} =1{1 Foto im Ausschnitt} other{{anzahl} Fotos im Ausschnitt}}'**
+  String karteImAusschnitt(int anzahl);
+
+  /// No description provided for @karteAusschnittLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.'**
+  String get karteAusschnittLeer;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

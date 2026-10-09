@@ -4007,5 +4007,9 @@
   "erinnerungenVergessen": "Stop keeping",
   "erinnerungenSchoensteReisen": "The best trips",
   "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 favourite} other{{anzahl} favourites}}",
-  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}}
+  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "karteAusschnittListe": "Photos in view",
+  "karteImAusschnitt": "{anzahl, plural, =0{No photos in view} =1{1 photo in view} other{{anzahl} photos in view}}",
+  "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "karteAusschnittLeer": "No photos here. The list follows the map once it stops moving."
 }

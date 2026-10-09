@@ -86,3 +86,32 @@ Map<String, List<T>> gruppiereFuerKarte<T>(
   }
   return (breite: breite / gruppe.length, laenge: laenge / gruppe.length);
 }
+
+/// Was von [dinge] im Ausschnitt zwischen [sued]/[west] und [nord]/[ost]
+/// liegt, jüngstes zuerst nach [wann].
+///
+/// **Über die Datumsgrenze hinweg.** Zeigt die Karte den Pazifik, liegt
+/// der westliche Rand östlich des östlichen (170° bis −170°). Ein
+/// schlichtes „zwischen West und Ost“ fände dann nichts; dazwischen liegt
+/// hier, was östlich von West **oder** westlich von Ost ist.
+List<T> imAusschnitt<T>(
+  Iterable<T> dinge, {
+  required double sued,
+  required double nord,
+  required double west,
+  required double ost,
+  required ({double breite, double laenge}) Function(T) lage,
+  required DateTime Function(T) wann,
+}) {
+  final ueberDieGrenze = west > ost;
+  return [
+    for (final d in dinge)
+      if (lage(d) case (:final breite, :final laenge)
+          when breite >= sued &&
+              breite <= nord &&
+              (ueberDieGrenze
+                  ? laenge >= west || laenge <= ost
+                  : laenge >= west && laenge <= ost))
+        d,
+  ]..sort((a, b) => wann(b).compareTo(wann(a)));
+}

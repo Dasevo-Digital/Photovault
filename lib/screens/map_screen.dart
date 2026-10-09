@@ -10,6 +10,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
 import '../db/database.dart';
+import '../db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import '../services/map_clustering.dart';
@@ -18,6 +19,7 @@ import '../services/lebenslauf.dart';
 import '../services/storage_paths.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/wisch_zoom.dart';
 import '../widgets/zoomsteuerung.dart';
 import '../widgets/mini_location_map.dart';
@@ -146,6 +148,14 @@ class _MapScreenState extends State<MapScreen> {
   // [_onGlobeZoomChanged]).
   double _flacherZoom = _standardZoom;
 
+  /// Ob neben der flachen Karte die Fotos des Ausschnitts stehen – und
+  /// welcher Ausschnitt das ist. Nachgezogen wird erst, wenn die Karte
+  /// eine Viertelsekunde stillsteht: Beim Wischen kommen Dutzende
+  /// Positionen je Sekunde, und jede filterte die ganze Liste neu.
+  bool _ausschnittListe = false;
+  LatLngBounds? _ausschnitt;
+  Timer? _ausschnittTakt;
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +164,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _ausschnittTakt?.cancel();
     // Kein `_globeController?.dispose()` hier: `RotatingGlobeState.dispose()`
     // (im FlutterEarthGlobe-Widget selbst) räumt dessen internen
     // rotationController bereits auf, sobald das Widget beim Tab-Wechsel
@@ -473,6 +484,29 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: Text(AppTexte.of(context).karteTitel),
         actions: [
+          if (_mode != Kartenansicht.globus && (located?.isNotEmpty ?? false))
+            IconButton(
+              tooltip: AppTexte.of(context).karteAusschnittListe,
+              isSelected: _ausschnittListe,
+              icon: const Icon(Icons.view_sidebar_outlined),
+              selectedIcon: const Icon(Icons.view_sidebar),
+              onPressed: () {
+                setState(() {
+                  _ausschnittListe = !_ausschnittListe;
+                  if (_ausschnittListe) {
+                    _ausschnitt = _flacheKarte.camera.visibleBounds;
+                  }
+                });
+                // Die Liste nimmt der Karte Platz weg; der Ausschnitt ist
+                // danach ein anderer, auch ohne dass jemand wischt.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted || !_ausschnittListe) return;
+                  setState(
+                    () => _ausschnitt = _flacheKarte.camera.visibleBounds,
+                  );
+                });
+              },
+            ),
           PopupMenuButton<Kartenansicht>(
             tooltip: AppTexte.of(context).karteAnsicht,
             icon: Icon(switch (_mode) {
@@ -667,7 +701,7 @@ class _MapScreenState extends State<MapScreen> {
     );
     // Die flache Karte bekommt dieselbe Leiste – deshalb ein Stack um
     // sie herum. FlutterMap selbst kann keine festen Aufsätze.
-    return Stack(
+    final karte = Stack(
       children: [
         Positioned.fill(child: _flacheKarteBauen(located, gruppen, stil)),
         Positioned(
@@ -685,6 +719,36 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ),
       ],
+    );
+    final ausschnitt = _ausschnitt;
+    if (!_ausschnittListe || ausschnitt == null) return karte;
+    final liste = _Ausschnittliste(
+      aufnahmen: imAusschnitt(
+        located,
+        sued: ausschnitt.south,
+        nord: ausschnitt.north,
+        west: ausschnitt.west,
+        ost: ausschnitt.east,
+        lage: (a) => (breite: a.latitude!, laenge: a.longitude!),
+        wann: (a) => a.fileCreatedAt,
+      ),
+      paths: widget.library.paths,
+      onOeffnen: _openAsset,
+    );
+    return LayoutBuilder(
+      builder: (context, platz) => platz.maxWidth > 900
+          ? Row(
+              children: [
+                Expanded(child: karte),
+                SizedBox(width: 340, child: liste),
+              ],
+            )
+          : Column(
+              children: [
+                Expanded(flex: 3, child: karte),
+                Expanded(flex: 2, child: liste),
+              ],
+            ),
     );
   }
 
@@ -892,9 +956,82 @@ class _MapScreenState extends State<MapScreen> {
   /// laufenden Zoomgeste in jedem Frame feuert – ohne diese Rundung würde
   /// die komplette Markerliste dutzendfach pro Sekunde neu aufgebaut.
   void _onFlatPositionChanged(MapCamera camera, bool hasGesture) {
+    if (_ausschnittListe) {
+      _ausschnittTakt?.cancel();
+      _ausschnittTakt = Timer(const Duration(milliseconds: 250), () {
+        if (mounted) setState(() => _ausschnitt = camera.visibleBounds);
+      });
+    }
     final stufe = camera.zoom.roundToDouble();
     if (stufe == _flacherZoom) return;
     setState(() => _flacherZoom = stufe);
+  }
+}
+
+/// Die Fotos im sichtbaren Ausschnitt der Karte, jüngstes zuerst – wie
+/// Immichs Zeitleiste zum Kartenausschnitt. Ein Foto öffnet sich in der
+/// Vollansicht mit genau dieser Liste zum Blättern.
+class _Ausschnittliste extends StatelessWidget {
+  const _Ausschnittliste({
+    required this.aufnahmen,
+    required this.paths,
+    required this.onOeffnen,
+  });
+
+  final List<AssetData> aufnahmen;
+  final StoragePaths paths;
+  final void Function(List<AssetData>, AssetData) onOeffnen;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Text(
+              t.karteImAusschnitt(aufnahmen.length),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Expanded(
+            child: aufnahmen.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Text(
+                        t.karteAusschnittLeer,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 110,
+                          mainAxisSpacing: 4,
+                          crossAxisSpacing: 4,
+                        ),
+                    itemCount: aufnahmen.length,
+                    itemBuilder: (context, i) => AssetThumbnailTile(
+                      asset: Rasterzeile.aus(aufnahmen[i]),
+                      paths: paths,
+                      onTap: () => onOeffnen(aufnahmen, aufnahmen[i]),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
