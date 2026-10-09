@@ -188,7 +188,7 @@
   "viewerGesichtBenennen": "Name this face",
   "viewerEntwicklungAnwenden": "Paste develop settings",
   "viewerEntwicklungAnwendenLang": "Paste the copied develop settings onto this photo",
-  "viewerFokusPeaking": "Focus peaking (highlight sharp edges)",
+  "viewerFokusPeaking": "Focus peaking: highlight sharp edges (P)",
   "viewerGesichtUnscharf": "Even the sharpest face is soft",
   "viewerTextZeigen": "Highlight recognised text",
   "viewerTextVerbergen": "Hide text highlighting",
@@ -4020,5 +4020,6 @@
   "sucheHerkunft": "Origin",
   "sucheHerkunftAlle": "All",
   "sucheHerkunftKamera": "From a camera",
-  "sucheHerkunftEmpfangen": "Received"
+  "sucheHerkunftEmpfangen": "Received",
+  "viewerDrittelRaster": "Rule-of-thirds grid (R)"
 }

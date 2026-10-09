@@ -483,7 +483,7 @@ class AppTexteEn extends AppTexte {
       'Paste the copied develop settings onto this photo';
 
   @override
-  String get viewerFokusPeaking => 'Focus peaking (highlight sharp edges)';
+  String get viewerFokusPeaking => 'Focus peaking: highlight sharp edges (P)';
 
   @override
   String get viewerGesichtUnscharf => 'Even the sharpest face is soft';
@@ -8872,4 +8872,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sucheHerkunftEmpfangen => 'Received';
+
+  @override
+  String get viewerDrittelRaster => 'Rule-of-thirds grid (R)';
 }

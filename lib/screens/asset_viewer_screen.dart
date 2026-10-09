@@ -163,6 +163,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Schärfe-Score um eine ortsaufgelöste Rückmeldung.
   bool _focusPeakingEnabled = false;
 
+  /// Drittel-Raster über dem Foto – zum Beurteilen des Bildaufbaus beim
+  /// Sichten, wie bei Excire 2027 und digiKam.
+  bool _drittelRaster = false;
+
   /// Schwellenwert für "Augen geschlossen" – siehe EyeStateService, der
   /// Score ist die Wahrscheinlichkeit "Augen offen".
   /// Ob KEIN Gesicht dieses Fotos scharf genug ist (siehe
@@ -341,6 +345,16 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (event.logicalKey == LogicalKeyboardKey.keyF &&
         widget.onToggleFavorite != null) {
       _toggleFavorite();
+      return KeyEventResult.handled;
+    }
+    // Die Sichthilfen auf je einer Taste: Beim Sichten liegt die Hand auf
+    // der Tastatur, und ein Knopf in der Leiste hiesse, zur Maus zu greifen.
+    if (event.logicalKey == LogicalKeyboardKey.keyR) {
+      setState(() => _drittelRaster = !_drittelRaster);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyP) {
+      setState(() => _focusPeakingEnabled = !_focusPeakingEnabled);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -830,6 +844,25 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             // Neben den Gesichtern und aus demselben Grund sichtbar statt im
             // Menü: 2406 der 7988 Aufnahmen dieser Bibliothek tragen
             // erkannten Text, der bis Schema 60 nirgends zu sehen war.
+            if (asset.type == 'IMAGE' && !widget.cullingMode)
+              IconButton(
+                isSelected: _drittelRaster,
+                icon: const Icon(Icons.grid_3x3_outlined),
+                selectedIcon: const Icon(Icons.grid_3x3),
+                tooltip: AppTexte.of(context).viewerDrittelRaster,
+                onPressed: () =>
+                    setState(() => _drittelRaster = !_drittelRaster),
+              ),
+            if (asset.type == 'IMAGE' && !widget.cullingMode)
+              IconButton(
+                isSelected: _focusPeakingEnabled,
+                icon: const Icon(Icons.center_focus_weak),
+                selectedIcon: const Icon(Icons.center_focus_strong),
+                tooltip: AppTexte.of(context).viewerFokusPeaking,
+                onPressed: () => setState(
+                  () => _focusPeakingEnabled = !_focusPeakingEnabled,
+                ),
+              ),
             if (asset.type == 'IMAGE' && !asset.isLocked)
               IconButton(
                 icon: Icon(
@@ -949,6 +982,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                                     setState(() => _gesichtAufziehen = false),
                                 textZeigen: _textZeigen,
                                 focusPeakingEnabled: _focusPeakingEnabled,
+                                drittelRaster: _drittelRaster,
                               );
                             },
                           ),
@@ -1015,6 +1049,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 onToggleFocusPeaking: () => setState(
                   () => _focusPeakingEnabled = !_focusPeakingEnabled,
                 ),
+                drittelRaster: _drittelRaster,
+                onToggleDrittelRaster: () =>
+                    setState(() => _drittelRaster = !_drittelRaster),
                 gesichterUnscharf: _currentGesichterUnscharf,
               ),
             ] else if (_assets.length > 1) ...[
@@ -1043,6 +1080,8 @@ class _CullingHintBar extends StatelessWidget {
   final int total;
   final bool focusPeakingEnabled;
   final VoidCallback onToggleFocusPeaking;
+  final bool drittelRaster;
+  final VoidCallback onToggleDrittelRaster;
 
   /// Auch das schärfste Gesicht dieses Fotos liegt unter der Schwelle.
   final bool gesichterUnscharf;
@@ -1052,6 +1091,8 @@ class _CullingHintBar extends StatelessWidget {
     required this.total,
     required this.focusPeakingEnabled,
     required this.onToggleFocusPeaking,
+    required this.drittelRaster,
+    required this.onToggleDrittelRaster,
     required this.gesichterUnscharf,
   });
 
@@ -1102,16 +1143,32 @@ class _CullingHintBar extends StatelessWidget {
           ),
           Align(
             alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: Icon(
-                Icons.center_focus_strong,
-                size: 20,
-                color: focusPeakingEnabled
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.white70,
-              ),
-              tooltip: AppTexte.of(context).viewerFokusPeaking,
-              onPressed: onToggleFocusPeaking,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.grid_3x3,
+                    size: 20,
+                    color: drittelRaster
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.white70,
+                  ),
+                  tooltip: AppTexte.of(context).viewerDrittelRaster,
+                  onPressed: onToggleDrittelRaster,
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.center_focus_strong,
+                    size: 20,
+                    color: focusPeakingEnabled
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.white70,
+                  ),
+                  tooltip: AppTexte.of(context).viewerFokusPeaking,
+                  onPressed: onToggleFocusPeaking,
+                ),
+              ],
             ),
           ),
         ],
@@ -1311,6 +1368,9 @@ class _AssetPage extends StatefulWidget {
   /// Ob die gelesenen Textstellen als Kästen über dem Foto liegen.
   final bool textZeigen;
   final bool focusPeakingEnabled;
+
+  /// Linien bei einem und zwei Dritteln – auf dem Foto, nicht dem Fenster.
+  final bool drittelRaster;
   const _AssetPage({
     required this.asset,
     required this.db,
@@ -1322,6 +1382,7 @@ class _AssetPage extends StatefulWidget {
     this.beiGesichtAngelegt,
     this.textZeigen = false,
     this.focusPeakingEnabled = false,
+    this.drittelRaster = false,
   });
 
   @override
@@ -1423,6 +1484,26 @@ class _AssetPageState extends State<_AssetPage> {
     super.initState();
     _maybeScheduleFocusPeaking();
     if (widget.gesichterZeigen) unawaited(_gesichterLaden());
+    if (widget.drittelRaster) unawaited(_masseSicherstellen());
+  }
+
+  /// Das Raster braucht die Masse des Bildes so wie die Rahmen: Nur mit
+  /// ihnen ist das Kind der Zoomfläche genau das Foto, und ein Drittel des
+  /// Fotos liegt nicht auf einem Drittel des Fensters samt schwarzer
+  /// Ränder.
+  Future<void> _masseSicherstellen() async {
+    if (_bildmasse != null) return;
+    final asset = widget.asset;
+    final breite = asset.widthPx, hoehe = asset.heightPx;
+    if (breite != null && hoehe != null && breite > 0 && hoehe > 0) {
+      setState(() => _bildmasse = Size(breite.toDouble(), hoehe.toDouble()));
+      return;
+    }
+    final datei = await _fileFuture;
+    if (!mounted || widget.asset.id != asset.id) return;
+    final masse = await _masseVon(begrenztesBild(datei));
+    if (!mounted || widget.asset.id != asset.id) return;
+    setState(() => _bildmasse = masse);
   }
 
   @override
@@ -1437,6 +1518,10 @@ class _AssetPageState extends State<_AssetPage> {
       if (widget.gesichterZeigen) unawaited(_gesichterLaden());
     } else if (widget.gesichterZeigen && !oldWidget.gesichterZeigen) {
       unawaited(_gesichterLaden());
+    }
+    if (widget.drittelRaster &&
+        (!oldWidget.drittelRaster || widget.asset.id != oldWidget.asset.id)) {
+      unawaited(_masseSicherstellen());
     }
     if (widget.focusPeakingEnabled && widget.isCurrent) {
       if (!oldWidget.focusPeakingEnabled || !oldWidget.isCurrent) {
@@ -1742,8 +1827,9 @@ class _AssetPageState extends State<_AssetPage> {
         // `rahmen` falsch, weil es keine Rahmen gibt. Ohne diese Zeile wäre
         // Nachtragen genau dort unmöglich, wo es am nötigsten ist.
         final malen = widget.gesichtAufziehen && masse != null;
+        final raster = widget.drittelRaster && masse != null;
         // Eine Überlagerung genügt, damit das Kind genau das Bild sein muss.
-        final ueberlagert = rahmen || textkaesten || malen;
+        final ueberlagert = rahmen || textkaesten || malen || raster;
         if (overlay == null && !ueberlagert) {
           return Stack(
             children: [
@@ -1873,6 +1959,10 @@ class _AssetPageState extends State<_AssetPage> {
                   Image(image: begrenztesBild(file), fit: BoxFit.contain),
                   if (overlay != null)
                     Image.memory(overlay, fit: BoxFit.contain),
+                  if (raster)
+                    const IgnorePointer(
+                      child: CustomPaint(painter: Drittelraster()),
+                    ),
                   if (rahmen)
                     for (final gesicht in _gesichter)
                       if (!gesicht.isIgnored)
@@ -2171,4 +2261,38 @@ class _VideoPageState extends State<_VideoPage> {
       ),
     );
   }
+}
+
+/// Linien bei einem und zwei Dritteln der Fläche, hell mit dunklem Saum –
+/// so bleiben sie auf Schnee wie auf Nacht sichtbar.
+@visibleForTesting
+class Drittelraster extends CustomPainter {
+  const Drittelraster();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final saum = Paint()
+      ..color = Colors.black54
+      ..strokeWidth = 3;
+    final linie = Paint()
+      ..color = Colors.white70
+      ..strokeWidth = 1;
+    for (final stift in [saum, linie]) {
+      for (final t in [1 / 3, 2 / 3]) {
+        canvas.drawLine(
+          Offset(size.width * t, 0),
+          Offset(size.width * t, size.height),
+          stift,
+        );
+        canvas.drawLine(
+          Offset(0, size.height * t),
+          Offset(size.width, size.height * t),
+          stift,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(Drittelraster old) => false;
 }

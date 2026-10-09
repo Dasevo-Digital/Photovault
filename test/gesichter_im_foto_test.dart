@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/db/database.dart';
@@ -219,5 +220,28 @@ void main() {
     await tester.tap(find.byType(Gesichtsrahmen));
     await tester.pumpAndSettle();
     expect(find.text('Gesicht benennen'), findsOneWidget);
+  });
+
+  testWidgets('das Drittel-Raster liegt auf dem Foto, per Knopf und Taste R', (
+    tester,
+  ) async {
+    await zeige(tester, await foto());
+    bool rasterDa() => find
+        .byWidgetPredicate(
+          (w) => w is CustomPaint && w.painter is Drittelraster,
+        )
+        .evaluate()
+        .isNotEmpty;
+    expect(rasterDa(), isFalse);
+
+    await tester.tap(find.byTooltip('Drittel-Raster (R)'));
+    await tester.pumpAndSettle();
+    expect(rasterDa(), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    // Nicht `pumpAndSettle`: Ohne Überlagerung zeigt PhotoView für die
+    // fehlende Datei seinen Ladekreisel, und der dreht sich endlos.
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(rasterDa(), isFalse, reason: 'die Taste schaltet es wieder aus');
   });
 }

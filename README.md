@@ -531,6 +531,11 @@ echter Hardware.
 - **Geschlossene-Augen-Erkennung** – **OCEC**-Modell markiert beim Sichten
   Fotos, auf denen mindestens ein Gesicht die Augen geschlossen hat –
   hilfreich beim Aussortieren von Blinzlern aus Porträt-/Gruppenserien
+- **Sichthilfen in der Vollansicht** – ein **Drittel-Raster** (Taste R)
+  liegt genau auf dem Foto, nicht auf dem Fenster samt schwarzer Ränder;
+  die **Fokus-Hervorhebung** (Taste P) markiert scharfe Kanten. Beide gibt
+  es jetzt in jeder Vollansicht, im Sichtungsmodus zusätzlich als Knöpfe in
+  der Hinweisleiste.
 - **Unschärfe-Erkennung** – Laplace-basierter Schärfe-Score, z.B. zum
   Aussortieren verwackelter Serienbilder
 - **Duplikate & ähnliche Fotos** – gruppiert Fotos mit sehr ähnlichen

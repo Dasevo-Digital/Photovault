@@ -251,7 +251,7 @@
   "viewerGesichtBenennen": "Gesicht benennen",
   "viewerEntwicklungAnwenden": "Kopierte Entwicklung anwenden",
   "viewerEntwicklungAnwendenLang": "Kopierte Entwicklung auf dieses Foto anwenden",
-  "viewerFokusPeaking": "Fokus-Peaking (scharfe Kanten hervorheben)",
+  "viewerFokusPeaking": "Fokus-Peaking: scharfe Kanten hervorheben (P)",
   "viewerGesichtUnscharf": "Auch das schärfste Gesicht ist unscharf",
   "viewerTextZeigen": "Erkannten Text hervorheben",
   "viewerTextVerbergen": "Texthervorhebung ausblenden",
@@ -5127,5 +5127,6 @@
   "sucheHerkunft": "Herkunft",
   "sucheHerkunftAlle": "Alle",
   "sucheHerkunftKamera": "Aus einer Kamera",
-  "sucheHerkunftEmpfangen": "Empfangen"
+  "sucheHerkunftEmpfangen": "Empfangen",
+  "viewerDrittelRaster": "Drittel-Raster (R)"
 }

@@ -885,7 +885,7 @@ abstract class AppTexte {
   /// No description provided for @viewerFokusPeaking.
   ///
   /// In de, this message translates to:
-  /// **'Fokus-Peaking (scharfe Kanten hervorheben)'**
+  /// **'Fokus-Peaking: scharfe Kanten hervorheben (P)'**
   String get viewerFokusPeaking;
 
   /// No description provided for @viewerGesichtUnscharf.
@@ -13722,6 +13722,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Empfangen'**
   String get sucheHerkunftEmpfangen;
+
+  /// No description provided for @viewerDrittelRaster.
+  ///
+  /// In de, this message translates to:
+  /// **'Drittel-Raster (R)'**
+  String get viewerDrittelRaster;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

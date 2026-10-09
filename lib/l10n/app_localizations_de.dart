@@ -489,7 +489,8 @@ class AppTexteDe extends AppTexte {
       'Kopierte Entwicklung auf dieses Foto anwenden';
 
   @override
-  String get viewerFokusPeaking => 'Fokus-Peaking (scharfe Kanten hervorheben)';
+  String get viewerFokusPeaking =>
+      'Fokus-Peaking: scharfe Kanten hervorheben (P)';
 
   @override
   String get viewerGesichtUnscharf => 'Auch das schärfste Gesicht ist unscharf';
@@ -8921,4 +8922,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sucheHerkunftEmpfangen => 'Empfangen';
+
+  @override
+  String get viewerDrittelRaster => 'Drittel-Raster (R)';
 }
