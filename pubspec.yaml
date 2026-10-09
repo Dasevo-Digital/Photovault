@@ -63,8 +63,12 @@ dependencies:
   # @visibleForTesting (StoragePaths.forTesting, siehe test/)
   meta: ^1.15.0
 
-  # On-device KI-Inferenz (CLIP-Bildsuche + Gesichtserkennung/-erkennung)
-  flutter_onnxruntime: ^1.8.0
+  # On-device KI-Inferenz (CLIP-Bildsuche + Gesichtserkennung/-erkennung).
+  # Eine angepasste Kopie von 1.8.5 unter third_party/: Das Original rechnet
+  # die Modelle auf dem Hauptfaden und hält dabei die App an (Issue #14);
+  # was geändert ist, steht in third_party/flutter_onnxruntime/ANPASSUNGEN.md.
+  flutter_onnxruntime:
+    path: third_party/flutter_onnxruntime
 
   # HTTP-Downloads der offenen Modelldateien (mit Fortschrittsanzeige)
   dio: ^5.7.0

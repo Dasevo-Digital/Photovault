@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
@@ -100,12 +99,15 @@ class RestoreQueueService {
   bool _processing = false;
   String? _activeJobId;
   final Set<String> _cancelRequested = {};
-  final Set<String> _pauseRequested = {};
   Timer? _idleTimer;
 
+  /// Der gerade rechnende Lauf – zum Anhalten, Fortsetzen und Abbrechen.
+  Restaurierungslauf? _lauf;
+
   /// Eine Restaurierung belegt CPU, GPU und mehrere grosse Bildpuffer. Sie
-  /// beginnt deshalb erst nach einer kurzen ruhigen Phase und gibt die
-  /// Rechenzeit bei neuer Eingabe zwischen zwei Modellkacheln wieder frei.
+  /// beginnt deshalb erst nach einer kurzen ruhigen Phase, hält bei neuer
+  /// Eingabe nach der laufenden Kachel an und macht nach der nächsten
+  /// ruhigen Phase an derselben Stelle weiter (siehe [Restaurierungslauf]).
   static const idleDelay = Duration(seconds: 20);
   bool _idle = false;
 
@@ -157,22 +159,25 @@ class RestoreQueueService {
   Future<void> cancel(String jobId) async {
     if (jobId == _activeJobId) {
       _cancelRequested.add(jobId);
+      _lauf?.abbrechen();
     } else {
       await _db.deleteRestoreJob(jobId);
     }
   }
 
   /// Wird von der App-Hülle für Zeigen, Scrollen und Tippen aufgerufen.
-  /// Ein laufendes Modell beendet seine aktuelle Kachel sauber und reiht den
-  /// Auftrag danach wieder ein; es entstehen weder Teilbilder noch verlorene
-  /// Aufträge.
+  /// Ein laufender Auftrag beendet seine aktuelle Kachel und wartet dann,
+  /// bis die App [idleDelay] lang unbenutzt ist – mit allem schon
+  /// Gerechneten. Vorher wurde er hier verworfen und neu eingereiht; ein
+  /// Foto mit sechzig Kacheln wurde so nie fertig, solange jemand mit der
+  /// App arbeitete.
   void noteUserInteraction() {
     _idle = false;
     _idleTimer?.cancel();
-    final active = _activeJobId;
-    if (active != null) _pauseRequested.add(active);
+    _lauf?.pausieren();
     _idleTimer = Timer(idleDelay, () {
       _idle = true;
+      _lauf?.fortsetzen();
       unawaited(_maybeStartNext());
     });
   }
@@ -228,8 +233,8 @@ class RestoreQueueService {
         await _process(next);
       } finally {
         _cancelRequested.remove(next.id);
-        _pauseRequested.remove(next.id);
         _activeJobId = null;
+        _lauf = null;
       }
     } finally {
       _processing = false;
@@ -352,8 +357,30 @@ class RestoreQueueService {
         );
         return;
       }
-      final decoded = img.decodeJpg(jpegBytes);
-      if (decoded == null) {
+      // Dekodieren, Kacheln, Zusammensetzen und das JPEG schreiben laufen
+      // im Isolat des Laufs, nicht auf dem Faden der Oberfläche (#14).
+      final lauf = service.starteJpeg(
+        jpegBytes,
+        quality: 92,
+        // Absichtlich nicht awaited (der Fortschritt darf die Inferenz
+        // nicht ausbremsen) – catchError statt eines unbehandelten
+        // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
+        // fehlschlägt.
+        onProgress: (done, total) => unawaited(
+          _db.updateRestoreJobProgress(job.id, done, total).catchError((_) {}),
+        ),
+      );
+      _lauf = lauf;
+      // Kam in der Zwischenzeit eine Eingabe, wartet er von Anfang an.
+      if (!_idle) lauf.pausieren();
+      if (_cancelRequested.contains(job.id)) lauf.abbrechen();
+      final ergebnis = await lauf.ergebnis;
+
+      if (_cancelRequested.contains(job.id)) {
+        await _db.markRestoreJobStatus(job.id, 'cancelled');
+        return;
+      }
+      if (ergebnis == null) {
         await _db.markRestoreJobStatus(
           job.id,
           'failed',
@@ -362,31 +389,10 @@ class RestoreQueueService {
         return;
       }
 
-      final result = await service.restore(
-        decoded,
-        // Absichtlich nicht awaited (der Fortschritt darf die Inferenz
-        // nicht ausbremsen) – catchError statt eines unbehandelten
-        // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
-        // fehlschlägt.
-        onProgress: (done, total) => unawaited(
-          _db.updateRestoreJobProgress(job.id, done, total).catchError((_) {}),
-        ),
-        isCancelled: () => _cancelRequested.contains(job.id),
-      );
-
-      if (_cancelRequested.contains(job.id)) {
-        await _db.markRestoreJobStatus(job.id, 'cancelled');
-        return;
-      }
-      if (_pauseRequested.contains(job.id)) {
-        await _db.requeueRestoreJob(job.id);
-        return;
-      }
-
       final relativePath = _paths.restoredRelativePath(job.assetId);
       final outFile = _paths.absolute(relativePath);
       await outFile.parent.create(recursive: true);
-      await outFile.writeAsBytes(img.encodeJpg(result, quality: 92));
+      await outFile.writeAsBytes(ergebnis);
 
       // Der Pfad ist je Aufnahme derselbe (`restored/{id}.jpg`). Wer ein
       // Ergebnis verwirft und neu rechnen laesst, bekaeme sonst das alte

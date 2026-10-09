@@ -65,6 +65,8 @@ Quell-URLs stehen in `lib/services/model_catalog.dart`.
 | LaMa | Objektentfernung | Apache-2.0 | [Carve/HuggingFace](https://huggingface.co/Carve/LaMa-ONNX) |
 | PaddleOCR | Texterkennung | Apache-2.0 | [PaddlePaddle/HuggingFace](https://huggingface.co/PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx) |
 | OPUS-MT en→de / de→en | Übersetzung | Apache-2.0 | [Xenova/HuggingFace](https://huggingface.co/Xenova) |
+| DDColor tiny | Einfärben | Apache-2.0 (Kang u. a.), ONNX-Export von edgetools | [edgetools/HuggingFace](https://huggingface.co/edgetools/ddcolor) |
+| Kratzererkennung (U-Net) | Kratzer in Scans finden | MIT (Microsoft, „Bringing Old Photos Back to Life“), selbst nach ONNX umgewandelt mit `tool/kratzermodell/umwandeln.py` | [Release `modell-kratzer-1`](https://github.com/Dasevo-Digital/Photovault/releases/tag/modell-kratzer-1), Gewichte von [microsoft/Bringing-Old-Photos-Back-to-Life](https://github.com/microsoft/Bringing-Old-Photos-Back-to-Life) |
 
 ### Geodaten
 
@@ -97,3 +99,10 @@ je Datei unterschiedlich lizenziert – siehe
 
 Die verwendeten Dart-/Flutter-Pakete stehen in `pubspec.yaml`; ihre Lizenzen
 lassen sich mit `flutter pub deps` bzw. über pub.dev einsehen.
+
+### Angepasste Kopie: `third_party/flutter_onnxruntime/`
+
+Das Paket `flutter_onnxruntime` 1.8.5 (MIT, © MASIC AI) liegt als angepasste
+Kopie im Repository, Lizenztext in `third_party/flutter_onnxruntime/LICENSE`.
+Geändert ist, in welchem Faden die Modelle rechnen; was genau, steht in
+`third_party/flutter_onnxruntime/ANPASSUNGEN.md`.
