@@ -22,6 +22,9 @@ source /etc/profile
 set -e
 
 FASSUNG="v1.23.1"
+# Der Commit hinter dem Tag. Ein Tag lässt sich auf dem Server verschieben,
+# ein Commit-Hash nicht: Zeigt der Tag woanders hin, wird nicht gebaut.
+COMMIT="2c4bbb54c2738d4a5efbbe3e5fa1d5d76bb88eb0"
 ZIEL="${1:?Zielordner angeben}"
 ARBEIT="$(mktemp -d)"
 trap 'rm -rf "$ARBEIT"' EXIT
@@ -35,6 +38,11 @@ pacman -S --noconfirm --needed \
 echo "== libheif $FASSUNG holen =="
 git clone --depth 1 --branch "$FASSUNG" \
   https://github.com/strukturag/libheif.git "$ARBEIT/quelle"
+IST="$(git -C "$ARBEIT/quelle" rev-parse HEAD)"
+if [ "$IST" != "$COMMIT" ]; then
+  echo "libheif $FASSUNG zeigt auf $IST statt auf $COMMIT – abgebrochen" >&2
+  exit 1
+fi
 
 echo "== Übersetzen (Encoder aus) =="
 cmake -G Ninja -S "$ARBEIT/quelle" -B "$ARBEIT/bau" \
