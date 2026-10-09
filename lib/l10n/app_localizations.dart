@@ -3224,7 +3224,7 @@ abstract class AppTexte {
   /// No description provided for @aufgLivePhotoText.
   ///
   /// In de, this message translates to:
-  /// **'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.'**
+  /// **'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.'**
   String get aufgLivePhotoText;
 
   /// No description provided for @aufgRendernText.

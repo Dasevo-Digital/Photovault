@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
@@ -45,6 +46,7 @@ import '../services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
 import '../services/asset_display_path.dart';
 import '../services/datierung.dart';
+import '../services/motion_photo.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
@@ -1264,6 +1266,61 @@ class LibraryState extends ChangeNotifier {
         await db.linkAssets(asset.id, candidate.id);
         return;
       }
+    }
+    if (isImage && (ext == '.jpg' || ext == '.jpeg')) {
+      await _motionPhotoAbtrennen(asset);
+    }
+  }
+
+  /// Holt das Video aus einem Motion Photo (siehe
+  /// `services/motion_photo.dart`) und verknüpft es mit dem Foto – wie die
+  /// Hälften eines Live Photos.
+  ///
+  /// **Das Original bleibt, wie es ist.** Das Video liegt danach zweimal
+  /// in der Bibliothek, im JPEG und als eigene Datei. Das JPEG zu kürzen
+  /// hiesse, eine Originaldatei umzuschreiben; das tut diese App nirgends.
+  ///
+  /// Gelesen wird erst Anfang und Ende; ganz nur, was danach aussieht.
+  /// Sonst läse die Aufgabe „Live Photos“ jedes JPEG der Bibliothek ganz.
+  Future<void> _motionPhotoAbtrennen(AssetData foto) async {
+    final datei = paths.absolute(foto.relativePath);
+    Directory? ordner;
+    try {
+      final groesse = await datei.length();
+      if (groesse < 64) return;
+      final zugriff = await datei.open();
+      final Uint8List kopf, ende;
+      try {
+        kopf = await zugriff.read(math.min(motionPhotoKopf, groesse));
+        await zugriff.setPosition(math.max(0, groesse - motionPhotoEnde));
+        ende = await zugriff.read(motionPhotoEnde);
+      } finally {
+        await zugriff.close();
+      }
+      if (!siehtNachMotionPhotoAus(kopf, ende)) return;
+      final alles = await datei.readAsBytes();
+      final anfang = motionPhotoAnfang(alles);
+      if (anfang == null) return;
+
+      ordner = await Directory.systemTemp.createTemp('pv_motion_');
+      final film = File(
+        p.join(
+          ordner.path,
+          '${p.basenameWithoutExtension(foto.originalFileName)}.mp4',
+        ),
+      );
+      await film.writeAsBytes(Uint8List.sublistView(alles, anfang));
+      final ergebnis = await importService.importFile(film.path);
+      final id = ergebnis.assetId;
+      if (ergebnis.outcome != ImportOutcome.imported || id == null) return;
+      // Das angehängte Video trägt selten eigene Angaben; es gehört zum
+      // Foto und bekommt dessen Zeit und Ort.
+      await db.uebernimmFotoangabenFuerBewegtbild(id, foto);
+      await db.linkAssets(foto.id, id);
+    } on FileSystemException {
+      // Datei weg oder nicht lesbar – dann eben kein Bewegtbild.
+    } finally {
+      await ordner?.delete(recursive: true);
     }
   }
 

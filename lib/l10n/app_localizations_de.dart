@@ -1905,7 +1905,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get aufgLivePhotoText =>
-      'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.';
+      'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.';
 
   @override
   String get aufgRendernText =>

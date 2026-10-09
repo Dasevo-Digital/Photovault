@@ -940,7 +940,7 @@
   "werkzPruefeDateiarten": "Prüfe Dateiarten …",
   "werkzAlleArtenStimmen": "Alle Aufnahmen sind richtig eingeordnet.",
   "aufgLivePhotoTitel": "Live-Photo-Paare prüfen",
-  "aufgLivePhotoText": "Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.",
+  "aufgLivePhotoText": "Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.",
   "aufgRendernText": "Rendert Fotos mit gespeicherten Entwicklungs-Anpassungen unverändert neu.",
   "aufgXmpText": "Legt für jedes Foto eine .xmp-Datei für Lightroom/darktable/digiKam daneben ab.",
   "auswAufheben": "Auswahl aufheben",

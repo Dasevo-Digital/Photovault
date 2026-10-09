@@ -609,7 +609,7 @@
   "werkzPruefeDateiarten": "Checking file kinds …",
   "werkzAlleArtenStimmen": "Every photo is filed correctly.",
   "aufgLivePhotoTitel": "Check Live Photo pairs",
-  "aufgLivePhotoText": "Links HEIC/JPG stills with MOV videos of the same name. The number counts photographs without a partner; most have none and never will.",
+  "aufgLivePhotoText": "Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will.",
   "aufgRendernText": "Renders photos with saved develop adjustments again, unchanged.",
   "aufgXmpText": "Puts an .xmp file next to every photo for Lightroom, darktable or digiKam.",
   "auswAufheben": "Clear selection",

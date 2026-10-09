@@ -4743,6 +4743,29 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  /// Gibt dem aus einem Motion Photo gelösten Video Zeit und Ort des
+  /// Fotos, zu dem es gehört.
+  Future<void> uebernimmFotoangabenFuerBewegtbild(
+    String videoId,
+    AssetData foto,
+  ) => (update(assets)..where((t) => t.id.equals(videoId))).write(
+    AssetsCompanion(
+      fileCreatedAt: Value(foto.fileCreatedAt),
+      datumGeschaetzt: Value(foto.datumGeschaetzt),
+      datumGeprueft: const Value(true),
+      zeitversatzMinuten: Value(foto.zeitversatzMinuten),
+      latitude: Value(foto.latitude),
+      longitude: Value(foto.longitude),
+      locationCountry: Value(foto.locationCountry),
+      locationState: Value(foto.locationState),
+      locationCity: Value(foto.locationCity),
+      ortGeerbt: Value(foto.ortGeerbt),
+      gpsGeprueft: const Value(true),
+      cameraMake: Value(foto.cameraMake),
+      cameraModel: Value(foto.cameraModel),
+    ),
+  );
+
   /// Gibt einem aus [video] gesicherten Standbild, was das Video über
   /// sich weiss: Zeitpunkt ([wann]), Ort, Kamera, Zeitzone – und ob
   /// davon etwas nur geschätzt oder geerbt war.

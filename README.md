@@ -568,6 +568,14 @@ echter Hardware.
 - **Live Photos** – automatische Verknüpfung von Foto + Video bei
   gleichem Dateinamen; in der Vollbildansicht gedrückt halten spielt das
   Video ab (wie Apples Fotos-App)
+- **Motion Photos von Google und Samsung** – diese Kameras hängen das
+  Video hinten an das JPEG. Beim Import (und mit der Aufgabe „Live
+  Photos“ für den Bestand) wird es herausgelöst, als eigenes Video mit Zeit
+  und Ort des Fotos angelegt und verknüpft wie bei einem Live Photo.
+  Erkannt am Camera-XMP (`Item:Semantic="MotionPhoto"`), am älteren
+  `MicroVideoOffset` oder an Samsungs Kennung `MotionPhoto_Data` – und nur,
+  wenn an der Stelle wirklich ein MP4 beginnt. Das Original-JPEG bleibt
+  unverändert, das Video liegt danach also zweimal in der Bibliothek.
 - **Panorama- & 360°-Fotos** – breite Panoramen werden in der Vollbildansicht
   automatisch bildfüllend gezeigt. Als equirechteckig (360°) erkannte Fotos
   bekommen eine eigene Ansicht mit drei umschaltbaren Modi: **3D-Kugel**
