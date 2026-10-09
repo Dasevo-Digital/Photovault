@@ -43,6 +43,7 @@ import '../services/videostandbilder.dart';
 import '../services/textstellen.dart';
 import '../services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
+import '../services/asset_display_path.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
@@ -1796,6 +1797,60 @@ class LibraryState extends ChangeNotifier {
   void verwerfeLauf(String schluessel) {
     if (_laeufe[schluessel]?.offen ?? false) return;
     if (_laeufe.remove(schluessel) != null) notifyListeners();
+  }
+
+  /// Sichert das Bild an [position] aus [video] als eigenes Foto.
+  ///
+  /// **Aus der Datei, die läuft.** Ist das Video zugeschnitten, zeigt der
+  /// Abspieler die geschnittene Fassung, und [position] zählt ab deren
+  /// Anfang. Gegriffen wird deshalb aus derselben Datei; für den
+  /// Zeitpunkt kommt der Schnittanfang wieder dazu.
+  Future<Videobildergebnis> sichereVideobild(
+    AssetData video,
+    Duration position,
+  ) async {
+    final datei = paths.absolute(displayRelativePath(video));
+    final schnitt = video.trimmedRelativePath == null
+        ? null
+        : await db.videoTrimForAsset(video.id);
+    final stelle = videobildStelle(video, schnitt, position);
+    final bild = await NativeImageConverter.generateVideoThumbnail(
+      datei,
+      // Gross genug für jedes Video; verkleinert wird ohnehin nicht über
+      // die Grösse des Films hinaus.
+      maxDimension: 8192,
+      anteil: stelle.anteil,
+      hoheQualitaet: true,
+    );
+    if (bild == null) return Videobildergebnis.fehlgeschlagen;
+
+    final ordner = await Directory.systemTemp.createTemp('pv_videobild_');
+    try {
+      final sekunden = position.inSeconds;
+      final name =
+          '${p.basenameWithoutExtension(video.originalFileName)}'
+          '-${sekunden ~/ 60}m${(sekunden % 60).toString().padLeft(2, '0')}s'
+          '.jpg';
+      final ziel = File(p.join(ordner.path, name));
+      await ziel.writeAsBytes(bild.jpegBytes);
+      final ergebnis = await importService.importFile(ziel.path);
+      // Prüfsumme gleich: genau dieses Bild liegt schon in der Bibliothek.
+      if (ergebnis.outcome == ImportOutcome.duplicateSkipped) {
+        return Videobildergebnis.schonDa;
+      }
+      final id = ergebnis.assetId;
+      if (ergebnis.outcome != ImportOutcome.imported || id == null) {
+        return Videobildergebnis.fehlgeschlagen;
+      }
+      await db.uebernimmVideoangaben(id, video, stelle.wann);
+      await _postProcessNewAsset(id);
+      if (await db.autoAnalyzeAfterImportEnabled()) {
+        unawaited(starteHintergrundanalyse());
+      }
+      return Videobildergebnis.gesichert;
+    } finally {
+      await ordner.delete(recursive: true);
+    }
   }
 
   /// Nachbereitung direkt beim Import – bewusst NUR ressourcenschonende
@@ -4751,4 +4806,33 @@ class LibraryState extends ChangeNotifier {
     _fortschritt.dispose();
     super.dispose();
   }
+}
+
+/// Was aus [LibraryState.sichereVideobild] wurde.
+enum Videobildergebnis { gesichert, schonDa, fehlgeschlagen }
+
+/// Wo im Film [position] liegt (0 bis 1, für das Greifen) und wann das
+/// war (für das gesicherte Foto).
+///
+/// Bei einem zugeschnittenen Video ([schnitt]) läuft die geschnittene
+/// Fassung: [position] zählt ab dem Schnittanfang, und die Länge ist die
+/// des Schnitts. Für die Uhrzeit kommt der Anfang wieder hinzu – sonst
+/// trüge ein Bild aus Minute drei die Zeit von Minute eins.
+({double anteil, DateTime wann}) videobildStelle(
+  AssetData video,
+  VideoTrimData? schnitt,
+  Duration position,
+) {
+  final dauer = schnitt != null
+      ? schnitt.endSeconds - schnitt.startSeconds
+      : video.durationSeconds;
+  final sekunden = position.inMilliseconds / 1000;
+  final anteil = dauer == null || dauer <= 0
+      ? 0.0
+      : (sekunden / dauer).clamp(0.0, 1.0);
+  final ab = (schnitt?.startSeconds ?? 0) + sekunden;
+  return (
+    anteil: anteil,
+    wann: video.fileCreatedAt.add(Duration(milliseconds: (ab * 1000).round())),
+  );
 }

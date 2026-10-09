@@ -5076,5 +5076,10 @@
   "gesundheitDokumenteTitel": "Ausweise liegen offen",
   "gesundheitDokumenteOffen": "{anzahl, plural, =1{1 Foto zeigt dem Text nach einen Ausweis oder eine Karte und liegt nicht im gesperrten Ordner.} other{{anzahl} Fotos zeigen dem Text nach einen Ausweis oder eine Karte und liegen nicht im gesperrten Ordner.}}",
   "@gesundheitDokumenteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
-  "gesundheitDokumenteAnsehen": "Ansehen"
+  "gesundheitDokumenteAnsehen": "Ansehen",
+  "viewerVideobildSichern": "Dieses Bild als Foto sichern",
+  "viewerVideobildGesichert": "Bild bei {stelle} als Foto gesichert – mit Datum und Ort des Videos",
+  "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
+  "viewerVideobildSchonDa": "Genau dieses Bild ist schon als Foto gesichert.",
+  "viewerVideobildFehler": "Aus dem Video ließ sich an dieser Stelle kein Bild greifen."
 }

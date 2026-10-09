@@ -205,9 +205,13 @@ class ImageConverterChannel: NSObject {
                 // Anteil der Laufzeit, an dem gegriffen wird. Fehlt er,
                 // bleibt es beim bisherigen Verhalten (kurz nach dem Start).
                 let anteil = (args["anteil"] as? NSNumber)?.doubleValue
+                // Ein Standbild, das als eigenes Foto in die Bibliothek
+                // geht, statt eines Vorschaubildes.
+                let hoheQualitaet = (args["hoheQualitaet"] as? Bool) ?? false
                 DispatchQueue.global(qos: .userInitiated).async {
                     let thumbnail = videoThumbnail(
-                        path: path, maxDimension: maxDimension, anteil: anteil)
+                        path: path, maxDimension: maxDimension, anteil: anteil,
+                        quality: hoheQualitaet ? 0.95 : 0.8)
                     DispatchQueue.main.async {
                         if let thumbnail = thumbnail {
                             result([
@@ -1186,7 +1190,8 @@ class ImageConverterChannel: NSObject {
     /// weit auseinanderliegenden Keyframes waeren mehrere angeforderte
     /// Stellen dasselbe Bild.
     private static func videoThumbnail(
-        path: String, maxDimension: Int, anteil: Double? = nil
+        path: String, maxDimension: Int, anteil: Double? = nil,
+        quality: CGFloat = 0.8
     ) -> VideoThumbnail? {
         let url = URL(fileURLWithPath: path)
         let asset = AVURLAsset(url: url)
@@ -1212,7 +1217,7 @@ class ImageConverterChannel: NSObject {
         guard let cgImage = try? generator.copyCGImage(at: requestedTime, actualTime: nil) else {
             return nil
         }
-        guard let jpeg = encodeJpeg(cgImage, quality: 0.8) else { return nil }
+        guard let jpeg = encodeJpeg(cgImage, quality: quality) else { return nil }
         return VideoThumbnail(jpeg: jpeg, durationSeconds: durationSeconds)
     }
 

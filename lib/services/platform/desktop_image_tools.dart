@@ -485,6 +485,7 @@ class DesktopImageTools {
     File datei, {
     int maxDimension = 800,
     double? anteil,
+    bool hoheQualitaet = false,
   }) async {
     final werkzeug = await aufruf('ffmpeg');
     if (werkzeug == null) return null;
@@ -506,6 +507,9 @@ class DesktopImageTools {
           '1',
           '-vf',
           "scale='min($maxDimension,iw)':-2",
+          // Ohne Angabe nimmt ffmpeg für JPEG eine Vorgabe, die für ein
+          // Vorschaubild reicht, für ein Foto aber sichtbar blockt.
+          if (hoheQualitaet) ...['-q:v', '2'],
           ziel,
         ]);
         return r.exitCode == 0 && await File(ziel).exists();

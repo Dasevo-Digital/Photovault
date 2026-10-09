@@ -13476,6 +13476,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Ansehen'**
   String get gesundheitDokumenteAnsehen;
+
+  /// No description provided for @viewerVideobildSichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Bild als Foto sichern'**
+  String get viewerVideobildSichern;
+
+  /// No description provided for @viewerVideobildGesichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Bild bei {stelle} als Foto gesichert – mit Datum und Ort des Videos'**
+  String viewerVideobildGesichert(String stelle);
+
+  /// No description provided for @viewerVideobildSchonDa.
+  ///
+  /// In de, this message translates to:
+  /// **'Genau dieses Bild ist schon als Foto gesichert.'**
+  String get viewerVideobildSchonDa;
+
+  /// No description provided for @viewerVideobildFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus dem Video ließ sich an dieser Stelle kein Bild greifen.'**
+  String get viewerVideobildFehler;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

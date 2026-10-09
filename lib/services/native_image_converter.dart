@@ -446,25 +446,33 @@ class NativeImageConverter {
   /// wie bisher kurz nach dem Start gegriffen; mit Angabe entstehen die
   /// weiteren Standbilder eines laengeren Videos (siehe
   /// `services/videostandbilder.dart`).
+  ///
+  /// [hoheQualitaet] für ein Standbild, das als eigenes Foto gesichert
+  /// wird: stärker komprimiert reicht nur für Vorschauen.
   static Future<VideoThumbnailResult?> generateVideoThumbnail(
     File file, {
     int maxDimension = 800,
     double? anteil,
+    bool hoheQualitaet = false,
   }) async {
     if (_ueberWerkzeuge) {
       final r = await DesktopImageTools.videoThumbnail(
         file,
         maxDimension: maxDimension,
         anteil: anteil,
+        hoheQualitaet: hoheQualitaet,
       );
       return r == null ? null : VideoThumbnailResult(r.jpeg, r.dauerSekunden);
     }
     if (!await isSupported()) return null;
     try {
-      final result = await _channel.invokeMethod<Map<Object?, Object?>>(
-        'videoThumbnail',
-        {'path': file.path, 'maxDimension': maxDimension, 'anteil': ?anteil},
-      );
+      final result = await _channel
+          .invokeMethod<Map<Object?, Object?>>('videoThumbnail', {
+            'path': file.path,
+            'maxDimension': maxDimension,
+            'anteil': ?anteil,
+            if (hoheQualitaet) 'hoheQualitaet': true,
+          });
       if (result == null) return null;
       final jpeg = result['jpeg'] as Uint8List?;
       if (jpeg == null) return null;

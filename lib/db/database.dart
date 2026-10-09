@@ -4716,6 +4716,36 @@ class AppDatabase extends _$AppDatabase {
     ),
   );
 
+  /// Gibt einem aus [video] gesicherten Standbild, was das Video über
+  /// sich weiss: Zeitpunkt ([wann]), Ort, Kamera, Zeitzone – und ob
+  /// davon etwas nur geschätzt oder geerbt war.
+  ///
+  /// Das Standbild selbst trägt nichts davon. Es ist ein frisch kodiertes
+  /// JPEG ohne EXIF; der Import gäbe ihm den Augenblick des Sicherns als
+  /// Aufnahmezeit und keinen Ort, und es stünde in der Zeitleiste beim
+  /// heutigen Tag statt neben seinem Video.
+  Future<void> uebernimmVideoangaben(
+    String fotoId,
+    AssetData video,
+    DateTime wann,
+  ) => (update(assets)..where((t) => t.id.equals(fotoId))).write(
+    AssetsCompanion(
+      fileCreatedAt: Value(wann),
+      datumGeschaetzt: Value(video.datumGeschaetzt),
+      datumGeprueft: const Value(true),
+      zeitversatzMinuten: Value(video.zeitversatzMinuten),
+      latitude: Value(video.latitude),
+      longitude: Value(video.longitude),
+      locationCountry: Value(video.locationCountry),
+      locationState: Value(video.locationState),
+      locationCity: Value(video.locationCity),
+      ortGeerbt: Value(video.ortGeerbt),
+      gpsGeprueft: const Value(true),
+      cameraMake: Value(video.cameraMake),
+      cameraModel: Value(video.cameraModel),
+    ),
+  );
+
   /// Die Daten, aus denen die Ortsvorschlaege entstehen: die
   /// unverorteten Aufnahmen und die verorteten, je nur mit dem, was die
   /// Rechnung braucht.

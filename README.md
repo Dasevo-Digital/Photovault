@@ -526,6 +526,12 @@ echter Hardware.
   (Luma-gewichtet) und **RGB** (die drei Kanäle additiv überlagert) –
   aktualisiert sich live zu den Reglern
 - **Bildeditor** für nicht-RAW-Fotos
+- **Einzelbild aus einem Video sichern** – im Vollbild hält ein Knopf
+  oben rechts das Video an und legt das gezeigte Bild in voller Auflösung
+  als eigenes Foto ab. Das Foto bekommt Aufnahmezeit, Ort und Kamera des
+  Videos – auf die Sekunde, bei einem zugeschnittenen Video ab dessen
+  Schnittanfang gerechnet –, damit es in der Zeitleiste neben dem Video
+  steht und nicht beim Tag des Sicherns.
 - **Video-Zuschnitt** – nicht-destruktiver Start-/Endpunkt-Schnitt über
   AVFoundation, Ergebnis als separate Datei, Original bleibt erhalten
 - **Live Photos** – automatische Verknüpfung von Foto + Video bei

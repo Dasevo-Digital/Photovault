@@ -8674,4 +8674,20 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get gesundheitDokumenteAnsehen => 'Review';
+
+  @override
+  String get viewerVideobildSichern => 'Save this frame as a photo';
+
+  @override
+  String viewerVideobildGesichert(String stelle) {
+    return 'Frame at $stelle saved as a photo – with the video\'s date and place';
+  }
+
+  @override
+  String get viewerVideobildSchonDa =>
+      'This exact frame is already saved as a photo.';
+
+  @override
+  String get viewerVideobildFehler =>
+      'Could not grab a frame from the video at this point.';
 }

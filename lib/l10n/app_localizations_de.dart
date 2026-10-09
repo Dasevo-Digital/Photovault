@@ -8723,4 +8723,20 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get gesundheitDokumenteAnsehen => 'Ansehen';
+
+  @override
+  String get viewerVideobildSichern => 'Dieses Bild als Foto sichern';
+
+  @override
+  String viewerVideobildGesichert(String stelle) {
+    return 'Bild bei $stelle als Foto gesichert – mit Datum und Ort des Videos';
+  }
+
+  @override
+  String get viewerVideobildSchonDa =>
+      'Genau dieses Bild ist schon als Foto gesichert.';
+
+  @override
+  String get viewerVideobildFehler =>
+      'Aus dem Video ließ sich an dieser Stelle kein Bild greifen.';
 }

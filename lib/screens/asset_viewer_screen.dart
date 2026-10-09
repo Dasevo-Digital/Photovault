@@ -1391,6 +1391,25 @@ class _AssetPageState extends State<_AssetPage> {
     melde.erfolg(AppTexte.of(context).viewerZeileKopiert(text));
   }
 
+  Future<void> _videobildSichern(Duration position) async {
+    final t = AppTexte.of(context);
+    final ergebnis = await widget.library!.sichereVideobild(
+      widget.asset,
+      position,
+    );
+    final sekunden = position.inSeconds;
+    final stelle =
+        '${sekunden ~/ 60}:${(sekunden % 60).toString().padLeft(2, '0')}';
+    switch (ergebnis) {
+      case Videobildergebnis.gesichert:
+        melde.erfolg(t.viewerVideobildGesichert(stelle));
+      case Videobildergebnis.schonDa:
+        melde.hinweis(t.viewerVideobildSchonDa);
+      case Videobildergebnis.fehlgeschlagen:
+        melde.fehler(t.viewerVideobildFehler);
+    }
+  }
+
   Future<File> _resolveFile() {
     final relativePath = displayRelativePath(widget.asset);
     if (widget.asset.isLocked && widget.library != null) {
@@ -1667,7 +1686,13 @@ class _AssetPageState extends State<_AssetPage> {
           );
         }
         if (asset.type != 'IMAGE') {
-          return _VideoPage(file: file, isCurrent: widget.isCurrent);
+          return _VideoPage(
+            file: file,
+            isCurrent: widget.isCurrent,
+            onBildSichern: widget.library == null || widget.asset.isLocked
+                ? null
+                : _videobildSichern,
+          );
         }
         if (isEquirectangular360(asset) && !_showFlatPreview) {
           final isSphere = _panoramaMode == Panorama360Mode.sphere;
@@ -2013,7 +2038,15 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
 class _VideoPage extends StatefulWidget {
   final File file;
   final bool isCurrent;
-  const _VideoPage({required this.file, required this.isCurrent});
+
+  /// Sichert das gerade gezeigte Bild als Foto; `null` blendet den Knopf
+  /// aus (gesperrte Videos: Das Standbild läge im Klartext daneben).
+  final Future<void> Function(Duration position)? onBildSichern;
+  const _VideoPage({
+    required this.file,
+    required this.isCurrent,
+    this.onBildSichern,
+  });
 
   @override
   State<_VideoPage> createState() => _VideoPageState();
@@ -2029,6 +2062,7 @@ class _VideoPageState extends State<_VideoPage> {
   // Controller erst erzeugt, sobald diese Seite tatsächlich [isCurrent] ist,
   // und beim Verlassen pausiert statt weiterzulaufen.
   VideoPlaybackController? _controller;
+  bool _sichert = false;
 
   @override
   void initState() {
@@ -2093,6 +2127,33 @@ class _VideoPageState extends State<_VideoPage> {
             // nach dem Öffnen oder nach einem Tap zum Pausieren).
             if (!controller.isPlaying)
               const Icon(Icons.play_arrow, color: Colors.white70, size: 72),
+            if (widget.onBildSichern case final sichern?)
+              Positioned(
+                top: AppSpacing.sm,
+                right: AppSpacing.sm,
+                child: IconButton.filledTonal(
+                  tooltip: AppTexte.of(context).viewerVideobildSichern,
+                  icon: _sichert
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add_photo_alternate_outlined),
+                  onPressed: _sichert
+                      ? null
+                      : () async {
+                          // Anhalten: Gesichert wird das Bild, das man
+                          // sieht, nicht eines ein paar Bilder später.
+                          controller.pause();
+                          setState(() => _sichert = true);
+                          try {
+                            await sichern(controller.position);
+                          } finally {
+                            if (mounted) setState(() => _sichert = false);
+                          }
+                        },
+                ),
+              ),
             Positioned(
               left: 0,
               right: 0,

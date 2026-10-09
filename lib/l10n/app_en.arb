@@ -3969,5 +3969,10 @@
   "gesundheitDokumenteTitel": "IDs are lying in the open",
   "gesundheitDokumenteOffen": "{anzahl, plural, =1{Going by its text, 1 photo shows an ID or a card and is not in the locked folder.} other{Going by their text, {anzahl} photos show an ID or a card and are not in the locked folder.}}",
   "@gesundheitDokumenteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
-  "gesundheitDokumenteAnsehen": "Review"
+  "gesundheitDokumenteAnsehen": "Review",
+  "viewerVideobildSichern": "Save this frame as a photo",
+  "viewerVideobildGesichert": "Frame at {stelle} saved as a photo – with the video's date and place",
+  "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
+  "viewerVideobildSchonDa": "This exact frame is already saved as a photo.",
+  "viewerVideobildFehler": "Could not grab a frame from the video at this point."
 }
