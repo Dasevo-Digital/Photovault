@@ -1885,7 +1885,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get aufgKameraText =>
-      'Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe; was gar keine Metadaten trägt, bleibt darunter.';
+      'Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe, nach dem ersten Lauf nur die seitdem dazugekommenen; was gar keine Metadaten trägt, bleibt darunter.';
 
   @override
   String get aufgDateiartTitel => 'Dateiarten prüfen';
@@ -1906,7 +1906,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get aufgLivePhotoText =>
-      'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.';
+      'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen. Nach dem ersten Lauf zählt sie nur noch, was seitdem dazugekommen ist.';
 
   @override
   String get aufgRendernText =>
@@ -8946,5 +8946,10 @@ class AppTexteDe extends AppTexte {
       one: '1 Stelle',
     );
     return 'Vorschlag des Kratzer-Modells: $_temp0. Prüfen, Falsches radieren, dann anwenden.';
+  }
+
+  @override
+  String aufgNeuSeitLauf(int anzahl) {
+    return 'Neu seit dem letzten Lauf: $anzahl';
   }
 }

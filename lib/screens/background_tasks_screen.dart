@@ -441,6 +441,11 @@ class Aufgabe {
   /// Fotos.
   final String? offenLabel;
 
+  /// Ob [offeneZahl] nach dem ersten vollständigen Lauf nur noch zählt,
+  /// was seitdem dazukam – dann heisst die Zahl ab da „neu seit dem
+  /// letzten Lauf“ (siehe `Aufgabenlaeufe`).
+  final bool zaehltSeitLetztemLauf;
+
   /// Ob diese Aufgabe zu den teuren gehört (KI-Modell im Speicher oder
   /// dieselbe Arbeit wie eine Stufe der Hintergrundanalyse). Nur solche
   /// warten aufeinander – siehe [LibraryState.maxGleichzeitig].
@@ -464,6 +469,7 @@ class Aufgabe {
     required this.offeneZahl,
     required this.aktionen,
     this.offenLabel,
+    this.zaehltSeitLetztemLauf = false,
     this.rechenintensiv = false,
     this.stufe,
     this.nichtVerfuegbar,
@@ -520,6 +526,14 @@ class _TaskCardState extends State<_TaskCard> {
   // Tabellen-Zählung auslösen, ohne dass das Ergebnis je sichtbar wird.
   late Future<int>? _countFuture = _a.bedienbar ? _a.offeneZahl() : null;
 
+  /// Ob die Aufgabe schon einmal ganz durchlief – dann zählt die Karte
+  /// nur noch Neues und sagt das auch (siehe [Aufgabe.zaehltSeitLetztemLauf]).
+  late Future<DateTime?> _letzterLauf = _letzterLaufLaden();
+
+  Future<DateTime?> _letzterLaufLaden() => _a.zaehltSeitLetztemLauf
+      ? widget.library.db.aufgabeFertigAm(_a.schluessel)
+      : Future<DateTime?>.value(null);
+
   /// Ob der Lauf dieser Karte beim letzten Bescheid schon beendet war –
   /// damit der Zähler genau einmal aufgefrischt wird, wenn ein Vorgang
   /// durchläuft, und nicht bei jedem der tausenden Fortschritts-Bescheide.
@@ -558,6 +572,9 @@ class _TaskCardState extends State<_TaskCard> {
     if (beendet && !_warBeendet) {
       _alsErledigtQuittiert = lauf?.erfolgreich ?? false;
       if (!_alsErledigtQuittiert) _refreshCount();
+      // Nach einem vollständigen Lauf heisst die Null ab sofort „neu seit
+      // dem letzten Lauf“, nicht erst beim nächsten Öffnen.
+      if (_alsErledigtQuittiert) _letzterLauf = _letzterLaufLaden();
     }
     _warBeendet = beendet;
   }
@@ -569,7 +586,9 @@ class _TaskCardState extends State<_TaskCard> {
     // zurück, und setState verbietet einen Rückgabewert dieser Art
     // ausdrücklich (Zusicherung im Framework).
     final naechste = _a.offeneZahl();
+    final lauf = _letzterLaufLaden();
     setState(() {
+      _letzterLauf = lauf;
       // Ein Pfeilrumpf gäbe hier das `Future` der Zuweisung zurück, und
       // setState verbietet einen Rückgabewert dieser Art ausdrücklich.
       _countFuture = naechste;
@@ -680,16 +699,24 @@ class _TaskCardState extends State<_TaskCard> {
                     if (lauf != null)
                       _Laufanzeige(lauf: lauf)
                     else
-                      FutureBuilder<int>(
-                        future: _alsErledigtQuittiert
-                            ? Future<int>.value(0)
-                            : _countFuture,
+                      FutureBuilder<(int, DateTime?)>(
+                        future: (
+                          _alsErledigtQuittiert
+                              ? Future<int>.value(0)
+                              : _countFuture ?? Future<int>.value(0),
+                          _letzterLauf,
+                        ).wait,
                         builder: (context, snapshot) => Text(
-                          snapshot.hasData
-                              ? (_a.offenLabel == null
-                                    ? t.aufgOffeneFotos(snapshot.data!)
-                                    : '${_a.offenLabel}: ${snapshot.data}')
-                              : '…',
+                          switch (snapshot.data) {
+                            null => '…',
+                            (final zahl, final DateTime _) => t.aufgNeuSeitLauf(
+                              zahl,
+                            ),
+                            (final zahl, null) =>
+                              _a.offenLabel == null
+                                  ? t.aufgOffeneFotos(zahl)
+                                  : '${_a.offenLabel}: $zahl',
+                          },
                           style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(
@@ -814,7 +841,26 @@ class _CombinedAnalysisCard extends StatelessWidget {
 /// Öffentlich, damit ein Prüfstand sie befragen kann: Dass jede Aufgabe eine
 /// eindeutige Kennung hat und mindestens eine Aktion, lässt sich so
 /// nachrechnen, statt es fünfzehnmal von Hand nachzusehen.
-List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
+List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) {
+  // Für Aufgaben ohne eigene Notiz je Aufnahme: nach dem ersten
+  // vollständigen Lauf nur zählen, was seitdem dazukam (Issue #15).
+  Future<int> Function() seitLetztemLauf(
+    String schluessel,
+    Future<int> Function(DateTime? seit) zaehle,
+  ) =>
+      () async => zaehle(await library.db.aufgabeFertigAm(schluessel));
+  return _aufgaben(t, library, seitLetztemLauf);
+}
+
+List<Aufgabe> _aufgaben(
+  AppTexte t,
+  LibraryState library,
+  Future<int> Function() Function(
+    String schluessel,
+    Future<int> Function(DateTime? seit) zaehle,
+  )
+  seitLetztemLauf,
+) => [
   Aufgabe(
     schluessel: 'gesichter',
     rechenintensiv: true,
@@ -1187,7 +1233,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.aufgKameraTitel,
     beschreibung: t.aufgKameraText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countCameraMetadataBackfill(),
+    offeneZahl: seitLetztemLauf(
+      'kameradaten',
+      (seit) => library.db.countCameraMetadataBackfill(importiertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.fehlende,
@@ -1203,7 +1253,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.werkzDatumTitel,
     beschreibung: t.aufgDatumText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countDatumskorrektur(),
+    offeneZahl: seitLetztemLauf(
+      'aufnahmedatum',
+      (seit) => library.db.countDatumskorrektur(importiertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.alle,
@@ -1249,7 +1303,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.aufgDateiartTitel,
     beschreibung: t.aufgDateiartText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countAssetsOfType('VIDEO'),
+    offeneZahl: seitLetztemLauf(
+      'dateiarten',
+      (seit) => library.db.countAssetsOfType('VIDEO', importiertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.fehlende,
@@ -1265,7 +1323,12 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.aufgLivePhotoTitel,
     beschreibung: t.aufgLivePhotoText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countUnlinkedAssetsOfType('IMAGE'),
+    offeneZahl: seitLetztemLauf(
+      'livephotos',
+      (seit) =>
+          library.db.countUnlinkedAssetsOfType('IMAGE', importiertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.fehlende,
@@ -1281,7 +1344,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.werkzNeuRendernTitel,
     beschreibung: t.aufgRendernText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countAssetsWithDevelopSettings(),
+    offeneZahl: seitLetztemLauf(
+      'rendern',
+      (seit) => library.db.countAssetsWithDevelopSettings(geaendertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.alle,
@@ -1297,7 +1364,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) => [
     titel: t.werkzXmpSchreibenTitel,
     beschreibung: t.aufgXmpText,
     offenLabel: t.aufgBetrifft,
-    offeneZahl: () => library.db.countXmpExport(),
+    offeneZahl: seitLetztemLauf(
+      'xmp',
+      (seit) => library.db.countXmpExport(importiertNach: seit),
+    ),
+    zaehltSeitLetztemLauf: true,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.alle,

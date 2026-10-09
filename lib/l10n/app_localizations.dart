@@ -3188,7 +3188,7 @@ abstract class AppTexte {
   /// No description provided for @aufgKameraText.
   ///
   /// In de, this message translates to:
-  /// **'Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe; was gar keine Metadaten trägt, bleibt darunter.'**
+  /// **'Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe, nach dem ersten Lauf nur die seitdem dazugekommenen; was gar keine Metadaten trägt, bleibt darunter.'**
   String get aufgKameraText;
 
   /// No description provided for @aufgDateiartTitel.
@@ -3224,7 +3224,7 @@ abstract class AppTexte {
   /// No description provided for @aufgLivePhotoText.
   ///
   /// In de, this message translates to:
-  /// **'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.'**
+  /// **'Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen. Nach dem ersten Lauf zählt sie nur noch, was seitdem dazugekommen ist.'**
   String get aufgLivePhotoText;
 
   /// No description provided for @aufgRendernText.
@@ -13752,6 +13752,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Vorschlag des Kratzer-Modells: {stellen, plural, =1{1 Stelle} other{{stellen} Stellen}}. Prüfen, Falsches radieren, dann anwenden.'**
   String bearbKratzerModellGefunden(int stellen);
+
+  /// No description provided for @aufgNeuSeitLauf.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu seit dem letzten Lauf: {anzahl}'**
+  String aufgNeuSeitLauf(int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

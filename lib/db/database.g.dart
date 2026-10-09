@@ -25139,6 +25139,227 @@ class GemerkteErinnerungenCompanion
   }
 }
 
+class $AufgabenlaeufeTable extends Aufgabenlaeufe
+    with TableInfo<$AufgabenlaeufeTable, AufgabenlaeufeData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AufgabenlaeufeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _schluesselMeta = const VerificationMeta(
+    'schluessel',
+  );
+  @override
+  late final GeneratedColumn<String> schluessel = GeneratedColumn<String>(
+    'schluessel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fertigAmMeta = const VerificationMeta(
+    'fertigAm',
+  );
+  @override
+  late final GeneratedColumn<DateTime> fertigAm = GeneratedColumn<DateTime>(
+    'fertig_am',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [schluessel, fertigAm];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'aufgabenlaeufe';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AufgabenlaeufeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('schluessel')) {
+      context.handle(
+        _schluesselMeta,
+        schluessel.isAcceptableOrUnknown(data['schluessel']!, _schluesselMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_schluesselMeta);
+    }
+    if (data.containsKey('fertig_am')) {
+      context.handle(
+        _fertigAmMeta,
+        fertigAm.isAcceptableOrUnknown(data['fertig_am']!, _fertigAmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fertigAmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {schluessel};
+  @override
+  AufgabenlaeufeData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AufgabenlaeufeData(
+      schluessel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}schluessel'],
+      )!,
+      fertigAm: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}fertig_am'],
+      )!,
+    );
+  }
+
+  @override
+  $AufgabenlaeufeTable createAlias(String alias) {
+    return $AufgabenlaeufeTable(attachedDatabase, alias);
+  }
+}
+
+class AufgabenlaeufeData extends DataClass
+    implements Insertable<AufgabenlaeufeData> {
+  final String schluessel;
+  final DateTime fertigAm;
+  const AufgabenlaeufeData({required this.schluessel, required this.fertigAm});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['schluessel'] = Variable<String>(schluessel);
+    map['fertig_am'] = Variable<DateTime>(fertigAm);
+    return map;
+  }
+
+  AufgabenlaeufeCompanion toCompanion(bool nullToAbsent) {
+    return AufgabenlaeufeCompanion(
+      schluessel: Value(schluessel),
+      fertigAm: Value(fertigAm),
+    );
+  }
+
+  factory AufgabenlaeufeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AufgabenlaeufeData(
+      schluessel: serializer.fromJson<String>(json['schluessel']),
+      fertigAm: serializer.fromJson<DateTime>(json['fertigAm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'schluessel': serializer.toJson<String>(schluessel),
+      'fertigAm': serializer.toJson<DateTime>(fertigAm),
+    };
+  }
+
+  AufgabenlaeufeData copyWith({String? schluessel, DateTime? fertigAm}) =>
+      AufgabenlaeufeData(
+        schluessel: schluessel ?? this.schluessel,
+        fertigAm: fertigAm ?? this.fertigAm,
+      );
+  AufgabenlaeufeData copyWithCompanion(AufgabenlaeufeCompanion data) {
+    return AufgabenlaeufeData(
+      schluessel: data.schluessel.present
+          ? data.schluessel.value
+          : this.schluessel,
+      fertigAm: data.fertigAm.present ? data.fertigAm.value : this.fertigAm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AufgabenlaeufeData(')
+          ..write('schluessel: $schluessel, ')
+          ..write('fertigAm: $fertigAm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(schluessel, fertigAm);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AufgabenlaeufeData &&
+          other.schluessel == this.schluessel &&
+          other.fertigAm == this.fertigAm);
+}
+
+class AufgabenlaeufeCompanion extends UpdateCompanion<AufgabenlaeufeData> {
+  final Value<String> schluessel;
+  final Value<DateTime> fertigAm;
+  final Value<int> rowid;
+  const AufgabenlaeufeCompanion({
+    this.schluessel = const Value.absent(),
+    this.fertigAm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AufgabenlaeufeCompanion.insert({
+    required String schluessel,
+    required DateTime fertigAm,
+    this.rowid = const Value.absent(),
+  }) : schluessel = Value(schluessel),
+       fertigAm = Value(fertigAm);
+  static Insertable<AufgabenlaeufeData> custom({
+    Expression<String>? schluessel,
+    Expression<DateTime>? fertigAm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (schluessel != null) 'schluessel': schluessel,
+      if (fertigAm != null) 'fertig_am': fertigAm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AufgabenlaeufeCompanion copyWith({
+    Value<String>? schluessel,
+    Value<DateTime>? fertigAm,
+    Value<int>? rowid,
+  }) {
+    return AufgabenlaeufeCompanion(
+      schluessel: schluessel ?? this.schluessel,
+      fertigAm: fertigAm ?? this.fertigAm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (schluessel.present) {
+      map['schluessel'] = Variable<String>(schluessel.value);
+    }
+    if (fertigAm.present) {
+      map['fertig_am'] = Variable<DateTime>(fertigAm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AufgabenlaeufeCompanion(')
+          ..write('schluessel: $schluessel, ')
+          ..write('fertigAm: $fertigAm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -25219,6 +25440,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $VerworfeneDokumenteTable(this);
   late final $GemerkteErinnerungenTable gemerkteErinnerungen =
       $GemerkteErinnerungenTable(this);
+  late final $AufgabenlaeufeTable aufgabenlaeufe = $AufgabenlaeufeTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -25271,6 +25493,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     wanderabfragen,
     verworfeneDokumente,
     gemerkteErinnerungen,
+    aufgabenlaeufe,
   ];
 }
 
@@ -38126,6 +38349,166 @@ typedef $$GemerkteErinnerungenTableProcessedTableManager =
       GemerkteErinnerungenData,
       PrefetchHooks Function()
     >;
+typedef $$AufgabenlaeufeTableCreateCompanionBuilder =
+    AufgabenlaeufeCompanion Function({
+      required String schluessel,
+      required DateTime fertigAm,
+      Value<int> rowid,
+    });
+typedef $$AufgabenlaeufeTableUpdateCompanionBuilder =
+    AufgabenlaeufeCompanion Function({
+      Value<String> schluessel,
+      Value<DateTime> fertigAm,
+      Value<int> rowid,
+    });
+
+class $$AufgabenlaeufeTableFilterComposer
+    extends Composer<_$AppDatabase, $AufgabenlaeufeTable> {
+  $$AufgabenlaeufeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get schluessel => $composableBuilder(
+    column: $table.schluessel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get fertigAm => $composableBuilder(
+    column: $table.fertigAm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AufgabenlaeufeTableOrderingComposer
+    extends Composer<_$AppDatabase, $AufgabenlaeufeTable> {
+  $$AufgabenlaeufeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get schluessel => $composableBuilder(
+    column: $table.schluessel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get fertigAm => $composableBuilder(
+    column: $table.fertigAm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AufgabenlaeufeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AufgabenlaeufeTable> {
+  $$AufgabenlaeufeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get schluessel => $composableBuilder(
+    column: $table.schluessel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get fertigAm =>
+      $composableBuilder(column: $table.fertigAm, builder: (column) => column);
+}
+
+class $$AufgabenlaeufeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AufgabenlaeufeTable,
+          AufgabenlaeufeData,
+          $$AufgabenlaeufeTableFilterComposer,
+          $$AufgabenlaeufeTableOrderingComposer,
+          $$AufgabenlaeufeTableAnnotationComposer,
+          $$AufgabenlaeufeTableCreateCompanionBuilder,
+          $$AufgabenlaeufeTableUpdateCompanionBuilder,
+          (
+            AufgabenlaeufeData,
+            BaseReferences<
+              _$AppDatabase,
+              $AufgabenlaeufeTable,
+              AufgabenlaeufeData
+            >,
+          ),
+          AufgabenlaeufeData,
+          PrefetchHooks Function()
+        > {
+  $$AufgabenlaeufeTableTableManager(
+    _$AppDatabase db,
+    $AufgabenlaeufeTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AufgabenlaeufeTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AufgabenlaeufeTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AufgabenlaeufeTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> schluessel = const Value.absent(),
+                Value<DateTime> fertigAm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AufgabenlaeufeCompanion(
+                schluessel: schluessel,
+                fertigAm: fertigAm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String schluessel,
+                required DateTime fertigAm,
+                Value<int> rowid = const Value.absent(),
+              }) => AufgabenlaeufeCompanion.insert(
+                schluessel: schluessel,
+                fertigAm: fertigAm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AufgabenlaeufeTable, AufgabenlaeufeData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AufgabenlaeufeTable,
+                    AufgabenlaeufeData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AufgabenlaeufeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AufgabenlaeufeTable,
+      AufgabenlaeufeData,
+      $$AufgabenlaeufeTableFilterComposer,
+      $$AufgabenlaeufeTableOrderingComposer,
+      $$AufgabenlaeufeTableAnnotationComposer,
+      $$AufgabenlaeufeTableCreateCompanionBuilder,
+      $$AufgabenlaeufeTableUpdateCompanionBuilder,
+      (
+        AufgabenlaeufeData,
+        BaseReferences<_$AppDatabase, $AufgabenlaeufeTable, AufgabenlaeufeData>,
+      ),
+      AufgabenlaeufeData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -38229,4 +38612,6 @@ class $AppDatabaseManager {
       $$VerworfeneDokumenteTableTableManager(_db, _db.verworfeneDokumente);
   $$GemerkteErinnerungenTableTableManager get gemerkteErinnerungen =>
       $$GemerkteErinnerungenTableTableManager(_db, _db.gemerkteErinnerungen);
+  $$AufgabenlaeufeTableTableManager get aufgabenlaeufe =>
+      $$AufgabenlaeufeTableTableManager(_db, _db.aufgabenlaeufe);
 }

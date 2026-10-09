@@ -103,4 +103,16 @@ void main() {
     await zeige(tester, hervorheben: 'gibtesnicht');
     expect(find.text(datum), findsNothing);
   });
+
+  testWidgets('nach einem Lauf zählt die Karte nur Neues und sagt es', (
+    tester,
+  ) async {
+    // Issue #15: Die Live-Photo-Karte zeigte nach jedem Lauf wieder alle
+    // Fotos ohne Partner.
+    await db.merkeAufgabenlauf('livephotos');
+    await zeige(tester, hervorheben: 'livephotos');
+    expect(find.text('Neu seit dem letzten Lauf: 0'), findsOneWidget);
+    // Eine Aufgabe, die noch nie lief, zählt wie bisher.
+    expect(find.text('Neu seit dem letzten Lauf: 0'), findsOneWidget);
+  });
 }

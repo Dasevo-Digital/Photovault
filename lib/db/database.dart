@@ -1092,6 +1092,22 @@ class VerworfeneOrtsvorschlaege extends Table {
   Set<Column> get primaryKey => {schluessel};
 }
 
+/// Wann eine Hintergrundaufgabe zuletzt vollständig durchgelaufen ist
+/// (Issue #15).
+///
+/// **Wozu.** Manche Aufgaben haben je Aufnahme keine Notiz „angesehen“ –
+/// der Dateiarten-Lauf etwa liest jedes Video, und die Live-Photo-Suche
+/// jedes Foto ohne Partner. Ihre Zahl blieb deshalb nach jedem Lauf gleich
+/// hoch, obwohl er nichts mehr zu tun hatte. Mit dem Zeitpunkt zählt die
+/// Karte danach nur, was seitdem dazugekommen ist.
+class Aufgabenlaeufe extends Table {
+  TextColumn get schluessel => text()();
+  DateTimeColumn get fertigAm => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {schluessel};
+}
+
 /// Erinnerungen, die jemand behalten wollte – siehe
 /// `screens/erinnerungen_screen.dart`.
 ///
@@ -2062,6 +2078,7 @@ class _SperrWiederholung extends QueryInterceptor {
     Wanderabfragen,
     VerworfeneDokumente,
     GemerkteErinnerungen,
+    Aufgabenlaeufe,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -2077,7 +2094,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 89;
+  int get schemaVersion => 90;
 
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
@@ -3314,6 +3331,10 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 89) {
         await m.createTable(gemerkteErinnerungen);
+      }
+      if (from < 90) {
+        // Leer: Bis zum ersten Lauf zählen die Karten wie bisher alles.
+        await m.createTable(aufgabenlaeufe);
       }
     },
   );
@@ -5167,7 +5188,8 @@ class AppDatabase extends _$AppDatabase {
       (select(assets)..where((_) => _ohneKameraangabe)).get();
 
   /// Zählvariante von [assetsForCameraMetadataBackfill], siehe [countLocationBackfill].
-  Future<int> countCameraMetadataBackfill() => _countWhere(_ohneKameraangabe);
+  Future<int> countCameraMetadataBackfill({DateTime? importiertNach}) =>
+      _countWhere(_ohneKameraangabe & _importiertNach(importiertNach));
 
   /// Setzt Aufnahmezeitpunkt und – falls der Monat wechselt – den neuen
   /// Ablageort einer Datei.
@@ -5293,7 +5315,8 @@ class AppDatabase extends _$AppDatabase {
       (select(assets)..where((_) => _rohaufnahme)).get();
 
   /// Zählvariante von [assetsFuerDatumskorrektur], siehe [countLocationBackfill].
-  Future<int> countDatumskorrektur() => _countWhere(_rohaufnahme);
+  Future<int> countDatumskorrektur({DateTime? importiertNach}) =>
+      _countWhere(_rohaufnahme & _importiertNach(importiertNach));
 
   /// Setzt das Ergebnis der Texterkennung (siehe ImageConverter.swift
   /// `recognizeText`) – [text] darf leer sein (kein Text im Bild gefunden),
@@ -5997,8 +6020,10 @@ class AppDatabase extends _$AppDatabase {
   )..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))).get();
 
   /// Zählvariante von [assetsForXmpExport], siehe [countLocationBackfill].
-  Future<int> countXmpExport() => _countWhere(
-    assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+  Future<int> countXmpExport({DateTime? importiertNach}) => _countWhere(
+    assets.isTrashed.equals(false) &
+        assets.isLocked.equals(false) &
+        _importiertNach(importiertNach),
   );
 
   /// Noch unbewertete Fotos/Videos für den Sichtungs-Modus (Culling) –
@@ -6438,14 +6463,39 @@ class AppDatabase extends _$AppDatabase {
   /// Zählvariante von [unlinkedAssetsOfType], siehe [countLocationBackfill].
   /// Wie viele Aufnahmen dieser Art es gibt – für die Anzeige „betrifft N"
   /// bei der Prüfung der Dateiarten.
-  Future<int> countAssetsOfType(String type) =>
-      _countWhere(assets.type.equals(type));
+  Future<int> countAssetsOfType(String type, {DateTime? importiertNach}) =>
+      _countWhere(assets.type.equals(type) & _importiertNach(importiertNach));
 
-  Future<int> countUnlinkedAssetsOfType(String type) => _countWhere(
+  Future<int> countUnlinkedAssetsOfType(
+    String type, {
+    DateTime? importiertNach,
+  }) => _countWhere(
     assets.type.equals(type) &
         assets.isTrashed.equals(false) &
-        assets.linkedAssetId.isNull(),
+        assets.linkedAssetId.isNull() &
+        _importiertNach(importiertNach),
   );
+
+  /// Nur, was nach [zeitpunkt] importiert wurde – oder alles, wenn er
+  /// fehlt. Für die Zähler der Aufgaben, die sich je Aufnahme nichts
+  /// merken (siehe [Aufgabenlaeufe]).
+  Expression<bool> _importiertNach(DateTime? zeitpunkt) => zeitpunkt == null
+      ? const Constant(true)
+      : assets.importedAt.isBiggerThanValue(zeitpunkt);
+
+  Future<void> merkeAufgabenlauf(String schluessel) =>
+      into(aufgabenlaeufe).insertOnConflictUpdate(
+        AufgabenlaeufeCompanion.insert(
+          schluessel: schluessel,
+          fertigAm: DateTime.now(),
+        ),
+      );
+
+  Future<DateTime?> aufgabeFertigAm(String schluessel) async =>
+      (await (select(
+            aufgabenlaeufe,
+          )..where((t) => t.schluessel.equals(schluessel))).getSingleOrNull())
+          ?.fertigAm;
 
   Future<void> linkAssets(String idA, String idB) async {
     await (update(assets)..where((t) => t.id.equals(idA))).write(
@@ -6787,7 +6837,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Zählvariante von [assetsWithDevelopSettings], siehe [countLocationBackfill].
-  Future<int> countAssetsWithDevelopSettings() async {
+  /// [geaendertNach]: nur Entwicklungen, deren Einstellungen danach
+  /// gespeichert wurden – siehe [Aufgabenlaeufe].
+  Future<int> countAssetsWithDevelopSettings({DateTime? geaendertNach}) async {
     final countExpr = assets.id.count();
     final query =
         selectOnly(assets).join([
@@ -6798,7 +6850,13 @@ class AppDatabase extends _$AppDatabase {
           ])
           ..addColumns([countExpr])
           ..where(
-            assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+            assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false) &
+                (geaendertNach == null
+                    ? const Constant(true)
+                    : developSettings.updatedAt.isBiggerThanValue(
+                        geaendertNach,
+                      )),
           );
     final row = await query.getSingle();
     return row.read<int>(countExpr) ?? 0;

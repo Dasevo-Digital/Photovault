@@ -1869,7 +1869,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get aufgKameraText =>
-      'Reads camera, lens, focal length, aperture, ISO and shutter speed from the metadata - from EXIF for photographs, from the container for videos. The number counts items without a camera; those carrying no metadata at all stay in it.';
+      'Reads camera, lens, focal length, aperture, ISO and shutter speed from the metadata - from EXIF for photographs, from the container for videos. The number counts items without a camera, after the first run only those added since; those carrying no metadata at all stay in it.';
 
   @override
   String get aufgDateiartTitel => 'Check file kinds';
@@ -1889,7 +1889,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get aufgLivePhotoText =>
-      'Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will.';
+      'Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will. After the first run it only counts what has been added since.';
 
   @override
   String get aufgRendernText =>
@@ -8896,5 +8896,10 @@ class AppTexteEn extends AppTexte {
       one: '1 spot',
     );
     return 'Scratch model suggestion: $_temp0. Check it, erase anything wrong, then apply.';
+  }
+
+  @override
+  String aufgNeuSeitLauf(int anzahl) {
+    return 'New since the last run: $anzahl';
   }
 }

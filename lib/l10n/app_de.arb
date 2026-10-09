@@ -934,13 +934,13 @@
   "aufgOrteText": "Liest EXIF-GPS-Daten aus Fotos nachträglich ein. Die Zahl ist die der Fotos ohne Ort – wie viele davon einen in der Datei tragen, weiss erst der Durchgang.",
   "aufgOrteAufloesenText": "Ordnet dem GPS-Ort eines Fotos Land, Bundesland/Provinz und Stadt zu.",
   "aufgKameraTitel": "Kameradaten einlesen",
-  "aufgKameraText": "Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe; was gar keine Metadaten trägt, bleibt darunter.",
+  "aufgKameraText": "Liest Kamera, Objektiv, Brennweite, Blende, ISO und Belichtungszeit aus den Metadaten ein – bei Fotos aus EXIF, bei Videos aus dem Container. Die Zahl ist die der Aufnahmen ohne Kameraangabe, nach dem ersten Lauf nur die seitdem dazugekommenen; was gar keine Metadaten trägt, bleibt darunter.",
   "aufgDateiartTitel": "Dateiarten prüfen",
   "aufgDateiartText": "Manche Standbilder kommen unter einem Videonamen an – als Video geführt fallen sie aus jeder Auswertung heraus, bekommen kein Vorschaubild und keinen Ort. Der Lauf sieht in die Bytes und berichtigt die Art. Danach lohnt ein Durchgang der übrigen Aufgaben.",
   "werkzPruefeDateiarten": "Prüfe Dateiarten …",
   "werkzAlleArtenStimmen": "Alle Aufnahmen sind richtig eingeordnet.",
   "aufgLivePhotoTitel": "Live-Photo-Paare prüfen",
-  "aufgLivePhotoText": "Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen.",
+  "aufgLivePhotoText": "Verknüpft HEIC/JPG-Standbilder mit gleichnamigen MOV-Videos und löst aus Motion Photos von Google und Samsung das Video, das im JPEG steckt. Die Zahl ist die der Fotos ohne Partner – die allermeisten haben keinen und bekommen auch keinen. Nach dem ersten Lauf zählt sie nur noch, was seitdem dazugekommen ist.",
   "aufgRendernText": "Rendert Fotos mit gespeicherten Entwicklungs-Anpassungen unverändert neu.",
   "aufgXmpText": "Legt für jedes Foto eine .xmp-Datei für Lightroom/darktable/digiKam daneben ab.",
   "auswAufheben": "Auswahl aufheben",
@@ -5133,5 +5133,7 @@
   "modellKratzerText": "Findet Kratzer, Knicke und Risse in eingescannten Fotos – im Bildeditor unter „Objekt entfernen“, gefüllt wird mit LaMa. Ohne dieses Modell sucht die App nur nach langen geraden Linien und Staub. 75 MB.",
   "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), nach ONNX umgewandelt",
   "bearbKratzerModellGefunden": "Vorschlag des Kratzer-Modells: {stellen, plural, =1{1 Stelle} other{{stellen} Stellen}}. Prüfen, Falsches radieren, dann anwenden.",
-  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}}
+  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}},
+  "aufgNeuSeitLauf": "Neu seit dem letzten Lauf: {anzahl}",
+  "@aufgNeuSeitLauf": {"placeholders": {"anzahl": {"type": "int"}}}
 }

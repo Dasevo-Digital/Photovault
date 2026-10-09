@@ -1795,6 +1795,16 @@ class LibraryState extends ChangeNotifier {
     } finally {
       lauf.beendet = true;
       lauf.abo = null;
+      // Ganz durchgelaufen: merken, wann. Die Karten der Aufgaben ohne
+      // eigene Notiz je Aufnahme zählen danach nur, was seitdem dazukam
+      // (Issue #15) – vorher stand dort nach jedem Lauf dieselbe Zahl.
+      if (lauf.erfolgreich) {
+        try {
+          await db.merkeAufgabenlauf(lauf.schluessel);
+        } catch (_) {
+          // Nur die Anzeige hängt daran; der Lauf selbst ist durch.
+        }
+      }
       notifyListeners();
       // Der frei gewordene Platz gehört dem nächsten in der Schlange.
       _versucheStarten();

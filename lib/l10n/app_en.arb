@@ -603,13 +603,13 @@
   "aufgOrteText": "Reads EXIF GPS data from photos after the fact. The number counts photographs without a place; how many carry one in the file only the run itself can tell.",
   "aufgOrteAufloesenText": "Works out the country, state or province and city behind a photo's GPS position.",
   "aufgKameraTitel": "Read camera data",
-  "aufgKameraText": "Reads camera, lens, focal length, aperture, ISO and shutter speed from the metadata - from EXIF for photographs, from the container for videos. The number counts items without a camera; those carrying no metadata at all stay in it.",
+  "aufgKameraText": "Reads camera, lens, focal length, aperture, ISO and shutter speed from the metadata - from EXIF for photographs, from the container for videos. The number counts items without a camera, after the first run only those added since; those carrying no metadata at all stay in it.",
   "aufgDateiartTitel": "Check file kinds",
   "aufgDateiartText": "Some stills arrive under a video name. Treated as a video they drop out of every analysis, get no thumbnail and no location. This run looks at the bytes and corrects the kind. A pass over the other tasks pays off afterwards.",
   "werkzPruefeDateiarten": "Checking file kinds …",
   "werkzAlleArtenStimmen": "Every photo is filed correctly.",
   "aufgLivePhotoTitel": "Check Live Photo pairs",
-  "aufgLivePhotoText": "Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will.",
+  "aufgLivePhotoText": "Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will. After the first run it only counts what has been added since.",
   "aufgRendernText": "Renders photos with saved develop adjustments again, unchanged.",
   "aufgXmpText": "Puts an .xmp file next to every photo for Lightroom, darktable or digiKam.",
   "auswAufheben": "Clear selection",
@@ -4026,5 +4026,7 @@
   "modellKratzerText": "Finds scratches, creases and tears in scanned photos – in the image editor under “Remove object”, filled by LaMa. Without this model the app only looks for long straight lines and dust. 75 MB.",
   "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), converted to ONNX",
   "bearbKratzerModellGefunden": "Scratch model suggestion: {stellen, plural, =1{1 spot} other{{stellen} spots}}. Check it, erase anything wrong, then apply.",
-  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}}
+  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}},
+  "aufgNeuSeitLauf": "New since the last run: {anzahl}",
+  "@aufgNeuSeitLauf": {"placeholders": {"anzahl": {"type": "int"}}}
 }
