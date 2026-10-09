@@ -194,6 +194,12 @@ echter Hardware.
   Auf Wunsch läuft ein eigenes Musikstück darunter: wiederholt, wenn es
   kürzer ist, auf die Länge des Videos geschnitten, eine Sekunde ein- und
   drei Sekunden ausgeblendet (macOS über AVFoundation, sonst ffmpeg).
+- **Erinnerungen** – eine eigene Seite unter „Entdecken“: die Rückblicke
+  der letzten vierzehn Tage (nicht nur des heutigen), gemerkte
+  Erinnerungen und die Reisen mit den meisten Lieblingsfotos (Favorit
+  oder ab vier Sternen). Eine gemerkte Erinnerung hält ihre Auswahl fest
+  und bleibt, bis man sie wieder vergisst; jede lässt sich als Video
+  speichern.
 - **Kalender** – Jahresübersicht mit Titelbild und Foto-/Videoanzahl je Jahr
 - **Karte** – Fotos mit GPS-Daten auf einer Karte (OpenStreetMap-Kacheln)
   oder wahlweise auf einem interaktiven 3D-Globus. Die dunkle Karte

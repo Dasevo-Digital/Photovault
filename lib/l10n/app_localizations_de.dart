@@ -8814,4 +8814,52 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get diashowMusikWaehlen => 'Musik wählen …';
+
+  @override
+  String get erinnerungenTitel => 'Erinnerungen';
+
+  @override
+  String get erinnerungenUntertitel =>
+      'Die letzten zwei Wochen, was du dir gemerkt hast, und die schönsten Reisen';
+
+  @override
+  String get erinnerungenGemerkt => 'Gemerkt';
+
+  @override
+  String get erinnerungenLetzteTage => 'Die letzten zwei Wochen';
+
+  @override
+  String get erinnerungenKeine =>
+      'An keinem der letzten vierzehn Tage gibt es Fotos aus früheren Jahren.';
+
+  @override
+  String erinnerungenTagVorJahren(String datum, int jahre) {
+    String _temp0 = intl.Intl.pluralLogic(
+      jahre,
+      locale: localeName,
+      other: 'vor $jahre Jahren',
+      one: 'vor einem Jahr',
+    );
+    return '$datum · $_temp0';
+  }
+
+  @override
+  String get erinnerungenMerken => 'Merken';
+
+  @override
+  String get erinnerungenVergessen => 'Nicht mehr merken';
+
+  @override
+  String get erinnerungenSchoensteReisen => 'Die schönsten Reisen';
+
+  @override
+  String erinnerungenReise(String name, String jahr, int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Lieblingsfotos',
+      one: '1 Lieblingsfoto',
+    );
+    return '$name $jahr · $_temp0';
+  }
 }

@@ -24777,6 +24777,368 @@ class VerworfeneDokumenteCompanion
   }
 }
 
+class $GemerkteErinnerungenTable extends GemerkteErinnerungen
+    with TableInfo<$GemerkteErinnerungenTable, GemerkteErinnerungenData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GemerkteErinnerungenTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titelMeta = const VerificationMeta('titel');
+  @override
+  late final GeneratedColumn<String> titel = GeneratedColumn<String>(
+    'titel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagMeta = const VerificationMeta('tag');
+  @override
+  late final GeneratedColumn<DateTime> tag = GeneratedColumn<DateTime>(
+    'tag',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assetIdsMeta = const VerificationMeta(
+    'assetIds',
+  );
+  @override
+  late final GeneratedColumn<String> assetIds = GeneratedColumn<String>(
+    'asset_ids',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gemerktAmMeta = const VerificationMeta(
+    'gemerktAm',
+  );
+  @override
+  late final GeneratedColumn<DateTime> gemerktAm = GeneratedColumn<DateTime>(
+    'gemerkt_am',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, titel, tag, assetIds, gemerktAm];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'gemerkte_erinnerungen';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<GemerkteErinnerungenData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('titel')) {
+      context.handle(
+        _titelMeta,
+        titel.isAcceptableOrUnknown(data['titel']!, _titelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titelMeta);
+    }
+    if (data.containsKey('tag')) {
+      context.handle(
+        _tagMeta,
+        tag.isAcceptableOrUnknown(data['tag']!, _tagMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagMeta);
+    }
+    if (data.containsKey('asset_ids')) {
+      context.handle(
+        _assetIdsMeta,
+        assetIds.isAcceptableOrUnknown(data['asset_ids']!, _assetIdsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdsMeta);
+    }
+    if (data.containsKey('gemerkt_am')) {
+      context.handle(
+        _gemerktAmMeta,
+        gemerktAm.isAcceptableOrUnknown(data['gemerkt_am']!, _gemerktAmMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_gemerktAmMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GemerkteErinnerungenData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GemerkteErinnerungenData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      titel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}titel'],
+      )!,
+      tag: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}tag'],
+      )!,
+      assetIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_ids'],
+      )!,
+      gemerktAm: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}gemerkt_am'],
+      )!,
+    );
+  }
+
+  @override
+  $GemerkteErinnerungenTable createAlias(String alias) {
+    return $GemerkteErinnerungenTable(attachedDatabase, alias);
+  }
+}
+
+class GemerkteErinnerungenData extends DataClass
+    implements Insertable<GemerkteErinnerungenData> {
+  final String id;
+  final String titel;
+
+  /// Der Tag, an dem die Erinnerung spielt (für den Untertitel und die
+  /// Reihenfolge), nicht der Tag des Merkens.
+  final DateTime tag;
+  final String assetIds;
+  final DateTime gemerktAm;
+  const GemerkteErinnerungenData({
+    required this.id,
+    required this.titel,
+    required this.tag,
+    required this.assetIds,
+    required this.gemerktAm,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['titel'] = Variable<String>(titel);
+    map['tag'] = Variable<DateTime>(tag);
+    map['asset_ids'] = Variable<String>(assetIds);
+    map['gemerkt_am'] = Variable<DateTime>(gemerktAm);
+    return map;
+  }
+
+  GemerkteErinnerungenCompanion toCompanion(bool nullToAbsent) {
+    return GemerkteErinnerungenCompanion(
+      id: Value(id),
+      titel: Value(titel),
+      tag: Value(tag),
+      assetIds: Value(assetIds),
+      gemerktAm: Value(gemerktAm),
+    );
+  }
+
+  factory GemerkteErinnerungenData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GemerkteErinnerungenData(
+      id: serializer.fromJson<String>(json['id']),
+      titel: serializer.fromJson<String>(json['titel']),
+      tag: serializer.fromJson<DateTime>(json['tag']),
+      assetIds: serializer.fromJson<String>(json['assetIds']),
+      gemerktAm: serializer.fromJson<DateTime>(json['gemerktAm']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'titel': serializer.toJson<String>(titel),
+      'tag': serializer.toJson<DateTime>(tag),
+      'assetIds': serializer.toJson<String>(assetIds),
+      'gemerktAm': serializer.toJson<DateTime>(gemerktAm),
+    };
+  }
+
+  GemerkteErinnerungenData copyWith({
+    String? id,
+    String? titel,
+    DateTime? tag,
+    String? assetIds,
+    DateTime? gemerktAm,
+  }) => GemerkteErinnerungenData(
+    id: id ?? this.id,
+    titel: titel ?? this.titel,
+    tag: tag ?? this.tag,
+    assetIds: assetIds ?? this.assetIds,
+    gemerktAm: gemerktAm ?? this.gemerktAm,
+  );
+  GemerkteErinnerungenData copyWithCompanion(
+    GemerkteErinnerungenCompanion data,
+  ) {
+    return GemerkteErinnerungenData(
+      id: data.id.present ? data.id.value : this.id,
+      titel: data.titel.present ? data.titel.value : this.titel,
+      tag: data.tag.present ? data.tag.value : this.tag,
+      assetIds: data.assetIds.present ? data.assetIds.value : this.assetIds,
+      gemerktAm: data.gemerktAm.present ? data.gemerktAm.value : this.gemerktAm,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GemerkteErinnerungenData(')
+          ..write('id: $id, ')
+          ..write('titel: $titel, ')
+          ..write('tag: $tag, ')
+          ..write('assetIds: $assetIds, ')
+          ..write('gemerktAm: $gemerktAm')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, titel, tag, assetIds, gemerktAm);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GemerkteErinnerungenData &&
+          other.id == this.id &&
+          other.titel == this.titel &&
+          other.tag == this.tag &&
+          other.assetIds == this.assetIds &&
+          other.gemerktAm == this.gemerktAm);
+}
+
+class GemerkteErinnerungenCompanion
+    extends UpdateCompanion<GemerkteErinnerungenData> {
+  final Value<String> id;
+  final Value<String> titel;
+  final Value<DateTime> tag;
+  final Value<String> assetIds;
+  final Value<DateTime> gemerktAm;
+  final Value<int> rowid;
+  const GemerkteErinnerungenCompanion({
+    this.id = const Value.absent(),
+    this.titel = const Value.absent(),
+    this.tag = const Value.absent(),
+    this.assetIds = const Value.absent(),
+    this.gemerktAm = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GemerkteErinnerungenCompanion.insert({
+    required String id,
+    required String titel,
+    required DateTime tag,
+    required String assetIds,
+    required DateTime gemerktAm,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       titel = Value(titel),
+       tag = Value(tag),
+       assetIds = Value(assetIds),
+       gemerktAm = Value(gemerktAm);
+  static Insertable<GemerkteErinnerungenData> custom({
+    Expression<String>? id,
+    Expression<String>? titel,
+    Expression<DateTime>? tag,
+    Expression<String>? assetIds,
+    Expression<DateTime>? gemerktAm,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (titel != null) 'titel': titel,
+      if (tag != null) 'tag': tag,
+      if (assetIds != null) 'asset_ids': assetIds,
+      if (gemerktAm != null) 'gemerkt_am': gemerktAm,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GemerkteErinnerungenCompanion copyWith({
+    Value<String>? id,
+    Value<String>? titel,
+    Value<DateTime>? tag,
+    Value<String>? assetIds,
+    Value<DateTime>? gemerktAm,
+    Value<int>? rowid,
+  }) {
+    return GemerkteErinnerungenCompanion(
+      id: id ?? this.id,
+      titel: titel ?? this.titel,
+      tag: tag ?? this.tag,
+      assetIds: assetIds ?? this.assetIds,
+      gemerktAm: gemerktAm ?? this.gemerktAm,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (titel.present) {
+      map['titel'] = Variable<String>(titel.value);
+    }
+    if (tag.present) {
+      map['tag'] = Variable<DateTime>(tag.value);
+    }
+    if (assetIds.present) {
+      map['asset_ids'] = Variable<String>(assetIds.value);
+    }
+    if (gemerktAm.present) {
+      map['gemerkt_am'] = Variable<DateTime>(gemerktAm.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GemerkteErinnerungenCompanion(')
+          ..write('id: $id, ')
+          ..write('titel: $titel, ')
+          ..write('tag: $tag, ')
+          ..write('assetIds: $assetIds, ')
+          ..write('gemerktAm: $gemerktAm, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -24855,6 +25217,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WanderabfragenTable wanderabfragen = $WanderabfragenTable(this);
   late final $VerworfeneDokumenteTable verworfeneDokumente =
       $VerworfeneDokumenteTable(this);
+  late final $GemerkteErinnerungenTable gemerkteErinnerungen =
+      $GemerkteErinnerungenTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -24906,6 +25270,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     wanderpunkte,
     wanderabfragen,
     verworfeneDokumente,
+    gemerkteErinnerungen,
   ];
 }
 
@@ -37533,6 +37898,234 @@ typedef $$VerworfeneDokumenteTableProcessedTableManager =
       VerworfeneDokumenteData,
       PrefetchHooks Function()
     >;
+typedef $$GemerkteErinnerungenTableCreateCompanionBuilder =
+    GemerkteErinnerungenCompanion Function({
+      required String id,
+      required String titel,
+      required DateTime tag,
+      required String assetIds,
+      required DateTime gemerktAm,
+      Value<int> rowid,
+    });
+typedef $$GemerkteErinnerungenTableUpdateCompanionBuilder =
+    GemerkteErinnerungenCompanion Function({
+      Value<String> id,
+      Value<String> titel,
+      Value<DateTime> tag,
+      Value<String> assetIds,
+      Value<DateTime> gemerktAm,
+      Value<int> rowid,
+    });
+
+class $$GemerkteErinnerungenTableFilterComposer
+    extends Composer<_$AppDatabase, $GemerkteErinnerungenTable> {
+  $$GemerkteErinnerungenTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titel => $composableBuilder(
+    column: $table.titel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assetIds => $composableBuilder(
+    column: $table.assetIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get gemerktAm => $composableBuilder(
+    column: $table.gemerktAm,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GemerkteErinnerungenTableOrderingComposer
+    extends Composer<_$AppDatabase, $GemerkteErinnerungenTable> {
+  $$GemerkteErinnerungenTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get titel => $composableBuilder(
+    column: $table.titel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assetIds => $composableBuilder(
+    column: $table.assetIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get gemerktAm => $composableBuilder(
+    column: $table.gemerktAm,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GemerkteErinnerungenTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GemerkteErinnerungenTable> {
+  $$GemerkteErinnerungenTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get titel =>
+      $composableBuilder(column: $table.titel, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get tag =>
+      $composableBuilder(column: $table.tag, builder: (column) => column);
+
+  GeneratedColumn<String> get assetIds =>
+      $composableBuilder(column: $table.assetIds, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get gemerktAm =>
+      $composableBuilder(column: $table.gemerktAm, builder: (column) => column);
+}
+
+class $$GemerkteErinnerungenTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GemerkteErinnerungenTable,
+          GemerkteErinnerungenData,
+          $$GemerkteErinnerungenTableFilterComposer,
+          $$GemerkteErinnerungenTableOrderingComposer,
+          $$GemerkteErinnerungenTableAnnotationComposer,
+          $$GemerkteErinnerungenTableCreateCompanionBuilder,
+          $$GemerkteErinnerungenTableUpdateCompanionBuilder,
+          (
+            GemerkteErinnerungenData,
+            BaseReferences<
+              _$AppDatabase,
+              $GemerkteErinnerungenTable,
+              GemerkteErinnerungenData
+            >,
+          ),
+          GemerkteErinnerungenData,
+          PrefetchHooks Function()
+        > {
+  $$GemerkteErinnerungenTableTableManager(
+    _$AppDatabase db,
+    $GemerkteErinnerungenTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GemerkteErinnerungenTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GemerkteErinnerungenTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$GemerkteErinnerungenTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> titel = const Value.absent(),
+                Value<DateTime> tag = const Value.absent(),
+                Value<String> assetIds = const Value.absent(),
+                Value<DateTime> gemerktAm = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GemerkteErinnerungenCompanion(
+                id: id,
+                titel: titel,
+                tag: tag,
+                assetIds: assetIds,
+                gemerktAm: gemerktAm,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String titel,
+                required DateTime tag,
+                required String assetIds,
+                required DateTime gemerktAm,
+                Value<int> rowid = const Value.absent(),
+              }) => GemerkteErinnerungenCompanion.insert(
+                id: id,
+                titel: titel,
+                tag: tag,
+                assetIds: assetIds,
+                gemerktAm: gemerktAm,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $GemerkteErinnerungenTable,
+                    GemerkteErinnerungenData
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $GemerkteErinnerungenTable,
+                    GemerkteErinnerungenData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GemerkteErinnerungenTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GemerkteErinnerungenTable,
+      GemerkteErinnerungenData,
+      $$GemerkteErinnerungenTableFilterComposer,
+      $$GemerkteErinnerungenTableOrderingComposer,
+      $$GemerkteErinnerungenTableAnnotationComposer,
+      $$GemerkteErinnerungenTableCreateCompanionBuilder,
+      $$GemerkteErinnerungenTableUpdateCompanionBuilder,
+      (
+        GemerkteErinnerungenData,
+        BaseReferences<
+          _$AppDatabase,
+          $GemerkteErinnerungenTable,
+          GemerkteErinnerungenData
+        >,
+      ),
+      GemerkteErinnerungenData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -37634,4 +38227,6 @@ class $AppDatabaseManager {
       $$WanderabfragenTableTableManager(_db, _db.wanderabfragen);
   $$VerworfeneDokumenteTableTableManager get verworfeneDokumente =>
       $$VerworfeneDokumenteTableTableManager(_db, _db.verworfeneDokumente);
+  $$GemerkteErinnerungenTableTableManager get gemerkteErinnerungen =>
+      $$GemerkteErinnerungenTableTableManager(_db, _db.gemerkteErinnerungen);
 }

@@ -1092,6 +1092,29 @@ class VerworfeneOrtsvorschlaege extends Table {
   Set<Column> get primaryKey => {schluessel};
 }
 
+/// Erinnerungen, die jemand behalten wollte – siehe
+/// `screens/erinnerungen_screen.dart`.
+///
+/// **Die Aufnahmen werden festgehalten, nicht die Frage.** Ein Rückblick
+/// entsteht jeden Tag neu aus „was war an diesem Tag"; wer ihn merkt,
+/// meint aber genau diese Auswahl – auch wenn später ein Foto ein anderes
+/// Datum bekommt oder eins dazukommt. Die Kennungen stehen als JSON-Liste
+/// in einer Spalte: Sie werden immer als Ganzes gelesen und geschrieben,
+/// und eine Zwischentabelle brächte nur eine zweite Stelle zum Aufräumen.
+class GemerkteErinnerungen extends Table {
+  TextColumn get id => text()();
+  TextColumn get titel => text()();
+
+  /// Der Tag, an dem die Erinnerung spielt (für den Untertitel und die
+  /// Reihenfolge), nicht der Tag des Merkens.
+  DateTimeColumn get tag => dateTime()();
+  TextColumn get assetIds => text()();
+  DateTimeColumn get gemerktAm => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Vorschläge für den gesperrten Ordner, die abgelehnt wurden – siehe
 /// `services/dokumenterkennung.dart`.
 ///
@@ -2038,6 +2061,7 @@ class _SperrWiederholung extends QueryInterceptor {
     Wanderpunkte,
     Wanderabfragen,
     VerworfeneDokumente,
+    GemerkteErinnerungen,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -2053,7 +2077,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 88;
+  int get schemaVersion => 89;
 
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
@@ -3287,6 +3311,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 88) {
         // Leer: Abgelehnt hat noch niemand etwas.
         await m.createTable(verworfeneDokumente);
+      }
+      if (from < 89) {
+        await m.createTable(gemerkteErinnerungen);
       }
     },
   );
@@ -6175,6 +6202,116 @@ class AppDatabase extends _$AppDatabase {
       assets,
     )..where((t) => t.id.isIn(treffer))).get();
     return geladen..sort((a, b) => b.fileCreatedAt.compareTo(a.fileCreatedAt));
+  }
+
+  /// Was an jedem der [tage] in früheren Jahren entstanden ist – für die
+  /// Erinnerungsseite, die zwei Wochen zurückblickt.
+  ///
+  /// **Ein Durchgang statt einer Frage je Tag.** [assetsOnThisDay] liest
+  /// die schlanke Liste aller Aufnahmen (31 ms an der echten
+  /// Bibliothek); vierzehnmal hintereinander wäre fast eine halbe Sekunde.
+  /// Dieselben Regeln: kein geratenes Datum, keins auf voller Stunde,
+  /// nichts aus Papierkorb oder Tresor, nur das Gesicht eines Stapels.
+  Future<Map<DateTime, List<AssetData>>> assetsAnTagen(
+    List<DateTime> tage,
+  ) async {
+    final gesucht = {for (final t in tage) t.month * 100 + t.day: t};
+    final schlank = selectOnly(assets)
+      ..addColumns([assets.id, assets.fileCreatedAt])
+      ..where(
+        assets.isTrashed.equals(false) &
+            assets.isLocked.equals(false) &
+            assets.datumGeschaetzt.equals(false) &
+            _nichtAufVollerStunde() &
+            _isPrimaryGridEntry(assets),
+      );
+    final jeTag = <DateTime, List<String>>{};
+    for (final zeile in await schlank.get()) {
+      final wann = DateTime.fromMillisecondsSinceEpoch(
+        zeile.rawData.read<int>('assets.file_created_at') * 1000,
+      );
+      final tag = gesucht[wann.month * 100 + wann.day];
+      if (tag == null || wann.year >= tag.year) continue;
+      (jeTag[tag] ??= []).add(zeile.rawData.read<String>('assets.id'));
+    }
+    if (jeTag.isEmpty) return const {};
+    final alle = {
+      for (final a in await (select(
+        assets,
+      )..where((t) => t.id.isIn(jeTag.values.expand((x) => x)))).get())
+        a.id: a,
+    };
+    return {
+      for (final MapEntry(key: tag, value: ids) in jeTag.entries)
+        tag: [for (final id in ids) ?alle[id]]
+          ..sort((a, b) => b.fileCreatedAt.compareTo(a.fileCreatedAt)),
+    };
+  }
+
+  /// Die Reisen mit den meisten Lieblingsfotos – favorisiert oder mit
+  /// vier, fünf Sternen –, die besten zuerst. Reisen ohne ein einziges
+  /// bleiben draussen: „schönste" nach einer Zahl, die null ist, wäre nur
+  /// die Reihenfolge der Tabelle.
+  Future<List<({ReisenData reise, int lieblinge})>> schoensteReisen({
+    int hoechstens = 8,
+  }) async {
+    final zeilen = await customSelect(
+      '''SELECT ra.reise_id AS id, COUNT(*) AS n
+         FROM reise_aufnahmen ra JOIN assets a ON a.id = ra.asset_id
+         WHERE a.is_trashed = 0 AND a.is_locked = 0
+           AND (a.is_favorite = 1 OR a.rating >= 4)
+         GROUP BY ra.reise_id ORDER BY n DESC LIMIT ?''',
+      variables: [Variable.withInt(hoechstens)],
+      readsFrom: {reiseAufnahmen, assets},
+    ).get();
+    final gefunden = {
+      for (final r
+          in await (select(reisen)..where(
+                (t) =>
+                    t.id.isIn([for (final z in zeilen) z.read<String>('id')]),
+              ))
+              .get())
+        r.id: r,
+    };
+    return [
+      for (final z in zeilen)
+        if (gefunden[z.read<String>('id')] case final reise?)
+          (reise: reise, lieblinge: z.read<int>('n')),
+    ];
+  }
+
+  Future<List<GemerkteErinnerungenData>> alleGemerktenErinnerungen() => (select(
+    gemerkteErinnerungen,
+  )..orderBy([(t) => OrderingTerm.desc(t.tag)])).get();
+
+  Future<void> merkeErinnerung({
+    required String id,
+    required String titel,
+    required DateTime tag,
+    required List<String> assetIds,
+  }) => into(gemerkteErinnerungen).insertOnConflictUpdate(
+    GemerkteErinnerungenCompanion.insert(
+      id: id,
+      titel: titel,
+      tag: tag,
+      assetIds: jsonEncode(assetIds),
+      gemerktAm: DateTime.now(),
+    ),
+  );
+
+  Future<void> vergissErinnerung(String id) =>
+      (delete(gemerkteErinnerungen)..where((t) => t.id.equals(id))).go();
+
+  /// Die Aufnahmen einer gemerkten Erinnerung, in ihrer Reihenfolge –
+  /// ohne die, die inzwischen gelöscht oder gesperrt sind.
+  Future<List<AssetData>> aufnahmenDerErinnerung(
+    GemerkteErinnerungenData e,
+  ) async {
+    final ids = (jsonDecode(e.assetIds) as List).cast<String>();
+    return [
+      for (final a in await assetsByIds(ids))
+        if (!a.isTrashed && !a.isLocked) a,
+    ];
   }
 
   /// Was in diesem **Monat** frueherer Jahre entstanden ist – ohne den

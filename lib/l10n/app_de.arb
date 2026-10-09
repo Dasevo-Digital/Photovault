@@ -5102,5 +5102,17 @@
   "diashowMusikTitel": "Musik unterlegen?",
   "diashowMusikText": "Ein Musikstück von der Platte läuft unter der Diashow – wiederholt, wenn es kürzer ist, sonst mit dem Video beendet, am Ende ausgeblendet. Das Stück wird nur in das Video geschrieben, nicht in die Bibliothek übernommen.",
   "diashowOhneMusik": "Ohne Musik",
-  "diashowMusikWaehlen": "Musik wählen …"
+  "diashowMusikWaehlen": "Musik wählen …",
+  "erinnerungenTitel": "Erinnerungen",
+  "erinnerungenUntertitel": "Die letzten zwei Wochen, was du dir gemerkt hast, und die schönsten Reisen",
+  "erinnerungenGemerkt": "Gemerkt",
+  "erinnerungenLetzteTage": "Die letzten zwei Wochen",
+  "erinnerungenKeine": "An keinem der letzten vierzehn Tage gibt es Fotos aus früheren Jahren.",
+  "erinnerungenTagVorJahren": "{datum} · {jahre, plural, =1{vor einem Jahr} other{vor {jahre} Jahren}}",
+  "@erinnerungenTagVorJahren": {"placeholders": {"datum": {"type": "String"}, "jahre": {"type": "int"}}},
+  "erinnerungenMerken": "Merken",
+  "erinnerungenVergessen": "Nicht mehr merken",
+  "erinnerungenSchoensteReisen": "Die schönsten Reisen",
+  "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 Lieblingsfoto} other{{anzahl} Lieblingsfotos}}",
+  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}}
 }

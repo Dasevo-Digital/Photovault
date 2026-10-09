@@ -13596,6 +13596,66 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Musik wählen …'**
   String get diashowMusikWaehlen;
+
+  /// No description provided for @erinnerungenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erinnerungen'**
+  String get erinnerungenTitel;
+
+  /// No description provided for @erinnerungenUntertitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Die letzten zwei Wochen, was du dir gemerkt hast, und die schönsten Reisen'**
+  String get erinnerungenUntertitel;
+
+  /// No description provided for @erinnerungenGemerkt.
+  ///
+  /// In de, this message translates to:
+  /// **'Gemerkt'**
+  String get erinnerungenGemerkt;
+
+  /// No description provided for @erinnerungenLetzteTage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die letzten zwei Wochen'**
+  String get erinnerungenLetzteTage;
+
+  /// No description provided for @erinnerungenKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'An keinem der letzten vierzehn Tage gibt es Fotos aus früheren Jahren.'**
+  String get erinnerungenKeine;
+
+  /// No description provided for @erinnerungenTagVorJahren.
+  ///
+  /// In de, this message translates to:
+  /// **'{datum} · {jahre, plural, =1{vor einem Jahr} other{vor {jahre} Jahren}}'**
+  String erinnerungenTagVorJahren(String datum, int jahre);
+
+  /// No description provided for @erinnerungenMerken.
+  ///
+  /// In de, this message translates to:
+  /// **'Merken'**
+  String get erinnerungenMerken;
+
+  /// No description provided for @erinnerungenVergessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr merken'**
+  String get erinnerungenVergessen;
+
+  /// No description provided for @erinnerungenSchoensteReisen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die schönsten Reisen'**
+  String get erinnerungenSchoensteReisen;
+
+  /// No description provided for @erinnerungenReise.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} {jahr} · {anzahl, plural, =1{1 Lieblingsfoto} other{{anzahl} Lieblingsfotos}}'**
+  String erinnerungenReise(String name, String jahr, int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

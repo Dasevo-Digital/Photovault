@@ -3995,5 +3995,17 @@
   "diashowMusikTitel": "Add music?",
   "diashowMusikText": "A piece of music from disk plays under the slideshow – repeated if it is shorter, otherwise ending with the video, faded out at the end. The track is only written into the video, not added to the library.",
   "diashowOhneMusik": "Without music",
-  "diashowMusikWaehlen": "Choose music …"
+  "diashowMusikWaehlen": "Choose music …",
+  "erinnerungenTitel": "Memories",
+  "erinnerungenUntertitel": "The last two weeks, what you have kept, and the best trips",
+  "erinnerungenGemerkt": "Kept",
+  "erinnerungenLetzteTage": "The last two weeks",
+  "erinnerungenKeine": "None of the last fourteen days has photos from earlier years.",
+  "erinnerungenTagVorJahren": "{datum} · {jahre, plural, =1{one year ago} other{{jahre} years ago}}",
+  "@erinnerungenTagVorJahren": {"placeholders": {"datum": {"type": "String"}, "jahre": {"type": "int"}}},
+  "erinnerungenMerken": "Keep",
+  "erinnerungenVergessen": "Stop keeping",
+  "erinnerungenSchoensteReisen": "The best trips",
+  "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 favourite} other{{anzahl} favourites}}",
+  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}}
 }

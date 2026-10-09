@@ -22,6 +22,7 @@ import 'aktivitaeten_screen.dart';
 import 'album_detail_screen.dart';
 import 'albums_screen.dart';
 import 'asset_viewer_screen.dart';
+import 'erinnerungen_screen.dart';
 import 'jahresrueckblick_screen.dart';
 import 'map_screen.dart';
 import 'people_screen.dart';
@@ -89,6 +90,7 @@ class ExploreScreen extends StatelessWidget {
         children: [
           FamilientageAbschnitt(library: library),
           _MemoriesSection(library: library),
+          _Erinnerungszeile(library: library),
           _Jahresrueckblickzeile(library: library),
           _Streifenabschnitt<PersonData>(
             titel: AppTexte.of(context).erkundenPersonen,
@@ -1155,6 +1157,36 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Der Weg zur Erinnerungsseite – immer da, auch an Tagen, an denen
+/// der Rückblick darüber nichts findet: Dann zeigt die Seite die Tage
+/// davor und das Gemerkte.
+class _Erinnerungszeile extends StatelessWidget {
+  final LibraryState library;
+  const _Erinnerungszeile({required this.library});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          leading: const Icon(Icons.bookmarks_outlined),
+          title: Text(t.erinnerungenTitel),
+          subtitle: Text(t.erinnerungenUntertitel),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ErinnerungenScreen(library: library),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
