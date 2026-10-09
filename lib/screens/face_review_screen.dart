@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -130,6 +131,12 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
+      // Ein offenes Rechtsklick-Menü zuerst – Escape schliesst das Menü,
+      // nicht den Bildschirm dahinter.
+      if (_menue.isOpen) {
+        _menue.close();
+        return KeyEventResult.handled;
+      }
       if (_addMode) {
         setState(() {
           _addMode = false;
@@ -288,109 +295,96 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Handlung über einen Linksklick, der immer denselben Dialog öffnete –
   /// wer ein Fehlerkennung nur wegräumen wollte, musste erst den
   /// Namensdialog aufmachen.
-  Future<void> _kontextmenue(Offset position, FaceData? face) async {
+  /// Das Rechtsklick-Menü (Issue #18) – als [MenuAnchor] statt mit
+  /// `showMenu`: Dessen modales Fenster blendete nach einem zweiten
+  /// Rechtsklick gut 300 ms lang aus, und wer gleich noch einmal klickte,
+  /// sah zwei Menüs übereinander. Der Anker öffnet das neue sofort an der
+  /// neuen Stelle.
+  final MenuController _menue = MenuController();
+  final GlobalKey _menueFlaeche = GlobalKey();
+
+  /// Für welches Gesicht das Menü offen ist – `null` für die freie Fläche.
+  FaceData? _menueGesicht;
+
+  void _kontextmenue(Offset position, FaceData? face) {
+    final flaeche =
+        _menueFlaeche.currentContext?.findRenderObject() as RenderBox?;
+    if (flaeche == null) return;
+    setState(() => _menueGesicht = face);
+    _menue.open(position: flaeche.globalToLocal(position));
+  }
+
+  List<Widget> _menuepunkte(FaceData? face) {
     final t = AppTexte.of(context);
-    final wo = Overlay.of(context).context.findRenderObject() as RenderBox;
     final unbenannte = _faces
         .where((f) => f.personId == null && !f.isIgnored)
         .length;
-
-    final wahl = await showMenu<String>(
-      context: context,
-      position: RelativeRect.fromRect(
-        position & Size.zero,
-        Offset.zero & wo.size,
-      ),
-      items: [
-        if (face != null) ...[
-          if (!face.isIgnored)
-            PopupMenuItem(
-              value: 'benennen',
-              child: _eintrag(
-                Icons.person_add_alt_1,
-                face.personId != null ? t.gesichtUmbenennen : t.gesichtBenennen,
-              ),
-            ),
-          if (face.personId != null)
-            PopupMenuItem(
-              value: 'loesen',
-              child: _eintrag(
-                Icons.person_off_outlined,
-                t.gesichtZuordnungLoesen,
-              ),
-            ),
-          PopupMenuItem(
-            value: face.isIgnored ? 'zurueck' : 'ignorieren',
-            child: _eintrag(
-              face.isIgnored
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-              face.isIgnored
-                  ? t.gesichtNichtMehrIgnorieren
-                  : t.gesichtIgnorieren,
-            ),
+    Widget punkt(String wahl, IconData symbol, String text, {bool an = true}) =>
+        MenuItemButton(
+          leadingIcon: Icon(symbol, size: 20),
+          onPressed: an ? () => unawaited(_waehle(wahl, face)) : null,
+          child: Text(text),
+        );
+    return [
+      if (face != null) ...[
+        if (!face.isIgnored)
+          punkt(
+            'benennen',
+            Icons.person_add_alt_1,
+            face.personId != null ? t.gesichtUmbenennen : t.gesichtBenennen,
           ),
-          PopupMenuItem(
-            value: 'loeschen',
-            child: _eintrag(Icons.delete_outline, t.gesichtErkennungLoeschen),
-          ),
-          const PopupMenuDivider(),
-        ],
-        // Auch hier, nicht nur in der Titelleiste: Sind die Rahmen weg,
-        // sucht man den Weg zurück dort, wo man gerade hinsieht.
-        PopupMenuItem(
-          value: 'rahmen',
-          child: _eintrag(
-            _rahmenSichtbar
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined,
-            _rahmenSichtbar
-                ? t.gesichtRahmenAusblenden
-                : t.gesichtRahmenEinblenden,
-          ),
+        if (face.personId != null)
+          punkt('loesen', Icons.person_off_outlined, t.gesichtZuordnungLoesen),
+        punkt(
+          face.isIgnored ? 'zurueck' : 'ignorieren',
+          face.isIgnored
+              ? Icons.visibility_outlined
+              : Icons.visibility_off_outlined,
+          face.isIgnored ? t.gesichtNichtMehrIgnorieren : t.gesichtIgnorieren,
         ),
-        PopupMenuItem(
-          value: 'hinzufuegen',
-          child: _eintrag(
-            Icons.add_a_photo_outlined,
-            t.gesichtManuellHinzufuegen,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'alleIgnorieren',
-          enabled: unbenannte > 0,
-          child: _eintrag(
-            Icons.visibility_off_outlined,
-            t.gesichtAlleUnbenanntenIgnorieren(unbenannte),
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'info',
-          child: _eintrag(Icons.info_outline, t.viewerInfo),
-        ),
-        // Das Foto selbst, nicht eine Erkennung darauf – deshalb unten und
-        // hinter einem Trenner: Die Einträge darüber ändern nur, was über
-        // dem Bild liegt.
-        PopupMenuItem(
-          value: 'nichtMehrSuchen',
-          child: _eintrag(
-            _asset.faceScanExcluded
-                ? Icons.person_search_outlined
-                : Icons.search_off_outlined,
-            _asset.faceScanExcluded
-                ? t.gesichtWiederDurchsuchen
-                : t.gesichtNichtMehrDurchsuchen,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'fotoLoeschen',
-          child: _eintrag(Icons.delete_outline, t.gesichtFotoLoeschen),
-        ),
+        punkt('loeschen', Icons.delete_outline, t.gesichtErkennungLoeschen),
+        const Divider(height: 1),
       ],
-    );
-    if (!mounted || wahl == null) return;
+      // Auch hier, nicht nur in der Titelleiste: Sind die Rahmen weg,
+      // sucht man den Weg zurück dort, wo man gerade hinsieht.
+      punkt(
+        'rahmen',
+        _rahmenSichtbar
+            ? Icons.visibility_off_outlined
+            : Icons.visibility_outlined,
+        _rahmenSichtbar ? t.gesichtRahmenAusblenden : t.gesichtRahmenEinblenden,
+      ),
+      punkt(
+        'hinzufuegen',
+        Icons.add_a_photo_outlined,
+        t.gesichtManuellHinzufuegen,
+      ),
+      punkt(
+        'alleIgnorieren',
+        Icons.visibility_off_outlined,
+        t.gesichtAlleUnbenanntenIgnorieren(unbenannte),
+        an: unbenannte > 0,
+      ),
+      const Divider(height: 1),
+      punkt('info', Icons.info_outline, t.viewerInfo),
+      // Das Foto selbst, nicht eine Erkennung darauf – deshalb unten und
+      // hinter einem Trenner: Die Einträge darüber ändern nur, was über
+      // dem Bild liegt.
+      punkt(
+        'nichtMehrSuchen',
+        _asset.faceScanExcluded
+            ? Icons.person_search_outlined
+            : Icons.search_off_outlined,
+        _asset.faceScanExcluded
+            ? t.gesichtWiederDurchsuchen
+            : t.gesichtNichtMehrDurchsuchen,
+      ),
+      punkt('fotoLoeschen', Icons.delete_outline, t.gesichtFotoLoeschen),
+    ];
+  }
 
+  Future<void> _waehle(String wahl, FaceData? face) async {
+    if (!mounted) return;
     switch (wahl) {
       case 'benennen':
         await _tapFace(face!);
@@ -555,14 +549,6 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Eine Menüzeile. Der Text ist [Flexible], weil ein Popup-Menü seine
   /// Breite begrenzt und eine feste Zeile sonst überläuft – genau das
   /// passierte beim längsten Eintrag.
-  Widget _eintrag(IconData icon, String text) => Row(
-    children: [
-      Icon(icon, size: 20),
-      const SizedBox(width: 12),
-      Flexible(child: Text(text)),
-    ],
-  );
-
   Future<void> _finishManualBox(Rect normalizedRect) async {
     final people = await widget.library.db
         .select(widget.library.db.people)
@@ -748,7 +734,16 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       // an beiden Stellen gleich aussieht und gleich breit ist.
       body: Row(
         children: [
-          Expanded(child: _fotoFlaeche(context)),
+          Expanded(
+            child: MenuAnchor(
+              controller: _menue,
+              menuChildren: _menuepunkte(_menueGesicht),
+              child: KeyedSubtree(
+                key: _menueFlaeche,
+                child: _fotoFlaeche(context),
+              ),
+            ),
+          ),
           if (_infoSichtbar) ...[
             const VerticalDivider(width: 1, color: Colors.white24),
             SizedBox(

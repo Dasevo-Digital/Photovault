@@ -321,7 +321,13 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      Navigator.of(context).maybePop();
+      // Ein offenes Rechtsklick-Menü zuerst: Escape schliesst das Menü,
+      // nicht die Vollansicht dahinter.
+      if (_menue.isOpen) {
+        _menue.close();
+      } else {
+        Navigator.of(context).maybePop();
+      }
       return KeyEventResult.handled;
     }
     final rating = bewertungFuerZiffer(event.logicalKey);
@@ -472,111 +478,95 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     await _refreshCurrentAsset();
   }
 
-  Future<void> _showContextMenu(Offset globalPosition) async {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+  /// Das Rechtsklick-Menü des Fotos (Issue #18).
+  ///
+  /// **Ein [MenuAnchor] statt `showMenu`.** `showMenu` legt ein modales
+  /// Fenster mit eigener Sperrfläche über die App: Ein zweiter Rechtsklick
+  /// schloss das Menü nur, und es blendete gut 300 ms lang aus. Wer gleich
+  /// noch einmal klickte – wie man es am Desktop tut, um das Menü an eine
+  /// andere Stelle zu holen –, sah das neue Menü über dem verblassenden
+  /// alten. Der Anker ist nicht modal: Ein Rechtsklick daneben schliesst
+  /// das alte Menü sofort und öffnet das neue an der neuen Stelle.
+  final MenuController _menue = MenuController();
+
+  void _showContextMenu(Offset globalPosition) {
     final bildbereich =
         _bildbereichKey.currentContext?.findRenderObject() as RenderBox?;
-    // `showMenu` erwartet Koordinaten des Overlays. Globale Koordinaten
-    // funktionierten zufällig im Vollfenster, lagen aber bei Panels und
-    // verschobenen Navigatoren unter anderen Bedienelementen.
-    final fotoRechteck = bildbereich == null
-        ? Offset.zero & overlay.size
-        : bildbereich.localToGlobal(Offset.zero, ancestor: overlay) &
-              bildbereich.size;
-    final lokal = overlay.globalToLocal(globalPosition);
-    final anker = Offset(
-      lokal.dx.clamp(fotoRechteck.left + 4, fotoRechteck.right - 4),
-      lokal.dy.clamp(fotoRechteck.top + 4, fotoRechteck.bottom - 4),
-    );
-    final selected = await showMenu<_ContextMenuAction>(
-      context: context,
-      position: RelativeRect.fromRect(
-        anker & const Size(1, 1),
-        Offset.zero & overlay.size,
+    if (bildbereich == null) return;
+    final lokal = bildbereich.globalToLocal(globalPosition);
+    // Innerhalb des Fotobereichs bleiben: Ein Menü, das am Rand des
+    // Bildbereichs ansetzt, lag sonst halb unter der Seitenleiste.
+    _menue.open(
+      position: Offset(
+        lokal.dx.clamp(4.0, bildbereich.size.width - 4),
+        lokal.dy.clamp(4.0, bildbereich.size.height - 4),
       ),
-      items: [
-        // Nur, wenn tatsächlich Einstellungen kopiert wurden. Der Weg über
-        // die Mehrfachauswahl bleibt daneben bestehen – hier gesucht hatte
-        // ihn der erste Bericht (Fehlerbericht).
-        if (widget.library?.hatKopierteEntwicklung ?? false)
-          PopupMenuItem(
-            value: _ContextMenuAction.entwicklungEinfuegen,
-            child: Row(
-              children: [
-                const Icon(Icons.auto_fix_high_outlined, size: 20),
-                const SizedBox(width: 12),
-                Text(AppTexte.of(context).viewerEntwicklungAnwenden),
-              ],
-            ),
-          ),
-        PopupMenuItem(
-          value: _ContextMenuAction.showInTimeline,
-          child: Row(
-            children: [
-              const Icon(Icons.photo_library_outlined, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).viewerInTimelineZeigen),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: _ContextMenuAction.showSimilar,
-          child: Row(
-            children: [
-              const Icon(Icons.image_search_outlined, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).viewerAehnlicheZeigen),
-            ],
-          ),
-        ),
-        // Der Weg zurueck – nur bei einer Aufnahme, an der es etwas
-        // zurueckzunehmen gibt. Denselben Knopf traegt die Info-Ansicht;
-        // hier steht er, weil das Rechtsklick-Menue der Ort ist, an dem
-        // man an einem Foto etwas TUT.
-        if (bearbeitungsarten(_currentAsset).isNotEmpty)
-          PopupMenuItem(
-            value: _ContextMenuAction.originalHerstellen,
-            child: Row(
-              children: [
-                const Icon(Icons.restore, size: 20),
-                const SizedBox(width: 12),
-                Text(AppTexte.of(context).infoOriginalHerstellen),
-              ],
-            ),
-          ),
-        PopupMenuItem(
-          value: _ContextMenuAction.editMetadata,
-          child: Row(
-            children: [
-              const Icon(Icons.edit_note_outlined, size: 20),
-              const SizedBox(width: 12),
-              Text(AppTexte.of(context).viewerMetadatenBearbeiten),
-            ],
-          ),
-        ),
-        // Nur für Fotos (nicht Videos), nicht gesperrt (FaceReviewScreen
-        // liest Original/Vorschau direkt von der Platte, ohne die
-        // Entschlüsselungs-/Wiederverschlüsselungs-Logik der Vollbildansicht
-        // zu kennen – analog zum Ausschluss in ImageEditorScreen/
-        // DevelopScreen) und nur, wenn eine LibraryState-Instanz vorliegt
-        // (FaceReviewScreen braucht sie zwingend, siehe dessen Konstruktor).
-        if (widget.library != null &&
-            _currentAsset.type == 'IMAGE' &&
-            !_currentAsset.isLocked)
-          PopupMenuItem(
-            value: _ContextMenuAction.faceReview,
-            child: Row(
-              children: [
-                const Icon(Icons.face_retouching_natural_outlined, size: 20),
-                const SizedBox(width: 12),
-                Text(AppTexte.of(context).viewerGesichterBearbeiten),
-              ],
-            ),
-          ),
-      ],
     );
-    if (selected == null || !mounted) return;
-    switch (selected) {
+  }
+
+  List<Widget> _menuepunkte(BuildContext context) {
+    final t = AppTexte.of(context);
+    Widget punkt(_ContextMenuAction aktion, IconData symbol, String text) =>
+        MenuItemButton(
+          leadingIcon: Icon(symbol, size: 20),
+          onPressed: () => unawaited(_fuehreAus(aktion)),
+          child: Text(text),
+        );
+    return [
+      // Nur, wenn tatsächlich Einstellungen kopiert wurden. Der Weg über
+      // die Mehrfachauswahl bleibt daneben bestehen – hier gesucht hatte
+      // ihn der erste Bericht (Fehlerbericht).
+      if (widget.library?.hatKopierteEntwicklung ?? false)
+        punkt(
+          _ContextMenuAction.entwicklungEinfuegen,
+          Icons.auto_fix_high_outlined,
+          t.viewerEntwicklungAnwenden,
+        ),
+      punkt(
+        _ContextMenuAction.showInTimeline,
+        Icons.photo_library_outlined,
+        t.viewerInTimelineZeigen,
+      ),
+      punkt(
+        _ContextMenuAction.showSimilar,
+        Icons.image_search_outlined,
+        t.viewerAehnlicheZeigen,
+      ),
+      // Der Weg zurueck – nur bei einer Aufnahme, an der es etwas
+      // zurueckzunehmen gibt. Denselben Knopf traegt die Info-Ansicht;
+      // hier steht er, weil das Rechtsklick-Menue der Ort ist, an dem
+      // man an einem Foto etwas TUT.
+      if (bearbeitungsarten(_currentAsset).isNotEmpty)
+        punkt(
+          _ContextMenuAction.originalHerstellen,
+          Icons.restore,
+          t.infoOriginalHerstellen,
+        ),
+      punkt(
+        _ContextMenuAction.editMetadata,
+        Icons.edit_note_outlined,
+        t.viewerMetadatenBearbeiten,
+      ),
+      // Nur für Fotos (nicht Videos), nicht gesperrt (FaceReviewScreen
+      // liest Original/Vorschau direkt von der Platte, ohne die
+      // Entschlüsselungs-/Wiederverschlüsselungs-Logik der Vollbildansicht
+      // zu kennen – analog zum Ausschluss in ImageEditorScreen/
+      // DevelopScreen) und nur, wenn eine LibraryState-Instanz vorliegt
+      // (FaceReviewScreen braucht sie zwingend, siehe dessen Konstruktor).
+      if (widget.library != null &&
+          _currentAsset.type == 'IMAGE' &&
+          !_currentAsset.isLocked)
+        punkt(
+          _ContextMenuAction.faceReview,
+          Icons.face_retouching_natural_outlined,
+          t.viewerGesichterBearbeiten,
+        ),
+    ];
+  }
+
+  Future<void> _fuehreAus(_ContextMenuAction aktion) async {
+    if (!mounted) return;
+    switch (aktion) {
       case _ContextMenuAction.showInTimeline:
         _showInTimeline();
       case _ContextMenuAction.showSimilar:
@@ -963,45 +953,50 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                   Expanded(
                     child: Stack(
                       children: [
-                        GestureDetector(
-                          key: _bildbereichKey,
-                          onSecondaryTapDown: (details) =>
-                              _showContextMenu(details.globalPosition),
-                          child: PageView.builder(
-                            controller: _controller,
-                            // Kein Blättern, solange ein Rahmen aufgezogen
-                            // wird (Issue #17): Mit der Maus nimmt der
-                            // Wischer zum Blättern einen Zug schon nach
-                            // einem Punkt an, der Zeichner erst nach zwei.
-                            // Ein waagerechter Zug blätterte deshalb, das
-                            // Foto rutschte unter dem Rahmen weg, und der
-                            // blieb kleiner stehen als gezogen.
-                            physics: _gesichtAufziehen
-                                ? const NeverScrollableScrollPhysics()
-                                : null,
-                            itemCount: _assets.length,
-                            onPageChanged: (i) {
-                              setState(() => _currentIndex = i);
-                              unawaited(_pruefeGesichtsschaerfe());
-                            },
-                            itemBuilder: (context, index) {
-                              final a = _assets[index];
-                              return _AssetPage(
-                                asset: a,
-                                db: widget.db,
-                                paths: widget.paths,
-                                library: widget.library,
-                                isCurrent: index == _currentIndex,
-                                gesichterZeigen: _gesichterZeigen,
-                                gesichtAufziehen:
-                                    _gesichtAufziehen && index == _currentIndex,
-                                beiGesichtAngelegt: () =>
-                                    setState(() => _gesichtAufziehen = false),
-                                textZeigen: _textZeigen,
-                                focusPeakingEnabled: _focusPeakingEnabled,
-                                drittelRaster: _drittelRaster,
-                              );
-                            },
+                        MenuAnchor(
+                          controller: _menue,
+                          menuChildren: _menuepunkte(context),
+                          child: GestureDetector(
+                            key: _bildbereichKey,
+                            onSecondaryTapDown: (details) =>
+                                _showContextMenu(details.globalPosition),
+                            child: PageView.builder(
+                              controller: _controller,
+                              // Kein Blättern, solange ein Rahmen aufgezogen
+                              // wird (Issue #17): Mit der Maus nimmt der
+                              // Wischer zum Blättern einen Zug schon nach
+                              // einem Punkt an, der Zeichner erst nach zwei.
+                              // Ein waagerechter Zug blätterte deshalb, das
+                              // Foto rutschte unter dem Rahmen weg, und der
+                              // blieb kleiner stehen als gezogen.
+                              physics: _gesichtAufziehen
+                                  ? const NeverScrollableScrollPhysics()
+                                  : null,
+                              itemCount: _assets.length,
+                              onPageChanged: (i) {
+                                setState(() => _currentIndex = i);
+                                unawaited(_pruefeGesichtsschaerfe());
+                              },
+                              itemBuilder: (context, index) {
+                                final a = _assets[index];
+                                return _AssetPage(
+                                  asset: a,
+                                  db: widget.db,
+                                  paths: widget.paths,
+                                  library: widget.library,
+                                  isCurrent: index == _currentIndex,
+                                  gesichterZeigen: _gesichterZeigen,
+                                  gesichtAufziehen:
+                                      _gesichtAufziehen &&
+                                      index == _currentIndex,
+                                  beiGesichtAngelegt: () =>
+                                      setState(() => _gesichtAufziehen = false),
+                                  textZeigen: _textZeigen,
+                                  focusPeakingEnabled: _focusPeakingEnabled,
+                                  drittelRaster: _drittelRaster,
+                                );
+                              },
+                            ),
                           ),
                         ),
                         if (_hasPrevious)

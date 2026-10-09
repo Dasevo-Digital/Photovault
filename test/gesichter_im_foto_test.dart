@@ -365,4 +365,52 @@ void main() {
       expect(find.text('Nachgetragenes Gesicht benennen'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'ein zweiter Rechtsklick verlegt das Menü, statt ein zweites zu öffnen',
+    (tester) async {
+      // Issue #18: Ein Rechtsklick schloss das offene Menü nur, und es blendete
+      // langsam aus. Wer gleich noch einmal klickte, sah das neue Menü über
+      // dem verblassenden alten – zwei Menüs übereinander.
+      await zeige(tester, await foto());
+      final flaeche = tester.getRect(find.byType(PageView));
+      final menuePunkt = find.text('Ähnliche Bilder anzeigen');
+
+      // Drei Stellen, so weit auseinander, dass keine im Menü der vorigen
+      // liegt – es öffnet nach rechts unten.
+      await tester.tapAt(
+        flaeche.topLeft + const Offset(40, 40),
+        buttons: kSecondaryButton,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(menuePunkt, findsOneWidget);
+      final ersterOrt = tester.getTopLeft(menuePunkt);
+
+      await tester.tapAt(
+        flaeche.topRight + const Offset(-60, 40),
+        buttons: kSecondaryButton,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(menuePunkt, findsOneWidget, reason: 'genau ein Menü, sofort');
+      expect(
+        tester.getTopLeft(menuePunkt),
+        isNot(ersterOrt),
+        reason: 'an der Stelle des zweiten Klicks',
+      );
+
+      await tester.tapAt(
+        flaeche.bottomLeft + const Offset(40, -60),
+        buttons: kSecondaryButton,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(menuePunkt, findsOneWidget);
+
+      // Escape schliesst das Menü – und nur das Menü, nicht die
+      // Vollansicht.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(menuePunkt, findsNothing);
+      expect(find.byType(AssetViewerScreen), findsOneWidget);
+    },
+  );
 }
