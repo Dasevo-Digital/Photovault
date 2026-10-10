@@ -198,9 +198,12 @@ class VaultCrypto {
     SecretKey masterKey,
   ) async {
     final input = await source.open(mode: FileMode.read);
-    final sink = destination.openWrite();
+    RandomAccessFile? ausgabe;
     try {
-      sink.add(_magicV2);
+      // Eine Datei mit Schreibzugriff statt eines IOSink, siehe
+      // [decryptFile].
+      ausgabe = await destination.open(mode: FileMode.write);
+      await ausgabe.writeFrom(_magicV2);
 
       Future<void> schreibe(List<int> klartext, int nummer) async {
         final nonce = _cipher.newNonce();
@@ -211,10 +214,14 @@ class VaultCrypto {
           aad: _blockNummer(nummer),
         );
         final header = ByteData(4)..setUint32(0, klartext.length, Endian.big);
-        sink.add(header.buffer.asUint8List());
-        sink.add(nonce);
-        sink.add(box.cipherText);
-        sink.add(box.mac.bytes);
+        await ausgabe!.writeFrom(
+          (BytesBuilder(copy: false)
+                ..add(header.buffer.asUint8List())
+                ..add(nonce)
+                ..add(box.cipherText)
+                ..add(box.mac.bytes))
+              .takeBytes(),
+        );
       }
 
       var nummer = 0;
@@ -225,10 +232,10 @@ class VaultCrypto {
         nummer++;
       }
       await schreibe(const <int>[], nummer);
-      await sink.flush();
+      await ausgabe.flush();
     } finally {
       await input.close();
-      await sink.close();
+      await ausgabe?.close();
     }
   }
 
@@ -242,9 +249,16 @@ class VaultCrypto {
     SecretKey masterKey,
   ) async {
     final input = await source.open(mode: FileMode.read);
-    final sink = destination.openWrite();
+    RandomAccessFile? ausgabe;
     var vollstaendig = false;
     try {
+      // **Eine Datei mit Schreibzugriff, kein IOSink.** Ein IOSink meldet
+      // einen Schreibfehler – keine Rechte, Platte oder tmpfs voll – nicht
+      // dem, der auf ihn wartet: Der Fehler lief als unbehandelt durch, und
+      // `flush()` kehrte nie zurück. Ein gesperrtes Video, das nicht in das
+      // tmpfs des Flatpaks passte, lud deshalb ewig, statt zu scheitern.
+      // Hier kommt jeder Fehler beim Aufrufer an.
+      ausgabe = await destination.open(mode: FileMode.write);
       final magic = await input.read(4);
       final istV2 = magic.length == 4 && _bytesEqual(magic, _magicV2);
       final istV1 = magic.length == 4 && _bytesEqual(magic, _magicV1);
@@ -301,14 +315,14 @@ class VaultCrypto {
           }
           break;
         }
-        sink.add(plain);
+        await ausgabe.writeFrom(plain);
         nummer++;
       }
-      await sink.flush();
+      await ausgabe.flush();
       vollstaendig = true;
     } finally {
       await input.close();
-      await sink.close();
+      await ausgabe?.close();
       // Bricht das Entschlüsseln ab – falscher Schlüssel, beschädigte oder
       // abgeschnittene Datei –, dann steht in [destination] bereits der
       // Klartext aller Blöcke, die bis dahin durchgingen. Bei einer

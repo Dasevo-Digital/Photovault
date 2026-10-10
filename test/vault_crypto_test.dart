@@ -150,4 +150,42 @@ void main() {
       expect(sw.elapsedMilliseconds, lessThan(5000));
     },
   );
+
+  test(
+    'ein Schreibfehler kommt als Ausnahme an, statt den Aufruf haengen zu lassen',
+    () async {
+      // Vorher schrieb ein IOSink: Der Fehler lief als unbehandelt durch,
+      // und flush() kehrte nie zurück. So stand ein gesperrtes Video, das
+      // nicht ins tmpfs des Flatpaks passte, endlos im Laden.
+      if (Platform.isWindows) return; // chmod gibt es dort nicht.
+      final key = (await VaultCrypto.createMasterKey('1234')).masterKey;
+      final klar = File(p.join(tempRoot.path, 'klar.bin'))
+        ..writeAsBytesSync(List<int>.generate(300000, (i) => i % 251));
+      final chiffre = File(p.join(tempRoot.path, 'chiffre.bin'));
+      await VaultCrypto.encryptFile(klar, chiffre, key);
+
+      final gesperrt = Directory(p.join(tempRoot.path, 'gesperrt'))
+        ..createSync();
+      Process.runSync('chmod', ['500', gesperrt.path]);
+      addTearDown(() => Process.runSync('chmod', ['700', gesperrt.path]));
+      final ziel = File(p.join(gesperrt.path, 'ziel.bin'));
+
+      await expectLater(
+        VaultCrypto.decryptFile(
+          chiffre,
+          ziel,
+          key,
+        ).timeout(const Duration(seconds: 5)),
+        throwsA(isA<FileSystemException>()),
+      );
+      await expectLater(
+        VaultCrypto.encryptFile(
+          klar,
+          ziel,
+          key,
+        ).timeout(const Duration(seconds: 5)),
+        throwsA(isA<FileSystemException>()),
+      );
+    },
+  );
 }
