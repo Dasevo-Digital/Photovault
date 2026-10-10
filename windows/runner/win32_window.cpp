@@ -193,10 +193,22 @@ bool Win32Window::Create(const std::wstring& title,
 
   // Groesse, Ort und Vollbildzustand des letzten Laufs. Erst nach
   // CreateWindow: Vorher gibt es kein Fenster, dem sie gehoeren koennten.
+  //
+  // Wie unter Linux: Kleiner als 640 x 480 Punkte uebernimmt die App die
+  // Lage nicht. So klein zieht niemand ein Fenster, mit dem er arbeiten
+  // will; entstanden ist es, weil Testlaeufe denselben Registry-Wert
+  // schreiben. In einem Fenster von 225 x 150 Punkten fror 3.28.0 ein.
   WINDOWPLACEMENT lage = {};
   if (FensterlageHolen(&lage)) {
-    SetWindowPlacement(window, &lage);
-    if (lage.showCmd == SW_SHOWMAXIMIZED) zeigebefehl_ = SW_SHOWMAXIMIZED;
+    const LONG breite =
+        lage.rcNormalPosition.right - lage.rcNormalPosition.left;
+    const LONG hoehe =
+        lage.rcNormalPosition.bottom - lage.rcNormalPosition.top;
+    if (breite >= Scale(640, scale_factor) &&
+        hoehe >= Scale(480, scale_factor)) {
+      SetWindowPlacement(window, &lage);
+      if (lage.showCmd == SW_SHOWMAXIMIZED) zeigebefehl_ = SW_SHOWMAXIMIZED;
+    }
   }
 
   return OnCreate();
