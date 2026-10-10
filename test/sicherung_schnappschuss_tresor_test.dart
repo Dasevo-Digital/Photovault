@@ -39,6 +39,7 @@ void main() {
       final library = LibraryState()
         ..db = db
         ..paths = pfade
+        ..klartextOrdnerFuerTests = Directory(p.join(temp.path, 'klartext'))
         ..importService = imp
         ..backupService = BackupService(db, pfade);
 

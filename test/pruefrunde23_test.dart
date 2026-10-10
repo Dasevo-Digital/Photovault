@@ -30,7 +30,11 @@ void main() {
     );
     library = LibraryState()
       ..db = db
-      ..paths = paths;
+      ..paths = paths
+      // Ein eigener Ordner je Test: Im System-Temp teilten sich alle
+      // Testdateien denselben, und das Räumen der einen leerte ihn der
+      // anderen mitten im Lauf.
+      ..klartextOrdnerFuerTests = Directory(p.join(wurzel.path, 'klartext'));
     await library.clearDecryptCache();
   });
 
@@ -148,9 +152,7 @@ void main() {
         await library.decryptForViewing(rel);
       }
 
-      final ordner = Directory(
-        p.join(Directory.systemTemp.path, 'photovault_decrypt'),
-      );
+      final ordner = Directory(p.join(wurzel.path, 'klartext'));
       final stuecke = ordner.listSync().whereType<File>().toList();
       expect(
         stuecke,
@@ -165,9 +167,7 @@ void main() {
       'ueber der Grenze bleibt der Zwischenspeicher unter der Grenze',
       () async {
         await library.setupVaultPin('4711');
-        final ordner = Directory(
-          p.join(Directory.systemTemp.path, 'photovault_decrypt'),
-        );
+        final ordner = Directory(p.join(wurzel.path, 'klartext'));
         await ordner.create(recursive: true);
 
         // Zwoelf Fuellstuecke, die zusammen ueber der Grenze liegen –
@@ -213,6 +213,59 @@ void main() {
     );
   });
 
+  group('Grosse Dateien im gesperrten Ordner (#8)', () {
+    test(
+      'eine Datei ueber der Grenze bleibt nach dem Entschluesseln da',
+      () async {
+        // Vorher war sie das letzte Stueck, das zum Kuerzen noch blieb, und
+        // die Ansicht bekam einen Pfad, unter dem nichts mehr lag – jedes
+        // gesperrte Video ueber 512 MB.
+        await library.setupVaultPin('4711');
+        library.zwischenspeicherGrenze = 100 * 1024;
+        final a = await aufnahme('gross', bytes: 300 * 1024);
+        final vorher = paths.absolute(a.relativePath).readAsBytesSync();
+        await library.lockAsset(a);
+        final f = await library.decryptForViewing(
+          (await db.assetById('gross'))!.relativePath,
+        );
+        expect(f.existsSync(), isTrue);
+        expect(f.readAsBytesSync(), vorher);
+      },
+    );
+
+    test(
+      'passt sie nicht in den ersten Ort, kommt sie in den Ausweichort',
+      () async {
+        if (Platform.isWindows) return; // chmod gibt es dort nicht.
+        await library.setupVaultPin('4711');
+        // Ein Ort, in den nichts hineingeht – so wie ein volles tmpfs.
+        final voll = Directory(p.join(wurzel.path, 'voll'))..createSync();
+        Process.runSync('chmod', ['500', voll.path]);
+        final ausweich = Directory(p.join(wurzel.path, 'ausweich'));
+        library
+          ..klartextOrdnerFuerTests = voll
+          ..klartextAusweichFuerTests = ausweich;
+
+        final a = await aufnahme('video', bytes: 200000);
+        final vorher = paths.absolute(a.relativePath).readAsBytesSync();
+        await library.lockAsset(a);
+        final rel = (await db.assetById('video'))!.relativePath;
+
+        final f = await library.decryptForViewing(rel);
+        expect(p.dirname(f.path), ausweich.path);
+        expect(f.readAsBytesSync(), vorher);
+        expect(voll.listSync(), isEmpty, reason: 'kein Rumpf im vollen Ort');
+        // Der zweite Zugriff findet sie dort wieder, statt neu zu rechnen.
+        expect((await library.decryptForViewing(rel)).path, f.path);
+
+        // Und beim Verlassen des gesperrten Ordners ist sie weg.
+        Process.runSync('chmod', ['700', voll.path]);
+        await library.clearDecryptCache();
+        expect(ausweich.existsSync(), isFalse);
+      },
+    );
+  });
+
   group('Der Zwischenspeicher gehoert nur dem eigenen Benutzer', () {
     test('das Verzeichnis traegt 0700, nicht 0755', () async {
       if (Platform.isWindows) return; // Dort regeln es die Zugriffslisten.
@@ -223,7 +276,7 @@ void main() {
         (await db.assetById('rechte'))!.relativePath,
       );
 
-      final ordner = p.join(Directory.systemTemp.path, 'photovault_decrypt');
+      final ordner = p.join(wurzel.path, 'klartext');
       final argumente = Platform.isMacOS
           ? ['-f', '%Lp', ordner]
           : ['-c', '%a', ordner];

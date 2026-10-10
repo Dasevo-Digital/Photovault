@@ -38,7 +38,8 @@ void main() {
     );
     bib = LibraryState()
       ..db = db
-      ..paths = pfade;
+      ..paths = pfade
+      ..klartextOrdnerFuerTests = Directory(p.join(wurzel.path, 'klartext'));
   });
 
   tearDown(() async {

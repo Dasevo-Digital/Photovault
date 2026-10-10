@@ -212,7 +212,10 @@ void main() {
       );
       library = LibraryState()
         ..db = db
-        ..paths = paths;
+        ..paths = paths
+        ..klartextOrdnerFuerTests = Directory(
+          p.join(tempRoot.path, 'klartext'),
+        );
       await library.clearDecryptCache();
     });
     tearDown(() async {

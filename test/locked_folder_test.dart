@@ -38,7 +38,8 @@ void main() {
     import = ImportService(db, paths);
     library = LibraryState()
       ..db = db
-      ..paths = paths;
+      ..paths = paths
+      ..klartextOrdnerFuerTests = Directory(p.join(tempRoot.path, 'klartext'));
   });
 
   tearDown(() async {

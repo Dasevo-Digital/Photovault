@@ -9,6 +9,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'package:uuid/uuid.dart';
 
@@ -4525,11 +4526,58 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  /// Temporäres Verzeichnis außerhalb der Bibliothek für rein zur Anzeige
-  /// entschlüsselte Dateien (Vollbildansicht/Thumbnails im gesperrten
-  /// Ordner) – die Originaldatei auf der Platte bleibt verschlüsselt.
-  Directory get _decryptCacheDir =>
-      Directory(p.join(Directory.systemTemp.path, 'photovault_decrypt'));
+  /// Wo rein zur Anzeige entschlüsselte Dateien liegen (Vollbild und
+  /// Vorschau im gesperrten Ordner). Die Originaldatei auf der Platte
+  /// bleibt verschlüsselt.
+  ///
+  /// - **macOS und Linux:** das System-Temp. Unter macOS liegt es im
+  ///   Sandkasten-Container, im Flatpak ist es ein privates tmpfs im
+  ///   Arbeitsspeicher; der Klartext kommt dort nicht auf die Platte.
+  /// - **Windows:** nicht das gemeinsame `%TEMP%`, sondern ein eigener
+  ///   Ordner im lokalen App-Ordner, den nur der eigene Benutzer lesen darf
+  ///   (siehe [_nurFuerMich]). Im `%TEMP%` lag der Klartext auch für SYSTEM
+  ///   und alle lokalen Administratoren offen, und jedes Aufräumprogramm
+  ///   geht dort durch.
+  Future<Directory> _klartextOrdner() async {
+    if (klartextOrdnerFuerTests case final vorgabe?) return vorgabe;
+    if (Platform.isWindows) {
+      try {
+        final lokal = await getApplicationCacheDirectory();
+        return Directory(p.join(lokal.path, 'Klartext'));
+      } catch (_) {
+        // Ohne lokalen App-Ordner bleibt es beim System-Temp.
+      }
+    }
+    return Directory(p.join(Directory.systemTemp.path, 'photovault_decrypt'));
+  }
+
+  /// Wohin eine Datei ausweicht, die in [_klartextOrdner] keinen Platz
+  /// hat, oder `null`, wo es keinen zweiten Ort braucht.
+  ///
+  /// **Nur unter Linux.** Das tmpfs des Flatpaks fasst zehn Prozent des
+  /// Arbeitsspeichers, gemessen 789 MB auf einem Rechner mit 7,7 GB. Ein
+  /// gesperrtes Video darüber liess sich nicht abspielen. Es landet dann im
+  /// Cache-Ordner der App auf der Platte (im Flatpak unter
+  /// `~/.var/app/<Kennung>/cache`), nur für den eigenen Benutzer lesbar und
+  /// beim Verlassen des gesperrten Ordners wieder gelöscht. Was ins tmpfs
+  /// passt, bleibt im Arbeitsspeicher.
+  Future<Directory?> _klartextAusweichOrdner() async {
+    if (klartextAusweichFuerTests case final vorgabe?) return vorgabe;
+    if (!Platform.isLinux) return null;
+    try {
+      final cache = await getApplicationCacheDirectory();
+      return Directory(p.join(cache.path, 'photovault_decrypt'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Nur für Tests: die beiden Orte von [_klartextOrdner] und
+  /// [_klartextAusweichOrdner].
+  @visibleForTesting
+  Directory? klartextOrdnerFuerTests;
+  @visibleForTesting
+  Directory? klartextAusweichFuerTests;
 
   /// Wie viel Klartext im Zwischenspeicher liegen darf, bevor die
   /// ältesten Stücke weichen.
@@ -4543,30 +4591,43 @@ class LibraryState extends ChangeNotifier {
   /// als jemand am Stück ansieht, und lässt sich nicht vollblättern.
   static const int hoechstensImZwischenspeicher = 512 * 1024 * 1024;
 
+  /// Die Grenze, mit der tatsächlich gekürzt wird – in Tests kleiner,
+  /// damit keine halbe Milliarde Byte zu schreiben ist.
+  @visibleForTesting
+  int zwischenspeicherGrenze = hoechstensImZwischenspeicher;
+
   /// Wirft die ältesten Stücke weg, bis der Zwischenspeicher wieder unter
-  /// [hoechstensImZwischenspeicher] liegt.
+  /// [zwischenspeicherGrenze] liegt.
   ///
   /// Nach der Zugriffszeit, nicht nach der Schreibzeit: Ein Bild, das
   /// beim Blättern mehrfach gebraucht wird, soll nicht deshalb weichen,
   /// weil es früh entschlüsselt wurde. Ein weggeworfenes Stück ist kein
   /// Verlust – der nächste Zugriff entschlüsselt es erneut.
-  Future<void> _kuerzeZwischenspeicher(Directory cacheDir) async {
+  ///
+  /// [behalte] ist die Datei, die gerade entschlüsselt wurde. Sie weicht
+  /// nie: Ein Video über der Grenze war sonst das letzte Stück, das noch
+  /// zu löschen blieb, und die Ansicht bekam einen Pfad, unter dem nichts
+  /// mehr lag.
+  Future<void> _kuerzeZwischenspeicher(
+    Directory cacheDir, {
+    String? behalte,
+  }) async {
     final stuecke = <(File, DateTime, int)>[];
     var summe = 0;
     await for (final e in cacheDir.list(followLinks: false)) {
       if (e is! File) continue;
       try {
         final st = await e.stat();
-        stuecke.add((e, st.accessed, st.size));
         summe += st.size;
+        if (e.path != behalte) stuecke.add((e, st.accessed, st.size));
       } on FileSystemException {
         // Ein anderer Durchgang war schneller – dann zählt es nicht mehr.
       }
     }
-    if (summe <= hoechstensImZwischenspeicher) return;
+    if (summe <= zwischenspeicherGrenze) return;
     stuecke.sort((a, b) => a.$2.compareTo(b.$2));
     for (final (datei, _, groesse) in stuecke) {
-      if (summe <= hoechstensImZwischenspeicher) break;
+      if (summe <= zwischenspeicherGrenze) break;
       try {
         await datei.delete();
         summe -= groesse;
@@ -4576,80 +4637,118 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  /// Entschlüsselt eine gesperrte Datei in den temporären Zwischenspeicher
-  /// (nur beim ersten Zugriff, danach aus dem Cache) und gibt sie zurück.
-  /// Setzt einen bereits entsperrten gesperrten Ordner voraus.
+  /// Entschlüsselt eine gesperrte Datei in den Zwischenspeicher (nur beim
+  /// ersten Zugriff, danach aus dem Cache) und gibt sie zurück. Setzt
+  /// einen bereits entsperrten gesperrten Ordner voraus.
+  ///
+  /// Passt sie nicht in [_klartextOrdner], kommt sie nach
+  /// [_klartextAusweichOrdner], sofern es den gibt.
   Future<File> decryptForViewing(String relativePath) async {
     final key = _vaultKey;
     if (key == null) {
       throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
     }
-    final cacheDir = _decryptCacheDir;
-    final frisch = !await cacheDir.exists();
-    await cacheDir.create(recursive: true);
-    if (frisch) await _nurFuerMich(cacheDir);
     // Über den Hash des Pfades, nicht über ersetzte Trennzeichen: „a/b.jpg"
     // und „a_b.jpg" wurden sonst auf denselben Namen abgebildet und konnten
     // sich gegenseitig anzeigen.
     final safeName = sha256.convert(utf8.encode(relativePath)).toString();
-    final target = File(p.join(cacheDir.path, safeName));
-    if (!await target.exists()) {
-      // Erst unter eigenem Namen entschlüsseln, dann umbenennen. Zwei
-      // Gründe, beide aus Prüfrunde 8:
-      //
-      // Die Ansicht kann dieselbe Datei zweimal gleichzeitig anfordern –
-      // eine Kachel, die aus dem Bild scrollt und zurückkommt, startet
-      // einen zweiten Durchgang, während der erste noch schreibt. Beide
-      // sähen "gibt es noch nicht" und schrieben ineinander. Das Umbenennen
-      // ist unteilbar; im schlimmsten Fall gewinnt der zweite Durchgang mit
-      // demselben Inhalt.
-      //
-      // Und: Unter dem endgültigen Namen darf nie ein Rumpf stehen. Bräche
-      // das Entschlüsseln ab, hielte der Zwischenspeicher die abgebrochene
-      // Fassung für fertig und zeigte sie beim nächsten Zugriff wortlos
-      // weiter, statt es erneut zu versuchen.
-      final teil = File(
-        '${target.path}.${DateTime.now().microsecondsSinceEpoch}',
-      );
-      try {
-        await VaultCrypto.decryptFile(paths.absolute(relativePath), teil, key);
-        await teil.rename(target.path);
-      } finally {
-        if (await teil.exists()) await teil.delete();
-      }
-      // Nur nach einem echten Zulauf, nicht bei jedem Treffer: Das
-      // Durchzählen kostet einen Systemaufruf je Stück, und ein Treffer
-      // soll billig bleiben.
-      await _kuerzeZwischenspeicher(cacheDir);
+    final ordner = await _klartextOrdner();
+    final ausweich = await _klartextAusweichOrdner();
+    for (final o in [ordner, ?ausweich]) {
+      final schon = File(p.join(o.path, safeName));
+      if (await schon.exists()) return schon;
     }
+    try {
+      return await _entschluesseleNach(ordner, relativePath, safeName, key);
+    } on FileSystemException catch (e) {
+      if (ausweich == null) rethrow;
+      debugPrint('Klartext passt nicht nach ${ordner.path} ($e), weicht aus.');
+      return _entschluesseleNach(ausweich, relativePath, safeName, key);
+    }
+  }
+
+  Future<File> _entschluesseleNach(
+    Directory cacheDir,
+    String relativePath,
+    String safeName,
+    SecretKey key,
+  ) async {
+    final frisch = !await cacheDir.exists();
+    await cacheDir.create(recursive: true);
+    if (frisch) await _nurFuerMich(cacheDir);
+    final target = File(p.join(cacheDir.path, safeName));
+    // Erst unter eigenem Namen entschlüsseln, dann umbenennen. Zwei
+    // Gründe, beide aus Prüfrunde 8:
+    //
+    // Die Ansicht kann dieselbe Datei zweimal gleichzeitig anfordern –
+    // eine Kachel, die aus dem Bild scrollt und zurückkommt, startet
+    // einen zweiten Durchgang, während der erste noch schreibt. Beide
+    // sähen "gibt es noch nicht" und schrieben ineinander. Das Umbenennen
+    // ist unteilbar; im schlimmsten Fall gewinnt der zweite Durchgang mit
+    // demselben Inhalt.
+    //
+    // Und: Unter dem endgültigen Namen darf nie ein Rumpf stehen. Bräche
+    // das Entschlüsseln ab, hielte der Zwischenspeicher die abgebrochene
+    // Fassung für fertig und zeigte sie beim nächsten Zugriff wortlos
+    // weiter, statt es erneut zu versuchen. Ein volles tmpfs ist genau
+    // so ein Abbruch – der Rumpf wird gelöscht und gibt den Platz frei.
+    final teil = File(
+      '${target.path}.${DateTime.now().microsecondsSinceEpoch}',
+    );
+    try {
+      await VaultCrypto.decryptFile(paths.absolute(relativePath), teil, key);
+      await teil.rename(target.path);
+    } finally {
+      if (await teil.exists()) await teil.delete();
+    }
+    // Nur nach einem echten Zulauf, nicht bei jedem Treffer: Das
+    // Durchzählen kostet einen Systemaufruf je Stück, und ein Treffer
+    // soll billig bleiben.
+    await _kuerzeZwischenspeicher(cacheDir, behalte: target.path);
     return target;
   }
 
   /// Entzieht allen ausser dem eigenen Benutzer den Zugriff auf [ordner].
   ///
   /// Dart legt Verzeichnisse mit 0755 und Dateien mit 0644 an (gemessen).
-  /// Auf allen drei ausgelieferten Verpackungen liegt `Directory.systemTemp`
-  /// zwar ohnehin schon geschützt – macOS im Sandkasten-Container, Windows
-  /// im Benutzerprofil, Linux im privaten tmpfs des Flatpaks –, aber das
+  /// Unter macOS und im Flatpak liegt der Zwischenspeicher zwar ohnehin
+  /// geschützt – im Sandkasten-Container bzw. im privaten tmpfs –, aber das
   /// ist eine Eigenschaft der Verpackung, keine der App. Ein Klartextfoto
   /// aus dem gesperrten Ordner soll nicht davon abhängen.
+  ///
+  /// Unter Windows über die Zugriffsliste: Die geerbten Einträge (SYSTEM,
+  /// Administratoren) fallen weg, übrig bleibt der eigene Benutzer.
   Future<void> _nurFuerMich(Directory ordner) async {
-    if (Platform.isWindows) return; // Dort regeln es die Zugriffslisten.
     try {
+      if (Platform.isWindows) {
+        final benutzer = Platform.environment['USERNAME'];
+        if (benutzer == null) return;
+        final domaene = Platform.environment['USERDOMAIN'];
+        final wer = domaene == null ? benutzer : '$domaene\\$benutzer';
+        await Process.run('icacls', [
+          ordner.path,
+          '/inheritance:r',
+          '/grant:r',
+          '$wer:(OI)(CI)F',
+        ]);
+        return;
+      }
       await Process.run('chmod', ['700', ordner.path]);
     } on ProcessException {
-      // Kein chmod vorhanden – dann bleibt es beim Schutz der Verpackung.
+      // Kein chmod bzw. icacls – dann bleibt es beim Schutz der Verpackung.
     }
   }
 
   /// Leert den Entschlüsselungs-Zwischenspeicher – beim App-Start (Reste
   /// einer abgestürzten vorigen Sitzung) und beim Verlassen des gesperrten
   /// Ordners, damit keine entschlüsselten Kopien länger als nötig auf der
-  /// Platte liegen bleiben.
+  /// Platte liegen bleiben. Beide Orte, auch der Ausweichort.
   Future<void> clearDecryptCache() async {
-    final dir = _decryptCacheDir;
-    if (await dir.exists()) {
-      await dir.delete(recursive: true);
+    for (final dir in [
+      await _klartextOrdner(),
+      ?await _klartextAusweichOrdner(),
+    ]) {
+      if (await dir.exists()) await dir.delete(recursive: true);
     }
     // Aus demselben Grund wie beim Sperren: Die Dateien sind weg, die
     // daraus dekodierten Bilder lägen sonst weiter im Arbeitsspeicher.
@@ -4665,8 +4764,11 @@ class LibraryState extends ChangeNotifier {
   Future<({int dateien, int bytes})> bereinigeTemporareDateien() async {
     var cacheDateien = 0;
     var cacheBytes = 0;
-    final dir = _decryptCacheDir;
-    if (await dir.exists()) {
+    for (final dir in [
+      await _klartextOrdner(),
+      ?await _klartextAusweichOrdner(),
+    ]) {
+      if (!await dir.exists()) continue;
       await for (final entity in dir.list(
         recursive: true,
         followLinks: false,
