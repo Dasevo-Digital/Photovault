@@ -237,10 +237,14 @@ class OcrService {
       gelesen.add(
         Textstelle(
           text: text,
-          links: stelle.links / bild.width,
-          oben: stelle.oben / bild.height,
-          breite: (stelle.rechts - stelle.links + 1) / bild.width,
-          hoehe: (stelle.unten - stelle.oben + 1) / bild.height,
+          links: stelle.links(bild.width) / bild.width,
+          oben: stelle.oben(bild.height) / bild.height,
+          breite:
+              (stelle.rechts(bild.width) - stelle.links(bild.width) + 1) /
+              bild.width,
+          hoehe:
+              (stelle.unten(bild.height) - stelle.oben(bild.height) + 1) /
+              bild.height,
         ),
       );
     }
@@ -249,7 +253,7 @@ class OcrService {
   }
 
   /// Sucht die Stellen mit Schrift und gibt sie in Lesereihenfolge zurück.
-  Future<List<_Stelle>> _findeStellen(img.Image bild) async {
+  Future<List<OcrStelle>> _findeStellen(img.Image bild) async {
     final faktor = math.min(_maxSeite / math.max(bild.width, bild.height), 1.0);
     // Beide Kanten auf ein Vielfaches von 32 – das Netz faltet fünfmal um
     // den Faktor zwei; eine krumme Kante ergäbe eine krumme Ausgabekarte.
@@ -292,21 +296,19 @@ class OcrService {
       }
     }
 
-    final kaesten = _zusammenhaengendeFlecken(karte, nw, nh);
+    final roh = _zusammenhaengendeFlecken(karte, nw, nh);
+    final flecken = fuegeZeilenZusammen(roh, nw);
     // Zurück auf die Maße des Originals.
     final sx = bild.width / nw, sy = bild.height / nh;
     final stellen = [
-      for (final k in kaesten)
-        _Stelle(
-          (k.$1 * sx).floor().clamp(0, bild.width - 1),
-          (k.$2 * sy).floor().clamp(0, bild.height - 1),
-          (k.$3 * sx).ceil().clamp(0, bild.width - 1),
-          (k.$4 * sy).ceil().clamp(0, bild.height - 1),
-        ),
+      for (final f in flecken) stelleAusFleck(f, nw, sx, sy, _aufweitung),
     ];
     // Von oben nach unten, dann von links nach rechts – Lesereihenfolge.
+    final w = bild.width, h = bild.height;
     stellen.sort(
-      (a, b) => a.oben != b.oben ? a.oben - b.oben : a.links - b.links,
+      (a, b) => a.oben(h) != b.oben(h)
+          ? a.oben(h) - b.oben(h)
+          : a.links(w) - b.links(w),
     );
     if (stellen.length <= _maxStellen) return stellen;
     // Zu viele: die grössten behalten, das ist der Text und nicht das Laub.
@@ -316,37 +318,28 @@ class OcrService {
     return stellen.where(behalten.contains).toList();
   }
 
-  /// Zusammenhangskomponenten über die Wahrscheinlichkeitskarte.
-  ///
-  /// Bewusst achsenparallele Kästen statt gedrehter Minimalrechtecke wie in
-  /// PaddleOCR: Dafür bräuchte es eine Konturverfolgung samt konvexer Hülle,
-  /// und Schrift auf Fotos steht fast immer waagerecht. Schräge Aufnahmen
-  /// liefern dadurch einen etwas grösseren Ausschnitt – lesbar bleibt er.
-  List<(int, int, int, int)> _zusammenhaengendeFlecken(
+  /// Zusammenhangskomponenten über die Wahrscheinlichkeitskarte – je
+  /// Fleck die Indizes seiner Punkte in der Karte. Die Lage der Zeile
+  /// bestimmt danach [stelleAusFleck].
+  List<Int32List> _zusammenhaengendeFlecken(
     List<double> karte,
     int breite,
     int hoehe,
   ) {
     final gesehen = Uint8List(breite * hoehe);
-    final kaesten = <(int, int, int, int)>[];
+    final flecken = <Int32List>[];
     final schlange = Queue<int>();
 
     for (var start = 0; start < karte.length; start++) {
       if (gesehen[start] == 1 || karte[start] <= _schwelle) continue;
       gesehen[start] = 1;
       schlange.add(start);
-      var minx = start % breite, maxx = minx;
-      var miny = start ~/ breite, maxy = miny;
-      var anzahl = 0;
+      final punkte = <int>[];
 
       while (schlange.isNotEmpty) {
         final p = schlange.removeFirst();
-        anzahl++;
+        punkte.add(p);
         final x = p % breite, y = p ~/ breite;
-        if (x < minx) minx = x;
-        if (x > maxx) maxx = x;
-        if (y < miny) miny = y;
-        if (y > maxy) maxy = y;
         for (final n in [
           if (x > 0) p - 1,
           if (x < breite - 1) p + 1,
@@ -359,18 +352,9 @@ class OcrService {
           }
         }
       }
-      if (anzahl < _minFlaeche) continue;
-
-      final bw = maxx - minx + 1, bh = maxy - miny + 1;
-      final d = (bw * bh * _aufweitung / (2.0 * (bw + bh))).round();
-      kaesten.add((
-        math.max(0, minx - d),
-        math.max(0, miny - d),
-        math.min(breite - 1, maxx + d),
-        math.min(hoehe - 1, maxy + d),
-      ));
+      if (punkte.length >= _minFlaeche) flecken.add(Int32List.fromList(punkte));
     }
-    return kaesten;
+    return flecken;
   }
 
   /// Breite, auf die eine Stelle für das Lesen gebracht wird.
@@ -384,24 +368,12 @@ class OcrService {
   }
 
   /// Liest eine einzelne Stelle.
-  Future<String> _liesStelle(img.Image bild, _Stelle s) async {
-    final w = s.rechts - s.links + 1, h = s.unten - s.oben + 1;
+  Future<String> _liesStelle(img.Image bild, OcrStelle s) async {
+    final w = s.laenge.round(), h = s.hoehe.round();
     if (w < 4 || h < 4) return '';
 
-    final ausschnitt = img.copyCrop(
-      bild,
-      x: s.links,
-      y: s.oben,
-      width: w,
-      height: h,
-    );
     final zielBreite = _lesebreite(w, h);
-    final skaliert = img.copyResize(
-      ausschnitt,
-      width: zielBreite,
-      height: _leseHoehe,
-      interpolation: img.Interpolation.linear,
-    );
+    final skaliert = richteStelleAus(bild, s, zielBreite, _leseHoehe);
 
     final eingabe = Float32List(3 * _leseHoehe * zielBreite);
     var i = 0;
@@ -468,11 +440,250 @@ class OcrService {
   }
 }
 
-/// Eine gefundene Textstelle im Bild, achsenparallel.
-class _Stelle {
-  final int links, oben, rechts, unten;
-  const _Stelle(this.links, this.oben, this.rechts, this.unten);
-  int get flaeche => (rechts - links + 1) * (unten - oben + 1);
+/// Eine gefundene Textzeile im Original: ein Rechteck, das so gedreht ist
+/// wie die Zeile.
+///
+/// [ox]/[oy] ist die Ecke oben links. [ux]/[uy] führt von dort an der
+/// Zeile entlang zur Ecke oben rechts, [vx]/[vy] quer dazu zur Ecke unten
+/// links.
+@visibleForTesting
+class OcrStelle {
+  final double ox, oy, ux, uy, vx, vy;
+  const OcrStelle(this.ox, this.oy, this.ux, this.uy, this.vx, this.vy);
+
+  double get laenge => math.sqrt(ux * ux + uy * uy);
+  double get hoehe => math.sqrt(vx * vx + vy * vy);
+
+  /// Neigung der Zeile in Grad, im Uhrzeigersinn positiv.
+  double get neigung => math.atan2(uy, ux) * 180 / math.pi;
+
+  Iterable<double> get _xs => [ox, ox + ux, ox + vx, ox + ux + vx];
+  Iterable<double> get _ys => [oy, oy + uy, oy + vy, oy + uy + vy];
+
+  // Der umschliessende achsenparallele Kasten, auf das Bild begrenzt –
+  // zum Sortieren und für die gespeicherten Textstellen.
+  int links(int breite) => _xs.reduce(math.min).floor().clamp(0, breite - 1);
+  int rechts(int breite) =>
+      (_xs.reduce(math.max).ceil() - 1).clamp(0, breite - 1);
+  int oben(int hoehe) => _ys.reduce(math.min).floor().clamp(0, hoehe - 1);
+  int unten(int hoehe) => (_ys.reduce(math.max).ceil() - 1).clamp(0, hoehe - 1);
+
+  int get flaeche => (laenge * hoehe).round();
+}
+
+/// Mitte, Richtung und Ausdehnung eines Flecks in der Karte, noch ohne
+/// Aufweitung: [ux]/[uy] längs der Zeile, [vx]/[vy] quer dazu, die
+/// Ausdehnung als Abstand von der Mitte.
+class _Lage {
+  final double mx, my, ux, uy, uMin, uMax, vMin, vMax;
+  const _Lage(
+    this.mx,
+    this.my,
+    this.ux,
+    this.uy,
+    this.uMin,
+    this.uMax,
+    this.vMin,
+    this.vMax,
+  );
+
+  double get vx => -uy;
+  double get vy => ux;
+  double get laenge => uMax - uMin;
+  double get hoehe => vMax - vMin;
+
+  // Mitte des Kastens – nicht der Schwerpunkt, der bei einem Fleck mit
+  // Unterlängen tiefer liegt.
+  double get cx => mx + (uMin + uMax) / 2 * ux + (vMin + vMax) / 2 * vx;
+  double get cy => my + (uMin + uMax) / 2 * uy + (vMin + vMax) / 2 * vy;
+
+  factory _Lage.aus(Int32List punkte, int kartenBreite) {
+    final n = punkte.length;
+    var mx = 0.0, my = 0.0;
+    for (final p in punkte) {
+      mx += p % kartenBreite + 0.5;
+      my += p ~/ kartenBreite + 0.5;
+    }
+    mx /= n;
+    my /= n;
+    var cxx = 0.0, cyy = 0.0, cxy = 0.0;
+    for (final p in punkte) {
+      final dx = p % kartenBreite + 0.5 - mx, dy = p ~/ kartenBreite + 0.5 - my;
+      cxx += dx * dx;
+      cyy += dy * dy;
+      cxy += dx * dy;
+    }
+    var winkel = 0.5 * math.atan2(2 * cxy, cxx - cyy);
+    final mitte = (cxx + cyy) / 2;
+    final abstand = math.sqrt((cxx - cyy) * (cxx - cyy) / 4 + cxy * cxy);
+    final lang = mitte + abstand, kurz = mitte - abstand;
+    // Längs mindestens doppelt so weit gestreut wie quer, sonst keine Richtung.
+    if (winkel.abs() > math.pi / 4 || lang < 4 * kurz || winkel.abs() < 0.005) {
+      winkel = 0;
+    }
+    final ux = math.cos(winkel), uy = math.sin(winkel);
+    final vx = -uy, vy = ux;
+
+    var uMin = double.infinity, uMax = double.negativeInfinity;
+    var vMin = double.infinity, vMax = double.negativeInfinity;
+    for (final p in punkte) {
+      final dx = p % kartenBreite + 0.5 - mx, dy = p ~/ kartenBreite + 0.5 - my;
+      final u = dx * ux + dy * uy, v = dx * vx + dy * vy;
+      if (u < uMin) uMin = u;
+      if (u > uMax) uMax = u;
+      if (v < vMin) vMin = v;
+      if (v > vMax) vMax = v;
+    }
+    // Ein Punkt der Karte ist ein Quadrat, nicht seine Mitte.
+    uMin -= 0.5;
+    uMax += 0.5;
+    vMin -= 0.5;
+    vMax += 0.5;
+    return _Lage(mx, my, ux, uy, uMin, uMax, vMin, vMax);
+  }
+}
+
+/// Vereint Flecken, die Stücke derselben Zeile sind.
+///
+/// Die Erkennung trennt eine Zeile, wo die Lücke breit ist – zwischen den
+/// Zifferngruppen einer Kartennummer etwa. Jedes Stück für sich gelesen,
+/// fehlt danach der Zusammenhang, und weil beide Stücke aufgeweitet
+/// werden, liest das linke die erste Ziffer des rechten mit: aus
+/// „4111 1111 1111 1111“ wurden „4111 1111 1111 1“ und „1111“.
+///
+/// Zusammen gehören zwei Flecken, wenn sie gleich hoch sind, auf derselben
+/// Linie liegen (gemessen in der Richtung des längeren) und die Lücke
+/// zwischen ihnen höchstens [_zeilenluecke] Zeilenhöhen beträgt.
+@visibleForTesting
+List<Int32List> fuegeZeilenZusammen(List<Int32List> flecken, int kartenBreite) {
+  if (flecken.length < 2) return flecken;
+  final lagen = [for (final f in flecken) _Lage.aus(f, kartenBreite)];
+  final eltern = List<int>.generate(flecken.length, (i) => i);
+  int wurzel(int i) {
+    while (eltern[i] != i) {
+      eltern[i] = eltern[eltern[i]];
+      i = eltern[i];
+    }
+    return i;
+  }
+
+  for (var i = 0; i < lagen.length; i++) {
+    for (var j = i + 1; j < lagen.length; j++) {
+      if (_selbeZeile(lagen[i], lagen[j])) eltern[wurzel(j)] = wurzel(i);
+    }
+  }
+  final gruppen = <int, List<int>>{};
+  for (var i = 0; i < flecken.length; i++) {
+    (gruppen[wurzel(i)] ??= []).add(i);
+  }
+  return [
+    for (final g in gruppen.values)
+      g.length == 1
+          ? flecken[g.single]
+          : Int32List.fromList([for (final i in g) ...flecken[i]]),
+  ];
+}
+
+/// Höchstens so viele Zeilenhöhen Lücke, und zwei Stücke gelten als eine
+/// Zeile.
+const _zeilenluecke = 1.5;
+
+bool _selbeZeile(_Lage a, _Lage b) {
+  final r = a.laenge >= b.laenge ? a : b;
+  final hoch = math.max(a.hoehe, b.hoehe), flach = math.min(a.hoehe, b.hoehe);
+  if (hoch > 1.6 * flach) return false;
+  final dx = b.cx - a.cx, dy = b.cy - a.cy;
+  if ((dx * r.vx + dy * r.vy).abs() > 0.4 * hoch) return false;
+  final luecke = (dx * r.ux + dy * r.uy).abs() - (a.laenge + b.laenge) / 2;
+  return luecke <= _zeilenluecke * hoch;
+}
+
+/// Die Lage einer Zeile aus ihrem Fleck in der Wahrscheinlichkeitskarte:
+/// [punkte] sind Indizes in einer Karte der Breite [kartenBreite], [sx] und
+/// [sy] der Weg zurück auf das Original.
+///
+/// **Gedreht, nicht achsenparallel.** Ein achsenparalleler Kasten um eine
+/// um 2,5° geneigte, 1900 Pixel lange Zeile ist 80 Pixel höher als die
+/// Schrift und schneidet Teile der Nachbarzeilen mit; aus der
+/// maschinenlesbaren Zone eines Ausweises wurde so „IDD<2000293“ statt
+/// „IDD<<T220001293<<<…“, aus einem Plakat „DER 34 04 052“. PaddleOCR
+/// selbst nimmt das kleinste gedrehte Rechteck; hier gibt die Hauptachse
+/// des Flecks die Richtung, das genügt für Zeilen.
+///
+/// Die Richtung gilt nur, wo sie verlässlich ist: Ein fast runder Fleck
+/// (ein einzelnes Zeichen, ein kurzes Wort) hat keine, und steiler als 45°
+/// steht keine waagerechte Zeile – beides bleibt achsenparallel wie
+/// bisher. Aufgeweitet wird wie in DBNet um `Fläche · [aufweitung] /
+/// Umfang`.
+@visibleForTesting
+OcrStelle stelleAusFleck(
+  Int32List punkte,
+  int kartenBreite,
+  double sx,
+  double sy,
+  double aufweitung,
+) {
+  final lage = _Lage.aus(punkte, kartenBreite);
+  final mx = lage.mx, my = lage.my, ux = lage.ux, uy = lage.uy;
+  final vx = lage.vx, vy = lage.vy;
+  var uMin = lage.uMin, uMax = lage.uMax;
+  var vMin = lage.vMin, vMax = lage.vMax;
+  final w = uMax - uMin, h = vMax - vMin;
+  final d = w * h * aufweitung / (2 * (w + h));
+  uMin -= d;
+  uMax += d;
+  vMin -= d;
+  vMax += d;
+
+  // Ecken in der Karte, dann aufs Original.
+  final ex = mx + uMin * ux + vMin * vx, ey = my + uMin * uy + vMin * vy;
+  final l = uMax - uMin, q = vMax - vMin;
+  return OcrStelle(
+    ex * sx,
+    ey * sy,
+    l * ux * sx,
+    l * uy * sy,
+    q * vx * sx,
+    q * vy * sy,
+  );
+}
+
+/// Schneidet [s] aus [bild] und bringt es auf [breite] × [hoehe], die
+/// Zeile waagerecht. Ausserhalb des Bildes gilt der Rand.
+@visibleForTesting
+img.Image richteStelleAus(img.Image bild, OcrStelle s, int breite, int hoehe) {
+  final ziel = img.Image(width: breite, height: hoehe);
+  final maxX = bild.width - 1, maxY = bild.height - 1;
+  for (var y = 0; y < hoehe; y++) {
+    final fy = (y + 0.5) / hoehe;
+    for (var x = 0; x < breite; x++) {
+      final fx = (x + 0.5) / breite;
+      // Mitte des Zielpunkts im Original, in Pixelmitten gerechnet.
+      final px = (s.ox + fx * s.ux + fy * s.vx - 0.5).clamp(0.0, maxX * 1.0);
+      final py = (s.oy + fx * s.uy + fy * s.vy - 0.5).clamp(0.0, maxY * 1.0);
+      final x0 = px.floor(), y0 = py.floor();
+      final x1 = math.min(x0 + 1, maxX), y1 = math.min(y0 + 1, maxY);
+      final ax = px - x0, ay = py - y0;
+      final a = bild.getPixel(x0, y0), b = bild.getPixel(x1, y0);
+      final c = bild.getPixel(x0, y1), e = bild.getPixel(x1, y1);
+      num misch(num p, num q, num r, num t) =>
+          (p * (1 - ax) + q * ax) * (1 - ay) + (r * (1 - ax) + t * ax) * ay;
+      ziel.setPixelRgb(
+        x,
+        y,
+        (misch(a.rNormalized, b.rNormalized, c.rNormalized, e.rNormalized) *
+                255)
+            .round(),
+        (misch(a.gNormalized, b.gNormalized, c.gNormalized, e.gNormalized) *
+                255)
+            .round(),
+        (misch(a.bNormalized, b.bNormalized, c.bNormalized, e.bNormalized) *
+                255)
+            .round(),
+      );
+    }
+  }
+  return ziel;
 }
 
 /// Es wurde Schrift gefunden, aber keine einzige Stelle liess sich lesen.
