@@ -12760,7 +12760,7 @@ abstract class AppTexte {
   /// No description provided for @gesundheitModellwechselText.
   ///
   /// In de, this message translates to:
-  /// **'{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Modellfassung.} other{{anzahl} Verarbeitungen stammen von älteren Modellfassungen.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.'**
+  /// **'{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Fassung des Modells oder der Auswertung.} other{{anzahl} Verarbeitungen stammen von älteren Fassungen der Modelle oder der Auswertung.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.'**
   String gesundheitModellwechselText(int anzahl);
 
   /// No description provided for @gesundheitModellwechselAufgaben.

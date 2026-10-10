@@ -29,4 +29,15 @@ void main() {
     expect(await state.initialize({'captions': 'eins'}), isEmpty);
     expect(await state.initialize({'captions': 'zwei'}), {'captions'});
   });
+
+  test('die Texterkennung ausserhalb von macOS ist neu zu lesen (#92)', () {
+    final mac = ModelProcessingState.currentFingerprints(macos: true)['ocr']!;
+    final sonst = ModelProcessingState.currentFingerprints(
+      macos: false,
+    )['ocr']!;
+    expect(sonst, isNot(mac));
+    expect(sonst, startsWith(mac));
+    // Der Mac liest mit Vision; sein Stand bleibt der bisherige.
+    expect(mac, isNot(contains('zeilen')));
+  });
 }

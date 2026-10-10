@@ -4923,7 +4923,7 @@
   "sicherTeilenImportFehler": "Austauschpaket konnte nicht geöffnet werden: {fehler}",
   "@sicherTeilenImportFehler": {"placeholders": {"fehler": {"type": "String"}}},
   "gesundheitModellwechselTitel": "KI-Ergebnisse aktualisieren",
-  "gesundheitModellwechselText": "{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Modellfassung.} other{{anzahl} Verarbeitungen stammen von älteren Modellfassungen.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.",
+  "gesundheitModellwechselText": "{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Fassung des Modells oder der Auswertung.} other{{anzahl} Verarbeitungen stammen von älteren Fassungen der Modelle oder der Auswertung.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.",
   "@gesundheitModellwechselText": {"placeholders": {"anzahl": {"type": "int"}}},
   "gesundheitModellwechselAufgaben": "Aufgaben öffnen",
   "einstBackupGenerationenTitel": "Wiederherstellungspunkte",

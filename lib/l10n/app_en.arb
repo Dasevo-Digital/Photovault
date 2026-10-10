@@ -3843,7 +3843,7 @@
   "sicherTeilenImportFehler": "Could not open sharing package: {fehler}",
   "@sicherTeilenImportFehler": {"placeholders": {"fehler": {"type": "String"}}},
   "gesundheitModellwechselTitel": "Update AI results",
-  "gesundheitModellwechselText": "{anzahl, plural, =1{One processing result comes from an older model version.} other{{anzahl} processing results come from older model versions.}} Existing results remain visible until you run the corresponding task completely again.",
+  "gesundheitModellwechselText": "{anzahl, plural, =1{One processing result comes from an older version of the model or the analysis.} other{{anzahl} processing results come from older versions of the models or the analysis.}} Existing results remain visible until you run the corresponding task completely again.",
   "@gesundheitModellwechselText": {"placeholders": {"anzahl": {"type": "int"}}},
   "gesundheitModellwechselAufgaben": "Open tasks",
   "einstBackupGenerationenTitel": "Recovery points",

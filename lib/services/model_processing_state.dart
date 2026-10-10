@@ -22,15 +22,26 @@ class ModelProcessingState {
   /// berechnet werden sollten. Gesichtsdetektion und -erkennung gehören
   /// zusammen: Ein Wechsel nur einer der beiden Gewichte verändert das
   /// Gesamtergebnis.
-  static Map<String, String> currentFingerprints() => {
+  ///
+  /// Die Texterkennung ausserhalb von macOS trägt zusätzlich die Fassung
+  /// ihrer Zeilenführung: Seit 3.27.0 wird eine Zeile entlang ihrer Neigung
+  /// gelesen statt in einem achsenparallelen Kasten, und schon leicht
+  /// schräge Schrift kam vorher als Kauderwelsch an (#92). Die Gewichte sind
+  /// dieselben, das Ergebnis nicht. macOS liest mit Vision und behält seinen
+  /// Stand.
+  static Map<String, String> currentFingerprints({bool? macos}) => {
     'clip': _fingerprint([ModelCatalog.clip]),
-    'ocr': _fingerprint([ModelCatalog.ocrPaddle]),
+    'ocr': (macos ?? Platform.isMacOS)
+        ? _fingerprint([ModelCatalog.ocrPaddle])
+        : '${_fingerprint([ModelCatalog.ocrPaddle])}:$_ocrZeilenfuehrung',
     'captions': _fingerprint([ModelCatalog.captioningFlorence]),
     'faces': _fingerprint([
       ModelCatalog.faceDetection,
       ModelCatalog.faceRecognition,
     ]),
   };
+
+  static const _ocrZeilenfuehrung = 'zeilen-gedreht-1';
 
   static String _fingerprint(List<ModelCatalogEntry> entries) => entries
       .expand((entry) => entry.files)

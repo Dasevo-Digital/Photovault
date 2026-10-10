@@ -8152,8 +8152,10 @@ class AppTexteEn extends AppTexte {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,
       locale: localeName,
-      other: '$anzahl processing results come from older model versions.',
-      one: 'One processing result comes from an older model version.',
+      other:
+          '$anzahl processing results come from older versions of the models or the analysis.',
+      one:
+          'One processing result comes from an older version of the model or the analysis.',
     );
     return '$_temp0 Existing results remain visible until you run the corresponding task completely again.';
   }
