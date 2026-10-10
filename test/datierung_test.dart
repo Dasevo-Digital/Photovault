@@ -46,6 +46,24 @@ void main() {
     expect(d.jahr, closeTo(1970, 1));
   });
 
+  test(
+    'ein Ausläufer in alte Jahrzehnte zieht das Jahr nicht aus der Spanne',
+    () {
+      // Klar die 2010er, dazu ein wenig von allem Alten: Das Mittel über die
+      // ganze Verteilung läge in den 1980ern, vor der Spanne.
+      final d = schaetzeDatierung(
+        bild({
+          2010: 1,
+          for (final j in datierungJahrzehnte.where((j) => j < 2000)) j: 0.88,
+        }),
+        saetze,
+      );
+      expect(d.von, 2010);
+      expect(d.bis, 2019);
+      expect(d.jahr, inInclusiveRange(d.von, d.bis));
+    },
+  );
+
   test('alles gleich nah: zu breit, nicht belastbar', () {
     final d = schaetzeDatierung(
       bild({for (final j in datierungJahrzehnte) j: 1}),

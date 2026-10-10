@@ -65,7 +65,8 @@ const datierungHoechsteSpanne = 40;
 const datierungAnteil = 0.7;
 
 class Datierung {
-  /// Das Jahr in der Mitte der Schätzung (gewichtetes Mittel).
+  /// Das Jahr in der Mitte der Schätzung: das gewichtete Mittel innerhalb
+  /// von [von] bis [bis], also immer in der angezeigten Spanne.
   final int jahr;
 
   /// Erstes und letztes Jahr der Spanne, die [datierungAnteil] der
@@ -104,11 +105,6 @@ Datierung schaetzeDatierung(Float32List bild, Map<int, Float32List> saetze) {
   final summe = exp.fold(0.0, (a, b) => a + b);
   final p = [for (final e in exp) e / summe];
 
-  var mittel = 0.0;
-  for (var i = 0; i < p.length; i++) {
-    mittel += p[i] * (jahrzehnte[i] + 5);
-  }
-
   // Die kürzeste zusammenhängende Folge mit genug Anteil; bei gleicher
   // Länge die mit dem grösseren.
   var besteVon = 0, besteBis = p.length - 1;
@@ -130,8 +126,17 @@ Datierung schaetzeDatierung(Float32List bild, Map<int, Float32List> saetze) {
     }
   }
 
+  // Das Jahr aus derselben Spanne, nicht aus der ganzen Verteilung: Ein
+  // langer Ausläufer in die alten Jahrzehnte zog das Mittel sonst aus der
+  // Spanne heraus – „um 2006, 2010 bis 2019“, und übernommen wurde 2006.
+  var gewicht = 0.0, mittel = 0.0;
+  for (var i = besteVon; i <= besteBis; i++) {
+    gewicht += p[i];
+    mittel += p[i] * (jahrzehnte[i] + 5);
+  }
+
   return Datierung(
-    jahr: mittel.round(),
+    jahr: (mittel / gewicht).round(),
     von: jahrzehnte[besteVon],
     bis: jahrzehnte[besteBis] + 9,
     verteilung: {for (var i = 0; i < p.length; i++) jahrzehnte[i]: p[i]},
