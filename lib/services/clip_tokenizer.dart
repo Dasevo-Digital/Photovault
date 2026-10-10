@@ -21,8 +21,15 @@ class ClipTokenizer {
 
   static const contextLength = 77;
 
+  /// Wie im Original: **eine Ziffer je Wort** (`[\p{N}]`, nicht
+  /// `[\p{N}]+`). Als ganze Folge zerfiel „1950“ in die Bytestücke „1“,
+  /// „9“, „5“ ohne Wortende und „0“ mit – Stücke, die das Modell nicht
+  /// auseinanderhält: „a photo taken in the 1950s.“ und „… 2020s.“ ergaben
+  /// denselben Vektor (Kosinus 1,0), jede Datierung landete bei 1955, und
+  /// eine Suche nach „2019“ fand dasselbe wie eine nach „1989“ – es zählte
+  /// nur die letzte Ziffer.
   static final RegExp _splitPattern = RegExp(
-    r"<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]+|[^\s\p{L}\p{N}]+",
+    r"<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+",
     unicode: true,
     caseSensitive: false,
   );

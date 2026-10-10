@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/clip_tokenizer.dart';
@@ -49,6 +52,33 @@ void main() {
       expect(ids.skip(2), everyElement(0));
     },
   );
+
+  test('jede Ziffer ist ein eigenes Wort, wie im Original-CLIP', () async {
+    // Als Folge zerlegt, wurde „19“ zu „1“ + „9</w>“ – Bytestücke, die das
+    // echte Modell bei allen Zahlen gleich behandelt.
+    final ordner = await Directory.systemTemp.createTemp('pv_clip_ziffern');
+    addTearDown(() => ordner.delete(recursive: true));
+    final vocab = File(p.join(ordner.path, 'vocab.json'))
+      ..writeAsStringSync(
+        jsonEncode({
+          '<|startoftext|>': 0,
+          '<|endoftext|>': 1,
+          '1': 2,
+          '9': 3,
+          '1</w>': 4,
+          '9</w>': 5,
+          's</w>': 6,
+        }),
+      );
+    final merges = File(p.join(ordner.path, 'merges.txt'))
+      ..writeAsStringSync('#version: 0.2\n');
+    final ziffern = await ClipTokenizer.loadFromFiles(
+      vocabJsonPath: vocab.path,
+      mergesTxtPath: merges.path,
+    );
+
+    expect(ziffern.encode('19s').take(5), [0, 4, 5, 6, 1]);
+  });
 
   test(
     'Sequenzen länger als contextLength werden gekürzt und enden trotzdem mit <|endoftext|>',
