@@ -77,6 +77,70 @@ const int videoBilderJeSekunde = 30;
 /// Wo ffmpeg liegt – oder `null`. Unter macOS immer `null`, siehe oben.
 Future<String?> ffmpegPfad() => DesktopImageTools.aufruf('ffmpeg');
 
+/// Die Schalter für den H.264-Kodierer, den [ffmpeg] mitbringt.
+///
+/// **Nicht jedes ffmpeg hat libx264.** Das Windows-Paket bringt die
+/// LGPL-Fassung von BtbN mit, und libx264 steht unter GPL – dort fehlt es.
+/// Jede Diashow und jeder Kameraflug brach unter Windows deshalb mit
+/// „Unknown encoder 'libx264'“ ab. Die LGPL-Fassung hat stattdessen
+/// libopenh264 (Cisco, BSD) und h264_mf (Media Foundation von Windows).
+/// Gefragt wird ffmpeg selbst (`-encoders`), einmal je Programm.
+///
+/// libx264 kodiert auf eine Qualitätsstufe, die beiden anderen auf eine
+/// Datenrate; die ist so bemessen, dass sie bei 1080p30 dort landet, wo
+/// libx264 mit `-crf 20` herauskommt. Kennt ffmpeg keinen davon, bleibt
+/// MPEG-4 Part 2 – älter, aber in MP4 überall abspielbar. Lässt sich die
+/// Liste gar nicht lesen, bleibt es bei libx264, und ffmpeg sagt selbst,
+/// was fehlt.
+Future<List<String>> h264Schalter(
+  String ffmpeg, {
+  required int breite,
+  required int hoehe,
+  required int bilderJeSekunde,
+}) async {
+  final kodierer = await _kodiererVon(ffmpeg);
+  final rate = (breite * hoehe * bilderJeSekunde * 0.1 / 1000).round().clamp(
+    1000,
+    20000,
+  );
+  if (kodierer == null || kodierer.contains('libx264')) {
+    return [
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      // 20 ist sichtbar verlustfrei und ergibt bei dreissig Sekunden in
+      // 1920 x 1080 rund 15 MB - klein genug zum Verschicken.
+      '-crf', '20',
+    ];
+  }
+  for (final name in ['libopenh264', 'h264_mf']) {
+    if (kodierer.contains(name)) return ['-c:v', name, '-b:v', '${rate}k'];
+  }
+  return ['-c:v', 'mpeg4', '-q:v', '3'];
+}
+
+final _kodiererListen = <String, Future<Set<String>?>>{};
+
+/// Die Namen der Videokodierer, die [ffmpeg] kennt, oder `null`, wenn es
+/// sich nicht fragen lässt.
+Future<Set<String>?> _kodiererVon(String ffmpeg) =>
+    _kodiererListen[ffmpeg] ??= () async {
+      try {
+        final r = await Process.run(ffmpeg, const [
+          '-hide_banner',
+          '-encoders',
+        ]);
+        if (r.exitCode != 0) return null;
+        // Zeilen wie „ V....D libx264   libx264 H.264 / AVC …“.
+        final zeile = RegExp(r'^\s*V\S{5}\s+(\S+)', multiLine: true);
+        final namen = {
+          for (final m in zeile.allMatches('${r.stdout}')) m.group(1)!,
+        };
+        return namen.isEmpty ? null : namen;
+      } catch (_) {
+        return null;
+      }
+    }();
+
 /// Ob ein Videoexport überhaupt möglich ist.
 ///
 /// **Nicht mehr „gibt es ffmpeg".** Genau diese Frage war der Fehler: Sie
@@ -248,11 +312,12 @@ Future<Videoergebnis> schreibeFlugvideo({
         '-video_size', '${b}x$h',
         '-framerate', '$bilderJeSekunde',
         '-i', '-',
-        '-c:v', 'libx264',
-        '-preset', 'medium',
-        // 20 ist sichtbar verlustfrei und ergibt bei dreissig Sekunden in
-        // 1920 x 1080 rund 15 MB - klein genug zum Verschicken.
-        '-crf', '20',
+        ...await h264Schalter(
+          werkzeug,
+          breite: b,
+          hoehe: h,
+          bilderJeSekunde: bilderJeSekunde,
+        ),
         '-pix_fmt', 'yuv420p',
         // Der Index nach vorn: Ohne das faengt ein Abspieler im Netz erst
         // an, wenn die ganze Datei da ist.

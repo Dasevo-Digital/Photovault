@@ -17,15 +17,31 @@ import 'package:photo_vault/services/flugvideo.dart';
 /// Ein Skript, das sich wie ffmpeg verhält: Es liest `stdin` leer,
 /// schreibt die Zahl der gelesenen Bytes und die Schalter in eine
 /// Merkdatei, legt die Zieldatei an und endet mit [code].
+///
+/// Auf `-encoders` antwortet es wie ffmpeg mit einer Liste – mit genau
+/// den Videokodierern aus [kodierer].
 Future<File> _gestelltesFfmpeg(
   Directory ordner, {
   int code = 0,
   String meldung = '',
+  List<String> kodierer = const ['libx264', 'mpeg4'],
 }) async {
   final merk = File('${ordner.path}/aufruf.txt');
   final skript = File('${ordner.path}/ffmpeg.sh');
+  final liste = [
+    'Encoders:',
+    ' ------',
+    for (final k in kodierer) ' V....D $k              $k',
+    ' A....D aac                  AAC (Advanced Audio Coding)',
+  ].join('\n');
   await skript.writeAsString('''
 #!/bin/sh
+if [ "\$2" = "-encoders" ]; then
+  cat <<'LISTE'
+$liste
+LISTE
+  exit 0
+fi
 echo "\$@" > "${merk.path}"
 n=\$(cat | wc -c)
 echo "bytes=\$n" >> "${merk.path}"
@@ -154,6 +170,59 @@ void main() {
           expect(e.ausgang, Videoausgang.abgebrochen);
           expect(bilder, 3, reason: 'der Abbruch greift zu spaet');
           expect(ziel.existsSync(), isFalse);
+        });
+      });
+
+      Future<String> kodiertMit(List<String> kodierer) async {
+        // Je Liste ein eigenes Programm: Die Antwort auf `-encoders`
+        // merkt sich die App je Pfad.
+        final unter = Directory('${ordner.path}/${kodierer.join('_')}')
+          ..createSync();
+        final ffmpeg = await _gestelltesFfmpeg(unter, kodierer: kodierer);
+        final e = await schreibeFlugvideo(
+          ziel: File('${unter.path}/flug.mp4'),
+          breite: 1920,
+          hoehe: 1080,
+          dauer: const Duration(milliseconds: 100),
+          bilderJeSekunde: 30,
+          maleBild: malEtwas,
+          ffmpeg: ffmpeg.path,
+        );
+        expect(e.ausgang, Videoausgang.fertig, reason: '${e.meldung}');
+        return _aufruf(unter);
+      }
+
+      testWidgets('mit libx264 bleibt es bei der Qualitätsstufe', (
+        tester,
+      ) async {
+        await tester.runAsync(() async {
+          final text = await kodiertMit(['libx264', 'libopenh264']);
+          expect(text, contains('-c:v libx264'));
+          expect(text, contains('-crf 20'));
+        });
+      });
+
+      testWidgets('ohne libx264 (Windows, LGPL) nimmt es libopenh264', (
+        tester,
+      ) async {
+        await tester.runAsync(() async {
+          final text = await kodiertMit(['libopenh264', 'h264_mf', 'mpeg4']);
+          expect(text, contains('-c:v libopenh264'));
+          // 1920 × 1080 × 30 × 0,1 Bit
+          expect(text, contains('-b:v 6221k'));
+          expect(text, isNot(contains('-crf')));
+        });
+      });
+
+      testWidgets('sonst Media Foundation, zuletzt MPEG-4', (tester) async {
+        await tester.runAsync(() async {
+          expect(
+            await kodiertMit(['h264_mf', 'mpeg4']),
+            contains('-c:v h264_mf'),
+          );
+        });
+        await tester.runAsync(() async {
+          expect(await kodiertMit(['mpeg4']), contains('-c:v mpeg4'));
         });
       });
 

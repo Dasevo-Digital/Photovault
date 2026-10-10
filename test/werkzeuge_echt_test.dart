@@ -237,11 +237,10 @@ void main() {
         '-loglevel', 'error', '-y',
         '-f', 'lavfi', '-i', 'testsrc=size=640x480:rate=25:duration=$sekunden',
         // mpeg4 statt libx264: Das mitgelieferte ffmpeg ist die
-        // LGPL-Fassung und hat gar keinen H.264-Encoder. Die App braucht
-        // auch keinen – sie schneidet mit `-c copy` und schreibt
-        // Vorschaubilder als JPEG. Mit libx264 prüfte dieser Test also
-        // eine Fähigkeit, die im Paket weder vorhanden noch nötig ist,
-        // und wurde rot, sobald das Paket im PATH stand.
+        // LGPL-Fassung und hat kein libx264 (GPL). Für ein Testvideo
+        // reicht MPEG-4; die Videoausgabe der App nimmt dort libopenh264
+        // (siehe `h264Schalter`). Mit libx264 wurde dieser Test rot,
+        // sobald das Paket im PATH stand.
         '-c:v', 'mpeg4', '-pix_fmt', 'yuv420p', datei.path,
       ]);
       expect(r.exitCode, 0, reason: 'ffmpeg: ${r.stderr}');
