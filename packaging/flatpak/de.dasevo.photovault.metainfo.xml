@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.28.0" date="2026-10-10">
+      <description>
+        <p>Large videos in the locked folder can be played again: a decrypted file larger than 512 MB was deleted right after decrypting, a write error made playback wait forever, and on Linux a file that does not fit into the in-memory temporary folder now goes to the app's cache folder. On Windows the library moves from the roaming to the local profile.</p>
+      </description>
+    </release>
     <release version="3.27.0" date="2026-10-10">
       <description>
         <p>The app stays responsive while an AI model is running, drawing a face frame by hand no longer jumps, only one context menu at a time, readable names on faces, and background tasks count only what is new since their last run. Fixes black slideshows on Linux, slideshow and flyover export on Windows, dating of old photos and image search with numbers, and text recognition of slightly tilted text on Linux and Windows.</p>
