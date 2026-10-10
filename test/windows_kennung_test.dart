@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// `%APPDATA%\<CompanyName>\<ProductName>\` zusammen (nachgelesen in
 /// `path_provider_windows_real.dart`, gemessen in Phase 0: die Bibliothek
 /// lag bis 3.19 unter `%APPDATA%\com.example\photo_vault\PhotoVault\`,
-/// seither unter `%APPDATA%\de.dasevo\photovault\PhotoVault\`).
+/// danach unter `%APPDATA%\de.dasevo\photovault\PhotoVault\`, seit 3.28 im
+/// lokalen Profil unter `%LOCALAPPDATA%\de.dasevo\photovault\PhotoVault\`).
 ///
 /// Werden sie geändert, sucht eine bereits benutzte Installation an einer
 /// neuen Stelle – und begrüsst den Nutzer mit dem Startbildschirm, als
@@ -28,7 +29,7 @@ void main() {
       rc,
       contains(r'VALUE "CompanyName", "de.dasevo" "\0"'),
       reason:
-          'Eine Änderung verschiebt %APPDATA%\\<CompanyName>\\… und '
+          'Eine Änderung verschiebt %LOCALAPPDATA%\\<CompanyName>\\… und '
           'damit die Bibliothek bestehender Installationen. Nur zusammen '
           'mit einer Umzugslogik ändern (siehe '
           'LibraryLocation.fruehererSupportordner).',

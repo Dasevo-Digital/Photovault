@@ -178,6 +178,14 @@ class LibraryLocation {
   static Future<Directory> _bestimmeDatenordner() async {
     final support = await getApplicationSupportDirectory();
     final alt = klassischerDatenordner(support.path);
+    // Windows, ausgepackte Fassung: lokal, nicht im Roaming-Profil.
+    if (Platform.isWindows && alt == null) {
+      final lokal = await getApplicationCacheDirectory();
+      return uebernimmFruehereKennung(
+        Directory(p.join(lokal.path, 'PhotoVault')),
+        windowsVorgaenger(support.path),
+      );
+    }
     final neu = Directory(p.join(support.path, 'PhotoVault'));
     // Wo die Daten unter der früheren Kennung lagen – im Paket und
     // ausserhalb, siehe [fruehererSupportordner].
@@ -196,11 +204,40 @@ class LibraryLocation {
       umbenennen: alt == null,
     );
     if (gewaehlt.path != neu.path) return gewaehlt;
-    return waehleDatenordner(
-      neu,
-      alt == null ? null : Directory(p.join(alt, 'PhotoVault')),
-    );
+    // Die ausgepackte Fassung liegt seit 3.28 lokal, davor im
+    // Roaming-Profil – wo Daten liegen, dort arbeitet auch das Paket.
+    Directory? klassisch;
+    for (final ort in [?klassischerLokalerDatenordner(support.path), ?alt]) {
+      final kandidat = Directory(p.join(ort, 'PhotoVault'));
+      klassisch ??= kandidat;
+      if (await _siehtNachDatenAus(kandidat)) {
+        klassisch = kandidat;
+        break;
+      }
+    }
+    return waehleDatenordner(neu, klassisch);
   }
+
+  /// Wo die ausgepackte Windows-Fassung ihre Daten vor 3.28 hatte, in
+  /// dieser Reihenfolge: im Roaming-Profil unter der heutigen Kennung,
+  /// dann unter der früheren (`com.example\photo_vault`).
+  ///
+  /// **Warum sie umziehen.** `getApplicationSupportDirectory()` liefert
+  /// unter Windows das Roaming-Profil. Dort lagen Bibliothek, Vorschauen
+  /// und die Modelle, zusammen leicht mehrere Gigabyte. Auf einem Rechner
+  /// mit servergespeichertem Profil kopierte Windows das bei jeder An- und
+  /// Abmeldung zum Server; Microsofts eigene Regel ist, dass grosse,
+  /// rechnergebundene Daten nach `%LOCALAPPDATA%` gehören. Umbenannt wird
+  /// wie beim Kennungswechsel: auf demselben Laufwerk ohne Kopie, und geht
+  /// es nicht (umgeleitetes Profil auf einem Netzlaufwerk, Datei offen),
+  /// arbeitet die App am alten Ort weiter.
+  @visibleForTesting
+  static List<Directory> windowsVorgaenger(String roamingSupport) => [
+    Directory(p.windows.join(roamingSupport, 'PhotoVault')),
+    if (fruehererSupportordner(roamingSupport, plattform: 'windows')
+        case final f?)
+      Directory(p.windows.join(f, 'PhotoVault')),
+  ];
 
   /// Die Kennung, unter der die App bis 3.19 lief, je Plattform.
   ///
@@ -365,6 +402,19 @@ class LibraryLocation {
     final rest = supportPfad.substring(j + mitte.length);
     if (benutzer.isEmpty || rest.isEmpty) return null;
     return '$benutzer\\AppData\\Roaming\\$rest';
+  }
+
+  /// Wie [klassischerDatenordner], aber der lokale Ort der ausgepackten
+  /// Fassung seit 3.28 (`%LOCALAPPDATA%` statt Roaming, siehe
+  /// [windowsVorgaenger]).
+  @visibleForTesting
+  static String? klassischerLokalerDatenordner(String supportPfad) {
+    final roaming = klassischerDatenordner(supportPfad);
+    if (roaming == null) return null;
+    const von = r'\AppData\Roaming\', nach = r'\AppData\Local\';
+    final i = roaming.toLowerCase().indexOf(von.toLowerCase());
+    if (i < 0) return null;
+    return roaming.replaceRange(i, i + von.length, nach);
   }
 
   static bool _pfadPruefungErzwingen = false;

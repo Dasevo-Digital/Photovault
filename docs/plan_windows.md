@@ -835,6 +835,13 @@ bestehenden Installation verschwinden. Das braucht eine Umzugslogik und
 ist ein eigener Vorgang, kein Nebenbei-Fix in einer Prüfrunde. Bis dahin
 steht es hier.
 
+**Erledigt in 3.28** (#7): Die ausgepackte Fassung legt ihre Daten unter
+`%LOCALAPPDATA%\de.dasevo\photovault\PhotoVault` ab und benennt beim ersten
+Start den Ordner aus dem Roaming-Profil dorthin um, unter der heutigen
+wie unter der früheren Kennung (`LibraryLocation.windowsVorgaenger`).
+Gelingt das Umbenennen nicht, bleibt sie am alten Ort. Die Paketfassung
+sucht den lokalen Ort zuerst.
+
 ### Was geprüft wurde und in Ordnung war
 
 **Pfade mit Leerzeichen.** Der Klassiker „unquoted path" sitzt genau

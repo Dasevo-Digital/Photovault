@@ -1136,7 +1136,7 @@ Einstellungen auf einen beliebigen anderen Ordner verlegbar:
 |---|---|
 | macOS | `~/Library/Containers/de.dasevo.photovault/Data/Library/Application Support/de.dasevo.photovault/PhotoVault/` |
 | Linux (Flatpak) | `~/.var/app/de.dasevo.photovault/data/de.dasevo.photovault/PhotoVault/` |
-| Windows | `%APPDATA%\de.dasevo\photovault\PhotoVault\` |
+| Windows | `%LOCALAPPDATA%\de.dasevo\photovault\PhotoVault\` |
 
 Bis 3.19 trug die App den Platzhalter `com.example` aus der
 Flutter-Vorlage in ihrer Kennung, und die Ordner hiessen entsprechend
@@ -1233,16 +1233,22 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   nachladbare Modelle aus der PaddleOCR-Familie (erst finden, dann lesen).
   An einer deutschen Testtafel gemessen: 99,7 % der Zeichen richtig,
   Umlaute und `ß` kommen durch.
-- **Was unter Windows anders bleibt:** Bibliothek und Modelle liegen im
-  **Roaming**-Profil (`%APPDATA%`). Wer sein Profil über ein Netzlaufwerk
-  synchronisiert, schleppt damit die gesamte Bibliothek mit. Ausserdem
-  gibt es dort keinen Sandkasten wie unter macOS und Linux – der
-  Entschlüsselungs-Zwischenspeicher des gesperrten Ordners liegt im
-  gemeinsamen `%TEMP%`.
+- **Was unter Windows anders bleibt:** Es gibt dort keinen Sandkasten wie
+  unter macOS und Linux. Die Bibliothek liegt seit 3.28 im lokalen Profil
+  (`%LOCALAPPDATA%`); bis 3.27 lag sie im Roaming-Profil (`%APPDATA%`), und
+  wer sein Profil über einen Server synchronisierte, schleppte die ganze
+  Bibliothek mit. Beim ersten Start zieht sie um, auf demselben Laufwerk
+  ohne Kopie; geht das nicht, arbeitet die App am alten Ort weiter. Der
+  Entschlüsselungs-Zwischenspeicher des gesperrten Ordners liegt nicht
+  mehr im gemeinsamen `%TEMP%`, sondern in einem eigenen lokalen Ordner,
+  den nur der eigene Benutzer lesen darf.
 - **Was unter Linux anders bleibt:** Das Flatpak bekommt ein privates
-  `/tmp` im Arbeitsspeicher. Das schützt – nichts davon landet auf der
-  Platte –, begrenzt aber zugleich, was zwischengelagert werden kann;
-  gemessen sind 789 MB. Grosse Videos im gesperrten Ordner stossen daran.
+  `/tmp` im Arbeitsspeicher; gemessen sind 789 MB. Klartext aus dem
+  gesperrten Ordner kommt dorthin und damit nicht auf die Platte. Passt
+  eine Datei nicht hinein, etwa ein grosses Video, weicht sie in den
+  Cache-Ordner der App aus (`~/.var/app/de.dasevo.photovault/cache`), nur
+  für den eigenen Benutzer lesbar und beim Verlassen des gesperrten
+  Ordners wieder gelöscht.
 
 ### Funktionale Grenzen
 
