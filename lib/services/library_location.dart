@@ -411,7 +411,8 @@ class LibraryLocation {
   static String? klassischerLokalerDatenordner(String supportPfad) {
     final roaming = klassischerDatenordner(supportPfad);
     if (roaming == null) return null;
-    const von = r'\AppData\Roaming\', nach = r'\AppData\Local\';
+    const von = '\\AppData\\Roaming\\';
+    const nach = '\\AppData\\Local\\';
     final i = roaming.toLowerCase().indexOf(von.toLowerCase());
     if (i < 0) return null;
     return roaming.replaceRange(i, i + von.length, nach);
