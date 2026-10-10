@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.28.1" date="2026-10-10">
+      <description>
+        <p>A very small window no longer freezes the app.</p>
+      </description>
+    </release>
     <release version="3.28.0" date="2026-10-10">
       <description>
         <p>Large videos in the locked folder can be played again: a decrypted file larger than 512 MB was deleted right after decrypting, a write error made playback wait forever, and on Linux a file that does not fit into the in-memory temporary folder now goes to the app's cache folder. On Windows the library moves from the roaming to the local profile.</p>
