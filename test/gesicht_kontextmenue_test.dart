@@ -15,6 +15,8 @@ import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 
+import 'hilfen/echte_arbeit.dart';
+
 /// Der Rechtsklick in der Gesichts-Vollbildansicht.
 ///
 /// Sie ist der Bildschirm, auf dem man unter „Personen" tatsächlich
@@ -111,17 +113,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// Wartet, bis [pruefung] zutrifft – für Schritte, die echtes Datei-I/O
-  /// auslösen. `pumpAndSettle` pumpt Bilder, keine Dateisystem-Aufrufe;
-  /// ohne dieses Warten prüfte der Test, während das Löschen noch läuft.
-  Future<void> bisDann(WidgetTester tester, bool Function() pruefung) async {
-    await tester.runAsync(() async {
-      for (var i = 0; i < 100 && !pruefung(); i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
-    });
-  }
-
   Future<void> rechtsklick(WidgetTester tester, Offset stelle) async {
     final maus = await tester.createGesture(
       kind: PointerDeviceKind.mouse,
@@ -199,7 +190,9 @@ void main() {
     await tester.tap(find.text('Erkennung löschen'));
     await tester.pumpAndSettle();
 
-    await bisDann(tester, () => !ausschnitt.existsSync());
+    // Das Löschen fragt erst `exists()` und löscht dann – zwei echte
+    // Plattenzugriffe, deren Fortsetzungen an der Testuhr hängen.
+    await warteAufEchteArbeit(tester, () => !ausschnitt.existsSync());
     expect(await db.facesForAsset('a1'), isEmpty);
     expect(ausschnitt.existsSync(), isFalse);
   });

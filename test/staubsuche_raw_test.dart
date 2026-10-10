@@ -13,6 +13,8 @@ import 'package:photo_vault/screens/staubsuche_screen.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
+import 'hilfen/echte_arbeit.dart';
+
 /// **Die Staubsuche muss auch bei RAW-Aufnahmen etwas untersuchen.**
 ///
 /// Das `image`-Paket dekodiert weder CR3 noch DNG – es gibt nach wenigen
@@ -130,20 +132,14 @@ void main() {
       // Jede Aufnahme geht durch ein eigenes Isolat (`compute`), und das
       // braucht die **echte** Ereignisschleife: `pump` dreht nur die
       // Testuhr weiter, und der Lauf käme über „0 von 8" nie hinaus.
-      for (var i = 0; i < 120; i++) {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)),
-        );
-        await tester.pump();
-        // Nach dem Ergebnis suchen, nicht nach einer Wendung, die schon im
-        // Erklärungstext oben steht.
-        if (find
-            .textContaining('untersuchten Aufnahmen')
-            .evaluate()
-            .isNotEmpty) {
-          break;
-        }
-      }
+      // Nach dem Ergebnis suchen, nicht nach einer Wendung, die schon im
+      // Erklärungstext oben steht.
+      await warteAufEchteArbeit(
+        tester,
+        () =>
+            find.textContaining('untersuchten Aufnahmen').evaluate().isNotEmpty,
+        schritt: const Duration(milliseconds: 50),
+      );
 
       // Der Befund selbst: acht Aufnahmen mit demselben Korn an derselben
       // Stelle. Vor der Umstellung stand hier „Auf 0 untersuchten Aufnahmen
@@ -188,13 +184,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Suchen'));
 
-    for (var i = 0; i < 120; i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)),
-      );
-      await tester.pump();
-      if (find.textContaining('übersprungen').evaluate().isNotEmpty) break;
-    }
+    await warteAufEchteArbeit(
+      tester,
+      () => find.textContaining('übersprungen').evaluate().isNotEmpty,
+      schritt: const Duration(milliseconds: 50),
+    );
 
     expect(find.textContaining('2 von 6'), findsOneWidget);
   });
