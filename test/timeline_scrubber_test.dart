@@ -364,4 +364,37 @@ void main() {
       matchesGoldenFile('golden/zeitleiste.png'),
     );
   }, skip: nurAufReferenzplattform);
+
+  testWidgets('bei wenig oder gar keiner Höhe wirft die Leiste nicht', (
+    tester,
+  ) async {
+    // Vorher warf `clamp` mit einer Obergrenze unter null, und im
+    // ausgelieferten Programm fror die Oberfläche danach ganz ein.
+    final b = _bibliothek();
+    for (final hoehe in [0.0, 5.0, 12.0, 20.0, 40.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topRight,
+              child: SizedBox(
+                width: 72,
+                height: hoehe,
+                child: TimelineScrubber(
+                  orderedKeys: b.keys,
+                  groups: b.groups,
+                  controller: ScrollController(),
+                  gridWidth: 800,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'Höhe $hoehe');
+    }
+  });
 }

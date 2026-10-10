@@ -34,6 +34,9 @@ const Color _leistenGrund = Color(0xD9000000);
 /// unten. Massgeblich dafür, welche Jahre überhaupt geschrieben werden.
 const double _zeilenhoehe = 15;
 
+/// Darunter zeichnet die Leiste nichts, siehe [_TimelineScrubberState.build].
+const double _mindestHoehe = 24;
+
 /// Ab welchem Abstand zur aktuellen Position nichts mehr hervorgehoben wird.
 ///
 /// Innerhalb dieses Bandes wachsen die Monatspunkte und die Jahreszahlen
@@ -285,6 +288,16 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final trackHeight = constraints.maxHeight;
+        // **Ohne Platz keine Leiste.** Punkte und Marken werden auf die
+        // Spur begrenzt (`clamp` bis `trackHeight - 16`). Ist sie kürzer,
+        // läge die Obergrenze unter der unteren, und `clamp` wirft. Eine
+        // Ausnahme im Layout friert im ausgelieferten Programm die ganze
+        // Oberfläche ein: Jedes weitere Bild scheitert an dem halb
+        // gebauten Baum, auch nach dem Vergrössern des Fensters. Gesehen
+        // unter Windows beim ersten Bild eines kleinen Fensters.
+        if (!trackHeight.isFinite || trackHeight < _mindestHoehe) {
+          return const SizedBox.shrink();
+        }
 
         double topFor(int index) {
           final fraction = totalHeight <= 0
