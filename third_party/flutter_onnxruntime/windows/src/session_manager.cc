@@ -15,7 +15,10 @@ namespace flutter_onnxruntime {
 // constants parse correctly. Should a host app ever change the CRT locale, the fix here is
 // _configthreadlocale(_ENABLE_PER_THREAD_LOCALE) + setlocale, not the POSIX uselocale used on Linux.
 SessionManager::SessionManager() : next_session_id_(1), env_(ORT_LOGGING_LEVEL_WARNING, "FlutterOnnxRuntime") {
-  // Initialize ONNX Runtime environment in constructor
+  // Photo Vault: Die offiziellen Windows-Bauten von ONNX Runtime melden
+  // Ereignisse über TraceLogging an die Windows-Diagnose, bis man es
+  // abschaltet. Die App verspricht „keine Telemetrie“; das gilt auch hier.
+  env_.DisableTelemetryEvents();
 }
 
 SessionManager::~SessionManager() {

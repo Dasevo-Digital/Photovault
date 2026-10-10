@@ -258,7 +258,11 @@ modules:
       # Plugin eine RUNPATH ins Bauverzeichnis trägt und der Heimatordner
       # freigegeben ist – auf jedem anderen Rechner fielen sämtliche
       # KI-Funktionen aus. Die echte Datei muss also mit hinein.
-      - install -Dm644 $(find ort -name 'libonnxruntime.so.*' -type f | head -1)
+      # Nach einem Wechsel der Fassung liegen alte und neue nebeneinander im
+      # Bauordner (onnxruntime-linux-x64-1.22.0 und -1.28.3); das Plugin ist
+      # gegen die neueste gebaut, also kommt die hinein. `head -1` nahm, was
+      # das Dateisystem zuerst lieferte.
+      - install -Dm644 $(find ort -name 'libonnxruntime.so.*.*.*' -type f | sort -V | tail -1)
         /app/photo_vault/lib/libonnxruntime.so.1
       - install -Dm755 photo_vault.sh /app/bin/photo_vault
       - install -Dm644 app_icon.png /app/share/icons/hicolor/256x256/apps/de.dasevo.photovault.png

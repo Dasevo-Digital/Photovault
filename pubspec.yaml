@@ -64,7 +64,7 @@ dependencies:
   meta: ^1.15.0
 
   # On-device KI-Inferenz (CLIP-Bildsuche + Gesichtserkennung/-erkennung).
-  # Eine angepasste Kopie von 1.8.5 unter third_party/: Das Original rechnet
+  # Eine angepasste Kopie von 1.9.0 unter third_party/: Das Original rechnet
   # die Modelle auf dem Hauptfaden und hält dabei die App an (Issue #14);
   # was geändert ist, steht in third_party/flutter_onnxruntime/ANPASSUNGEN.md.
   flutter_onnxruntime:

@@ -390,7 +390,7 @@ packages:
       path: "third_party/flutter_onnxruntime"
       relative: true
     source: path
-    version: "1.8.5"
+    version: "1.9.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

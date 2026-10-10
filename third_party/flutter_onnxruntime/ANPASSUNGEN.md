@@ -1,15 +1,16 @@
-# Anpassungen gegenüber flutter_onnxruntime 1.8.5
+# Anpassungen gegenüber flutter_onnxruntime 1.9.0
 
-Diese Kopie stammt aus dem Paket `flutter_onnxruntime` 1.8.5 (MIT, © MASIC AI,
+Diese Kopie stammt aus dem Paket `flutter_onnxruntime` 1.9.0 (MIT, © MASIC AI,
 <https://github.com/masicai/flutter_onnxruntime>). Weggelassen sind nur
-`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert ist genau eine
-Sache, auf allen drei Desktop-Plattformen gleich:
+`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert sind zwei Dinge.
 
-**Die Aufrufe laufen nicht mehr im Hauptfaden.** Das Original rechnet jedes
-Modell synchron im Kanal-Handler, also auf dem Hauptfaden der Plattform. Unter
-macOS teilen sich Plattform und Oberfläche diesen Faden; eine Kachel der
-KI-Restaurierung hielt die App so 5,9 Sekunden lang an (Issue #14, gemessen mit
-`integration_test/modell_haelt_an_test.dart`; danach 37 ms).
+## 1. Die Aufrufe laufen nicht im Hauptfaden
+
+Das Original rechnet jedes Modell synchron im Kanal-Handler, also auf dem
+Hauptfaden der Plattform. Unter macOS teilen sich Plattform und Oberfläche
+diesen Faden; eine Kachel der KI-Restaurierung hielt die App so 5,9 Sekunden
+lang an (Issue #14, gemessen mit `integration_test/modell_haelt_an_test.dart`;
+danach 37 ms).
 
 | Plattform | Datei | Was |
 |---|---|---|
@@ -20,10 +21,35 @@ KI-Restaurierung hielt die App so 5,9 Sekunden lang an (Issue #14, gemessen mit
 Ein einziger Faden je Plattform hält die Reihenfolge der Aufrufe, wie Dart sie
 stellt – erst Tensor anlegen, dann rechnen, dann auslesen.
 
+## 2. Windows: keine Telemetrie
+
+`windows/src/session_manager.cc` ruft nach dem Anlegen der Umgebung
+`DisableTelemetryEvents()`. Die offiziellen Windows-Bauten von ONNX Runtime
+melden sonst Ereignisse über TraceLogging an die Windows-Diagnose. Unter Linux
+und macOS enthalten die Bauten keine solche Meldung.
+
+## Sonst
+
 In den beiden podspecs ist die Kontaktadresse des Herstellers durch die Adresse
 des Projekts ersetzt (in diesem Repository stehen keine E-Mail-Adressen).
 
-**Beim Wechsel auf eine neuere Fassung** (Issue #60) die drei Änderungen
-nachziehen und die Probe `integration_test/modell_haelt_an_test.dart` auf allen
-drei Plattformen laufen lassen. Die Fassung 1.9.0 rechnet weiterhin im
-Hauptfaden.
+## Der Wechsel von 1.8.5 auf 1.9.0 (Issue #60, 10.10.2026)
+
+1.9.0 hebt ONNX Runtime unter Linux und Windows von 1.22.0 auf 1.28.3, unter
+macOS von 1.23.0 auf 1.28.0. Eingespielt als Unterschied der beiden
+veröffentlichten Pakete; die Änderungen oben ließen sich unverändert
+übernehmen.
+
+Nebenbei behebt 1.9.0 einen Fehler, der unter Linux jede Sitzung betraf: Die
+Sitzungsoptionen kamen nie an. `createSession` nahm sie als `void *` entgegen
+und wandelte sie in den falschen Typ zurück; ONNX Runtime öffnete jedes Modell
+mit den Voreinstellungen. Gemessen mit `integration_test/onnx_wechsel_test.dart`
+auf einem Rechner mit vier Kernen: Mit 1.8.5 legte jede Sitzung drei
+Rechenfäden an, gleich ob zwei, vier oder gar keine verlangt waren. Die
+Begrenzung aus `lib/services/modellthreads.dart`, die zwei Kerne für die
+Oberfläche freihält, galt unter Linux also nie.
+
+**Beim nächsten Wechsel** dasselbe Vorgehen: die Änderungen oben nachziehen,
+dann `integration_test/onnx_wechsel_test.dart` auf allen drei Plattformen erst
+mit der alten, dann mit der neuen Fassung laufen lassen (siehe Kopf der Datei),
+dazu `integration_test/modell_haelt_an_test.dart`.

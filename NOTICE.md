@@ -104,7 +104,8 @@ lassen sich mit `flutter pub deps` bzw. über pub.dev einsehen.
 
 ### Angepasste Kopie: `third_party/flutter_onnxruntime/`
 
-Das Paket `flutter_onnxruntime` 1.8.5 (MIT, © MASIC AI) liegt als angepasste
+Das Paket `flutter_onnxruntime` 1.9.0 (MIT, © MASIC AI) liegt als angepasste
 Kopie im Repository, Lizenztext in `third_party/flutter_onnxruntime/LICENSE`.
-Geändert ist, in welchem Faden die Modelle rechnen; was genau, steht in
+Geändert ist, in welchem Faden die Modelle rechnen, und unter Windows ist die
+Telemetrie von ONNX Runtime abgeschaltet; was genau, steht in
 `third_party/flutter_onnxruntime/ANPASSUNGEN.md`.

@@ -196,6 +196,23 @@ foreach ($dll in 'onnxruntime.dll', 'libmpv-2.dll', 'flutter_windows.dll') {
   }
 }
 
+# Die Fassung von ONNX Runtime, die das Plugin verlangt. Ein vorhandener
+# Bauordner hielt einmal still an 1.22.0 fest, obwohl das Plugin 1.28.3
+# vorgab (CMake-Cache, Issue #60) - die App lief, nur eben mit der alten.
+$ortSoll = ([regex]'set\(ONNXRUNTIME_VERSION "([0-9.]+)"\)').Match(
+  (Get-Content -Raw "$Wurzel\third_party\flutter_onnxruntime\windows\CMakeLists.txt")).Groups[1].Value
+# Die DLL traegt nur Haupt- und Nebennummer, dahinter das Baudatum
+# (1.22.20250508.2.f217402); verglichen wird also "1.28.".
+if (Test-Path "$Paket\onnxruntime.dll") {
+  $ortIst = (Get-Item "$Paket\onnxruntime.dll").VersionInfo.ProductVersion
+  $ortStamm = (($ortSoll -split '\.')[0..1] -join '.') + '.'
+  if ($ortIst -and $ortSoll -and $ortIst.StartsWith($ortStamm)) {
+    Gut "ONNX Runtime $ortIst, wie vom Plugin verlangt"
+  } else {
+    Schlecht "ONNX Runtime $ortIst im Paket, das Plugin verlangt $ortSoll"
+  }
+}
+
 # Und die Laufzeit, auf der all das aufsitzt. Statt einer festen Liste
 # wird gefragt, was die Dateien im Paket wirklich verlangen: Dann faellt
 # eine neu hinzugekommene Abhaengigkeit HIER auf und nicht auf dem

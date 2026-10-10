@@ -313,6 +313,20 @@ if [ "$pruefen" -eq 1 ]; then
         fehler "Baupfade im ausgelieferten Paket:"
         printf '%s\n' "$rest"
       fi
+
+      # Dieselbe ONNX Runtime, die das Plugin verlangt. Nach einem Wechsel
+      # liegen alte und neue Fassung nebeneinander im Bauordner; passt die
+      # ins Paket gelegte nicht, lädt die Bibliothek trotzdem, und erst das
+      # erste Modell scheitert (Issue #60).
+      soll="$(sed -n 's/.*set(ONNXRUNTIME_VERSION "\([0-9.]*\)").*/\1/p' \
+        "$WURZEL/third_party/flutter_onnxruntime/linux/CMakeLists.txt" | head -1)"
+      gebaut="$(find "$WURZEL/build/linux/x64/release/plugins/flutter_onnxruntime/onnxruntime" \
+        -name "libonnxruntime.so.$soll" -type f 2>/dev/null | head -1)"
+      if [ -n "$soll" ] && [ -n "$gebaut" ] && cmp -s "$gebaut" "$ORT/lib/libonnxruntime.so.1"; then
+        gut "ONNX Runtime $soll im Paket, wie vom Plugin verlangt"
+      else
+        fehler "ONNX Runtime im Paket ist nicht $soll, die das Plugin verlangt"
+      fi
     fi
   else
     hinweis "nicht eingespielt – mit --installieren wiederholen"
