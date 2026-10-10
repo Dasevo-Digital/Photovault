@@ -1,7 +1,9 @@
 # Herkunft und Lizenzen von Drittinhalten
 
-Dieses Projekt selbst steht unter der Lizenz in [LICENSE](LICENSE). Die
-folgenden Bestandteile stammen von Dritten und behalten ihre eigene Lizenz.
+Dieses Projekt selbst steht unter der Lizenz in [LICENSE](LICENSE), seit
+Version 3.19.1 der PolyForm Strict License 1.0.0; bis 3.19.0 galt MIT (siehe
+Abschnitt „Lizenz“ in der README). Die folgenden Bestandteile stammen von
+Dritten und behalten ihre eigene Lizenz.
 
 ## Mitgelieferte Dateien
 

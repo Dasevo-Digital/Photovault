@@ -1208,6 +1208,11 @@ Lizenzen aller Drittinhalte – insbesondere die Namensnennung für die
 Globus-Texturen (CC BY 4.0), die nachladbaren KI-Modelle, GeoNames und
 OpenStreetMap – stehen in [NOTICE.md](NOTICE.md).
 
+**Ab welcher Fassung.** PolyForm Strict gilt seit Version 3.19.1, eingeführt
+mit Commit `96f18d4` vom 2. Oktober 2026. Die Fassungen bis einschließlich
+3.19.0 (Tags bis `v3.19.0`) sind unter der MIT-Lizenz erschienen; für sie
+gilt die `LICENSE`-Datei, die ihnen beiliegt.
+
 ## Bekannte Grenzen / nächste Schritte
 
 ### Plattformen
