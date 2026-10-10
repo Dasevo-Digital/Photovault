@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 

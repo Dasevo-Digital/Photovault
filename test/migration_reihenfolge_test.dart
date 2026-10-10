@@ -16,8 +16,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('die Schritte in onUpgrade stehen aufsteigend', () {
-    final quelle = File('lib/db/database.dart');
+  test('die Schritte der Migration stehen aufsteigend', () {
+    // Die Schritte stehen seit der Aufteilung von database.dart (#85) in
+    // einer eigenen Teildatei.
+    final quelle = File('lib/db/migration.dart');
     expect(
       quelle.existsSync(),
       isTrue,
@@ -25,8 +27,10 @@ void main() {
     );
     final text = quelle.readAsStringSync();
 
-    final anfang = text.indexOf('onUpgrade: (m, from, to) async {');
-    expect(anfang, greaterThan(0), reason: 'onUpgrade nicht gefunden');
+    final anfang = text.indexOf(
+      'Future<void> stufeAuf(Migrator m, int from, int to) async {',
+    );
+    expect(anfang, greaterThan(0), reason: 'stufeAuf nicht gefunden');
 
     final nummern = RegExp(r'if \(from < (\d+)\)')
         .allMatches(text.substring(anfang))

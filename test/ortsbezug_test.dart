@@ -207,7 +207,7 @@ void main() {
       // liesse den Fall durch, dass die Umsetzung wieder auf das
       // schlichte JOIN zurückfällt. Quelltextprüfung nach dem Muster
       // von keine_festen_texte_test.dart.
-      final quelle = File('lib/db/database.dart').readAsStringSync();
+      final quelle = File('lib/db/abfragen/reisen.dart').readAsStringSync();
       expect(quelle, contains('CROSS JOIN assets a ON a.id = z.asset_id'));
       expect(
         quelle,
