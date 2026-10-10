@@ -1164,6 +1164,23 @@ TileUpdateTransformer _takt(Duration abstand) =>
 @visibleForTesting
 TileProvider? kachelAnbieterFuerTest;
 
+/// Ersatz für den Host der OSM-Kachelserver in Tests – sonst `null`.
+///
+/// flutter_map gibt im Debug-Modus bei jedem Aufbau einer Schicht mit
+/// `tile.openstreetmap.org` einen Hinweis zur Nutzungsrichtlinie aus,
+/// per `print` und an keiner Zone vorbei. Im vollen Testlauf waren das
+/// 236 Wiederholungen, zwischen denen echte Meldungen untergingen (#42).
+/// `test/flutter_test_config.dart` setzt hier einen Host ein, den
+/// flutter_map nicht als OSM erkennt; Kacheln lädt ein Test ohnehin nicht.
+@visibleForTesting
+String? osmHostFuerTest;
+
+String _vorlageFuerSchicht(String vorlage) {
+  final ersatz = osmHostFuerTest;
+  if (ersatz == null) return vorlage;
+  return vorlage.replaceFirst(Uri.parse(_osmKacheln).host, ersatz);
+}
+
 /// Liefert die Kacheln des gewählten Stils.
 ///
 /// Ohne [stil] richtet sich das nach dem Theme – da die App aber permanent
@@ -1179,7 +1196,7 @@ TileLayer buildMapTileLayer(
   final gewaehlt = stil ?? _ausTheme(context);
   final anbieter = kachelAnbieterFuerTest ?? kartenKachelAnbieter();
   return TileLayer(
-    urlTemplate: gewaehlt.kachelUrl,
+    urlTemplate: _vorlageFuerSchicht(gewaehlt.kachelUrl),
     subdomains: gewaehlt.unterbereiche,
     // Der Zähler steht in KEINER Adresse – er ist nur da, damit
     // flutter_map beim Hochzählen `reloadImages` auslöst und die

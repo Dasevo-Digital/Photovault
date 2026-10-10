@@ -91,6 +91,14 @@ Future<ui.Image> _einPixel() {
 const _mitte = ll.LatLng(52.37, 9.73);
 const _ziel = 16.0;
 
+/// Dieselbe Adresse wie die echte Schicht im Test: mit dem Ersatz-Host aus
+/// test/flutter_test_config.dart, sonst druckte flutter_map seinen
+/// OSM-Hinweis (#42).
+String get _gegenprobeVorlage => Kartenstil.hell.kachelUrl.replaceFirst(
+  'tile.openstreetmap.org',
+  osmHostFuerTest ?? 'tile.openstreetmap.org',
+);
+
 void main() {
   late ui.Image pixel;
   var laufNr = 0;
@@ -129,7 +137,7 @@ void main() {
               // mit einfacher Aufloesung verglich zwei verschiedene Karten.
               Builder(
                 builder: (context) => TileLayer(
-                  urlTemplate: Kartenstil.hell.kachelUrl,
+                  urlTemplate: _gegenprobeVorlage,
                   tileProvider: zaehler,
                   maxNativeZoom: 19,
                   userAgentPackageName: netzkennung,
@@ -227,7 +235,7 @@ void main() {
               else
                 Builder(
                   builder: (context) => TileLayer(
-                    urlTemplate: Kartenstil.hell.kachelUrl,
+                    urlTemplate: _gegenprobeVorlage,
                     tileProvider: zaehler,
                     maxNativeZoom: 19,
                     userAgentPackageName: netzkennung,
