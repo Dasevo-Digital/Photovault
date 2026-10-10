@@ -74,6 +74,8 @@ void main() {
       final ffmpeg = File('${ordner.path}/ffmpeg.sh')
         ..writeAsStringSync('''
 #!/bin/sh
+# Die Frage nach den Kodierern (h264Schalter): keine Liste, also libx264.
+[ "\$2" = "-encoders" ] && exit 0
 n=\$(cat | wc -c)
 echo "bytes=\$n" > "${merk.path}"
 for letztes in "\$@"; do :; done

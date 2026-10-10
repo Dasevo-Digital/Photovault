@@ -324,6 +324,8 @@ void main() {
         final skript = File('${ordner.path}/ffmpeg.sh');
         skript.writeAsStringSync('''
 #!/bin/sh
+# Die Frage nach den Kodierern (h264Schalter): keine Liste, also libx264.
+[ "\$2" = "-encoders" ] && exit 0
 cat > "${rohziel.path}"
 for letztes in "\$@"; do :; done
 : > "\$letztes"
