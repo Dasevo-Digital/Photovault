@@ -299,14 +299,23 @@ void main() {
   });
 
   // ---------------------------------------------------------------- #74
+  //
+  // Unter macOS liest die App mit Vision, sonst mit PaddleOCR. Auf dem Mac
+  // läuft hier beides, sofern die Paddle-Modelle da sind – so prüft schon
+  // der Mac den Weg von Linux und Windows mit. Die Karte liegt 2,5° schräg:
+  // Achsenparallel ausgeschnitten, las PaddleOCR daraus nur Kauderwelsch.
   testWidgets('#74 Ausweise: echte Texterkennung, dann die Prüfung', (
     tester,
   ) async {
-    OcrService? paddle;
-    if (!Platform.isMacOS) {
-      if (!vorhanden(ModelCatalog.ocrPaddle)) return;
-      paddle = await OcrService.load(modelle);
-    }
+    final mitPaddle = !Platform.isMacOS || OcrService.isAvailable(modelle);
+    if (!Platform.isMacOS && !vorhanden(ModelCatalog.ocrPaddle)) return;
+    final paddle = mitPaddle ? await OcrService.load(modelle) : null;
+    final leser = <String, Future<List<Textstelle>?> Function(File)>{
+      if (Platform.isMacOS) 'Vision': NativeImageConverter.recognizeText,
+      if (paddle != null)
+        'PaddleOCR': (datei) =>
+            paddle.erkenne(img.decodeJpg(datei.readAsBytesSync())!),
+    };
     final faelle = <String, (Dokumentart?, Dokumentgrund?, _Szene)>{
       'ausweis_rueckseite': (
         Dokumentart.ausweis,
@@ -335,21 +344,19 @@ void main() {
         // Als JPEG wie aus dem Telefon, und genau diese Datei wird gelesen.
         final datei = File(p.join(aus.path, 'dokument_$name.jpg'))
           ..writeAsBytesSync(img.encodeJpg(bild, quality: 82));
-        List<Textstelle>? stellen;
-        await tester.runAsync(() async {
-          stellen = paddle != null
-              ? await paddle.erkenne(img.decodeJpg(datei.readAsBytesSync())!)
-              : await NativeImageConverter.recognizeText(datei);
-        });
-        final text = textAusStellen(stellen ?? const []);
-        final fund = dokumentImText(text);
-        print(
-          '#74 $name: ${fund?.art.name ?? 'nichts'} '
-          '(${fund?.grund.name ?? '-'}), erwartet ${art?.name ?? 'nichts'}\n'
-          '    gelesen: ${text.replaceAll('\n', ' | ')}',
-        );
-        if (fund?.art != art || fund?.grund != grund) {
-          fehler.add('$name: ${fund?.art.name} statt ${art?.name}');
+        for (final MapEntry(key: wer, value: lies) in leser.entries) {
+          List<Textstelle>? stellen;
+          await tester.runAsync(() async => stellen = await lies(datei));
+          final text = textAusStellen(stellen ?? const []);
+          final fund = dokumentImText(text);
+          print(
+            '#74 $wer $name: ${fund?.art.name ?? 'nichts'} '
+            '(${fund?.grund.name ?? '-'}), erwartet ${art?.name ?? 'nichts'}\n'
+            '    gelesen: ${text.replaceAll('\n', ' | ')}',
+          );
+          if (fund?.art != art || fund?.grund != grund) {
+            fehler.add('$wer $name: ${fund?.art.name} statt ${art?.name}');
+          }
         }
       }
     } finally {
