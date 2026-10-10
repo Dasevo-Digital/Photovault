@@ -1062,7 +1062,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final ok = await ensureBackupKeyAvailable(context, widget.library);
       if (!ok || !mounted) return;
     }
-    final destination = await FilePicker.platform.getDirectoryPath(
+    final destination = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).einstBackupZielWaehlen,
     );
     if (destination == null || !mounted) return;
@@ -1081,7 +1081,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _runRestore() async {
-    final source = await FilePicker.platform.getDirectoryPath(
+    final source = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).einstBackupOrdnerWaehlen,
     );
     if (source == null || !mounted) return;
@@ -1178,7 +1178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pruefeBackup() async {
-    final source = await FilePicker.platform.getDirectoryPath(
+    final source = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).einstBackupOrdnerWaehlen,
     );
     if (source == null || !mounted) return;
@@ -2798,7 +2798,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 trailing: OutlinedButton(
                   onPressed: () async {
-                    final picked = await FilePicker.platform.getDirectoryPath(
+                    final picked = await FilePicker.getDirectoryPath(
                       dialogTitle: AppTexte.of(
                         context,
                       ).einstBackupAutoZielWaehlen,

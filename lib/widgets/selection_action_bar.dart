@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import 'namens_dialog.dart' show MitTextsteuerung;
 import '../screens/photo_compare_screen.dart';
 import '../screens/export_presets_screen.dart';
+import '../services/platform/speicherort.dart';
 import '../services/export_service.dart';
 import '../services/contact_sheet_service.dart';
 import '../services/secure_share_service.dart';
@@ -934,16 +935,12 @@ Future<void> runBatchExport(
     final texte = AppTexte.of(context);
     final defaultName = texte.sicherTeilenDateiname;
     final extension = p.extension(defaultName);
-    final selected = await FilePicker.platform.saveFile(
-      dialogTitle: texte.sicherTeilenZiel,
-      fileName: defaultName,
-      type: FileType.custom,
-      allowedExtensions: [extension.substring(1)],
+    final path = await waehleSpeicherort(
+      dialogTitel: texte.sicherTeilenZiel,
+      dateiname: defaultName,
+      mitEndung: (pfad) => mitDateiendung(pfad, extension.substring(1)),
     );
-    if (selected == null || !context.mounted) return;
-    final path = selected.toLowerCase().endsWith(extension.toLowerCase())
-        ? selected
-        : '$selected$extension';
+    if (path == null || !context.mounted) return;
     try {
       await SecureShareService(
         ExportService(library.paths, library: library),
@@ -959,19 +956,17 @@ Future<void> runBatchExport(
     return;
   }
   if (wahl is _WahlKontaktblatt) {
-    final path = await FilePicker.platform.saveFile(
-      dialogTitle: AppTexte.of(context).kontaktblattZiel,
-      fileName: AppTexte.of(context).kontaktblattDateiname,
-      type: FileType.custom,
-      allowedExtensions: const [kontaktblattFormat],
-    );
-    if (path == null || !context.mounted) return;
     // Über `p.setExtension` statt zusammengesetzt: Das hängt die Endung
     // nicht ein zweites Mal an, wenn der Dialog sie schon gesetzt hat,
     // und behandelt einen Namen, der selbst einen Punkt enthält, richtig.
-    final ziel = p.extension(path).toLowerCase() == kontaktblattEndung
-        ? path
-        : p.setExtension(path, kontaktblattEndung);
+    final ziel = await waehleSpeicherort(
+      dialogTitel: AppTexte.of(context).kontaktblattZiel,
+      dateiname: AppTexte.of(context).kontaktblattDateiname,
+      mitEndung: (pfad) => p.extension(pfad).toLowerCase() == kontaktblattEndung
+          ? pfad
+          : p.setExtension(pfad, kontaktblattEndung),
+    );
+    if (ziel == null || !context.mounted) return;
     try {
       final result = await ContactSheetService(
         library.paths,
@@ -1000,7 +995,7 @@ Future<void> runBatchExport(
   }
   final vorgabe = (wahl as _WahlVorgabe).vorgabe;
 
-  final destination = await FilePicker.platform.getDirectoryPath(
+  final destination = await FilePicker.getDirectoryPath(
     dialogTitle: AppTexte.of(context).auswZielordner(assets.length),
   );
   if (destination == null || !context.mounted) return;

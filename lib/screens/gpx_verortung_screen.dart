@@ -41,14 +41,13 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
 
   Future<void> _waehlen() async {
     final t = AppTexte.of(context);
-    final wahl = await FilePicker.platform.pickFiles(
+    final wahl = await FilePicker.pickFile(
       dialogTitle: t.gpxDateiWaehlen,
       type: FileType.custom,
       allowedExtensions: const ['gpx'],
     );
-    if (wahl == null || wahl.files.isEmpty || !mounted) return;
-    final pfad = wahl.files.first.path;
-    if (pfad == null) return;
+    final pfad = wahl?.path;
+    if (pfad == null || !mounted) return;
 
     setState(() {
       _arbeitet = true;

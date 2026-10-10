@@ -668,7 +668,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _exportAsset() async {
     final asset = _currentAsset;
-    final destination = await FilePicker.platform.getDirectoryPath(
+    final destination = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).viewerExportZielordner,
     );
     if (destination == null || !mounted) return;

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -17,54 +16,14 @@ import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
 import 'package:photo_vault/widgets/meldungsfenster.dart';
 
+import 'hilfen/dateidialog.dart';
+
 /// Der Weg von der GPX-Datei bis zur Koordinate in der Datenbank.
 ///
 /// Die Rechnung ist in gpx_test.dart geprüft. Hier geht es um das, was
 /// Tests, die sie unmittelbar aufrufen, nicht sehen: ob der Knopf
 /// wirklich zu einer verorteten Aufnahme führt – und ob der
 /// vorgeschlagene Zeitversatz auf dem Bildschirm ankommt.
-class _NachgestellterDateidialog extends FilePicker {
-  _NachgestellterDateidialog(this.datei);
-  File? datei;
-
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
-    final d = datei;
-    if (d == null) return null;
-    return FilePickerResult([
-      PlatformFile(
-        name: p.basename(d.path),
-        path: d.path,
-        size: d.lengthSync(),
-      ),
-    ]);
-  }
-
-  @override
-  Future<String?> saveFile({
-    String? dialogTitle,
-    String? fileName,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Uint8List? bytes,
-    bool lockParentWindow = false,
-  }) async => null;
-}
-
 void main() {
   late Directory tempRoot;
   late AppDatabase db;
@@ -122,7 +81,7 @@ void main() {
     }
     await foto('schon', DateTime.utc(2024, 6, 3, 11, 5), breite: 9.9);
 
-    FilePicker.platform = _NachgestellterDateidialog(spurdatei);
+    FilePickerPlatform.instance = NachgestellterDateidialog(spurdatei);
   });
 
   tearDown(() async {

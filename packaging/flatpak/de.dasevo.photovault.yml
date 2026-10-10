@@ -233,16 +233,9 @@ modules:
         url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.41.0.tar.gz
         sha256: ee21092a5ee427353392360929dc64645c54479aefdb5babc5cfbb5fad626209
 
-  # --- Dateiauswahl ------------------------------------------------------
-  # file_picker startet unter Linux zenity als eigenen Prozess. Fehlt es,
-  # lässt sich kein Bibliotheksordner wählen – und ohne den tut die App
-  # nichts.
-  - name: zenity
-    buildsystem: meson
-    sources:
-      - type: archive
-        url: https://download.gnome.org/sources/zenity/4.2/zenity-4.2.2.tar.xz
-        sha256: 019186a996096ef4fc356e21577b5673f5baa3a29ac8e3d608b753371c18018d
+  # Kein zenity mehr: Seit file_picker 12 fragt die App den Dateidialog
+  # über das Dateiportal (org.freedesktop.portal.FileChooser) an, das jede
+  # Flatpak-Umgebung mitbringt.
 
   # --- Die Anwendung selbst ----------------------------------------------
   # Der Flutter-Bau läuft VOR flatpak-builder (tool/flatpak_bauen.sh):

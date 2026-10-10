@@ -480,12 +480,12 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   /// neben die aus den Fotos geratene Linie – nicht hinein.
   Future<void> _spurHinzufuegen() async {
     final t = AppTexte.of(context);
-    final wahl = await FilePicker.platform.pickFiles(
+    final wahl = await FilePicker.pickFile(
       dialogTitle: t.gpxDateiWaehlen,
       type: FileType.custom,
       allowedExtensions: const ['gpx'],
     );
-    final pfad = wahl?.files.firstOrNull?.path;
+    final pfad = wahl?.path;
     if (pfad == null || !mounted) return;
 
     List<Rohpunkt> punkte;

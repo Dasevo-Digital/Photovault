@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../db/database.dart';
 import '../l10n/app_localizations.dart';
+import '../services/platform/speicherort.dart';
 import '../services/asset_display_path.dart';
 import '../services/diashow.dart';
 import '../services/flugvideo.dart';
@@ -43,14 +44,13 @@ Future<void> diashowExportieren(
   if (!context.mounted) return;
   final musik = await _frageNachMusik(context);
   if (musik == null || !context.mounted) return;
-  final pfad = await FilePicker.platform.saveFile(
-    dialogTitle: t.diashowSpeichern,
-    fileName: dateiname,
-    type: FileType.custom,
-    allowedExtensions: const ['mp4'],
+  final pfad = await waehleSpeicherort(
+    dialogTitel: t.diashowSpeichern,
+    dateiname: dateiname,
+    mitEndung: (pfad) => mitDateiendung(pfad, 'mp4'),
   );
   if (pfad == null || !context.mounted) return;
-  final ziel = File(pfad.toLowerCase().endsWith('.mp4') ? pfad : '$pfad.mp4');
+  final ziel = File(pfad);
 
   final stand = ValueNotifier<double>(0);
   var abbrechen = false;
@@ -160,11 +160,11 @@ Future<_Musikwahl?> _frageNachMusik(BuildContext context) async {
   );
   if (mitMusik == null) return null;
   if (!mitMusik) return (datei: null);
-  final wahl = await FilePicker.platform.pickFiles(
+  final wahl = await FilePicker.pickFile(
     dialogTitle: t.diashowMusikWaehlen,
     type: FileType.custom,
     allowedExtensions: tonEndungen,
   );
-  final pfad = wahl?.files.single.path;
+  final pfad = wahl?.path;
   return pfad == null ? null : (datei: File(pfad));
 }

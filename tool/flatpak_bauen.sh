@@ -235,7 +235,6 @@ if [ "$pruefen" -eq 1 ]; then
   laeuft raw-identify raw-identify
   laeuft ffmpeg ffmpeg -hide_banner -version
   laeuft ffprobe ffprobe -hide_banner -version
-  laeuft zenity zenity --version
 
   # Das eigentliche Versprechen dieses Pakets: Vorhandensein genügt nicht,
   # libheif muss den Bildinhalt auch auspacken können. Genau daran ist der

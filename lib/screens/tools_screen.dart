@@ -123,12 +123,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
   }
 
   Future<void> _importSecurePackage() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['pvshare'],
-      allowMultiple: false,
     );
-    final path = result?.files.single.path;
+    final path = result?.path;
     if (path == null || !mounted) return;
     final passphrase = await showEnterPassphraseDialog(
       context,

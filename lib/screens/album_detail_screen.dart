@@ -122,7 +122,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     BuildContext context,
     List<AssetData> assets,
   ) async {
-    final destination = await FilePicker.platform.getDirectoryPath(
+    final destination = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).albumZielordner(widget.albumName),
     );
     if (destination == null || !context.mounted) return;

@@ -511,12 +511,12 @@ class _DevelopScreenState extends State<DevelopScreen> {
   /// Download-Ordner zeigt, sähe nach dem nächsten Aufräumen anders aus,
   /// und ein Backup enthielte den Look nicht.
   Future<void> _lutWaehlen() async {
-    final auswahl = await FilePicker.platform.pickFiles(
+    final auswahl = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['cube'],
       dialogTitle: AppTexte.of(context).entwLutWaehlen,
     );
-    final quelle = auswahl?.files.single.path;
+    final quelle = auswahl?.path;
     if (quelle == null) return;
 
     try {

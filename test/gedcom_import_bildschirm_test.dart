@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:file_picker/file_picker.dart';
@@ -14,78 +13,21 @@ import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 
+import 'hilfen/dateidialog.dart';
+
 /// Der Weg vom Menüpunkt bis in die Datenbank.
 ///
 /// Der Anlass steht in der Fassung 1.9.6: Dort wurde ein Knopf
 /// ausgeliefert, den niemand drücken konnte. Tests, die die Rechnung
 /// unmittelbar aufrufen, sehen den Weg dorthin nicht – und der Weg ist
-/// hier lang: Menü, Dateidialog, Rückfrage, Übernahme, Bericht.
-///
-/// Der Dateidialog ist ein Fenster des Betriebssystems und in einem Test
-/// nicht zu öffnen. Er wird deshalb nachgestellt; was er zurückgibt, ist
-/// eine echte Datei auf der Platte, und alles danach läuft unverändert.
-///
-/// Nachgestellt wird die **Schnittstelle** des Pakets und nicht sein
-/// Kanal zum Betriebssystem: In einem Test wird kein Erweiterungspaket
-/// angemeldet, `FilePicker.platform` ist dann nicht belegt, und ein
-/// nachgestellter Kanal käme nie zum Zuge.
-class _NachgestellterDateidialog extends FilePicker {
-  _NachgestellterDateidialog(this.datei);
-
-  /// Was der Dialog zurückgibt – `null` heißt „abgebrochen".
-  File? datei;
-
-  /// Welche Wege durch diesen Dialog gegangen wurden.
-  final gerufen = <String>[];
-
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = true,
-    int compressionQuality = 30,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async {
-    gerufen.add('pickFiles');
-    final d = datei;
-    if (d == null) return null;
-    return FilePickerResult([
-      PlatformFile(
-        name: p.basename(d.path),
-        path: d.path,
-        size: d.lengthSync(),
-      ),
-    ]);
-  }
-
-  @override
-  Future<String?> saveFile({
-    String? dialogTitle,
-    String? fileName,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Uint8List? bytes,
-    bool lockParentWindow = false,
-  }) async {
-    gerufen.add('saveFile');
-    return null;
-  }
-}
-
+/// hier lang: Menü, Dateidialog, Rückfrage, Übernahme, Bericht. Den
+/// Dateidialog stellt [NachgestellterDateidialog] nach.
 void main() {
   late Directory tempRoot;
   late AppDatabase db;
   late LibraryState library;
   late File gedcom;
-  late _NachgestellterDateidialog dialog;
+  late NachgestellterDateidialog dialog;
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_gedcom_bs_');
@@ -122,8 +64,8 @@ void main() {
       ].map((z) => '$z\r\n').join(),
     );
 
-    dialog = _NachgestellterDateidialog(gedcom);
-    FilePicker.platform = dialog;
+    dialog = NachgestellterDateidialog(gedcom);
+    FilePickerPlatform.instance = dialog;
   });
 
   tearDown(() async {
@@ -206,7 +148,7 @@ void main() {
     // Der Dialog zum **Auswählen** wurde geöffnet, nicht der zum
     // Speichern. Ohne diese Zeile fiele ein vertauschter Menüpunkt nicht
     // auf: Beide Wege enden still, wenn niemand eine Datei wählt.
-    expect(dialog.gerufen, ['pickFiles']);
+    expect(dialog.gerufen, ['pickFile']);
 
     // Die Rückfrage nennt, was in der Datei steht, und sagt zu, nichts
     // Bestehendes anzufassen.

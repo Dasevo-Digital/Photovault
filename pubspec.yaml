@@ -33,7 +33,7 @@ dependencies:
   provider: ^6.1.2
 
   # Datei-/Ordnerauswahl (Import & Backup-Ziel)
-  file_picker: ^8.1.6
+  file_picker: ^13.1.0
 
   # Bildverarbeitung (Thumbnails, Größe, Gesichts-Crops)
   image: ^4.2.0
@@ -109,10 +109,10 @@ dependencies:
   # Nativer Teilen-Dialog (AirDrop/Mail/Nachrichten via NSSharingServicePicker
   # auf macOS) – ergänzt den bestehenden "Exportieren"-Button (Kopie in einen
   # gewählten Ordner) um direktes Teilen ohne Umweg über den Finder.
-  share_plus: ^12.0.2
+  share_plus: ^13.3.1
   # Liefert die Version aus dem App-Bundle (CFBundleShortVersionString)
   # statt einer Konstante im Code, die man beim Versionssprung vergisst.
-  package_info_plus: ^9.0.1
+  package_info_plus: ^10.2.2
 
   # Balkendiagramme für die Analyseseite (Fotos pro Jahr/Monat, Kameras) –
   # reiner Flutter-Widget-Code, kein Cloud-Dienst.

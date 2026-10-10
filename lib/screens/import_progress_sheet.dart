@@ -43,8 +43,7 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
 
   List<String> paths;
   if (mode == _ImportMode.files) {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: [
         'jpg',
@@ -66,10 +65,10 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
         'm4v',
       ],
     );
-    if (result == null || result.files.isEmpty) return;
-    paths = result.files.map((f) => f.path).whereType<String>().toList();
+    paths = result.map((f) => f.path).whereType<String>().toList();
+    if (paths.isEmpty) return;
   } else if (mode == _ImportMode.folder) {
-    final folder = await FilePicker.platform.getDirectoryPath(
+    final folder = await FilePicker.getDirectoryPath(
       dialogTitle: AppTexte.of(context).importOrdnerWaehlen,
     );
     if (folder == null) return;

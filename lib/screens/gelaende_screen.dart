@@ -3,13 +3,13 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart'
     show DisabledMapCachingProvider, MapCachingProvider;
 import 'package:http/http.dart' as http;
 
 import '../l10n/app_localizations.dart';
+import '../services/platform/speicherort.dart';
 import '../services/gelaende_laden.dart';
 import '../services/flugvideo.dart';
 import '../services/gelaendeebenen.dart';
@@ -524,17 +524,16 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         .replaceAll(RegExp(r'[^\w\s-]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), '_');
-    final pfad = await FilePicker.platform.saveFile(
-      dialogTitle: t.flugVideo,
-      fileName: '${sauber.isEmpty ? 'ueberflug' : sauber}.mp4',
-      type: FileType.custom,
-      allowedExtensions: const ['mp4'],
-    );
-    if (pfad == null) return null;
     // Manche Dateiwähler geben die Endung nicht mit; ohne sie schreibt
     // ffmpeg nichts, weil es das Format am Namen erkennt.
+    final pfad = await waehleSpeicherort(
+      dialogTitel: t.flugVideo,
+      dateiname: '${sauber.isEmpty ? 'ueberflug' : sauber}.mp4',
+      mitEndung: (pfad) => mitDateiendung(pfad, 'mp4'),
+    );
+    if (pfad == null) return null;
     return (
-      ziel: File(pfad.toLowerCase().endsWith('.mp4') ? pfad : '$pfad.mp4'),
+      ziel: File(pfad),
       breite: wahl.breite,
       hoehe: wahl.hoehe,
       dauer: Duration(seconds: wahl.sekunden),

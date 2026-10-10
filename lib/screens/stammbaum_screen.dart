@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 import '../l10n/app_localizations.dart';
+import '../services/platform/speicherort.dart';
 import '../services/baumnavigation.dart';
 import '../services/stammbaum.dart';
 import '../services/verwandtschaftsgrad.dart';
@@ -1118,11 +1119,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     };
     final plaetze = faechertafel(_netz, fokus, (id) => rang[id] ?? 1 << 30);
 
-    final ziel = await FilePicker.platform.saveFile(
-      dialogTitle: t.stammbaumTafelDrucken,
-      fileName: tafelDateiname,
-      type: FileType.custom,
-      allowedExtensions: const [tafelEndungOhnePunkt],
+    final ziel = await waehleSpeicherort(
+      dialogTitel: t.stammbaumTafelDrucken,
+      dateiname: tafelDateiname,
+      mitEndung: mitTafelEndung,
     );
     if (ziel == null || !mounted) return;
 
@@ -1133,7 +1133,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       farben: Theme.of(context).colorScheme,
       textRichtung: Directionality.of(context),
     );
-    await File(mitTafelEndung(ziel)).writeAsBytes(bytes);
+    await File(ziel).writeAsBytes(bytes);
     if (!mounted) return;
     melde.erfolg(t.stammbaumTafelFertig);
   }
@@ -1164,11 +1164,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       );
     }
 
-    final ziel = await FilePicker.platform.saveFile(
-      dialogTitle: t.stammbaumZierbaumDrucken,
-      fileName: zierbaumDateiname,
-      type: FileType.custom,
-      allowedExtensions: const [tafelEndungOhnePunkt],
+    final ziel = await waehleSpeicherort(
+      dialogTitel: t.stammbaumZierbaumDrucken,
+      dateiname: zierbaumDateiname,
+      mitEndung: mitTafelEndung,
     );
     if (ziel == null || !mounted) return;
 
@@ -1179,7 +1178,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       farben: farben,
       textRichtung: richtung,
     );
-    await File(mitTafelEndung(ziel)).writeAsBytes(bytes);
+    await File(ziel).writeAsBytes(bytes);
     if (!mounted) return;
     melde.erfolg(t.stammbaumTafelFertig);
   }
@@ -1191,11 +1190,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Verwandtschaftsnetz nicht.
   Future<void> _gedcomExport() async {
     final t = AppTexte.of(context);
-    final ziel = await FilePicker.platform.saveFile(
-      dialogTitle: t.stammbaumGedcomExport,
-      fileName: gedcomDateiname,
-      type: FileType.custom,
-      allowedExtensions: const [gedcomEndungOhnePunkt],
+    final ziel = await waehleSpeicherort(
+      dialogTitel: t.stammbaumGedcomExport,
+      dateiname: gedcomDateiname,
+      mitEndung: mitEndung,
     );
     if (ziel == null || !mounted) return;
 
@@ -1219,7 +1217,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     if (!mounted) return;
     // Ausdrücklich UTF-8: Der Kopf der Datei kündigt es an, und die
     // Standard-Kodierung von `writeAsString` ist es nicht überall.
-    await File(mitEndung(ziel)).writeAsString(inhalt, encoding: utf8);
+    await File(ziel).writeAsString(inhalt, encoding: utf8);
     if (!mounted) return;
     melde.erfolg(t.stammbaumGedcomFertig(_personen.length));
   }
@@ -1236,14 +1234,13 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Bericht und wartet auf eine Entscheidung.
   Future<void> _gedcomImport() async {
     final t = AppTexte.of(context);
-    final wahl = await FilePicker.platform.pickFiles(
+    final wahl = await FilePicker.pickFile(
       dialogTitle: t.stammbaumGedcomImport,
       type: FileType.custom,
       allowedExtensions: const [gedcomEndungOhnePunkt],
     );
-    if (wahl == null || wahl.files.isEmpty || !mounted) return;
-    final pfad = wahl.files.first.path;
-    if (pfad == null) return;
+    final pfad = wahl?.path;
+    if (pfad == null || !mounted) return;
 
     final GedcomEingelesen gelesen;
     try {
@@ -1889,11 +1886,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final inhalt = _lebensbaumbild(fokus.id);
     final titel = _lebensbaumtitel(t, inhalt);
     final untertitel = _lebensbaumuntertitel(t, fokus);
-    final ziel = await FilePicker.platform.saveFile(
-      dialogTitle: t.lebensbaumDrucken,
-      fileName: lebensbaumDateiname,
-      type: FileType.custom,
-      allowedExtensions: const [tafelEndungOhnePunkt],
+    final ziel = await waehleSpeicherort(
+      dialogTitel: t.lebensbaumDrucken,
+      dateiname: lebensbaumDateiname,
+      mitEndung: mitTafelEndung,
     );
     if (ziel == null || !mounted) return;
     final bytes = await baueLebensbaumPdf(
@@ -1904,7 +1900,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       textRichtung: richtung,
       portrait: _lebensPortraits ? _portraitVon : null,
     );
-    await File(mitTafelEndung(ziel)).writeAsBytes(bytes);
+    await File(ziel).writeAsBytes(bytes);
     if (!mounted) return;
     melde.erfolg(t.stammbaumTafelFertig);
   }

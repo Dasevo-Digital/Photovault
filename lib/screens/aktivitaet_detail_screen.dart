@@ -174,12 +174,12 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       melde.warnung(t.spurSchonDa);
       return;
     }
-    final wahl = await FilePicker.platform.pickFiles(
+    final wahl = await FilePicker.pickFile(
       dialogTitle: t.gpxDateiWaehlen,
       type: FileType.custom,
       allowedExtensions: const ['gpx'],
     );
-    final pfad = wahl?.files.firstOrNull?.path;
+    final pfad = wahl?.path;
     if (pfad == null || !mounted) return;
 
     List<Rohpunkt> punkte;
