@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
@@ -15,8 +17,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('ein Kratzer auf einem alten Bild wird gefunden', (tester) async {
+    // Auf Linux und Windows aus PV_MODELLE: Im Datenordner der App hätte
+    // ein Modellordner die Übernahme der alten Kennung verhindert.
     final support = await getApplicationSupportDirectory();
-    final modelle = p.join(support.path, 'PhotoVault', 'models');
+    final modelle =
+        Platform.environment['PV_MODELLE'] ??
+        p.join(support.path, 'PhotoVault', 'models');
     if (!KratzerModellService.isAvailable(modelle)) {
       markTestSkipped('${KratzerModellService.datei} fehlt in $modelle');
       return;
