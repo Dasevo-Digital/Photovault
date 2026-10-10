@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.27.0" date="2026-10-10">
+      <description>
+        <p>The app stays responsive while an AI model is running, drawing a face frame by hand no longer jumps, only one context menu at a time, readable names on faces, and background tasks count only what is new since their last run. Fixes black slideshows on Linux, slideshow and flyover export on Windows, dating of old photos and image search with numbers, and text recognition of slightly tilted text on Linux and Windows.</p>
+      </description>
+    </release>
     <release version="3.26.0" date="2026-10-09">
       <description>
         <p>Suggests photographed IDs and bank cards for the locked folder, saves a video frame as a photo, estimates the decade of old scanned photos, adds music to memory videos, a memories page with kept memories, a list of the photos in the visible map area, finds scratches and dust in scans (optionally with a trained model), extracts the video from Google and Samsung Motion Photos, filters by origin (camera or received), and a rule-of-thirds grid in the viewer.</p>
