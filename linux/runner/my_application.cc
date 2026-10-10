@@ -129,6 +129,13 @@ static void my_application_activate(GApplication* application) {
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
       project, self->dart_entrypoint_arguments);
+  // Zeichnen mit Skia, nicht mit Impeller. Seit Flutter 3.47 ist Impeller
+  // unter Linux voreingestellt, und dort liefert ein abseits des Bildschirms
+  // gezeichnetes Bild beim Auslesen (Picture.toImage, toByteData) leere
+  // Pixel: Die Diashow wurde schwarz. Dasselbe Auslesen nutzen Kameraflug,
+  // PDF-Tafeln und Gelaendetexturen. Auf dem Bildschirm fiel nichts auf.
+  // Unter Flutter 3.44 gab es hier nur Skia.
+  fl_dart_project_set_enable_impeller(project, FALSE);
 
   FlView* view = fl_view_new(project);
   GdkRGBA background_color;
