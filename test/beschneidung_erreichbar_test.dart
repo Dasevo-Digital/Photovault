@@ -120,7 +120,16 @@ void main() {
     // keine_festen_texte_test.dart: grob, aber es sieht etwas, das weder
     // analyze noch ein Widget-Test sehen kann - der Shader laedt im Test
     // ohnehin nicht, dort waere der Knopf aus dem falschen Grund aus.
-    final quelle = File('lib/screens/develop_screen.dart').readAsStringSync();
+    // Der Bildschirm samt seiner Teile unter entwickeln/ (#41).
+    final teile =
+        Directory(
+            'lib/screens/entwickeln',
+          ).listSync().whereType<File>().toList()
+          ..sort((a, b) => a.path.compareTo(b.path));
+    final quelle = [
+      File('lib/screens/develop_screen.dart'),
+      ...teile,
+    ].map((d) => d.readAsStringSync()).join('\n');
 
     test('der Knopf haengt an _shaderMoeglich, nicht am Ziehen', () {
       final knopf = RegExp(
