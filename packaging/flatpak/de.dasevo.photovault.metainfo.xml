@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.29.0" date="2026-10-11">
+      <description>
+        <p>The AI models run on ONNX Runtime 1.28. On Linux the app now limits the number of threads a model may use, as intended, so the interface keeps two cores; before, every model used all cores. On Windows the runtime's telemetry is switched off. File dialogs on Linux use the desktop's file portal instead of zenity. After switching the interface language, the offer to translate the tag vocabulary appears in the new language.</p>
+      </description>
+    </release>
     <release version="3.28.1" date="2026-10-10">
       <description>
         <p>A very small window no longer freezes the app.</p>
