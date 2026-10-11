@@ -86,7 +86,7 @@ void main() {
     r'Photo Vault $version',
     // Reine Fortschrittsanzeigen.
     r'${(progress * 100).toStringAsFixed(0)} %',
-    r'${(_geoDataProgress * 100).toStringAsFixed(0)} %',
+    r'${(stand.geoDataProgress * 100).toStringAsFixed(0)} %',
     // Kürzel, die in beiden Sprachen gleich lauten.
     'RGB',
     'LIVE',
