@@ -27,7 +27,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Future<void> _reload() {
     final future = widget.library.db.loadLibraryStats();
-    setState(() => _statsFuture = future);
+    setState(() {
+      _statsFuture = future;
+    });
     return future;
   }
 

@@ -99,20 +99,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (betroffen.isEmpty || !mounted) return;
     final eigene = vorhandene.length - betroffen.length;
 
-    final t = AppTexte.of(context);
+    // Die Texte erst im Aufbau des Dialogs holen, nicht hier: In diesem
+    // Augenblick hat die App ihre neue Sprache noch nicht gezeichnet, und
+    // der Dialog stand – entgegen der Absicht oben – in der alten da.
     final uebersetzen = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(t.spracheVokabularTitel),
+        title: Text(AppTexte.of(context).spracheVokabularTitel),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(t.spracheVokabularText(betroffen.length, vorhandene.length)),
+            Text(
+              AppTexte.of(
+                context,
+              ).spracheVokabularText(betroffen.length, vorhandene.length),
+            ),
             if (eigene > 0) ...[
               const SizedBox(height: 10),
               Text(
-                t.spracheVokabularSelbstAngelegt(eigene),
+                AppTexte.of(context).spracheVokabularSelbstAngelegt(eigene),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -123,11 +129,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(t.spracheVokabularBehalten),
+            child: Text(AppTexte.of(context).spracheVokabularBehalten),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(t.spracheVokabularUebersetzen),
+            child: Text(AppTexte.of(context).spracheVokabularUebersetzen),
           ),
         ],
       ),
@@ -281,19 +287,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
       (_abfragen[schluessel] ??= abfrage()) as Future<T>;
 
   /// Fragt [schluessel] beim nächsten Aufbau neu – nach einer Änderung.
-  void _neuFragen(Object schluessel) =>
-      setState(() => _abfragen.remove(schluessel));
+  ///
+  /// Hier und in den `_reload…` darunter steht der Rückruf als Block, nicht
+  /// als `=> …`: `remove` und eine Zuweisung liefern ihren Wert, hier ein
+  /// Future, und ein setState-Rückruf, der ein Future liefert, bricht im
+  /// Debug-Modus mit einer Assertion ab. In der ausgelieferten App sind
+  /// Assertions aus; aufgefallen ist es erst beim Test jeder Gruppe (#41).
+  void _neuFragen(Object schluessel) => setState(() {
+    _abfragen.remove(schluessel);
+  });
 
-  void _reloadPinState() =>
-      setState(() => _hasPinSetFuture = widget.library.db.hasPinSet());
-  void _reloadBackupKeyState() =>
-      setState(() => _hasBackupKeyFuture = widget.library.db.hasBackupKey());
-  void _reloadBackupSettings() => setState(
-    () => _backupSettingsFuture = widget.library.db.backupSettingsRow(),
-  );
-  void _reloadTrashSettings() => setState(
-    () => _trashSettingsFuture = widget.library.db.trashSettingsRow(),
-  );
+  void _reloadPinState() => setState(() {
+    _hasPinSetFuture = widget.library.db.hasPinSet();
+  });
+  void _reloadBackupKeyState() => setState(() {
+    _hasBackupKeyFuture = widget.library.db.hasBackupKey();
+  });
+  void _reloadBackupSettings() => setState(() {
+    _backupSettingsFuture = widget.library.db.backupSettingsRow();
+  });
+  void _reloadTrashSettings() => setState(() {
+    _trashSettingsFuture = widget.library.db.trashSettingsRow();
+  });
 
   Future<void> _refresh() async {
     final belegt = await widget.library.paths.belegung();
@@ -723,9 +738,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       token: picked.token,
     );
     if (!mounted) return;
-    setState(
-      () => _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner(),
-    );
+    setState(() {
+      _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner();
+    });
     final neue = await widget.library.pruefeUeberwachtenOrdner();
     if (!mounted) return;
     melde.hinweis(
@@ -738,9 +753,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _beendeUeberwachung() async {
     await widget.library.db.setzeUeberwachtenOrdner(pfad: null, token: null);
     if (!mounted) return;
-    setState(
-      () => _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner(),
-    );
+    setState(() {
+      _ueberwachterOrdnerFuture = widget.library.db.ueberwachterOrdner();
+    });
   }
 
   Future<void> _wechsleBibliothek(BibliothekMitZustand ziel) async {
@@ -792,7 +807,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final vorhanden = File(p.join(picked.path, 'library.sqlite')).existsSync();
     await LibraryLocation.fuegeHinzu(picked);
     if (!mounted) return;
-    setState(() => _bibliothekenFuture = LibraryLocation.bekannte());
+    setState(() {
+      _bibliothekenFuture = LibraryLocation.bekannte();
+    });
     melde.erfolg(
       vorhanden
           ? AppTexte.of(context).einstBibBestehendHinzugefuegt
@@ -824,7 +841,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (bestaetigt != true) return;
     final entfernt = await LibraryLocation.entferneAusListe(b.eintrag.path);
     if (!mounted) return;
-    setState(() => _bibliothekenFuture = LibraryLocation.bekannte());
+    setState(() {
+      _bibliothekenFuture = LibraryLocation.bekannte();
+    });
     if (!entfernt) {
       melde.warnung(AppTexte.of(context).einstBibNichtEntfernbar);
     }

@@ -541,7 +541,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
                             StackReviewScreen(library: widget.library),
                       ),
                     );
-                    if (mounted) setState(() => _serienzahl = _zaehleSerien());
+                    if (mounted) {
+                      setState(() {
+                        _serienzahl = _zaehleSerien();
+                      });
+                    }
                   },
                 ),
                 const Divider(height: 1),
@@ -600,9 +604,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       ),
                     );
                     if (mounted) {
-                      setState(
-                        () => _ortsvorschlagszahl = _zaehleOrtsvorschlaege(),
-                      );
+                      setState(() {
+                        _ortsvorschlagszahl = _zaehleOrtsvorschlaege();
+                      });
                     }
                   },
                 ),
