@@ -346,14 +346,27 @@ if ($Pruefen) {
     Schlecht "ffmpeg ohne HEVC - Videovorschauen blieben leer"
   }
   # Vorschaubilder werden als JPEG geschrieben. Der Dekoder allein genuegt
-  # dafuer nicht - es braucht auch den mjpeg-Kodierer. Ein H.264-Kodierer
-  # dagegen fehlt der LGPL-Fassung, und das ist in Ordnung: Geschnitten
-  # wird mit -c copy.
+  # dafuer nicht - es braucht auch den mjpeg-Kodierer.
   $ffe = ImPaket 'ffmpeg.exe' @('-hide_banner', '-encoders')
   if ($ffe.aus -match '(?m)^\s*V[.A-Z]*\s+mjpeg\s') {
     Gut "ffmpeg kann JPEG schreiben (Vorschaubilder)"
   } else {
     Schlecht "ffmpeg ohne mjpeg-Kodierer - Videovorschauen blieben leer"
+  }
+  # Kameraflug und Diashow schreiben H.264 - ueber den Kodierer von
+  # Windows (h264_mf, siehe windows_ffmpeg.sh). Fehlt er, faellt die App
+  # auf mpeg4 zurueck; fehlt auch der, entsteht gar kein Video.
+  if ($ffe.aus -match '(?m)^\s*V[.A-Z]*\s+(h264_mf|libx264|libopenh264)\s') {
+    Gut "ffmpeg kann H.264 schreiben (Kameraflug, Diashow)"
+  } elseif ($ffe.aus -match '(?m)^\s*V[.A-Z]*\s+mpeg4\s') {
+    Gut "ffmpeg schreibt Videos als MPEG-4 (kein H.264-Kodierer)"
+  } else {
+    Schlecht "ffmpeg ohne Videokodierer - Kameraflug und Diashow scheitern"
+  }
+  if ($ffe.aus -match '(?m)^\s*A[.A-Z]*\s+aac\s') {
+    Gut "ffmpeg kann AAC schreiben (Musik unter Videos)"
+  } else {
+    Schlecht "ffmpeg ohne aac-Kodierer - Musik unterlegen scheitert"
   }
 
   # Und einmal richtig: eine echte HEIC-Datei auspacken.

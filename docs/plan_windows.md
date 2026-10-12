@@ -575,7 +575,7 @@ dav1d statt aom genommen wurde. Nebenbei liefert der eigene Bau
 | Werkzeug | Quelle | Fassung |
 |---|---|---|
 | `dcraw_emu.exe`, `libraw.dll` | libraw.org, `LibRaw-0.22.2-Win64.zip` | 0.22.2 |
-| `ffmpeg.exe`, `ffprobe.exe` | BtbN, **LGPL**-shared, datierte Marke | n9.0.1 |
+| `ffmpeg.exe`, `ffprobe.exe` | selbst gebaut, **LGPL**, nur was die App aufruft (`tool/windows_ffmpeg.sh`; bis 3.29 BtbN, LGPL-shared) | n9.0.1 |
 | `heif-dec.exe` + 18 DLLs | selbst gebaut, libheif v1.23.1 | 1.23.1 |
 
 Die LGPL-Fassung von ffmpeg statt der GPL-Fassung ist eine bewusste Wahl:
@@ -708,7 +708,10 @@ mit denen entwickelt wurde. Genau so ist der libx264-Fund aufgefallen.
   die Adresse mit dem Windows-Rechner.
 * **Ein eigener ffmpeg-Bau** mit nur den gebrauchten Kodierern wäre die
   nächste Verkleinerung des Pakets – 145 der 245 MB sind Werkzeuge, der
-  grösste Einzelposten ffmpegs gemeinsame Bibliotheken.
+  grösste Einzelposten ffmpegs gemeinsame Bibliotheken. *Erledigt (#3,
+  Oktober 2026):* `tool/windows_ffmpeg.sh` baut ffmpeg in MSYS2 mit nur
+  den Teilen, die die App aufruft – 16,5 statt 124 MB. H.264 schreibt
+  dabei der Kodierer von Windows (`h264_mf`) statt libopenh264.
 * **Signatur.** Ohne Zertifikat meldet sich SmartScreen bei jedem
   Download. Daran ändert die Paketierung nichts.
 

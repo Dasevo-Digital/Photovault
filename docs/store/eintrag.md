@@ -152,8 +152,10 @@ Stellen sind unten genannt.
 
 ## Die zwei bekannten Risiken
 
-**LGPL-ffmpeg.** Das Paket liefert einen LGPL-shared-Bau von BtbN mit
-(`tool/windows_werkzeuge.ps1`). ffmpeg ist dabei ein eigenständiges
+**LGPL-ffmpeg.** Das Paket liefert einen eigenen LGPL-shared-Bau mit
+(`tool/windows_ffmpeg.sh`: ffmpeg n9.0.1 unverändert, nur die Teile, die
+die App aufruft; Lizenztext und Bauschalter liegen im Paket unter
+`tools\`). ffmpeg ist dabei ein eigenständiges
 Kindprogramm und wird nicht gelinkt — der günstigste denkbare Fall —,
 aber die Store-Bedingungen schränken die Weitergabe ein, während die
 LGPL verlangt, dass Neulinken möglich bleibt. Das ist die Stelle mit der

@@ -1,7 +1,9 @@
 @TestOn('linux || windows')
 library;
 
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -283,17 +285,56 @@ void main() {
       final ffmpeg = await hole('ffmpeg');
       if (ffmpeg == null) return null;
       final datei = File(p.join(temp.path, name));
-      final r = await Process.run(ffmpeg, [
-        '-loglevel', 'error', '-y',
-        '-f', 'lavfi', '-i', 'testsrc=size=640x480:rate=25:duration=$sekunden',
-        // mpeg4 statt libx264: Das mitgelieferte ffmpeg ist die
-        // LGPL-Fassung und hat kein libx264 (GPL). Für ein Testvideo
-        // reicht MPEG-4; die Videoausgabe der App nimmt dort libopenh264
-        // (siehe `h264Schalter`). Mit libx264 wurde dieser Test rot,
-        // sobald das Paket im PATH stand.
-        '-c:v', 'mpeg4', '-pix_fmt', 'yuv420p', datei.path,
+      // Die Bilder kommen über die Pipe, so wie Kameraflug und Diashow
+      // ihre Videos schreiben – nicht aus `-f lavfi`. Das gehört zu
+      // libavdevice, das die App nie aufruft und das der eigene
+      // Windows-Bau deshalb nicht hat (tool/windows_ffmpeg.sh). Derselbe
+      // Fall wie früher mit libx264: Der Test prüfte eine Fähigkeit, die
+      // im Paket weder vorhanden noch nötig ist.
+      //
+      // mpeg4 statt libx264: Das mitgelieferte ffmpeg ist LGPL und hat
+      // kein libx264 (GPL); die Videoausgabe der App nimmt dort h264_mf
+      // (siehe `h264Schalter`).
+      const breite = 320, hoehe = 240, takt = 25;
+      final prozess = await Process.start(ffmpeg, [
+        '-loglevel',
+        'error',
+        '-y',
+        '-f',
+        'rawvideo',
+        '-pixel_format',
+        'rgba',
+        '-video_size',
+        '${breite}x$hoehe',
+        '-framerate',
+        '$takt',
+        '-i',
+        '-',
+        '-c:v',
+        'mpeg4',
+        '-pix_fmt',
+        'yuv420p',
+        datei.path,
       ]);
-      expect(r.exitCode, 0, reason: 'ffmpeg: ${r.stderr}');
+      final fehler = prozess.stderr.transform(utf8.decoder).join();
+      for (var i = 0; i < sekunden * takt; i++) {
+        // Ein wandernder Balken, damit jedes Bild anders ist.
+        final bild = Uint8List(breite * hoehe * 4);
+        for (var y = 0; y < hoehe; y++) {
+          for (var x = 0; x < breite; x++) {
+            final o = (y * breite + x) * 4;
+            final balken = ((x + i * 4) % breite) < 40;
+            bild[o] = balken ? 230 : x * 255 ~/ breite;
+            bild[o + 1] = y * 255 ~/ hoehe;
+            bild[o + 2] = balken ? 40 : 128;
+            bild[o + 3] = 255;
+          }
+        }
+        prozess.stdin.add(bild);
+      }
+      await prozess.stdin.close();
+      final rc = await prozess.exitCode;
+      expect(rc, 0, reason: 'ffmpeg: ${await fehler}');
       return datei;
     }
 

@@ -79,11 +79,12 @@ Future<String?> ffmpegPfad() => DesktopImageTools.aufruf('ffmpeg');
 
 /// Die Schalter für den H.264-Kodierer, den [ffmpeg] mitbringt.
 ///
-/// **Nicht jedes ffmpeg hat libx264.** Das Windows-Paket bringt die
-/// LGPL-Fassung von BtbN mit, und libx264 steht unter GPL – dort fehlt es.
-/// Jede Diashow und jeder Kameraflug brach unter Windows deshalb mit
-/// „Unknown encoder 'libx264'“ ab. Die LGPL-Fassung hat stattdessen
-/// libopenh264 (Cisco, BSD) und h264_mf (Media Foundation von Windows).
+/// **Nicht jedes ffmpeg hat libx264.** Das Windows-Paket bringt ein
+/// LGPL-ffmpeg mit, und libx264 steht unter GPL – dort fehlt es. Jede
+/// Diashow und jeder Kameraflug brach unter Windows deshalb mit „Unknown
+/// encoder 'libx264'“ ab. Der eigene Bau (tool/windows_ffmpeg.sh) hat
+/// stattdessen h264_mf, den Kodierer von Windows (Media Foundation); bis
+/// 3.29 kam das ffmpeg von BtbN und brachte auch libopenh264 mit.
 /// Gefragt wird ffmpeg selbst (`-encoders`), einmal je Programm.
 ///
 /// libx264 kodiert auf eine Qualitätsstufe, die beiden anderen auf eine

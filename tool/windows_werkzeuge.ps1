@@ -12,8 +12,9 @@
 # Pruefsummen. Ein Werkzeug ohne Pruefsumme im Installationspaket waere
 # ein Einfallstor.
 #
-# libheif kommt nicht als Download, sondern wird gebaut - siehe
-# tool\windows_libheif.sh und die Begruendung dort.
+# libheif und ffmpeg kommen nicht als Download, sondern werden gebaut -
+# siehe tool\windows_libheif.sh und tool\windows_ffmpeg.sh und die
+# Begruendungen dort. Beim ffmpeg sind es 16 statt 124 MB (Issue #3).
 [CmdletBinding()]
 param([string]$Ziel)
 
@@ -63,15 +64,11 @@ New-Item -ItemType Directory -Force $Ziel | Out-Null
 $Zwischen = Join-Path $env:TEMP 'pv_werkzeuge'
 New-Item -ItemType Directory -Force $Zwischen | Out-Null
 
-# Name, Adresse, SHA-256. Beide Fassungen sind festgenagelt: Bei BtbN sind
-# die datierten Marken unveraenderlich, "latest" waere es nicht.
+# Name, Adresse, SHA-256. Die Fassung ist festgenagelt.
 $Quellen = @(
   @{ Name  = 'LibRaw-0.22.2-Win64.zip'
      Adresse = 'https://www.libraw.org/data/LibRaw-0.22.2-Win64.zip'
      Summe = 'AC64FA12BB00A7581332D4C6AB918C0533FB3F119D6B668D47A6875410DCA948' }
-  @{ Name  = 'ffmpeg-lgpl-shared.zip'
-     Adresse = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-08-22-12-58/ffmpeg-n9.0.1-6-g9d4ca21220-win64-lgpl-shared-9.0.zip'
-     Summe = 'BEE92BA1D9BE90E7DD9BE6A40FD853297AFD993231D9F3DDF9FDFDBC3012268D' }
 )
 
 Titel "Herunterladen"
@@ -101,12 +98,10 @@ foreach ($q in $Quellen) {
 
 Titel "Auspacken"
 $libraw = Join-Path $Zwischen 'libraw'
-$ffmpeg = Join-Path $Zwischen 'ffmpeg'
-Remove-Item -Recurse -Force $libraw, $ffmpeg -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force $libraw -ErrorAction SilentlyContinue
 Expand-Archive (Join-Path $Zwischen 'LibRaw-0.22.2-Win64.zip') $libraw
-Expand-Archive (Join-Path $Zwischen 'ffmpeg-lgpl-shared.zip') $ffmpeg
 
-# dcraw_emu braucht genau eine DLL, ffmpeg bringt seine eigenen mit.
+# dcraw_emu braucht genau eine DLL.
 Copy-Item (Get-ChildItem $libraw -Recurse -Filter 'dcraw_emu.exe').FullName $Ziel -Force
 Copy-Item (Get-ChildItem $libraw -Recurse -Filter 'libraw.dll').FullName $Ziel -Force
 # raw-identify liest Kamera, Objektiv und Aufnahmezeitpunkt aus RAW-Dateien.
@@ -128,17 +123,10 @@ function Belegt($name) {
 }
 foreach ($n in 'dcraw_emu.exe', 'raw-identify.exe', 'libraw.dll') { Belegt $n }
 
-foreach ($n in 'ffmpeg.exe', 'ffprobe.exe') {
-  Copy-Item (Get-ChildItem $ffmpeg -Recurse -Filter $n | Select-Object -First 1).FullName $Ziel -Force
-}
-Get-ChildItem $ffmpeg -Recurse -Filter '*.dll' | ForEach-Object { Copy-Item $_.FullName $Ziel -Force }
-foreach ($n in 'ffmpeg.exe', 'ffprobe.exe') { Belegt $n }
-Gut "ffmpeg.exe, ffprobe.exe samt DLLs"
-
-Titel "libheif bauen"
+Titel "libheif und ffmpeg bauen"
 $bash = 'C:\msys64\usr\bin\bash.exe'
 if (-not (Test-Path $bash)) {
-  Schlecht "MSYS2 fehlt - ohne es laesst sich libheif nicht bauen."
+  Schlecht "MSYS2 fehlt - ohne es lassen sich libheif und ffmpeg nicht bauen."
   Write-Host "       winget install --id MSYS2.MSYS2 -e"
   exit 1
 }
@@ -158,6 +146,12 @@ $rc = Fremd $bash @('-lc', "bash '$sh' '$zielUnix'")
 if ($rc -ne 0) { Schlecht "libheif-Bau fehlgeschlagen (Rueckgabewert $rc)"; exit 1 }
 if (-not (Test-Path "$Ziel\heif-dec.exe")) { Schlecht "heif-dec.exe fehlt trotzdem"; exit 1 }
 Gut "heif-dec.exe samt Huelle"
+
+$sh = AlsUnix (Resolve-Path "$PSScriptRoot\windows_ffmpeg.sh").Path
+$rc = Fremd $bash @('-lc', "bash '$sh' '$zielUnix'")
+if ($rc -ne 0) { Schlecht "ffmpeg-Bau fehlgeschlagen (Rueckgabewert $rc)"; exit 1 }
+foreach ($n in 'ffmpeg.exe', 'ffprobe.exe') { Belegt $n }
+Gut "ffmpeg.exe, ffprobe.exe samt Huelle"
 
 Titel "Was jetzt da ist"
 $gesamt = (Get-ChildItem $Ziel -File | Measure-Object -Property Length -Sum).Sum
