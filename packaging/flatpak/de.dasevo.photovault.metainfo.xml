@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.30.0" date="2026-10-12">
+      <description>
+        <p>Sharpness, noise reduction, clarity and vignette in the develop view now run on the GPU on Linux and Windows, measured against the macOS results, and show while dragging. Masks on Linux and Windows now affect only the masked area and build on the developed image. On macOS negative clarity softens and the vignette darkens for positive values. The colour mixer no longer turns smooth gradients into bands. Sony RAW files are corrected for lens distortion from the data the camera writes into the file. The 3D globe loads aerial tiles when zoomed in.</p>
+      </description>
+    </release>
     <release version="3.29.0" date="2026-10-11">
       <description>
         <p>The AI models run on ONNX Runtime 1.28. On Linux the app now limits the number of threads a model may use, as intended, so the interface keeps two cores; before, every model used all cores. On Windows the runtime's telemetry is switched off. File dialogs on Linux use the desktop's file portal instead of zenity. After switching the interface language, the offer to translate the tag vocabulary appears in the new language.</p>
