@@ -128,15 +128,17 @@ class _ReisenScreenState extends State<ReisenScreen> {
     );
     if (sauber == null || !mounted) return;
 
-    await widget.library.db.reiseAnlegen(
-      ReisenCompanion.insert(
-        id: const Uuid().v4(),
-        name: sauber,
-        von: v.von,
-        bis: v.bis,
-        angelegtAm: DateTime.now(),
+    await widget.library.db.fuehreAus(
+      ReiseAnlegen(
+        ReisenCompanion.insert(
+          id: const Uuid().v4(),
+          name: sauber,
+          von: v.von,
+          bis: v.bis,
+          angelegtAm: DateTime.now(),
+        ),
+        v.aufnahmeIds,
       ),
-      v.aufnahmeIds,
     );
     await _laden();
   }
@@ -160,15 +162,17 @@ class _ReisenScreenState extends State<ReisenScreen> {
       angabe.von,
       angabe.bis,
     );
-    await widget.library.db.reiseAnlegen(
-      ReisenCompanion.insert(
-        id: const Uuid().v4(),
-        name: angabe.name,
-        von: angabe.von,
-        bis: angabe.bis,
-        angelegtAm: DateTime.now(),
+    await widget.library.db.fuehreAus(
+      ReiseAnlegen(
+        ReisenCompanion.insert(
+          id: const Uuid().v4(),
+          name: angabe.name,
+          von: angabe.von,
+          bis: angabe.bis,
+          angelegtAm: DateTime.now(),
+        ),
+        [for (final a in aufnahmen) a.id],
       ),
-      [for (final a in aufnahmen) a.id],
     );
     if (!mounted) return;
     melde.erfolg(t.reisenSelbstAngelegt(angabe.name));
@@ -176,7 +180,7 @@ class _ReisenScreenState extends State<ReisenScreen> {
   }
 
   Future<void> _verwerfen(Reisevorschlag v) async {
-    await widget.library.db.verwirfReisevorschlag(v.schluessel);
+    await widget.library.db.fuehreAus(ReisevorschlagVerwerfen(v.schluessel));
     await _laden();
   }
 
@@ -189,9 +193,8 @@ class _ReisenScreenState extends State<ReisenScreen> {
       vorgabe: reise.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db.reiseAendern(
-      reise.id,
-      ReisenCompanion(name: Value(sauber)),
+    await widget.library.db.fuehreAus(
+      ReiseAendern(reise.id, ReisenCompanion(name: Value(sauber))),
     );
     await _laden();
   }
@@ -274,7 +277,9 @@ class _ReisenScreenState extends State<ReisenScreen> {
     );
     if (ok != true || !mounted) return;
     final anzahl = gewaehlt.length;
-    await widget.library.db.reisenZusammenfuehren(ziel.id, gewaehlt.toList());
+    await widget.library.db.fuehreAus(
+      ReisenZusammenfuehren(ziel.id, gewaehlt.toList()),
+    );
     if (!mounted) return;
     melde.erfolg(t.reisenZusammengefuehrt(ziel.name, anzahl));
     await _laden();
@@ -300,7 +305,7 @@ class _ReisenScreenState extends State<ReisenScreen> {
       ),
     );
     if (ja != true || !mounted) return;
-    await widget.library.db.reiseLoeschen(reise.id);
+    await widget.library.db.fuehreAus(ReiseLoeschen(reise.id));
     await _laden();
   }
 

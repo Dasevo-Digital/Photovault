@@ -93,7 +93,9 @@ class PapierkorbGruppe extends StatelessWidget {
                 SwitchListTile(
                   value: enabled,
                   onChanged: (v) async {
-                    await stand.library.db.setTrashAutoDeleteConfig(enabled: v);
+                    await stand.library.db.fuehreAus(
+                      PapierkorbFristSetzen(an: v),
+                    );
                     if (stand.aktiv) stand.reloadTrashSettings();
                   },
                   title: Text(AppTexte.of(context).allgAktiv),
@@ -116,9 +118,8 @@ class PapierkorbGruppe extends StatelessWidget {
                     ],
                     onChanged: (v) async {
                       if (v == null) return;
-                      await stand.library.db.setTrashAutoDeleteConfig(
-                        enabled: enabled,
-                        afterDays: v,
+                      await stand.library.db.fuehreAus(
+                        PapierkorbFristSetzen(an: enabled, tage: v),
                       );
                       if (stand.aktiv) stand.reloadTrashSettings();
                     },

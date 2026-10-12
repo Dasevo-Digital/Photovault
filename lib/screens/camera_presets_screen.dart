@@ -68,18 +68,19 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
     }
 
     final presetId = existing?.id ?? const Uuid().v4();
-    await widget.library.db.upsertCameraPreset(
-      CameraPresetsCompanion.insert(
-        id: presetId,
-        cameraMake: result.cameraMake,
-        cameraModel: result.cameraModel,
-        targetAlbumId: Value(albumId),
-        autoFavorite: Value(result.autoFavorite),
+    await widget.library.db.fuehreAus(
+      KameravorgabeSpeichern(
+        CameraPresetsCompanion.insert(
+          id: presetId,
+          cameraMake: result.cameraMake,
+          cameraModel: result.cameraModel,
+          targetAlbumId: Value(albumId),
+          autoFavorite: Value(result.autoFavorite),
+        ),
       ),
     );
-    await widget.library.db.setCameraPresetTags(
-      presetId,
-      result.tagIds.toList(),
+    await widget.library.db.fuehreAus(
+      KameravorgabeSchlagwoerterSetzen(presetId, result.tagIds.toList()),
     );
   }
 
@@ -106,7 +107,7 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
       ),
     );
     if (confirmed == true) {
-      await widget.library.db.deleteCameraPreset(preset.id);
+      await widget.library.db.fuehreAus(KameravorgabeLoeschen(preset.id));
     }
   }
 

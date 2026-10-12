@@ -37,19 +37,21 @@ extension ReisenAbfragen on AppDatabase {
   /// In einer Transaktion: Eine Reise ohne ihre Aufnahmen sähe aus wie
   /// eine leere Reise, und niemand könnte hinterher sagen, ob sie so
   /// gemeint war.
-  Future<void> reiseAnlegen(ReisenCompanion reise, List<String> assetIds) =>
-      transaction(() async {
-        await into(reisen).insert(reise);
-        await batch(
-          (b) => b.insertAll(reiseAufnahmen, [
-            for (final id in assetIds)
-              ReiseAufnahmenCompanion.insert(
-                reiseId: reise.id.value,
-                assetId: id,
-              ),
-          ]),
-        );
-      });
+  Future<void> reiseAnlegen(
+    Insertable<ReisenData> reise,
+    List<String> assetIds,
+  ) => transaction(() async {
+    await into(reisen).insert(reise);
+    await batch(
+      (b) => b.insertAll(reiseAufnahmen, [
+        for (final id in assetIds)
+          ReiseAufnahmenCompanion.insert(
+            reiseId: _textSpalte(reise, 'id'),
+            assetId: id,
+          ),
+      ]),
+    );
+  });
 
   Future<void> reiseLoeschen(String id) => transaction(() async {
     await (delete(reiseAufnahmen)..where((t) => t.reiseId.equals(id))).go();
@@ -193,7 +195,7 @@ extension ReisenAbfragen on AppDatabase {
     );
   }
 
-  Future<void> reiseAendern(String id, ReisenCompanion aenderung) =>
+  Future<void> reiseAendern(String id, Insertable<ReisenData> aenderung) =>
       (update(reisen)..where((t) => t.id.equals(id))).write(aenderung);
 
   /// Die Aufnahmen einer Reise, chronologisch.

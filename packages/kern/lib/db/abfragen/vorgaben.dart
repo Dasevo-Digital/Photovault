@@ -19,7 +19,7 @@ extension VorgabenAbfragen on AppDatabase {
   /// über die Nummer aufgelöst, nicht über den Namen. Ein zweiter Eintrag
   /// mit belegtem Namen soll nicht stillschweigend den ersten
   /// überschreiben.
-  Future<void> upsertDevelopPreset(DevelopPresetsCompanion vorgabe) =>
+  Future<void> upsertDevelopPreset(Insertable<DevelopPresetData> vorgabe) =>
       into(developPresets).insertOnConflictUpdate(vorgabe);
 
   /// Ob [name] schon vergeben ist – [ausserId] nimmt die gerade
@@ -54,7 +54,7 @@ extension VorgabenAbfragen on AppDatabase {
   /// ersten überschreiben, sondern an der `unique`-Spalte scheitern. Wer
   /// speichert, fragt vorher [exportPresetNameVergeben] und sagt es dem
   /// Nutzer – siehe ExportPresetsScreen.
-  Future<void> upsertExportPreset(ExportPresetsCompanion vorgabe) =>
+  Future<void> upsertExportPreset(Insertable<ExportPresetData> vorgabe) =>
       into(exportPresets).insertOnConflictUpdate(vorgabe);
 
   /// Ob [name] schon vergeben ist – [ausserId] nimmt die gerade bearbeitete
@@ -98,7 +98,7 @@ extension VorgabenAbfragen on AppDatabase {
     });
   }
 
-  Future<void> upsertCameraPreset(CameraPresetsCompanion preset) =>
+  Future<void> upsertCameraPreset(Insertable<CameraPresetData> preset) =>
       into(cameraPresets).insertOnConflictUpdate(preset);
 
   Future<void> deleteCameraPreset(String id) async {
@@ -188,7 +188,7 @@ extension VorgabenAbfragen on AppDatabase {
     });
   }
 
-  Future<void> upsertAutomationRule(AutomationRulesCompanion rule) =>
+  Future<void> upsertAutomationRule(Insertable<AutomationRuleData> rule) =>
       into(automationRules).insertOnConflictUpdate(rule);
 
   Future<void> deleteAutomationRule(String id) async {

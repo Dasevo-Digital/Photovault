@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
@@ -115,6 +116,79 @@ void main() {
           ),
         ],
       ),
+      ReiseAnlegen(
+        ReisenCompanion.insert(
+          id: 'r1',
+          name: 'Ostsee',
+          von: DateTime(2025, 7, 1),
+          bis: DateTime(2025, 7, 14, 18),
+          angelegtAm: DateTime(2026, 1, 2, 3, 4, 5),
+        ),
+        const ['a1', 'a2'],
+      ),
+      ReiseAendern(
+        'r1',
+        const ReisenCompanion(notiz: Value(null), name: Value('Ostsee 2025')),
+      ),
+      const ReiseLoeschen('r1'),
+      const ReisenZusammenfuehren('r1', ['r2', 'r3']),
+      ReisetagnotizSetzen('r1', DateTime(2025, 7, 3), 'Regen'),
+      const ReiseartSetzen('r1', 'wandern'),
+      const AufnahmenDerReiseSetzen('r1', {'a1', 'a3'}),
+      const ReisevorschlagVerwerfen('2025-07-01|2025-07-14'),
+      AktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: 'ak1',
+          name: 'Gipfel',
+          art: 'wandern',
+          von: DateTime(2025, 7, 5, 8),
+          bis: DateTime(2025, 7, 5, 16),
+          angelegtAm: DateTime(2026),
+        ),
+        const ['a2'],
+      ),
+      AktivitaetAendern(
+        'ak1',
+        const AktivitaetenCompanion(reiseId: Value('r1')),
+      ),
+      const AktivitaetLoeschen('ak1'),
+      const AufnahmenDerAktivitaetSetzen('ak1', {'a2'}),
+      const AktivitaetsvorschlagVerwerfen('ak|2025-07-05'),
+      const SpurLoeschen('s1'),
+      ExportvorgabeSpeichern(
+        ExportPresetsCompanion.insert(
+          name: 'Web',
+          erstelltAm: DateTime(2026, 2, 3),
+          maxKante: const Value(2048),
+          qualitaet: const Value(0.82),
+        ),
+      ),
+      const ExportvorgabeLoeschen(3),
+      EntwicklungsvorgabeSpeichern(
+        const DevelopPresetsCompanion(id: Value(2), name: Value('Warm')),
+      ),
+      KameravorgabeSpeichern(
+        const CameraPresetsCompanion(
+          id: Value('k1'),
+          autoFavorite: Value(true),
+        ),
+      ),
+      const KameravorgabeSchlagwoerterSetzen('k1', ['t1', 't2']),
+      const KameravorgabeLoeschen('k1'),
+      RegelSpeichern(
+        const AutomationRulesCompanion(
+          id: Value('r1'),
+          name: Value('Urlaub'),
+          regionCenterLat: Value(null),
+        ),
+      ),
+      const RegelSchlagwoerterSetzen('r1', []),
+      const RegelLoeschen('r1'),
+      const PapierkorbFristSetzen(an: true, tage: 30),
+      const GesichtsschwelleSetzen(0.45),
+      const AuswertenNachImportSetzen(false),
+      const SucheUebersetzenSetzen(true),
+      const AngabenSchuetzenSetzen(true),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
@@ -158,6 +232,34 @@ void main() {
       EreignisLoeschen() => 'ereignisLoeschen',
       EreignisortSetzen() => 'ereignisortSetzen',
       GedcomUebernehmen() => 'gedcomUebernehmen',
+      ReiseAnlegen() => 'reiseAnlegen',
+      ReiseAendern() => 'reiseAendern',
+      ReiseLoeschen() => 'reiseLoeschen',
+      ReisenZusammenfuehren() => 'reisenZusammenfuehren',
+      ReisetagnotizSetzen() => 'reisetagnotizSetzen',
+      ReiseartSetzen() => 'reiseartSetzen',
+      AufnahmenDerReiseSetzen() => 'aufnahmenDerReiseSetzen',
+      ReisevorschlagVerwerfen() => 'reisevorschlagVerwerfen',
+      AktivitaetAnlegen() => 'aktivitaetAnlegen',
+      AktivitaetAendern() => 'aktivitaetAendern',
+      AktivitaetLoeschen() => 'aktivitaetLoeschen',
+      AufnahmenDerAktivitaetSetzen() => 'aufnahmenDerAktivitaetSetzen',
+      AktivitaetsvorschlagVerwerfen() => 'aktivitaetsvorschlagVerwerfen',
+      SpurLoeschen() => 'spurLoeschen',
+      ExportvorgabeSpeichern() => 'exportvorgabeSpeichern',
+      ExportvorgabeLoeschen() => 'exportvorgabeLoeschen',
+      EntwicklungsvorgabeSpeichern() => 'entwicklungsvorgabeSpeichern',
+      KameravorgabeSpeichern() => 'kameravorgabeSpeichern',
+      KameravorgabeSchlagwoerterSetzen() => 'kameravorgabeSchlagwoerterSetzen',
+      KameravorgabeLoeschen() => 'kameravorgabeLoeschen',
+      RegelSpeichern() => 'regelSpeichern',
+      RegelSchlagwoerterSetzen() => 'regelSchlagwoerterSetzen',
+      RegelLoeschen() => 'regelLoeschen',
+      PapierkorbFristSetzen() => 'papierkorbFristSetzen',
+      GesichtsschwelleSetzen() => 'gesichtsschwelleSetzen',
+      AuswertenNachImportSetzen() => 'auswertenNachImportSetzen',
+      SucheUebersetzenSetzen() => 'sucheUebersetzenSetzen',
+      AngabenSchuetzenSetzen() => 'angabenSchuetzenSetzen',
     };
 
     test('jede Art hat ein Beispiel und ist zum Lesen eingetragen', () {
@@ -378,6 +480,51 @@ void main() {
       expect([for (final e in ereignisse) e.ort], ['Lübeck']);
     });
 
+    test(
+      'Zeilen im Befehl: anlegen wie direkt, ändern nur das Gesetzte',
+      () async {
+        final reise = ReisenCompanion.insert(
+          id: 'r1',
+          name: 'Ostsee',
+          von: DateTime(2025, 7, 1),
+          bis: DateTime(2025, 7, 14, 18),
+          notiz: const Value('Strandkorb'),
+          angelegtAm: DateTime(2026, 1, 2, 3, 4, 5),
+        );
+        // Einmal über JSON, wie es ein Server bekäme.
+        Befehl<Object?> ueberJson(Befehl<Object?> b) => Befehl.ausJson(
+          (jsonDecode(jsonEncode(b.alsJson())) as Map).cast<String, Object?>(),
+        );
+        await db.fuehreAus(ueberJson(ReiseAnlegen(reise, const ['a1', 'a2'])));
+        final direkt = AppDatabase(NativeDatabase.memory());
+        addTearDown(direkt.close);
+        await direkt.into(direkt.reisen).insert(reise);
+        expect(
+          (await db.select(db.reisen).getSingle()).toJson(),
+          (await direkt.select(direkt.reisen).getSingle()).toJson(),
+        );
+        await db.fuehreAus(
+          ueberJson(
+            ReiseAendern(
+              'r1',
+              const ReisenCompanion(
+                name: Value('Ostsee 2025'),
+                notiz: Value(null),
+              ),
+            ),
+          ),
+        );
+        final danach = await db.select(db.reisen).getSingle();
+        expect(danach.name, 'Ostsee 2025');
+        expect(danach.notiz, isNull, reason: 'null leert die Spalte');
+        expect(danach.bis, DateTime(2025, 7, 14, 18), reason: 'nicht gesetzt');
+        expect(
+          {for (final a in await db.aufnahmenDerReise('r1')) a.id},
+          {'a1', 'a2'},
+        );
+      },
+    );
+
     test('jeder ausgeführte Befehl wird gemeldet, nach der Wirkung', () async {
       final gemeldet = <String>[];
       db.befehlsbeobachter.add((b) async {
@@ -431,7 +578,13 @@ void main() {
         final zeilen = datei.readAsLinesSync();
         for (var i = 0; i < zeilen.length; i++) {
           for (final m in befehle) {
-            if (zeilen[i].contains('.$m(')) funde.add('$pfad:${i + 1} $m');
+            // Über eine Datenbank: `db.`, `_db.`, `rasterDb.` … So wie die
+            // Bibliothek heisst sie überall. Eine gleichnamige Methode
+            // anderswo (LibraryState.setFaceSimilarityThreshold führt den
+            // Befehl selbst aus) ist damit kein Fund.
+            if (RegExp(r'\b\w*[dD]b\??\.' + m + r'\(').hasMatch(zeilen[i])) {
+              funde.add('$pfad:${i + 1} $m');
+            }
           }
         }
       }
@@ -551,24 +704,26 @@ const _einordnung = <String, _Art>{
   'loescheEreignis': _Art.befehl,
   'uebernehmeGedcom': _Art.befehl,
   // Reisen, Aktivitäten, Spuren
-  'reiseAnlegen': _Art.nutzer,
-  'reiseAendern': _Art.nutzer,
-  'reiseLoeschen': _Art.nutzer,
-  'reisenZusammenfuehren': _Art.nutzer,
-  'setzeReisetagnotiz': _Art.nutzer,
-  'setzeReiseart': _Art.nutzer,
+  'reiseAnlegen': _Art.befehl,
+  'reiseAendern': _Art.befehl,
+  'reiseLoeschen': _Art.befehl,
+  'reisenZusammenfuehren': _Art.befehl,
+  'setzeReisetagnotiz': _Art.befehl,
+  'setzeReiseart': _Art.befehl,
   'aufnahmeAusReise': _Art.nutzer,
   'aufnahmenZurReise': _Art.nutzer,
-  'setzeAufnahmenDerReise': _Art.nutzer,
-  'verwirfReisevorschlag': _Art.nutzer,
-  'aktivitaetAnlegen': _Art.nutzer,
-  'aktivitaetAendern': _Art.nutzer,
-  'aktivitaetLoeschen': _Art.nutzer,
-  'setzeAufnahmenDerAktivitaet': _Art.nutzer,
-  'verwirfAktivitaetsvorschlag': _Art.nutzer,
-  'spurAnlegen': _Art.nutzer,
+  'setzeAufnahmenDerReise': _Art.befehl,
+  'verwirfReisevorschlag': _Art.befehl,
+  'aktivitaetAnlegen': _Art.befehl,
+  'aktivitaetAendern': _Art.befehl,
+  'aktivitaetLoeschen': _Art.befehl,
+  'setzeAufnahmenDerAktivitaet': _Art.befehl,
+  'verwirfAktivitaetsvorschlag': _Art.befehl,
+  // Bringt die Punkte einer GPX-Datei mit – zehntausend Zeilen sind
+  // kein Befehl, sondern eine Datei.
+  'spurAnlegen': _Art.datei,
   'spurAendern': _Art.nutzer,
-  'spurLoeschen': _Art.nutzer,
+  'spurLoeschen': _Art.befehl,
   // Bearbeiten: Einstellungen sind Befehle, das gerechnete Bild eine Datei
   'resetDevelopSettings': _Art.nutzer,
   'saveDevelopResult': _Art.datei,
@@ -579,26 +734,26 @@ const _einordnung = <String, _Art>{
   'saveVideoTrim': _Art.datei,
   'resetVideoTrim': _Art.datei,
   // Vorgaben der Bibliothek
-  'upsertAutomationRule': _Art.nutzer,
-  'deleteAutomationRule': _Art.nutzer,
-  'setAutomationRuleTags': _Art.nutzer,
-  'upsertCameraPreset': _Art.nutzer,
-  'deleteCameraPreset': _Art.nutzer,
-  'setCameraPresetTags': _Art.nutzer,
-  'upsertDevelopPreset': _Art.nutzer,
+  'upsertAutomationRule': _Art.befehl,
+  'deleteAutomationRule': _Art.befehl,
+  'setAutomationRuleTags': _Art.befehl,
+  'upsertCameraPreset': _Art.befehl,
+  'deleteCameraPreset': _Art.befehl,
+  'setCameraPresetTags': _Art.befehl,
+  'upsertDevelopPreset': _Art.befehl,
   'deleteDevelopPreset': _Art.nutzer,
-  'upsertExportPreset': _Art.nutzer,
-  'deleteExportPreset': _Art.nutzer,
-  'setTrashAutoDeleteConfig': _Art.nutzer,
-  'setFaceSimilarityThreshold': _Art.nutzer,
-  'setAutoAnalyzeAfterImport': _Art.nutzer,
-  'setzeUebersetzeSucheUndTags': _Art.nutzer,
+  'upsertExportPreset': _Art.befehl,
+  'deleteExportPreset': _Art.befehl,
+  'setTrashAutoDeleteConfig': _Art.befehl,
+  'setFaceSimilarityThreshold': _Art.befehl,
+  'setAutoAnalyzeAfterImport': _Art.befehl,
+  'setzeUebersetzeSucheUndTags': _Art.befehl,
   'setzeUebersetzeBeschreibungen': _Art.nutzer,
   // Gesperrter Ordner: Inhalte werden auf dem Gerät verschlüsselt
   'setAssetsLocked': _Art.datei,
   'hidePrivateMetadata': _Art.datei,
   'restorePrivateMetadata': _Art.datei,
-  'setProtectPrivateMetadata': _Art.nutzer,
+  'setProtectPrivateMetadata': _Art.befehl,
   'verlegeProfilbilderVon': _Art.datei,
   // Ergebnisse der Auswertungen
   'saveEmbedding': _Art.ergebnis,

@@ -72,24 +72,25 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
     }
 
     final ruleId = existing?.id ?? const Uuid().v4();
-    await widget.library.db.upsertAutomationRule(
-      AutomationRulesCompanion.insert(
-        id: ruleId,
-        name: result.name,
-        triggerType: result.triggerType,
-        regionCenterLat: Value(result.regionCenterLat),
-        regionCenterLon: Value(result.regionCenterLon),
-        regionRadiusKm: Value(result.regionRadiusKm),
-        aiTagTerm: Value(result.aiTagTerm),
-        dateFrom: Value(result.dateFrom),
-        dateTo: Value(result.dateTo),
-        targetAlbumId: Value(albumId),
-        autoFavorite: Value(result.autoFavorite),
+    await widget.library.db.fuehreAus(
+      RegelSpeichern(
+        AutomationRulesCompanion.insert(
+          id: ruleId,
+          name: result.name,
+          triggerType: result.triggerType,
+          regionCenterLat: Value(result.regionCenterLat),
+          regionCenterLon: Value(result.regionCenterLon),
+          regionRadiusKm: Value(result.regionRadiusKm),
+          aiTagTerm: Value(result.aiTagTerm),
+          dateFrom: Value(result.dateFrom),
+          dateTo: Value(result.dateTo),
+          targetAlbumId: Value(albumId),
+          autoFavorite: Value(result.autoFavorite),
+        ),
       ),
     );
-    await widget.library.db.setAutomationRuleTags(
-      ruleId,
-      result.tagIds.toList(),
+    await widget.library.db.fuehreAus(
+      RegelSchlagwoerterSetzen(ruleId, result.tagIds.toList()),
     );
   }
 
@@ -112,7 +113,7 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
       ),
     );
     if (confirmed == true) {
-      await widget.library.db.deleteAutomationRule(rule.id);
+      await widget.library.db.fuehreAus(RegelLoeschen(rule.id));
     }
   }
 

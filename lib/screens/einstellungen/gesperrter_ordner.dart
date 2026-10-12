@@ -72,7 +72,9 @@ class GesperrterOrdnerGruppe extends StatelessWidget {
                     ),
                     value: privacy.data?.protectMetadata ?? true,
                     onChanged: (value) async {
-                      await stand.library.db.setProtectPrivateMetadata(value);
+                      await stand.library.db.fuehreAus(
+                        AngabenSchuetzenSetzen(value),
+                      );
                       if (stand.aktiv) {
                         stand.neuFragen(EinstellungsAbfrage.datenschutz);
                       }

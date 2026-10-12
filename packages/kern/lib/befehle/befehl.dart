@@ -19,7 +19,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import '../services/search_filters.dart';
@@ -29,8 +29,11 @@ import '../services/verwandtschaftsgrad.dart';
 part 'alben.dart';
 part 'aufnahmen.dart';
 part 'personen.dart';
+part 'reisen.dart';
 part 'schlagwoerter.dart';
 part 'stammbaum.dart';
+part 'vorgaben.dart';
+part 'zeilen.dart';
 
 /// [T] ist, was die Änderung zurückgibt – meist nichts, manchmal eine
 /// Zahl für die Rückmeldung („12 Schlagwörter zurückgenommen“).
@@ -105,6 +108,34 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'ereignisLoeschen': EreignisLoeschen.aus,
   'ereignisortSetzen': EreignisortSetzen.aus,
   'gedcomUebernehmen': GedcomUebernehmen.aus,
+  'reiseAnlegen': ReiseAnlegen.aus,
+  'reiseAendern': ReiseAendern.aus,
+  'reiseLoeschen': ReiseLoeschen.aus,
+  'reisenZusammenfuehren': ReisenZusammenfuehren.aus,
+  'reisetagnotizSetzen': ReisetagnotizSetzen.aus,
+  'reiseartSetzen': ReiseartSetzen.aus,
+  'aufnahmenDerReiseSetzen': AufnahmenDerReiseSetzen.aus,
+  'reisevorschlagVerwerfen': ReisevorschlagVerwerfen.aus,
+  'aktivitaetAnlegen': AktivitaetAnlegen.aus,
+  'aktivitaetAendern': AktivitaetAendern.aus,
+  'aktivitaetLoeschen': AktivitaetLoeschen.aus,
+  'aufnahmenDerAktivitaetSetzen': AufnahmenDerAktivitaetSetzen.aus,
+  'aktivitaetsvorschlagVerwerfen': AktivitaetsvorschlagVerwerfen.aus,
+  'spurLoeschen': SpurLoeschen.aus,
+  'exportvorgabeSpeichern': ExportvorgabeSpeichern.aus,
+  'exportvorgabeLoeschen': ExportvorgabeLoeschen.aus,
+  'entwicklungsvorgabeSpeichern': EntwicklungsvorgabeSpeichern.aus,
+  'kameravorgabeSpeichern': KameravorgabeSpeichern.aus,
+  'kameravorgabeSchlagwoerterSetzen': KameravorgabeSchlagwoerterSetzen.aus,
+  'kameravorgabeLoeschen': KameravorgabeLoeschen.aus,
+  'regelSpeichern': RegelSpeichern.aus,
+  'regelSchlagwoerterSetzen': RegelSchlagwoerterSetzen.aus,
+  'regelLoeschen': RegelLoeschen.aus,
+  'papierkorbFristSetzen': PapierkorbFristSetzen.aus,
+  'gesichtsschwelleSetzen': GesichtsschwelleSetzen.aus,
+  'auswertenNachImportSetzen': AuswertenNachImportSetzen.aus,
+  'sucheUebersetzenSetzen': SucheUebersetzenSetzen.aus,
+  'angabenSchuetzenSetzen': AngabenSchuetzenSetzen.aus,
 };
 
 List<String> _kennungen(Object? werte) => (werte! as List).cast<String>();

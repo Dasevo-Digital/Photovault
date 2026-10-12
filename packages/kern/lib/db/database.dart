@@ -211,6 +211,11 @@ class _SperrWiederholung extends QueryInterceptor {
     Aufgabenlaeufe,
   ],
 )
+/// Der Wert einer Textspalte aus einer Zeile, die eingefügt werden soll –
+/// gleich, ob sie als Companion oder roh (aus einem Befehl) kommt.
+String _textSpalte(Insertable<Object?> zeile, String spalte) =>
+    (zeile.toColumns(false)[spalte]! as Variable<String>).value!;
+
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 

@@ -377,7 +377,7 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     final spur = _spur;
     if (spur == null) return;
     final t = AppTexte.of(context);
-    await widget.library.db.spurLoeschen(spur.id);
+    await widget.library.db.fuehreAus(SpurLoeschen(spur.id));
     melde.hinweis(t.spurEntferntMeldung);
     await _laden();
   }
@@ -391,9 +391,8 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       vorgabe: _k.name,
     );
     if (sauber == null) return;
-    await widget.library.db.aktivitaetAendern(
-      _k.id,
-      AktivitaetenCompanion(name: Value(sauber)),
+    await widget.library.db.fuehreAus(
+      AktivitaetAendern(_k.id, AktivitaetenCompanion(name: Value(sauber))),
     );
     await _laden();
   }
@@ -405,9 +404,8 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       aktuell: _k.art,
     );
     if (gewaehlt == null) return;
-    await widget.library.db.aktivitaetAendern(
-      _k.id,
-      AktivitaetenCompanion(art: Value(gewaehlt)),
+    await widget.library.db.fuehreAus(
+      AktivitaetAendern(_k.id, AktivitaetenCompanion(art: Value(gewaehlt))),
     );
     await _laden();
   }
@@ -444,9 +442,8 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     if (weg.isEmpty) return;
     final vorher = await widget.library.db.zuordnungenDerAktivitaet(_k.id);
     if (!mounted) return;
-    await widget.library.db.setzeAufnahmenDerAktivitaet(
-      _k.id,
-      vorher.difference(weg),
+    await widget.library.db.fuehreAus(
+      AufnahmenDerAktivitaetSetzen(_k.id, vorher.difference(weg)),
     );
     if (!mounted) return;
     setState(_auswahl.clear);
@@ -484,7 +481,7 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       melde.hinweis(t.aufnahmenWahlUnveraendert);
       return;
     }
-    await widget.library.db.setzeAufnahmenDerAktivitaet(_k.id, neu);
+    await widget.library.db.fuehreAus(AufnahmenDerAktivitaetSetzen(_k.id, neu));
     melde.erfolg(t.aufnahmenWahlGeaendert(dazu, weg));
     await _laden();
   }
@@ -500,9 +497,11 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       leerErlaubt: true,
     );
     if (sauber == null) return;
-    await widget.library.db.aktivitaetAendern(
-      _k.id,
-      AktivitaetenCompanion(notiz: Value(sauber.isEmpty ? null : sauber)),
+    await widget.library.db.fuehreAus(
+      AktivitaetAendern(
+        _k.id,
+        AktivitaetenCompanion(notiz: Value(sauber.isEmpty ? null : sauber)),
+      ),
     );
     await _laden();
   }
@@ -527,7 +526,7 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       ),
     );
     if (ja != true || !mounted) return;
-    await widget.library.db.aktivitaetLoeschen(_k.id);
+    await widget.library.db.fuehreAus(AktivitaetLoeschen(_k.id));
     melde.hinweis(t.aktivitaetenEntfernt(_k.name));
     if (mounted) Navigator.of(context).pop();
   }

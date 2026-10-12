@@ -573,7 +573,7 @@ class LibraryState extends ChangeNotifier {
   Future<void> setFaceSimilarityThreshold(double value) async {
     faceSimilarityThreshold = value;
     notifyListeners();
-    await db.setFaceSimilarityThreshold(value);
+    await db.fuehreAus(GesichtsschwelleSetzen(value));
   }
 
   /// Die für [personId] geltende Schwelle: die persönliche, sonst die

@@ -40,7 +40,7 @@ extension AktivitaetenAbfragen on AppDatabase {
   /// Legt eine bestätigte Aktivität samt ihren Aufnahmen an – in einer
   /// Transaktion, aus demselben Grund wie bei [reiseAnlegen].
   Future<void> aktivitaetAnlegen(
-    AktivitaetenCompanion neue,
+    Insertable<AktivitaetenData> neue,
     List<String> assetIds,
   ) => transaction(() async {
     await into(aktivitaeten).insert(neue);
@@ -48,7 +48,7 @@ extension AktivitaetenAbfragen on AppDatabase {
       (b) => b.insertAll(aktivitaetAufnahmen, [
         for (final id in assetIds)
           AktivitaetAufnahmenCompanion.insert(
-            aktivitaetId: neue.id.value,
+            aktivitaetId: _textSpalte(neue, 'id'),
             assetId: id,
           ),
       ]),
@@ -62,8 +62,10 @@ extension AktivitaetenAbfragen on AppDatabase {
     await (delete(aktivitaeten)..where((t) => t.id.equals(id))).go();
   });
 
-  Future<void> aktivitaetAendern(String id, AktivitaetenCompanion aenderung) =>
-      (update(aktivitaeten)..where((t) => t.id.equals(id))).write(aenderung);
+  Future<void> aktivitaetAendern(
+    String id,
+    Insertable<AktivitaetenData> aenderung,
+  ) => (update(aktivitaeten)..where((t) => t.id.equals(id))).write(aenderung);
 
   /// Die Aufnahmen einer Aktivität, chronologisch. Gelöschte und
   /// gesperrte fallen heraus – siehe die Regel über [aufnahmenDerReise].

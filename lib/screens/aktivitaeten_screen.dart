@@ -143,17 +143,19 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       reisen: [for (final r in reisen) (id: r.id, von: r.von, bis: r.bis)],
     );
 
-    await db.aktivitaetAnlegen(
-      AktivitaetenCompanion.insert(
-        id: const Uuid().v4(),
-        name: sauber,
-        art: v.art.kennung,
-        von: v.von,
-        bis: v.bis,
-        reiseId: Value(reiseId),
-        angelegtAm: DateTime.now(),
+    await db.fuehreAus(
+      AktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: const Uuid().v4(),
+          name: sauber,
+          art: v.art.kennung,
+          von: v.von,
+          bis: v.bis,
+          reiseId: Value(reiseId),
+          angelegtAm: DateTime.now(),
+        ),
+        v.aufnahmeIds,
       ),
-      v.aufnahmeIds,
     );
     melde.erfolg(t.aktivitaetenAngelegt(sauber));
     await _laden();
@@ -188,17 +190,19 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       reisen: [for (final r in reisen) (id: r.id, von: r.von, bis: r.bis)],
     );
 
-    await db.aktivitaetAnlegen(
-      AktivitaetenCompanion.insert(
-        id: const Uuid().v4(),
-        name: angabe.name,
-        art: angabe.art!,
-        von: angabe.von,
-        bis: angabe.bis,
-        reiseId: Value(reiseId),
-        angelegtAm: DateTime.now(),
+    await db.fuehreAus(
+      AktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: const Uuid().v4(),
+          name: angabe.name,
+          art: angabe.art!,
+          von: angabe.von,
+          bis: angabe.bis,
+          reiseId: Value(reiseId),
+          angelegtAm: DateTime.now(),
+        ),
+        ids,
       ),
-      ids,
     );
     if (!mounted) return;
     melde.erfolg(t.aktivitaetenSelbstAngelegt(angabe.name));
@@ -206,7 +210,9 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
   }
 
   Future<void> _verwerfen(Aktivitaetsvorschlag v) async {
-    await widget.library.db.verwirfAktivitaetsvorschlag(v.schluessel);
+    await widget.library.db.fuehreAus(
+      AktivitaetsvorschlagVerwerfen(v.schluessel),
+    );
     await _laden();
   }
 
@@ -237,9 +243,8 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       vorgabe: k.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db.aktivitaetAendern(
-      k.id,
-      AktivitaetenCompanion(name: Value(sauber)),
+    await widget.library.db.fuehreAus(
+      AktivitaetAendern(k.id, AktivitaetenCompanion(name: Value(sauber))),
     );
     await _laden();
   }
@@ -264,7 +269,7 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       ),
     );
     if (ja != true || !mounted) return;
-    await widget.library.db.aktivitaetLoeschen(k.id);
+    await widget.library.db.fuehreAus(AktivitaetLoeschen(k.id));
     await _laden();
   }
 

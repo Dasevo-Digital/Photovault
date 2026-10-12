@@ -243,29 +243,31 @@ mixin _Verlauf on _EntwickelnBasis {
     }
 
     final a = _currentAdjustments();
-    await widget.db.upsertDevelopPreset(
-      DevelopPresetsCompanion.insert(
-        name: name,
-        exposure: Value(a.exposure),
-        temperature: Value(a.temperature),
-        tint: Value(a.tint),
-        contrast: Value(a.contrast),
-        shadows: Value(a.shadows),
-        highlights: Value(a.highlights),
-        sharpness: Value(a.sharpness),
-        noiseReduction: Value(a.noiseReduction),
-        lensCorrectionEnabled: Value(a.lensCorrectionEnabled),
-        clarity: Value(a.clarity),
-        vignette: Value(a.vignette),
-        lutPath: Value(_lutPfad),
-        lutStrength: Value(a.lutStrength),
-        toneCurveJson: Value(
-          _toneCurve.istNeutral ? null : _toneCurve.encode(),
+    await widget.db.fuehreAus(
+      EntwicklungsvorgabeSpeichern(
+        DevelopPresetsCompanion.insert(
+          name: name,
+          exposure: Value(a.exposure),
+          temperature: Value(a.temperature),
+          tint: Value(a.tint),
+          contrast: Value(a.contrast),
+          shadows: Value(a.shadows),
+          highlights: Value(a.highlights),
+          sharpness: Value(a.sharpness),
+          noiseReduction: Value(a.noiseReduction),
+          lensCorrectionEnabled: Value(a.lensCorrectionEnabled),
+          clarity: Value(a.clarity),
+          vignette: Value(a.vignette),
+          lutPath: Value(_lutPfad),
+          lutStrength: Value(a.lutStrength),
+          toneCurveJson: Value(
+            _toneCurve.istNeutral ? null : _toneCurve.encode(),
+          ),
+          colorMixerJson: Value(
+            _colorMixer.istNeutral ? null : _colorMixer.encode(),
+          ),
+          erstelltAm: DateTime.now(),
         ),
-        colorMixerJson: Value(
-          _colorMixer.istNeutral ? null : _colorMixer.encode(),
-        ),
-        erstelltAm: DateTime.now(),
       ),
     );
     if (!mounted) return;

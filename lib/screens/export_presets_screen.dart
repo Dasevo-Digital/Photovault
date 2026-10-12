@@ -37,7 +37,7 @@ class ExportPresetsScreen extends StatelessWidget {
           _VorgabeEditor(bestehend: bestehend, belegteNamen: belegt),
     );
     if (ergebnis == null) return;
-    await library.db.upsertExportPreset(ergebnis);
+    await library.db.fuehreAus(ExportvorgabeSpeichern(ergebnis));
   }
 
   Future<void> _loeschen(BuildContext context, ExportPresetData vorgabe) async {
@@ -60,7 +60,7 @@ class ExportPresetsScreen extends StatelessWidget {
       ),
     );
     if (bestaetigt != true) return;
-    await library.db.deleteExportPreset(vorgabe.id);
+    await library.db.fuehreAus(ExportvorgabeLoeschen(vorgabe.id));
   }
 
   @override

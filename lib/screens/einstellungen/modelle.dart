@@ -47,7 +47,7 @@ class ModelleGruppe extends StatelessWidget {
             child: SwitchListTile(
               value: an,
               onChanged: (v) async {
-                await stand.library.db.setAutoAnalyzeAfterImport(v);
+                await stand.library.db.fuehreAus(AuswertenNachImportSetzen(v));
                 if (stand.aktiv) {
                   stand.neuFragen(EinstellungsAbfrage.autoanalyse);
                 }
@@ -83,7 +83,7 @@ class ModelleGruppe extends StatelessWidget {
           installiert: stand.library.uebersetzungDeEnHalter.installiert,
           lesen: stand.library.db.uebersetzeSucheUndTags,
           schreiben: (an) async {
-            await stand.library.db.setzeUebersetzeSucheUndTags(an);
+            await stand.library.db.fuehreAus(SucheUebersetzenSetzen(an));
             // Die zwischengespeicherten Begriffs-Vektoren stammen sonst
             // noch aus der anderen Sprache und die Umstellung bliebe bis
             // zum nächsten Programmstart wirkungslos.

@@ -155,9 +155,8 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       vorgabe: _reise.name,
     );
     if (sauber == null || !mounted) return;
-    await widget.library.db.reiseAendern(
-      _reise.id,
-      ReisenCompanion(name: Value(sauber)),
+    await widget.library.db.fuehreAus(
+      ReiseAendern(_reise.id, ReisenCompanion(name: Value(sauber))),
     );
     await _laden();
   }
@@ -173,11 +172,13 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       leerErlaubt: true,
     );
     if (text == null || !mounted) return;
-    await widget.library.db.reiseAendern(
-      _reise.id,
-      // Leerer Text heisst „keine Notiz" und nicht „eine leere Notiz" –
-      // sonst stünde in der Ansicht ein leerer Absatz.
-      ReisenCompanion(notiz: Value(text.isEmpty ? null : text)),
+    await widget.library.db.fuehreAus(
+      ReiseAendern(
+        _reise
+            .id, // Leerer Text heisst „keine Notiz" und nicht „eine leere Notiz" –
+        // sonst stünde in der Ansicht ein leerer Absatz.
+        ReisenCompanion(notiz: Value(text.isEmpty ? null : text)),
+      ),
     );
     await _laden();
   }
@@ -195,7 +196,9 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       leerErlaubt: true,
     );
     if (text == null || !mounted) return;
-    await widget.library.db.setzeReisetagnotiz(_reise.id, tag, text);
+    await widget.library.db.fuehreAus(
+      ReisetagnotizSetzen(_reise.id, tag, text),
+    );
     await _laden();
   }
 
@@ -234,9 +237,11 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
 
   Future<void> _titelbild(AssetData asset) async {
     final t = AppTexte.of(context);
-    await widget.library.db.reiseAendern(
-      _reise.id,
-      ReisenCompanion(titelbildAssetId: Value(asset.id)),
+    await widget.library.db.fuehreAus(
+      ReiseAendern(
+        _reise.id,
+        ReisenCompanion(titelbildAssetId: Value(asset.id)),
+      ),
     );
     await _laden();
     if (!mounted) return;
@@ -263,7 +268,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       ),
     );
     if (ja != true || !mounted) return;
-    await widget.library.db.reiseLoeschen(_reise.id);
+    await widget.library.db.fuehreAus(ReiseLoeschen(_reise.id));
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -292,9 +297,8 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
     if (weg.isEmpty) return;
     final vorher = await widget.library.db.zuordnungenDerReise(_reise.id);
     if (!mounted) return;
-    await widget.library.db.setzeAufnahmenDerReise(
-      _reise.id,
-      vorher.difference(weg),
+    await widget.library.db.fuehreAus(
+      AufnahmenDerReiseSetzen(_reise.id, vorher.difference(weg)),
     );
     if (!mounted) return;
     setState(_auswahl.clear);
@@ -332,7 +336,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       melde.hinweis(t.aufnahmenWahlUnveraendert);
       return;
     }
-    await widget.library.db.setzeAufnahmenDerReise(_reise.id, neu);
+    await widget.library.db.fuehreAus(AufnahmenDerReiseSetzen(_reise.id, neu));
     melde.erfolg(t.aufnahmenWahlGeaendert(dazu, weg));
     await _laden();
   }
@@ -352,7 +356,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   Future<void> _artWaehlen() async {
     final gewaehlt = await frageReiseart(context, aktuell: _reise.art);
     if (gewaehlt == null || gewaehlt == _reise.art || !mounted) return;
-    await widget.library.db.setzeReiseart(_reise.id, gewaehlt);
+    await widget.library.db.fuehreAus(ReiseartSetzen(_reise.id, gewaehlt));
     await _laden();
   }
 
@@ -405,17 +409,19 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       return;
     }
 
-    await widget.library.db.aktivitaetAnlegen(
-      AktivitaetenCompanion.insert(
-        id: const Uuid().v4(),
-        name: angabe.name,
-        art: angabe.art!,
-        von: angabe.von,
-        bis: angabe.bis,
-        reiseId: Value(_reise.id),
-        angelegtAm: DateTime.now(),
+    await widget.library.db.fuehreAus(
+      AktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: const Uuid().v4(),
+          name: angabe.name,
+          art: angabe.art!,
+          von: angabe.von,
+          bis: angabe.bis,
+          reiseId: Value(_reise.id),
+          angelegtAm: DateTime.now(),
+        ),
+        ids,
       ),
-      ids,
     );
     if (!mounted) return;
     melde.erfolg(t.reisenAktivitaetAngelegt(angabe.name, ids.length));
@@ -549,7 +555,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
 
   Future<void> _spurEntfernen(SpurenData spur) async {
     final t = AppTexte.of(context);
-    await widget.library.db.spurLoeschen(spur.id);
+    await widget.library.db.fuehreAus(SpurLoeschen(spur.id));
     melde.hinweis(t.spurEntferntMeldung);
     await _laden();
   }
