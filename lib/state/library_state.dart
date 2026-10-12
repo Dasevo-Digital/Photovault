@@ -32,7 +32,7 @@ import 'package:kern/services/eye_state_service.dart';
 import 'package:kern/services/face_engine_service.dart';
 import 'package:kern/services/face_postprocess.dart';
 import '../services/geo_data_download_service.dart';
-import '../services/import_service.dart';
+import 'package:kern/services/import_service.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
 import 'package:kern/services/model_catalog.dart';
@@ -56,7 +56,7 @@ import 'package:kern/services/reverse_geocoder.dart';
 import '../widgets/mini_location_map.dart'
     show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
@@ -829,9 +829,12 @@ class LibraryState extends ChangeNotifier {
     _bibliothekBelegt = false;
     _belegterOrt = null;
 
-    db = await AppDatabase.open(await LibraryLocation.currentRoot());
+    final bibliothek = await LibraryLocation.currentRoot();
+    db = await AppDatabase.open(bibliothek);
     _datenbankGeoeffnet = true;
-    paths = await StoragePaths.instance();
+    paths = await StoragePaths.oeffne(
+      Directory(p.join(bibliothek.path, 'library')),
+    );
     modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);
     _outdatedModelPipelines = await modelProcessingState!.initialize(
       ModelProcessingState.currentFingerprints(),

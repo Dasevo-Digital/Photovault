@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {

@@ -13,7 +13,7 @@
 // roh aus `mvhd` kommt – siehe den Kopf von video_metadaten.dart.
 import 'dart:io';
 
-import 'package:photo_vault/services/video_metadaten.dart';
+import 'package:kern/services/video_metadaten.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {

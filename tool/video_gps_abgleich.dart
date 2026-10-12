@@ -7,7 +7,7 @@
 // Ausgabe je Zeile: Pfad|Breite|Länge bzw. Pfad|KEIN_GPS.
 import 'dart:io';
 
-import 'package:photo_vault/services/video_gps.dart';
+import 'package:kern/services/video_gps.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {

@@ -1,18 +1,18 @@
 import 'dart:collection';
-import 'dart:isolate';
-import '../protokoll.dart';
-import 'package:meta/meta.dart' show visibleForTesting;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
+import 'package:meta/meta.dart' show visibleForTesting;
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 
-import 'onnx_hardswish.dart';
-import 'textstellen.dart';
-import 'modellthreads.dart';
+import 'package:kern/berechne.dart';
+import 'package:kern/protokoll.dart';
+import 'package:kern/services/onnx_hardswish.dart';
+import 'package:kern/services/textstellen.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Texterkennung ohne Betriebssystem-Hilfe – zwei ONNX-Modelle aus der
 /// PaddleOCR-Familie, dieselbe Zerlegung wie dort: erst finden, dann lesen.
@@ -121,8 +121,7 @@ class OcrService {
 
     // Neun Megabyte zerlegen und neu zusammensetzen gehört nicht auf den
     // Faden, der die Oberfläche zeichnet.
-    final bytes = await quelle.readAsBytes();
-    final umgebaut = await Isolate.run(() => _umbauen(bytes));
+    final umgebaut = await berechne(_umbauen, await quelle.readAsBytes());
     if (umgebaut == null) {
       // Nichts umzubauen – seit `latin_PP-OCRv5` der Regelfall, das Modell
       // enthält keinen einzigen HardSwish-Knoten mehr (nachgesehen: 27 im

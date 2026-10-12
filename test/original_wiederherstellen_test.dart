@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/bearbeitung_zuruecknehmen.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/widgets/asset_info_sheet.dart';
 
 /// **Nicht-destruktiv heisst: es gibt einen Weg zurueck.**

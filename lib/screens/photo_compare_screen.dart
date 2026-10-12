@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 

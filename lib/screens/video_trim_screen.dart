@@ -4,7 +4,7 @@ import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
 import '../services/native_image_converter.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/video_playback.dart';
 import '../services/meldungsdienst.dart';

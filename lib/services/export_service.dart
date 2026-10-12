@@ -9,7 +9,7 @@ import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import 'export_naming.dart';
 import 'native_image_converter.dart';
-import 'storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/textstellen.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/xmp_regionen.dart';

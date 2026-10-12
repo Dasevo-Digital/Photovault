@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/native_image_converter.dart';
-import 'package:photo_vault/services/objektivkorrektur.dart';
+import 'package:kern/services/objektivkorrektur.dart';
 
 /// Eine TIFF-Datei, wie Sony sie als ARW schreibt, auf das Nötigste
 /// gekürzt: IFD0 mit einem Verweis auf das Verzeichnis der Rohdaten

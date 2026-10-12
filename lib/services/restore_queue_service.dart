@@ -7,7 +7,7 @@ import 'bilddekodierung.dart';
 import 'package:kern/services/modell_halter.dart';
 import 'native_image_converter.dart';
 import 'restore_service.dart';
-import 'storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Wie lange die Restaurierung noch braucht – `null`, solange sich das
 /// nicht sagen lässt.

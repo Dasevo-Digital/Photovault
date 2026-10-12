@@ -9,7 +9,7 @@ import '../l10n/app_localizations.dart';
 import 'package:kern/services/embedding_codec.dart';
 import '../services/face_clustering_service.dart';
 import 'package:kern/services/face_engine_service.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../state/hintergrundlauf.dart' show abweisungstext;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

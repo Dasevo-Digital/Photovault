@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/native_image_converter.dart';
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:kern/services/raw_formats.dart';
 
 /// Die Fassung für Linux und Windows ruft Kommandozeilenwerkzeuge auf und

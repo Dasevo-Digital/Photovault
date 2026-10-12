@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
-import 'package:photo_vault/services/import_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Anlass (13. Prüfrunde, 25.08.2026): Unter Flatpak ist `/tmp` ein
 /// tmpfs von 789 MiB. Die Sicherung legte dort jede Datei zwischen, und in

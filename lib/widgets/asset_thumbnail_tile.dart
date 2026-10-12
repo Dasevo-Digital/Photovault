@@ -10,7 +10,7 @@ import '../l10n/app_localizations.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../services/bilddekodierung.dart';
 import '../services/schwebevorschau.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'schwebevorschau.dart';
 import '../theme/app_spacing.dart';
 

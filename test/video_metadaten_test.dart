@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/video_metadaten.dart';
+import 'package:kern/services/video_metadaten.dart';
 
 /// **Aufnahmezeit und Kamera aus einem Video.**
 ///

@@ -16,7 +16,7 @@
 /// die URLs in dieser Datei anzupassen.
 library;
 
-import 'ocr_service.dart';
+import 'package:kern/services/ocr_service.dart';
 
 class ModelFile {
   final String fileName; // Zieldateiname im models-Ordner

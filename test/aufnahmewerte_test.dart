@@ -10,7 +10,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:kern/services/asset_format.dart';
 import 'package:kern/services/exif_camera.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/widgets/asset_info_sheet.dart';
 
 IfdTag _ratios(List<Ratio> werte) => IfdTag(

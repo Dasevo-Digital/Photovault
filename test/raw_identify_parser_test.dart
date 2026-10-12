@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/raw_identify_parser.dart';
+import 'package:kern/services/raw_identify_parser.dart';
 
 /// Gegen die ECHTE Ausgabe von `raw-identify -v`, abgenommen an einer
 /// CC0-Musterdatei einer Canon EOS R10 (raw.pixls.us). Ein selbst

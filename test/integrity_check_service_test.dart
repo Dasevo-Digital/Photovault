@@ -4,7 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/integrity_check_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Prüft [runIntegrityCheck] direkt mit selbst geschriebenen Dummy-Dateien
 /// (Muster: test/delete_asset_files_test.dart) – ohne echte Drift-DB, da der

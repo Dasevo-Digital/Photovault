@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/import_service.dart';
+import 'package:kern/services/import_service.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
 
 /// Der Beleg an der echten Datei: eine HEIC-Datei, die `.jpg` heisst,

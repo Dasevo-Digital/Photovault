@@ -1,12 +1,12 @@
 import 'dart:async';
-import '../protokoll.dart';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
-import 'model_catalog.dart';
+import 'package:kern/protokoll.dart';
+import 'package:kern/services/model_catalog.dart';
 
 /// Warum ein Modell-Download gescheitert ist.
 ///

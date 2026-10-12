@@ -4,18 +4,18 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:exif/exif.dart';
-import 'package:flutter/foundation.dart' show compute;
+import '../berechne.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import 'package:kern/db/database.dart';
+import '../db/database.dart';
 import 'cr3_gps.dart';
 import 'dateikennung.dart';
-import 'package:kern/services/exif_camera.dart';
+import 'exif_camera.dart';
 import 'exif_gps.dart';
-import 'native_image_converter.dart';
-import 'package:kern/services/raw_formats.dart';
+import 'bildwerkzeuge.dart';
+import 'raw_formats.dart';
 import 'raw_identify_parser.dart';
 import 'storage_paths.dart';
 import 'video_gps.dart';
@@ -40,7 +40,7 @@ const _videoExtensions = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'};
 
 /// Dekodieren + Verkleinern + JPEG-Encodieren eines Thumbnails sind reine,
 /// aber für große Fotos spürbar CPU-intensive Operationen (oft 100+ ms) –
-/// als Top-Level-Funktion über `compute()` in einem Hintergrund-Isolate
+/// als Top-Level-Funktion über `berechne()` in einem Hintergrund-Isolate
 /// ausgeführt (siehe [ImportService.generateThumbnailAndPreview]/
 /// [ImportService.generateVideoThumbnail]), statt beim Import oder
 /// Backfill vieler Fotos den Haupt-Isolate (und damit die UI) zu blockieren.
@@ -110,10 +110,14 @@ class ThumbnailResult {
 /// kopieren, Thumbnail erzeugen, EXIF-Aufnahmedatum lesen und einen
 /// Datenbank-Eintrag anlegen.
 class ImportService {
-  ImportService(this._db, this._paths);
+  /// [bildwerkzeuge] ist der Weg der Plattform zu Pixeln und
+  /// Aufnahmewerten; ohne Angabe gilt [Bildwerkzeuge.standard].
+  ImportService(this._db, this._paths, {Bildwerkzeuge? bildwerkzeuge})
+    : _bild = bildwerkzeuge ?? Bildwerkzeuge.standard;
 
   final AppDatabase _db;
   final StoragePaths _paths;
+  final Bildwerkzeuge _bild;
   final _uuid = const Uuid();
 
   bool isSupported(String filePath) {
@@ -309,7 +313,7 @@ class ImportService {
 
     Uint8List? convertedBytes;
     if (needsNativeConversion || forceBoundedDecode) {
-      convertedBytes = await NativeImageConverter.convertToJpegBytes(
+      convertedBytes = await _bild.convertToJpegBytes(
         sourceFile,
         maxDimension: 2048,
       );
@@ -323,7 +327,7 @@ class ImportService {
     // "nicht dekodierbar". Weder direkt dekodierbar noch (falls versucht)
     // nativ konvertierbar – z.B. weil die native Bildkonvertierung nicht
     // eingerichtet ist, oder weil die Datei beschädigt/unvollständig ist.
-    final result = await compute(decodeAndResizeThumbnail, bytesToDecode);
+    final result = await berechne(decodeAndResizeThumbnail, bytesToDecode);
     if (result == null) {
       return const ThumbnailResult();
     }
@@ -374,13 +378,13 @@ class ImportService {
     File sourceFile,
     String assetId,
   ) async {
-    final native = await NativeImageConverter.generateVideoThumbnail(
+    final native = await _bild.generateVideoThumbnail(
       sourceFile,
       maxDimension: videoStandbildKante,
     );
     if (native == null) return const ThumbnailResult();
 
-    final result = await compute(decodeAndResizeThumbnail, native.jpegBytes);
+    final result = await berechne(decodeAndResizeThumbnail, native.jpegBytes);
     if (result == null) {
       // Frame-Extraktion lieferte kein dekodierbares Bild – Videolänge
       // trotzdem übernehmen, falls AVFoundation sie ermitteln konnte.
@@ -542,7 +546,7 @@ class ImportService {
         (datum == null &&
             kamera.isEmpty &&
             rawImageExtensions.contains(endung))) {
-      final nativ = await NativeImageConverter.readCameraMetadata(datei);
+      final nativ = await _bild.readCameraMetadata(datei);
       if (!nativ.isEmpty) {
         return _ExifMetadata(
           nativ.zeitpunkt,
@@ -602,7 +606,7 @@ class ImportService {
     if (kamera.isEmpty &&
         datum == null &&
         rawImageExtensions.contains(endung)) {
-      final nativ = await NativeImageConverter.readCameraMetadata(file);
+      final nativ = await _bild.readCameraMetadata(file);
       if (!nativ.isEmpty) return nativ;
     }
     return Aufnahmedaten(kamera, datum);
@@ -681,7 +685,7 @@ class ImportService {
         !heicAndRawExtensions.contains(wirklich)) {
       return Datumsbefund(null, versatzMinuten: versatz);
     }
-    final nativ = await NativeImageConverter.readCameraMetadata(file);
+    final nativ = await _bild.readCameraMetadata(file);
     if (nativ.zeitpunkt != null) {
       return Datumsbefund(nativ.zeitpunkt, versatzMinuten: versatz);
     }

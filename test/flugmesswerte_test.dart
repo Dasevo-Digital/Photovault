@@ -29,7 +29,7 @@ import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/gelaendeflug.dart';
 import 'package:photo_vault/services/gelaendekacheln.dart';
 import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:photo_vault/services/platform/nativer_videoschreiber.dart';
 import 'package:photo_vault/widgets/gelaende.dart';
 

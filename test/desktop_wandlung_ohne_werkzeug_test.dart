@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 
 /// Die Bildwandlung unter Linux und Windows für das, was Dart selbst
 /// liest – JPEG, PNG und Verwandte.

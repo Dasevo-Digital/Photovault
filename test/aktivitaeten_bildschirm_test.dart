@@ -10,7 +10,7 @@ import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/aktivitaeten_screen.dart';
 import 'package:kern/services/aktivitaeten.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/meldungsfenster.dart';

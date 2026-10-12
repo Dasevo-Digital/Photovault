@@ -17,7 +17,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/fotobuch.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/widgets/fotobuch_export.dart';
 

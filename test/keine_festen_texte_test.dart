@@ -35,10 +35,10 @@ void main() {
     // Datenbank und wird beim Sprachwechsel auf Wunsch mit übersetzt.
     'packages/kern/lib/services/ki_vokabular_vorgabe.dart',
     // `ImportResult.error` wird protokolliert, nie angezeigt.
-    'lib/services/import_service.dart',
+    'packages/kern/lib/services/import_service.dart',
     // Eine Aufstellung der gebrauchten Kommandozeilenwerkzeuge für
     // Entwickler; nirgends in der Oberfläche.
-    'lib/services/platform/desktop_image_tools.dart',
+    'packages/kern/lib/services/platform/desktop_image_tools.dart',
     // Der Satzleser vergleicht EINGABEN gegen deutsche und englische
     // Wörter („Sommer", „letztes Jahr", „grün"). Das sind keine
     // Beschriftungen, sondern die Wörter, die der Nutzer tippt – sie durch

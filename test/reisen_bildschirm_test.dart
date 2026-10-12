@@ -13,7 +13,7 @@ import 'package:photo_vault/screens/laenderliste_screen.dart';
 import 'package:photo_vault/screens/reisen_screen.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:kern/services/reverse_geocoder.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/ortskachel.dart';

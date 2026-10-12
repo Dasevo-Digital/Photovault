@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show compute, visibleForTesting;
+import '../../berechne.dart';
+import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
@@ -361,7 +362,7 @@ class DesktopImageTools {
     // Werkzeuge.
     if (dartEndungen.contains(endung)) {
       try {
-        final direkt = await compute(
+        final direkt = await berechne(
           _skaliereUndKodiere,
           _SkalierAuftrag(
             await datei.readAsBytes(),
@@ -421,7 +422,7 @@ class DesktopImageTools {
       final rohBytes = await File(ziel).readAsBytes();
       // await ist wichtig: ohne würde das Future erst NACH dem catch
       // abgeschlossen und ein Fehler im Isolate entkäme der Fehlerbehandlung.
-      return await compute(
+      return await berechne(
         _skaliereUndKodiere,
         _SkalierAuftrag(
           rohBytes,
@@ -706,7 +707,7 @@ class _SkalierAuftrag {
   });
 }
 
-/// Top-Level-Funktion für `compute()` – verkleinert auf die längste Kante
+/// Top-Level-Funktion für [berechne] – verkleinert auf die längste Kante
 /// und kodiert als JPEG.
 Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
   final gelesen = img.decodeImage(a.bytes);

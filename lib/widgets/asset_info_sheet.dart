@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/zeitversatz.dart';
+import 'package:kern/services/zeitversatz.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -13,7 +13,7 @@ import '../screens/serienvergleich_screen.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import 'package:kern/services/asset_format.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/textstellen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

@@ -5,7 +5,7 @@ import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 import 'package:kern/db/rasterzeile.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import 'asset_thumbnail_tile.dart';
 import 'rasterbedienung.dart';

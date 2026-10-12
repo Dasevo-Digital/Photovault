@@ -7,8 +7,8 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/ai_tagging_service.dart'
     show defaultAiTagVocabulary;
-import 'package:photo_vault/services/import_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Prüft die DB-Bausteine des KI-Tagging-Backfills (siehe
 /// LibraryState.backfillAiTags): welche Fotos als "ungetaggt" gelten, dass

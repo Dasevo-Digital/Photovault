@@ -6,28 +6,19 @@ import 'package:flutter/foundation.dart' show compute, visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
+export 'package:kern/services/bildwerkzeuge.dart'
+    show VideoThumbnailResult, heicAndRawExtensions;
+
+import 'package:kern/services/bildwerkzeuge.dart';
 import 'cube_lut.dart';
 import 'develop_color.dart';
 import 'develop_render.dart';
 import 'package:kern/services/exif_camera.dart';
-import 'objektivkorrektur.dart';
-import 'platform/desktop_image_tools.dart';
+import 'package:kern/services/objektivkorrektur.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:kern/services/textstellen.dart';
-import 'raw_identify_parser.dart';
+import 'package:kern/services/raw_identify_parser.dart';
 import 'package:kern/services/raw_formats.dart';
-
-/// Formate, die Flutter (Skia) selbst nicht rendern kann und die das
-/// Dart-Paket `image` auch nicht dekodieren kann – für diese wird immer
-/// versucht, über [NativeImageConverter] eine JPEG-Vorschau zu erzeugen,
-/// unabhängig davon, ob ein direkter Dekodierversuch zufällig teilweise
-/// klappen würde.
-const heicAndRawExtensions = {
-  '.heic',
-  '.heif',
-  '.avif',
-  '.avifs',
-  ...rawImageExtensions,
-};
 
 /// Was sich für ein Foto an Tiefendaten holen lässt.
 ///
@@ -545,15 +536,7 @@ class NativeImageConverter {
         return null;
       }
     }
-    if (roh == null) return null;
-    // Little endian, wie bestellt; eine ungerade Länge kann nur ein
-    // abgeschnittenes letztes Byte sein.
-    final werte = Int16List(roh.length ~/ 2);
-    final sicht = ByteData.sublistView(roh);
-    for (var i = 0; i < werte.length; i++) {
-      werte[i] = sicht.getInt16(i * 2, Endian.little);
-    }
-    return werte;
+    return roh == null ? null : pcmAusBytes(roh);
   }
 
   /// Erkennt Text in einer Bilddatei über Apples Vision-Framework (rein
@@ -619,12 +602,52 @@ class NativeImageConverter {
   }
 }
 
-/// Ergebnis der nativen Video-Frame-Extraktion: das Thumbnail als JPEG-Bytes
-/// plus die Videolänge (falls vom Betriebssystem ermittelbar).
-class VideoThumbnailResult {
-  final Uint8List jpegBytes;
-  final double? durationSeconds;
-  const VideoThumbnailResult(this.jpegBytes, this.durationSeconds);
+/// Der Weg der App für Import und Auswertungen im Kern: unter macOS der
+/// native Kanal, sonst die Werkzeuge – genau das, was [NativeImageConverter]
+/// selbst tut. `main()` setzt ihn als [Bildwerkzeuge.standard].
+class AppBildwerkzeuge implements Bildwerkzeuge {
+  const AppBildwerkzeuge();
+
+  @override
+  Future<Uint8List?> convertToJpegBytes(
+    File file, {
+    int? maxDimension = 2048,
+    double quality = 0.9,
+    bool objektivkorrektur = true,
+  }) => NativeImageConverter.convertToJpegBytes(
+    file,
+    maxDimension: maxDimension,
+    quality: quality,
+    objektivkorrektur: objektivkorrektur,
+  );
+
+  @override
+  Future<VideoThumbnailResult?> generateVideoThumbnail(
+    File file, {
+    int maxDimension = 800,
+    double? anteil,
+    bool hoheQualitaet = false,
+  }) => NativeImageConverter.generateVideoThumbnail(
+    file,
+    maxDimension: maxDimension,
+    anteil: anteil,
+    hoheQualitaet: hoheQualitaet,
+  );
+
+  @override
+  Future<Aufnahmedaten> readCameraMetadata(File file) =>
+      NativeImageConverter.readCameraMetadata(file);
+
+  @override
+  Future<Int16List?> videoTon(File file, {int hoechstensSekunden = 0}) =>
+      NativeImageConverter.videoTon(
+        file,
+        hoechstensSekunden: hoechstensSekunden,
+      );
+
+  @override
+  Future<List<Textstelle>?> recognizeText(File file) =>
+      NativeImageConverter.recognizeText(file);
 }
 
 /// Regler-Werte des DevelopScreen für [NativeImageConverter.developImage] –

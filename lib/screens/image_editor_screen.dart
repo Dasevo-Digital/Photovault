@@ -19,8 +19,8 @@ import 'package:path/path.dart' as p;
 
 import 'package:kern/db/database.dart';
 import '../services/bilddekodierung.dart';
-import '../services/import_service.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../services/meldungsdienst.dart';
 

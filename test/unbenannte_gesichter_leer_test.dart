@@ -10,7 +10,7 @@ import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/people_screen.dart';
 import 'package:kern/services/face_engine_service.dart';
 import 'package:kern/services/modell_halter.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// **„Nach dem Import keine unbekannten Gesichter."**

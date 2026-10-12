@@ -1,6 +1,6 @@
 import 'package:kern/db/database.dart';
 import 'bilddekodierung.dart' show vergissAlleBilder;
-import 'storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Welche nicht-destruktive Bearbeitung an einer Aufnahme hängt.
 ///

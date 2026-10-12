@@ -20,7 +20,7 @@ import '../services/blur_detection.dart';
 import '../services/export_service.dart';
 import '../services/rasterauswahl.dart';
 import 'package:kern/services/textstellen.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/bild_zoom_gesten.dart';

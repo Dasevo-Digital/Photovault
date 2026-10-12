@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/import_service.dart';
+import 'package:kern/services/import_service.dart';
 
 /// **Was die App herausrendert, trägt seinen Farbraum bei sich.**
 ///

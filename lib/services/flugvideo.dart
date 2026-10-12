@@ -45,7 +45,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 
-import 'platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'platform/nativer_videoschreiber.dart';
 
 /// Wie ein Lauf ausgegangen ist.

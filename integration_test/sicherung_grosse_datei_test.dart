@@ -20,11 +20,16 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
-import 'package:photo_vault/services/import_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
+import 'package:photo_vault/services/native_image_converter.dart'
+    show AppBildwerkzeuge;
+import 'package:kern/services/bildwerkzeuge.dart' show Bildwerkzeuge;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // Den Bildweg der App wie in main(): unter macOS der native Kanal.
+  Bildwerkzeuge.standard = const AppBildwerkzeuge();
 
   test('Datei groesser als das Zwischenlager kommt trotzdem an', () async {
     final lager = Directory('/run/user/1000/pv_zwischenlager_test');

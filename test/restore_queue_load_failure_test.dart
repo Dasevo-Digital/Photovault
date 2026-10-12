@@ -7,7 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/modell_halter.dart';
 import 'package:photo_vault/services/restore_queue_service.dart';
 import 'package:photo_vault/services/restore_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Audit-Fund: Ein Ladefehler des Restaurierungs-Modells (z.B. eine
 /// beschädigte Datei) verließ RestoreQueueService._process() unbehandelt,

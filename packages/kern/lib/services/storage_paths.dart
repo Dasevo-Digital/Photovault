@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
-import 'library_location.dart';
-
 /// Kapselt sämtliche Pfade der lokalen Bibliothek. Layout (Wurzelverzeichnis
 /// standardmäßig im App-Support-Ordner, siehe [LibraryLocation] – kann in
 /// den Einstellungen auf einen beliebigen anderen Ordner verlegt werden):
@@ -28,20 +26,13 @@ class StoragePaths {
 
   final Directory root;
 
-  static StoragePaths? _instance;
-
-  static Future<StoragePaths> instance() async {
-    if (_instance != null) return _instance!;
-    final libraryRoot = await LibraryLocation.currentRoot();
-    final root = Directory(p.join(libraryRoot.path, 'library'));
-    _instance = await _createAt(root);
-    return _instance!;
-  }
+  /// Legt die Unterordner unter [root] an (falls nötig) und gibt die
+  /// Pfade zurück. Wo die Bibliothek liegt, weiss die App
+  /// (`LibraryLocation`) – ein Server öffnet so jede seiner Bibliotheken.
+  static Future<StoragePaths> oeffne(Directory root) => _createAt(root);
 
   /// Erzeugt eine eigenständige [StoragePaths]-Instanz unter einem
-  /// beliebigen Wurzelverzeichnis, ohne das `path_provider`-Plugin (das
-  /// echte Platform-Channels braucht) zu berühren und ohne das
-  /// App-weite Singleton zu setzen. Nur für Tests gedacht, damit
+  /// beliebigen Wurzelverzeichnis. Nur für Tests gedacht, damit
   /// ImportService/BackupService dort mit einem temporären Verzeichnis
   /// statt dem echten App-Support-Ordner arbeiten können.
   @visibleForTesting

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/reverse_geocoder.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// Die ganze Kette: Ortsname aus dem Lebenslauf zu einer Koordinate auf

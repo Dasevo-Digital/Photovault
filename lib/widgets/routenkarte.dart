@@ -36,7 +36,7 @@ import 'package:latlong2/latlong.dart' as ll;
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/reiseroute.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import 'mini_location_map.dart'
     show Kachelschicht, buildMapAttribution, kartenHoechsteStufe;

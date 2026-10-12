@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/standort_parser.dart';
+import 'package:kern/services/standort_parser.dart';
 
 /// Gegen die echte Ausgabeform von `pv_standort.exe`, abgenommen am
 /// 25.08.2026 auf dem Windows-Testrechner. Gemessen wurden dort 19 m

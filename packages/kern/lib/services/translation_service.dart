@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
-import 'marian_tokenizer.dart';
-import 'modellthreads.dart';
+import 'package:kern/services/marian_tokenizer.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Welche Richtung ein [TranslationService] übersetzt.
 enum Uebersetzungsrichtung {

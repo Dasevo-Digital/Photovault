@@ -21,7 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../services/schwebevorschau.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'video_playback.dart';
 
 /// Was eine Kachel von der Vorschau wissen muss.

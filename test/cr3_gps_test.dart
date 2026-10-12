@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/cr3_gps.dart';
-import 'package:photo_vault/services/dateikennung.dart';
+import 'package:kern/services/cr3_gps.dart';
+import 'package:kern/services/dateikennung.dart';
 
 import 'cr3_bauen.dart';
 

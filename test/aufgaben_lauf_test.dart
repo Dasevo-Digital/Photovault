@@ -16,7 +16,7 @@ import 'package:kern/services/face_engine_service.dart';
 import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/modell_halter.dart';
 import 'package:kern/services/ocr_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/translation_service.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';

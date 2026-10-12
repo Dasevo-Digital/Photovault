@@ -6,7 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import 'package:kern/db/database.dart';
 import 'export_service.dart';
-import 'storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Das Dateiformat eines Kontaktblatts – als Kürzel und als Endung.
 ///

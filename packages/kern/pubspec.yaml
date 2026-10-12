@@ -24,6 +24,7 @@ dependencies:
     path: ../../third_party/onnxruntime_api
   path: ^1.9.0
   sqlite3: ^3.5.1
+  uuid: ^4.5.1
 
 dev_dependencies:
   build_runner: ^2.4.13

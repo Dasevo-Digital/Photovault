@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/widgets/asset_thumbnail_tile.dart';
 import 'package:photo_vault/widgets/color_label_picker.dart';
 import 'package:photo_vault/widgets/star_rating.dart';

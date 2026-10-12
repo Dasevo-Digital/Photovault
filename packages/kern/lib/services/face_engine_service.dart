@@ -5,10 +5,10 @@ import 'dart:typed_data';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
-import 'face_postprocess.dart';
-import 'modellthreads.dart';
+import 'package:kern/services/face_postprocess.dart';
+import 'package:kern/services/modellthreads.dart';
 
-export 'face_postprocess.dart' show DetectedFace;
+export 'package:kern/services/face_postprocess.dart' show DetectedFace;
 
 const int _yunetInputSize =
     640; // entspricht der im ONNX-Graph fest hinterlegten Größe

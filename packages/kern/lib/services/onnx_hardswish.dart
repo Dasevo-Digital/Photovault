@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:meta/meta.dart' show visibleForTesting;
 import 'dart:typed_data';
+
+import 'package:meta/meta.dart' show visibleForTesting;
 
 /// Ersetzt `HardSwish`-Knoten in einer ONNX-Datei durch `HardSigmoid` und
 /// `Mul` – rechnerisch dasselbe, nur aus Schritten zusammengesetzt, die

@@ -18,7 +18,7 @@ import '../services/bilddekodierung.dart';
 import '../services/map_clustering.dart';
 import '../services/native_image_converter.dart';
 import '../services/lebenslauf.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';

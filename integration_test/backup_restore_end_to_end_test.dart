@@ -6,8 +6,11 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
-import 'package:photo_vault/services/import_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
+import 'package:photo_vault/services/native_image_converter.dart'
+    show AppBildwerkzeuge;
+import 'package:kern/services/bildwerkzeuge.dart' show Bildwerkzeuge;
 
 /// Prüft den vollständigen, plattformneutralen Weg auf echten Dateien und
 /// SQLite-Dateien: ein neuer Rechner bekommt nur das Sicherungsverzeichnis
@@ -17,6 +20,8 @@ import 'package:photo_vault/services/storage_paths.dart';
 /// Bibliothek. Er kann unverändert auf macOS, Linux und Windows laufen.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // Den Bildweg der App wie in main(): unter macOS der native Kanal.
+  Bildwerkzeuge.standard = const AppBildwerkzeuge();
 
   test(
     'Backup und Restore ergeben auf einem frischen Bibliotheksort denselben Bestand',

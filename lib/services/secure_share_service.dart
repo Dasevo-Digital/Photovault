@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 
 import 'package:kern/db/database.dart';
 import 'export_service.dart';
-import 'import_service.dart';
+import 'package:kern/services/import_service.dart';
 import 'vault_crypto.dart';
 
 /// Ein Paket wurde mit einer abgelaufenen Freigabefrist geöffnet.

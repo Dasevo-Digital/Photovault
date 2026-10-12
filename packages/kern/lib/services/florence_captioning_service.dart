@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
-import 'bart_tokenizer.dart';
-import 'modellthreads.dart';
+import 'package:kern/services/bart_tokenizer.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Bildvorverarbeitung laut `preprocessor_config.json` des Exports:
 /// 768×768, ImageNet-Statistik, **kein** mittiger Zuschnitt

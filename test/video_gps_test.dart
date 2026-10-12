@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/video_gps.dart';
+import 'package:kern/services/video_gps.dart';
 
 /// **Der Ort im Video.** In der Prüfbibliothek trugen 216 von 440 Videos
 /// einen Ort in der Datei und keines einen in der Datenbank.

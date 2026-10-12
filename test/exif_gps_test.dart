@@ -1,6 +1,6 @@
 import 'package:exif/exif.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/exif_gps.dart';
+import 'package:kern/services/exif_gps.dart';
 
 /// Baut ein minimales, aber realistisches Tag-Set nachwie es
 /// `readExifFromBytes` für ein Foto mit GPS-Daten liefern würde – ohne eine

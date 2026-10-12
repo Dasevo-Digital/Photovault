@@ -27,8 +27,8 @@ import 'dart:typed_data';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
-import 'kratzersuche.dart' show Kratzerfund;
-import 'modellthreads.dart';
+import 'package:kern/services/kratzersuche.dart' show Kratzerfund;
+import 'package:kern/services/modellthreads.dart';
 
 /// Ab dieser Wahrscheinlichkeit gilt ein Punkt als Kratzer.
 ///

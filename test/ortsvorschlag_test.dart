@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/ortsvorschlag.dart';
 import 'package:kern/services/reverse_geocoder.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// **Eine verworfene Messung gilt nur für ihren Datenstand.**

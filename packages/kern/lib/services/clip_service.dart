@@ -6,8 +6,8 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
-import 'clip_tokenizer.dart';
-import 'modellthreads.dart';
+import 'package:kern/services/clip_tokenizer.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Mittelwert/Standardabweichung, mit denen CLIP-Modelle trainiert wurden
 /// (Standard für alle offiziellen OpenAI-CLIP-Checkpoints).

@@ -8,7 +8,7 @@ import '../l10n/app_localizations.dart';
 import '../services/asset_grouping.dart';
 import '../services/groessentext.dart';
 import 'package:kern/services/listenspalten.dart';
-import '../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/color_label_picker.dart';
 import '../widgets/star_rating.dart';

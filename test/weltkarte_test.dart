@@ -11,7 +11,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/weltkarte_screen.dart';
 import 'package:kern/services/reverse_geocoder.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/screens/ortsansicht_screen.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';

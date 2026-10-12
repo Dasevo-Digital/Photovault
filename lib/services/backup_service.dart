@@ -11,8 +11,8 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import 'blur_detection.dart';
 import 'package:kern/services/face_engine_service.dart';
-import 'import_service.dart';
-import 'storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'vault_crypto.dart';
 import 'xmp_writer.dart';
 

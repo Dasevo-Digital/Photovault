@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:kern/services/videostandbilder.dart';
 
 /// Holt aus einem echten Video die Standbilder, die

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 
 /// Der Werkzeuge-Bildschirm fragte für seine Statuszeile
 /// `NativeImageConverter.isSupported()` ab – das ist ausserhalb von macOS

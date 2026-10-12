@@ -12,7 +12,7 @@ import 'package:photo_vault/screens/search_screen.dart';
 import 'package:photo_vault/screens/timeline_screen.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/sortierung.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/widgets/asset_thumbnail_tile.dart';
 import 'package:photo_vault/widgets/month_grouped_asset_grid.dart';

@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/dateikennung.dart';
-import 'package:photo_vault/services/import_service.dart';
+import 'package:kern/services/dateikennung.dart';
+import 'package:kern/services/import_service.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
 
 /// Baut den Kopf eines ISO-BMFF-Kastens: vier Byte Länge, `ftyp`, Marke.

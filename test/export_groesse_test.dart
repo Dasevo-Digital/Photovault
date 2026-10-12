@@ -6,8 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations_de.dart';
 import 'package:photo_vault/services/export_service.dart';
-import 'package:photo_vault/services/import_service.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// Der Export kann jetzt verkleinern. Entscheidend ist, dass die
 /// Voreinstellung weiterhin die unveränderte Originaldatei liefert und dass

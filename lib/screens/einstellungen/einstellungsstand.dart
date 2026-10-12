@@ -7,7 +7,7 @@ import 'package:kern/db/database.dart';
 import '../../services/aktualisierungspruefung.dart';
 import '../../services/kachelvorrat.dart';
 import '../../services/library_location.dart';
-import '../../services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import '../../state/library_state.dart';
 import '../../widgets/eigene_karte_einstellung.dart';
 

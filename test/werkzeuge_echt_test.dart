@@ -8,7 +8,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/platform/desktop_image_tools.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 
 /// Der Ersatz für die nativen macOS-Funktionen war unter Linux
 /// geschrieben, aber nie ausgeführt worden (docs/plan_linux.md, Phasen 2

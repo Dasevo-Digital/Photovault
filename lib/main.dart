@@ -17,6 +17,8 @@ import 'screens/home_shell.dart';
 import 'screens/initialisierungsfehler_screen.dart';
 import 'services/bilddekodierung.dart';
 import 'services/beenden_waechter.dart';
+import 'services/native_image_converter.dart' show AppBildwerkzeuge;
+import 'package:kern/services/bildwerkzeuge.dart' show Bildwerkzeuge;
 import 'state/library_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/zierbaum_farben.dart' show zierschriftenLizenzenAnmelden;
@@ -38,6 +40,9 @@ Future<void> main() async {
   // Meldungen aus dem Kern (package:kern) wie die der App: über
   // debugPrint, das lange Ausgaben nicht verschluckt.
   protokollZiel = debugPrint;
+  // Import und Auswertungen im Kern nehmen den Bildweg der App: unter
+  // macOS den nativen Kanal, sonst die Werkzeuge.
+  Bildwerkzeuge.standard = const AppBildwerkzeuge();
   // Muss vor der ersten Videowiedergabe laufen (siehe widgets/video_playback.dart).
   MediaKit.ensureInitialized();
   // Ohne Argument werden alle Locales vorbereitet – nötig, weil die

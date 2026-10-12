@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/widgets/meldungsfenster.dart';
 import 'package:photo_vault/widgets/selection_action_bar.dart';

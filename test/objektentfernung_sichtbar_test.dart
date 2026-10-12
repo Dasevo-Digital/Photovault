@@ -9,7 +9,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/image_editor_screen.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// **„Objektentfernung geht nicht."**
 ///

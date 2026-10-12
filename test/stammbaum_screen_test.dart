@@ -17,7 +17,7 @@ import 'package:photo_vault/widgets/faecher_ansicht.dart';
 import 'package:photo_vault/widgets/familien_zeitleiste.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:kern/services/stammbaum.dart';
-import 'package:photo_vault/services/storage_paths.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 
