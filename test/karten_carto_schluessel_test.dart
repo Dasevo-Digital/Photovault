@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
+
+import 'hilfen/quelltext.dart';
 
 /// Die dunkle Karte und ihr CARTO-Schlüssel.
 ///
@@ -211,11 +211,7 @@ void main() {
     // Ausprobieren" doch in den Quelltext zu schreiben.
     final verdacht = RegExp(r'key=[A-Za-z0-9_\-]{8,}');
     final treffer = <String>[];
-    for (final datei
-        in Directory('lib')
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei in dartQuellen()) {
       for (final zeile in datei.readAsLinesSync()) {
         if (verdacht.hasMatch(zeile)) treffer.add('${datei.path}: $zeile');
       }

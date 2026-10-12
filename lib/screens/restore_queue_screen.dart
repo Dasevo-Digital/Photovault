@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/dauertext.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/restore_queue_service.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

@@ -13,7 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
 import '../services/asset_display_path.dart';

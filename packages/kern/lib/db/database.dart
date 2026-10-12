@@ -10,16 +10,15 @@ import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' show Database;
 import 'package:path/path.dart' as p;
 
-import '../services/ai_tagging_service.dart' show defaultAiTagVocabulary;
+import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
 import '../services/aktivitaeten.dart' show istBekannteArt;
 import '../services/embedding_codec.dart';
 import '../services/embedding_similarity.dart' show duplikatPaarSchluessel;
 import '../services/exif_camera.dart';
 import '../services/face_threshold.dart';
 import '../services/gelaendeebenen.dart';
-import '../services/library_location.dart';
 import '../services/library_stats.dart';
-import '../services/lichtstimmung.dart';
+import '../services/tageszeit.dart';
 import '../services/reisen.dart' show Reiseart, reiseartVorgabe;
 import '../services/listenspalten.dart';
 import '../services/ortsvorschlag.dart' show Ortsloser, Ortsnachbar;
@@ -241,10 +240,12 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) => stufeAuf(m, from, to),
   );
 
-  /// Öffnet (bzw. legt beim ersten Start an) die lokale SQLite-Datei im
-  /// App-Support-Verzeichnis des Betriebssystems.
-  static Future<AppDatabase> open() async {
-    final libraryRoot = await LibraryLocation.currentRoot();
+  /// Öffnet (bzw. legt beim ersten Start an) die SQLite-Datei der
+  /// Bibliothek in [libraryRoot].
+  ///
+  /// Wo die Bibliothek liegt, weiss die App (`LibraryLocation`), nicht die
+  /// Datenbank – so öffnet ein Server seine Bibliotheken auf demselben Weg.
+  static Future<AppDatabase> open(Directory libraryRoot) async {
     await libraryRoot.create(recursive: true);
     final dbFile = File(p.join(libraryRoot.path, 'library.sqlite'));
     return AppDatabase(

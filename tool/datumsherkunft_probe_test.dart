@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/import_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';

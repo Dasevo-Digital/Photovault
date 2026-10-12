@@ -4,8 +4,8 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/ortsvorschlag.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/ortsvorschlag.dart';
 
 /// Misst die Ortsvorschlaege an einer **Kopie** einer echten Bibliothek.
 ///

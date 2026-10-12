@@ -6,7 +6,7 @@
 /// doch, und beide sind am fertigen Bild nicht zu beurteilen.
 library;
 
-import 'reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 
 /// Ein Punkt der Route.
 typedef Routenpunkt = ({double breite, double laenge, DateTime zeit});

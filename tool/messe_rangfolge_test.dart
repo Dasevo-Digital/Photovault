@@ -16,7 +16,7 @@ import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:photo_vault/services/clip_service.dart';
 

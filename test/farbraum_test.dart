@@ -95,7 +95,9 @@ void main() {
     // führt die Liste von Hand nach (sie kann die Dart-Datei nicht
     // importieren), und beide auseinanderlaufen zu lassen hiesse, dass ein
     // Format auf einem Weg entwickelt wird und auf dem anderen nicht.
-    final dart = File('lib/services/raw_formats.dart').readAsStringSync();
+    final dart = File(
+      'packages/kern/lib/services/raw_formats.dart',
+    ).readAsStringSync();
     final dartEndungen = RegExp(r"'(\.[a-z0-9]+)'")
         .allMatches(
           dart.substring(

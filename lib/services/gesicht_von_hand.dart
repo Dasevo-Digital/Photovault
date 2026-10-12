@@ -6,7 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import 'face_engine_service.dart';
 

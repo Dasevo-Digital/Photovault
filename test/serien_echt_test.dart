@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/embedding_codec.dart';
-import 'package:photo_vault/services/embedding_similarity.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/embedding_codec.dart';
+import 'package:kern/services/embedding_similarity.dart';
 
 /// Was [findBurstGroups] an einer **echten** Bibliothek findet.
 ///

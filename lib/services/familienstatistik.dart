@@ -12,8 +12,8 @@
 library;
 
 import 'lebenslauf.dart';
-import 'stammbaum.dart';
-import 'verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Eine Person, wie die Auswertung sie braucht.
 typedef StatPerson = ({

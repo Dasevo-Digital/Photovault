@@ -29,7 +29,7 @@
 library;
 
 import 'blur_detection.dart' show blurryScoreThreshold;
-import 'search_filters.dart';
+import 'package:kern/services/search_filters.dart';
 
 /// Ein Wort oder eine Wendung, die der Leser erkannt hat.
 ///

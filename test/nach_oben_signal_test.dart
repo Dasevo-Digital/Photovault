@@ -1,12 +1,12 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/asset_grouping.dart';
 import 'package:photo_vault/services/storage_paths.dart';
-import 'package:photo_vault/services/listenspalten.dart';
+import 'package:kern/services/listenspalten.dart';
 import 'package:photo_vault/widgets/asset_list_view.dart';
 import 'package:photo_vault/widgets/month_grouped_asset_grid.dart';
 import 'dart:io';

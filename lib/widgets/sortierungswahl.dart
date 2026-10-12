@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/sortierung.dart';
+import 'package:kern/services/sortierung.dart';
 
 /// Der Name einer Reihenfolge in der Sprache der Oberfläche.
 String sortierungName(AppTexte t, Rastersortierung s) => switch (s) {

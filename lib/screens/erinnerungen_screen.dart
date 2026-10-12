@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../services/rueckblick.dart';
 import '../state/library_state.dart';

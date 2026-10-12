@@ -17,7 +17,7 @@ import '../services/kratzermodell.dart';
 import '../services/kratzersuche.dart';
 import 'package:path/path.dart' as p;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/bilddekodierung.dart';
 import '../services/import_service.dart';
 import '../services/storage_paths.dart';

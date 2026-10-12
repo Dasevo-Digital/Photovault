@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/familienstatistik.dart';
 import 'package:photo_vault/services/lebenslauf.dart';
-import 'package:photo_vault/services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Die Familienstatistik.
 ///

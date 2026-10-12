@@ -2,13 +2,13 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/familienstatistik_screen.dart';
 import 'package:photo_vault/services/familienstatistik.dart';
 import 'package:photo_vault/services/fotostatistik.dart';
-import 'package:photo_vault/services/stammbaum.dart';
-import 'package:photo_vault/services/verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Die Familienstatistik nach dem Umbau: Die Bilder stehen vorn, die
 /// Lebensdaten hinten, und leere Kacheln gibt es nicht mehr.

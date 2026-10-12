@@ -4,9 +4,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/ortsvorschlag.dart';
-import 'package:photo_vault/services/reverse_geocoder.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/ortsvorschlag.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 

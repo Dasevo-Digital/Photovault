@@ -13,7 +13,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Genau die Folge, die `_applyMetadataExport` je Eintrag abarbeitet.
 Future<void> eintrag(AppDatabase db, String id, int n) async {

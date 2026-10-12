@@ -9,12 +9,12 @@ import 'package:path/path.dart' as p;
 import 'cube_lut.dart';
 import 'develop_color.dart';
 import 'develop_render.dart';
-import 'exif_camera.dart';
+import 'package:kern/services/exif_camera.dart';
 import 'objektivkorrektur.dart';
 import 'platform/desktop_image_tools.dart';
 import 'textstellen.dart';
 import 'raw_identify_parser.dart';
-import 'raw_formats.dart';
+import 'package:kern/services/raw_formats.dart';
 
 /// Formate, die Flutter (Skia) selbst nicht rendern kann und die das
 /// Dart-Paket `image` auch nicht dekodieren kann – für diese wird immer

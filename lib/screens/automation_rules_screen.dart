@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 

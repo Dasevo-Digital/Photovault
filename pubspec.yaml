@@ -69,6 +69,10 @@ dependencies:
   # was geändert ist, steht in third_party/flutter_onnxruntime/ANPASSUNGEN.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
+  # Datenbank und Dienste ohne Flutter, gemeinsam mit dem Server
+  # (packages/kern/README.md).
+  kern:
+    path: packages/kern
 
   # HTTP-Downloads der offenen Modelldateien (mit Fortschrittsanzeige)
   dio: ^5.7.0

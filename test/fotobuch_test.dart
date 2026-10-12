@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/fotobuch.dart';
 import 'package:photo_vault/services/storage_paths.dart';

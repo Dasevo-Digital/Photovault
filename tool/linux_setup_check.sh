@@ -126,7 +126,7 @@ if [ "$fehlt_build" -gt 0 ]; then
   printf '  %s%d Bau-Voraussetzung(en) fehlen%s – bitte oben genannte Pakete installieren.\n' "$ROT" "$fehlt_build" "$AUS"
 else
   printf '  %sBauen möglich.%s Nächster Schritt:\n' "$GRUEN" "$AUS"
-  printf '      flutter pub get && dart run build_runner build --delete-conflicting-outputs\n'
+  printf '      flutter pub get\n'
   printf '      flutter build linux    # oder: flutter run -d linux\n'
 fi
 if [ "$fehlt_laufzeit" -gt 0 ]; then

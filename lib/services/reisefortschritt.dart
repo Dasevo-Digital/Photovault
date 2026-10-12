@@ -8,7 +8,7 @@
 /// ob „Bayern" einmal oder zweimal gezählt wurde.
 library;
 
-import 'laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 
 /// Was eine Aufnahme über ihren Ort weiß, samt Anzahl.
 typedef Besuchsangabe = ({

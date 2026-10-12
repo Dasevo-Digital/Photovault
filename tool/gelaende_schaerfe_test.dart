@@ -34,7 +34,7 @@ import 'package:photo_vault/services/gelaendetextur.dart';
 import 'package:photo_vault/services/wanderobjekte.dart';
 import 'package:photo_vault/widgets/gelaende.dart';
 import 'package:photo_vault/widgets/gelaendeschilder.dart';
-import 'package:photo_vault/services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 
 /// Die Wanderung durch das Ilsetal – dieselbe, an der die Zahlen im
 /// Entwurf gemessen sind.

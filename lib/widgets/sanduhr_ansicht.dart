@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/sanduhr.dart';
-import '../services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import '../theme/app_spacing.dart';
 
 /// Ein Kasten in der Sanduhr. Kleiner als die Karten der Baum-Ansicht –

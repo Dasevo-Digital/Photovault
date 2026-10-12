@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show Value, Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// **Der Index wurde neu geschrieben, auch wenn sich nichts geändert hatte.**
 ///

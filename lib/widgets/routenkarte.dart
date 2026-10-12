@@ -33,7 +33,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/reiseroute.dart';
 import '../services/storage_paths.dart';

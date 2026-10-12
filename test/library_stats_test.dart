@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/library_stats.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/library_stats.dart';
 
 /// Fügt ein synthetisches Asset mit frei wählbaren, für die Statistik
 /// relevanten Feldern ein (analog zu insertSyntheticAssets in

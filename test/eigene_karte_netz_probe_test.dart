@@ -5,7 +5,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
-import 'package:photo_vault/services/eigenkarte.dart';
+import 'package:kern/services/eigenkarte.dart';
 import 'package:photo_vault/services/netzkennung.dart';
 
 /// Sonde: Stimmen die Zoomgrenzen der mitgelieferten Vorlagen noch?

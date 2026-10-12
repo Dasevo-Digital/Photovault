@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/sanduhr.dart';
-import 'package:photo_vault/services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Die Anordnung der Sanduhr.
 ///

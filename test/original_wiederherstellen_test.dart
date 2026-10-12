@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';

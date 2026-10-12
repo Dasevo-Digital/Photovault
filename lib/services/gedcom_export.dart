@@ -11,8 +11,8 @@
 /// Angaben unsicherer.
 library;
 
-import 'stammbaum.dart';
-import 'verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Die Dateiendung des Formats.
 const gedcomEndung = '.ged';

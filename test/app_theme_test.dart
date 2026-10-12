@@ -1,7 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 
 /// Prüft die Persistenz des Erscheinungsbild-Modus (setThemeMode/

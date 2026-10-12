@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
-import '../services/face_threshold.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/face_threshold.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/pin_dialogs.dart';
 import 'package:flutter/foundation.dart' show compute;
 
-import '../services/embedding_codec.dart';
+import 'package:kern/services/embedding_codec.dart';
 import '../services/face_suggestions.dart';
 import 'asset_viewer_screen.dart';
 import 'face_review_screen.dart';

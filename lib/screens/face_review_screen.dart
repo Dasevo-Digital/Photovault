@@ -9,7 +9,7 @@ import '../l10n/app_localizations.dart';
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/bilddekodierung.dart';
 import '../services/gesicht_von_hand.dart';
 import '../state/library_state.dart';

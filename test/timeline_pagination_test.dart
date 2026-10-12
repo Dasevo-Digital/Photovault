@@ -1,6 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Fügt [count] synthetische Assets in einem einzigen Batch ein – der volle
 /// Import-Pfad (Thumbnail/EXIF/Prüfsumme aus echten Bytes) wäre für einen

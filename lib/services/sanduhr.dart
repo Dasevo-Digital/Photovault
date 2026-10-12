@@ -12,7 +12,7 @@
 /// nicht an – man rechnet es nach.
 library;
 
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Ein Kasten in der Sanduhr, in Rasterkoordinaten.
 ///

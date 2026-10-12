@@ -6,7 +6,7 @@
 /// Funktion statt in den Maler.
 library;
 
-import 'verwandtschaftsgrad.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Die vier Gruppen, nach denen die Karte einfärbt.
 ///

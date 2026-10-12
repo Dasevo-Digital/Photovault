@@ -1,4 +1,4 @@
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'bilddekodierung.dart' show vergissAlleBilder;
 import 'storage_paths.dart';
 

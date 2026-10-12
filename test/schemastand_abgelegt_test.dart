@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
-/// **Jede Schemafassung liegt als Stand unter drift_schemas/.**
+/// **Jede Schemafassung liegt als Stand unter packages/kern/drift_schemas/.**
 ///
 /// Aus zwei abgelegten Ständen erzeugt `dart run drift_dev make-migrations`
 /// Tests, die die Migration dazwischen an einer echten Datenbank
@@ -17,7 +17,9 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     final fassung = db.schemaVersion;
-    final datei = File('drift_schemas/default/drift_schema_v$fassung.json');
+    final datei = File(
+      'packages/kern/drift_schemas/default/drift_schema_v$fassung.json',
+    );
     expect(
       datei.existsSync(),
       isTrue,

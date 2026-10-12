@@ -13,7 +13,7 @@
 /// [bildreihen] und dem Zeitstrahl.
 library;
 
-import '../db/rasterzeile.dart';
+import 'package:kern/db/rasterzeile.dart';
 
 /// Wie lange die Maus stehen bleiben muss, bevor das Video anläuft.
 ///

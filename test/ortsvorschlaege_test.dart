@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 
 /// **Vorschlagen statt raten.**
 ///

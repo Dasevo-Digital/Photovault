@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/ai_tagging_service.dart';
 import '../services/backup_service.dart';
@@ -27,22 +27,22 @@ import '../services/cube_lut.dart';
 import '../services/develop_color.dart';
 import '../services/speicher_rueckgabe.dart';
 import '../services/translation_service.dart';
-import '../services/embedding_codec.dart';
+import 'package:kern/services/embedding_codec.dart';
 import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/face_postprocess.dart';
 import '../services/geo_data_download_service.dart';
 import '../services/import_service.dart';
-import '../services/raw_formats.dart';
+import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
 import '../services/model_catalog.dart';
 import '../services/model_download_service.dart';
 import '../services/model_processing_state.dart';
 import '../services/ocr_service.dart';
 import '../services/personenvorschlag.dart';
-import '../services/ortsvorschlag.dart';
+import 'package:kern/services/ortsvorschlag.dart';
 import '../services/serienvorschlag.dart';
-import '../services/videostandbilder.dart';
+import 'package:kern/services/videostandbilder.dart';
 import '../services/textstellen.dart';
 import '../services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
@@ -52,7 +52,7 @@ import '../services/motion_photo.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
-import '../services/reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 import '../widgets/mini_location_map.dart'
     show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
@@ -829,7 +829,7 @@ class LibraryState extends ChangeNotifier {
     _bibliothekBelegt = false;
     _belegterOrt = null;
 
-    db = await AppDatabase.open();
+    db = await AppDatabase.open(await LibraryLocation.currentRoot());
     _datenbankGeoeffnet = true;
     paths = await StoragePaths.instance();
     modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);

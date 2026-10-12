@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import '../services/staubflecken.dart';

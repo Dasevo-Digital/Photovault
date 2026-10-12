@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 /// Issue #15: Nach einem vollständigen Lauf zählen die Aufgaben ohne

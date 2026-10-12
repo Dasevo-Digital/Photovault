@@ -14,7 +14,7 @@ library;
 
 import 'package:xml/xml.dart';
 
-import 'reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 
 /// Ein Punkt einer aufgezeichneten Spur – mit Zeit, wie ihn das
 /// Verorten braucht.

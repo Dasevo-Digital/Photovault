@@ -3,12 +3,12 @@ import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/rasterstufen.dart';
+import 'package:kern/services/rasterstufen.dart';
 import '../services/rueckblick.dart';
-import '../services/search_filters.dart';
+import 'package:kern/services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -33,7 +33,7 @@ import 'timeline_screen.dart';
 import 'trash_screen.dart';
 import '../widgets/profilbild.dart';
 import '../widgets/stromhalter.dart';
-import '../services/laendernamen.dart';
+import 'package:kern/services/laendernamen.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
 
 /// Wie viele Kacheln ein Streifen höchstens zeigt.

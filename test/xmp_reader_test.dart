@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/xmp_reader.dart';
 import 'package:photo_vault/services/xmp_writer.dart';
 

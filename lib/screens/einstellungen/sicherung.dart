@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
-import '../../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/backup_service.dart';
 import '../../services/backup_verification_service.dart';

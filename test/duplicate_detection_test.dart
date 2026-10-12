@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/embedding_similarity.dart';
+import 'package:kern/services/embedding_similarity.dart';
 
 Float32List _randomUnitVector(math.Random rand, int dim) {
   final v = Float32List(dim);

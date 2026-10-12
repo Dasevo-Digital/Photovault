@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../db/rasterzeile.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../theme/app_theme.dart';
 import 'timeline_grid_layout.dart';
 

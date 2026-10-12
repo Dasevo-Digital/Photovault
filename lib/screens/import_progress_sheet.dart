@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
-import '../services/raw_formats.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/raw_formats.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/camera_source_picker_dialog.dart';

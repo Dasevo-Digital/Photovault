@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/faechertafel.dart';
-import 'package:photo_vault/services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import 'package:photo_vault/services/tafel_pdf.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 

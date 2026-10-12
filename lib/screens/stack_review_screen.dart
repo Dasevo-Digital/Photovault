@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/suchfehler.dart';
 import '../services/serienvorschlag.dart';
 import 'serienvergleich_screen.dart';

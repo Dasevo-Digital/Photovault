@@ -6,7 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// **Was passiert, wenn zwei auf dieselbe Datenbank schreiben.**
 ///

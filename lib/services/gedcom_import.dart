@@ -20,8 +20,8 @@ library;
 import 'dart:convert';
 
 import 'lebenslauf.dart';
-import 'stammbaum.dart';
-import 'verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Warum eine Datei gar nicht erst gelesen wurde.
 enum GedcomAbbruch {

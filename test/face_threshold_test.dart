@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/face_threshold.dart';
+import 'package:kern/services/face_threshold.dart';
 
 /// Die Herleitung der persönlichen Wiedererkennungs-Schwelle.
 ///

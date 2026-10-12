@@ -1,10 +1,10 @@
-import '../db/rasterzeile.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/bildreihen.dart';
-import '../services/rasterstufen.dart';
+import 'package:kern/services/rasterstufen.dart';
 
 export '../services/bildreihen.dart'
     show Bildreihe, Bildplatz, reihenGesamthoehe, seitenverhaeltnisVorgabe;
-export '../services/rasterstufen.dart';
+export 'package:kern/services/rasterstufen.dart';
 
 /// Geschätzte Maße des von [MonthGroupedAssetGrid] erzeugten Scroll-Inhalts
 /// (Monats-Überschrift, Grid-Kachelgröße/-abstände) – gemeinsam von

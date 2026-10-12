@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/asset_viewer_screen.dart';
 import '../services/familientage.dart';
 import '../services/lebenslauf.dart';
-import '../services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'asset_thumbnail_tile.dart';

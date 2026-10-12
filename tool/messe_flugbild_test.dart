@@ -14,7 +14,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/blocktexturen.dart';
-import 'package:photo_vault/services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import 'package:photo_vault/services/gelaendekacheln.dart';
 import 'package:photo_vault/services/gelaendesicht.dart';
 import 'package:photo_vault/widgets/gelaende.dart';

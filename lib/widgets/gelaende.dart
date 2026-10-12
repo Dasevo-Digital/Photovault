@@ -35,7 +35,7 @@ import '../services/gelaendetextur.dart';
 import '../services/gelaendesicht.dart';
 import '../services/lichtstimmung.dart';
 import '../services/flugvideo.dart';
-import '../services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import '../services/meldungsdienst.dart';
 import 'gelaendeschilder.dart';
 

@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/gedcom_export.dart';
 import 'package:photo_vault/services/gedcom_import.dart';
 import 'package:photo_vault/services/lebenslauf.dart';
-import 'package:photo_vault/services/stammbaum.dart';
-import 'package:photo_vault/services/verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Das Einlesen von GEDCOM.
 ///

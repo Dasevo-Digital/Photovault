@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/face_threshold.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/face_threshold.dart';
 
 /// Das Gedächtnis der Wiedererkennung auf Datenbankseite: Entscheidungen
 /// festhalten und die persönliche Schwelle daraus nachführen.

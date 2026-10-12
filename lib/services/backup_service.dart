@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'blur_detection.dart';
 import 'face_engine_service.dart';
 import 'import_service.dart';

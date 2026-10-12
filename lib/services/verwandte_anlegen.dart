@@ -19,7 +19,7 @@
 /// genau so aussieht.
 library;
 
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Was die neue Person für die Person wird, an der sie hängt.
 enum Ankerrolle {

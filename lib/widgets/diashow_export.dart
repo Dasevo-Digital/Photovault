@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/platform/speicherort.dart';
 import '../services/asset_display_path.dart';

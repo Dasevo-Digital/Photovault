@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/suchfehler.dart';
-import '../services/embedding_similarity.dart';
+import 'package:kern/services/embedding_similarity.dart';
 import '../services/duplicate_selection.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

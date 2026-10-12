@@ -4,9 +4,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/embedding_codec.dart';
+import 'package:kern/services/embedding_codec.dart';
 import '../services/face_clustering_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/storage_paths.dart';

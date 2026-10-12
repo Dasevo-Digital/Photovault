@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
+
+import 'hilfen/quelltext.dart';
 
 /// Der Kachelspeicher der Karte.
 ///
@@ -49,10 +49,7 @@ void main() {
     // noch ein Laufzeittest sieht - und im Unittest laesst sich der
     // Speicher gar nicht anlegen, weil path_provider keine
     // Plattformkanaele hat.
-    final quellen = Directory('lib')
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'))
+    final quellen = dartQuellen()
         .map((f) => (f.path, f.readAsStringSync()))
         .toList();
 

@@ -776,8 +776,9 @@ cd photo_vault
 # Abhängigkeiten installieren
 flutter pub get
 
-# Datenbank-Code generieren (drift braucht das für die typisierten Queries)
-dart run build_runner build --delete-conflicting-outputs
+# Der Datenbank-Code liegt fertig erzeugt im Repository. Nach einer
+# Änderung am Schema neu erzeugen – im Kern, wo die Datenbank liegt:
+(cd packages/kern && dart pub get && dart run build_runner build --delete-conflicting-outputs)
 
 # Auf macOS starten
 flutter run -d macos

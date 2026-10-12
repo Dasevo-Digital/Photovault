@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 
 class AlbumChoice {
   final String? newName;

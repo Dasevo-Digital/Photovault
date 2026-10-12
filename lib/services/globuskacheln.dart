@@ -8,7 +8,7 @@ import 'package:flutter_map/flutter_map.dart' show MapCachingProvider;
 import 'package:http/http.dart' as http;
 
 import 'gelaende_laden.dart';
-import 'gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'netzkennung.dart';
 

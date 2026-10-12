@@ -3,7 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/widgets/rasterbedienung.dart';
 
 /// Prüft die Bedienung, die alle vier Fotoraster teilen: Umschalt-Klick für

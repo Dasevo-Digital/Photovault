@@ -22,17 +22,9 @@ library;
 
 import 'dart:ui' show Color;
 
-/// Die vier Stimmungen. Als Aufzählung und nicht als freier Winkel: Vier
-/// Bilder, zwischen denen man wählt, sind eine Entscheidung; ein Regler
-/// von 0 bis 24 Uhr wäre eine Aufgabe.
-enum Tageszeit { morgen, mittag, abend, blaueStunde }
+import 'package:kern/services/tageszeit.dart';
 
-/// Was die Vorgabe ist, wenn niemand etwas eingestellt hat.
-///
-/// Mittag, und zwar **mit genau den Schattierungswerten von vorher**:
-/// Wer nichts umstellt, sieht dasselbe Relief wie bisher. Neu sind für
-/// ihn nur Himmel, Dunst und die Spur – die gelten für jede Stimmung.
-const Tageszeit lichtstimmungVorgabe = Tageszeit.mittag;
+export 'package:kern/services/tageszeit.dart';
 
 /// Alles, was eine Tageszeit am Bild ändert.
 class Lichtstimmung {
@@ -164,11 +156,3 @@ Lichtstimmung stimmungFuer(Tageszeit zeit) => lichtstimmungen.firstWhere(
   (s) => s.zeit == zeit,
   orElse: () => stimmungMittag,
 );
-
-/// Die Tageszeit zu einer gemerkten Nummer.
-///
-/// Eine Nummer ausserhalb der Reihe fällt auf die Vorgabe zurück, statt
-/// den Bildschirm zu verhindern – dieselbe Regel wie beim Kartenstil.
-Tageszeit tageszeit(int nr) => nr >= 0 && nr < Tageszeit.values.length
-    ? Tageszeit.values[nr]
-    : lichtstimmungVorgabe;

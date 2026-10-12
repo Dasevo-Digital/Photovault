@@ -9,13 +9,13 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'cr3_gps.dart';
 import 'dateikennung.dart';
-import 'exif_camera.dart';
+import 'package:kern/services/exif_camera.dart';
 import 'exif_gps.dart';
 import 'native_image_converter.dart';
-import 'raw_formats.dart';
+import 'package:kern/services/raw_formats.dart';
 import 'raw_identify_parser.dart';
 import 'storage_paths.dart';
 import 'video_gps.dart';

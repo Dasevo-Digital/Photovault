@@ -17,7 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:photo_vault/services/blocktexturen.dart';
 import 'package:photo_vault/services/gelaendetextur.dart';
-import 'package:photo_vault/services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 
 /// Eine einfarbige Kachel als PNG – Inhalt egal, Grösse nicht.
 Future<Uint8List> _kachel(Color farbe) async {

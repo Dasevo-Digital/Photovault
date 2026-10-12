@@ -5,7 +5,7 @@
 /// Papierkorb verschiebt, ist das keine Kür.
 library;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Rangfolge beim Behalten, wichtigstes Kriterium zuerst:
 ///

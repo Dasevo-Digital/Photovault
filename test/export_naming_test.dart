@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/export_naming.dart';
 
 /// Das Namensmuster ist der Teil der Export-Voreinstellungen, der einen

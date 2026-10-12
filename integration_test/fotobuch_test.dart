@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/fotobuch.dart';
 import 'package:photo_vault/services/native_image_converter.dart';

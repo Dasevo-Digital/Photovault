@@ -15,7 +15,7 @@ library;
 
 import 'dart:math' as math;
 
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Ein Platz im Fächer.
 class Fachplatz {

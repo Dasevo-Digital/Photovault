@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/screens/dokumente_screen.dart';
 import 'package:photo_vault/services/dokumenterkennung.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;

@@ -20,14 +20,14 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../theme/zierbaum_farben.dart';
 import '../widgets/faecher_ansicht.dart';
 import '../widgets/lebensbaum_maler.dart';
 import '../widgets/zierbaum_maler.dart';
 import 'faechertafel.dart';
 import 'lebensbaum_bild.dart';
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import 'zierbaum.dart';
 
 const tafelEndung = '.pdf';

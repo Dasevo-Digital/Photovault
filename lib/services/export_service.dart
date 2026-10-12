@@ -5,14 +5,14 @@ import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:image/image.dart' as img;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import 'export_naming.dart';
 import 'native_image_converter.dart';
 import 'storage_paths.dart';
 import 'textstellen.dart';
 import '../l10n/app_localizations.dart';
-import 'xmp_regionen.dart';
+import 'package:kern/services/xmp_regionen.dart';
 import 'xmp_writer.dart';
 
 /// Größe und Format, in denen exportiert wird.

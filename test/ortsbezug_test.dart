@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Wo eine Reise oder Aktivität stattfand.
 ///
@@ -207,7 +207,9 @@ void main() {
       // liesse den Fall durch, dass die Umsetzung wieder auf das
       // schlichte JOIN zurückfällt. Quelltextprüfung nach dem Muster
       // von keine_festen_texte_test.dart.
-      final quelle = File('lib/db/abfragen/reisen.dart').readAsStringSync();
+      final quelle = File(
+        'packages/kern/lib/db/abfragen/reisen.dart',
+      ).readAsStringSync();
       expect(quelle, contains('CROSS JOIN assets a ON a.id = z.asset_id'));
       expect(
         quelle,

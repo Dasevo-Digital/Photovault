@@ -9,7 +9,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/reisen.dart';
+import 'package:kern/services/reisen.dart';
 import '../theme/app_spacing.dart';
 
 IconData symbolFuerReiseart(Reiseart art) => switch (art) {

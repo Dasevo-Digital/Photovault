@@ -4,12 +4,12 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/gebietsgrenzen.dart';
 import '../services/ortsuebersicht.dart' show Ortsebene;
 import '../services/reisefortschritt.dart';
-import '../services/reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'ortsansicht_screen.dart';
@@ -18,7 +18,7 @@ import '../widgets/zoomsteuerung.dart';
 import '../widgets/mini_location_map.dart'
     show Kachelschicht, buildMapAttribution, kartenHoechsteStufe;
 import '../widgets/wisch_zoom.dart';
-import '../services/laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 
 /// Die Welt als Karte: wo du warst, und wo du hinwillst.
 ///

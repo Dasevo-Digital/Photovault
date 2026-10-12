@@ -32,9 +32,12 @@ jobs:
       # Erst die Pakete: Ohne sie findet dart format die analysis_options
       # (include von flutter_lints) und die Sprachversion nicht und
       # formatiert nach anderen Regeln – dann gilt sauberer Code als falsch.
-      - run: flutter pub get
+      # Der Kern (packages/kern) ist ein eigenes Paket ohne Flutter und
+      # braucht seine eigene Auflösung, sonst sieht die Analyse dort jeden
+      # Import als fehlend.
+      - run: flutter pub get && (cd packages/kern && dart pub get)
       - name: Formatierung
-        run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs
+        run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages
       - name: Analyse und Tests
         run: flutter analyze && flutter test
 

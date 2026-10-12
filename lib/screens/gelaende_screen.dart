@@ -12,7 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../services/platform/speicherort.dart';
 import '../services/gelaende_laden.dart';
 import '../services/flugvideo.dart';
-import '../services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import '../services/gelaendeflug.dart';
 import '../services/gelaendekacheln.dart';
 import '../services/gelaendesicht.dart';

@@ -1,6 +1,6 @@
 import 'package:exif/exif.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/exif_camera.dart';
+import 'package:kern/services/exif_camera.dart';
 
 IfdTag _ratiosTag(List<Ratio> ratios) => IfdTag(
   tag: 0,

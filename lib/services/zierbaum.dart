@@ -24,7 +24,7 @@ import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
 
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Ein Schild: eine Person, ihr Platz.
 @immutable

@@ -1,5 +1,5 @@
 import 'package:drift/native.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Eine Bibliothek, die ein Test absichtlich NEBEN einer anderen offen hält.
 ///

@@ -15,7 +15,7 @@ import 'dart:convert';
 
 import 'package:path/path.dart' as p;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Ein Platzhalter mit seiner Bedeutung – die Liste ist zugleich die
 /// Hilfe, die im Editor unter dem Eingabefeld steht.

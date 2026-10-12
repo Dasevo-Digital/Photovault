@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'hilfen/quelltext.dart';
+
 /// Wacht darüber, dass in den bereits umgestellten Dateien kein sichtbarer
 /// Text mehr fest im Quelltext steht.
 ///
@@ -31,7 +33,7 @@ void main() {
   const ausgenommen = {
     // Das Schlagwort-Vokabular sind Daten, keine Oberfläche. Es steht in der
     // Datenbank und wird beim Sprachwechsel auf Wunsch mit übersetzt.
-    'lib/services/ai_tagging_service.dart',
+    'packages/kern/lib/services/ki_vokabular_vorgabe.dart',
     // `ImportResult.error` wird protokolliert, nie angezeigt.
     'lib/services/import_service.dart',
     // Eine Aufstellung der gebrauchten Kommandozeilenwerkzeuge für
@@ -51,13 +53,12 @@ void main() {
     // `landAnzeige` an der Sprache der Oberfläche. In die ARB-Dateien
     // gehörten sie nicht – dort stünden 250 Schlüssel, die niemand je
     // einzeln anfasst, und der englische Teil käme trotzdem aus GeoNames.
-    'lib/services/laendernamen.dart',
+    'packages/kern/lib/services/laendernamen.dart',
   };
 
   List<String> zuPruefen() {
     final aus = <String>[];
-    for (final e in Directory('lib').listSync(recursive: true)) {
-      if (e is! File || !e.path.endsWith('.dart')) continue;
+    for (final e in dartQuellen()) {
       // Einmal auf Schrägstriche bringen: Windows liefert Backslashes, und
       // damit ging weder der l10n-Ausschluss noch die Ausnahmeliste auf –
       // der Wächter meldete dort erzeugte Sprachdateien und das
@@ -431,8 +432,7 @@ void main() {
         jsonDecode(File('lib/l10n/app_de.arb').readAsStringSync())
             as Map<String, dynamic>;
     final quelltext = StringBuffer();
-    for (final e in Directory('lib').listSync(recursive: true)) {
-      if (e is! File || !e.path.endsWith('.dart')) continue;
+    for (final e in dartQuellen()) {
       if (e.path.replaceAll(r'\', '/').contains('/l10n/')) {
         continue; // die Erzeugnisse selbst
       }

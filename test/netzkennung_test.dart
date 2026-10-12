@@ -1,10 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/netzkennung.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
+
+import 'hilfen/quelltext.dart';
 
 /// Die Kennung, mit der sich die App bei den Kartenanbietern ausweist.
 ///
@@ -60,11 +60,7 @@ void main() {
     // muss deshalb aus netzkennung.dart kommen.
     final vonHand = RegExp(r'''['"]User-Agent['"]\s*:\s*['"]''');
     final funde = <String>[];
-    for (final datei
-        in Directory('lib')
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.dart'))) {
+    for (final datei in dartQuellen()) {
       final zeilen = datei.readAsLinesSync();
       for (var i = 0; i < zeilen.length; i++) {
         if (vonHand.hasMatch(zeilen[i])) funde.add('${datei.path}:${i + 1}');

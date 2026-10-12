@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../../services/aktualisierungspruefung.dart';
 import '../../services/kachelvorrat.dart';
 import '../../services/library_location.dart';

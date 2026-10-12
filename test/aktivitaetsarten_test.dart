@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/aktivitaeten.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/aktivitaeten.dart';
 
 /// Die Arten einer Aktivität – die mitgelieferten und die eigenen.
 ///

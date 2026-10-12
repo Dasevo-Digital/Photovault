@@ -6,8 +6,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show compute;
 
-import '../db/database.dart';
-import 'embedding_similarity.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/embedding_similarity.dart';
 
 /// Der Schlüssel eines Vorschlags: die Kennung seiner ersten Aufnahme.
 ///

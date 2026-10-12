@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/search_filters.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/search_filters.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 /// Das Gesprochene in Videos: welche Videos gehört werden, wie man es

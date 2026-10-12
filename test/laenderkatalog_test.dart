@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 
 // Auszug im Format von countryInfo.txt: Spalte 0 ISO, 4 Name,
 // 5 Hauptstadt, 8 Erdteil.

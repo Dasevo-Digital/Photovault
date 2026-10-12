@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 import 'package:photo_vault/services/reisefortschritt.dart';
 
 Landeintragung _l(

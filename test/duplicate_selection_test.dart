@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/duplicate_selection.dart';
 
 /// Diese Regeln entscheiden, welche Fotos in den Papierkorb wandern –

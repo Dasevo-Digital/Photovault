@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/export_service.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/services/textstellen.dart';

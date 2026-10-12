@@ -7,12 +7,12 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import '../services/wanderobjekte.dart';
-import '../services/aktivitaeten.dart';
+import 'package:kern/services/aktivitaeten.dart';
 import '../services/gpx.dart';
 import '../services/meldungsdienst.dart';
 import '../services/reiseroute.dart';

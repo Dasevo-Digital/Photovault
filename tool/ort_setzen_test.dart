@@ -39,8 +39,8 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/reverse_geocoder.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 void main() {

@@ -20,7 +20,7 @@ import 'package:http/http.dart' as http;
 
 import '../widgets/mini_location_map.dart'
     show kachelNochmalVersuchen, kartenKachelFrische, kartenKachelspeicher;
-import 'gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'hoehenlinien.dart';
 import 'netzkennung.dart';

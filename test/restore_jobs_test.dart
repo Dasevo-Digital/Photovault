@@ -1,6 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Prüft die DB-Seite der KI-Restaurierungs-Warteschlange (siehe
 /// RestoreQueueService, RestoreJobs): Anlegen/Auflisten/Fortschritt/Status,

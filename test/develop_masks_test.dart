@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Prüft die DB-Seite der KI-Objektmasken (siehe MaskEditor in
 /// develop_screen.dart): Erstellen/Auflisten/Aktualisieren/Löschen,

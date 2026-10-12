@@ -1,4 +1,4 @@
-import 'exif_camera.dart';
+import 'package:kern/services/exif_camera.dart';
 
 /// Aufnahmewerte einer Datei samt Aufnahmezeitpunkt.
 ///

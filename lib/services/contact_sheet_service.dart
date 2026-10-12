@@ -4,7 +4,7 @@ import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'export_service.dart';
 import 'storage_paths.dart';
 

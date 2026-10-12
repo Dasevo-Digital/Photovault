@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 import '../services/ortsuebersicht.dart';
 import '../services/reisefortschritt.dart';
-import '../services/search_filters.dart';
+import 'package:kern/services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';

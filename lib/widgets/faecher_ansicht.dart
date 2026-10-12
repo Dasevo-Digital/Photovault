@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/faechertafel.dart';
-import '../services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import '../theme/app_spacing.dart';
 
 /// Das Fächerdiagramm: die Vorfahren einer Person als Ringe.

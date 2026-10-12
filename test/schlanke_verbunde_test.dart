@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// **Ein Verbund in drift holt jede Spalte jeder beteiligten Tabelle.**
 ///

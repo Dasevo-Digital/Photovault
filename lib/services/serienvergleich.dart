@@ -4,7 +4,7 @@
 /// nebeneinandergestellt wird, ohne einen Pixel zu zeichnen.
 library;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Ein Gesicht in einer Spalte.
 class Serienkopf {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import 'package:photo_vault/services/zierbaum.dart';
 
 /// Die Anordnung des Zierbaums.

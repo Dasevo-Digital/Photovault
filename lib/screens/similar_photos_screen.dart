@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/clip_service.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

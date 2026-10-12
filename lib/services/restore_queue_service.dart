@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'bilddekodierung.dart';
 import 'modell_halter.dart';
 import 'native_image_converter.dart';

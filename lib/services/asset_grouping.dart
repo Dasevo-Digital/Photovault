@@ -5,7 +5,7 @@
 /// prüfen, ohne einen Bildschirm aufzubauen.
 library;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Wonach die Liste gegliedert wird.
 enum ListenGruppierung {

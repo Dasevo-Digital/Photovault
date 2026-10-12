@@ -9,10 +9,10 @@ import 'package:flutter_earth_globe/point.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/gelaendeebenen.dart' show luftbildEbene;
+import 'package:kern/services/gelaendeebenen.dart' show luftbildEbene;
 import '../services/globuskacheln.dart';
 import '../services/bilddekodierung.dart';
 import '../services/map_clustering.dart';

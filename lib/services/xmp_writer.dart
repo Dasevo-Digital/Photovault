@@ -1,7 +1,7 @@
 import 'package:xml/xml.dart';
 
-import '../db/database.dart';
-import 'xmp_regionen.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/xmp_regionen.dart';
 
 /// Baut ein minimales, valides XMP-Sidecar-Paket für ein Asset – Struktur/
 /// Namensräume wie sie Lightroom/darktable/digiKam erzeugen und lesen

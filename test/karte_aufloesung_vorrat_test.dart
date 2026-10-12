@@ -1,7 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/eigenkarte.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/eigenkarte.dart';
 import 'package:photo_vault/services/kachelvorrat.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
 

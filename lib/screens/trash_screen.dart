@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../services/groessentext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

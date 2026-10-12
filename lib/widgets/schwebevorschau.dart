@@ -18,8 +18,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/schwebevorschau.dart';
 import '../services/storage_paths.dart';
 import 'video_playback.dart';

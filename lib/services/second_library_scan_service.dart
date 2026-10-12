@@ -5,8 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:path/path.dart' as p;
 
-import '../db/database.dart';
-import 'embedding_similarity.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/embedding_similarity.dart';
 
 /// Präfix für externe Asset-IDs im gemeinsamen Embedding-Vergleich – rein
 /// zur Unterscheidung "eigenes Foto" vs. "Foto aus der zweiten Bibliothek",

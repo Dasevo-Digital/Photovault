@@ -1,11 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 
-import '../services/library_stats.dart';
+import 'package:kern/services/library_stats.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 

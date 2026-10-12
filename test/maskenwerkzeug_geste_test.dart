@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/develop_screen.dart';
 import 'package:photo_vault/services/storage_paths.dart';

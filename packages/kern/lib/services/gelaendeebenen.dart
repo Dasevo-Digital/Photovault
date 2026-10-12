@@ -29,7 +29,7 @@
 /// zumutbare Stufe getrennt von der lieferbaren.
 library;
 
-import '../widgets/mini_location_map.dart' show Kartenstil;
+import 'kartenstil.dart' show Kartenstil;
 
 /// Eine Kachelebene, aus der eine Blocktextur zusammengesetzt wird.
 class Kartenebene {

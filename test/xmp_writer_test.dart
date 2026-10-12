@@ -1,7 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/exif_camera.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/exif_camera.dart';
 import 'package:photo_vault/services/xmp_writer.dart';
 import 'package:xml/xml.dart';
 

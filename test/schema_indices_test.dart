@@ -1,6 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Prüft, dass eine frisch angelegte Datenbank mindestens Schema-Version 14
 /// hat und alle in Migration 14 hinzugefügten Indizes tatsächlich existieren

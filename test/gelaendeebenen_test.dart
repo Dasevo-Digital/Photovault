@@ -6,7 +6,7 @@
 // Namensnennung genau die Quellen nennt, die tatsächlich im Bild stehen.
 // Das zweite ist eine Lizenzauflage.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import 'package:photo_vault/services/gelaendetextur.dart';
 
 void main() {

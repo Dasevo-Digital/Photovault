@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/laenderkatalog.dart';
+import 'package:kern/services/laenderkatalog.dart';
 import '../services/ortsuebersicht.dart' show Ortsebene;
 import '../services/reisefortschritt.dart';
 import '../state/library_state.dart';

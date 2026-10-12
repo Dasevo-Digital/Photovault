@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Prüft die DB-Seite des nicht-destruktiven Video-Zuschnitts (siehe
 /// VideoTrimScreen): Speichern/Zurücksetzen von Start/Ende samt

@@ -35,7 +35,7 @@ import 'package:http/http.dart' as http;
 
 import 'blockvorrat.dart';
 import 'gelaende_laden.dart';
-import 'gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'gelaendetextur.dart';
 import 'hoehenlinien.dart';

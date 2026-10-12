@@ -11,10 +11,10 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/asset_display_path.dart';
-import '../services/asset_format.dart';
+import 'package:kern/services/asset_format.dart';
 import '../services/bilddekodierung.dart';
 import '../services/blur_detection.dart';
 import '../services/export_service.dart';

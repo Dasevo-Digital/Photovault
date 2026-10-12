@@ -1,0 +1,23 @@
+# Schema-Stände der Datenbank für `dart run drift_dev make-migrations`.
+# Bei jedem Schemawechsel einmal hier im Kern aufrufen: Der Befehl legt den
+# neuen Stand unter drift_schemas/ ab (im Wurzelordner prüft das
+# test/schemastand_abgelegt_test.dart).
+#
+# Die Tests und lib/db/database.steps.dart, die er zusätzlich erzeugt,
+# waren bis Fassung 92 NICHT brauchbar und wurden gelöscht: Solange die
+# Datenbank Flutter mitzog, konnte drift sie für den Export nicht starten,
+# las das Schema nur statisch und schrieb Vorgabewerte als Dart-Ausdrücke
+# ab (lichtstimmungVorgabe …), die in den erzeugten Dateien unbekannt
+# sind. Seit sie im Kern liegt, startet drift sie wirklich (`schema dump`
+# schreibt die Vorgaben dann als SQL). Ob die erzeugten Tests damit
+# taugen, zeigt der nächste Schemawechsel; bis dahin wird die Migration
+# von Hand geprüft, siehe test/migration_86_87_test.dart als Muster.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            default: lib/db/database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/drift/

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/aktivitaeten.dart';
+import 'package:kern/services/aktivitaeten.dart';
 import '../services/meldungsdienst.dart';
-import '../services/reisen.dart' show zuhause;
+import 'package:kern/services/reisen.dart' show zuhause;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';

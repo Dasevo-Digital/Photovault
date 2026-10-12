@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'db/database.dart';
+import 'package:kern/db/database.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/bibliothek_belegt_screen.dart';
 import 'screens/bibliothek_unerreichbar_screen.dart';
@@ -19,7 +19,7 @@ import 'services/beenden_waechter.dart';
 import 'state/library_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/zierbaum_farben.dart' show zierschriftenLizenzenAnmelden;
-import 'services/eigenkarte.dart';
+import 'package:kern/services/eigenkarte.dart';
 import 'services/schwebevorschau.dart';
 import 'widgets/mini_location_map.dart'
     show

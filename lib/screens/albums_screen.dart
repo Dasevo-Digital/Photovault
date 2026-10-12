@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
-import '../db/rasterzeile.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../widgets/asset_thumbnail_tile.dart';
-import '../services/search_filters.dart';
+import 'package:kern/services/search_filters.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'album_detail_screen.dart';
 import 'search_screen.dart';

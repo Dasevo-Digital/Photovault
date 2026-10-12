@@ -5,7 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as pfad;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:photo_vault/services/cube_lut.dart';
 import 'package:photo_vault/services/develop_color.dart';

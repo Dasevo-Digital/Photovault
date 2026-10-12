@@ -7,11 +7,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../screens/person_detail_screen.dart';
 import '../screens/serienvergleich_screen.dart';
-import '../services/reverse_geocoder.dart';
-import '../services/asset_format.dart';
+import 'package:kern/services/reverse_geocoder.dart';
+import 'package:kern/services/asset_format.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
 import '../services/storage_paths.dart';
 import '../services/textstellen.dart';
@@ -24,7 +24,7 @@ import 'star_rating.dart';
 import 'selection_action_bar.dart' show confirmDialog;
 import '../services/meldungsdienst.dart';
 import 'profilbild.dart';
-import '../services/laendernamen.dart';
+import 'package:kern/services/laendernamen.dart';
 
 /// Info-Ansicht für ein einzelnes Asset (Foto/Video) in der Vollbildvorschau
 /// – Layout angelehnt an Google Fotos: Zeilen mit Icon, Titel und optionalem

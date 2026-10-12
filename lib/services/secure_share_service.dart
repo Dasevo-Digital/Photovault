@@ -6,7 +6,7 @@ import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import 'export_service.dart';
 import 'import_service.dart';
 import 'vault_crypto.dart';

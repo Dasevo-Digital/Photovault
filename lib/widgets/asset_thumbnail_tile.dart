@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/rasterzeile.dart';
+import 'package:kern/db/rasterzeile.dart';
 import '../services/bilddekodierung.dart';
 import '../services/schwebevorschau.dart';
 import '../services/storage_paths.dart';

@@ -19,7 +19,7 @@ void main() {
   test('die Schritte der Migration stehen aufsteigend', () {
     // Die Schritte stehen seit der Aufteilung von database.dart (#85) in
     // einer eigenen Teildatei.
-    final quelle = File('lib/db/migration.dart');
+    final quelle = File('packages/kern/lib/db/migration.dart');
     expect(
       quelle.existsSync(),
       isTrue,

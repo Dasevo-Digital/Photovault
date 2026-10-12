@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/people_screen.dart';
 import 'package:photo_vault/services/face_engine_service.dart';

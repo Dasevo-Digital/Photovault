@@ -3,18 +3,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/blur_detection.dart';
-import '../services/raw_formats.dart';
-import '../services/search_filters.dart';
+import 'package:kern/services/raw_formats.dart';
+import 'package:kern/services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'color_label_picker.dart';
 import 'star_rating.dart';
 import 'profilbild.dart';
-import '../services/laendernamen.dart';
+import 'package:kern/services/laendernamen.dart';
 
 /// Panel mit allen kombinierbaren Suchfiltern (Personen, Text-Suche, Tags,
 /// Kamera, Zeitraum, Medientyp, Anzeigeoptionen) – analog zu Immichs

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/eigenkarte.dart';
+import 'package:kern/services/eigenkarte.dart';
 import '../services/meldungsdienst.dart';
 import '../services/platform/webseite_oeffnen.dart';
 import '../state/library_state.dart';

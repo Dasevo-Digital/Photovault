@@ -9,12 +9,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-import '../db/database.dart';
+import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/platform/speicherort.dart';
 import '../services/baumnavigation.dart';
-import '../services/stammbaum.dart';
-import '../services/verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 import '../services/verwandte_anlegen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

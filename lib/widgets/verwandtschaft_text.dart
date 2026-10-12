@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 import '../l10n/app_localizations.dart';
-import '../services/stammbaum.dart';
-import '../services/verwandtschaftsgrad.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 /// Setzt einen berechneten [Grad] in die Sprache der Oberfläche um.
 ///

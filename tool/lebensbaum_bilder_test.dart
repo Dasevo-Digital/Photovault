@@ -14,7 +14,7 @@ import 'package:photo_vault/services/lebensbaum.dart';
 import 'package:photo_vault/services/lebensbaum_bild.dart';
 import 'package:photo_vault/services/lebensbaum_vorlage.dart';
 import 'package:photo_vault/services/zierbaum.dart';
-import 'package:photo_vault/services/stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 
 void main() {

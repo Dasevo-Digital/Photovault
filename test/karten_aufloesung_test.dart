@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/eigenkarte.dart';
+import 'package:kern/services/eigenkarte.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
 
 void main() {

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
-import 'package:photo_vault/services/search_filters.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/search_filters.dart';
 import 'package:uuid/uuid.dart';
 
 /// Prüft "Gespeicherte Suchen" (Intelligente Alben): die Filter-Kombination

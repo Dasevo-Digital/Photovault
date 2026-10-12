@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:xml/xml.dart';
 
-import 'xmp_regionen.dart';
+import 'package:kern/services/xmp_regionen.dart';
 
 /// Aus einem XMP-Paket ausgelesene Felder – Gegenstück zu
 /// [buildXmpPacket] in xmp_writer.dart. Alle Felder optional, da ein

@@ -10,7 +10,7 @@ import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/gelaende_screen.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/gelaende.dart';
-import 'package:photo_vault/services/gelaendeebenen.dart';
+import 'package:kern/services/gelaendeebenen.dart';
 
 /// Die Geländeansicht am Bildschirm.
 ///

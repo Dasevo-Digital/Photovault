@@ -1,6 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/db/database.dart';
+import 'package:kern/db/database.dart';
 
 /// Der Schalter entscheidet, ob die rechenintensiven Auswertungen nach
 /// einem Import von selbst nachlaufen. Ein falscher Standardwert wäre

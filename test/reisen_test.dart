@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/reisen.dart';
+import 'package:kern/services/reisen.dart';
 
 /// Reisen aus den Aufnahmen selbst erkennen.
 ///

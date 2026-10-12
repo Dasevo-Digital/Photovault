@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../db/database.dart';
-import '../services/asset_format.dart';
-import '../services/exif_camera.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_format.dart';
+import 'package:kern/services/exif_camera.dart';
 import '../theme/app_spacing.dart';
 
 /// Dialog zum direkten Bearbeiten der Kamera-/Aufnahme-Metadaten eines
