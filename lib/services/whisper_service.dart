@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -219,6 +220,15 @@ class WhisperService {
       offen.remove(v);
     }
 
+    // Freigeben, ohne auf die Antwort zu warten. Das Plugin arbeitet alle
+    // Aufrufe nacheinander auf einem Faden ab; ein späterer Aufruf sieht
+    // die Freigabe also schon erledigt. Je Decoderschritt sind es rund
+    // fünfzig – einzeln abgewartet kostete das unter Linux 150 ms je Wort.
+    void lass(OrtValue v) {
+      offen.remove(v);
+      unawaited(v.dispose().catchError((Object _) {}));
+    }
+
     try {
       final mel = await OrtValue.fromList(
         whisperLogMel(audio, filter: _filter),
@@ -271,11 +281,11 @@ class WhisperService {
           ...past,
         });
         offen.addAll(aus.values);
-        await gib(ids);
-        await gib(flagge);
+        lass(ids);
+        lass(flagge);
         final logitsTensor = aus['logits']!;
         final alle = await logitsTensor.asFlattenedList();
-        await gib(logitsTensor);
+        lass(logitsTensor);
         final vokabular = alle.length ~/ eingang.length;
         final versatz = (eingang.length - 1) * vokabular;
         final logits = [
@@ -287,15 +297,15 @@ class WhisperService {
         final naechstes = <String, OrtValue>{};
         for (var i = 0; i < _lagen; i++) {
           for (final kv in ['key', 'value']) {
-            await gib(past['past_key_values.$i.decoder.$kv']!);
+            lass(past['past_key_values.$i.decoder.$kv']!);
             naechstes['past_key_values.$i.decoder.$kv'] =
                 aus['present.$i.decoder.$kv']!;
             if (mitCache) {
               naechstes['past_key_values.$i.encoder.$kv'] =
                   past['past_key_values.$i.encoder.$kv']!;
-              await gib(aus['present.$i.encoder.$kv']!);
+              lass(aus['present.$i.encoder.$kv']!);
             } else {
-              await gib(past['past_key_values.$i.encoder.$kv']!);
+              lass(past['past_key_values.$i.encoder.$kv']!);
               naechstes['past_key_values.$i.encoder.$kv'] =
                   aus['present.$i.encoder.$kv']!;
             }
