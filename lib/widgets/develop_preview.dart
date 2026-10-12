@@ -111,10 +111,18 @@ void setzeDevelopUniforms(
     ..setFloat(_iMixerActive, werte[8])
     ..setFloat(_iCubeSize, werte[9])
     ..setFloat(_iClipWarn, werte[10]);
+  // Bilinear, ausdrücklich: Ohne Angabe tastet Flutter den nächsten
+  // Pixel ab (FilterQuality.none). Kurve und Farbwürfel sind aber
+  // Stützstellen, zwischen denen der Shader die Textur interpolieren
+  // lässt (siehe farbwuerfel() in develop_adjustments.frag). Bis 3.29
+  // fehlte die Angabe, und ein Farbmischer zerlegte einen Verlauf in
+  // Stufen von bis zu 14 Werten – unter Linux und Windows auch im
+  // gespeicherten Bild. Das Bild selbst zeichnet die Vorschau verkleinert,
+  // auch dort gehört gemittelt statt ein Pixel herausgegriffen.
   shader
-    ..setImageSampler(_sTexture, bild)
-    ..setImageSampler(_sCurveLut, curveLut)
-    ..setImageSampler(_sColorCube, colorCube);
+    ..setImageSampler(_sTexture, bild, filterQuality: FilterQuality.low)
+    ..setImageSampler(_sCurveLut, curveLut, filterQuality: FilterQuality.low)
+    ..setImageSampler(_sColorCube, colorCube, filterQuality: FilterQuality.low);
 }
 
 /// Zeichnet [image] durch den Entwickeln-Shader.

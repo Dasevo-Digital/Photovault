@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/services/develop_color.dart';
 import 'package:photo_vault/services/develop_render.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
 
@@ -103,6 +104,45 @@ void main() {
     final bild = img.decodeImage(bytes!)!;
     expect(bild.width, 320);
     expect(bild.height, 320);
+  });
+
+  // Flutter tastet Bildabtaster ohne Angabe beim nächsten Pixel ab. Der
+  // Farbwürfel ist aber auf Interpolation gebaut; ohne sie zerlegte ein
+  // Farbmischer bis 3.29 diesen Verlauf in 56 Stufen mit Sprüngen bis 14.
+  test('ein Farbmischer lässt einen Verlauf stetig', () async {
+    final verlauf = img.Image(width: 512, height: 8);
+    for (var x = 0; x < 512; x++) {
+      for (var y = 0; y < 8; y++) {
+        verlauf.setPixelRgb(
+          x,
+          y,
+          40 + x * 180 ~/ 512,
+          40 + x * 140 ~/ 512,
+          40 + x * 100 ~/ 512,
+        );
+      }
+    }
+    final quelle = File(p.join(temp.path, 'verlauf.png'))
+      ..writeAsBytesSync(img.encodePng(verlauf));
+    final bild = img.decodeJpg(
+      (await DevelopRender.rendere(
+        quelle,
+        adjustments: const DevelopAdjustments(
+          colorMixer: ColorMixer({
+            ColorBand.orange: BandAnpassung(saettigung: 0.5),
+          }),
+        ),
+        quality: 100,
+      ))!,
+    )!;
+    var groessterSprung = 0;
+    for (var x = 1; x < 512; x++) {
+      final sprung = (bild.getPixel(x, 4).r - bild.getPixel(x - 1, 4).r)
+          .abs()
+          .toInt();
+      if (sprung > groessterSprung) groessterSprung = sprung;
+    }
+    expect(groessterSprung, lessThanOrEqualTo(4));
   });
 
   group('Schärfe, Rauschminderung, Klarheit, Vignette', () {
