@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/embedding_codec.dart';
-import 'package:photo_vault/services/personenvorschlag.dart';
+import 'package:kern/services/personenvorschlag.dart';
 
 /// **Die Erkennung war da – gefragt hat sie niemand.**
 ///

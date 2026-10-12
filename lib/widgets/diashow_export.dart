@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/platform/speicherort.dart';
-import '../services/asset_display_path.dart';
+import 'package:kern/services/asset_display_path.dart';
 import '../services/diashow.dart';
 import '../services/flugvideo.dart';
 import '../services/meldungsdienst.dart';

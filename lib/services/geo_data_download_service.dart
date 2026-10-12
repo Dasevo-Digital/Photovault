@@ -5,7 +5,7 @@ import 'package:archive/archive_io.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
-import 'geo_data_catalog.dart';
+import 'package:kern/services/geo_data_catalog.dart';
 
 /// Warum der Standortdaten-Download gescheitert ist – siehe
 /// [ModellDownloadFehler] für die Begründung, warum hier kein fertiger Satz

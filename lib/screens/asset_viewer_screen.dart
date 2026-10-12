@@ -13,10 +13,10 @@ import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/asset_display_path.dart';
+import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/asset_format.dart';
 import '../services/bilddekodierung.dart';
-import '../services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 import '../services/export_service.dart';
 import '../services/rasterauswahl.dart';
 import 'package:kern/services/textstellen.dart';

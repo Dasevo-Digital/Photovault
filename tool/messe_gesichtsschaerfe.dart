@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 
 // Misst die Laplace-Varianz echter Gesichtsausschnitte, um die Schwelle fuer
 // "das Gesicht ist unscharf" aus Daten statt aus einer Vermutung zu setzen -

@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 
 /// `computeBlurScore` misst das GANZE Bild. Ein Porträt mit unscharfem
 /// Gesicht vor scharfem Laub besteht diese Prüfung mühelos – und beim

@@ -648,6 +648,9 @@ class AppBildwerkzeuge implements Bildwerkzeuge {
   @override
   Future<List<Textstelle>?> recognizeText(File file) =>
       NativeImageConverter.recognizeText(file);
+
+  @override
+  bool get liestTextSelbst => Platform.isMacOS;
 }
 
 /// Regler-Werte des DevelopScreen für [NativeImageConverter.developImage] –

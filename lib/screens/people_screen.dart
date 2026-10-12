@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/embedding_codec.dart';
-import '../services/face_clustering_service.dart';
+import 'package:kern/services/face_clustering_service.dart';
 import 'package:kern/services/face_engine_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../state/hintergrundlauf.dart' show abweisungstext;

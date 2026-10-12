@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/face_clustering_service.dart';
+import 'package:kern/services/face_clustering_service.dart';
 
 /// Erzeugt einen L2-normalisierten synthetischen Embedding-Vektor: eine
 /// Basisrichtung leicht verrauscht, damit "dieselbe Person" (kleines

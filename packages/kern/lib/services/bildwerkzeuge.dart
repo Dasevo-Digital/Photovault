@@ -77,6 +77,10 @@ abstract interface class Bildwerkzeuge {
   /// `null` heisst: keiner da oder gescheitert – dann rechnet das Modell
   /// des Kerns.
   Future<List<Textstelle>?> recognizeText(File file);
+
+  /// Ob [recognizeText] den Text liest, sodass die Texterkennung kein
+  /// Modell braucht.
+  bool get liestTextSelbst;
 }
 
 /// Linux, Windows, Server: die Kommandozeilenwerkzeuge.
@@ -130,6 +134,9 @@ class WerkzeugBildwerkzeuge implements Bildwerkzeuge {
 
   @override
   Future<List<Textstelle>?> recognizeText(File file) async => null;
+
+  @override
+  bool get liestTextSelbst => false;
 }
 
 /// Kein Weg: Alles liefert „nicht möglich". Die Vorgabe unter macOS, solange
@@ -164,6 +171,9 @@ class KeineBildwerkzeuge implements Bildwerkzeuge {
 
   @override
   Future<List<Textstelle>?> recognizeText(File file) async => null;
+
+  @override
+  bool get liestTextSelbst => false;
 }
 
 /// 16-Bit-Werte aus rohen Bytes (little endian, wie bestellt). Eine

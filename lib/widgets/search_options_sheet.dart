@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 import 'package:kern/services/raw_formats.dart';
 import 'package:kern/services/search_filters.dart';
 import '../state/library_state.dart';

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/face_clustering_service.dart';
+import 'package:kern/services/face_clustering_service.dart';
 
 /// Fortschritt und Abbruch der automatischen Gruppierung.
 ///

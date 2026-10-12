@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/model_processing_state.dart';
+import 'package:kern/services/model_processing_state.dart';
 
 void main() {
   test(

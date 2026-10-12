@@ -8,7 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart';
-import 'package:photo_vault/services/motion_photo.dart';
+import 'package:kern/services/motion_photo.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 

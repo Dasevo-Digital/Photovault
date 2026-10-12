@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/personenvorschlag.dart';
+import 'package:kern/services/personenvorschlag.dart';
 
 /// **Wer könnte das sein?**
 ///

@@ -1,4 +1,4 @@
-import 'package:kern/db/database.dart';
+import '../db/database.dart';
 
 /// Bestes verfügbares Anzeigebild/-video eines Assets, in Prioritätsreihen-
 /// folge: KI-restauriert (RestoreQueueService, nur Fotos) > entwickelt

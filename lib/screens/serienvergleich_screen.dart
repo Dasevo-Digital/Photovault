@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 import '../services/serienvergleich.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

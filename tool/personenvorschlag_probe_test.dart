@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/face_engine_service.dart';
-import 'package:photo_vault/services/personenvorschlag.dart';
+import 'package:kern/services/personenvorschlag.dart';
 
 /// Was wuerde eine automatische Wiedererkennung an einer echten
 /// Bibliothek finden?

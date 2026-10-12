@@ -71,7 +71,7 @@ void main() {
 
   /// **„Gescannt" darf nur dastehen, wenn hingesehen wurde.**
   ///
-  /// Bis Fassung 2.5 setzte `_scanFacesForDecodedAsset` den Vermerk auch
+  /// Bis Fassung 2.5 setzte `scanFacesForDecodedAsset` den Vermerk auch
   /// dann, wenn sich das Foto gar nicht dekodieren liess – der Aufruf
   /// stand ausserhalb der `decoded != null`-Prüfung. Danach ging der Modus
   /// „nur Fehlende" für immer daran vorbei, samt Hintergrundanalyse. Ein
@@ -83,8 +83,10 @@ void main() {
   /// YuNet-Modell, das im Prüflauf nicht liegt. Also wird der Quelltext
   /// gelesen: Der frühe Ausstieg muss VOR jedem Schreibvorgang stehen.
   test('ohne dekodiertes Bild wird nichts vermerkt', () {
-    final quelle = File('lib/state/library_state.dart').readAsStringSync();
-    final von = quelle.indexOf('Future<void> _scanFacesForDecodedAsset(');
+    final quelle = File(
+      'packages/kern/lib/auswertung/auswertungen.dart',
+    ).readAsStringSync();
+    final von = quelle.indexOf('Future<void> scanFacesForDecodedAsset(');
     expect(von, greaterThan(0), reason: 'Methode umbenannt? Dann hier mit.');
     final bis = quelle.indexOf('\n  Future<', von + 10);
     final rumpf = quelle.substring(von, bis);

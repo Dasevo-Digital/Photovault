@@ -28,7 +28,7 @@
 /// Schlagwort" sind eigene, schon vorhandene Kriterien und bleiben es.
 library;
 
-import 'blur_detection.dart' show blurryScoreThreshold;
+import 'package:kern/services/blur_detection.dart' show blurryScoreThreshold;
 import 'package:kern/services/search_filters.dart';
 
 /// Ein Wort oder eine Wendung, die der Leser erkannt hat.

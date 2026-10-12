@@ -15,7 +15,7 @@ library;
 import 'dart:typed_data';
 
 import 'face_clustering_service.dart' show meanNormalizedEmbedding;
-import 'package:kern/services/face_engine_service.dart' show FaceEngineService;
+import 'face_engine_service.dart' show FaceEngineService;
 
 /// Die Einbettung eines zugeordneten Gesichts, so wie sie aus der
 /// Datenbank kommt.

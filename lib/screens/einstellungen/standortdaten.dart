@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../services/geo_data_catalog.dart';
+import 'package:kern/services/geo_data_catalog.dart';
 import '../../services/meldungsdienst.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';

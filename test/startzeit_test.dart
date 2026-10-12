@@ -30,9 +30,16 @@ void main() {
     // zeigt: Ein `await geoBereit` im Bildaufbau würde das erste Bild
     // wieder anhalten – genau das, was die Änderung abgeschafft hat.
     final quelle = _quelle('lib/state/library_state.dart');
+    // Die Nachbearbeitung des Imports liegt im Kern; die App reicht ihr
+    // die Wartestelle hinein.
     expect(
       quelle,
-      contains('await geoBereit;'),
+      contains('ortsverzeichnisBereit: () => geoBereit'),
+      reason: 'der Import muss warten',
+    );
+    expect(
+      _quelle('packages/kern/lib/auswertung/nachbearbeitung.dart'),
+      contains('await ortsverzeichnisBereit();'),
       reason: 'der Import muss warten',
     );
     expect(

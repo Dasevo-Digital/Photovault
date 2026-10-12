@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/blur_detection.dart';
+import 'package:kern/services/blur_detection.dart';
 
 /// Prüft [computeBlurScore] anhand synthetischer Testbilder: ein
 /// Schachbrettmuster (hochfrequent, "scharf") muss einen deutlich höheren

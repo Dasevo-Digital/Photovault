@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
-import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-
-import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
@@ -19,7 +15,6 @@ import 'package:kern/services/ai_tagging_service.dart';
 import '../services/backup_service.dart';
 import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
-import '../services/blur_detection.dart';
 import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
@@ -30,25 +25,21 @@ import 'package:kern/services/translation_service.dart';
 import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/eye_state_service.dart';
 import 'package:kern/services/face_engine_service.dart';
-import 'package:kern/services/face_postprocess.dart';
 import '../services/geo_data_download_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/model_download_service.dart';
-import '../services/model_processing_state.dart';
+import 'package:kern/services/model_processing_state.dart';
 import 'package:kern/services/ocr_service.dart';
-import '../services/personenvorschlag.dart';
+import 'package:kern/services/personenvorschlag.dart';
 import 'package:kern/services/ortsvorschlag.dart';
 import '../services/serienvorschlag.dart';
-import 'package:kern/services/videostandbilder.dart';
-import 'package:kern/services/textstellen.dart';
 import 'package:kern/services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
-import '../services/asset_display_path.dart';
+import 'package:kern/services/asset_display_path.dart';
 import '../services/datierung.dart';
-import '../services/motion_photo.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
@@ -60,26 +51,17 @@ import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
+import 'package:kern/auswertung/auswertungen.dart';
+import 'package:kern/auswertung/modelle.dart';
+import 'package:kern/auswertung/nachbearbeitung.dart';
 // [ImportProgress] steht seit der Warteschlange in hintergrundlauf.dart –
 // der Lauf hält seinen eigenen Strom, und ein Feld vom Typ
 // `Stream<ImportProgress>` in einer Datei, die library_state.dart nicht
 // kennen darf, ginge sonst nicht. Von hier weitergereicht, damit die drei
 // Dutzend Bildschirme, die den Typ benutzen, ihren Import behalten.
-export 'hintergrundlauf.dart' show ImportProgress;
+export 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 
-/// Die Schritte der Hintergrundanalyse, in der Reihenfolge ihres Ablaufs.
-///
-/// Eine Aufzählung statt eines fertigen Namens: Dieser Dienst kennt keine
-/// Oberflächensprache, und der Name wird an zwei Stellen angezeigt (Leiste
-/// oben, Hintergrundaufgaben). Die Zuordnung zum Text steht dort.
-enum Analysestufe {
-  bildanalyse,
-  texterkennung,
-  schlagwoerter,
-  bildbeschreibung,
-  spracherkennung,
-  wiedererkennung,
-}
+export 'hintergrundlauf.dart' show ImportProgress;
 
 /// Der Name einer Stufe in der Oberflächensprache.
 String analysestufeName(AppTexte t, Analysestufe stufe) => switch (stufe) {
@@ -106,45 +88,6 @@ class AnalyseFortschritt {
     required this.erledigt,
     required this.gesamt,
   });
-}
-
-/// Reine Top-Level-Funktion für `compute()` (siehe [LibraryState._decodeAsset]
-/// – dasselbe Muster wie `decodeAndResizeThumbnail` in `import_service.dart`).
-/// Das Decodieren einer vollen JPEG/HEIC-Vorschau ist für große Fotos die mit
-/// Abstand teuerste Einzeloperation vor Gesichtserkennung/CLIP-Einbettung
-/// (oft 100+ ms) – lief bisher synchron auf dem Haupt-Isolate und blockierte
-/// damit beim Import oder Backfill vieler Fotos hintereinander spürbar die
-/// UI. Gibt `null` zurück, wenn die Bytes nicht dekodierbar sind (z.B.
-/// beschädigte Datei).
-///
-/// **Hier wird ohne Deckel dekodiert, und das ist Absicht.** Gemessen an der
-/// Prüfbibliothek (19. Prüfrunde):
-///
-/// ```
-/// 20383 × 4077  dekodieren 1442 ms   Arbeitssatz 301 -> 1205 MB
-/// 16350 × 3788  dekodieren 1376 ms   Arbeitssatz      ->  981 MB
-///  3456 × 5184  dekodieren  755 ms
-/// laenger als 4096 Punkte: 1062 von 5784 Aufnahmen ohne Vorschaudatei
-/// ```
-///
-/// Ein Deckel wie bei der Anzeige (`begrenztesBild`) würde diese Spitze
-/// nehmen, aber die Ergebnisse ändern: YuNet fände auf einem verkleinerten
-/// Bild andere – kleinere – Gesichter, und die Bibliothek bestünde danach
-/// aus zwei Beständen, einem vor und einem nach dem Deckel. Die Spitze ist
-/// vorübergehend, tritt je Foto einzeln auf und wird mit dem Isolat wieder
-/// freigegeben; die Uneinheitlichkeit wäre dauerhaft. Deshalb gemessen,
-/// notiert und nicht geändert.
-///
-/// Die Übergabe an ein weiteres `compute()` (etwa
-/// `compute(computeBlurScore, decoded)`) ist dagegen kein Posten: gemessen
-/// 28 ms Aufschlag bei 249 MB Bilddaten, bei kleineren Aufnahmen unter der
-/// Messgenauigkeit.
-img.Image? decodeImageBytes(Uint8List bytes) {
-  try {
-    return img.decodeImage(bytes);
-  } catch (_) {
-    return null;
-  }
 }
 
 /// Zentraler App-Zustand: hält Datenbank- und Service-Instanzen bereit und
@@ -181,53 +124,105 @@ class LibraryState extends ChangeNotifier {
   // audit_optimierungen_test.dart) und dürfen dabei nicht auf ein
   // uninitialisiertes `late`-Feld treffen. _loadModelsIfPresent() ersetzt
   // die Platzhalter beim echten Start durch die tatsächlichen Halter.
-  ModellHalter<FaceEngineService> faceEngineHalter = _leererHalter(
-    'Gesichtserkennung',
-  );
-  ModellHalter<EyeStateService> eyeStateHalter = _leererHalter('Augen-Zustand');
+  //
+  // Die Modelle, mit denen auch der Server rechnet, hält der Kern
+  // ([Modelle]); hier stehen nur noch Zugriffe unter den bisherigen Namen.
+  final Modelle modelle = Modelle();
+
+  ModellHalter<FaceEngineService> get faceEngineHalter =>
+      modelle.faceEngineHalter;
+  set faceEngineHalter(ModellHalter<FaceEngineService> h) =>
+      modelle.faceEngineHalter = h;
+  ModellHalter<EyeStateService> get eyeStateHalter => modelle.eyeStateHalter;
+  set eyeStateHalter(ModellHalter<EyeStateService> h) =>
+      modelle.eyeStateHalter = h;
   // CLIP getrennt nach Encoder: Der Bildteil (335 MB) arbeitet in der
   // Hintergrundanalyse, der Textteil (242 MB) nur, wenn jemand eine
   // Kontext-Suche eintippt. Zusammen wären es 577 MB, von denen die
   // jeweilige Aufgabe die Hälfte nie anfasst. Einzige Ausnahme ist das
   // KI-Tagging, das beide braucht (Bild-Embedding des Fotos gegen
   // Text-Embeddings der Vokabelbegriffe) und deshalb beide leiht.
-  ModellHalter<ClipService> clipBildHalter = _leererHalter('CLIP-Bild');
-  ModellHalter<ClipService> clipTextHalter = _leererHalter('CLIP-Text');
-  ModellHalter<SegmentationService> segmentationHalter = _leererHalter(
-    'Segmentierung',
-  );
-  ModellHalter<FlorenceCaptioningService> captioningHalter = _leererHalter(
-    'Bildbeschreibung',
-  );
+  ModellHalter<ClipService> get clipBildHalter => modelle.clipBildHalter;
+  set clipBildHalter(ModellHalter<ClipService> h) => modelle.clipBildHalter = h;
+  ModellHalter<ClipService> get clipTextHalter => modelle.clipTextHalter;
+  set clipTextHalter(ModellHalter<ClipService> h) => modelle.clipTextHalter = h;
+  ModellHalter<FlorenceCaptioningService> get captioningHalter =>
+      modelle.captioningHalter;
+  set captioningHalter(ModellHalter<FlorenceCaptioningService> h) =>
+      modelle.captioningHalter = h;
 
   /// Spracherkennung in Videos (Whisper, 249 MB) – nur während ihres
   /// Durchgangs geladen.
-  ModellHalter<WhisperService> spracherkennungHalter = _leererHalter(
-    'Spracherkennung',
-  );
+  ModellHalter<WhisperService> get spracherkennungHalter =>
+      modelle.spracherkennungHalter;
+  set spracherkennungHalter(ModellHalter<WhisperService> h) =>
+      modelle.spracherkennungHalter = h;
 
   /// Die beiden Übersetzungsrichtungen – getrennte Halter, weil sie
   /// getrennt installierbar sind und selten gleichzeitig gebraucht werden.
-  ModellHalter<TranslationService> uebersetzungEnDeHalter = _leererHalter(
-    'translate-en-de',
-  );
-  ModellHalter<TranslationService> uebersetzungDeEnHalter = _leererHalter(
-    'translate-de-en',
-  );
+  ModellHalter<TranslationService> get uebersetzungEnDeHalter =>
+      modelle.uebersetzungEnDeHalter;
+  set uebersetzungEnDeHalter(ModellHalter<TranslationService> h) =>
+      modelle.uebersetzungEnDeHalter = h;
+  ModellHalter<TranslationService> get uebersetzungDeEnHalter =>
+      modelle.uebersetzungDeEnHalter;
+  set uebersetzungDeEnHalter(ModellHalter<TranslationService> h) =>
+      modelle.uebersetzungDeEnHalter = h;
 
   /// Texterkennung ohne Betriebssystem-Hilfe – nur ausserhalb von macOS
   /// gebraucht, wo Apples Vision-Framework die Arbeit besser und ohne
   /// Download erledigt.
-  ModellHalter<OcrService> ocrHalter = _leererHalter('Texterkennung');
+  ModellHalter<OcrService> get ocrHalter => modelle.ocrHalter;
+  set ocrHalter(ModellHalter<OcrService> h) => modelle.ocrHalter = h;
 
-  static ModellHalter<T> _leererHalter<T>(String name) => ModellHalter<T>(
-    name: name,
+  /// Nur in der App: Objekte freistellen.
+  ModellHalter<SegmentationService> segmentationHalter = ModellHalter(
+    name: 'Segmentierung',
     installiert: false,
     laden: () => throw StateError(
       'LibraryState.initialize() wurde noch nicht aufgerufen.',
     ),
     entsorgen: (_) async {},
   );
+
+  /// Die Auswertungsläufe des Kerns für die geöffnete Bibliothek – neu
+  /// angelegt, sobald eine andere Datenbank oder ein anderer Ort gilt
+  /// (Wechsel der Bibliothek; Tests setzen beides selbst).
+  Auswertungen get auswertungen {
+    final a = _auswertungen;
+    if (a != null && identical(a.db, db) && identical(a.paths, paths)) {
+      return a;
+    }
+    return _auswertungen = Auswertungen(
+      db: db,
+      paths: paths,
+      modelle: modelle,
+      aiTaggingService: aiTaggingService,
+      gesichtsschwelle: () => faceSimilarityThreshold,
+      abgebrochen: () => _analyseAbbruch,
+      pipelineAktuell: _markModelPipelineCurrent,
+    );
+  }
+
+  Auswertungen? _auswertungen;
+
+  /// Was gleich nach dem Import geschieht (Kern) – angelegt wie
+  /// [auswertungen].
+  Nachbearbeitung get nachbearbeitung {
+    final n = _nachbearbeitung;
+    final a = auswertungen;
+    if (n != null && identical(n.auswertungen, a)) return n;
+    return _nachbearbeitung = Nachbearbeitung(
+      db: db,
+      paths: paths,
+      importe: () => importService,
+      auswertungen: a,
+      ortsverzeichnis: () => geocoder,
+      ortsverzeichnisBereit: () => geoBereit,
+    );
+  }
+
+  Nachbearbeitung? _nachbearbeitung;
 
   /// Halter, die gerade durch einen frischen ersetzt wurden, während sie
   /// noch in Benutzung waren (siehe _loadModelsIfPresent) – ohne diese Liste
@@ -237,15 +232,8 @@ class LibraryState extends ChangeNotifier {
   Timer? _modellFreigabeTimer;
 
   List<ModellHalter> get _alleHalter => [
-    faceEngineHalter,
-    eyeStateHalter,
-    clipBildHalter,
-    clipTextHalter,
+    ...modelle.alle,
     segmentationHalter,
-    captioningHalter,
-    spracherkennungHalter,
-    uebersetzungEnDeHalter,
-    uebersetzungDeEnHalter,
     if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
   ];
 
@@ -578,10 +566,9 @@ class LibraryState extends ChangeNotifier {
     await db.fuehreAus(GesichtsschwelleSetzen(value));
   }
 
-  /// Die für [personId] geltende Schwelle: die persönliche, sonst die
-  /// allgemeine.
+  /// Siehe [Auswertungen.schwelleFuerPerson].
   double schwelleFuerPerson(PersonData person) =>
-      person.similarityThreshold ?? faceSimilarityThreshold;
+      auswertungen.schwelleFuerPerson(person);
 
   /// Wer könnte auf [einbettung] zu sehen sein?
   ///
@@ -690,35 +677,8 @@ class LibraryState extends ChangeNotifier {
     )..where((t) => t.id.equals(treffer.personId))).getSingleOrNull();
   }
 
-  /// Übersetzt [text] ins Englische, sofern das Modell installiert und die
-  /// Einstellung eingeschaltet ist – sonst kommt [text] unverändert zurück.
-  ///
-  /// Gebraucht, weil der CLIP-Text-Encoder nur Englisch versteht, das
-  /// Tag-Vokabular aber deutsch ist und die Suche in einer deutschen
-  /// Oberfläche stattfindet. An 103 Fotos gemessen trennt die übersetzte
-  /// Fassung bei 33 von 56 Vokabelbegriffen schärfer, bei 19 schlechter –
-  /// ein realer, aber weder grosser noch durchgängiger Gewinn. Deshalb
-  /// eine Einstellung und keine stille Umstellung.
-  ///
-  /// Schlägt die Übersetzung fehl, gilt der Ausgangstext: Eine Suche, die
-  /// mittelmässige Treffer liefert, ist besser als eine, die eine
-  /// Fehlermeldung liefert.
-  Future<String> insEnglische(String text) async {
-    if (text.trim().isEmpty) return text;
-    if (!uebersetzungDeEnHalter.installiert) return text;
-    if (!await db.uebersetzeSucheUndTags()) return text;
-    try {
-      // `mit` gibt null zurück, wenn das Modell doch nicht ladbar war.
-      final uebersetzt = await uebersetzungDeEnHalter.mit(
-        (s) => s.translate(text),
-      );
-      if (uebersetzt == null || uebersetzt.trim().isEmpty) return text;
-      return uebersetzt;
-    } catch (e) {
-      debugPrint('Übersetzung der Anfrage fehlgeschlagen: $e');
-      return text;
-    }
-  }
+  /// Siehe [Auswertungen.insEnglische].
+  Future<String> insEnglische(String text) => auswertungen.insEnglische(text);
 
   String? _modelsDir;
   String get modelsDir => _modelsDir!;
@@ -981,81 +941,16 @@ class LibraryState extends ChangeNotifier {
     // beim nächsten Durchlauf sofort wieder aus _retiredHalters, da
     // `istGeladen` nie true war. _alleHalter liest dieselben (gleich
     // überschriebenen) Felder, daher identisch zu einer eigenen Liste hier.
-    _retiredHalters.addAll(_alleHalter);
+    _retiredHalters.addAll(modelle.richteEin(_modelsDir!));
+    _retiredHalters.add(segmentationHalter);
+    if (restoreQueue.restoreHalter != null) {
+      _retiredHalters.add(restoreQueue.restoreHalter!);
+    }
 
-    faceEngineHalter = ModellHalter<FaceEngineService>(
-      name: 'Gesichtserkennung',
-      installiert: FaceEngineService.isDetectionAvailable(_modelsDir!),
-      // load() ist nullable, weil es intern denselben Dateicheck wie
-      // isDetectionAvailable() wiederholt – der ist hier über `installiert`
-      // oben bereits als true bekannt, daher unbedenklich entpackt.
-      laden: () async => (await FaceEngineService.load(_modelsDir!))!,
-      entsorgen: (s) => s.dispose(),
-    );
-    eyeStateHalter = ModellHalter<EyeStateService>(
-      name: 'Augen-Zustand',
-      installiert: EyeStateService.isAvailable(_modelsDir!),
-      // Gleiches Argument wie bei faceEngineHalter oben.
-      laden: () async => (await EyeStateService.load(_modelsDir!))!,
-      entsorgen: (s) => s.dispose(),
-    );
-    // Beide Halter prüfen dieselben Dateien (isAvailable deckt Bild-,
-    // Text-Encoder und Tokenizer gemeinsam ab), laden aber jeweils nur
-    // ihren Teil – siehe ClipService.load.
-    clipBildHalter = ModellHalter<ClipService>(
-      name: 'CLIP-Bild',
-      installiert: ClipService.isAvailable(_modelsDir!),
-      laden: () => ClipService.load(_modelsDir!, bild: true, text: false),
-      entsorgen: (s) => s.dispose(),
-    );
-    clipTextHalter = ModellHalter<ClipService>(
-      name: 'CLIP-Text',
-      installiert: ClipService.isAvailable(_modelsDir!),
-      laden: () => ClipService.load(_modelsDir!, bild: false, text: true),
-      entsorgen: (s) => s.dispose(),
-    );
     segmentationHalter = ModellHalter<SegmentationService>(
       name: 'Segmentierung',
       installiert: SegmentationService.isAvailable(_modelsDir!),
       laden: () => SegmentationService.load(_modelsDir!),
-      entsorgen: (s) => s.dispose(),
-    );
-    uebersetzungEnDeHalter = ModellHalter<TranslationService>(
-      name: 'translate-en-de',
-      installiert: TranslationService.isAvailable(
-        _modelsDir!,
-        Uebersetzungsrichtung.enDe,
-      ),
-      laden: () =>
-          TranslationService.load(_modelsDir!, Uebersetzungsrichtung.enDe),
-      entsorgen: (s) => s.dispose(),
-    );
-    uebersetzungDeEnHalter = ModellHalter<TranslationService>(
-      name: 'translate-de-en',
-      installiert: TranslationService.isAvailable(
-        _modelsDir!,
-        Uebersetzungsrichtung.deEn,
-      ),
-      laden: () =>
-          TranslationService.load(_modelsDir!, Uebersetzungsrichtung.deEn),
-      entsorgen: (s) => s.dispose(),
-    );
-    ocrHalter = ModellHalter<OcrService>(
-      name: 'Texterkennung',
-      installiert: OcrService.isAvailable(_modelsDir!),
-      laden: () => OcrService.load(_modelsDir!),
-      entsorgen: (s) => s.dispose(),
-    );
-    captioningHalter = ModellHalter<FlorenceCaptioningService>(
-      name: 'Bildbeschreibung',
-      installiert: FlorenceCaptioningService.isAvailable(_modelsDir!),
-      laden: () => FlorenceCaptioningService.load(_modelsDir!),
-      entsorgen: (s) => s.dispose(),
-    );
-    spracherkennungHalter = ModellHalter<WhisperService>(
-      name: 'Spracherkennung',
-      installiert: WhisperService.isAvailable(_modelsDir!),
-      laden: () => WhisperService.load(_modelsDir!),
       entsorgen: (s) => s.dispose(),
     );
     restoreQueue.restoreHalter = ModellHalter<RestoreService>(
@@ -1232,172 +1127,24 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  /// Datei, die tatsächlich dekodiert werden kann: die konvertierte
-  /// Vorschau, falls das Originalformat (HEIC/DNG & Co.) von Flutter bzw.
-  /// dem `image`-Paket nicht direkt gelesen werden kann – sonst das
-  /// Original selbst.
-  File _decodableFile(AssetData asset) =>
-      paths.absolute(asset.previewRelativePath ?? asset.relativePath);
+  Future<void> _tryLinkLivePhoto(AssetData asset) =>
+      nachbearbeitung.verknuepfeLivePhoto(asset);
 
-  /// Lädt und dekodiert das Bild eines Assets einmalig – wird sowohl für
-  /// die Gesichtserkennung als auch für die CLIP-Einbettung wiederverwendet
-  /// (siehe [_postProcessNewAsset]), statt dieselbe JPEG/HEIC-Vorschau für
-  /// jeden Verarbeitungsschritt erneut von der Platte zu lesen und zu
-  /// dekodieren. Gibt `null` zurück, wenn die Datei fehlt oder nicht
-  /// dekodierbar ist (z.B. beschädigt).
-  Future<img.Image?> _decodeAsset(AssetData asset) async {
-    try {
-      return await compute(
-        decodeImageBytes,
-        await _decodableFile(asset).readAsBytes(),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static const _livePhotoImageExts = {'.heic', '.heif', '.jpg', '.jpeg'};
-  static const _livePhotoVideoExt = '.mov';
-
-  /// Prüft, ob es zu diesem frisch importierten Asset schon einen
-  /// unverknüpften Partner mit demselben Dateinamen (ohne Endung) gibt –
-  /// z.B. das HEIC-Standbild zu einem bereits importierten MOV oder
-  /// umgekehrt – und verknüpft die beiden als Live Photo.
-  Future<void> _tryLinkLivePhoto(AssetData asset) async {
-    final ext = p.extension(asset.originalFileName).toLowerCase();
-    final isImage = asset.type == 'IMAGE';
-    if (isImage && !_livePhotoImageExts.contains(ext)) return;
-    if (!isImage && ext != _livePhotoVideoExt) return;
-
-    final stem = p
-        .basenameWithoutExtension(asset.originalFileName)
-        .toLowerCase();
-    final candidates = await db.unlinkedAssetsOfType(
-      isImage ? 'VIDEO' : 'IMAGE',
-    );
-    for (final candidate in candidates) {
-      if (candidate.id == asset.id) continue;
-      final candidateExt = p
-          .extension(candidate.originalFileName)
-          .toLowerCase();
-      if (isImage && candidateExt != _livePhotoVideoExt) continue;
-      if (!isImage && !_livePhotoImageExts.contains(candidateExt)) continue;
-      final candidateStem = p
-          .basenameWithoutExtension(candidate.originalFileName)
-          .toLowerCase();
-      if (candidateStem == stem) {
-        await db.linkAssets(asset.id, candidate.id);
-        return;
-      }
-    }
-    if (isImage && (ext == '.jpg' || ext == '.jpeg')) {
-      await _motionPhotoAbtrennen(asset);
-    }
-  }
-
-  /// Holt das Video aus einem Motion Photo (siehe
-  /// `services/motion_photo.dart`) und verknüpft es mit dem Foto – wie die
-  /// Hälften eines Live Photos.
-  ///
-  /// **Das Original bleibt, wie es ist.** Das Video liegt danach zweimal
-  /// in der Bibliothek, im JPEG und als eigene Datei. Das JPEG zu kürzen
-  /// hiesse, eine Originaldatei umzuschreiben; das tut diese App nirgends.
-  ///
-  /// Gelesen wird erst Anfang und Ende; ganz nur, was danach aussieht.
-  /// Sonst läse die Aufgabe „Live Photos“ jedes JPEG der Bibliothek ganz.
-  Future<void> _motionPhotoAbtrennen(AssetData foto) async {
-    final datei = paths.absolute(foto.relativePath);
-    Directory? ordner;
-    try {
-      final groesse = await datei.length();
-      if (groesse < 64) return;
-      final zugriff = await datei.open();
-      final Uint8List kopf, ende;
-      try {
-        kopf = await zugriff.read(math.min(motionPhotoKopf, groesse));
-        await zugriff.setPosition(math.max(0, groesse - motionPhotoEnde));
-        ende = await zugriff.read(motionPhotoEnde);
-      } finally {
-        await zugriff.close();
-      }
-      if (!siehtNachMotionPhotoAus(kopf, ende)) return;
-      final alles = await datei.readAsBytes();
-      final anfang = motionPhotoAnfang(alles);
-      if (anfang == null) return;
-
-      ordner = await Directory.systemTemp.createTemp('pv_motion_');
-      final film = File(
-        p.join(
-          ordner.path,
-          '${p.basenameWithoutExtension(foto.originalFileName)}.mp4',
-        ),
-      );
-      await film.writeAsBytes(Uint8List.sublistView(alles, anfang));
-      final ergebnis = await importService.importFile(film.path);
-      final id = ergebnis.assetId;
-      if (ergebnis.outcome != ImportOutcome.imported || id == null) return;
-      // Das angehängte Video trägt selten eigene Angaben; es gehört zum
-      // Foto und bekommt dessen Zeit und Ort.
-      await db.uebernimmFotoangabenFuerBewegtbild(id, foto);
-      await db.linkAssets(foto.id, id);
-    } on FileSystemException {
-      // Datei weg oder nicht lesbar – dann eben kein Bewegtbild.
-    } finally {
-      await ordner?.delete(recursive: true);
-    }
-  }
-
-  /// Wendet ein evtl. für die erkannte Kamera hinterlegtes Preset an
-  /// (Zielalbum, Tags, automatisches Favorisieren) – siehe
-  /// CameraPresetsScreen. Für Videos (keine EXIF-Kamera) und Fotos ohne
-  /// passendes Preset ein günstiges No-Op (siehe AppDatabase.cameraPresetFor).
-  /// Öffentlich (statt privat) nur wegen [visibleForTesting]: ein Test über
-  /// den vollen Importpfad bräuchte eine echte EXIF-tragende JPEG-Datei
-  /// (siehe camera_metadata_test.dart, das aus demselben Grund
-  /// setCameraMetadata statt eines echten Imports nutzt) – hier lässt sich
-  /// die Anwendungslogik stattdessen direkt mit einer bereits bekannten
-  /// Kamera testen.
+  /// Siehe [Nachbearbeitung.applyCameraPreset]. Öffentlich nur für die
+  /// Prüfstände: Ein Test über den vollen Importpfad bräuchte eine echte
+  /// EXIF-tragende JPEG-Datei.
   @visibleForTesting
   Future<void> applyCameraPreset(
     String assetId, {
     required String? cameraMake,
     required String? cameraModel,
-  }) async {
-    final preset = await db.cameraPresetFor(cameraMake, cameraModel);
-    if (preset == null) return;
-    if (preset.targetAlbumId != null) {
-      await db.fuehreAus(AlbumFuellen(preset.targetAlbumId!, [assetId]));
-    }
-    if (preset.autoFavorite) {
-      await db.fuehreAus(FavoritSetzen([assetId], true));
-    }
-    final tagIds = await db.tagIdsForCameraPreset(preset.id);
-    for (final tagId in tagIds) {
-      await db.fuehreAus(SchlagwortAnheftenPerKennung(assetId, tagId));
-    }
-  }
+  }) => nachbearbeitung.applyCameraPreset(
+    assetId,
+    cameraMake: cameraMake,
+    cameraModel: cameraModel,
+  );
 
-  /// Wendet passende Automatisierungsregeln an (Zielalbum, Tags, automatisch
-  /// favorisieren) – Verallgemeinerung von [applyCameraPreset] auf Orts-/
-  /// Datums-/KI-Tag-Bedingungen statt nur Kamera, siehe AutomationRules in
-  /// database.dart. Zwei Aufrufstellen, je nachdem, wann die jeweilige
-  /// Bedingung überhaupt geprüft werden kann:
-  ///
-  /// - [latitude]/[longitude]/[fileCreatedAt] liegen schon beim Import vor
-  ///   ([_postProcessNewAsset]) – werten `location`-/`dateRange`-Regeln aus.
-  /// - [aiTags] liegen erst nach der KI-Tagging-Stufe der Hintergrundanalyse
-  ///   vor ([backfillAiTags]) – wertet `aiTag`-Regeln aus.
-  ///
-  /// Ein Aufruf mit nur einem Teil der Parameter überspringt die jeweils
-  /// nicht auswertbaren Regeltypen folgerichtig (kein Fehler) – so ruft
-  /// jede Aufrufstelle dieselbe Methode auf, ohne die andere Bedingungsart
-  /// zu kennen.
-  ///
-  /// [rules] erlaubt Stapelverarbeitungen, die Regeln EINMAL pro Lauf statt
-  /// pro Foto zu laden (siehe [backfillAiTags]) – dieselbe Überlegung wie
-  /// beim dortigen Vokabular-Laden. Ohne den Parameter werden sie pro
-  /// Aufruf frisch geholt, was für den Einzelaufruf beim Import richtig ist
-  /// (eine zwischenzeitlich geänderte Regel soll sofort greifen).
+  /// Siehe [Auswertungen.applyAutomationRules].
   @visibleForTesting
   Future<void> applyAutomationRules(
     String assetId, {
@@ -1406,53 +1153,14 @@ class LibraryState extends ChangeNotifier {
     DateTime? fileCreatedAt,
     List<String>? aiTags,
     List<AutomationRuleData>? rules,
-  }) async {
-    for (final rule in rules ?? await db.allAutomationRules()) {
-      final bool matches;
-      switch (rule.triggerType) {
-        case 'location':
-          matches =
-              latitude != null &&
-              longitude != null &&
-              rule.regionCenterLat != null &&
-              rule.regionCenterLon != null &&
-              rule.regionRadiusKm != null &&
-              ReverseGeocoder.haversineKm(
-                    latitude,
-                    longitude,
-                    rule.regionCenterLat!,
-                    rule.regionCenterLon!,
-                  ) <=
-                  rule.regionRadiusKm!;
-        case 'dateRange':
-          matches =
-              fileCreatedAt != null &&
-              rule.dateFrom != null &&
-              rule.dateTo != null &&
-              !fileCreatedAt.isBefore(rule.dateFrom!) &&
-              !fileCreatedAt.isAfter(rule.dateTo!);
-        case 'aiTag':
-          matches =
-              aiTags != null &&
-              rule.aiTagTerm != null &&
-              aiTags.contains(rule.aiTagTerm);
-        default:
-          matches = false;
-      }
-      if (!matches) continue;
-
-      if (rule.targetAlbumId != null) {
-        await db.fuehreAus(AlbumFuellen(rule.targetAlbumId!, [assetId]));
-      }
-      if (rule.autoFavorite) {
-        await db.fuehreAus(FavoritSetzen([assetId], true));
-      }
-      final tagIds = await db.tagIdsForAutomationRule(rule.id);
-      for (final tagId in tagIds) {
-        await db.fuehreAus(SchlagwortAnheftenPerKennung(assetId, tagId));
-      }
-    }
-  }
+  }) => auswertungen.applyAutomationRules(
+    assetId,
+    latitude: latitude,
+    longitude: longitude,
+    fileCreatedAt: fileCreatedAt,
+    aiTags: aiTags,
+    rules: rules,
+  );
 
   // --- Hintergrundanalyse nach dem Import -------------------------------
 
@@ -1475,29 +1183,6 @@ class LibraryState extends ChangeNotifier {
   bool get analyseLaeuft => _analyse != null;
   bool _analyseAbbruch = false;
 
-  /// Arbeitet die rechenintensiven Auswertungen nacheinander ab – jede
-  /// überspringt selbst die Fotos, die sie schon hat, und tut nichts, wenn
-  /// ihr Modell fehlt. Deshalb ist ein erneuter Aufruf gefahrlos.
-  ///
-  /// Reihenfolge nach steigendem Aufwand: Zuerst das, was schnell fertig
-  /// ist und sofort nutzbar, zuletzt die Bildbeschreibung – die erzeugt
-  /// ihren Satz Wort für Wort und ist damit mit Abstand die teuerste Stufe.
-  ///
-  /// Unschärfe, Gesichter und CLIP brauchen DASSELBE dekodierte Bild und
-  /// laufen deshalb als ein gemeinsamer Durchlauf ([_bildinhaltsAnalyse]),
-  /// der je Foto nur einmal dekodiert. Vorher ging jede Stufe die
-  /// Bibliothek für sich durch und dekodierte erneut – bei gemessenen
-  /// ~85 ms je Dekodiervorgang war das der größte vermeidbare Posten
-  /// (Audit-Fund).
-  ///
-  /// Die Bildbeschreibung bleibt bewusst eine eigene, letzte Stufe, obwohl
-  /// sie dasselbe Bild bräuchte: Sie ist um ein Vielfaches teurer als die
-  /// anderen drei zusammen. Zöge man sie in den gemeinsamen Durchlauf,
-  /// zahlte jedes einzelne Foto sofort ihren vollen Preis, und ein Abbruch
-  /// nach der halben Zeit ließe die halbe Bibliothek gänzlich unausgewertet
-  /// zurück – statt, wie jetzt, vollständig bis auf die Bildbeschreibung.
-  /// Die Texterkennung wiederum arbeitet nativ auf der Datei und hat vom
-  /// dekodierten Bild ohnehin nichts.
   /// Wie oft der Fortschritt einer Hintergrundstufe gemeldet wird.
   ///
   /// Nicht öfter, weil jede Meldung die Fortschrittsanzeigen neu aufbaut;
@@ -1506,6 +1191,8 @@ class LibraryState extends ChangeNotifier {
   @visibleForTesting
   static const meldeabstand = Duration(milliseconds: 100);
 
+  /// Arbeitet die Stufen der Hintergrundanalyse nacheinander ab (siehe
+  /// [Analysestufe]) und meldet ihren Fortschritt.
   Future<void> starteHintergrundanalyse() async {
     if (_analyse != null) return; // läuft bereits
 
@@ -1523,32 +1210,7 @@ class LibraryState extends ChangeNotifier {
     _analyseZurueckgestellt = false;
     _analyseAbbruch = false;
 
-    final stufen =
-        <({Analysestufe name, Stream<ImportProgress> Function() lauf})>[
-          (name: Analysestufe.bildanalyse, lauf: () => _bildinhaltsAnalyse()),
-          (name: Analysestufe.texterkennung, lauf: () => backfillOcrText()),
-          // Kein eigener CLIP-Schritt mehr – die Embeddings entstehen bereits in
-          // der Bildanalyse. [backfillClipEmbeddings] bleibt für den manuellen
-          // Aufruf in den Werkzeugen erhalten.
-          (
-            name: Analysestufe.schlagwoerter,
-            lauf: () => backfillAiTags(onlyUntagged: true),
-          ),
-          (name: Analysestufe.bildbeschreibung, lauf: () => backfillCaptions()),
-          // Nach der Bildbeschreibung: Sie ist je Aufnahme billiger als
-          // ein Video mit Ton, und es gibt mehr Fotos als Videos.
-          (
-            name: Analysestufe.spracherkennung,
-            lauf: () => transkribiereVideos(),
-          ),
-          // Zuletzt, und das ist keine Nebensache: Die Gesichter entstehen
-          // erst in der Bildanalyse ganz oben. Wer hier frueher fragt, fragt
-          // nach Gesichtern, die es noch nicht gibt.
-          (
-            name: Analysestufe.wiedererkennung,
-            lauf: () => backfillWiedererkennung(),
-          ),
-        ];
+    const stufen = Analysestufe.values;
 
     try {
       for (var i = 0; i < stufen.length; i++) {
@@ -1567,14 +1229,14 @@ class LibraryState extends ChangeNotifier {
           // auf eine Meldung zu warten (das Aufgabenblatt beim Öffnen),
           // sieht trotzdem den aktuellen.
           var zuletztGemeldet = DateTime.now();
-          await for (final p in stufe.lauf()) {
+          await for (final p in auswertungen.stufe(stufe)) {
             if (_analyseAbbruch) break;
             // Der erste Stand heisst „die Analyse läuft" – und davon
             // hängt mehr ab als eine Zahl (Knöpfe, Hinweise, die
             // Rückfrage beim Beenden). Der geht an alle.
             final beginnt = _analyse == null;
             _analyse = AnalyseFortschritt(
-              stufe: stufe.name,
+              stufe: stufe,
               stufeNummer: i + 1,
               stufenGesamt: stufen.length,
               erledigt: p.done,
@@ -1592,7 +1254,7 @@ class LibraryState extends ChangeNotifier {
           _fortschritt.value++;
         } catch (e) {
           debugPrint(
-            'Analysestufe "${stufe.name.name}" fehlgeschlagen, '
+            'Analysestufe "${stufe.name}" fehlgeschlagen, '
             'weiter mit der nächsten: $e',
           );
         }
@@ -1971,53 +1633,9 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  /// Nachbereitung direkt beim Import – bewusst NUR ressourcenschonende
-  /// Schritte: reine Datenbankarbeit und ein Nachschlagen im bereits
-  /// geladenen Ortsverzeichnis. Kein Dekodieren, keine Modell-Inferenz.
-  ///
-  /// Alles Rechenintensive (Gesichter, Unschärfe, Texterkennung, CLIP,
-  /// Bildbeschreibung) läuft NACH dem Import als Hintergrundaufgabe, siehe
-  /// [starteHintergrundanalyse]. Vorher lief es hier inline und machte den
-  /// Import bei mehreren tausend Fotos unzumutbar langsam: fünf schwere
-  /// Durchläufe je Foto, nacheinander.
-  Future<void> _postProcessNewAsset(String assetId) async {
-    final asset = await db.assetById(assetId);
-    if (asset == null) return;
-
-    await _tryLinkLivePhoto(asset);
-    await applyCameraPreset(
-      asset.id,
-      cameraMake: asset.cameraMake,
-      cameraModel: asset.cameraModel,
-    );
-    await applyAutomationRules(
-      asset.id,
-      latitude: asset.latitude,
-      longitude: asset.longitude,
-      fileCreatedAt: asset.fileCreatedAt,
-    );
-
-    if (asset.type != 'IMAGE') return;
-
-    // Ortsauflösung bleibt hier: reines Nachschlagen im bereits im
-    // Speicher liegenden GeoNames-Verzeichnis, kein Bild wird angefasst.
-    //
-    // Erst abwarten, ob das Verzeichnis noch gelesen wird: Seit es
-    // nebenher lädt (siehe [geoBereit]), wäre ein Import in der ersten
-    // halben Sekunde nach dem Start sonst still ohne Ortsnamen geblieben.
-    await geoBereit;
-    if (geocoder != null && asset.latitude != null && asset.longitude != null) {
-      final result = geocoder!.lookup(asset.latitude!, asset.longitude!);
-      if (result != null) {
-        await db.setLocationNames(
-          asset.id,
-          country: result.country,
-          state: result.state,
-          city: result.city,
-        );
-      }
-    }
-  }
+  /// Siehe [Nachbearbeitung.neueAufnahme].
+  Future<void> _postProcessNewAsset(String assetId) =>
+      nachbearbeitung.neueAufnahme(assetId);
 
   /// Setzt den Ort von Hand – und trägt die Ortsnamen gleich mit nach.
   ///
@@ -2060,212 +1678,9 @@ class LibraryState extends ChangeNotifier {
     );
   }
 
-  /// Führt die Gesichtserkennung für ein Asset aus, dessen Bild bereits
-  /// dekodiert vorliegt (siehe [_postProcessNewAsset], wo dasselbe Bild auch
-  /// für die CLIP-Einbettung dekodiert wird), und markiert es als gescannt.
-  ///
-  /// [decoded] darf `null` sein (z.B. wenn die Datei beschädigt ist) – dann
-  /// werden schlicht keine Gesichter gefunden, das Asset aber trotzdem als
-  /// gescannt markiert (kein endloses Wiederholen bei kaputten Dateien).
-  ///
-  /// [deleteExistingUnassigned] löscht vorher alle noch nicht einer Person
-  /// zugeordneten Gesichter dieses Assets (relevant beim "alle Fotos erneut
-  /// scannen", damit sich Erkennungen nicht endlos aufsummieren) – bereits
-  /// manuell zugeordnete Gesichter bleiben davon unberührt.
-  Future<void> _scanFacesForDecodedAsset(
-    AssetData asset,
-    img.Image? decoded, {
-    required FaceEngineService engine,
-    EyeStateService? eyeState,
-    required bool deleteExistingUnassigned,
-    bool nurNeueStellen = false,
-  }) async {
-    // **Ohne Bild wird gar nichts angefasst.** Nicht die vorhandenen
-    // Gesichter gelöscht, und vor allem nicht der Vermerk „gescannt"
-    // gesetzt. Bis Fassung 2.5 stand dieser Vermerk am Ende des Rumpfes,
-    // ausserhalb der `decoded != null`-Prüfung: Liess sich ein Foto nicht
-    // dekodieren, galt es danach trotzdem als gescannt – und der Modus
-    // „nur Fehlende" ging für immer daran vorbei, auch bei der
-    // Hintergrundanalyse. Ein Lauf, der an beschädigten Dateien
-    // vorbeirauscht und „fertig" meldet, ist genau die Art Ergebnis, der
-    // man nicht ansieht, dass sie keines ist.
-    //
-    // (An der Prüfbibliothek hatte der Fehler noch nichts angerichtet:
-    // Kein Foto war als gescannt vermerkt, ohne dass Unschärfe und
-    // Einbettung – die dasselbe dekodierte Bild brauchen – dastanden.)
-    //
-    // Ein früher Ausstieg und keine Bedingung um den Vermerk herum, damit
-    // die Regel baulich gilt und nicht an einer Stelle hängt, die beim
-    // nächsten Umbau mitwandern muss.
-    if (decoded == null) return;
-
-    if (deleteExistingUnassigned) {
-      // Die Ausschnitte der gelöschten Zeilen müssen mit weg. Sonst
-      // hinterlässt jedes „alle Fotos erneut scannen" den kompletten alten
-      // Bestand als Dateien ohne Datenbankzeile – siehe
-      // [AppDatabase.deleteUnassignedFacesForAsset].
-      for (final pfad in await db.deleteUnassignedFacesForAsset(asset.id)) {
-        await paths.deletePermanently(pfad);
-      }
-    }
-
-    // Was beiseitegelegt wurde, darf ein erneuter Scan nicht als neue
-    // Erkennung zurückbringen. Das Löschen oben verschont diese Gesichter
-    // zwar, aber die Erkennung findet dieselbe Stelle wieder – ohne diesen
-    // Abgleich stünde neben jedem ignorierten Plakatgesicht nach dem
-    // nächsten Scan ein frisches, unbenanntes.
-    //
-    // [nurNeueStellen] weitet das auf ALLE vorhandenen Gesichter aus – der
-    // Fall der weiteren Standbilder eines Videos: Wer zwei Sekunden lang
-    // stillsteht, ist auf jedem Standbild an derselben Stelle und soll
-    // trotzdem einmal in der Bibliothek stehen. Wer sich bewegt hat,
-    // bekommt eine zweite Zeile, und das ist richtig so.
-    final ignorierteBoxen = [
-      for (final f in await db.facesForAsset(asset.id))
-        if (nurNeueStellen || f.isIgnored)
-          DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
-    ];
-
-    try {
-      final boxes = await engine.detectFaces(decoded);
-      for (final box in boxes) {
-        // Dieselbe Schwelle wie die Unterdrückung mehrfacher Erkennungen
-        // derselben Stelle (FaceEngineService.detectFaces) – es ist
-        // dieselbe Frage: Ist das nochmal dieses Gesicht?
-        if (ignorierteBoxen.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
-          continue;
-        }
-        final faceId = const Uuid().v4();
-        final cropFile = paths.absolute(paths.faceRelativePath(faceId));
-        final croppedThumb = FaceEngineService.cropFaceImage(decoded, box);
-        await FaceEngineService.saveFaceCrop(croppedThumb, cropFile);
-
-        Float32List? embedding;
-        if (engine.canEmbed) {
-          embedding = await engine.embedFace(decoded, box);
-        }
-
-        // Nutzt dieselben Landmarks weiter, die YuNet für diese Box schon
-        // geliefert hat (siehe FaceEngineService.detectFaces) – keine
-        // erneute Erkennung nötig, nur ein kleiner Zusatz-Klassifikator
-        // auf zwei winzigen Augen-Ausschnitten.
-        double? eyeOpenScore;
-        if (eyeState != null) {
-          try {
-            eyeOpenScore = await eyeState.eyeOpenScore(decoded, box);
-          } catch (e) {
-            debugPrint(
-              'Augen-Zustand-Erkennung fehlgeschlagen für ${asset.originalFileName}: $e',
-            );
-          }
-        }
-
-        await db.insertFace(
-          FacesCompanion.insert(
-            id: faceId,
-            assetId: asset.id,
-            boxX: box.x,
-            boxY: box.y,
-            boxW: box.width,
-            boxH: box.height,
-            cropRelativePath: Value(paths.faceRelativePath(faceId)),
-            embedding: embedding != null
-                ? Value(blobFromEmbeddingFloats(embedding))
-                : const Value.absent(),
-            eyeOpenScore: eyeOpenScore != null
-                ? Value(eyeOpenScore)
-                : const Value.absent(),
-            // Auf dem Ausschnitt, der ohnehin schon im Speicher liegt –
-            // kein zweiter Dekodiervorgang, keine zweite Skalierung.
-            schaerfe: Value(gesichtsschaerfe(croppedThumb)),
-          ),
-        );
-      }
-      await db.markFacesScanned([asset.id]);
-    } catch (e) {
-      debugPrint(
-        'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
-      );
-    }
-  }
-
-  /// Dekodiert das Bild eines Assets und führt die Gesichtserkennung aus –
-  /// für Aufrufer, die (anders als [_postProcessNewAsset]) noch kein
-  /// dekodiertes Bild vorliegen haben (manueller Rescan über die Werkzeuge).
-  Future<void> _scanFacesForAsset(
-    AssetData asset, {
-    required FaceEngineService engine,
-    EyeStateService? eyeState,
-    required bool deleteExistingUnassigned,
-  }) async {
-    final decoded = await _decodeAsset(asset);
-    await _scanFacesForDecodedAsset(
-      asset,
-      decoded,
-      engine: engine,
-      eyeState: eyeState,
-      deleteExistingUnassigned: deleteExistingUnassigned,
-    );
-  }
-
-  /// Manueller (Re-)Scan der Gesichtserkennung, z.B. nachdem das YuNet-Modell
-  /// erst nachträglich installiert wurde oder ein Erkennungs-Bug (wie die
-  /// BGR/RGB-Verwechslung) behoben wurde.
-  ///
-  /// [onlyNewPhotos] = true: nur Fotos, die noch nie gescannt wurden.
-  /// [onlyNewPhotos] = false: ALLE Fotos erneut scannen (dauert entsprechend
-  /// länger bei großen Bibliotheken).
-  Stream<ImportProgress> rescanFaces({required bool onlyNewPhotos}) async* {
-    // Erst die Arbeit ermitteln, dann die Modelle holen – siehe
-    // [_bildinhaltsAnalyse].
-    final assets = await db.assetsForFaceScan(onlyNew: onlyNewPhotos);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    final engine = await faceEngineHalter.leihen();
-    if (engine == null) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    var failed = false;
-    try {
-      final eyeState = await eyeStateHalter.leihen();
-      try {
-        var done = 0;
-        yield ImportProgress(0, assets.length);
-        for (final asset in assets) {
-          try {
-            await _scanFacesForAsset(
-              asset,
-              engine: engine,
-              eyeState: eyeState,
-              deleteExistingUnassigned: !onlyNewPhotos,
-            );
-          } catch (e) {
-            failed = true;
-            debugPrint(
-              'Gesichtserkennung fehlgeschlagen für '
-              '${asset.originalFileName}: $e',
-            );
-          }
-          done++;
-          yield ImportProgress(
-            done,
-            assets.length,
-            currentFile: asset.originalFileName,
-          );
-        }
-      } finally {
-        if (eyeState != null) eyeStateHalter.zurueckgeben();
-      }
-    } finally {
-      faceEngineHalter.zurueckgeben();
-    }
-    if (!onlyNewPhotos && !failed) {
-      await _markModelPipelineCurrent('faces');
-    }
-  }
+  /// Siehe [Auswertungen.rescanFaces].
+  Stream<ImportProgress> rescanFaces({required bool onlyNewPhotos}) =>
+      auswertungen.rescanFaces(onlyNewPhotos: onlyNewPhotos);
 
   /// Manuelles (Re-)Erzeugen von Thumbnails/Vorschauen, z.B. nachdem die
   /// native Bildkonvertierung für HEIC/DNG oder die Video-Thumbnail-
@@ -2607,235 +2022,15 @@ class LibraryState extends ChangeNotifier {
     );
   }
 
-  /// Wertet **weitere Standbilder** eines Videos aus – bisher war ein
-  /// Video ein einziges Bild.
-  ///
-  /// **Was daran fehlte.** Seit der 6. Vergleichsauflage haben 428 von 429
-  /// Videos eine Einbettung für die Suche und Schlagwörter. Alles davon
-  /// stammt aus dem einen Standbild, das seit dem Import auf der Platte
-  /// liegt. Bei einem Live-Photo-Fetzen von zwei Sekunden ist das das
-  /// ganze Video; bei neun Minuten – so lang ist das längste in der
-  /// echten Bibliothek – ist es eine Stichprobe von 0,2 Promille.
-  ///
-  /// ```
-  /// 429 Videos, 186 Minuten
-  ///   unter 10 s     208   ein Bild reicht
-  ///   ab 10 s        219   ein Bild reicht nicht
-  /// ```
-  ///
-  /// Die Bilder werden **nicht aufgehoben**. Sie entstehen, gehen durch
-  /// die Modelle und werden verworfen; was bleibt, sind die Einbettungen,
-  /// die Schlagwörter und die Gesichtsausschnitte, die die
-  /// Gesichtserkennung ohnehin selbst schreibt. Fünf Bilder je Video auf
-  /// der Platte wären an dieser Bibliothek rund 340 MB für nichts.
-  ///
-  /// Die zusätzlichen Einbettungen gehen in eine **eigene** Tabelle: Die
-  /// Duplikatsuche und die Serienerkennung fragen „welche Aufnahme sieht
-  /// wem ähnlich" und fänden bei fünf Zeilen je Video fünfmal dasselbe
-  /// Video (siehe [Videoeinbettungen]).
-  /// Sucht zu jedem noch namenlosen Gesicht die Person, die es sein
-  /// koennte – und **schlaegt sie nur vor**.
-  ///
-  /// **Warum es diesen Lauf braucht.** Die Rechnung dafuer gibt es seit
-  /// langem ([personenvorschlag]), aufgerufen wurde sie an genau drei
-  /// Stellen: Vollbild, Info-Blatt, Gesichter-Durchsicht. Alle drei
-  /// setzen voraus, dass jemand ein Gesicht **anschaut**. Nach einem
-  /// Import lagen die neuen Gesichter deshalb einfach da. An der echten
-  /// Bibliothek endete das damit, dass 14.065 Gesichter von Hand
-  /// beiseitegelegt wurden – die Warteschlange war nicht abgearbeitet,
-  /// sondern weggeraeumt.
-  ///
-  /// **Und warum nur vorschlagen.** Ein falscher Vorschlag, den jemand
-  /// wegklickt, kostet Zeit; einer, den jemand uebersieht und bestaetigt,
-  /// kostet eine falsche Zuordnung – und die faellt spaeter niemandem
-  /// mehr auf. Zugeordnet wird deshalb erst nach Zustimmung.
-  ///
-  /// Gerechnet wird gegen die Kerne der benannten Personen, mit der
-  /// **persoenlichen** Schwelle jeder Person: Darin steckt, was aus
-  /// frueheren Zustimmungen und Ablehnungen gelernt wurde.
+  /// Siehe [Auswertungen.backfillWiedererkennung].
   Stream<ImportProgress> backfillWiedererkennung({
     bool alle = false,
     bool beiseite = false,
-  }) async* {
-    final gesichter = await db.gesichterFuerWiedererkennung(
-      alle: alle,
-      beiseite: beiseite,
-    );
-    if (gesichter.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
+  }) => auswertungen.backfillWiedererkennung(alle: alle, beiseite: beiseite);
 
-    // Die Kerne einmal fuer den ganzen Lauf. Sie je Gesicht neu zu
-    // bilden hiesse, 2366 Einbettungen zehntausendfach zu mitteln.
-    final roh = await db.einbettungenZugeordneterGesichter();
-    final leute = {for (final p in await db.select(db.people).get()) p.id: p};
-    final kerne = personenkerne([
-      for (final e in roh)
-        if (leute.containsKey(e.personId))
-          (personId: e.personId, vektor: floatsFromEmbeddingBlob(e.vektor)),
-    ]);
-    if (kerne.isEmpty) {
-      // Ohne eine einzige benannte Person gibt es nichts zu vergleichen.
-      // Die Marke trotzdem zu setzen waere falsch: Sobald die erste
-      // Person benannt ist, gehoeren diese Gesichter wieder in den Lauf.
-      yield ImportProgress(0, 0);
-      return;
-    }
-
-    var done = 0;
-    var gefunden = 0;
-    yield ImportProgress(0, gesichter.length);
-    final ergebnisse = <({String faceId, String? personId, double? wert})>[];
-    for (final gesicht in gesichter) {
-      final einbettung = gesicht.embedding;
-      if (einbettung != null) {
-        final treffer = besterTreffer(
-          floatsFromEmbeddingBlob(einbettung),
-          kerne,
-          schwelleFuer: (id) {
-            final person = leute[id];
-            return person == null
-                ? faceSimilarityThreshold
-                : schwelleFuerPerson(person);
-          },
-        );
-        if (treffer != null) gefunden++;
-        ergebnisse.add((
-          faceId: gesicht.id,
-          personId: treffer?.personId,
-          wert: treffer?.aehnlichkeit,
-        ));
-      }
-      done++;
-      // Blockweise sichern statt erst am Ende: Wer den Lauf nach der
-      // Haelfte abbricht, soll die Haelfte behalten – und ein Abbruch
-      // geschieht hier ueber das Abbestellen des Stroms, mitten in der
-      // Schleife.
-      if (done % 200 == 0) {
-        await db.merkeVorschlaege(ergebnisse);
-        ergebnisse.clear();
-        yield ImportProgress(done, gesichter.length, getan: gefunden);
-      }
-    }
-    await db.merkeVorschlaege(ergebnisse);
-    yield ImportProgress(done, gesichter.length, getan: gefunden);
-  }
-
-  Stream<ImportProgress> backfillVideobilder({bool alle = false}) async* {
-    final videos = await db.assetsFuerVideobilder(alle: alle);
-    if (videos.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    // Erst die Arbeit ermitteln, dann die Modelle holen – siehe
-    // [_bildinhaltsAnalyse].
-    final clipBild = await clipBildHalter.leihen();
-    final clipText = await clipTextHalter.leihen();
-    try {
-      final gesichter = await faceEngineHalter.leihen();
-      try {
-        final augenzustand = gesichter != null
-            ? await eyeStateHalter.leihen()
-            : null;
-        try {
-          final vokabular = await db.aiTagVocabularyTerms();
-          var done = 0;
-          var bilder = 0;
-          yield ImportProgress(0, videos.length);
-          final ohneArbeit = <String>[];
-
-          for (final video in videos) {
-            final stellen = videostandbildstellen(video.durationSeconds);
-            if (stellen.isEmpty) {
-              // Zu kurz – und das ist ein Ergebnis, kein offener Posten.
-              ohneArbeit.add(video.id);
-            } else {
-              try {
-                final neue = <({double stelle, Uint8List vector})>[];
-                for (final stelle in stellen) {
-                  final bild =
-                      await NativeImageConverter.generateVideoThumbnail(
-                        paths.absolute(video.relativePath),
-                        maxDimension: videoStandbildKante,
-                        anteil: stelle,
-                      );
-                  if (bild == null) continue;
-                  final dekodiert = await compute(
-                    img.decodeJpg,
-                    bild.jpegBytes,
-                  );
-                  if (dekodiert == null) continue;
-                  bilder++;
-
-                  if (clipBild != null) {
-                    final vektor = await clipBild.embedImage(dekodiert);
-                    neue.add((
-                      stelle: stelle,
-                      vector: blobFromEmbeddingFloats(vektor),
-                    ));
-                    if (clipText != null) {
-                      for (final tag in await aiTaggingService.suggestTags(
-                        clipText,
-                        vektor,
-                        vokabular,
-                        insEnglische: insEnglische,
-                      )) {
-                        await db.fuehreAus(
-                          SchlagwortAnheften(
-                            [video.id],
-                            tag,
-                            quelle: Tagquelle.ki,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                  if (gesichter != null) {
-                    // `nurNeueStellen`: Wer im Video stillsteht, ist auf
-                    // jedem Standbild an derselben Stelle und soll
-                    // trotzdem einmal in der Bibliothek stehen.
-                    await _scanFacesForDecodedAsset(
-                      video,
-                      dekodiert,
-                      engine: gesichter,
-                      eyeState: augenzustand,
-                      deleteExistingUnassigned: false,
-                      nurNeueStellen: true,
-                    );
-                  }
-                }
-                // Auch mit leerer Liste vermerken: Ein Video, aus dem sich
-                // kein Standbild greifen lässt, ist angesehen worden.
-                await db.setzeVideoeinbettungen(video.id, neue);
-              } catch (e) {
-                debugPrint(
-                  'Standbilder fehlgeschlagen für ${video.originalFileName}: $e',
-                );
-              }
-            }
-            done++;
-            yield ImportProgress(
-              done,
-              videos.length,
-              currentFile: video.originalFileName,
-            );
-          }
-          if (ohneArbeit.isNotEmpty) {
-            await db.markVideobilderGeprueft(ohneArbeit);
-          }
-          debugPrint('Videostandbilder: $bilder aus ${videos.length} Videos');
-        } finally {
-          if (augenzustand != null) eyeStateHalter.zurueckgeben();
-        }
-      } finally {
-        if (gesichter != null) faceEngineHalter.zurueckgeben();
-      }
-    } finally {
-      if (clipBild != null) clipBildHalter.zurueckgeben();
-      if (clipText != null) clipTextHalter.zurueckgeben();
-    }
-  }
+  /// Siehe [Auswertungen.backfillVideobilder].
+  Stream<ImportProgress> backfillVideobilder({bool alle = false}) =>
+      auswertungen.backfillVideobilder(alle: alle);
 
   /// Löst für Fotos mit bekanntem GPS-Ort, aber noch ohne Land/Bundesland/
   /// Stadt, die lokale/offline Umkehr-Geokodierung aus (siehe Werkzeuge →
@@ -3532,466 +2727,32 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  Stream<ImportProgress> backfillOcrText({bool alle = false}) async* {
-    final assets = await db.assetsForOcrBackfill(alle: alle);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
+  /// Siehe [Auswertungen.backfillOcrText].
+  Stream<ImportProgress> backfillOcrText({bool alle = false}) =>
+      auswertungen.backfillOcrText(alle: alle);
 
-    // Auf macOS erledigt das Vision-Framework die Arbeit ohne Modell und
-    // ohne Download; überall sonst braucht es die beiden ONNX-Modelle.
-    // Das Modell wird für den ganzen Lauf EINMAL geliehen, nicht je Foto –
-    // dasselbe Muster wie bei den Bildbeschreibungen.
-    final ueberSystem = Platform.isMacOS;
-    OcrService? modell;
-    if (!ueberSystem) {
-      modell = await ocrHalter.leihen();
-      if (modell == null) {
-        yield ImportProgress(0, 0);
-        return;
-      }
-    }
+  /// Siehe [Auswertungen.backfillCaptions].
+  Stream<ImportProgress> backfillCaptions({bool alle = false}) =>
+      auswertungen.backfillCaptions(alle: alle);
 
-    var failed = false;
-    try {
-      var done = 0;
-      yield ImportProgress(0, assets.length);
-      for (final asset in assets) {
-        // Pro Foto abgesichert: Ein einzelner Fehlschlag (beschädigte
-        // Datei, Fehler im nativen Aufruf) darf nicht den ganzen Lauf
-        // abbrechen.
-        try {
-          List<Textstelle>? stellen;
-          if (ueberSystem) {
-            stellen = await NativeImageConverter.recognizeText(
-              _decodableFile(asset),
-            );
-          } else {
-            final bild = await _decodeAsset(asset);
-            if (bild != null) stellen = await modell!.erkenne(bild);
-          }
-          if (stellen != null) {
-            // Kein Text im Bild: Nur das Ergebnis merken, keine leere Liste
-            // als „Stellen" ablegen – sonst käme das Foto beim nächsten Lauf
-            // nicht mehr dran, obwohl nichts zu holen war. Genau das
-            // unterscheidet die beiden Fälle in [_ocrOffen].
-            await db.setOcrResult(
-              asset.id,
-              textAusStellen(stellen),
-              boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
-            );
-          }
-        } on LesungLiefertNichts catch (e) {
-          // NICHT als leeres Ergebnis speichern: Das Foto würde als
-          // durchsucht vermerkt und nach einer Reparatur nie wieder
-          // drankommen. Es bleibt offen, der Lauf geht weiter.
-          debugPrint(
-            'Texterkennung: ${e.stellen} Stellen mit Schrift in '
-            '${asset.originalFileName}, keine lesbar – Foto bleibt offen.',
-          );
-          failed = true;
-        } catch (e) {
-          failed = true;
-          debugPrint(
-            'Texterkennung fehlgeschlagen für ${asset.originalFileName}: $e',
-          );
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          assets.length,
-          currentFile: asset.originalFileName,
-        );
-      }
-    } finally {
-      if (!ueberSystem) ocrHalter.zurueckgeben();
-    }
-    if (alle && !failed) await _markModelPipelineCurrent('ocr');
-  }
+  static const transkriptHoechstensSekunden =
+      Auswertungen.transkriptHoechstensSekunden;
 
-  /// Erzeugt KI-Bildbeschreibungen nachträglich für Fotos, die vor
-  /// Installation des Modells importiert wurden (Captions entstehen sonst
-  /// nur automatisch beim Import, siehe [_postProcessNewAsset]).
-  /// [alle] beschreibt auch Fotos neu, die schon eine Beschreibung haben –
-  /// nach dem Modellwechsel der sinnvolle Weg, siehe
-  /// [AppDatabase.assetsForCaptionBackfill].
-  Stream<ImportProgress> backfillCaptions({bool alle = false}) async* {
-    // Erst die Arbeit ermitteln, dann das Modell holen – siehe
-    // [_bildinhaltsAnalyse]. Das Bildbeschreibungs-Modell ist mit 275 MB
-    // das zweitgrösste; es für eine leere Liste zu laden war der teuerste
-    // Einzelposten des Fehlers.
-    final assets = await db.assetsForCaptionBackfill(alle: alle);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    final service = await captioningHalter.leihen();
-    if (service == null) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    // Der Übersetzer wird für den ganzen Lauf einmal geliehen, nicht je
-    // Foto – sonst würde ein 100-MB-Modell pro Bild geladen und wieder
-    // freigegeben. Null heisst schlicht: nicht installiert oder
-    // abgeschaltet, dann bleibt es bei der englischen Beschreibung.
-    final uebersetzer = await db.uebersetzeBeschreibungen()
-        ? await uebersetzungEnDeHalter.leihen()
-        : null;
+  /// Siehe [Auswertungen.transkribiereVideos].
+  Stream<ImportProgress> transkribiereVideos({bool alle = false}) =>
+      auswertungen.transkribiereVideos(alle: alle);
 
-    var failed = false;
-    try {
-      var done = 0;
-      yield ImportProgress(0, assets.length);
-      for (final asset in assets) {
-        try {
-          final decoded = await _decodeAsset(asset);
-          if (decoded == null) {
-            throw Exception('Bild konnte nicht dekodiert werden.');
-          }
-          final caption = await service.generateCaption(decoded);
-          String? deutsch;
-          if (uebersetzer != null && caption.isNotEmpty) {
-            try {
-              deutsch = await uebersetzer.translate(caption);
-            } catch (e) {
-              // Eine fehlgeschlagene Übersetzung darf die Beschreibung
-              // nicht mitreissen – das englische Original ist brauchbar.
-              debugPrint(
-                'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e',
-              );
-            }
-          }
-          await db.setAiCaption(asset.id, caption, deutsch: deutsch);
-        } catch (e) {
-          failed = true;
-          debugPrint(
-            'KI-Bildbeschreibung fehlgeschlagen für ${asset.originalFileName}: $e',
-          );
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          assets.length,
-          currentFile: asset.originalFileName,
-        );
-      }
-    } finally {
-      if (uebersetzer != null) uebersetzungEnDeHalter.zurueckgeben();
-      captioningHalter.zurueckgeben();
-    }
-    if (alle && !failed) await _markModelPipelineCurrent('captions');
-  }
+  /// Siehe [Auswertungen.uebersetzeBildbeschreibungen].
+  Stream<ImportProgress> uebersetzeBildbeschreibungen({bool alle = false}) =>
+      auswertungen.uebersetzeBildbeschreibungen(alle: alle);
 
-  /// Wie lang ein Video höchstens gehört wird. Darüber nur der Anfang:
-  /// Eine Stunde Ton wären 120 Durchgänge des Modells, und für die Suche
-  /// genügt meist, was in der ersten halben Stunde gesagt wird.
-  static const transkriptHoechstensSekunden = 30 * 60;
+  /// Siehe [Auswertungen.backfillBlurScores].
+  Stream<ImportProgress> backfillBlurScores() =>
+      auswertungen.backfillBlurScores();
 
-  /// Hört die Videos ab, die die Spracherkennung noch nicht kennt, und
-  /// hält fest, was gesagt wird – auch, dass nichts gesagt wird.
-  ///
-  /// [alle] hört auch die schon gehörten noch einmal, nach einem
-  /// Modellwechsel der sinnvolle Weg.
-  Stream<ImportProgress> transkribiereVideos({bool alle = false}) async* {
-    // Erst die Arbeit ermitteln, dann das Modell holen – siehe
-    // [_bildinhaltsAnalyse].
-    final videos = await db.assetsForTranskription(alle: alle);
-    if (videos.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    final service = await spracherkennungHalter.leihen();
-    if (service == null) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    var failed = false;
-    try {
-      var done = 0;
-      yield ImportProgress(0, videos.length);
-      for (final video in videos) {
-        try {
-          // Der Ton aus dem Video, das man sieht: ein gekürztes, wenn es
-          // eines gibt.
-          final datei = paths.absolute(displayRelativePath(video));
-          final ton = await NativeImageConverter.videoTon(
-            datei,
-            hoechstensSekunden: transkriptHoechstensSekunden,
-          );
-          if (ton == null) {
-            // Keine Tonspur ist ein Ergebnis; eine unlesbare Datei auch –
-            // sonst käme sie bei jedem Durchgang wieder.
-            await db.setTranskript(video.id);
-          } else {
-            final gehoert = await service.transkribiere(
-              ton,
-              abbruch: () => _analyseAbbruch,
-            );
-            if (_analyseAbbruch) break;
-            await db.setTranskript(
-              video.id,
-              text: gehoert?.text,
-              sprache: gehoert?.sprache,
-            );
-          }
-        } catch (e) {
-          failed = true;
-          debugPrint(
-            'Spracherkennung fehlgeschlagen für ${video.originalFileName}: $e',
-          );
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          videos.length,
-          currentFile: video.originalFileName,
-        );
-      }
-    } finally {
-      spracherkennungHalter.zurueckgeben();
-    }
-    if (failed) {
-      debugPrint('Spracherkennung: nicht jedes Video liess sich hören.');
-    }
-  }
-
-  /// Übersetzt vorhandene englische Bildunterschriften ins Deutsche, ohne
-  /// das Beschreibungsmodell zu bemühen.
-  ///
-  /// Das ist der Weg für alle, die die Übersetzung erst später einschalten:
-  /// Die englischen Sätze stehen längst in der Datenbank, es fehlt nur ihre
-  /// Übertragung. Der Umweg über [backfillCaptions] mit `alle: true` würde
-  /// dafür das 275-MB-Modell über die gesamte Bibliothek laufen lassen und
-  /// dabei ausgerechnet die vorhandenen Sätze wegwerfen.
-  ///
-  /// [alle] übersetzt auch das, was schon eine deutsche Fassung hat – nach
-  /// einem Modellwechsel der sinnvolle Weg.
-  Stream<ImportProgress> uebersetzeBildbeschreibungen({
-    bool alle = false,
-  }) async* {
-    // Erst die Arbeit ermitteln, dann das Modell holen – siehe
-    // [_bildinhaltsAnalyse].
-    final assets = await db.assetsForCaptionTranslation(alle: alle);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    final uebersetzer = await uebersetzungEnDeHalter.leihen();
-    if (uebersetzer == null) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-
-    try {
-      var done = 0;
-      yield ImportProgress(0, assets.length);
-      for (final asset in assets) {
-        final englisch = asset.aiCaption?.trim() ?? '';
-        if (englisch.isNotEmpty) {
-          try {
-            final deutsch = await uebersetzer.translate(englisch);
-            if (deutsch.trim().isNotEmpty) {
-              await db.setAiCaptionDe(asset.id, deutsch.trim());
-            }
-          } catch (e) {
-            // Ein Satz, an dem sich das Modell verschluckt, darf den Lauf
-            // über die ganze Bibliothek nicht beenden.
-            debugPrint(
-              'Übersetzung fehlgeschlagen für ${asset.originalFileName}: $e',
-            );
-          }
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          assets.length,
-          currentFile: asset.originalFileName,
-        );
-      }
-    } finally {
-      uebersetzungEnDeHalter.zurueckgeben();
-    }
-  }
-
-  /// Gemeinsamer Durchlauf für die drei Auswertungen, die dasselbe
-  /// dekodierte Bild brauchen: Unschärfe, Gesichter und CLIP-Embedding.
-  /// Jedes Foto wird EINMAL dekodiert (gemessen ~85 ms) statt bis zu
-  /// dreimal – siehe [starteHintergrundanalyse].
-  ///
-  /// Je Foto wird nur nachgeholt, was tatsächlich fehlt, und nur, wenn das
-  /// zugehörige Modell da ist. Ein Foto, dem keine der drei Auswertungen
-  /// mehr fehlt, wird gar nicht erst dekodiert.
-  ///
-  /// Fehler bleiben pro Foto UND pro Auswertung eingegrenzt: Ein
-  /// fehlschlagendes CLIP-Modell darf weder die Unschärfe desselben Fotos
-  /// noch die folgenden Fotos verhindern.
-  Stream<ImportProgress> _bildinhaltsAnalyse() async* {
-    final kandidaten = await db.assetsForCombinedImageAnalysis();
-    // Nichts zu tun? Dann auch nichts laden. Ohne diese Abkürzung lieh sich
-    // die Stufe ihre Modelle, sah danach eine leere Liste und gab sie
-    // ungenutzt wieder frei – bei jedem Programmstart, weil die Analyse dort
-    // automatisch anläuft. Gemessen belegte die App so 1076 MB statt 214 MB,
-    // ohne ein einziges Foto anzufassen; der ganze Zweck des bedarfsweisen
-    // Ladens war damit für den Normalfall aufgehoben (Audit-Fund).
-    if (kandidaten.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    // Einmal für den ganzen Durchlauf geliehen (siehe ModellHalter.leihen)
-    // statt bei tausenden Fotos das Modell implizit ständig neu zu laden.
-    // Nur der Bild-Encoder: Hier entstehen ausschliesslich Bild-Embeddings.
-    final clip = await clipBildHalter.leihen();
-    try {
-      final gesichter = await faceEngineHalter.leihen();
-      try {
-        final augenzustand = gesichter != null
-            ? await eyeStateHalter.leihen()
-            : null;
-        try {
-          var done = 0;
-          yield ImportProgress(0, kandidaten.length);
-
-          for (final k in kandidaten) {
-            final asset = k.asset;
-            final brauchtUnschaerfe = asset.sharpnessScore == null;
-            final brauchtGesichter = !asset.facesScanned && gesichter != null;
-            final brauchtEmbedding = !k.hatEmbedding && clip != null;
-
-            if (brauchtUnschaerfe || brauchtGesichter || brauchtEmbedding) {
-              final decoded = await _decodeAsset(asset);
-              if (decoded != null) {
-                if (brauchtUnschaerfe) {
-                  try {
-                    await db.setSharpnessScore(
-                      asset.id,
-                      await compute(computeBlurScore, decoded),
-                    );
-                  } catch (e) {
-                    debugPrint(
-                      'Unschärfe fehlgeschlagen für ${asset.originalFileName}: $e',
-                    );
-                  }
-                }
-                if (brauchtGesichter) {
-                  try {
-                    await _scanFacesForDecodedAsset(
-                      asset,
-                      decoded,
-                      engine: gesichter,
-                      eyeState: augenzustand,
-                      deleteExistingUnassigned: false,
-                    );
-                  } catch (e) {
-                    debugPrint(
-                      'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
-                    );
-                  }
-                }
-                if (brauchtEmbedding) {
-                  try {
-                    await db.saveEmbedding(
-                      asset.id,
-                      await clip.embedImage(decoded),
-                    );
-                  } catch (e) {
-                    debugPrint(
-                      'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
-                    );
-                  }
-                }
-              }
-            }
-
-            done++;
-            yield ImportProgress(
-              done,
-              kandidaten.length,
-              currentFile: asset.originalFileName,
-            );
-          }
-        } finally {
-          if (augenzustand != null) eyeStateHalter.zurueckgeben();
-        }
-      } finally {
-        if (gesichter != null) faceEngineHalter.zurueckgeben();
-      }
-    } finally {
-      if (clip != null) clipBildHalter.zurueckgeben();
-    }
-  }
-
-  /// Berechnet Unschärfe-Scores nachträglich für Fotos, die vor Einführung
-  /// dieses Features importiert wurden (siehe [_postProcessNewAsset]).
-  /// Wird von der Hintergrundanalyse nicht mehr direkt aufgerufen (dort
-  /// erledigt das [_bildinhaltsAnalyse] mit), bleibt aber für den manuellen
-  /// Lauf in den Werkzeugen erhalten.
-  Stream<ImportProgress> backfillBlurScores() async* {
-    final assets = await db.assetsForBlurBackfill();
-    var done = 0;
-    yield ImportProgress(0, assets.length);
-    for (final asset in assets) {
-      // Pro Foto abgesichert, analog zu [backfillOcrText].
-      try {
-        final decoded = await _decodeAsset(asset);
-        if (decoded != null) {
-          await db.setSharpnessScore(
-            asset.id,
-            await compute(computeBlurScore, decoded),
-          );
-        }
-      } catch (e) {
-        debugPrint(
-          'Unschärfe-Berechnung fehlgeschlagen für ${asset.originalFileName}: $e',
-        );
-      }
-      done++;
-      yield ImportProgress(
-        done,
-        assets.length,
-        currentFile: asset.originalFileName,
-      );
-    }
-  }
-
-  /// Holt die Gesichtsschärfe für Gesichter nach, die vor Schema 61
-  /// erkannt wurden.
-  ///
-  /// **Aus den gespeicherten Ausschnitten, nicht aus den Fotos.** Der
-  /// 160x160-Ausschnitt liegt für jedes erkannte Gesicht auf der Platte.
-  /// Ihn zu lesen kostet rund zwei Millisekunden; das zugehörige Foto neu zu
-  /// dekodieren kostet je nach Format das Hundertfache – bei 17.867
-  /// Gesichtern der Unterschied zwischen einer halben Minute und einer
-  /// halben Stunde.
-  ///
-  /// Ein Gesicht ohne Ausschnitt (von Hand eingezeichnet, oder die Datei
-  /// fehlt) bleibt ohne Wert stehen, statt den Lauf abzubrechen.
-  Stream<ImportProgress> backfillGesichtsschaerfe() async* {
-    final offen = await db.gesichterOhneSchaerfe();
-    var done = 0;
-    yield ImportProgress(0, offen.length);
-    for (final gesicht in offen) {
-      try {
-        final pfad = gesicht.cropRelativePath;
-        if (pfad != null) {
-          final datei = paths.absolute(pfad);
-          if (await datei.exists()) {
-            final bild = img.decodeImage(await datei.readAsBytes());
-            if (bild != null) {
-              await db.setzeGesichtsschaerfe(
-                gesicht.id,
-                gesichtsschaerfe(bild),
-              );
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Gesichtsschärfe fehlgeschlagen für ${gesicht.id}: $e');
-      }
-      done++;
-      yield ImportProgress(done, offen.length);
-    }
-  }
+  /// Siehe [Auswertungen.backfillGesichtsschaerfe].
+  Stream<ImportProgress> backfillGesichtsschaerfe() =>
+      auswertungen.backfillGesichtsschaerfe();
 
   /// Schreibt für jedes Asset in der Bibliothek eine `.xmp`-Sidecar-Datei
   /// neben das Original (Interoperabilität mit Lightroom/darktable/digiKam,
@@ -4095,56 +2856,9 @@ class LibraryState extends ChangeNotifier {
     if (await libraryDir.exists()) await libraryDir.delete(recursive: true);
   }
 
-  /// Berechnet CLIP-Bild-Embeddings nachträglich für Fotos, die vor
-  /// Installation des CLIP-Modells importiert wurden (Embeddings entstehen
-  /// sonst nur automatisch beim Import, siehe [_postProcessNewAsset]) –
-  /// ohne dieses Werkzeug bliebe die KI-Bildsuche/Duplikatsuche auf die
-  /// wenigen danach importierten Fotos beschränkt.
-  /// [alle] rechnet auch bereits vorhandene Einbettungen neu – für den
-  /// Fall, dass sich die Bildvorverarbeitung geändert hat.
-  Stream<ImportProgress> backfillClipEmbeddings({bool alle = false}) async* {
-    // Erst die Arbeit ermitteln, dann das Modell holen – siehe
-    // [_bildinhaltsAnalyse].
-    final assets = await db.assetsForEmbeddingBackfill(alle: alle);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    final service = await clipBildHalter.leihen();
-    if (service == null) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    var failed = false;
-    try {
-      var done = 0;
-      yield ImportProgress(0, assets.length);
-      for (final asset in assets) {
-        try {
-          final decoded = await _decodeAsset(asset);
-          if (decoded == null) {
-            throw Exception('Bild konnte nicht dekodiert werden.');
-          }
-          final embedding = await service.embedImage(decoded);
-          await db.saveEmbedding(asset.id, embedding);
-        } catch (e) {
-          failed = true;
-          debugPrint(
-            'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
-          );
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          assets.length,
-          currentFile: asset.originalFileName,
-        );
-      }
-    } finally {
-      clipBildHalter.zurueckgeben();
-    }
-    if (alle && !failed) await _markModelPipelineCurrent('clip');
-  }
+  /// Siehe [Auswertungen.backfillClipEmbeddings].
+  Stream<ImportProgress> backfillClipEmbeddings({bool alle = false}) =>
+      auswertungen.backfillClipEmbeddings(alle: alle);
 
   Future<void> _markModelPipelineCurrent(String pipeline) async {
     final state = modelProcessingState;
@@ -4156,99 +2870,9 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Berechnet automatische KI-Tags nachträglich (siehe [AiTaggingService])
-  /// – für Fotos, die vor Einführung dieser Funktion importiert wurden oder
-  /// wenn das CLIP-Modell erst nachträglich installiert wurde. Nutzt ein
-  /// bereits gespeichertes CLIP-Embedding weiter, falls vorhanden, statt es
-  /// neu zu berechnen.
-  Stream<ImportProgress> backfillAiTags({required bool onlyUntagged}) async* {
-    // Erst nachsehen, ob es Arbeit gibt – Modelle zu leihen kostet hier
-    // besonders viel (beide CLIP-Encoder, 577 MB), und bei einer fertig
-    // ausgewerteten Bibliothek wäre es reine Verschwendung. Siehe
-    // [_bildinhaltsAnalyse] für den gemessenen Effekt.
-    final assets = await db.assetsForAiTagging(onlyUntagged: onlyUntagged);
-    if (assets.isEmpty) {
-      yield ImportProgress(0, 0);
-      return;
-    }
-    // Die einzige Stelle, die BEIDE CLIP-Encoder braucht: das Foto wird
-    // als Bild eingebettet, die Vokabelbegriffe als Text (siehe
-    // AiTaggingService.suggestTags). Hier fällt die Aufteilung also nicht
-    // ins Gewicht – die übrigen Stellen sparen dafür je die Hälfte.
-    final clipBild = await clipBildHalter.leihen();
-    final clipText = clipBild == null ? null : await clipTextHalter.leihen();
-    if (clipBild == null || clipText == null) {
-      if (clipBild != null) clipBildHalter.zurueckgeben();
-      yield ImportProgress(0, 0);
-      return;
-    }
-    try {
-      // Einmal pro Lauf statt pro Asset gelesen – das Vokabular ändert sich
-      // während eines laufenden Backfills nicht, ein SELECT pro Foto wäre
-      // gegenüber der ohnehin pro Foto anfallenden CLIP-Inferenz reine Verschwendung.
-      final vocabulary = await db.aiTagVocabularyTerms();
-      // Aus demselben Grund wie das Vokabular einmal pro Lauf statt pro
-      // Foto geladen (siehe applyAutomationRules' `rules`-Parameter).
-      final automationRules = await db.allAutomationRules();
-      var done = 0;
-      yield ImportProgress(0, assets.length);
-      for (final asset in assets) {
-        try {
-          var embedding = await db.embeddingForAsset(asset.id);
-          if (embedding == null) {
-            final decoded = await _decodeAsset(asset);
-            if (decoded == null) {
-              throw Exception('Bild konnte nicht dekodiert werden.');
-            }
-            embedding = await clipBild.embedImage(decoded);
-            await db.saveEmbedding(asset.id, embedding);
-          }
-          final tags = await aiTaggingService.suggestTags(
-            clipText,
-            embedding,
-            vocabulary,
-            insEnglische: insEnglische,
-          );
-          for (final tag in tags) {
-            // Als Vorschlag der Bilderkennung gekennzeichnet – damit er
-            // beim Sperren verschwindet und nach dem Entsperren neu
-            // berechnet wird (siehe [Tagquelle]). Eine bereits von Hand
-            // vergebene Zuordnung lässt `tagAsset` dabei unangetastet.
-            await db.fuehreAus(
-              SchlagwortAnheften([asset.id], tag, quelle: Tagquelle.ki),
-            );
-          }
-          if (tags.isNotEmpty) {
-            await applyAutomationRules(
-              asset.id,
-              aiTags: tags,
-              rules: automationRules,
-            );
-          }
-          // Auch bei LEERER Trefferliste vermerken: "kein Begriff passt" ist
-          // ein Ergebnis, kein offener Posten. Ohne diesen Vermerk bliebe das
-          // Foto für immer Kandidat und die Stufe lüde bei jedem Start erneut
-          // beide CLIP-Encoder, um wieder nichts zu finden (Audit-Fund).
-          // Bewusst NUR im Erfolgsfall – ein abgebrochener Durchlauf (siehe
-          // catch) soll erneut versucht werden.
-          await db.markAiTagsScanned([asset.id]);
-        } catch (e) {
-          debugPrint(
-            'KI-Tagging fehlgeschlagen für ${asset.originalFileName}: $e',
-          );
-        }
-        done++;
-        yield ImportProgress(
-          done,
-          assets.length,
-          currentFile: asset.originalFileName,
-        );
-      }
-    } finally {
-      clipTextHalter.zurueckgeben();
-      clipBildHalter.zurueckgeben();
-    }
-  }
+  /// Siehe [Auswertungen.backfillAiTags].
+  Stream<ImportProgress> backfillAiTags({required bool onlyUntagged}) =>
+      auswertungen.backfillAiTags(onlyUntagged: onlyUntagged);
 
   // -----------------------------------------------------------------------
   // Gesperrter Ordner (PIN-Schutz + echte AES-256-Verschlüsselung)
