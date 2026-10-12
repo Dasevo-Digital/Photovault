@@ -366,7 +366,7 @@ class LibraryState extends ChangeNotifier {
   ///
   /// Zwischen 3.16.0 und 3.18.0 lag hier ein persistenter SimHash-Index
   /// (`EmbeddingAnnIndex`), der die Rangfolge auf rund 12 % der
-  /// Bibliothek einschränkte. An 7489 echten CLIP-Vektoren gemessen,
+  /// Bibliothek einschränkte. An rund 10 000 echten CLIP-Vektoren gemessen,
   /// gegen die exakte Kosinus-Rangfolge:
   ///
   /// ```
