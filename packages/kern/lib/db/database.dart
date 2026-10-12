@@ -159,6 +159,15 @@ class _SperrWiederholung extends QueryInterceptor {
   ) => _wiederhole(() => executor.runSelect(statement, args));
 }
 
+/// Der Wert einer Textspalte aus einer Zeile, die eingefügt werden soll –
+/// gleich, ob sie als Companion oder roh (aus einem Befehl) kommt.
+///
+/// Steht hier und nicht zwischen `@DriftDatabase` und der Klasse: Dort
+/// hing die Anmerkung an der Funktion, drift fand keine Datenbank mehr
+/// und erzeugte stillschweigend nichts.
+String _textSpalte(Insertable<Object?> zeile, String spalte) =>
+    (zeile.toColumns(false)[spalte]! as Variable<String>).value!;
+
 @DriftDatabase(
   tables: [
     Assets,
@@ -211,11 +220,6 @@ class _SperrWiederholung extends QueryInterceptor {
     Aufgabenlaeufe,
   ],
 )
-/// Der Wert einer Textspalte aus einer Zeile, die eingefügt werden soll –
-/// gleich, ob sie als Companion oder roh (aus einem Befehl) kommt.
-String _textSpalte(Insertable<Object?> zeile, String spalte) =>
-    (zeile.toColumns(false)[spalte]! as Variable<String>).value!;
-
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 

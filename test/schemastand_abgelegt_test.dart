@@ -28,4 +28,21 @@ void main() {
           '`dart run drift_dev make-migrations` aufrufen',
     );
   });
+
+  test('@DriftDatabase steht unmittelbar an der Datenbankklasse', () {
+    // Eine Funktion dazwischen nimmt die Anmerkung an sich: drift findet
+    // dann keine Datenbank mehr, build_runner meldet Erfolg und löscht
+    // database.g.dart. So geschehen am 12.10.2026 – aufgefallen erst beim
+    // nächsten Erzeugen, Tage später.
+    final quelle = File(
+      'packages/kern/lib/db/database.dart',
+    ).readAsStringSync();
+    final anmerkung = quelle.indexOf('@DriftDatabase(');
+    final klasse = quelle.indexOf('class AppDatabase extends');
+    expect(anmerkung, greaterThan(0));
+    expect(klasse, greaterThan(anmerkung));
+    final dazwischen = quelle.substring(anmerkung, klasse);
+    final ende = dazwischen.lastIndexOf(')');
+    expect(dazwischen.substring(ende + 1).trim(), isEmpty);
+  });
 }
