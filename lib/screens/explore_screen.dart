@@ -461,7 +461,7 @@ class _Fotokachel extends StatelessWidget {
                 library: library,
                 onToggleFavorite: (a) =>
                     library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
-                onDelete: (a) => library.db.moveToTrash([a.id]),
+                onDelete: (a) => library.db.fuehreAus(InDenPapierkorb([a.id])),
                 onLock: (a) async {
                   if (await ensureVaultUnlocked(context, library)) {
                     await library.lockAsset(a);
@@ -734,7 +734,7 @@ class _LocationGroupTile extends StatelessWidget {
           library: library,
           onToggleFavorite: (a) =>
               library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
-          onDelete: (a) => library.db.moveToTrash([a.id]),
+          onDelete: (a) => library.db.fuehreAus(InDenPapierkorb([a.id])),
           onLock: (a) async {
             if (await ensureVaultUnlocked(context, library)) {
               await library.lockAsset(a);
@@ -1045,7 +1045,7 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
           library: widget.library,
           onToggleFavorite: (a) =>
               widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
-          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onDelete: (a) => widget.library.db.fuehreAus(InDenPapierkorb([a.id])),
           onLock: (a) async {
             if (await ensureVaultUnlocked(context, widget.library)) {
               await widget.library.lockAsset(a);

@@ -95,17 +95,19 @@ class _ErinnerungenScreenState extends State<ErinnerungenScreen> {
       DateFormat.yMMMMd(Localizations.localeOf(context).toString()).format(d);
 
   Future<void> _merken(Erinnerung e, String titel) async {
-    await widget.library.db.merkeErinnerung(
-      id: erinnerungsKennung(e.tag, e.jahreHer),
-      titel: titel,
-      tag: DateTime(e.tag.year - e.jahreHer, e.tag.month, e.tag.day),
-      assetIds: [for (final a in e.dinge) a.id],
+    await widget.library.db.fuehreAus(
+      ErinnerungMerken(
+        erinnerungId: erinnerungsKennung(e.tag, e.jahreHer),
+        titel: titel,
+        tag: DateTime(e.tag.year - e.jahreHer, e.tag.month, e.tag.day),
+        ids: [for (final a in e.dinge) a.id],
+      ),
     );
     if (mounted) _neuLaden();
   }
 
   Future<void> _vergessen(String id) async {
-    await widget.library.db.vergissErinnerung(id);
+    await widget.library.db.fuehreAus(ErinnerungVergessen(id));
     if (mounted) _neuLaden();
   }
 

@@ -538,7 +538,7 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     );
     if (ja != true || !mounted) return;
 
-    await widget.library.db.moveToTrash([_asset.id]);
+    await widget.library.db.fuehreAus(InDenPapierkorb([_asset.id]));
     if (!mounted) return;
     if (_assets.length == 1) {
       Navigator.of(context).pop();

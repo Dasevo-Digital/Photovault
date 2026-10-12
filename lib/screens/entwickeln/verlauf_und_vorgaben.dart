@@ -443,17 +443,19 @@ mixin _Verlauf on _EntwickelnBasis {
     // geänderte Regler-Werte im Speicher haben (siehe _currentMaskLayers) –
     // alle anderen sind bereits mit der DB konsistent.
     if (_selectedMaskId != null) {
-      await widget.db.updateDevelopMaskAdjustments(
-        _selectedMaskId!,
-        DevelopMasksCompanion(
-          exposure: Value(_maskExposure),
-          temperature: Value(_maskAutoWhiteBalance ? null : _maskTemperature),
-          tint: Value(_maskAutoWhiteBalance ? null : _maskTint),
-          contrast: Value(_maskContrast),
-          shadows: Value(_maskShadows),
-          highlights: Value(_maskHighlights),
-          sharpness: Value(_maskSharpness),
-          noiseReduction: Value(_maskNoiseReduction),
+      await widget.db.fuehreAus(
+        MaskeneinstellungAendern(
+          _selectedMaskId!,
+          DevelopMasksCompanion(
+            exposure: Value(_maskExposure),
+            temperature: Value(_maskAutoWhiteBalance ? null : _maskTemperature),
+            tint: Value(_maskAutoWhiteBalance ? null : _maskTint),
+            contrast: Value(_maskContrast),
+            shadows: Value(_maskShadows),
+            highlights: Value(_maskHighlights),
+            sharpness: Value(_maskSharpness),
+            noiseReduction: Value(_maskNoiseReduction),
+          ),
         ),
       );
     }
@@ -462,7 +464,7 @@ mixin _Verlauf on _EntwickelnBasis {
   }
 
   Future<void> _reset() async {
-    await widget.db.resetDevelopSettings(widget.asset.id);
+    await widget.db.fuehreAus(EntwicklungZuruecksetzen(widget.asset.id));
     final developedFile = widget.paths.absolute(
       widget.paths.developedRelativePath(widget.asset.id),
     );

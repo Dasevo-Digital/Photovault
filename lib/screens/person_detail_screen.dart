@@ -334,8 +334,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                               a.id,
                                             ], !a.isFavorite),
                                           ),
-                                      onDelete: (a) =>
-                                          library.db.moveToTrash([a.id]),
+                                      onDelete: (a) => library.db.fuehreAus(
+                                        InDenPapierkorb([a.id]),
+                                      ),
                                       onLock: (a) async {
                                         if (await ensureVaultUnlocked(
                                           context,

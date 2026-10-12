@@ -168,8 +168,8 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
     if (bestaetigt != true) return;
 
-    await widget.library.db.moveToTrash(
-      vorschau.zuLoeschen.map((a) => a.id).toList(),
+    await widget.library.db.fuehreAus(
+      InDenPapierkorb(vorschau.zuLoeschen.map((a) => a.id).toList()),
     );
     if (!mounted) return;
     melde.erfolg(
@@ -185,7 +185,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
   /// Zeit, und am Ergebnis ändert sich nichts ausser dieser einen Gruppe.
   Future<void> _gruppeIgnorieren(List<AssetData> group) async {
     final ids = group.map((a) => a.id).toList();
-    await widget.library.db.ignoriereDuplikatgruppe(ids);
+    await widget.library.db.fuehreAus(DuplikatgruppeIgnorieren(ids));
     if (!mounted) return;
     final neueZahl = await widget.library.db.zaehleDuplikatAusnahmen();
     if (!mounted) return;
@@ -200,7 +200,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
         // Einzeln zurücknehmen statt alles: Wer sich vertippt hat, will
         // diese eine Gruppe zurück, nicht die Arbeit einer halben Stunde.
         beiDruck: () async {
-          await widget.library.db.hebeDuplikatgruppeAuf(ids);
+          await widget.library.db.fuehreAus(DuplikatgruppeAufheben(ids));
           await _load();
         },
       ),
@@ -226,12 +226,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       ),
     );
     if (bestaetigt != true) return;
-    await widget.library.db.loescheDuplikatAusnahmen();
+    await widget.library.db.fuehreAus(const DuplikatAusnahmenLoeschen());
     await _load();
   }
 
   Future<void> _moveToTrash(AssetData asset, List<AssetData> group) async {
-    await widget.library.db.moveToTrash([asset.id]);
+    await widget.library.db.fuehreAus(InDenPapierkorb([asset.id]));
     if (!mounted) return;
     setState(() {
       group.remove(asset);
@@ -331,10 +331,12 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       ),
     );
     if (bestaetigt != true) return;
-    await widget.library.db.fuehreDuplikateZusammen(
-      behaltenId: behalten.id,
-      duplikatIds: gruppe.map((asset) => asset.id).toList(),
-      beschreibungenVerbinden: beschreibungenVerbinden,
+    await widget.library.db.fuehreAus(
+      DuplikateZusammenfuehren(
+        behaltenId: behalten.id,
+        duplikatIds: gruppe.map((asset) => asset.id).toList(),
+        beschreibungenVerbinden: beschreibungenVerbinden,
+      ),
     );
     if (!mounted) return;
     setState(() => _groups.remove(gruppe));

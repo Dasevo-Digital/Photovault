@@ -326,7 +326,9 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           p.marke != null,
     );
     if (vorhanden != null && vorhanden.isNotEmpty) {
-      await widget.library.db.loescheOrtsmarke(_stufe.name, ziel.schluessel);
+      await widget.library.db.fuehreAus(
+        OrtsmarkeLoeschen(_stufe.name, ziel.schluessel),
+      );
       await _laden();
       if (mounted) _sage(t.weltkarteMarkeWeggenommen(ziel.anzeige));
       return;
@@ -446,15 +448,17 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     double? breite,
     double? laenge,
   }) async {
-    await widget.library.db.setzeOrtsmarke(
-      OrtsmarkenCompanion.insert(
-        art: art,
-        schluessel: schluessel,
-        name: name,
-        status: _alsGeplant ? 'geplant' : 'besucht',
-        angelegtAm: DateTime.now(),
-        breite: Value(breite),
-        laenge: Value(laenge),
+    await widget.library.db.fuehreAus(
+      OrtsmarkeSetzen(
+        OrtsmarkenCompanion.insert(
+          art: art,
+          schluessel: schluessel,
+          name: name,
+          status: _alsGeplant ? 'geplant' : 'besucht',
+          angelegtAm: DateTime.now(),
+          breite: Value(breite),
+          laenge: Value(laenge),
+        ),
       ),
     );
     await _laden();

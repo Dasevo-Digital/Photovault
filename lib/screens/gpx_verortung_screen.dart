@@ -98,32 +98,34 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
     final verortungen = verorteAusSpur(spur, _kandidaten, versatz: _versatz);
     setState(() => _arbeitet = true);
 
-    await widget.library.db.setzeOrte([
-      for (final v in verortungen)
-        // Einmal nachschlagen und nicht dreimal: Die Suche geht über
-        // hunderttausend Städte, und drei gleiche Anfragen je Foto wären
-        // bei tausend Fotos dreitausend Durchgänge zu viel.
-        if (geo?.lookup(v.breite, v.laenge) case final ort?)
-          (
-            assetId: v.assetId,
-            breite: v.breite,
-            laenge: v.laenge,
-            // Die Namen gleich mit – sonst stünden hinterher Punkte auf
-            // der Karte, aber keine Länder im Reisezähler.
-            land: ort.country,
-            region: ort.state,
-            ort: ort.city,
-          )
-        else
-          (
-            assetId: v.assetId,
-            breite: v.breite,
-            laenge: v.laenge,
-            land: null,
-            region: null,
-            ort: null,
-          ),
-    ]);
+    await widget.library.db.fuehreAus(
+      OrteAusSpurSetzen([
+        for (final v in verortungen)
+          // Einmal nachschlagen und nicht dreimal: Die Suche geht über
+          // hunderttausend Städte, und drei gleiche Anfragen je Foto wären
+          // bei tausend Fotos dreitausend Durchgänge zu viel.
+          if (geo?.lookup(v.breite, v.laenge) case final ort?)
+            (
+              assetId: v.assetId,
+              breite: v.breite,
+              laenge: v.laenge,
+              // Die Namen gleich mit – sonst stünden hinterher Punkte auf
+              // der Karte, aber keine Länder im Reisezähler.
+              land: ort.country,
+              region: ort.state,
+              ort: ort.city,
+            )
+          else
+            (
+              assetId: v.assetId,
+              breite: v.breite,
+              laenge: v.laenge,
+              land: null,
+              region: null,
+              ort: null,
+            ),
+      ]),
+    );
     if (!mounted) return;
     setState(() {
       _arbeitet = false;

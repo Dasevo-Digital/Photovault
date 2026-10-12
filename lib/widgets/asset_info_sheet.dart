@@ -129,7 +129,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (deutsch == null) return;
     final neu = _kiController.text.trim();
     if (neu == _kiText(deutsch)) return;
-    await widget.db.setAiCaptionVonHand(_asset.id, neu, deutsch: deutsch);
+    await widget.db.fuehreAus(
+      BildbeschreibungSetzen(_asset.id, neu, deutsch: deutsch),
+    );
     await _refresh();
   }
 
@@ -448,7 +450,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   Future<void> _unstack() async {
     final stackId = _asset.stackId;
     if (stackId == null) return;
-    await widget.db.unstackAssets(stackId);
+    await widget.db.fuehreAus(SerieAufloesen(stackId));
     await _refresh();
   }
 

@@ -274,7 +274,7 @@ extension SpurenAbfragen on AppDatabase {
   /// sind zusammen der Primärschlüssel, ein zweiter Haken auf dasselbe
   /// Land ist also gar nicht möglich – und ein Umschalten von „geplant"
   /// auf „besucht" ist genau dieselbe Zeile mit anderem Wert.
-  Future<void> setzeOrtsmarke(OrtsmarkenCompanion marke) =>
+  Future<void> setzeOrtsmarke(Insertable<OrtsmarkenData> marke) =>
       into(ortsmarken).insertOnConflictUpdate(marke);
 
   /// Nimmt eine Marke zurück.

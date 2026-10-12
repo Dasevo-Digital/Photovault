@@ -1113,9 +1113,8 @@ class BackupService {
           // (siehe ExportService).
           final originalFileName = entry['originalFileName'] as String?;
           if (originalFileName != null && originalFileName.isNotEmpty) {
-            await _db.setOriginalFileName(
-              assetId,
-              p.basename(originalFileName),
+            await _db.fuehreAus(
+              DateinameSetzen(assetId, p.basename(originalFileName)),
             );
           }
           if (entry['isFavorite'] == true) {
@@ -1143,10 +1142,12 @@ class BackupService {
           // Beides zusammen oder gar nicht: Eine Koordinate ohne die andere
           // ist kein Ort, sondern eine halbe Zahl.
           if (entry['latitude'] is num && entry['longitude'] is num) {
-            await _db.setLocation(
-              assetId,
-              (entry['latitude'] as num).toDouble(),
-              (entry['longitude'] as num).toDouble(),
+            await _db.fuehreAus(
+              OrtSetzen(
+                [assetId],
+                (entry['latitude'] as num).toDouble(),
+                (entry['longitude'] as num).toDouble(),
+              ),
             );
           }
           if (entry['locationCity'] is String) {

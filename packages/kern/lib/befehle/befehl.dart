@@ -22,12 +22,14 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
+import '../services/exif_camera.dart';
 import '../services/search_filters.dart';
 import '../services/stammbaum.dart';
 import '../services/verwandtschaftsgrad.dart';
 
 part 'alben.dart';
 part 'aufnahmen.dart';
+part 'ordnen.dart';
 part 'personen.dart';
 part 'reisen.dart';
 part 'schlagwoerter.dart';
@@ -136,6 +138,30 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'auswertenNachImportSetzen': AuswertenNachImportSetzen.aus,
   'sucheUebersetzenSetzen': SucheUebersetzenSetzen.aus,
   'angabenSchuetzenSetzen': AngabenSchuetzenSetzen.aus,
+  'ortSetzen': OrtSetzen.aus,
+  'kameraangabenSetzen': KameraangabenSetzen.aus,
+  'bildbeschreibungSetzen': BildbeschreibungSetzen.aus,
+  'jahrSchaetzen': JahrSchaetzen.aus,
+  'dateinameSetzen': DateinameSetzen.aus,
+  'inDenPapierkorb': InDenPapierkorb.aus,
+  'ausDemPapierkorb': AusDemPapierkorb.aus,
+  'duplikateZusammenfuehren': DuplikateZusammenfuehren.aus,
+  'duplikatgruppeIgnorieren': DuplikatgruppeIgnorieren.aus,
+  'duplikatgruppeAufheben': DuplikatgruppeAufheben.aus,
+  'duplikatAusnahmenLoeschen': DuplikatAusnahmenLoeschen.aus,
+  'serieBilden': SerieBilden.aus,
+  'serieAufloesen': SerieAufloesen.aus,
+  'serienvorschlagVerwerfen': SerienvorschlagVerwerfen.aus,
+  'dokumentvorschlaegeVerwerfen': DokumentvorschlaegeVerwerfen.aus,
+  'ortsvorschlagVerwerfen': OrtsvorschlagVerwerfen.aus,
+  'ortsvorschlagUebernehmen': OrtsvorschlagUebernehmen.aus,
+  'orteAusSpurSetzen': OrteAusSpurSetzen.aus,
+  'erinnerungMerken': ErinnerungMerken.aus,
+  'erinnerungVergessen': ErinnerungVergessen.aus,
+  'ortsmarkeSetzen': OrtsmarkeSetzen.aus,
+  'ortsmarkeLoeschen': OrtsmarkeLoeschen.aus,
+  'entwicklungZuruecksetzen': EntwicklungZuruecksetzen.aus,
+  'maskeneinstellungAendern': MaskeneinstellungAendern.aus,
 };
 
 List<String> _kennungen(Object? werte) => (werte! as List).cast<String>();

@@ -93,7 +93,9 @@ class _DokumenteScreenState extends State<DokumenteScreen> {
 
   Future<void> _verwerfen() async {
     setState(() => _arbeitet = true);
-    await widget.library.db.verwirfDokumentvorschlaege(_gewaehlt);
+    await widget.library.db.fuehreAus(
+      DokumentvorschlaegeVerwerfen(_gewaehlt.toList()),
+    );
     if (!mounted) return;
     setState(() => _arbeitet = false);
     _neuLaden();

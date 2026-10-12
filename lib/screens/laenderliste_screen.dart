@@ -104,17 +104,19 @@ class _LaenderlisteScreenState extends State<LaenderlisteScreen> {
   Future<void> _markieren(Landstand land, Markenart? wert) async {
     final db = widget.library.db;
     if (wert == null) {
-      await db.loescheOrtsmarke('land', land.iso);
+      await db.fuehreAus(OrtsmarkeLoeschen('land', land.iso));
     } else {
-      await db.setzeOrtsmarke(
-        OrtsmarkenCompanion.insert(
-          art: 'land',
-          schluessel: land.iso,
-          // Der ENGLISCHE Name in die Datenbank: Die Marke soll nicht davon
-          // abhängen, in welcher Sprache sie gesetzt wurde.
-          name: land.name,
-          status: wert == Markenart.geplant ? 'geplant' : 'besucht',
-          angelegtAm: DateTime.now(),
+      await db.fuehreAus(
+        OrtsmarkeSetzen(
+          OrtsmarkenCompanion.insert(
+            art: 'land',
+            schluessel: land.iso,
+            // Der ENGLISCHE Name in die Datenbank: Die Marke soll nicht davon
+            // abhängen, in welcher Sprache sie gesetzt wurde.
+            name: land.name,
+            status: wert == Markenart.geplant ? 'geplant' : 'besucht',
+            angelegtAm: DateTime.now(),
+          ),
         ),
       );
     }

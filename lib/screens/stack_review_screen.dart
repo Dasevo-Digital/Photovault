@@ -101,10 +101,12 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
   Future<void> _applyStack(int groupIndex) async {
     final group = _groups[groupIndex];
     final coverIndex = _coverIndexByGroup[groupIndex] ?? 0;
-    await widget.library.db.createStack(
-      const Uuid().v4(),
-      group.map((a) => a.id).toList(),
-      group[coverIndex].id,
+    await widget.library.db.fuehreAus(
+      SerieBilden(
+        const Uuid().v4(),
+        group.map((a) => a.id).toList(),
+        group[coverIndex].id,
+      ),
     );
     widget.library.serieErledigt(group);
     if (!mounted) return;
@@ -118,7 +120,9 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
     // Gemerkt, nicht nur weggeblendet: Wer einmal „nein" gesagt hat, will
     // nicht bei jedem Öffnen erneut gefragt werden.
     final gruppe = _groups[groupIndex];
-    await widget.library.db.verwirfSerienvorschlag(serienschluessel(gruppe));
+    await widget.library.db.fuehreAus(
+      SerienvorschlagVerwerfen(serienschluessel(gruppe)),
+    );
     widget.library.serieErledigt(gruppe);
     if (!mounted) return;
     setState(() {
@@ -145,9 +149,11 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       await widget.library.db.transaction(() async {
         for (var i = _groups.length - 1; i >= 0; i--) {
           final gruppe = _groups[i];
-          await widget.library.db.createStack(const Uuid().v4(), [
-            for (final a in gruppe) a.id,
-          ], gruppe[_coverIndexByGroup[i] ?? 0].id);
+          await widget.library.db.fuehreAus(
+            SerieBilden(const Uuid().v4(), [
+              for (final a in gruppe) a.id,
+            ], gruppe[_coverIndexByGroup[i] ?? 0].id),
+          );
         }
       });
       widget.library.serienGeleert();

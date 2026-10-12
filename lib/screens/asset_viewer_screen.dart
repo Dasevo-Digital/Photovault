@@ -375,7 +375,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _removeCurrentAndAdvance() async {
     final rejectedId = _currentAsset.id;
     final wasLastIndex = _currentIndex == _assets.length - 1;
-    await widget.db.moveToTrash([rejectedId]);
+    await widget.db.fuehreAus(InDenPapierkorb([rejectedId]));
     if (!mounted) return;
     setState(() => _assets.removeWhere((a) => a.id == rejectedId));
     if (_assets.isEmpty) {

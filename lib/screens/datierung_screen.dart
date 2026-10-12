@@ -55,9 +55,8 @@ class _DatierungScreenState extends State<DatierungScreen> {
     final t = AppTexte.of(context);
     setState(() => _arbeitet = true);
     for (final s in welche) {
-      await widget.library.db.setzeGeschaetztesJahr(
-        s.asset.id,
-        s.datierung.jahr,
+      await widget.library.db.fuehreAus(
+        JahrSchaetzen(s.asset.id, s.datierung.jahr),
       );
       _uebernommen.add(s.asset.id);
     }

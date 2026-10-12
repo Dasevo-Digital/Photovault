@@ -291,10 +291,12 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
           }
         }
       case _XmpDiffField.location:
-        await widget.library.db.setLocation(
-          diff.asset.id,
-          diff.xmpFields.latitude,
-          diff.xmpFields.longitude,
+        await widget.library.db.fuehreAus(
+          OrtSetzen(
+            [diff.asset.id],
+            diff.xmpFields.latitude,
+            diff.xmpFields.longitude,
+          ),
         );
       case _XmpDiffField.gesichter:
         for (final z in diff.zuordnung) {

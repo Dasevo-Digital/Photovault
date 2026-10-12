@@ -89,7 +89,7 @@ class _MetadataEditorDialogState extends State<MetadataEditorDialog> {
       iso: int.tryParse(_isoCtrl.text.trim()),
       exposureTimeSeconds: parseExposureTimeInput(_exposureCtrl.text),
     );
-    await widget.db.setCameraMetadata(widget.asset.id, info);
+    await widget.db.fuehreAus(KameraangabenSetzen(widget.asset.id, info));
     if (mounted) Navigator.of(context).pop(true);
   }
 

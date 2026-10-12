@@ -65,7 +65,7 @@ Future<Set<Bearbeitungsart>> originalWiederherstellen({
       await db.deleteDevelopMask(maske.id);
     }
     await loesche(asset.developedRelativePath);
-    await db.resetDevelopSettings(asset.id);
+    await db.fuehreAus(EntwicklungZuruecksetzen(asset.id));
   }
   if (arten.contains(Bearbeitungsart.restauriert)) {
     await loesche(asset.restoredRelativePath);

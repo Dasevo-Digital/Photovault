@@ -166,7 +166,7 @@ extension BearbeitungsAbfragen on AppDatabase {
   /// Regler.
   Future<void> updateDevelopMaskAdjustments(
     int id,
-    DevelopMasksCompanion adjustments,
+    Insertable<DevelopMaskData> adjustments,
   ) => (update(developMasks)..where((t) => t.id.equals(id))).write(adjustments);
 
   /// Aktualisiert die Geometrie einer Vektor-Maske nach erneutem Bearbeiten

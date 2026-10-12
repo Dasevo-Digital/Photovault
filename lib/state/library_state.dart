@@ -529,7 +529,9 @@ class LibraryState extends ChangeNotifier {
   /// Ortsgruppen der Übersicht sähen sie nicht.
   Future<void> uebernimmOrtsbuendel(Ortsbuendel buendel) async {
     final ids = [for (final v in buendel.vorschlaege) v.assetId];
-    await db.uebernimmOrtsvorschlag(ids, buendel.breite, buendel.laenge);
+    await db.fuehreAus(
+      OrtsvorschlagUebernehmen(ids, buendel.breite, buendel.laenge),
+    );
     final treffer = geocoder?.lookup(buendel.breite, buendel.laenge);
     if (treffer != null) {
       await db.setLocationNamesBulk(
@@ -2033,7 +2035,7 @@ class LibraryState extends ChangeNotifier {
     double? breite,
     double? laenge,
   ) async {
-    await db.setLocationBulk(assetIds, breite, laenge);
+    await db.fuehreAus(OrtSetzen(assetIds, breite, laenge));
     if (breite == null || laenge == null) return;
     // **Kein `await geoBereit` hier**, anders als beim Import. Der wartet
     // darauf, weil er in der ersten halben Sekunde nach dem Start laufen
@@ -2486,7 +2488,9 @@ class LibraryState extends ChangeNotifier {
           paths.absolute(asset.relativePath),
         );
         if (gps != null) {
-          await db.setLocation(asset.id, gps.latitude, gps.longitude);
+          await db.fuehreAus(
+            OrtSetzen([asset.id], gps.latitude, gps.longitude),
+          );
         }
         block.add(asset.id);
         if (block.length >= blockGroesse) await blockSchreiben();
@@ -2904,7 +2908,7 @@ class LibraryState extends ChangeNotifier {
         paths.absolute(asset.relativePath),
       );
       if (!info.isEmpty) {
-        await db.setCameraMetadata(asset.id, info);
+        await db.fuehreAus(KameraangabenSetzen(asset.id, info));
         await applyCameraPreset(
           asset.id,
           cameraMake: info.make,
@@ -2949,7 +2953,7 @@ class LibraryState extends ChangeNotifier {
       if (await datei.exists()) {
         final daten = await importService.readAufnahmedaten(datei);
         if (!daten.kamera.isEmpty) {
-          await db.setCameraMetadata(asset.id, daten.kamera);
+          await db.fuehreAus(KameraangabenSetzen(asset.id, daten.kamera));
           await applyCameraPreset(
             asset.id,
             cameraMake: daten.kamera.make,
@@ -2994,7 +2998,7 @@ class LibraryState extends ChangeNotifier {
   Future<void> ausPapierkorbHolen(List<String> assetIds) async {
     // Erst zurückholen. Scheitert das Nachlesen danach, ist das Foto
     // trotzdem wieder da – nur mit dem Datum, das es vorher hatte.
-    await db.restoreFromTrash(assetIds);
+    await db.fuehreAus(AusDemPapierkorb(assetIds));
 
     for (final id in assetIds) {
       final asset = await db.assetById(id);
@@ -3009,7 +3013,7 @@ class LibraryState extends ChangeNotifier {
       final daten = await importService.readAufnahmedaten(datei);
 
       if (!daten.kamera.isEmpty && (asset.cameraModel ?? '').isEmpty) {
-        await db.setCameraMetadata(id, daten.kamera);
+        await db.fuehreAus(KameraangabenSetzen(id, daten.kamera));
         await applyCameraPreset(
           id,
           cameraMake: daten.kamera.make,

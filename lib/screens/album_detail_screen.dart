@@ -91,7 +91,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
             await widget.library.db.fuehreAus(
               AusAlbumNehmen(widget.albumId, [a.id]),
             );
-            await widget.library.db.moveToTrash([a.id]);
+            await widget.library.db.fuehreAus(InDenPapierkorb([a.id]));
           },
           onLock: (a) async {
             if (await ensureVaultUnlocked(context, widget.library)) {
@@ -117,7 +117,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     for (final id in ids) {
       await widget.library.db.fuehreAus(AusAlbumNehmen(widget.albumId, [id]));
     }
-    await widget.library.db.moveToTrash(ids);
+    await widget.library.db.fuehreAus(InDenPapierkorb(ids));
     if (mounted) setState(_selected.clear);
   }
 

@@ -383,7 +383,7 @@ class _TimelineScreenState extends State<TimelineScreen>
           library: widget.library,
           onToggleFavorite: (a) =>
               widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
-          onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+          onDelete: (a) => widget.library.db.fuehreAus(InDenPapierkorb([a.id])),
           onLock: (a) async {
             if (await ensureVaultUnlocked(context, widget.library)) {
               await widget.library.lockAsset(a);
@@ -402,7 +402,7 @@ class _TimelineScreenState extends State<TimelineScreen>
       AppTexte.of(context).loeschenHinweis(ids.length),
     );
     if (!confirmed) return;
-    await widget.library.db.moveToTrash(ids);
+    await widget.library.db.fuehreAus(InDenPapierkorb(ids));
     if (mounted) setState(_selected.clear);
   }
 

@@ -81,7 +81,7 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
 
   Future<void> _verwirf(int i) async {
     final b = _buendel[i];
-    await widget.library.db.verwirfOrtsvorschlag(b.schluessel);
+    await widget.library.db.fuehreAus(OrtsvorschlagVerwerfen(b.schluessel));
     if (!mounted) return;
     setState(() => _buendel = [..._buendel]..removeAt(i));
   }

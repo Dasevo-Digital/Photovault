@@ -146,7 +146,8 @@ class _LockedAssetsGrid extends StatelessWidget {
                               onToggleFavorite: (a) => library.db.fuehreAus(
                                 FavoritSetzen([a.id], !a.isFavorite),
                               ),
-                              onDelete: (a) => library.db.moveToTrash([a.id]),
+                              onDelete: (a) =>
+                                  library.db.fuehreAus(InDenPapierkorb([a.id])),
                             ),
                           ),
                         ),

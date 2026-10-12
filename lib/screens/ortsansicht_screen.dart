@@ -146,15 +146,19 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
       Ortsebene.ort => 'ort',
     };
     if (wert == null) {
-      await widget.library.db.loescheOrtsmarke(art, widget.schluessel);
+      await widget.library.db.fuehreAus(
+        OrtsmarkeLoeschen(art, widget.schluessel),
+      );
     } else {
-      await widget.library.db.setzeOrtsmarke(
-        OrtsmarkenCompanion.insert(
-          art: art,
-          schluessel: widget.schluessel,
-          name: widget.name,
-          status: wert == Markenart.geplant ? 'geplant' : 'besucht',
-          angelegtAm: DateTime.now(),
+      await widget.library.db.fuehreAus(
+        OrtsmarkeSetzen(
+          OrtsmarkenCompanion.insert(
+            art: art,
+            schluessel: widget.schluessel,
+            name: widget.name,
+            status: wert == Markenart.geplant ? 'geplant' : 'besucht',
+            angelegtAm: DateTime.now(),
+          ),
         ),
       );
     }
@@ -194,7 +198,8 @@ class _OrtsansichtScreenState extends State<OrtsansichtScreen> {
               onToggleFavorite: (a) => widget.library.db.fuehreAus(
                 FavoritSetzen([a.id], !a.isFavorite),
               ),
-              onDelete: (a) => widget.library.db.moveToTrash([a.id]),
+              onDelete: (a) =>
+                  widget.library.db.fuehreAus(InDenPapierkorb([a.id])),
               onLock: (a) async {
                 if (await ensureVaultUnlocked(context, widget.library)) {
                   await widget.library.lockAsset(a);

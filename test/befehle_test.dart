@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/exif_camera.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
@@ -189,6 +190,61 @@ void main() {
       const AuswertenNachImportSetzen(false),
       const SucheUebersetzenSetzen(true),
       const AngabenSchuetzenSetzen(true),
+      const OrtSetzen(['a1', 'a2'], 54.1, 10.9),
+      const KameraangabenSetzen(
+        'a1',
+        CameraInfo(make: 'Canon', model: 'EOS R10', iso: 400, fNumber: 2.8),
+      ),
+      const BildbeschreibungSetzen('a1', 'Ein Hafen', deutsch: true),
+      const JahrSchaetzen('a1', 1987),
+      const DateinameSetzen('a1', 'IMG_0001.JPG'),
+      const InDenPapierkorb(['a2']),
+      const AusDemPapierkorb(['a2']),
+      const DuplikateZusammenfuehren(behaltenId: 'a1', duplikatIds: ['a2']),
+      const DuplikatgruppeIgnorieren(['a1', 'a2']),
+      const DuplikatgruppeAufheben(['a1', 'a2']),
+      const DuplikatAusnahmenLoeschen(),
+      const SerieBilden('st1', ['a1', 'a2', 'a3'], 'a2'),
+      const SerieAufloesen('st1'),
+      const SerienvorschlagVerwerfen('a1|a2|a3'),
+      const DokumentvorschlaegeVerwerfen(['a3']),
+      const OrtsvorschlagVerwerfen('54.1|10.9'),
+      const OrtsvorschlagUebernehmen(['a3'], 54.1, 10.9),
+      const OrteAusSpurSetzen([
+        (
+          assetId: 'a1',
+          breite: 47.4,
+          laenge: 11.0,
+          land: 'DE',
+          region: null,
+          ort: 'Garmisch',
+        ),
+      ]),
+      ErinnerungMerken(
+        erinnerungId: 'er1',
+        titel: 'Vor zehn Jahren',
+        tag: DateTime(2016, 10, 12),
+        ids: const ['a1'],
+      ),
+      const ErinnerungVergessen('er1'),
+      OrtsmarkeSetzen(
+        OrtsmarkenCompanion.insert(
+          art: 'land',
+          schluessel: 'IS',
+          name: 'Island',
+          status: 'wunsch',
+          angelegtAm: DateTime(2026, 5, 1),
+        ),
+      ),
+      const OrtsmarkeLoeschen('land', 'IS'),
+      const EntwicklungZuruecksetzen('a1'),
+      MaskeneinstellungAendern(
+        4,
+        const DevelopMasksCompanion(
+          label: Value('Himmel'),
+          exposure: Value(0.3),
+        ),
+      ),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
@@ -260,6 +316,30 @@ void main() {
       AuswertenNachImportSetzen() => 'auswertenNachImportSetzen',
       SucheUebersetzenSetzen() => 'sucheUebersetzenSetzen',
       AngabenSchuetzenSetzen() => 'angabenSchuetzenSetzen',
+      OrtSetzen() => 'ortSetzen',
+      KameraangabenSetzen() => 'kameraangabenSetzen',
+      BildbeschreibungSetzen() => 'bildbeschreibungSetzen',
+      JahrSchaetzen() => 'jahrSchaetzen',
+      DateinameSetzen() => 'dateinameSetzen',
+      InDenPapierkorb() => 'inDenPapierkorb',
+      AusDemPapierkorb() => 'ausDemPapierkorb',
+      DuplikateZusammenfuehren() => 'duplikateZusammenfuehren',
+      DuplikatgruppeIgnorieren() => 'duplikatgruppeIgnorieren',
+      DuplikatgruppeAufheben() => 'duplikatgruppeAufheben',
+      DuplikatAusnahmenLoeschen() => 'duplikatAusnahmenLoeschen',
+      SerieBilden() => 'serieBilden',
+      SerieAufloesen() => 'serieAufloesen',
+      SerienvorschlagVerwerfen() => 'serienvorschlagVerwerfen',
+      DokumentvorschlaegeVerwerfen() => 'dokumentvorschlaegeVerwerfen',
+      OrtsvorschlagVerwerfen() => 'ortsvorschlagVerwerfen',
+      OrtsvorschlagUebernehmen() => 'ortsvorschlagUebernehmen',
+      OrteAusSpurSetzen() => 'orteAusSpurSetzen',
+      ErinnerungMerken() => 'erinnerungMerken',
+      ErinnerungVergessen() => 'erinnerungVergessen',
+      OrtsmarkeSetzen() => 'ortsmarkeSetzen',
+      OrtsmarkeLoeschen() => 'ortsmarkeLoeschen',
+      EntwicklungZuruecksetzen() => 'entwicklungZuruecksetzen',
+      MaskeneinstellungAendern() => 'maskeneinstellungAendern',
     };
 
     test('jede Art hat ein Beispiel und ist zum Lesen eingetragen', () {
@@ -525,6 +605,25 @@ void main() {
       },
     );
 
+    test('Ort, Papierkorb und Serien', () async {
+      await db.fuehreAus(const OrtSetzen(['a1', 'a2'], 54.1, 10.9));
+      await db.fuehreAus(const OrtSetzen(['a2'], null, null));
+      await db.fuehreAus(const InDenPapierkorb(['a3']));
+      await db.fuehreAus(const SerieBilden('st1', ['a1', 'a2'], 'a2'));
+      final a1 = await aufnahme('a1');
+      final a2 = await aufnahme('a2');
+      final a3 = await aufnahme('a3');
+      expect([a1.latitude, a1.longitude], [54.1, 10.9]);
+      expect([a2.latitude, a2.longitude], [null, null]);
+      expect(a3.isTrashed, isTrue);
+      expect(a3.trashedAt, isNotNull);
+      expect([a1.stackId, a2.stackId, a2.isStackCover], ['st1', 'st1', true]);
+      await db.fuehreAus(const AusDemPapierkorb(['a3']));
+      await db.fuehreAus(const SerieAufloesen('st1'));
+      expect((await aufnahme('a3')).isTrashed, isFalse);
+      expect((await aufnahme('a1')).stackId, isNull);
+    });
+
     test('jeder ausgeführte Befehl wird gemeldet, nach der Wirkung', () async {
       final gemeldet = <String>[];
       db.befehlsbeobachter.add((b) async {
@@ -563,6 +662,27 @@ void main() {
       expect(_einordnung.keys.toSet().difference(gefunden), isEmpty);
     });
 
+    test('was die App ändert, läuft als Befehl', () {
+      // Eine Änderung durch den Nutzer, die noch kein Befehl ist, darf die
+      // App nicht aufrufen – sonst ginge sie später am Server vorbei.
+      final offen = [
+        for (final e in _einordnung.entries)
+          if (e.value == _Art.nutzer) e.key,
+      ];
+      final funde = <String>[];
+      for (final datei in dartQuellen()) {
+        final pfad = datei.path.replaceAll(r'\', '/');
+        if (pfad.contains('/kern/lib/db/')) continue;
+        final text = datei.readAsStringSync();
+        for (final m in offen) {
+          if (RegExp(r'\b\w*[dD]b\??\.' + m + r'\(').hasMatch(text)) {
+            funde.add('$pfad $m');
+          }
+        }
+      }
+      expect(funde, isEmpty);
+    });
+
     test('was ein Befehl ist, ruft niemand mehr direkt auf', () {
       final befehle = [
         for (final e in _einordnung.entries)
@@ -599,7 +719,9 @@ enum _Art {
   /// `fuehreAus` erreichbar.
   befehl,
 
-  /// Eine Änderung durch den Nutzer, die noch als Befehl umzusetzen ist.
+  /// Eine Änderung durch den Nutzer, die (noch) kein Befehl ist. Die App
+  /// ruft keine davon mehr auf, nur Tests – siehe „was die App ändert,
+  /// läuft als Befehl“.
   nutzer,
 
   /// Eine Änderung, an der Dateien hängen (Import, Sperren, Bearbeitungen
@@ -628,17 +750,18 @@ const _einordnung = <String, _Art>{
   'setDescription': _Art.befehl,
   'setDescriptionBulk': _Art.befehl,
   'setzeMarkierungen': _Art.befehl,
-  'setLocation': _Art.nutzer,
-  'setLocationBulk': _Art.nutzer,
+  'setLocation': _Art.befehl,
+  'setLocationBulk': _Art.befehl,
   'setFileCreatedAt': _Art.nutzer,
   'setFileCreatedAtBulk': _Art.nutzer,
-  'setAufnahmezeitpunkt': _Art.nutzer,
-  'setCameraMetadata': _Art.nutzer,
-  'setAiCaptionVonHand': _Art.nutzer,
-  'setzeGeschaetztesJahr': _Art.nutzer,
-  'setOriginalFileName': _Art.nutzer,
-  'moveToTrash': _Art.nutzer,
-  'restoreFromTrash': _Art.nutzer,
+  // Verschiebt das Original in den Ordner des neuen Datums.
+  'setAufnahmezeitpunkt': _Art.datei,
+  'setCameraMetadata': _Art.befehl,
+  'setAiCaptionVonHand': _Art.befehl,
+  'setzeGeschaetztesJahr': _Art.befehl,
+  'setOriginalFileName': _Art.befehl,
+  'moveToTrash': _Art.befehl,
+  'restoreFromTrash': _Art.befehl,
   'deleteAssetRows': _Art.datei,
   'insertAsset': _Art.datei,
   'setEditedAssetFile': _Art.datei,
@@ -661,22 +784,22 @@ const _einordnung = <String, _Art>{
   'removeAiTagTerm': _Art.befehl,
   'uebersetzeVokabular': _Art.befehl,
   // Duplikate und Serien
-  'fuehreDuplikateZusammen': _Art.nutzer,
-  'hebeDuplikatgruppeAuf': _Art.nutzer,
-  'ignoriereDuplikatgruppe': _Art.nutzer,
-  'loescheDuplikatAusnahmen': _Art.nutzer,
-  'createStack': _Art.nutzer,
-  'unstackAssets': _Art.nutzer,
-  'verwirfSerienvorschlag': _Art.nutzer,
+  'fuehreDuplikateZusammen': _Art.befehl,
+  'hebeDuplikatgruppeAuf': _Art.befehl,
+  'ignoriereDuplikatgruppe': _Art.befehl,
+  'loescheDuplikatAusnahmen': _Art.befehl,
+  'createStack': _Art.befehl,
+  'unstackAssets': _Art.befehl,
+  'verwirfSerienvorschlag': _Art.befehl,
   // Vorschläge, Erinnerungen, Orte
-  'verwirfDokumentvorschlaege': _Art.nutzer,
-  'verwirfOrtsvorschlag': _Art.nutzer,
-  'uebernimmOrtsvorschlag': _Art.nutzer,
-  'merkeErinnerung': _Art.nutzer,
-  'vergissErinnerung': _Art.nutzer,
-  'setzeOrtsmarke': _Art.nutzer,
-  'loescheOrtsmarke': _Art.nutzer,
-  'setzeOrte': _Art.nutzer,
+  'verwirfDokumentvorschlaege': _Art.befehl,
+  'verwirfOrtsvorschlag': _Art.befehl,
+  'uebernimmOrtsvorschlag': _Art.befehl,
+  'merkeErinnerung': _Art.befehl,
+  'vergissErinnerung': _Art.befehl,
+  'setzeOrtsmarke': _Art.befehl,
+  'loescheOrtsmarke': _Art.befehl,
+  'setzeOrte': _Art.befehl,
   // Personen und Gesichter
   'createPerson': _Art.befehl,
   'assignFacesToPerson': _Art.befehl,
@@ -725,11 +848,11 @@ const _einordnung = <String, _Art>{
   'spurAendern': _Art.nutzer,
   'spurLoeschen': _Art.befehl,
   // Bearbeiten: Einstellungen sind Befehle, das gerechnete Bild eine Datei
-  'resetDevelopSettings': _Art.nutzer,
+  'resetDevelopSettings': _Art.befehl,
   'saveDevelopResult': _Art.datei,
   'createDevelopMask': _Art.datei,
   'updateDevelopMaskShape': _Art.datei,
-  'updateDevelopMaskAdjustments': _Art.nutzer,
+  'updateDevelopMaskAdjustments': _Art.befehl,
   'deleteDevelopMask': _Art.datei,
   'saveVideoTrim': _Art.datei,
   'resetVideoTrim': _Art.datei,
