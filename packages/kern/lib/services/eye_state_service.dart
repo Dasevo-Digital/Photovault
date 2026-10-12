@@ -5,8 +5,8 @@ import 'dart:typed_data';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
-import 'package:kern/services/face_postprocess.dart';
-import 'package:kern/services/modellthreads.dart';
+import 'face_postprocess.dart';
+import 'modellthreads.dart';
 
 const int _eyeStateInputWidth = 40;
 const int _eyeStateInputHeight = 24;

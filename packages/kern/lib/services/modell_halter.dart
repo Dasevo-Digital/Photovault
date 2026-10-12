@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:meta/meta.dart' show visibleForTesting;
 
-import 'package:kern/protokoll.dart';
+import '../protokoll.dart';
 
 /// Hält ein KI-Modell, das erst beim ersten Gebrauch geladen und nach
 /// getaner Arbeit wieder freigegeben wird.

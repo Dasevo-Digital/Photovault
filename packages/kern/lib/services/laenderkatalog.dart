@@ -12,7 +12,7 @@
 /// mehr sieht.
 library;
 
-import 'package:kern/services/laendernamen.dart';
+import 'laendernamen.dart';
 
 /// Ein Land, wie der Datensatz es kennt.
 typedef Landeintragung = ({

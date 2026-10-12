@@ -8,11 +8,11 @@ import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
-import 'package:kern/berechne.dart';
-import 'package:kern/protokoll.dart';
-import 'package:kern/services/onnx_hardswish.dart';
-import 'package:kern/services/textstellen.dart';
-import 'package:kern/services/modellthreads.dart';
+import '../berechne.dart';
+import '../protokoll.dart';
+import 'onnx_hardswish.dart';
+import 'textstellen.dart';
+import 'modellthreads.dart';
 
 /// Texterkennung ohne Betriebssystem-Hilfe – zwei ONNX-Modelle aus der
 /// PaddleOCR-Familie, dieselbe Zerlegung wie dort: erst finden, dann lesen.

@@ -6,8 +6,8 @@ import 'dart:typed_data';
 
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
-import 'package:kern/services/modellthreads.dart';
-import 'package:kern/services/whisper_mel.dart';
+import 'modellthreads.dart';
+import 'whisper_mel.dart';
 
 /// Was die Spracherkennung aus einem Video gehört hat.
 typedef Transkript = ({String text, String? sprache});

@@ -10,41 +10,39 @@ import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' show Database;
 import 'package:path/path.dart' as p;
 
-import 'package:kern/services/ki_vokabular_vorgabe.dart'
-    show defaultAiTagVocabulary;
-import 'package:kern/services/aktivitaeten.dart' show istBekannteArt;
-import 'package:kern/services/embedding_codec.dart';
-import 'package:kern/services/embedding_similarity.dart'
-    show duplikatPaarSchluessel;
-import 'package:kern/services/exif_camera.dart';
-import 'package:kern/services/face_threshold.dart';
-import 'package:kern/services/gelaendeebenen.dart';
-import 'package:kern/services/library_stats.dart';
-import 'package:kern/services/tageszeit.dart';
-import 'package:kern/services/reisen.dart' show Reiseart, reiseartVorgabe;
-import 'package:kern/services/listenspalten.dart';
-import 'package:kern/services/ortsvorschlag.dart' show Ortsloser, Ortsnachbar;
-import 'package:kern/db/rasterzeile.dart';
-import 'package:kern/services/rasterstufen.dart'
+import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
+import '../services/aktivitaeten.dart' show istBekannteArt;
+import '../services/embedding_codec.dart';
+import '../services/embedding_similarity.dart' show duplikatPaarSchluessel;
+import '../services/exif_camera.dart';
+import '../services/face_threshold.dart';
+import '../services/gelaendeebenen.dart';
+import '../services/library_stats.dart';
+import '../services/tageszeit.dart';
+import '../services/reisen.dart' show Reiseart, reiseartVorgabe;
+import '../services/listenspalten.dart';
+import '../services/ortsvorschlag.dart' show Ortsloser, Ortsnachbar;
+import 'rasterzeile.dart';
+import '../services/rasterstufen.dart'
     show
         zeitleisteKachelstufeVorgabe,
         zeitleisteFormVorgabe,
         zeitleisteForm,
         Zeitleistenform;
-import 'package:kern/services/raw_formats.dart' show rawImageExtensions;
-import 'package:kern/services/search_filters.dart';
-import 'package:kern/services/sortierung.dart'
+import '../services/raw_formats.dart' show rawImageExtensions;
+import '../services/search_filters.dart';
+import '../services/sortierung.dart'
     show
         Rastersortierung,
         rastersortierung,
         rastersortierungVorgabe,
         sortierungSql;
-import 'package:kern/services/stammbaum.dart';
-import 'package:kern/services/verwandtschaftsgrad.dart';
-import 'package:kern/services/videostandbilder.dart'
+import '../services/stammbaum.dart';
+import '../services/verwandtschaftsgrad.dart';
+import '../services/videostandbilder.dart'
     show videoZweitblickAb, videostandbildstellen;
-import 'package:kern/services/xmp_regionen.dart';
-import 'package:kern/services/eigenkarte.dart';
+import '../services/xmp_regionen.dart';
+import '../services/eigenkarte.dart';
 
 // **Aufbau (#85).** Diese Bibliothek ist auf Teildateien verteilt: die
 // Tabellen unter tabellen/, die Schritte der Migration in migration.dart,
@@ -58,34 +56,34 @@ import 'package:kern/services/eigenkarte.dart';
 // Eine Folge für Aufrufer: Eine Abfrage ist nur sichtbar, wo diese Datei
 // importiert ist. Meldet der Analyzer „The method … isn't defined for the
 // type 'AppDatabase'“, fehlt `import '…/db/database.dart';`.
-part 'package:kern/db/database.g.dart';
-part 'package:kern/db/tabellen/aufnahmen.dart';
-part 'package:kern/db/tabellen/alben_und_tags.dart';
-part 'package:kern/db/tabellen/bearbeitung.dart';
-part 'package:kern/db/tabellen/personen.dart';
-part 'package:kern/db/tabellen/orte.dart';
-part 'package:kern/db/tabellen/einstellungen.dart';
-part 'package:kern/db/migration.dart';
-part 'package:kern/db/abfragen/aufnahmen.dart';
-part 'package:kern/db/abfragen/auswahl_und_papierkorb.dart';
-part 'package:kern/db/abfragen/einstellungen.dart';
-part 'package:kern/db/abfragen/nachtraege.dart';
-part 'package:kern/db/abfragen/auswertungen.dart';
-part 'package:kern/db/abfragen/orte_und_erinnerungen.dart';
-part 'package:kern/db/abfragen/serien.dart';
-part 'package:kern/db/abfragen/bearbeitung.dart';
-part 'package:kern/db/abfragen/alben_und_tags.dart';
-part 'package:kern/db/abfragen/vorgaben.dart';
-part 'package:kern/db/abfragen/ki_vokabular.dart';
-part 'package:kern/db/abfragen/suchen.dart';
-part 'package:kern/db/abfragen/personen.dart';
-part 'package:kern/db/abfragen/stammbaum.dart';
-part 'package:kern/db/abfragen/reisen.dart';
-part 'package:kern/db/abfragen/aktivitaeten.dart';
-part 'package:kern/db/abfragen/spuren.dart';
-part 'package:kern/db/abfragen/einbettungen.dart';
-part 'package:kern/db/abfragen/sicherung.dart';
-part 'package:kern/db/abfragen/gesperrter_ordner.dart';
+part 'database.g.dart';
+part 'tabellen/aufnahmen.dart';
+part 'tabellen/alben_und_tags.dart';
+part 'tabellen/bearbeitung.dart';
+part 'tabellen/personen.dart';
+part 'tabellen/orte.dart';
+part 'tabellen/einstellungen.dart';
+part 'migration.dart';
+part 'abfragen/aufnahmen.dart';
+part 'abfragen/auswahl_und_papierkorb.dart';
+part 'abfragen/einstellungen.dart';
+part 'abfragen/nachtraege.dart';
+part 'abfragen/auswertungen.dart';
+part 'abfragen/orte_und_erinnerungen.dart';
+part 'abfragen/serien.dart';
+part 'abfragen/bearbeitung.dart';
+part 'abfragen/alben_und_tags.dart';
+part 'abfragen/vorgaben.dart';
+part 'abfragen/ki_vokabular.dart';
+part 'abfragen/suchen.dart';
+part 'abfragen/personen.dart';
+part 'abfragen/stammbaum.dart';
+part 'abfragen/reisen.dart';
+part 'abfragen/aktivitaeten.dart';
+part 'abfragen/spuren.dart';
+part 'abfragen/einbettungen.dart';
+part 'abfragen/sicherung.dart';
+part 'abfragen/gesperrter_ordner.dart';
 
 class _SperrWiederholung extends QueryInterceptor {
   Future<T> _wiederhole<T>(Future<T> Function() arbeit) async {

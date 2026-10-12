@@ -1,6 +1,6 @@
 import 'package:path/path.dart' as p;
 
-import 'package:kern/db/database.dart';
+import '../db/database.dart';
 
 /// Kurzes, für Menschen lesbares Format-Kürzel eines Assets (z.B. "JPG",
 /// "DNG", "CR3", "HEIC") – für kleine Format-Hinweise in Timeline/

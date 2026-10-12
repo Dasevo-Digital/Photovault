@@ -4,7 +4,7 @@
 /// `widgets/mini_location_map.dart`.
 library;
 
-import 'package:kern/services/eigenkarte.dart';
+import 'eigenkarte.dart';
 
 /// Der eigene CARTO-Schlüssel, oder null.
 ///

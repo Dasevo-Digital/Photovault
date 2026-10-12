@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:kern/services/laenderkatalog.dart';
+import 'laenderkatalog.dart';
 
 /// Ergebnis einer Umkehr-Geokodierung: die nächstgelegene bekannte Stadt
 /// sowie deren Land/Bundesland (soweit auflösbar). [city] ist immer gesetzt,

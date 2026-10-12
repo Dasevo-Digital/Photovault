@@ -5,8 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:kern/protokoll.dart';
-import 'package:kern/services/model_catalog.dart';
+import '../protokoll.dart';
+import 'model_catalog.dart';
 
 /// Warum ein Modell-Download gescheitert ist.
 ///

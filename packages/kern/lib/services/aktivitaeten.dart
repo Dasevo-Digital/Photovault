@@ -16,7 +16,7 @@
 /// sieht man nicht, warum er entstanden ist.
 library;
 
-import 'package:kern/services/reverse_geocoder.dart';
+import 'reverse_geocoder.dart';
 
 /// Was für eine Art von Unternehmung es war.
 enum Aktivitaetsart {
