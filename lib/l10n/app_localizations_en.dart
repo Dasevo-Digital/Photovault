@@ -2513,10 +2513,6 @@ class AppTexteEn extends AppTexte {
       'Clipping cannot be shown while masks are on the photo – the marks come from the shader preview, and it cannot draw masks.';
 
   @override
-  String get entwBeschneidungVorschauHinweis =>
-      'Clipping preview – sharpness, noise, clarity and vignette are not shown here';
-
-  @override
   String get entwVorgabeSichern => 'Save as preset';
 
   @override

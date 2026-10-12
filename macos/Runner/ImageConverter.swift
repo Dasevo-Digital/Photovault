@@ -845,7 +845,13 @@ class ImageConverterChannel: NSObject {
             output = filter.outputImage.map {
                 // Reihenfolge wie im Shader: Lichter nach dem Kontrast
                 // (den CIRAWFilter oben erledigt), vor Kurve und Mischer.
-                applyCurveAndMixer(lichterAnwenden($0, adjustments.highlights), adjustments)
+                // Klarheit und Vignette kennt CIRAWFilter nicht; bis 3.29
+                // fehlten sie bei RAW deshalb ganz, die Regler bewegten
+                // sich ohne Wirkung.
+                klarheitUndVignette(
+                    applyCurveAndMixer(lichterAnwenden($0, adjustments.highlights), adjustments),
+                    adjustments
+                )
             }
         } else {
             guard let source = CIImage(contentsOf: url, options: [.applyOrientationProperty: true])
@@ -1046,38 +1052,62 @@ class ImageConverterChannel: NSObject {
             image = f.outputImage ?? image
         }
 
-        // Klarheit: eine Unschärfemaske mit grossem Radius. Genau das
-        // unterscheidet sie vom Schärfen darüber – der kleine Radius dort
-        // arbeitet Kanten heraus, der grosse hier den Eindruck von Struktur
-        // über grössere Flächen. Deshalb auch NACH dem Schärfen: Beide
-        // greifen an verschiedenen Grössenordnungen an.
-        if a.clarity != 0, let f = CIFilter(name: "CIUnsharpMask") {
-            f.setValue(image, forKey: kCIInputImageKey)
-            f.setValue(20.0, forKey: kCIInputRadiusKey)
-            f.setValue(abs(a.clarity) * 1.5, forKey: kCIInputIntensityKey)
-            if let raus = f.outputImage {
-                // Negative Klarheit gibt es als Filter nicht; sie entsteht
-                // durch Zurückblenden über das Original hinaus.
-                image = a.clarity > 0 ? raus : mische(image, raus, -Double(a.clarity))
+        return klarheitUndVignette(image, a)
+    }
+
+    /// Klarheit und Vignettierung – für beide Zweige, den RAW-Zweig und
+    /// die Filterkette für alle anderen Formate.
+    ///
+    /// **Klarheit** ist eine Unschärfemaske mit grossem Radius. Genau das
+    /// unterscheidet sie vom Schärfen davor – der kleine Radius dort
+    /// arbeitet Kanten heraus, der grosse hier den Eindruck von Struktur
+    /// über grössere Flächen. Der Radius wächst mit dem Bild (20 bei 1600
+    /// Punkten Kante): Die Vorschau rechnet mit 1600, das Speichern mit
+    /// 4096, und bei festen 20 Pixeln trug das gespeicherte Bild weniger
+    /// Klarheit, als man in der Vorschau eingestellt hatte. Negativ nimmt
+    /// sie Kontrast über grössere Flächen weg: CIUnsharpMask kappt eine
+    /// negative Stärke auf null, deshalb hier über das Weichbild und
+    /// CIMix. Bis 3.29 lief auch negativ über CIUnsharpMask und CIMix mit
+    /// vertauschter Richtung – negative Klarheit schärfte dann ebenfalls,
+    /// am stärksten bei −0,5.
+    ///
+    /// **Vignettierung** über CIVignette: positiv dunkelt die Ränder ab,
+    /// negativ hellt sie auf. Bis 3.29 bekam CIVignette immer eine
+    /// negative Stärke, und beide Richtungen hellten die Ränder gleich
+    /// stark auf.
+    ///
+    /// Dieselben Formeln rechnet unter Linux und Windows der GPU-Weg
+    /// (lib/services/develop_nachbarn.dart); der Vergleich steht in
+    /// integration_test/nachbarregler_test.dart.
+    private static func klarheitUndVignette(_ input: CIImage, _ a: DevelopAdjustments) -> CIImage {
+        var image = input
+        if a.clarity != 0 {
+            let radius = 20.0 * Double(max(image.extent.width, image.extent.height)) / 1600.0
+            if a.clarity > 0, let f = CIFilter(name: "CIUnsharpMask") {
+                f.setValue(image, forKey: kCIInputImageKey)
+                f.setValue(radius, forKey: kCIInputRadiusKey)
+                f.setValue(a.clarity * 1.5, forKey: kCIInputIntensityKey)
+                image = f.outputImage?.cropped(to: input.extent) ?? image
+            } else if a.clarity < 0 {
+                let weich = image.clampedToExtent()
+                    .applyingGaussianBlur(sigma: radius)
+                    .cropped(to: input.extent)
+                // Ergebnis = Bild − ½·|c|·(Bild − Weichbild)
+                image = mische(image, weich, 1.0 + 0.5 * Double(a.clarity))
+                    .cropped(to: input.extent)
             }
         }
-
-        // Vignettierung. CIVignette dunkelt nur ab; zum Aufhellen wird der
-        // Effekt gespiegelt und zurückgeblendet.
         if a.vignette != 0, let f = CIFilter(name: "CIVignette") {
             f.setValue(image, forKey: kCIInputImageKey)
             f.setValue(1.0, forKey: kCIInputRadiusKey)
-            f.setValue(-abs(a.vignette) * 2.0, forKey: kCIInputIntensityKey)
-            if let raus = f.outputImage {
-                image = a.vignette < 0 ? raus : mische(image, raus, -Double(a.vignette))
-            }
+            f.setValue(a.vignette * 2.0, forKey: kCIInputIntensityKey)
+            image = f.outputImage ?? image
         }
         return image
     }
 
-    /// Blendet [b] mit [anteil] über [a]. Bei negativem [anteil] wird über
-    /// [a] hinaus in die Gegenrichtung extrapoliert – so entsteht aus einem
-    /// Filter, den es nur in eine Richtung gibt, auch die andere.
+    /// CIMix: Ergebnis = [b] + [anteil]·([a] − [b]). Bei 1 also [a], bei
+    /// 0 [b]; Werte ausserhalb von 0…1 kappt Core Image (gemessen).
     private static func mische(_ a: CIImage, _ b: CIImage, _ anteil: Double) -> CIImage {
         guard let f = CIFilter(name: "CIMix") else { return a }
         f.setValue(a, forKey: kCIInputImageKey)

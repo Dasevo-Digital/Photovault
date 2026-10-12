@@ -655,42 +655,6 @@ class _DevelopScreenState extends _EntwickelnBasis
                                           ),
                                         ),
                                       ),
-                                    // Solange die Warnung an ist, zeigt
-                                    // der Shader das Bild - und der
-                                    // rechnet unter macOS NICHT dasselbe
-                                    // wie Core Image. Vier Regler fehlen
-                                    // darin. Wo der Shader ohnehin das
-                                    // Ergebnis erzeugt (Linux, Windows),
-                                    // gibt es nichts zu vermelden.
-                                    if (_beschneidungZeigen &&
-                                        !_dragging &&
-                                        !_showingOriginal &&
-                                        _shaderMoeglich &&
-                                        !DevelopRender.istMassgeblich)
-                                      Positioned(
-                                        top: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: AppSpacing.xs,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black54,
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadius.pill,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            AppTexte.of(
-                                              context,
-                                            ).entwBeschneidungVorschauHinweis,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     if (_rendering)
                                       const Padding(
                                         padding: EdgeInsets.only(

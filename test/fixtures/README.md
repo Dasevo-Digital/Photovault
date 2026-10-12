@@ -9,6 +9,7 @@ Klonen durch, ohne dass irgendetwas heruntergeladen werden muss.
 | Pfad | Inhalt | Herkunft |
 |---|---|---|
 | `sample_images.dart` | Erzeugt Testbilder zur Laufzeit (JPG/PNG/TIFF/BMP/GIF) | selbst erzeugt, lizenzfrei |
+| `entwickeln_referenz/` | Die Prüftafel aus `test/hilfen/entwickeln_tafel.dart`, von Core Image entwickelt (Schärfe, Rauschminderung, Klarheit, Vignette, Maske) – Sollwerte für den GPU-Weg von Linux und Windows | selbst erzeugt mit `integration_test/nachbarregler_test.dart` unter macOS |
 | `clip/vocab.json`, `clip/merges.txt` | Winziges, handgeschriebenes Vokabular für die Tokenizer-Tests (nicht die echten CLIP-Dateien) | selbst erstellt |
 | `samples/` | Echte Kameradateien, per Skript geladen | extern, **nicht versioniert** |
 

@@ -1223,12 +1223,13 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   (`macos/Runner/ImageConverter.swift`); unter Linux und Windows
   übernehmen das Kommandozeilenwerkzeuge, ein Fragment-Shader und ein
   nachladbares ONNX-Modell.
-- **Vier Entwickeln-Regler sind ausserhalb von macOS abgeschaltet** –
-  Schärfe, Rauschunterdrückung, Klarheit, Vignettierung. Die ersten beiden
-  brauchen Nachbarpixel, die ein Fragment-Shader so nicht sieht, die
-  anderen beiden sind reine Core-Image-Filter. Im Bedienfeld steht der
-  Grund darunter. Ein Regler, der sich bewegen lässt und nichts tut, wäre
-  die unangenehmere Lösung.
+- **Schärfe, Rauschunterdrückung, Klarheit und Vignettierung** rechnet
+  unter Linux und Windows eine Folge von GPU-Stufen hinter dem
+  Entwickeln-Shader (`lib/services/develop_nachbarn.dart`), mit Formeln,
+  die an Core Image gemessen sind. An einer Prüftafel liegen sie im
+  Mittel 0,3 bis 1,1 Stufen (von 255) neben dem macOS-Ergebnis; die
+  Sollbilder stehen unter `test/fixtures/entwickeln_referenz`. Die
+  Live-Vorschau zeigt alle vier auch beim Ziehen.
 - **Texterkennung** nutzt auf macOS Apples Vision-Framework, sonst zwei
   nachladbare Modelle aus der PaddleOCR-Familie (erst finden, dann lesen).
   An einer deutschen Testtafel gemessen: 99,7 % der Zeichen richtig,

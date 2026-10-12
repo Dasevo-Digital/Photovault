@@ -1255,7 +1255,6 @@
   "entwKontrast": "Kontrast",
   "entwBeschneidungWarnung": "Beschneidung anzeigen (Rot = ausgefressen, Blau = abgesoffen)",
   "entwBeschneidungMitMasken": "Beschneidung anzeigen geht nicht, solange Masken im Bild liegen – die Markierung entsteht in der Shader-Vorschau, und die kann Masken nicht darstellen.",
-  "entwBeschneidungVorschauHinweis": "Beschneidungs-Vorschau – Schärfe, Rauschen, Klarheit und Vignette zeigt sie nicht",
   "entwVorgabeSichern": "Als Vorgabe sichern",
   "entwVorgabeAnwenden": "Vorgabe anwenden",
   "entwVorgabeWaehlen": "Vorgabe wählen",

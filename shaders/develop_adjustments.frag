@@ -8,8 +8,9 @@
 // gespeicherte Ergebnis bleibt der native Renderpfad (bei RAW wirken die
 // Regler dort auf den Rohdaten, was deutlich mehr Spielraum hat).
 //
-// Bewusst NICHT enthalten: Schärfe und Rauschunterdrückung (brauchen
-// Nachbarpixel bzw. echte Entrauschung) sowie Masken.
+// Bewusst NICHT enthalten: Schärfe, Rauschunterdrückung, Klarheit und
+// Vignette (brauchen Nachbarpixel; sie laufen als eigene Stufen dahinter,
+// siehe develop_nachbarn.frag) sowie Masken (develop_maske.frag).
 
 // Ohne eigene layout(location = …): Flutter vergibt die Float-Indizes in
 // Deklarationsreihenfolge (uSize belegt 0 und 1), Sampler haben einen

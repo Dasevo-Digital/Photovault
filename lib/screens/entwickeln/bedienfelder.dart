@@ -1014,9 +1014,9 @@ mixin _Bedienfelder on _EntwickelnBasis {
       1,
       (v) => setState(() => _shadows = v),
     ),
-    // Die vier Nachbarpixel-Regler folgen im Desktop-Renderer nach dem
-    // Shader. Während des Ziehens wird deshalb ein gedrosselter Render
-    // angefordert; gespeichert wirken sie auf allen Desktop-Systemen.
+    // Die vier Nachbarpixel-Regler rechnen unter Linux und Windows eigene
+    // GPU-Stufen hinter dem Shader (develop_nachbarn.dart), auch in der
+    // Live-Vorschau. Unter macOS rechnet beim Ziehen Core Image.
     _slider(
       AppTexte.of(context).entwSchaerfe,
       _sharpness,

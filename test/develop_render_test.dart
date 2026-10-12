@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,8 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/develop_render.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
+
+import 'hilfen/entwickeln_tafel.dart';
 
 /// Der Shader war bisher nur für die Live-Vorschau da; das gespeicherte
 /// Ergebnis kam vom nativen Renderpfad. Wo es den nicht gibt – Linux,
@@ -102,30 +105,175 @@ void main() {
     expect(bild.height, 320);
   });
 
-  test('Desktop-Filter verändern Kanten und Vignette auch ohne Core Image', () {
-    final bild = img.Image(width: 40, height: 40, numChannels: 4);
-    img.fill(bild, color: img.ColorRgba8(140, 140, 140, 255));
-    img.fillRect(
-      bild,
-      x1: 14,
-      y1: 14,
-      x2: 25,
-      y2: 25,
-      color: img.ColorRgba8(220, 220, 220, 255),
-    );
-    final beforeEdge = bild.getPixel(13, 20).luminance;
-    final beforeCorner = bild.getPixel(0, 0).luminance;
+  group('Schärfe, Rauschminderung, Klarheit, Vignette', () {
+    late File tafel;
+    setUp(() {
+      tafel = File(p.join(temp.path, 'tafel.png'))
+        ..writeAsBytesSync(img.encodePng(entwickelnTafel()));
+    });
 
-    wendeDesktopDevelopFilterAn(
-      bild,
-      sharpness: 0.7,
-      noiseReduction: 0.2,
-      clarity: 0.5,
-      vignette: 0.8,
+    Future<img.Image> rendere(
+      DevelopAdjustments a, {
+      List<MaskAdjustmentLayer> masks = const [],
+    }) async => img.decodeJpg(
+      (await DevelopRender.rendere(
+        tafel,
+        adjustments: a,
+        masks: masks,
+        quality: 100,
+      ))!,
+    )!;
+
+    // Die Sollwerte hat Core Image gerechnet (test/fixtures/README.md). Dass
+    // der GPU-Weg sie trifft, ist der eigentliche Nachweis: Die Formeln
+    // sind an Core Image gemessen, nicht von Apple beschrieben. Hier
+    // rechnet der Software-Renderer des Testprozesses; den echten
+    // GPU-Renderer prüft integration_test/nachbarregler_test.dart.
+    test('liegen nahe an Core Image', () async {
+      final neutral = await rendere(const DevelopAdjustments());
+      final faelle = <String, (DevelopAdjustments, List<MaskAdjustmentLayer>)>{
+        for (final e in entwickelnFaelle.entries) e.key: (e.value, const []),
+      };
+      final maske = File(p.join(temp.path, 'maske.png'))
+        ..writeAsBytesSync(img.encodePng(entwickelnTafelMaske()));
+      faelle['maske'] = (
+        maskenfallGlobal,
+        [
+          MaskAdjustmentLayer(
+            maskFilePath: maske.path,
+            adjustments: maskenfallMaske,
+          ),
+        ],
+      );
+      for (final MapEntry(key: name, value: (werte, masks)) in faelle.entries) {
+        final soll = img.decodeJpg(
+          File('test/fixtures/entwickeln_referenz/$name.jpg').readAsBytesSync(),
+        )!;
+        final d = abweichung(await rendere(werte, masks: masks), soll);
+        final ohne = abweichung(neutral, soll);
+        expect(
+          d.mittel,
+          lessThan(math.min(2.0, ohne.mittel * 0.35)),
+          reason:
+              '$name: mittlere Abweichung ${d.mittel.toStringAsFixed(2)} '
+              '(ohne Filter ${ohne.mittel.toStringAsFixed(2)})',
+        );
+      }
+    });
+
+    test(
+      'Vignette: positiv dunkelt die Ecken ab, negativ hellt sie auf',
+      () async {
+        final grau = legeGrau('grau.png');
+        Future<img.Image> mit(double v) async => img.decodeJpg(
+          (await DevelopRender.rendere(
+            grau,
+            adjustments: DevelopAdjustments(vignette: v),
+            quality: 100,
+          ))!,
+        )!;
+        final dunkel = await mit(0.6);
+        final hell = await mit(-0.6);
+        expect(dunkel.getPixel(2, 2).luminance, lessThan(110));
+        expect(hell.getPixel(2, 2).luminance, greaterThan(150));
+        // Die Mitte bleibt, wie sie war.
+        expect(dunkel.getPixel(128, 128).luminance, closeTo(128, 2));
+        expect(hell.getPixel(128, 128).luminance, closeTo(128, 2));
+      },
     );
 
-    expect(bild.getPixel(0, 0).luminance, lessThan(beforeCorner));
-    expect(bild.getPixel(13, 20).luminance, isNot(beforeEdge));
+    // Bis 3.29 schärfte negative Klarheit unter macOS ebenfalls (CIMix
+    // in vertauschter Richtung). Gemessen wird der Kontrast im
+    // grossflächigen Muster der unteren Tafelhälfte.
+    test(
+      'Klarheit: positiv hebt, negativ senkt den Kontrast über Flächen',
+      () async {
+        // Schwingungsweite des Musters entlang zweier Spalten, an denen es
+        // voll ausschlägt. Die Streuung über die ganze Fläche taugte nicht:
+        // Sie hängt am Verlauf, und den lässt die Klarheit fast in Ruhe.
+        // Der Radius wächst mit dem Bild; bei 400 Punkten Kante sind es 5,
+        // und auf das Muster (120 × 90) wirkt die Klarheit mit gut 10 %.
+        double kontrast(img.Image b) {
+          var summe = 0.0;
+          for (final x in [30, 330]) {
+            final spalte = [
+              for (var y = 140; y < 240; y++)
+                b.getPixel(x, y).luminance.toDouble(),
+            ];
+            summe += spalte.reduce(math.max) - spalte.reduce(math.min);
+          }
+          return summe / 2;
+        }
+
+        final neutral = kontrast(await rendere(const DevelopAdjustments()));
+        expect(
+          kontrast(await rendere(const DevelopAdjustments(clarity: 0.8))),
+          greaterThan(neutral * 1.08),
+        );
+        expect(
+          kontrast(await rendere(const DevelopAdjustments(clarity: -0.8))),
+          lessThan(neutral * 0.98),
+        );
+      },
+    );
+
+    // So speichert die App Masken: deckend, Graustufen, weiß = ausgewählt.
+    // Bis 3.29 las der Linux- und Windows-Weg den Alphakanal – der ist hier
+    // überall voll, und die Maske wirkte auf das ganze Bild.
+    test('eine deckende Graustufenmaske wirkt nur, wo sie weiß ist', () async {
+      final quelle = legeGrau('grau.png', kante: 200);
+      final maske = img.Image(width: 200, height: 200);
+      img.fill(maske, color: img.ColorRgb8(0, 0, 0));
+      img.fillRect(
+        maske,
+        x1: 0,
+        y1: 0,
+        x2: 99,
+        y2: 199,
+        color: img.ColorRgb8(255, 255, 255),
+      );
+      final maskeDatei = File(p.join(temp.path, 'maske_grau.png'))
+        ..writeAsBytesSync(img.encodePng(maske));
+      final bild = img.decodeJpg(
+        (await DevelopRender.rendere(
+          quelle,
+          adjustments: const DevelopAdjustments(),
+          masks: [
+            MaskAdjustmentLayer(
+              maskFilePath: maskeDatei.path,
+              adjustments: const DevelopAdjustments(exposure: 1.5),
+            ),
+          ],
+        ))!,
+      )!;
+      expect(bild.getPixel(40, 100).luminance, greaterThan(158));
+      expect(bild.getPixel(160, 100).luminance, closeTo(128, 6));
+    });
+
+    // Bis 3.29 rechnete jede Maske auf dem Original: Innerhalb der Maske
+    // fehlten die globalen Regler. Eine Maske, die nur schärft, nahm dort
+    // die Belichtung des ganzen Bildes zurück.
+    test('eine Maske wirkt auf das schon entwickelte Bild', () async {
+      final quelle = legeGrau('grau.png', kante: 200);
+      final maske = img.Image(width: 200, height: 200);
+      img.fill(maske, color: img.ColorRgb8(255, 255, 255));
+      final maskeDatei = File(p.join(temp.path, 'maske_voll.png'))
+        ..writeAsBytesSync(img.encodePng(maske));
+      final bild = img.decodeJpg(
+        (await DevelopRender.rendere(
+          quelle,
+          adjustments: const DevelopAdjustments(exposure: 1),
+          masks: [
+            MaskAdjustmentLayer(
+              maskFilePath: maskeDatei.path,
+              adjustments: const DevelopAdjustments(sharpness: 0.5),
+            ),
+          ],
+        ))!,
+      )!;
+      // Grau 128 eine Blende heller: linear 0,216 → 0,431, sRGB rund 175.
+      expect(bild.getPixel(100, 100).luminance, closeTo(175, 4));
+    });
   });
 
   test('eine Maske wirkt nur dort, wo sie deckt', () async {

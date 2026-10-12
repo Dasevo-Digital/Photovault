@@ -796,7 +796,6 @@
   "entwKontrast": "Contrast",
   "entwBeschneidungWarnung": "Show clipping (red = blown, blue = crushed)",
   "entwBeschneidungMitMasken": "Clipping cannot be shown while masks are on the photo – the marks come from the shader preview, and it cannot draw masks.",
-  "entwBeschneidungVorschauHinweis": "Clipping preview – sharpness, noise, clarity and vignette are not shown here",
   "entwVorgabeSichern": "Save as preset",
   "entwVorgabeAnwenden": "Apply preset",
   "entwVorgabeWaehlen": "Choose a preset",

@@ -188,3 +188,6 @@ flutter:
   # plattformübergreifend, anders als das native Core Image.
   shaders:
     - shaders/develop_adjustments.frag
+    - shaders/develop_maske.frag
+    - shaders/develop_nachbarn.frag
+    - shaders/develop_weich.frag

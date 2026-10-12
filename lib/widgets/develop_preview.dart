@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../services/develop_color.dart';
+import '../services/develop_nachbarn.dart';
 import '../services/native_image_converter.dart';
 
 /// Pfad des Shaders (siehe pubspec.yaml, Abschnitt `shaders:`).
@@ -188,6 +189,41 @@ class DevelopPreviewPainter extends CustomPainter {
       !identical(alt.colorCube, colorCube);
 }
 
+/// Zeichnet [bild] einmal durch den Entwickeln-Shader in ein neues Bild
+/// derselben Grösse – die Vorstufe, wenn danach noch die
+/// Nachbarpixel-Stufen laufen (siehe develop_nachbarn.dart).
+Future<ui.Image> entwickleInBild(
+  ui.FragmentShader shader,
+  ui.Image bild,
+  DevelopAdjustments a, {
+  required ui.Image curveLut,
+  required ui.Image colorCube,
+  required int wuerfelKante,
+}) async {
+  final breite = bild.width.toDouble();
+  final hoehe = bild.height.toDouble();
+  setzeDevelopUniforms(
+    shader,
+    adjustments: a,
+    breite: breite,
+    hoehe: hoehe,
+    bild: bild,
+    curveLut: curveLut,
+    colorCube: colorCube,
+    wuerfelKante: wuerfelKante,
+  );
+  final aufnahme = ui.PictureRecorder();
+  ui.Canvas(
+    aufnahme,
+  ).drawRect(Offset.zero & Size(breite, hoehe), Paint()..shader = shader);
+  final bildaufnahme = aufnahme.endRecording();
+  try {
+    return await bildaufnahme.toImage(bild.width, bild.height);
+  } finally {
+    bildaufnahme.dispose();
+  }
+}
+
 /// Live-Vorschau der Entwickeln-Regler auf der GPU.
 ///
 /// Bewusst nur für die Zeit des Regler-Ziehens gedacht: maßgeblich für das
@@ -195,6 +231,15 @@ class DevelopPreviewPainter extends CustomPainter {
 /// develop_adjustments.frag). Kann der Shader nicht geladen werden, zeigt
 /// das Widget das unveränderte Basisbild – dann fehlt nur die
 /// Live-Rückmeldung, nichts stürzt ab.
+///
+/// **Schärfe, Rauschminderung, Klarheit, Vignette.** Ist einer davon
+/// gesetzt, reicht ein Shader-Aufruf je Pixel nicht mehr. Dann rechnet
+/// das Widget das Bild in seiner eigenen Grösse durch den Shader und
+/// danach durch die Nachbarpixel-Stufen – dieselben wie beim Speichern
+/// unter Linux und Windows – und zeigt das Ergebnis. Bis 3.29 zeigte die
+/// Vorschau diese vier Regler gar nicht: Beim Ziehen bewegte sich der
+/// Regler, das Bild erst nach dem Loslassen, und beim Ziehen eines
+/// anderen Reglers verschwand ihre Wirkung für die Dauer des Zugs.
 class DevelopShaderPreview extends StatefulWidget {
   final ui.FragmentShader? shader;
   final ui.Image image;
@@ -221,6 +266,21 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
   ui.Image? _curveLut;
   ui.Image? _colorCube;
 
+  /// Ein eigenes Exemplar des Entwickeln-Shaders für die Vorstufe der
+  /// Nachbarpixel-Regler – das von [DevelopShaderPreview.shader] zeichnet
+  /// gleichzeitig direkt.
+  ui.FragmentShader? _vorstufe;
+  NachbarShader? _nachbarn;
+
+  /// Das zuletzt fertig gerechnete Bild samt Nachbarpixel-Stufen.
+  ui.Image? _nachbarBild;
+
+  /// Es läuft immer nur EINE Rechnung. Was währenddessen an Bewegung
+  /// anfällt, wird zu einem einzigen Nachzügler – dasselbe Muster wie
+  /// beim nativen Render während des Ziehens (`_liveNativ`).
+  bool _rechnet = false;
+  bool _nochmal = false;
+
   /// Verwirft spät fertig gewordene Texturen, wenn die Regler inzwischen
   /// weitergezogen wurden – dasselbe Muster wie `_requestToken` im
   /// Entwickeln-Bildschirm.
@@ -230,6 +290,88 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
   void initState() {
     super.initState();
     _baueTexturen();
+    _ladeNachbarn();
+  }
+
+  Future<void> _ladeNachbarn() async {
+    final vorstufe = await ladeDevelopShader();
+    final nachbarn = await ladeNachbarShader();
+    if (!mounted) {
+      vorstufe?.dispose();
+      nachbarn?.dispose();
+      return;
+    }
+    _vorstufe = vorstufe;
+    _nachbarn = nachbarn;
+    _planeNachbarn();
+  }
+
+  void _planeNachbarn() {
+    if (!brauchtNachbarn(widget.adjustments)) {
+      final alt = _nachbarBild;
+      if (alt != null) {
+        setState(() => _nachbarBild = null);
+        alt.dispose();
+      }
+      return;
+    }
+    if (_rechnet) {
+      _nochmal = true;
+      return;
+    }
+    unawaited(_rechneNachbarn());
+  }
+
+  Future<void> _rechneNachbarn() async {
+    final vorstufe = _vorstufe;
+    final nachbarn = _nachbarn;
+    if (vorstufe == null || nachbarn == null) return;
+    _rechnet = true;
+    try {
+      do {
+        _nochmal = false;
+        final platzhalter = _platzhalter ??= await texturVonBytes(
+          Uint8List.fromList([0, 0, 0, 255]),
+          1,
+          1,
+        );
+        final stand = widget.adjustments;
+        if (!mounted || !brauchtNachbarn(stand)) return;
+        final aufraeumen = <ui.Image>[];
+        ui.Image? ergebnis;
+        try {
+          final entwickelt = await entwickleInBild(
+            vorstufe,
+            widget.image,
+            stand,
+            curveLut: _curveLut ?? platzhalter,
+            colorCube: _colorCube ?? platzhalter,
+            wuerfelKante: colorCubePreviewSize,
+          );
+          aufraeumen.add(entwickelt);
+          ergebnis = await wendeNachbarnAn(
+            entwickelt,
+            stand,
+            nachbarn,
+            aufraeumen,
+            beschneidungZeigen: widget.beschneidungZeigen,
+          );
+        } finally {
+          for (final b in aufraeumen) {
+            if (!identical(b, ergebnis)) b.dispose();
+          }
+        }
+        if (!mounted) {
+          ergebnis.dispose();
+          return;
+        }
+        final alt = _nachbarBild;
+        setState(() => _nachbarBild = ergebnis);
+        alt?.dispose();
+      } while (_nochmal && mounted);
+    } finally {
+      _rechnet = false;
+    }
   }
 
   @override
@@ -241,6 +383,11 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
     if (alt.adjustments.toneCurve != widget.adjustments.toneCurve ||
         alt.adjustments.colorMixer != widget.adjustments.colorMixer) {
       _baueTexturen();
+    }
+    if (alt.adjustments != widget.adjustments ||
+        !identical(alt.image, widget.image) ||
+        alt.beschneidungZeigen != widget.beschneidungZeigen) {
+      _planeNachbarn();
     }
   }
 
@@ -289,6 +436,9 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
     });
     alteKurve?.dispose();
     alterWuerfel?.dispose();
+    // Kurve und Mischer stecken in der Vorstufe – mit den neuen Tabellen
+    // noch einmal rechnen.
+    _planeNachbarn();
   }
 
   @override
@@ -296,6 +446,9 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
     _platzhalter?.dispose();
     _curveLut?.dispose();
     _colorCube?.dispose();
+    _nachbarBild?.dispose();
+    _vorstufe?.dispose();
+    _nachbarn?.dispose();
     super.dispose();
   }
 
@@ -308,6 +461,10 @@ class _DevelopShaderPreviewState extends State<DevelopShaderPreview> {
     // eine leere Fläche.
     if (shader == null || platzhalter == null) {
       return RawImage(image: widget.image, fit: BoxFit.contain);
+    }
+    final nachbarBild = _nachbarBild;
+    if (nachbarBild != null && brauchtNachbarn(widget.adjustments)) {
+      return RawImage(image: nachbarBild, fit: BoxFit.contain);
     }
     return CustomPaint(
       painter: DevelopPreviewPainter(
