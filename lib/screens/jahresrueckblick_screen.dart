@@ -9,6 +9,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/diashow_export.dart';
+import '../widgets/fotobuch_export.dart';
 import '../widgets/profilbild.dart';
 import 'asset_viewer_screen.dart';
 import 'person_detail_screen.dart';
@@ -122,17 +123,34 @@ class _JahresrueckblickScreenState extends State<JahresrueckblickScreen> {
                 _ueberschrift(
                   context,
                   t.jahresrueckblickAuswahl,
-                  aktion: IconButton(
-                    tooltip: t.diashowAlsVideo,
-                    icon: const Icon(Icons.movie_creation_outlined),
-                    onPressed: () => diashowExportieren(
-                      context,
-                      widget.library,
-                      inhalt.auswahl,
-                      titel: t.jahresrueckblickTitel(_jahr),
-                      untertitel: t.jahresrueckblickUmfang(z.fotos, z.tage),
-                      dateiname: 'jahresrueckblick-$_jahr.mp4',
-                    ),
+                  aktion: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: t.diashowAlsVideo,
+                        icon: const Icon(Icons.movie_creation_outlined),
+                        onPressed: () => diashowExportieren(
+                          context,
+                          widget.library,
+                          inhalt.auswahl,
+                          titel: t.jahresrueckblickTitel(_jahr),
+                          untertitel: t.jahresrueckblickUmfang(z.fotos, z.tage),
+                          dateiname: 'jahresrueckblick-$_jahr.mp4',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: t.fotobuchAlsPdf,
+                        icon: const Icon(Icons.menu_book_outlined),
+                        onPressed: () => fotobuchExportieren(
+                          context,
+                          widget.library,
+                          inhalt.auswahl,
+                          titel: t.jahresrueckblickTitel(_jahr),
+                          untertitel: t.jahresrueckblickUmfang(z.fotos, z.tage),
+                          dateiname: 'jahresrueckblick-$_jahr.pdf',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 _auswahl(context, inhalt.auswahl),

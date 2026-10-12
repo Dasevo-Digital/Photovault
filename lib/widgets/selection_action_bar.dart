@@ -19,6 +19,7 @@ import 'pin_dialogs.dart';
 import 'progress_dialog.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import 'fotobuch_export.dart';
 import 'album_picker_dialog.dart';
 import 'color_label_picker.dart';
 import 'mini_location_map.dart';
@@ -664,6 +665,10 @@ class _WahlKontaktblatt extends _Exportwahl {
   const _WahlKontaktblatt();
 }
 
+class _WahlFotobuch extends _Exportwahl {
+  const _WahlFotobuch();
+}
+
 /// Fragt die Ausgabe ab: die vier festen Grössen und, sofern angelegt, die
 /// eigenen Voreinstellungen. `null` bedeutet Abbruch.
 Future<_Exportwahl?> _frageExportgroesse(
@@ -697,6 +702,15 @@ Future<_Exportwahl?> _frageExportgroesse(
               leading: const Icon(Icons.grid_view_outlined),
               title: Text(t.kontaktblattTitel),
               subtitle: Text(t.kontaktblattText),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, const _WahlFotobuch()),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.menu_book_outlined),
+              title: Text(t.fotobuchTitel),
+              subtitle: Text(t.fotobuchText),
             ),
           ),
           SimpleDialogOption(
@@ -953,6 +967,15 @@ Future<void> runBatchExport(
         melde.fehler(AppTexte.of(context).sicherTeilenFehler('$error'));
       }
     }
+    return;
+  }
+  if (wahl is _WahlFotobuch) {
+    await fotobuchExportieren(
+      context,
+      library,
+      assets,
+      dateiname: AppTexte.of(context).fotobuchDateiname,
+    );
     return;
   }
   if (wahl is _WahlKontaktblatt) {

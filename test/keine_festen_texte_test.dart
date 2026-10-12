@@ -342,6 +342,7 @@ void main() {
       '.md',
       '.xmp',
       '.mp4',
+      '.pdf',
       '.heic',
       '.svg',
       '.csv',

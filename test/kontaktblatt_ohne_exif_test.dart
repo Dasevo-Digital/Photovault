@@ -6,9 +6,9 @@
 // liess sich das JPEG herausschneiden; darin standen Kamera, Modell und
 // GPS 52°22'12.78" N / 9°44'8.17" E.
 //
-// Kein Randfall: An einer gewachsenen Bibliothek tragen 892 von 8144
-// Vorschaubildern GPS und 5538 eine Kameraangabe – und ein Kontaktblatt
-// ist zum Ausdrucken und Weitergeben da.
+// Kein Randfall: In einer gewachsenen Bibliothek trägt ein guter Teil
+// der Vorschaubilder GPS und die Mehrheit eine Kameraangabe – und ein
+// Kontaktblatt ist zum Ausdrucken und Weitergeben da.
 import 'dart:io';
 import 'dart:typed_data';
 

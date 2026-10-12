@@ -108,9 +108,9 @@ class ContactSheetService {
         // herausschneiden und darin standen Kamera, Modell und die
         // **GPS-Koordinaten der Aufnahme**.
         //
-        // Das ist kein Randfall des Rückfalls auf die Originaldatei: An
-        // einer gewachsenen Bibliothek tragen **892 von 8144
-        // Vorschaubildern GPS** und 5538 eine Kameraangabe. Und ein
+        // Das ist kein Randfall des Rückfalls auf die Originaldatei: In
+        // einer gewachsenen Bibliothek trägt ein guter Teil der
+        // Vorschaubilder GPS und die Mehrheit eine Kameraangabe. Und ein
         // Kontaktblatt ist genau das Blatt, das man ausdruckt und
         // weitergibt – sichtbar stehen darauf nur Nummer und Datum.
         //

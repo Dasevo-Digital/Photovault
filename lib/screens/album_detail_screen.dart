@@ -7,6 +7,7 @@ import '../db/database.dart';
 import '../db/rasterzeile.dart';
 import '../services/export_service.dart';
 import '../state/library_state.dart';
+import '../widgets/fotobuch_export.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/pin_dialogs.dart';
@@ -248,6 +249,18 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                   icon: const Icon(Icons.image_outlined),
                   tooltip: AppTexte.of(context).albumTitelbildSetzen,
                   onPressed: () => _titelbildSetzen(_selected.first),
+                ),
+              if (assets.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.menu_book_outlined),
+                  tooltip: AppTexte.of(context).fotobuchAlsPdf,
+                  onPressed: () => fotobuchExportieren(
+                    context,
+                    widget.library,
+                    assets,
+                    titel: widget.albumName,
+                    dateiname: mitPdfEndung(dateinameAus(widget.albumName)),
+                  ),
                 ),
               if (assets.isNotEmpty)
                 IconButton(

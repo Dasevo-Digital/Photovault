@@ -8400,6 +8400,128 @@ class AppTexteDe extends AppTexte {
       'In dieser Auswahl steht niemand außer der Person in der Mitte. Wähle mehr Generationen oder einen weiteren Kreis.';
 
   @override
+  String get fotobuchTitel => 'Fotobuch (PDF)';
+
+  @override
+  String get fotobuchText =>
+      'Druckfertig in 300 dpi, mit 1, 2 oder 4 Fotos je Seite und Bildunterschriften';
+
+  @override
+  String get fotobuchAlsPdf => 'Als Fotobuch (PDF)';
+
+  @override
+  String get fotobuchDateiname => 'Fotobuch.pdf';
+
+  @override
+  String get fotobuchGestalten => 'Fotobuch gestalten';
+
+  @override
+  String get fotobuchTitelseite => 'Titel';
+
+  @override
+  String get fotobuchTitelseiteHinweis =>
+      'Leer lassen für ein Buch ohne Titelseite';
+
+  @override
+  String get fotobuchFormat => 'Format';
+
+  @override
+  String get fotobuchA4Hoch => 'A4 hoch';
+
+  @override
+  String get fotobuchA4Quer => 'A4 quer';
+
+  @override
+  String get fotobuchQuadrat => '21 × 21 cm';
+
+  @override
+  String get fotobuchJeSeite => 'Fotos je Seite';
+
+  @override
+  String get fotobuchUnterschrift => 'Bildunterschrift';
+
+  @override
+  String get fotobuchMitDatum => 'Datum';
+
+  @override
+  String get fotobuchMitOrt => 'Ort';
+
+  @override
+  String get fotobuchMitPersonen => 'Personen';
+
+  @override
+  String get fotobuchMitBeschreibung => 'Beschreibung';
+
+  @override
+  String get fotobuchErstellen => 'PDF erstellen';
+
+  @override
+  String get fotobuchSpeichern => 'Fotobuch speichern';
+
+  @override
+  String get fotobuchWirdErstellt => 'Fotobuch wird erstellt …';
+
+  @override
+  String fotobuchUmfang(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String fotobuchUmJahr(int jahr) {
+    final intl.NumberFormat jahrNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String jahrString = jahrNumberFormat.format(jahr);
+
+    return 'um $jahrString';
+  }
+
+  @override
+  String fotobuchFertig(String datei, int seiten) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seiten,
+      locale: localeName,
+      other: '$seiten Seiten',
+      one: '1 Seite',
+    );
+    return 'Fotobuch gespeichert: $datei, $_temp0.';
+  }
+
+  @override
+  String fotobuchGekuerzt(int anzahl) {
+    return 'Ein Fotobuch fasst höchstens $anzahl Fotos; die ersten $anzahl sind darin.';
+  }
+
+  @override
+  String fotobuchUebersprungen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Aufnahmen blieben draußen',
+      one: '1 Aufnahme blieb draußen',
+    );
+    return '$_temp0 (Videos, gesperrte oder nicht lesbare Dateien).';
+  }
+
+  @override
+  String get fotobuchKeineFotos =>
+      'Keine Fotos für ein Fotobuch – Videos und gesperrte Aufnahmen bleiben draußen.';
+
+  @override
+  String get fotobuchAbgebrochen => 'Fotobuch abgebrochen.';
+
+  @override
+  String fotobuchFehler(String fehler) {
+    return 'Das Fotobuch ließ sich nicht erstellen: $fehler';
+  }
+
+  @override
   String get lebensbaumDrucken => 'Lebensbaum als PDF';
 
   @override

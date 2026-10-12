@@ -9,6 +9,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/diashow_export.dart';
+import '../widgets/fotobuch_export.dart';
 import 'asset_viewer_screen.dart';
 import 'reise_detail_screen.dart';
 
@@ -281,6 +282,18 @@ class _Gruppe extends StatelessWidget {
                   dinge,
                   titel: ueberschrift,
                   dateiname: dateiname,
+                ),
+              ),
+              IconButton(
+                tooltip: t.fotobuchAlsPdf,
+                icon: const Icon(Icons.menu_book_outlined),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => fotobuchExportieren(
+                  context,
+                  library,
+                  dinge,
+                  titel: ueberschrift,
+                  dateiname: mitPdfEndung(dateiname),
                 ),
               ),
             ],

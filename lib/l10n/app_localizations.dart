@@ -13051,6 +13051,174 @@ abstract class AppTexte {
   /// **'In dieser Auswahl steht niemand außer der Person in der Mitte. Wähle mehr Generationen oder einen weiteren Kreis.'**
   String get lebensbaumFamilieNichtsImAusschnitt;
 
+  /// No description provided for @fotobuchTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch (PDF)'**
+  String get fotobuchTitel;
+
+  /// No description provided for @fotobuchText.
+  ///
+  /// In de, this message translates to:
+  /// **'Druckfertig in 300 dpi, mit 1, 2 oder 4 Fotos je Seite und Bildunterschriften'**
+  String get fotobuchText;
+
+  /// No description provided for @fotobuchAlsPdf.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Fotobuch (PDF)'**
+  String get fotobuchAlsPdf;
+
+  /// No description provided for @fotobuchDateiname.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch.pdf'**
+  String get fotobuchDateiname;
+
+  /// No description provided for @fotobuchGestalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch gestalten'**
+  String get fotobuchGestalten;
+
+  /// No description provided for @fotobuchTitelseite.
+  ///
+  /// In de, this message translates to:
+  /// **'Titel'**
+  String get fotobuchTitelseite;
+
+  /// No description provided for @fotobuchTitelseiteHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Leer lassen für ein Buch ohne Titelseite'**
+  String get fotobuchTitelseiteHinweis;
+
+  /// No description provided for @fotobuchFormat.
+  ///
+  /// In de, this message translates to:
+  /// **'Format'**
+  String get fotobuchFormat;
+
+  /// No description provided for @fotobuchA4Hoch.
+  ///
+  /// In de, this message translates to:
+  /// **'A4 hoch'**
+  String get fotobuchA4Hoch;
+
+  /// No description provided for @fotobuchA4Quer.
+  ///
+  /// In de, this message translates to:
+  /// **'A4 quer'**
+  String get fotobuchA4Quer;
+
+  /// No description provided for @fotobuchQuadrat.
+  ///
+  /// In de, this message translates to:
+  /// **'21 × 21 cm'**
+  String get fotobuchQuadrat;
+
+  /// No description provided for @fotobuchJeSeite.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos je Seite'**
+  String get fotobuchJeSeite;
+
+  /// No description provided for @fotobuchUnterschrift.
+  ///
+  /// In de, this message translates to:
+  /// **'Bildunterschrift'**
+  String get fotobuchUnterschrift;
+
+  /// No description provided for @fotobuchMitDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum'**
+  String get fotobuchMitDatum;
+
+  /// No description provided for @fotobuchMitOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get fotobuchMitOrt;
+
+  /// No description provided for @fotobuchMitPersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Personen'**
+  String get fotobuchMitPersonen;
+
+  /// No description provided for @fotobuchMitBeschreibung.
+  ///
+  /// In de, this message translates to:
+  /// **'Beschreibung'**
+  String get fotobuchMitBeschreibung;
+
+  /// No description provided for @fotobuchErstellen.
+  ///
+  /// In de, this message translates to:
+  /// **'PDF erstellen'**
+  String get fotobuchErstellen;
+
+  /// No description provided for @fotobuchSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch speichern'**
+  String get fotobuchSpeichern;
+
+  /// No description provided for @fotobuchWirdErstellt.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch wird erstellt …'**
+  String get fotobuchWirdErstellt;
+
+  /// No description provided for @fotobuchUmfang.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}'**
+  String fotobuchUmfang(int anzahl);
+
+  /// No description provided for @fotobuchUmJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'um {jahr}'**
+  String fotobuchUmJahr(int jahr);
+
+  /// No description provided for @fotobuchFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch gespeichert: {datei}, {seiten, plural, =1{1 Seite} other{{seiten} Seiten}}.'**
+  String fotobuchFertig(String datei, int seiten);
+
+  /// No description provided for @fotobuchGekuerzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Fotobuch fasst höchstens {anzahl} Fotos; die ersten {anzahl} sind darin.'**
+  String fotobuchGekuerzt(int anzahl);
+
+  /// No description provided for @fotobuchUebersprungen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Aufnahme blieb draußen} other{{anzahl} Aufnahmen blieben draußen}} (Videos, gesperrte oder nicht lesbare Dateien).'**
+  String fotobuchUebersprungen(int anzahl);
+
+  /// No description provided for @fotobuchKeineFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Fotos für ein Fotobuch – Videos und gesperrte Aufnahmen bleiben draußen.'**
+  String get fotobuchKeineFotos;
+
+  /// No description provided for @fotobuchAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotobuch abgebrochen.'**
+  String get fotobuchAbgebrochen;
+
+  /// No description provided for @fotobuchFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Fotobuch ließ sich nicht erstellen: {fehler}'**
+  String fotobuchFehler(String fehler);
+
   /// No description provided for @lebensbaumDrucken.
   ///
   /// In de, this message translates to:
