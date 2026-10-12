@@ -270,19 +270,16 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
   Future<void> _apply(_XmpDiff diff) async {
     switch (diff.field) {
       case _XmpDiffField.rating:
-        await widget.library.db.setRating(
-          diff.asset.id,
-          diff.xmpFields.rating!,
+        await widget.library.db.fuehreAus(
+          BewertungSetzen([diff.asset.id], diff.xmpFields.rating!),
         );
       case _XmpDiffField.colorLabel:
-        await widget.library.db.setColorLabel(
-          diff.asset.id,
-          diff.xmpFields.colorLabel,
+        await widget.library.db.fuehreAus(
+          FarbmarkeSetzen([diff.asset.id], diff.xmpFields.colorLabel),
         );
       case _XmpDiffField.description:
-        await widget.library.db.setDescription(
-          diff.asset.id,
-          diff.xmpFields.description!,
+        await widget.library.db.fuehreAus(
+          BeschreibungSetzen([diff.asset.id], diff.xmpFields.description!),
         );
       case _XmpDiffField.tags:
         final currentTags = (await widget.library.db.tagsForAsset(
@@ -290,7 +287,9 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
         )).map((t) => t.name).toSet();
         for (final tag in diff.xmpFields.tags!) {
           if (!currentTags.contains(tag)) {
-            await widget.library.db.tagAsset(diff.asset.id, tag);
+            await widget.library.db.fuehreAus(
+              SchlagwortAnheften([diff.asset.id], tag),
+            );
           }
         }
       case _XmpDiffField.location:

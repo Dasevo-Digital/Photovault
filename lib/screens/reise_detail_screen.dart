@@ -444,7 +444,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
           db: widget.library.db,
           library: widget.library,
           onToggleFavorite: (a) =>
-              widget.library.db.setFavorite(a.id, !a.isFavorite),
+              widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
         ),
       ),
     );
@@ -460,7 +460,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
           db: widget.library.db,
           library: widget.library,
           onToggleFavorite: (a) =>
-              widget.library.db.setFavorite(a.id, !a.isFavorite),
+              widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
         ),
       ),
     );

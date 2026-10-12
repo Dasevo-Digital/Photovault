@@ -86,9 +86,11 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
           db: widget.library.db,
           library: widget.library,
           onToggleFavorite: (a) =>
-              widget.library.db.setFavorite(a.id, !a.isFavorite),
+              widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
           onDelete: (a) async {
-            await widget.library.db.removeAssetFromAlbum(widget.albumId, a.id);
+            await widget.library.db.fuehreAus(
+              AusAlbumNehmen(widget.albumId, [a.id]),
+            );
             await widget.library.db.moveToTrash([a.id]);
           },
           onLock: (a) async {
@@ -113,7 +115,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     );
     if (!confirmed) return;
     for (final id in ids) {
-      await widget.library.db.removeAssetFromAlbum(widget.albumId, id);
+      await widget.library.db.fuehreAus(AusAlbumNehmen(widget.albumId, [id]));
     }
     await widget.library.db.moveToTrash(ids);
     if (mounted) setState(_selected.clear);
@@ -206,17 +208,19 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     final dazu = gewaehlt.difference(vorher).toList();
     final weg = vorher.difference(gewaehlt);
     if (dazu.isNotEmpty) {
-      await widget.library.db.addAssetsToAlbum(widget.albumId, dazu);
+      await widget.library.db.fuehreAus(AlbumFuellen(widget.albumId, dazu));
     }
     // Abwaehlen zaehlt auch: Der Waehler zeigt das Vorhandene angehakt,
     // und ein entferntes Haekchen ist eine Ansage.
     for (final id in weg) {
-      await widget.library.db.removeAssetFromAlbum(widget.albumId, id);
+      await widget.library.db.fuehreAus(AusAlbumNehmen(widget.albumId, [id]));
     }
   }
 
   Future<void> _titelbildSetzen(String assetId) async {
-    await widget.library.db.setzeAlbumTitelbild(widget.albumId, assetId);
+    await widget.library.db.fuehreAus(
+      AlbumTitelbildSetzen(widget.albumId, assetId),
+    );
     if (!mounted) return;
     melde.hinweis(AppTexte.of(context).albumTitelbildGesetzt);
     setState(_selected.clear);

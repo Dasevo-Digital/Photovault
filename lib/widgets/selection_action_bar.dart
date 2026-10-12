@@ -278,11 +278,11 @@ Future<void> runBatchFavorite(
   AppTexte? texte,
 }) async {
   final vorher = await library.db.markierungen(assetIds);
-  await library.db.setFavoriteBulk(assetIds, true);
+  await library.db.fuehreAus(FavoritSetzen(assetIds, true));
   _rueckgaengigAnbieten(
     texte,
     texte?.auswRueckFavorit(assetIds.length) ?? '',
-    () => library.db.setzeMarkierungen(vorher),
+    () => library.db.fuehreAus(MarkierungenSetzen(vorher)),
   );
 }
 
@@ -318,11 +318,11 @@ Future<void> runBatchSetRating(
   if (rating == null || !context.mounted) return;
   final t = AppTexte.of(context);
   final vorher = await library.db.markierungen(assetIds);
-  await library.db.setRatingBulk(assetIds, rating);
+  await library.db.fuehreAus(BewertungSetzen(assetIds, rating));
   _rueckgaengigAnbieten(
     t,
     t.auswRueckBewertung(assetIds.length),
-    () => library.db.setzeMarkierungen(vorher),
+    () => library.db.fuehreAus(MarkierungenSetzen(vorher)),
   );
 }
 
@@ -360,11 +360,13 @@ Future<void> runBatchSetColorLabel(
   if (result == null || !context.mounted) return;
   final t = AppTexte.of(context);
   final vorher = await library.db.markierungen(assetIds);
-  await library.db.setColorLabelBulk(assetIds, result.isEmpty ? null : result);
+  await library.db.fuehreAus(
+    FarbmarkeSetzen(assetIds, result.isEmpty ? null : result),
+  );
   _rueckgaengigAnbieten(
     t,
     t.auswRueckFarbe(assetIds.length),
-    () => library.db.setzeMarkierungen(vorher),
+    () => library.db.fuehreAus(MarkierungenSetzen(vorher)),
   );
 }
 
@@ -383,7 +385,9 @@ Future<void> runBatchEditMetadataDialog(
   );
   if (result == null) return;
   if (result.description != null) {
-    await library.db.setDescriptionBulk(assetIds, result.description!);
+    await library.db.fuehreAus(
+      BeschreibungSetzen(assetIds, result.description!),
+    );
   }
   if (result.date != null) {
     // Über LibraryState und nicht über die Datenbankschicht: Das Datum
@@ -579,7 +583,7 @@ Future<void> runBatchTagDialog(
   if (tag == null || tag.isEmpty || !context.mounted) return;
   final t = AppTexte.of(context);
   final schon = await library.db.tragenSchlagwort(assetIds, tag);
-  await library.db.tagAssetsBulk(assetIds, tag);
+  await library.db.fuehreAus(SchlagwortAnheften(assetIds, tag));
   final neu = [
     for (final id in assetIds)
       if (!schon.contains(id)) id,
@@ -588,7 +592,7 @@ Future<void> runBatchTagDialog(
   _rueckgaengigAnbieten(
     t,
     t.auswRueckSchlagwort(tag, neu.length),
-    () => library.db.nimmSchlagwortAb(neu, tag),
+    () => library.db.fuehreAus(SchlagwortAbnehmen(neu, tag)),
   );
 }
 
@@ -608,18 +612,14 @@ Future<void> runBatchAddToAlbumDialog(
   final neuesAlbum = choice.newName != null;
   if (choice.newName != null) {
     albumId = const Uuid().v4();
-    await library.db.createAlbum(
-      AlbumsCompanion.insert(
-        id: albumId,
-        name: choice.newName!,
-        createdAt: DateTime.now(),
-      ),
+    await library.db.fuehreAus(
+      AlbumAnlegen(albumId, choice.newName!, DateTime.now()),
     );
   } else {
     albumId = choice.existingAlbumId!;
   }
   final schon = await library.db.imAlbum(albumId, assetIds);
-  await library.db.addAssetsToAlbum(albumId, assetIds);
+  await library.db.fuehreAus(AlbumFuellen(albumId, assetIds));
   if (!context.mounted) return;
   final t = AppTexte.of(context);
   final neu = [
@@ -630,7 +630,9 @@ Future<void> runBatchAddToAlbumDialog(
   _rueckgaengigAnbieten(
     t,
     t.auswRueckAlbum(neu.length),
-    () => library.db.nimmAusAlbum(albumId, neu, albumLoeschen: neuesAlbum),
+    () => library.db.fuehreAus(
+      AusAlbumNehmen(albumId, neu, albumLoeschen: neuesAlbum),
+    ),
   );
 }
 

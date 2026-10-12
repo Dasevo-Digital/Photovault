@@ -113,8 +113,9 @@ class _SimilarPhotosScreenState extends State<SimilarPhotosScreen> {
                       paths: widget.library.paths,
                       db: widget.library.db,
                       library: widget.library,
-                      onToggleFavorite: (a) =>
-                          widget.library.db.setFavorite(a.id, !a.isFavorite),
+                      onToggleFavorite: (a) => widget.library.db.fuehreAus(
+                        FavoritSetzen([a.id], !a.isFavorite),
+                      ),
                       onDelete: (a) => widget.library.db.moveToTrash([a.id]),
                       onLock: (a) async {
                         if (await ensureVaultUnlocked(

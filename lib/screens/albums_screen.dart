@@ -46,12 +46,8 @@ class AlbumsScreen extends StatelessWidget {
       ),
     );
     if (name != null && name.isNotEmpty) {
-      await library.db.createAlbum(
-        AlbumsCompanion.insert(
-          id: const Uuid().v4(),
-          name: name,
-          createdAt: DateTime.now(),
-        ),
+      await library.db.fuehreAus(
+        AlbumAnlegen(const Uuid().v4(), name, DateTime.now()),
       );
     }
   }
@@ -212,7 +208,7 @@ class _IntelligentesAlbum extends StatelessWidget {
     )) {
       return;
     }
-    await library.db.deleteSavedSearch(eintrag.id);
+    await library.db.fuehreAus(SucheVergessen(eintrag.id));
   }
 
   void _oeffnen(BuildContext context) {

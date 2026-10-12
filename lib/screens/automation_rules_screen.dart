@@ -66,12 +66,8 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
     var albumId = result.existingAlbumId;
     if (result.newAlbumName != null) {
       albumId = const Uuid().v4();
-      await widget.library.db.createAlbum(
-        AlbumsCompanion.insert(
-          id: albumId,
-          name: result.newAlbumName!,
-          createdAt: DateTime.now(),
-        ),
+      await widget.library.db.fuehreAus(
+        AlbumAnlegen(albumId, result.newAlbumName!, DateTime.now()),
       );
     }
 

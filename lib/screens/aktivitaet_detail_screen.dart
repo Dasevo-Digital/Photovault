@@ -542,7 +542,7 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
           db: widget.library.db,
           library: widget.library,
           onToggleFavorite: (a) =>
-              widget.library.db.setFavorite(a.id, !a.isFavorite),
+              widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
         ),
       ),
     );

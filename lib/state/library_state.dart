@@ -1364,14 +1364,14 @@ class LibraryState extends ChangeNotifier {
     final preset = await db.cameraPresetFor(cameraMake, cameraModel);
     if (preset == null) return;
     if (preset.targetAlbumId != null) {
-      await db.addAssetsToAlbum(preset.targetAlbumId!, [assetId]);
+      await db.fuehreAus(AlbumFuellen(preset.targetAlbumId!, [assetId]));
     }
     if (preset.autoFavorite) {
-      await db.setFavorite(assetId, true);
+      await db.fuehreAus(FavoritSetzen([assetId], true));
     }
     final tagIds = await db.tagIdsForCameraPreset(preset.id);
     for (final tagId in tagIds) {
-      await db.tagAssetById(assetId, tagId);
+      await db.fuehreAus(SchlagwortAnheftenPerKennung(assetId, tagId));
     }
   }
 
@@ -1440,14 +1440,14 @@ class LibraryState extends ChangeNotifier {
       if (!matches) continue;
 
       if (rule.targetAlbumId != null) {
-        await db.addAssetsToAlbum(rule.targetAlbumId!, [assetId]);
+        await db.fuehreAus(AlbumFuellen(rule.targetAlbumId!, [assetId]));
       }
       if (rule.autoFavorite) {
-        await db.setFavorite(assetId, true);
+        await db.fuehreAus(FavoritSetzen([assetId], true));
       }
       final tagIds = await db.tagIdsForAutomationRule(rule.id);
       for (final tagId in tagIds) {
-        await db.tagAssetById(assetId, tagId);
+        await db.fuehreAus(SchlagwortAnheftenPerKennung(assetId, tagId));
       }
     }
   }
@@ -2777,7 +2777,13 @@ class LibraryState extends ChangeNotifier {
                         vokabular,
                         insEnglische: insEnglische,
                       )) {
-                        await db.tagAsset(video.id, tag, quelle: Tagquelle.ki);
+                        await db.fuehreAus(
+                          SchlagwortAnheften(
+                            [video.id],
+                            tag,
+                            quelle: Tagquelle.ki,
+                          ),
+                        );
                       }
                     }
                   }
@@ -4204,7 +4210,9 @@ class LibraryState extends ChangeNotifier {
             // beim Sperren verschwindet und nach dem Entsperren neu
             // berechnet wird (siehe [Tagquelle]). Eine bereits von Hand
             // vergebene Zuordnung lässt `tagAsset` dabei unangetastet.
-            await db.tagAsset(asset.id, tag, quelle: Tagquelle.ki);
+            await db.fuehreAus(
+              SchlagwortAnheften([asset.id], tag, quelle: Tagquelle.ki),
+            );
           }
           if (tags.isNotEmpty) {
             await applyAutomationRules(

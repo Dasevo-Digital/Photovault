@@ -436,7 +436,7 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// können statt es sich zu merken.
   Future<void> _favoritUmschalten() async {
     final neuerWert = !_asset.isFavorite;
-    await widget.library.db.setFavorite(_asset.id, neuerWert);
+    await widget.library.db.fuehreAus(FavoritSetzen([_asset.id], neuerWert));
     if (!mounted) return;
     // Die Zeile in der eigenen Liste nachziehen: Sie stammt aus dem
     // aufrufenden Bildschirm und weiss von der Änderung nichts.

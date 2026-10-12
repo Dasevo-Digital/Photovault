@@ -10,6 +10,9 @@ import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' show Database;
 import 'package:path/path.dart' as p;
 
+import '../befehle/befehl.dart';
+
+export '../befehle/befehl.dart';
 import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
 import '../services/aktivitaeten.dart' show istBekannteArt;
 import '../services/embedding_codec.dart';
@@ -210,6 +213,21 @@ class _SperrWiederholung extends QueryInterceptor {
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
+
+  /// Wer erfährt, dass ein Befehl ausgeführt wurde – heute niemand; im
+  /// verbundenen Betrieb die Warteschlange zum Server (Issue #86).
+  final befehlsbeobachter = <void Function(Befehl<Object?> befehl)>[];
+
+  /// Führt eine Änderung durch den Nutzer aus (siehe [Befehl]): wendet
+  /// sie hier an, meldet sie danach [befehlsbeobachter] und gibt zurück,
+  /// was die Änderung liefert.
+  Future<T> fuehreAus<T>(Befehl<T> befehl) async {
+    final ergebnis = await befehl.anwenden(this);
+    for (final beobachter in befehlsbeobachter) {
+      beobachter(befehl);
+    }
+    return ergebnis;
+  }
 
   /// Wird bei jeder Mutation erhöht, die das Ergebnis von [allEmbeddings]
   /// verändern könnte (neues/aktualisiertes Embedding, Papierkorb/

@@ -310,7 +310,7 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object> on State<T> {
 
     final bewertung = bewertungFuerZiffer(taste);
     if (bewertung != null) {
-      _fuehreAus(rasterDb.setRatingBulk(ziele, bewertung));
+      _fuehreAus(rasterDb.fuehreAus(BewertungSetzen(ziele, bewertung)));
       return KeyEventResult.handled;
     }
 
@@ -323,14 +323,16 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object> on State<T> {
       final erstes = rasterAssets.where((a) => rasterKennung(a) == ziele.first);
       final schonSo =
           erstes.isNotEmpty && rasterMerkmale(erstes.first).farbe == farbe;
-      _fuehreAus(rasterDb.setColorLabelBulk(ziele, schonSo ? null : farbe));
+      _fuehreAus(
+        rasterDb.fuehreAus(FarbmarkeSetzen(ziele, schonSo ? null : farbe)),
+      );
       return KeyEventResult.handled;
     }
 
     if (taste == LogicalKeyboardKey.keyF) {
       final erstes = rasterAssets.where((a) => rasterKennung(a) == ziele.first);
       final schonSo = erstes.isNotEmpty && rasterMerkmale(erstes.first).favorit;
-      _fuehreAus(rasterDb.setFavoriteBulk(ziele, !schonSo));
+      _fuehreAus(rasterDb.fuehreAus(FavoritSetzen(ziele, !schonSo)));
       return KeyEventResult.handled;
     }
 

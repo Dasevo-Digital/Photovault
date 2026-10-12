@@ -178,7 +178,16 @@ extension AlbenAbfragen on AppDatabase {
     await batch(
       (b) => b.insertAllOnConflictUpdate(assetTags, [
         for (final id in assetIds)
-          AssetTagsCompanion.insert(assetId: id, tagId: tagId),
+          // Die Quelle ausdrücklich: Ohne sie liess das Überschreiben eine
+          // Vergabe der Bilderkennung stehen, und der Nutzer hatte das
+          // Schlagwort von Hand vergeben, ohne es zu übernehmen – beim
+          // Sperren wäre es mit den KI-Schlagwörtern verschwunden. Dieselbe
+          // Regel wie in [tagAsset]: Hand schlägt KI.
+          AssetTagsCompanion.insert(
+            assetId: id,
+            tagId: tagId,
+            quelle: const Value(Tagquelle.hand),
+          ),
       ]),
     );
   }

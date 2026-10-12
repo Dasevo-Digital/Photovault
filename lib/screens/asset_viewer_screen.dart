@@ -621,7 +621,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   }
 
   Future<void> _setRating(int rating) async {
-    await widget.db.setRating(_currentAsset.id, rating);
+    await widget.db.fuehreAus(BewertungSetzen([_currentAsset.id], rating));
     await _refreshCurrentAsset();
   }
 
@@ -630,9 +630,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// denselben Kreis in der Palette.
   Future<void> _setColorLabel(String farbe) async {
     final aktuell = _currentAsset.colorLabel;
-    await widget.db.setColorLabel(
-      _currentAsset.id,
-      aktuell == farbe ? null : farbe,
+    await widget.db.fuehreAus(
+      FarbmarkeSetzen([_currentAsset.id], aktuell == farbe ? null : farbe),
     );
     await _refreshCurrentAsset();
   }

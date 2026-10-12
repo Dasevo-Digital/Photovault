@@ -326,8 +326,12 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                       paths: library.paths,
                                       db: library.db,
                                       library: library,
-                                      onToggleFavorite: (a) => library.db
-                                          .setFavorite(a.id, !a.isFavorite),
+                                      onToggleFavorite: (a) =>
+                                          library.db.fuehreAus(
+                                            FavoritSetzen([
+                                              a.id,
+                                            ], !a.isFavorite),
+                                          ),
                                       onDelete: (a) =>
                                           library.db.moveToTrash([a.id]),
                                       onLock: (a) async {

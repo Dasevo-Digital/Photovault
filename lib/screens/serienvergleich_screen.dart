@@ -60,7 +60,7 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
   }
 
   Future<void> _bewerte(AssetData asset, int sterne) async {
-    await widget.library.db.setRating(asset.id, sterne);
+    await widget.library.db.fuehreAus(BewertungSetzen([asset.id], sterne));
     await _laden();
   }
 

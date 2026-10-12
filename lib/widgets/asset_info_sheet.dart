@@ -179,13 +179,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   Future<void> _addTag() async {
     final name = _tagController.text.trim();
     if (name.isEmpty) return;
-    await widget.db.tagAsset(_asset.id, name);
+    await widget.db.fuehreAus(SchlagwortAnheften([_asset.id], name));
     _tagController.clear();
     await _loadTags();
   }
 
   Future<void> _removeTag(TagData tag) async {
-    await widget.db.untagAsset(_asset.id, tag.id);
+    await widget.db.fuehreAus(SchlagwortLoesen(_asset.id, tag.id));
     await _loadTags();
   }
 
@@ -242,20 +242,19 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (_descriptionController.text.trim() == (_asset.description ?? '')) {
       return;
     }
-    await widget.db.setDescription(
-      _asset.id,
-      _descriptionController.text.trim(),
+    await widget.db.fuehreAus(
+      BeschreibungSetzen([_asset.id], _descriptionController.text.trim()),
     );
     await _refresh();
   }
 
   Future<void> _setRating(int rating) async {
-    await widget.db.setRating(_asset.id, rating);
+    await widget.db.fuehreAus(BewertungSetzen([_asset.id], rating));
     await _refresh();
   }
 
   Future<void> _setColorLabel(String? colorLabel) async {
-    await widget.db.setColorLabel(_asset.id, colorLabel);
+    await widget.db.fuehreAus(FarbmarkeSetzen([_asset.id], colorLabel));
     await _refresh();
   }
 

@@ -1119,20 +1119,26 @@ class BackupService {
             );
           }
           if (entry['isFavorite'] == true) {
-            await _db.setFavorite(assetId, true);
+            await _db.fuehreAus(FavoritSetzen([assetId], true));
           }
           if (entry['description'] is String &&
               (entry['description'] as String).isNotEmpty) {
-            await _db.setDescription(assetId, entry['description'] as String);
+            await _db.fuehreAus(
+              BeschreibungSetzen([assetId], entry['description'] as String),
+            );
           }
           // Fehlen die Felder (Sicherung vor Fassung 2.3.0), bleibt es beim
           // Vorgabewert - eine ältere Sicherung setzt also keine Null
           // über etwas, das im Ziel schon steht.
           if (entry['rating'] is int && entry['rating'] as int > 0) {
-            await _db.setRating(assetId, entry['rating'] as int);
+            await _db.fuehreAus(
+              BewertungSetzen([assetId], entry['rating'] as int),
+            );
           }
           if (entry['colorLabel'] is String) {
-            await _db.setColorLabel(assetId, entry['colorLabel'] as String);
+            await _db.fuehreAus(
+              FarbmarkeSetzen([assetId], entry['colorLabel'] as String),
+            );
           }
           // Beides zusammen oder gar nicht: Eine Koordinate ohne die andere
           // ist kein Ort, sondern eine halbe Zahl.
@@ -1160,10 +1166,12 @@ class BackupService {
               if (t is String) t,
           };
           for (final tag in (entry['tags'] as List<dynamic>? ?? [])) {
-            await _db.tagAsset(
-              assetId,
-              tag as String,
-              quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand,
+            await _db.fuehreAus(
+              SchlagwortAnheften(
+                [assetId],
+                tag as String,
+                quelle: kiTags.contains(tag) ? Tagquelle.ki : Tagquelle.hand,
+              ),
             );
           }
         } catch (e) {
@@ -1188,14 +1196,8 @@ class BackupService {
             .toList();
         if (assetIds.isEmpty) continue;
         final albumId = const Uuid().v4();
-        await _db.createAlbum(
-          AlbumsCompanion.insert(
-            id: albumId,
-            name: name,
-            createdAt: DateTime.now(),
-          ),
-        );
-        await _db.addAssetsToAlbum(albumId, assetIds);
+        await _db.fuehreAus(AlbumAnlegen(albumId, name, DateTime.now()));
+        await _db.fuehreAus(AlbumFuellen(albumId, assetIds));
       } catch (e) {
         debugPrint(
           'Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e',

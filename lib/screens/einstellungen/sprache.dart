@@ -152,7 +152,9 @@ Future<void> _wechsleSprache(Einstellungsstand stand, String sprachcode) async {
   );
   if (uebersetzen != true) return;
 
-  final anzahl = await stand.library.db.uebersetzeVokabular(betroffen);
+  final anzahl = await stand.library.db.fuehreAus(
+    VokabularUebersetzen(betroffen),
+  );
   // Die zwischengespeicherten Begriffs-Vektoren gehören zu den alten
   // Wörtern und wären danach nie wieder erreichbar.
   stand.library.aiTaggingService.leereBegriffsCache();

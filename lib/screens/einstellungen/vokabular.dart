@@ -49,8 +49,9 @@ class VokabularGruppe extends StatelessWidget {
                         for (final entry in terms)
                           InputChip(
                             label: Text(entry.term),
-                            onDeleted: () =>
-                                stand.library.db.removeAiTagTerm(entry.id),
+                            onDeleted: () => stand.library.db.fuehreAus(
+                              KiBegriffEntfernen(entry.id),
+                            ),
                           ),
                       ],
                     ),
@@ -117,7 +118,7 @@ Future<void> _addAiTagVocabularyTerm(Einstellungsstand stand) async {
   final term = stand.aiTagVocabularyController.text.trim();
   if (term.isEmpty) return;
   stand.aiTagVocabularyController.clear();
-  await stand.library.db.addAiTagTerm(term);
+  await stand.library.db.fuehreAus(KiBegriffHinzufuegen(term));
 }
 
 /// Nimmt alle von der Bilderkennung vergebenen Schlagwörter zurück.
@@ -145,7 +146,9 @@ Future<void> _nimmKiTagsZurueck(Einstellungsstand stand, int anzahl) async {
     ),
   );
   if (ja != true) return;
-  final entfernt = await stand.library.db.nimmKiTagsZurueck();
+  final entfernt = await stand.library.db.fuehreAus(
+    const KiSchlagwoerterZuruecknehmen(),
+  );
   if (!context.mounted) return;
   stand.neuFragen(EinstellungsAbfrage.kiTags);
   melde.erfolg(t.einstKiTagsZurueckFertig(entfernt));
