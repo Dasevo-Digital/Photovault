@@ -35,11 +35,11 @@ jobs:
       # Der Kern (packages/kern) ist ein eigenes Paket ohne Flutter und
       # braucht seine eigene Auflösung, sonst sieht die Analyse dort jeden
       # Import als fehlend.
-      - run: flutter pub get && (cd packages/kern && dart pub get)
+      - run: flutter pub get && (cd packages/kern && dart pub get) && (cd packages/server && dart pub get)
       - name: Formatierung
         run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages
       - name: Analyse und Tests
-        run: flutter analyze && flutter test
+        run: flutter analyze && flutter test && (cd packages/server && dart test)
 
   # Kompiliert die nativen Teile, damit ein kaputter Plattform-Build vor dem
   # Release auffällt. Unter Windows reicht dafür `flutter build windows`:

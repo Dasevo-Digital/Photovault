@@ -1,0 +1,12 @@
+# Dieselben Regeln wie im Kern (packages/kern): kein Flutter.
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_const_constructors: true
+    prefer_single_quotes: true
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
