@@ -21,7 +21,9 @@ import 'bibliothek.dart';
 /// richtigen Stelle weiterschreiben.
 ///
 /// Ist die letzte Stelle angekommen, geht die Datei durch denselben Import
-/// wie in der App. Die Antwort trägt dann `Pv-Ausgang` (`imported`,
+/// und dieselbe Nachbearbeitung wie in der App (Live Photos, Vorgaben,
+/// Regeln, Ortsnamen); danach meldet [nachImport], dass die Auswertung
+/// fällig ist. Die Antwort trägt dann `Pv-Ausgang` (`imported`,
 /// `duplicateSkipped`, `failed`) und `Pv-Aufnahme` (die Kennung, auch bei
 /// einer Dublette).
 ///
@@ -34,6 +36,7 @@ class Hochladen {
     this.eingang,
     this.bibliothek, {
     this.hoechstens = 64 * 1024 * 1024 * 1024,
+    this.nachImport,
   });
 
   final Directory eingang;
@@ -41,6 +44,9 @@ class Hochladen {
 
   /// Grösste Datei, die angenommen wird.
   final int hoechstens;
+
+  /// Nach jeder neu aufgenommenen Datei.
+  final void Function()? nachImport;
 
   static const _fassung = '1.0.0';
   static final _kennungMuster = RegExp(r'^[0-9a-f-]{36}$');
@@ -228,6 +234,17 @@ class Hochladen {
       }
       final r = await bibliothek.importe.importFile(datei.path);
       var aufnahme = r.assetId;
+      if (r.outcome == ImportOutcome.imported && aufnahme != null) {
+        // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei
+        // trotzdem aufgenommen – das darf dem Client nicht als Fehler
+        // erscheinen, sonst lädt er sie noch einmal hoch.
+        try {
+          await bibliothek.nachbearbeitung.neueAufnahme(aufnahme);
+        } catch (e) {
+          protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
+        }
+        nachImport?.call();
+      }
       if (r.outcome == ImportOutcome.duplicateSkipped) {
         final summe = await sha256.bind(datei.openRead()).first;
         aufnahme = await bibliothek.kennungFuer(summe.toString());

@@ -1,0 +1,41 @@
+# Photo Vault Server unter systemd. Einrichten: siehe README.md im Bündel.
+#
+# Eigene Einstellungen (PV_ADRESSE, PV_PORT, PV_MODELLE, PV_GEODATEN) in
+# /etc/photo-vault-server.env; sie gehen den Vorgaben hier vor. Liegen die
+# Daten woanders als unter /var/lib, braucht der neue Ort ein
+# ReadWritePaths= in einer Ergänzung (systemctl edit photo-vault-server).
+
+[Unit]
+Description=Photo Vault Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=photovault
+Group=photovault
+Environment=PV_DATEN=/var/lib/photo-vault-server
+EnvironmentFile=-/etc/photo-vault-server.env
+ExecStart=/opt/photo-vault-server/bin/photo_vault_server
+Restart=on-failure
+RestartSec=5
+# Der Server wartet auf die laufende Aufnahme, bevor er beendet.
+TimeoutStopSec=120
+
+StateDirectory=photo-vault-server
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

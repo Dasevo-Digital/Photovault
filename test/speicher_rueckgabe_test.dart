@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/speicher_rueckgabe.dart';
+import 'package:kern/services/speicher_rueckgabe.dart';
 
 /// Anlass: Eine Linux-Instanz, die knapp dreizehn Stunden gelaufen war,
 /// hielt 2,4 GB – davon 1,5 GB liegengebliebener Heap der C-Bibliothek,

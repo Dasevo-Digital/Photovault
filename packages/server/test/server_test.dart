@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
+import 'package:kern/db/database.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -10,6 +12,7 @@ import 'package:test/test.dart';
 void main() {
   late Directory ordner;
   late Bibliothek bibliothek;
+  late Auswertungsdienst auswertung;
   late Handler api;
   final schluessel = 'k' * 43;
   final mitSchluessel = {'authorization': 'Bearer $schluessel'};
@@ -18,13 +21,21 @@ void main() {
   setUp(() async {
     ordner = await Directory.systemTemp.createTemp('pv_server_');
     bibliothek = await Bibliothek.oeffne(Directory('${ordner.path}/bib'));
+    // Ohne Ruhezeit, damit ein Test den Lauf gleich abwarten kann.
+    auswertung = Auswertungsdienst(bibliothek, ruhe: Duration.zero);
     api = baueApi(
       bibliothek: bibliothek,
-      hochladen: Hochladen(Directory('${ordner.path}/eingang'), bibliothek),
+      hochladen: Hochladen(
+        Directory('${ordner.path}/eingang'),
+        bibliothek,
+        nachImport: auswertung.anstossen,
+      ),
       zugang: Zugang(schluessel),
+      auswertung: auswertung,
     );
   });
   tearDown(() async {
+    await auswertung.beende();
     await bibliothek.schliesse();
     await ordner.delete(recursive: true);
   });
@@ -241,4 +252,59 @@ void main() {
     } while (nach != null);
     expect(gesehen, ['f4.jpg', 'f3.jpg', 'f2.jpg', 'f1.jpg', 'f0.jpg']);
   });
+
+  test('nach dem Hochladen: Regeln und Live Photos wie in der App', () async {
+    await bibliothek.db.upsertAutomationRule(
+      AutomationRulesCompanion.insert(
+        id: 'regel',
+        name: 'Urlaub',
+        triggerType: 'dateRange',
+        dateFrom: Value(DateTime(2021, 7, 1)),
+        dateTo: Value(DateTime(2021, 7, 31)),
+        autoFavorite: const Value(true),
+      ),
+    );
+    final foto = (await hochladen(
+      jpeg(30),
+      'IMG_0007.JPG',
+      geaendert: DateTime(2021, 7, 12, 9),
+    )).headers['pv-aufnahme']!;
+    // Die Hälfte eines Live Photos: Ob sich ein Standbild daraus ziehen
+    // lässt, spielt für die Zuordnung keine Rolle, nur der Name.
+    final film = await hochladen(
+      Uint8List.fromList(List.generate(4096, (i) => i * 7 % 256)),
+      'IMG_0007.MOV',
+      geaendert: DateTime(2021, 7, 12, 9),
+    );
+    expect(film.headers['pv-ausgang'], 'imported');
+    final filmId = film.headers['pv-aufnahme']!;
+
+    final a = await jsonAus(await frag('GET', '/api/v1/aufnahmen/$foto'));
+    expect(a['isFavorite'], isTrue, reason: 'die Regel greift beim Import');
+    expect(
+      a['linkedAssetId'],
+      filmId,
+      reason: 'Foto und Film gehören zusammen',
+    );
+  });
+
+  test(
+    'ausgewertet wird nach dem Hochladen – ohne Modelle die Schärfe',
+    () async {
+      final id = (await hochladen(jpeg(200), 'd.jpg')).headers['pv-aufnahme']!;
+      await auswertung.jetzt();
+      final a = await jsonAus(await frag('GET', '/api/v1/aufnahmen/$id'));
+      expect(
+        a['sharpnessScore'],
+        isNotNull,
+        reason: 'die Bildanalyse braucht für die Schärfe kein Modell',
+      );
+      expect(a['facesScanned'], isFalse, reason: 'ohne Modell kein Vermerk');
+
+      final stand = await jsonAus(await frag('GET', '/api/v1/auswertung'));
+      expect(stand['laeuft'], isFalse);
+      final angestossen = await frag('POST', '/api/v1/auswertung');
+      expect(angestossen.statusCode, 202);
+    },
+  );
 }

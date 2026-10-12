@@ -296,8 +296,11 @@ class _Ort {
     _bind();
     _env = using((a) {
       final aus = a<Pointer<Void>>();
+      // Pegel 3 (Fehler) statt der Warnungen wie im Plugin: Die Modelle
+      // melden beim Laden jedes unbenutzte Gewicht einzeln, und auf dem
+      // Server landet das farbig im Journal. Am Rechnen ändert das nichts.
       _pruefe(
-        _createEnv(2, 'PhotoVaultServer'.toNativeUtf8(allocator: a), aus),
+        _createEnv(3, 'PhotoVaultServer'.toNativeUtf8(allocator: a), aus),
       );
       return aus.value;
     });

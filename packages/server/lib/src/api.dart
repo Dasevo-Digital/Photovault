@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'auswertungsdienst.dart';
 import 'bibliothek.dart';
 import 'hochladen.dart';
 import 'zugang.dart';
@@ -21,8 +23,9 @@ Handler baueApi({
   required Bibliothek bibliothek,
   required Hochladen hochladen,
   required Zugang zugang,
+  Auswertungsdienst? auswertung,
 }) {
-  final api = _Api(bibliothek);
+  final api = _Api(bibliothek, auswertung);
   final r = Router()
     ..get('/api/v1/zustand', api.zustand)
     ..get('/api/v1/bibliothek', api.bibliothek)
@@ -30,6 +33,8 @@ Handler baueApi({
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/<art>', api.datei)
     ..post('/api/v1/befehle', api.befehl)
+    ..get('/api/v1/auswertung', api.auswertung)
+    ..post('/api/v1/auswertung', api.auswertungAnstossen)
     ..add('OPTIONS', '/api/v1/hochladen', hochladen.optionen)
     ..post('/api/v1/hochladen', hochladen.anlegen)
     ..head('/api/v1/hochladen/<id>', hochladen.stand)
@@ -48,9 +53,10 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.b);
+  _Api(this.b, this.dienst);
 
   final Bibliothek b;
+  final Auswertungsdienst? dienst;
 
   AppDatabase get db => b.db;
 
@@ -70,6 +76,22 @@ class _Api {
       'protokoll': protokollFassung,
       'aufnahmen': anzahl.read<int>('n'),
     });
+  }
+
+  /// Was die Auswertung gerade tut: `laeuft` und, wenn ja, die Stufe mit
+  /// ihrem Fortschritt.
+  Response auswertung(Request anfrage) => _json({
+    'laeuft': dienst?.laeuft ?? false,
+    'stand': dienst?.stand?.alsJson(),
+  });
+
+  /// Stösst einen Durchgang an, ohne die Ruhezeit abzuwarten. Antwortet
+  /// sofort; der Durchgang läuft im Hintergrund.
+  Response auswertungAnstossen(Request anfrage) {
+    final d = dienst;
+    if (d == null) return _json({'fehler': 'keine Auswertung'}, status: 503);
+    unawaited(d.jetzt());
+    return _json({'laeuft': true}, status: 202);
   }
 
   /// Die Zeitleiste seitenweise, neueste zuerst.

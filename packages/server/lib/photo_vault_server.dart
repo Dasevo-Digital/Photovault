@@ -3,6 +3,7 @@
 library;
 
 export 'src/api.dart' show baueApi, protokollFassung;
+export 'src/auswertungsdienst.dart' show Auswertungsdienst, Auswertungsstand;
 export 'src/bibliothek.dart' show Bibliothek;
 export 'src/einstellungen.dart' show Einstellungen;
 export 'src/hochladen.dart' show Hochladen;

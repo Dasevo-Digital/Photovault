@@ -103,3 +103,31 @@ jobs:
               exit "$status"
             fi
           done
+
+  # Baut das Server-Bild je Plattform auf einem passenden Läufer und prüft,
+  # dass es startet und antwortet. Nur gebaut und geprüft, nirgends
+  # hochgeladen – das Bild entsteht zum Einsatz von Hand (siehe
+  # packages/server/README.md).
+  server:
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Bild bauen
+        run: docker build -f packages/server/Dockerfile -t photo-vault-server:pruefung .
+      - name: Startet und antwortet
+        run: |
+          docker run -d --name pv photo-vault-server:pruefung
+          for i in $(seq 1 30); do
+            if docker exec pv /opt/photo-vault-server/bin/photo_vault_server --lebenszeichen; then
+              docker logs pv
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs pv
+          exit 1

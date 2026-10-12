@@ -20,7 +20,7 @@ import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
 import '../services/cube_lut.dart';
 import '../services/develop_color.dart';
-import '../services/speicher_rueckgabe.dart';
+import 'package:kern/services/speicher_rueckgabe.dart';
 import 'package:kern/services/translation_service.dart';
 import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/eye_state_service.dart';

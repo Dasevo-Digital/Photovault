@@ -1,0 +1,11 @@
+# Gebaut wird vom Wurzelordner des Repos aus; hinein gehört nur, was der
+# Server braucht – nicht die App, ihre Bauordner und schon gar keine Daten.
+*
+!packages/kern
+!packages/server
+!third_party/onnxruntime_api
+**/.dart_tool
+**/build
+**/.packages
+packages/server/test
+packages/kern/test

@@ -1,11 +1,9 @@
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 /// Gibt freigegebenen Speicher an das Betriebssystem zurück – unter Linux.
 ///
-/// **Warum das nötig ist.** Die KI-Modelle werden alle zwei Minuten
+/// **Warum das nötig ist.** Die KI-Modelle werden regelmässig
 /// freigegeben, wenn niemand sie benutzt (siehe
 /// `ModellHalter.freigebenWennUnbenutzt`). Das gibt den Speicher an die
 /// C-Bibliothek zurück, aber nicht an das System: glibc behält die Seiten
@@ -27,6 +25,10 @@ import 'package:flutter/foundation.dart';
 /// (gemessen 513 → 282 MB ohne Zutun). Unter macOS gibt es
 /// `malloc_zone_pressure_relief`, aber dort ist das Problem nicht
 /// nachgewiesen – und was nicht gemessen ist, wird hier nicht gebaut.
+///
+/// Auf dem Server dasselbe: Nach einem Auswertungslauf mit allen Modellen
+/// hielt er am 12.10.2026 noch 1,45 GB, obwohl die Modelle eine Minute
+/// zuvor freigegeben worden waren.
 ///
 /// **Nicht jede Linux-Umgebung hat es.** `malloc_trim` ist eine
 /// GNU-Erweiterung; unter musl (Alpine) fehlt sie. Der Symbolzugriff wird
@@ -67,15 +69,6 @@ class SpeicherRueckgabe {
     _suche();
     final f = _trim;
     if (f == null) return false;
-    final uhr = Stopwatch()..start();
-    final etwasFrei = f(0) != 0;
-    uhr.stop();
-    if (kDebugMode) {
-      debugPrint(
-        'malloc_trim: ${etwasFrei ? "etwas" : "nichts"} '
-        'zurueckgegeben in ${uhr.elapsedMilliseconds} ms',
-      );
-    }
-    return etwasFrei;
+    return f(0) != 0;
   }
 }
