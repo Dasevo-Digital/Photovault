@@ -109,3 +109,14 @@ Kopie im Repository, Lizenztext in `third_party/flutter_onnxruntime/LICENSE`.
 Geändert ist, in welchem Faden die Modelle rechnen, und unter Windows ist die
 Telemetrie von ONNX Runtime abgeschaltet; was genau, steht in
 `third_party/flutter_onnxruntime/ANPASSUNGEN.md`.
+
+### Angepasste Kopie: `third_party/flutter_earth_globe/`
+
+Das Paket `flutter_earth_globe` 2.2.1 (MIT, © George Panagiotou) liegt als
+angepasste Kopie im Repository, Lizenztext in
+`third_party/flutter_earth_globe/LICENSE`. Geändert ist, dass die Kugel ein
+Mosaik aus Luftbildkacheln über der Erdtextur zeigen kann, dass Texturen
+bilinear abgetastet werden und dass die Pixelkopie für den CPU-Weg nur noch
+bei Bedarf entsteht; was genau, steht in
+`third_party/flutter_earth_globe/ANPASSUNGEN.md`. Die Luftbilder kommen von
+Esri (World Imagery); die Ansicht nennt sie, solange sie zu sehen sind.

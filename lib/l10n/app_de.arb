@@ -130,6 +130,15 @@
   "karteTitel": "Karte",
   "karteAnsicht": "Kartenansicht",
   "karteTexturNachweis": "Erd-/Sternentextur: Solar System Scope (CC BY 4.0)",
+  "karteLuftbildNachweis": "Luftbild: {nennung}",
+  "@karteLuftbildNachweis": {
+    "placeholders": {
+      "nennung": {
+        "type": "String"
+      }
+    }
+  },
+  "karteGlobusLuftbildHinweis": "Der Globus zeigt hier Luftbilder. Straßen und Ortsnamen stehen in der Karte – tippe auf einen Pin, um an dieser Stelle zu wechseln.",
   "kalenderLeer": "Noch keine Fotos für eine Jahresübersicht.",
   "kalenderJahrLeer": "Keine Fotos in diesem Jahr.",
   "kalenderAnzahlFotos": "{anzahl, plural, =1{{anzahl} Foto/Video} other{{anzahl} Fotos/Videos}}",

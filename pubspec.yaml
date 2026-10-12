@@ -89,7 +89,13 @@ dependencies:
   # AssetImage 64,7 % nicht-schwarze Pixel, FileImage und MemoryImage
   # jeweils 0,0 %. Bibliotheksfotos sind immer Dateien – siehe
   # panorama_360_view.dart, das dafür panorama_viewer nutzt.
-  flutter_earth_globe: ^2.2.1
+  #
+  # Als angepasste Kopie unter third_party/ (#9): Die Kugel zeigt beim
+  # Heranzoomen nachgeladene Luftbildkacheln, und die Pixelkopie der Textur
+  # entsteht nur noch für den CPU-Weg. Was geändert ist, steht in
+  # third_party/flutter_earth_globe/ANPASSUNGEN.md.
+  flutter_earth_globe:
+    path: third_party/flutter_earth_globe
 
   # Echte Kugelprojektion für 360°-Fotos aus der Bibliothek (siehe
   # panorama_360_view.dart) – baut auf flutter_cube auf und dekodiert die

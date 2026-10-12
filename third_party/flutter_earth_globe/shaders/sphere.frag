@@ -1,0 +1,219 @@
+#version 460 core
+
+#include <flutter/runtime_effect.glsl>
+
+// Output color
+out vec4 fragColor;
+
+// Uniforms - sphere parameters (float uniforms must come before samplers)
+uniform float uResolutionX;    // Canvas width
+uniform float uResolutionY;    // Canvas height
+uniform float uCenterX;        // Sphere center X on screen
+uniform float uCenterY;        // Sphere center Y on screen
+uniform float uRadius;         // Sphere radius in pixels
+uniform float uRotationX;      // X rotation in radians
+uniform float uRotationZ;      // Z rotation in radians
+
+// Uniforms - day/night cycle
+uniform float uSunLongitude;   // Sun longitude in radians
+uniform float uSunLatitude;    // Sun latitude in radians
+uniform float uBlendFactor;    // Day/night transition sharpness
+uniform float uDayNightEnabled; // 1.0 if day/night cycle enabled, 0.0 otherwise
+uniform float uDayNightMode;   // 0.0 = textureSwap, 1.0 = simulated
+uniform float uNightColorR;    // Simulated night tint color - Red component (0-1)
+uniform float uNightColorG;    // Simulated night tint color - Green component (0-1)
+uniform float uNightColorB;    // Simulated night tint color - Blue component (0-1)
+uniform float uNightIntensity; // Simulated night brightness (0 = dark, 1 = bright)
+
+// Uniforms - 3D surface lighting
+uniform float uLightEnabled;   // 1.0 if 3D lighting enabled, 0.0 otherwise
+uniform float uLightAngle;     // Light source angle in radians (0 = from right)
+uniform float uLightIntensity; // Light intensity (0.0 - 1.0)
+uniform float uAmbientLight;   // Ambient light level (0.0 - 1.0), prevents total darkness
+
+// Anpassung Photo Vault (siehe ANPASSUNGEN.md): ein Mosaik aus
+// Web-Mercator-Kacheln über der Grundtextur, dort wo es liegt.
+uniform float uDetailAktiv;    // 1.0 wenn ein Mosaik gesetzt ist
+uniform float uDetailZoom;     // 2^Stufe: Kacheln je Erdumfang
+uniform float uDetailX0;       // linke Kante in Kachelkoordinaten
+uniform float uDetailY0;       // obere Kante in Kachelkoordinaten
+uniform float uDetailBreite;   // Breite in Kacheln
+uniform float uDetailHoehe;    // Höhe in Kacheln
+
+// Samplers for textures (must come after float uniforms)
+uniform sampler2D uDaySurface;
+uniform sampler2D uNightSurface;
+uniform sampler2D uDetail;     // Anpassung Photo Vault: das Mosaik
+
+// Constants
+const float PI = 3.14159265359;
+const float TWO_PI = 6.28318530718;
+const float HALF_PI = 1.57079632679;
+
+// Rotation matrix around X axis
+mat3 rotationMatrixX(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        1.0, 0.0, 0.0,
+        0.0, c, -s,
+        0.0, s, c
+    );
+}
+
+// Rotation matrix around Z axis
+mat3 rotationMatrixZ(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        c, -s, 0.0,
+        s, c, 0.0,
+        0.0, 0.0, 1.0
+    );
+}
+
+// Calculate day/night blend factor
+float calculateDayNightFactor(float lat, float lon) {
+    // Calculate the angle between the point and the sun
+    float cosAngle = sin(lat) * sin(uSunLatitude) + 
+                     cos(lat) * cos(uSunLatitude) * cos(lon - uSunLongitude);
+    
+    // Map to 0-1 with smooth transition based on blend factor
+    return clamp(cosAngle / uBlendFactor + 0.5, 0.0, 1.0);
+}
+
+void main() {
+    // Get fragment position relative to center
+    vec2 fragCoord = FlutterFragCoord().xy;
+    vec2 center = vec2(uCenterX, uCenterY);
+    vec2 pos = fragCoord - center;
+    
+    // Calculate distance from center
+    float dist = length(pos);
+    float radiusSquared = uRadius * uRadius;
+    
+    // Anti-aliasing with fixed edge width for smooth edges
+    // Use 1.5 pixels of smoothing at the edge
+    float edgeWidth = 1.5;
+    
+    // Smooth transition at the edge
+    float edgeAlpha = 1.0 - smoothstep(uRadius - edgeWidth, uRadius + edgeWidth * 0.5, dist);
+    
+    // If completely outside the AA band, output transparent
+    if (edgeAlpha <= 0.001) {
+        fragColor = vec4(0.0);
+        return;
+    }
+    
+    // For pixels at the edge, we need to calculate z carefully
+    // Clamp distance to just inside the sphere for stable z calculation
+    float effectiveDist = min(dist, uRadius - 0.5);
+    float distSquared = effectiveDist * effectiveDist;
+    
+    // Calculate z coordinate on sphere surface
+    float z = sqrt(radiusSquared - distSquared);
+    
+    // For edge pixels, scale pos to stay on sphere surface
+    // This ensures proper texture sampling at the edge
+    vec2 effectivePos = pos;
+    if (dist > effectiveDist) {
+        effectivePos = pos * (effectiveDist / dist);
+    }
+    
+    // Create 3D point on sphere
+    vec3 spherePoint = vec3(effectivePos.x, effectivePos.y, z);
+    
+    // Apply combined rotation (Z then X, matching the Dart code)
+    mat3 rotX = rotationMatrixX(HALF_PI - uRotationX);
+    mat3 rotZ = rotationMatrixZ(uRotationZ + HALF_PI);
+    mat3 combinedRot = rotZ * rotX;
+    
+    vec3 rotatedPoint = combinedRot * spherePoint;
+    
+    // Convert to spherical coordinates (lat/lon)
+    float invRadius = 1.0 / uRadius;
+    float lat = asin(rotatedPoint.z * invRadius);
+    float lon = atan(rotatedPoint.y, rotatedPoint.x);
+    
+    // Convert to UV coordinates for texture sampling
+    // lon is in [-PI, PI], map to [0, 1]
+    // lat is in [-PI/2, PI/2], map to [0, 1]
+    // Note: We invert the U coordinate (1.0 - ...) to fix horizontal mirroring
+    // This ensures the texture maps correctly (west on left, east on right)
+    vec2 uv;
+    uv.x = 1.0 - (lon + PI) / TWO_PI;
+    uv.y = (HALF_PI - lat) / PI;
+    
+    // Sample day texture
+    vec4 dayColor = texture(uDaySurface, uv);
+
+    // Anpassung Photo Vault: Liegt der Punkt im Kachelmosaik, kommt die
+    // Farbe von dort. Die Länge dieses Shaders ist gespiegelt (siehe uv.x
+    // oben), die geografische ist -lon. Web Mercator endet bei ±85,05°.
+    if (uDetailAktiv > 0.5 && abs(lat) < 1.4844) {
+        float mercY = log(tan(0.25 * PI + 0.5 * lat));
+        float kx = (PI - lon) / TWO_PI * uDetailZoom;
+        float ky = (1.0 - mercY / PI) * 0.5 * uDetailZoom;
+        // Über die Datumsgrenze: mod liefert immer 0 … uDetailZoom.
+        float dx = mod(kx - uDetailX0, uDetailZoom);
+        float dy = ky - uDetailY0;
+        if (dx <= uDetailBreite && dy >= 0.0 && dy <= uDetailHoehe) {
+            vec4 kachel = texture(uDetail,
+                vec2(dx / uDetailBreite, dy / uDetailHoehe));
+            // Zum Rand hin eine halbe Kachel lang überblenden, damit das
+            // Mosaik nicht als Rechteck auf der Kugel steht. Wo eine Kachel
+            // fehlt (kein Netz), ist das Mosaik durchsichtig, und dort
+            // bleibt die Grundtextur.
+            float rand = min(min(dx, uDetailBreite - dx),
+                             min(dy, uDetailHoehe - dy));
+            float anteil = smoothstep(0.0, 0.5, rand) * kachel.a;
+            vec3 farbe = kachel.rgb / max(kachel.a, 0.0001);
+            dayColor = vec4(mix(dayColor.rgb, farbe, anteil), dayColor.a);
+        }
+    }
+    
+    // Apply day/night cycle if enabled
+    if (uDayNightEnabled > 0.5) {
+        float dayFactor = calculateDayNightFactor(lat, lon);
+        
+        if (uDayNightMode > 0.5) {
+            // Simulated mode: darken the day texture for night
+            // Use customizable night tint color and intensity
+            vec3 nightTint = vec3(uNightColorR, uNightColorG, uNightColorB);
+            float nightBrightness = uNightIntensity;
+            vec3 simulatedNight = dayColor.rgb * nightBrightness + nightTint * (1.0 - nightBrightness) * 0.5;
+            fragColor = vec4(mix(simulatedNight, dayColor.rgb, dayFactor), dayColor.a);
+        } else {
+            // Texture swap mode: blend between day and night textures
+            vec4 nightColor = texture(uNightSurface, uv);
+            fragColor = mix(nightColor, dayColor, dayFactor);
+        }
+    } else {
+        fragColor = dayColor;
+    }
+    
+    // Apply 3D surface lighting if enabled
+    // This creates the appearance of a light source illuminating the sphere
+    if (uLightEnabled > 0.5) {
+        // Calculate surface normal (normalized position on sphere, pointing outward toward viewer)
+        vec3 normal = normalize(spherePoint);
+        
+        // Light direction coming FROM the light (pointing toward sphere center)
+        // Light angle is in screen space: 0 = from right, PI/2 = from top, PI = from left, etc.
+        vec3 lightDir = normalize(vec3(cos(uLightAngle), sin(uLightAngle), 0.5));
+        
+        // Calculate diffuse lighting (how much the surface faces the light)
+        float diffuse = max(dot(normal, lightDir), 0.0);
+        
+        // Apply intensity and ambient
+        float lighting = uAmbientLight + diffuse * uLightIntensity * (1.0 - uAmbientLight);
+        
+        // Apply lighting to the color
+        fragColor.rgb *= lighting;
+    }
+    
+    // Apply anti-aliasing edge smoothing with premultiplied alpha
+    // This ensures proper blending with the background
+    fragColor.rgb *= edgeAlpha;
+    fragColor.a *= edgeAlpha;
+}

@@ -271,6 +271,15 @@ class AppTexteEn extends AppTexte {
       'Earth/star textures: Solar System Scope (CC BY 4.0)';
 
   @override
+  String karteLuftbildNachweis(String nennung) {
+    return 'Aerial imagery: $nennung';
+  }
+
+  @override
+  String get karteGlobusLuftbildHinweis =>
+      'The globe shows aerial imagery here. Streets and place names are in the map – tap a pin to switch to it at that spot.';
+
+  @override
   String get kalenderLeer => 'Not enough photos for a year overview yet.';
 
   @override

@@ -1312,8 +1312,11 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   Bei vier Bildern in der Sekunde wirkt eine Zoomgeste nicht langsam,
   sondern wirkungslos – genau so wurde es auch gemeldet. Gedeckelt sind
   es 259 Pins und 79 ms. Er rendert
-  eine einzelne Erdtextur (8192×4096) ohne Kachel-Nachladen; weiteres
-  Heranzoomen vergrössert nur. Gemessen auf echter GPU (Kantenschärfe
+  eine Erdtextur (8192×4096) und legt beim Heranzoomen Luftbildkacheln
+  von Esri darüber, sobald die Ansicht feiner auflöst als Kachelstufe 6
+  (`lib/services/globuskacheln.dart`, seit #9). Ohne Netz bleibt es bei
+  der Textur, und weiteres Heranzoomen vergrössert nur. Gemessen auf
+  echter GPU, vor den Kacheln (Kantenschärfe
   über den Alpen – bei 0°/0° blickt der Globus auf offenen Atlantik, wo
   jede Auflösung gleich strukturlos ist):
 
@@ -1324,18 +1327,23 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   | 3 | 96 | 151 | 200 |
   | 4 | 81 | 131 | 182 |
 
-  Ab Stufe 3 erscheint deshalb ein Hinweis, der auf den Pin-Tipp
-  verweist: Er wechselt an derselben Stelle in die kachelbasierte Karte.
   Echte Detailschärfe bräuchte Kacheln statt eines Bildes – bei Zoom 6
   wäre die Kugel rund 100.000 Pixel breit gerendert, die Textur müsste
-  dafür etwa 200.000 × 100.000 Pixel gross sein.
+  dafür etwa 200.000 × 100.000 Pixel gross sein. Deshalb die Kacheln:
+  Der Shader des Globus (angepasste Kopie unter
+  `third_party/flutter_earth_globe`) zeigt ein Mosaik um den Blickpunkt
+  dort, wo es liegt. Über den Alpen bei Zoomstufe 3,5 ist die Bildmitte
+  damit rund dreissigmal so scharf (Laplace-Varianz 35 → 1085, auf allen
+  drei Plattformen gemessen). Ohne Luftbilder erscheint ab Stufe 3 der
+  Hinweis auf den Pin-Tipp, mit ihnen ab Stufe 5: Straßen und Ortsnamen
+  zeigt nur die Karte.
 
   Preis der grossen Textur: dekodiert 134 MB, während Flutters
   Bildspeicher 105 MB fasst – sie wird also nie zwischengespeichert
-  (gemessen: „0 Bilder gehalten"). Dazu legt `flutter_earth_globe`
-  unbedingt eine zweite Kopie als `Uint32List` an, auch für den
-  Shader-Weg, der sie nicht braucht. Die Kartenansicht lässt den Globus
-  beim Verlassen deshalb ausdrücklich los.
+  (gemessen: „0 Bilder gehalten"). Die zweite Kopie als `Uint32List`,
+  die das Original-Paket auch für den Shader-Weg anlegte, entsteht seit
+  #9 nur noch für den CPU-Weg. Dazu kommt das Mosaik, höchstens 48 MB.
+  Die Kartenansicht lässt den Globus beim Verlassen ausdrücklich los.
 - Für die 360°-Kugelansicht wird `panorama_viewer` genutzt, nicht das
   ebenfalls eingebundene `flutter_earth_globe`: Letzteres rendert auf dem
   Testgerät nur Texturen aus gebündelten Assets sichtbar (mit identischem

@@ -546,6 +546,18 @@ abstract class AppTexte {
   /// **'Erd-/Sternentextur: Solar System Scope (CC BY 4.0)'**
   String get karteTexturNachweis;
 
+  /// No description provided for @karteLuftbildNachweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Luftbild: {nennung}'**
+  String karteLuftbildNachweis(String nennung);
+
+  /// No description provided for @karteGlobusLuftbildHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Globus zeigt hier Luftbilder. Straßen und Ortsnamen stehen in der Karte – tippe auf einen Pin, um an dieser Stelle zu wechseln.'**
+  String get karteGlobusLuftbildHinweis;
+
   /// No description provided for @kalenderLeer.
   ///
   /// In de, this message translates to:

@@ -12,6 +12,8 @@ import 'package:latlong2/latlong.dart' as ll;
 import '../db/database.dart';
 import '../db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
+import '../services/gelaendeebenen.dart' show luftbildEbene;
+import '../services/globuskacheln.dart';
 import '../services/bilddekodierung.dart';
 import '../services/map_clustering.dart';
 import '../services/native_image_converter.dart';
@@ -85,6 +87,10 @@ const double _standardZoom = 6;
 /// also nur noch, statt mehr zu zeigen.
 const double zoomHinweisAb = 3;
 
+/// Mit Luftbildern (#9) zeigt der Globus beim Heranzoomen mehr; der
+/// Hinweis auf die Karte kommt dann erst kurz vor der Höchststufe.
+const double luftbildHinweisAb = 5;
+
 /// Scrollbare Kartenansicht (OpenStreetMap) über alle Fotos/Videos mit
 /// bekanntem Ort – aus EXIF-GPS-Daten beim Import übernommen oder manuell in
 /// der Info-Ansicht eines Assets gesetzt (siehe [AssetInfoSheet]).
@@ -116,6 +122,17 @@ class _MapScreenState extends State<MapScreen> {
   // Globus-Modus tatsächlich schon einmal aktiv war – wer nie in den
   // Globus-Modus wechselt, zahlt dafür auch keine Rendering-Kosten.
   FlutterEarthGlobeController? _globeController;
+
+  /// Lädt beim Heranzoomen Luftbildkacheln für den Globus (#9).
+  Globuskacheln? _globuskacheln;
+
+  /// Grösse und Pixeldichte der Globusansicht – für die Wahl der
+  /// Kachelstufe. Gesetzt beim Aufbau der Ansicht.
+  ({double breite, double hoehe, double pixeldichte}) _globusAnsicht = (
+    breite: 800,
+    hoehe: 600,
+    pixeldichte: 1,
+  );
   bool _globePointsSynced = false;
   double? _lastGroupedZoomBucket;
 
@@ -165,6 +182,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _ausschnittTakt?.cancel();
+    _globuskacheln?.dispose();
     // Kein `_globeController?.dispose()` hier: `RotatingGlobeState.dispose()`
     // (im FlutterEarthGlobe-Widget selbst) räumt dessen internen
     // rotationController bereits auf, sobald das Widget beim Tab-Wechsel
@@ -273,7 +291,9 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   FlutterEarthGlobeController _ensureGlobeController() {
-    return _globeController ??= FlutterEarthGlobeController(
+    final vorhanden = _globeController;
+    if (vorhanden != null) return vorhanden;
+    final regler = FlutterEarthGlobeController(
       surface: const AssetImage('assets/globe/8k_earth_daymap.jpg'),
       background: const AssetImage('assets/globe/2k_stars_milky_way.jpg'),
       isRotating: false,
@@ -284,11 +304,10 @@ class _MapScreenState extends State<MapScreen> {
       zoom: 0,
       // Deutlich höher als der Bibliotheks-Standard (2.5): einzelne Fotos
       // innerhalb einer Stadt lassen sich erst bei starkem Reinzoomen
-      // auseinanderhalten (siehe _gridDegreesForZoom). Straßen-/Gebäude-
-      // Detailgrad zeigt aber selbst dieser Zoom nicht – die Erdtextur ist
-      // ein einzelnes Bild ohne Kachel-Nachladen wie bei der flachen
-      // Karte; dafür bleibt die Hell/Dunkel-Kartenansicht (echte
-      // OSM-Kacheln) die richtige Wahl.
+      // auseinanderhalten (siehe _gridDegreesForZoom). Beim Heranzoomen
+      // legt der Globus seit #9 Luftbildkacheln über die Textur
+      // (Globuskacheln); Straßen und Ortsnamen zeigt er trotzdem nicht,
+      // dafür bleibt die Hell/Dunkel-Kartenansicht die richtige Wahl.
       //
       // Die Textur ist 8192×4096 statt vormals 2048×1024. Gemessen auf
       // echter GPU (Laplace-Schärfe der Bildmitte über den Alpen, weil
@@ -305,6 +324,12 @@ class _MapScreenState extends State<MapScreen> {
       // herausfinden zu lassen.
       maxZoom: 6,
     );
+    // Beim Heranzoomen Luftbildkacheln über die Textur (#9).
+    _globuskacheln = Globuskacheln(regler, ansicht: () => _globusAnsicht)
+      ..beiWechsel = () {
+        if (mounted) setState(() {});
+      };
+    return _globeController = regler;
   }
 
   /// [focus] zentriert den Globus einmalig auf den Fotos (beim ersten
@@ -449,6 +474,13 @@ class _MapScreenState extends State<MapScreen> {
         // unbedingt eine zweite Kopie als Uint32List an (für ihren
         // CPU-Zeichenweg, den der Desktop gar nicht nimmt) – zusammen rund
         // 268 MB, dauerhaft, nach einem einzigen Blick auf den Globus.
+        //
+        //
+        // Die Pixelkopie für den CPU-Weg entsteht seit #9 nur noch, wenn
+        // der Shader ausfällt (third_party/flutter_earth_globe,
+        // ANPASSUNGEN.md); es bleiben die 134 MB der Textur.
+        _globuskacheln?.dispose();
+        _globuskacheln = null;
         //
         // Kein `dispose()`: Den internen AnimationController räumt
         // `RotatingGlobeState.dispose()` bereits ab, ein zweiter Aufruf
@@ -598,6 +630,11 @@ class _MapScreenState extends State<MapScreen> {
                 final radius =
                     math.min(constraints.maxWidth, constraints.maxHeight) / 2 -
                     16;
+                _globusAnsicht = (
+                  breite: constraints.maxWidth,
+                  hoehe: constraints.maxHeight,
+                  pixeldichte: MediaQuery.devicePixelRatioOf(context),
+                );
                 return Center(
                   child: FlutterEarthGlobe(
                     controller: _ensureGlobeController(),
@@ -610,7 +647,14 @@ class _MapScreenState extends State<MapScreen> {
           ),
           // Der Hinweis steht oben und nicht unten: Unten sitzt schon der
           // Texturnachweis, und beim Zoomen schaut man auf die Mitte.
-          if (_globusZoom >= zoomHinweisAb)
+          //
+          // Mit Luftbildern stimmt „keine zusätzlichen Details" nicht mehr;
+          // dann steht der Hinweis erst kurz vor der Höchststufe und sagt,
+          // was der Globus trotzdem nicht zeigt. Ohne Netz bleibt es beim
+          // alten.
+          if (_globuskacheln?.aktiv ?? false
+              ? _globusZoom >= luftbildHinweisAb
+              : _globusZoom >= zoomHinweisAb)
             Positioned(
               left: 8,
               right: 8,
@@ -636,7 +680,9 @@ class _MapScreenState extends State<MapScreen> {
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          AppTexte.of(context).karteGlobusZoomHinweis,
+                          _globuskacheln?.aktiv ?? false
+                              ? AppTexte.of(context).karteGlobusLuftbildHinweis
+                              : AppTexte.of(context).karteGlobusZoomHinweis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -667,7 +713,10 @@ class _MapScreenState extends State<MapScreen> {
             left: 8,
             bottom: 8,
             child: Text(
-              AppTexte.of(context).karteTexturNachweis,
+              _globuskacheln?.aktiv ?? false
+                  ? '${AppTexte.of(context).karteTexturNachweis}\n'
+                        '${AppTexte.of(context).karteLuftbildNachweis(luftbildEbene.nennung)}'
+                  : AppTexte.of(context).karteTexturNachweis,
               style: TextStyle(
                 fontSize: 10,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

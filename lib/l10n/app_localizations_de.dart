@@ -274,6 +274,15 @@ class AppTexteDe extends AppTexte {
       'Erd-/Sternentextur: Solar System Scope (CC BY 4.0)';
 
   @override
+  String karteLuftbildNachweis(String nennung) {
+    return 'Luftbild: $nennung';
+  }
+
+  @override
+  String get karteGlobusLuftbildHinweis =>
+      'Der Globus zeigt hier Luftbilder. Straßen und Ortsnamen stehen in der Karte – tippe auf einen Pin, um an dieser Stelle zu wechseln.';
+
+  @override
   String get kalenderLeer => 'Noch keine Fotos für eine Jahresübersicht.';
 
   @override

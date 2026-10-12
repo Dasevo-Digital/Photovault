@@ -81,6 +81,8 @@
   "karteTitel": "Map",
   "karteAnsicht": "Map view",
   "karteTexturNachweis": "Earth/star textures: Solar System Scope (CC BY 4.0)",
+  "karteLuftbildNachweis": "Aerial imagery: {nennung}",
+  "karteGlobusLuftbildHinweis": "The globe shows aerial imagery here. Streets and place names are in the map – tap a pin to switch to it at that spot.",
   "kalenderLeer": "Not enough photos for a year overview yet.",
   "kalenderJahrLeer": "No photos in this year.",
   "kalenderAnzahlFotos": "{anzahl, plural, =1{{anzahl} photo/video} other{{anzahl} photos/videos}}",
