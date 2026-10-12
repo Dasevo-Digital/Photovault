@@ -75,15 +75,14 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      await widget.library.db.fuehreAus(
+        PersonAnlegen(personId, choice.newName!),
       );
     } else {
       personId = choice.existingPersonId!;
     }
-    await widget.library.db.assignFacesToPerson(
-      cluster.faces.map((f) => f.id).toList(),
-      personId,
+    await widget.library.db.fuehreAus(
+      GesichterZuordnen(cluster.faces.map((f) => f.id).toList(), personId),
     );
 
     // Gab es einen Vorschlag, ist die Wahl des Nutzers ein Urteil darüber:
@@ -97,13 +96,15 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
     final vorschlag = cluster.suggestedPerson;
     final aehnlichkeit = cluster.similarity;
     if (vorschlag != null && aehnlichkeit != null) {
-      await widget.library.db.merkeGesichtsEntscheidungen(vorschlag.id, [
-        (
-          faceId: cluster.faces.first.id,
-          accepted: personId == vorschlag.id,
-          similarity: aehnlichkeit,
-        ),
-      ], allgemeineSchwelle: widget.library.faceSimilarityThreshold);
+      await widget.library.db.fuehreAus(
+        GesichtsEntscheidungenMerken(vorschlag.id, [
+          (
+            faceId: cluster.faces.first.id,
+            accepted: personId == vorschlag.id,
+            similarity: aehnlichkeit,
+          ),
+        ], allgemeineSchwelle: widget.library.faceSimilarityThreshold),
+      );
     }
 
     if (mounted) setState(() => _pending.remove(cluster));
@@ -128,9 +129,8 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
   /// sagt „das ist keine Person", nicht „diese Gesichter gehören nicht
   /// zusammen". Deshalb wird, wie beim Überspringen, nichts gelernt.
   Future<void> _ignorieren(FaceClusterSuggestion cluster) async {
-    await widget.library.db.setFacesIgnored(
-      cluster.faces.map((f) => f.id).toList(),
-      true,
+    await widget.library.db.fuehreAus(
+      GesichterBeiseitelegen(cluster.faces.map((f) => f.id).toList(), true),
     );
     if (mounted) setState(() => _pending.remove(cluster));
   }

@@ -258,7 +258,9 @@ class _PeopleScreenState extends State<PeopleScreen>
   Future<void> _ignoriereAuswahl() async {
     if (_selectedFaceIds.isEmpty) return;
     final betroffen = _selectedFaceIds.toSet();
-    await widget.library.db.setFacesIgnored(betroffen.toList(), true);
+    await widget.library.db.fuehreAus(
+      GesichterBeiseitelegen(betroffen.toList(), true),
+    );
     if (!mounted) return;
     setState(() {
       _selectedFaceIds.clear();
@@ -275,7 +277,9 @@ class _PeopleScreenState extends State<PeopleScreen>
         // die Gesichter wieder an ihren Platz im Raster setzen, und deren
         // Reihenfolge kennt nur die Datenbank.
         beiDruck: () async {
-          await widget.library.db.setFacesIgnored(betroffen.toList(), false);
+          await widget.library.db.fuehreAus(
+            GesichterBeiseitelegen(betroffen.toList(), false),
+          );
           await _neuLaden();
         },
       ),
@@ -352,7 +356,14 @@ class _PeopleScreenState extends State<PeopleScreen>
   }
 
   Future<void> _alleIgnorieren() async {
-    final anzahl = await widget.library.db.ignoriereAlleUnbenannten();
+    // Die Gesichter beim Namen, nicht „alle unbenannten“: Ein Befehl soll
+    // auf jeder Kopie der Bibliothek dasselbe tun, auch wenn dort inzwischen
+    // weitere Gesichter erkannt wurden.
+    final betroffen = [
+      for (final f in await widget.library.db.allUnassignedFaces()) f.id,
+    ];
+    await widget.library.db.fuehreAus(GesichterBeiseitelegen(betroffen, true));
+    final anzahl = betroffen.length;
     if (!mounted) return;
     setState(() {
       _selectedFaceIds.clear();
@@ -406,9 +417,8 @@ class _PeopleScreenState extends State<PeopleScreen>
 
   Future<void> _holeZurueck() async {
     if (_ausgewaehlteIgnorierte.isEmpty) return;
-    await widget.library.db.setFacesIgnored(
-      _ausgewaehlteIgnorierte.toList(),
-      false,
+    await widget.library.db.fuehreAus(
+      GesichterBeiseitelegen(_ausgewaehlteIgnorierte.toList(), false),
     );
     if (!mounted) return;
     setState(_ausgewaehlteIgnorierte.clear);
@@ -503,8 +513,8 @@ class _PeopleScreenState extends State<PeopleScreen>
     final personIstNeu = choice.newName != null;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      await widget.library.db.fuehreAus(
+        PersonAnlegen(personId, choice.newName!),
       );
     } else {
       personId = choice.existingPersonId!;
@@ -520,9 +530,8 @@ class _PeopleScreenState extends State<PeopleScreen>
               )..where((t) => t.id.equals(personId))).getSingleOrNull())
               ?.coverFaceCropPath;
 
-    await widget.library.db.assignFacesToPerson(
-      _selectedFaceIds.toList(),
-      personId,
+    await widget.library.db.fuehreAus(
+      GesichterZuordnen(_selectedFaceIds.toList(), personId),
     );
 
     // Was "Ähnliche mit auswählen" vorgeschlagen hat, ist damit beurteilt:
@@ -539,10 +548,12 @@ class _PeopleScreenState extends State<PeopleScreen>
     ];
     DateTime? rueckmeldungenSeit;
     if (entscheidungen.isNotEmpty) {
-      rueckmeldungenSeit = await widget.library.db.merkeGesichtsEntscheidungen(
-        personId,
-        entscheidungen,
-        allgemeineSchwelle: widget.library.faceSimilarityThreshold,
+      rueckmeldungenSeit = await widget.library.db.fuehreAus(
+        GesichtsEntscheidungenMerken(
+          personId,
+          entscheidungen,
+          allgemeineSchwelle: widget.library.faceSimilarityThreshold,
+        ),
       );
     }
 
@@ -568,13 +579,15 @@ class _PeopleScreenState extends State<PeopleScreen>
       aktion: (
         beschriftung: AppTexte.of(context).allgRueckgaengig,
         beiDruck: () async {
-          await widget.library.db.nimmZuordnungZurueck(
-            gesichter: vorher,
-            personId: personId,
-            personWarNeu: personIstNeu,
-            titelbildVorher: titelbildVorher,
-            rueckmeldungenSeit: rueckmeldungenSeit,
-            allgemeineSchwelle: widget.library.faceSimilarityThreshold,
+          await widget.library.db.fuehreAus(
+            ZuordnungZuruecknehmen(
+              gesichter: vorher,
+              personId: personId,
+              personWarNeu: personIstNeu,
+              titelbildVorher: titelbildVorher,
+              rueckmeldungenSeit: rueckmeldungenSeit,
+              allgemeineSchwelle: widget.library.faceSimilarityThreshold,
+            ),
           );
           await _neuLaden();
           await _zaehlePersonen();
@@ -1008,9 +1021,8 @@ class _PeopleGrid extends StatelessWidget {
       ),
     );
     if (confirm == true) {
-      await library.db.mergePeople(
-        keepPersonId: target.id,
-        removePersonId: source.id,
+      await library.db.fuehreAus(
+        PersonenZusammenfuehren(behalten: target.id, entfernen: source.id),
       );
     }
   }

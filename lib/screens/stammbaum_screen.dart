@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
@@ -448,16 +447,18 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     String andereId;
     if (wahl.newName != null) {
       andereId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: andereId, name: wahl.newName!),
-      );
+      await widget.library.db.fuehreAus(PersonAnlegen(andereId, wahl.newName!));
     } else {
       andereId = wahl.existingPersonId!;
     }
 
     final fehler = umgekehrt
-        ? await widget.library.db.fuegeBeziehungHinzu(andereId, fokusId, art)
-        : await widget.library.db.fuegeBeziehungHinzu(fokusId, andereId, art);
+        ? await widget.library.db.fuehreAus(
+            BeziehungHinzufuegen(andereId, fokusId, art),
+          )
+        : await widget.library.db.fuehreAus(
+            BeziehungHinzufuegen(fokusId, andereId, art),
+          );
     await _laden();
     if (fehler != null && mounted) _meldeFehler(fehler);
   }
@@ -514,15 +515,13 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     String neueId;
     if (wahl.newName != null) {
       neueId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: neueId, name: wahl.newName!),
-      );
+      await widget.library.db.fuehreAus(PersonAnlegen(neueId, wahl.newName!));
     } else {
       neueId = wahl.existingPersonId!;
     }
 
-    final fehler = await widget.library.db.fuegeBeziehungenHinzu(
-      kantenFuer(weg, neueId),
+    final fehler = await widget.library.db.fuehreAus(
+      BeziehungenHinzufuegen(kantenFuer(weg, neueId)),
     );
     await _laden();
     if (!mounted) return;
@@ -908,7 +907,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       ),
     );
     if (neueArt == null || neueArt == art) return;
-    await widget.library.db.aendereElternart(kindId, elternteilId, neueArt);
+    await widget.library.db.fuehreAus(
+      ElternartAendern(kindId, elternteilId, neueArt),
+    );
     await _laden();
   }
 
@@ -943,8 +944,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     if (ja != true) return;
     final fokusId = _fokusId!;
     final entfernt = umgekehrt
-        ? await widget.library.db.entferneBeziehung(person.id, fokusId, art)
-        : await widget.library.db.entferneBeziehung(fokusId, person.id, art);
+        ? await widget.library.db.fuehreAus(
+            BeziehungEntfernen(person.id, fokusId, art),
+          )
+        : await widget.library.db.fuehreAus(
+            BeziehungEntfernen(fokusId, person.id, art),
+          );
     await _laden();
     // Ein Griff ins Leere soll nicht als Erfolg aussehen. Genau das war
     // der Fehler bei Adoptiv- und Pflegeeltern: Es passierte nichts, und
@@ -963,12 +968,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           builder: (_) => _LebensdatenDialog(person: person),
         );
     if (ergebnis == null) return;
-    await widget.library.db.setzeLebensdaten(
-      person.id,
-      geburt: ergebnis.geburt,
-      tod: ergebnis.tod,
+    await widget.library.db.fuehreAus(
+      LebensdatenSetzen(person.id, geburt: ergebnis.geburt, tod: ergebnis.tod),
     );
-    await widget.library.db.setzeGeschlecht(person.id, ergebnis.geschlecht);
+    await widget.library.db.fuehreAus(
+      GeschlechtSetzen(person.id, ergebnis.geschlecht),
+    );
     await _laden();
   }
 
@@ -986,9 +991,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     if (wahl == null || !mounted) return;
     if (wahl.newName != null) {
       final id = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: id, name: wahl.newName!),
-      );
+      await widget.library.db.fuehreAus(PersonAnlegen(id, wahl.newName!));
       if (!mounted) return;
       setState(() => _fokusId = id);
       await _laden();
@@ -1345,32 +1348,32 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final neueKennung = {
       for (final p in gelesen.personen) p.kennung: const Uuid().v4(),
     };
-    await widget.library.db.uebernehmeGedcom(
-      personen: [
-        for (final p in gelesen.personen)
-          PeopleCompanion.insert(
-            id: neueKennung[p.kennung]!,
-            name: p.name,
-            geschlecht: Value(
-              p.geschlecht == null ? null : geschlechtZuText(p.geschlecht!),
+    await widget.library.db.fuehreAus(
+      GedcomUebernehmen(
+        personen: [
+          for (final p in gelesen.personen)
+            (
+              id: neueKennung[p.kennung]!,
+              name: p.name,
+              geschlecht: p.geschlecht,
+              geburt: p.geburt,
+              tod: p.tod,
             ),
-            geburtsdatum: Value(p.geburt),
-            sterbedatum: Value(p.tod),
-          ),
-      ],
-      kanten: mitNeuenKennungen(gelesen.kanten, neueKennung),
-      ereignisse: [
-        for (final p in gelesen.personen)
-          for (final e in p.ereignisse)
-            LebensereignisseCompanion.insert(
-              id: const Uuid().v4(),
-              personId: neueKennung[p.kennung]!,
-              art: ereignisartZuText(e.art),
-              datum: Value(e.datum),
-              ort: Value(e.ort),
-              notiz: Value(e.notiz),
-            ),
-      ],
+        ],
+        kanten: mitNeuenKennungen(gelesen.kanten, neueKennung),
+        ereignisse: [
+          for (final p in gelesen.personen)
+            for (final e in p.ereignisse)
+              (
+                id: const Uuid().v4(),
+                personId: neueKennung[p.kennung]!,
+                art: ereignisartZuText(e.art),
+                datum: e.datum,
+                ort: e.ort,
+                notiz: e.notiz,
+              ),
+        ],
+      ),
     );
     // Die eingelesenen Ortsnamen bekommen jetzt ihre Koordinaten – das
     // ist der Grund, warum die Verortung vor dem Einlesen gebaut wurde.

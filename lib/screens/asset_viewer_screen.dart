@@ -1653,11 +1653,9 @@ class _AssetPageState extends State<_AssetPage> {
         ? const Uuid().v4()
         : wahl.existingPersonId!;
     if (wahl.newName != null) {
-      await widget.db.createPerson(
-        PeopleCompanion.insert(id: id, name: wahl.newName!),
-      );
+      await widget.db.fuehreAus(PersonAnlegen(id, wahl.newName!));
     }
-    await widget.db.assignFacesToPerson([gesicht.id], id);
+    await widget.db.fuehreAus(GesichterZuordnen([gesicht.id], id));
     await _gesichterLaden();
   }
 
@@ -1696,9 +1694,7 @@ class _AssetPageState extends State<_AssetPage> {
         ? const Uuid().v4()
         : wahl.existingPersonId!;
     if (wahl.newName != null) {
-      await widget.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: wahl.newName!),
-      );
+      await widget.db.fuehreAus(PersonAnlegen(personId, wahl.newName!));
     }
 
     final datei = await _fileFuture;

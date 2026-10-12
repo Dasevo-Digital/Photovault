@@ -19,12 +19,18 @@ library;
 
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
+
 import '../db/database.dart';
 import '../services/search_filters.dart';
+import '../services/stammbaum.dart';
+import '../services/verwandtschaftsgrad.dart';
 
 part 'alben.dart';
 part 'aufnahmen.dart';
+part 'personen.dart';
 part 'schlagwoerter.dart';
+part 'stammbaum.dart';
 
 /// [T] ist, was die Änderung zurückgibt – meist nichts, manchmal eine
 /// Zahl für die Rückmeldung („12 Schlagwörter zurückgenommen“).
@@ -78,6 +84,30 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'albumTitelbildSetzen': AlbumTitelbildSetzen.aus,
   'sucheMerken': SucheMerken.aus,
   'sucheVergessen': SucheVergessen.aus,
+  'personAnlegen': PersonAnlegen.aus,
+  'gesichterZuordnen': GesichterZuordnen.aus,
+  'personenZusammenfuehren': PersonenZusammenfuehren.aus,
+  'personTitelbildSetzen': PersonTitelbildSetzen.aus,
+  'gesichterBeiseitelegen': GesichterBeiseitelegen.aus,
+  'zuordnungLoesen': ZuordnungLoesen.aus,
+  'zuordnungZuruecknehmen': ZuordnungZuruecknehmen.aus,
+  'gesichtsEntscheidungenMerken': GesichtsEntscheidungenMerken.aus,
+  'gesichtsEntscheidungenVergessen': GesichtsEntscheidungenVergessen.aus,
+  'vorschlaegeVerwerfen': VorschlaegeVerwerfen.aus,
+  'gesichtssucheAusnehmen': GesichtssucheAusnehmen.aus,
+  'beziehungHinzufuegen': BeziehungHinzufuegen.aus,
+  'beziehungenHinzufuegen': BeziehungenHinzufuegen.aus,
+  'beziehungEntfernen': BeziehungEntfernen.aus,
+  'elternartAendern': ElternartAendern.aus,
+  'lebensdatenSetzen': LebensdatenSetzen.aus,
+  'geschlechtSetzen': GeschlechtSetzen.aus,
+  'ereignisHinzufuegen': EreignisHinzufuegen.aus,
+  'ereignisLoeschen': EreignisLoeschen.aus,
+  'ereignisortSetzen': EreignisortSetzen.aus,
+  'gedcomUebernehmen': GedcomUebernehmen.aus,
 };
 
 List<String> _kennungen(Object? werte) => (werte! as List).cast<String>();
+
+DateTime? _zeitOderNichts(Object? wert) =>
+    wert == null ? null : DateTime.parse(wert as String);

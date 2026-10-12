@@ -261,9 +261,7 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       if (p.name.toLowerCase() == name.toLowerCase()) return p.id;
     }
     final id = const Uuid().v4();
-    await widget.library.db.createPerson(
-      PeopleCompanion.insert(id: id, name: name),
-    );
+    await widget.library.db.fuehreAus(PersonAnlegen(id, name));
     return id;
   }
 
@@ -301,7 +299,9 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       case _XmpDiffField.gesichter:
         for (final z in diff.zuordnung) {
           final personId = await _personFuer(z.name);
-          await widget.library.db.assignFacesToPerson([z.faceId], personId);
+          await widget.library.db.fuehreAus(
+            GesichterZuordnen([z.faceId], personId),
+          );
         }
     }
     setState(() => _diffs = _diffs.where((d) => d != diff).toList());

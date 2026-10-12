@@ -231,7 +231,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     // braucht es keinen Dialog mit Namensfeld, der nur den einen Fall
     // verdeckte, den der Nutzer hier will.
     if (face.isIgnored) {
-      await widget.library.db.setFacesIgnored([face.id], false);
+      await widget.library.db.fuehreAus(
+        GesichterBeiseitelegen([face.id], false),
+      );
       if (mounted) {
         melde.erfolg(AppTexte.of(context).gesichtZurueckgeholt);
       }
@@ -269,7 +271,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     if (choice == null) return;
 
     if (choice.ignorieren) {
-      await widget.library.db.setFacesIgnored([face.id], true);
+      await widget.library.db.fuehreAus(
+        GesichterBeiseitelegen([face.id], true),
+      );
       _load();
       return;
     }
@@ -277,13 +281,13 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      await widget.library.db.fuehreAus(
+        PersonAnlegen(personId, choice.newName!),
       );
     } else {
       personId = choice.existingPersonId!;
     }
-    await widget.library.db.assignFacesToPerson([face.id], personId);
+    await widget.library.db.fuehreAus(GesichterZuordnen([face.id], personId));
     _load();
   }
 
@@ -389,13 +393,17 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       case 'benennen':
         await _tapFace(face!);
       case 'loesen':
-        await widget.library.db.loeseZuordnung(face!.id);
+        await widget.library.db.fuehreAus(ZuordnungLoesen(face!.id));
         _load();
       case 'ignorieren':
-        await widget.library.db.setFacesIgnored([face!.id], true);
+        await widget.library.db.fuehreAus(
+          GesichterBeiseitelegen([face!.id], true),
+        );
         _load();
       case 'zurueck':
-        await widget.library.db.setFacesIgnored([face!.id], false);
+        await widget.library.db.fuehreAus(
+          GesichterBeiseitelegen([face!.id], false),
+        );
         _load();
       case 'loeschen':
         await widget.library.loescheGesicht(face!.id);
@@ -409,10 +417,12 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
           _dragCurrent = null;
         });
       case 'alleIgnorieren':
-        await widget.library.db.setFacesIgnored([
-          for (final f in _faces)
-            if (f.personId == null && !f.isIgnored) f.id,
-        ], true);
+        await widget.library.db.fuehreAus(
+          GesichterBeiseitelegen([
+            for (final f in _faces)
+              if (f.personId == null && !f.isIgnored) f.id,
+          ], true),
+        );
         _load();
       case 'info':
         setState(() => _infoSichtbar = true);
@@ -493,7 +503,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Suchen, nicht dem Gefundenen.
   Future<void> _durchsuchenUmschalten() async {
     final neuerWert = !_asset.faceScanExcluded;
-    await widget.library.db.setzeGesichtssucheAusgenommen(_asset.id, neuerWert);
+    await widget.library.db.fuehreAus(
+      GesichtssucheAusnehmen(_asset.id, neuerWert),
+    );
     if (!mounted) return;
     setState(
       () => _assets[_index] = _asset.copyWith(faceScanExcluded: neuerWert),
@@ -567,8 +579,8 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.library.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: choice.newName!),
+      await widget.library.db.fuehreAus(
+        PersonAnlegen(personId, choice.newName!),
       );
     } else {
       personId = choice.existingPersonId!;

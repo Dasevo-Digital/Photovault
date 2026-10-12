@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -55,15 +54,15 @@ class LebenslaufScreen extends StatelessWidget {
       builder: (_) => const _EreignisDialog(),
     );
     if (ergebnis == null) return;
-    await library.db.fuegeEreignisHinzu(
-      LebensereignisseCompanion.insert(
+    await library.db.fuehreAus(
+      EreignisHinzufuegen((
         id: const Uuid().v4(),
         personId: person.id,
         art: ereignisartZuText(ergebnis.art),
-        datum: Value(ergebnis.datum),
-        ort: Value(ergebnis.ort),
-        notiz: Value(ergebnis.notiz),
-      ),
+        datum: ergebnis.datum,
+        ort: ergebnis.ort,
+        notiz: ergebnis.notiz,
+      )),
     );
   }
 
@@ -157,8 +156,9 @@ class LebenslaufScreen extends StatelessWidget {
                       IconButton(
                         tooltip: t.allgLoeschen,
                         icon: const Icon(Icons.close, size: 18),
-                        onPressed: () =>
-                            library.db.loescheEreignis(z.ereignisId!),
+                        onPressed: () => library.db.fuehreAus(
+                          EreignisLoeschen(z.ereignisId!),
+                        ),
                       ),
                   ],
                 ),
@@ -331,10 +331,12 @@ class _Ortsknopf extends StatelessWidget {
                 longitude: ereignis.ortLaenge,
                 height: 220,
                 onLocationChanged: (breite, laenge) async {
-                  await library.db.setzeEreignisort(
-                    ereignis.id,
-                    breite: breite,
-                    laenge: laenge,
+                  await library.db.fuehreAus(
+                    EreignisortSetzen(
+                      ereignis.id,
+                      breite: breite,
+                      laenge: laenge,
+                    ),
                   );
                   if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                 },
@@ -350,7 +352,7 @@ class _Ortsknopf extends StatelessWidget {
                 // verortet" muss ein erreichbarer Zustand bleiben, sonst
                 // liesse sich eine falsche Zuordnung nur durch Löschen
                 // des ganzen Ereignisses beheben.
-                await library.db.setzeEreignisort(ereignis.id);
+                await library.db.fuehreAus(EreignisortSetzen(ereignis.id));
                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
               },
               child: Text(t.lebenslaufOrtEntfernen),

@@ -224,13 +224,13 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
-      await widget.db.createPerson(
-        PeopleCompanion.insert(id: personId, name: choice.newName!),
-      );
+      await widget.db.fuehreAus(PersonAnlegen(personId, choice.newName!));
     } else {
       personId = choice.existingPersonId!;
     }
-    await widget.db.assignFacesToPerson([unassigned.first.id], personId);
+    await widget.db.fuehreAus(
+      GesichterZuordnen([unassigned.first.id], personId),
+    );
     await _loadPeople();
   }
 

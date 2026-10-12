@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/search_filters.dart';
+import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
 
 import 'hilfen/quelltext.dart';
 
@@ -47,6 +49,72 @@ void main() {
         SearchFilters(query: 'Hafen', minRating: 5),
       ),
       const SucheVergessen('s1'),
+      const PersonAnlegen('p1', 'Anna'),
+      const GesichterZuordnen(['g1', 'g2'], 'p1'),
+      const PersonenZusammenfuehren(behalten: 'p1', entfernen: 'p2'),
+      const PersonTitelbildSetzen('p1', 'faces/g1.jpg'),
+      const GesichterBeiseitelegen(['g3'], true),
+      const ZuordnungLoesen('g1'),
+      ZuordnungZuruecknehmen(
+        gesichter: const [
+          (id: 'g1', personId: null, ignoriert: false),
+          (id: 'g2', personId: 'p2', ignoriert: true),
+        ],
+        personId: 'p1',
+        personWarNeu: false,
+        titelbildVorher: 'faces/g9.jpg',
+        rueckmeldungenSeit: DateTime(2026, 10, 12, 9, 15, 30),
+        allgemeineSchwelle: 0.42,
+      ),
+      const GesichtsEntscheidungenMerken('p1', [
+        (faceId: 'g1', accepted: true, similarity: 0.61),
+        (faceId: 'g2', accepted: false, similarity: 0.38),
+      ], allgemeineSchwelle: 0.4),
+      const GesichtsEntscheidungenVergessen('p1'),
+      const VorschlaegeVerwerfen(['g4']),
+      const GesichtssucheAusnehmen('a1', true),
+      const BeziehungHinzufuegen('p1', 'p2', Verwandtschaft.partner),
+      const BeziehungenHinzufuegen([
+        (personId: 'p3', andereId: 'p1', art: Verwandtschaft.elternteil),
+      ]),
+      const BeziehungEntfernen('p1', 'p2', Verwandtschaft.partner),
+      const ElternartAendern('p3', 'p1', Verwandtschaft.pflegeelternteil),
+      LebensdatenSetzen('p1', geburt: DateTime(1950, 3, 4), tod: null),
+      const GeschlechtSetzen('p1', Geschlecht.weiblich),
+      EreignisHinzufuegen((
+        id: 'e1',
+        personId: 'p1',
+        art: 'hochzeit',
+        datum: DateTime(1975, 6, 7),
+        ort: 'Kiel',
+        notiz: null,
+      )),
+      const EreignisLoeschen('e1'),
+      const EreignisortSetzen('e1', breite: 54.32, laenge: 10.13),
+      GedcomUebernehmen(
+        personen: [
+          (
+            id: 'p9',
+            name: 'Hans',
+            geschlecht: Geschlecht.maennlich,
+            geburt: DateTime(1920),
+            tod: DateTime(1990, 12, 31),
+          ),
+        ],
+        kanten: const [
+          (personId: 'p9', andereId: 'p1', art: Verwandtschaft.elternteil),
+        ],
+        ereignisse: const [
+          (
+            id: 'e9',
+            personId: 'p9',
+            art: 'geburt',
+            datum: null,
+            ort: 'Lübeck',
+            notiz: 'laut Kirchenbuch',
+          ),
+        ],
+      ),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
@@ -69,6 +137,27 @@ void main() {
       AlbumTitelbildSetzen() => 'albumTitelbildSetzen',
       SucheMerken() => 'sucheMerken',
       SucheVergessen() => 'sucheVergessen',
+      PersonAnlegen() => 'personAnlegen',
+      GesichterZuordnen() => 'gesichterZuordnen',
+      PersonenZusammenfuehren() => 'personenZusammenfuehren',
+      PersonTitelbildSetzen() => 'personTitelbildSetzen',
+      GesichterBeiseitelegen() => 'gesichterBeiseitelegen',
+      ZuordnungLoesen() => 'zuordnungLoesen',
+      ZuordnungZuruecknehmen() => 'zuordnungZuruecknehmen',
+      GesichtsEntscheidungenMerken() => 'gesichtsEntscheidungenMerken',
+      GesichtsEntscheidungenVergessen() => 'gesichtsEntscheidungenVergessen',
+      VorschlaegeVerwerfen() => 'vorschlaegeVerwerfen',
+      GesichtssucheAusnehmen() => 'gesichtssucheAusnehmen',
+      BeziehungHinzufuegen() => 'beziehungHinzufuegen',
+      BeziehungenHinzufuegen() => 'beziehungenHinzufuegen',
+      BeziehungEntfernen() => 'beziehungEntfernen',
+      ElternartAendern() => 'elternartAendern',
+      LebensdatenSetzen() => 'lebensdatenSetzen',
+      GeschlechtSetzen() => 'geschlechtSetzen',
+      EreignisHinzufuegen() => 'ereignisHinzufuegen',
+      EreignisLoeschen() => 'ereignisLoeschen',
+      EreignisortSetzen() => 'ereignisortSetzen',
+      GedcomUebernehmen() => 'gedcomUebernehmen',
     };
 
     test('jede Art hat ein Beispiel und ist zum Lesen eingetragen', () {
@@ -186,6 +275,107 @@ void main() {
         const AusAlbumNehmen('al1', ['a1'], albumLoeschen: true),
       );
       expect(await db.imAlbum('al1', ['a1', 'a2', 'a3']), isEmpty);
+    });
+
+    test(
+      'Personen: anlegen, zuordnen, beiseitelegen, zusammenführen',
+      () async {
+        for (final g in ['g1', 'g2', 'g3']) {
+          await db.insertFace(
+            FacesCompanion.insert(
+              id: g,
+              assetId: 'a1',
+              boxX: 0,
+              boxY: 0,
+              boxW: 0.1,
+              boxH: 0.1,
+            ),
+          );
+        }
+        Future<Map<String, (String?, bool)>> stand() async => {
+          for (final f in await db.select(db.faces).get())
+            f.id: (f.personId, f.isIgnored),
+        };
+        await db.fuehreAus(const PersonAnlegen('p1', 'Anna'));
+        await db.fuehreAus(const PersonAnlegen('p2', 'Anna B.'));
+        await db.fuehreAus(const GesichterZuordnen(['g1', 'g2'], 'p1'));
+        await db.fuehreAus(const GesichterZuordnen(['g3'], 'p2'));
+        await db.fuehreAus(const GesichterBeiseitelegen(['g2'], true));
+        expect(await stand(), {
+          'g1': ('p1', false),
+          'g2': (null, true),
+          'g3': ('p2', false),
+        });
+        await db.fuehreAus(
+          const PersonenZusammenfuehren(behalten: 'p1', entfernen: 'p2'),
+        );
+        await db.fuehreAus(const ZuordnungLoesen('g1'));
+        expect(await stand(), {
+          'g1': (null, false),
+          'g2': (null, true),
+          'g3': ('p1', false),
+        });
+        expect(
+          [for (final p in await db.select(db.people).get()) p.id],
+          ['p1'],
+        );
+      },
+    );
+
+    test('Stammbaum: Verwandtschaften, Lebensdaten, GEDCOM', () async {
+      await db.fuehreAus(const PersonAnlegen('p1', 'Anna'));
+      await db.fuehreAus(const PersonAnlegen('p2', 'Ben'));
+      expect(
+        await db.fuehreAus(
+          const BeziehungHinzufuegen('p1', 'p2', Verwandtschaft.partner),
+        ),
+        isNull,
+      );
+      await db.fuehreAus(
+        LebensdatenSetzen('p1', geburt: DateTime(1950, 3, 4), tod: null),
+      );
+      await db.fuehreAus(const GeschlechtSetzen('p1', Geschlecht.weiblich));
+      await db.fuehreAus(
+        GedcomUebernehmen(
+          personen: [
+            (
+              id: 'p9',
+              name: 'Hans',
+              geschlecht: Geschlecht.maennlich,
+              geburt: DateTime(1920),
+              tod: null,
+            ),
+          ],
+          kanten: const [
+            (personId: 'p9', andereId: 'p1', art: Verwandtschaft.elternteil),
+          ],
+          ereignisse: const [
+            (
+              id: 'e9',
+              personId: 'p9',
+              art: 'geburt',
+              datum: null,
+              ort: 'Lübeck',
+              notiz: null,
+            ),
+          ],
+        ),
+      );
+      expect(
+        await db.fuehreAus(
+          const BeziehungEntfernen('p1', 'p2', Verwandtschaft.partner),
+        ),
+        isTrue,
+      );
+      final kanten = await db.select(db.personBeziehungen).get();
+      expect(kanten, hasLength(1));
+      final anna = (await db.select(db.people).get()).firstWhere(
+        (p) => p.id == 'p1',
+      );
+      expect(anna.geburtsdatum, DateTime(1950, 3, 4));
+      expect(geschlechtAusText(anna.geschlecht), Geschlecht.weiblich);
+      final ereignisse = await db.select(db.lebensereignisse).get();
+      expect([for (final e in ereignisse) e.ort], ['Lübeck']);
     });
 
     test('jeder ausgeführte Befehl wird gemeldet, nach der Wirkung', () async {
@@ -335,31 +525,31 @@ const _einordnung = <String, _Art>{
   'loescheOrtsmarke': _Art.nutzer,
   'setzeOrte': _Art.nutzer,
   // Personen und Gesichter
-  'createPerson': _Art.nutzer,
-  'assignFacesToPerson': _Art.nutzer,
-  'mergePeople': _Art.nutzer,
-  'setPersonCover': _Art.nutzer,
-  'setFacesIgnored': _Art.nutzer,
-  'loescheAlleUnbenanntenErkennungen': _Art.nutzer,
-  'loescheGesicht': _Art.nutzer,
-  'loeseZuordnung': _Art.nutzer,
-  'nimmZuordnungZurueck': _Art.nutzer,
-  'merkeGesichtsEntscheidungen': _Art.nutzer,
-  'vergissGesichtsEntscheidungen': _Art.nutzer,
-  'verwirfVorschlaege': _Art.nutzer,
-  'setzeGesichtssucheAusgenommen': _Art.nutzer,
-  'insertFace': _Art.nutzer,
+  'createPerson': _Art.befehl,
+  'assignFacesToPerson': _Art.befehl,
+  'mergePeople': _Art.befehl,
+  'setPersonCover': _Art.befehl,
+  'setFacesIgnored': _Art.befehl,
+  'loescheAlleUnbenanntenErkennungen': _Art.datei,
+  'loescheGesicht': _Art.datei,
+  'loeseZuordnung': _Art.befehl,
+  'nimmZuordnungZurueck': _Art.befehl,
+  'merkeGesichtsEntscheidungen': _Art.befehl,
+  'vergissGesichtsEntscheidungen': _Art.befehl,
+  'verwirfVorschlaege': _Art.befehl,
+  'setzeGesichtssucheAusgenommen': _Art.befehl,
+  'insertFace': _Art.datei,
   // Stammbaum
-  'setzeGeschlecht': _Art.nutzer,
-  'setzeLebensdaten': _Art.nutzer,
-  'setzeEreignisort': _Art.nutzer,
-  'aendereElternart': _Art.nutzer,
-  'entferneBeziehung': _Art.nutzer,
-  'fuegeBeziehungHinzu': _Art.nutzer,
-  'fuegeBeziehungenHinzu': _Art.nutzer,
-  'fuegeEreignisHinzu': _Art.nutzer,
-  'loescheEreignis': _Art.nutzer,
-  'uebernehmeGedcom': _Art.nutzer,
+  'setzeGeschlecht': _Art.befehl,
+  'setzeLebensdaten': _Art.befehl,
+  'setzeEreignisort': _Art.befehl,
+  'aendereElternart': _Art.befehl,
+  'entferneBeziehung': _Art.befehl,
+  'fuegeBeziehungHinzu': _Art.befehl,
+  'fuegeBeziehungenHinzu': _Art.befehl,
+  'fuegeEreignisHinzu': _Art.befehl,
+  'loescheEreignis': _Art.befehl,
+  'uebernehmeGedcom': _Art.befehl,
   // Reisen, Aktivitäten, Spuren
   'reiseAnlegen': _Art.nutzer,
   'reiseAendern': _Art.nutzer,

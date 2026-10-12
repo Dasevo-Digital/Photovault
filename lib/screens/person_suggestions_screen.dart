@@ -47,7 +47,9 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
         if (_gewaehlt.contains(v.gesicht.id)) v.gesicht.id,
     ];
     if (angenommen.isNotEmpty) {
-      await widget.library.db.assignFacesToPerson(angenommen, widget.person.id);
+      await widget.library.db.fuehreAus(
+        GesichterZuordnen(angenommen, widget.person.id),
+      );
     }
 
     // Das Abgewaehlte verliert seinen gespeicherten Vorschlag. Ohne das
@@ -59,17 +61,19 @@ class _PersonSuggestionsScreenState extends State<PersonSuggestionsScreen> {
         if (!_gewaehlt.contains(v.gesicht.id)) v.gesicht.id,
     ];
     if (abgelehnt.isNotEmpty) {
-      await widget.library.db.verwirfVorschlaege(abgelehnt);
+      await widget.library.db.fuehreAus(VorschlaegeVerwerfen(abgelehnt));
     }
 
-    await widget.library.db.merkeGesichtsEntscheidungen(widget.person.id, [
-      for (final v in widget.vorschlaege)
-        (
-          faceId: v.gesicht.id,
-          accepted: _gewaehlt.contains(v.gesicht.id),
-          similarity: v.aehnlichkeit,
-        ),
-    ], allgemeineSchwelle: widget.library.faceSimilarityThreshold);
+    await widget.library.db.fuehreAus(
+      GesichtsEntscheidungenMerken(widget.person.id, [
+        for (final v in widget.vorschlaege)
+          (
+            faceId: v.gesicht.id,
+            accepted: _gewaehlt.contains(v.gesicht.id),
+            similarity: v.aehnlichkeit,
+          ),
+      ], allgemeineSchwelle: widget.library.faceSimilarityThreshold),
+    );
 
     if (!mounted) return;
     Navigator.of(context).pop(angenommen.length);

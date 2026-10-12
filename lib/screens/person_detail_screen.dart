@@ -184,7 +184,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
       ),
     );
     if (chosen != null) {
-      await library.db.setPersonCover(person.id, chosen.cropRelativePath!);
+      await library.db.fuehreAus(
+        PersonTitelbildSetzen(person.id, chosen.cropRelativePath!),
+      );
     }
   }
 
@@ -401,7 +403,9 @@ class _ErkennungsStandState extends State<_ErkennungsStand> {
   }
 
   Future<void> _vergessen() async {
-    await widget.library.db.vergissGesichtsEntscheidungen(widget.person.id);
+    await widget.library.db.fuehreAus(
+      GesichtsEntscheidungenVergessen(widget.person.id),
+    );
     await _lade();
     if (mounted) {
       melde.erfolg(AppTexte.of(context).personGelerntesVerworfen);
