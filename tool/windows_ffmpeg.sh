@@ -75,9 +75,10 @@ wav,w64,flac,ogg,aiff,caf,amr,asf,flv,dv,rawvideo,mjpeg"
 ENCODER="mjpeg,h264_mf,mpeg4,aac,pcm_s16le"
 # Der Zuschnitt schreibt in den Container, aus dem er liest. Die Namen
 # sind die von configure, nicht die Endungen: .3gp heisst tgp, .mpg
-# mpeg1system, .wmv asf.
+# mpeg1system, .wmv asf – und das rohe PCM, das `-f s16le` schreibt,
+# pcm_s16le.
 MUXER="image2,mp4,mov,ipod,tgp,tg2,matroska,webm,avi,mpegts,mpeg1system,\
-mpeg2vob,ogg,ogv,asf,flv,dv,null,s16le"
+mpeg2vob,ogg,ogv,asf,flv,dv,null,pcm_s16le"
 # Was die Aufrufe brauchen und was ffmpeg selbst einsetzt: Formatwandlung,
 # Drehen nach den Metadaten eines Telefonvideos, Abtastraten.
 FILTER="buffer,buffersink,abuffer,abuffersink,format,aformat,scale,\
