@@ -2,7 +2,7 @@
 
 Diese Kopie stammt aus dem Paket `flutter_onnxruntime` 1.9.0 (MIT, © MASIC AI,
 <https://github.com/masicai/flutter_onnxruntime>). Weggelassen sind nur
-`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert sind zwei Dinge.
+`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert sind drei Dinge.
 
 ## 1. Die Aufrufe laufen nicht im Hauptfaden
 
@@ -27,6 +27,23 @@ stellt – erst Tensor anlegen, dann rechnen, dann auslesen.
 `DisableTelemetryEvents()`. Die offiziellen Windows-Bauten von ONNX Runtime
 melden sonst Ereignisse über TraceLogging an die Windows-Diagnose. Unter Linux
 und macOS enthalten die Bauten keine solche Meldung.
+
+## 3. Linux und Windows: Eingaben ohne Kopie
+
+Vor jedem Aufruf eines Modells kopierte das Original jeden Eingabetensor in
+einen frischen Puffer (`cloneTensor`). Bei einem Decoder, der Schritt für
+Schritt den Zwischenspeicher der Kreuz-Aufmerksamkeit zurückbekommt, ist das
+teuer: Whisper small reicht je Schritt 115 MB herein, die Bildbeschreibung
+weniger, aber genauso bei jedem Wort. `TensorManager::viewTensor` legt
+stattdessen ein `Ort::Value` über denselben Speicher. Das ist sicher, weil
+alle Aufrufe nacheinander auf einem Faden laufen (siehe 1.) – während ein
+Modell rechnet, kann kein Aufruf den Tensor freigeben. Zeichenketten und
+leere Tensoren werden weiter kopiert. Unter macOS gab es die Kopie nie.
+
+| Plattform | Datei |
+|---|---|
+| Linux | `linux/src/tensor_manager.{h,cc}`, `linux/src/flutter_onnxruntime_plugin.cc` |
+| Windows | `windows/src/tensor_manager.{h,cc}`, `windows/flutter_onnxruntime_plugin.cpp` |
 
 ## Sonst
 

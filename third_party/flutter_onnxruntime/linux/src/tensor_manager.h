@@ -97,6 +97,13 @@ public:
   // Clone a tensor, returning both the Ort::Value and its backing buffer
   ClonedTensor cloneTensor(const std::string &tensor_id);
 
+  // Eine Sicht auf den gespeicherten Tensor statt einer Kopie: ein
+  // Ort::Value ueber denselben Speicher, ohne eigenen Puffer. Fuer den
+  // Aufruf eines Modells genuegt das – waehrend er laeuft, kann nichts den
+  // Tensor freigeben, weil alle Aufrufe nacheinander auf einem Faden
+  // laufen. Zeichenketten und leere Tensoren werden weiter kopiert.
+  ClonedTensor viewTensor(const std::string &tensor_id);
+
 private:
   ClonedTensor cloneTensorLocked(const std::string &tensor_id);
 

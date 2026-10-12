@@ -760,6 +760,49 @@ std::string TensorManager::convertBoolTo(const std::string &tensor_id, const std
   return new_tensor_id;
 }
 
+ClonedTensor TensorManager::viewTensor(const std::string &tensor_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  auto tensor_it = tensors_.find(tensor_id);
+  auto type_it = tensor_types_.find(tensor_id);
+  auto shape_it = tensor_shapes_.find(tensor_id);
+  if (tensor_it == tensors_.end() || type_it == tensor_types_.end() || shape_it == tensor_shapes_.end()) {
+    throw std::runtime_error("Tensor not found: " + tensor_id);
+  }
+
+  Ort::Value *tensor_ptr = tensor_it->second.get();
+  const std::string &tensor_type = type_it->second;
+  const std::vector<int64_t> &shape = shape_it->second;
+  size_t element_count = tensor_ptr->GetTensorTypeAndShapeInfo().GetElementCount();
+
+  size_t element_size = 0;
+  ONNXTensorElementDataType element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED;
+  if (tensor_type == "float32") {
+    element_size = sizeof(float);
+    element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
+  } else if (tensor_type == "int32") {
+    element_size = sizeof(int32_t);
+    element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32;
+  } else if (tensor_type == "int64") {
+    element_size = sizeof(int64_t);
+    element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64;
+  } else if (tensor_type == "uint8") {
+    element_size = sizeof(uint8_t);
+    element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8;
+  } else if (tensor_type == "bool") {
+    element_size = sizeof(bool);
+    element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL;
+  }
+  if (element_size == 0 || element_count == 0) {
+    return cloneTensorLocked(tensor_id);
+  }
+
+  ClonedTensor result;
+  result.value = Ort::Value::CreateTensor(memory_info_, tensor_ptr->GetTensorMutableRawData(),
+                                          element_count * element_size, shape.data(), shape.size(), element_type);
+  return result;
+}
+
 ClonedTensor TensorManager::cloneTensor(const std::string &tensor_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   return cloneTensorLocked(tensor_id);

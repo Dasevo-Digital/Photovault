@@ -905,8 +905,10 @@ void FlutterOnnxruntimePlugin::HandleRunInference(
       Ort::Value *tensor_ptr = impl_->tensorManager_->getTensor(tensor_id);
       if (tensor_ptr != nullptr) {
         try {
-          // Clone the tensor — ClonedTensor owns both the Ort::Value and its backing buffer
-          ClonedTensor cloned = impl_->tensorManager_->cloneTensor(tensor_id);
+          // Photo Vault: eine Sicht statt einer Kopie (siehe TensorManager::viewTensor).
+          // Die Kopie jedes Eingabetensors kostete den Whisper-Decoder je Schritt
+          // 115 MB Speicherverkehr, denselben bei jedem Schritt der Bildbeschreibung.
+          ClonedTensor cloned = impl_->tensorManager_->viewTensor(tensor_id);
           if (cloned.value) {
             cloned_inputs.push_back(std::move(cloned));
             input_names.push_back(input_name);
