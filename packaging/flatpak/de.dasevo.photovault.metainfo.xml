@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.31.0" date="2026-10-12">
+      <description>
+        <p>The family tree keeps the person in the middle under the trunk, with the father's side on the left and the mother's on the right. The family view of the life tree can show one to three generations above and none to three below, with or without siblings and in-laws.</p>
+        <p>Selections, albums, the year in review and memories can be exported as a printable photo book PDF, without EXIF data.</p>
+        <p>Speech in videos is transcribed locally with Whisper small and can be searched.</p>
+        <p>On Linux and Windows, ordinary JPEG and PNG photos convert again, so smaller exports and the privacy export work, and the models no longer copy every input before each run.</p>
+      </description>
+    </release>
     <release version="3.30.0" date="2026-10-12">
       <description>
         <p>Sharpness, noise reduction, clarity and vignette in the develop view now run on the GPU on Linux and Windows, measured against the macOS results, and show while dragging. Masks on Linux and Windows now affect only the masked area and build on the developed image. On macOS negative clarity softens and the vignette darkens for positive values. The colour mixer no longer turns smooth gradients into bands. Sony RAW files are corrected for lens distortion from the data the camera writes into the file. The 3D globe loads aerial tiles when zoomed in.</p>
