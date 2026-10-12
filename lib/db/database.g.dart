@@ -13872,6 +13872,37 @@ class $AppSettingsTable extends AppSettings
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lebensbaumFamilieObenMeta =
+      const VerificationMeta('lebensbaumFamilieOben');
+  @override
+  late final GeneratedColumn<int> lebensbaumFamilieOben = GeneratedColumn<int>(
+    'lebensbaum_familie_oben',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lebensbaumFamilieUntenMeta =
+      const VerificationMeta('lebensbaumFamilieUnten');
+  @override
+  late final GeneratedColumn<int> lebensbaumFamilieUnten = GeneratedColumn<int>(
+    'lebensbaum_familie_unten',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lebensbaumFamilieKreisMeta =
+      const VerificationMeta('lebensbaumFamilieKreis');
+  @override
+  late final GeneratedColumn<String> lebensbaumFamilieKreis =
+      GeneratedColumn<String>(
+        'lebensbaum_familie_kreis',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _zeitleisteKachelstufeMeta =
       const VerificationMeta('zeitleisteKachelstufe');
   @override
@@ -14002,6 +14033,9 @@ class $AppSettingsTable extends AppSettings
     lebensbaumRichtung,
     lebensbaumStil,
     lebensbaumGenerationen,
+    lebensbaumFamilieOben,
+    lebensbaumFamilieUnten,
+    lebensbaumFamilieKreis,
     zeitleisteKachelstufe,
     zeitleisteFormNr,
     zeitleisteSortierungNr,
@@ -14254,6 +14288,33 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('lebensbaum_familie_oben')) {
+      context.handle(
+        _lebensbaumFamilieObenMeta,
+        lebensbaumFamilieOben.isAcceptableOrUnknown(
+          data['lebensbaum_familie_oben']!,
+          _lebensbaumFamilieObenMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lebensbaum_familie_unten')) {
+      context.handle(
+        _lebensbaumFamilieUntenMeta,
+        lebensbaumFamilieUnten.isAcceptableOrUnknown(
+          data['lebensbaum_familie_unten']!,
+          _lebensbaumFamilieUntenMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lebensbaum_familie_kreis')) {
+      context.handle(
+        _lebensbaumFamilieKreisMeta,
+        lebensbaumFamilieKreis.isAcceptableOrUnknown(
+          data['lebensbaum_familie_kreis']!,
+          _lebensbaumFamilieKreisMeta,
+        ),
+      );
+    }
     if (data.containsKey('zeitleiste_kachelstufe')) {
       context.handle(
         _zeitleisteKachelstufeMeta,
@@ -14442,6 +14503,18 @@ class $AppSettingsTable extends AppSettings
       lebensbaumGenerationen: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}lebensbaum_generationen'],
+      ),
+      lebensbaumFamilieOben: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lebensbaum_familie_oben'],
+      ),
+      lebensbaumFamilieUnten: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lebensbaum_familie_unten'],
+      ),
+      lebensbaumFamilieKreis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lebensbaum_familie_kreis'],
       ),
       zeitleisteKachelstufe: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -14707,6 +14780,14 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
   final String? lebensbaumStil;
   final int? lebensbaumGenerationen;
 
+  /// Wie weit der Lebensbaum „Familie" reicht: Generationen darüber und
+  /// darunter und der Kreis der Verwandtschaft als Name aus
+  /// `Verwandtenkreis`. `null` heisst Vorgabe – so weit wie der Zierbaum,
+  /// die ganze Familie.
+  final int? lebensbaumFamilieOben;
+  final int? lebensbaumFamilieUnten;
+  final String? lebensbaumFamilieKreis;
+
   /// Wie gross die Kacheln der Zeitleiste sind – als Stufe, siehe
   /// [zeitleisteKachelstufen].
   ///
@@ -14805,6 +14886,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     this.lebensbaumRichtung,
     this.lebensbaumStil,
     this.lebensbaumGenerationen,
+    this.lebensbaumFamilieOben,
+    this.lebensbaumFamilieUnten,
+    this.lebensbaumFamilieKreis,
     required this.zeitleisteKachelstufe,
     required this.zeitleisteFormNr,
     required this.zeitleisteSortierungNr,
@@ -14869,6 +14953,17 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     }
     if (!nullToAbsent || lebensbaumGenerationen != null) {
       map['lebensbaum_generationen'] = Variable<int>(lebensbaumGenerationen);
+    }
+    if (!nullToAbsent || lebensbaumFamilieOben != null) {
+      map['lebensbaum_familie_oben'] = Variable<int>(lebensbaumFamilieOben);
+    }
+    if (!nullToAbsent || lebensbaumFamilieUnten != null) {
+      map['lebensbaum_familie_unten'] = Variable<int>(lebensbaumFamilieUnten);
+    }
+    if (!nullToAbsent || lebensbaumFamilieKreis != null) {
+      map['lebensbaum_familie_kreis'] = Variable<String>(
+        lebensbaumFamilieKreis,
+      );
     }
     map['zeitleiste_kachelstufe'] = Variable<int>(zeitleisteKachelstufe);
     map['zeitleiste_form_nr'] = Variable<int>(zeitleisteFormNr);
@@ -14936,6 +15031,15 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       lebensbaumGenerationen: lebensbaumGenerationen == null && nullToAbsent
           ? const Value.absent()
           : Value(lebensbaumGenerationen),
+      lebensbaumFamilieOben: lebensbaumFamilieOben == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lebensbaumFamilieOben),
+      lebensbaumFamilieUnten: lebensbaumFamilieUnten == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lebensbaumFamilieUnten),
+      lebensbaumFamilieKreis: lebensbaumFamilieKreis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lebensbaumFamilieKreis),
       zeitleisteKachelstufe: Value(zeitleisteKachelstufe),
       zeitleisteFormNr: Value(zeitleisteFormNr),
       zeitleisteSortierungNr: Value(zeitleisteSortierungNr),
@@ -15006,6 +15110,15 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       lebensbaumGenerationen: serializer.fromJson<int?>(
         json['lebensbaumGenerationen'],
       ),
+      lebensbaumFamilieOben: serializer.fromJson<int?>(
+        json['lebensbaumFamilieOben'],
+      ),
+      lebensbaumFamilieUnten: serializer.fromJson<int?>(
+        json['lebensbaumFamilieUnten'],
+      ),
+      lebensbaumFamilieKreis: serializer.fromJson<String?>(
+        json['lebensbaumFamilieKreis'],
+      ),
       zeitleisteKachelstufe: serializer.fromJson<int>(
         json['zeitleisteKachelstufe'],
       ),
@@ -15055,6 +15168,11 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       'lebensbaumRichtung': serializer.toJson<String?>(lebensbaumRichtung),
       'lebensbaumStil': serializer.toJson<String?>(lebensbaumStil),
       'lebensbaumGenerationen': serializer.toJson<int?>(lebensbaumGenerationen),
+      'lebensbaumFamilieOben': serializer.toJson<int?>(lebensbaumFamilieOben),
+      'lebensbaumFamilieUnten': serializer.toJson<int?>(lebensbaumFamilieUnten),
+      'lebensbaumFamilieKreis': serializer.toJson<String?>(
+        lebensbaumFamilieKreis,
+      ),
       'zeitleisteKachelstufe': serializer.toJson<int>(zeitleisteKachelstufe),
       'zeitleisteFormNr': serializer.toJson<int>(zeitleisteFormNr),
       'zeitleisteSortierungNr': serializer.toJson<int>(zeitleisteSortierungNr),
@@ -15094,6 +15212,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     Value<String?> lebensbaumRichtung = const Value.absent(),
     Value<String?> lebensbaumStil = const Value.absent(),
     Value<int?> lebensbaumGenerationen = const Value.absent(),
+    Value<int?> lebensbaumFamilieOben = const Value.absent(),
+    Value<int?> lebensbaumFamilieUnten = const Value.absent(),
+    Value<String?> lebensbaumFamilieKreis = const Value.absent(),
     int? zeitleisteKachelstufe,
     int? zeitleisteFormNr,
     int? zeitleisteSortierungNr,
@@ -15156,6 +15277,15 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     lebensbaumGenerationen: lebensbaumGenerationen.present
         ? lebensbaumGenerationen.value
         : this.lebensbaumGenerationen,
+    lebensbaumFamilieOben: lebensbaumFamilieOben.present
+        ? lebensbaumFamilieOben.value
+        : this.lebensbaumFamilieOben,
+    lebensbaumFamilieUnten: lebensbaumFamilieUnten.present
+        ? lebensbaumFamilieUnten.value
+        : this.lebensbaumFamilieUnten,
+    lebensbaumFamilieKreis: lebensbaumFamilieKreis.present
+        ? lebensbaumFamilieKreis.value
+        : this.lebensbaumFamilieKreis,
     zeitleisteKachelstufe: zeitleisteKachelstufe ?? this.zeitleisteKachelstufe,
     zeitleisteFormNr: zeitleisteFormNr ?? this.zeitleisteFormNr,
     zeitleisteSortierungNr:
@@ -15246,6 +15376,15 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       lebensbaumGenerationen: data.lebensbaumGenerationen.present
           ? data.lebensbaumGenerationen.value
           : this.lebensbaumGenerationen,
+      lebensbaumFamilieOben: data.lebensbaumFamilieOben.present
+          ? data.lebensbaumFamilieOben.value
+          : this.lebensbaumFamilieOben,
+      lebensbaumFamilieUnten: data.lebensbaumFamilieUnten.present
+          ? data.lebensbaumFamilieUnten.value
+          : this.lebensbaumFamilieUnten,
+      lebensbaumFamilieKreis: data.lebensbaumFamilieKreis.present
+          ? data.lebensbaumFamilieKreis.value
+          : this.lebensbaumFamilieKreis,
       zeitleisteKachelstufe: data.zeitleisteKachelstufe.present
           ? data.zeitleisteKachelstufe.value
           : this.zeitleisteKachelstufe,
@@ -15303,6 +15442,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ..write('lebensbaumRichtung: $lebensbaumRichtung, ')
           ..write('lebensbaumStil: $lebensbaumStil, ')
           ..write('lebensbaumGenerationen: $lebensbaumGenerationen, ')
+          ..write('lebensbaumFamilieOben: $lebensbaumFamilieOben, ')
+          ..write('lebensbaumFamilieUnten: $lebensbaumFamilieUnten, ')
+          ..write('lebensbaumFamilieKreis: $lebensbaumFamilieKreis, ')
           ..write('zeitleisteKachelstufe: $zeitleisteKachelstufe, ')
           ..write('zeitleisteFormNr: $zeitleisteFormNr, ')
           ..write('zeitleisteSortierungNr: $zeitleisteSortierungNr, ')
@@ -15344,6 +15486,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     lebensbaumRichtung,
     lebensbaumStil,
     lebensbaumGenerationen,
+    lebensbaumFamilieOben,
+    lebensbaumFamilieUnten,
+    lebensbaumFamilieKreis,
     zeitleisteKachelstufe,
     zeitleisteFormNr,
     zeitleisteSortierungNr,
@@ -15384,6 +15529,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           other.lebensbaumRichtung == this.lebensbaumRichtung &&
           other.lebensbaumStil == this.lebensbaumStil &&
           other.lebensbaumGenerationen == this.lebensbaumGenerationen &&
+          other.lebensbaumFamilieOben == this.lebensbaumFamilieOben &&
+          other.lebensbaumFamilieUnten == this.lebensbaumFamilieUnten &&
+          other.lebensbaumFamilieKreis == this.lebensbaumFamilieKreis &&
           other.zeitleisteKachelstufe == this.zeitleisteKachelstufe &&
           other.zeitleisteFormNr == this.zeitleisteFormNr &&
           other.zeitleisteSortierungNr == this.zeitleisteSortierungNr &&
@@ -15422,6 +15570,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
   final Value<String?> lebensbaumRichtung;
   final Value<String?> lebensbaumStil;
   final Value<int?> lebensbaumGenerationen;
+  final Value<int?> lebensbaumFamilieOben;
+  final Value<int?> lebensbaumFamilieUnten;
+  final Value<String?> lebensbaumFamilieKreis;
   final Value<int> zeitleisteKachelstufe;
   final Value<int> zeitleisteFormNr;
   final Value<int> zeitleisteSortierungNr;
@@ -15458,6 +15609,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.lebensbaumRichtung = const Value.absent(),
     this.lebensbaumStil = const Value.absent(),
     this.lebensbaumGenerationen = const Value.absent(),
+    this.lebensbaumFamilieOben = const Value.absent(),
+    this.lebensbaumFamilieUnten = const Value.absent(),
+    this.lebensbaumFamilieKreis = const Value.absent(),
     this.zeitleisteKachelstufe = const Value.absent(),
     this.zeitleisteFormNr = const Value.absent(),
     this.zeitleisteSortierungNr = const Value.absent(),
@@ -15495,6 +15649,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.lebensbaumRichtung = const Value.absent(),
     this.lebensbaumStil = const Value.absent(),
     this.lebensbaumGenerationen = const Value.absent(),
+    this.lebensbaumFamilieOben = const Value.absent(),
+    this.lebensbaumFamilieUnten = const Value.absent(),
+    this.lebensbaumFamilieKreis = const Value.absent(),
     this.zeitleisteKachelstufe = const Value.absent(),
     this.zeitleisteFormNr = const Value.absent(),
     this.zeitleisteSortierungNr = const Value.absent(),
@@ -15532,6 +15689,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Expression<String>? lebensbaumRichtung,
     Expression<String>? lebensbaumStil,
     Expression<int>? lebensbaumGenerationen,
+    Expression<int>? lebensbaumFamilieOben,
+    Expression<int>? lebensbaumFamilieUnten,
+    Expression<String>? lebensbaumFamilieKreis,
     Expression<int>? zeitleisteKachelstufe,
     Expression<int>? zeitleisteFormNr,
     Expression<int>? zeitleisteSortierungNr,
@@ -15580,6 +15740,12 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       if (lebensbaumStil != null) 'lebensbaum_stil': lebensbaumStil,
       if (lebensbaumGenerationen != null)
         'lebensbaum_generationen': lebensbaumGenerationen,
+      if (lebensbaumFamilieOben != null)
+        'lebensbaum_familie_oben': lebensbaumFamilieOben,
+      if (lebensbaumFamilieUnten != null)
+        'lebensbaum_familie_unten': lebensbaumFamilieUnten,
+      if (lebensbaumFamilieKreis != null)
+        'lebensbaum_familie_kreis': lebensbaumFamilieKreis,
       if (zeitleisteKachelstufe != null)
         'zeitleiste_kachelstufe': zeitleisteKachelstufe,
       if (zeitleisteFormNr != null) 'zeitleiste_form_nr': zeitleisteFormNr,
@@ -15623,6 +15789,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Value<String?>? lebensbaumRichtung,
     Value<String?>? lebensbaumStil,
     Value<int?>? lebensbaumGenerationen,
+    Value<int?>? lebensbaumFamilieOben,
+    Value<int?>? lebensbaumFamilieUnten,
+    Value<String?>? lebensbaumFamilieKreis,
     Value<int>? zeitleisteKachelstufe,
     Value<int>? zeitleisteFormNr,
     Value<int>? zeitleisteSortierungNr,
@@ -15665,6 +15834,12 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       lebensbaumStil: lebensbaumStil ?? this.lebensbaumStil,
       lebensbaumGenerationen:
           lebensbaumGenerationen ?? this.lebensbaumGenerationen,
+      lebensbaumFamilieOben:
+          lebensbaumFamilieOben ?? this.lebensbaumFamilieOben,
+      lebensbaumFamilieUnten:
+          lebensbaumFamilieUnten ?? this.lebensbaumFamilieUnten,
+      lebensbaumFamilieKreis:
+          lebensbaumFamilieKreis ?? this.lebensbaumFamilieKreis,
       zeitleisteKachelstufe:
           zeitleisteKachelstufe ?? this.zeitleisteKachelstufe,
       zeitleisteFormNr: zeitleisteFormNr ?? this.zeitleisteFormNr,
@@ -15773,6 +15948,21 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
         lebensbaumGenerationen.value,
       );
     }
+    if (lebensbaumFamilieOben.present) {
+      map['lebensbaum_familie_oben'] = Variable<int>(
+        lebensbaumFamilieOben.value,
+      );
+    }
+    if (lebensbaumFamilieUnten.present) {
+      map['lebensbaum_familie_unten'] = Variable<int>(
+        lebensbaumFamilieUnten.value,
+      );
+    }
+    if (lebensbaumFamilieKreis.present) {
+      map['lebensbaum_familie_kreis'] = Variable<String>(
+        lebensbaumFamilieKreis.value,
+      );
+    }
     if (zeitleisteKachelstufe.present) {
       map['zeitleiste_kachelstufe'] = Variable<int>(
         zeitleisteKachelstufe.value,
@@ -15836,6 +16026,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
           ..write('lebensbaumRichtung: $lebensbaumRichtung, ')
           ..write('lebensbaumStil: $lebensbaumStil, ')
           ..write('lebensbaumGenerationen: $lebensbaumGenerationen, ')
+          ..write('lebensbaumFamilieOben: $lebensbaumFamilieOben, ')
+          ..write('lebensbaumFamilieUnten: $lebensbaumFamilieUnten, ')
+          ..write('lebensbaumFamilieKreis: $lebensbaumFamilieKreis, ')
           ..write('zeitleisteKachelstufe: $zeitleisteKachelstufe, ')
           ..write('zeitleisteFormNr: $zeitleisteFormNr, ')
           ..write('zeitleisteSortierungNr: $zeitleisteSortierungNr, ')
@@ -32115,6 +32308,9 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String?> lebensbaumRichtung,
       Value<String?> lebensbaumStil,
       Value<int?> lebensbaumGenerationen,
+      Value<int?> lebensbaumFamilieOben,
+      Value<int?> lebensbaumFamilieUnten,
+      Value<String?> lebensbaumFamilieKreis,
       Value<int> zeitleisteKachelstufe,
       Value<int> zeitleisteFormNr,
       Value<int> zeitleisteSortierungNr,
@@ -32153,6 +32349,9 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String?> lebensbaumRichtung,
       Value<String?> lebensbaumStil,
       Value<int?> lebensbaumGenerationen,
+      Value<int?> lebensbaumFamilieOben,
+      Value<int?> lebensbaumFamilieUnten,
+      Value<String?> lebensbaumFamilieKreis,
       Value<int> zeitleisteKachelstufe,
       Value<int> zeitleisteFormNr,
       Value<int> zeitleisteSortierungNr,
@@ -32304,6 +32503,21 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<int> get lebensbaumGenerationen => $composableBuilder(
     column: $table.lebensbaumGenerationen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lebensbaumFamilieOben => $composableBuilder(
+    column: $table.lebensbaumFamilieOben,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lebensbaumFamilieUnten => $composableBuilder(
+    column: $table.lebensbaumFamilieUnten,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lebensbaumFamilieKreis => $composableBuilder(
+    column: $table.lebensbaumFamilieKreis,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -32492,6 +32706,21 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get lebensbaumFamilieOben => $composableBuilder(
+    column: $table.lebensbaumFamilieOben,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lebensbaumFamilieUnten => $composableBuilder(
+    column: $table.lebensbaumFamilieUnten,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lebensbaumFamilieKreis => $composableBuilder(
+    column: $table.lebensbaumFamilieKreis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get zeitleisteKachelstufe => $composableBuilder(
     column: $table.zeitleisteKachelstufe,
     builder: (column) => ColumnOrderings(column),
@@ -32671,6 +32900,21 @@ class $$AppSettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get lebensbaumFamilieOben => $composableBuilder(
+    column: $table.lebensbaumFamilieOben,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lebensbaumFamilieUnten => $composableBuilder(
+    column: $table.lebensbaumFamilieUnten,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lebensbaumFamilieKreis => $composableBuilder(
+    column: $table.lebensbaumFamilieKreis,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get zeitleisteKachelstufe => $composableBuilder(
     column: $table.zeitleisteKachelstufe,
     builder: (column) => column,
@@ -32770,6 +33014,9 @@ class $$AppSettingsTableTableManager
                 Value<String?> lebensbaumRichtung = const Value.absent(),
                 Value<String?> lebensbaumStil = const Value.absent(),
                 Value<int?> lebensbaumGenerationen = const Value.absent(),
+                Value<int?> lebensbaumFamilieOben = const Value.absent(),
+                Value<int?> lebensbaumFamilieUnten = const Value.absent(),
+                Value<String?> lebensbaumFamilieKreis = const Value.absent(),
                 Value<int> zeitleisteKachelstufe = const Value.absent(),
                 Value<int> zeitleisteFormNr = const Value.absent(),
                 Value<int> zeitleisteSortierungNr = const Value.absent(),
@@ -32806,6 +33053,9 @@ class $$AppSettingsTableTableManager
                 lebensbaumRichtung: lebensbaumRichtung,
                 lebensbaumStil: lebensbaumStil,
                 lebensbaumGenerationen: lebensbaumGenerationen,
+                lebensbaumFamilieOben: lebensbaumFamilieOben,
+                lebensbaumFamilieUnten: lebensbaumFamilieUnten,
+                lebensbaumFamilieKreis: lebensbaumFamilieKreis,
                 zeitleisteKachelstufe: zeitleisteKachelstufe,
                 zeitleisteFormNr: zeitleisteFormNr,
                 zeitleisteSortierungNr: zeitleisteSortierungNr,
@@ -32844,6 +33094,9 @@ class $$AppSettingsTableTableManager
                 Value<String?> lebensbaumRichtung = const Value.absent(),
                 Value<String?> lebensbaumStil = const Value.absent(),
                 Value<int?> lebensbaumGenerationen = const Value.absent(),
+                Value<int?> lebensbaumFamilieOben = const Value.absent(),
+                Value<int?> lebensbaumFamilieUnten = const Value.absent(),
+                Value<String?> lebensbaumFamilieKreis = const Value.absent(),
                 Value<int> zeitleisteKachelstufe = const Value.absent(),
                 Value<int> zeitleisteFormNr = const Value.absent(),
                 Value<int> zeitleisteSortierungNr = const Value.absent(),
@@ -32880,6 +33133,9 @@ class $$AppSettingsTableTableManager
                 lebensbaumRichtung: lebensbaumRichtung,
                 lebensbaumStil: lebensbaumStil,
                 lebensbaumGenerationen: lebensbaumGenerationen,
+                lebensbaumFamilieOben: lebensbaumFamilieOben,
+                lebensbaumFamilieUnten: lebensbaumFamilieUnten,
+                lebensbaumFamilieKreis: lebensbaumFamilieKreis,
                 zeitleisteKachelstufe: zeitleisteKachelstufe,
                 zeitleisteFormNr: zeitleisteFormNr,
                 zeitleisteSortierungNr: zeitleisteSortierungNr,

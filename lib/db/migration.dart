@@ -1301,5 +1301,15 @@ extension Migrationsschritte on AppDatabase {
       // Leer: Bis zum ersten Lauf zählen die Karten wie bisher alles.
       await m.createTable(aufgabenlaeufe);
     }
+    if (from < 91) {
+      // Alle drei leer = der ganze Baum, wie bisher.
+      for (final (spalte, name) in [
+        (appSettings.lebensbaumFamilieOben, 'lebensbaum_familie_oben'),
+        (appSettings.lebensbaumFamilieUnten, 'lebensbaum_familie_unten'),
+        (appSettings.lebensbaumFamilieKreis, 'lebensbaum_familie_kreis'),
+      ]) {
+        await _addColumnIfMissing(m, appSettings, spalte, 'app_settings', name);
+      }
+    }
   }
 }

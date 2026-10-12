@@ -220,6 +220,49 @@ void main() {
     });
   });
 
+  group('Auswahl für den Lebensbaum', () {
+    test('die Vorgabe ist der ganze Baum, samt Familie des Schwagers', () {
+      expect(geflecht().personen, containsAll(['schwagersBruder', 'neffe']));
+    });
+
+    test('die direkte Linie lässt Geschwister und Schwägerschaft weg', () {
+      final g = geflechtUm(sippe(), 'ich', alle, kreis: Verwandtenkreis.linie);
+      expect(g.personen, {'opa', 'oma', 'vater', 'mutter', 'ich'});
+      expect(g.verschwiegen, 0, reason: 'nicht verschwiegen, nicht verlangt');
+    });
+
+    test('mit Geschwistern: samt Partnern und Kindern, ohne deren '
+        'Herkunftsfamilien', () {
+      final g = geflechtUm(
+        sippe(),
+        'ich',
+        alle,
+        kreis: Verwandtenkreis.geschwister,
+      );
+      expect(g.personen, containsAll(['anna', 'schwager', 'neffe', 'bruno']));
+      expect(
+        g.personen.intersection({
+          'schwagersVater',
+          'schwagersMutter',
+          'schwagersBruder',
+        }),
+        isEmpty,
+      );
+    });
+
+    test('die Generationen begrenzen nach oben und nach unten', () {
+      final g = geflechtUm(sippe(), 'ich', alle, oben: 1, unten: 0);
+      expect(g.personen, containsAll(['vater', 'mutter', 'anna', 'bruno']));
+      expect(g.personen, isNot(contains('opa')));
+      expect(g.personen, isNot(contains('neffe')));
+      expect(g.band.values.reduce((a, b) => a < b ? a : b), -1);
+      expect(g.band.values.reduce((a, b) => a > b ? a : b), 0);
+      // Wer oben abgeschnitten ist, trägt das Mehrzeichen: Da geht es
+      // weiter, nur nicht in diesem Bild.
+      expect(g.weitereOben['vater'], isTrue);
+    });
+  });
+
   test('zweimal gefragt, zweimal dasselbe', () {
     // Die Reihenfolge ist übergeben, also darf nichts umherspringen.
     final a = geflecht();

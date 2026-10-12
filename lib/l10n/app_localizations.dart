@@ -13015,6 +13015,42 @@ abstract class AppTexte {
   /// **'{anzahl} Generationen'**
   String lebensbaumGenerationen(int anzahl);
 
+  /// No description provided for @lebensbaumFamilieOben.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine Generation darüber} =1{1 Generation darüber} other{{anzahl} Generationen darüber}}'**
+  String lebensbaumFamilieOben(int anzahl);
+
+  /// No description provided for @lebensbaumFamilieUnten.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine Generation darunter} =1{1 Generation darunter} other{{anzahl} Generationen darunter}}'**
+  String lebensbaumFamilieUnten(int anzahl);
+
+  /// No description provided for @lebensbaumKreisLinie.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur die direkte Linie'**
+  String get lebensbaumKreisLinie;
+
+  /// No description provided for @lebensbaumKreisGeschwister.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Geschwistern'**
+  String get lebensbaumKreisGeschwister;
+
+  /// No description provided for @lebensbaumKreisAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit angeheirateten Familien'**
+  String get lebensbaumKreisAlle;
+
+  /// No description provided for @lebensbaumFamilieNichtsImAusschnitt.
+  ///
+  /// In de, this message translates to:
+  /// **'In dieser Auswahl steht niemand außer der Person in der Mitte. Wähle mehr Generationen oder einen weiteren Kreis.'**
+  String get lebensbaumFamilieNichtsImAusschnitt;
+
   /// No description provided for @lebensbaumDrucken.
   ///
   /// In de, this message translates to:

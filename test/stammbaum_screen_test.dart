@@ -890,6 +890,58 @@ void main() {
     );
   });
 
+  testWidgets('die Familie lässt sich nach Generationen und Kreis wählen', (
+    tester,
+  ) async {
+    await zeigeLebensbaum(tester, 'kind');
+    await tester.tap(find.text('Familie'));
+    await tester.pumpAndSettle();
+    for (final name in ['Vater', 'Mutter', 'Schwester', 'Opa', 'Uropa']) {
+      expect(schild(name), findsOneWidget, reason: name);
+    }
+    // Nur die gerade Linie: Die Schwester fällt weg, die Vorfahren bleiben.
+    await tester.tap(find.byType(DropdownButton<Verwandtenkreis>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nur die direkte Linie').last);
+    await tester.pumpAndSettle();
+    expect(schild('Schwester'), findsNothing);
+    expect(schild('Uropa'), findsOneWidget);
+    // Eine Generation darüber: nur noch die Eltern.
+    await tester.tap(find.text('3 Generationen darüber'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 Generation darüber').last);
+    await tester.pumpAndSettle();
+    expect(schild('Opa'), findsNothing);
+    expect(schild('Vater'), findsOneWidget);
+    // Geschrieben wird ohne Warten; vor dem Neuöffnen ankommen lassen.
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+
+    // Neu geöffnet: dieselbe Auswahl.
+    await tester.pumpWidget(const SizedBox.shrink());
+    await zeige(tester, 'kind');
+    await tester.pumpAndSettle();
+    expect(schild('Vater'), findsOneWidget);
+    expect(schild('Opa'), findsNothing);
+    expect(schild('Schwester'), findsNothing);
+  });
+
+  testWidgets('wer die Familie zu eng wählt, erfährt es', (tester) async {
+    // Und liest nicht, es seien keine Verwandten eingetragen.
+    await zeigeLebensbaum(tester, 'uropa');
+    await tester.tap(find.text('Familie'));
+    await tester.pumpAndSettle();
+    expect(schild('Kind'), findsOneWidget);
+    await tester.tap(find.text('3 Generationen darunter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Keine Generation darunter').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('niemand außer der Person in der Mitte'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('noch keine Verwandten'), findsNothing);
+  });
+
   testWidgets('ein Neuaufbau rechnet den Lebensbaum nicht neu', (tester) async {
     await zeigeLebensbaum(tester, 'kind');
     Object inhalt() =>

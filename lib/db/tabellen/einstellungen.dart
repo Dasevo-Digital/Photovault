@@ -356,6 +356,14 @@ class AppSettings extends Table {
   TextColumn get lebensbaumStil => text().nullable()();
   IntColumn get lebensbaumGenerationen => integer().nullable()();
 
+  /// Wie weit der Lebensbaum „Familie" reicht: Generationen darüber und
+  /// darunter und der Kreis der Verwandtschaft als Name aus
+  /// `Verwandtenkreis`. `null` heisst Vorgabe – so weit wie der Zierbaum,
+  /// die ganze Familie.
+  IntColumn get lebensbaumFamilieOben => integer().nullable()();
+  IntColumn get lebensbaumFamilieUnten => integer().nullable()();
+  TextColumn get lebensbaumFamilieKreis => text().nullable()();
+
   /// Wie gross die Kacheln der Zeitleiste sind – als Stufe, siehe
   /// [zeitleisteKachelstufen].
   ///

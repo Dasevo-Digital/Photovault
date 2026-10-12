@@ -8313,6 +8313,43 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String lebensbaumFamilieOben(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl generations above',
+      one: '1 generation above',
+      zero: 'No generation above',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String lebensbaumFamilieUnten(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl generations below',
+      one: '1 generation below',
+      zero: 'No generation below',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lebensbaumKreisLinie => 'Direct line only';
+
+  @override
+  String get lebensbaumKreisGeschwister => 'With siblings';
+
+  @override
+  String get lebensbaumKreisAlle => 'With in-law families';
+
+  @override
+  String get lebensbaumFamilieNichtsImAusschnitt =>
+      'This selection shows no one but the person in the middle. Choose more generations or a wider circle.';
+
+  @override
   String get lebensbaumDrucken => 'Tree of life as PDF';
 
   @override

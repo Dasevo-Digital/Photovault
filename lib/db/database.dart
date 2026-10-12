@@ -222,7 +222,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 90;
+  int get schemaVersion => 91;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

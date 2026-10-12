@@ -189,6 +189,12 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   Lebensbaumstil _lebensStil = Lebensbaumstil.pergament;
   int _lebensGenerationen = 4;
 
+  /// Wie weit der Lebensbaum „Familie" reicht – siehe [geflechtUm]. Die
+  /// Vorgabe ist so weit wie der Zierbaum.
+  int _familieOben = geflechtGenerationen;
+  int _familieUnten = geflechtGenerationen;
+  Verwandtenkreis _familieKreis = Verwandtenkreis.alle;
+
   /// Ob die Schilder Porträts tragen – wo es eines gibt.
   bool _lebensPortraits = true;
   final TransformationController _lebensBlick = TransformationController();
@@ -250,6 +256,17 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             generationen <= lebensbaumMaxGenerationen) {
           _lebensGenerationen = generationen;
         }
+        final oben = lebens.familieOben;
+        if (oben != null && oben >= 1 && oben <= geflechtGenerationen) {
+          _familieOben = oben;
+        }
+        final unten = lebens.familieUnten;
+        if (unten != null && unten >= 0 && unten <= geflechtGenerationen) {
+          _familieUnten = unten;
+        }
+        for (final k in Verwandtenkreis.values) {
+          if (k.name == lebens.familieKreis) _familieKreis = k;
+        }
         final person = zuletzt.person;
         _fokusId ??=
             widget.startPersonId ??
@@ -288,6 +305,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         richtung: _lebensRichtung.name,
         stil: _lebensStil.name,
         generationen: _lebensGenerationen,
+        familieOben: _familieOben,
+        familieUnten: _familieUnten,
+        familieKreis: _familieKreis.name,
       ),
     );
   }
@@ -1563,6 +1583,68 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
   }
 
+  /// Wie weit die Familie reicht: Generationen darüber und darunter und
+  /// der Kreis der Verwandtschaft.
+  ///
+  /// Höchstens so weit wie der Zierbaum. Nach oben mindestens eine
+  /// Generation – wer nur die Nachkommen will, hat dafür die eigene
+  /// Richtung; nach unten auch keine, für ein Bild der Herkunft.
+  List<Widget> _familienwahl(AppTexte t) {
+    void setze(VoidCallback aenderung) {
+      setState(aenderung);
+      _lebensbaumMerken();
+    }
+
+    return [
+      DropdownButton<int>(
+        value: _familieOben,
+        underline: const SizedBox.shrink(),
+        items: [
+          for (var g = 1; g <= geflechtGenerationen; g++)
+            DropdownMenuItem(value: g, child: Text(t.lebensbaumFamilieOben(g))),
+        ],
+        onChanged: (w) {
+          if (w != null) setze(() => _familieOben = w);
+        },
+      ),
+      DropdownButton<int>(
+        value: _familieUnten,
+        underline: const SizedBox.shrink(),
+        items: [
+          for (var g = 0; g <= geflechtGenerationen; g++)
+            DropdownMenuItem(
+              value: g,
+              child: Text(t.lebensbaumFamilieUnten(g)),
+            ),
+        ],
+        onChanged: (w) {
+          if (w != null) setze(() => _familieUnten = w);
+        },
+      ),
+      DropdownButton<Verwandtenkreis>(
+        value: _familieKreis,
+        underline: const SizedBox.shrink(),
+        items: [
+          for (final (kreis, name) in [
+            (Verwandtenkreis.linie, t.lebensbaumKreisLinie),
+            (Verwandtenkreis.geschwister, t.lebensbaumKreisGeschwister),
+            (Verwandtenkreis.alle, t.lebensbaumKreisAlle),
+          ])
+            DropdownMenuItem(value: kreis, child: Text(name)),
+        ],
+        onChanged: (w) {
+          if (w != null) setze(() => _familieKreis = w);
+        },
+      ),
+    ];
+  }
+
+  /// Ob die Familienwahl Verwandte ausblendet, die es gibt.
+  bool get _familieEingeschraenkt =>
+      _familieOben < geflechtGenerationen ||
+      _familieUnten < geflechtGenerationen ||
+      _familieKreis != Verwandtenkreis.alle;
+
   /// Der Lebensbaum – siehe [LebensbaumAnsicht].
   Widget _lebensbaum(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
@@ -1623,8 +1705,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               _lebensbaumMerken();
             },
           ),
-          // Die Familie reicht so weit wie der Zierbaum, nicht weiter.
-          if (_lebensRichtung != Lebensbaumrichtung.familie)
+          if (_lebensRichtung == Lebensbaumrichtung.familie)
+            ..._familienwahl(t)
+          else
             DropdownButton<int>(
               value: _lebensGenerationen,
               underline: const SizedBox.shrink(),
@@ -1679,7 +1762,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               Lebensbaumrichtung.vorfahren ||
               Lebensbaumrichtung.paar => t.lebensbaumKeineVorfahren,
               Lebensbaumrichtung.nachkommen => t.lebensbaumKeineNachkommen,
-              Lebensbaumrichtung.familie => t.lebensbaumKeineFamilie,
+              Lebensbaumrichtung.familie =>
+                _familieEingeschraenkt &&
+                        geflechtUm(_netz, fokus.id, [
+                              for (final p in _personen) p.id,
+                            ]).personen.length >
+                            1
+                    ? t.lebensbaumFamilieNichtsImAusschnitt
+                    : t.lebensbaumKeineFamilie,
             }),
           ),
         ],
@@ -1714,6 +1804,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
               // Ganzes ansieht – und erst dann hineinzoomt.
               final schluessel =
                   '${fokus.id}|$_lebensRichtung|$_lebensGenerationen|'
+                  '$_familieOben|$_familieUnten|$_familieKreis|'
                   '${inhalt.hintergrund}|'
                   '${fenster.width.round()}x${fenster.height.round()}';
               if (_lebensEingepasst != schluessel) {
@@ -1798,6 +1889,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       _lebensRichtung,
       _lebensStil,
       _lebensGenerationen,
+      _familieOben,
+      _familieUnten,
+      _familieKreis,
       // Beide vergleichen sich über ihre Identität, nicht ihren Inhalt.
       _netz,
       _personen,
@@ -1813,9 +1907,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
 
   Lebensbaumbild _lebensbaumbildRechnen(String fokus) {
     if (_lebensRichtung == Lebensbaumrichtung.familie) {
-      final geflecht = geflechtUm(_netz, fokus, [
-        for (final p in _personen) p.id,
-      ]);
+      final geflecht = geflechtUm(
+        _netz,
+        fokus,
+        [for (final p in _personen) p.id],
+        oben: _familieOben,
+        unten: _familieUnten,
+        kreis: _familieKreis,
+      );
       return familienbild(
         zierbaumplan(geflecht),
         grosseLebensbaumvorlage(_lebensStil),

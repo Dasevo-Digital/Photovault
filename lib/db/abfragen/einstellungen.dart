@@ -479,7 +479,16 @@ extension EinstellungsAbfragen on AppDatabase {
 
   /// Wie der Lebensbaum zuletzt aussah – siehe die Spalten. Alles `null`,
   /// solange niemand etwas umgestellt hat.
-  Future<({String? richtung, String? stil, int? generationen})>
+  Future<
+    ({
+      String? richtung,
+      String? stil,
+      int? generationen,
+      int? familieOben,
+      int? familieUnten,
+      String? familieKreis,
+    })
+  >
   lebensbaumZuletzt() async {
     final row = await (select(
       appSettings,
@@ -488,19 +497,36 @@ extension EinstellungsAbfragen on AppDatabase {
       richtung: row?.lebensbaumRichtung,
       stil: row?.lebensbaumStil,
       generationen: row?.lebensbaumGenerationen,
+      familieOben: row?.lebensbaumFamilieOben,
+      familieUnten: row?.lebensbaumFamilieUnten,
+      familieKreis: row?.lebensbaumFamilieKreis,
     );
   }
 
+  /// Merkt sich den Lebensbaum. Was für die Familie nicht angegeben ist,
+  /// bleibt, wie es war.
   Future<void> setzeLebensbaum({
     required String richtung,
     required String stil,
     required int generationen,
+    int? familieOben,
+    int? familieUnten,
+    String? familieKreis,
   }) => into(appSettings).insertOnConflictUpdate(
     AppSettingsCompanion.insert(
       id: const Value(0),
       lebensbaumRichtung: Value(richtung),
       lebensbaumStil: Value(stil),
       lebensbaumGenerationen: Value(generationen),
+      lebensbaumFamilieOben: familieOben == null
+          ? const Value.absent()
+          : Value(familieOben),
+      lebensbaumFamilieUnten: familieUnten == null
+          ? const Value.absent()
+          : Value(familieUnten),
+      lebensbaumFamilieKreis: familieKreis == null
+          ? const Value.absent()
+          : Value(familieKreis),
     ),
   );
 
