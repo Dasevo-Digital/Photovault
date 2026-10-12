@@ -1115,6 +1115,7 @@ mixin _Bedienfelder on _EntwickelnBasis {
   String _objektivkorrekturHinweis(AppTexte t) => switch (_korrekturstand) {
     Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
     Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
+    Objektivkorrekturstand.ausDerDatei => t.entwObjektivkorrekturAusDerDatei,
     Objektivkorrekturstand.nichtInDatenbank =>
       t.entwObjektivkorrekturUnbekanntesObjektiv,
     Objektivkorrekturstand.nichtLesbar => t.entwObjektivkorrekturNichtLesbar,

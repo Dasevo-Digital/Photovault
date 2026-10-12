@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show compute, visibleForTesting;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
+import '../objektivkorrektur.dart';
 import '../raw_identify_parser.dart';
 import '../standort_parser.dart';
 
@@ -321,10 +322,17 @@ class DesktopImageTools {
   /// und die TIFF-Ausgabe trägt kein Profil dazu. Weite Farben ohne Profil
   /// sind schlechter als enge mit – sie werden als sRGB gelesen und sehen
   /// dann falsch aus, statt nur blass.
+  ///
+  /// **Objektivkorrektur.** Mit [objektivkorrektur] (Vorgabe) wird eine
+  /// Sony-ARW nach den Korrekturdaten entzerrt, die die Kamera in die
+  /// Datei schreibt (objektivkorrektur.dart) – wie CIRAWFilter es unter
+  /// macOS tut, dort für Vorschauen immer und beim Entwickeln nach dem
+  /// Schalter.
   static Future<Uint8List?> convertToJpeg(
     File datei, {
     int maxDimension = 2048,
     int quality = 90,
+    bool objektivkorrektur = true,
   }) async {
     final endung = p.extension(datei.path).toLowerCase();
 
@@ -332,6 +340,7 @@ class DesktopImageTools {
     try {
       temp = await Directory.systemTemp.createTemp('pv_convert_');
       final ziel = p.join(temp.path, 'out.jpg');
+      String? korrekturQuelle;
 
       if (libheifEndungen.contains(endung)) {
         final werkzeug = await aufruf('heif-dec');
@@ -366,6 +375,7 @@ class DesktopImageTools {
         final tiff = '$kopie.tiff';
         if (!await File(tiff).exists()) return null;
         await File(tiff).rename(ziel);
+        if (objektivkorrektur && endung == '.arw') korrekturQuelle = kopie;
       }
 
       final rohBytes = await File(ziel).readAsBytes();
@@ -373,7 +383,12 @@ class DesktopImageTools {
       // abgeschlossen und ein Fehler im Isolate entkäme der Fehlerbehandlung.
       return await compute(
         _skaliereUndKodiere,
-        _SkalierAuftrag(rohBytes, maxDimension, quality),
+        _SkalierAuftrag(
+          rohBytes,
+          maxDimension,
+          quality,
+          korrekturQuelle: korrekturQuelle,
+        ),
       );
     } catch (_) {
       return null;
@@ -598,7 +613,15 @@ class _SkalierAuftrag {
   final Uint8List bytes;
   final int maxDimension;
   final int quality;
-  const _SkalierAuftrag(this.bytes, this.maxDimension, this.quality);
+
+  /// Die RAW-Datei, deren Korrekturdaten angewendet werden, oder `null`.
+  final String? korrekturQuelle;
+  const _SkalierAuftrag(
+    this.bytes,
+    this.maxDimension,
+    this.quality, {
+    this.korrekturQuelle,
+  });
 }
 
 /// Top-Level-Funktion für `compute()` – verkleinert auf die längste Kante
@@ -615,5 +638,15 @@ Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
           interpolation: img.Interpolation.average,
         )
       : bild;
-  return Uint8List.fromList(img.encodeJpg(fertig, quality: a.quality));
+  // Nach dem Verkleinern entzerren: Die Kurve hängt am Radius in halben
+  // Diagonalen, nicht an Pixeln, und so rechnet es ein Bruchteil der
+  // Punkte.
+  final quelle = a.korrekturQuelle;
+  final verzeichnung = quelle == null
+      ? null
+      : leseSonyVerzeichnung(File(quelle).readAsBytesSync());
+  final ausgabe = verzeichnung == null
+      ? fertig
+      : entzerre(fertig, verzeichnung);
+  return Uint8List.fromList(img.encodeJpg(ausgabe, quality: a.quality));
 }

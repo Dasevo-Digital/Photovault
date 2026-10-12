@@ -7099,6 +7099,12 @@ abstract class AppTexte {
   /// **'Für diese Kamera gibt es kein Profil. Bei ProRAW-Aufnahmen ist das kein Mangel – die Korrektur steckt schon in der Datei.'**
   String get entwObjektivkorrekturUnbekanntesObjektiv;
 
+  /// No description provided for @entwObjektivkorrekturAusDerDatei.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Kamera hat ihre Korrekturdaten in die Datei geschrieben: Die Verzeichnung wird danach korrigiert.'**
+  String get entwObjektivkorrekturAusDerDatei;
+
   /// No description provided for @entwObjektivkorrekturNichtLesbar.
   ///
   /// In de, this message translates to:

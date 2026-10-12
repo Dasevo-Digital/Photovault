@@ -4245,6 +4245,10 @@ class AppTexteEn extends AppTexte {
       'There is no profile for this camera. With ProRAW that is no loss – the correction is already baked into the file.';
 
   @override
+  String get entwObjektivkorrekturAusDerDatei =>
+      'The camera wrote its correction data into the file: distortion is corrected from it.';
+
+  @override
   String get entwObjektivkorrekturNichtLesbar =>
       'The RAW data in this file cannot be opened. The other sliders therefore only affect the embedded preview.';
 

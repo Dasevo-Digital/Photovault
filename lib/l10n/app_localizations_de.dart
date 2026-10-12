@@ -4275,6 +4275,10 @@ class AppTexteDe extends AppTexte {
       'Für diese Kamera gibt es kein Profil. Bei ProRAW-Aufnahmen ist das kein Mangel – die Korrektur steckt schon in der Datei.';
 
   @override
+  String get entwObjektivkorrekturAusDerDatei =>
+      'Die Kamera hat ihre Korrekturdaten in die Datei geschrieben: Die Verzeichnung wird danach korrigiert.';
+
+  @override
   String get entwObjektivkorrekturNichtLesbar =>
       'Die RAW-Daten dieser Datei lassen sich nicht öffnen. Auch die übrigen Regler wirken deshalb nur auf die eingebettete Vorschau.';
 

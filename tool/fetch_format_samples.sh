@@ -28,6 +28,10 @@ PROBEN=(
   # package:exif liest dort NULL Tags. Eine DNG-Probe kann das nicht
   # abdecken - DNG ist TIFF-basiert und funktionierte immer.
   "canon_eos_r10.cr3|https://raw.pixls.us/getfile.php/5871/nice/Canon%20-%20EOS%20R10%20-%203%3A2.CR3|5d2e076d38e7835d4c4f13dc2030a913cc573a31d7199b60777d23a25ccc3ef9"
+  # Sony schreibt seine Verzeichnungskorrektur in die Datei
+  # (DistortionCorrParams); objektivkorrektur.dart liest sie unter Linux
+  # und Windows. Sigma 30 mm, tonnenförmig.
+  "sony_ilce6300.arw|https://raw.pixls.us/data/Sony/ILCE-6300/AST05226.ARW|d96dc154ed8811d52548dab52d32f9e25a654b574ce702325fae47c86e2a624a"
 )
 
 pruefsumme() {

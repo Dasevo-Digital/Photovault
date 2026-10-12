@@ -21,6 +21,7 @@ void main() {
   String hinweis(AppTexte t, Objektivkorrekturstand stand) => switch (stand) {
     Objektivkorrekturstand.keinRaw => t.entwObjektivkorrekturKeinRaw,
     Objektivkorrekturstand.verfuegbar => t.entwObjektivkorrekturVerfuegbar,
+    Objektivkorrekturstand.ausDerDatei => t.entwObjektivkorrekturAusDerDatei,
     Objektivkorrekturstand.nichtInDatenbank =>
       t.entwObjektivkorrekturUnbekanntesObjektiv,
     Objektivkorrekturstand.nichtLesbar => t.entwObjektivkorrekturNichtLesbar,
@@ -54,6 +55,7 @@ void main() {
     };
 
     expect(bedienbar(Objektivkorrekturstand.verfuegbar), isTrue);
+    expect(bedienbar(Objektivkorrekturstand.ausDerDatei), isTrue);
     expect(bedienbar(Objektivkorrekturstand.unbekannt), isTrue);
     expect(bedienbar(Objektivkorrekturstand.keinRaw), isFalse);
     expect(bedienbar(Objektivkorrekturstand.nichtInDatenbank), isFalse);
@@ -63,10 +65,17 @@ void main() {
   test('ohne nativen Kanal bleibt es beim allgemeinen Hinweis', () async {
     // In der Testumgebung gibt es keinen MethodChannel – die Abfrage muss
     // dann „unbekannt" liefern und nicht etwa fälschlich „kein RAW".
+    // Unter Linux und Windows entscheidet die Datei selbst: eine DNG
+    // trägt keine Sony-Korrekturdaten (objektivkorrektur_sony_test.dart).
     TestWidgetsFlutterBinding.ensureInitialized();
     final stand = await NativeImageConverter.lensCorrectionStatus(
       File('/gibt/es/nicht.dng'),
     );
-    expect(stand, Objektivkorrekturstand.unbekannt);
+    expect(
+      stand,
+      Platform.isMacOS
+          ? Objektivkorrekturstand.unbekannt
+          : Objektivkorrekturstand.nichtInDatenbank,
+    );
   });
 }

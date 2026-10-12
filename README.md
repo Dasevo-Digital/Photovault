@@ -572,7 +572,10 @@ echter Hardware.
   gezielte Korrekturen) werden als Verlauf gespeichert, das Original bleibt
   unverändert; jeder Schritt lässt sich zurückverfolgen. Ausserhalb von
   macOS rechnet derselbe Fragment-Shader, der auch die Live-Vorschau
-  zeichnet, das gespeicherte Ergebnis
+  zeichnet, das gespeicherte Ergebnis. Die Objektivkorrektur greift dort
+  bei Sony-RAW, nach den Korrekturdaten, die die Kamera in die Datei
+  schreibt (`lib/services/objektivkorrektur.dart`); eine
+  Objektivdatenbank wie die von Apple gibt es dort nicht
 - **Tonwertkurve** – Punktkurve mit den Kanälen RGB, R, G und B; Punkte per
   Ziehen setzen und verschieben, langes Drücken entfernt sie. Monotone
   Interpolation nach Fritsch–Carlson, damit die Kurve zwischen zwei Punkten

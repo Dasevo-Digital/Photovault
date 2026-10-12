@@ -1430,6 +1430,7 @@
   "entwObjektivkorrekturKeinRaw": "Not a RAW file – the camera has already corrected distortion and vignetting.",
   "entwObjektivkorrekturVerfuegbar": "Camera and lens are known: distortion and vignetting are corrected.",
   "entwObjektivkorrekturUnbekanntesObjektiv": "There is no profile for this camera. With ProRAW that is no loss – the correction is already baked into the file.",
+  "entwObjektivkorrekturAusDerDatei": "The camera wrote its correction data into the file: distortion is corrected from it.",
   "entwObjektivkorrekturNichtLesbar": "The RAW data in this file cannot be opened. The other sliders therefore only affect the embedded preview.",
   "einstSuche": "Search settings",
   "einstNichtsGefunden": "No setting matches that search.",

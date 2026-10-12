@@ -222,6 +222,56 @@ void main() {
           ? 'RAW-Vorlage fehlt (nicht im Repository, siehe oben)'
           : null,
     );
+
+    /// Sony schreibt seine Verzeichnungskorrektur in die Datei; unter
+    /// macOS wendet CIRAWFilter sie an, hier objektivkorrektur.dart.
+    final sony = File(
+      p.join('test', 'fixtures', 'samples', 'sony_ilce6300.arw'),
+    );
+
+    test(
+      'eine Sony-ARW wird nach den Daten der Kamera entzerrt',
+      () async {
+        if (await hole('dcraw_emu') == null) return;
+        final quelle = File(p.join(temp.path, 'sony.arw'))
+          ..writeAsBytesSync(sony.readAsBytesSync());
+
+        final uhr = Stopwatch()..start();
+        final mit = img.decodeImage(
+          (await DesktopImageTools.convertToJpeg(quelle, maxDimension: 1500))!,
+        )!;
+        final dauerMit = uhr.elapsedMilliseconds;
+        uhr.reset();
+        final ohne = img.decodeImage(
+          (await DesktopImageTools.convertToJpeg(
+            quelle,
+            maxDimension: 1500,
+            objektivkorrektur: false,
+          ))!,
+        )!;
+        final dauerOhne = uhr.elapsedMilliseconds;
+        // ignore: avoid_print
+        print('Sony 1500 px: mit Korrektur $dauerMit ms, ohne $dauerOhne ms');
+
+        expect([mit.width, mit.height], [ohne.width, ohne.height]);
+        var summe = 0.0;
+        var n = 0;
+        for (var y = 20; y < mit.height - 20; y += 4) {
+          for (var x = 20; x < mit.width - 20; x += 4) {
+            summe +=
+                (mit.getPixel(x, y).luminance - ohne.getPixel(x, y).luminance)
+                    .abs();
+            n++;
+          }
+        }
+        // Gegen CIRAWFilter gemessen lagen ohne Korrektur 12 Stufen
+        // zwischen beiden Bildern (siehe objektivkorrektur.dart).
+        expect(summe / n, greaterThan(4), reason: 'nichts entzerrt');
+      },
+      skip: !sony.existsSync()
+          ? 'Sony-Vorlage fehlt – tool/fetch_format_samples.sh'
+          : null,
+    );
   });
 
   group('Video', () {

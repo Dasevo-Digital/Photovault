@@ -87,7 +87,11 @@ class DevelopRender {
     ui.Image? basis;
     final aufraeumen = <ui.Image>[];
     try {
-      basis = await _ladeBild(datei, maxDimension);
+      basis = await _ladeBild(
+        datei,
+        maxDimension,
+        objektivkorrektur: adjustments.lensCorrectionEnabled,
+      );
       if (basis == null) return null;
 
       final ergebnis = await _zeichne(
@@ -131,12 +135,17 @@ class DevelopRender {
   ///
   /// HEIC und RAW kann Flutter selbst nicht dekodieren; dafür ist derselbe
   /// Weg zuständig, der auch die Vorschaubilder erzeugt.
-  static Future<ui.Image?> _ladeBild(File datei, int maxDimension) async {
+  static Future<ui.Image?> _ladeBild(
+    File datei,
+    int maxDimension, {
+    required bool objektivkorrektur,
+  }) async {
     Uint8List? bytes;
     if (heicAndRawExtensions.contains(p.extension(datei.path).toLowerCase())) {
       bytes = await NativeImageConverter.convertToJpegBytes(
         datei,
         maxDimension: maxDimension,
+        objektivkorrektur: objektivkorrektur,
       );
     } else {
       bytes = await datei.readAsBytes();

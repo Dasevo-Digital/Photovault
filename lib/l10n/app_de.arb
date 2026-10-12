@@ -2413,6 +2413,7 @@
   "entwObjektivkorrekturKeinRaw": "Kein RAW – die Kamera hat Verzeichnung und Vignettierung bereits korrigiert.",
   "entwObjektivkorrekturVerfuegbar": "Kamera und Objektiv sind bekannt: Verzeichnung und Vignettierung werden korrigiert.",
   "entwObjektivkorrekturUnbekanntesObjektiv": "Für diese Kamera gibt es kein Profil. Bei ProRAW-Aufnahmen ist das kein Mangel – die Korrektur steckt schon in der Datei.",
+  "entwObjektivkorrekturAusDerDatei": "Die Kamera hat ihre Korrekturdaten in die Datei geschrieben: Die Verzeichnung wird danach korrigiert.",
   "entwObjektivkorrekturNichtLesbar": "Die RAW-Daten dieser Datei lassen sich nicht öffnen. Auch die übrigen Regler wirken deshalb nur auf die eingebettete Vorschau.",
   "einstSuche": "Suche nach Einstellungen",
   "einstNichtsGefunden": "Keine Einstellung passt zu dieser Suche.",

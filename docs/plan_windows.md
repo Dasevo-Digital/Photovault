@@ -202,7 +202,11 @@ Diese Punkte haben dort Zeit gekostet und sind hier vorhersehbar:
   es aber überwiegend nur für x64. Erst nach x64 sinnvoll.
 * **Die Objektivkorrektur.** Sie hängt auf macOS an `CIRAWFilter`; unter
   Linux fehlt sie ebenso. LibRaw kann sie nicht ersetzen, ohne eine
-  eigene Objektivdatenbank mitzubringen.
+  eigene Objektivdatenbank mitzubringen. *Nachtrag (#5, Oktober 2026):*
+  Gemessen korrigiert CIRAWFilter weder Canon-CR3 mit RF-S-Objektiv noch
+  Apples ProRAW, wohl aber Sony-RAW – und Sony legt die Korrektur selbst
+  in die Datei. Linux und Windows lesen sie dort
+  (`lib/services/objektivkorrektur.dart`).
 * **Zeitschätzungen.** Ohne einen ersten echten Bau wären sie geraten –
   dieselbe Zurückhaltung wie im Linux-Plan.
 

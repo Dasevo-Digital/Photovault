@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show compute, visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
@@ -8,6 +9,7 @@ import 'cube_lut.dart';
 import 'develop_color.dart';
 import 'develop_render.dart';
 import 'exif_camera.dart';
+import 'objektivkorrektur.dart';
 import 'platform/desktop_image_tools.dart';
 import 'textstellen.dart';
 import 'raw_identify_parser.dart';
@@ -83,6 +85,10 @@ enum Objektivkorrekturstand {
   /// Die RAW-Daten lassen sich gar nicht öffnen. Dann greift auch der Rest
   /// der RAW-Entwicklung nicht.
   nichtLesbar,
+
+  /// Linux, Windows: Die Kamera hat ihre Korrekturdaten in die Datei
+  /// geschrieben (Sony), danach wird entzerrt – siehe objektivkorrektur.dart.
+  ausDerDatei,
 
   /// Kein nativer Kanal (Linux, Windows) oder die Abfrage schlug fehl.
   unbekannt,
@@ -163,9 +169,8 @@ class NativeImageConverter {
   /// Korrektur steckt bereits in der Datei –, bei einer nicht lesbaren
   /// RAW-Datei dagegen schon.
   static Future<Objektivkorrekturstand> lensCorrectionStatus(File file) async {
-    if (_ueberWerkzeuge || !await isSupported()) {
-      return Objektivkorrekturstand.unbekannt;
-    }
+    if (_ueberWerkzeuge) return _objektivkorrekturOhneKanal(file);
+    if (!await isSupported()) return Objektivkorrekturstand.unbekannt;
     try {
       final antwort = await _channel.invokeMethod<String>(
         'lensCorrectionStatus',
@@ -183,6 +188,26 @@ class NativeImageConverter {
     } on MissingPluginException {
       return Objektivkorrekturstand.unbekannt;
     }
+  }
+
+  /// Der Stand unter Linux und Windows: Korrigiert wird nur nach den Daten,
+  /// die Sony-Kameras in die Datei schreiben (objektivkorrektur.dart).
+  /// Eine Objektivdatenbank gibt es dort nicht.
+  @visibleForTesting
+  static Future<Objektivkorrekturstand> objektivkorrekturOhneKanal(File file) =>
+      _objektivkorrekturOhneKanal(file);
+
+  static Future<Objektivkorrekturstand> _objektivkorrekturOhneKanal(
+    File file,
+  ) async {
+    final endung = p.extension(file.path).toLowerCase();
+    if (!rawImageExtensions.contains(endung)) {
+      return Objektivkorrekturstand.keinRaw;
+    }
+    if (endung == '.arw' && await compute(_traegtSonyKorrektur, file.path)) {
+      return Objektivkorrekturstand.ausDerDatei;
+    }
+    return Objektivkorrekturstand.nichtInDatenbank;
   }
 
   /// Welche Endungen überhaupt eine Tiefenkarte tragen können.
@@ -370,6 +395,7 @@ class NativeImageConverter {
     File file, {
     int? maxDimension = 2048,
     double quality = 0.9,
+    bool objektivkorrektur = true,
   }) async {
     final grenze = maxDimension ?? _ohneBegrenzung;
     if (_ueberWerkzeuge) {
@@ -377,6 +403,7 @@ class NativeImageConverter {
         file,
         maxDimension: grenze,
         quality: (quality * 100).round(),
+        objektivkorrektur: objektivkorrektur,
       );
     }
     if (!await isSupported()) return null;
@@ -715,4 +742,12 @@ class MaskAdjustmentLayer {
     'path': maskFilePath,
     ...adjustments.toChannelMap(),
   };
+}
+
+bool _traegtSonyKorrektur(String pfad) {
+  try {
+    return leseSonyVerzeichnung(File(pfad).readAsBytesSync()) != null;
+  } catch (_) {
+    return false;
+  }
 }
