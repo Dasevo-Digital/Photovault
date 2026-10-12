@@ -6,4 +6,5 @@ export 'src/api.dart' show baueApi, protokollFassung;
 export 'src/bibliothek.dart' show Bibliothek;
 export 'src/einstellungen.dart' show Einstellungen;
 export 'src/hochladen.dart' show Hochladen;
+export 'src/onnx_ffi.dart' show FfiOnnxPlattform;
 export 'src/zugang.dart' show Zugang;
