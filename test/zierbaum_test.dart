@@ -320,6 +320,182 @@ void main() {
     expect(p.schilder.single.links, greaterThanOrEqualTo(0));
   });
 
+  group('symmetrisch um den Stamm', () {
+    /// Ohne Partner: Vater und Mutter in einem Haus, beide mit Eltern
+    /// und Geschwistern. Die Mutterseite ist absichtlich grösser.
+    Verwandtschaftsnetz zweiSeiten() => Verwandtschaftsnetz([
+      partnerKanteFuer('vater', 'mutter'),
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('ich', 'mutter', Verwandtschaft.elternteil),
+      kante('vater', 'vatersVater', Verwandtschaft.elternteil),
+      kante('onkel', 'vatersVater', Verwandtschaft.elternteil),
+      kante('mutter', 'muttersMutter', Verwandtschaft.elternteil),
+      for (final t in ['tante1', 'tante2', 'tante3'])
+        kante(t, 'muttersMutter', Verwandtschaft.elternteil),
+    ]);
+    const reihe = [
+      'vatersVater',
+      'muttersMutter',
+      'vater',
+      'mutter',
+      'onkel',
+      'tante1',
+      'tante2',
+      'tante3',
+      'ich',
+    ];
+
+    test('ohne Partner: Vaterseite links, Mutterseite rechts', () {
+      // Bisher teilte sich der Baum nur bei einem Paar in der Mitte. Ohne
+      // Partner stand alles, wohin die Nachbarn es schoben, und der Stamm
+      // rückte weit an den Rand.
+      final p = zierbaumplan(geflechtUm(zweiSeiten(), 'ich', reihe));
+      final ich = schild(p, 'ich').mitteX;
+      for (final person in ['vatersVater', 'onkel']) {
+        expect(schild(p, person).mitteX, lessThan(ich), reason: person);
+      }
+      for (final person in ['muttersMutter', 'tante1', 'tante2', 'tante3']) {
+        expect(schild(p, person).mitteX, greaterThan(ich), reason: person);
+      }
+    });
+
+    test('die Eltern stehen senkrecht über der Person in der Mitte', () {
+      final p = zierbaumplan(geflechtUm(zweiSeiten(), 'ich', reihe));
+      final eltern =
+          (schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2;
+      expect(eltern, closeTo(schild(p, 'ich').mitteX, 0.001));
+    });
+
+    test('der Stamm steht in der Mitte des Bildes', () {
+      // Auch wenn eine Seite drei Tanten trägt und die andere einen
+      // Onkel: Die Fläche reicht nach beiden Seiten gleich weit.
+      for (final p in [
+        zierbaumplan(geflechtUm(zweiSeiten(), 'ich', reihe)),
+        plan(),
+        plan('anna'),
+      ]) {
+        expect(p.stammX, closeTo(p.breite / 2, 0.001));
+        for (final s in p.schilder) {
+          expect(s.links, greaterThanOrEqualTo(0));
+          expect(s.rechts, lessThanOrEqualTo(p.breite));
+        }
+      }
+    });
+
+    test('ein Partner ohne Familie teilt den Baum nicht', () {
+      // Sonst stünde die ganze eigene Familie rechts und links nichts.
+      final netz = Verwandtschaftsnetz([
+        ...[
+          for (final k in [
+            partnerKanteFuer('vater', 'mutter'),
+            kante('ich', 'vater', Verwandtschaft.elternteil),
+            kante('ich', 'mutter', Verwandtschaft.elternteil),
+            kante('vater', 'vatersVater', Verwandtschaft.elternteil),
+            kante('mutter', 'muttersMutter', Verwandtschaft.elternteil),
+          ])
+            k,
+        ],
+        partnerKanteFuer('ich', 'partner'),
+      ]);
+      final p = zierbaumplan(
+        geflechtUm(netz, 'ich', [
+          'vatersVater',
+          'muttersMutter',
+          'vater',
+          'mutter',
+          'partner',
+          'ich',
+        ]),
+      );
+      final ich = schild(p, 'ich').mitteX;
+      final eltern =
+          (schild(p, 'vater').mitteX + schild(p, 'mutter').mitteX) / 2;
+      expect(eltern, closeTo(ich, 0.001), reason: 'die Eltern über mir');
+      expect(schild(p, 'vatersVater').mitteX, lessThan(ich));
+      expect(schild(p, 'muttersMutter').mitteX, greaterThan(ich));
+    });
+
+    test('das Kind der Mitte bleibt unter ihr, auch neben einer grossen '
+        'Familie', () {
+      // Ein Geschwister mit vielen Kindern schob das einzige Kind der
+      // Person in der Mitte weit zur Seite, weil jedes Haus gleich viel
+      // zählte.
+      final netz = Verwandtschaftsnetz([
+        kante('ich', 'mutter', Verwandtschaft.elternteil),
+        kante('bruder', 'mutter', Verwandtschaft.elternteil),
+        kante('kind', 'ich', Verwandtschaft.elternteil),
+        for (var i = 0; i < 6; i++)
+          kante('neffe$i', 'bruder', Verwandtschaft.elternteil),
+      ]);
+      final p = zierbaumplan(
+        geflechtUm(netz, 'ich', [
+          'mutter',
+          'bruder',
+          'ich',
+          for (var i = 0; i < 6; i++) 'neffe$i',
+          'kind',
+        ]),
+      );
+      // Ganz genau nicht: Die Mitte hält mit hundertfachem Gewicht, die
+      // Häuser daneben schieben sie um wenige Punkte.
+      expect(
+        schild(p, 'kind').mitteX,
+        closeTo(
+          schild(p, 'ich').mitteX,
+          const Zierbaummasse().schildBreite * 0.1,
+        ),
+      );
+      expect(schild(p, 'mutter').mitteX, closeTo(schild(p, 'ich').mitteX, 1));
+      for (var i = 0; i < 6; i++) {
+        expect(
+          schild(p, 'neffe$i').mitteX,
+          lessThan(schild(p, 'kind').mitteX),
+          reason: 'die Neffen stehen auf der Seite ihres Vaters',
+        );
+      }
+    });
+
+    test('links vom Stamm steht der Angeheiratete aussen', () {
+      // Gespiegelt wie rechts: Sonst stünde die Schwägerin zwischen dem
+      // Bruder und der Mitte, und ihre Eltern über dem Bruder.
+      final netz = Verwandtschaftsnetz([
+        partnerKanteFuer('vater', 'mutter'),
+        kante('ich', 'vater', Verwandtschaft.elternteil),
+        kante('ich', 'mutter', Verwandtschaft.elternteil),
+        kante('bruder', 'vater', Verwandtschaft.elternteil),
+        kante('bruder', 'mutter', Verwandtschaft.elternteil),
+        kante('schwester', 'vater', Verwandtschaft.elternteil),
+        kante('schwester', 'mutter', Verwandtschaft.elternteil),
+        partnerKanteFuer('bruder', 'schwaegerin'),
+        partnerKanteFuer('schwester', 'schwager'),
+      ]);
+      final p = zierbaumplan(
+        geflechtUm(netz, 'ich', [
+          'vater',
+          'mutter',
+          'bruder',
+          'schwaegerin',
+          'ich',
+          'schwester',
+          'schwager',
+        ]),
+      );
+      final ich = schild(p, 'ich').mitteX;
+      final links = schild(p, 'bruder').mitteX < ich ? 'bruder' : 'schwester';
+      final rechts = links == 'bruder' ? 'schwester' : 'bruder';
+      final partnerVon = {'bruder': 'schwaegerin', 'schwester': 'schwager'};
+      expect(schild(p, rechts).mitteX, greaterThan(ich));
+      expect(
+        schild(p, partnerVon[links]!).mitteX,
+        lessThan(schild(p, links).mitteX),
+      );
+      expect(
+        schild(p, partnerVon[rechts]!).mitteX,
+        greaterThan(schild(p, rechts).mitteX),
+      );
+    });
+  });
+
   group('das Nachfuehren', () {
     test('wer nach draussen gebunden ist, rueckt nach draussen', () {
       // Der Fund beim Hinsehen: Ein einziger Durchgang von der Mitte
@@ -329,21 +505,23 @@ void main() {
       //
       // Was sich dadurch aendert, ist die REIHENFOLGE im Band: Annas
       // Haushalt traegt den Schwager und damit dessen ganze Familie mit
-      // - er gehoert an deren Seite. Bruno hat keine Bindung nach
-      // draussen und gehoert zwischen seine Geschwister. Ohne das
-      // Nachfuehren stand es genau andersherum, und Annas Ast kreuzte
-      // den von Bruno.
+      // - die steht ausserhalb von Anna, nicht zwischen ihr und der
+      // Mitte. Bruno hat keine Bindung nach draussen und steht auf der
+      // anderen Seite. Ohne das Nachfuehren stand es genau andersherum,
+      // und Annas Ast kreuzte den von Bruno.
       final p = plan();
       final ich = schild(p, 'ich').mitteX;
       final bruno = schild(p, 'bruno').mitteX;
       final anna = schild(p, 'anna').mitteX;
+      final schwager = schild(p, 'schwager').mitteX;
       final schwiegerfamilie = schild(p, 'schwagersBruder').mitteX;
 
       expect(
         schwiegerfamilie,
-        lessThan(anna),
-        reason: 'die angeheiratete Familie bleibt ein eigener Seitenzweig',
+        greaterThan(schwager),
+        reason: 'die angeheiratete Familie steht aussen',
       );
+      expect(schwager, greaterThan(anna), reason: 'der Schwager aussen');
       expect(bruno, lessThan(ich));
       expect(
         anna,

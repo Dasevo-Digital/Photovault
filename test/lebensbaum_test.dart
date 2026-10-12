@@ -477,6 +477,10 @@ void main() {
           expect(x('schwager'), greaterThan(x('schw')));
         }
         expect(y('neffe'), greaterThan(y('schw')));
+        // Die Person in der Mitte steht über dem gemalten Stamm, auch
+        // wenn ihre Seite mehr trägt als die des Partners. Vorher stand
+        // dort die Mitte aller Schilder.
+        expect(x('ich'), closeTo(stamm, 0.5));
         expect(
           bild.personBei(
             bild.plaetze

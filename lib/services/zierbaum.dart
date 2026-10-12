@@ -331,6 +331,17 @@ class Schildmasse {
 ///
 /// [geflecht] kommt aus [geflechtUm]. Das Ergebnis ist vollständig
 /// bestimmt: dieselbe Familie ergibt zweimal dieselben Zahlen.
+///
+/// **Symmetrisch um den Stamm.** Der Baum teilt sich an einer Stelle in
+/// eine linke und eine rechte Familie (siehe [_aufteilung]): beim Paar in
+/// der Mitte zwischen den beiden Partnern, sonst bei den Eltern zwischen
+/// Vater- und Mutterseite. Was darunter liegt, steht senkrecht über dem
+/// Stamm – die Person in der Mitte und ihre Eltern, solange sie nur eine
+/// Linie haben. Die Geschwister verteilen sich auf beide Seiten, und die
+/// Fläche reicht nach links und rechts gleich weit. Vorher teilte sich der
+/// Baum nur bei einem Paar; ohne Partner stand alles, wohin die Wünsche
+/// der Nachbarn es schoben, und der Stamm einer kleinen Familie rückte an
+/// den Rand einer grossen.
 Zierbaumplan zierbaumplan(
   Stammbaumgeflecht geflecht, {
   Zierbaummasse masse = const Zierbaummasse(),
@@ -349,195 +360,167 @@ Zierbaumplan zierbaumplan(
     );
   }
 
-  // Haushalt -> gewünschte Mitte. Erst das Band der Mitte, dann nach
-  // aussen: Jedes weitere Band richtet sich an dem aus, das schon steht.
-  final mitte = <String, double>{};
-
-  /// Setzt ein Band auf die Wünsche und schiebt Überschneidungen
-  /// auseinander.
-  ///
-  /// Der Sortierschlüssel ist der Wunsch, nicht die Reihenfolge im
-  /// Bestand: Sonst müsste der Schub Häuser umeinander herumtragen, und
-  /// die Kanten kreuzten sich mehr als nötig. Bei gleichem Wunsch
-  /// entscheidet die Reihenfolge – ohne sie sprängen zwei Haushalte bei
-  /// jedem Aufbau umeinander.
   final fokusHaus = geflecht.haushaltVon(geflecht.fokus)!;
-  final seiten = _seitenVomFokus(geflecht, fokusHaus);
-
-  int seiteVon(Haushalt haushalt) => seiten[haushalt.id] ?? 0;
-
-  void setze(
-    List<Haushalt> haushalte,
-    Map<String, double> wunsch, {
-    bool fokusFixiert = false,
-  }) {
-    if (haushalte.isEmpty) return;
-    final ordnung = [...haushalte]
-      ..sort((a, b) {
-        final w = (wunsch[a.id] ?? 0).compareTo(wunsch[b.id] ?? 0);
-        if (w != 0) return w;
-        return geflecht.haushalte
-            .indexOf(a)
-            .compareTo(geflecht.haushalte.indexOf(b));
-      });
-
-    // Das mittlere Band ist der optische Anker des ganzen Baums. Die
-    // frühere links-nach-rechts-Auflösung gab allen Haushalten x=0 und
-    // schob den Fokus je nach Datenreihenfolge an einen Rand. Hier steht
-    // er wirklich in der Mitte; weitere Haushalte wachsen abwechselnd und
-    // ohne Überschneidung nach links und rechts.
-    if (fokusFixiert) {
-      mitte[fokusHaus.id] = 0;
-      var linkeKante =
-          masse.haushaltBreite(fokusHaus.personen.length) / 2 +
-          masse.haushaltLuecke;
-      var rechteKante = linkeKante;
-
-      // Der Paarhaushalt in der Mitte hat zwei Aussenseiten: Die eigene
-      // Herkunftsfamilie gehört zur Seite des Fokus, die des Partners auf
-      // die andere. Ein abwechselnder Schub sah zwar ausgeglichen aus,
-      // trennte aber etwa Schwester und Schwager von ihren Eltern.
-      final links = [
-        for (final h in ordnung)
-          if (h.id != fokusHaus.id && seiteVon(h) < 0) h,
-      ];
-      final rechts = [
-        for (final h in ordnung)
-          if (h.id != fokusHaus.id && seiteVon(h) > 0) h,
-      ];
-      final frei = [
-        for (final h in ordnung)
-          if (h.id != fokusHaus.id && seiteVon(h) == 0) h,
-      ];
-
-      // Von innen nach aussen setzen. Links wird rückwärts durchlaufen,
-      // damit die Reihenfolge innerhalb einer Familienseite stabil bleibt.
-      for (final h in links.reversed) {
-        final halb = masse.haushaltBreite(h.personen.length) / 2;
-        mitte[h.id] = -(linkeKante + halb);
-        linkeKante += halb * 2 + masse.haushaltLuecke;
-      }
-      for (final h in rechts) {
-        final halb = masse.haushaltBreite(h.personen.length) / 2;
-        mitte[h.id] = rechteKante + halb;
-        rechteKante += halb * 2 + masse.haushaltLuecke;
-      }
-
-      // Nicht zur eigenen oder Partnerlinie gehörende Äste bleiben
-      // ausgewogen; sie dürfen keine der beiden Familienseiten umdrehen.
-      for (final h in frei) {
-        final halb = masse.haushaltBreite(h.personen.length) / 2;
-        if (linkeKante <= rechteKante) {
-          mitte[h.id] = -(linkeKante + halb);
-          linkeKante += halb * 2 + masse.haushaltLuecke;
-        } else {
-          mitte[h.id] = rechteKante + halb;
-          rechteKante += halb * 2 + masse.haushaltLuecke;
-        }
-      }
-      return;
-    }
-
-    // Links nach rechts, jeder mindestens eine Lücke hinter dem Vorigen.
-    var grenze = double.negativeInfinity;
-    final gesetzt = <String, double>{};
-    for (final h in ordnung) {
-      final halb = masse.haushaltBreite(h.personen.length) / 2;
-      final mitteOhneSeitenwechsel = halb + masse.haushaltLuecke / 2;
-      final gewuenscht = switch (seiteVon(h)) {
-        < 0 => math.min(wunsch[h.id] ?? 0, -mitteOhneSeitenwechsel),
-        > 0 => math.max(wunsch[h.id] ?? 0, mitteOhneSeitenwechsel),
-        _ => wunsch[h.id] ?? 0,
-      };
-      final x = math.max(gewuenscht, grenze + halb);
-      gesetzt[h.id] = x;
-      grenze = x + halb + masse.haushaltLuecke;
-    }
-
-    // Der Schub oben drückt alles nach rechts. Das ganze Band wieder auf
-    // den Schwerpunkt der Wünsche zurückziehen, sonst wandert jedes
-    // weitere Band ein Stück weiter fort und der Baum steht schief.
-    var summeWunsch = 0.0;
-    var summeGesetzt = 0.0;
-    for (final h in ordnung) {
-      final halb = masse.haushaltBreite(h.personen.length) / 2;
-      final mitteOhneSeitenwechsel = halb + masse.haushaltLuecke / 2;
-      summeWunsch += switch (seiteVon(h)) {
-        < 0 => math.min(wunsch[h.id] ?? 0, -mitteOhneSeitenwechsel),
-        > 0 => math.max(wunsch[h.id] ?? 0, mitteOhneSeitenwechsel),
-        _ => wunsch[h.id] ?? 0,
-      };
-      summeGesetzt += gesetzt[h.id]!;
-    }
-    final idealerVersatz = (summeWunsch - summeGesetzt) / ordnung.length;
-    var untereGrenze = double.negativeInfinity;
-    var obereGrenze = double.infinity;
-    for (final h in ordnung) {
-      final halb = masse.haushaltBreite(h.personen.length) / 2;
-      final mitteOhneSeitenwechsel = halb + masse.haushaltLuecke / 2;
-      switch (seiteVon(h)) {
-        case < 0:
-          obereGrenze = math.min(
-            obereGrenze,
-            -mitteOhneSeitenwechsel - gesetzt[h.id]!,
-          );
-        case > 0:
-          untereGrenze = math.max(
-            untereGrenze,
-            mitteOhneSeitenwechsel - gesetzt[h.id]!,
-          );
-      }
-    }
-    final versatz = math.max(
-      untereGrenze,
-      math.min(obereGrenze, idealerVersatz),
-    );
-    for (final e in gesetzt.entries) {
-      mitte[e.key] = e.value + versatz;
+  final hausVon = <String, Haushalt>{
+    for (final h in geflecht.haushalte)
+      for (final person in h.personen) person: h,
+  };
+  final rang = {for (final (i, h) in geflecht.haushalte.indexed) h.id: i};
+  final kinderVon = <String, List<String>>{};
+  for (final e in geflecht.elternhaeuserVon.entries) {
+    for (final haus in e.value) {
+      kinderVon.putIfAbsent(haus, () => []).add(e.key);
     }
   }
 
-  // Das Band der Mitte zuerst, dicht an dicht in der Reihenfolge des
-  // Baums. Alle wünschen sich dieselbe Stelle; der Schub darunter macht
-  // daraus eine Reihe. Feste Schrittweiten wären hier falsch – ein
-  // Haushalt mit Partner ist doppelt so breit wie einer ohne.
-  final bandNull = geflecht.imBand(geflecht.band[fokusHaus.id]!);
-  setze(bandNull, {for (final h in bandNull) h.id: 0.0}, fokusFixiert: true);
-
-  /// Der Schwerpunkt der schon gesetzten Nachbarn eines Haushalts.
+  /// Die Bewohner, wie sie nebeneinander stehen.
   ///
-  /// Nachbarn sind beide Richtungen: die Kinder eines Elternhauses und
-  /// die Elternhäuser eines Kinderhaushalts. Wer keine hat – eine
-  /// angeheiratete Familie, von der nur die Eltern bekannt sind –, bleibt
-  /// bei null und landet damit in der Mitte, statt an den Rand zu
-  /// rutschen.
-  double schwerpunkt(Haushalt h) {
+  /// Im Haus der Mitte steht die Person in der Mitte rechts, der Stamm
+  /// wächst unter ihr. Links vom Stamm ist jeder Haushalt gespiegelt: Dort
+  /// steht der Verwandte innen und der Angeheiratete aussen, genau wie
+  /// rechts – sonst stünde der Schwager zwischen der Schwester und ihren
+  /// Eltern, und sein Ast liefe quer über ihren.
+  List<String> folge(Haushalt h, Map<String, int> seiten) {
+    if (h.id == fokusHaus.id && h.personen.length > 1) {
+      return [
+        ...h.personen.where((person) => person != geflecht.fokus),
+        geflecht.fokus,
+      ];
+    }
+    if ((seiten[h.id] ?? 0) < 0) return h.personen.reversed.toList();
+    return h.personen;
+  }
+
+  final aufteilung = _aufteilung(
+    geflecht,
+    fokusHaus,
+    hausVon: hausVon,
+    kinderVon: kinderVon,
+    rang: rang,
+    folge: (h) => folge(h, const {}),
+  );
+  final seiten = aufteilung.seiten;
+  int seiteVon(String hausId) => seiten[hausId] ?? 0;
+  final folgeVon = {for (final h in geflecht.haushalte) h.id: folge(h, seiten)};
+
+  /// Wo ein Bewohner steht, gemessen von der Mitte seines Haushalts.
+  double versatzIm(String hausId, String person) {
+    final f = folgeVon[hausId]!;
+    return -masse.haushaltBreite(f.length) / 2 +
+        f.indexOf(person) * (masse.schildBreite + masse.partnerLuecke) +
+        masse.schildBreite / 2;
+  }
+
+  // Die Achse steht fest: jedes Haus genau über dem Bewohner darunter,
+  // dessen Eltern es sind.
+  final fest = <String, double>{fokusHaus.id: 0};
+  for (final (:haus, :ueber) in aufteilung.achse) {
+    final darunter = hausVon[ueber]!.id;
+    fest[haus] = fest[darunter]! + versatzIm(darunter, ueber);
+  }
+  final trennHaus = aufteilung.trennHaus;
+  final trennPerson = aufteilung.trennPerson;
+  final trennX = trennHaus == null
+      ? 0.0
+      : fest[trennHaus]! +
+            (trennPerson == null ? 0 : versatzIm(trennHaus, trennPerson));
+
+  // Haushalt -> Mitte.
+  final mitte = <String, double>{};
+
+  /// Wo ein Haushalt nach seinen schon gesetzten Nachbarn stehen möchte.
+  ///
+  /// Je **Person** gerechnet, nicht je Haushalt: Die Eltern des Schwagers
+  /// gehören über den Schwager, nicht über die Mitte des Hauses, in dem
+  /// er mit der Schwester wohnt. Sonst entscheidet bei zwei Elternhäusern
+  /// über einem Paar nur die Reihenfolge im Bestand, welches links steht,
+  /// und die Äste kreuzen sich.
+  double? wunschFuer(Haushalt h) {
     final werte = <double>[];
     for (final person in h.personen) {
       for (final elternhaus in geflecht.elternhaeuserVon[person] ?? const []) {
-        if (mitte.containsKey(elternhaus)) werte.add(mitte[elternhaus]!);
+        final x = mitte[elternhaus];
+        if (x != null) werte.add(x - versatzIm(h.id, person));
       }
     }
-    for (final e in geflecht.elternhaeuserVon.entries) {
-      if (!e.value.contains(h.id)) continue;
-      final kindHaus = geflecht.haushaltVon(e.key);
-      if (kindHaus != null && mitte.containsKey(kindHaus.id)) {
-        werte.add(mitte[kindHaus.id]!);
-      }
+    for (final kind in kinderVon[h.id] ?? const <String>[]) {
+      final kindHaus = hausVon[kind]!.id;
+      final x = mitte[kindHaus];
+      if (x != null) werte.add(x + versatzIm(kindHaus, kind));
     }
-    if (werte.isEmpty) return 0;
+    if (werte.isEmpty) return null;
     return werte.reduce((a, b) => a + b) / werte.length;
   }
 
-  // Nach oben, dann nach unten – immer vom schon gesetzten Band aus.
+  /// Setzt ein Band: links, Mitte, rechts, innerhalb der Seiten nach
+  /// Wunsch, und so nah an den Wünschen, wie es ohne Überschneidung geht.
+  ///
+  /// Der Sortierschlüssel ist innerhalb einer Seite der Wunsch, nicht die
+  /// Reihenfolge im Bestand: Sonst kreuzten sich die Kanten mehr als
+  /// nötig. Bei gleichem Wunsch entscheidet die Reihenfolge – ohne sie
+  /// sprängen zwei Haushalte bei jedem Aufbau umeinander.
+  void setze(List<Haushalt> haushalte) {
+    if (haushalte.isEmpty) return;
+    final wunsch = {
+      for (final h in haushalte) h.id: fest[h.id] ?? wunschFuer(h) ?? trennX,
+    };
+    final ordnung = [...haushalte]
+      ..sort((a, b) {
+        final s = seiteVon(a.id).compareTo(seiteVon(b.id));
+        if (s != 0) return s;
+        final w = wunsch[a.id]!.compareTo(wunsch[b.id]!);
+        if (w != 0) return w;
+        return rang[a.id]!.compareTo(rang[b.id]!);
+      });
+    // Steht ein Haus der Achse im Band, hält schon die Reihenfolge die
+    // Seiten auseinander. Sonst die Trennlinie: Kein Haus der linken
+    // Familie rückt über sie hinweg nach rechts und umgekehrt.
+    final mitAchse = ordnung.any((h) => fest.containsKey(h.id));
+    final halb = [
+      for (final h in ordnung) masse.haushaltBreite(h.personen.length) / 2,
+    ];
+    final unten = <double>[];
+    final oben = <double>[];
+    for (final (i, h) in ordnung.indexed) {
+      final f = fest[h.id];
+      var u = double.negativeInfinity;
+      var o = double.infinity;
+      if (f != null) {
+        u = f;
+        o = f;
+      } else if (!mitAchse) {
+        final seite = seiteVon(h.id);
+        if (seite < 0) o = trennX - masse.haushaltLuecke / 2 - halb[i];
+        if (seite > 0) u = trennX + masse.haushaltLuecke / 2 + halb[i];
+      }
+      unten.add(u);
+      oben.add(o);
+    }
+    final xs = _reihe(
+      wunsch: [for (final h in ordnung) wunsch[h.id]!],
+      // Die Mitte hält, die Seiten weichen: Ein Kind unter der Person in
+      // der Mitte wurde sonst von einer kinderreichen Familie daneben weit
+      // zur Seite gezogen, weil jedes Haus gleich viel zählte.
+      gewicht: [for (final h in ordnung) seiteVon(h.id) == 0 ? 100.0 : 1.0],
+      halb: halb,
+      unten: unten,
+      oben: oben,
+      luecke: masse.haushaltLuecke,
+    );
+    for (final (i, h) in ordnung.indexed) {
+      mitte[h.id] = xs[i];
+    }
+  }
+
+  // Das Band der Mitte zuerst, dann nach aussen: Jedes weitere Band
+  // richtet sich an dem aus, das schon steht.
   final nullBand = geflecht.band[fokusHaus.id]!;
+  setze(geflecht.imBand(nullBand));
   for (final b in baender.where((b) => b < nullBand).toList().reversed) {
-    final haushalte = geflecht.imBand(b);
-    setze(haushalte, {for (final h in haushalte) h.id: schwerpunkt(h)});
+    setze(geflecht.imBand(b));
   }
   for (final b in baender.where((b) => b > nullBand)) {
-    final haushalte = geflecht.imBand(b);
-    setze(haushalte, {for (final h in haushalte) h.id: schwerpunkt(h)});
+    setze(geflecht.imBand(b));
   }
 
   // **Und jetzt zurück.** Ein einziger Durchgang von der Mitte nach
@@ -554,10 +537,20 @@ Zierbaumplan zierbaumplan(
         ? baender
         : baender.reversed.toList();
     for (final b in reihenfolgeDerBaender) {
-      final haushalte = geflecht.imBand(b);
-      setze(haushalte, {
-        for (final h in haushalte) h.id: schwerpunkt(h),
-      }, fokusFixiert: haushalte.any((h) => h.id == fokusHaus.id));
+      setze(geflecht.imBand(b));
+    }
+  }
+
+  // Unter der Mitte gilt dieselbe Regel wie links vom Stamm: Ein Kind
+  // mit Partner, das links vom Stamm steht, steht innen und sein Partner
+  // aussen. Erst nach dem Setzen entscheidbar – vorher weiss niemand, auf
+  // welcher Seite des Stammes es landet.
+  final stammImHaus = versatzIm(fokusHaus.id, geflecht.fokus);
+  for (final h in geflecht.haushalte) {
+    if (seiteVon(h.id) != 0 || h.personen.length < 2) continue;
+    if (geflecht.band[h.id]! <= nullBand) continue;
+    if (mitte[h.id]! < stammImHaus) {
+      folgeVon[h.id] = h.personen.reversed.toList();
     }
   }
 
@@ -574,13 +567,7 @@ Zierbaumplan zierbaumplan(
     var x = mitte[h.id]! - gesamt / 2;
     final y = bandY(b);
     Schild? voriges;
-    final personen = h.id == fokusHaus.id && h.personen.length > 1
-        ? [
-            ...h.personen.where((person) => person != geflecht.fokus),
-            geflecht.fokus,
-          ]
-        : h.personen;
-    for (final person in personen) {
+    for (final person in folgeVon[h.id]!) {
       final s = Schild(
         personId: person,
         haushaltId: h.id,
@@ -635,11 +622,16 @@ Zierbaumplan zierbaumplan(
     }
   }
 
-  // Alles in den sichtbaren Bereich schieben.
+  // Alles in den sichtbaren Bereich schieben – und zwar so, dass links
+  // und rechts vom Stamm gleich viel Fläche liegt. Hat eine Seite mehr
+  // Verwandte, bleibt auf der anderen Grund stehen; der Stamm steht in
+  // der Mitte des Bildes, auf dem Bildschirm wie auf der Tafel.
+  final stamm = nachId[geflecht.fokus]?.mitteX ?? 0;
   final minX = schilder.map((s) => s.links).reduce(math.min);
   final maxX = schilder.map((s) => s.rechts).reduce(math.max);
   final maxY = schilder.map((s) => s.unten).reduce(math.max);
-  final versatzX = masse.rand - minX;
+  final halbeBreite = math.max(stamm - minX, maxX - stamm);
+  final versatzX = masse.rand + halbeBreite - stamm;
 
   Schild verschoben(Schild s) => Schild(
     personId: s.personId,
@@ -667,79 +659,288 @@ Zierbaumplan zierbaumplan(
       for (final p in partnerbaender)
         Partnerband(p.vonX + versatzX, p.nachX + versatzX, p.y + masse.rand),
     ],
-    breite: maxX - minX + 2 * masse.rand,
+    breite: 2 * halbeBreite + 2 * masse.rand,
     hoehe: maxY + masse.rand + masse.randUnten,
-    stammX: (nachId[geflecht.fokus]?.mitteX ?? 0) + versatzX,
+    stammX: stamm + versatzX,
   );
 }
 
-/// Ordnet jeden Ast der Herkunftsseite des Fokus oder der Partnerseite zu.
+/// Setzt Haushalte in fester Reihenfolge auf eine Linie: jeden so nah an
+/// seinem Wunsch, wie es die Lücken zu den Nachbarn und seine Grenzen
+/// erlauben.
 ///
-/// Ein Paar in der Mitte ist die einzige Stelle, an der zwei Familienlinien
-/// zusammentreffen. Vom Fokus aus geht seine Herkunftsfamilie nach rechts,
-/// die des Partners nach links. Die Zuordnung läuft danach entlang der
-/// Eltern-Kind-Verbindungen weiter: Geschwister mit ihren Partnern bleiben
-/// bei der Fokusfamilie, Geschwister des Partners bei dessen Familie.
-/// Der Paarhaushalt selbst wird nicht erneut durchlaufen, damit die beiden
-/// Linien nicht wieder zusammenfallen.
-Map<String, int> _seitenVomFokus(
+/// Das ist eine Ausgleichsrechnung mit Reihenfolge (Pool Adjacent
+/// Violators): Rechnet man die Mindestabstände heraus, müssen die Plätze
+/// nur noch aufsteigen. Wer seinen Nachbarn überholen will, wird mit ihm
+/// zu einem Block, und der Block steht am gewichteten Mittel der Wünsche. Der frühere
+/// Schub nach rechts mit anschliessendem Zurückziehen kam auf dasselbe,
+/// solange niemand eine Grenze hatte; mit Grenzen stand ein Band danach
+/// schief.
+List<double> _reihe({
+  required List<double> wunsch,
+  required List<double> gewicht,
+  required List<double> halb,
+  required List<double> unten,
+  required List<double> oben,
+  required double luecke,
+}) {
+  final n = wunsch.length;
+  final versatz = List<double>.filled(n, 0);
+  for (var i = 1; i < n; i++) {
+    versatz[i] = versatz[i - 1] + halb[i - 1] + luecke + halb[i];
+  }
+  final bloecke = <_Block>[];
+  for (var i = 0; i < n; i++) {
+    var block = _Block(
+      bis: i,
+      summe: (wunsch[i] - versatz[i]) * gewicht[i],
+      anzahl: gewicht[i],
+      unten: unten[i] - versatz[i],
+      oben: oben[i] - versatz[i],
+    );
+    while (bloecke.isNotEmpty && bloecke.last.wert > block.wert) {
+      block = bloecke.removeLast().mit(block);
+    }
+    bloecke.add(block);
+  }
+  final ergebnis = List<double>.filled(n, 0);
+  var von = 0;
+  for (final block in bloecke) {
+    for (var i = von; i <= block.bis; i++) {
+      ergebnis[i] = block.wert + versatz[i];
+    }
+    von = block.bis + 1;
+  }
+  return ergebnis;
+}
+
+class _Block {
+  final int bis;
+  final double summe;
+  final double anzahl;
+  final double unten;
+  final double oben;
+
+  const _Block({
+    required this.bis,
+    required this.summe,
+    required this.anzahl,
+    required this.unten,
+    required this.oben,
+  });
+
+  /// Das Mittel der Wünsche, in die Grenzen gerückt. Widersprechen sich
+  /// die Grenzen, gewinnt die untere – überlappen darf trotzdem nichts.
+  double get wert => math.max(unten, math.min(oben, summe / anzahl));
+
+  _Block mit(_Block rechts) => _Block(
+    bis: rechts.bis,
+    summe: summe + rechts.summe,
+    anzahl: anzahl + rechts.anzahl,
+    unten: math.max(unten, rechts.unten),
+    oben: math.min(oben, rechts.oben),
+  );
+}
+
+/// Wie sich der Baum auf links und rechts verteilt.
+class _Aufteilung {
+  /// Haushalt -> -1 (links) oder 1 (rechts). Wer fehlt, steht in der
+  /// Mitte: das Haus der Person in der Mitte, die Achse darüber und alle
+  /// Nachkommen darunter.
+  final Map<String, int> seiten;
+
+  /// Die Häuser senkrecht über der Mitte, von unten nach oben – je mit
+  /// der Person im Haus darunter, deren Eltern sie sind.
+  final List<({String haus, String ueber})> achse;
+
+  /// Wo sich links und rechts trennen: in einem Haus der Achse zwischen
+  /// seinen Bewohnern oder, wenn [trennPerson] gesetzt ist, zwischen den
+  /// getrennt lebenden Eltern dieser Person. `null`, wenn sich nichts
+  /// trennt – dann stehen auch keine zwei Familien nebeneinander.
+  final String? trennHaus;
+  final String? trennPerson;
+
+  const _Aufteilung({
+    required this.seiten,
+    required this.achse,
+    required this.trennHaus,
+    required this.trennPerson,
+  });
+}
+
+/// Teilt den Baum in eine linke und eine rechte Familie.
+///
+/// Von der Person in der Mitte aus nach oben, bis zur ersten Stelle, an
+/// der zwei Familienlinien zusammentreffen:
+///
+/// - **Ein Paar, bei dem beide Eltern im Bild haben.** Die Familie des
+///   Partners geht nach links, die eigene nach rechts – in der Reihenfolge,
+///   in der die beiden nebeneinander stehen.
+/// - **Getrennt lebende Eltern.** Das erste Elternhaus links, das zweite
+///   rechts.
+/// - **Eltern in einem Haus.** Ihr Haus steht über dem Kind, und die
+///   Teilung rückt eine Generation höher: die Eltern des Vaters links, die
+///   der Mutter rechts.
+///
+/// Die Zuordnung läuft danach entlang der Eltern-Kind-Verbindungen weiter:
+/// Geschwister mit ihren Partnern bleiben bei der Familie, aus der sie
+/// stammen; ihre Schwiegerfamilien bei ihnen. Die Häuser der Achse werden
+/// dabei nicht durchlaufen, sonst fielen die beiden Linien wieder
+/// zusammen.
+///
+/// Die Geschwister an der Achse – die der Person in der Mitte, wenn ihre
+/// Eltern über ihr stehen – gehören zu beiden Seiten. Sie werden so
+/// verteilt, dass beide Seiten ungefähr gleich viel tragen: das schwerste
+/// zuerst auf die leichtere Seite, bei Gleichstand die älteren links.
+_Aufteilung _aufteilung(
   Stammbaumgeflecht geflecht,
-  Haushalt fokusHaus,
-) {
+  Haushalt fokusHaus, {
+  required Map<String, Haushalt> hausVon,
+  required Map<String, List<String>> kinderVon,
+  required Map<String, int> rang,
+  required List<String> Function(Haushalt h) folge,
+}) {
   const links = -1;
   const rechts = 1;
-  final seiten = <String, int>{fokusHaus.id: 0};
-  final partner = fokusHaus.personen
-      .where((person) => person != geflecht.fokus)
-      .toList();
+  final hausNachId = {for (final h in geflecht.haushalte) h.id: h};
+  final seiten = <String, int>{};
+  final achse = <({String haus, String ueber})>[];
+  final aufAchse = <String>{fokusHaus.id};
+  String? trennHaus;
+  String? trennPerson;
 
-  // Ohne Partner gibt es keine Paarmitte und damit auch keine natürliche
-  // linke oder rechte Familienseite. Der allein gezeigte Fokus bleibt
-  // deshalb mittig, seine Geschwister wie bisher ausgewogen verteilt.
-  if (partner.isEmpty) return seiten;
-
-  final wartend = <String>[];
-
-  void merke(String hausId, int seite) {
-    if (hausId == fokusHaus.id || seiten.containsKey(hausId)) return;
-    seiten[hausId] = seite;
-    wartend.add(hausId);
-  }
-
-  // Die Eltern des Fokus bilden seine Seite. Die Eltern jedes Partners
-  // bilden die Gegenrichtung; die Karten im Paarhaushalt werden unten in
-  // genau dieser Reihenfolge gezeichnet.
-  for (final haus in geflecht.elternhaeuserVon[geflecht.fokus] ?? const []) {
-    merke(haus, rechts);
-  }
-  for (final person in partner) {
-    for (final haus in geflecht.elternhaeuserVon[person] ?? const []) {
-      merke(haus, links);
+  /// Die Häuser, die von [hausId] aus erreichbar sind: die Eltern jedes
+  /// Bewohners und die Kinder des Hauses.
+  Iterable<String> nachbarn(String hausId) sync* {
+    for (final person in hausNachId[hausId]!.personen) {
+      yield* geflecht.elternhaeuserVon[person] ?? const <String>[];
+    }
+    for (final kind in kinderVon[hausId] ?? const <String>[]) {
+      yield hausVon[kind]!.id;
     }
   }
 
-  while (wartend.isNotEmpty) {
-    final hausId = wartend.removeLast();
-    final seite = seiten[hausId]!;
-    final haus = geflecht.haushalte.firstWhere((h) => h.id == hausId);
-
-    // Von einem Haushalt zu den Eltern jedes Bewohners.
-    for (final person in haus.personen) {
-      for (final elternhaus in geflecht.elternhaeuserVon[person] ?? const []) {
-        merke(elternhaus, seite);
+  void verteile(String start, int seite) {
+    if (aufAchse.contains(start) || seiten.containsKey(start)) return;
+    seiten[start] = seite;
+    final wartend = [start];
+    while (wartend.isNotEmpty) {
+      for (final n in nachbarn(wartend.removeLast())) {
+        if (aufAchse.contains(n) || seiten.containsKey(n)) continue;
+        seiten[n] = seite;
+        wartend.add(n);
       }
     }
-
-    // Und zu allen im Bild stehenden Kindern dieses Haushalts. Das führt
-    // etwa von den Eltern des Fokus zu dessen Schwester samt Schwager.
-    for (final eintrag in geflecht.elternhaeuserVon.entries) {
-      if (!eintrag.value.contains(hausId)) continue;
-      final kindHaus = geflecht.haushaltVon(eintrag.key);
-      if (kindHaus != null) merke(kindHaus.id, seite);
-    }
   }
 
-  return seiten;
+  var haus = fokusHaus;
+  while (true) {
+    final mitEltern = [
+      for (final person in folge(haus))
+        if ((geflecht.elternhaeuserVon[person] ?? const []).isNotEmpty) person,
+    ];
+    if (mitEltern.isEmpty) break;
+    if (mitEltern.length > 1) {
+      trennHaus = haus.id;
+      final aufLinks = <String>[];
+      final aufRechts = <String>[];
+      for (final (i, person) in mitEltern.indexed) {
+        (i < mitEltern.length / 2 ? aufLinks : aufRechts).addAll(
+          geflecht.elternhaeuserVon[person]!,
+        );
+      }
+      for (final h in aufLinks) {
+        verteile(h, links);
+      }
+      for (final h in aufRechts) {
+        verteile(h, rechts);
+      }
+      break;
+    }
+    final person = mitEltern.single;
+    final elternhaeuser = geflecht.elternhaeuserVon[person]!;
+    if (elternhaeuser.length > 1) {
+      trennHaus = haus.id;
+      trennPerson = person;
+      for (final (i, h) in elternhaeuser.indexed) {
+        verteile(h, i == 0 ? links : rechts);
+      }
+      break;
+    }
+    final oben = elternhaeuser.single;
+    if (aufAchse.contains(oben)) break;
+    achse.add((haus: oben, ueber: person));
+    aufAchse.add(oben);
+    haus = hausNachId[oben]!;
+  }
+
+  // Die Geschwister an der Achse: die übrigen Kinder jedes Hauses über
+  // ihr. Die Kinder des Hauses in der Mitte sind keine – sie hängen als
+  // Nachkommen mittig darunter.
+  final geschwister = <({String haus, String neben})>[];
+  for (final (:haus, :ueber) in achse) {
+    for (final kind in kinderVon[haus] ?? const <String>[]) {
+      final kindHaus = hausVon[kind]!.id;
+      if (aufAchse.contains(kindHaus) || seiten.containsKey(kindHaus)) {
+        continue;
+      }
+      if (geschwister.any((g) => g.haus == kindHaus)) continue;
+      geschwister.add((haus: kindHaus, neben: hausVon[ueber]!.id));
+    }
+  }
+  if (geschwister.isEmpty) {
+    return _Aufteilung(
+      seiten: seiten,
+      achse: achse,
+      trennHaus: trennHaus,
+      trennPerson: trennPerson,
+    );
+  }
+
+  // Wie viel jedes Geschwister mitbringt: alles, was von ihm aus
+  // erreichbar und noch keiner Seite zugeordnet ist.
+  final frei = {for (final g in geschwister) g.haus};
+  int gewicht(String start) {
+    final gesehen = {start};
+    final wartend = [start];
+    while (wartend.isNotEmpty) {
+      for (final n in nachbarn(wartend.removeLast())) {
+        if (aufAchse.contains(n) || seiten.containsKey(n)) continue;
+        if (frei.contains(n) && n != start) continue;
+        if (gesehen.add(n)) wartend.add(n);
+      }
+    }
+    return gesehen.length;
+  }
+
+  final gewichte = {for (final g in geschwister) g.haus: gewicht(g.haus)};
+  final summe = {links: 0, rechts: 0};
+  for (final h in seiten.entries) {
+    summe[h.value] = summe[h.value]! + 1;
+  }
+  final reihe = [...geschwister]
+    ..sort((a, b) {
+      final w = gewichte[b.haus]!.compareTo(gewichte[a.haus]!);
+      if (w != 0) return w;
+      return rang[a.haus]!.compareTo(rang[b.haus]!);
+    });
+  for (final g in reihe) {
+    final int seite;
+    if (summe[links]! != summe[rechts]!) {
+      seite = summe[links]! < summe[rechts]! ? links : rechts;
+    } else {
+      seite = rang[g.haus]! < rang[g.neben]! ? links : rechts;
+    }
+    verteile(g.haus, seite);
+    summe[seite] = summe[seite]! + gewichte[g.haus]!;
+  }
+
+  return _Aufteilung(
+    seiten: seiten,
+    achse: achse,
+    trennHaus: trennHaus,
+    trennPerson: trennPerson,
+  );
 }
 
 bool _gleich<T>(List<T> a, List<T> b) {

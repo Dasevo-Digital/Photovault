@@ -141,35 +141,17 @@ Lebensbaumbild familienbild(
   final baender = {for (final s in plan.schilder) s.band}.toList()..sort();
   final links = plan.schilder.map((s) => s.links).reduce(math.min);
   final rechts = plan.schilder.map((s) => s.rechts).reduce(math.max);
-  final mitte = (links + rechts) / 2;
-  final massstab = krone.width / math.max(rechts - links, 1);
+  // **Um den Stamm, nicht um die Mitte der Schilder.** Die Person in der
+  // Mitte gehört über den gemalten Stamm, auch wenn eine Seite mehr
+  // Verwandte trägt. Vorher stand sie dort, wo die grössere Familie sie
+  // hinschob, und der Stamm trug einen Onkel.
+  final mitte = plan.stammX;
+  final halbeBreite = math.max(mitte - links, rechts - mitte);
+  final massstab = krone.width / math.max(2 * halbeBreite, 1);
 
-  // **Wer abstammt, steht innen.** Im Zierbaum steht in jedem Haushalt
-  // der Verwandte links und der Angeheiratete rechts daneben. Links vom
-  // Stamm hiesse das: der Angeheiratete zwischen dem Verwandten und dem
-  // Stamm. Dort werden die Plätze im Haushalt deshalb gespiegelt – aber
-  // nur unterhalb der Person in der Mitte. Ab ihrer Generation aufwärts
-  // stehen über einem Angeheirateten seine eigenen Eltern, und gespiegelt
-  // stünde er nicht mehr unter ihnen.
-  final xVon = <String, double>{};
-  final haushalte = <String, List<Schild>>{};
-  for (final s in plan.schilder) {
-    (haushalte[s.haushaltId] ??= []).add(s);
-  }
-  for (final bewohner in haushalte.values) {
-    final plaetze = [for (final s in bewohner) s.mitteX]..sort();
-    final mitteHaushalt = (plaetze.first + plaetze.last) / 2;
-    final gespiegelt =
-        bewohner.length > 1 &&
-        bewohner.first.band > 0 &&
-        mitteHaushalt < plan.stammX;
-    final folge = [...bewohner]..sort((a, b) => a.mitteX.compareTo(b.mitteX));
-    for (final (i, s) in folge.indexed) {
-      xVon[s.personId] = gespiegelt
-          ? plaetze[plaetze.length - 1 - i]
-          : s.mitteX;
-    }
-  }
+  // Wer abstammt, steht innen und der Angeheiratete aussen – das ordnet
+  // der Zierbaum schon selbst (siehe `zierbaumplan`).
+  final xVon = {for (final s in plan.schilder) s.personId: s.mitteX};
   // Die Lücke zwischen zwei Partnern ist die engste im Plan; ein Teil
   // davon darf das Schild breiter machen – die gemalten Schilder haben
   // ohnehin einen Rand, der wie Abstand wirkt.
