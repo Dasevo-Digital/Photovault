@@ -80,6 +80,19 @@ class DesktopImageTools {
   /// weil ImageIO AVIF selbst kann.
   static const libheifEndungen = {'.heic', '.heif', '.avif', '.avifs'};
 
+  /// Was Dart selbst dekodiert und deshalb kein Werkzeug braucht.
+  static const dartEndungen = {
+    '.jpg',
+    '.jpeg',
+    '.jpe',
+    '.png',
+    '.webp',
+    '.gif',
+    '.bmp',
+    '.tif',
+    '.tiff',
+  };
+
   /// Liest Kamera, Objektiv, Aufnahmewerte und Aufnahmezeitpunkt aus einer
   /// RAW-Datei über `raw-identify` (LibRaw).
   ///
@@ -335,6 +348,30 @@ class DesktopImageTools {
     bool objektivkorrektur = true,
   }) async {
     final endung = p.extension(datei.path).toLowerCase();
+
+    // **Was Dart lesen kann, braucht kein Werkzeug.** Bis hierher ging
+    // alles ausser HEIF an dcraw_emu – das ist für RAW gebaut und lehnt
+    // ein JPEG oder PNG ab. Die Wandlung lieferte dafür unter Linux und
+    // Windows nichts: Der Export in kleinerer Grösse kopierte das
+    // Original, der Datenschutzexport brach bei jedem gewöhnlichen Foto
+    // ab. Steckt hinter der Endung etwas anderes, versuchen es danach die
+    // Werkzeuge.
+    if (dartEndungen.contains(endung)) {
+      try {
+        final direkt = await compute(
+          _skaliereUndKodiere,
+          _SkalierAuftrag(
+            await datei.readAsBytes(),
+            maxDimension,
+            quality,
+            drehen: true,
+          ),
+        );
+        if (direkt != null) return direkt;
+      } catch (_) {
+        // Weiter mit den Werkzeugen.
+      }
+    }
 
     Directory? temp;
     try {
@@ -616,19 +653,25 @@ class _SkalierAuftrag {
 
   /// Die RAW-Datei, deren Korrekturdaten angewendet werden, oder `null`.
   final String? korrekturQuelle;
+
+  /// Ob die Lage aus dem EXIF anzuwenden ist. Nur für Dateien, die Dart
+  /// selbst liest: dcraw_emu und heif-dec liefern ihr Bild schon gedreht.
+  final bool drehen;
   const _SkalierAuftrag(
     this.bytes,
     this.maxDimension,
     this.quality, {
     this.korrekturQuelle,
+    this.drehen = false,
   });
 }
 
 /// Top-Level-Funktion für `compute()` – verkleinert auf die längste Kante
 /// und kodiert als JPEG.
 Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
-  final bild = img.decodeImage(a.bytes);
-  if (bild == null) return null;
+  final gelesen = img.decodeImage(a.bytes);
+  if (gelesen == null) return null;
+  final bild = a.drehen ? img.bakeOrientation(gelesen) : gelesen;
   final laengsteKante = bild.width > bild.height ? bild.width : bild.height;
   final fertig = laengsteKante > a.maxDimension
       ? img.copyResize(
@@ -648,5 +691,10 @@ Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
   final ausgabe = verzeichnung == null
       ? fertig
       : entzerre(fertig, verzeichnung);
+  // Ohne Beipackzettel: `encodeJpg` schriebe den gelesenen EXIF-Anhang
+  // wieder hinaus, samt Aufnahmeort. Wer gewandelte Bytes bekommt – der
+  // Datenschutzexport, das Fotobuch –, verlässt sich darauf, dass nichts
+  // davon mitkommt. heif-dec etwa reicht das EXIF einer HEIC weiter.
+  ausgabe.exif = img.ExifData();
   return Uint8List.fromList(img.encodeJpg(ausgabe, quality: a.quality));
 }
