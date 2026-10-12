@@ -46,6 +46,7 @@ void main() {
       aiCaptionScanned: false,
       aiCaptionEdited: false,
       aiTagsScanned: false,
+      transkriptGeprueft: false,
       isStackCover: false,
     );
 

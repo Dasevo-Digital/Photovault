@@ -43,6 +43,7 @@ Rasterzeile _asset(String id, DateTime wann) => Rasterzeile.aus(
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
   ),
 );

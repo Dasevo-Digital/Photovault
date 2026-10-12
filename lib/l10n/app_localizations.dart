@@ -13219,6 +13219,102 @@ abstract class AppTexte {
   /// **'Das Fotobuch ließ sich nicht erstellen: {fehler}'**
   String fotobuchFehler(String fehler);
 
+  /// No description provided for @suchePlatzhalterTranskript.
+  ///
+  /// In de, this message translates to:
+  /// **'z.B. „Geburtstag“, „Hamburg“ …'**
+  String get suchePlatzhalterTranskript;
+
+  /// No description provided for @suchoptTypTranskript.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesprochenes (Videos)'**
+  String get suchoptTypTranskript;
+
+  /// No description provided for @suchoptNachTranskript.
+  ///
+  /// In de, this message translates to:
+  /// **'Suche nach Gesprochenem in Videos'**
+  String get suchoptNachTranskript;
+
+  /// No description provided for @suchoptHintTranskript.
+  ///
+  /// In de, this message translates to:
+  /// **'z.B. \"Geburtstag\", \"Kuchen\" …'**
+  String get suchoptHintTranskript;
+
+  /// No description provided for @suchoptTranskriptFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung nicht verfügbar – Modell fehlt (siehe Einstellungen → KI-Modelle).'**
+  String get suchoptTranskriptFehlt;
+
+  /// No description provided for @stufeSpracherkennung.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung'**
+  String get stufeSpracherkennung;
+
+  /// No description provided for @aufgTranskripteTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesprochenes in Videos'**
+  String get aufgTranskripteTitel;
+
+  /// No description provided for @aufgTranskripteText.
+  ///
+  /// In de, this message translates to:
+  /// **'Hört, was in Videos gesagt wird, und macht es durchsuchbar. Bei langen Videos die erste halbe Stunde.'**
+  String get aufgTranskripteText;
+
+  /// No description provided for @aufgSprachmodell.
+  ///
+  /// In de, this message translates to:
+  /// **'das Spracherkennungs-Modell'**
+  String get aufgSprachmodell;
+
+  /// No description provided for @werkzHoereVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Höre Videos ab …'**
+  String get werkzHoereVideos;
+
+  /// No description provided for @werkzKeineVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Videos gefunden.'**
+  String get werkzKeineVideos;
+
+  /// No description provided for @werkzAlleVideosGehoert.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Videos sind schon abgehört.'**
+  String get werkzAlleVideosGehoert;
+
+  /// No description provided for @modellWhisperTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Spracherkennung – Whisper small'**
+  String get modellWhisperTitel;
+
+  /// No description provided for @modellWhisperText.
+  ///
+  /// In de, this message translates to:
+  /// **'Hört, was in Videos gesprochen wird, und macht es über die Suche auffindbar – auf Deutsch, Englisch und rund 100 weiteren Sprachen. Läuft vollständig auf diesem Rechner.'**
+  String get modellWhisperText;
+
+  /// No description provided for @modellWhisperLizenz.
+  ///
+  /// In de, this message translates to:
+  /// **'Apache-2.0 (Basis: openai/whisper-small, ONNX-Port: onnx-community)'**
+  String get modellWhisperLizenz;
+
+  /// No description provided for @infoGesprochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesprochen'**
+  String get infoGesprochen;
+
   /// No description provided for @lebensbaumDrucken.
   ///
   /// In de, this message translates to:

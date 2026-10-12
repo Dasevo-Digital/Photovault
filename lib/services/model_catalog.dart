@@ -93,6 +93,7 @@ String modellTitel(AppTexte t, String id) => switch (id) {
   'clip_vit_b32' => t.modellClipTitel,
   'segmentation_sam_vit_base' => t.modellSamTitel,
   'captioning_florence2_base_ft' => t.modellCaptionTitel,
+  'speech_whisper_small' => t.modellWhisperTitel,
   'eye_state_ocec' => t.modellOcecTitel,
   'neural_restore_real_esrgan_x4' => t.modellEsrganTitel,
   'inpainting_lama' => t.modellLamaTitel,
@@ -112,6 +113,7 @@ String modellBeschreibung(AppTexte t, String id) => switch (id) {
   'clip_vit_b32' => t.modellClipText,
   'segmentation_sam_vit_base' => t.modellSamText,
   'captioning_florence2_base_ft' => t.modellCaptionText,
+  'speech_whisper_small' => t.modellWhisperText,
   'eye_state_ocec' => t.modellOcecText,
   'neural_restore_real_esrgan_x4' => t.modellEsrganText,
   'inpainting_lama' => t.modellLamaText,
@@ -129,6 +131,7 @@ String modellLizenz(AppTexte t, String id) => switch (id) {
   'clip_vit_b32' => t.modellClipLizenz,
   'segmentation_sam_vit_base' => t.modellSamLizenz,
   'captioning_florence2_base_ft' => t.modellCaptionLizenz,
+  'speech_whisper_small' => t.modellWhisperLizenz,
   'eye_state_ocec' => t.modellOcecLizenz,
   'neural_restore_real_esrgan_x4' => t.modellEsrganLizenz,
   'inpainting_lama' => t.modellLamaLizenz,
@@ -649,12 +652,44 @@ class ModelCatalog {
     ],
   );
 
+  /// Whisper small – Sprache in Videos (siehe WhisperService).
+  ///
+  /// Auf den Commit des Exports festgenagelt statt `main`: Die
+  /// Prüfsummen gehören zu genau diesen Dateien, und ein neuer Export
+  /// unter demselben Namen wäre sonst ein Download, der an der Prüfung
+  /// scheitert, statt einer, der funktioniert.
+  static const spracherkennung = ModelCatalogEntry(
+    id: 'speech_whisper_small',
+    sourceUrl: 'https://huggingface.co/onnx-community/whisper-small',
+    files: [
+      ModelFile(
+        'whisper_encoder.onnx',
+        'https://huggingface.co/onnx-community/whisper-small/resolve/36050c46d777d46dc4b5f43f6d90574fc38f8732/onnx/encoder_model_quantized.onnx',
+        'a43a83f3c5361cd591cfa7c36f14b43cf7cb22f47a415cc14a8d557be800fa92',
+        92326160,
+      ),
+      ModelFile(
+        'whisper_decoder.onnx',
+        'https://huggingface.co/onnx-community/whisper-small/resolve/36050c46d777d46dc4b5f43f6d90574fc38f8732/onnx/decoder_model_merged_quantized.onnx',
+        'ec07c3cbb64172c39791e26ee870a65ac22b458c36722bfe2776b3dbf741e0c9',
+        156750845,
+      ),
+      ModelFile(
+        'whisper_vocab.json',
+        'https://huggingface.co/onnx-community/whisper-small/resolve/36050c46d777d46dc4b5f43f6d90574fc38f8732/vocab.json',
+        '50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a',
+        1036584,
+      ),
+    ],
+  );
+
   static const all = [
     faceDetection,
     faceRecognition,
     clip,
     segmentation,
     captioningFlorence,
+    spracherkennung,
     eyeState,
     neuralRestore,
     inpainting,

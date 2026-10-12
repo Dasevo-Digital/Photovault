@@ -74,6 +74,7 @@ AssetData _aufnahme(String rel, int groesse, List<int> inhalt) => AssetData(
   aiCaptionScanned: false,
   aiCaptionEdited: false,
   aiTagsScanned: false,
+  transkriptGeprueft: false,
   isStackCover: false,
 );
 

@@ -8522,6 +8522,58 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get suchePlatzhalterTranskript => 'z.B. „Geburtstag“, „Hamburg“ …';
+
+  @override
+  String get suchoptTypTranskript => 'Gesprochenes (Videos)';
+
+  @override
+  String get suchoptNachTranskript => 'Suche nach Gesprochenem in Videos';
+
+  @override
+  String get suchoptHintTranskript => 'z.B. \"Geburtstag\", \"Kuchen\" …';
+
+  @override
+  String get suchoptTranskriptFehlt =>
+      'Spracherkennung nicht verfügbar – Modell fehlt (siehe Einstellungen → KI-Modelle).';
+
+  @override
+  String get stufeSpracherkennung => 'Spracherkennung';
+
+  @override
+  String get aufgTranskripteTitel => 'Gesprochenes in Videos';
+
+  @override
+  String get aufgTranskripteText =>
+      'Hört, was in Videos gesagt wird, und macht es durchsuchbar. Bei langen Videos die erste halbe Stunde.';
+
+  @override
+  String get aufgSprachmodell => 'das Spracherkennungs-Modell';
+
+  @override
+  String get werkzHoereVideos => 'Höre Videos ab …';
+
+  @override
+  String get werkzKeineVideos => 'Keine Videos gefunden.';
+
+  @override
+  String get werkzAlleVideosGehoert => 'Alle Videos sind schon abgehört.';
+
+  @override
+  String get modellWhisperTitel => 'Spracherkennung – Whisper small';
+
+  @override
+  String get modellWhisperText =>
+      'Hört, was in Videos gesprochen wird, und macht es über die Suche auffindbar – auf Deutsch, Englisch und rund 100 weiteren Sprachen. Läuft vollständig auf diesem Rechner.';
+
+  @override
+  String get modellWhisperLizenz =>
+      'Apache-2.0 (Basis: openai/whisper-small, ONNX-Port: onnx-community)';
+
+  @override
+  String get infoGesprochen => 'Gesprochen';
+
+  @override
   String get lebensbaumDrucken => 'Lebensbaum als PDF';
 
   @override

@@ -539,6 +539,9 @@ class _SearchScreenState extends State<SearchScreen>
                 SearchTextMode.caption => AppTexte.of(
                   context,
                 ).suchePlatzhalterBildunterschrift,
+                SearchTextMode.transkript => AppTexte.of(
+                  context,
+                ).suchePlatzhalterTranskript,
               },
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),

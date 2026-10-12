@@ -37,6 +37,7 @@ Rasterzeile _foto(String id, DateTime wann) => Rasterzeile.aus(
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
     rating: 0,
   ),

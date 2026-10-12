@@ -40,6 +40,7 @@ AssetData _foto(String id) => AssetData(
   aiCaptionScanned: false,
   aiCaptionEdited: false,
   aiTagsScanned: false,
+  transkriptGeprueft: false,
   isStackCover: false,
   rating: 0,
 );

@@ -368,6 +368,14 @@ if ($Pruefen) {
   } else {
     Schlecht "ffmpeg ohne aac-Kodierer - Musik unterlegen scheitert"
   }
+  # Die Spracherkennung bekommt den Ton als rohes PCM ueber die Pipe:
+  # Kodierer pcm_s16le und Format s16le (siehe windows_ffmpeg.sh).
+  $ffm = ImPaket 'ffmpeg.exe' @('-hide_banner', '-muxers')
+  if ($ffe.aus -match '(?m)^\s*A[.A-Z]*\s+pcm_s16le\s' -and $ffm.aus -match '(?m)^\s*E\s+s16le\s') {
+    Gut "ffmpeg kann PCM schreiben (Spracherkennung)"
+  } else {
+    Schlecht "ffmpeg ohne pcm_s16le/s16le - die Spracherkennung hoert nichts"
+  }
 
   # Und einmal richtig: eine echte HEIC-Datei auspacken.
   $probe = "$Wurzel\test\fixtures\werkzeuge\probe.heic"

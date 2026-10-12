@@ -223,6 +223,22 @@ class ImageConverterChannel: NSObject {
                         }
                     }
                 }
+            case "videoTon":
+                // Die Tonspur als 16-kHz-Mono-PCM für die Spracherkennung.
+                guard
+                    let args = call.arguments as? [String: Any],
+                    let path = args["path"] as? String
+                else {
+                    result(FlutterError(code: "bad_args", message: "path fehlt", details: nil))
+                    return
+                }
+                let hoechstens = (args["hoechstensSekunden"] as? NSNumber)?.doubleValue ?? 0
+                DispatchQueue.global(qos: .utility).async {
+                    let pcm = tonAlsPcm(path: path, hoechstensSekunden: hoechstens)
+                    DispatchQueue.main.async {
+                        result(pcm.map { FlutterStandardTypedData(bytes: $0) })
+                    }
+                }
             case "recognizeText":
                 guard
                     let args = call.arguments as? [String: Any],
@@ -1277,6 +1293,51 @@ class ImageConverterChannel: NSObject {
         }
         guard let jpeg = encodeJpeg(cgImage, quality: quality) else { return nil }
         return VideoThumbnail(jpeg: jpeg, durationSeconds: durationSeconds)
+    }
+
+    /// Die Tonspur von [path] als 16-kHz-Mono-PCM, 16 Bit, little endian –
+    /// das Format, mit dem die Spracherkennung rechnet. AVAssetReader
+    /// wandelt Abtastrate und Kanäle selbst; ffmpeg ist im Sandkasten
+    /// nicht startbar. `nil` ohne Tonspur oder wenn sie sich nicht lesen
+    /// lässt. [hoechstensSekunden] > 0 begrenzt die Länge.
+    private static func tonAlsPcm(path: String, hoechstensSekunden: Double) -> Data? {
+        let asset = AVURLAsset(url: URL(fileURLWithPath: path))
+        guard let spur = asset.tracks(withMediaType: .audio).first,
+            let leser = try? AVAssetReader(asset: asset)
+        else { return nil }
+        if hoechstensSekunden > 0 {
+            leser.timeRange = CMTimeRange(
+                start: .zero, duration: CMTime(seconds: hoechstensSekunden, preferredTimescale: 600))
+        }
+        let ausgabe = AVAssetReaderTrackOutput(
+            track: spur,
+            outputSettings: [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 16000,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false,
+            ])
+        ausgabe.alwaysCopiesSampleData = false
+        guard leser.canAdd(ausgabe) else { return nil }
+        leser.add(ausgabe)
+        guard leser.startReading() else { return nil }
+        var daten = Data()
+        while let puffer = ausgabe.copyNextSampleBuffer() {
+            guard let block = CMSampleBufferGetDataBuffer(puffer) else { continue }
+            let laenge = CMBlockBufferGetDataLength(block)
+            var stueck = Data(count: laenge)
+            let status = stueck.withUnsafeMutableBytes { zeiger -> OSStatus in
+                guard let ziel = zeiger.baseAddress else { return -1 }
+                return CMBlockBufferCopyDataBytes(
+                    block, atOffset: 0, dataLength: laenge, destination: ziel)
+            }
+            if status == kCMBlockBufferNoErr { daten.append(stueck) }
+        }
+        if leser.status == .failed && daten.isEmpty { return nil }
+        return daten
     }
 
     /// Schneidet ein Video nicht-destruktiv auf [startSeconds, endSeconds] zu

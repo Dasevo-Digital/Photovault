@@ -19,20 +19,21 @@ import 'package:flutter_test/flutter_test.dart';
 /// Dienst seine Sitzungen am Ende schliesst, stört dabei nicht – das
 /// geschieht über `.close()`, nicht über `.dispose()`.
 void main() {
-  /// Zwei Dienste geben nicht am Ende eines einzelnen Aufrufs frei, sondern
+  /// Drei Dienste geben nicht am Ende eines einzelnen Aufrufs frei, sondern
   /// führen über einen ganzen Lauf mit Schleife eine Menge offener Tensoren
   /// mit und leeren sie im `finally`. Ihre `.dispose()`-Zeile steckt in
   /// einer Hilfsfunktion und liegt damit formal ausserhalb – die Zusage hält
   /// trotzdem, weil der Schlussblock nimmt, was noch offen ist. Für diese
-  /// beiden wird deshalb genau dieses Muster geprüft statt der Klammerregel:
+  /// drei wird deshalb genau dieses Muster geprüft statt der Klammerregel:
   /// der Name der mitgeführten Menge muss in einem `finally` durchlaufen und
   /// freigegeben werden.
   const mitOffenerMenge = {
     'lib/services/florence_captioning_service.dart': 'offen',
     'lib/services/translation_service.dart': 'liveTensors',
+    'lib/services/whisper_service.dart': 'offen',
   };
 
-  test('die beiden Dienste mit mitgeführter Menge leeren sie im finally', () {
+  test('die Dienste mit mitgeführter Menge leeren sie im finally', () {
     mitOffenerMenge.forEach((pfad, menge) {
       final quelle = File(pfad).readAsStringSync();
       expect(

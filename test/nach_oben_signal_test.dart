@@ -56,6 +56,7 @@ void main() {
         ocrScanned: false,
         aiCaptionScanned: false,
         aiTagsScanned: false,
+        transkriptGeprueft: false,
         isStackCover: false,
         aiCaptionEdited: false,
         fileSizeBytes: 1,

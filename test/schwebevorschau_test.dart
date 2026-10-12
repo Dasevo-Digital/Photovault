@@ -50,6 +50,7 @@ AssetData _asset({
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
     linkedAssetId: linkedAssetId,
   );

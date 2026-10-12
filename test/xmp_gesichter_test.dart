@@ -45,6 +45,7 @@ AssetData _foto({int? breite, int? hoehe}) => AssetData(
   aiCaptionScanned: false,
   aiCaptionEdited: false,
   aiTagsScanned: false,
+  transkriptGeprueft: false,
   isStackCover: false,
   rating: 0,
   widthPx: breite,

@@ -99,6 +99,7 @@ AssetData _aufnahme(String rel, List<int> inhalt) => AssetData(
   aiCaptionScanned: false,
   aiCaptionEdited: false,
   aiTagsScanned: false,
+  transkriptGeprueft: false,
   isStackCover: false,
 );
 

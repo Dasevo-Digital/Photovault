@@ -70,13 +70,14 @@ pcm_f32be,pcm_u8,pcm_s8,pcm_mulaw,pcm_alaw"
 DEMUXER="mov,matroska,avi,mpegts,mpegps,mpegvideo,m4v,h264,hevc,mp3,aac,\
 wav,w64,flac,ogg,aiff,caf,amr,asf,flv,dv,rawvideo,mjpeg"
 # Was geschrieben wird: JPEG-Vorschaubilder, H.264 und MPEG-4 für
-# Kameraflug und Diashow, AAC für die Musik.
-ENCODER="mjpeg,h264_mf,mpeg4,aac"
+# Kameraflug und Diashow, AAC für die Musik, rohes PCM (16 kHz, mono)
+# für die Spracherkennung.
+ENCODER="mjpeg,h264_mf,mpeg4,aac,pcm_s16le"
 # Der Zuschnitt schreibt in den Container, aus dem er liest. Die Namen
 # sind die von configure, nicht die Endungen: .3gp heisst tgp, .mpg
 # mpeg1system, .wmv asf.
 MUXER="image2,mp4,mov,ipod,tgp,tg2,matroska,webm,avi,mpegts,mpeg1system,\
-mpeg2vob,ogg,ogv,asf,flv,dv,null"
+mpeg2vob,ogg,ogv,asf,flv,dv,null,s16le"
 # Was die Aufrufe brauchen und was ffmpeg selbst einsetzt: Formatwandlung,
 # Drehen nach den Metadaten eines Telefonvideos, Abtastraten.
 FILTER="buffer,buffersink,abuffer,abuffersink,format,aformat,scale,\

@@ -38,6 +38,7 @@ AssetData _asset({
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
     cameraMake: hersteller,
     cameraModel: modell,

@@ -91,6 +91,8 @@ extension GesperrteAbfragen on AppDatabase {
         zeitversatzMinuten: const Value(null),
         aiCaption: const Value(null),
         aiCaptionDe: const Value(null),
+        transkript: const Value(null),
+        transkriptSprache: const Value(null),
       ),
     );
     await (delete(assetTags)..where((t) => t.assetId.equals(assetId))).go();
@@ -191,6 +193,11 @@ extension GesperrteAbfragen on AppDatabase {
         // Damit die Verschlagwortung nach dem Entsperren neu läuft und die
         // gelöschten Begriffe zurückbringt.
         aiTagsScanned: Value(false),
+        // Das Gesprochene eines Videos verrät, was der erkannte Text eines
+        // Fotos verrät – und wird nach dem Entsperren neu gehört.
+        transkript: Value(null),
+        transkriptSprache: Value(null),
+        transkriptGeprueft: Value(false),
       ),
     );
 

@@ -44,6 +44,7 @@ AssetData _foto(String id) => AssetData(
   aiCaptionScanned: false,
   aiCaptionEdited: false,
   aiTagsScanned: false,
+  transkriptGeprueft: false,
   isStackCover: false,
   rating: 3,
   cameraModel: 'Canon EOS R10',

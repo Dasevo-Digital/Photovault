@@ -29,6 +29,40 @@ extension AuswertungsAbfragen on AppDatabase {
   Future<int> countCaptionBackfill() =>
       _countWhere(_brauchtBeschreibung(false));
 
+  /// Bedingung für „ein Video, das die Spracherkennung noch hören soll".
+  ///
+  /// Ohne die Videohälften von Live Photos: drei Sekunden um den Auslöser,
+  /// in denen selten jemand spricht – und die neben ihrem Foto gar nicht
+  /// als eigenes Video erscheinen.
+  Expression<bool> _brauchtTranskript(bool alle) =>
+      assets.type.equals('VIDEO') &
+      assets.linkedAssetId.isNull() &
+      assets.isTrashed.equals(false) &
+      assets.isLocked.equals(false) &
+      (alle ? const Constant(true) : assets.transkriptGeprueft.equals(false));
+
+  /// Die Videos für die Spracherkennung, die neuesten zuerst – die sind am
+  /// ehesten die, nach denen gesucht wird.
+  Future<List<AssetData>> assetsForTranskription({bool alle = false}) =>
+      (select(assets)
+            ..where((t) => _brauchtTranskript(alle))
+            ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]))
+          .get();
+
+  /// Zählvariante von [assetsForTranskription].
+  Future<int> countTranskription() => _countWhere(_brauchtTranskript(false));
+
+  /// Hält fest, was die Spracherkennung gehört hat – auch „nichts": Dann
+  /// bleiben [text] und [sprache] leer, und das Video ist trotzdem erledigt.
+  Future<void> setTranskript(String assetId, {String? text, String? sprache}) =>
+      (update(assets)..where((t) => t.id.equals(assetId))).write(
+        AssetsCompanion(
+          transkript: Value(text),
+          transkriptSprache: Value(sprache),
+          transkriptGeprueft: const Value(true),
+        ),
+      );
+
   /// Bedingung für „hat eine englische Bildunterschrift, aber (noch) keine
   /// deutsche".
   ///

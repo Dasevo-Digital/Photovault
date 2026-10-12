@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:io';
 import 'dart:convert';
 
@@ -513,6 +514,46 @@ class NativeImageConverter {
     } on MissingPluginException {
       return null;
     }
+  }
+
+  /// Die Tonspur eines Videos als 16-kHz-Mono-PCM (16 Bit) für die
+  /// Spracherkennung – unter macOS über AVFoundation, sonst über ffmpeg.
+  ///
+  /// `null`, wenn es keine Tonspur gibt oder sie sich nicht lesen lässt;
+  /// eine leere Liste, wenn sie leer ist. [hoechstensSekunden] begrenzt
+  /// die Länge.
+  static Future<Int16List?> videoTon(
+    File file, {
+    int hoechstensSekunden = 0,
+  }) async {
+    final Uint8List? roh;
+    if (_ueberWerkzeuge) {
+      roh = await DesktopImageTools.videoTon(
+        file,
+        hoechstensSekunden: hoechstensSekunden,
+      );
+    } else {
+      if (!await isSupported()) return null;
+      try {
+        roh = await _channel.invokeMethod<Uint8List>('videoTon', {
+          'path': file.path,
+          'hoechstensSekunden': hoechstensSekunden,
+        });
+      } on PlatformException {
+        return null;
+      } on MissingPluginException {
+        return null;
+      }
+    }
+    if (roh == null) return null;
+    // Little endian, wie bestellt; eine ungerade Länge kann nur ein
+    // abgeschnittenes letztes Byte sein.
+    final werte = Int16List(roh.length ~/ 2);
+    final sicht = ByteData.sublistView(roh);
+    for (var i = 0; i < werte.length; i++) {
+      werte[i] = sicht.getInt16(i * 2, Endian.little);
+    }
+    return werte;
   }
 
   /// Erkennt Text in einer Bilddatei über Apples Vision-Framework (rein

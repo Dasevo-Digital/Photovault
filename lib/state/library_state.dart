@@ -21,6 +21,7 @@ import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
 import '../services/blur_detection.dart';
 import '../services/florence_captioning_service.dart';
+import '../services/whisper_service.dart';
 import '../services/clip_service.dart';
 import '../services/cube_lut.dart';
 import '../services/develop_color.dart';
@@ -76,6 +77,7 @@ enum Analysestufe {
   texterkennung,
   schlagwoerter,
   bildbeschreibung,
+  spracherkennung,
   wiedererkennung,
 }
 
@@ -85,6 +87,7 @@ String analysestufeName(AppTexte t, Analysestufe stufe) => switch (stufe) {
   Analysestufe.texterkennung => t.stufeTexterkennung,
   Analysestufe.schlagwoerter => t.stufeSchlagwoerter,
   Analysestufe.bildbeschreibung => t.stufeBildbeschreibung,
+  Analysestufe.spracherkennung => t.stufeSpracherkennung,
   Analysestufe.wiedererkennung => t.stufeWiedererkennung,
 };
 
@@ -197,6 +200,12 @@ class LibraryState extends ChangeNotifier {
     'Bildbeschreibung',
   );
 
+  /// Spracherkennung in Videos (Whisper, 249 MB) – nur während ihres
+  /// Durchgangs geladen.
+  ModellHalter<WhisperService> spracherkennungHalter = _leererHalter(
+    'Spracherkennung',
+  );
+
   /// Die beiden Übersetzungsrichtungen – getrennte Halter, weil sie
   /// getrennt installierbar sind und selten gleichzeitig gebraucht werden.
   ModellHalter<TranslationService> uebersetzungEnDeHalter = _leererHalter(
@@ -234,6 +243,7 @@ class LibraryState extends ChangeNotifier {
     clipTextHalter,
     segmentationHalter,
     captioningHalter,
+    spracherkennungHalter,
     uebersetzungEnDeHalter,
     uebersetzungDeEnHalter,
     if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
@@ -1037,6 +1047,12 @@ class LibraryState extends ChangeNotifier {
       laden: () => FlorenceCaptioningService.load(_modelsDir!),
       entsorgen: (s) => s.dispose(),
     );
+    spracherkennungHalter = ModellHalter<WhisperService>(
+      name: 'Spracherkennung',
+      installiert: WhisperService.isAvailable(_modelsDir!),
+      laden: () => WhisperService.load(_modelsDir!),
+      entsorgen: (s) => s.dispose(),
+    );
     restoreQueue.restoreHalter = ModellHalter<RestoreService>(
       name: 'KI-Restaurierung',
       installiert: RestoreService.isAvailable(_modelsDir!),
@@ -1166,6 +1182,7 @@ class LibraryState extends ChangeNotifier {
       FaceEngineService.isRecognitionAvailable(_modelsDir!);
   bool get segmentationAvailable => segmentationHalter.installiert;
   bool get captioningAvailable => captioningHalter.installiert;
+  bool get spracherkennungAvailable => spracherkennungHalter.installiert;
   bool get uebersetzungEnDeAvailable => uebersetzungEnDeHalter.installiert;
 
   /// Ob Text erkannt werden kann – über das Betriebssystem (macOS) oder
@@ -1513,6 +1530,12 @@ class LibraryState extends ChangeNotifier {
             lauf: () => backfillAiTags(onlyUntagged: true),
           ),
           (name: Analysestufe.bildbeschreibung, lauf: () => backfillCaptions()),
+          // Nach der Bildbeschreibung: Sie ist je Aufnahme billiger als
+          // ein Video mit Ton, und es gibt mehr Fotos als Videos.
+          (
+            name: Analysestufe.spracherkennung,
+            lauf: () => transkribiereVideos(),
+          ),
           // Zuletzt, und das ist keine Nebensache: Die Gesichter entstehen
           // erst in der Bildanalyse ganz oben. Wer hier frueher fragt, fragt
           // nach Gesichtern, die es noch nicht gibt.
@@ -3647,6 +3670,79 @@ class LibraryState extends ChangeNotifier {
     if (alle && !failed) await _markModelPipelineCurrent('captions');
   }
 
+  /// Wie lang ein Video höchstens gehört wird. Darüber nur der Anfang:
+  /// Eine Stunde Ton wären 120 Durchgänge des Modells, und für die Suche
+  /// genügt meist, was in der ersten halben Stunde gesagt wird.
+  static const transkriptHoechstensSekunden = 30 * 60;
+
+  /// Hört die Videos ab, die die Spracherkennung noch nicht kennt, und
+  /// hält fest, was gesagt wird – auch, dass nichts gesagt wird.
+  ///
+  /// [alle] hört auch die schon gehörten noch einmal, nach einem
+  /// Modellwechsel der sinnvolle Weg.
+  Stream<ImportProgress> transkribiereVideos({bool alle = false}) async* {
+    // Erst die Arbeit ermitteln, dann das Modell holen – siehe
+    // [_bildinhaltsAnalyse].
+    final videos = await db.assetsForTranskription(alle: alle);
+    if (videos.isEmpty) {
+      yield ImportProgress(0, 0);
+      return;
+    }
+    final service = await spracherkennungHalter.leihen();
+    if (service == null) {
+      yield ImportProgress(0, 0);
+      return;
+    }
+    var failed = false;
+    try {
+      var done = 0;
+      yield ImportProgress(0, videos.length);
+      for (final video in videos) {
+        try {
+          // Der Ton aus dem Video, das man sieht: ein gekürztes, wenn es
+          // eines gibt.
+          final datei = paths.absolute(displayRelativePath(video));
+          final ton = await NativeImageConverter.videoTon(
+            datei,
+            hoechstensSekunden: transkriptHoechstensSekunden,
+          );
+          if (ton == null) {
+            // Keine Tonspur ist ein Ergebnis; eine unlesbare Datei auch –
+            // sonst käme sie bei jedem Durchgang wieder.
+            await db.setTranskript(video.id);
+          } else {
+            final gehoert = await service.transkribiere(
+              ton,
+              abbruch: () => _analyseAbbruch,
+            );
+            if (_analyseAbbruch) break;
+            await db.setTranskript(
+              video.id,
+              text: gehoert?.text,
+              sprache: gehoert?.sprache,
+            );
+          }
+        } catch (e) {
+          failed = true;
+          debugPrint(
+            'Spracherkennung fehlgeschlagen für ${video.originalFileName}: $e',
+          );
+        }
+        done++;
+        yield ImportProgress(
+          done,
+          videos.length,
+          currentFile: video.originalFileName,
+        );
+      }
+    } finally {
+      spracherkennungHalter.zurueckgeben();
+    }
+    if (failed) {
+      debugPrint('Spracherkennung: nicht jedes Video liess sich hören.');
+    }
+  }
+
   /// Übersetzt vorhandene englische Bildunterschriften ins Deutsche, ohne
   /// das Beschreibungsmodell zu bemühen.
   ///
@@ -4364,6 +4460,11 @@ class LibraryState extends ChangeNotifier {
       'aiCaptionScanned': asset.aiCaptionScanned,
       'aiCaptionEdited': asset.aiCaptionEdited,
       'aiTagsScanned': asset.aiTagsScanned,
+      // Was in einem gesperrten Video gesagt wird, gehört genauso in den
+      // Tresor wie der Text auf einem gesperrten Foto.
+      'transkript': asset.transkript,
+      'transkriptSprache': asset.transkriptSprache,
+      'transkriptGeprueft': asset.transkriptGeprueft,
       'tags': relations['tags'] ?? const <String>[],
       'albums': relations['albums'] ?? const <String>[],
     };
@@ -4455,6 +4556,11 @@ class LibraryState extends ChangeNotifier {
         aiCaptionScanned: Value(json['aiCaptionScanned'] as bool),
         aiCaptionEdited: Value(json['aiCaptionEdited'] as bool),
         aiTagsScanned: Value(json['aiTagsScanned'] as bool),
+        // Fehlt in allem, was vor Schema 92 gesperrt wurde: dann eben
+        // noch nicht gehört.
+        transkript: Value(json['transkript'] as String?),
+        transkriptSprache: Value(json['transkriptSprache'] as String?),
+        transkriptGeprueft: Value(json['transkriptGeprueft'] as bool? ?? false),
       ),
       tags: tags,
       albumIds: [

@@ -80,6 +80,7 @@ void main() {
         aiCaptionScanned: false,
         aiCaptionEdited: false,
         aiTagsScanned: false,
+        transkriptGeprueft: false,
         isStackCover: false,
       );
       final target = File(p.join(temp.path, 'paket.pvshare'));
@@ -153,6 +154,7 @@ void main() {
         aiCaptionScanned: false,
         aiCaptionEdited: false,
         aiTagsScanned: false,
+        transkriptGeprueft: false,
         isStackCover: false,
       );
       final service = SecureShareService(ExportService(paths));
@@ -223,6 +225,7 @@ void main() {
       aiCaptionScanned: false,
       aiCaptionEdited: false,
       aiTagsScanned: false,
+      transkriptGeprueft: false,
       isStackCover: false,
     );
     final issuedAt = DateTime.utc(2040, 1, 1);

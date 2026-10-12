@@ -29,6 +29,7 @@ AssetData foto(
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
     rating: bewertung,
     widthPx: breite,

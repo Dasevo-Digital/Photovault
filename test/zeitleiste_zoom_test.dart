@@ -49,6 +49,7 @@ Rasterzeile _quadratfoto(String id) => Rasterzeile.aus(
     aiCaptionScanned: false,
     aiCaptionEdited: false,
     aiTagsScanned: false,
+    transkriptGeprueft: false,
     isStackCover: false,
     rating: 0,
   ),

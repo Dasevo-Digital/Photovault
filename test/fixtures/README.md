@@ -11,6 +11,7 @@ Klonen durch, ohne dass irgendetwas heruntergeladen werden muss.
 | `sample_images.dart` | Erzeugt Testbilder zur Laufzeit (JPG/PNG/TIFF/BMP/GIF) | selbst erzeugt, lizenzfrei |
 | `entwickeln_referenz/` | Die Prüftafel aus `test/hilfen/entwickeln_tafel.dart`, von Core Image entwickelt (Schärfe, Rauschminderung, Klarheit, Vignette, Maske) – Sollwerte für den GPU-Weg von Linux und Windows | selbst erzeugt mit `integration_test/nachbarregler_test.dart` unter macOS |
 | `clip/vocab.json`, `clip/merges.txt` | Winziges, handgeschriebenes Vokabular für die Tokenizer-Tests (nicht die echten CLIP-Dateien) | selbst erstellt |
+| `whisper/referenz.json` | Sollwerte für das Mel-Spektrogramm der Spracherkennung: die Filterbank des Originals (nur die Werte ungleich null) und das Log-Mel-Spektrogramm eines erzeugten Gleittons an neun Stellen | gerechnet mit numpy aus `mel_filters.npz` des [Whisper-Repositorys](https://github.com/openai/whisper) (MIT) |
 | `samples/` | Echte Kameradateien, per Skript geladen | extern, **nicht versioniert** |
 
 ## Automatisierte Formatprüfung

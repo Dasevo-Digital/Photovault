@@ -1008,6 +1008,35 @@ List<Aufgabe> _aufgaben(
     ],
   ),
   Aufgabe(
+    schluessel: 'transkripte',
+    rechenintensiv: true,
+    icon: Icons.record_voice_over_outlined,
+    titel: t.aufgTranskripteTitel,
+    stufe: Analysestufe.spracherkennung,
+    beschreibung: t.aufgTranskripteText,
+    offeneZahl: () => library.db.countTranskription(),
+    nichtVerfuegbar: _modelHint(
+      t,
+      library.spracherkennungAvailable,
+      t.aufgSprachmodell,
+      t.aufgWoModelle,
+    ),
+    aktionen: [
+      Aufgabenaktion(
+        modus: Aufgabenmodus.alle,
+        laufTitel: t.werkzHoereVideos,
+        emptyMessage: t.werkzKeineVideos,
+        stream: () => library.transkribiereVideos(alle: true),
+      ),
+      Aufgabenaktion(
+        modus: Aufgabenmodus.fehlende,
+        laufTitel: t.werkzHoereVideos,
+        emptyMessage: t.werkzAlleVideosGehoert,
+        stream: () => library.transkribiereVideos(),
+      ),
+    ],
+  ),
+  Aufgabe(
     schluessel: 'beschreibungen_de',
     rechenintensiv: true,
     icon: Icons.translate,

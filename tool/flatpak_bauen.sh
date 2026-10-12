@@ -264,6 +264,14 @@ if [ "$pruefen" -eq 1 ]; then
     fehler "ffmpeg ohne HEVC – Videovorschauen blieben leer"
   fi
 
+  # Die Spracherkennung bekommt den Ton als rohes PCM über die Pipe.
+  if im_sandkasten ffmpeg -hide_banner -encoders 2>/dev/null | grep -qE '^ A[.A-Z]* +pcm_s16le ' &&
+     im_sandkasten ffmpeg -hide_banner -muxers 2>/dev/null | grep -qE '^ +E +s16le '; then
+    gut "ffmpeg kann PCM schreiben (Spracherkennung)"
+  else
+    fehler "ffmpeg ohne pcm_s16le/s16le – die Spracherkennung hört nichts"
+  fi
+
   if im_sandkasten sh -c 'ls /app/lib/libmpv.so* >/dev/null 2>&1'; then
     gut "libmpv vorhanden (Videowiedergabe)"
   else

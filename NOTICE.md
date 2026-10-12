@@ -62,6 +62,7 @@ Quell-URLs stehen in `lib/services/model_catalog.dart`.
 | CLIP ViT-B/32 | KI-Bildsuche | MIT (OpenAI-Gewichte) | [Xenova/HuggingFace](https://huggingface.co/Xenova/clip-vit-base-patch32) |
 | SAM ViT-Base | KI-Objektmasken | Apache-2.0 (Meta Segment Anything) | [Xenova/HuggingFace](https://huggingface.co/Xenova/sam-vit-base) |
 | Florence-2 base-ft | Bildbeschreibung | MIT | [onnx-community/HuggingFace](https://huggingface.co/onnx-community/Florence-2-base-ft) |
+| Whisper small | Spracherkennung in Videos | Apache-2.0 (OpenAI) | [onnx-community/HuggingFace](https://huggingface.co/onnx-community/whisper-small) |
 | OCEC | Geschlossene Augen | MIT | [PINTO0309/OCEC](https://github.com/PINTO0309/OCEC) |
 | Real-ESRGAN x4 | KI-Restaurierung | BSD-3-Clause | [SceneWorks/HuggingFace](https://huggingface.co/SceneWorks/real-esrgan-onnx) |
 | LaMa | Objektentfernung | Apache-2.0 | [Carve/HuggingFace](https://huggingface.co/Carve/LaMa-ONNX) |

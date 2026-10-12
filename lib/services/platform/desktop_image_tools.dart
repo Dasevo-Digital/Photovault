@@ -80,6 +80,9 @@ class DesktopImageTools {
   /// weil ImageIO AVIF selbst kann.
   static const libheifEndungen = {'.heic', '.heif', '.avif', '.avifs'};
 
+  /// Die Abtastrate, mit der die Spracherkennung rechnet.
+  static const whisperTonrate = 16000;
+
   /// Was Dart selbst dekodiert und deshalb kein Werkzeug braucht.
   static const dartEndungen = {
     '.jpg',
@@ -589,6 +592,43 @@ class DesktopImageTools {
       try {
         await temp?.delete(recursive: true);
       } catch (_) {}
+    }
+  }
+
+  /// Die Tonspur eines Videos als 16-kHz-Mono-PCM (16 Bit, little
+  /// endian) über ffmpeg, für die Spracherkennung.
+  ///
+  /// `null` ohne ffmpeg, ohne Tonspur oder wenn ffmpeg scheitert.
+  static Future<Uint8List?> videoTon(
+    File datei, {
+    int hoechstensSekunden = 0,
+  }) async {
+    final werkzeug = await aufruf('ffmpeg');
+    if (werkzeug == null) return null;
+    try {
+      final r = await Process.run(werkzeug, [
+        '-nostdin',
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        datei.path,
+        if (hoechstensSekunden > 0) ...['-t', '$hoechstensSekunden'],
+        // Nur der Ton, gemischt auf einen Kanal, umgerechnet auf 16 kHz.
+        '-vn',
+        '-ac',
+        '1',
+        '-ar',
+        '$whisperTonrate',
+        '-f',
+        's16le',
+        '-',
+      ], stdoutEncoding: null);
+      if (r.exitCode != 0) return null;
+      final bytes = r.stdout as List<int>;
+      return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    } catch (_) {
+      return null;
     }
   }
 

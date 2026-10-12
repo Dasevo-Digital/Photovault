@@ -482,6 +482,10 @@ echter Hardware.
   Wunsch ins Deutsche übersetzt. Liest dabei auch Schrift im Bild
   (Ladenschilder, Ortstafeln). An 40 echten Fotos gegen den Vorgänger
   ViT-GPT2 beurteilt: 27 statt 11 zutreffende Sätze
+- **Gesprochenes in Videos** – die Tonspur jedes Videos über **Whisper
+  small** abgehört, durchsuchbar unter „Gesprochenes" und im Info-Blatt zu
+  lesen. Rund 100 Sprachen, vollständig auf dem Rechner; Stille und Musik
+  ohne Worte werden verworfen statt mit erfundenen Sätzen gefüllt
 - **KI-Tagging** – automatisches Zuordnen deutscher Alltagsbegriffe per
   CLIP-Zero-Shot-Klassifikation gegen eine feste Begriffsliste, statt eines
   zusätzlichen dedizierten Tagging-Modells. Der Begriff geht dabei in einer
@@ -879,6 +883,7 @@ Download-Button:
 | CLIP ViT-B/32 | KI-Bildsuche in natürlicher Sprache | MIT (OpenAI-Gewichte) | Xenova/HuggingFace |
 | SAM ViT-Base | KI-Objektmasken für gezielte Entwicklungs-Anpassungen | Apache-2.0 (Meta Segment Anything) | Xenova/HuggingFace |
 | Florence-2 base-ft | Automatische Bildbeschreibung (Englisch), liest auch Schrift im Bild | MIT (Microsoft) | onnx-community/HuggingFace |
+| Whisper small | Spracherkennung in Videos, durchsuchbar | Apache-2.0 (OpenAI) | onnx-community/HuggingFace |
 | OCEC | Erkennung geschlossener Augen (Blinzler) | MIT | PINTO0309/GitHub |
 | Real-ESRGAN x4 | KI-Restaurierung (4× hochskalieren + entrauschen) | BSD-3-Clause | SceneWorks/HuggingFace |
 | OPUS-MT en→de | Bildbeschreibungen in die Oberflächensprache übersetzen | Apache-2.0 (Helsinki-NLP) | Xenova/HuggingFace |
@@ -1103,6 +1108,8 @@ lib/
     florence_captioning_service.dart
                                  Florence-2-Inferenz für KI-Bildbeschreibung
     bart_tokenizer.dart          Wortzerleger dafür (Byte-Level-BPE, BART-Art)
+    whisper_service.dart         Whisper-Inferenz für die Spracherkennung in Videos
+    whisper_mel.dart             Log-Mel-Spektrogramm dafür (FFT der Länge 400)
     ai_tagging_service.dart      CLIP-Zero-Shot-Tagging gegen feste Begriffsliste
     eye_state_service.dart       OCEC-Inferenz für geschlossene Augen
     restore_service.dart         Real-ESRGAN-Inferenz (KI-Restaurierung)

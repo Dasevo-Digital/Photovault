@@ -641,6 +641,14 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           stellen: textstellenAusJson(asset.ocrBoxen).length,
                         ),
                       ],
+                      if ((asset.transkript ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _ErkannterText(
+                          text: asset.transkript!.trim(),
+                          stellen: 0,
+                          gesprochen: true,
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -1223,7 +1231,15 @@ class _ErkannterText extends StatelessWidget {
   /// steht die Zeile nicht da, statt „0 Stellen" zu behaupten.
   final int stellen;
 
-  const _ErkannterText({required this.text, required this.stellen});
+  /// Gesprochen statt geschrieben: das Transkript eines Videos (siehe
+  /// WhisperService) – dieselbe Darstellung, nur mit anderem Titel.
+  final bool gesprochen;
+
+  const _ErkannterText({
+    required this.text,
+    required this.stellen,
+    this.gesprochen = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1234,9 +1250,17 @@ class _ErkannterText extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.text_fields, size: 16, color: farben.onSurfaceVariant),
+            Icon(
+              gesprochen ? Icons.record_voice_over_outlined : Icons.text_fields,
+              size: 16,
+              color: farben.onSurfaceVariant,
+            ),
             const SizedBox(width: 6),
-            Expanded(child: _SectionLabel(t.infoErkannterText)),
+            Expanded(
+              child: _SectionLabel(
+                gesprochen ? t.infoGesprochen : t.infoErkannterText,
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.copy_all_outlined, size: 18),
               visualDensity: VisualDensity.compact,

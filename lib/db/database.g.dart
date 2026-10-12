@@ -693,6 +693,43 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _transkriptMeta = const VerificationMeta(
+    'transkript',
+  );
+  @override
+  late final GeneratedColumn<String> transkript = GeneratedColumn<String>(
+    'transkript',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transkriptSpracheMeta = const VerificationMeta(
+    'transkriptSprache',
+  );
+  @override
+  late final GeneratedColumn<String> transkriptSprache =
+      GeneratedColumn<String>(
+        'transkript_sprache',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _transkriptGeprueftMeta =
+      const VerificationMeta('transkriptGeprueft');
+  @override
+  late final GeneratedColumn<bool> transkriptGeprueft = GeneratedColumn<bool>(
+    'transkript_geprueft',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("transkript_geprueft" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _sharpnessScoreMeta = const VerificationMeta(
     'sharpnessScore',
   );
@@ -800,6 +837,9 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     aiCaptionScanned,
     aiCaptionEdited,
     aiTagsScanned,
+    transkript,
+    transkriptSprache,
+    transkriptGeprueft,
     sharpnessScore,
     stackId,
     isStackCover,
@@ -1269,6 +1309,30 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
         ),
       );
     }
+    if (data.containsKey('transkript')) {
+      context.handle(
+        _transkriptMeta,
+        transkript.isAcceptableOrUnknown(data['transkript']!, _transkriptMeta),
+      );
+    }
+    if (data.containsKey('transkript_sprache')) {
+      context.handle(
+        _transkriptSpracheMeta,
+        transkriptSprache.isAcceptableOrUnknown(
+          data['transkript_sprache']!,
+          _transkriptSpracheMeta,
+        ),
+      );
+    }
+    if (data.containsKey('transkript_geprueft')) {
+      context.handle(
+        _transkriptGeprueftMeta,
+        transkriptGeprueft.isAcceptableOrUnknown(
+          data['transkript_geprueft']!,
+          _transkriptGeprueftMeta,
+        ),
+      );
+    }
     if (data.containsKey('sharpness_score')) {
       context.handle(
         _sharpnessScoreMeta,
@@ -1535,6 +1599,18 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
       aiTagsScanned: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}ai_tags_scanned'],
+      )!,
+      transkript: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transkript'],
+      ),
+      transkriptSprache: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transkript_sprache'],
+      ),
+      transkriptGeprueft: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}transkript_geprueft'],
       )!,
       sharpnessScore: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -1849,6 +1925,19 @@ class AssetData extends DataClass implements Insertable<AssetData> {
   /// nichts (Audit-Fund: gemessen 1066 MB Grundlast statt 214 MB).
   final bool aiTagsScanned;
 
+  /// Was in einem Video gesprochen wird (siehe WhisperService) –
+  /// durchsuchbar über SearchTextMode.transkript. Bei Fotos immer leer.
+  final String? transkript;
+
+  /// Die Sprache von [transkript] als Kürzel (`de`, `en`, …), wie das
+  /// Modell sie bestimmt hat.
+  final String? transkriptSprache;
+
+  /// Ob die Spracherkennung das Video schon gehört hat – aus demselben
+  /// Grund wie [aiTagsScanned] ein eigenes Merkmal: Ein Video ohne
+  /// Sprache ist ein gültiges Ergebnis, kein offener Posten.
+  final bool transkriptGeprueft;
+
   /// Laplace-Varianz des Bilds (siehe blur_detection.dart) – höher = schärfer.
   /// Null, solange noch nicht berechnet.
   final double? sharpnessScore;
@@ -1925,6 +2014,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     required this.aiCaptionScanned,
     required this.aiCaptionEdited,
     required this.aiTagsScanned,
+    this.transkript,
+    this.transkriptSprache,
+    required this.transkriptGeprueft,
     this.sharpnessScore,
     this.stackId,
     required this.isStackCover,
@@ -2054,6 +2146,13 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     map['ai_caption_scanned'] = Variable<bool>(aiCaptionScanned);
     map['ai_caption_edited'] = Variable<bool>(aiCaptionEdited);
     map['ai_tags_scanned'] = Variable<bool>(aiTagsScanned);
+    if (!nullToAbsent || transkript != null) {
+      map['transkript'] = Variable<String>(transkript);
+    }
+    if (!nullToAbsent || transkriptSprache != null) {
+      map['transkript_sprache'] = Variable<String>(transkriptSprache);
+    }
+    map['transkript_geprueft'] = Variable<bool>(transkriptGeprueft);
     if (!nullToAbsent || sharpnessScore != null) {
       map['sharpness_score'] = Variable<double>(sharpnessScore);
     }
@@ -2188,6 +2287,13 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       aiCaptionScanned: Value(aiCaptionScanned),
       aiCaptionEdited: Value(aiCaptionEdited),
       aiTagsScanned: Value(aiTagsScanned),
+      transkript: transkript == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transkript),
+      transkriptSprache: transkriptSprache == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transkriptSprache),
+      transkriptGeprueft: Value(transkriptGeprueft),
       sharpnessScore: sharpnessScore == null && nullToAbsent
           ? const Value.absent()
           : Value(sharpnessScore),
@@ -2278,6 +2384,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       aiCaptionScanned: serializer.fromJson<bool>(json['aiCaptionScanned']),
       aiCaptionEdited: serializer.fromJson<bool>(json['aiCaptionEdited']),
       aiTagsScanned: serializer.fromJson<bool>(json['aiTagsScanned']),
+      transkript: serializer.fromJson<String?>(json['transkript']),
+      transkriptSprache: serializer.fromJson<String?>(
+        json['transkriptSprache'],
+      ),
+      transkriptGeprueft: serializer.fromJson<bool>(json['transkriptGeprueft']),
       sharpnessScore: serializer.fromJson<double?>(json['sharpnessScore']),
       stackId: serializer.fromJson<String?>(json['stackId']),
       isStackCover: serializer.fromJson<bool>(json['isStackCover']),
@@ -2349,6 +2460,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       'aiCaptionScanned': serializer.toJson<bool>(aiCaptionScanned),
       'aiCaptionEdited': serializer.toJson<bool>(aiCaptionEdited),
       'aiTagsScanned': serializer.toJson<bool>(aiTagsScanned),
+      'transkript': serializer.toJson<String?>(transkript),
+      'transkriptSprache': serializer.toJson<String?>(transkriptSprache),
+      'transkriptGeprueft': serializer.toJson<bool>(transkriptGeprueft),
       'sharpnessScore': serializer.toJson<double?>(sharpnessScore),
       'stackId': serializer.toJson<String?>(stackId),
       'isStackCover': serializer.toJson<bool>(isStackCover),
@@ -2414,6 +2528,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     bool? aiCaptionScanned,
     bool? aiCaptionEdited,
     bool? aiTagsScanned,
+    Value<String?> transkript = const Value.absent(),
+    Value<String?> transkriptSprache = const Value.absent(),
+    bool? transkriptGeprueft,
     Value<double?> sharpnessScore = const Value.absent(),
     Value<String?> stackId = const Value.absent(),
     bool? isStackCover,
@@ -2504,6 +2621,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     aiCaptionScanned: aiCaptionScanned ?? this.aiCaptionScanned,
     aiCaptionEdited: aiCaptionEdited ?? this.aiCaptionEdited,
     aiTagsScanned: aiTagsScanned ?? this.aiTagsScanned,
+    transkript: transkript.present ? transkript.value : this.transkript,
+    transkriptSprache: transkriptSprache.present
+        ? transkriptSprache.value
+        : this.transkriptSprache,
+    transkriptGeprueft: transkriptGeprueft ?? this.transkriptGeprueft,
     sharpnessScore: sharpnessScore.present
         ? sharpnessScore.value
         : this.sharpnessScore,
@@ -2646,6 +2768,15 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       aiTagsScanned: data.aiTagsScanned.present
           ? data.aiTagsScanned.value
           : this.aiTagsScanned,
+      transkript: data.transkript.present
+          ? data.transkript.value
+          : this.transkript,
+      transkriptSprache: data.transkriptSprache.present
+          ? data.transkriptSprache.value
+          : this.transkriptSprache,
+      transkriptGeprueft: data.transkriptGeprueft.present
+          ? data.transkriptGeprueft.value
+          : this.transkriptGeprueft,
       sharpnessScore: data.sharpnessScore.present
           ? data.sharpnessScore.value
           : this.sharpnessScore,
@@ -2717,6 +2848,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           ..write('aiCaptionScanned: $aiCaptionScanned, ')
           ..write('aiCaptionEdited: $aiCaptionEdited, ')
           ..write('aiTagsScanned: $aiTagsScanned, ')
+          ..write('transkript: $transkript, ')
+          ..write('transkriptSprache: $transkriptSprache, ')
+          ..write('transkriptGeprueft: $transkriptGeprueft, ')
           ..write('sharpnessScore: $sharpnessScore, ')
           ..write('stackId: $stackId, ')
           ..write('isStackCover: $isStackCover, ')
@@ -2784,6 +2918,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     aiCaptionScanned,
     aiCaptionEdited,
     aiTagsScanned,
+    transkript,
+    transkriptSprache,
+    transkriptGeprueft,
     sharpnessScore,
     stackId,
     isStackCover,
@@ -2850,6 +2987,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           other.aiCaptionScanned == this.aiCaptionScanned &&
           other.aiCaptionEdited == this.aiCaptionEdited &&
           other.aiTagsScanned == this.aiTagsScanned &&
+          other.transkript == this.transkript &&
+          other.transkriptSprache == this.transkriptSprache &&
+          other.transkriptGeprueft == this.transkriptGeprueft &&
           other.sharpnessScore == this.sharpnessScore &&
           other.stackId == this.stackId &&
           other.isStackCover == this.isStackCover &&
@@ -2914,6 +3054,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
   final Value<bool> aiCaptionScanned;
   final Value<bool> aiCaptionEdited;
   final Value<bool> aiTagsScanned;
+  final Value<String?> transkript;
+  final Value<String?> transkriptSprache;
+  final Value<bool> transkriptGeprueft;
   final Value<double?> sharpnessScore;
   final Value<String?> stackId;
   final Value<bool> isStackCover;
@@ -2977,6 +3120,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.aiCaptionScanned = const Value.absent(),
     this.aiCaptionEdited = const Value.absent(),
     this.aiTagsScanned = const Value.absent(),
+    this.transkript = const Value.absent(),
+    this.transkriptSprache = const Value.absent(),
+    this.transkriptGeprueft = const Value.absent(),
     this.sharpnessScore = const Value.absent(),
     this.stackId = const Value.absent(),
     this.isStackCover = const Value.absent(),
@@ -3041,6 +3187,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.aiCaptionScanned = const Value.absent(),
     this.aiCaptionEdited = const Value.absent(),
     this.aiTagsScanned = const Value.absent(),
+    this.transkript = const Value.absent(),
+    this.transkriptSprache = const Value.absent(),
+    this.transkriptGeprueft = const Value.absent(),
     this.sharpnessScore = const Value.absent(),
     this.stackId = const Value.absent(),
     this.isStackCover = const Value.absent(),
@@ -3111,6 +3260,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Expression<bool>? aiCaptionScanned,
     Expression<bool>? aiCaptionEdited,
     Expression<bool>? aiTagsScanned,
+    Expression<String>? transkript,
+    Expression<String>? transkriptSprache,
+    Expression<bool>? transkriptGeprueft,
     Expression<double>? sharpnessScore,
     Expression<String>? stackId,
     Expression<bool>? isStackCover,
@@ -3182,6 +3334,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       if (aiCaptionScanned != null) 'ai_caption_scanned': aiCaptionScanned,
       if (aiCaptionEdited != null) 'ai_caption_edited': aiCaptionEdited,
       if (aiTagsScanned != null) 'ai_tags_scanned': aiTagsScanned,
+      if (transkript != null) 'transkript': transkript,
+      if (transkriptSprache != null) 'transkript_sprache': transkriptSprache,
+      if (transkriptGeprueft != null) 'transkript_geprueft': transkriptGeprueft,
       if (sharpnessScore != null) 'sharpness_score': sharpnessScore,
       if (stackId != null) 'stack_id': stackId,
       if (isStackCover != null) 'is_stack_cover': isStackCover,
@@ -3248,6 +3403,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Value<bool>? aiCaptionScanned,
     Value<bool>? aiCaptionEdited,
     Value<bool>? aiTagsScanned,
+    Value<String?>? transkript,
+    Value<String?>? transkriptSprache,
+    Value<bool>? transkriptGeprueft,
     Value<double?>? sharpnessScore,
     Value<String?>? stackId,
     Value<bool>? isStackCover,
@@ -3314,6 +3472,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       aiCaptionScanned: aiCaptionScanned ?? this.aiCaptionScanned,
       aiCaptionEdited: aiCaptionEdited ?? this.aiCaptionEdited,
       aiTagsScanned: aiTagsScanned ?? this.aiTagsScanned,
+      transkript: transkript ?? this.transkript,
+      transkriptSprache: transkriptSprache ?? this.transkriptSprache,
+      transkriptGeprueft: transkriptGeprueft ?? this.transkriptGeprueft,
       sharpnessScore: sharpnessScore ?? this.sharpnessScore,
       stackId: stackId ?? this.stackId,
       isStackCover: isStackCover ?? this.isStackCover,
@@ -3508,6 +3669,15 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     if (aiTagsScanned.present) {
       map['ai_tags_scanned'] = Variable<bool>(aiTagsScanned.value);
     }
+    if (transkript.present) {
+      map['transkript'] = Variable<String>(transkript.value);
+    }
+    if (transkriptSprache.present) {
+      map['transkript_sprache'] = Variable<String>(transkriptSprache.value);
+    }
+    if (transkriptGeprueft.present) {
+      map['transkript_geprueft'] = Variable<bool>(transkriptGeprueft.value);
+    }
     if (sharpnessScore.present) {
       map['sharpness_score'] = Variable<double>(sharpnessScore.value);
     }
@@ -3586,6 +3756,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
           ..write('aiCaptionScanned: $aiCaptionScanned, ')
           ..write('aiCaptionEdited: $aiCaptionEdited, ')
           ..write('aiTagsScanned: $aiTagsScanned, ')
+          ..write('transkript: $transkript, ')
+          ..write('transkriptSprache: $transkriptSprache, ')
+          ..write('transkriptGeprueft: $transkriptGeprueft, ')
           ..write('sharpnessScore: $sharpnessScore, ')
           ..write('stackId: $stackId, ')
           ..write('isStackCover: $isStackCover, ')
@@ -25749,6 +25922,9 @@ typedef $$AssetsTableCreateCompanionBuilder =
       Value<bool> aiCaptionScanned,
       Value<bool> aiCaptionEdited,
       Value<bool> aiTagsScanned,
+      Value<String?> transkript,
+      Value<String?> transkriptSprache,
+      Value<bool> transkriptGeprueft,
       Value<double?> sharpnessScore,
       Value<String?> stackId,
       Value<bool> isStackCover,
@@ -25814,6 +25990,9 @@ typedef $$AssetsTableUpdateCompanionBuilder =
       Value<bool> aiCaptionScanned,
       Value<bool> aiCaptionEdited,
       Value<bool> aiTagsScanned,
+      Value<String?> transkript,
+      Value<String?> transkriptSprache,
+      Value<bool> transkriptGeprueft,
       Value<double?> sharpnessScore,
       Value<String?> stackId,
       Value<bool> isStackCover,
@@ -26112,6 +26291,21 @@ class $$AssetsTableFilterComposer
 
   ColumnFilters<bool> get aiTagsScanned => $composableBuilder(
     column: $table.aiTagsScanned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transkript => $composableBuilder(
+    column: $table.transkript,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transkriptSprache => $composableBuilder(
+    column: $table.transkriptSprache,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get transkriptGeprueft => $composableBuilder(
+    column: $table.transkriptGeprueft,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26430,6 +26624,21 @@ class $$AssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get transkript => $composableBuilder(
+    column: $table.transkript,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transkriptSprache => $composableBuilder(
+    column: $table.transkriptSprache,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get transkriptGeprueft => $composableBuilder(
+    column: $table.transkriptGeprueft,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get sharpnessScore => $composableBuilder(
     column: $table.sharpnessScore,
     builder: (column) => ColumnOrderings(column),
@@ -26707,6 +26916,21 @@ class $$AssetsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get transkript => $composableBuilder(
+    column: $table.transkript,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transkriptSprache => $composableBuilder(
+    column: $table.transkriptSprache,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get transkriptGeprueft => $composableBuilder(
+    column: $table.transkriptGeprueft,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get sharpnessScore => $composableBuilder(
     column: $table.sharpnessScore,
     builder: (column) => column,
@@ -26809,6 +27033,9 @@ class $$AssetsTableTableManager
                 Value<bool> aiCaptionScanned = const Value.absent(),
                 Value<bool> aiCaptionEdited = const Value.absent(),
                 Value<bool> aiTagsScanned = const Value.absent(),
+                Value<String?> transkript = const Value.absent(),
+                Value<String?> transkriptSprache = const Value.absent(),
+                Value<bool> transkriptGeprueft = const Value.absent(),
                 Value<double?> sharpnessScore = const Value.absent(),
                 Value<String?> stackId = const Value.absent(),
                 Value<bool> isStackCover = const Value.absent(),
@@ -26872,6 +27099,9 @@ class $$AssetsTableTableManager
                 aiCaptionScanned: aiCaptionScanned,
                 aiCaptionEdited: aiCaptionEdited,
                 aiTagsScanned: aiTagsScanned,
+                transkript: transkript,
+                transkriptSprache: transkriptSprache,
+                transkriptGeprueft: transkriptGeprueft,
                 sharpnessScore: sharpnessScore,
                 stackId: stackId,
                 isStackCover: isStackCover,
@@ -26937,6 +27167,9 @@ class $$AssetsTableTableManager
                 Value<bool> aiCaptionScanned = const Value.absent(),
                 Value<bool> aiCaptionEdited = const Value.absent(),
                 Value<bool> aiTagsScanned = const Value.absent(),
+                Value<String?> transkript = const Value.absent(),
+                Value<String?> transkriptSprache = const Value.absent(),
+                Value<bool> transkriptGeprueft = const Value.absent(),
                 Value<double?> sharpnessScore = const Value.absent(),
                 Value<String?> stackId = const Value.absent(),
                 Value<bool> isStackCover = const Value.absent(),
@@ -27000,6 +27233,9 @@ class $$AssetsTableTableManager
                 aiCaptionScanned: aiCaptionScanned,
                 aiCaptionEdited: aiCaptionEdited,
                 aiTagsScanned: aiTagsScanned,
+                transkript: transkript,
+                transkriptSprache: transkriptSprache,
+                transkriptGeprueft: transkriptGeprueft,
                 sharpnessScore: sharpnessScore,
                 stackId: stackId,
                 isStackCover: isStackCover,

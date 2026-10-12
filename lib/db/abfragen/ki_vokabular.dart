@@ -103,6 +103,10 @@ extension VokabularAbfragen on AppDatabase {
       wo.add(
         assets.aiCaption.like('%$text%') | assets.aiCaptionDe.like('%$text%'),
       );
+    } else if (!textAlreadyFiltered &&
+        text.isNotEmpty &&
+        filters.textMode == SearchTextMode.transkript) {
+      wo.add(assets.transkript.like('%$text%'));
     }
 
     if (filters.cameraMake != null) {
@@ -277,6 +281,7 @@ extension VokabularAbfragen on AppDatabase {
       SearchTextMode.description => ['description'],
       SearchTextMode.ocr => ['ocr_text'],
       SearchTextMode.caption => ['ai_caption', 'ai_caption_de'],
+      SearchTextMode.transkript => ['transkript'],
       _ => const <String>[],
     };
     if (columns.isEmpty) return null;

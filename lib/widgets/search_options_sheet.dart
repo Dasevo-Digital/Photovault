@@ -690,6 +690,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     SearchTextMode.description => AppTexte.of(context).suchoptNachBeschreibung,
     SearchTextMode.ocr => AppTexte.of(context).suchoptNachOcr,
     SearchTextMode.caption => AppTexte.of(context).suchoptNachCaption,
+    SearchTextMode.transkript => AppTexte.of(context).suchoptNachTranskript,
   };
 
   Widget _buildTextModeSection() {
@@ -733,6 +734,12 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               label: AppTexte.of(context).suchoptTypCaption,
               onChanged: (v) => setState(() => _textMode = v),
             ),
+            _InlineRadio(
+              value: SearchTextMode.transkript,
+              groupValue: _textMode,
+              label: AppTexte.of(context).suchoptTypTranskript,
+              onChanged: (v) => setState(() => _textMode = v),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -756,6 +763,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               ).suchoptHintBeschreibung,
               SearchTextMode.ocr => AppTexte.of(context).suchoptHintOcr,
               SearchTextMode.caption => AppTexte.of(context).suchoptHintCaption,
+              SearchTextMode.transkript => AppTexte.of(
+                context,
+              ).suchoptHintTranskript,
             },
           ),
         ),
@@ -765,6 +775,15 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
             padding: const EdgeInsets.only(top: AppSpacing.sm),
             child: Text(
               AppTexte.of(context).suchoptClipFehlt,
+              style: TextStyle(fontSize: 12, color: context.semantik.warnung),
+            ),
+          ),
+        if (_textMode == SearchTextMode.transkript &&
+            !widget.library.spracherkennungAvailable)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: Text(
+              AppTexte.of(context).suchoptTranskriptFehlt,
               style: TextStyle(fontSize: 12, color: context.semantik.warnung),
             ),
           ),

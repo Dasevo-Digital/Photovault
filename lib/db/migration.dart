@@ -11,16 +11,18 @@ extension Migrationsschritte on AppDatabase {
         ocr_text,
         ai_caption,
         ai_caption_de,
+        transkript,
         tokenize = 'unicode61 remove_diacritics 2'
       )
     ''');
     await customStatement('DELETE FROM asset_search_fts');
     await customStatement('''
       INSERT INTO asset_search_fts
-        (asset_id, original_file_name, description, ocr_text, ai_caption, ai_caption_de)
+        (asset_id, original_file_name, description, ocr_text, ai_caption,
+         ai_caption_de, transkript)
       SELECT id, original_file_name, coalesce(description, ''),
              coalesce(ocr_text, ''), coalesce(ai_caption, ''),
-             coalesce(ai_caption_de, '')
+             coalesce(ai_caption_de, ''), coalesce(transkript, '')
       FROM assets
     ''');
     await _createAssetSearchTriggers();
@@ -35,10 +37,11 @@ extension Migrationsschritte on AppDatabase {
     await customStatement('''
       CREATE TRIGGER IF NOT EXISTS assets_fts_insert AFTER INSERT ON assets BEGIN
         INSERT INTO asset_search_fts
-          (asset_id, original_file_name, description, ocr_text, ai_caption, ai_caption_de)
+          (asset_id, original_file_name, description, ocr_text, ai_caption,
+           ai_caption_de, transkript)
         VALUES (new.id, new.original_file_name, coalesce(new.description, ''),
                 coalesce(new.ocr_text, ''), coalesce(new.ai_caption, ''),
-                coalesce(new.ai_caption_de, ''));
+                coalesce(new.ai_caption_de, ''), coalesce(new.transkript, ''));
       END
     ''');
     // **`UPDATE OF` genügt nicht.** Es feuert, sobald eine der Spalten in
@@ -56,20 +59,23 @@ extension Migrationsschritte on AppDatabase {
     // genau so sieht das erste Beschreiben eines leeren Feldes aus.
     await customStatement('''
       CREATE TRIGGER IF NOT EXISTS assets_fts_update
-      AFTER UPDATE OF original_file_name, description, ocr_text, ai_caption, ai_caption_de
+      AFTER UPDATE OF original_file_name, description, ocr_text, ai_caption,
+        ai_caption_de, transkript
       ON assets
       WHEN new.original_file_name IS NOT old.original_file_name
         OR new.description IS NOT old.description
         OR new.ocr_text IS NOT old.ocr_text
         OR new.ai_caption IS NOT old.ai_caption
         OR new.ai_caption_de IS NOT old.ai_caption_de
+        OR new.transkript IS NOT old.transkript
       BEGIN
         DELETE FROM asset_search_fts WHERE asset_id = old.id;
         INSERT INTO asset_search_fts
-          (asset_id, original_file_name, description, ocr_text, ai_caption, ai_caption_de)
+          (asset_id, original_file_name, description, ocr_text, ai_caption,
+           ai_caption_de, transkript)
         VALUES (new.id, new.original_file_name, coalesce(new.description, ''),
                 coalesce(new.ocr_text, ''), coalesce(new.ai_caption, ''),
-                coalesce(new.ai_caption_de, ''));
+                coalesce(new.ai_caption_de, ''), coalesce(new.transkript, ''));
       END
     ''');
     await customStatement('''
@@ -1227,6 +1233,15 @@ extension Migrationsschritte on AppDatabase {
       await _addColumnIfMissing(m, reisen, reisen.art, 'reisen', 'art');
     }
     if (from < 82) {
+      // Index und Auslöser lesen seit Schema 92 auch das Transkript; die
+      // Spalte muss deshalb schon hier da sein, nicht erst bei 92.
+      await _addColumnIfMissing(
+        m,
+        assets,
+        assets.transkript,
+        'assets',
+        'transkript',
+      );
       await _createAssetSearchFts();
     }
     if (from < 83) {
@@ -1243,6 +1258,13 @@ extension Migrationsschritte on AppDatabase {
       // [_createAssetSearchFts]). `CREATE TRIGGER IF NOT EXISTS`
       // liesse den alten stehen – er muss weg, bevor der neue kommt.
       await customStatement('DROP TRIGGER IF EXISTS assets_fts_update');
+      await _addColumnIfMissing(
+        m,
+        assets,
+        assets.transkript,
+        'assets',
+        'transkript',
+      );
       await _createAssetSearchTriggers();
     }
     if (from < 85) {
@@ -1310,6 +1332,27 @@ extension Migrationsschritte on AppDatabase {
       ]) {
         await _addColumnIfMissing(m, appSettings, spalte, 'app_settings', name);
       }
+    }
+    if (from < 92) {
+      // Erst die Spalten, dann der Index: Die Auslöser lesen
+      // `new.transkript`, und den Volltextindex legt nur ein Neubau mit
+      // der zusätzlichen Spalte an – FTS5 kennt kein ALTER TABLE.
+      for (final (spalte, name) in [
+        (assets.transkript, 'transkript'),
+        (assets.transkriptSprache, 'transkript_sprache'),
+        (assets.transkriptGeprueft, 'transkript_geprueft'),
+      ]) {
+        await _addColumnIfMissing(m, assets, spalte, 'assets', name);
+      }
+      for (final ausloeser in [
+        'assets_fts_insert',
+        'assets_fts_update',
+        'assets_fts_delete',
+      ]) {
+        await customStatement('DROP TRIGGER IF EXISTS $ausloeser');
+      }
+      await customStatement('DROP TABLE IF EXISTS asset_search_fts');
+      await _createAssetSearchFts();
     }
   }
 }

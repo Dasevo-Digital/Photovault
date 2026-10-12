@@ -179,6 +179,7 @@ void main() {
           ocrScanned: false,
           aiCaptionScanned: false,
           aiTagsScanned: false,
+          transkriptGeprueft: false,
           aiCaptionEdited: false,
           isStackCover: false,
           faceScanExcluded: false,

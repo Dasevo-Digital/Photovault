@@ -67,6 +67,7 @@ AssetData _voll(String id, DateTime wann, {int b = 3000, int h = 2000}) =>
       aiCaptionScanned: false,
       aiCaptionEdited: false,
       aiTagsScanned: false,
+      transkriptGeprueft: false,
       isStackCover: false,
       rating: 0,
     );

@@ -302,6 +302,20 @@ class Assets extends Table {
   BoolColumn get aiTagsScanned =>
       boolean().withDefault(const Constant(false))();
 
+  /// Was in einem Video gesprochen wird (siehe WhisperService) –
+  /// durchsuchbar über SearchTextMode.transkript. Bei Fotos immer leer.
+  TextColumn get transkript => text().nullable()();
+
+  /// Die Sprache von [transkript] als Kürzel (`de`, `en`, …), wie das
+  /// Modell sie bestimmt hat.
+  TextColumn get transkriptSprache => text().nullable()();
+
+  /// Ob die Spracherkennung das Video schon gehört hat – aus demselben
+  /// Grund wie [aiTagsScanned] ein eigenes Merkmal: Ein Video ohne
+  /// Sprache ist ein gültiges Ergebnis, kein offener Posten.
+  BoolColumn get transkriptGeprueft =>
+      boolean().withDefault(const Constant(false))();
+
   /// Laplace-Varianz des Bilds (siehe blur_detection.dart) – höher = schärfer.
   /// Null, solange noch nicht berechnet.
   RealColumn get sharpnessScore => real().nullable()();

@@ -57,6 +57,7 @@ Rasterzeile _foto(String id, DateTime wann, {int? breite, int? hoehe}) =>
         aiCaptionScanned: false,
         aiCaptionEdited: false,
         aiTagsScanned: false,
+        transkriptGeprueft: false,
         isStackCover: false,
         rating: 0,
       ),

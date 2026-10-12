@@ -2,7 +2,9 @@
 /// analog zu Immichs "Suche nach Typ". "Voller Ordnerpfad oder Ordner" fehlt
 /// bewusst: passt nicht zu PhotoVaults Datenmodell (die App organisiert die
 /// Bibliothek selbst, es gibt keine vom Nutzer sichtbaren Ordner).
-enum SearchTextMode { context, filename, description, ocr, caption }
+/// Wo ein Suchbegriff gesucht wird. [transkript] ist das in Videos
+/// Gesprochene (siehe WhisperService).
+enum SearchTextMode { context, filename, description, ocr, caption, transkript }
 
 enum MediaTypeFilter { all, image, video }
 
