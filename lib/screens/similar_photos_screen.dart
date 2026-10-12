@@ -4,7 +4,7 @@ import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
-import '../services/clip_service.dart';
+import 'package:kern/services/clip_service.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';

@@ -9,7 +9,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/widgets/asset_info_sheet.dart';
-import 'package:photo_vault/services/textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import 'package:photo_vault/widgets/textrahmen.dart';
 
 /// Der erkannte Text lag bis Schema 60 ausschliesslich in der Datenbank und

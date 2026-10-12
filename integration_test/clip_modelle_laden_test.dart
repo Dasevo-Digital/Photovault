@@ -37,8 +37,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/clip_service.dart';
-import 'package:photo_vault/services/model_catalog.dart';
+import 'package:kern/services/clip_service.dart';
+import 'package:kern/services/model_catalog.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/ocr_service.dart';
+import 'package:kern/services/ocr_service.dart';
 
 /// Texterkennung gegen die ECHTEN Modelle, nicht gegen Attrappen.
 ///

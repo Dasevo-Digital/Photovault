@@ -3,7 +3,7 @@ import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'face_engine_service.dart';
+import 'package:kern/services/face_engine_service.dart';
 
 /// Eingabe für [clusterFaces] – als eigene Klasse statt loser Parameter,
 /// damit sich der Aufruf sauber an `compute()` übergeben lässt (top-level

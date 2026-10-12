@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_catalog.dart';
-import 'package:photo_vault/services/model_download_service.dart';
+import 'package:kern/services/model_catalog.dart';
+import 'package:kern/services/model_download_service.dart';
 
 /// **Die Prüfsumme darf nicht nur einmal wirken.**
 ///

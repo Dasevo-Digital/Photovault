@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_catalog.dart';
-import 'package:photo_vault/services/model_download_service.dart';
-import 'package:photo_vault/services/translation_service.dart';
+import 'package:kern/services/model_catalog.dart';
+import 'package:kern/services/model_download_service.dart';
+import 'package:kern/services/translation_service.dart';
 
 /// Die Katalogeinträge der beiden Übersetzungsrichtungen und ihr
 /// Zusammenspiel mit dem Verfügbarkeits-Check.

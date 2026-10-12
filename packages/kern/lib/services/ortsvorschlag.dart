@@ -19,7 +19,7 @@
 /// **Eine verworfene Messung gilt nur für ihren Datenstand.**
 library;
 
-import 'reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 
 /// Eine verortete Aufnahme, wie die Rechnung sie braucht.
 typedef Ortsnachbar = ({DateTime wann, double breite, double laenge});

@@ -11,7 +11,6 @@ import 'dart:math' as math;
 import 'dart:typed_data' as typed_data;
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:flutter_onnxruntime/src/flutter_onnxruntime_platform_interface.dart';
 import 'package:web/web.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter/services.dart'; // Import for PlatformException
@@ -72,14 +71,14 @@ extension NavigatorJSExtension on NavigatorJS {
   external String get userAgent;
 }
 
-/// Web implementation of [FlutterOnnxruntimePlatform] using Dart JS interop.
-class FlutterOnnxruntimeWebPlugin extends FlutterOnnxruntimePlatform {
+/// Web implementation of [OnnxRuntimePlatform] using Dart JS interop.
+class FlutterOnnxruntimeWebPlugin extends OnnxRuntimePlatform {
   // A map to store the created inference sessions
   final Map<String, JSObject> _sessions = {};
 
-  /// Registers this class as the default instance of [FlutterOnnxruntimePlatform].
+  /// Registers this class as the default instance of [OnnxRuntimePlatform].
   static void registerWith(Registrar registrar) {
-    FlutterOnnxruntimePlatform.instance = FlutterOnnxruntimeWebPlugin();
+    OnnxRuntimePlatform.instance = FlutterOnnxruntimeWebPlugin();
   }
 
   @override

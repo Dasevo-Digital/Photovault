@@ -13,8 +13,8 @@ import 'package:image/image.dart' as img;
 import '../services/geometry_edits.dart';
 import '../services/inpainting_service.dart';
 import '../services/kolorieren.dart';
-import '../services/kratzermodell.dart';
-import '../services/kratzersuche.dart';
+import 'package:kern/services/kratzermodell.dart';
+import 'package:kern/services/kratzersuche.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:kern/db/database.dart';

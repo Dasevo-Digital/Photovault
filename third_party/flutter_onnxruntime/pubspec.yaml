@@ -13,7 +13,10 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
    sdk: flutter
-  path_provider: ^2.1.5
+  # The API without Flutter (sessions, values, platform interface); see
+  # ANPASSUNGEN.md.
+  onnxruntime_api:
+    path: ../onnxruntime_api
   plugin_platform_interface: ^2.0.2
   web: ^1.1.1
 
@@ -21,8 +24,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  # Used only by tests to fake getTemporaryDirectory() (already a transitive dep of path_provider).
-  path_provider_platform_interface: ^2.1.2
 
 flutter:
   plugin:
@@ -30,17 +31,22 @@ flutter:
       android:
         package: com.masicai.flutteronnxruntime
         pluginClass: FlutterOnnxruntimePlugin
+        dartPluginClass: MethodChannelFlutterOnnxruntime
       ios:
         pluginClass: FlutterOnnxruntimePlugin
+        dartPluginClass: MethodChannelFlutterOnnxruntime
       linux:
         pluginClass: FlutterOnnxruntimePlugin
+        dartPluginClass: MethodChannelFlutterOnnxruntime
       macos:
         pluginClass: FlutterOnnxruntimePlugin
+        dartPluginClass: MethodChannelFlutterOnnxruntime
       web:
         pluginClass: FlutterOnnxruntimeWebPlugin
         fileName: web/flutter_onnxruntime_web_plugin.dart
       windows:
         pluginClass: FlutterOnnxruntimePlugin
+        dartPluginClass: MethodChannelFlutterOnnxruntime
 
 topics:
  - onnx

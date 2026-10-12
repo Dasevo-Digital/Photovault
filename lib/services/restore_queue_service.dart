@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import 'bilddekodierung.dart';
-import 'modell_halter.dart';
+import 'package:kern/services/modell_halter.dart';
 import 'native_image_converter.dart';
 import 'restore_service.dart';
 import 'storage_paths.dart';

@@ -23,7 +23,7 @@ import '../services/develop_color.dart';
 import '../services/develop_render.dart';
 import '../services/entwicklungsverlauf.dart';
 import '../services/histogram.dart';
-import '../services/modell_halter.dart';
+import 'package:kern/services/modell_halter.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/segmentation_service.dart';

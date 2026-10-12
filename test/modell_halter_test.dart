@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/modell_halter.dart';
+import 'package:kern/services/modell_halter.dart';
 
 /// Der Halter entscheidet, wann ein KI-Modell im Speicher liegt. Fehler
 /// darin sind teuer: doppeltes Laden kostet hunderte Megabyte, Freigeben

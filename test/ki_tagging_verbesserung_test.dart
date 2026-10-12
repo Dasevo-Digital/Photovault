@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/ai_tagging_service.dart';
-import 'package:photo_vault/services/clip_service.dart';
+import 'package:kern/services/ai_tagging_service.dart';
+import 'package:kern/services/clip_service.dart';
 
 /// Was ein Vokabelbegriff auf dem Weg zum Text-Encoder wird.
 ///

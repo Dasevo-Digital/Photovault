@@ -11,10 +11,17 @@ environment:
 # löst sie gemeinsam auf; die eigene Auflösung hier dient der Analyse und
 # später dem Server, der ohne Flutter gebaut wird.
 dependencies:
+  crypto: ^3.0.5
+  dio: ^5.7.0
   drift: ^2.20.0
   exif: ^3.3.0
   http: ^1.6.0
+  image: ^4.2.0
   meta: ^1.15.0
+  # Die Dart-API der ONNX Runtime ohne Flutter; die App bringt über das
+  # Plugin third_party/flutter_onnxruntime die Umsetzung mit.
+  onnxruntime_api:
+    path: ../../third_party/onnxruntime_api
   path: ^1.9.0
   sqlite3: ^3.5.1
 

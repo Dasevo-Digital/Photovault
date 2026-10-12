@@ -19,10 +19,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/face_engine_service.dart';
-import 'package:photo_vault/services/florence_captioning_service.dart';
+import 'package:kern/services/face_engine_service.dart';
+import 'package:kern/services/florence_captioning_service.dart';
 import 'package:photo_vault/services/segmentation_service.dart';
-import 'package:photo_vault/services/translation_service.dart';
+import 'package:kern/services/translation_service.dart';
 
 /// Ein Bild, das jeder Lauf identisch erzeugt.
 img.Image pruefbild(int kante) {

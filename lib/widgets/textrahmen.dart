@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../services/textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import '../theme/app_spacing.dart';
 import 'tippfaenger.dart';
 

@@ -1,8 +1,8 @@
 import 'dart:async';
+import '../protokoll.dart';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
@@ -374,7 +374,7 @@ class ModelDownloadService {
           await eintrag.delete();
           entfernt++;
         } catch (e) {
-          debugPrint('Rest eines Downloads liess sich nicht entfernen: $e');
+          protokoll('Rest eines Downloads liess sich nicht entfernen: $e');
         }
       }
     }
@@ -411,9 +411,7 @@ class ModelDownloadService {
           await f.delete();
         }
       } catch (e) {
-        debugPrint(
-          'Abgelöste Modelldatei $name liess sich nicht entfernen: $e',
-        );
+        protokoll('Abgelöste Modelldatei $name liess sich nicht entfernen: $e');
       }
     }
     return bytes;

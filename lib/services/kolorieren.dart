@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
-import 'modellthreads.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// **Alte Schwarzweiss-Fotos einfärben** (DDColor, siehe
 /// ModelCatalog.kolorieren).

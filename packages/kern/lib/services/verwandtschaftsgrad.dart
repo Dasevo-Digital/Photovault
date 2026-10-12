@@ -10,7 +10,7 @@ library;
 
 import 'package:meta/meta.dart';
 
-import 'stammbaum.dart';
+import 'package:kern/services/stammbaum.dart';
 
 /// Nur für die Bezeichnungen erhoben, siehe `People.geschlecht`.
 enum Geschlecht { weiblich, maennlich, divers }

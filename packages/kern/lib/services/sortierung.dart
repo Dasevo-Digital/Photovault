@@ -9,7 +9,7 @@
 /// laufen können.
 library;
 
-import '../db/database.dart' show AssetData;
+import 'package:kern/db/database.dart' show AssetData;
 
 /// Die wählbaren Reihenfolgen.
 ///

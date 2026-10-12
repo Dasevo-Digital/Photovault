@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/ai_tagging_service.dart';
+import 'package:kern/services/ai_tagging_service.dart';
 
 /// **Rangieren statt schwellen.**
 ///

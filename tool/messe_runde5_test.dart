@@ -12,7 +12,7 @@ import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/clip_service.dart';
+import 'package:kern/services/clip_service.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:photo_vault/services/serienvergleich.dart';
 import 'package:kern/services/sortierung.dart';

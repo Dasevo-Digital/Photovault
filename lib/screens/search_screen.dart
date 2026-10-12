@@ -8,7 +8,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
-import '../services/clip_service.dart';
+import 'package:kern/services/clip_service.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/sortierung.dart';
 import '../services/suchsatz.dart';

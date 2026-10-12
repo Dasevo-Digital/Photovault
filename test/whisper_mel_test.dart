@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/whisper_mel.dart';
+import 'package:kern/services/whisper_mel.dart';
 
 /// Das Mel-Spektrogramm, mit dem Whisper hört – gegen Werte aus dem
 /// Original (numpy, `mel_filters.npz` des Whisper-Repositorys), siehe

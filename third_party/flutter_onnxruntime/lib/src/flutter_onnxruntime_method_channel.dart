@@ -6,12 +6,16 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 
-import 'flutter_onnxruntime_platform_interface.dart';
+/// An implementation of [OnnxRuntimePlatform] that uses method channels.
+class MethodChannelFlutterOnnxruntime extends OnnxRuntimePlatform {
+  /// Registers this implementation. Flutter calls it on start-up because the
+  /// plugin names this class as its `dartPluginClass` (pubspec.yaml).
+  static void registerWith() {
+    OnnxRuntimePlatform.instance = MethodChannelFlutterOnnxruntime();
+  }
 
-/// An implementation of [FlutterOnnxruntimePlatform] that uses method channels.
-class MethodChannelFlutterOnnxruntime extends FlutterOnnxruntimePlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel('flutter_onnxruntime');

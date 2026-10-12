@@ -4,10 +4,10 @@
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
 
-import 'package:flutter_onnxruntime/src/flutter_onnxruntime_platform_interface.dart';
-import 'package:flutter_onnxruntime/src/ort_model_metadata.dart';
-import 'package:flutter_onnxruntime/src/ort_provider.dart';
-import 'package:flutter_onnxruntime/src/ort_value.dart';
+import 'onnxruntime_platform.dart';
+import 'ort_model_metadata.dart';
+import 'ort_provider.dart';
+import 'ort_value.dart';
 
 class OrtSession {
   final String id;
@@ -45,7 +45,7 @@ class OrtSession {
   /// final outputs = await session.run(inputs);
   /// ```
   Future<Map<String, OrtValue>> run(Map<String, OrtValue> inputs, {OrtRunOptions? options}) async {
-    final result = await FlutterOnnxruntimePlatform.instance.runInference(
+    final result = await OnnxRuntimePlatform.instance.runInference(
       id,
       inputs,
       runOptions: options?.toMap() ?? {},
@@ -59,7 +59,7 @@ class OrtSession {
   }
 
   Future<void> close() async {
-    await FlutterOnnxruntimePlatform.instance.closeSession(id);
+    await OnnxRuntimePlatform.instance.closeSession(id);
   }
 
   /// Get metadata about the model
@@ -67,7 +67,7 @@ class OrtSession {
   /// Returns information about the model such as producer name, graph name,
   /// domain, description, version, and custom metadata.
   Future<OrtModelMetadata> getMetadata() async {
-    final metadataMap = await FlutterOnnxruntimePlatform.instance.getMetadata(id);
+    final metadataMap = await OnnxRuntimePlatform.instance.getMetadata(id);
     return OrtModelMetadata.fromMap(metadataMap);
   }
 
@@ -75,7 +75,7 @@ class OrtSession {
   ///
   /// Returns information about the model's inputs such as name, type, and shape.
   Future<List<Map<String, dynamic>>> getInputInfo() async {
-    final inputInfoMap = await FlutterOnnxruntimePlatform.instance.getInputInfo(id);
+    final inputInfoMap = await OnnxRuntimePlatform.instance.getInputInfo(id);
     return inputInfoMap.map((info) => Map<String, dynamic>.from(info)).toList();
   }
 
@@ -83,7 +83,7 @@ class OrtSession {
   ///
   /// Returns information about the model's outputs such as name, type, and shape.
   Future<List<Map<String, dynamic>>> getOutputInfo() async {
-    final outputInfoMap = await FlutterOnnxruntimePlatform.instance.getOutputInfo(id);
+    final outputInfoMap = await OnnxRuntimePlatform.instance.getOutputInfo(id);
     return outputInfoMap.map((info) => Map<String, dynamic>.from(info)).toList();
   }
 }

@@ -12,7 +12,7 @@ import 'develop_render.dart';
 import 'package:kern/services/exif_camera.dart';
 import 'objektivkorrektur.dart';
 import 'platform/desktop_image_tools.dart';
-import 'textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import 'raw_identify_parser.dart';
 import 'package:kern/services/raw_formats.dart';
 

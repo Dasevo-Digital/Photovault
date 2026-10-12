@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_catalog.dart';
-import 'package:photo_vault/services/model_download_service.dart';
+import 'package:kern/services/model_catalog.dart';
+import 'package:kern/services/model_download_service.dart';
 
 /// Der Modellordner wächst schnell auf über ein Gigabyte, ohne dass die App
 /// das bisher irgendwo auswies. Diese Zahlen speisen die Anzeige in den

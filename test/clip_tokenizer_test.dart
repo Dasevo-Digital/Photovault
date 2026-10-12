@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/clip_tokenizer.dart';
+import 'package:kern/services/clip_tokenizer.dart';
 
 /// Testet den BPE-Tokenizer gegen eine kleine, handgeschriebene
 /// vocab.json/merges.txt (test/fixtures/clip/) statt der echten ~1MB

@@ -1,7 +1,7 @@
 import 'dart:io' show Directory, File, Platform;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/modellthreads.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// **„Bei der Ausführung der Aufgabe Standbilder generieren war die App
 /// nicht mehr oder schlecht bedienbar."**
@@ -39,9 +39,10 @@ void main() {
     // NIRGENDS gestellt wurde. Ein Prüfstand auf [modellThreads] allein
     // saehe nicht, ob ein siebzehntes Modell sie wieder vergisst.
     final ohne = <String>[];
-    for (final datei in Directory(
-      'lib/services',
-    ).listSync().whereType<File>().where((f) => f.path.endsWith('.dart'))) {
+    for (final datei in [
+      for (final ordner in ['lib/services', 'packages/kern/lib/services'])
+        ...Directory(ordner).listSync().whereType<File>(),
+    ].where((f) => f.path.endsWith('.dart'))) {
       final quelle = datei.readAsStringSync();
       var ab = 0;
       while (true) {

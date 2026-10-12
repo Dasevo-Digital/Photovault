@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/ocr_service.dart';
+import 'package:kern/services/ocr_service.dart';
 
 /// Die Lage einer Textzeile aus ihrem Fleck in der Wahrscheinlichkeitskarte
 /// und das Ausschneiden entlang dieser Lage – ohne Modell.

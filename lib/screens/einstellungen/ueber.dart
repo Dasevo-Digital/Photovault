@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/aktualisierungspruefung.dart';
-import '../../services/model_catalog.dart';
+import '../../services/modelltexte.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import 'einstellungsstand.dart';

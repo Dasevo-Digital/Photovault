@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/kratzermodell.dart';
-import 'package:photo_vault/services/model_catalog.dart';
+import 'package:kern/services/kratzermodell.dart';
+import 'package:kern/services/model_catalog.dart';
 
 /// Vor- und Nachbereitung des Kratzer-Netzes – ohne das Netz selbst, das
 /// nur im Zielprozess läuft (siehe integration_test/kratzermodell_test.dart).

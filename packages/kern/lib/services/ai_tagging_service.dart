@@ -2,9 +2,9 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'clip_service.dart';
-import 'package:kern/services/ki_vokabular_vorgabe.dart';
+import 'ki_vokabular_vorgabe.dart';
 
-export 'package:kern/services/ki_vokabular_vorgabe.dart';
+export 'ki_vokabular_vorgabe.dart';
 
 /// Rückrichtung von [aiTagVocabularyEnglisch] – um zu erkennen, dass ein
 /// Begriff bereits englisch ist (nach einem Sprachwechsel steht im

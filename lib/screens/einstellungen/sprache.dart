@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:kern/db/database.dart';
 import '../../l10n/app_localizations.dart';
-import '../../services/ai_tagging_service.dart';
+import 'package:kern/services/ai_tagging_service.dart';
 import '../../services/meldungsdienst.dart';
 import 'einstellungsstand.dart';
 

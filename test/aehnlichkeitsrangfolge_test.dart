@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/clip_service.dart';
+import 'package:kern/services/clip_service.dart';
 
 void main() {
   final kandidaten = <String, Float32List>{

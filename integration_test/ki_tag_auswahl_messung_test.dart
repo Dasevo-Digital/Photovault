@@ -8,8 +8,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/ai_tagging_service.dart';
-import 'package:photo_vault/services/clip_service.dart';
+import 'package:kern/services/ai_tagging_service.dart';
+import 'package:kern/services/clip_service.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 /// **Wie viele Schlagwörter vergibt welche Regel?** – an einer echten

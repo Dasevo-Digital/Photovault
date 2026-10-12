@@ -6,7 +6,7 @@
 
 import 'dart:typed_data';
 
-import 'package:flutter_onnxruntime/src/flutter_onnxruntime_platform_interface.dart';
+import 'onnxruntime_platform.dart';
 
 /// Represents a data type in ONNX Runtime
 enum OrtDataType {
@@ -117,7 +117,7 @@ class OrtValue {
       throw ArgumentError('Unsupported data type: ${data.runtimeType}');
     }
 
-    final result = await FlutterOnnxruntimePlatform.instance.createOrtValue(sourceType, data, shape);
+    final result = await OnnxRuntimePlatform.instance.createOrtValue(sourceType, data, shape);
     return OrtValue.fromMap(result);
   }
 
@@ -125,7 +125,7 @@ class OrtValue {
   ///
   /// [targetType] is the target data type to convert to
   Future<OrtValue> to(OrtDataType targetType) async {
-    final result = await FlutterOnnxruntimePlatform.instance.convertOrtValue(id, targetType.toString().split('.').last);
+    final result = await OnnxRuntimePlatform.instance.convertOrtValue(id, targetType.toString().split('.').last);
     return OrtValue.fromMap(result);
   }
 
@@ -140,7 +140,7 @@ class OrtValue {
   /// - String values for string tensors
   ///
   Future<List<dynamic>> asList() async {
-    final data = await FlutterOnnxruntimePlatform.instance.getOrtValueData(id);
+    final data = await OnnxRuntimePlatform.instance.getOrtValueData(id);
     final rawData = data['data'];
     var dataList1d = (rawData is List) ? rawData : List<dynamic>.from(rawData);
     // On iOS/macOS, bool tensors are stored as uint8 internally,
@@ -160,7 +160,7 @@ class OrtValue {
   /// - String values for string tensors
   ///
   Future<List<dynamic>> asFlattenedList() async {
-    final data = await FlutterOnnxruntimePlatform.instance.getOrtValueData(id);
+    final data = await OnnxRuntimePlatform.instance.getOrtValueData(id);
     final rawData = data['data'];
     final list = (rawData is List) ? rawData : List<dynamic>.from(rawData);
     // On iOS/macOS, bool tensors are stored as uint8 internally,
@@ -173,7 +173,7 @@ class OrtValue {
 
   /// Release native resources associated with this tensor
   Future<void> dispose() async {
-    await FlutterOnnxruntimePlatform.instance.releaseOrtValue(id);
+    await OnnxRuntimePlatform.instance.releaseOrtValue(id);
   }
 
   /// Converts a regular List to appropriate TypedData based on content

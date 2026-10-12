@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/face_engine_service.dart';
+import 'package:kern/services/face_engine_service.dart';
 
 void main() {
   group('FaceEngineService.alignFace', () {

@@ -1,0 +1,12 @@
+name: onnxruntime_api
+description: >-
+  The Dart API of flutter_onnxruntime without Flutter, so that code without
+  Flutter (packages/kern, a server) can create sessions and values. Split
+  off from third_party/flutter_onnxruntime; see its ANPASSUNGEN.md.
+publish_to: none
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  plugin_platform_interface: ^2.0.2

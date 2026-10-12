@@ -30,8 +30,8 @@ library;
 
 import 'package:drift/drift.dart' show QueryRow;
 
-import '../services/asset_format.dart';
-import 'database.dart';
+import 'package:kern/services/asset_format.dart';
+import 'package:kern/db/database.dart';
 
 /// Genau die Spalten, die [Rasterzeile] trägt – als SQL-Liste.
 ///

@@ -1,0 +1,4 @@
+# Die Dateien stammen aus flutter_onnxruntime und sind dort mit 120 Zeichen
+# je Zeile gesetzt; so bleibt der Abstand zum Original klein.
+formatter:
+  page_width: 120

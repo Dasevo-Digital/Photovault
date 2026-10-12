@@ -14,7 +14,7 @@ import 'package:kern/services/reverse_geocoder.dart';
 import 'package:kern/services/asset_format.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
 import '../services/storage_paths.dart';
-import '../services/textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'color_label_picker.dart';

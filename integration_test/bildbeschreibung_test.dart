@@ -3,7 +3,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/florence_captioning_service.dart';
+import 'package:kern/services/florence_captioning_service.dart';
 
 /// Die Bildbeschreibung am ECHTEN Modell.
 ///

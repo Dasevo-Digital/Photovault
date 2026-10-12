@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
-import 'modellthreads.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Entfernt Objekte aus einem Foto, indem es die markierte Stelle aus der
 /// Umgebung neu erfindet (LaMa, siehe ModelCatalog.inpainting).

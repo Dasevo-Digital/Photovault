@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/eye_state_service.dart';
+import 'package:kern/services/eye_state_service.dart';
 
 /// Prüft [eyeCropRects] – die reine Geometrie-Logik hinter der
 /// Geschlossene-Augen-Erkennung (Landmarks -> Augen-Ausschnitte), ohne eine

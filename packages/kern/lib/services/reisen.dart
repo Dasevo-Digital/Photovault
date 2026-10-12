@@ -17,7 +17,7 @@
 /// nicht, warum er entstanden ist.
 library;
 
-import 'reverse_geocoder.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 
 /// Was für eine Art Reise das war.
 ///

@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
-import 'face_engine_service.dart';
+import 'package:kern/services/face_engine_service.dart';
 
 /// **Ein von Hand aufgezogenes Gesicht anlegen.**
 ///

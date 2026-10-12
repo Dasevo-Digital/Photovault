@@ -5,7 +5,7 @@ import 'dart:ui' show Offset;
 
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
-import 'modellthreads.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// SAMs Standard-Vorverarbeitung (ImageNet-Mittel/Standardabweichung,
 /// längste Kante auf 1024px, danach quadratisch aufgefüllt) – exakt gegen

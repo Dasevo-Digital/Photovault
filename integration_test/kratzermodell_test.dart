@@ -5,7 +5,7 @@ import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_vault/services/kratzermodell.dart';
+import 'package:kern/services/kratzermodell.dart';
 
 /// Das Kratzer-Netz im Zielprozess.
 ///

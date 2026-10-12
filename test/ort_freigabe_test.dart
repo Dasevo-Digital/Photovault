@@ -28,9 +28,9 @@ void main() {
   /// der Name der mitgeführten Menge muss in einem `finally` durchlaufen und
   /// freigegeben werden.
   const mitOffenerMenge = {
-    'lib/services/florence_captioning_service.dart': 'offen',
-    'lib/services/translation_service.dart': 'liveTensors',
-    'lib/services/whisper_service.dart': 'offen',
+    'packages/kern/lib/services/florence_captioning_service.dart': 'offen',
+    'packages/kern/lib/services/translation_service.dart': 'liveTensors',
+    'packages/kern/lib/services/whisper_service.dart': 'offen',
   };
 
   test('die Dienste mit mitgeführter Menge leeren sie im finally', () {
@@ -51,10 +51,18 @@ void main() {
   });
 
   test('jede Tensor-Freigabe steht in einem finally', () {
+    // Die Dienste liegen teils in der App (Bearbeiten), teils im Kern
+    // (Auswertungen, packages/kern).
     final dienste =
-        Directory('lib/services')
-            .listSync(recursive: true)
-            .whereType<File>()
+        [
+              for (final ordner in [
+                'lib/services',
+                'packages/kern/lib/services',
+              ])
+                ...Directory(
+                  ordner,
+                ).listSync(recursive: true).whereType<File>(),
+            ]
             .where((f) => f.path.endsWith('.dart'))
             .where((f) => f.readAsStringSync().contains('OrtValue'))
             .toList()

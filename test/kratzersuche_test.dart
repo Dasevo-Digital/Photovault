@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:photo_vault/services/kratzersuche.dart';
+import 'package:kern/services/kratzersuche.dart';
 
 /// Kratzer und Staub – an gemalten Bildern, bei denen feststeht, wo sie
 /// liegen.

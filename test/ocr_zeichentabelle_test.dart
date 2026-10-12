@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_catalog.dart';
-import 'package:photo_vault/services/ocr_service.dart';
+import 'package:kern/services/model_catalog.dart';
+import 'package:kern/services/ocr_service.dart';
 
 /// **Die Zeichentabelle des Lesemodells.**
 ///

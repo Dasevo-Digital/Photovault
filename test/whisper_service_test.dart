@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/whisper_service.dart';
+import 'package:kern/services/whisper_service.dart';
 
 /// Was an der Spracherkennung ohne Modell prüfbar ist: der Weg von Token
 /// zu Text und die Regeln, nach denen ein Stück verworfen wird.

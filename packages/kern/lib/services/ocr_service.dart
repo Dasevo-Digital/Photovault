@@ -1,12 +1,13 @@
 import 'dart:collection';
+import 'dart:isolate';
+import '../protokoll.dart';
+import 'package:meta/meta.dart' show visibleForTesting;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart'
-    show compute, debugPrint, visibleForTesting;
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
 import 'onnx_hardswish.dart';
@@ -120,7 +121,8 @@ class OcrService {
 
     // Neun Megabyte zerlegen und neu zusammensetzen gehört nicht auf den
     // Faden, der die Oberfläche zeichnet.
-    final umgebaut = await compute(_umbauen, await quelle.readAsBytes());
+    final bytes = await quelle.readAsBytes();
+    final umgebaut = await Isolate.run(() => _umbauen(bytes));
     if (umgebaut == null) {
       // Nichts umzubauen – seit `latin_PP-OCRv5` der Regelfall, das Modell
       // enthält keinen einzigen HardSwish-Knoten mehr (nachgesehen: 27 im
@@ -131,7 +133,7 @@ class OcrService {
         try {
           await ziel.delete();
         } on FileSystemException catch (e) {
-          debugPrint('Alte Umbau-Fassung blieb liegen: ${ziel.path}: $e');
+          protokoll('Alte Umbau-Fassung blieb liegen: ${ziel.path}: $e');
         }
       }
       return quelle.path;
@@ -405,7 +407,7 @@ class OcrService {
       final klassen = form.isNotEmpty ? form.last : 0;
       return _ctcEntschluesseln(roh, schritte, klassen);
     } catch (e) {
-      debugPrint('Texterkennung: Lesen einer Stelle fehlgeschlagen: $e');
+      protokoll('Texterkennung: Lesen einer Stelle fehlgeschlagen: $e');
       return '';
     } finally {
       await tensor.dispose();

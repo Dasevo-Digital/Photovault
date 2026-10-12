@@ -41,17 +41,17 @@ import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_vault/services/clip_service.dart';
-import 'package:photo_vault/services/eye_state_service.dart';
-import 'package:photo_vault/services/face_engine_service.dart';
-import 'package:photo_vault/services/florence_captioning_service.dart';
+import 'package:kern/services/clip_service.dart';
+import 'package:kern/services/eye_state_service.dart';
+import 'package:kern/services/face_engine_service.dart';
+import 'package:kern/services/florence_captioning_service.dart';
 import 'package:photo_vault/services/inpainting_service.dart';
 import 'package:photo_vault/services/kolorieren.dart';
-import 'package:photo_vault/services/kratzermodell.dart';
-import 'package:photo_vault/services/ocr_service.dart';
+import 'package:kern/services/kratzermodell.dart';
+import 'package:kern/services/ocr_service.dart';
 import 'package:photo_vault/services/restore_service.dart';
 import 'package:photo_vault/services/segmentation_service.dart';
-import 'package:photo_vault/services/translation_service.dart';
+import 'package:kern/services/translation_service.dart';
 
 /// Ein Bild, das jeder Lauf gleich erzeugt: Verläufe mit etwas Struktur.
 img.Image _pruefbild(int kante) {

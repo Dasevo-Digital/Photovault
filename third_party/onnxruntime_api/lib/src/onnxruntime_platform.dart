@@ -4,27 +4,34 @@
 // This source code is licensed under the license found in the
 // LICENSE file in the root directory of this source tree.
 
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
-import 'package:flutter_onnxruntime/src/flutter_onnxruntime_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-abstract class FlutterOnnxruntimePlatform extends PlatformInterface {
-  /// Constructs a FlutterOnnxruntimePlatform.
-  FlutterOnnxruntimePlatform() : super(token: _token);
+import 'ort_value.dart';
+
+abstract class OnnxRuntimePlatform extends PlatformInterface {
+  /// Constructs a OnnxRuntimePlatform.
+  OnnxRuntimePlatform() : super(token: _token);
 
   static final Object _token = Object();
 
-  static FlutterOnnxruntimePlatform _instance = MethodChannelFlutterOnnxruntime();
+  static OnnxRuntimePlatform? _instance;
 
-  /// The default instance of [FlutterOnnxruntimePlatform] to use.
+  /// The implementation in use.
   ///
-  /// Defaults to [MethodChannelFlutterOnnxruntime].
-  static FlutterOnnxruntimePlatform get instance => _instance;
+  /// There is no default: this package has no Flutter and no native code. The Flutter plugin `flutter_onnxruntime`
+  /// registers its method channel on start-up (`dartPluginClass`); a program without Flutter sets its own
+  /// implementation before the first session is created.
+  static OnnxRuntimePlatform get instance =>
+      _instance ??
+      (throw StateError(
+        'No ONNX Runtime implementation registered. In a Flutter app the flutter_onnxruntime plugin does this on '
+        'start-up; elsewhere set OnnxRuntimePlatform.instance first.',
+      ));
 
   /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [FlutterOnnxruntimePlatform] when
+  /// platform-specific class that extends [OnnxRuntimePlatform] when
   /// they register themselves.
-  static set instance(FlutterOnnxruntimePlatform instance) {
+  static set instance(OnnxRuntimePlatform instance) {
     PlatformInterface.verify(instance, _token);
     _instance = instance;
   }

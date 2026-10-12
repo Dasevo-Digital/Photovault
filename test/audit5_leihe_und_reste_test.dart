@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_download_service.dart';
-import 'package:photo_vault/services/modell_halter.dart';
+import 'package:kern/services/model_download_service.dart';
+import 'package:kern/services/modell_halter.dart';
 
 /// Befunde der fünften Prüfrunde.
 void main() {

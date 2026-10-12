@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/marian_tokenizer.dart';
+import 'package:kern/services/marian_tokenizer.dart';
 
 /// Prüft die Zerlegung gegen die echte Bibliothek `tokenizers`.
 ///

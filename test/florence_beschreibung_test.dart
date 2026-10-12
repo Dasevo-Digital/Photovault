@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/florence_captioning_service.dart';
-import 'package:photo_vault/services/model_download_service.dart';
+import 'package:kern/services/florence_captioning_service.dart';
+import 'package:kern/services/model_download_service.dart';
 
 /// Die beiden Teile des neuen Beschreibungsmodells, die sich ohne
 /// ONNX-Sitzung prüfen lassen: die Wiederholungsbremse und das Aufräumen

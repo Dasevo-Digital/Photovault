@@ -2,7 +2,7 @@
 
 Diese Kopie stammt aus dem Paket `flutter_onnxruntime` 1.9.0 (MIT, © MASIC AI,
 <https://github.com/masicai/flutter_onnxruntime>). Weggelassen sind nur
-`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert sind drei Dinge.
+`example/`, `doc/`, `CONTRIBUTING.md` und das Logo. Geändert sind vier Dinge.
 
 ## 1. Die Aufrufe laufen nicht im Hauptfaden
 
@@ -44,6 +44,31 @@ leere Tensoren werden weiter kopiert. Unter macOS gab es die Kopie nie.
 |---|---|
 | Linux | `linux/src/tensor_manager.{h,cc}`, `linux/src/flutter_onnxruntime_plugin.cc` |
 | Windows | `windows/src/tensor_manager.{h,cc}`, `windows/flutter_onnxruntime_plugin.cpp` |
+
+## 4. Die Dart-API ohne Flutter
+
+Sitzungen, Werte und die Plattformschnittstelle liegen in einem eigenen Paket
+ohne Flutter, `../onnxruntime_api` (dieselbe Lizenz). Grund ist der Kern der
+App (`packages/kern`): Er rechnet die Modelle und soll auch in einem Server
+ohne Flutter laufen (Issue #86). Das Original zieht über die Vorgabe
+`MethodChannelFlutterOnnxruntime` und `path_provider` Flutter in jede Datei,
+die eine Sitzung anlegt.
+
+- `onnxruntime_api` enthält `OnnxRuntime`, `OrtSession`, `OrtValue`,
+  `OrtProvider`, `OrtModelMetadata` und die Schnittstelle, jetzt
+  `OnnxRuntimePlatform` (vorher `FlutterOnnxruntimePlatform`). Sie hat keine
+  Vorgabe; wer ohne Einrichtung rechnet, bekommt einen `StateError` statt eines
+  Kanalfehlers.
+- Das Plugin meldet seinen Kanal beim Start selbst an: `dartPluginClass:
+  MethodChannelFlutterOnnxruntime` in der `pubspec.yaml`, für jede Plattform.
+  Das gilt auch in Integrationstests, die nur einen Dienst und nicht die App
+  starten.
+- `lib/flutter_onnxruntime.dart` exportiert die API weiter; wer das Plugin
+  importiert, merkt nichts.
+- Weggefallen ist `createSessionFromAsset` (brauchte `path_provider` und das
+  Asset-Bündel, von dieser App nie benutzt) und der Hinweis in
+  `getAvailableProviders`, welche Anbieter ohne `OrtProvider`-Wert
+  ausgelassen wurden (brauchte `kDebugMode`).
 
 ## Sonst
 

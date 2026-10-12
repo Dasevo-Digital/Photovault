@@ -19,7 +19,7 @@ import '../services/bilddekodierung.dart';
 import '../services/blur_detection.dart';
 import '../services/export_service.dart';
 import '../services/rasterauswahl.dart';
-import '../services/textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import '../services/storage_paths.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

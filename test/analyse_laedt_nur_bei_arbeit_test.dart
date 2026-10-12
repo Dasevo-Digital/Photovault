@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
-import 'package:photo_vault/services/florence_captioning_service.dart';
-import 'package:photo_vault/services/clip_service.dart';
-import 'package:photo_vault/services/eye_state_service.dart';
-import 'package:photo_vault/services/face_engine_service.dart';
-import 'package:photo_vault/services/modell_halter.dart';
+import 'package:kern/services/florence_captioning_service.dart';
+import 'package:kern/services/clip_service.dart';
+import 'package:kern/services/eye_state_service.dart';
+import 'package:kern/services/face_engine_service.dart';
+import 'package:kern/services/modell_halter.dart';
 import 'package:photo_vault/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 

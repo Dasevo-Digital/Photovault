@@ -3,10 +3,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/model_catalog.dart';
-import 'package:photo_vault/services/model_download_service.dart';
-import 'package:photo_vault/services/ocr_service.dart';
-import 'package:photo_vault/services/onnx_hardswish.dart';
+import 'package:kern/services/model_catalog.dart';
+import 'package:kern/services/model_download_service.dart';
+import 'package:kern/services/ocr_service.dart';
+import 'package:kern/services/onnx_hardswish.dart';
 
 /// Dasselbe 126-Byte-Modell wie in `onnx_hardswish_test.dart`: zwei
 /// HardSwish mit einem Relu dazwischen.

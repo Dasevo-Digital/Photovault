@@ -124,13 +124,15 @@ void main() {
 
   /// Zeilen, deren Text nie ein Nutzer sieht.
   ///
-  /// `debugPrint` landet im Protokoll. `StateError`/`ArgumentError`/`assert`
+  /// `debugPrint` landet im Protokoll, im Kern ebenso `protokoll` (das dort
+  /// an seine Stelle tritt). `StateError`/`ArgumentError`/`assert`
   /// melden einen Programmierfehler an den Entwickler – alles, was in dieser
   /// App wirklich beim Nutzer ankommt, wirft inzwischen einen eigenen Typ
   /// (siehe etwa `RestaurierungsGrund` oder `ModellDownloadFehler`) und wird
   /// erst im Bildschirm zu einem Satz.
   bool nurFuerEntwickler(String zeile) =>
       zeile.contains('debugPrint(') ||
+      zeile.contains('protokoll(') ||
       zeile.contains('StateError(') ||
       zeile.contains('ArgumentError(') ||
       zeile.contains('throw Exception(') ||

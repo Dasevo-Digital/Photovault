@@ -8,7 +8,7 @@ import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
 import 'tile_processor.dart';
-import 'modellthreads.dart';
+import 'package:kern/services/modellthreads.dart';
 
 /// Kapselt On-Device-Inferenz mit Real-ESRGAN x4 (siehe model_catalog.dart:
 /// `neuralRestore`) für KI-Restaurierung (Hochskalieren + Entrauschen in

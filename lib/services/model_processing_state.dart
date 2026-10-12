@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'model_catalog.dart';
+import 'package:kern/services/model_catalog.dart';
 
 /// Die Verarbeitungsergebnisse einer Bibliothek hängen nicht nur vom
 /// Programmcode ab, sondern auch von den Gewichten der lokalen KI-Modelle.

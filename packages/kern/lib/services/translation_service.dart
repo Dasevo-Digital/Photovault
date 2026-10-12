@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import 'marian_tokenizer.dart';
 import 'modellthreads.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/bart_tokenizer.dart';
+import 'package:kern/services/bart_tokenizer.dart';
 
 /// Der Wortzerleger der Sprachhälfte von Florence-2.
 ///

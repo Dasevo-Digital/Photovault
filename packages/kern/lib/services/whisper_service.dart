@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import 'modellthreads.dart';
 import 'whisper_mel.dart';

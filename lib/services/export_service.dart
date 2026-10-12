@@ -10,7 +10,7 @@ import '../state/library_state.dart';
 import 'export_naming.dart';
 import 'native_image_converter.dart';
 import 'storage_paths.dart';
-import 'textstellen.dart';
+import 'package:kern/services/textstellen.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/xmp_regionen.dart';
 import 'xmp_writer.dart';

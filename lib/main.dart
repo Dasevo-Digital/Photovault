@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/protokoll.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/bibliothek_belegt_screen.dart';
 import 'screens/bibliothek_unerreichbar_screen.dart';
@@ -34,6 +35,9 @@ import 'widgets/stromhalter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Meldungen aus dem Kern (package:kern) wie die der App: über
+  // debugPrint, das lange Ausgaben nicht verschluckt.
+  protokollZiel = debugPrint;
   // Muss vor der ersten Videowiedergabe laufen (siehe widgets/video_playback.dart).
   MediaKit.ensureInitialized();
   // Ohne Argument werden alle Locales vorbereitet – nötig, weil die

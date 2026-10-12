@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/onnx_hardswish.dart';
+import 'package:kern/services/onnx_hardswish.dart';
 
 /// Ein echtes, von `onnx` erzeugtes Modell mit 126 Bytes: HardSwish („erster",
 /// mit Namen) → Relu (ohne Namen) → HardSwish (ohne Namen). Als Text

@@ -20,7 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/native_image_converter.dart';
-import 'package:photo_vault/services/whisper_service.dart';
+import 'package:kern/services/whisper_service.dart';
 
 /// Die Abtastwerte einer WAV-Datei (16 Bit, mono) – den Chunk `data`
 /// gesucht, nicht hinter 44 Bytes vermutet: afconvert legt davor weitere

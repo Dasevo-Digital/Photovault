@@ -19,7 +19,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/ocr_service.dart';
+import 'package:kern/services/ocr_service.dart';
 import 'package:photo_vault/services/speicher_rueckgabe.dart';
 
 /// Der belegte Speicher in MB. `/proc` gibt es nur unter Linux – deshalb

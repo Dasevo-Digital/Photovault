@@ -4,8 +4,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/ai_tagging_service.dart';
-import 'package:photo_vault/services/clip_service.dart';
+import 'package:kern/services/ai_tagging_service.dart';
+import 'package:kern/services/clip_service.dart';
 import 'package:kern/services/search_filters.dart';
 
 /// Das Einhängen der Übersetzung – ohne die Modelle selbst, die in

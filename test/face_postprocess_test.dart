@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/face_postprocess.dart';
+import 'package:kern/services/face_postprocess.dart';
 
 void main() {
   group('FacePostprocess.iou', () {

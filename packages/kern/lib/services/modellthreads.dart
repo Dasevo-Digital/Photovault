@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 /// Wie viele Rechenkerne ein Modell benutzen darf – und warum nicht alle.
 ///

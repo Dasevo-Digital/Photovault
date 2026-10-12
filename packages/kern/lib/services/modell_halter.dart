@@ -1,6 +1,6 @@
 import 'dart:async';
-
-import 'package:flutter/foundation.dart';
+import '../protokoll.dart';
+import 'package:meta/meta.dart' show visibleForTesting;
 
 /// Hält ein KI-Modell, das erst beim ersten Gebrauch geladen und nach
 /// getaner Arbeit wieder freigegeben wird.
@@ -114,7 +114,7 @@ class ModellHalter<T> {
     try {
       await _entsorgen(da);
     } catch (e) {
-      debugPrint('Modell "$name" liess sich nicht sauber entsorgen: $e');
+      protokoll('Modell "$name" liess sich nicht sauber entsorgen: $e');
     }
     return true;
   }
