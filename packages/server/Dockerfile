@@ -87,6 +87,12 @@ RUN groupadd --system --gid 8790 photovault \
  && mkdir /daten && chown photovault:photovault /daten
 COPY --from=bau /aus/bundle /opt/photo-vault-server
 COPY --from=ort /libonnxruntime.so.${ORT_FASSUNG} /opt/photo-vault-server/lib/
+# Für die Verwaltung: docker exec -it … photo_vault_server konto anlegen NAME.
+# Ein Startskript statt eines Symlinks: Die Bibliotheken liegen relativ zum
+# Programm, und das soll unter seinem eigenen Pfad laufen.
+RUN printf '#!/bin/sh\nexec /opt/photo-vault-server/bin/photo_vault_server "$@"\n' \
+      > /usr/local/bin/photo_vault_server \
+ && chmod 755 /usr/local/bin/photo_vault_server
 # Im Bild auf allen Adressen: Erreichbar ist der Server trotzdem nur über
 # das, was der Container nach aussen gibt – hinter dem Reverse Proxy.
 ENV PV_DATEN=/daten \

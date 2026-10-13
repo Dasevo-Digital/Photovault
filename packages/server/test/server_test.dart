@@ -11,34 +11,42 @@ import 'package:test/test.dart';
 
 void main() {
   late Directory ordner;
-  late Bibliothek bibliothek;
-  late Auswertungsdienst auswertung;
+  late Serverdatenbank sdb;
+  late Kontodienst konten;
+  late Bibliotheken bibliotheken;
+  late Konto konto;
   late Handler api;
-  final schluessel = 'k' * 43;
-  final mitSchluessel = {'authorization': 'Bearer $schluessel'};
+  late Map<String, String> mitSchluessel;
   const tus = {'tus-resumable': '1.0.0'};
 
   setUp(() async {
     ordner = await Directory.systemTemp.createTemp('pv_server_');
-    bibliothek = await Bibliothek.oeffne(Directory('${ordner.path}/bib'));
-    // Ohne Ruhezeit, damit ein Test den Lauf gleich abwarten kann.
-    auswertung = Auswertungsdienst(bibliothek, ruhe: Duration.zero);
-    api = baueApi(
-      bibliothek: bibliothek,
-      hochladen: Hochladen(
-        Directory('${ordner.path}/eingang'),
-        bibliothek,
-        nachImport: auswertung.anstossen,
-      ),
-      zugang: Zugang(schluessel),
-      auswertung: auswertung,
+    sdb = Serverdatenbank.imSpeicher();
+    konten = Kontodienst(
+      sdb,
+      Tresorschluessel(List.filled(32, 7)),
+      // Billig gerechnet: Hier geht es nicht um das Passwort.
+      passwort: const Passwort(speicher: 64, durchgaenge: 1),
+      totpPflicht: false,
     );
+    // Ohne Ruhezeit, damit ein Test den Lauf gleich abwarten kann.
+    bibliotheken = Bibliotheken(
+      wurzel: Directory('${ordner.path}/bibliotheken'),
+      eingang: Directory('${ordner.path}/eingang'),
+      ruhe: Duration.zero,
+    );
+    konto = await konten.legeAn('erika', 'ein langes passwort');
+    final a = konten.meldeAn(konto.id, 'Prüfstand', 'lokal');
+    mitSchluessel = {'authorization': 'Bearer ${a.token}'};
+    api = baueApi(konten: konten, bibliotheken: bibliotheken);
   });
   tearDown(() async {
-    await auswertung.beende();
-    await bibliothek.schliesse();
+    await bibliotheken.schliesseAlle();
+    sdb.schliesse();
     await ordner.delete(recursive: true);
   });
+
+  Future<Kontobereich> bereich() => bibliotheken.fuer(konto.id);
 
   Future<Response> frag(
     String methode,
@@ -115,7 +123,7 @@ void main() {
     );
   }
 
-  test('ohne Schlüssel nur das Lebenszeichen', () async {
+  test('ohne Anmeldung nur das Lebenszeichen', () async {
     expect(
       (await frag('GET', '/api/v1/zustand', schluessel: false)).statusCode,
       200,
@@ -126,7 +134,7 @@ void main() {
       'GET',
       '/api/v1/aufnahmen',
       schluessel: false,
-      kopf: {'authorization': 'Bearer ${'x' * 43}'},
+      kopf: {'authorization': 'Bearer pv1_${'x' * 43}'},
     );
     expect(falsch.statusCode, 401);
     expect((await frag('GET', '/api/v1/aufnahmen')).statusCode, 200);
@@ -254,7 +262,7 @@ void main() {
   });
 
   test('nach dem Hochladen: Regeln und Live Photos wie in der App', () async {
-    await bibliothek.db.upsertAutomationRule(
+    await (await bereich()).bibliothek.db.upsertAutomationRule(
       AutomationRulesCompanion.insert(
         id: 'regel',
         name: 'Urlaub',
@@ -292,7 +300,7 @@ void main() {
     'ausgewertet wird nach dem Hochladen – ohne Modelle die Schärfe',
     () async {
       final id = (await hochladen(jpeg(200), 'd.jpg')).headers['pv-aufnahme']!;
-      await auswertung.jetzt();
+      await (await bereich()).auswertung.jetzt();
       final a = await jsonAus(await frag('GET', '/api/v1/aufnahmen/$id'));
       expect(
         a['sharpnessScore'],

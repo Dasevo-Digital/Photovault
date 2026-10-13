@@ -2,20 +2,28 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'oidc.dart';
+
 /// Wie der Server läuft.
 ///
 /// Alles kommt aus Umgebungsvariablen, damit Docker, systemd und ein Aufruf
 /// von Hand dieselben Schalter haben und kein Schalter nur in einer der drei
 /// Welten existiert.
 ///
-/// | Variable         | Vorgabe               |                                    |
-/// |------------------|-----------------------|------------------------------------|
-/// | `PV_DATEN`       | `./daten`             | Bibliotheken, Uploads, Zugang      |
-/// | `PV_ADRESSE`     | `127.0.0.1`           | worauf gehört wird                 |
-/// | `PV_PORT`        | `8790`                |                                    |
-/// | `PV_MODELLE`     | `<PV_DATEN>/modelle`  | die KI-Modelle                     |
-/// | `PV_ONNXRUNTIME` | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle |
-/// | `PV_GEODATEN`    | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen             |
+/// | Variable             | Vorgabe               |                                       |
+/// |----------------------|-----------------------|---------------------------------------|
+/// | `PV_DATEN`           | `./daten`             | Konten, Bibliotheken, Uploads         |
+/// | `PV_ADRESSE`         | `127.0.0.1`           | worauf gehört wird                    |
+/// | `PV_PORT`            | `8790`                |                                       |
+/// | `PV_MODELLE`         | `<PV_DATEN>/modelle`  | die KI-Modelle                        |
+/// | `PV_ONNXRUNTIME`     | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle   |
+/// | `PV_GEODATEN`        | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                |
+/// | `PV_TOTP`            | `pflicht`             | `frei`: TOTP nur, wer es einrichtet   |
+/// | `PV_PROXY`           | –                     | vertraute Proxys (Adressen, Netze, `privat`) |
+/// | `PV_OEFFENTLICH`     | –                     | die Adresse von aussen (für OIDC)     |
+/// | `PV_OIDC_AUSSTELLER` | –                     | `issuer` des OIDC-Anbieters           |
+/// | `PV_OIDC_CLIENT`     | –                     | Client-ID beim Anbieter               |
+/// | `PV_OIDC_GEHEIMNIS`  | –                     | Client-Geheimnis (oder `…_DATEI`)     |
 ///
 /// Ohne `PV_ONNXRUNTIME` rechnet kein Modell: Der Server nimmt Fotos an und
 /// zeigt sie, wertet aber nichts aus, was ein Modell braucht. Ohne die drei
@@ -33,6 +41,10 @@ class Einstellungen {
     Directory? modelle,
     this.onnxRuntime,
     Directory? geodaten,
+    this.totpPflicht = true,
+    this.proxys = const [],
+    this.oeffentlich,
+    this.oidc,
   }) : modelle = modelle ?? Directory(p.join(daten.path, 'modelle')),
        geodaten = geodaten ?? Directory(p.join(daten.path, 'geodaten'));
 
@@ -40,6 +52,9 @@ class Einstellungen {
     final u = umgebung ?? Platform.environment;
     final daten = Directory(p.absolute(u['PV_DATEN'] ?? 'daten'));
     final port = int.tryParse(u['PV_PORT'] ?? '');
+    final oeffentlich = u['PV_OEFFENTLICH'] == null
+        ? null
+        : Uri.parse(u['PV_OEFFENTLICH']!);
     return Einstellungen(
       daten: daten,
       adresse: u['PV_ADRESSE'] ?? '127.0.0.1',
@@ -53,6 +68,43 @@ class Einstellungen {
       geodaten: u['PV_GEODATEN'] == null
           ? null
           : Directory(p.absolute(u['PV_GEODATEN']!)),
+      totpPflicht: switch (u['PV_TOTP']) {
+        null || 'pflicht' => true,
+        'frei' => false,
+        final w => throw ArgumentError('PV_TOTP: „$w“ (pflicht oder frei)'),
+      },
+      proxys: [
+        for (final s in (u['PV_PROXY'] ?? '').split(','))
+          if (s.trim().isNotEmpty) s.trim(),
+      ],
+      oeffentlich: oeffentlich,
+      oidc: _oidcAus(u, oeffentlich),
+    );
+  }
+
+  static OidcEinstellungen? _oidcAus(Map<String, String> u, Uri? oeffentlich) {
+    final aussteller = u['PV_OIDC_AUSSTELLER'];
+    if (aussteller == null || aussteller.isEmpty) return null;
+    final client = u['PV_OIDC_CLIENT'];
+    if (client == null || client.isEmpty) {
+      throw ArgumentError('PV_OIDC_AUSSTELLER braucht PV_OIDC_CLIENT');
+    }
+    if (oeffentlich == null) {
+      throw ArgumentError(
+        'PV_OIDC_AUSSTELLER braucht PV_OEFFENTLICH – die Adresse, unter der '
+        'der Anbieter den Browser zurückschickt',
+      );
+    }
+    var geheimnis = u['PV_OIDC_GEHEIMNIS'];
+    final datei = u['PV_OIDC_GEHEIMNIS_DATEI'];
+    if (geheimnis == null && datei != null) {
+      geheimnis = File(datei).readAsStringSync().trim();
+    }
+    return OidcEinstellungen(
+      aussteller: Uri.parse(aussteller),
+      client: client,
+      geheimnis: geheimnis == null || geheimnis.isEmpty ? null : geheimnis,
+      oeffentlich: oeffentlich,
     );
   }
 
@@ -78,12 +130,23 @@ class Einstellungen {
   final Directory modelle;
   final File? onnxRuntime;
   final Directory geodaten;
+  final bool totpPflicht;
+  final List<String> proxys;
+  final Uri? oeffentlich;
+  final OidcEinstellungen? oidc;
 
-  /// Eine Bibliothek je Konto; bis es Konten gibt (Stufe 6), eine.
+  /// Eine Bibliothek je Konto.
   Directory get bibliotheken => Directory(p.join(daten.path, 'bibliotheken'));
 
-  /// Uploads, die noch nicht vollständig sind.
+  /// Uploads, die noch nicht vollständig sind – je Konto ein Ordner.
   Directory get eingang => Directory(p.join(daten.path, 'eingang'));
 
-  File get zugangsdatei => File(p.join(daten.path, 'zugang.txt'));
+  /// Konten und Geräte.
+  File get serverdatenbank => File(p.join(daten.path, 'server.sqlite'));
+
+  /// Der Schlüssel für die TOTP-Geheimnisse.
+  File get tresorschluessel => File(p.join(daten.path, 'server.schluessel'));
+
+  /// Der eine Schlüssel aus der Zeit vor den Konten – gilt nicht mehr.
+  File get alteZugangsdatei => File(p.join(daten.path, 'zugang.txt'));
 }

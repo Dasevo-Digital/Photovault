@@ -9,25 +9,48 @@ import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import 'auswertungsdienst.dart';
-import 'bibliothek.dart';
-import 'hochladen.dart';
-import 'zugang.dart';
+import 'absender.dart';
+import 'anmeldung_api.dart';
+import 'bibliotheken.dart';
+import 'konten/kontodienst.dart';
+import 'oidc.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
 /// etwas so ändert, dass ein älterer Client es falsch verstünde.
-const protokollFassung = 1;
+///
+/// 2: Konten und Geräte-Tokens statt des einen Schlüssels.
+const protokollFassung = 2;
 
 /// Die Schnittstelle unter `/api/v1`.
+///
+/// Ohne Anmeldung erreichbar sind nur das Lebenszeichen und die Wege der
+/// Anmeldung selbst; alles andere braucht das Token eines Geräts und
+/// arbeitet dann auf der Bibliothek von dessen Konto.
 Handler baueApi({
-  required Bibliothek bibliothek,
-  required Hochladen hochladen,
-  required Zugang zugang,
-  Auswertungsdienst? auswertung,
+  required Kontodienst konten,
+  required Bibliotheken bibliotheken,
+  Absender? absender,
+  Oidc? oidc,
 }) {
-  final api = _Api(bibliothek, auswertung);
+  final von = absender ?? Absender();
+  final anmeldung = Anmeldungsapi(konten, von, oidc);
+  final api = _Api(bibliotheken);
+  Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
+
   final r = Router()
-    ..get('/api/v1/zustand', api.zustand)
+    ..get('/api/v1/zustand', (Request _) => api.zustand(konten, oidc))
+    ..post('/api/v1/anmelden', anmeldung.anmelden)
+    ..post('/api/v1/anmelden/totp', anmeldung.totp)
+    ..get('/api/v1/anmelden/oidc', anmeldung.oidcStart)
+    ..get('/api/v1/anmelden/oidc/zurueck', anmeldung.oidcZurueck)
+    ..post('/api/v1/anmelden/oidc/einloesen', anmeldung.oidcEinloesen)
+    ..post('/api/v1/abmelden', anmeldung.abmelden)
+    ..get('/api/v1/konto', anmeldung.konto)
+    ..post('/api/v1/konto/passwort', anmeldung.passwort)
+    ..post('/api/v1/konto/wiederherstellungscodes', anmeldung.codes)
+    ..post('/api/v1/konto/oidc', anmeldung.oidcVerknuepfen)
+    ..get('/api/v1/geraete', anmeldung.geraete)
+    ..delete('/api/v1/geraete/<id>', anmeldung.geraetAbmelden)
     ..get('/api/v1/bibliothek', api.bibliothek)
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
@@ -35,16 +58,65 @@ Handler baueApi({
     ..post('/api/v1/befehle', api.befehl)
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
-    ..add('OPTIONS', '/api/v1/hochladen', hochladen.optionen)
-    ..post('/api/v1/hochladen', hochladen.anlegen)
-    ..head('/api/v1/hochladen/<id>', hochladen.stand)
-    ..get('/api/v1/hochladen/<id>', hochladen.status)
-    ..patch('/api/v1/hochladen/<id>', hochladen.anhaengen)
-    ..delete('/api/v1/hochladen/<id>', hochladen.verwerfen);
+    ..add(
+      'OPTIONS',
+      '/api/v1/hochladen',
+      (Request r) async => (await bereich(r)).hochladen.optionen(r),
+    )
+    ..post(
+      '/api/v1/hochladen',
+      (Request r) async => (await bereich(r)).hochladen.anlegen(r),
+    )
+    ..head(
+      '/api/v1/hochladen/<id>',
+      (Request r, String id) async => (await bereich(r)).hochladen.stand(r, id),
+    )
+    ..get(
+      '/api/v1/hochladen/<id>',
+      (Request r, String id) async =>
+          (await bereich(r)).hochladen.status(r, id),
+    )
+    ..patch(
+      '/api/v1/hochladen/<id>',
+      (Request r, String id) async =>
+          (await bereich(r)).hochladen.anhaengen(r, id),
+    )
+    ..delete(
+      '/api/v1/hochladen/<id>',
+      (Request r, String id) async =>
+          (await bereich(r)).hochladen.verwerfen(r, id),
+    );
   return const Pipeline()
-      .addMiddleware(zugang.middleware(offen: {'api/v1/zustand'}))
+      .addMiddleware(_sicherheitskoepfe)
+      .addMiddleware(
+        anmeldungNoetig(
+          konten,
+          von,
+          offen: {
+            'api/v1/zustand',
+            'api/v1/anmelden',
+            'api/v1/anmelden/totp',
+            'api/v1/anmelden/oidc',
+            'api/v1/anmelden/oidc/zurueck',
+            'api/v1/anmelden/oidc/einloesen',
+          },
+        ),
+      )
       .addHandler(r.call);
 }
+
+/// Was jede Antwort trägt: Der Browser soll nichts erraten und keine
+/// Adresse weitergeben – die Rückwege der Anmeldung tragen Codes.
+Middleware get _sicherheitskoepfe =>
+    (innerer) => (anfrage) async {
+      final antwort = await innerer(anfrage);
+      return antwort.change(
+        headers: {
+          'x-content-type-options': 'nosniff',
+          'referrer-policy': 'no-referrer',
+        },
+      );
+    };
 
 Response _json(Object? daten, {int status = 200}) => Response(
   status,
@@ -53,18 +125,22 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.b, this.dienst);
+  _Api(this.bibliotheken);
 
-  final Bibliothek b;
-  final Auswertungsdienst? dienst;
+  final Bibliotheken bibliotheken;
 
-  AppDatabase get db => b.db;
+  Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
-  /// Lebenszeichen, ohne Schlüssel – für Docker und den Reverse Proxy.
-  Response zustand(Request anfrage) =>
-      _json({'dienst': 'photo-vault', 'protokoll': protokollFassung});
+  /// Lebenszeichen, ohne Anmeldung – für Docker, den Reverse Proxy und
+  /// Clients, die wissen wollen, wie sie sich anmelden.
+  Response zustand(Kontodienst konten, Oidc? oidc) => _json({
+    'dienst': 'photo-vault',
+    'protokoll': protokollFassung,
+    'anmeldung': {'totp': konten.totpPflicht, 'oidc': oidc != null},
+  });
 
   Future<Response> bibliothek(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
     final anzahl = await db
         .customSelect(
           'SELECT count(*) AS n FROM assets WHERE $rasterSichtbar',
@@ -80,17 +156,15 @@ class _Api {
 
   /// Was die Auswertung gerade tut: `laeuft` und, wenn ja, die Stufe mit
   /// ihrem Fortschritt.
-  Response auswertung(Request anfrage) => _json({
-    'laeuft': dienst?.laeuft ?? false,
-    'stand': dienst?.stand?.alsJson(),
-  });
+  Future<Response> auswertung(Request anfrage) async {
+    final d = (await _bereich(anfrage)).auswertung;
+    return _json({'laeuft': d.laeuft, 'stand': d.stand?.alsJson()});
+  }
 
   /// Stösst einen Durchgang an, ohne die Ruhezeit abzuwarten. Antwortet
   /// sofort; der Durchgang läuft im Hintergrund.
-  Response auswertungAnstossen(Request anfrage) {
-    final d = dienst;
-    if (d == null) return _json({'fehler': 'keine Auswertung'}, status: 503);
-    unawaited(d.jetzt());
+  Future<Response> auswertungAnstossen(Request anfrage) async {
+    unawaited((await _bereich(anfrage)).auswertung.jetzt());
     return _json({'laeuft': true}, status: 202);
   }
 
@@ -101,6 +175,7 @@ class _Api {
   /// Seitenzahl, ein Lesezeichen auf die letzte Zeile nicht. Und die
   /// Abfrage bleibt in jeder Tiefe der Bibliothek gleich schnell.
   Future<Response> aufnahmen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
     final q = anfrage.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
     final nach = _Lesezeichen.lies(q['nach']);
@@ -130,6 +205,7 @@ class _Api {
   }
 
   Future<Response> aufnahme(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
     final a = await db.assetById(id);
     if (a == null || a.isLocked) {
       return _json({'fehler': 'unbekannt'}, status: 404);
@@ -140,7 +216,8 @@ class _Api {
   /// `miniatur`, `vorschau` oder `original` – mit Teilabruf (`Range`),
   /// damit sich ein Video abspielen lässt, ohne es ganz zu laden.
   Future<Response> datei(Request anfrage, String id, String art) async {
-    final a = await db.assetById(id);
+    final b = (await _bereich(anfrage)).bibliothek;
+    final a = await b.db.assetById(id);
     if (a == null || a.isLocked) return Response.notFound(null);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
@@ -162,6 +239,7 @@ class _Api {
 
   /// Ein Befehl (siehe `package:kern/befehle`) als JSON: `{art, werte}`.
   Future<Response> befehl(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
     final Befehl<Object?> b;
     try {
       b = Befehl.ausJson(

@@ -15,37 +15,61 @@ Future<void> main(List<String> argumente) async {
   if (argumente.contains('--lebenszeichen')) {
     exit(await _lebenszeichen(Einstellungen.ausUmgebung()));
   }
+  final Einstellungen e;
+  try {
+    e = Einstellungen.ausUmgebung();
+  } on ArgumentError catch (f) {
+    stderr.writeln(f.message);
+    exit(78);
+  }
+  if (argumente.isNotEmpty) exit(await verwalte(argumente, e));
+
   protokollZiel = (meldung) =>
       stdout.writeln('${DateTime.now().toIso8601String()} $meldung');
   // Auf dem Server gibt es keinen nativen Kanal einer App: Bilder, Videos
   // und Ton gehen über die Werkzeuge (ffmpeg, libheif, LibRaw).
   Bildwerkzeuge.standard = const WerkzeugBildwerkzeuge();
 
-  final e = Einstellungen.ausUmgebung();
-  final zugang = await Zugang.ladeOderLegeAn(e.zugangsdatei);
+  final sdb = Serverdatenbank.oeffne(e.serverdatenbank);
+  final konten = Kontodienst(
+    sdb,
+    Tresorschluessel.ladeOderLegeAn(e.tresorschluessel),
+    totpPflicht: e.totpPflicht,
+  );
+  if (e.alteZugangsdatei.existsSync()) {
+    protokoll(
+      '${e.alteZugangsdatei.path} gilt nicht mehr – angemeldet wird mit '
+      'Konto und Gerät. Die Datei kann weg.',
+    );
+  }
+  if (konten.alle().isEmpty) {
+    protokoll(
+      'Noch kein Konto. Anlegen mit: photo_vault_server konto anlegen NAME',
+    );
+  }
+
   final onnx = await _starteOnnx(e.onnxRuntime);
   final modelle = Modelle();
   if (onnx != null) modelle.richteEin(e.modelle.path);
-  final bibliothek = await Bibliothek.oeffne(
-    Directory(p.join(e.bibliotheken.path, 'standard')),
+  final bibliotheken = Bibliotheken(
+    wurzel: e.bibliotheken,
+    eingang: e.eingang,
     modelle: modelle,
     ortsverzeichnis: await _ladeOrtsverzeichnis(e.geodaten),
   );
-  final auswertung = Auswertungsdienst(bibliothek);
-  final hochladen = Hochladen(
-    e.eingang,
-    bibliothek,
-    nachImport: auswertung.anstossen,
-  );
-  final weg = await hochladen.raeumeAuf();
-  if (weg > 0) protokoll('$weg liegengebliebene Uploads weggeräumt');
+  // Jede Bibliothek holt beim Öffnen nach, was offen blieb (Neustart
+  // mitten in der Auswertung, neue Modelle).
+  for (final k in konten.alle()) {
+    await bibliotheken.fuer(k.id);
+  }
+  final oidc = e.oidc == null ? null : Oidc(e.oidc!);
 
   final server = await shelf_io.serve(
     baueApi(
-      bibliothek: bibliothek,
-      hochladen: hochladen,
-      zugang: zugang,
-      auswertung: auswertung,
+      konten: konten,
+      bibliotheken: bibliotheken,
+      absender: Absender(e.proxys),
+      oidc: oidc,
     ),
     e.adresse,
     e.port,
@@ -53,7 +77,13 @@ Future<void> main(List<String> argumente) async {
   server.autoCompress = true;
   protokoll(
     'Photo Vault Server auf http://${e.adresse}:${server.port} – '
-    'Daten in ${e.daten.path}, Schlüssel in ${e.zugangsdatei.path}',
+    'Daten in ${e.daten.path}',
+  );
+  protokoll(
+    'Anmeldung: TOTP ${e.totpPflicht ? 'Pflicht' : 'freiwillig'}'
+    '${oidc == null ? '' : ', OIDC über ${e.oidc!.aussteller} '
+              '(Weiterleitung: ${e.oidc!.rueckruf})'}'
+    '${e.proxys.isEmpty ? '' : ', vertraute Proxys: ${e.proxys.join(', ')}'}',
   );
   final installiert = [
     for (final h in modelle.alle)
@@ -65,9 +95,6 @@ Future<void> main(List<String> argumente) async {
               'braucht'
         : 'Modelle: ${installiert.join(', ')}',
   );
-  // Was beim letzten Mal offen blieb (Neustart mitten in der Auswertung,
-  // neue Modelle), holt ein Durchgang beim Start nach.
-  auswertung.anstossen();
 
   await Future.any([
     ProcessSignal.sigint.watch().first,
@@ -75,8 +102,9 @@ Future<void> main(List<String> argumente) async {
   ]);
   protokoll('Beende …');
   await server.close();
-  await auswertung.beende();
-  await bibliothek.schliesse();
+  await bibliotheken.schliesseAlle();
+  oidc?.schliesse();
+  sdb.schliesse();
   onnx?.beende();
   exit(0);
 }

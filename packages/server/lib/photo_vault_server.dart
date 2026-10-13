@@ -2,10 +2,18 @@
 /// mit demselben Kern wie die App.
 library;
 
+export 'src/absender.dart' show Absender;
 export 'src/api.dart' show baueApi, protokollFassung;
 export 'src/auswertungsdienst.dart' show Auswertungsdienst, Auswertungsstand;
 export 'src/bibliothek.dart' show Bibliothek;
+export 'src/bibliotheken.dart' show Bibliotheken, Kontobereich;
 export 'src/einstellungen.dart' show Einstellungen;
 export 'src/hochladen.dart' show Hochladen;
+export 'src/konten/kontodienst.dart';
+export 'src/konten/passwort.dart' show Passwort;
+export 'src/konten/serverdatenbank.dart' show Serverdatenbank;
+export 'src/konten/totp.dart' show Totp;
+export 'src/konten/tresorschluessel.dart' show Tresorschluessel;
+export 'src/oidc.dart' show Oidc, OidcEinstellungen;
 export 'src/onnx_ffi.dart' show FfiOnnxPlattform;
-export 'src/zugang.dart' show Zugang;
+export 'src/verwaltung.dart' show hilfe, qrImTerminal, verwalte;

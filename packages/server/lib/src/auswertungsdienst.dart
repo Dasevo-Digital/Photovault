@@ -49,11 +49,17 @@ class Auswertungsdienst {
     this.bibliothek, {
     this.ruhe = const Duration(seconds: 10),
     Duration freigabeTakt = const Duration(minutes: 1),
-  }) {
+    Rechenreihe? reihe,
+  }) : reihe = reihe ?? Rechenreihe() {
     _freigabe = Timer.periodic(freigabeTakt, (_) => _gibFrei());
   }
 
   final Bibliothek bibliothek;
+
+  /// Teilen sich alle Bibliotheken eines Servers: Es rechnet immer nur
+  /// eine, sonst lägen die Modelle doppelt im Speicher und die Kerne wären
+  /// doppelt belegt, ohne dass irgendetwas früher fertig würde.
+  final Rechenreihe reihe;
 
   /// Wie lange nach dem letzten Anstoss gewartet wird.
   final Duration ruhe;
@@ -94,7 +100,7 @@ class Auswertungsdienst {
     if (_beendet || _lauf != null) return;
     _lauf = () async {
       try {
-        await _laufe();
+        await reihe.nacheinander(_laufe);
       } catch (e) {
         protokoll('Auswertung gescheitert: $e');
       } finally {
@@ -109,6 +115,8 @@ class Auswertungsdienst {
   }
 
   Future<void> _laufe() async {
+    // Kann in der Reihe gewartet haben, während der Server beendet wurde.
+    if (_beendet) return;
     if (!await bibliothek.db.autoAnalyzeAfterImportEnabled()) return;
     bibliothek.auswertungAbbrechen = false;
     const stufen = Analysestufe.values;
@@ -160,5 +168,17 @@ class Auswertungsdienst {
     bibliothek.auswertungAbbrechen = true;
     await _lauf;
     await _gibFrei();
+  }
+}
+
+/// Lässt Arbeiten nacheinander laufen, in der Reihenfolge ihres Eintreffens.
+class Rechenreihe {
+  Future<void> _ende = Future.value();
+
+  Future<T> nacheinander<T>(Future<T> Function() arbeit) {
+    final vorher = _ende;
+    final fertig = Completer<void>();
+    _ende = fertig.future;
+    return vorher.then((_) => arbeit()).whenComplete(fertig.complete);
   }
 }
