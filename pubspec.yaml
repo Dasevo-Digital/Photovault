@@ -140,6 +140,9 @@ dependencies:
   # wiederholt allein bei 503, OpenTopoMap antwortet aber mit 404,
   # solange eine Kachel noch gerendert wird.
   http: ^1.6.0
+  # Der QR-Code fürs Einrichten der Zwei-Faktor-Anmeldung (kommt ohnehin
+  # mit dem PDF-Paket mit).
+  qr: ^3.0.2
 
 dev_dependencies:
   integration_test:

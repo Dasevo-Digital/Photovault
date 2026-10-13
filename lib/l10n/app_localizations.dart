@@ -14070,6 +14070,312 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Neu seit dem letzten Lauf: {anzahl}'**
   String aufgNeuSeitLauf(int anzahl);
+
+  /// No description provided for @aufgAmServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist mit einem Server verbunden – dort läuft diese Arbeit.'**
+  String get aufgAmServer;
+
+  /// No description provided for @nurOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Geht in einer mit dem Server verbundenen Bibliothek noch nicht: Es ändert Dateien, und die liegen beim Server.'**
+  String get nurOhneServer;
+
+  /// No description provided for @serverTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Server'**
+  String get serverTitel;
+
+  /// No description provided for @einstBeschrServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit einem eigenen Photo-Vault-Server verbinden, die Bibliothek dorthin umziehen'**
+  String get einstBeschrServer;
+
+  /// No description provided for @serverErklaerung.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit einem eigenen Photo-Vault-Server liegt die Bibliothek dort, und dieser Rechner arbeitet mit einer Kopie: Änderungen gehen zum Server, auch nach einer Zeit ohne Verbindung. Auswerten erledigt der Server, Originale kommen, wenn sie gebraucht werden.'**
+  String get serverErklaerung;
+
+  /// No description provided for @serverVerbinden.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit einem Server verbinden …'**
+  String get serverVerbinden;
+
+  /// No description provided for @serverVerbundenMit.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbunden mit {ort}'**
+  String serverVerbundenMit(String ort);
+
+  /// No description provided for @serverKontoGeraet.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto {konto} · Gerät {geraet}'**
+  String serverKontoGeraet(String konto, String geraet);
+
+  /// No description provided for @serverAbgeglichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Abgeglichen'**
+  String get serverAbgeglichen;
+
+  /// No description provided for @serverOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Server nicht erreichbar – {n} Änderungen warten'**
+  String serverOffline(int n);
+
+  /// No description provided for @serverSendet.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Änderungen gehen zum Server'**
+  String serverSendet(int n);
+
+  /// No description provided for @serverAbgelehnt.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Änderungen hat der Server abgelehnt; sie sind zurückgenommen.'**
+  String serverAbgelehnt(int n);
+
+  /// No description provided for @serverAbgemeldet.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Gerät ist beim Server abgemeldet. Neu verbinden, um weiterzuarbeiten.'**
+  String get serverAbgemeldet;
+
+  /// No description provided for @serverTrennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vom Server trennen …'**
+  String get serverTrennen;
+
+  /// No description provided for @serverTrennenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Vom Server trennen?'**
+  String get serverTrennenTitel;
+
+  /// No description provided for @serverTrennenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Gerät meldet sich beim Server ab. Die Kopie auf diesem Rechner bleibt als eigene Bibliothek – mit allem, was schon heruntergeladen ist; Originale, die nie geöffnet wurden, fehlen darin. Änderungen, die noch warten, gehen verloren.'**
+  String get serverTrennenText;
+
+  /// No description provided for @serverTrennenAktion.
+  ///
+  /// In de, this message translates to:
+  /// **'Trennen'**
+  String get serverTrennenAktion;
+
+  /// No description provided for @serverGetrennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Getrennt. Photo Vault muss neu starten.'**
+  String get serverGetrennt;
+
+  /// No description provided for @serverTrennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Trenne …'**
+  String get serverTrennt;
+
+  /// No description provided for @serverVerbindenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Server verbinden'**
+  String get serverVerbindenTitel;
+
+  /// No description provided for @serverAdresse.
+  ///
+  /// In de, this message translates to:
+  /// **'Adresse des Servers'**
+  String get serverAdresse;
+
+  /// No description provided for @serverAdresseHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'z. B. https://fotos.example.de'**
+  String get serverAdresseHinweis;
+
+  /// No description provided for @serverName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get serverName;
+
+  /// No description provided for @serverPasswort.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort'**
+  String get serverPasswort;
+
+  /// No description provided for @serverGeraet.
+  ///
+  /// In de, this message translates to:
+  /// **'Name dieses Geräts'**
+  String get serverGeraet;
+
+  /// No description provided for @serverAnmelden.
+  ///
+  /// In de, this message translates to:
+  /// **'Anmelden'**
+  String get serverAnmelden;
+
+  /// No description provided for @serverNichtErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Unter dieser Adresse antwortet kein Server.'**
+  String get serverNichtErreichbar;
+
+  /// No description provided for @serverKeinPhotoVault.
+  ///
+  /// In de, this message translates to:
+  /// **'Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.'**
+  String get serverKeinPhotoVault;
+
+  /// No description provided for @serverFalsch.
+  ///
+  /// In de, this message translates to:
+  /// **'Name, Passwort oder Code stimmt nicht.'**
+  String get serverFalsch;
+
+  /// No description provided for @serverGebremst.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu viele Fehlversuche – bitte in {sekunden} Sekunden erneut versuchen.'**
+  String serverGebremst(int sekunden);
+
+  /// No description provided for @serverCodeTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Code aus der Authenticator-App'**
+  String get serverCodeTitel;
+
+  /// No description provided for @serverCodeHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Sechs Ziffern – oder einer der Wiederherstellungscodes.'**
+  String get serverCodeHinweis;
+
+  /// No description provided for @serverBestaetigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Bestätigen'**
+  String get serverBestaetigen;
+
+  /// No description provided for @serverTotpTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwei-Faktor-Anmeldung einrichten'**
+  String get serverTotpTitel;
+
+  /// No description provided for @serverTotpText.
+  ///
+  /// In de, this message translates to:
+  /// **'Diesen Code mit einer Authenticator-App einlesen – oder das Geheimnis abtippen – und dann den ersten Code eingeben.'**
+  String get serverTotpText;
+
+  /// No description provided for @serverCodesTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellungscodes'**
+  String get serverCodesTitel;
+
+  /// No description provided for @serverCodesText.
+  ///
+  /// In de, this message translates to:
+  /// **'Jeder Code gilt einmal, wenn das Telefon fehlt. Jetzt sicher aufbewahren – sie werden nicht noch einmal gezeigt.'**
+  String get serverCodesText;
+
+  /// No description provided for @serverKopieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Kopieren'**
+  String get serverKopieren;
+
+  /// No description provided for @serverKopiert.
+  ///
+  /// In de, this message translates to:
+  /// **'In die Zwischenablage kopiert.'**
+  String get serverKopiert;
+
+  /// No description provided for @serverWeiter.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiter'**
+  String get serverWeiter;
+
+  /// No description provided for @serverWahlTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Welche Bibliothek soll es sein?'**
+  String get serverWahlTitel;
+
+  /// No description provided for @serverServerBib.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek des Servers hier öffnen'**
+  String get serverServerBib;
+
+  /// No description provided for @serverServerBibText.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Aufnahmen. Auf diesem Rechner entsteht eine Kopie; Originale kommen, wenn sie gebraucht werden.'**
+  String serverServerBibText(int n);
+
+  /// No description provided for @serverUmziehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek auf den Server umziehen'**
+  String get serverUmziehen;
+
+  /// No description provided for @serverUmziehenText.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Aufnahmen samt allen Dateien. Danach ist diese Bibliothek die Kopie der Bibliothek auf dem Server. Währenddessen bitte nichts ändern.'**
+  String serverUmziehenText(int n);
+
+  /// No description provided for @serverUmziehenNichtLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Geht nur, solange die Bibliothek auf dem Server leer ist.'**
+  String get serverUmziehenNichtLeer;
+
+  /// No description provided for @serverUmziehenSchonVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist schon mit einem Server verbunden.'**
+  String get serverUmziehenSchonVerbunden;
+
+  /// No description provided for @serverLaedt.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek kommt vom Server …'**
+  String get serverLaedt;
+
+  /// No description provided for @serverZiehtUm.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek zieht auf den Server …'**
+  String get serverZiehtUm;
+
+  /// No description provided for @serverFertigNeustart.
+  ///
+  /// In de, this message translates to:
+  /// **'Fertig. Photo Vault muss neu starten und öffnet dann die verbundene Bibliothek.'**
+  String get serverFertigNeustart;
+
+  /// No description provided for @serverFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Hat nicht geklappt'**
+  String get serverFehler;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -141,6 +141,9 @@ void main() {
             .listSync(recursive: true)
             .whereType<File>()
             .where((f) => f.path.endsWith('.dart'))) {
+      // Der Helfer für Bibliotheksbilder reicht beide nur weiter; geprüft
+      // werden seine Aufrufe.
+      if (datei.path.endsWith('bibliotheksbild.dart')) continue;
       final quelle = datei.readAsStringSync();
       // Beide Angaben unmittelbar nacheinander - so sieht der Fehler aus.
       final regel = RegExp(

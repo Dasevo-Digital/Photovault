@@ -9174,4 +9174,187 @@ class AppTexteDe extends AppTexte {
   String aufgNeuSeitLauf(int anzahl) {
     return 'Neu seit dem letzten Lauf: $anzahl';
   }
+
+  @override
+  String get aufgAmServer =>
+      'Diese Bibliothek ist mit einem Server verbunden – dort läuft diese Arbeit.';
+
+  @override
+  String get nurOhneServer =>
+      'Geht in einer mit dem Server verbundenen Bibliothek noch nicht: Es ändert Dateien, und die liegen beim Server.';
+
+  @override
+  String get serverTitel => 'Server';
+
+  @override
+  String get einstBeschrServer =>
+      'Mit einem eigenen Photo-Vault-Server verbinden, die Bibliothek dorthin umziehen';
+
+  @override
+  String get serverErklaerung =>
+      'Mit einem eigenen Photo-Vault-Server liegt die Bibliothek dort, und dieser Rechner arbeitet mit einer Kopie: Änderungen gehen zum Server, auch nach einer Zeit ohne Verbindung. Auswerten erledigt der Server, Originale kommen, wenn sie gebraucht werden.';
+
+  @override
+  String get serverVerbinden => 'Mit einem Server verbinden …';
+
+  @override
+  String serverVerbundenMit(String ort) {
+    return 'Verbunden mit $ort';
+  }
+
+  @override
+  String serverKontoGeraet(String konto, String geraet) {
+    return 'Konto $konto · Gerät $geraet';
+  }
+
+  @override
+  String get serverAbgeglichen => 'Abgeglichen';
+
+  @override
+  String serverOffline(int n) {
+    return 'Server nicht erreichbar – $n Änderungen warten';
+  }
+
+  @override
+  String serverSendet(int n) {
+    return '$n Änderungen gehen zum Server';
+  }
+
+  @override
+  String serverAbgelehnt(int n) {
+    return '$n Änderungen hat der Server abgelehnt; sie sind zurückgenommen.';
+  }
+
+  @override
+  String get serverAbgemeldet =>
+      'Dieses Gerät ist beim Server abgemeldet. Neu verbinden, um weiterzuarbeiten.';
+
+  @override
+  String get serverTrennen => 'Vom Server trennen …';
+
+  @override
+  String get serverTrennenTitel => 'Vom Server trennen?';
+
+  @override
+  String get serverTrennenText =>
+      'Dieses Gerät meldet sich beim Server ab. Die Kopie auf diesem Rechner bleibt als eigene Bibliothek – mit allem, was schon heruntergeladen ist; Originale, die nie geöffnet wurden, fehlen darin. Änderungen, die noch warten, gehen verloren.';
+
+  @override
+  String get serverTrennenAktion => 'Trennen';
+
+  @override
+  String get serverGetrennt => 'Getrennt. Photo Vault muss neu starten.';
+
+  @override
+  String get serverTrennt => 'Trenne …';
+
+  @override
+  String get serverVerbindenTitel => 'Mit Server verbinden';
+
+  @override
+  String get serverAdresse => 'Adresse des Servers';
+
+  @override
+  String get serverAdresseHinweis => 'z. B. https://fotos.example.de';
+
+  @override
+  String get serverName => 'Name';
+
+  @override
+  String get serverPasswort => 'Passwort';
+
+  @override
+  String get serverGeraet => 'Name dieses Geräts';
+
+  @override
+  String get serverAnmelden => 'Anmelden';
+
+  @override
+  String get serverNichtErreichbar =>
+      'Unter dieser Adresse antwortet kein Server.';
+
+  @override
+  String get serverKeinPhotoVault =>
+      'Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.';
+
+  @override
+  String get serverFalsch => 'Name, Passwort oder Code stimmt nicht.';
+
+  @override
+  String serverGebremst(int sekunden) {
+    return 'Zu viele Fehlversuche – bitte in $sekunden Sekunden erneut versuchen.';
+  }
+
+  @override
+  String get serverCodeTitel => 'Code aus der Authenticator-App';
+
+  @override
+  String get serverCodeHinweis =>
+      'Sechs Ziffern – oder einer der Wiederherstellungscodes.';
+
+  @override
+  String get serverBestaetigen => 'Bestätigen';
+
+  @override
+  String get serverTotpTitel => 'Zwei-Faktor-Anmeldung einrichten';
+
+  @override
+  String get serverTotpText =>
+      'Diesen Code mit einer Authenticator-App einlesen – oder das Geheimnis abtippen – und dann den ersten Code eingeben.';
+
+  @override
+  String get serverCodesTitel => 'Wiederherstellungscodes';
+
+  @override
+  String get serverCodesText =>
+      'Jeder Code gilt einmal, wenn das Telefon fehlt. Jetzt sicher aufbewahren – sie werden nicht noch einmal gezeigt.';
+
+  @override
+  String get serverKopieren => 'Kopieren';
+
+  @override
+  String get serverKopiert => 'In die Zwischenablage kopiert.';
+
+  @override
+  String get serverWeiter => 'Weiter';
+
+  @override
+  String get serverWahlTitel => 'Welche Bibliothek soll es sein?';
+
+  @override
+  String get serverServerBib => 'Die Bibliothek des Servers hier öffnen';
+
+  @override
+  String serverServerBibText(int n) {
+    return '$n Aufnahmen. Auf diesem Rechner entsteht eine Kopie; Originale kommen, wenn sie gebraucht werden.';
+  }
+
+  @override
+  String get serverUmziehen => 'Diese Bibliothek auf den Server umziehen';
+
+  @override
+  String serverUmziehenText(int n) {
+    return '$n Aufnahmen samt allen Dateien. Danach ist diese Bibliothek die Kopie der Bibliothek auf dem Server. Währenddessen bitte nichts ändern.';
+  }
+
+  @override
+  String get serverUmziehenNichtLeer =>
+      'Geht nur, solange die Bibliothek auf dem Server leer ist.';
+
+  @override
+  String get serverUmziehenSchonVerbunden =>
+      'Diese Bibliothek ist schon mit einem Server verbunden.';
+
+  @override
+  String get serverLaedt => 'Die Bibliothek kommt vom Server …';
+
+  @override
+  String get serverZiehtUm => 'Die Bibliothek zieht auf den Server …';
+
+  @override
+  String get serverFertigNeustart =>
+      'Fertig. Photo Vault muss neu starten und öffnet dann die verbundene Bibliothek.';
+
+  @override
+  String get serverFehler => 'Hat nicht geklappt';
 }

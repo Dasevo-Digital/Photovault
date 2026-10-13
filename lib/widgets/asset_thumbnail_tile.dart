@@ -13,6 +13,7 @@ import '../services/schwebevorschau.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'schwebevorschau.dart';
 import '../theme/app_spacing.dart';
+import 'bibliotheksbild.dart';
 
 /// Kantenlaenge eines Gesichts-Ausschnitts in [LocalImageTile].
 const double _ausschnittKante = 160;
@@ -171,8 +172,9 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
                           context,
                         ).devicePixelRatio,
                       );
-                      return Image.file(
-                        widget.paths.absolute(thumbPath),
+                      return bibliotheksbild(
+                        widget.paths,
+                        thumbPath,
                         fit: BoxFit.cover,
                         cacheWidth: masse.breite,
                         cacheHeight: masse.hoehe,

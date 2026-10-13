@@ -13,6 +13,7 @@ import 'einstellungen/hintergrund.dart';
 import 'einstellungen/karte.dart';
 import 'einstellungen/modelle.dart';
 import 'einstellungen/papierkorb.dart';
+import 'einstellungen/server.dart';
 import 'einstellungen/sicherung.dart';
 import 'einstellungen/speicherort.dart';
 import 'einstellungen/sprache.dart';
@@ -92,6 +93,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       titel: t.einstBibListe,
       beschreibung: t.einstBeschrBibliotheken,
       inhalt: () => [BibliothekenGruppe(_stand)],
+    ),
+    _Gruppe(
+      icon: Icons.cloud_outlined,
+      titel: t.serverTitel,
+      beschreibung: t.einstBeschrServer,
+      inhalt: () => [ServerGruppe(_stand)],
     ),
     _Gruppe(
       icon: Icons.sd_storage_outlined,

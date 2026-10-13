@@ -51,6 +51,11 @@ import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
+import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/tus.dart';
+import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
@@ -797,6 +802,10 @@ class LibraryState extends ChangeNotifier {
     paths = await StoragePaths.oeffne(
       Directory(p.join(bibliothek.path, 'library')),
     );
+    // Die Kopie einer Bibliothek auf dem Server? Dann gleich hier den
+    // Abgleich einrichten – vor allem anderen, das schreiben könnte.
+    verbindung = await Verbindungsdatei.lies(bibliothek);
+    if (verbunden) await _verbinde();
     modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);
     _outdatedModelPipelines = await modelProcessingState!.initialize(
       ModelProcessingState.currentFingerprints(),
@@ -857,7 +866,10 @@ class LibraryState extends ChangeNotifier {
     // viele einzelne Schreibvorgänge, und der Start soll nicht darauf
     // warten. Die Ereignisse tauchen dann eben eine Sekunde später auf
     // der Karte auf.
-    unawaited(trageEreignisorteNach());
+    // Im verbundenen Betrieb schreibt nur der Server – Nachträge,
+    // Restaurierung, Sicherung, Papierkorb-Ablauf und der überwachte
+    // Ordner gehören dorthin oder kommen später als eigene Wege.
+    if (!verbunden) unawaited(trageEreignisorteNach());
     await clearDecryptCache();
 
     // Crash-Safety: ein Restaurierungs-Auftrag, der beim letzten Beenden
@@ -865,37 +877,43 @@ class LibraryState extends ChangeNotifier {
     // abgestürzt), zurück auf "queued" setzen und die Warteschlange dann
     // fortsetzen – siehe AppDatabase.resetStuckRunningRestoreJobs.
     await db.resetStuckRunningRestoreJobs();
-    unawaited(restoreQueue.resumeWhenIdle());
+    if (!verbunden) unawaited(restoreQueue.resumeWhenIdle());
 
     // Automatisches Backup läuft nur, während die App offen ist (kein
     // Hintergrunddienst) – einmal direkt beim Start prüfen (falls das
     // Intervall während der App war geschlossen abgelaufen ist) und danach
     // regelmäßig, damit es auch bei einer lange offenen Sitzung nicht erst
     // beim nächsten Neustart nachgeholt wird.
-    unawaited(runAutoBackupIfDue());
-    _autoBackupTimer = Timer.periodic(
-      const Duration(minutes: 30),
-      (_) => runAutoBackupIfDue(),
-    );
+    if (!verbunden) {
+      unawaited(runAutoBackupIfDue());
+      _autoBackupTimer = Timer.periodic(
+        const Duration(minutes: 30),
+        (_) => runAutoBackupIfDue(),
+      );
+    }
 
     // Automatischer Papierkorb-Ablauf – aus demselben Grund (kein
     // Hintergrunddienst) ebenfalls einmal direkt beim Start geprüft und
     // danach regelmäßig. Ein gröberes Intervall als beim Backup reicht hier,
     // da "nach N Tagen" ohnehin keine Sekundengenauigkeit braucht.
-    unawaited(purgeExpiredTrashIfDue());
-    _trashPurgeTimer = Timer.periodic(
-      const Duration(hours: 6),
-      (_) => purgeExpiredTrashIfDue(),
-    );
+    if (!verbunden) {
+      unawaited(purgeExpiredTrashIfDue());
+      _trashPurgeTimer = Timer.periodic(
+        const Duration(hours: 6),
+        (_) => purgeExpiredTrashIfDue(),
+      );
+    }
 
     // Überwachter Ordner – einmal beim Start und danach regelmässig, aus
     // demselben Grund wie beim automatischen Backup: Es gibt keinen
     // Hintergrunddienst, der das erledigen könnte.
-    unawaited(pruefeUeberwachtenOrdner());
-    _ordnerTimer = Timer.periodic(
-      _ordnerIntervall,
-      (_) => pruefeUeberwachtenOrdner(),
-    );
+    if (!verbunden) {
+      unawaited(pruefeUeberwachtenOrdner());
+      _ordnerTimer = Timer.periodic(
+        _ordnerIntervall,
+        (_) => pruefeUeberwachtenOrdner(),
+      );
+    }
 
     // Gibt KI-Modelle frei, die seit dem letzten Durchlauf nicht mehr in
     // Benutzung sind (siehe ModellHalter.freigebenWennUnbenutzt) – das ist
@@ -918,8 +936,99 @@ class LibraryState extends ChangeNotifier {
     // nötig: Jede Stufe ermittelt selbst, welche Fotos ihr noch fehlen,
     // und ist damit gefahrlos wiederholbar. Erst NACH `_ready`, damit der
     // Start der Oberfläche nicht darauf wartet.
-    if (await db.autoAnalyzeAfterImportEnabled()) {
+    if (!verbunden && await db.autoAnalyzeAfterImportEnabled()) {
       unawaited(starteHintergrundanalyse());
+    }
+  }
+
+  // --- Verbundener Betrieb (Issue #86, Stufe 2) -------------------------
+
+  /// Bricht ab, bevor etwas geschieht, wenn die Bibliothek verbunden ist:
+  /// Was Dateien schreibt (Sperren, Entwickeln, endgültig Löschen …), geht
+  /// in der Kopie noch nicht – der Server ist der einzige Schreiber, und
+  /// Dateien wandern bisher nur von ihm her. Die Oberfläche macht aus dem
+  /// Abbruch einen Hinweis (siehe serversperre.dart).
+  void _nurOhneServer() {
+    if (verbunden) throw StateError('pv_nur_ueber_server');
+  }
+
+  /// Gesetzt, wenn diese Bibliothek die Kopie einer Bibliothek auf einem
+  /// Server ist (siehe `Verbindungsdatei`).
+  Verbindungsdatei? verbindung;
+  bool get verbunden => verbindung != null;
+
+  /// Hält die Kopie mit dem Server gleich; nur im verbundenen Betrieb.
+  Abgleich? abgleich;
+  Vorrat? _vorrat;
+  StreamSubscription<Abgleichszustand>? _abgleichsAbo;
+
+  /// Wie es um den Abgleich steht – für die Anzeige.
+  Abgleichszustand? get abgleichszustand => _abgleichszustand;
+  Abgleichszustand? _abgleichszustand;
+
+  /// Richtet den Abgleich ein: Befehle laufen ab jetzt über die
+  /// Warteschlange zum Server, fehlende Dateien kommen bei Bedarf, und im
+  /// Hintergrund füllt sich der Vorrat an Miniaturen.
+  Future<void> _verbinde() async {
+    final v = verbindung!;
+    final s = Serververbindung(v.server, v.token);
+    final a = Abgleich(db, s);
+    await a.richteEin();
+    final beschaffung = Dateibeschaffung(paths, s)..binde();
+    _vorrat = Vorrat(db, beschaffung);
+    _abgleichsAbo = a.zustand.listen((z) {
+      final vorher = _abgleichszustand;
+      _abgleichszustand = z;
+      if (z.erreichbar) unawaited(_vorrat?.fuelle().catchError((_) => 0));
+      if (vorher == null ||
+          vorher.erreichbar != z.erreichbar ||
+          vorher.ausstehend != z.ausstehend ||
+          vorher.abgemeldet != z.abgemeldet ||
+          vorher.abgelehnt.length != z.abgelehnt.length) {
+        notifyListeners();
+      }
+    });
+    abgleich = a;
+    a.starte();
+  }
+
+  /// Lädt [filePaths] zum Server hoch – der importiert sie wie die App
+  /// (siehe dort `Hochladen`), und die neuen Aufnahmen kommen über den
+  /// Abgleich zurück.
+  Stream<ImportProgress> _ladeHoch(List<String> filePaths) async* {
+    final a = abgleich!;
+    final tus = TusHochladen(a.verbindung);
+    var done = 0;
+    yield ImportProgress(0, filePaths.length);
+    for (final filePath in filePaths) {
+      final datei = File(filePath);
+      String? ausgang, aufnahme;
+      try {
+        final kopf = await tus.lade(datei, 'api/v1/hochladen', {
+          'filename': p.basename(filePath),
+          'geaendert': '${(await datei.lastModified()).millisecondsSinceEpoch}',
+        });
+        ausgang = kopf['pv-ausgang'];
+        aufnahme = kopf['pv-aufnahme'];
+      } catch (e) {
+        debugPrint('Hochladen von $filePath fehlgeschlagen: $e');
+      }
+      done++;
+      yield ImportProgress(
+        done,
+        filePaths.length,
+        currentFile: p.basename(filePath),
+        assetId: ausgang == 'imported' ? aufnahme : null,
+        duplikat: ausgang == 'duplicateSkipped',
+        gescheitert: ausgang == null || ausgang == 'failed',
+      );
+    }
+    // Die neuen Aufnahmen gleich holen: Wer nach dem Import zu ihnen
+    // springt, soll sie hier schon finden.
+    try {
+      await a.empfange();
+    } catch (e) {
+      debugPrint('Abgleich nach dem Hochladen: $e');
     }
   }
 
@@ -1098,6 +1207,10 @@ class LibraryState extends ChangeNotifier {
   /// (falls Modell vorhanden), CLIP-Embedding (falls Modell vorhanden) und
   /// den Live-Photo-Abgleich (Foto <-> Video mit gleichem Dateinamen) aus.
   Stream<ImportProgress> importFiles(List<String> filePaths) async* {
+    if (verbunden) {
+      yield* _ladeHoch(filePaths);
+      return;
+    }
     var done = 0;
     yield ImportProgress(0, filePaths.length);
     for (final filePath in filePaths) {
@@ -1195,6 +1308,9 @@ class LibraryState extends ChangeNotifier {
   /// [Analysestufe]) und meldet ihren Fortschritt.
   Future<void> starteHintergrundanalyse() async {
     if (_analyse != null) return; // läuft bereits
+    // Verbunden wertet der Server aus; die Ergebnisse kommen mit dem
+    // Abgleich.
+    if (verbunden) return;
 
     // Nicht neben eine rechenintensive Aufgabe legen: Die Analyse arbeitet
     // genau deren Stufen ab – zwei Durchgänge gingen dann dieselbe Liste
@@ -1371,8 +1487,9 @@ class LibraryState extends ChangeNotifier {
   /// Ohne die frühere Angabe `rechenintensiv`: Sie entschied, ob abgewiesen
   /// wird, und tut das nicht mehr. Ein Parameter, den niemand liest, ist
   /// eine Behauptung über die Regel, die nicht mehr stimmt.
-  Startabweisung? pruefeStart(String schluessel) =>
-      (_laeufe[schluessel]?.offen ?? false)
+  Startabweisung? pruefeStart(String schluessel) => verbunden
+      ? Startabweisung.amServer
+      : (_laeufe[schluessel]?.offen ?? false)
       ? Startabweisung.laeuftBereits
       : null;
 
@@ -1589,6 +1706,7 @@ class LibraryState extends ChangeNotifier {
     AssetData video,
     Duration position,
   ) async {
+    _nurOhneServer();
     final datei = paths.absolute(displayRelativePath(video));
     final schnitt = video.trimmedRelativePath == null
         ? null
@@ -1733,6 +1851,7 @@ class LibraryState extends ChangeNotifier {
   /// Änderung an der nativen Render-Logik selbst. Die Einstellungen bleiben
   /// dabei unverändert, nur das gerenderte Bild wird neu erzeugt.
   Stream<ImportProgress> redevelopAll() async* {
+    _nurOhneServer();
     final entries = await db.assetsWithDevelopSettings();
     var done = 0;
     yield ImportProgress(0, entries.length);
@@ -2239,6 +2358,7 @@ class LibraryState extends ChangeNotifier {
   /// tausend sind davon unabhängig, und [_datumUmschreiben] lässt eine
   /// unverschiebbare Datei dort, wo sie liegt.
   Stream<ImportProgress> ordneAblageNeu() async* {
+    _nurOhneServer();
     final betroffen = await db.assetsFuerAblageordnung();
     // Die liegengebliebenen Beipackzettel gehören zur selben Aufgabe: Sie
     // an ihren Platz zu legen ist das, was „Ablage ordnen" heisst. Sie
@@ -2320,6 +2440,7 @@ class LibraryState extends ChangeNotifier {
     List<String> assetIds,
     DateTime neu,
   ) async {
+    _nurOhneServer();
     for (final id in assetIds) {
       final asset = await db.assetById(id);
       if (asset == null) continue;
@@ -2524,6 +2645,7 @@ class LibraryState extends ChangeNotifier {
   /// entwickelt wurde. Für Aufrufer ausserhalb des Entwickeln-Bildschirms,
   /// die nur eine Foto-Kennung haben.
   Future<bool> kopiereEntwicklungVon(String assetId) async {
+    _nurOhneServer();
     final s = await db.developSettingsForAsset(assetId);
     if (s == null) return false;
     _kopierteEntwicklung = s;
@@ -2650,6 +2772,7 @@ class LibraryState extends ChangeNotifier {
     List<String> zielIds, {
     Entwicklungswerte? vorgabe,
   }) async* {
+    _nurOhneServer();
     // Ohne [vorgabe] gilt die Zwischenablage. Beides läuft ab hier durch
     // denselben Code – eine zweite Fassung des Übertragungswegs vergässe
     // beim nächsten neuen Regler etwas, ohne dass es auffiele.
@@ -2763,6 +2886,7 @@ class LibraryState extends ChangeNotifier {
   /// erneutem Lauf konsistent. Gesperrte Assets werden ausgeschlossen (siehe
   /// AppDatabase.assetsForXmpExport).
   Stream<ImportProgress> writeXmpSidecars() async* {
+    _nurOhneServer();
     final assets = await db.assetsForXmpExport();
     final tagsByAssetId = await db.allTagNamesByAssetId();
     // Eine Abfrage für alle, nicht eine je Foto – siehe
@@ -2819,6 +2943,7 @@ class LibraryState extends ChangeNotifier {
 
   /// Löscht eine einzelne Erkennung samt ihrem Ausschnitt auf der Platte.
   Future<void> loescheGesicht(String faceId) async {
+    _nurOhneServer();
     final pfad = await db.loescheGesicht(faceId);
     if (pfad != null) await paths.deletePermanently(pfad);
   }
@@ -2831,6 +2956,7 @@ class LibraryState extends ChangeNotifier {
   /// liegen, wäre der Platz nicht frei – und genau der ist der einzige
   /// Vorteil des Löschens gegenüber dem Beiseitelegen.
   Future<int> loescheAlleUnbenanntenErkennungen() async {
+    _nurOhneServer();
     final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
     for (final pfad in ergebnis.pfade) {
       await paths.deletePermanently(pfad);
@@ -3216,6 +3342,7 @@ class LibraryState extends ChangeNotifier {
   /// (Foto<->Video) wird automatisch mitgesperrt, damit nie nur eine Hälfte
   /// eines Live Photos verschlüsselt ist.
   Future<void> lockAsset(AssetData asset) async {
+    _nurOhneServer();
     final key = _vaultKey;
     if (key == null) {
       throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
@@ -3254,6 +3381,7 @@ class LibraryState extends ChangeNotifier {
   /// Kehrt [lockAsset] um: entschlüsselt die Dateien wieder in Klartext und
   /// entfernt das Foto (samt Live-Photo-Partner) aus dem gesperrten Ordner.
   Future<void> unlockAsset(AssetData asset) async {
+    _nurOhneServer();
     final key = _vaultKey;
     if (key == null) {
       throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
@@ -3441,7 +3569,11 @@ class LibraryState extends ChangeNotifier {
       '${target.path}.${DateTime.now().microsecondsSinceEpoch}',
     );
     try {
-      await VaultCrypto.decryptFile(paths.absolute(relativePath), teil, key);
+      await VaultCrypto.decryptFile(
+        await paths.bereit(relativePath),
+        teil,
+        key,
+      );
       await teil.rename(target.path);
     } finally {
       if (await teil.exists()) await teil.delete();
@@ -3600,6 +3732,7 @@ class LibraryState extends ChangeNotifier {
     String destination, {
     required bool encrypt,
   }) async* {
+    _nurOhneServer();
     final grenze = await _backupGrenzeBytes();
     yield* backupService.performBackup(
       destination,
@@ -3621,6 +3754,7 @@ class LibraryState extends ChangeNotifier {
   /// Setzt voraus, dass die Backup-Passphrase für diese Sitzung bereits
   /// entsperrt ist.
   Stream<BackupProgress> runAutoBackupNow(String destination) async* {
+    _nurOhneServer();
     final key = _backupKey;
     if (key == null) {
       throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
@@ -3692,6 +3826,7 @@ class LibraryState extends ChangeNotifier {
   /// DB-Zeile selbst; das bleibt Sache des Aufrufers (unterschiedliche
   /// Batch-Strategien).
   Future<void> deleteAssetFilesFromDisk(AssetData asset) async {
+    _nurOhneServer();
     for (final relPath in await dateienVon(asset)) {
       await paths.deletePermanently(relPath);
     }
@@ -3739,6 +3874,8 @@ class LibraryState extends ChangeNotifier {
     // Pruefung fiel es als „A Timer is still pending even after the
     // widget tree was disposed" auf (drei Tests).
     _embeddingCacheTimer?.cancel();
+    unawaited(_abgleichsAbo?.cancel());
+    unawaited(abgleich?.beende());
     _fortschritt.dispose();
     super.dispose();
   }

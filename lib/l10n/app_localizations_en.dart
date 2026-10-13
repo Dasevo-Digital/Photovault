@@ -9125,4 +9125,185 @@ class AppTexteEn extends AppTexte {
   String aufgNeuSeitLauf(int anzahl) {
     return 'New since the last run: $anzahl';
   }
+
+  @override
+  String get aufgAmServer =>
+      'This library is connected to a server – this work runs there.';
+
+  @override
+  String get nurOhneServer =>
+      'Not yet available in a library connected to a server: it changes files, and those live on the server.';
+
+  @override
+  String get serverTitel => 'Server';
+
+  @override
+  String get einstBeschrServer =>
+      'Connect to your own Photo Vault server, move the library there';
+
+  @override
+  String get serverErklaerung =>
+      'With your own Photo Vault server, the library lives there and this computer works with a copy: changes go to the server, even after a while offline. The server does the analysis; originals arrive when they are needed.';
+
+  @override
+  String get serverVerbinden => 'Connect to a server …';
+
+  @override
+  String serverVerbundenMit(String ort) {
+    return 'Connected to $ort';
+  }
+
+  @override
+  String serverKontoGeraet(String konto, String geraet) {
+    return 'Account $konto · device $geraet';
+  }
+
+  @override
+  String get serverAbgeglichen => 'In sync';
+
+  @override
+  String serverOffline(int n) {
+    return 'Server unreachable – $n changes waiting';
+  }
+
+  @override
+  String serverSendet(int n) {
+    return '$n changes going to the server';
+  }
+
+  @override
+  String serverAbgelehnt(int n) {
+    return 'The server rejected $n changes; they were undone.';
+  }
+
+  @override
+  String get serverAbgemeldet =>
+      'This device was signed out on the server. Connect again to continue.';
+
+  @override
+  String get serverTrennen => 'Disconnect from server …';
+
+  @override
+  String get serverTrennenTitel => 'Disconnect from the server?';
+
+  @override
+  String get serverTrennenText =>
+      'This device signs out of the server. The copy on this computer stays as a library of its own – with everything already downloaded; originals that were never opened are missing from it. Changes still waiting are lost.';
+
+  @override
+  String get serverTrennenAktion => 'Disconnect';
+
+  @override
+  String get serverGetrennt => 'Disconnected. Photo Vault needs to restart.';
+
+  @override
+  String get serverTrennt => 'Disconnecting …';
+
+  @override
+  String get serverVerbindenTitel => 'Connect to server';
+
+  @override
+  String get serverAdresse => 'Server address';
+
+  @override
+  String get serverAdresseHinweis => 'e.g. https://photos.example.com';
+
+  @override
+  String get serverName => 'Name';
+
+  @override
+  String get serverPasswort => 'Password';
+
+  @override
+  String get serverGeraet => 'Name of this device';
+
+  @override
+  String get serverAnmelden => 'Sign in';
+
+  @override
+  String get serverNichtErreichbar => 'No server responds at this address.';
+
+  @override
+  String get serverKeinPhotoVault =>
+      'A server responds there, but not a Photo Vault server of a matching version.';
+
+  @override
+  String get serverFalsch => 'Name, password or code is wrong.';
+
+  @override
+  String serverGebremst(int sekunden) {
+    return 'Too many failed attempts – please try again in $sekunden seconds.';
+  }
+
+  @override
+  String get serverCodeTitel => 'Code from the authenticator app';
+
+  @override
+  String get serverCodeHinweis => 'Six digits – or one of the recovery codes.';
+
+  @override
+  String get serverBestaetigen => 'Confirm';
+
+  @override
+  String get serverTotpTitel => 'Set up two-factor sign-in';
+
+  @override
+  String get serverTotpText =>
+      'Scan this code with an authenticator app – or type in the secret – and then enter the first code.';
+
+  @override
+  String get serverCodesTitel => 'Recovery codes';
+
+  @override
+  String get serverCodesText =>
+      'Each code works once if your phone is missing. Store them safely now – they will not be shown again.';
+
+  @override
+  String get serverKopieren => 'Copy';
+
+  @override
+  String get serverKopiert => 'Copied to the clipboard.';
+
+  @override
+  String get serverWeiter => 'Continue';
+
+  @override
+  String get serverWahlTitel => 'Which library should it be?';
+
+  @override
+  String get serverServerBib => 'Open the server\'s library here';
+
+  @override
+  String serverServerBibText(int n) {
+    return '$n items. A copy is created on this computer; originals arrive when they are needed.';
+  }
+
+  @override
+  String get serverUmziehen => 'Move this library to the server';
+
+  @override
+  String serverUmziehenText(int n) {
+    return '$n items with all their files. Afterwards this library is the copy of the library on the server. Please change nothing while it runs.';
+  }
+
+  @override
+  String get serverUmziehenNichtLeer =>
+      'Only possible while the server\'s library is empty.';
+
+  @override
+  String get serverUmziehenSchonVerbunden =>
+      'This library is already connected to a server.';
+
+  @override
+  String get serverLaedt => 'Loading the library from the server …';
+
+  @override
+  String get serverZiehtUm => 'Moving the library to the server …';
+
+  @override
+  String get serverFertigNeustart =>
+      'Done. Photo Vault needs to restart and will then open the connected library.';
+
+  @override
+  String get serverFehler => 'That did not work';
 }

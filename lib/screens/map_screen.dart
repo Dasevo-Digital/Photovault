@@ -29,6 +29,7 @@ import '../widgets/pin_dialogs.dart';
 import 'asset_viewer_screen.dart';
 import 'lebenslauf_screen.dart';
 import '../services/meldungsdienst.dart';
+import '../widgets/bibliotheksbild.dart';
 
 /// Die vier Darstellungen der Kartenansicht: helle, dunkle oder
 /// topografische flache Karte oder ein interaktiver 3D-Globus. Bewusst als
@@ -1130,8 +1131,9 @@ class _MapThumbMarker extends StatelessWidget {
           ),
           child: ClipOval(
             child: thumbPath != null
-                ? Image.file(
-                    paths.absolute(thumbPath),
+                ? bibliotheksbild(
+                    paths,
+                    thumbPath,
                     fit: BoxFit.cover,
                     // Auf Markergröße dekodieren statt auf die volle
                     // Vorschaugröße – derselbe Grund wie bei

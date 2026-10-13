@@ -7,6 +7,7 @@ import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/person_picker_dialog.dart';
+import '../widgets/bibliotheksbild.dart';
 
 /// Eine per Union-Find-Clustering (siehe face_clustering_service.dart)
 /// vorgeschlagene Gruppe unzugeordneter Gesichter, die vermutlich zur
@@ -169,10 +170,9 @@ class _FaceClusterReviewScreenState extends State<FaceClusterReviewScreen> {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(6),
                                   child: face.cropRelativePath != null
-                                      ? Image.file(
-                                          widget.library.paths.absolute(
-                                            face.cropRelativePath!,
-                                          ),
+                                      ? bibliotheksbild(
+                                          widget.library.paths,
+                                          face.cropRelativePath!,
                                           width: 56,
                                           height: 56,
                                           fit: BoxFit.cover,

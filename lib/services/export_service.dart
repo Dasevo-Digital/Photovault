@@ -163,7 +163,7 @@ class ExportService {
   Future<File> resolveSourceFile(AssetData asset) async {
     return asset.isLocked && _library != null
         ? await _library.decryptForViewing(asset.relativePath)
-        : _paths.absolute(asset.relativePath);
+        : await _paths.bereit(asset.relativePath);
   }
 
   /// Exportiert die Originaldatei eines Assets in [destinationDir] und gibt

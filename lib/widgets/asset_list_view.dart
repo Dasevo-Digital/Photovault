@@ -12,6 +12,7 @@ import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/color_label_picker.dart';
 import '../widgets/star_rating.dart';
+import 'bibliotheksbild.dart';
 
 /// Die Fotos als Liste mit Metadaten-Spalten statt als Raster.
 ///
@@ -592,8 +593,9 @@ class _Zeile extends StatelessWidget {
                       )
                     : ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.xs),
-                        child: Image.file(
-                          paths.absolute(thumb),
+                        child: bibliotheksbild(
+                          paths,
+                          thumb,
                           fit: BoxFit.cover,
                           cacheWidth:
                               (48 * MediaQuery.devicePixelRatioOf(context))

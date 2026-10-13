@@ -87,11 +87,23 @@ class Protokoll {
     );
     await db.customStatement(
       'CREATE TABLE IF NOT EXISTS pv_schalter ('
-      'id INTEGER PRIMARY KEY CHECK (id = 0), mitschreiben INTEGER NOT NULL)',
+      'id INTEGER PRIMARY KEY CHECK (id = 0), mitschreiben INTEGER NOT NULL, '
+      'frei INTEGER NOT NULL DEFAULT 0)',
     );
+    final spalten = {
+      for (final c
+          in await db.customSelect('PRAGMA table_info(pv_schalter)').get())
+        c.read<String>('name'),
+    };
+    if (!spalten.contains('frei')) {
+      await db.customStatement(
+        'ALTER TABLE pv_schalter ADD COLUMN frei INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     await db.customStatement(
-      'INSERT INTO pv_schalter (id, mitschreiben) VALUES (0, ?) '
-      'ON CONFLICT(id) DO UPDATE SET mitschreiben = excluded.mitschreiben',
+      'INSERT INTO pv_schalter (id, mitschreiben, frei) VALUES (0, ?, 0) '
+      'ON CONFLICT(id) DO UPDATE SET mitschreiben = excluded.mitschreiben, '
+      'frei = 0',
       [mitschreiben],
     );
     for (final t
@@ -125,6 +137,64 @@ class Protokoll {
         'CREATE TRIGGER "pv_aenderung_${tabelle}_d" AFTER DELETE ON "$tabelle" '
         '$wenn BEGIN ${eintrag('OLD')} END',
       );
+    }
+  }
+
+  /// Das Sicherheitsnetz einer Kopie: Ein Schreibzugriff auf eine
+  /// abgeglichene Tabelle bricht ab (`pv_nur_ueber_server`), wenn er weder
+  /// aus dem Abgleich kommt ([frei]) noch aus einem vorweggenommenen Befehl
+  /// (`mitschreiben`). Sonst wiche die Kopie unbemerkt vom Server ab – und
+  /// bliebe es, denn der Server schickt eine Zeile erst wieder, wenn sie
+  /// sich bei ihm ändert.
+  ///
+  /// **Temporäre Trigger:** Sie gelten nur für diese Verbindung und sind
+  /// beim nächsten Öffnen fort. Eine Migration beim Start der App läuft
+  /// deshalb ungehindert, und eine Kopie, deren Abgleich nicht läuft, ist
+  /// nicht gesperrt.
+  Future<void> richteSchutzEin() async {
+    const wenn =
+        'WHEN (SELECT frei FROM pv_schalter) = 0 '
+        'AND (SELECT mitschreiben FROM pv_schalter) = 0';
+    const abbruch = "BEGIN SELECT RAISE(ABORT, 'pv_nur_ueber_server'); END";
+    for (final tabelle in await abgeglicheneTabellen()) {
+      final teilweise = Abgleichsplan.geteilteSpalten[tabelle];
+      if (teilweise == null) {
+        for (final (art, kurz) in [
+          ('INSERT', 'i'),
+          ('UPDATE', 'u'),
+          ('DELETE', 'd'),
+        ]) {
+          await db.customStatement(
+            'CREATE TEMP TRIGGER IF NOT EXISTS "pv_schutz_${tabelle}_$kurz" '
+            'BEFORE $art ON main."$tabelle" $wenn $abbruch',
+          );
+        }
+      } else {
+        // In geteilten Tabellen schützt es nur die geteilten Spalten – die
+        // übrigen stellt jeder Rechner für sich ein.
+        final b = await _bauVon(tabelle);
+        final geschuetzt = [
+          for (final s in teilweise)
+            if (!b.schluessel.contains(s)) '"$s"',
+        ];
+        if (geschuetzt.isEmpty) continue;
+        await db.customStatement(
+          'CREATE TEMP TRIGGER IF NOT EXISTS "pv_schutz_${tabelle}_u" '
+          'BEFORE UPDATE OF ${geschuetzt.join(', ')} ON main."$tabelle" '
+          '$wenn $abbruch',
+        );
+      }
+    }
+  }
+
+  /// Führt [arbeit] mit offenem Sicherheitsnetz aus – für den Abgleich
+  /// selbst.
+  Future<T> frei<T>(Future<T> Function() arbeit) async {
+    await db.customStatement('UPDATE pv_schalter SET frei = 1');
+    try {
+      return await arbeit();
+    } finally {
+      await db.customStatement('UPDATE pv_schalter SET frei = 0');
     }
   }
 

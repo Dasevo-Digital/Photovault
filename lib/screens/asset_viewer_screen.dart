@@ -43,6 +43,7 @@ import 'similar_photos_screen.dart';
 import 'video_trim_screen.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
 import '../services/meldungsdienst.dart';
+import '../widgets/bibliotheksbild.dart';
 
 enum _ContextMenuAction {
   showInTimeline,
@@ -1332,8 +1333,9 @@ class _FilmstripState extends State<_Filmstrip> {
                             context,
                           ).devicePixelRatio,
                         );
-                        return Image.file(
-                          widget.paths.absolute(thumbPath),
+                        return bibliotheksbild(
+                          widget.paths,
+                          thumbPath,
                           fit: BoxFit.cover,
                           cacheWidth: masse.breite,
                           cacheHeight: masse.hoehe,
@@ -1487,7 +1489,8 @@ class _AssetPageState extends State<_AssetPage> {
     if (widget.asset.isLocked && widget.library != null) {
       return widget.library!.decryptForViewing(relativePath);
     }
-    return Future.value(widget.paths.absolute(relativePath));
+    // In einer verbundenen Bibliothek erst vom Server geholt.
+    return widget.paths.bereit(relativePath);
   }
 
   @override
@@ -2112,7 +2115,7 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
   Future<File> _resolveVideoFile(AssetData videoAsset) {
     return _videoFileFuture ??= (widget.isLocked && widget.library != null
         ? widget.library!.decryptForViewing(videoAsset.relativePath)
-        : Future.value(widget.paths.absolute(videoAsset.relativePath)));
+        : widget.paths.bereit(videoAsset.relativePath));
   }
 
   @override

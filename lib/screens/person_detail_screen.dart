@@ -21,6 +21,7 @@ import 'stammbaum_screen.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/profilbild.dart';
 import '../widgets/stromhalter.dart';
+import '../widgets/bibliotheksbild.dart';
 
 class PersonDetailScreen extends StatefulWidget {
   final LibraryState library;
@@ -160,8 +161,9 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 onTap: () => Navigator.pop(context, face),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  child: Image.file(
-                    library.paths.absolute(face.cropRelativePath!),
+                  child: bibliotheksbild(
+                    library.paths,
+                    face.cropRelativePath!,
                     fit: BoxFit.cover,
                     // Ein Gesichtsausschnitt liegt mit 160 px auf der
                     // Platte, die Kachel ist höchstens 100 breit. Bei einer

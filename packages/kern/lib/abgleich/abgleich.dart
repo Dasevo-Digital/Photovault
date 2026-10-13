@@ -141,6 +141,7 @@ class Abgleich {
   /// [starte] verbindet sich mit dem Server.
   Future<void> richteEin() async {
     await protokoll.richteEin(mitschreiben: 0);
+    await protokoll.richteSchutzEin();
     await db.customStatement(
       'CREATE TABLE IF NOT EXISTS pv_abgleich ('
       'id INTEGER PRIMARY KEY CHECK (id = 0), stand INTEGER NOT NULL)',
@@ -275,7 +276,7 @@ class Abgleich {
       final bis = a['bis']! as int;
       if (zeilen.isNotEmpty || bis != stand) {
         final tabellen = await db.transaction(() async {
-          final t = await protokoll.wendeAn(zeilen);
+          final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
           await db.customStatement(
             'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
             [bis],
@@ -388,7 +389,7 @@ class Abgleich {
       ]);
     }
     final tabellen = await db.transaction(() async {
-      final t = await protokoll.wendeAn(zeilen);
+      final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
       await db.customStatement(
         'DELETE FROM pv_aenderungen WHERE ausgang IN ($liste)',
       );

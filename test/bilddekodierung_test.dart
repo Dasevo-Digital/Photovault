@@ -55,7 +55,10 @@ void main() {
     final ohne = <String>[];
     for (final datei in quelldateien()) {
       final quelle = datei.readAsStringSync();
-      for (final muster in ['Image.file(', 'FileImage(']) {
+      // Der Helfer selbst reicht die Zielgrösse nur weiter; geprüft werden
+      // seine Aufrufe wie die von Image.file.
+      if (datei.path.endsWith('bibliotheksbild.dart')) continue;
+      for (final muster in ['Image.file(', 'FileImage(', 'bibliotheksbild(']) {
         for (final a in aufrufe(quelle, muster)) {
           // Zwei erlaubte Wege: `cacheWidth` (dann steht die Zielgrösse
           // beim Aufruf) oder [begrenztesBild] (dann steht sie an der

@@ -91,7 +91,7 @@ Future<void> diashowExportieren(
   var ergebnis = await schreibeDiashow(
     ziel: stumm,
     dateien: [
-      for (final a in fotos) library.paths.absolute(displayRelativePath(a)),
+      for (final a in fotos) await library.paths.bereit(displayRelativePath(a)),
     ],
     titel: titel,
     untertitel: untertitel,

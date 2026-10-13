@@ -12,6 +12,7 @@ import '../widgets/pin_dialogs.dart';
 import '../widgets/selection_action_bar.dart';
 import 'asset_viewer_screen.dart';
 import '../widgets/stromhalter.dart';
+import '../widgets/bibliotheksbild.dart';
 
 /// Jahresübersicht: eine Kachel pro Jahr mit Titelbild (neuestes Foto des
 /// Jahres) und Foto-/Videoanzahl – zum schnellen Einstieg in ein bestimmtes
@@ -120,8 +121,9 @@ class _YearCardState extends State<_YearCard> {
               builder: (context, snapshot) {
                 final thumbPath = snapshot.data?.thumbnailRelativePath;
                 if (thumbPath == null) return const SizedBox.shrink();
-                return Image.file(
-                  widget.library.paths.absolute(thumbPath),
+                return bibliotheksbild(
+                  widget.library.paths,
+                  thumbPath,
                   fit: BoxFit.cover,
                   cacheWidth:
                       (_kachelKante * MediaQuery.devicePixelRatioOf(context))

@@ -180,13 +180,31 @@ class _AnalyseBanner extends StatelessWidget {
     final t = AppTexte.of(context);
     final a = library.analyse;
     final laeufe = library.laufendeAufgaben.toList();
-    if (a == null && laeufe.isEmpty) return const SizedBox.shrink();
+    // Im verbundenen Betrieb nur, wenn etwas zu sagen ist: Ein Gerät, das
+    // abgleicht, soll nicht bei jedem Stern eine Zeile aufblitzen lassen.
+    final z = library.verbunden ? library.abgleichszustand : null;
+    final server = z == null
+        ? null
+        : z.abgemeldet
+        ? t.serverAbgemeldet
+        : !z.erreichbar
+        ? t.serverOffline(z.ausstehend)
+        : null;
+    if (a == null && laeufe.isEmpty && server == null) {
+      return const SizedBox.shrink();
+    }
 
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (server != null)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.cloud_off_outlined),
+              title: Text(server),
+            ),
           if (a != null)
             _Laufzeile(
               anteil: a.gesamt > 0 ? a.erledigt / a.gesamt : null,

@@ -175,6 +175,21 @@ class StoragePaths {
     return File(ziel);
   }
 
+  /// Holt eine Datei, die hier fehlt – gesetzt nur in einer mit einem
+  /// Server verbundenen Bibliothek (siehe `Dateibeschaffung`). Dort liegen
+  /// Originale und Vorschauen erst, wenn jemand sie braucht.
+  Future<void> Function(String relativePath)? beschaffe;
+
+  /// [relativePath] als Datei, die da ist: in einer verbundenen Bibliothek
+  /// vorher vom Server geholt, sonst wie [absolute]. Für alles, was eine
+  /// Datei ganz liest (Betrachter, Video, Export, Bearbeiten).
+  Future<File> bereit(String relativePath) async {
+    final f = absolute(relativePath);
+    final holen = beschaffe;
+    if (holen != null && !await f.exists()) await holen(relativePath);
+    return f;
+  }
+
   /// Verschiebt eine Originaldatei physisch in den Papierkorb-Ordner (wird
   /// beim "Papierkorb leeren" endgültig gelöscht). Gibt den neuen relativen
   /// Pfad zurück.

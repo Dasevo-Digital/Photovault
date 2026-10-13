@@ -5,9 +5,12 @@ die Uploads annimmt, auswertet und an Desktop und Handy ausliefert. Er
 benutzt denselben Kern wie die App (`packages/kern`) und dieselbe ONNX
 Runtime, damit Ergebnisse gleich sind, egal wo sie gerechnet werden.
 
-**Stand: Stufe 1a.** Konten mit Passwort und TOTP, je Konto eine eigene
-Bibliothek, Geräte einzeln abmeldbar, optional OIDC. Teilen zwischen
-Konten folgt in Stufe 6.
+**Stand: Stufe 2.** Konten mit Passwort und TOTP, je Konto eine eigene
+Bibliothek, Geräte einzeln abmeldbar, optional OIDC. Die Desktop-App
+verbindet sich (Einstellungen → Server): Sie hält eine Kopie der
+Bibliothek, gleicht sie ab und arbeitet offline weiter; eine bestehende
+Bibliothek zieht auf Wunsch auf den Server um. Teilen zwischen Konten
+folgt in Stufe 6.
 
 ## Was er tut
 
@@ -62,6 +65,32 @@ braucht; ohne ONNX Runtime alle, die ein Modell brauchen.
 **Ortsnamen:** `cities1000.txt`, `admin1CodesASCII.txt` und
 `countryInfo.txt` von GeoNames (dieselben Dateien wie in der App) nach
 `PV_GEODATEN`. Ohne sie bleiben die Ortsnamen leer, die Koordinaten nicht.
+
+## Verbundene Geräte
+
+Ein Gerät hält eine Kopie der Bibliothek (dasselbe Schema wie die App) und
+folgt den Änderungen des Servers. **Der Server ist der einzige
+Schreiber:** Das Gerät schickt seine Änderungen als Befehle, wendet sie
+vorweg selbst an und gleicht danach mit dem Stand des Servers ab – auch
+nach Tagen ohne Verbindung.
+
+- Jede Bibliothek schreibt mit, welche Zeile sich ändert
+  (`pv_aenderungen`, über Trigger). Ein Gerät holt die Änderungen seit
+  seinem Stand ab, mit Long-Poll bis 30 Sekunden.
+- Abgeglichen wird alles ausser dem, was nur auf einem Rechner gilt
+  (Sicherungen, Aufträge, Ansicht, PIN und Tresorschlüssel).
+- Dateien kommen bei Bedarf (`/dateien/<pfad>`); Miniaturen und
+  Gesichtsausschnitte lädt die App im Hintergrund vor.
+- Was in der Kopie Dateien schreiben würde (Sperren, Entwickeln,
+  endgültig löschen, Videoschnitt, Restaurieren), geht verbunden noch
+  nicht; die App sagt es. Importieren lädt zum Server hoch, und die
+  Auswertung läuft dort.
+
+**Umzug:** Eine Bibliothek, die bisher nur auf einem Rechner lag, zieht
+mit allen Dateien in eine leere Bibliothek des Servers (Einstellungen →
+Server → „Diese Bibliothek auf den Server umziehen“). Die leere Bibliothek
+wird dabei beiseitegelegt (`bibliotheken/<Konto>.vor-umzug-<Zeit>`), nicht
+gelöscht; ein unterbrochener Umzug setzt fort.
 
 ## Konten
 
@@ -243,11 +272,17 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /konto/wiederherstellungscodes` | `{code}` → zehn neue |
 | `POST /konto/oidc` | `{rueckweg, pruefwert}` → `{adresse}` zum Verknüpfen |
 | `GET /geraete`, `DELETE /geraete/<id>` | angemeldete Geräte, eines abmelden |
+| `GET /abgleich/stand` | wie weit das Protokoll reicht |
+| `GET /abgleich/aenderungen?nach=N&warten=25` | geänderte Zeilen seit N (Long-Poll) |
+| `POST /abgleich/zeilen` | einzelne Zeilen, wie der Server sie sieht |
+| `GET /abgleich/abzug` | die ganze Bibliothek als SQLite-Datei |
+| `GET /dateien/<pfad>` | eine Datei der Bibliothek, mit `Range` |
+| `POST /umzug/beginnen`, `GET /umzug/stand`, `…/umzug/hochladen` (tus), `POST /umzug/abschliessen` | Umzug einer bestehenden Bibliothek |
 | `GET /bibliothek` | Schema, Zahl der Aufnahmen |
 | `GET /aufnahmen?anzahl=300&nach=…` | Zeitleiste, neueste zuerst; `weiter` der Antwort ist `nach` der nächsten Seite |
 | `GET /aufnahmen/<id>` | alle Angaben einer Aufnahme |
 | `GET /aufnahmen/<id>/miniatur\|vorschau\|original` | die Datei, mit `Range` |
-| `POST /befehle` | eine Änderung als Befehl `{art, werte}` (siehe `packages/kern/lib/befehle`) |
+| `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
 | `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt |
 | `POST /auswertung` | einen Durchgang sofort anstossen |

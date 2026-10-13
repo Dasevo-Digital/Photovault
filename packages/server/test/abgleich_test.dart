@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -232,6 +235,29 @@ void main() {
     },
   );
 
+  test('an der Kopie vorbei lässt sich nichts schreiben', () async {
+    await aufnahme(await serverDb(), 'a1');
+    final (db, a) = await geraet('Rechner');
+    await expectLater(
+      db.setRating('a1', 2),
+      throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
+      reason: 'direkt, ohne Befehl',
+    );
+    await expectLater(
+      db.deleteAssetRows(['a1']),
+      throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
+    );
+    // Was nur diesem Rechner gehört, bleibt frei.
+    await db.setThemeMode('dark');
+    await db.merkeAufgabenlauf('ordnen');
+    // Und über einen Befehl geht es.
+    await db.fuehreAus(const BewertungSetzen(['a1'], 2));
+    expect((await holeAufnahme(db, 'a1')).rating, 2);
+    await a.sende();
+    await a.empfange();
+    expect((await holeAufnahme(db, 'a1')).rating, 2);
+  });
+
   test(
     'Long-Poll: eine Änderung kommt an, ohne dass das Gerät fragt',
     () async {
@@ -317,4 +343,93 @@ void main() {
       await abo.cancel();
     },
   );
+
+  test('Dateien bei Bedarf und Miniaturen im Vorrat', () async {
+    final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    for (final id in ['a1', 'a2']) {
+      await b.db
+          .into(b.db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/2025/$id.jpg',
+              thumbnailRelativePath: Value('thumbnails/$id.jpg'),
+              checksum: 'pruef-$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2025),
+              importedAt: DateTime(2026),
+            ),
+          );
+      for (final rel in ['originals/2025/$id.jpg', 'thumbnails/$id.jpg']) {
+        final f = b.pfade.absolute(rel);
+        await f.parent.create(recursive: true);
+        await f.writeAsString(rel);
+      }
+    }
+    final (db, a) = await geraet('Rechner');
+    final paths = await StoragePaths.oeffne(
+      Directory('${ordner.path}/Rechner/library'),
+    );
+    final beschaffung = Dateibeschaffung(paths, a.verbindung)..binde();
+    expect(await Vorrat(db, beschaffung).fuelle(), 2);
+    expect(
+      await paths.absolute('thumbnails/a2.jpg').readAsString(),
+      'thumbnails/a2.jpg',
+    );
+    expect(await paths.absolute('originals/2025/a1.jpg').exists(), isFalse);
+    final original = await paths.bereit('originals/2025/a1.jpg');
+    expect(await original.readAsString(), 'originals/2025/a1.jpg');
+    expect(await Vorrat(db, beschaffung).fuelle(), 0, reason: 'schon da');
+  });
+
+  test('Anmeldung als Client: TOTP einrichten, Code, abgewiesen', () async {
+    final pflicht = Kontodienst(
+      sdb,
+      Tresorschluessel(List.filled(32, 1)),
+      passwort: const Passwort(speicher: 64, durchgaenge: 1),
+    );
+    await server.close(force: true);
+    api = baueApi(konten: pflicht, bibliotheken: bibliotheken);
+    await starteServer();
+    await pflicht.legeAn('max', 'noch ein passwort');
+    final anmeldung = Anmeldung(Uri.parse('http://127.0.0.1:$port'));
+    expect((await anmeldung.zustand())['protokoll'], 2);
+    expect(
+      await anmeldung.anmelden('max', 'falsch falsch falsch', geraet: 'x'),
+      isA<AnmeldungAbgewiesen>(),
+    );
+    final s = await anmeldung.anmelden(
+      'max',
+      'noch ein passwort',
+      geraet: 'Rechner',
+    );
+    final einrichten = s as AnmeldungTotpEinrichten;
+    final geheimnis = base32Zurueck(einrichten.geheimnis);
+    final fertig = await anmeldung.bestaetige(
+      einrichten.vorgang,
+      Totp.code(geheimnis, Totp.schritt(DateTime.now())),
+    );
+    final f = fertig as AnmeldungFertig;
+    expect(f.wiederherstellungscodes, hasLength(10));
+    expect(pflicht.pruefeToken(f.token, 'x')!.konto.name, 'max');
+    anmeldung.schliesse();
+  });
+}
+
+/// Base32 zurück in Bytes – wie eine Authenticator-App das Geheimnis liest.
+List<int> base32Zurueck(String s) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  final aus = <int>[];
+  var puffer = 0, bits = 0;
+  for (final z in s.split('')) {
+    puffer = (puffer << 5) | alphabet.indexOf(z);
+    bits += 5;
+    if (bits >= 8) {
+      aus.add((puffer >> (bits - 8)) & 0xff);
+      bits -= 8;
+      puffer &= (1 << bits) - 1;
+    }
+  }
+  return aus;
 }

@@ -35,6 +35,7 @@ import '../widgets/profilbild.dart';
 import '../widgets/stromhalter.dart';
 import 'package:kern/services/laendernamen.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
+import '../widgets/bibliotheksbild.dart';
 
 /// Wie viele Kacheln ein Streifen höchstens zeigt.
 ///
@@ -762,8 +763,9 @@ class _LocationGroupTile extends StatelessWidget {
                 child: Container(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: thumbPath != null
-                      ? Image.file(
-                          library.paths.absolute(thumbPath),
+                      ? bibliotheksbild(
+                          library.paths,
+                          thumbPath,
                           fit: BoxFit.cover,
                           cacheWidth:
                               (_kartenKante *
@@ -963,8 +965,9 @@ class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
                         context,
                       ).colorScheme.surfaceContainerHighest,
                       child: thumbPath != null
-                          ? Image.file(
-                              widget.library.paths.absolute(thumbPath),
+                          ? bibliotheksbild(
+                              widget.library.paths,
+                              thumbPath,
                               fit: BoxFit.cover,
                               cacheWidth:
                                   (_kartenKante *

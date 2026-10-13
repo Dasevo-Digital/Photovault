@@ -41,6 +41,7 @@ import '../theme/app_spacing.dart';
 import 'mini_location_map.dart'
     show Kachelschicht, buildMapAttribution, kartenHoechsteStufe;
 import 'zoomsteuerung.dart';
+import 'bibliotheksbild.dart';
 
 class Routenkarte extends StatefulWidget {
   final List<Routenpunkt> route;
@@ -359,8 +360,9 @@ class _Ortsbild extends StatelessWidget {
                         size: 18,
                         color: farben.onSurfaceVariant,
                       )
-                    : Image.file(
-                        paths.absolute(pfad),
+                    : bibliotheksbild(
+                        paths,
+                        pfad,
                         fit: BoxFit.cover,
                         // Die Marke ist 44 Punkte gross; die Vorschau auf
                         // der Platte ist 400. Ohne diese Grenze läge bei

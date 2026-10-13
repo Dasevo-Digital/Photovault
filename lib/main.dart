@@ -30,6 +30,8 @@ import 'widgets/mini_location_map.dart'
         setzeCartoSchluessel,
         setzeEigeneKarte,
         setzeKarteHochaufloesend;
+import 'services/meldungsdienst.dart';
+import 'services/serversperre.dart';
 import 'widgets/beenden_dialog.dart';
 import 'widgets/meldungsfenster.dart';
 import 'widgets/schwebevorschau.dart';
@@ -58,6 +60,9 @@ Future<void> main() async {
   // Die Lizenzen der mitgelieferten Schriften anmelden, damit sie in der
   // Lizenzuebersicht auftauchen (siehe zierschriftenLizenzenAnmelden).
   zierschriftenLizenzenAnmelden();
+  // Was in einer verbundenen Bibliothek noch nicht geht, meldet sich als
+  // Hinweis statt als Fehler (siehe serversperre.dart).
+  richteServersperreEin();
   runApp(const PhotoVaultApp());
 }
 
@@ -170,19 +175,23 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 // zeigt: Eine Meldung, die beim Bildschirmwechsel
                 // verschwände, wäre keine – und ein Blatt, das sie
                 // verdeckte, auch nicht.
-                builder: (context, kind) => Listener(
-                  // Die Restaurierungswarteschlange läuft nur, wenn die
-                  // App wirklich unbenutzt ist. Pointer-Signale decken das
-                  // Mausrad/Trackpad ab; Bewegung deckt Ziehen und Scrollen
-                  // ab, ohne für jede Geste eigene Spezialwege zu brauchen.
-                  onPointerDown: (_) =>
-                      library.restoreQueue.noteUserInteraction(),
-                  onPointerMove: (_) =>
-                      library.restoreQueue.noteUserInteraction(),
-                  onPointerSignal: (_) =>
-                      library.restoreQueue.noteUserInteraction(),
-                  child: mitMeldungen(kind),
-                ),
+                builder: (context, kind) {
+                  meldeServersperre = () =>
+                      melde.hinweis(AppTexte.of(context).nurOhneServer);
+                  return Listener(
+                    // Die Restaurierungswarteschlange läuft nur, wenn die
+                    // App wirklich unbenutzt ist. Pointer-Signale decken das
+                    // Mausrad/Trackpad ab; Bewegung deckt Ziehen und Scrollen
+                    // ab, ohne für jede Geste eigene Spezialwege zu brauchen.
+                    onPointerDown: (_) =>
+                        library.restoreQueue.noteUserInteraction(),
+                    onPointerMove: (_) =>
+                        library.restoreQueue.noteUserInteraction(),
+                    onPointerSignal: (_) =>
+                        library.restoreQueue.noteUserInteraction(),
+                    child: mitMeldungen(kind),
+                  );
+                },
                 theme: buildLightTheme(),
                 darkTheme: buildDarkTheme(),
                 themeMode: themeModeFromString(

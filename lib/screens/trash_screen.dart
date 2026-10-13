@@ -9,6 +9,7 @@ import '../theme/app_spacing.dart';
 import '../widgets/empty_state.dart';
 import 'asset_viewer_screen.dart';
 import '../widgets/stromhalter.dart';
+import '../widgets/bibliotheksbild.dart';
 
 /// Kantenlänge einer Kachel im Raster – zugleich die Grundlage dafür, wie
 /// groß das Vorschaubild dekodiert wird (siehe `cacheWidth` unten). Als
@@ -243,8 +244,9 @@ class _TrashScreenState extends State<TrashScreen> {
           fit: StackFit.expand,
           children: [
             asset.thumbnailRelativePath != null
-                ? Image.file(
-                    widget.library.paths.absolute(asset.thumbnailRelativePath!),
+                ? bibliotheksbild(
+                    widget.library.paths,
+                    asset.thumbnailRelativePath!,
                     fit: BoxFit.cover,
                     // Auf Kachelgröße dekodieren statt auf die
                     // volle Vorschaugröße: Die Vorschau ist 400 px

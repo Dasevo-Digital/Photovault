@@ -164,6 +164,10 @@ enum Startabweisung {
   /// `LibraryState.reiheAufgabeEin`); dieselbe Arbeit zweimal in die
   /// Schlange zu stellen bleibt sinnlos und wird weiter abgelehnt.
   laeuftBereits,
+
+  /// Die Bibliothek ist die Kopie einer Bibliothek auf einem Server; dort
+  /// läuft diese Arbeit (Stufe 2 von Issue #86).
+  amServer,
 }
 
 /// Der Grund als Satz in der Oberflächensprache.
@@ -174,4 +178,5 @@ enum Startabweisung {
 /// unterschiedlich formuliert wird.
 String abweisungstext(AppTexte t, Startabweisung grund) => switch (grund) {
   Startabweisung.laeuftBereits => t.aufgLaeuftSchon,
+  Startabweisung.amServer => t.aufgAmServer,
 };

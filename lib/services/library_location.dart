@@ -537,10 +537,9 @@ class LibraryLocation {
       return (wurzel: await _anchorDir(), unerreichbar: null);
     }
 
-    final resolved = await _access.resolveRoot(
-      path: eintrag.path,
-      token: eintrag.token,
-    );
+    final resolved =
+        await _imEigenenOrdner(eintrag) ??
+        await _access.resolveRoot(path: eintrag.path, token: eintrag.token);
     // Ordner nicht mehr erreichbar (gelöscht/umbenannt, Laufwerk nicht
     // eingebunden, Bookmark ungültig) – auf den Standardordner
     // zurückfallen, statt die App gar nicht erst starten zu lassen.
@@ -548,6 +547,32 @@ class LibraryLocation {
       return (wurzel: await _anchorDir(), unerreichbar: eintrag);
     }
     return (wurzel: Directory(resolved), unerreichbar: null);
+  }
+
+  /// Ein Ordner im eigenen Datenordner der App braucht kein Lesezeichen:
+  /// Unter macOS gehört er zum Behälter der App, anderswo ohnehin nicht.
+  /// So liegen die Kopien verbundener Bibliotheken (`verbunden/…`).
+  static Future<String?> _imEigenenOrdner(Bibliothekseintrag eintrag) async {
+    if (eintrag.token != null && eintrag.token!.isNotEmpty) return null;
+    final daten = await datenordner();
+    if (!p.isWithin(daten.path, eintrag.path)) return null;
+    return await Directory(eintrag.path).exists() ? eintrag.path : null;
+  }
+
+  /// Nimmt einen Ordner im eigenen Datenordner der App in die Liste auf –
+  /// ohne Auswahl und ohne Lesezeichen (siehe [_imEigenenOrdner]).
+  static Future<Bibliothekseintrag> fuegeEigenenOrdnerHinzu(
+    Directory ordner, {
+    required String name,
+  }) async {
+    final konfig = await _leseKonfig();
+    final eintrag = Bibliothekseintrag(path: ordner.path, name: name);
+    final liste = [
+      ...konfig.liste.where((e) => !p.equals(e.path, ordner.path)),
+      eintrag,
+    ];
+    await _schreibeKonfig(konfig.aktiv, liste);
+    return eintrag;
   }
 
   /// Alle bekannten Bibliotheken samt Auskunft, ob sie gerade erreichbar
@@ -568,7 +593,9 @@ class LibraryLocation {
     for (final e in eintraege) {
       final erreichbar = p.equals(e.path, standard.path)
           ? true
-          : (await _access.resolveRoot(path: e.path, token: e.token)) != null;
+          : (await _imEigenenOrdner(e) ??
+                    await _access.resolveRoot(path: e.path, token: e.token)) !=
+                null;
       ergebnis.add(
         BibliothekMitZustand(
           eintrag: e,

@@ -216,9 +216,16 @@ Future<({int seiten, int bilder})?> erstelleFotobuch(
     // Original. Die Vorschau eines RAW ist für den Druck zu klein – dann
     // lieber das Original, gewandelt in genau der nötigen Grösse.
     final abgeleitet = a.restoredRelativePath ?? a.developedRelativePath;
-    var datei = library.paths.absolute(abgeleitet ?? a.relativePath);
-    if (!await datei.exists()) {
+    // In einer verbundenen Bibliothek erst vom Server geholt; gibt es die
+    // abgeleitete Datei dort nicht, bleibt es beim Original.
+    File datei;
+    try {
+      datei = await library.paths.bereit(abgeleitet ?? a.relativePath);
+    } catch (_) {
       datei = library.paths.absolute(a.relativePath);
+    }
+    if (!await datei.exists()) {
+      datei = await library.paths.bereit(a.relativePath);
     }
     final roh = await wandle(datei, maxDimension: pixel[i]);
     if (roh == null) continue;
