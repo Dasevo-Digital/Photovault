@@ -34,12 +34,13 @@ jobs:
       # formatiert nach anderen Regeln – dann gilt sauberer Code als falsch.
       # Der Kern (packages/kern) ist ein eigenes Paket ohne Flutter und
       # braucht seine eigene Auflösung, sonst sieht die Analyse dort jeden
-      # Import als fehlend.
-      - run: flutter pub get && (cd packages/kern && dart pub get) && (cd packages/server && dart pub get)
+      # Import als fehlend. Dasselbe gilt für die Handy-App (apps/mobil).
+      - run: flutter pub get && (cd packages/kern && dart pub get) && (cd packages/server && dart pub get) && (cd apps/mobil && flutter pub get)
       - name: Formatierung
-        run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages
+        run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages apps
+      # Die Tests der Handy-App starten einen Server aus packages/server.
       - name: Analyse und Tests
-        run: flutter analyze && flutter test && (cd packages/server && dart test)
+        run: flutter analyze && flutter test && (cd packages/server && dart test) && (cd apps/mobil && flutter test)
 
   # Kompiliert die nativen Teile, damit ein kaputter Plattform-Build vor dem
   # Release auffällt. Unter Windows reicht dafür `flutter build windows`:
@@ -83,17 +84,20 @@ jobs:
       - name: Bauen
         shell: bash
         run: |
+          # Die Handy-App (apps/mobil) baut im Android- und im Apple-Lauf mit.
           case "${{ matrix.target }}" in
-            android) befehle=("flutter build apk --debug") ;;
+            android) befehle=("flutter build apk --debug"
+                              "cd apps/mobil && flutter build apk --debug") ;;
             linux)   befehle=("flutter build linux --debug") ;;
             windows) befehle=("flutter build windows --debug") ;;
             apple)   befehle=("flutter build macos --debug"
-                              "flutter build ios --simulator --debug") ;;
+                              "flutter build ios --simulator --debug"
+                              "cd apps/mobil && flutter build ios --simulator --debug") ;;
           esac
           for befehl in "${befehle[@]}"; do
             echo "::group::$befehl"
             set +e
-            $befehl 2>&1 | tee bau.log
+            bash -c "$befehl" 2>&1 | tee bau.log
             status=${PIPESTATUS[0]}
             set -e
             echo "::endgroup::"

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Gibt Kern und Server dieselben Paketfassungen wie der App.
 
-Kern (packages/kern) und Server (packages/server) lösen ihre Pakete selbst
-auf, damit sich der Server ohne Flutter bauen lässt. Dabei kann pub andere
+Kern (packages/kern), Server (packages/server) und Handy-App (apps/mobil)
+lösen ihre Pakete selbst auf – der Server ohne Flutter, die Handy-App ohne
+die Pakete des Desktops. Dabei kann pub andere
 Fassungen wählen als für die App – und eine andere Fassung von
 `package:image` verkleinert ein Bild ein wenig anders. Am 12.10.2026
 gemessen: CLIP-Einbettung um bis zu 1e-5 verschoben, Florence schrieb
@@ -26,7 +27,11 @@ import sys
 from pathlib import Path
 
 WURZEL = Path(__file__).resolve().parent.parent
-ZIELE = [WURZEL / 'packages' / 'kern', WURZEL / 'packages' / 'server']
+ZIELE = [
+    WURZEL / 'packages' / 'kern',
+    WURZEL / 'packages' / 'server',
+    WURZEL / 'apps' / 'mobil',
+]
 
 
 def bloecke(text):
@@ -97,8 +102,10 @@ def main():
     for ziel in ZIELE:
         n = gleiche_an(ziel, app)
         print(f'{ziel.name}: {n} Pakete auf die Fassung der App gesetzt')
-        r = subprocess.run(['dart', 'pub', 'get'], cwd=ziel,
-                           capture_output=True, text=True)
+        # Eine Flutter-App (die Handy-App) löst mit flutter auf.
+        flutter = 'sdk: flutter' in (ziel / 'pubspec.yaml').read_text()
+        r = subprocess.run([('flutter' if flutter else 'dart'), 'pub', 'get'],
+                           cwd=ziel, capture_output=True, text=True)
         if r.returncode != 0:
             print(r.stdout[-2000:], r.stderr[-2000:], file=sys.stderr)
             sys.exit(f'{ziel.name}: dart pub get scheiterte')

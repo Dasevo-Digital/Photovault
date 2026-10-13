@@ -1,0 +1,105 @@
+{
+  "@@locale": "de",
+  "appTitel": "Photo Vault",
+  "abbrechen": "Abbrechen",
+  "weiter": "Weiter",
+  "kopieren": "Kopieren",
+  "navZeitleiste": "Fotos",
+  "navSuche": "Suche",
+  "navAlben": "Alben",
+  "navPersonen": "Personen",
+  "navKarte": "Karte",
+  "zeitleisteLeer": "Noch keine Aufnahmen. Was auf den Server kommt, erscheint hier.",
+  "albenLeer": "Noch keine Alben.",
+  "personenLeer": "Noch keine benannten Personen. Personen benennt man am Rechner.",
+  "karteLeer": "Noch keine Aufnahmen mit Ort.",
+  "karteFotos": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
+  "@karteFotos": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "abgemeldetHinweis": "Dieses Telefon ist beim Server abgemeldet. Unter „Konto“ abmelden und neu verbinden.",
+  "offline": "{n, plural, =1{Server nicht erreichbar – 1 Änderung wartet} other{Server nicht erreichbar – {n} Änderungen warten}}",
+  "@offline": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sucheInhalt": "Bildinhalt",
+  "sucheText": "Text",
+  "sucheHinweisInhalt": "z. B. Strand bei Sonnenuntergang",
+  "sucheHinweisText": "Dateiname, Beschreibung, erkannter Text …",
+  "sucheKeinModell": "Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.",
+  "sucheFehler": "Die Suche hat nicht geklappt.",
+  "sucheNichts": "Nichts gefunden.",
+  "betrachterFavorit": "Favorit",
+  "betrachterTeilen": "Teilen",
+  "betrachterAngaben": "Angaben",
+  "betrachterPapierkorb": "In den Papierkorb",
+  "betrachterPapierkorbTitel": "In den Papierkorb legen?",
+  "betrachterPapierkorbText": "Die Aufnahme verschwindet überall – auch am Rechner. Aus dem Papierkorb lässt sie sich am Rechner zurückholen.",
+  "betrachterLaedtOriginal": "Das Original wird geladen …",
+  "betrachterNichtGeladen": "Konnte nicht geladen werden – ist der Server erreichbar?",
+  "betrachterBeschreibungKi": "Beschreibung der Bilderkennung",
+  "kontoTitel": "Konto",
+  "kontoKontoGeraet": "Konto {konto} · Gerät {geraet}",
+  "@kontoKontoGeraet": {
+    "placeholders": {
+      "konto": {
+        "type": "String"
+      },
+      "geraet": {
+        "type": "String"
+      }
+    }
+  },
+  "kontoVerbindet": "Verbindet …",
+  "kontoAbgeglichen": "Abgeglichen",
+  "kontoSendet": "{n, plural, =1{1 Änderung geht zum Server} other{{n} Änderungen gehen zum Server}}",
+  "@kontoSendet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "kontoAbmelden": "Abmelden",
+  "kontoAbmeldenHinweis": "Löscht die Kopie auf diesem Telefon; auf dem Server bleibt alles.",
+  "kontoAbmeldenTitel": "Abmelden?",
+  "kontoAbmeldenText": "Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Änderungen, die noch warten, gehen verloren.",
+  "geraetVorgabe": "Telefon",
+  "anmeldenTitel": "Mit Server verbinden",
+  "anmeldenErklaerung": "Photo Vault auf dem Telefon zeigt die Bibliothek deines Photo-Vault-Servers – mit Zeitleiste, Suche, Alben, Personen und Karte, auch ohne Verbindung.",
+  "anmeldenAdresse": "Adresse des Servers",
+  "anmeldenAdresseHinweis": "z. B. fotos.example.de",
+  "anmeldenName": "Name",
+  "anmeldenPasswort": "Passwort",
+  "anmeldenGeraet": "Name dieses Telefons",
+  "anmeldenAnmelden": "Anmelden",
+  "anmeldenNichtErreichbar": "Unter dieser Adresse antwortet kein Server.",
+  "anmeldenKeinServer": "Dort antwortet kein Photo-Vault-Server in passender Fassung.",
+  "anmeldenNurHttps": "Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.",
+  "anmeldenFalsch": "Name, Passwort oder Code stimmt nicht.",
+  "anmeldenGebremst": "Zu viele Fehlversuche – bitte in {sekunden} Sekunden erneut versuchen.",
+  "@anmeldenGebremst": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
+  "anmeldenCodeTitel": "Code aus der Authenticator-App",
+  "anmeldenCodeHinweis": "Sechs Ziffern – oder einer der Wiederherstellungscodes.",
+  "anmeldenBestaetigen": "Bestätigen",
+  "anmeldenTotpTitel": "Zwei-Faktor-Anmeldung einrichten",
+  "anmeldenTotpText": "Das Geheimnis in die Authenticator-App übernehmen – mit dem Knopf oder abgetippt – und dann den ersten Code eingeben.",
+  "anmeldenTotpOeffnen": "In der Authenticator-App öffnen",
+  "anmeldenCodesTitel": "Wiederherstellungscodes",
+  "anmeldenCodesText": "Jeder Code gilt einmal, wenn das Telefon mit der Authenticator-App fehlt. Jetzt sicher aufbewahren – sie werden nicht noch einmal gezeigt.",
+  "anmeldenLaedt": "Die Bibliothek kommt vom Server …"
+}

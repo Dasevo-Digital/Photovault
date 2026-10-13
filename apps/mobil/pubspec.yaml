@@ -1,0 +1,46 @@
+name: photo_vault_mobil
+description: >-
+  Photo Vault für das Telefon: die Bibliothek eines Photo Vault Servers –
+  Zeitleiste, Betrachter, Suche, Alben, Personen, Karte, Teilen
+  (Issue #86, Stufe 3).
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Datenbank, Abgleich und Anmeldung – derselbe Kern wie Desktop und
+  # Server.
+  kern:
+    path: ../../packages/kern
+  drift: ^2.20.0
+  flutter_map: ^8.3.1
+  http: ^1.6.0
+  intl: ^0.20.2
+  latlong2: ^0.10.1
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  photo_view: ^0.15.0
+  share_plus: ^13.3.1
+  # Der Code fürs Einrichten der Zwei-Faktor-Anmeldung geht an die
+  # Authenticator-App auf demselben Telefon (otpauth://).
+  url_launcher: ^6.3.0
+  # Videos laufen vom Server, mit Teilabruf – ohne sie erst ganz zu laden.
+  video_player: ^2.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Testbilder für den Server im Test.
+  image: ^4.2.0
+
+flutter:
+  uses-material-design: true
+  generate: true

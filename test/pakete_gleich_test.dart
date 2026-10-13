@@ -57,7 +57,7 @@ void main() {
     return gesehen;
   }
 
-  for (final paket in ['packages/kern', 'packages/server']) {
+  for (final paket in ['packages/kern', 'packages/server', 'apps/mobil']) {
     test('$paket hat die Fassungen der App', () {
       final eigene = fassungen('$paket/pubspec.lock');
       final noetig = laufzeit(paket);
