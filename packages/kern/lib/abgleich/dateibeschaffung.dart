@@ -21,14 +21,16 @@ class Dateibeschaffung {
     try {
       final ziel = paths.absolute(relativ);
       if (await ziel.exists()) return;
-      final pfad = [
-        for (final t in relativ.split('/')) Uri.encodeComponent(t),
-      ].join('/');
-      await verbindung.ladeHerunter('api/v1/dateien/$pfad', ziel);
+      await verbindung.ladeHerunter(adresse(relativ), ziel);
     } finally {
       unawaited(Future<void>(() => _laufend.remove(relativ)));
     }
   });
+
+  /// Wo der Server die Datei [relativ] der Bibliothek ausliefert.
+  static String adresse(String relativ) =>
+      'api/v1/dateien/'
+      '${[for (final t in relativ.split('/')) Uri.encodeComponent(t)].join('/')}';
 
   /// Verbindet [paths] mit dieser Beschaffung (siehe
   /// [StoragePaths.beschaffe]).

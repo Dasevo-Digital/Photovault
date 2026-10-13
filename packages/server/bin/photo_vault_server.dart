@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
@@ -56,7 +57,15 @@ Future<void> main(List<String> argumente) async {
     eingang: e.eingang,
     modelle: modelle,
     ortsverzeichnis: await _ladeOrtsverzeichnis(e.geodaten),
+    selbst: e.selbstRechnen,
   );
+  if (e.selbstRechnen.length < Analysestufe.values.length) {
+    protokoll(
+      'Selbst gerechnet wird nur: '
+      '${e.selbstRechnen.map((s) => s.name).join(', ')} – den Rest '
+      'übernimmt die Rechenhilfe verbundener Rechner',
+    );
+  }
   // Jede Bibliothek holt beim Öffnen nach, was offen blieb (Neustart
   // mitten in der Auswertung, neue Modelle).
   for (final k in konten.alle()) {

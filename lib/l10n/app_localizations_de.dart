@@ -9290,6 +9290,57 @@ class AppTexteDe extends AppTexte {
       'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
 
   @override
+  String get serverRechenhilfe => 'Für den Server mitrechnen';
+
+  @override
+  String get serverRechenhilfeText =>
+      'Solange Photo Vault hier offen ist, übernimmt dieser Rechner Bildanalyse, Texterkennung und Bildbeschreibung für den Server – mit den Modellen, die hier installiert sind. Eingetragen wird auf dem Server.';
+
+  @override
+  String serverRechenhilfeRechnet(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Ergebnisse',
+      one: '1 Ergebnis',
+    );
+    return 'Rechnet – $_temp0 geliefert';
+  }
+
+  @override
+  String serverRechenhilfeWartet(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Ergebnisse',
+      one: '1 Ergebnis',
+    );
+    return 'Wartet auf Arbeit – $_temp0 geliefert';
+  }
+
+  @override
+  String get serverRechenhilfeKeinModell =>
+      'Hier ist kein Modell installiert, mit dem dieser Rechner dem Server helfen könnte.';
+
+  @override
+  String get serverRechenhilfeOffline => 'Der Server ist nicht erreichbar.';
+
+  @override
+  String get serverRechenhilfeServerZuAlt =>
+      'Der Server kann das noch nicht – bitte den Server aktualisieren.';
+
+  @override
+  String serverRechenhilfeAusgelassen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen ließen',
+      one: 'Eine Aufnahme ließ',
+    );
+    return '$_temp0 sich hier nicht rechnen; die übernimmt der Server.';
+  }
+
+  @override
   String get serverFalsch => 'Name, Passwort oder Code stimmt nicht.';
 
   @override

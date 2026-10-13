@@ -16,6 +16,7 @@ class Verbindungsdatei {
     required this.konto,
     required this.geraet,
     required this.token,
+    this.rechenhilfe = false,
   });
 
   /// Die Adresse des Servers, z. B. `https://fotos.example.de/`.
@@ -23,6 +24,17 @@ class Verbindungsdatei {
   final String konto;
   final String geraet;
   final String token;
+
+  /// Rechnet dieser Rechner für den Server mit (siehe `Rechenhilfe`)?
+  final bool rechenhilfe;
+
+  Verbindungsdatei mitRechenhilfe(bool an) => Verbindungsdatei(
+    server: server,
+    konto: konto,
+    geraet: geraet,
+    token: token,
+    rechenhilfe: an,
+  );
 
   static File _datei(Directory bibliothek) =>
       File(p.join(bibliothek.path, 'verbindung.json'));
@@ -38,6 +50,7 @@ class Verbindungsdatei {
       konto: j['konto'] as String,
       geraet: j['geraet'] as String,
       token: j['token'] as String,
+      rechenhilfe: j['rechenhilfe'] == true,
     );
   }
 
@@ -53,6 +66,7 @@ class Verbindungsdatei {
         'konto': konto,
         'geraet': geraet,
         'token': token,
+        if (rechenhilfe) 'rechenhilfe': true,
       }),
       flush: true,
     );

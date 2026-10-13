@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 import 'package:path/path.dart' as p;
 
 import 'beschleuniger.dart';
@@ -19,6 +20,7 @@ import 'oidc.dart';
 /// | `PV_MODELLE`         | `<PV_DATEN>/modelle`  | die KI-Modelle                        |
 /// | `PV_ONNXRUNTIME`     | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle   |
 /// | `PV_BESCHLEUNIGER`   | `cpu`                 | `openvino`, `cuda`, … (siehe `Beschleuniger`) |
+/// | `PV_SELBST_RECHNEN`  | `alles`               | welche Stufen der Server selbst rechnet: `alles`, `nichts` oder eine Liste wie `schlagwoerter,wiedererkennung,spracherkennung` |
 /// | `PV_GEODATEN`        | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                |
 /// | `PV_TOTP`            | `pflicht`             | `frei`: TOTP nur, wer es einrichtet   |
 /// | `PV_PROXY`           | –                     | vertraute Proxys (Adressen, Netze, `privat`) |
@@ -43,6 +45,7 @@ class Einstellungen {
     Directory? modelle,
     this.onnxRuntime,
     this.beschleuniger = Beschleuniger.cpu,
+    this.selbstRechnen = const {...Analysestufe.values},
     Directory? geodaten,
     this.totpPflicht = true,
     this.proxys = const [],
@@ -69,6 +72,7 @@ class Einstellungen {
           ? onnxImBuendel()
           : File(p.absolute(u['PV_ONNXRUNTIME']!)),
       beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
+      selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
       geodaten: u['PV_GEODATEN'] == null
           ? null
           : Directory(p.absolute(u['PV_GEODATEN']!)),
@@ -132,6 +136,28 @@ class Einstellungen {
   final String adresse;
   final int port;
   final Directory modelle;
+
+  /// Welche Stufen der Auswertung der Server selbst rechnet. Die übrigen
+  /// rechnen verbundene Rechner mit eingeschalteter Rechenhilfe – eine
+  /// schwache Maschine überlässt so die Bildmodelle dem Rechner.
+  final Set<Analysestufe> selbstRechnen;
+
+  /// Liest `PV_SELBST_RECHNEN`.
+  static Set<Analysestufe> selbstRechnenAus(String? text) {
+    final t = (text ?? '').trim();
+    if (t.isEmpty || t == 'alles') return {...Analysestufe.values};
+    if (t == 'nichts') return {};
+    final namen = Analysestufe.values.asNameMap();
+    return {
+      for (final teil in t.split(','))
+        if (teil.trim().isNotEmpty)
+          namen[teil.trim()] ??
+              (throw ArgumentError(
+                'PV_SELBST_RECHNEN: „${teil.trim()}“ – bekannt sind '
+                '${namen.keys.join(', ')}',
+              )),
+    };
+  }
 
   /// Womit die Modelle rechnen (siehe [Beschleuniger]).
   final Beschleuniger beschleuniger;

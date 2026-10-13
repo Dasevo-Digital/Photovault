@@ -54,12 +54,15 @@ import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/rechenhilfe.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
+import 'package:kern/auswertung/rechenhilfe.dart'
+    show Rechenfaehigkeit, Rechnen;
 // [ImportProgress] steht seit der Warteschlange in hintergrundlauf.dart –
 // der Lauf hält seinen eigenen Strom, und ein Feld vom Typ
 // `Stream<ImportProgress>` in einer Datei, die library_state.dart nicht
@@ -910,6 +913,9 @@ class LibraryState extends ChangeNotifier {
     _ready = true;
     notifyListeners();
 
+    // Erst jetzt: Vorher wüsste sie nicht, welche Modelle hier liegen.
+    if (verbindung?.rechenhilfe ?? false) _starteRechenhilfe();
+
     // Eine beim letzten Beenden unfertige Hintergrundanalyse fortsetzen.
     // Sie ist nach einem Import mit mehreren tausend Fotos stundenlang
     // unterwegs – die App zwischendurch zu schließen ist der Normalfall,
@@ -976,6 +982,64 @@ class LibraryState extends ChangeNotifier {
     });
     abgleich = a;
     a.starte();
+  }
+
+  // --- Rechenhilfe (Issue #104) ------------------------------------------
+
+  /// Rechnet für den Server mit, wenn das in `verbindung.json` steht.
+  Rechenhilfe? _rechenhilfe;
+  StreamSubscription<Rechenhilfestand>? _rechenhilfeAbo;
+
+  /// Wie es um die Rechenhilfe steht – eigens gemeldet, nicht über den
+  /// ganzen Zustand: Jeder gelieferte Auftrag zählt hoch.
+  ValueListenable<Rechenhilfestand?> get rechenhilfestand => _rechenhilfestand;
+  final _rechenhilfestand = ValueNotifier<Rechenhilfestand?>(null);
+
+  bool get rechenhilfeAn => verbindung?.rechenhilfe ?? false;
+
+  void _starteRechenhilfe() {
+    final a = abgleich;
+    if (a == null || _rechenhilfe != null) return;
+    final r = Rechenhilfe(
+      a.verbindung,
+      paths,
+      arten: () => auswertungen.rechenarten,
+      teile: () => auswertungen.bildanalyseteile,
+      rechne: (auftrag, datei) => auswertungen.rechne(auftrag, datei),
+      // Bei anderem Schema rechnete sie für einen Server, mit dem die
+      // Kopie gar nicht abgleicht.
+      darf: () => !(_abgleichszustand?.schemaAnders ?? false),
+    );
+    _rechenhilfeAbo = r.stand.listen((z) => _rechenhilfestand.value = z);
+    _rechenhilfestand.value = r.standJetzt;
+    _rechenhilfe = r..starte();
+  }
+
+  /// Hält die Rechenhilfe an; ein Auftrag, der gerade rechnet, wird noch
+  /// fertig.
+  Future<void> beendeRechenhilfe() async {
+    final r = _rechenhilfe;
+    _rechenhilfe = null;
+    await _rechenhilfeAbo?.cancel();
+    _rechenhilfeAbo = null;
+    _rechenhilfestand.value = null;
+    await r?.schliesse();
+  }
+
+  /// Schaltet die Rechenhilfe ein oder aus und merkt es sich in
+  /// `verbindung.json`.
+  Future<void> setzeRechenhilfe(bool an) async {
+    final v = verbindung;
+    if (v == null || v.rechenhilfe == an) return;
+    final neu = v.mitRechenhilfe(an);
+    await neu.schreibe(await LibraryLocation.currentRoot());
+    verbindung = neu;
+    if (an) {
+      _starteRechenhilfe();
+    } else {
+      await beendeRechenhilfe();
+    }
+    notifyListeners();
   }
 
   /// Lädt [filePaths] zum Server hoch – der importiert sie wie die App
@@ -1089,6 +1153,8 @@ class LibraryState extends ChangeNotifier {
     await _loadModelsIfPresent();
     notifyListeners();
     unawaited(restoreQueue.resumeWhenIdle());
+    // Ein neues Modell kann neue Arten von Aufträgen übernehmen.
+    _rechenhilfe?.wecke();
   }
 
   /// Lädt den GeoNames-Datensatz (falls bereits heruntergeladen) in den
@@ -3862,6 +3928,7 @@ class LibraryState extends ChangeNotifier {
     _embeddingCacheTimer?.cancel();
     unawaited(_abgleichsAbo?.cancel());
     unawaited(abgleich?.beende());
+    unawaited(beendeRechenhilfe());
     _fortschritt.dispose();
     super.dispose();
   }

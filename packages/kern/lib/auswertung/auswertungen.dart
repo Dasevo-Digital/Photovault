@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
-import 'package:uuid/uuid.dart';
 
 import '../berechne.dart';
 import '../db/database.dart';
@@ -17,7 +15,6 @@ import '../services/clip_service.dart';
 import '../services/embedding_codec.dart';
 import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
-import '../services/face_postprocess.dart';
 import '../services/florence_captioning_service.dart';
 import '../services/import_service.dart';
 import '../services/modell_halter.dart';
@@ -32,6 +29,7 @@ import '../services/whisper_service.dart';
 import 'fortschritt.dart';
 import 'modelle.dart';
 import 'herkunft.dart';
+import 'rechenhilfe.dart';
 
 /// Die Stufen der Hintergrundanalyse nach dem Import – **in der
 /// Reihenfolge ihres Ablaufs** (siehe [Auswertungen.stufe]). Jede
@@ -92,6 +90,7 @@ class Auswertungen {
     bool Function()? abgebrochen,
     this.pipelineAktuell,
     Rechner? rechner,
+    this.vergabe,
   }) : rechner = rechner ?? Rechner.hier(),
        bildwerkzeuge = bildwerkzeuge ?? Bildwerkzeuge.standard,
        aiTaggingService = aiTaggingService ?? AiTaggingService(),
@@ -121,14 +120,30 @@ class Auswertungen {
   /// [Ergebnisart]).
   final Rechner rechner;
 
-  Future<void> _vermerke(String assetId, Ergebnisart art) =>
-      db.vermerkeHerkunft(
-        assetId,
-        art.name,
-        modell: art.modell,
-        geraet: rechner.geraet,
-        beschleuniger: rechner.beschleuniger(art),
-      );
+  /// Auf dem Server: wer gerade an welcher Aufnahme rechnet (siehe
+  /// [Vergabe]). Die eigenen Läufe nehmen eine Aufnahme wie ein Rechner,
+  /// damit nie beide dieselbe rechnen.
+  final Vergabe? vergabe;
+
+  bool _nimm(Rechenart art, String aufnahme) =>
+      vergabe?.nimm(art, aufnahme) ?? true;
+
+  void _gib(Rechenart art, String aufnahme) => vergabe?.gib(art, aufnahme);
+
+  /// [modell] und [beschleuniger] nur, wenn nicht die Modelle der Art
+  /// rechneten – die Texterkennung auf dem Mac etwa macht Apples Vision.
+  Future<void> _vermerke(
+    String assetId,
+    Ergebnisart art, {
+    String? modell,
+    String? beschleuniger,
+  }) => db.vermerkeHerkunft(
+    assetId,
+    art.name,
+    modell: modell ?? art.modell,
+    geraet: rechner.geraet,
+    beschleuniger: beschleuniger ?? rechner.beschleuniger(art),
+  );
 
   Future<void> _pipelineAktuell(String pipeline) async =>
       pipelineAktuell?.call(pipeline);
@@ -250,62 +265,17 @@ class Auswertungen {
           DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
     ];
 
+    // Erkennen und Eintragen in zwei Schritten – dieselben, mit denen ein
+    // Rechner für den Server rechnet und der Server einträgt (siehe
+    // rechenhilfe.dart). So entsteht ein Gesicht auf beiden Wegen gleich.
     try {
-      final boxes = await engine.detectFaces(decoded);
-      for (final box in boxes) {
-        // Dieselbe Schwelle wie die Unterdrückung mehrfacher Erkennungen
-        // derselben Stelle (FaceEngineService.detectFaces) – es ist
-        // dieselbe Frage: Ist das nochmal dieses Gesicht?
-        if (ignorierteBoxen.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
-          continue;
-        }
-        final faceId = const Uuid().v4();
-        final cropFile = paths.absolute(paths.faceRelativePath(faceId));
-        final croppedThumb = FaceEngineService.cropFaceImage(decoded, box);
-        await FaceEngineService.saveFaceCrop(croppedThumb, cropFile);
-
-        Float32List? embedding;
-        if (engine.canEmbed) {
-          embedding = await engine.embedFace(decoded, box);
-        }
-
-        // Nutzt dieselben Landmarks weiter, die YuNet für diese Box schon
-        // geliefert hat (siehe FaceEngineService.detectFaces) – keine
-        // erneute Erkennung nötig, nur ein kleiner Zusatz-Klassifikator
-        // auf zwei winzigen Augen-Ausschnitten.
-        double? eyeOpenScore;
-        if (eyeState != null) {
-          try {
-            eyeOpenScore = await eyeState.eyeOpenScore(decoded, box);
-          } catch (e) {
-            protokoll(
-              'Augen-Zustand-Erkennung fehlgeschlagen für ${asset.originalFileName}: $e',
-            );
-          }
-        }
-
-        await db.insertFace(
-          FacesCompanion.insert(
-            id: faceId,
-            assetId: asset.id,
-            boxX: box.x,
-            boxY: box.y,
-            boxW: box.width,
-            boxH: box.height,
-            cropRelativePath: Value(paths.faceRelativePath(faceId)),
-            embedding: embedding != null
-                ? Value(blobFromEmbeddingFloats(embedding))
-                : const Value.absent(),
-            eyeOpenScore: eyeOpenScore != null
-                ? Value(eyeOpenScore)
-                : const Value.absent(),
-            // Auf dem Ausschnitt, der ohnehin schon im Speicher liegt –
-            // kein zweiter Dekodiervorgang, keine zweite Skalierung.
-            schaerfe: Value(gesichtsschaerfe(croppedThumb)),
-          ),
-        );
-      }
-      await db.markFacesScanned([asset.id]);
+      final funde = await erkenneGesichter(
+        decoded,
+        engine,
+        eyeState,
+        auslassen: ignorierteBoxen,
+      );
+      await speichereGesichter(asset, funde);
       await _vermerke(asset.id, Ergebnisart.gesichter);
     } catch (e) {
       protokoll(
@@ -648,6 +618,15 @@ class Auswertungen {
       var done = 0;
       yield ImportProgress(0, assets.length);
       for (final asset in assets) {
+        if (!_nimm(Rechenart.texterkennung, asset.id)) {
+          done++;
+          yield ImportProgress(
+            done,
+            assets.length,
+            currentFile: asset.originalFileName,
+          );
+          continue;
+        }
         // Pro Foto abgesichert: Ein einzelner Fehlschlag (beschädigte
         // Datei, Fehler im nativen Aufruf) darf nicht den ganzen Lauf
         // abbrechen.
@@ -669,7 +648,12 @@ class Auswertungen {
               textAusStellen(stellen),
               boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
             );
-            await _vermerke(asset.id, Ergebnisart.texterkennung);
+            await _vermerke(
+              asset.id,
+              Ergebnisart.texterkennung,
+              modell: ueberSystem ? 'Apple Vision' : null,
+              beschleuniger: ueberSystem ? 'System' : null,
+            );
           }
         } on LesungLiefertNichts catch (e) {
           // NICHT als leeres Ergebnis speichern: Das Foto würde als
@@ -686,6 +670,7 @@ class Auswertungen {
             'Texterkennung fehlgeschlagen für ${asset.originalFileName}: $e',
           );
         }
+        _gib(Rechenart.texterkennung, asset.id);
         done++;
         yield ImportProgress(
           done,
@@ -733,6 +718,15 @@ class Auswertungen {
       var done = 0;
       yield ImportProgress(0, assets.length);
       for (final asset in assets) {
+        if (!_nimm(Rechenart.bildbeschreibung, asset.id)) {
+          done++;
+          yield ImportProgress(
+            done,
+            assets.length,
+            currentFile: asset.originalFileName,
+          );
+          continue;
+        }
         try {
           final decoded = await decodeAsset(asset);
           if (decoded == null) {
@@ -759,6 +753,7 @@ class Auswertungen {
             'KI-Bildbeschreibung fehlgeschlagen für ${asset.originalFileName}: $e',
           );
         }
+        _gib(Rechenart.bildbeschreibung, asset.id);
         done++;
         yield ImportProgress(
           done,
@@ -887,6 +882,15 @@ class Auswertungen {
 
           for (final k in kandidaten) {
             final asset = k.asset;
+            if (!_nimm(Rechenart.bildanalyse, asset.id)) {
+              done++;
+              yield ImportProgress(
+                done,
+                kandidaten.length,
+                currentFile: asset.originalFileName,
+              );
+              continue;
+            }
             final brauchtUnschaerfe = asset.sharpnessScore == null;
             final brauchtGesichter = !asset.facesScanned && gesichter != null;
             final brauchtEmbedding = !k.hatEmbedding && clip != null;
@@ -937,6 +941,7 @@ class Auswertungen {
               }
             }
 
+            _gib(Rechenart.bildanalyse, asset.id);
             done++;
             yield ImportProgress(
               done,

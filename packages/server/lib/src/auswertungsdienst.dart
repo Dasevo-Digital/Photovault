@@ -5,6 +5,7 @@ import 'package:kern/protokoll.dart';
 import 'package:kern/services/speicher_rueckgabe.dart';
 
 import 'bibliothek.dart';
+import 'rechnen.dart';
 
 /// Wo die Auswertung gerade steht.
 class Auswertungsstand {
@@ -50,6 +51,8 @@ class Auswertungsdienst {
     this.ruhe = const Duration(seconds: 10),
     Duration freigabeTakt = const Duration(minutes: 1),
     Rechenreihe? reihe,
+    this.vergabe,
+    this.selbst = const {...Analysestufe.values},
   }) : reihe = reihe ?? Rechenreihe() {
     _freigabe = Timer.periodic(freigabeTakt, (_) => _gibFrei());
   }
@@ -63,6 +66,13 @@ class Auswertungsdienst {
 
   /// Wie lange nach dem letzten Anstoss gewartet wird.
   final Duration ruhe;
+
+  /// Wer an welcher Aufnahme rechnet (siehe Rechenvergabe).
+  final Rechenvergabe? vergabe;
+
+  /// Welche Stufen der Server selbst rechnet. Die übrigen rechnen
+  /// verbundene Rechner – oder niemand, wenn keiner hilft.
+  final Set<Analysestufe> selbst;
 
   Timer? _warte;
   late final Timer _freigabe;
@@ -119,7 +129,11 @@ class Auswertungsdienst {
     if (_beendet) return;
     if (!await bibliothek.db.autoAnalyzeAfterImportEnabled()) return;
     bibliothek.auswertungAbbrechen = false;
-    const stufen = Analysestufe.values;
+    vergabe?.neuerDurchgang();
+    final stufen = [
+      for (final s in Analysestufe.values)
+        if (selbst.contains(s)) s,
+    ];
     final uhr = Stopwatch()..start();
     for (var i = 0; i < stufen.length; i++) {
       if (bibliothek.auswertungAbbrechen) break;

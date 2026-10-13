@@ -43,6 +43,7 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_MODELLE`              | `<PV_DATEN>/modelle`  | die KI-Modelle                          |
 | `PV_ONNXRUNTIME`          | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle     |
 | `PV_BESCHLEUNIGER`        | `cpu`                 | `openvino`, `cuda`, siehe Beschleuniger |
+| `PV_SELBST_RECHNEN`       | `alles`               | `nichts` oder Stufen, siehe Rechenhilfe |
 | `PV_GEODATEN`             | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                  |
 | `PV_TOTP`                 | `pflicht`             | `frei`: TOTP nur, wer es einrichtet     |
 | `PV_PROXY`                | –                     | vertraute Proxys, siehe unten           |
@@ -250,6 +251,39 @@ beim Start; auf der CPU können Ergebnisse deshalb minimal anders ausfallen
 als in der App. OpenVINO übersetzt die Modelle für die Grafik beim ersten
 Laden und legt sie unter `<PV_DATEN>/beschleuniger` ab.
 
+## Rechenhilfe
+
+Ein verbundener Rechner kann für den Server mitrechnen (App:
+Einstellungen → Server → „Für den Server mitrechnen“). Solange die App
+offen ist, holt er Aufträge für Bildanalyse, Texterkennung und
+Bildbeschreibung, rechnet sie mit seinen Modellen und schickt die
+Ergebnisse zurück; eingetragen wird auf dem Server, nach denselben Regeln
+wie bei seinen eigenen Läufen. Spracherkennung bleibt beim Server.
+
+- **Nie doppelt:** Der Server vergibt jede Aufnahme je Art an höchstens
+  einen – an einen Rechner oder an sich selbst. Ein Auftrag gilt zehn
+  Minuten; wird ein Rechner zugeklappt, nimmt danach ein anderer ihn.
+- **Was ein Rechner nicht rechnen kann** (Datei nicht lesbar, Modell
+  fehlt), gibt er zurück; dann rechnet es der Server, und kein Rechner
+  bekommt es wieder, bis der Server neu startet.
+- **Geprüft wird, was ankommt:** Länge und Werte der Einbettung, Lage der
+  Gesichter, Grösse der Ausschnitte und Texte. Was nicht passt, lehnt der
+  Server ab.
+- Die Kopie auf dem Rechner wächst dabei nicht: Fehlt dort eine Datei,
+  holt er sie in eine Zwischenablage und löscht sie nach dem Rechnen.
+- Was auf den Ergebnissen aufbaut (Schlagwörter, Wiedererkennung),
+  rechnet der Server danach selbst.
+- Die Herkunft jedes Ergebnisses nennt den Rechner (z. B.
+  `Rechner (macOS)`) statt `Server (Linux)`.
+
+Mit `PV_SELBST_RECHNEN` rechnet der Server nur noch, was dort steht:
+`nichts`, oder Stufen mit Komma, z. B.
+`PV_SELBST_RECHNEN=schlagwoerter,spracherkennung,wiedererkennung` für
+einen schwachen Server, dem die Rechner die Bildmodelle abnehmen. Bekannt
+sind `bildanalyse`, `texterkennung`, `schlagwoerter`, `bildbeschreibung`,
+`spracherkennung` und `wiedererkennung`. Was dann kein Rechner übernimmt,
+bleibt offen, bis einer kommt.
+
 ## Einzeldatei mit systemd
 
 Dasselbe Programm als Bündel (`bin/`, `lib/` mit SQLite und ONNX Runtime,
@@ -326,6 +360,9 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
 | `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt; der Beschleuniger und seine Gegenproben |
+| `POST /rechnen/auftraege` | `{arten, teile?, anzahl?}` → `{auftraege: [{id, art, aufnahme, datei, teile?, deutsch?}], gueltig}` – Arbeit für einen Rechner (Rechenhilfe) |
+| `POST /rechnen/ergebnis` | `{auftrag, ergebnis}` – trägt ein; 409, wenn der Auftrag abgelaufen oder fremd ist, 400 bei unbrauchbaren Werten |
+| `POST /rechnen/zurueck` | `{auftrag, auslassen?}` – ohne Ergebnis zurück; mit `auslassen` rechnet es der Server |
 | `POST /auswertung` | einen Durchgang sofort anstossen |
 
 Beim Hochladen gehören zu `Upload-Metadata` `filename` und `geaendert`

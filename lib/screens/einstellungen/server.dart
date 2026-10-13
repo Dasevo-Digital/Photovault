@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/rechenhilfe.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:kern/auswertung/rechenhilfe.dart' show Rechenfaehigkeit;
 
 import '../../l10n/app_localizations.dart';
 import '../../services/library_location.dart';
+import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
 import '../server_verbinden_screen.dart';
 import 'einstellungsstand.dart';
@@ -74,12 +77,68 @@ class ServerGruppe extends StatelessWidget {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
+        const Divider(height: AppSpacing.xl),
+        _Rechenhilfe(library),
         const SizedBox(height: AppSpacing.md),
         OutlinedButton.icon(
           icon: const Icon(Icons.link_off_outlined),
           label: Text(t.serverTrennen),
           onPressed: () => _trenne(stand, v),
         ),
+      ],
+    );
+  }
+}
+
+/// Für den Server mitrechnen (Issue #104).
+class _Rechenhilfe extends StatelessWidget {
+  const _Rechenhilfe(this.library);
+
+  final LibraryState library;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final an = library.rechenhilfeAn;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.memory_outlined),
+          title: Text(t.serverRechenhilfe),
+          subtitle: Text(t.serverRechenhilfeText),
+          value: an,
+          onChanged: library.setzeRechenhilfe,
+        ),
+        if (an)
+          ValueListenableBuilder(
+            valueListenable: library.rechenhilfestand,
+            builder: (context, s, _) {
+              final n = s?.geliefert ?? 0;
+              final lage = library.auswertungen.rechenarten.isEmpty
+                  ? t.serverRechenhilfeKeinModell
+                  : switch (s?.lage) {
+                      null || Rechenhilfelage.aus => null,
+                      Rechenhilfelage.rechnet => t.serverRechenhilfeRechnet(n),
+                      Rechenhilfelage.wartet => t.serverRechenhilfeWartet(n),
+                      Rechenhilfelage.offline => t.serverRechenhilfeOffline,
+                      Rechenhilfelage.serverZuAlt =>
+                        t.serverRechenhilfeServerZuAlt,
+                      Rechenhilfelage.abgemeldet => t.serverAbgemeldet,
+                    };
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ?(lage == null ? null : Text(lage)),
+                  if ((s?.ausgelassen ?? 0) > 0)
+                    Text(t.serverRechenhilfeAusgelassen(s!.ausgelassen)),
+                ],
+              );
+            },
+          ),
       ],
     );
   }
@@ -114,6 +173,7 @@ Future<void> _trenne(Einstellungsstand stand, Verbindungsdatei v) async {
     restartMessage: t.serverGetrennt,
     errorPrefix: t.serverFehler,
     action: () async {
+      await stand.library.beendeRechenhilfe();
       await stand.library.abgleich?.beende();
       // Abmelden, wenn der Server erreichbar ist – sonst bleibt das Token
       // dort gültig, bis jemand es abmeldet (Geräteliste, Kommandozeile).

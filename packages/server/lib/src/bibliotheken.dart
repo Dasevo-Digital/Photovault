@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:kern/services/reverse_geocoder.dart';
@@ -8,16 +9,20 @@ import 'package:path/path.dart' as p;
 
 import 'auswertungsdienst.dart';
 import 'bibliothek.dart';
+import 'rechnen.dart';
 import 'hochladen.dart';
 
 /// Was zu einem Konto gehört: seine Bibliothek, sein Eingang für Uploads
 /// und seine Auswertung.
 class Kontobereich {
-  Kontobereich(this.bibliothek, this.hochladen, this.auswertung);
+  Kontobereich(this.bibliothek, this.hochladen, this.auswertung, this.vergabe);
 
   final Bibliothek bibliothek;
   final Hochladen hochladen;
   final Auswertungsdienst auswertung;
+
+  /// Wer an welcher Aufnahme rechnet – Rechner und Server (Issue #104).
+  final Rechenvergabe vergabe;
 }
 
 /// Die Bibliotheken des Servers, eine je Konto, unter
@@ -40,6 +45,7 @@ class Bibliotheken {
     this.ortsverzeichnis,
     this.bildwerkzeuge = const WerkzeugBildwerkzeuge(),
     this.ruhe = const Duration(seconds: 10),
+    this.selbst = const {...Analysestufe.values},
   }) : modelle = modelle ?? Modelle() {
     // drift warnt, sobald es AppDatabase zweimal gibt – für den Fall, dass
     // zwei Instanzen auf dieselbe Datei schreiben. Hier hat jedes Konto
@@ -52,6 +58,11 @@ class Bibliotheken {
   final Modelle modelle;
   final ReverseGeocoder? ortsverzeichnis;
   final Bildwerkzeuge bildwerkzeuge;
+
+  /// Welche Stufen der Server selbst rechnet (`PV_SELBST_RECHNEN`); die
+  /// übrigen bleiben verbundenen Rechnern (siehe Rechenapi).
+  final Set<Analysestufe> selbst;
+
   final Duration ruhe;
   final reihe = Rechenreihe();
 
@@ -66,13 +77,21 @@ class Bibliotheken {
       throw ArgumentError('keine Kontokennung: $kontoId');
     }
     return _offen.putIfAbsent(kontoId, () async {
+      final vergabe = Rechenvergabe();
       final b = await Bibliothek.oeffne(
         Directory(p.join(wurzel.path, kontoId)),
         bildwerkzeuge: bildwerkzeuge,
         modelle: modelle,
         ortsverzeichnis: ortsverzeichnis,
+        vergabe: vergabe,
       );
-      final auswertung = Auswertungsdienst(b, ruhe: ruhe, reihe: reihe);
+      final auswertung = Auswertungsdienst(
+        b,
+        ruhe: ruhe,
+        reihe: reihe,
+        vergabe: vergabe,
+        selbst: selbst,
+      );
       final hochladen = Hochladen(
         Directory(p.join(eingang.path, kontoId)),
         b,
@@ -80,7 +99,7 @@ class Bibliotheken {
       );
       await hochladen.raeumeAuf();
       auswertung.anstossen();
-      return Kontobereich(b, hochladen, auswertung);
+      return Kontobereich(b, hochladen, auswertung, vergabe);
     });
   }
 

@@ -82,6 +82,11 @@ void main() {
   /// Ein Prüfstand mit echter Erkennung geht hier nicht – die braucht das
   /// YuNet-Modell, das im Prüflauf nicht liegt. Also wird der Quelltext
   /// gelesen: Der frühe Ausstieg muss VOR jedem Schreibvorgang stehen.
+  ///
+  /// Seit der Rechenhilfe (Issue #104) schreibt `speichereGesichter` die
+  /// Gesichter und den Vermerk – dieselbe Methode für die eigenen Läufe und
+  /// für Ergebnisse eines Rechners. Geprüft wird deshalb beides: dass der
+  /// Aufruf hinter dem Ausstieg steht und dass dort geschrieben wird.
   test('ohne dekodiertes Bild wird nichts vermerkt', () {
     final quelle = File(
       'packages/kern/lib/auswertung/auswertungen.dart',
@@ -100,15 +105,25 @@ void main() {
           'würde wieder als gescannt vermerkt',
     );
     for (final schreibt in [
-      'db.markFacesScanned',
-      'db.insertFace',
+      'speichereGesichter(',
       'db.deleteUnassignedFacesForAsset',
+      '_vermerke(',
     ]) {
       expect(
         rumpf.indexOf(schreibt),
         greaterThan(ausstieg),
         reason: '$schreibt steht vor dem Ausstieg',
       );
+    }
+
+    final hilfe = File(
+      'packages/kern/lib/auswertung/rechenhilfe.dart',
+    ).readAsStringSync();
+    final speichern = hilfe.substring(
+      hilfe.indexOf('Future<void> speichereGesichter('),
+    );
+    for (final schreibt in ['db.insertFace', 'db.markFacesScanned']) {
+      expect(speichern, contains(schreibt), reason: 'umgezogen?');
     }
   });
 }

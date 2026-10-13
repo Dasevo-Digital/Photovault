@@ -6,10 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/rechenhilfe.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:kern/auswertung/herkunft.dart';
+import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/textstellen.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/library_location.dart';
 import 'package:photo_vault/state/hintergrundlauf.dart';
@@ -208,5 +212,84 @@ void main() {
       throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
       reason: 'das Sicherheitsnetz',
     );
+  });
+
+  test('Rechenhilfe: der Rechner rechnet, der Server trägt ein, die Kopie '
+      'bekommt es', () async {
+    final ablage = Directory(p.join(ordner.path, 'ablage'));
+    final gerechnet = <({bool lokal, String datei, String pfad})>[];
+    final hilfe = Rechenhilfe(
+      bib.abgleich!.verbindung,
+      bib.paths,
+      arten: () => {Rechenart.texterkennung},
+      teile: () => const {},
+      rechne: (auftrag, datei) async {
+        expect(await datei.length(), greaterThan(0));
+        gerechnet.add((
+          lokal: bib.paths.absolute(auftrag.datei).path == datei.path,
+          datei: auftrag.datei,
+          pfad: datei.path,
+        ));
+        return Rechenergebnis(
+          textstellen: const [
+            Textstelle(
+              text: 'Rechenhilfe',
+              links: 0.1,
+              oben: 0.1,
+              breite: 0.5,
+              hoehe: 0.1,
+            ),
+          ],
+          herkunft: {
+            Ergebnisart.texterkennung.name: (
+              modell: 'Probe',
+              geraet: 'Rechner (Test)',
+              beschleuniger: 'CPU',
+            ),
+          },
+        );
+      },
+      ruhe: const Duration(milliseconds: 200),
+      zwischenablage: ablage,
+    )..starte();
+    addTearDown(hilfe.schliesse);
+
+    final ids = [
+      for (final a in await bib.db.select(bib.db.assets).get()) a.id,
+    ];
+    await bis(
+      () async => (await bib.db.assetsByIds(
+        ids,
+      )).every((a) => a.ocrText == 'Rechenhilfe'),
+      'erkannter Text in der Kopie',
+    );
+    await bis(
+      () async => (await bib.db.herkunftVon(
+        ids.first,
+      )).any((h) => h.geraet == 'Rechner (Test)'),
+      'Herkunft in der Kopie',
+    );
+    expect(hilfe.standJetzt.geliefert, ids.length);
+    expect(gerechnet, hasLength(ids.length));
+    final geholt = gerechnet.where((g) => !g.lokal).toList();
+    expect(geholt, isNotEmpty, reason: 'mindestens ein Original fehlte');
+    for (final g in geholt) {
+      expect(File(g.pfad).existsSync(), isFalse);
+      expect(
+        bib.paths.absolute(g.datei).existsSync(),
+        isFalse,
+        reason: 'die Kopie wächst nicht',
+      );
+    }
+  });
+
+  test('der Schalter steht in verbindung.json', () async {
+    final wurzel = await LibraryLocation.currentRoot();
+    await bib.setzeRechenhilfe(true);
+    expect((await Verbindungsdatei.lies(wurzel))!.rechenhilfe, isTrue);
+    expect(bib.rechenhilfestand.value, isNotNull);
+    await bib.setzeRechenhilfe(false);
+    expect((await Verbindungsdatei.lies(wurzel))!.rechenhilfe, isFalse);
+    expect(bib.rechenhilfestand.value, isNull);
   });
 }

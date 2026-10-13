@@ -14257,6 +14257,54 @@ abstract class AppTexte {
   /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
   String get serverZuAlt;
 
+  /// No description provided for @serverRechenhilfe.
+  ///
+  /// In de, this message translates to:
+  /// **'Für den Server mitrechnen'**
+  String get serverRechenhilfe;
+
+  /// No description provided for @serverRechenhilfeText.
+  ///
+  /// In de, this message translates to:
+  /// **'Solange Photo Vault hier offen ist, übernimmt dieser Rechner Bildanalyse, Texterkennung und Bildbeschreibung für den Server – mit den Modellen, die hier installiert sind. Eingetragen wird auf dem Server.'**
+  String get serverRechenhilfeText;
+
+  /// No description provided for @serverRechenhilfeRechnet.
+  ///
+  /// In de, this message translates to:
+  /// **'Rechnet – {n, plural, =1{1 Ergebnis} other{{n} Ergebnisse}} geliefert'**
+  String serverRechenhilfeRechnet(int n);
+
+  /// No description provided for @serverRechenhilfeWartet.
+  ///
+  /// In de, this message translates to:
+  /// **'Wartet auf Arbeit – {n, plural, =1{1 Ergebnis} other{{n} Ergebnisse}} geliefert'**
+  String serverRechenhilfeWartet(int n);
+
+  /// No description provided for @serverRechenhilfeKeinModell.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier ist kein Modell installiert, mit dem dieser Rechner dem Server helfen könnte.'**
+  String get serverRechenhilfeKeinModell;
+
+  /// No description provided for @serverRechenhilfeOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist nicht erreichbar.'**
+  String get serverRechenhilfeOffline;
+
+  /// No description provided for @serverRechenhilfeServerZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kann das noch nicht – bitte den Server aktualisieren.'**
+  String get serverRechenhilfeServerZuAlt;
+
+  /// No description provided for @serverRechenhilfeAusgelassen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Eine Aufnahme ließ} other{{n} Aufnahmen ließen}} sich hier nicht rechnen; die übernimmt der Server.'**
+  String serverRechenhilfeAusgelassen(int n);
+
   /// No description provided for @serverFalsch.
   ///
   /// In de, this message translates to:

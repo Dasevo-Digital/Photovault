@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:kern/abgleich/protokoll.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/herkunft.dart';
+import 'package:kern/auswertung/rechenhilfe.dart' show Vergabe;
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
 import 'package:kern/db/database.dart';
@@ -29,6 +30,7 @@ class Bibliothek {
     Bildwerkzeuge bildwerkzeuge,
     ReverseGeocoder? ortsverzeichnis,
     this.protokoll,
+    Vergabe? vergabe,
   ) {
     final modellstand = ModelProcessingState(pfade.modelProcessingStateFile);
     auswertungen = Auswertungen(
@@ -37,6 +39,7 @@ class Bibliothek {
       modelle: modelle,
       bildwerkzeuge: bildwerkzeuge,
       abgebrochen: () => auswertungAbbrechen,
+      vergabe: vergabe,
       // Die Herkunft jedes Ergebnisses: der Server, und je Modell, ob es
       // auf dem Beschleuniger rechnete (siehe FfiOnnxPlattform).
       rechner: Rechner.server(
@@ -74,6 +77,7 @@ class Bibliothek {
     Bildwerkzeuge bildwerkzeuge = const WerkzeugBildwerkzeuge(),
     Modelle? modelle,
     ReverseGeocoder? ortsverzeichnis,
+    Vergabe? vergabe,
   }) async {
     await ordner.create(recursive: true);
     final db = AppDatabase(
@@ -112,6 +116,7 @@ class Bibliothek {
       bildwerkzeuge,
       ortsverzeichnis,
       protokoll,
+      vergabe,
     );
   }
 

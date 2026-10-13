@@ -15,6 +15,7 @@ import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'konten/kontodienst.dart';
 import 'oidc.dart';
+import 'rechnen.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 
@@ -42,6 +43,7 @@ Handler baueApi({
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
+  final rechnen = Rechenapi(bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
@@ -70,6 +72,9 @@ Handler baueApi({
     ..get('/api/v1/abgleich/abzug', abgleich.abzug)
     ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
     ..post('/api/v1/suche/text', suche.text)
+    ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
+    ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
+    ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
     ..post('/api/v1/umzug/beginnen', umzug.beginnen)
     ..get('/api/v1/umzug/stand', umzug.stand)
     ..post('/api/v1/umzug/abschliessen', umzug.abschliessen)

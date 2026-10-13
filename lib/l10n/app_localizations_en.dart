@@ -9240,6 +9240,57 @@ class AppTexteEn extends AppTexte {
       'The server is older than this app – please update the server. Nothing syncs until then.';
 
   @override
+  String get serverRechenhilfe => 'Compute for the server';
+
+  @override
+  String get serverRechenhilfeText =>
+      'While Photo Vault is open here, this computer takes on image analysis, text recognition and image captions for the server – with the models installed here. The results are stored on the server.';
+
+  @override
+  String serverRechenhilfeRechnet(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n results',
+      one: '1 result',
+    );
+    return 'Computing – $_temp0 delivered';
+  }
+
+  @override
+  String serverRechenhilfeWartet(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n results',
+      one: '1 result',
+    );
+    return 'Waiting for work – $_temp0 delivered';
+  }
+
+  @override
+  String get serverRechenhilfeKeinModell =>
+      'No model is installed here that could help the server.';
+
+  @override
+  String get serverRechenhilfeOffline => 'The server cannot be reached.';
+
+  @override
+  String get serverRechenhilfeServerZuAlt =>
+      'The server cannot do this yet – please update the server.';
+
+  @override
+  String serverRechenhilfeAusgelassen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: 'One item',
+    );
+    return '$_temp0 could not be computed here; the server takes them over.';
+  }
+
+  @override
   String get serverFalsch => 'Name, password or code is wrong.';
 
   @override
