@@ -122,21 +122,26 @@ final class KiSchlagwoerterZuruecknehmen extends Befehl<int> {
 
 /// Ein Begriff mehr, nach dem die Bilderkennung sucht.
 final class KiBegriffHinzufuegen extends Befehl<void> {
-  const KiBegriffHinzufuegen(this.begriff);
+  KiBegriffHinzufuegen(this.begriff, {int? id}) : id = id ?? _neueZahlkennung();
+
+  const KiBegriffHinzufuegen._(this.begriff, this.id);
 
   static KiBegriffHinzufuegen aus(Map<String, Object?> w) =>
-      KiBegriffHinzufuegen(w['begriff']! as String);
+      KiBegriffHinzufuegen._(w['begriff']! as String, w['id'] as int?);
 
   final String begriff;
+
+  /// Die Kennung der neuen Zeile – siehe „Kennungen“ in befehl.dart.
+  final int? id;
 
   @override
   String get art => 'kiBegriffHinzufuegen';
 
   @override
-  Map<String, Object?> get werte => {'begriff': begriff};
+  Map<String, Object?> get werte => {'begriff': begriff, 'id': ?id};
 
   @override
-  Future<void> anwenden(AppDatabase db) => db.addAiTagTerm(begriff);
+  Future<void> anwenden(AppDatabase db) => db.addAiTagTerm(begriff, id: id);
 }
 
 /// Einen Begriff aus dem Vokabular der Bilderkennung nehmen.

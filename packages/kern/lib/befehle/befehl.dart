@@ -15,9 +15,23 @@
 /// Welche Schreibzugriffe Befehle sind und welche nicht (Ergebnisse von
 /// Auswertungen, Einstellungen nur dieses Rechners), hält
 /// `test/befehle_test.dart` fest.
+///
+/// **Kennungen (Issue #107).** Eine Zeile, die ein Befehl anlegt, bekommt
+/// ihre Kennung aus dem Befehl – nicht aus der Datenbank, in der er
+/// ausgeführt wird. Sonst bekäme dieselbe Zeile auf dem Gerät, das den
+/// Befehl offline vorwegnimmt, eine andere Kennung als auf dem Server, und
+/// ein späterer Befehl, der auf sie verweist, träfe dort eine andere Zeile.
+/// Text-Kennungen bringt der Aufrufer mit (UUID); Schlagwörter leiten sie
+/// aus dem Namen ab. Zahl-Kennungen zieht der Befehl beim Erzeugen
+/// ([_neueZahlkennung]). Ausgenommen sind Zeilen, auf die kein Befehl
+/// verweist (Rückmeldungen zur Gesichtserkennung) – die gleicht der
+/// Abgleich selbst an –, und Zeilen, an denen Dateien hängen
+/// (Entwicklungsverlauf, Masken); deren Weg entscheidet das Protokoll für
+/// Dateien.
 library;
 
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 
@@ -168,3 +182,15 @@ List<String> _kennungen(Object? werte) => (werte! as List).cast<String>();
 
 DateTime? _zeitOderNichts(Object? wert) =>
     wert == null ? null : DateTime.parse(wert as String);
+
+/// Eine Kennung für eine neue Zeile mit Zahl-Kennung: zufällig aus 2^44
+/// Werten oberhalb von 2^40. Weit über allem, was die Datenbank selbst
+/// hochzählt, und so gross, dass zwei Geräte nicht dieselbe ziehen.
+int _neueZahlkennung() {
+  final z = Random.secure();
+  return (1 << 40) + ((z.nextInt(1 << 12) << 32) | z.nextInt(1 << 32));
+}
+
+/// [werte] mit einer `id`, falls sie noch keine haben (neue Zeile).
+Map<String, Object?> _mitKennung(Map<String, Object?> werte) =>
+    werte['id'] != null ? werte : {...werte, 'id': _neueZahlkennung()};

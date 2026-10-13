@@ -126,9 +126,7 @@ extension AlbenAbfragen on AppDatabase {
       tags,
     )..where((t) => t.name.equals(name))).getSingleOrNull();
     if (existing != null) return existing.id;
-    final id =
-        name.hashCode.toRadixString(36) +
-        DateTime.now().microsecondsSinceEpoch.toString();
+    final id = schlagwortKennung(name);
     await into(tags).insert(TagsCompanion.insert(id: id, name: name));
     return id;
   }

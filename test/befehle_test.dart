@@ -38,7 +38,7 @@ void main() {
       const SchlagwortLoesen('a1', 't1'),
       const SchlagwortAbnehmen(['a1', 'a2'], 'Strand'),
       const KiSchlagwoerterZuruecknehmen(),
-      const KiBegriffHinzufuegen('Leuchtturm'),
+      KiBegriffHinzufuegen('Leuchtturm', id: 1 << 41),
       const KiBegriffEntfernen(7),
       const VokabularUebersetzen({'Strand': 'Beach'}),
       AlbumAnlegen('al1', 'Sommer', DateTime(2026, 7, 1, 12, 30)),
@@ -632,6 +632,74 @@ void main() {
       await db.fuehreAus(const BewertungSetzen(['a1'], 3));
       await pumpEventQueue();
       expect(gemeldet, ['bewertungSetzen:3']);
+    });
+  });
+
+  /// Issue #107: Eine Zeile, die ein Befehl anlegt, hat auf jedem Gerät und
+  /// auf dem Server dieselbe Kennung – auch wenn der Befehl offline auf
+  /// einem Gerät vorweggenommen und erst später auf dem Server ausgeführt
+  /// wird. Geprüft an zwei getrennten Datenbanken: Derselbe Befehl, über
+  /// JSON weitergereicht, legt in beiden dieselbe Zeile an.
+  group('Kennungen kommen aus dem Befehl', () {
+    late AppDatabase hier, dort;
+    setUp(() {
+      hier = AppDatabase(NativeDatabase.memory());
+      dort = AppDatabase(NativeDatabase.memory());
+    });
+    tearDown(() async {
+      await hier.close();
+      await dort.close();
+    });
+
+    Future<void> beide(Befehl<Object?> b) async {
+      await hier.fuehreAus(b);
+      await dort.fuehreAus(Befehl.ausJson(jsonDecode(jsonEncode(b.alsJson()))));
+    }
+
+    test('Export- und Entwicklungsvorgaben, KI-Begriffe', () async {
+      await beide(
+        ExportvorgabeSpeichern(
+          ExportPresetsCompanion.insert(
+            name: 'Web',
+            erstelltAm: DateTime(2026, 10, 13),
+          ),
+        ),
+      );
+      await beide(
+        EntwicklungsvorgabeSpeichern(
+          DevelopPresetsCompanion.insert(
+            name: 'Warm',
+            erstelltAm: DateTime(2026, 10, 13),
+          ),
+        ),
+      );
+      await beide(KiBegriffHinzufuegen('Leuchtturm'));
+      Future<List<int>> kennungen(AppDatabase db) async => [
+        for (final v in await db.select(db.exportPresets).get()) v.id,
+        for (final v in await db.select(db.developPresets).get()) v.id,
+        for (final v in await db.select(db.aiTagVocabulary).get())
+          if (v.term == 'Leuchtturm') v.id,
+      ];
+      final h = await kennungen(hier);
+      expect(h, hasLength(3));
+      expect(h, everyElement(greaterThanOrEqualTo(1 << 40)));
+      expect(await kennungen(dort), h);
+    });
+
+    test('Schlagwörter: die Kennung folgt aus dem Namen', () async {
+      await beide(const SchlagwortAnheften([], 'Leuchtturm'));
+      expect(
+        await hier.ensureTag('Leuchtturm'),
+        schlagwortKennung('Leuchtturm'),
+      );
+      expect(
+        await dort.ensureTag('Leuchtturm'),
+        schlagwortKennung('Leuchtturm'),
+      );
+      expect(
+        schlagwortKennung('Leuchtturm'),
+        isNot(schlagwortKennung('Hafen')),
+      );
     });
   });
 

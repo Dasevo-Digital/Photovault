@@ -3,7 +3,7 @@ part of 'befehl.dart';
 /// Eine Exportvorgabe anlegen oder überschreiben.
 final class ExportvorgabeSpeichern extends Befehl<void> {
   ExportvorgabeSpeichern(Insertable<ExportPresetData> vorgabe)
-    : vorgabe = _zeileAlsWerte(vorgabe);
+    : vorgabe = _mitKennung(_zeileAlsWerte(vorgabe));
 
   const ExportvorgabeSpeichern._(this.vorgabe);
 
@@ -44,7 +44,7 @@ final class ExportvorgabeLoeschen extends Befehl<void> {
 /// Eine Entwicklungsvorgabe anlegen oder überschreiben.
 final class EntwicklungsvorgabeSpeichern extends Befehl<void> {
   EntwicklungsvorgabeSpeichern(Insertable<DevelopPresetData> vorgabe)
-    : vorgabe = _zeileAlsWerte(vorgabe);
+    : vorgabe = _mitKennung(_zeileAlsWerte(vorgabe));
 
   const EntwicklungsvorgabeSpeichern._(this.vorgabe);
 

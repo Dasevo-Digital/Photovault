@@ -13,16 +13,22 @@ extension VokabularAbfragen on AppDatabase {
 
   /// Idempotent (Muster: [ensureTag]) – ein Doppel-Tap auf "Hinzufügen"
   /// erzeugt keinen doppelten Eintrag und keinen UNIQUE-Constraint-Fehler.
-  Future<void> addAiTagTerm(String term) async {
+  ///
+  /// [id] setzt die Kennung der neuen Zeile (siehe „Kennungen“ in
+  /// befehl.dart); ohne sie zählt die Datenbank selbst.
+  Future<void> addAiTagTerm(String term, {int? id}) async {
     final trimmed = term.trim();
     if (trimmed.isEmpty) return;
     final existing = await (select(
       aiTagVocabulary,
     )..where((t) => t.term.equals(trimmed))).getSingleOrNull();
     if (existing != null) return;
-    await into(
-      aiTagVocabulary,
-    ).insert(AiTagVocabularyCompanion.insert(term: trimmed));
+    await into(aiTagVocabulary).insert(
+      AiTagVocabularyCompanion.insert(
+        term: trimmed,
+        id: id == null ? const Value.absent() : Value(id),
+      ),
+    );
   }
 
   Future<void> removeAiTagTerm(int id) =>

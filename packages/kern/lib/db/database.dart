@@ -9,6 +9,7 @@ import 'package:drift/native.dart';
 // Nur fuer den Typ der Verbindung in [AppDatabase.bereiteVerbindungVor].
 import 'package:sqlite3/sqlite3.dart' show Database;
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import '../befehle/befehl.dart';
 
@@ -167,6 +168,14 @@ class _SperrWiederholung extends QueryInterceptor {
 /// und erzeugte stillschweigend nichts.
 String _textSpalte(Insertable<Object?> zeile, String spalte) =>
     (zeile.toColumns(false)[spalte]! as Variable<String>).value!;
+
+/// Die Kennung des Schlagworts [name] – aus dem Namen abgeleitet (UUID v5),
+/// nicht gezogen. Legen zwei Geräte dasselbe Schlagwort an, eines davon
+/// offline, bekommt es überall dieselbe Kennung, und ein Befehl, der auf
+/// sie verweist, trifft auf dem Server dieselbe Zeile (Issue #107).
+/// Schlagwörter, die schon vorher entstanden sind, behalten ihre.
+String schlagwortKennung(String name) =>
+    const Uuid().v5(Namespace.url.value, 'photovault:schlagwort:$name');
 
 @DriftDatabase(
   tables: [
