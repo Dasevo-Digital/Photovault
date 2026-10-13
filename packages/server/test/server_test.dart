@@ -315,4 +315,15 @@ void main() {
       expect(angestossen.statusCode, 202);
     },
   );
+
+  test('Bildsuche nach Inhalt: ohne Modell eine klare Absage', () async {
+    final r = await frag(
+      'POST',
+      '/api/v1/suche/text',
+      inhalt: jsonEncode({'text': 'Strand bei Sonnenuntergang'}),
+    );
+    expect(r.statusCode, 404);
+    final leer = await frag('POST', '/api/v1/suche/text', inhalt: '{}');
+    expect(leer.statusCode, 400);
+  });
 }

@@ -15,6 +15,7 @@ import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'konten/kontodienst.dart';
 import 'oidc.dart';
+import 'suche_api.dart';
 import 'umzug.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
@@ -39,6 +40,7 @@ Handler baueApi({
   final api = _Api(bibliotheken);
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
+  final suche = Suchapi(bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
@@ -65,6 +67,7 @@ Handler baueApi({
     ..post('/api/v1/abgleich/zeilen', abgleich.zeilen)
     ..get('/api/v1/abgleich/abzug', abgleich.abzug)
     ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
+    ..post('/api/v1/suche/text', suche.text)
     ..post('/api/v1/umzug/beginnen', umzug.beginnen)
     ..get('/api/v1/umzug/stand', umzug.stand)
     ..post('/api/v1/umzug/abschliessen', umzug.abschliessen)
