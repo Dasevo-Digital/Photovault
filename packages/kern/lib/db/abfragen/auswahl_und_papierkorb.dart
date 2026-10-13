@@ -307,6 +307,9 @@ extension AuswahlAbfragen on AppDatabase {
     await (delete(
       duplikatAusnahmen,
     )..where((t) => t.assetA.isIn(assetIds) | t.assetB.isIn(assetIds))).go();
+    await (delete(
+      ergebnisherkunft,
+    )..where((t) => t.assetId.isIn(assetIds))).go();
     _embeddingsGeneration++;
   }
 

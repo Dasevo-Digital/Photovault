@@ -185,6 +185,8 @@ class _AnalyseBanner extends StatelessWidget {
     final z = library.verbunden ? library.abgleichszustand : null;
     final server = z == null
         ? null
+        : z.schemaAnders
+        ? (z.appZuAlt ? t.serverAppZuAlt : t.serverZuAlt)
         : z.abgemeldet
         ? t.serverAbgemeldet
         : !z.erreichbar

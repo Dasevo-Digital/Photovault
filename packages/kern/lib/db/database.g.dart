@@ -24294,6 +24294,430 @@ class VideoeinbettungenCompanion
   }
 }
 
+class $ErgebnisherkunftTable extends Ergebnisherkunft
+    with TableInfo<$ErgebnisherkunftTable, ErgebnisherkunftData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ErgebnisherkunftTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _assetIdMeta = const VerificationMeta(
+    'assetId',
+  );
+  @override
+  late final GeneratedColumn<String> assetId = GeneratedColumn<String>(
+    'asset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _artMeta = const VerificationMeta('art');
+  @override
+  late final GeneratedColumn<String> art = GeneratedColumn<String>(
+    'art',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modellMeta = const VerificationMeta('modell');
+  @override
+  late final GeneratedColumn<String> modell = GeneratedColumn<String>(
+    'modell',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _geraetMeta = const VerificationMeta('geraet');
+  @override
+  late final GeneratedColumn<String> geraet = GeneratedColumn<String>(
+    'geraet',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _beschleunigerMeta = const VerificationMeta(
+    'beschleuniger',
+  );
+  @override
+  late final GeneratedColumn<String> beschleuniger = GeneratedColumn<String>(
+    'beschleuniger',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _zeitMeta = const VerificationMeta('zeit');
+  @override
+  late final GeneratedColumn<DateTime> zeit = GeneratedColumn<DateTime>(
+    'zeit',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    assetId,
+    art,
+    modell,
+    geraet,
+    beschleuniger,
+    zeit,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ergebnisherkunft';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ErgebnisherkunftData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('asset_id')) {
+      context.handle(
+        _assetIdMeta,
+        assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('art')) {
+      context.handle(
+        _artMeta,
+        art.isAcceptableOrUnknown(data['art']!, _artMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_artMeta);
+    }
+    if (data.containsKey('modell')) {
+      context.handle(
+        _modellMeta,
+        modell.isAcceptableOrUnknown(data['modell']!, _modellMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modellMeta);
+    }
+    if (data.containsKey('geraet')) {
+      context.handle(
+        _geraetMeta,
+        geraet.isAcceptableOrUnknown(data['geraet']!, _geraetMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_geraetMeta);
+    }
+    if (data.containsKey('beschleuniger')) {
+      context.handle(
+        _beschleunigerMeta,
+        beschleuniger.isAcceptableOrUnknown(
+          data['beschleuniger']!,
+          _beschleunigerMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_beschleunigerMeta);
+    }
+    if (data.containsKey('zeit')) {
+      context.handle(
+        _zeitMeta,
+        zeit.isAcceptableOrUnknown(data['zeit']!, _zeitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_zeitMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {assetId, art};
+  @override
+  ErgebnisherkunftData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ErgebnisherkunftData(
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      art: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}art'],
+      )!,
+      modell: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modell'],
+      )!,
+      geraet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}geraet'],
+      )!,
+      beschleuniger: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}beschleuniger'],
+      )!,
+      zeit: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}zeit'],
+      )!,
+    );
+  }
+
+  @override
+  $ErgebnisherkunftTable createAlias(String alias) {
+    return $ErgebnisherkunftTable(attachedDatabase, alias);
+  }
+}
+
+class ErgebnisherkunftData extends DataClass
+    implements Insertable<ErgebnisherkunftData> {
+  final String assetId;
+
+  /// `clip`, `gesichter`, `texterkennung`, `bildbeschreibung`,
+  /// `spracherkennung`.
+  final String art;
+
+  /// Die Modelldateien mit dem Anfang ihrer Prüfsumme aus dem Katalog,
+  /// etwa `clip_image_encoder.onnx@fd6e1402a588`.
+  final String modell;
+
+  /// `Server (Linux)`, `Rechner (macOS)`, …
+  final String geraet;
+
+  /// `CPU`, `OpenVINO:GPU`, … – bei mehreren Modellen mit `+` verbunden,
+  /// wenn sie verschieden rechneten.
+  final String beschleuniger;
+  final DateTime zeit;
+  const ErgebnisherkunftData({
+    required this.assetId,
+    required this.art,
+    required this.modell,
+    required this.geraet,
+    required this.beschleuniger,
+    required this.zeit,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['asset_id'] = Variable<String>(assetId);
+    map['art'] = Variable<String>(art);
+    map['modell'] = Variable<String>(modell);
+    map['geraet'] = Variable<String>(geraet);
+    map['beschleuniger'] = Variable<String>(beschleuniger);
+    map['zeit'] = Variable<DateTime>(zeit);
+    return map;
+  }
+
+  ErgebnisherkunftCompanion toCompanion(bool nullToAbsent) {
+    return ErgebnisherkunftCompanion(
+      assetId: Value(assetId),
+      art: Value(art),
+      modell: Value(modell),
+      geraet: Value(geraet),
+      beschleuniger: Value(beschleuniger),
+      zeit: Value(zeit),
+    );
+  }
+
+  factory ErgebnisherkunftData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ErgebnisherkunftData(
+      assetId: serializer.fromJson<String>(json['assetId']),
+      art: serializer.fromJson<String>(json['art']),
+      modell: serializer.fromJson<String>(json['modell']),
+      geraet: serializer.fromJson<String>(json['geraet']),
+      beschleuniger: serializer.fromJson<String>(json['beschleuniger']),
+      zeit: serializer.fromJson<DateTime>(json['zeit']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'assetId': serializer.toJson<String>(assetId),
+      'art': serializer.toJson<String>(art),
+      'modell': serializer.toJson<String>(modell),
+      'geraet': serializer.toJson<String>(geraet),
+      'beschleuniger': serializer.toJson<String>(beschleuniger),
+      'zeit': serializer.toJson<DateTime>(zeit),
+    };
+  }
+
+  ErgebnisherkunftData copyWith({
+    String? assetId,
+    String? art,
+    String? modell,
+    String? geraet,
+    String? beschleuniger,
+    DateTime? zeit,
+  }) => ErgebnisherkunftData(
+    assetId: assetId ?? this.assetId,
+    art: art ?? this.art,
+    modell: modell ?? this.modell,
+    geraet: geraet ?? this.geraet,
+    beschleuniger: beschleuniger ?? this.beschleuniger,
+    zeit: zeit ?? this.zeit,
+  );
+  ErgebnisherkunftData copyWithCompanion(ErgebnisherkunftCompanion data) {
+    return ErgebnisherkunftData(
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      art: data.art.present ? data.art.value : this.art,
+      modell: data.modell.present ? data.modell.value : this.modell,
+      geraet: data.geraet.present ? data.geraet.value : this.geraet,
+      beschleuniger: data.beschleuniger.present
+          ? data.beschleuniger.value
+          : this.beschleuniger,
+      zeit: data.zeit.present ? data.zeit.value : this.zeit,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ErgebnisherkunftData(')
+          ..write('assetId: $assetId, ')
+          ..write('art: $art, ')
+          ..write('modell: $modell, ')
+          ..write('geraet: $geraet, ')
+          ..write('beschleuniger: $beschleuniger, ')
+          ..write('zeit: $zeit')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(assetId, art, modell, geraet, beschleuniger, zeit);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ErgebnisherkunftData &&
+          other.assetId == this.assetId &&
+          other.art == this.art &&
+          other.modell == this.modell &&
+          other.geraet == this.geraet &&
+          other.beschleuniger == this.beschleuniger &&
+          other.zeit == this.zeit);
+}
+
+class ErgebnisherkunftCompanion extends UpdateCompanion<ErgebnisherkunftData> {
+  final Value<String> assetId;
+  final Value<String> art;
+  final Value<String> modell;
+  final Value<String> geraet;
+  final Value<String> beschleuniger;
+  final Value<DateTime> zeit;
+  final Value<int> rowid;
+  const ErgebnisherkunftCompanion({
+    this.assetId = const Value.absent(),
+    this.art = const Value.absent(),
+    this.modell = const Value.absent(),
+    this.geraet = const Value.absent(),
+    this.beschleuniger = const Value.absent(),
+    this.zeit = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ErgebnisherkunftCompanion.insert({
+    required String assetId,
+    required String art,
+    required String modell,
+    required String geraet,
+    required String beschleuniger,
+    required DateTime zeit,
+    this.rowid = const Value.absent(),
+  }) : assetId = Value(assetId),
+       art = Value(art),
+       modell = Value(modell),
+       geraet = Value(geraet),
+       beschleuniger = Value(beschleuniger),
+       zeit = Value(zeit);
+  static Insertable<ErgebnisherkunftData> custom({
+    Expression<String>? assetId,
+    Expression<String>? art,
+    Expression<String>? modell,
+    Expression<String>? geraet,
+    Expression<String>? beschleuniger,
+    Expression<DateTime>? zeit,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (assetId != null) 'asset_id': assetId,
+      if (art != null) 'art': art,
+      if (modell != null) 'modell': modell,
+      if (geraet != null) 'geraet': geraet,
+      if (beschleuniger != null) 'beschleuniger': beschleuniger,
+      if (zeit != null) 'zeit': zeit,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ErgebnisherkunftCompanion copyWith({
+    Value<String>? assetId,
+    Value<String>? art,
+    Value<String>? modell,
+    Value<String>? geraet,
+    Value<String>? beschleuniger,
+    Value<DateTime>? zeit,
+    Value<int>? rowid,
+  }) {
+    return ErgebnisherkunftCompanion(
+      assetId: assetId ?? this.assetId,
+      art: art ?? this.art,
+      modell: modell ?? this.modell,
+      geraet: geraet ?? this.geraet,
+      beschleuniger: beschleuniger ?? this.beschleuniger,
+      zeit: zeit ?? this.zeit,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (assetId.present) {
+      map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (art.present) {
+      map['art'] = Variable<String>(art.value);
+    }
+    if (modell.present) {
+      map['modell'] = Variable<String>(modell.value);
+    }
+    if (geraet.present) {
+      map['geraet'] = Variable<String>(geraet.value);
+    }
+    if (beschleuniger.present) {
+      map['beschleuniger'] = Variable<String>(beschleuniger.value);
+    }
+    if (zeit.present) {
+      map['zeit'] = Variable<DateTime>(zeit.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ErgebnisherkunftCompanion(')
+          ..write('assetId: $assetId, ')
+          ..write('art: $art, ')
+          ..write('modell: $modell, ')
+          ..write('geraet: $geraet, ')
+          ..write('beschleuniger: $beschleuniger, ')
+          ..write('zeit: $zeit, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WanderpunkteTable extends Wanderpunkte
     with TableInfo<$WanderpunkteTable, WanderpunkteData> {
   @override
@@ -25800,6 +26224,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $VerworfeneOrtsvorschlaegeTable(this);
   late final $VideoeinbettungenTable videoeinbettungen =
       $VideoeinbettungenTable(this);
+  late final $ErgebnisherkunftTable ergebnisherkunft = $ErgebnisherkunftTable(
+    this,
+  );
   late final $WanderpunkteTable wanderpunkte = $WanderpunkteTable(this);
   late final $WanderabfragenTable wanderabfragen = $WanderabfragenTable(this);
   late final $VerworfeneDokumenteTable verworfeneDokumente =
@@ -25855,6 +26282,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     verworfeneSerien,
     verworfeneOrtsvorschlaege,
     videoeinbettungen,
+    ergebnisherkunft,
     wanderpunkte,
     wanderabfragen,
     verworfeneDokumente,
@@ -38060,6 +38488,248 @@ typedef $$VideoeinbettungenTableProcessedTableManager =
       VideoeinbettungenData,
       PrefetchHooks Function()
     >;
+typedef $$ErgebnisherkunftTableCreateCompanionBuilder =
+    ErgebnisherkunftCompanion Function({
+      required String assetId,
+      required String art,
+      required String modell,
+      required String geraet,
+      required String beschleuniger,
+      required DateTime zeit,
+      Value<int> rowid,
+    });
+typedef $$ErgebnisherkunftTableUpdateCompanionBuilder =
+    ErgebnisherkunftCompanion Function({
+      Value<String> assetId,
+      Value<String> art,
+      Value<String> modell,
+      Value<String> geraet,
+      Value<String> beschleuniger,
+      Value<DateTime> zeit,
+      Value<int> rowid,
+    });
+
+class $$ErgebnisherkunftTableFilterComposer
+    extends Composer<_$AppDatabase, $ErgebnisherkunftTable> {
+  $$ErgebnisherkunftTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get art => $composableBuilder(
+    column: $table.art,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modell => $composableBuilder(
+    column: $table.modell,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get geraet => $composableBuilder(
+    column: $table.geraet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get beschleuniger => $composableBuilder(
+    column: $table.beschleuniger,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get zeit => $composableBuilder(
+    column: $table.zeit,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ErgebnisherkunftTableOrderingComposer
+    extends Composer<_$AppDatabase, $ErgebnisherkunftTable> {
+  $$ErgebnisherkunftTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get art => $composableBuilder(
+    column: $table.art,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modell => $composableBuilder(
+    column: $table.modell,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get geraet => $composableBuilder(
+    column: $table.geraet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get beschleuniger => $composableBuilder(
+    column: $table.beschleuniger,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get zeit => $composableBuilder(
+    column: $table.zeit,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ErgebnisherkunftTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ErgebnisherkunftTable> {
+  $$ErgebnisherkunftTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<String> get art =>
+      $composableBuilder(column: $table.art, builder: (column) => column);
+
+  GeneratedColumn<String> get modell =>
+      $composableBuilder(column: $table.modell, builder: (column) => column);
+
+  GeneratedColumn<String> get geraet =>
+      $composableBuilder(column: $table.geraet, builder: (column) => column);
+
+  GeneratedColumn<String> get beschleuniger => $composableBuilder(
+    column: $table.beschleuniger,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get zeit =>
+      $composableBuilder(column: $table.zeit, builder: (column) => column);
+}
+
+class $$ErgebnisherkunftTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ErgebnisherkunftTable,
+          ErgebnisherkunftData,
+          $$ErgebnisherkunftTableFilterComposer,
+          $$ErgebnisherkunftTableOrderingComposer,
+          $$ErgebnisherkunftTableAnnotationComposer,
+          $$ErgebnisherkunftTableCreateCompanionBuilder,
+          $$ErgebnisherkunftTableUpdateCompanionBuilder,
+          (
+            ErgebnisherkunftData,
+            BaseReferences<
+              _$AppDatabase,
+              $ErgebnisherkunftTable,
+              ErgebnisherkunftData
+            >,
+          ),
+          ErgebnisherkunftData,
+          PrefetchHooks Function()
+        > {
+  $$ErgebnisherkunftTableTableManager(
+    _$AppDatabase db,
+    $ErgebnisherkunftTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ErgebnisherkunftTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ErgebnisherkunftTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ErgebnisherkunftTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> assetId = const Value.absent(),
+                Value<String> art = const Value.absent(),
+                Value<String> modell = const Value.absent(),
+                Value<String> geraet = const Value.absent(),
+                Value<String> beschleuniger = const Value.absent(),
+                Value<DateTime> zeit = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ErgebnisherkunftCompanion(
+                assetId: assetId,
+                art: art,
+                modell: modell,
+                geraet: geraet,
+                beschleuniger: beschleuniger,
+                zeit: zeit,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String assetId,
+                required String art,
+                required String modell,
+                required String geraet,
+                required String beschleuniger,
+                required DateTime zeit,
+                Value<int> rowid = const Value.absent(),
+              }) => ErgebnisherkunftCompanion.insert(
+                assetId: assetId,
+                art: art,
+                modell: modell,
+                geraet: geraet,
+                beschleuniger: beschleuniger,
+                zeit: zeit,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ErgebnisherkunftTable, ErgebnisherkunftData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ErgebnisherkunftTable,
+                    ErgebnisherkunftData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ErgebnisherkunftTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ErgebnisherkunftTable,
+      ErgebnisherkunftData,
+      $$ErgebnisherkunftTableFilterComposer,
+      $$ErgebnisherkunftTableOrderingComposer,
+      $$ErgebnisherkunftTableAnnotationComposer,
+      $$ErgebnisherkunftTableCreateCompanionBuilder,
+      $$ErgebnisherkunftTableUpdateCompanionBuilder,
+      (
+        ErgebnisherkunftData,
+        BaseReferences<
+          _$AppDatabase,
+          $ErgebnisherkunftTable,
+          ErgebnisherkunftData
+        >,
+      ),
+      ErgebnisherkunftData,
+      PrefetchHooks Function()
+    >;
 typedef $$WanderpunkteTableCreateCompanionBuilder =
     WanderpunkteCompanion Function({
       Value<int> osmId,
@@ -39096,6 +39766,8 @@ class $AppDatabaseManager {
       );
   $$VideoeinbettungenTableTableManager get videoeinbettungen =>
       $$VideoeinbettungenTableTableManager(_db, _db.videoeinbettungen);
+  $$ErgebnisherkunftTableTableManager get ergebnisherkunft =>
+      $$ErgebnisherkunftTableTableManager(_db, _db.ergebnisherkunft);
   $$WanderpunkteTableTableManager get wanderpunkte =>
       $$WanderpunkteTableTableManager(_db, _db.wanderpunkte);
   $$WanderabfragenTableTableManager get wanderabfragen =>

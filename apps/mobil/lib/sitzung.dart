@@ -102,7 +102,8 @@ class Sitzung extends ChangeNotifier {
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||
           vorher.ausstehend != z.ausstehend ||
-          vorher.abgemeldet != z.abgemeldet) {
+          vorher.abgemeldet != z.abgemeldet ||
+          vorher.serverSchema != z.serverSchema) {
         notifyListeners();
       }
     });

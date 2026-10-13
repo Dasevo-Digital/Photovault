@@ -955,6 +955,7 @@ const _einordnung = <String, _Art>{
   'setAiCaptionDe': _Art.ergebnis,
   'setOcrResult': _Art.ergebnis,
   'setTranskript': _Art.ergebnis,
+  'vermerkeHerkunft': _Art.ergebnis,
   'setSharpnessScore': _Art.ergebnis,
   'setLocationNames': _Art.ergebnis,
   'setLocationNamesBulk': _Art.ergebnis,

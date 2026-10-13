@@ -4115,6 +4115,8 @@
   "serverNichtErreichbar": "No server responds at this address.",
   "serverKeinPhotoVault": "A server responds there, but not a Photo Vault server of a matching version.",
   "serverNurHttps": "Unencrypted (http://) only on your own network – please use https:// for an address on the internet.",
+  "serverAppZuAlt": "The server is newer than this app – please update Photo Vault. Nothing syncs until then.",
+  "serverZuAlt": "The server is older than this app – please update the server. Nothing syncs until then.",
   "serverFalsch": "Name, password or code is wrong.",
   "serverGebremst": "Too many failed attempts – please try again in {sekunden} seconds.",
   "@serverGebremst": {"placeholders": {"sekunden": {"type": "int"}}},

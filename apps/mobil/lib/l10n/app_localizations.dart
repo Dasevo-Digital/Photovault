@@ -678,6 +678,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Sicherung'**
   String get sicherungKanal;
+
+  /// No description provided for @appZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist neuer als diese App – bitte die App aktualisieren. Bis dahin gleicht nichts ab.'**
+  String get appZuAlt;
+
+  /// No description provided for @serverZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
+  String get serverZuAlt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

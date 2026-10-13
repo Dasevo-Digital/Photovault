@@ -172,5 +172,7 @@
   "sicherungJetzt": "Jetzt sichern",
   "sicherungBenachrichtigungTitel": "Photo Vault sichert Fotos",
   "sicherungBenachrichtigungText": "Fotos und Videos gehen zum Server.",
-  "sicherungKanal": "Sicherung"
+  "sicherungKanal": "Sicherung",
+  "appZuAlt": "Der Server ist neuer als diese App – bitte die App aktualisieren. Bis dahin gleicht nichts ab.",
+  "serverZuAlt": "Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab."
 }

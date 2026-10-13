@@ -31,6 +31,7 @@ import '../services/videostandbilder.dart';
 import '../services/whisper_service.dart';
 import 'fortschritt.dart';
 import 'modelle.dart';
+import 'herkunft.dart';
 
 /// Die Stufen der Hintergrundanalyse nach dem Import – **in der
 /// Reihenfolge ihres Ablaufs** (siehe [Auswertungen.stufe]). Jede
@@ -90,7 +91,9 @@ class Auswertungen {
     double Function()? gesichtsschwelle,
     bool Function()? abgebrochen,
     this.pipelineAktuell,
-  }) : bildwerkzeuge = bildwerkzeuge ?? Bildwerkzeuge.standard,
+    Rechner? rechner,
+  }) : rechner = rechner ?? Rechner.hier(),
+       bildwerkzeuge = bildwerkzeuge ?? Bildwerkzeuge.standard,
        aiTaggingService = aiTaggingService ?? AiTaggingService(),
        gesichtsschwelle = gesichtsschwelle ?? (() => standardGesichtsschwelle),
        abgebrochen = abgebrochen ?? (() => false);
@@ -113,6 +116,19 @@ class Auswertungen {
   /// Was geschieht, wenn ein Lauf über alle Aufnahmen mit den aktuellen
   /// Modellen fertig ist (siehe ModelProcessingState).
   final Future<void> Function(String pipeline)? pipelineAktuell;
+
+  /// Wer rechnet – für die Herkunft jedes Ergebnisses (siehe
+  /// [Ergebnisart]).
+  final Rechner rechner;
+
+  Future<void> _vermerke(String assetId, Ergebnisart art) =>
+      db.vermerkeHerkunft(
+        assetId,
+        art.name,
+        modell: art.modell,
+        geraet: rechner.geraet,
+        beschleuniger: rechner.beschleuniger(art),
+      );
 
   Future<void> _pipelineAktuell(String pipeline) async =>
       pipelineAktuell?.call(pipeline);
@@ -290,6 +306,7 @@ class Auswertungen {
         );
       }
       await db.markFacesScanned([asset.id]);
+      await _vermerke(asset.id, Ergebnisart.gesichter);
     } catch (e) {
       protokoll(
         'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
@@ -575,6 +592,7 @@ class Auswertungen {
                 // Auch mit leerer Liste vermerken: Ein Video, aus dem sich
                 // kein Standbild greifen lässt, ist angesehen worden.
                 await db.setzeVideoeinbettungen(video.id, neue);
+                await _vermerke(video.id, Ergebnisart.clip);
               } catch (e) {
                 protokoll(
                   'Standbilder fehlgeschlagen für ${video.originalFileName}: $e',
@@ -651,6 +669,7 @@ class Auswertungen {
               textAusStellen(stellen),
               boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
             );
+            await _vermerke(asset.id, Ergebnisart.texterkennung);
           }
         } on LesungLiefertNichts catch (e) {
           // NICHT als leeres Ergebnis speichern: Das Foto würde als
@@ -733,6 +752,7 @@ class Auswertungen {
             }
           }
           await db.setAiCaption(asset.id, caption, deutsch: deutsch);
+          await _vermerke(asset.id, Ergebnisart.bildbeschreibung);
         } catch (e) {
           failed = true;
           protokoll(
@@ -804,6 +824,7 @@ class Auswertungen {
               text: gehoert?.text,
               sprache: gehoert?.sprache,
             );
+            await _vermerke(video.id, Ergebnisart.spracherkennung);
           }
         } catch (e) {
           failed = true;
@@ -906,6 +927,7 @@ class Auswertungen {
                       asset.id,
                       await clip.embedImage(decoded),
                     );
+                    await _vermerke(asset.id, Ergebnisart.clip);
                   } catch (e) {
                     protokoll(
                       'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
@@ -1037,6 +1059,7 @@ class Auswertungen {
           }
           final embedding = await service.embedImage(decoded);
           await db.saveEmbedding(asset.id, embedding);
+          await _vermerke(asset.id, Ergebnisart.clip);
         } catch (e) {
           failed = true;
           protokoll(
@@ -1102,6 +1125,7 @@ class Auswertungen {
             }
             embedding = await clipBild.embedImage(decoded);
             await db.saveEmbedding(asset.id, embedding);
+            await _vermerke(asset.id, Ergebnisart.clip);
           }
           final tags = await aiTaggingService.suggestTags(
             clipText,

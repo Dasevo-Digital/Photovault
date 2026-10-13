@@ -61,6 +61,8 @@ class Konto extends StatelessWidget {
                   title: Text(
                     z == null
                         ? t.kontoVerbindet
+                        : z.schemaAnders
+                        ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)
                         : z.abgemeldet
                         ? t.abgemeldetHinweis
                         : !z.erreichbar

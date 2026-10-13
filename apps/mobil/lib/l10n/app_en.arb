@@ -96,5 +96,7 @@
   "sicherungJetzt": "Back up now",
   "sicherungBenachrichtigungTitel": "Photo Vault is backing up photos",
   "sicherungBenachrichtigungText": "Photos and videos are going to the server.",
-  "sicherungKanal": "Backup"
+  "sicherungKanal": "Backup",
+  "appZuAlt": "The server is newer than this app – please update the app. Nothing syncs until then.",
+  "serverZuAlt": "The server is older than this app – please update the server. Nothing syncs until then."
 }

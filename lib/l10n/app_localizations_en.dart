@@ -9232,6 +9232,14 @@ class AppTexteEn extends AppTexte {
       'Unencrypted (http://) only on your own network – please use https:// for an address on the internet.';
 
   @override
+  String get serverAppZuAlt =>
+      'The server is newer than this app – please update Photo Vault. Nothing syncs until then.';
+
+  @override
+  String get serverZuAlt =>
+      'The server is older than this app – please update the server. Nothing syncs until then.';
+
+  @override
   String get serverFalsch => 'Name, password or code is wrong.';
 
   @override

@@ -283,4 +283,26 @@ extension AuswertungsAbfragen on AppDatabase {
         assets.longitude.isNotNull() &
         assets.locationCountry.isNull(),
   );
+
+  /// Vermerkt, woher das Ergebnis der Art [art] für [assetId] stammt
+  /// (siehe [Ergebnisherkunft]); ersetzt einen älteren Vermerk.
+  Future<void> vermerkeHerkunft(
+    String assetId,
+    String art, {
+    required String modell,
+    required String geraet,
+    required String beschleuniger,
+  }) => into(ergebnisherkunft).insertOnConflictUpdate(
+    ErgebnisherkunftCompanion.insert(
+      assetId: assetId,
+      art: art,
+      modell: modell,
+      geraet: geraet,
+      beschleuniger: beschleuniger,
+      zeit: DateTime.now(),
+    ),
+  );
+
+  Future<List<ErgebnisherkunftData>> herkunftVon(String assetId) =>
+      (select(ergebnisherkunft)..where((t) => t.assetId.equals(assetId))).get();
 }

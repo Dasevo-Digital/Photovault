@@ -451,3 +451,36 @@ class DuplikatAusnahmen extends Table {
   @override
   Set<Column> get primaryKey => {assetA, assetB};
 }
+
+/// Woher ein Ergebnis der Auswertung stammt (Issue #104): welche Modelle in
+/// welcher Fassung, auf welchem Gerät und mit welchem Beschleuniger es
+/// gerechnet wurde – eine Zeile je Aufnahme und Art (siehe
+/// `Ergebnisart`); ein neuer Lauf derselben Art überschreibt sie.
+///
+/// Wozu: Seit der Server auf einer Grafikkarte rechnen kann und ein Rechner
+/// ihm Arbeit abnimmt, entstehen Ergebnisse an verschiedenen Orten. Stellt
+/// sich ein Modell oder ein Beschleuniger als fehlerhaft heraus, lässt sich
+/// genau das nachrechnen, was er geliefert hat.
+class Ergebnisherkunft extends Table {
+  TextColumn get assetId => text()();
+
+  /// `clip`, `gesichter`, `texterkennung`, `bildbeschreibung`,
+  /// `spracherkennung`.
+  TextColumn get art => text()();
+
+  /// Die Modelldateien mit dem Anfang ihrer Prüfsumme aus dem Katalog,
+  /// etwa `clip_image_encoder.onnx@fd6e1402a588`.
+  TextColumn get modell => text()();
+
+  /// `Server (Linux)`, `Rechner (macOS)`, …
+  TextColumn get geraet => text()();
+
+  /// `CPU`, `OpenVINO:GPU`, … – bei mehreren Modellen mit `+` verbunden,
+  /// wenn sie verschieden rechneten.
+  TextColumn get beschleuniger => text()();
+
+  DateTimeColumn get zeit => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {assetId, art};
+}

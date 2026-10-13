@@ -9282,6 +9282,14 @@ class AppTexteDe extends AppTexte {
       'Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.';
 
   @override
+  String get serverAppZuAlt =>
+      'Der Server ist neuer als diese App – bitte Photo Vault aktualisieren. Bis dahin gleicht nichts ab.';
+
+  @override
+  String get serverZuAlt =>
+      'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
+
+  @override
   String get serverFalsch => 'Name, Passwort oder Code stimmt nicht.';
 
   @override

@@ -371,4 +371,12 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sicherungKanal => 'Backup';
+
+  @override
+  String get appZuAlt =>
+      'The server is newer than this app – please update the app. Nothing syncs until then.';
+
+  @override
+  String get serverZuAlt =>
+      'The server is older than this app – please update the server. Nothing syncs until then.';
 }

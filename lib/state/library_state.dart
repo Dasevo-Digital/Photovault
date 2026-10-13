@@ -962,11 +962,14 @@ class LibraryState extends ChangeNotifier {
     _abgleichsAbo = a.zustand.listen((z) {
       final vorher = _abgleichszustand;
       _abgleichszustand = z;
-      if (z.erreichbar) unawaited(_vorrat?.fuelle().catchError((_) => 0));
+      if (z.erreichbar && !z.schemaAnders) {
+        unawaited(_vorrat?.fuelle().catchError((_) => 0));
+      }
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||
           vorher.ausstehend != z.ausstehend ||
           vorher.abgemeldet != z.abgemeldet ||
+          vorher.serverSchema != z.serverSchema ||
           vorher.abgelehnt.length != z.abgelehnt.length) {
         notifyListeners();
       }

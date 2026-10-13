@@ -14245,6 +14245,18 @@ abstract class AppTexte {
   /// **'Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.'**
   String get serverNurHttps;
 
+  /// No description provided for @serverAppZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist neuer als diese App – bitte Photo Vault aktualisieren. Bis dahin gleicht nichts ab.'**
+  String get serverAppZuAlt;
+
+  /// No description provided for @serverZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
+  String get serverZuAlt;
+
   /// No description provided for @serverFalsch.
   ///
   /// In de, this message translates to:

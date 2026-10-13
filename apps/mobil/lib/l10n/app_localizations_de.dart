@@ -371,4 +371,12 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sicherungKanal => 'Sicherung';
+
+  @override
+  String get appZuAlt =>
+      'Der Server ist neuer als diese App – bitte die App aktualisieren. Bis dahin gleicht nichts ab.';
+
+  @override
+  String get serverZuAlt =>
+      'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
 }

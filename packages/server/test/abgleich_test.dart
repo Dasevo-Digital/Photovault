@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
@@ -439,6 +442,34 @@ void main() {
       a.starte();
       await erster.timeout(const Duration(seconds: 10));
       expect(uhr.elapsed, lessThan(const Duration(seconds: 3)));
+    },
+  );
+
+  test(
+    'ein anderes Schema beim Server: kein Abgleich, sondern ein Hinweis',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final anfragen = <String>[];
+      final v = Serververbindung(
+        Uri.parse('http://server.test/'),
+        'pv1_test',
+        client: MockClient((r) async {
+          anfragen.add(r.url.path);
+          return http.Response(
+            jsonEncode({'stand': 0, 'schema': db.schemaVersion + 1}),
+            200,
+          );
+        }),
+      );
+      final a = Abgleich(db, v);
+      await a.richteEin();
+      final zustand = a.zustand.first;
+      a.starte();
+      final z = await zustand.timeout(const Duration(seconds: 5));
+      expect(z.serverSchema, db.schemaVersion + 1);
+      await a.beende();
+      expect(anfragen, ['/api/v1/abgleich/stand'], reason: 'sonst nichts');
     },
   );
 

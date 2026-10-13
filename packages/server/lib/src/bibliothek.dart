@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:kern/abgleich/protokoll.dart';
 import 'package:kern/auswertung/auswertungen.dart';
+import 'package:kern/auswertung/herkunft.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
 import 'package:kern/db/database.dart';
@@ -11,7 +12,10 @@ import 'package:kern/services/import_service.dart';
 import 'package:kern/services/model_processing_state.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:path/path.dart' as p;
+
+import 'onnx_ffi.dart';
 
 /// Eine Bibliothek auf dem Server: dieselbe Ablage wie in der App
 /// (`library.sqlite` und darunter `library/`), nur ohne Oberfläche.
@@ -33,6 +37,14 @@ class Bibliothek {
       modelle: modelle,
       bildwerkzeuge: bildwerkzeuge,
       abgebrochen: () => auswertungAbbrechen,
+      // Die Herkunft jedes Ergebnisses: der Server, und je Modell, ob es
+      // auf dem Beschleuniger rechnete (siehe FfiOnnxPlattform).
+      rechner: Rechner.server(
+        (datei) => switch (OnnxRuntimePlatform.instance) {
+          final FfiOnnxPlattform f => f.anbieterFuer(datei),
+          _ => 'CPU',
+        },
+      ),
       pipelineAktuell: (pipeline) async {
         final abdruck = ModelProcessingState.currentFingerprints()[pipeline];
         if (abdruck != null) await modellstand.markCurrent(pipeline, abdruck);

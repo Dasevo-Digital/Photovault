@@ -82,6 +82,8 @@ class _StartState extends State<Start> {
               final z = s.abgleichszustand;
               final text = z == null
                   ? null
+                  : z.schemaAnders
+                  ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)
                   : z.abgemeldet
                   ? t.abgemeldetHinweis
                   : !z.erreichbar

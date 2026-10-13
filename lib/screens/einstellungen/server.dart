@@ -43,6 +43,8 @@ class ServerGruppe extends StatelessWidget {
     final z = library.abgleichszustand;
     final zustand = z == null
         ? null
+        : z.schemaAnders
+        ? (z.appZuAlt ? t.serverAppZuAlt : t.serverZuAlt)
         : z.abgemeldet
         ? t.serverAbgemeldet
         : !z.erreichbar

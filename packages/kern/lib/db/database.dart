@@ -222,6 +222,7 @@ String schlagwortKennung(String name) =>
     VerworfeneSerien,
     VerworfeneOrtsvorschlaege,
     Videoeinbettungen,
+    Ergebnisherkunft,
     Wanderpunkte,
     Wanderabfragen,
     VerworfeneDokumente,
@@ -262,7 +263,7 @@ class AppDatabase extends _$AppDatabase {
   int get embeddingsGeneration => _embeddingsGeneration;
 
   @override
-  int get schemaVersion => 92;
+  int get schemaVersion => 93;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

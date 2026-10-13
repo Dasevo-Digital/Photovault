@@ -19,6 +19,8 @@ class Abgleichszustand {
     required this.ausstehend,
     this.abgelehnt = const [],
     this.abgemeldet = false,
+    this.serverSchema,
+    this.hierSchema,
   });
 
   /// Ob der Server zuletzt geantwortet hat.
@@ -33,6 +35,20 @@ class Abgleichszustand {
 
   /// Das Gerät ist beim Server nicht mehr angemeldet.
   final bool abgemeldet;
+
+  /// Der Schemastand des Servers, wenn er nicht zu dem dieser Kopie passt –
+  /// dann gleicht nichts mehr ab, bis App oder Server aktualisiert sind.
+  /// Ist er höher, ist die App zu alt; ist er niedriger, der Server.
+  final int? serverSchema;
+
+  /// Der Schemastand dieser Kopie, wenn [serverSchema] gesetzt ist.
+  final int? hierSchema;
+
+  /// Ob die Schemastände nicht zusammenpassen …
+  bool get schemaAnders => serverSchema != null;
+
+  /// … und ob es an der App liegt (sonst am Server).
+  bool get appZuAlt => (serverSchema ?? 0) > (hierSchema ?? 0);
 }
 
 /// Hält die Kopie einer Bibliothek auf einem Gerät mit dem Server gleich.
@@ -430,8 +446,21 @@ class Abgleich {
     // Abfrage erst nach 25 s zurück – so lange stünde „verbindet …“ da,
     // obwohl der Server längst antwortet.
     var warten = Duration.zero;
+    var geprueft = false;
     while (_laeuft) {
       try {
+        if (!geprueft) {
+          // Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten es
+          // hier nicht gibt (oder umgekehrt) – dann lieber gar nicht.
+          final stand = await verbindung.hole('api/v1/abgleich/stand');
+          final schema = stand['schema'];
+          if (schema is int && schema != db.schemaVersion) {
+            await _melde(erreichbar: true, serverSchema: schema);
+            _laeuft = false;
+            return;
+          }
+          geprueft = true;
+        }
         await sende();
         await empfange(warten: warten);
         warten = const Duration(seconds: 25);
@@ -464,7 +493,11 @@ class Abgleich {
     _wecker = null;
   }
 
-  Future<void> _melde({bool? erreichbar, bool abgemeldet = false}) async {
+  Future<void> _melde({
+    bool? erreichbar,
+    bool abgemeldet = false,
+    int? serverSchema,
+  }) async {
     if (_zustand.isClosed) return;
     final n =
         (await db
@@ -478,6 +511,8 @@ class Abgleich {
       ausstehend: n,
       abgelehnt: List.unmodifiable(_abgelehnt),
       abgemeldet: abgemeldet,
+      serverSchema: serverSchema,
+      hierSchema: serverSchema == null ? null : db.schemaVersion,
     );
     _zustand.add(_letzter);
   }

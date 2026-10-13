@@ -1354,5 +1354,9 @@ extension Migrationsschritte on AppDatabase {
       await customStatement('DROP TABLE IF EXISTS asset_search_fts');
       await _createAssetSearchFts();
     }
+    if (from < 93) {
+      // Leer: Was vorher gerechnet wurde, hat keine bekannte Herkunft.
+      await m.createTable(ergebnisherkunft);
+    }
   }
 }

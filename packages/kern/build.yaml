@@ -12,6 +12,12 @@
 # schreibt die Vorgaben dann als SQL). Ob die erzeugten Tests damit
 # taugen, zeigt der nächste Schemawechsel; bis dahin wird die Migration
 # von Hand geprüft, siehe test/migration_86_87_test.dart als Muster.
+#
+# Beim Wechsel 92 → 93 (13.10.2026) geprüft: Der Stand 93 ist ein echter
+# Export (mit `fixed_sql`, ohne Dart-Ausdrücke), die Stände 86–92 brechen
+# die erzeugten Tests weiterhin. Ab dem Wechsel 93 → 94 taugen sie, wenn
+# nur Stände ab 93 einfliessen; dafür braucht der Kern `test` als
+# dev_dependency.
 targets:
   $default:
     builders:
