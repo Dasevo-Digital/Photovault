@@ -426,14 +426,20 @@ class Abgleich {
 
   Future<void> _laufe() async {
     var pause = const Duration(seconds: 2);
+    // Die erste Runde wartet nicht: Gibt es nichts Neues, kehrte die lange
+    // Abfrage erst nach 25 s zurück – so lange stünde „verbindet …“ da,
+    // obwohl der Server längst antwortet.
+    var warten = Duration.zero;
     while (_laeuft) {
       try {
         await sende();
-        await empfange(warten: const Duration(seconds: 25));
+        await empfange(warten: warten);
+        warten = const Duration(seconds: 25);
         pause = const Duration(seconds: 2);
         await _melde(erreichbar: true);
       } on KeineVerbindung {
         if (!_laeuft) return;
+        warten = Duration.zero;
         await _melde(erreichbar: false);
         await _schlafe(pause);
         pause = Duration(seconds: min(pause.inSeconds * 2, 60));
@@ -444,6 +450,7 @@ class Abgleich {
           return;
         }
         if (!_laeuft) return;
+        warten = Duration.zero;
         meldung.protokoll('Abgleich: $f');
         await _schlafe(pause);
         pause = Duration(seconds: min(pause.inSeconds * 2, 60));

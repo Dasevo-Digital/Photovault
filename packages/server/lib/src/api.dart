@@ -61,6 +61,7 @@ Handler baueApi({
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/<art>', api.datei)
+    ..post('/api/v1/pruefsummen', api.pruefsummen)
     ..post('/api/v1/befehle', abgleich.befehle)
     ..get('/api/v1/abgleich/stand', abgleich.stand)
     ..get('/api/v1/abgleich/aenderungen', abgleich.aenderungen)
@@ -248,6 +249,41 @@ class _Api {
     }
     return _json(a.toJson());
   }
+
+  /// Welche Dateien schon in der Bibliothek liegen: `{pruefsummen: [...]}`
+  /// (SHA-256, hexadezimal) → `{vorhanden: {pruefsumme: kennung}}`.
+  ///
+  /// Für die Sicherung der Kamerarolle: Was schon da ist – etwa weil die
+  /// Bibliothek vom Rechner umgezogen ist –, muss das Telefon nicht erst
+  /// hochladen, damit der Server es als Dublette verwirft. Zählt auch,
+  /// was im Papierkorb liegt; der Import nähme es ebenfalls nicht noch
+  /// einmal.
+  Future<Response> pruefsummen(Request anfrage) async {
+    final k = jsonDecode(await anfrage.readAsString());
+    final liste = k is Map ? k['pruefsummen'] : null;
+    if (liste is! List || liste.length > 1000) {
+      return _json({'fehler': 'pruefsummen fehlt oder zu viele'}, status: 400);
+    }
+    final summen = {
+      for (final s in liste)
+        if (s is String && _pruefsummeMuster.hasMatch(s)) s,
+    }.toList();
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final vorhanden = <String, String>{};
+    if (summen.isNotEmpty) {
+      final zeilen =
+          await (db.selectOnly(db.assets)
+                ..addColumns([db.assets.checksum, db.assets.id])
+                ..where(db.assets.checksum.isIn(summen)))
+              .get();
+      for (final z in zeilen) {
+        vorhanden[z.read(db.assets.checksum)!] = z.read(db.assets.id)!;
+      }
+    }
+    return _json({'vorhanden': vorhanden});
+  }
+
+  static final _pruefsummeMuster = RegExp(r'^[0-9a-f]{64}$');
 
   /// `miniatur`, `vorschau` oder `original` – mit Teilabruf (`Range`),
   /// damit sich ein Video abspielen lässt, ohne es ganz zu laden.

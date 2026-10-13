@@ -304,16 +304,26 @@ class Hochladen {
     }
   }
 
-  /// Räumt Uploads weg, die seit [alter] nicht fertig wurden, und Angaben
+  /// Räumt Uploads weg, die seit [alter] nicht weitergingen, und Angaben
   /// zu fertigen, die so lange niemand abgefragt hat.
+  ///
+  /// Zählt die letzte Änderung an Angaben **oder** Teil: Die Angaben
+  /// schreibt nur das Anlegen und der Abschluss. Eine Sicherung, die ein
+  /// grosses Video über Tage in Hintergrundläufen fortsetzt, wäre sonst
+  /// eine Woche nach dem Anlegen mitten im Hochladen verworfen worden.
   Future<int> raeumeAuf({Duration alter = const Duration(days: 7)}) async {
     if (!await eingang.exists()) return 0;
     var weg = 0;
     final grenze = DateTime.now().subtract(alter);
     await for (final e in eingang.list()) {
       if (e is! File || !e.path.endsWith('.json')) continue;
+      final id = p.basenameWithoutExtension(e.path);
       if ((await e.lastModified()).isAfter(grenze)) continue;
-      await _loesche(p.basenameWithoutExtension(e.path));
+      final teil = _teil(id);
+      if (await teil.exists() && (await teil.lastModified()).isAfter(grenze)) {
+        continue;
+      }
+      await _loesche(id);
       weg++;
     }
     return weg;

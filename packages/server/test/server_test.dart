@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
@@ -325,5 +326,74 @@ void main() {
     expect(r.statusCode, 404);
     final leer = await frag('POST', '/api/v1/suche/text', inhalt: '{}');
     expect(leer.statusCode, 400);
+  });
+
+  test('Prüfsummen: was schon da ist, auch im Papierkorb', () async {
+    final bytes = jpeg(120);
+    final r = await hochladen(bytes, 'hafen.jpg');
+    final id = r.headers['pv-aufnahme']!;
+    final summe = sha256.convert(bytes).toString();
+    final fremd = sha256.convert(jpeg(121)).toString();
+
+    Future<Map<String, Object?>> frage(Object? summen) async {
+      final a = await frag(
+        'POST',
+        '/api/v1/pruefsummen',
+        inhalt: jsonEncode({'pruefsummen': summen}),
+      );
+      expect(a.statusCode, 200);
+      return ((await jsonAus(a))['vorhanden']! as Map).cast<String, Object?>();
+    }
+
+    expect(await frage([summe, fremd, 'kein-hex']), {summe: id});
+
+    final db = (await bibliotheken.fuer(konto.id)).bibliothek.db;
+    await db.fuehreAus(InDenPapierkorb([id]));
+    expect(await frage([summe]), {summe: id});
+
+    final zuViele = await frag(
+      'POST',
+      '/api/v1/pruefsummen',
+      inhalt: jsonEncode({'pruefsummen': List.filled(1001, fremd)}),
+    );
+    expect(zuViele.statusCode, 400);
+  });
+
+  test('Aufräumen verwirft nur, was nicht mehr weitergeht', () async {
+    final bytes = jpeg(140);
+    final angelegt = await frag(
+      'POST',
+      '/api/v1/hochladen',
+      kopf: {
+        ...tus,
+        'upload-length': '${bytes.length}',
+        'upload-metadata': meta({'filename': 'lang.jpg'}),
+      },
+    );
+    final ort = angelegt.headers['location']!;
+    await frag(
+      'PATCH',
+      ort,
+      kopf: {
+        ...tus,
+        'content-type': 'application/offset+octet-stream',
+        'upload-offset': '0',
+      },
+      inhalt: bytes.sublist(0, 100),
+    );
+    final hochladen = (await bibliotheken.fuer(konto.id)).hochladen;
+    final id = ort.split('/').last;
+    final alt = DateTime.now().subtract(const Duration(days: 8));
+    await File('${hochladen.eingang.path}/$id.json').setLastModified(alt);
+
+    expect(await hochladen.raeumeAuf(), 0, reason: 'der Teil wuchs gerade');
+    expect(
+      (await frag('HEAD', ort, kopf: tus)).headers['upload-offset'],
+      '100',
+    );
+
+    await File('${hochladen.eingang.path}/$id.teil').setLastModified(alt);
+    expect(await hochladen.raeumeAuf(), 1);
+    expect((await frag('HEAD', ort, kopf: tus)).statusCode, 404);
   });
 }

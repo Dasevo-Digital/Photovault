@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -358,6 +360,85 @@ void main() {
       expect(uhr.elapsed, lessThan(const Duration(seconds: 3)));
       expect(zustaende.where((z) => !z.erreichbar), isEmpty);
       await abo.cancel();
+    },
+  );
+
+  test(
+    'Hochladen setzt nach einem Neustart fort, wo der Server steht',
+    () async {
+      final token = konten.meldeAn(erika.id, 'Telefon', 'x').token;
+      final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+      addTearDown(v.schliesse);
+      final bild = img.Image(width: 300, height: 200);
+      img.fill(bild, color: img.ColorRgb8(10, 120, 200));
+      final datei = File('${ordner.path}/see.jpg')
+        ..writeAsBytesSync(img.encodeJpg(bild));
+      final laenge = datei.lengthSync();
+      expect(laenge, greaterThan(400));
+      const meta = {'filename': 'see.jpg'};
+
+      // Erster Lauf: ein Stück, dann ist die Zeit um.
+      String? ort;
+      var stuecke = 0;
+      await expectLater(
+        TusHochladen(v, stueck: 200).lade(
+          datei,
+          'api/v1/hochladen',
+          meta,
+          angelegt: (o) => ort = o,
+          abbrechen: () => stuecke++ >= 1,
+        ),
+        throwsA(isA<Abgebrochen>()),
+      );
+      expect(ort, isNotNull);
+
+      // Neuer Lauf, neue Instanz: geht bei 200 weiter, nicht bei 0.
+      final stellen = <int>[];
+      final kopf = await TusHochladen(v, stueck: 200).lade(
+        datei,
+        'api/v1/hochladen',
+        meta,
+        fortsetzen: ort,
+        angelegt: (_) => fail('kein neuer Upload'),
+        fortschritt: (erledigt, _) => stellen.add(erledigt),
+      );
+      expect(stellen.first, 400);
+      expect(kopf['pv-ausgang'], 'imported');
+
+      // Schon fertig (die Antwort ging verloren): das Ergebnis aus dem Stand.
+      final nochmal = await TusHochladen(v).lade(
+        datei,
+        'api/v1/hochladen',
+        meta,
+        fortsetzen: ort,
+        angelegt: (_) => fail('kein neuer Upload'),
+      );
+      expect(nochmal['pv-ausgang'], 'imported');
+      expect(nochmal['pv-aufnahme'], kopf['pv-aufnahme']);
+
+      // Kennt der Server den Ort nicht mehr, beginnt ein neuer Upload.
+      String? neu;
+      final dublette = await TusHochladen(v).lade(
+        datei,
+        'api/v1/hochladen',
+        meta,
+        fortsetzen: '${ort!.substring(0, ort!.length - 4)}0000',
+        angelegt: (o) => neu = o,
+      );
+      expect(neu, isNot(ort));
+      expect(dublette['pv-ausgang'], 'duplicateSkipped');
+    },
+  );
+
+  test(
+    'erreichbar meldet sich gleich, nicht erst nach der langen Abfrage',
+    () async {
+      final (_, a) = await geraet('Rechner');
+      final erster = a.zustand.firstWhere((z) => z.erreichbar);
+      final uhr = Stopwatch()..start();
+      a.starte();
+      await erster.timeout(const Duration(seconds: 10));
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 3)));
     },
   );
 
