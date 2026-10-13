@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
@@ -9,9 +8,11 @@ import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import 'abgleich_api.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'bibliotheken.dart';
+import 'dateiantwort.dart';
 import 'konten/kontodienst.dart';
 import 'oidc.dart';
 
@@ -35,6 +36,7 @@ Handler baueApi({
   final von = absender ?? Absender();
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final api = _Api(bibliotheken);
+  final abgleich = Abgleichsapi(bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
@@ -55,7 +57,12 @@ Handler baueApi({
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/<art>', api.datei)
-    ..post('/api/v1/befehle', api.befehl)
+    ..post('/api/v1/befehle', abgleich.befehle)
+    ..get('/api/v1/abgleich/stand', abgleich.stand)
+    ..get('/api/v1/abgleich/aenderungen', abgleich.aenderungen)
+    ..post('/api/v1/abgleich/zeilen', abgleich.zeilen)
+    ..get('/api/v1/abgleich/abzug', abgleich.abzug)
+    ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
     ..add(
@@ -234,32 +241,9 @@ class _Api {
     if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
       return Response.notFound(null);
     }
-    return _dateiAntwort(anfrage, datei);
-  }
-
-  /// Ein Befehl (siehe `package:kern/befehle`) als JSON: `{art, werte}`.
-  Future<Response> befehl(Request anfrage) async {
-    final db = (await _bereich(anfrage)).bibliothek.db;
-    final Befehl<Object?> b;
-    try {
-      b = Befehl.ausJson(
-        (jsonDecode(await anfrage.readAsString()) as Map)
-            .cast<String, Object?>(),
-      );
-    } on Object catch (e) {
-      return _json({'fehler': 'Befehl nicht lesbar: $e'}, status: 400);
-    }
-    final ergebnis = await db.fuehreAus(b);
-    return _json({'ergebnis': _ergebnisAlsJson(ergebnis)});
+    return dateiAntwort(anfrage, datei);
   }
 }
-
-Object? _ergebnisAlsJson(Object? e) => switch (e) {
-  null || bool() || num() || String() => e,
-  DateTime() => e.toIso8601String(),
-  Enum() => e.name,
-  _ => e.toString(),
-};
 
 Map<String, Object?> _alsJson(Rasterzeile r) => {
   'id': r.id,
@@ -302,73 +286,4 @@ class _Lesezeichen {
       text.substring(i + 1),
     );
   }
-}
-
-const _typen = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.heic': 'image/heic',
-  '.heif': 'image/heif',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.tif': 'image/tiff',
-  '.tiff': 'image/tiff',
-  '.mov': 'video/quicktime',
-  '.mp4': 'video/mp4',
-  '.m4v': 'video/x-m4v',
-};
-
-Future<Response> _dateiAntwort(Request anfrage, File datei) async {
-  final groesse = await datei.length();
-  final geaendert = await datei.lastModified();
-  final etag =
-      '"${geaendert.millisecondsSinceEpoch.toRadixString(36)}-'
-      '${groesse.toRadixString(36)}"';
-  final kopf = {
-    'content-type':
-        _typen[p.extension(datei.path).toLowerCase()] ??
-        'application/octet-stream',
-    'accept-ranges': 'bytes',
-    'etag': etag,
-    'cache-control': 'private, max-age=86400',
-  };
-  if (anfrage.headers['if-none-match'] == etag) {
-    return Response.notModified(headers: kopf);
-  }
-  final bereich = RegExp(
-    r'^bytes=(\d*)-(\d*)$',
-  ).firstMatch(anfrage.headers['range'] ?? '');
-  if (bereich == null || groesse == 0) {
-    return Response.ok(
-      datei.openRead(),
-      headers: {...kopf, 'content-length': '$groesse'},
-    );
-  }
-  final a = bereich.group(1)!, e = bereich.group(2)!;
-  int von, bis;
-  if (a.isEmpty) {
-    // `bytes=-500`: die letzten 500 Bytes.
-    final n = int.parse(e);
-    von = n >= groesse ? 0 : groesse - n;
-    bis = groesse - 1;
-  } else {
-    von = int.parse(a);
-    bis = e.isEmpty ? groesse - 1 : int.parse(e).clamp(0, groesse - 1);
-  }
-  if (von >= groesse || von > bis) {
-    return Response(
-      416,
-      headers: {...kopf, 'content-range': 'bytes */$groesse'},
-    );
-  }
-  return Response(
-    206,
-    body: datei.openRead(von, bis + 1),
-    headers: {
-      ...kopf,
-      'content-range': 'bytes $von-$bis/$groesse',
-      'content-length': '${bis - von + 1}',
-    },
-  );
 }

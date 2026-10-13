@@ -232,15 +232,20 @@ String schlagwortKennung(String name) =>
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
-  /// Wer erfährt, dass ein Befehl ausgeführt wurde – heute niemand; im
-  /// verbundenen Betrieb die Warteschlange zum Server (Issue #86).
+  /// Wer erfährt, dass ein Befehl ausgeführt wurde.
   final befehlsbeobachter = <void Function(Befehl<Object?> befehl)>[];
 
+  /// Im verbundenen Betrieb (Issue #86, Stufe 2): Statt einen Befehl nur
+  /// anzuwenden, nimmt der Abgleich ihn vorweg und stellt ihn in die
+  /// Warteschlange zum Server (siehe `Abgleich`).
+  Future<T> Function<T>(Befehl<T> befehl)? umleitung;
+
   /// Führt eine Änderung durch den Nutzer aus (siehe [Befehl]): wendet
-  /// sie hier an, meldet sie danach [befehlsbeobachter] und gibt zurück,
-  /// was die Änderung liefert.
+  /// sie hier an – im verbundenen Betrieb über [umleitung] –, meldet sie
+  /// danach [befehlsbeobachter] und gibt zurück, was die Änderung liefert.
   Future<T> fuehreAus<T>(Befehl<T> befehl) async {
-    final ergebnis = await befehl.anwenden(this);
+    final u = umleitung;
+    final ergebnis = u == null ? await befehl.anwenden(this) : await u(befehl);
     for (final beobachter in befehlsbeobachter) {
       beobachter(befehl);
     }

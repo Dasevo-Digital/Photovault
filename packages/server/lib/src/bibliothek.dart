@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:kern/abgleich/protokoll.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
@@ -23,6 +24,7 @@ class Bibliothek {
     this.modelle,
     Bildwerkzeuge bildwerkzeuge,
     ReverseGeocoder? ortsverzeichnis,
+    this.protokoll,
   ) {
     final modellstand = ModelProcessingState(pfade.modelProcessingStateFile);
     auswertungen = Auswertungen(
@@ -76,6 +78,19 @@ class Bibliothek {
     final pfade = await StoragePaths.oeffne(
       Directory(p.join(ordner.path, 'library')),
     );
+    // Jede Änderung mitschreiben – für die verbundenen Geräte (Stufe 2).
+    // Neu bei jedem Öffnen: Eine Migration kann Tabellen neu angelegt und
+    // ihre Trigger mitgenommen haben.
+    final protokoll = Protokoll(db);
+    await protokoll.richteEin(mitschreiben: -1);
+    await protokoll.verdichte();
+    // Welche Befehle schon ausgeführt sind – damit ein Gerät, dessen
+    // Antwort verloren ging, denselben Befehl gefahrlos noch einmal
+    // schicken kann.
+    await db.customStatement(
+      'CREATE TABLE IF NOT EXISTS pv_erledigt ('
+      'kennung TEXT PRIMARY KEY, stand INTEGER NOT NULL, am INTEGER NOT NULL)',
+    );
     return Bibliothek._(
       ordner,
       db,
@@ -84,6 +99,7 @@ class Bibliothek {
       modelle ?? Modelle(),
       bildwerkzeuge,
       ortsverzeichnis,
+      protokoll,
     );
   }
 
@@ -92,6 +108,7 @@ class Bibliothek {
   final StoragePaths pfade;
   final ImportService importe;
   final Modelle modelle;
+  final Protokoll protokoll;
   late final Auswertungen auswertungen;
   late final Nachbearbeitung nachbearbeitung;
 

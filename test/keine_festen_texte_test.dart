@@ -98,6 +98,8 @@ void main() {
     '© OpenStreetMap contributors',
     '© OpenStreetMap contributors © CARTO',
     '© OpenStreetMap contributors, SRTM | © opentopomap.org (CC-BY-SA)',
+    // Ein Parametername der Server-Schnittstelle (`?nach=…`), kein Text.
+    'nach',
     // Eine Kopfzeile fuer eine Antwort, die diese App sich selbst gibt
     // (siehe `Offlinerueckfall`) – HTTP spricht englisch.
     'max-age=0',
