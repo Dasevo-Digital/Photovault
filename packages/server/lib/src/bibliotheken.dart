@@ -95,6 +95,16 @@ class Bibliotheken {
     return true;
   }
 
+  /// Schliesst die Bibliothek von [kontoId], falls sie offen ist – vor
+  /// dem Umzug, der sie austauscht.
+  Future<void> schliesse(String kontoId) async {
+    final f = _offen.remove(kontoId);
+    if (f == null) return;
+    final b = await f;
+    await b.auswertung.beende();
+    await b.bibliothek.schliesse();
+  }
+
   Future<void> schliesseAlle() async {
     for (final f in _offen.values) {
       final b = await f;

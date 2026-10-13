@@ -86,6 +86,31 @@ class Serververbindung {
     return j is Map ? j.cast<String, Object?>() : {'wert': j};
   }
 
+  /// Eine Anfrage ohne JSON (tus): Fehler der Verbindung werden zu
+  /// [KeineVerbindung], die Antwort kommt, wie sie ist.
+  Future<http.Response> anfrage(
+    String methode,
+    String pfad, {
+    Map<String, String> kopf = const {},
+    List<int>? inhalt,
+    Duration zeitlimit = const Duration(minutes: 5),
+  }) async {
+    final r = http.Request(methode, adresse(pfad))
+      ..headers.addAll({..._kopf, ...kopf});
+    if (inhalt != null) r.bodyBytes = inhalt;
+    try {
+      return await http.Response.fromStream(
+        await _http.send(r).timeout(zeitlimit),
+      );
+    } on SocketException catch (e) {
+      throw KeineVerbindung(e);
+    } on TimeoutException catch (e) {
+      throw KeineVerbindung(e);
+    } on http.ClientException catch (e) {
+      throw KeineVerbindung(e);
+    }
+  }
+
   /// Lädt [pfad] nach [ziel] – erst in eine Zwischendatei, dann an ihren
   /// Platz, damit nie eine halbe Datei als ganze dasteht.
   Future<void> ladeHerunter(String pfad, File ziel) async {

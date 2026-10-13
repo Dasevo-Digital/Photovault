@@ -37,10 +37,28 @@ class Hochladen {
     this.bibliothek, {
     this.hoechstens = 64 * 1024 * 1024 * 1024,
     this.nachImport,
+    this.pfad = '/api/v1/hochladen',
+    this.abschluss,
   });
 
   final Directory eingang;
-  final Bibliothek bibliothek;
+
+  /// Wohin importiert wird; nur ohne [abschluss] gebraucht.
+  final Bibliothek? bibliothek;
+
+  /// Unter welchem Pfad die Uploads liegen (`Location`).
+  final String pfad;
+
+  /// Was mit einer vollständigen Datei geschieht, statt sie zu importieren
+  /// (der Umzug legt sie an ihren Pfad). Gibt zurück, was in der Antwort
+  /// steht: `ausgang` und gegebenenfalls `fehler`. Mit [abschluss] braucht
+  /// ein Upload statt eines Dateinamens den Pfad (`pfad`) in den
+  /// Metadaten.
+  final Future<Map<String, Object?>> Function(
+    File datei,
+    Map<String, Object?> angaben,
+  )?
+  abschluss;
 
   /// Grösste Datei, die angenommen wird.
   final int hoechstens;
@@ -90,7 +108,15 @@ class Hochladen {
     }
     if (laenge > hoechstens) return Response(413, headers: _tus);
     final meta = _metadaten(anfrage.headers['upload-metadata']);
-    final name = p.basename(meta['filename'] ?? meta['name'] ?? '');
+    final zielpfad = meta['pfad'];
+    if (abschluss != null &&
+        (zielpfad == null ||
+            zielpfad.isEmpty ||
+            p.isAbsolute(zielpfad) ||
+            p.split(zielpfad).any((t) => t == '..' || t == '.'))) {
+      return Response(400, body: 'pfad fehlt oder taugt nicht', headers: _tus);
+    }
+    final name = p.basename(zielpfad ?? meta['filename'] ?? meta['name'] ?? '');
     if (name.isEmpty || name == '.' || name == '..') {
       return Response(400, body: 'Dateiname fehlt', headers: _tus);
     }
@@ -101,15 +127,14 @@ class Hochladen {
       'laenge': laenge,
       'name': name,
       'geaendert': int.tryParse(meta['geaendert'] ?? ''),
+      'pfad': ?zielpfad,
+      'sha256': ?meta['sha256'],
+      'art': ?meta['art'],
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
       201,
-      headers: {
-        ..._tus,
-        'location': '/api/v1/hochladen/$id',
-        'upload-offset': '0',
-      },
+      headers: {..._tus, 'location': '$pfad/$id', 'upload-offset': '0'},
     );
   }
 
@@ -201,7 +226,10 @@ class Hochladen {
     final kopf = {..._tus, 'upload-offset': '$versatz'};
     if (versatz < laenge) return Response(204, headers: kopf);
 
-    final ergebnis = await _importiere(id, a);
+    final fertig = abschluss;
+    final ergebnis = fertig == null
+        ? await _importiere(id, a)
+        : await fertig(_teil(id), a);
     await _schreib(id, {...a, 'ergebnis': ergebnis});
     return Response(
       204,
@@ -232,14 +260,15 @@ class Hochladen {
           DateTime.fromMillisecondsSinceEpoch(geaendert),
         );
       }
-      final r = await bibliothek.importe.importFile(datei.path);
+      final b = bibliothek!;
+      final r = await b.importe.importFile(datei.path);
       var aufnahme = r.assetId;
       if (r.outcome == ImportOutcome.imported && aufnahme != null) {
         // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei
         // trotzdem aufgenommen – das darf dem Client nicht als Fehler
         // erscheinen, sonst lädt er sie noch einmal hoch.
         try {
-          await bibliothek.nachbearbeitung.neueAufnahme(aufnahme);
+          await b.nachbearbeitung.neueAufnahme(aufnahme);
         } catch (e) {
           protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
         }
@@ -247,7 +276,7 @@ class Hochladen {
       }
       if (r.outcome == ImportOutcome.duplicateSkipped) {
         final summe = await sha256.bind(datei.openRead()).first;
-        aufnahme = await bibliothek.kennungFuer(summe.toString());
+        aufnahme = await b.kennungFuer(summe.toString());
       }
       if (r.outcome == ImportOutcome.failed) {
         protokoll('Import von ${a['name']} gescheitert: ${r.error}');

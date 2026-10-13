@@ -15,6 +15,7 @@ import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'konten/kontodienst.dart';
 import 'oidc.dart';
+import 'umzug.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
 /// etwas so ändert, dass ein älterer Client es falsch verstünde.
@@ -37,6 +38,7 @@ Handler baueApi({
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final api = _Api(bibliotheken);
   final abgleich = Abgleichsapi(bibliotheken);
+  final umzug = Umzugsdienst(bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
@@ -63,6 +65,30 @@ Handler baueApi({
     ..post('/api/v1/abgleich/zeilen', abgleich.zeilen)
     ..get('/api/v1/abgleich/abzug', abgleich.abzug)
     ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
+    ..post('/api/v1/umzug/beginnen', umzug.beginnen)
+    ..get('/api/v1/umzug/stand', umzug.stand)
+    ..post('/api/v1/umzug/abschliessen', umzug.abschliessen)
+    ..add(
+      'OPTIONS',
+      '/api/v1/umzug/hochladen',
+      (Request r) => umzug.hochladen(r).optionen(r),
+    )
+    ..post(
+      '/api/v1/umzug/hochladen',
+      (Request r) => umzug.hochladen(r).anlegen(r),
+    )
+    ..head(
+      '/api/v1/umzug/hochladen/<id>',
+      (Request r, String id) => umzug.hochladen(r).stand(r, id),
+    )
+    ..patch(
+      '/api/v1/umzug/hochladen/<id>',
+      (Request r, String id) => umzug.hochladen(r).anhaengen(r, id),
+    )
+    ..delete(
+      '/api/v1/umzug/hochladen/<id>',
+      (Request r, String id) => umzug.hochladen(r).verwerfen(r, id),
+    )
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
     ..add(
