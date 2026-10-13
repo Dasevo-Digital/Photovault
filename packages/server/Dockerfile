@@ -18,6 +18,11 @@
 #   docker buildx build -f packages/server/Dockerfile --target openvino \
 #     --platform linux/amd64 -t photo-vault-server:openvino .
 #
+# … und als Bündel für systemd:
+#
+#   docker buildx build -f packages/server/Dockerfile --target paket-openvino \
+#     --platform linux/amd64 --output type=local,dest=aus .
+#
 # Siehe packages/server/README.md.
 
 ARG DART_FASSUNG=3.13.5
@@ -94,6 +99,16 @@ RUN tar -C /pv --owner=0 --group=0 -czf "/photo-vault-server-linux-${TARGETARCH}
 
 FROM scratch AS paket
 COPY --from=buendel /photo-vault-server-linux-*.tar.gz /
+
+# Dasselbe Bündel mit Intels ONNX Runtime unter lib/openvino (nur amd64;
+# siehe README, „Intel-Grafik mit systemd“).
+FROM buendel AS buendel-openvino
+COPY --from=ort-openvino /ov /pv/photo-vault-server/lib/openvino
+RUN tar -C /pv --owner=0 --group=0 \
+      -czf /photo-vault-server-linux-amd64-openvino.tar.gz photo-vault-server
+
+FROM scratch AS paket-openvino
+COPY --from=buendel-openvino /photo-vault-server-linux-amd64-openvino.tar.gz /
 
 # --- Das Bild für Intel-Grafik -------------------------------------------------
 # Ubuntu statt Debian: Den Treiber für Rechnen auf der Intel-Grafik

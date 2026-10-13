@@ -251,6 +251,49 @@ beim Start; auf der CPU können Ergebnisse deshalb minimal anders ausfallen
 als in der App. OpenVINO übersetzt die Modelle für die Grafik beim ersten
 Laden und legt sie unter `<PV_DATEN>/beschleuniger` ab.
 
+**Intel-Grafik mit systemd:** Das Bündel mit OpenVINO baut das Ziel
+`paket-openvino` (nur amd64):
+
+```sh
+docker buildx build -f packages/server/Dockerfile --target paket-openvino \
+  --platform linux/amd64 --output type=local,dest=aus .
+```
+
+Eingerichtet wird es wie unter „Einzeldatei mit systemd“, dazu der
+Treiber (Ubuntu 26.04; Debian hat ihn nicht), die Gruppe `render` und
+eine Ergänzung der Einheit, die dem Server den Render-Knoten zeigt:
+
+```sh
+sudo apt install intel-opencl-icd libze-intel-gpu1 libze1
+sudo usermod -aG render photovault
+sudo mkdir -p /etc/systemd/system/photo-vault-server.service.d
+sudo cp /opt/photo-vault-server/systemd/intel-grafik.conf \
+  /etc/systemd/system/photo-vault-server.service.d/
+```
+
+In `/etc/photo-vault-server.env`:
+
+```
+PV_ONNXRUNTIME=/opt/photo-vault-server/lib/openvino/libonnxruntime.so.1.24.1
+PV_BESCHLEUNIGER=openvino
+```
+
+In einem LXC-Container unter Proxmox reicht der Wirt den Render-Knoten
+durch – als `root` auf dem Wirt, mit der Kennung der Gruppe `render` im
+Container (`getent group render`, unter Ubuntu 26.04 meist 991):
+
+```sh
+pct set <ID> -dev0 /dev/dri/renderD128,gid=991,mode=0660
+```
+
+**Die Bildbeschreibung ist empfindlich:** Sie wählt Wort für Wort das
+wahrscheinlichste nächste, und schon die Rundung einer anderen Fassung der
+ONNX Runtime oder eines anderen Prozessors kann ein Wort kippen – danach
+geht der Satz anders weiter. Gemessen an zehn Bildern: Schärfe, CLIP,
+Texterkennung und Gesichter waren zwischen Linux und macOS, 1.24.1 und
+1.28.3 gleich, die Beschreibung in sechs bis neun Fällen anders
+formuliert. Das gilt auch für die Rechenhilfe.
+
 ## Rechenhilfe
 
 Ein verbundener Rechner kann für den Server mitrechnen (App:

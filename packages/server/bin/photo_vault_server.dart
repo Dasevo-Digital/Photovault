@@ -59,7 +59,12 @@ Future<void> main(List<String> argumente) async {
     ortsverzeichnis: await _ladeOrtsverzeichnis(e.geodaten),
     selbst: e.selbstRechnen,
   );
-  if (e.selbstRechnen.length < Analysestufe.values.length) {
+  if (e.selbstRechnen.isEmpty) {
+    protokoll(
+      'Selbst gerechnet wird nichts – alles übernimmt die Rechenhilfe '
+      'verbundener Rechner',
+    );
+  } else if (e.selbstRechnen.length < Analysestufe.values.length) {
     protokoll(
       'Selbst gerechnet wird nur: '
       '${e.selbstRechnen.map((s) => s.name).join(', ')} – den Rest '
