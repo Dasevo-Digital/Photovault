@@ -24,6 +24,25 @@ class _StartState extends State<Start> {
   var _bereich = 0;
   final _gebaut = <int>{0};
 
+  /// Zurück in der App: sichern, was dazukam. In den Hintergrund: unter
+  /// Android an den Vordergrunddienst übergeben.
+  late final _lebenslauf = AppLifecycleListener(
+    onResume: () => widget.sitzung.sicherung?.sichere(),
+    onHide: () => widget.sitzung.sicherung?.imHintergrund(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lebenslauf;
+  }
+
+  @override
+  void dispose() {
+    _lebenslauf.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);

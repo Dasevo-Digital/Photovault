@@ -11,6 +11,8 @@ import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'sicherung/dienst.dart';
+
 enum Sitzungszustand { laedt, abgemeldet, bereit }
 
 /// Die Verbindung des Telefons mit seinem Server und die Kopie der
@@ -24,11 +26,13 @@ enum Sitzungszustand { laedt, abgemeldet, bereit }
 /// auch nach einer Zeit ohne Verbindung.
 class Sitzung extends ChangeNotifier {
   Sitzung({Future<Directory> Function()? ordner})
-    : _ordner = ordner ?? _vorgabeOrdner;
+    : _ordner = ordner ?? vorgabeOrdner;
 
   final Future<Directory> Function() _ordner;
 
-  static Future<Directory> _vorgabeOrdner() async => Directory(
+  /// Wo die Kopie liegt – auch die Hintergrundaufgabe der Sicherung
+  /// findet sie dort.
+  static Future<Directory> vorgabeOrdner() async => Directory(
     p.join((await getApplicationSupportDirectory()).path, 'bibliothek'),
   );
 
@@ -40,6 +44,9 @@ class Sitzung extends ChangeNotifier {
   late StoragePaths paths;
   Abgleich? abgleich;
   Abgleichszustand? abgleichszustand;
+
+  /// Die Sicherung der Kamerarolle (siehe `sicherung/`).
+  Sicherungsdienst? sicherung;
   StreamSubscription<Abgleichszustand>? _abo;
 
   /// Öffnet die Kopie, wenn es eine gibt; sonst geht es zur Anmeldung.
@@ -102,7 +109,13 @@ class Sitzung extends ChangeNotifier {
     a.starte();
     verbindung = v;
     abgleich = a;
+    final d = sicherung = Sicherungsdienst(
+      ordner: ordner,
+      server: v.server,
+      token: v.token,
+    );
     _setze(Sitzungszustand.bereit);
+    unawaited(d.starte());
   }
 
   /// Den Text einer Bildsuche vom Server einbetten lassen (siehe dort
@@ -140,6 +153,7 @@ class Sitzung extends ChangeNotifier {
         // Ohne Verbindung abgemeldet: Das Token gilt dort weiter, bis es
         // auf einem anderen Gerät oder auf dem Server abgemeldet wird.
       }
+      await sicherung?.streicheAufgaben();
       await beende();
     }
     verbindung = null;
@@ -160,6 +174,8 @@ class Sitzung extends ChangeNotifier {
     final a = abgleich;
     if (a == null) return;
     abgleich = null;
+    sicherung?.dispose();
+    sicherung = null;
     await _abo?.cancel();
     await a.beende();
     a.verbindung.schliesse();

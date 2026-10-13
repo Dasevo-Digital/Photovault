@@ -7,6 +7,9 @@ import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/karte.dart';
+import 'package:photo_vault_mobil/seiten/sicherung.dart';
+import 'package:photo_vault_mobil/sicherung/dienst.dart';
+import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
 
 Rasterzeile _zeile(String id, double breite, double laenge) => Rasterzeile(
@@ -86,5 +89,48 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, t.anmeldenAnmelden));
     await tester.pumpAndSettle();
     expect(find.text(t.anmeldenNichtErreichbar), findsOneWidget);
+  });
+
+  testWidgets('die Sicherungsseite zeigt Stand, Probleme und Knopf', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_sicherungsseite_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    Sicherungsstand.oeffne(ordner)
+      ..einstellungen = const Sicherungseinstellungen(an: true)
+      ..letzterLauf = Laufbericht(
+        ende: DateTime(2026, 10, 13, 9, 30),
+        gesamt: 5,
+        offen: 1,
+        hochgeladen: 3,
+        vorhanden: 0,
+        fehlgeschlagen: 1,
+        vollstaendig: false,
+      )
+      ..fehlschlag('x', 'Datei nicht verfügbar')
+      ..schliesse();
+    final dienst = Sicherungsdienst(
+      ordner: ordner,
+      server: Uri.parse('http://localhost:1/'),
+      token: 'pv1_test',
+    );
+    addTearDown(dienst.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Sicherungsseite(dienst: dienst),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Sicherungsseite)));
+    expect(find.text(t.sicherungStand(3, 5)), findsOneWidget);
+    expect(find.text(t.sicherungProbleme(1)), findsOneWidget);
+    expect(find.text('Datei nicht verfügbar'), findsOneWidget);
+    expect(find.text(t.sicherungJetzt), findsOneWidget);
+    expect(find.text(t.sicherungAlleFotos), findsOneWidget);
+    expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
   });
 }

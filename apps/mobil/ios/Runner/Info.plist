@@ -21,6 +21,19 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Die Sicherung der Kamerarolle liest die Fotomediathek und arbeitet
+	     im Hintergrund (BGProcessingTask, siehe sicherung/hintergrund.dart). -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo Vault sichert die Fotos und Videos dieses Telefons auf deinem Server.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>de.dasevo.photovault.sicherung</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>$(PV_ANZEIGENAME)</string>
 	<key>CFBundleExecutable</key>

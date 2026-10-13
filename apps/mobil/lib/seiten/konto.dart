@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'sicherung.dart';
 
 /// Womit das Telefon verbunden ist, wie der Abgleich steht – und abmelden.
 class Konto extends StatelessWidget {
@@ -70,6 +71,21 @@ class Konto extends StatelessWidget {
                   ),
                 ),
               ],
+              if (sitzung.sicherung case final d?)
+                ListenableBuilder(
+                  listenable: d,
+                  builder: (context, _) => ListTile(
+                    leading: const Icon(Icons.backup_outlined),
+                    title: Text(t.sicherungTitel),
+                    subtitle: Text(sicherungKurz(t, d)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => Sicherungsseite(dienst: d),
+                      ),
+                    ),
+                  ),
+                ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout),

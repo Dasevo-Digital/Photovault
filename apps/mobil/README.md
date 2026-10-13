@@ -16,6 +16,32 @@ Die Suche nach Bildinhalt bettet den Suchtext auf dem Server ein
 abgeglichenen Einbettungen, wie der Desktop. Hat der Server kein Modell,
 sucht die App im Text.
 
+## Kamerarolle sichern
+
+Unter „Konto → Kamerarolle sichern“. Gesichert wird das Original jedes
+Fotos und Videos (bei Live Photos Bild und Video unter demselben
+Namensstamm, damit der Server sie paart), der neueste Eintrag zuerst.
+
+- Vor dem Hochladen fragt die App den Server nach den Prüfsummen
+  (`POST /api/v1/pruefsummen`); was er schon hat, etwa nach einem Umzug
+  vom Rechner, geht nicht noch einmal über das Netz.
+- Was einmal sicher ist, merkt sich die App in `sicherung.sqlite` neben der
+  Kopie der Bibliothek. Am Server gelöschte Fotos kommen deshalb nicht
+  wieder; erst eine Bearbeitung am Telefon lässt einen Eintrag noch einmal
+  prüfen.
+- Ein abgebrochener Upload geht beim nächsten Lauf an der Stelle weiter,
+  die der Server hat – auch nach einem Neustart.
+- Was der Server beim Import ablehnt, bleibt liegen, bis „Erneut
+  versuchen“ gedrückt wird; andere Fehler pausieren nach drei Versuchen für
+  zwölf Stunden.
+
+Im Hintergrund: unter Android eine periodische Aufgabe von WorkManager
+(alle 15 Minuten, mit WLAN und Laden als Bedingung, wenn eingestellt);
+verlässt man die App mit offener Arbeit, lädt ein Vordergrunddienst
+(`dataSync`) mit Benachrichtigung weiter. Unter iOS eine
+Verarbeitungsaufgabe (`BGProcessingTask`), die das System meist nachts am
+Ladekabel laufen lässt.
+
 ## Kennungen
 
 | Variante | Android | iOS | Name |

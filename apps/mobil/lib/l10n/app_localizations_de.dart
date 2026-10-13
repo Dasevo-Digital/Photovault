@@ -242,4 +242,133 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get anmeldenLaedt => 'Die Bibliothek kommt vom Server …';
+
+  @override
+  String get sicherungTitel => 'Kamerarolle sichern';
+
+  @override
+  String get sicherungAn => 'Fotos vom Telefon sichern';
+
+  @override
+  String get sicherungAnHinweis =>
+      'Neue Fotos und Videos gehen von selbst zum Server – auch, wenn die App nicht offen ist.';
+
+  @override
+  String get sicherungAus => 'Aus';
+
+  @override
+  String get sicherungLaeuft => 'Sichert gerade …';
+
+  @override
+  String get sicherungVideos => 'Videos sichern';
+
+  @override
+  String get sicherungNurWlan => 'Nur im WLAN';
+
+  @override
+  String get sicherungNurBeimLaden => 'Im Hintergrund nur beim Laden';
+
+  @override
+  String get sicherungAlben => 'Alben';
+
+  @override
+  String get sicherungAlleFotos => 'Alle Fotos';
+
+  @override
+  String sicherungAlbenAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Alben',
+      one: '1 Album',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungHinweisIos =>
+      'Ist die App offen, sichert sie sofort. Im Hintergrund lässt iOS sie arbeiten, wann es das für richtig hält – meist nachts am Ladekabel.';
+
+  @override
+  String get sicherungHinweisAndroid =>
+      'Ist die App offen, sichert sie sofort; im Hintergrund schaut sie alle 15 Minuten nach. Was beim Verlassen der App noch fehlt, lädt sie mit einer Benachrichtigung weiter.';
+
+  @override
+  String get sicherungKeinZugriff => 'Kein Zugriff auf die Fotos';
+
+  @override
+  String get sicherungKeinZugriffHinweis =>
+      'In den Einstellungen des Telefons erlauben.';
+
+  @override
+  String get sicherungEinstellungenOeffnen => 'Einstellungen';
+
+  @override
+  String get sicherungTeilweise => 'Nur ausgewählte Fotos freigegeben';
+
+  @override
+  String get sicherungTeilweiseHinweis =>
+      'Gesichert wird nur, was die App sehen darf.';
+
+  @override
+  String get sicherungAuswahlAendern => 'Auswahl ändern';
+
+  @override
+  String get sicherungWartetWlan => 'Wartet auf WLAN';
+
+  @override
+  String get sicherungWartetNetz => 'Wartet auf eine Verbindung';
+
+  @override
+  String get sicherungImHintergrund =>
+      'Die Sicherung läuft gerade im Hintergrund.';
+
+  @override
+  String get sicherungNochNicht => 'Noch nicht gesichert';
+
+  @override
+  String sicherungStand(int sicher, int gesamt) {
+    return '$sicher von $gesamt gesichert';
+  }
+
+  @override
+  String sicherungLaedt(String datei) {
+    return 'Lädt $datei hoch';
+  }
+
+  @override
+  String sicherungZuletzt(String zeit) {
+    return 'Zuletzt: $zeit';
+  }
+
+  @override
+  String get sicherungFehler =>
+      'Der Server hat die Sicherung abgebrochen. Beim nächsten Lauf geht es weiter.';
+
+  @override
+  String sicherungProbleme(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen ließen sich nicht sichern',
+      one: '1 Aufnahme ließ sich nicht sichern',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungErneut => 'Erneut versuchen';
+
+  @override
+  String get sicherungJetzt => 'Jetzt sichern';
+
+  @override
+  String get sicherungBenachrichtigungTitel => 'Photo Vault sichert Fotos';
+
+  @override
+  String get sicherungBenachrichtigungText =>
+      'Fotos und Videos gehen zum Server.';
+
+  @override
+  String get sicherungKanal => 'Sicherung';
 }

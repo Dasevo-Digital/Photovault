@@ -101,5 +101,76 @@
   "anmeldenTotpOeffnen": "In der Authenticator-App öffnen",
   "anmeldenCodesTitel": "Wiederherstellungscodes",
   "anmeldenCodesText": "Jeder Code gilt einmal, wenn das Telefon mit der Authenticator-App fehlt. Jetzt sicher aufbewahren – sie werden nicht noch einmal gezeigt.",
-  "anmeldenLaedt": "Die Bibliothek kommt vom Server …"
+  "anmeldenLaedt": "Die Bibliothek kommt vom Server …",
+  "sicherungTitel": "Kamerarolle sichern",
+  "sicherungAn": "Fotos vom Telefon sichern",
+  "sicherungAnHinweis": "Neue Fotos und Videos gehen von selbst zum Server – auch, wenn die App nicht offen ist.",
+  "sicherungAus": "Aus",
+  "sicherungLaeuft": "Sichert gerade …",
+  "sicherungVideos": "Videos sichern",
+  "sicherungNurWlan": "Nur im WLAN",
+  "sicherungNurBeimLaden": "Im Hintergrund nur beim Laden",
+  "sicherungAlben": "Alben",
+  "sicherungAlleFotos": "Alle Fotos",
+  "sicherungAlbenAnzahl": "{n, plural, =1{1 Album} other{{n} Alben}}",
+  "@sicherungAlbenAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungHinweisIos": "Ist die App offen, sichert sie sofort. Im Hintergrund lässt iOS sie arbeiten, wann es das für richtig hält – meist nachts am Ladekabel.",
+  "sicherungHinweisAndroid": "Ist die App offen, sichert sie sofort; im Hintergrund schaut sie alle 15 Minuten nach. Was beim Verlassen der App noch fehlt, lädt sie mit einer Benachrichtigung weiter.",
+  "sicherungKeinZugriff": "Kein Zugriff auf die Fotos",
+  "sicherungKeinZugriffHinweis": "In den Einstellungen des Telefons erlauben.",
+  "sicherungEinstellungenOeffnen": "Einstellungen",
+  "sicherungTeilweise": "Nur ausgewählte Fotos freigegeben",
+  "sicherungTeilweiseHinweis": "Gesichert wird nur, was die App sehen darf.",
+  "sicherungAuswahlAendern": "Auswahl ändern",
+  "sicherungWartetWlan": "Wartet auf WLAN",
+  "sicherungWartetNetz": "Wartet auf eine Verbindung",
+  "sicherungImHintergrund": "Die Sicherung läuft gerade im Hintergrund.",
+  "sicherungNochNicht": "Noch nicht gesichert",
+  "sicherungStand": "{sicher} von {gesamt} gesichert",
+  "@sicherungStand": {
+    "placeholders": {
+      "sicher": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungLaedt": "Lädt {datei} hoch",
+  "@sicherungLaedt": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "sicherungZuletzt": "Zuletzt: {zeit}",
+  "@sicherungZuletzt": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
+  "sicherungFehler": "Der Server hat die Sicherung abgebrochen. Beim nächsten Lauf geht es weiter.",
+  "sicherungProbleme": "{n, plural, =1{1 Aufnahme ließ sich nicht sichern} other{{n} Aufnahmen ließen sich nicht sichern}}",
+  "@sicherungProbleme": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungErneut": "Erneut versuchen",
+  "sicherungJetzt": "Jetzt sichern",
+  "sicherungBenachrichtigungTitel": "Photo Vault sichert Fotos",
+  "sicherungBenachrichtigungText": "Fotos und Videos gehen zum Server.",
+  "sicherungKanal": "Sicherung"
 }

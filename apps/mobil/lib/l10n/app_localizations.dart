@@ -480,6 +480,204 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Bibliothek kommt vom Server …'**
   String get anmeldenLaedt;
+
+  /// No description provided for @sicherungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Kamerarolle sichern'**
+  String get sicherungTitel;
+
+  /// No description provided for @sicherungAn.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos vom Telefon sichern'**
+  String get sicherungAn;
+
+  /// No description provided for @sicherungAnHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Fotos und Videos gehen von selbst zum Server – auch, wenn die App nicht offen ist.'**
+  String get sicherungAnHinweis;
+
+  /// No description provided for @sicherungAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus'**
+  String get sicherungAus;
+
+  /// No description provided for @sicherungLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichert gerade …'**
+  String get sicherungLaeuft;
+
+  /// No description provided for @sicherungVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos sichern'**
+  String get sicherungVideos;
+
+  /// No description provided for @sicherungNurWlan.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur im WLAN'**
+  String get sicherungNurWlan;
+
+  /// No description provided for @sicherungNurBeimLaden.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Hintergrund nur beim Laden'**
+  String get sicherungNurBeimLaden;
+
+  /// No description provided for @sicherungAlben.
+  ///
+  /// In de, this message translates to:
+  /// **'Alben'**
+  String get sicherungAlben;
+
+  /// No description provided for @sicherungAlleFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Fotos'**
+  String get sicherungAlleFotos;
+
+  /// No description provided for @sicherungAlbenAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Album} other{{n} Alben}}'**
+  String sicherungAlbenAnzahl(int n);
+
+  /// No description provided for @sicherungHinweisIos.
+  ///
+  /// In de, this message translates to:
+  /// **'Ist die App offen, sichert sie sofort. Im Hintergrund lässt iOS sie arbeiten, wann es das für richtig hält – meist nachts am Ladekabel.'**
+  String get sicherungHinweisIos;
+
+  /// No description provided for @sicherungHinweisAndroid.
+  ///
+  /// In de, this message translates to:
+  /// **'Ist die App offen, sichert sie sofort; im Hintergrund schaut sie alle 15 Minuten nach. Was beim Verlassen der App noch fehlt, lädt sie mit einer Benachrichtigung weiter.'**
+  String get sicherungHinweisAndroid;
+
+  /// No description provided for @sicherungKeinZugriff.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Zugriff auf die Fotos'**
+  String get sicherungKeinZugriff;
+
+  /// No description provided for @sicherungKeinZugriffHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'In den Einstellungen des Telefons erlauben.'**
+  String get sicherungKeinZugriffHinweis;
+
+  /// No description provided for @sicherungEinstellungenOeffnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstellungen'**
+  String get sicherungEinstellungenOeffnen;
+
+  /// No description provided for @sicherungTeilweise.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur ausgewählte Fotos freigegeben'**
+  String get sicherungTeilweise;
+
+  /// No description provided for @sicherungTeilweiseHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesichert wird nur, was die App sehen darf.'**
+  String get sicherungTeilweiseHinweis;
+
+  /// No description provided for @sicherungAuswahlAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl ändern'**
+  String get sicherungAuswahlAendern;
+
+  /// No description provided for @sicherungWartetWlan.
+  ///
+  /// In de, this message translates to:
+  /// **'Wartet auf WLAN'**
+  String get sicherungWartetWlan;
+
+  /// No description provided for @sicherungWartetNetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Wartet auf eine Verbindung'**
+  String get sicherungWartetNetz;
+
+  /// No description provided for @sicherungImHintergrund.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung läuft gerade im Hintergrund.'**
+  String get sicherungImHintergrund;
+
+  /// No description provided for @sicherungNochNicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nicht gesichert'**
+  String get sicherungNochNicht;
+
+  /// No description provided for @sicherungStand.
+  ///
+  /// In de, this message translates to:
+  /// **'{sicher} von {gesamt} gesichert'**
+  String sicherungStand(int sicher, int gesamt);
+
+  /// No description provided for @sicherungLaedt.
+  ///
+  /// In de, this message translates to:
+  /// **'Lädt {datei} hoch'**
+  String sicherungLaedt(String datei);
+
+  /// No description provided for @sicherungZuletzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt: {zeit}'**
+  String sicherungZuletzt(String zeit);
+
+  /// No description provided for @sicherungFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server hat die Sicherung abgebrochen. Beim nächsten Lauf geht es weiter.'**
+  String get sicherungFehler;
+
+  /// No description provided for @sicherungProbleme.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme ließ sich nicht sichern} other{{n} Aufnahmen ließen sich nicht sichern}}'**
+  String sicherungProbleme(int n);
+
+  /// No description provided for @sicherungErneut.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut versuchen'**
+  String get sicherungErneut;
+
+  /// No description provided for @sicherungJetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt sichern'**
+  String get sicherungJetzt;
+
+  /// No description provided for @sicherungBenachrichtigungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault sichert Fotos'**
+  String get sicherungBenachrichtigungTitel;
+
+  /// No description provided for @sicherungBenachrichtigungText.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos und Videos gehen zum Server.'**
+  String get sicherungBenachrichtigungText;
+
+  /// No description provided for @sicherungKanal.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung'**
+  String get sicherungKanal;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Der Server; ohne diese Zeile geht im Release-Bau kein Netz. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Die Sicherung der Kamerarolle (sicherung/). ACCESS_MEDIA_LOCATION,
+         weil Android sonst den Ort aus den Originalen entfernt; die
+         Teilfreigabe ab Android 14 (USER_SELECTED) behandelt photo_manager. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
     <!-- Klartext zulassen: Ein Server im Heimnetz oder im VPN spricht oft
          ohne TLS. Android kann das nicht auf das eigene Netz begrenzen;
          das tut die App selbst (ohneTlsErlaubt im Kern), wie unter iOS. -->

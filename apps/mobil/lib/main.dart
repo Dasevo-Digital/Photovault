@@ -2,16 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kern/protokoll.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'l10n/app_localizations.dart';
 import 'seiten/anmelden.dart';
 import 'seiten/start.dart';
+import 'sicherung/hintergrund.dart';
 import 'sitzung.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Meldungen aus dem Kern über debugPrint, wie in der Desktop-App.
   protokollZiel = debugPrint;
+  // Die Sicherung der Kamerarolle im Hintergrund (sicherung/hintergrund.dart).
+  await Workmanager().initialize(sicherungImHintergrund);
   final sitzung = Sitzung();
   runApp(PhotoVaultMobil(sitzung: sitzung));
   unawaited(sitzung.starte());
