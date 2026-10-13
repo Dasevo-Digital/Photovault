@@ -4114,6 +4114,7 @@
   "serverAnmelden": "Sign in",
   "serverNichtErreichbar": "No server responds at this address.",
   "serverKeinPhotoVault": "A server responds there, but not a Photo Vault server of a matching version.",
+  "serverNurHttps": "Unencrypted (http://) only on your own network – please use https:// for an address on the internet.",
   "serverFalsch": "Name, password or code is wrong.",
   "serverGebremst": "Too many failed attempts – please try again in {sekunden} seconds.",
   "@serverGebremst": {"placeholders": {"sekunden": {"type": "int"}}},

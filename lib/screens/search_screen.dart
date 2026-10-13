@@ -9,10 +9,10 @@ import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
 import 'package:kern/services/clip_service.dart';
+import 'package:kern/services/bildsuche.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/sortierung.dart';
 import '../services/suchsatz.dart';
-import 'package:kern/services/videostandbilder.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -413,12 +413,13 @@ class _SearchScreenState extends State<SearchScreen>
         final erlaubt = (await widget.library.db.searchAssetIds(
           _filters,
         )).toSet();
-        final kandidaten = <String, Float32List>{
-          for (final e in embeddings.entries)
-            if (erlaubt.contains(LibraryState.aufnahmeAusSuchschluessel(e.key)))
-              e.key: e.value,
-        };
-        if (kandidaten.isEmpty) {
+        // searchAssets sortiert nach Datum – hier zählt die Ähnlichkeit.
+        final rangfolge = rangfolgeDerBildsuche(
+          queryVector,
+          embeddings,
+          erlaubt,
+        );
+        if (rangfolge.isEmpty) {
           if (!mounted) return;
           setState(() {
             _zeigeFunde(const []);
@@ -426,23 +427,6 @@ class _SearchScreenState extends State<SearchScreen>
           });
           return;
         }
-        // Etwas mehr als die 200, die am Ende stehen sollen: Ein Video
-        // kann mit mehreren Standbildern in der Rangfolge auftauchen, und
-        // die fallen gleich wieder zusammen.
-        final ranked = ClipService.rankBySimilarity(
-          queryVector,
-          kandidaten,
-          topK: 200 * (1 + videoStandbilderHoechstens),
-        );
-        // searchAssets sortiert nach Datum – hier zählt die Ähnlichkeit.
-        // Je Aufnahme zählt ihr bestes Standbild; die Rangfolge kommt
-        // absteigend, das erste Auftreten ist also das beste.
-        final gesehen = <String>{};
-        final rangfolge = [
-          for (final e in ranked)
-            if (gesehen.add(LibraryState.aufnahmeAusSuchschluessel(e.key)))
-              LibraryState.aufnahmeAusSuchschluessel(e.key),
-        ].take(200).toList();
         // `assetsByIds` behält die übergebene Reihenfolge bei – die
         // Rangfolge nach Ähnlichkeit übersteht den Umweg also.
         results = await widget.library.db.assetsByIds(rangfolge);

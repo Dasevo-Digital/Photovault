@@ -81,6 +81,10 @@ class Abgleich {
   Future<void>? _schleife;
   Future<void>? _senden;
   Completer<void>? _wecker;
+
+  /// Tritt mit [beende] ein und bricht die wartende Abfrage ab – sonst
+  /// hinge das Beenden bis zu 25 s an ihr.
+  final _halt = Completer<void>();
   final _abgelehnt = <String>[];
 
   /// Lädt die Bibliothek vom Server nach [ziel] und bereitet sie als Kopie
@@ -168,7 +172,8 @@ class Abgleich {
 
   Future<void> beende() async {
     _laeuft = false;
-    _wecker?.complete();
+    if (_wecker case final w? when !w.isCompleted) w.complete();
+    if (!_halt.isCompleted) _halt.complete();
     await _schleife;
     await _senden;
     db.umleitung = null;
@@ -268,6 +273,7 @@ class Abgleich {
           'warten': '${w.inSeconds}',
         },
         zeitlimit: w + const Duration(seconds: 30),
+        abbruch: w == Duration.zero ? null : _halt.future,
       );
       final zeilen = [
         for (final z in (a['zeilen']! as List).cast<Map>())
@@ -427,6 +433,7 @@ class Abgleich {
         pause = const Duration(seconds: 2);
         await _melde(erreichbar: true);
       } on KeineVerbindung {
+        if (!_laeuft) return;
         await _melde(erreichbar: false);
         await _schlafe(pause);
         pause = Duration(seconds: min(pause.inSeconds * 2, 60));
@@ -436,6 +443,7 @@ class Abgleich {
           _laeuft = false;
           return;
         }
+        if (!_laeuft) return;
         meldung.protokoll('Abgleich: $f');
         await _schlafe(pause);
         pause = Duration(seconds: min(pause.inSeconds * 2, 60));

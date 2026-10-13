@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/bildsuche.dart';
 import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/videostandbilder.dart';
@@ -202,7 +203,7 @@ void main() {
       final kandidaten = await library.suchkandidaten();
       expect(kandidaten.keys.toSet(), {'v', 'v#0', 'v#1'});
       for (final k in kandidaten.keys) {
-        expect(LibraryState.aufnahmeAusSuchschluessel(k), 'v');
+        expect(aufnahmeAusSuchschluessel(k), 'v');
       }
     });
 
@@ -219,8 +220,8 @@ void main() {
     test('eine Kennung mit Raute im Namen bleibt lesbar', () async {
       // Die Kennungen sind UUIDs und enthalten keine Raute – aber der
       // Rueckweg darf nicht daran haengen, dass das so bleibt.
-      expect(LibraryState.aufnahmeAusSuchschluessel('a#b#2'), 'a#b');
-      expect(LibraryState.aufnahmeAusSuchschluessel('a'), 'a');
+      expect(aufnahmeAusSuchschluessel('a#b#2'), 'a#b');
+      expect(aufnahmeAusSuchschluessel('a'), 'a');
     });
   });
 }

@@ -14239,6 +14239,12 @@ abstract class AppTexte {
   /// **'Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.'**
   String get serverKeinPhotoVault;
 
+  /// No description provided for @serverNurHttps.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.'**
+  String get serverNurHttps;
+
   /// No description provided for @serverFalsch.
   ///
   /// In de, this message translates to:

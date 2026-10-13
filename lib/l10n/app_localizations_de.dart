@@ -9278,6 +9278,10 @@ class AppTexteDe extends AppTexte {
       'Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.';
 
   @override
+  String get serverNurHttps =>
+      'Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.';
+
+  @override
   String get serverFalsch => 'Name, Passwort oder Code stimmt nicht.';
 
   @override

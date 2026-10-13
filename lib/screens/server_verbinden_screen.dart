@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/umzug.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -65,16 +66,6 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
     super.dispose();
   }
 
-  /// `fotos.example.de` → `https://fotos.example.de/`.
-  static Uri? _alsAdresse(String text) {
-    var t = text.trim();
-    if (t.isEmpty) return null;
-    if (!t.contains('://')) t = 'https://$t';
-    final u = Uri.tryParse(t);
-    if (u == null || u.host.isEmpty) return null;
-    return u.replace(path: u.path.endsWith('/') ? u.path : '${u.path}/');
-  }
-
   Future<void> _mitArbeit(Future<void> Function() arbeit) async {
     setState(() {
       _arbeitet = true;
@@ -94,9 +85,13 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
 
   Future<void> _anmelden() => _mitArbeit(() async {
     final t = AppTexte.of(context);
-    final server = _alsAdresse(_adresse.text);
+    final server = serveradresseAus(_adresse.text);
     if (server == null) {
       _fehler = t.serverNichtErreichbar;
+      return;
+    }
+    if (!ohneTlsErlaubt(server)) {
+      _fehler = t.serverNurHttps;
       return;
     }
     _anmeldung?.schliesse();

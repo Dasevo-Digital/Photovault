@@ -291,18 +291,15 @@ extension VokabularAbfragen on AppDatabase {
       _ => const <String>[],
     };
     if (columns.isEmpty) return null;
-    // **Jeder Begriff in Anführungszeichen.** Der Ausdruck unten lässt nur
-    // Buchstaben, Ziffern und Unterstrich durch, aber das genügt nicht: FTS5
-    // liest `AND`, `OR` und `NOT` als Verknüpfung, sobald sie nackt
-    // dastehen. Die Suche nach „a AND b" wurde damit zu
+    // **Jeder Begriff in Anführungszeichen.** Der Ausdruck in
+    // [_ftsBegriffe] lässt nur Buchstaben, Ziffern und Unterstrich durch,
+    // aber das genügt nicht: FTS5 liest `AND`, `OR` und `NOT` als
+    // Verknüpfung, sobald sie nackt dastehen. Die Suche nach „a AND b" wurde damit zu
     // `(a* AND AND* AND b*)` – ein Syntaxfehler, der im Suchbildschirm als
     // „Suche fehlgeschlagen" landete, statt Treffer zu liefern. In
     // Anführungszeichen ist derselbe Begriff ein Wort wie jedes andere, und
     // das nachgestellte `*` bleibt gültige Präfixsuche.
-    final terms = RegExp(r'[\p{L}\p{N}_]+', unicode: true)
-        .allMatches(text)
-        .map((match) => '"${match.group(0)!.replaceAll('"', '""')}"*')
-        .toList();
+    final terms = _ftsBegriffe(text);
     if (terms.isEmpty) return const [];
     final query = columns
         .map((column) => '$column : (${terms.join(' AND ')})')
@@ -310,6 +307,33 @@ extension VokabularAbfragen on AppDatabase {
     final rows = await customSelect(
       'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts MATCH ?',
       variables: [Variable<String>(query)],
+    ).get();
+    return [for (final row in rows) row.read<String>('asset_id')];
+  }
+
+  /// Die Begriffe aus [text] als FTS5-Präfixsuche, jeder in
+  /// Anführungszeichen (siehe [_ftsAssetIds]).
+  static List<String> _ftsBegriffe(String text) =>
+      RegExp(r'[\p{L}\p{N}_]+', unicode: true)
+          .allMatches(text)
+          .map((match) => '"${match.group(0)!.replaceAll('"', '""')}"*')
+          .toList();
+
+  /// Die Aufnahmen, in deren Texten – Dateiname, Beschreibung, erkannter
+  /// Text, Bildbeschreibung, Transkript – jeder Begriff aus [text] als
+  /// Wortanfang vorkommt, in irgendeinem davon.
+  ///
+  /// Für eine Suche mit einem einzigen Feld (das Telefon). Die Suche am
+  /// Desktop fragt je Textart, siehe [SearchTextMode]; deren Vorgabe
+  /// `context` ist die Bildsuche und filtert gar nicht nach dem Text.
+  /// Sichtbar oder nicht, entscheidet danach [searchAssets] mit
+  /// `restrictToIds`.
+  Future<List<String>> textfundstellen(String text) async {
+    final terms = _ftsBegriffe(text);
+    if (terms.isEmpty) return const [];
+    final rows = await customSelect(
+      'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts MATCH ?',
+      variables: [Variable<String>(terms.join(' AND '))],
     ).get();
     return [for (final row in rows) row.read<String>('asset_id')];
   }

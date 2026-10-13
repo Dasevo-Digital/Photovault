@@ -605,4 +605,39 @@ void main() {
       botMitKamera.id,
     });
   });
+
+  test(
+    'Textfundstellen: alle Textarten, jeder Begriff, Sichtbarkeit danach',
+    () async {
+      final strand = await importPhoto('strand.jpg');
+      final abend = await importPhoto('foto1.jpg');
+      await db.setDescription(abend.id, 'Abendlicht am Hafen');
+      final beides = await importPhoto('hafen.jpg');
+      await db.setDescription(beides.id, 'Strandkorb');
+      final weg = await importPhoto('strandgut.jpg');
+      await (db.update(db.assets)..where((t) => t.id.equals(weg.id))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
+
+      Future<Set<String>> finde(String text) async {
+        final ids = await db.textfundstellen(text);
+        if (ids.isEmpty) return {};
+        return {
+          for (final a in await db.searchAssets(
+            const SearchFilters(),
+            restrictToIds: ids,
+          ))
+            a.id,
+        };
+      }
+
+      // Dateiname oder Beschreibung, als Wortanfang; der Papierkorb nicht.
+      expect(await finde('stra'), {strand.id, beides.id});
+      expect(await finde('abendlicht'), {abend.id});
+      // Jeder Begriff muss vorkommen – in welchem Text, ist gleich.
+      expect(await finde('hafen strand'), {beides.id});
+      expect(await finde('AND OR'), isEmpty, reason: 'keine Verknüpfung');
+      expect(await db.textfundstellen('  '), isEmpty);
+    },
+  );
 }

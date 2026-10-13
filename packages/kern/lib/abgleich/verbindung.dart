@@ -45,14 +45,24 @@ class Serververbindung {
     return parameter == null ? ziel : ziel.replace(queryParameters: parameter);
   }
 
+  /// Mit [abbruch] endet die Anfrage, sobald er eintritt – mit
+  /// [KeineVerbindung], wie eine abgerissene Leitung.
   Future<Map<String, Object?>> hole(
     String pfad, {
     Map<String, String>? parameter,
     Duration zeitlimit = const Duration(seconds: 30),
-  }) => _json(
-    () => _http.get(adresse(pfad, parameter), headers: _kopf),
-    zeitlimit,
-  );
+    Future<void>? abbruch,
+  }) => _json(() async {
+    if (abbruch == null) {
+      return _http.get(adresse(pfad, parameter), headers: _kopf);
+    }
+    final r = http.AbortableRequest(
+      'GET',
+      adresse(pfad, parameter),
+      abortTrigger: abbruch,
+    )..headers.addAll(_kopf);
+    return http.Response.fromStream(await _http.send(r));
+  }, zeitlimit);
 
   Future<Map<String, Object?>> schicke(
     String pfad,

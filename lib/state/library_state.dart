@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/ai_tagging_service.dart';
+import 'package:kern/services/bildsuche.dart';
 import '../services/backup_service.dart';
 import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
@@ -421,30 +422,12 @@ class LibraryState extends ChangeNotifier {
     return ergebnis;
   }
 
-  /// Die Kandidaten der Textsuche: je Aufnahme ihre Einbettung, bei
-  /// Videos zusätzlich die ihrer weiteren Standbilder.
-  ///
-  /// **Die Schlüssel tragen die Stelle mit** (`kennung#2`), damit die
-  /// Rangfolge jedes Standbild einzeln bewerten kann. Es zählt das
-  /// **beste**, nicht das Mittel: Ein Mittelwert über verschiedene Szenen
-  /// wäre ein Vektor, der zu nichts mehr recht passt. Zurück auf die
-  /// Aufnahme kommt man über [aufnahmeAusSuchschluessel].
-  Future<Map<String, Float32List>> suchkandidaten() async {
-    final einzeln = await cachedEmbeddings();
-    final videos = await cachedVideoEinbettungen();
-    if (videos.isEmpty) return einzeln;
-    return {
-      ...einzeln,
-      for (final e in videos.entries)
-        for (var i = 0; i < e.value.length; i++) '${e.key}#$i': e.value[i],
-    };
-  }
-
-  /// Die Aufnahmekennung zu einem Schlüssel aus [suchkandidaten].
-  static String aufnahmeAusSuchschluessel(String schluessel) {
-    final trenner = schluessel.lastIndexOf('#');
-    return trenner < 0 ? schluessel : schluessel.substring(0, trenner);
-  }
+  /// Die Kandidaten der Textsuche aus den Zwischenspeichern (siehe
+  /// `suchkandidatenAus` im Kern).
+  Future<Map<String, Float32List>> suchkandidaten() async => suchkandidatenAus(
+    await cachedEmbeddings(),
+    await cachedVideoEinbettungen(),
+  );
 
   /// Die Serienvorschläge – einmal gerechnet, nicht bei jedem Blick.
   ///

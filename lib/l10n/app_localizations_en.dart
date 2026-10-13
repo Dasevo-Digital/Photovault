@@ -9228,6 +9228,10 @@ class AppTexteEn extends AppTexte {
       'A server responds there, but not a Photo Vault server of a matching version.';
 
   @override
+  String get serverNurHttps =>
+      'Unencrypted (http://) only on your own network – please use https:// for an address on the internet.';
+
+  @override
   String get serverFalsch => 'Name, password or code is wrong.';
 
   @override

@@ -344,6 +344,23 @@ void main() {
     },
   );
 
+  test(
+    'beenden bricht die wartende Abfrage ab, ohne Störung zu melden',
+    () async {
+      final (_, a) = await geraet('Rechner');
+      final zustaende = <Abgleichszustand>[];
+      final abo = a.zustand.listen(zustaende.add);
+      a.starte();
+      // Die Schleife hängt jetzt in der Abfrage, die bis zu 25 s wartet.
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      final uhr = Stopwatch()..start();
+      await a.beende();
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 3)));
+      expect(zustaende.where((z) => !z.erreichbar), isEmpty);
+      await abo.cancel();
+    },
+  );
+
   test('Dateien bei Bedarf und Miniaturen im Vorrat', () async {
     final b = (await bibliotheken.fuer(erika.id)).bibliothek;
     for (final id in ['a1', 'a2']) {
