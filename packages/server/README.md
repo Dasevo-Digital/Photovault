@@ -42,6 +42,7 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_PORT`                 | `8790`                |                                         |
 | `PV_MODELLE`              | `<PV_DATEN>/modelle`  | die KI-Modelle                          |
 | `PV_ONNXRUNTIME`          | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle     |
+| `PV_BESCHLEUNIGER`        | `cpu`                 | `openvino`, `cuda`, siehe Beschleuniger |
 | `PV_GEODATEN`             | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                  |
 | `PV_TOTP`                 | `pflicht`             | `frei`: TOTP nur, wer es einrichtet     |
 | `PV_PROXY`                | –                     | vertraute Proxys, siehe unten           |
@@ -211,6 +212,44 @@ Der Server läuft im Bild als Benutzer `photovault` (UID 8790). Wer statt
 eines Volumes einen Ordner einbindet, gibt ihn diesem Benutzer
 (`chown -R 8790:8790 …`). Die Gesundheitsprüfung fragt `/api/v1/zustand`.
 
+## Beschleuniger
+
+Die Modelle rechnen auf der CPU, solange `PV_BESCHLEUNIGER` nichts anderes
+sagt:
+
+| Wert | |
+|---|---|
+| `openvino` | Intel-Grafik über OpenVINO (`openvino:NPU`, `openvino:CPU`, `openvino:GPU.1` … für andere Geräte) |
+| `cuda`, `cuda:1` | NVIDIA über CUDA (braucht eine ONNX Runtime mit CUDA und die CUDA-Bibliotheken) |
+| `coreml` | nur zum Prüfen auf einem Mac |
+
+**Jedes Modell besteht erst eine Gegenprobe.** Seine ersten drei Läufe
+rechnen auf dem Beschleuniger und auf der CPU; nur wenn die Ausgaben
+übereinstimmen (Kosinus ≥ 0,9999, Abweichung ≤ 1 %), übernimmt der
+Beschleuniger. Sonst bleibt das Modell auf der CPU. Gemessen mit OpenVINO:
+CLIP, Gesichter und Texterkennung bestehen; Teile der Bildbeschreibung
+weichen ab oder laden nicht und bleiben auf der CPU. `GET
+/api/v1/auswertung` zeigt unter `beschleuniger`, welche Modelle geprüft,
+noch in Prüfung oder verworfen sind (mit Grund). Jedes Ergebnis vermerkt in
+der Bibliothek, mit welchem Modell, wo und worauf es gerechnet wurde.
+
+**Intel-Grafik mit Docker:** Das Bild mit OpenVINO baut ein eigenes Ziel
+(nur amd64):
+
+```sh
+docker buildx build -f packages/server/Dockerfile --target openvino \
+  --platform linux/amd64 -t photo-vault-server:openvino .
+docker run -d --name photo-vault -p 127.0.0.1:8790:8790 \
+  --device /dev/dri --group-add "$(stat -c %g /dev/dri/renderD128)" \
+  -e PV_PROXY=privat -v photo-vault-daten:/daten photo-vault-server:openvino
+```
+
+Es bringt Intels Bau der ONNX Runtime mit OpenVINO mit – den gibt es fertig
+nur bis Fassung 1.24.1, die App rechnet mit 1.28.3. Der Server sagt das
+beim Start; auf der CPU können Ergebnisse deshalb minimal anders ausfallen
+als in der App. OpenVINO übersetzt die Modelle für die Grafik beim ersten
+Laden und legt sie unter `<PV_DATEN>/beschleuniger` ab.
+
 ## Einzeldatei mit systemd
 
 Dasselbe Programm als Bündel (`bin/`, `lib/` mit SQLite und ONNX Runtime,
@@ -282,9 +321,11 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /aufnahmen?anzahl=300&nach=…` | Zeitleiste, neueste zuerst; `weiter` der Antwort ist `nach` der nächsten Seite |
 | `GET /aufnahmen/<id>` | alle Angaben einer Aufnahme |
 | `GET /aufnahmen/<id>/miniatur\|vorschau\|original` | die Datei, mit `Range` |
+| `POST /pruefsummen` | `{pruefsummen: [SHA-256 …]}` → `{vorhanden: {pruefsumme: kennung}}` – was schon da ist (Sicherung der Kamerarolle) |
+| `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
-| `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt |
+| `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt; der Beschleuniger und seine Gegenproben |
 | `POST /auswertung` | einen Durchgang sofort anstossen |
 
 Beim Hochladen gehören zu `Upload-Metadata` `filename` und `geaendert`

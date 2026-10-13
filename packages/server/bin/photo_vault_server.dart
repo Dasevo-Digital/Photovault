@@ -48,7 +48,7 @@ Future<void> main(List<String> argumente) async {
     );
   }
 
-  final onnx = await _starteOnnx(e.onnxRuntime);
+  final onnx = await _starteOnnx(e);
   final modelle = Modelle();
   if (onnx != null) modelle.richteEin(e.modelle.path);
   final bibliotheken = Bibliotheken(
@@ -70,6 +70,7 @@ Future<void> main(List<String> argumente) async {
       bibliotheken: bibliotheken,
       absender: Absender(e.proxys),
       oidc: oidc,
+      beschleunigerZustand: onnx?.zustand,
     ),
     e.adresse,
     e.port,
@@ -111,15 +112,34 @@ Future<void> main(List<String> argumente) async {
 
 /// ONNX Runtime über FFI, falls eine Bibliothek angegeben ist. Ohne sie
 /// rechnet kein Modell – der Server läuft trotzdem.
-Future<FfiOnnxPlattform?> _starteOnnx(File? bibliothek) async {
+Future<FfiOnnxPlattform?> _starteOnnx(Einstellungen e) async {
+  final bibliothek = e.onnxRuntime;
   if (bibliothek == null) {
     protokoll('PV_ONNXRUNTIME nicht gesetzt – ohne KI-Auswertung');
     return null;
   }
   try {
-    final plattform = await FfiOnnxPlattform.starte(bibliothek.path);
+    final plattform = await FfiOnnxPlattform.starte(
+      bibliothek.path,
+      beschleuniger: e.beschleuniger,
+      zwischenspeicher: e.beschleunigerZwischenspeicher.path,
+    );
     OnnxRuntimePlatform.instance = plattform;
     protokoll('ONNX Runtime ${plattform.fassung} aus ${bibliothek.path}');
+    if (plattform.fassung != geprueftFassung) {
+      protokoll(
+        'Die App rechnet mit ONNX Runtime $geprueftFassung – auf der CPU '
+        'können Ergebnisse minimal abweichen',
+      );
+    }
+    if (!e.beschleuniger.istCpu) {
+      final verfuegbar = await plattform.getAvailableProviders();
+      protokoll(
+        'Beschleuniger ${e.beschleuniger} (die Bibliothek kennt '
+        '${verfuegbar.join(', ')}); jedes Modell rechnet zur Gegenprobe '
+        'zuerst auch auf der CPU',
+      );
+    }
     return plattform;
   } catch (fehler) {
     protokoll('ONNX Runtime nicht ladbar (${bibliothek.path}): $fehler');

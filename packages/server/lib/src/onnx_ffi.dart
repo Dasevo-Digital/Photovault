@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
+import 'beschleuniger.dart';
+
 /// ONNX Runtime für ein Programm ohne Flutter: die C-Schnittstelle der
 /// Bibliothek über `dart:ffi`, hinter derselben Plattform-Schnittstelle, die
 /// in der App das Plugin bedient. Die Dienste im Kern merken keinen
@@ -16,11 +18,31 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 /// alles andere wie ONNX Runtime es vorgibt) und alle Aufrufe nacheinander
 /// in einem einzigen Arbeitsfaden – hier einem eigenen Isolate. Ein Modell
 /// rechnet blockierend; im Isolate des Servers hielte es jede Anfrage an.
+///
+/// **Beschleuniger** (Issue #104, siehe [Beschleuniger]): Ein Modell, das
+/// ohne ausdrückliche Anbieter geladen wird – so lädt der Kern alle ausser
+/// dem Kratzermodell –, rechnet auf dem eingestellten Beschleuniger. Seine
+/// ersten Läufe rechnen zur Gegenprobe auch auf der CPU; weicht etwas ab,
+/// bleibt es auf der CPU. [zustand] sagt, wie es steht, [anbieterFuer]
+/// womit ein Modell gerade rechnet (für die Herkunft der Ergebnisse).
 class FfiOnnxPlattform extends OnnxRuntimePlatform {
-  FfiOnnxPlattform._(this._an, this._von, this.fassung, this.eintraege);
+  FfiOnnxPlattform._(
+    this._an,
+    this._von,
+    this.fassung,
+    this.eintraege,
+    this.beschleuniger,
+  );
 
   /// Konfigurationseinträge, die jede Sitzung zusätzlich bekommt.
   final Map<String, String> eintraege;
+
+  final Beschleuniger beschleuniger;
+
+  /// Je Sitzung ihr Modell, je Modell (Dateiname), womit es zuletzt
+  /// rechnete.
+  final _modellJeSitzung = <String, String>{};
+  final _anbieterJeModell = <String, String>{};
 
   final SendPort _an;
   final ReceivePort _von;
@@ -35,9 +57,17 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
   static Future<FfiOnnxPlattform> starte(
     String pfad, {
     Map<String, String> eintraege = const {},
+    Beschleuniger beschleuniger = Beschleuniger.cpu,
+    String? zwischenspeicher,
   }) async {
     final von = ReceivePort();
-    await Isolate.spawn(_arbeite, [von.sendPort, pfad]);
+    await Isolate.spawn(_arbeite, [
+      von.sendPort,
+      pfad,
+      beschleuniger.art,
+      beschleuniger.name,
+      beschleuniger.optionen(zwischenspeicher: zwischenspeicher),
+    ]);
     final erste = Completer<List<Object?>>();
     late FfiOnnxPlattform plattform;
     von.listen((nachricht) {
@@ -57,6 +87,7 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
       von,
       hallo[1]! as String,
       eintraege,
+      beschleuniger,
     );
   }
 
@@ -100,9 +131,9 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
     final anbieter = (o['providers'] as List?)?.cast<String>() ?? const [];
     final fremd = anbieter.where((a) => a != 'CPU');
     if (fremd.isNotEmpty) {
-      // Beschleuniger kommen mit Stufe 5 (Issue #104). Bis dahin lieber
-      // ablehnen als stillschweigend auf der CPU rechnen.
-      throw UnsupportedError('Anbieter $fremd gibt es über FFI noch nicht');
+      // Welcher Beschleuniger rechnet, stellt der Server ein (siehe
+      // [Beschleuniger]), nicht das Modell.
+      throw UnsupportedError('Anbieter $fremd fordert ein Modell über FFI an');
     }
     final r = await _frag<List<Object?>>('sitzung', [
       modelPath,
@@ -110,7 +141,12 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
       o['interOpNumThreads'],
       o['useArena'],
       {...eintraege, ...?(o['sessionConfigs'] as Map?)?.cast<String, String>()},
+      // Wer ausdrücklich die CPU verlangt (das Kratzermodell), bekommt sie.
+      anbieter.isEmpty && !beschleuniger.istCpu,
     ]);
+    final modell = modelPath.split(RegExp(r'[/\\]')).last;
+    _modellJeSitzung[r[0]! as String] = modell;
+    _anbieterJeModell[modell] = r[3]! as String;
     return {
       'sessionId': r[0],
       'inputNames': (r[1]! as List).cast<String>(),
@@ -119,8 +155,21 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
   }
 
   @override
-  Future<void> closeSession(String sessionId) =>
-      _frag<void>('schliesse', [sessionId]);
+  Future<void> closeSession(String sessionId) {
+    _modellJeSitzung.remove(sessionId);
+    return _frag<void>('schliesse', [sessionId]);
+  }
+
+  /// Womit das Modell [datei] (Dateiname) zuletzt rechnete: `CPU` oder der
+  /// Name des Beschleunigers; `CPU` auch während der Gegenprobe, denn
+  /// solange zählt, was die CPU gerechnet hat.
+  String anbieterFuer(String datei) => _anbieterJeModell[datei] ?? 'CPU';
+
+  /// Wie es um den Beschleuniger steht: Name, ein Fehler, welche Modelle
+  /// die Gegenprobe bestanden haben, welche noch geprüft werden und welche
+  /// mit welchem Grund durchfielen.
+  Future<Map<String, Object?>> zustand() async =>
+      (await _frag<Map<Object?, Object?>>('zustand')).cast<String, Object?>();
 
   @override
   Future<Map<String, dynamic>> createOrtValue(
@@ -149,11 +198,13 @@ class FfiOnnxPlattform extends OnnxRuntimePlatform {
     Map<String, OrtValue> inputs, {
     Map<String, dynamic>? runOptions,
   }) async {
-    final r = await _frag<Map<Object?, Object?>>('rechne', [
+    final r = await _frag<List<Object?>>('rechne', [
       sessionId,
       {for (final e in inputs.entries) e.key: e.value.id},
     ]);
-    return r.cast<String, dynamic>();
+    final modell = _modellJeSitzung[sessionId];
+    if (modell != null) _anbieterJeModell[modell] = r[1]! as String;
+    return (r[0]! as Map).cast<String, dynamic>();
   }
 
   @override
@@ -183,7 +234,12 @@ void _arbeite(List<Object?> start) {
   final antwort = start[0]! as SendPort;
   final _Ort ort;
   try {
-    ort = _Ort(start[1]! as String);
+    ort = _Ort(
+      start[1]! as String,
+      art: start[2]! as String,
+      name: start[3]! as String,
+      anbieterOptionen: (start[4]! as Map).cast<String, String>(),
+    );
   } on Object catch (e) {
     antwort.send([null, '$e']);
     return;
@@ -252,18 +308,72 @@ abstract final class _Stelle {
   static const getAvailableProviders = 125;
   static const releaseAvailableProviders = 126;
   static const addSessionConfigEntry = 130;
+  static const appendCudaV2 = 204;
+  static const createCudaOptions = 205;
+  static const updateCudaOptions = 206;
+  static const releaseCudaOptions = 208;
+  static const appendExecutionProvider = 216;
+  static const appendOpenVinoV2 = 275;
 }
 
-const _apiFassung = 28;
+/// So viele Läufe rechnet ein beschleunigtes Modell zur Probe auch auf der
+/// CPU, bevor der Beschleuniger allein übernimmt.
+const _probelaeufe = 3;
+
+/// Die API-Fassung, die verlangt wird: die älteste, die alle hier
+/// benutzten Funktionen hat (die jüngste ist `…_OpenVINO_V2` aus 1.17).
+/// ONNX Runtime liefert für jede ältere Fassung dieselbe Tabelle; so lädt
+/// auch eine ältere Bibliothek mit Beschleuniger – Intels OpenVINO-Bau etwa
+/// gibt es nur bis 1.24. Gemessen und bitgleich zur App ist 1.28 (siehe
+/// [geprueftFassung]).
+const _apiFassung = 17;
+
+/// Die Fassung, mit der die App rechnet und gegen die der Server gemessen
+/// ist. Eine andere rechnet auf der CPU womöglich minimal anders.
+const geprueftFassung = '1.28.3';
 
 typedef _Zeiger = Pointer<Void>;
 typedef _Status = Pointer<Void>;
 
 final class _Sitzung {
-  _Sitzung(this.zeiger, this.eingaenge, this.ausgaenge);
-  final _Zeiger zeiger;
+  _Sitzung(
+    this.pfad,
+    this.zeiger,
+    this.eingaenge,
+    this.ausgaenge,
+    this.anbieter,
+    this.optionen, {
+    this.zwilling,
+  });
+  final String pfad;
+  _Zeiger zeiger;
   final List<String> eingaenge;
   final List<String> ausgaenge;
+
+  /// Womit [zeiger] rechnet: `CPU` oder der Name des Beschleunigers.
+  String anbieter;
+
+  /// Wie die Sitzung angelegt wurde – für eine CPU-Sitzung, falls der
+  /// Beschleuniger später ausfällt.
+  final _Sitzungsoptionen optionen;
+
+  /// Dieselbe Sitzung auf der CPU, solange die Gegenprobe läuft.
+  _Zeiger? zwilling;
+  var offen = _probelaeufe;
+}
+
+typedef _Sitzungsoptionen = ({
+  int? intra,
+  int? inter,
+  bool? arena,
+  Map<String, String> eintraege,
+});
+
+/// Der Beschleuniger liess sich nicht an die Sitzung hängen – fehlt in der
+/// Bibliothek oder auf dem Rechner.
+final class _AnbieterFehlt implements Exception {
+  _AnbieterFehlt(this.grund);
+  final String grund;
 }
 
 final class _Wert {
@@ -274,7 +384,12 @@ final class _Wert {
 }
 
 class _Ort {
-  _Ort(String pfad) : _lib = DynamicLibrary.open(pfad) {
+  _Ort(
+    String pfad, {
+    required this.art,
+    required this.name,
+    required this.anbieterOptionen,
+  }) : _lib = DynamicLibrary.open(pfad) {
     final basis = _lib
         .lookupFunction<
           Pointer<Pointer<Void>> Function(),
@@ -286,7 +401,7 @@ class _Ort {
     _api = getApi(_apiFassung);
     if (_api == nullptr) {
       throw StateError(
-        'die Bibliothek kennt die API-Fassung $_apiFassung nicht',
+        'die Bibliothek kennt die API-Fassung $_apiFassung nicht (zu alt)',
       );
     }
     fassung = basis[1]
@@ -312,6 +427,23 @@ class _Ort {
   }
 
   final DynamicLibrary _lib;
+
+  /// Der Beschleuniger (siehe `Beschleuniger`): `cpu`, `openvino`, `cuda`,
+  /// `coreml`, mit seinem Namen und den Optionen für ONNX Runtime.
+  final String art;
+  final String name;
+  final Map<String, String> anbieterOptionen;
+
+  /// Warum der Beschleuniger gar nicht geht – dann rechnet alles auf der
+  /// CPU.
+  String? _anbieterFehler;
+
+  /// Modelle (Pfad), die die Gegenprobe bestanden haben …
+  final _bestanden = <String>{};
+
+  /// … und die, die durchfielen, mit Grund.
+  final _verworfen = <String, String>{};
+
   late final Pointer<Pointer<Void>> _api;
   late final String fassung;
   late final _Zeiger _env;
@@ -377,6 +509,31 @@ class _Ort {
   _availableProviders;
   late final _Status Function(Pointer<Pointer<Utf8>>, int)
   _releaseAvailableProviders;
+  late final _Status Function(
+    _Zeiger,
+    Pointer<Utf8>,
+    Pointer<Pointer<Utf8>>,
+    Pointer<Pointer<Utf8>>,
+    int,
+  )
+  _appendProvider;
+  late final _Status Function(
+    _Zeiger,
+    Pointer<Pointer<Utf8>>,
+    Pointer<Pointer<Utf8>>,
+    int,
+  )
+  _appendOpenVino;
+  late final _Status Function(Pointer<_Zeiger>) _createCudaOptions;
+  late final _Status Function(
+    _Zeiger,
+    Pointer<Pointer<Utf8>>,
+    Pointer<Pointer<Utf8>>,
+    int,
+  )
+  _updateCudaOptions;
+  late final void Function(_Zeiger) _releaseCudaOptions;
+  late final _Status Function(_Zeiger, _Zeiger) _appendCuda;
 
   void _bind() {
     _getErrorMessage = _f<Pointer<Utf8> Function(_Status)>(
@@ -492,6 +649,46 @@ class _Ort {
         _f<_Status Function(Pointer<Pointer<Utf8>>, Int32)>(
           _Stelle.releaseAvailableProviders,
         ).asFunction();
+    _appendProvider =
+        _f<
+              _Status Function(
+                _Zeiger,
+                Pointer<Utf8>,
+                Pointer<Pointer<Utf8>>,
+                Pointer<Pointer<Utf8>>,
+                Size,
+              )
+            >(_Stelle.appendExecutionProvider)
+            .asFunction();
+    _appendOpenVino =
+        _f<
+              _Status Function(
+                _Zeiger,
+                Pointer<Pointer<Utf8>>,
+                Pointer<Pointer<Utf8>>,
+                Size,
+              )
+            >(_Stelle.appendOpenVinoV2)
+            .asFunction();
+    _createCudaOptions = _f<_Status Function(Pointer<_Zeiger>)>(
+      _Stelle.createCudaOptions,
+    ).asFunction();
+    _updateCudaOptions =
+        _f<
+              _Status Function(
+                _Zeiger,
+                Pointer<Pointer<Utf8>>,
+                Pointer<Pointer<Utf8>>,
+                Size,
+              )
+            >(_Stelle.updateCudaOptions)
+            .asFunction();
+    _releaseCudaOptions = _f<Void Function(_Zeiger)>(
+      _Stelle.releaseCudaOptions,
+    ).asFunction();
+    _appendCuda = _f<_Status Function(_Zeiger, _Zeiger)>(
+      _Stelle.appendCudaV2,
+    ).asFunction();
   }
 
   /// Ein Status ungleich null ist ein Fehler: Text holen, freigeben, werfen.
@@ -504,13 +701,13 @@ class _Ort {
 
   Object? fuehreAus(String methode, List<Object?> a) => switch (methode) {
     'anbieter' => _anbieter(),
-    'sitzung' => _sitzung(
-      a[0]! as String,
-      a[1] as int?,
-      a[2] as int?,
-      a[3] as bool?,
-      (a[4]! as Map).cast<String, String>(),
-    ),
+    'sitzung' => _sitzung(a[0]! as String, (
+      intra: a[1] as int?,
+      inter: a[2] as int?,
+      arena: a[3] as bool?,
+      eintraege: (a[4]! as Map).cast<String, String>(),
+    ), beschleunigen: a[5]! as bool),
+    'zustand' => _zustand(),
     'schliesse' => _schliesse(a[0]! as String),
     'wert' => _wert(
       a[0]! as String,
@@ -539,20 +736,75 @@ class _Ort {
     ];
   });
 
+  /// Legt eine Sitzung an. Mit [beschleunigen] (und einem Beschleuniger,
+  /// der geht) rechnet sie dort – bis zur bestandenen Gegenprobe zusammen
+  /// mit einem Zwilling auf der CPU.
   List<Object?> _sitzung(
     String pfad,
-    int? intra,
-    int? inter,
-    bool? arena,
-    Map<String, String> eintraege,
-  ) => using((a) {
+    _Sitzungsoptionen o, {
+    required bool beschleunigen,
+  }) {
+    if (beschleunigen &&
+        art != 'cpu' &&
+        _anbieterFehler == null &&
+        !_verworfen.containsKey(pfad)) {
+      try {
+        final zeiger = _erzeuge(pfad, o, mitAnbieter: true);
+        _Zeiger? zwilling;
+        if (!_bestanden.contains(pfad)) {
+          try {
+            zwilling = _erzeuge(pfad, o, mitAnbieter: false);
+          } on Object {
+            _releaseSession(zeiger);
+            rethrow;
+          }
+        }
+        return _merke(pfad, zeiger, o, name, zwilling: zwilling);
+      } on _AnbieterFehlt catch (f) {
+        _anbieterFehler = f.grund;
+      } on StateError catch (f) {
+        // Der Anbieter ist da, aber dieses Modell lädt mit ihm nicht.
+        _verworfen[pfad] = 'lädt nicht: ${f.message}';
+      }
+    }
+    return _merke(pfad, _erzeuge(pfad, o, mitAnbieter: false), o, 'CPU');
+  }
+
+  List<Object?> _merke(
+    String pfad,
+    _Zeiger zeiger,
+    _Sitzungsoptionen o,
+    String anbieter, {
+    _Zeiger? zwilling,
+  }) => using((a) {
+    final eingaenge = _namen(zeiger, _inputCount, _inputName, a);
+    final ausgaenge = _namen(zeiger, _outputCount, _outputName, a);
+    final id = 's${_zaehler++}';
+    _sitzungen[id] = _Sitzung(
+      pfad,
+      zeiger,
+      eingaenge,
+      ausgaenge,
+      anbieter,
+      o,
+      zwilling: zwilling,
+    );
+    // Während der Gegenprobe zählt, was die CPU rechnet.
+    return [id, eingaenge, ausgaenge, zwilling == null ? anbieter : 'CPU'];
+  });
+
+  _Zeiger _erzeuge(
+    String pfad,
+    _Sitzungsoptionen o, {
+    required bool mitAnbieter,
+  }) => using((a) {
     final aus = a<_Zeiger>();
     _pruefe(_createSessionOptions(aus));
     final optionen = aus.value;
     try {
-      if (intra != null) _pruefe(_setIntra(optionen, intra));
-      if (inter != null) _pruefe(_setInter(optionen, inter));
-      for (final e in eintraege.entries) {
+      if (o.intra != null) _pruefe(_setIntra(optionen, o.intra!));
+      if (o.inter != null) _pruefe(_setInter(optionen, o.inter!));
+      for (final e in o.eintraege.entries) {
         _pruefe(
           _addConfigEntry(
             optionen,
@@ -561,20 +813,74 @@ class _Ort {
           ),
         );
       }
-      if (arena == false) _pruefe(_disableArena(optionen));
+      if (o.arena == false) _pruefe(_disableArena(optionen));
+      if (mitAnbieter) _haengeAn(optionen, a);
       final s = a<_Zeiger>();
       _pruefe(
         _createSession(_env, pfad.toNativeUtf8(allocator: a), optionen, s),
       );
-      final eingaenge = _namen(s.value, _inputCount, _inputName, a);
-      final ausgaenge = _namen(s.value, _outputCount, _outputName, a);
-      final id = 's${_zaehler++}';
-      _sitzungen[id] = _Sitzung(s.value, eingaenge, ausgaenge);
-      return [id, eingaenge, ausgaenge];
+      return s.value;
     } finally {
       _releaseSessionOptions(optionen);
     }
   });
+
+  /// Hängt den Beschleuniger an [optionen]; wirft [_AnbieterFehlt], wenn die
+  /// Bibliothek oder der Rechner ihn nicht hat.
+  void _haengeAn(_Zeiger optionen, Arena a) {
+    final schluessel = a<Pointer<Utf8>>(anbieterOptionen.length.clamp(1, 64));
+    final werte = a<Pointer<Utf8>>(anbieterOptionen.length.clamp(1, 64));
+    var i = 0;
+    for (final e in anbieterOptionen.entries) {
+      schluessel[i] = e.key.toNativeUtf8(allocator: a);
+      werte[i] = e.value.toNativeUtf8(allocator: a);
+      i++;
+    }
+    try {
+      switch (art) {
+        case 'openvino':
+          _pruefe(_appendOpenVino(optionen, schluessel, werte, i));
+        case 'cuda':
+          final aus = a<_Zeiger>();
+          _pruefe(_createCudaOptions(aus));
+          try {
+            _pruefe(_updateCudaOptions(aus.value, schluessel, werte, i));
+            _pruefe(_appendCuda(optionen, aus.value));
+          } finally {
+            _releaseCudaOptions(aus.value);
+          }
+        case 'coreml':
+          _pruefe(
+            _appendProvider(
+              optionen,
+              'CoreML'.toNativeUtf8(allocator: a),
+              schluessel,
+              werte,
+              i,
+            ),
+          );
+        default:
+          throw _AnbieterFehlt('unbekannter Beschleuniger $art');
+      }
+    } on StateError catch (f) {
+      throw _AnbieterFehlt(f.message);
+    }
+  }
+
+  /// Wie es um den Beschleuniger steht.
+  Map<String, Object?> _zustand() => {
+    'onnxRuntime': fassung,
+    'beschleuniger': name,
+    'fehler': ?_anbieterFehler,
+    'geprueft': [..._bestanden.map(_kurz)]..sort(),
+    'inPruefung': {
+      for (final s in _sitzungen.values)
+        if (s.zwilling != null) _kurz(s.pfad),
+    }.toList()..sort(),
+    'verworfen': {for (final e in _verworfen.entries) _kurz(e.key): e.value},
+  };
+
+  static String _kurz(String pfad) => pfad.split(RegExp(r'[/\\]')).last;
 
   List<String> _namen(
     _Zeiger sitzung,
@@ -596,7 +902,10 @@ class _Ort {
 
   Object? _schliesse(String id) {
     final s = _sitzungen.remove(id);
-    if (s != null) _releaseSession(s.zeiger);
+    if (s != null) {
+      _releaseSession(s.zeiger);
+      if (s.zwilling case final z?) _releaseSession(z);
+    }
     return null;
   }
 
@@ -630,52 +939,142 @@ class _Ort {
     return id;
   }
 
-  Map<String, Object?> _rechne(String sitzungId, Map<String, String> eingaben) {
+  /// Rechnet; die Antwort ist `[Ausgaben, Anbieter]`. Während der
+  /// Gegenprobe rechnen Beschleuniger und CPU, und zurück geht das Ergebnis
+  /// der CPU – erst ein bestandenes Modell liefert, was der Beschleuniger
+  /// gerechnet hat.
+  List<Object?> _rechne(String sitzungId, Map<String, String> eingaben) {
     final s =
         _sitzungen[sitzungId] ??
         (throw StateError('Sitzung $sitzungId gibt es nicht'));
-    return using((a) {
-      final namen = a<Pointer<Utf8>>(eingaben.length);
-      final werte = a<_Zeiger>(eingaben.length);
-      var i = 0;
-      for (final e in eingaben.entries) {
-        final w =
-            _werte[e.value] ??
-            (throw StateError('Wert ${e.value} gibt es nicht'));
-        namen[i] = e.key.toNativeUtf8(allocator: a);
-        werte[i] = w.zeiger;
-        i++;
+    final zwilling = s.zwilling;
+    if (zwilling != null) {
+      final cpu = _lauf(zwilling, s, eingaben);
+      String? abweichung;
+      try {
+        final beschleunigt = _lauf(s.zeiger, s, eingaben);
+        try {
+          abweichung = _vergleiche(cpu, beschleunigt, s.ausgaenge);
+        } finally {
+          beschleunigt.forEach(_releaseValue);
+        }
+      } on StateError catch (f) {
+        abweichung = 'rechnet nicht: ${f.message}';
       }
-      final ausNamen = a<Pointer<Utf8>>(s.ausgaenge.length);
-      for (var j = 0; j < s.ausgaenge.length; j++) {
-        ausNamen[j] = s.ausgaenge[j].toNativeUtf8(allocator: a);
+      if (abweichung != null) {
+        _verworfen[s.pfad] = abweichung;
+        _releaseSession(s.zeiger);
+        s
+          ..zeiger = zwilling
+          ..zwilling = null
+          ..anbieter = 'CPU';
+      } else if (--s.offen <= 0) {
+        _bestanden.add(s.pfad);
+        _releaseSession(zwilling);
+        s.zwilling = null;
       }
-      final aus = a<_Zeiger>(s.ausgaenge.length);
-      for (var j = 0; j < s.ausgaenge.length; j++) {
-        aus[j] = nullptr;
-      }
-      _pruefe(
-        _run(
-          s.zeiger,
-          nullptr,
-          namen,
-          werte,
-          eingaben.length,
-          ausNamen,
-          s.ausgaenge.length,
-          aus,
-        ),
-      );
-      final ergebnis = <String, Object?>{};
-      for (var j = 0; j < s.ausgaenge.length; j++) {
-        final (typ, form) = _typUndForm(aus[j], a);
-        final id = 'v${_zaehler++}';
-        _werte[id] = _Wert(aus[j], typ, form);
-        ergebnis[s.ausgaenge[j]] = [id, typ, form];
-      }
-      return ergebnis;
-    });
+      return [_registriere(cpu, s), 'CPU'];
+    }
+    try {
+      return [_registriere(_lauf(s.zeiger, s, eingaben), s), s.anbieter];
+    } on StateError catch (f) {
+      if (s.anbieter == 'CPU') rethrow;
+      // Bestanden und trotzdem gescheitert (etwa eine Form, die in der
+      // Probe nicht vorkam): ab jetzt auf der CPU.
+      _verworfen[s.pfad] = 'rechnet nicht: ${f.message}';
+      _releaseSession(s.zeiger);
+      s
+        ..zeiger = _erzeuge(s.pfad, s.optionen, mitAnbieter: false)
+        ..anbieter = 'CPU';
+      return [_registriere(_lauf(s.zeiger, s, eingaben), s), 'CPU'];
+    }
   }
+
+  List<_Zeiger> _lauf(
+    _Zeiger sitzung,
+    _Sitzung s,
+    Map<String, String> eingaben,
+  ) =>
+      using((a) {
+        final namen = a<Pointer<Utf8>>(eingaben.length);
+        final werte = a<_Zeiger>(eingaben.length);
+        var i = 0;
+        for (final e in eingaben.entries) {
+          final w =
+              _werte[e.value] ??
+              (throw StateError('Wert ${e.value} gibt es nicht'));
+          namen[i] = e.key.toNativeUtf8(allocator: a);
+          werte[i] = w.zeiger;
+          i++;
+        }
+        final ausNamen = a<Pointer<Utf8>>(s.ausgaenge.length);
+        for (var j = 0; j < s.ausgaenge.length; j++) {
+          ausNamen[j] = s.ausgaenge[j].toNativeUtf8(allocator: a);
+        }
+        final aus = a<_Zeiger>(s.ausgaenge.length);
+        for (var j = 0; j < s.ausgaenge.length; j++) {
+          aus[j] = nullptr;
+        }
+        _pruefe(
+          _run(
+            sitzung,
+            nullptr,
+            namen,
+            werte,
+            eingaben.length,
+            ausNamen,
+            s.ausgaenge.length,
+            aus,
+          ),
+        );
+        return [for (var j = 0; j < s.ausgaenge.length; j++) aus[j]];
+      });
+
+  Map<String, Object?> _registriere(List<_Zeiger> aus, _Sitzung s) =>
+      using((a) {
+        final ergebnis = <String, Object?>{};
+        for (var j = 0; j < s.ausgaenge.length; j++) {
+          final (typ, form) = _typUndForm(aus[j], a);
+          final id = 'v${_zaehler++}';
+          _werte[id] = _Wert(aus[j], typ, form);
+          ergebnis[s.ausgaenge[j]] = [id, typ, form];
+        }
+        return ergebnis;
+      });
+
+  /// `null`, wenn [b] dasselbe ist wie [a] (siehe [_mindestKosinus]);
+  /// sonst, was abweicht.
+  String? _vergleiche(List<_Zeiger> a, List<_Zeiger> b, List<String> namen) =>
+      using((arena) {
+        for (var j = 0; j < a.length; j++) {
+          final (typA, formA) = _typUndForm(a[j], arena);
+          final (typB, formB) = _typUndForm(b[j], arena);
+          if (typA != typB || formA.join(',') != formB.join(',')) {
+            return '${namen[j]}: Form $typA$formA gegen $typB$formB';
+          }
+          final n = formA.fold(1, (x, y) => x * y);
+          if (n == 0) continue;
+          final breite = _typen[typA]!.$2;
+          final pa = arena<_Zeiger>();
+          final pb = arena<_Zeiger>();
+          _pruefe(_mutableData(a[j], pa));
+          _pruefe(_mutableData(b[j], pb));
+          if (typA != 'float32') {
+            final x = pa.value.cast<Uint8>().asTypedList(n * breite);
+            final y = pb.value.cast<Uint8>().asTypedList(n * breite);
+            for (var i = 0; i < x.length; i++) {
+              if (x[i] != y[i]) return '${namen[j]}: andere Werte ($typA)';
+            }
+            continue;
+          }
+          final grund = abweichung(
+            pa.value.cast<Float>().asTypedList(n),
+            pb.value.cast<Float>().asTypedList(n),
+          );
+          if (grund != null) return '${namen[j]}: $grund';
+        }
+        return null;
+      });
 
   (String, List<int>) _typUndForm(_Zeiger wert, Arena a) {
     final info = a<_Zeiger>();
@@ -739,6 +1138,7 @@ class _Ort {
     _werte.clear();
     for (final s in _sitzungen.values) {
       _releaseSession(s.zeiger);
+      if (s.zwilling case final z?) _releaseSession(z);
     }
     _sitzungen.clear();
     _releaseEnv(_env);

@@ -135,3 +135,22 @@ jobs:
           done
           docker logs pv
           exit 1
+      # Das Bild für Intel-Grafik (OpenVINO) gibt es nur für amd64. Ohne
+      # Grafik auf dem Läufer rechnet es auf der CPU; geprüft wird, dass es
+      # baut, startet und antwortet.
+      - name: Bild mit OpenVINO bauen
+        if: matrix.runner == 'ubuntu-24.04'
+        run: docker build -f packages/server/Dockerfile --target openvino -t photo-vault-server:openvino .
+      - name: Bild mit OpenVINO startet und antwortet
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          docker run -d --name pv-openvino photo-vault-server:openvino
+          for i in $(seq 1 30); do
+            if docker exec pv-openvino /opt/photo-vault-server/bin/photo_vault_server --lebenszeichen; then
+              docker logs pv-openvino
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs pv-openvino
+          exit 1

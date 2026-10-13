@@ -34,10 +34,11 @@ Handler baueApi({
   required Bibliotheken bibliotheken,
   Absender? absender,
   Oidc? oidc,
+  Future<Map<String, Object?>> Function()? beschleunigerZustand,
 }) {
   final von = absender ?? Absender();
   final anmeldung = Anmeldungsapi(konten, von, oidc);
-  final api = _Api(bibliotheken);
+  final api = _Api(bibliotheken, beschleunigerZustand);
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
@@ -162,9 +163,10 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.bibliotheken);
+  _Api(this.bibliotheken, this._beschleuniger);
 
   final Bibliotheken bibliotheken;
+  final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
@@ -192,10 +194,14 @@ class _Api {
   }
 
   /// Was die Auswertung gerade tut: `laeuft` und, wenn ja, die Stufe mit
-  /// ihrem Fortschritt.
+  /// ihrem Fortschritt; dazu der Beschleuniger und seine Gegenproben.
   Future<Response> auswertung(Request anfrage) async {
     final d = (await _bereich(anfrage)).auswertung;
-    return _json({'laeuft': d.laeuft, 'stand': d.stand?.alsJson()});
+    return _json({
+      'laeuft': d.laeuft,
+      'stand': d.stand?.alsJson(),
+      'beschleuniger': ?await _beschleuniger?.call(),
+    });
   }
 
   /// Stösst einen Durchgang an, ohne die Ruhezeit abzuwarten. Antwortet

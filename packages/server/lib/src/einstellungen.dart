@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'beschleuniger.dart';
 import 'oidc.dart';
 
 /// Wie der Server läuft.
@@ -17,6 +18,7 @@ import 'oidc.dart';
 /// | `PV_PORT`            | `8790`                |                                       |
 /// | `PV_MODELLE`         | `<PV_DATEN>/modelle`  | die KI-Modelle                        |
 /// | `PV_ONNXRUNTIME`     | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle   |
+/// | `PV_BESCHLEUNIGER`   | `cpu`                 | `openvino`, `cuda`, … (siehe `Beschleuniger`) |
 /// | `PV_GEODATEN`        | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                |
 /// | `PV_TOTP`            | `pflicht`             | `frei`: TOTP nur, wer es einrichtet   |
 /// | `PV_PROXY`           | –                     | vertraute Proxys (Adressen, Netze, `privat`) |
@@ -40,6 +42,7 @@ class Einstellungen {
     this.port = 8790,
     Directory? modelle,
     this.onnxRuntime,
+    this.beschleuniger = Beschleuniger.cpu,
     Directory? geodaten,
     this.totpPflicht = true,
     this.proxys = const [],
@@ -65,6 +68,7 @@ class Einstellungen {
       onnxRuntime: u['PV_ONNXRUNTIME'] == null
           ? onnxImBuendel()
           : File(p.absolute(u['PV_ONNXRUNTIME']!)),
+      beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
       geodaten: u['PV_GEODATEN'] == null
           ? null
           : Directory(p.absolute(u['PV_GEODATEN']!)),
@@ -128,6 +132,14 @@ class Einstellungen {
   final String adresse;
   final int port;
   final Directory modelle;
+
+  /// Womit die Modelle rechnen (siehe [Beschleuniger]).
+  final Beschleuniger beschleuniger;
+
+  /// Wohin OpenVINO die für die Grafik übersetzten Modelle legt.
+  Directory get beschleunigerZwischenspeicher =>
+      Directory(p.join(daten.path, 'beschleuniger'));
+
   final File? onnxRuntime;
   final Directory geodaten;
   final bool totpPflicht;

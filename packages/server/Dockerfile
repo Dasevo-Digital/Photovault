@@ -13,11 +13,17 @@
 #   docker buildx build -f packages/server/Dockerfile --target paket \
 #     --platform linux/amd64,linux/arm64 --output type=local,dest=aus .
 #
+# Das Bild für Intel-Grafik (OpenVINO, nur amd64; Issue #104):
+#
+#   docker buildx build -f packages/server/Dockerfile --target openvino \
+#     --platform linux/amd64 -t photo-vault-server:openvino .
+#
 # Siehe packages/server/README.md.
 
 ARG DART_FASSUNG=3.13.5
 ARG ORT_FASSUNG=1.28.3
 ARG DEBIAN=trixie-slim
+ARG UBUNTU=26.04
 
 # --- Übersetzen ------------------------------------------------------------
 # `dart build cli` statt `dart compile exe`: sqlite3 bringt seine Bibliothek
@@ -56,6 +62,26 @@ RUN set -eu; \
     cp "/ort/lib/libonnxruntime.so.${ORT_FASSUNG}" /libonnxruntime.so.${ORT_FASSUNG}; \
     rm -rf /tmp/ort.tgz /ort
 
+# --- ONNX Runtime mit OpenVINO (nur amd64) -----------------------------------
+# Intels Bau aus dem Python-Paket onnxruntime-openvino 1.24.1: libonnxruntime
+# mit dem Anbieter für OpenVINO 2025.4 und dessen Plugins (CPU, Grafik, NPU).
+# Neuer gibt es ihn nicht fertig – der Server lädt die ältere Fassung und
+# sagt beim Start, dass sie nicht die der App ist (siehe geprueftFassung).
+# Was auf der Grafik rechnet, besteht vorher die Gegenprobe gegen die CPU.
+FROM debian:${DEBIAN} AS ort-openvino
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl python3 \
+ && rm -rf /var/lib/apt/lists/*
+RUN set -eu; \
+    curl -fsSL -o /tmp/ov.whl \
+      "https://files.pythonhosted.org/packages/50/cf/17ba72de2df0fcba349937d2788f154397bbc2d1a2d67772a97e26f6bc5f/onnxruntime_openvino-1.24.1-cp312-cp312-manylinux_2_28_x86_64.whl"; \
+    echo "d617fac2f59a6ab5ea59a788c3e1592240a129642519aaeaa774761dfe35150e  /tmp/ov.whl" | sha256sum -c -; \
+    python3 -m zipfile -e /tmp/ov.whl /tmp/ov; \
+    mkdir /ov; \
+    cp -a /tmp/ov/onnxruntime/capi/*.so* /ov/; \
+    rm -f /ov/onnxruntime_pybind11_state*; \
+    rm -rf /tmp/ov /tmp/ov.whl
+
 # --- Bündel für systemd ------------------------------------------------------
 FROM debian:${DEBIAN} AS buendel
 ARG ORT_FASSUNG
@@ -69,7 +95,43 @@ RUN tar -C /pv --owner=0 --group=0 -czf "/photo-vault-server-linux-${TARGETARCH}
 FROM scratch AS paket
 COPY --from=buendel /photo-vault-server-linux-*.tar.gz /
 
+# --- Das Bild für Intel-Grafik -------------------------------------------------
+# Ubuntu statt Debian: Den Treiber für Rechnen auf der Intel-Grafik
+# (intel-opencl-icd, Level Zero) hat Debian trixie nicht. Die Grafik kommt
+# mit `--device /dev/dri` in den Container; der Nutzer braucht die Gruppe,
+# der /dev/dri/renderD128 auf dem Wirt gehört (`--group-add …`, siehe
+# README).
+FROM ubuntu:${UBUNTU} AS openvino
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ffmpeg \
+      libheif-examples libheif-plugin-libde265 libheif-plugin-dav1d \
+      libraw-bin \
+      tzdata \
+      intel-opencl-icd libze-intel-gpu1 libze1 \
+ && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system --gid 8790 photovault \
+ && useradd --system --uid 8790 --gid 8790 --home-dir /daten --no-create-home photovault \
+ && mkdir /daten && chown photovault:photovault /daten
+COPY --from=bau /aus/bundle /opt/photo-vault-server
+COPY --from=ort-openvino /ov /opt/photo-vault-server/lib/openvino
+RUN printf '#!/bin/sh\nexec /opt/photo-vault-server/bin/photo_vault_server "$@"\n' \
+      > /usr/local/bin/photo_vault_server \
+ && chmod 755 /usr/local/bin/photo_vault_server
+ENV PV_DATEN=/daten \
+    PV_ADRESSE=0.0.0.0 \
+    PV_PORT=8790 \
+    PV_ONNXRUNTIME=/opt/photo-vault-server/lib/openvino/libonnxruntime.so.1.24.1 \
+    PV_BESCHLEUNIGER=openvino
+USER photovault
+VOLUME /daten
+EXPOSE 8790
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s \
+  CMD ["/opt/photo-vault-server/bin/photo_vault_server", "--lebenszeichen"]
+ENTRYPOINT ["/opt/photo-vault-server/bin/photo_vault_server"]
+
 # --- Das Bild ----------------------------------------------------------------
+# Zuletzt, damit es bleibt, was ohne `--target` entsteht.
 FROM debian:${DEBIAN}
 ARG ORT_FASSUNG
 # Dieselben Werkzeuge wie die App unter Linux: ffmpeg für Videos, libheif
