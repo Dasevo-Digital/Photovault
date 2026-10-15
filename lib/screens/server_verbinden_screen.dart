@@ -19,6 +19,7 @@ import '../theme/app_spacing.dart';
 import '../widgets/qr_bild.dart';
 import 'einstellungen/einstellungsstand.dart';
 import 'einstellungen/gemeinsam.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, wahl }
 
@@ -350,6 +351,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       Text(t.serverErklaerung),
       const SizedBox(height: AppSpacing.lg),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _adresse,
         keyboardType: TextInputType.url,
         autocorrect: false,
@@ -359,17 +361,20 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
         ),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _name,
         autocorrect: false,
         decoration: InputDecoration(labelText: t.serverName),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort,
         obscureText: true,
         decoration: InputDecoration(labelText: t.serverPasswort),
         onSubmitted: (_) => _arbeitet ? null : _anmelden(),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _geraet,
         decoration: InputDecoration(labelText: t.serverGeraet),
       ),
@@ -384,6 +389,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       const SizedBox(height: AppSpacing.sm),
       Text(t.serverErstesText(_name.text.trim())),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort2,
         autofocus: true,
         obscureText: true,
@@ -513,6 +519,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
   };
 
   Widget _codefeld() => TextField(
+    contextMenuBuilder: einfuegbaresMenue,
     controller: _code,
     autofocus: true,
     autocorrect: false,

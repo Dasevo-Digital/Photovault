@@ -8,6 +8,7 @@ import '../services/reisefortschritt.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'ortsansicht_screen.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Jedes Land der Welt, und was du davon gesehen hast.
 ///
@@ -357,6 +358,7 @@ class _Werkzeugleiste extends StatelessWidget {
       child: Column(
         children: [
           TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: feld,
             onChanged: beiSuche,
             decoration: InputDecoration(

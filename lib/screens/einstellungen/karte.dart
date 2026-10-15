@@ -15,6 +15,7 @@ import '../../widgets/mini_location_map.dart'
 import '../kachelmitschnitt_screen.dart';
 import '../map_screen.dart' show Kartenansicht;
 import 'einstellungsstand.dart';
+import '../../widgets/einfuegbares_menue.dart';
 
 /// Karte: CARTO-Schlüssel, doppelte Auflösung, Kartenquellen, Vorladen und Mitschnitt.
 class KarteGruppe extends StatelessWidget {
@@ -101,6 +102,7 @@ class KarteGruppe extends StatelessWidget {
                   children: [
                     Expanded(
                       child: TextField(
+                        contextMenuBuilder: einfuegbaresMenue,
                         controller: stand.cartoSchluessel,
                         decoration: InputDecoration(
                           labelText: t.einstCartoFeld,

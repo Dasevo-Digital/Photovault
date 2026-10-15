@@ -7,6 +7,7 @@ import 'package:kern/services/search_filters.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'raster.dart';
+import '../einfuegbares_menue.dart';
 
 enum _Art { inhalt, text }
 
@@ -94,6 +95,7 @@ class _SucheState extends State<Suche> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: _feld,
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _suche(),

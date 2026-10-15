@@ -12,6 +12,7 @@ import 'package:kern/services/search_filters.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'album_detail_screen.dart';
 import 'search_screen.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 class AlbumsScreen extends StatelessWidget {
   final LibraryState library;
@@ -26,6 +27,7 @@ class AlbumsScreen extends StatelessWidget {
         builder: (context, ctrl) => AlertDialog(
           title: Text(AppTexte.of(context).albumNeu),
           content: TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: ctrl,
             autofocus: true,
             decoration: InputDecoration(

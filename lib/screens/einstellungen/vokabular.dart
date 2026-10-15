@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/meldungsdienst.dart';
 import '../../theme/app_spacing.dart';
 import 'einstellungsstand.dart';
+import '../../widgets/einfuegbares_menue.dart';
 
 /// Das Schlagwort-Vokabular der Bilderkennung.
 class VokabularGruppe extends StatelessWidget {
@@ -62,6 +63,7 @@ class VokabularGruppe extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
+                      contextMenuBuilder: einfuegbaresMenue,
                       controller: stand.aiTagVocabularyController,
                       decoration: InputDecoration(
                         hintText: AppTexte.of(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import 'einfuegbares_menue.dart';
 
 /// Fragt nach einem Namen und gibt ihn beschnitten zurück – `null`, wenn
 /// abgebrochen oder nur Leerraum eingegeben wurde.
@@ -86,6 +87,7 @@ class _NamensDialogState extends State<_NamensDialog> {
     return AlertDialog(
       title: Text(widget.titel),
       content: TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _steuerung,
         autofocus: true,
         // Mehrzeilig gibt es keine Eingabetaste zum Abschliessen – dort

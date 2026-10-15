@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Der Name eines Auslösers in der Oberflächensprache.
 String _ausloeserName(AppTexte t, String art) => switch (art) {
@@ -451,6 +452,7 @@ class _AutomationRuleEditorDialogState
               children: [
                 Expanded(
                   child: TextField(
+                    contextMenuBuilder: einfuegbaresMenue,
                     controller: _latCtrl,
                     decoration: InputDecoration(
                       labelText: AppTexte.of(context).regelBreitengrad,
@@ -464,6 +466,7 @@ class _AutomationRuleEditorDialogState
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
+                    contextMenuBuilder: einfuegbaresMenue,
                     controller: _lonCtrl,
                     decoration: InputDecoration(
                       labelText: AppTexte.of(context).regelLaengengrad,
@@ -559,6 +562,7 @@ class _AutomationRuleEditorDialogState
                 const SizedBox(height: 8),
               ],
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _nameCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).regelNameFeld,
@@ -611,6 +615,7 @@ class _AutomationRuleEditorDialogState
               ),
               const SizedBox(height: 4),
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _newAlbumCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).presetNeuesAlbum,
@@ -659,6 +664,7 @@ class _AutomationRuleEditorDialogState
                             child: Column(
                               children: [
                                 TextField(
+                                  contextMenuBuilder: einfuegbaresMenue,
                                   autofocus: true,
                                   decoration: InputDecoration(
                                     hintText: AppTexte.of(

@@ -214,6 +214,7 @@ mixin _Verlauf on _EntwickelnBasis {
         builder: (context, feld) => AlertDialog(
           title: Text(t.entwVorgabeSichern),
           content: TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: feld,
             autofocus: true,
             decoration: InputDecoration(hintText: t.entwVorgabeName),

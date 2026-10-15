@@ -6,6 +6,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import 'profilbild.dart';
+import 'einfuegbares_menue.dart';
 
 /// Was der Nutzer im Zuordnungs-Dialog entschieden hat.
 class PersonChoice {
@@ -222,6 +223,7 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
               const SizedBox(height: AppSpacing.md),
             ],
             TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               controller: _suchfeld,
               focusNode: _fokus,
               autofocus: true,

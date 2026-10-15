@@ -7,6 +7,7 @@ import 'package:kern/services/aktivitaeten.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'aktivitaetsart_anzeige.dart';
+import 'einfuegbares_menue.dart';
 
 /// Das Ergebnis von [frageZeitraum].
 typedef Zeitraumangabe = ({
@@ -151,6 +152,7 @@ class _ZeitraumDialogState extends State<_ZeitraumDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               controller: _name,
               autofocus: true,
               decoration: InputDecoration(

@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import '../services/export_naming.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Verwaltung benannter Export-Vorgaben.
 ///
@@ -239,6 +240,7 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _name,
                 autofocus: true,
                 decoration: InputDecoration(labelText: t.exportVorgabeName),
@@ -253,6 +255,7 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
               ),
               if (_nachJpeg) ...[
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: _kante,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
@@ -275,6 +278,7 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
               ],
               const Divider(height: AppSpacing.xxl),
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _muster,
                 decoration: InputDecoration(labelText: t.exportVorgabeMuster),
               ),

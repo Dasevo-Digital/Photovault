@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import '../einfuegbares_menue.dart';
 
 enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, laden }
 
@@ -239,6 +240,7 @@ class _AnmeldenState extends State<Anmelden> {
       Text(t.anmeldenErklaerung),
       const SizedBox(height: 16),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _adresse,
         keyboardType: TextInputType.url,
         autocorrect: false,
@@ -248,17 +250,20 @@ class _AnmeldenState extends State<Anmelden> {
         ),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _name,
         autocorrect: false,
         decoration: InputDecoration(labelText: t.anmeldenName),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort,
         obscureText: true,
         decoration: InputDecoration(labelText: t.anmeldenPasswort),
         onSubmitted: (_) => _arbeitet ? null : _anmelden(),
       ),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _geraet,
         decoration: InputDecoration(labelText: t.anmeldenGeraet),
       ),
@@ -276,6 +281,7 @@ class _AnmeldenState extends State<Anmelden> {
       const SizedBox(height: 8),
       Text(t.anmeldenErstesText(_name.text.trim())),
       TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort2,
         autofocus: true,
         obscureText: true,
@@ -368,6 +374,7 @@ class _AnmeldenState extends State<Anmelden> {
   };
 
   Widget _codefeld() => TextField(
+    contextMenuBuilder: einfuegbaresMenue,
     controller: _code,
     autofocus: true,
     autocorrect: false,

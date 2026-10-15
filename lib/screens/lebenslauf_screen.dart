@@ -7,6 +7,7 @@ import '../services/lebenslauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/mini_location_map.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Der Lebenslauf einer Person: Geburt, Tod und alles dazwischen.
 ///
@@ -252,10 +253,12 @@ class _EreignisDialogState extends State<_EreignisDialog> {
               ],
             ),
             TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               controller: _ort,
               decoration: InputDecoration(labelText: t.lebenslaufOrt),
             ),
             TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               controller: _notiz,
               decoration: InputDecoration(labelText: t.lebenslaufNotiz),
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
+import 'einfuegbares_menue.dart';
 
 class AlbumChoice {
   final String? newName;
@@ -79,6 +80,7 @@ class _AlbumPickerDialogState extends State<_AlbumPickerDialog> {
             const SizedBox(height: 12),
           ],
           TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: _nameCtrl,
             decoration: InputDecoration(
               labelText: AppTexte.of(context).albumNeuAnlegen,

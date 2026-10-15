@@ -4,6 +4,7 @@ import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/verbindung.dart';
 
 import '../l10n/app_localizations.dart';
+import '../einfuegbares_menue.dart';
 
 /// Die Konten des Servers, für Verwalter (Konto → Konten verwalten):
 /// anlegen, Passwort neu setzen, TOTP zurücksetzen, entsperren, entfernen.
@@ -257,18 +258,21 @@ class _KontoDialogState extends State<_KontoDialog> {
           if (widget.text != null) Text(widget.text!),
           if (widget.mitName)
             TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               controller: _name,
               autofocus: true,
               autocorrect: false,
               decoration: InputDecoration(labelText: t.anmeldenName),
             ),
           TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: _passwort,
             autofocus: !widget.mitName,
             obscureText: true,
             decoration: InputDecoration(labelText: t.anmeldenPasswort),
           ),
           TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: _passwort2,
             obscureText: true,
             decoration: InputDecoration(

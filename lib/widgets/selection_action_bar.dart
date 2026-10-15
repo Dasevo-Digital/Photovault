@@ -25,6 +25,7 @@ import 'color_label_picker.dart';
 import 'mini_location_map.dart';
 import 'star_rating.dart';
 import '../services/meldungsdienst.dart';
+import 'einfuegbares_menue.dart';
 
 /// Schwebende Aktionsleiste am unteren Rand, sichtbar sobald in einem
 /// Foto-Raster (Timeline, Jahresansicht, Suche, Album) mindestens ein Foto
@@ -483,6 +484,7 @@ class _BatchMetadataDialogState extends State<_BatchMetadataDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _descriptionCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).auswBeschreibungFeld,
@@ -561,6 +563,7 @@ Future<void> runBatchTagDialog(
       builder: (context, ctrl) => AlertDialog(
         title: Text(AppTexte.of(context).auswTagTitel(assetIds.length)),
         content: TextField(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: ctrl,
           autofocus: true,
           decoration: InputDecoration(

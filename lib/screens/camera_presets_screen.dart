@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Kombiniert Hersteller + Modell zu einem Anzeigenamen, analog zu
 /// [cameraLabel] in asset_format.dart – hier aber für rohe Strings statt
@@ -339,6 +340,7 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               child: Column(
                 children: [
                   TextField(
+                    contextMenuBuilder: einfuegbaresMenue,
                     autofocus: true,
                     decoration: InputDecoration(
                       hintText: AppTexte.of(context).suchoptTagsFiltern,
@@ -458,6 +460,7 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
                 const SizedBox(height: 12),
               ],
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _makeCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).presetHersteller,
@@ -465,6 +468,7 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               ),
               const SizedBox(height: 8),
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _modelCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).presetModell,
@@ -496,6 +500,7 @@ class _CameraPresetEditorDialogState extends State<_CameraPresetEditorDialog> {
               ),
               const SizedBox(height: 4),
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _newAlbumCtrl,
                 decoration: InputDecoration(
                   labelText: AppTexte.of(context).presetNeuesAlbum,

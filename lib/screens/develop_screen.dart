@@ -41,6 +41,7 @@ import '../widgets/tone_curve_editor.dart';
 import '../theme/app_theme.dart';
 import '../services/meldungsdienst.dart';
 import 'package:kern/services/bild_lesen.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 part 'entwickeln/vorschau.dart';
 part 'entwickeln/verlauf_und_vorgaben.dart';

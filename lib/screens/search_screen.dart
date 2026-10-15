@@ -22,6 +22,7 @@ import '../widgets/rasterbedienung.dart';
 import '../widgets/selection_action_bar.dart';
 import '../widgets/sortierungswahl.dart';
 import 'asset_viewer_screen.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 class SearchScreen extends StatefulWidget {
   final LibraryState library;
@@ -209,6 +210,7 @@ class _SearchScreenState extends State<SearchScreen>
         builder: (context, ctrl) => AlertDialog(
           title: Text(AppTexte.of(context).sucheSpeichernTitel),
           content: TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: ctrl,
             autofocus: true,
             decoration: InputDecoration(
@@ -505,6 +507,7 @@ class _SearchScreenState extends State<SearchScreen>
         Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: TextField(
+            contextMenuBuilder: einfuegbaresMenue,
             controller: _queryCtrl,
             decoration: InputDecoration(
               hintText: switch (_filters.textMode) {

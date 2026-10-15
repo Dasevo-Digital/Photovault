@@ -9,6 +9,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'mini_location_map.dart';
+import 'einfuegbares_menue.dart';
 
 /// Die Einstellung für eine selbst eingetragene Kartenquelle.
 ///
@@ -291,6 +292,7 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                   ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: _name,
                   decoration: InputDecoration(
                     labelText: t.einstEigeneKarteName,
@@ -300,6 +302,7 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: _adresse,
                   maxLines: 2,
                   decoration: InputDecoration(
@@ -315,6 +318,7 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: _nennung,
                   decoration: InputDecoration(
                     labelText: t.einstEigeneKarteNennung,
@@ -327,6 +331,7 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                 SizedBox(
                   width: 200,
                   child: TextField(
+                    contextMenuBuilder: einfuegbaresMenue,
                     controller: _stufe,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(

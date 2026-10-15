@@ -15,6 +15,7 @@ import 'color_label_picker.dart';
 import 'star_rating.dart';
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'einfuegbares_menue.dart';
 
 /// Panel mit allen kombinierbaren Suchfiltern (Personen, Text-Suche, Tags,
 /// Kamera, Zeitraum, Medientyp, Anzeigeoptionen) – analog zu Immichs
@@ -336,6 +337,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               child: Column(
                 children: [
                   TextField(
+                    contextMenuBuilder: einfuegbaresMenue,
                     autofocus: true,
                     decoration: InputDecoration(
                       hintText: AppTexte.of(context).suchoptTagsFiltern,
@@ -549,6 +551,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                   SizedBox(
                     width: 220,
                     child: TextField(
+                      contextMenuBuilder: einfuegbaresMenue,
                       controller: _peopleFilterController,
                       decoration: InputDecoration(
                         isDense: true,
@@ -749,6 +752,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
         ),
         const SizedBox(height: 8),
         TextField(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: _queryController,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
@@ -1042,6 +1046,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
 
   Widget _numberField(String label, TextEditingController controller) {
     return TextField(
+      contextMenuBuilder: einfuegbaresMenue,
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(

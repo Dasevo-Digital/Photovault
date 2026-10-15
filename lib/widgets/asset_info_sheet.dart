@@ -25,6 +25,7 @@ import 'selection_action_bar.dart' show confirmDialog;
 import '../services/meldungsdienst.dart';
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'einfuegbares_menue.dart';
 
 /// Info-Ansicht für ein einzelnes Asset (Foto/Video) in der Vollbildvorschau
 /// – Layout angelehnt an Google Fotos: Zeilen mit Icon, Titel und optionalem
@@ -598,6 +599,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextField(
+                        contextMenuBuilder: einfuegbaresMenue,
                         controller: _descriptionController,
                         focusNode: _descriptionFocusNode,
                         maxLines: null,
@@ -897,6 +899,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         children: [
                           Expanded(
                             child: TextField(
+                              contextMenuBuilder: einfuegbaresMenue,
                               controller: _tagController,
                               decoration: InputDecoration(
                                 hintText: AppTexte.of(
@@ -933,6 +936,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                     children: [
                       Expanded(
                         child: TextField(
+                          contextMenuBuilder: einfuegbaresMenue,
                           controller: _ortController,
                           decoration: InputDecoration(
                             isDense: true,
@@ -1346,6 +1350,7 @@ class _KiBeschreibung extends StatelessWidget {
           ],
         ),
         TextField(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: controller,
           focusNode: focusNode,
           maxLines: null,

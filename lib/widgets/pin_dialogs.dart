@@ -8,6 +8,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../services/meldungsdienst.dart';
+import 'einfuegbares_menue.dart';
 
 /// Fragt einen PIN ab (z.B. um den gesperrten Ordner zu öffnen oder eine
 /// Änderung zu bestätigen). Gibt `null` zurück, wenn abgebrochen wurde.
@@ -30,6 +31,7 @@ Future<String?> showEnterPinDialog(
       builder: (context, ctrl) => AlertDialog(
         title: Text(titel),
         content: TextField(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: ctrl,
           autofocus: true,
           obscureText: true,
@@ -85,6 +87,7 @@ Future<String?> showSetPinDialog(BuildContext context) async {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: pinCtrl,
                   autofocus: true,
                   obscureText: true,
@@ -96,6 +99,7 @@ Future<String?> showSetPinDialog(BuildContext context) async {
                   ),
                 ),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: confirmCtrl,
                   obscureText: true,
                   keyboardType: TextInputType.number,
@@ -214,6 +218,7 @@ Future<String?> showEnterPassphraseDialog(
       builder: (context, ctrl) => AlertDialog(
         title: Text(titel),
         content: TextField(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: ctrl,
           autofocus: true,
           obscureText: true,
@@ -257,6 +262,7 @@ Future<String?> showSetPassphraseDialog(BuildContext context) async {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: passCtrl,
                   autofocus: true,
                   obscureText: true,
@@ -265,6 +271,7 @@ Future<String?> showSetPassphraseDialog(BuildContext context) async {
                   ),
                 ),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: confirmCtrl,
                   obscureText: true,
                   decoration: InputDecoration(

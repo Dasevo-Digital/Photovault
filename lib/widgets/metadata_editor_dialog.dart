@@ -6,6 +6,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_format.dart';
 import 'package:kern/services/exif_camera.dart';
 import '../theme/app_spacing.dart';
+import 'einfuegbares_menue.dart';
 
 /// Dialog zum direkten Bearbeiten der Kamera-/Aufnahme-Metadaten eines
 /// Assets (Hersteller, Modell, Objektiv, Brennweite, Blende, ISO,
@@ -101,6 +102,7 @@ class _MetadataEditorDialogState extends State<MetadataEditorDialog> {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: TextField(
+        contextMenuBuilder: einfuegbaresMenue,
         controller: controller,
         decoration: InputDecoration(
           labelText: label,

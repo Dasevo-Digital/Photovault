@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'namens_dialog.dart' show MitTextsteuerung;
+import 'einfuegbares_menue.dart';
 
 /// Bestätigungsdialog für besonders folgenschwere, unumkehrbare Aktionen
 /// (z.B. "Datenbank zurücksetzen") – ein normales Ja/Nein reicht hier nicht,
@@ -50,6 +51,7 @@ Future<bool> showTypedConfirmDialog(
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  contextMenuBuilder: einfuegbaresMenue,
                   controller: ctrl,
                   autofocus: true,
                   onChanged: (_) => setState(() {}),

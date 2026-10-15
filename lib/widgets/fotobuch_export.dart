@@ -14,6 +14,7 @@ import '../services/native_image_converter.dart';
 import '../services/platform/speicherort.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import 'einfuegbares_menue.dart';
 
 /// [dateiname] mit der Endung des Fotobuchs statt der bisherigen – aus
 /// dem Namen einer Diashow wird so der des Buches.
@@ -341,6 +342,7 @@ class _FotobuchDialogState extends State<_FotobuchDialog> {
               Text(t.fotobuchUmfang(widget.anzahl)),
               const SizedBox(height: AppSpacing.md),
               TextField(
+                contextMenuBuilder: einfuegbaresMenue,
                 controller: _titel,
                 decoration: InputDecoration(
                   labelText: t.fotobuchTitelseite,

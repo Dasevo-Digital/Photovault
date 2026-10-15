@@ -21,6 +21,7 @@ import 'einstellungen/standortdaten.dart';
 import 'einstellungen/ueber.dart';
 import 'einstellungen/ueberwachter_ordner.dart';
 import 'einstellungen/vokabular.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 class SettingsScreen extends StatefulWidget {
   final LibraryState library;
@@ -218,6 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         SearchBar(
+          contextMenuBuilder: einfuegbaresMenue,
           controller: _suche,
           hintText: t.einstSuche,
           leading: const Icon(Icons.search),
