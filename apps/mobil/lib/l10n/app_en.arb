@@ -37,13 +37,34 @@
   "kontoVerbindet": "Connecting …",
   "kontoAbgeglichen": "In sync",
   "serverSicherungStand": "Server backup: last {wann}",
-  "@serverSicherungStand": {"placeholders": {"wann": {"type": "String"}}},
+  "@serverSicherungStand": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungWarnung": "The server backup needs attention – on the computer under Settings → Server.",
   "serverSicherungOffen": "The server backup is not set up yet – on the computer under Settings → Server.",
   "speicherStand": "Storage on the server: {frei} free of {gesamt}",
-  "@speicherStand": {"placeholders": {"frei": {"type": "String"}, "gesamt": {"type": "String"}}},
+  "@speicherStand": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      }
+    }
+  },
   "speicherKnapp": "The server is running low on storage: {frei} left.",
-  "@speicherKnapp": {"placeholders": {"frei": {"type": "String"}}},
+  "@speicherKnapp": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      }
+    }
+  },
   "speicherVoll": "The server storage is full. It accepts new photos again once space is freed.",
   "kontoSendet": "{n, plural, =1{1 change going to the server} other{{n} changes going to the server}}",
   "kontoAbmelden": "Sign out",
@@ -75,12 +96,24 @@
   "anmeldenLaedt": "Loading the library from the server …",
   "anmeldenErstesTitel": "Create the first account",
   "anmeldenErstesText": "This server has no account yet. The first one will be created with the name “{name}” and the password you just entered. It becomes the administrator and can add more accounts later.",
-  "@anmeldenErstesText": {"placeholders": {"name": {"type": "String"}}},
+  "@anmeldenErstesText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "anmeldenPasswortWiederholen": "Repeat password",
   "anmeldenErstesAnlegen": "Create account and sign in",
   "anmeldenPasswortUngleich": "The two passwords do not match.",
   "anmeldenPasswortZuKurz": "The password needs at least {n} characters.",
-  "@anmeldenPasswortZuKurz": {"placeholders": {"n": {"type": "int"}}},
+  "@anmeldenPasswortZuKurz": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "anmeldenNameUngueltig": "The name needs 2 to 40 letters, digits, dots, hyphens or underscores.",
   "anmeldenErstesNurHeimnetz": "The first account can only be created from the home network, not through access from outside.",
   "anmeldenSchonEingerichtet": "The server already has an account now. Please sign in with it.",
@@ -94,20 +127,44 @@
   "kontoVerwalter": "Administrator",
   "kontoAlsVerwalter": "May also manage accounts",
   "kontoGeraete": "{n, plural, =0{no device} =1{1 device} other{{n} devices}}",
-  "@kontoGeraete": {"placeholders": {"n": {"type": "int"}}},
+  "@kontoGeraete": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "kontoMitTotp": "with TOTP",
   "kontoOhneTotp": "without TOTP",
   "kontoGesperrt": "locked after failed attempts",
   "kontoDu": "your account",
   "kontoPasswortSetzen": "Set new password",
   "kontoPasswortSetzenText": "All devices of “{name}” will be signed out.",
-  "@kontoPasswortSetzenText": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoPasswortSetzenText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoTotpZuruecksetzen": "Reset TOTP",
   "kontoTotpZurueckgesetzt": "“{name}” will set up TOTP again at the next sign-in.",
-  "@kontoTotpZurueckgesetzt": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoTotpZurueckgesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoEntsperren": "Unlock",
   "kontoEntfernenTitel": "Remove “{name}”?",
-  "@kontoEntfernenTitel": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoEntfernenTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoEntfernenText": "The account and its devices will be removed. The library with all its photos stays on the server: it is set aside, not deleted, and can only be deleted there by hand.",
   "kontoErledigt": "Done.",
   "sicherungTitel": "Back up camera roll",
@@ -144,5 +201,53 @@
   "sicherungBenachrichtigungText": "Photos and videos are going to the server.",
   "sicherungKanal": "Backup",
   "appZuAlt": "The server is newer than this app – please update the app. Nothing syncs until then.",
-  "serverZuAlt": "The server is older than this app – please update the server. Nothing syncs until then."
+  "serverZuAlt": "The server is older than this app – please update the server. Nothing syncs until then.",
+  "auswahlAnzahl": "{n, plural, =1{1 selected} other{{n} selected}}",
+  "@auswahlAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlAufheben": "Clear selection",
+  "auswahlFavorit": "Favorite",
+  "auswahlTeilen": "Share",
+  "auswahlAlbum": "Album",
+  "auswahlHerunterladen": "To phone",
+  "auswahlPapierkorb": "Trash",
+  "auswahlPapierkorbTitel": "{n, plural, =1{Move this photo to the trash?} other{Move {n} photos to the trash?}}",
+  "@auswahlPapierkorbTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlPapierkorbText": "They disappear everywhere – on the computer too. They can be restored from the trash on the computer.",
+  "auswahlAlbumTitel": "Add to album",
+  "auswahlAlbumNeu": "New album …",
+  "auswahlAlbumName": "Album name",
+  "auswahlAlbumAnlegen": "Create",
+  "auswahlImAlbum": "{n, plural, =1{1 photo in album “{album}”} other{{n} photos in album “{album}”}}",
+  "@auswahlImAlbum": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "auswahlLaedt": "Loading the originals …",
+  "auswahlGespeichert": "{n, plural, =1{1 photo saved to this phone} other{{n} photos saved to this phone}}",
+  "@auswahlGespeichert": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlKeinZugriff": "No access to the photo library – allow it in the phone's settings."
 }

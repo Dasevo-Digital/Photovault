@@ -10,12 +10,18 @@ import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:drift/native.dart';
+import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
+import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
+import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/karte.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
+import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
@@ -240,6 +246,104 @@ void main() {
     expect(find.text(t.sicherungJetzt), findsOneWidget);
     expect(find.text(t.sicherungAlleFotos), findsOneWidget);
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
+  });
+
+  testWidgets('Auswahl im Raster: Favorit, Album, Papierkorb', (tester) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_auswahl_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    for (final id in ['a1', 'a2', 'a3']) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025),
+          importedAt: DateTime(2026),
+        ),
+      );
+    }
+    // Echte Ein-/Ausgabe im Widget-Test nur über runAsync – sonst hängt
+    // das await wortlos.
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    final zeilen = [_zeile('a1', 0, 0), _zeile('a2', 0, 0), _zeile('a3', 0, 0)];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: AufnahmenRaster(sitzung: sitzung, zeilen: zeilen),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(AufnahmenRaster)));
+    expect(find.byType(Auswahlleiste), findsNothing);
+
+    // Lang drücken wählt, ein Tipp sammelt weitere ein.
+    await tester.longPress(find.byType(Miniatur).at(0));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(1)), findsOneWidget);
+    await tester.tap(find.byType(Miniatur).at(1));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(2)), findsOneWidget);
+
+    await tester.tap(find.text(t.auswahlFavorit));
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(Auswahlleiste),
+      findsNothing,
+      reason: 'danach aufgehoben',
+    );
+    Future<AssetData> a(String id) async => (await db.assetById(id))!;
+    expect((await a('a1')).isFavorite, isTrue);
+    expect((await a('a2')).isFavorite, isTrue);
+    expect((await a('a3')).isFavorite, isFalse);
+
+    // Ins neue Album.
+    await tester.longPress(find.byType(Miniatur).at(2));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.auswahlAlbum));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.auswahlAlbumNeu));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Urlaub');
+    await tester.tap(find.text(t.auswahlAlbumAnlegen));
+    // Die Meldung steht nur vier Sekunden – nachsehen, bevor sie weg ist.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text(t.auswahlImAlbum(1, 'Urlaub')), findsOneWidget);
+    // Weg mit der Meldung – sie läge sonst über der Leiste.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    final album = (await db.alleAlben()).single;
+    expect(album.name, 'Urlaub');
+    final imAlbum = await tester.runAsync(
+      () => db.watchAlbumAssets(album.id).first,
+    );
+    expect(imAlbum!.map((x) => x.id), ['a3']);
+
+    // In den Papierkorb, mit Rückfrage.
+    await tester.longPress(find.byType(Miniatur).at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.auswahlPapierkorb));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlPapierkorbTitel(1)), findsOneWidget);
+    await tester.tap(find.text(t.betrachterPapierkorb));
+    await tester.pumpAndSettle();
+    expect((await a('a1')).isTrashed, isTrue);
+    expect((await a('a2')).isTrashed, isFalse);
+    expect(find.byType(Auswahlleiste), findsNothing);
   });
 
   testWidgets('die Kontoseite zeigt den Speicher des Servers', (tester) async {

@@ -912,6 +912,108 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
   String get serverZuAlt;
+
+  /// No description provided for @auswahlAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 ausgewählt} other{{n} ausgewählt}}'**
+  String auswahlAnzahl(int n);
+
+  /// No description provided for @auswahlAufheben.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl aufheben'**
+  String get auswahlAufheben;
+
+  /// No description provided for @auswahlFavorit.
+  ///
+  /// In de, this message translates to:
+  /// **'Favorit'**
+  String get auswahlFavorit;
+
+  /// No description provided for @auswahlTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilen'**
+  String get auswahlTeilen;
+
+  /// No description provided for @auswahlAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'Album'**
+  String get auswahlAlbum;
+
+  /// No description provided for @auswahlHerunterladen.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufs Telefon'**
+  String get auswahlHerunterladen;
+
+  /// No description provided for @auswahlPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb'**
+  String get auswahlPapierkorb;
+
+  /// No description provided for @auswahlPapierkorbTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Die Aufnahme in den Papierkorb legen?} other{{n} Aufnahmen in den Papierkorb legen?}}'**
+  String auswahlPapierkorbTitel(int n);
+
+  /// No description provided for @auswahlPapierkorbText.
+  ///
+  /// In de, this message translates to:
+  /// **'Sie verschwinden überall – auch am Rechner. Aus dem Papierkorb lassen sie sich am Rechner zurückholen.'**
+  String get auswahlPapierkorbText;
+
+  /// No description provided for @auswahlAlbumTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum Album hinzufügen'**
+  String get auswahlAlbumTitel;
+
+  /// No description provided for @auswahlAlbumNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neues Album …'**
+  String get auswahlAlbumNeu;
+
+  /// No description provided for @auswahlAlbumName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name des Albums'**
+  String get auswahlAlbumName;
+
+  /// No description provided for @auswahlAlbumAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Anlegen'**
+  String get auswahlAlbumAnlegen;
+
+  /// No description provided for @auswahlImAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme im Album „{album}“} other{{n} Aufnahmen im Album „{album}“}}'**
+  String auswahlImAlbum(int n, String album);
+
+  /// No description provided for @auswahlLaedt.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Originale werden geladen …'**
+  String get auswahlLaedt;
+
+  /// No description provided for @auswahlGespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme auf dem Telefon gespeichert} other{{n} Aufnahmen auf dem Telefon gespeichert}}'**
+  String auswahlGespeichert(int n);
+
+  /// No description provided for @auswahlKeinZugriff.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.'**
+  String get auswahlKeinZugriff;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

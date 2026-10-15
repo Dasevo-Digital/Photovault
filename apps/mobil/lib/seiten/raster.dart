@@ -4,11 +4,14 @@ import 'package:kern/db/rasterzeile.dart';
 
 import '../bilder.dart';
 import '../sitzung.dart';
+import 'auswahl.dart';
 import 'betrachter.dart';
 
 /// Aufnahmen als Raster – auf Wunsch nach Tagen gegliedert, wie in der
-/// Zeitleiste. Ein Tipp öffnet den Betrachter mit genau dieser Liste.
-class AufnahmenRaster extends StatelessWidget {
+/// Zeitleiste. Ein Tipp öffnet den Betrachter mit genau dieser Liste;
+/// langes Drücken beginnt eine Auswahl (Issue #128), dann sammelt jeder
+/// Tipp weitere ein, und unten erscheint die Leiste mit den Aktionen.
+class AufnahmenRaster extends StatefulWidget {
   const AufnahmenRaster({
     super.key,
     required this.sitzung,
@@ -24,24 +27,73 @@ class AufnahmenRaster extends StatelessWidget {
   /// Etwas über dem Raster (z. B. das Suchfeld), das mitscrollt.
   final Widget? kopf;
 
+  @override
+  State<AufnahmenRaster> createState() => _AufnahmenRasterState();
+}
+
+class _AufnahmenRasterState extends State<AufnahmenRaster> {
   static const _spalten = 4;
 
-  void _oeffne(BuildContext context, int index) => Navigator.of(context).push(
+  final _auswahl = <String>{};
+
+  bool get _waehlt => _auswahl.isNotEmpty;
+
+  @override
+  void didUpdateWidget(AufnahmenRaster alt) {
+    super.didUpdateWidget(alt);
+    // Was aus der Liste verschwand (Papierkorb, anderer Filter), ist auch
+    // nicht mehr ausgewählt.
+    final da = {for (final z in widget.zeilen) z.id};
+    _auswahl.removeWhere((id) => !da.contains(id));
+  }
+
+  void _oeffne(int index) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) =>
-          Betrachter(sitzung: sitzung, zeilen: zeilen, start: index),
+      builder: (_) => Betrachter(
+        sitzung: widget.sitzung,
+        zeilen: widget.zeilen,
+        start: index,
+      ),
     ),
   );
 
-  Widget _kachel(BuildContext context, int i) {
-    final z = zeilen[i];
+  void _schalte(String id) => setState(() {
+    if (!_auswahl.remove(id)) _auswahl.add(id);
+  });
+
+  Widget _kachel(int i) {
+    final z = widget.zeilen[i];
+    final gewaehlt = _auswahl.contains(z.id);
+    final farben = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => _oeffne(context, i),
-      child: Miniatur(
-        paths: sitzung.paths,
-        relativ: z.thumbnailRelativePath,
-        video: z.type == 'VIDEO',
-        favorit: z.isFavorite,
+      onTap: () => _waehlt ? _schalte(z.id) : _oeffne(i),
+      onLongPress: () => _schalte(z.id),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedPadding(
+            duration: const Duration(milliseconds: 120),
+            padding: EdgeInsets.all(gewaehlt ? 8 : 0),
+            child: Miniatur(
+              paths: widget.sitzung.paths,
+              relativ: z.thumbnailRelativePath,
+              video: z.type == 'VIDEO',
+              favorit: z.isFavorite,
+            ),
+          ),
+          if (gewaehlt) ...[
+            ColoredBox(color: farben.primary.withValues(alpha: 0.15)),
+            Positioned(
+              left: 4,
+              top: 4,
+              child: Icon(
+                Icons.check_circle,
+                color: farben.primary,
+                shadows: const [Shadow(color: Colors.white, blurRadius: 4)],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -53,15 +105,18 @@ class AufnahmenRaster extends StatelessWidget {
       crossAxisSpacing: 2,
     ),
     delegate: SliverChildBuilderDelegate(
-      (context, i) => _kachel(context, von + i),
+      (context, i) => _kachel(von + i),
       childCount: bis - von,
     ),
   );
 
   @override
   Widget build(BuildContext context) {
-    final slivers = <Widget>[if (kopf != null) SliverToBoxAdapter(child: kopf)];
-    if (!nachTagen) {
+    final zeilen = widget.zeilen;
+    final slivers = <Widget>[
+      if (widget.kopf != null) SliverToBoxAdapter(child: widget.kopf),
+    ];
+    if (!widget.nachTagen) {
       slivers.add(_gitter(0, zeilen.length));
     } else {
       final sprache = Localizations.localeOf(context).toLanguageTag();
@@ -90,7 +145,28 @@ class AufnahmenRaster extends StatelessWidget {
         von = bis;
       }
     }
-    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 24)));
-    return CustomScrollView(slivers: slivers);
+    // Unter dem letzten Rand bleibt Platz für die Leiste.
+    slivers.add(
+      SliverToBoxAdapter(child: SizedBox(height: _waehlt ? 120 : 24)),
+    );
+    return Stack(
+      children: [
+        CustomScrollView(slivers: slivers),
+        if (_waehlt)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Auswahlleiste(
+              sitzung: widget.sitzung,
+              zeilen: [
+                for (final z in zeilen)
+                  if (_auswahl.contains(z.id)) z,
+              ],
+              aufheben: () => setState(_auswahl.clear),
+            ),
+          ),
+      ],
+    );
   }
 }

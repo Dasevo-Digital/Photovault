@@ -61,13 +61,34 @@
   "kontoVerbindet": "Verbindet …",
   "kontoAbgeglichen": "Abgeglichen",
   "serverSicherungStand": "Sicherung des Servers: zuletzt {wann}",
-  "@serverSicherungStand": {"placeholders": {"wann": {"type": "String"}}},
+  "@serverSicherungStand": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungWarnung": "Die Sicherung des Servers braucht Aufmerksamkeit – am Rechner unter Einstellungen → Server.",
   "serverSicherungOffen": "Die Sicherung des Servers ist noch nicht eingerichtet – am Rechner unter Einstellungen → Server.",
   "speicherStand": "Speicher auf dem Server: {frei} frei von {gesamt}",
-  "@speicherStand": {"placeholders": {"frei": {"type": "String"}, "gesamt": {"type": "String"}}},
+  "@speicherStand": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      }
+    }
+  },
   "speicherKnapp": "Der Speicher des Servers wird knapp: noch {frei} frei.",
-  "@speicherKnapp": {"placeholders": {"frei": {"type": "String"}}},
+  "@speicherKnapp": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      }
+    }
+  },
   "speicherVoll": "Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.",
   "kontoSendet": "{n, plural, =1{1 Änderung geht zum Server} other{{n} Änderungen gehen zum Server}}",
   "@kontoSendet": {
@@ -113,12 +134,24 @@
   "anmeldenLaedt": "Die Bibliothek kommt vom Server …",
   "anmeldenErstesTitel": "Erstes Konto anlegen",
   "anmeldenErstesText": "Dieser Server hat noch kein Konto. Mit dem Namen „{name}“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.",
-  "@anmeldenErstesText": {"placeholders": {"name": {"type": "String"}}},
+  "@anmeldenErstesText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "anmeldenPasswortWiederholen": "Passwort wiederholen",
   "anmeldenErstesAnlegen": "Konto anlegen und anmelden",
   "anmeldenPasswortUngleich": "Die beiden Passwörter stimmen nicht überein.",
   "anmeldenPasswortZuKurz": "Das Passwort braucht mindestens {n} Zeichen.",
-  "@anmeldenPasswortZuKurz": {"placeholders": {"n": {"type": "int"}}},
+  "@anmeldenPasswortZuKurz": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "anmeldenNameUngueltig": "Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.",
   "anmeldenErstesNurHeimnetz": "Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.",
   "anmeldenSchonEingerichtet": "Der Server hat inzwischen ein Konto. Bitte damit anmelden.",
@@ -132,20 +165,44 @@
   "kontoVerwalter": "Verwalter",
   "kontoAlsVerwalter": "Darf ebenfalls Konten verwalten",
   "kontoGeraete": "{n, plural, =0{kein Gerät} =1{1 Gerät} other{{n} Geräte}}",
-  "@kontoGeraete": {"placeholders": {"n": {"type": "int"}}},
+  "@kontoGeraete": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "kontoMitTotp": "mit TOTP",
   "kontoOhneTotp": "ohne TOTP",
   "kontoGesperrt": "gesperrt nach Fehlversuchen",
   "kontoDu": "dein Konto",
   "kontoPasswortSetzen": "Passwort neu setzen",
   "kontoPasswortSetzenText": "Alle Geräte von „{name}“ werden dabei abgemeldet.",
-  "@kontoPasswortSetzenText": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoPasswortSetzenText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoTotpZuruecksetzen": "TOTP zurücksetzen",
   "kontoTotpZurueckgesetzt": "„{name}“ richtet TOTP bei der nächsten Anmeldung neu ein.",
-  "@kontoTotpZurueckgesetzt": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoTotpZurueckgesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoEntsperren": "Entsperren",
   "kontoEntfernenTitel": "„{name}“ entfernen?",
-  "@kontoEntfernenTitel": {"placeholders": {"name": {"type": "String"}}},
+  "@kontoEntfernenTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "kontoEntfernenText": "Das Konto und seine Geräte werden entfernt. Die Bibliothek mit allen Fotos bleibt auf dem Server liegen: Sie wird beiseitegelegt, nicht gelöscht, und lässt sich nur dort von Hand löschen.",
   "kontoErledigt": "Erledigt.",
   "sicherungTitel": "Kamerarolle sichern",
@@ -220,5 +277,53 @@
   "sicherungBenachrichtigungText": "Fotos und Videos gehen zum Server.",
   "sicherungKanal": "Sicherung",
   "appZuAlt": "Der Server ist neuer als diese App – bitte die App aktualisieren. Bis dahin gleicht nichts ab.",
-  "serverZuAlt": "Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab."
+  "serverZuAlt": "Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.",
+  "auswahlAnzahl": "{n, plural, =1{1 ausgewählt} other{{n} ausgewählt}}",
+  "@auswahlAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlAufheben": "Auswahl aufheben",
+  "auswahlFavorit": "Favorit",
+  "auswahlTeilen": "Teilen",
+  "auswahlAlbum": "Album",
+  "auswahlHerunterladen": "Aufs Telefon",
+  "auswahlPapierkorb": "Papierkorb",
+  "auswahlPapierkorbTitel": "{n, plural, =1{Die Aufnahme in den Papierkorb legen?} other{{n} Aufnahmen in den Papierkorb legen?}}",
+  "@auswahlPapierkorbTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlPapierkorbText": "Sie verschwinden überall – auch am Rechner. Aus dem Papierkorb lassen sie sich am Rechner zurückholen.",
+  "auswahlAlbumTitel": "Zum Album hinzufügen",
+  "auswahlAlbumNeu": "Neues Album …",
+  "auswahlAlbumName": "Name des Albums",
+  "auswahlAlbumAnlegen": "Anlegen",
+  "auswahlImAlbum": "{n, plural, =1{1 Aufnahme im Album „{album}“} other{{n} Aufnahmen im Album „{album}“}}",
+  "@auswahlImAlbum": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "album": {
+        "type": "String"
+      }
+    }
+  },
+  "auswahlLaedt": "Die Originale werden geladen …",
+  "auswahlGespeichert": "{n, plural, =1{1 Aufnahme auf dem Telefon gespeichert} other{{n} Aufnahmen auf dem Telefon gespeichert}}",
+  "@auswahlGespeichert": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlKeinZugriff": "Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben."
 }

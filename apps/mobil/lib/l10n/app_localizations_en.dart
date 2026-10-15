@@ -523,4 +523,89 @@ class AppTexteEn extends AppTexte {
   @override
   String get serverZuAlt =>
       'The server is older than this app – please update the server. Nothing syncs until then.';
+
+  @override
+  String auswahlAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n selected',
+      one: '1 selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlAufheben => 'Clear selection';
+
+  @override
+  String get auswahlFavorit => 'Favorite';
+
+  @override
+  String get auswahlTeilen => 'Share';
+
+  @override
+  String get auswahlAlbum => 'Album';
+
+  @override
+  String get auswahlHerunterladen => 'To phone';
+
+  @override
+  String get auswahlPapierkorb => 'Trash';
+
+  @override
+  String auswahlPapierkorbTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Move $n photos to the trash?',
+      one: 'Move this photo to the trash?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlPapierkorbText =>
+      'They disappear everywhere – on the computer too. They can be restored from the trash on the computer.';
+
+  @override
+  String get auswahlAlbumTitel => 'Add to album';
+
+  @override
+  String get auswahlAlbumNeu => 'New album …';
+
+  @override
+  String get auswahlAlbumName => 'Album name';
+
+  @override
+  String get auswahlAlbumAnlegen => 'Create';
+
+  @override
+  String auswahlImAlbum(int n, String album) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos in album “$album”',
+      one: '1 photo in album “$album”',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlLaedt => 'Loading the originals …';
+
+  @override
+  String auswahlGespeichert(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos saved to this phone',
+      one: '1 photo saved to this phone',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlKeinZugriff =>
+      'No access to the photo library – allow it in the phone\'s settings.';
 }

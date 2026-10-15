@@ -10,6 +10,10 @@ extension AlbenAbfragen on AppDatabase {
     albums,
   )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).watch();
 
+  /// Dieselbe Liste einmalig – für einen Dialog, der sie nur kurz braucht.
+  Future<List<AlbumData>> alleAlben() =>
+      (select(albums)..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+
   Future<void> createAlbum(AlbumsCompanion album) => into(albums).insert(album);
 
   Future<void> addAssetsToAlbum(String albumId, List<String> assetIds) async {

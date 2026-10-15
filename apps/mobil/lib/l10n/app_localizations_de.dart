@@ -524,4 +524,89 @@ class AppTexteDe extends AppTexte {
   @override
   String get serverZuAlt =>
       'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
+
+  @override
+  String auswahlAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n ausgewählt',
+      one: '1 ausgewählt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlAufheben => 'Auswahl aufheben';
+
+  @override
+  String get auswahlFavorit => 'Favorit';
+
+  @override
+  String get auswahlTeilen => 'Teilen';
+
+  @override
+  String get auswahlAlbum => 'Album';
+
+  @override
+  String get auswahlHerunterladen => 'Aufs Telefon';
+
+  @override
+  String get auswahlPapierkorb => 'Papierkorb';
+
+  @override
+  String auswahlPapierkorbTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen in den Papierkorb legen?',
+      one: 'Die Aufnahme in den Papierkorb legen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlPapierkorbText =>
+      'Sie verschwinden überall – auch am Rechner. Aus dem Papierkorb lassen sie sich am Rechner zurückholen.';
+
+  @override
+  String get auswahlAlbumTitel => 'Zum Album hinzufügen';
+
+  @override
+  String get auswahlAlbumNeu => 'Neues Album …';
+
+  @override
+  String get auswahlAlbumName => 'Name des Albums';
+
+  @override
+  String get auswahlAlbumAnlegen => 'Anlegen';
+
+  @override
+  String auswahlImAlbum(int n, String album) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen im Album „$album“',
+      one: '1 Aufnahme im Album „$album“',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlLaedt => 'Die Originale werden geladen …';
+
+  @override
+  String auswahlGespeichert(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen auf dem Telefon gespeichert',
+      one: '1 Aufnahme auf dem Telefon gespeichert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get auswahlKeinZugriff =>
+      'Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.';
 }

@@ -1,2 +1,5 @@
 /* Asked on first access to the photo library (camera roll backup). */
 "NSPhotoLibraryUsageDescription" = "Photo Vault backs up the photos and videos on this phone to your server.";
+
+/* When saving from a selection */
+"NSPhotoLibraryAddUsageDescription" = "Photo Vault adds selected photos and videos to your photo library.";
