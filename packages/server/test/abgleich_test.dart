@@ -10,6 +10,7 @@ import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -606,6 +607,36 @@ void main() {
     );
     await verwaltung.entferne(max.id);
     expect([for (final k in await verwaltung.liste()) k.name], ['anna']);
+  });
+
+  test('der Speicher des Servers, wie das Gerät ihn sieht', () async {
+    final v = Serververbindung(
+      Uri.parse('http://127.0.0.1:$port'),
+      konten.meldeAn(erika.id, 'Rechner', 'x').token,
+    );
+    addTearDown(v.schliesse);
+    // Ohne Wächter: unbekannt, aber kein Fehler.
+    expect((await Serverspeicher.hole(v))!.stufe, 'unbekannt');
+
+    await server.close(force: true);
+    const gb = 1000 * 1000 * 1000;
+    final w = Speicherwaechter(
+      ordner,
+      messung: (_) async => const Speicherstand(gesamt: 200 * gb, frei: 9 * gb),
+    );
+    await w.pruefe();
+    api = baueApi(konten: konten, bibliotheken: bibliotheken, speicher: w);
+    await starteServer();
+    final s = (await Serverspeicher.hole(v))!;
+    expect(
+      (s.stufe, s.knapp, s.gesamt, s.frei),
+      ('knapp', true, 200 * gb, 9 * gb),
+    );
+    expect(Serverspeicher.anders(s, s), isFalse);
+    expect(
+      Serverspeicher.anders(s, const Serverspeicher(stufe: 'voll')),
+      isTrue,
+    );
   });
 }
 

@@ -187,14 +187,17 @@ class Sicherungsdienst extends ChangeNotifier {
     await uebergib(einstellungen);
   }
 
+  // Die Rückgabe des Plugins abfangen, nicht nur den Aufruf: Ein Fehler
+  // im unbeobachteten Future (in Tests ohne Telefon: kein Plugin) fiel
+  // sonst später irgendwo anders herunter.
   void _beobachte() {
     PhotoManager.addChangeCallback(_geaendert);
-    unawaited(PhotoManager.startChangeNotify());
+    unawaited(PhotoManager.startChangeNotify().then((_) {}, onError: (_) {}));
   }
 
   void _beobachteNicht() {
     PhotoManager.removeChangeCallback(_geaendert);
-    unawaited(PhotoManager.stopChangeNotify());
+    unawaited(PhotoManager.stopChangeNotify().then((_) {}, onError: (_) {}));
   }
 
   /// Ein neues Foto: kurz warten (eine Serie kommt in Schüben), dann

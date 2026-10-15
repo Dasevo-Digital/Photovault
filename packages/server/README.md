@@ -44,6 +44,8 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_ONNXRUNTIME`          | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle     |
 | `PV_BESCHLEUNIGER`        | `cpu`                 | `openvino`, `cuda`, siehe Beschleuniger |
 | `PV_SELBST_RECHNEN`       | `alles`               | `nichts` oder Stufen, siehe Rechenhilfe |
+| `PV_SPEICHER_WARNUNG`     | `85`                  | ab so viel Prozent belegt: knapp        |
+| `PV_SPEICHER_MINDEST`     | `2`                   | unter so vielen GB frei: keine Uploads  |
 | `PV_GEODATEN`             | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                  |
 | `PV_TOTP`                 | `pflicht`             | `frei`: TOTP nur, wer es einrichtet     |
 | `PV_PROXY`                | –                     | vertraute Proxys, siehe unten           |
@@ -58,6 +60,14 @@ In `PV_DATEN` liegen `server.sqlite` (Konten und Geräte),
 den Besitzer lesbar), `bibliotheken/<Konto>/` und `eingang/<Konto>/`.
 Gesichert gehört der ganze Ordner. Fehlt der Schlüssel, ist nichts
 verloren ausser den TOTP-Einrichtungen (`konto totp-zuruecksetzen`).
+
+**Speicher:** Der Server misst alle fünf Minuten den freien Platz unter
+`PV_DATEN`. Knapp ist er ab `PV_SPEICHER_WARNUNG` Prozent belegt oder unter
+10 GB frei – dann zeigen die Apps eine Warnung (Desktop: Statuszeile und
+Einstellungen → Server, Telefon: oben und unter Konto). Unter
+`PV_SPEICHER_MINDEST` GB nimmt er keine Uploads mehr an (507): Eine Platte,
+die mitten im Schreiben der Datenbank voll läuft, kann sie beschädigen.
+Alles andere läuft weiter, und jeder Wechsel steht im Protokoll.
 
 **Modelle:** dieselben Dateien wie in der App. Am einfachsten den Inhalt
 des Modellordners der App (Einstellungen → KI-Modelle) nach `PV_MODELLE`
@@ -433,6 +443,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
 | `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt; der Beschleuniger und seine Gegenproben |
+| `GET /speicher` | `{stufe: ausreichend \| knapp \| voll \| unbekannt, gesamt, frei, belegt}` – bei `voll` antworten Hochladen und Umzug mit 507 |
 | `POST /rechnen/auftraege` | `{arten, teile?, anzahl?}` → `{auftraege: [{id, art, aufnahme, datei, teile?, deutsch?}], gueltig}` – Arbeit für einen Rechner (Rechenhilfe) |
 | `POST /rechnen/ergebnis` | `{auftrag, ergebnis}` – trägt ein; 409, wenn der Auftrag abgelaufen oder fremd ist, 400 bei unbrauchbaren Werten |
 | `POST /rechnen/zurueck` | `{auftrag, auslassen?}` – ohne Ergebnis zurück; mit `auslassen` rechnet es der Server |

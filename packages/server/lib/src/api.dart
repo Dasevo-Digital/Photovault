@@ -17,6 +17,7 @@ import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'oidc.dart';
 import 'rechnen.dart';
+import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 
@@ -37,6 +38,7 @@ Handler baueApi({
   Absender? absender,
   Oidc? oidc,
   Future<Map<String, Object?>> Function()? beschleunigerZustand,
+  Speicherwaechter? speicher,
 }) {
   final von = absender ?? Absender();
   final anmeldung = Anmeldungsapi(konten, von, oidc);
@@ -47,6 +49,10 @@ Handler baueApi({
   final rechnen = Rechenapi(bibliotheken);
   final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
+
+  /// Bei vollem Speicher keine neuen Daten (siehe [Speicherwaechter]).
+  Handler wennPlatz(Handler h) =>
+      (r) => speicher?.voll ?? false ? _speicherVoll() : h(r);
 
   final r = Router()
     // Wer die Adresse im Browser öffnet, sah bisher nur „nicht angemeldet“
@@ -114,7 +120,7 @@ Handler baueApi({
     )
     ..post(
       '/api/v1/umzug/hochladen',
-      (Request r) => umzug.hochladen(r).anlegen(r),
+      wennPlatz((Request r) => umzug.hochladen(r).anlegen(r)),
     )
     ..head(
       '/api/v1/umzug/hochladen/<id>',
@@ -122,11 +128,17 @@ Handler baueApi({
     )
     ..patch(
       '/api/v1/umzug/hochladen/<id>',
-      (Request r, String id) => umzug.hochladen(r).anhaengen(r, id),
+      (Request r, String id) => speicher?.voll ?? false
+          ? _speicherVoll()
+          : umzug.hochladen(r).anhaengen(r, id),
     )
     ..delete(
       '/api/v1/umzug/hochladen/<id>',
       (Request r, String id) => umzug.hochladen(r).verwerfen(r, id),
+    )
+    ..get(
+      '/api/v1/speicher',
+      (Request _) => _json(speicher?.alsJson() ?? const {'stufe': 'unbekannt'}),
     )
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
@@ -137,7 +149,7 @@ Handler baueApi({
     )
     ..post(
       '/api/v1/hochladen',
-      (Request r) async => (await bereich(r)).hochladen.anlegen(r),
+      wennPlatz((Request r) async => (await bereich(r)).hochladen.anlegen(r)),
     )
     ..head(
       '/api/v1/hochladen/<id>',
@@ -150,8 +162,9 @@ Handler baueApi({
     )
     ..patch(
       '/api/v1/hochladen/<id>',
-      (Request r, String id) async =>
-          (await bereich(r)).hochladen.anhaengen(r, id),
+      (Request r, String id) async => speicher?.voll ?? false
+          ? _speicherVoll()
+          : (await bereich(r)).hochladen.anhaengen(r, id),
     )
     ..delete(
       '/api/v1/hochladen/<id>',
@@ -191,6 +204,11 @@ Middleware get _sicherheitskoepfe =>
         },
       );
     };
+
+/// 507 Insufficient Storage – der Client bricht ab, statt es weiter zu
+/// versuchen.
+Response _speicherVoll() =>
+    _json({'fehler': 'Der Speicher des Servers ist voll.'}, status: 507);
 
 Response _json(Object? daten, {int status = 200}) => Response(
   status,

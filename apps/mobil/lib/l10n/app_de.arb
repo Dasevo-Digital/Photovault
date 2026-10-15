@@ -60,6 +60,11 @@
   },
   "kontoVerbindet": "Verbindet …",
   "kontoAbgeglichen": "Abgeglichen",
+  "speicherStand": "Speicher auf dem Server: {frei} frei von {gesamt}",
+  "@speicherStand": {"placeholders": {"frei": {"type": "String"}, "gesamt": {"type": "String"}}},
+  "speicherKnapp": "Der Speicher des Servers wird knapp: noch {frei} frei.",
+  "@speicherKnapp": {"placeholders": {"frei": {"type": "String"}}},
+  "speicherVoll": "Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.",
   "kontoSendet": "{n, plural, =1{1 Änderung geht zum Server} other{{n} Änderungen gehen zum Server}}",
   "@kontoSendet": {
     "placeholders": {

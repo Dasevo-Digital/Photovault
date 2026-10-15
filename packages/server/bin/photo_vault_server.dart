@@ -78,6 +78,11 @@ Future<void> main(List<String> argumente) async {
     await bibliotheken.fuer(k.id);
   }
   final oidc = e.oidc == null ? null : Oidc(e.oidc!);
+  final speicher = Speicherwaechter(
+    e.daten,
+    warnAnteil: e.speicherWarnung,
+    mindestFrei: e.speicherMindestGb * 1000 * 1000 * 1000,
+  )..starte();
 
   final server = await shelf_io.serve(
     baueApi(
@@ -86,6 +91,7 @@ Future<void> main(List<String> argumente) async {
       absender: Absender(e.proxys),
       oidc: oidc,
       beschleunigerZustand: onnx?.zustand,
+      speicher: speicher,
     ),
     e.adresse,
     e.port,
@@ -118,6 +124,7 @@ Future<void> main(List<String> argumente) async {
   ]);
   protokoll('Beende …');
   await server.close();
+  speicher.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
   sdb.schliesse();

@@ -9240,6 +9240,20 @@ class AppTexteEn extends AppTexte {
       'The server is older than this app – please update the server. Nothing syncs until then.';
 
   @override
+  String serverSpeicherStand(String frei, String gesamt) {
+    return 'Storage on the server: $frei free of $gesamt';
+  }
+
+  @override
+  String serverSpeicherKnapp(String frei) {
+    return 'The server is running low on storage: $frei left.';
+  }
+
+  @override
+  String get serverSpeicherVoll =>
+      'The server storage is full. It accepts new photos again once space is freed.';
+
+  @override
   String get serverErstesTitel => 'Create the first account';
 
   @override

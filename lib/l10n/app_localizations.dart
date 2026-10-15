@@ -14257,6 +14257,24 @@ abstract class AppTexte {
   /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
   String get serverZuAlt;
 
+  /// No description provided for @serverSpeicherStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicher auf dem Server: {frei} frei von {gesamt}'**
+  String serverSpeicherStand(String frei, String gesamt);
+
+  /// No description provided for @serverSpeicherKnapp.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers wird knapp: noch {frei} frei.'**
+  String serverSpeicherKnapp(String frei);
+
+  /// No description provided for @serverSpeicherVoll.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.'**
+  String get serverSpeicherVoll;
+
   /// No description provided for @serverErstesTitel.
   ///
   /// In de, this message translates to:

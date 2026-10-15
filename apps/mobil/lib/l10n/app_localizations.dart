@@ -313,6 +313,24 @@ abstract class AppTexte {
   /// **'Abgeglichen'**
   String get kontoAbgeglichen;
 
+  /// No description provided for @speicherStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicher auf dem Server: {frei} frei von {gesamt}'**
+  String speicherStand(String frei, String gesamt);
+
+  /// No description provided for @speicherKnapp.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers wird knapp: noch {frei} frei.'**
+  String speicherKnapp(String frei);
+
+  /// No description provided for @speicherVoll.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.'**
+  String get speicherVoll;
+
   /// No description provided for @kontoSendet.
   ///
   /// In de, this message translates to:

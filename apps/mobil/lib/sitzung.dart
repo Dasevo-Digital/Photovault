@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
@@ -117,6 +118,31 @@ class Sitzung extends ChangeNotifier {
     );
     _setze(Sitzungszustand.bereit);
     unawaited(d.starte());
+    unawaited(pruefeServerspeicher());
+    _speicherUhr = Timer.periodic(
+      const Duration(minutes: 15),
+      (_) => pruefeServerspeicher(),
+    );
+  }
+
+  /// Wie es um den Speicher des Servers steht (siehe dort
+  /// `Speicherwaechter`); `null`, solange unbekannt.
+  Serverspeicher? serverspeicher;
+  Timer? _speicherUhr;
+
+  Future<void> pruefeServerspeicher() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final neu = await Serverspeicher.hole(a.verbindung);
+      final vorher = serverspeicher;
+      serverspeicher = neu;
+      if (Serverspeicher.anders(vorher, neu)) notifyListeners();
+    } on KeineVerbindung {
+      // Dann beim nächsten Mal.
+    } on Serverfehler {
+      // Ebenso.
+    }
   }
 
   /// Den Text einer Bildsuche vom Server einbetten lassen (siehe dort
@@ -175,6 +201,8 @@ class Sitzung extends ChangeNotifier {
     final a = abgleich;
     if (a == null) return;
     abgleich = null;
+    _speicherUhr?.cancel();
+    serverspeicher = null;
     sicherung?.dispose();
     sicherung = null;
     await _abo?.cancel();

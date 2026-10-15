@@ -8,7 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -231,6 +233,51 @@ void main() {
     await tester.tap(find.text(t.allgSpeichern));
     await tester.pumpAndSettle();
     expect(verwaltung.angelegt, ['eva']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('der Speicher des Servers: Stand, knapp in Rot, voll', (
+    tester,
+  ) async {
+    const gib = 1 << 30;
+    bib.verbindung = Verbindungsdatei(
+      server: Uri.parse('https://fotos.example.de/'),
+      konto: 'anna',
+      geraet: 'Rechner',
+      token: 't',
+    );
+    bib.serverspeicherFuerTests = const Serverspeicher(
+      stufe: 'ausreichend',
+      gesamt: 200 * gib,
+      frei: 120 * gib,
+    );
+    var t = await zeige(tester, ServerGruppe.new);
+    expect(
+      find.text(t.serverSpeicherStand('120.00 GB', '200.00 GB')),
+      findsOneWidget,
+    );
+
+    bib.serverspeicherFuerTests = const Serverspeicher(
+      stufe: 'knapp',
+      gesamt: 200 * gib,
+      frei: 20 * gib,
+    );
+    t = await zeige(tester, ServerGruppe.new);
+    final zeile = tester.widget<Text>(
+      find.text(t.serverSpeicherStand('20.00 GB', '200.00 GB')),
+    );
+    expect(
+      zeile.style?.color,
+      Theme.of(tester.element(find.byWidget(zeile))).colorScheme.error,
+    );
+
+    bib.serverspeicherFuerTests = const Serverspeicher(
+      stufe: 'voll',
+      gesamt: 200 * gib,
+      frei: gib,
+    );
+    t = await zeige(tester, ServerGruppe.new);
+    expect(find.text(t.serverSpeicherVoll), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

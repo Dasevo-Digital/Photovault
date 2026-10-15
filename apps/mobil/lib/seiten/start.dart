@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kern/services/groessentext.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -80,7 +81,8 @@ class _StartState extends State<Start> {
             listenable: s,
             builder: (context, _) {
               final z = s.abgleichszustand;
-              final text = z == null
+              final sp = s.serverspeicher;
+              final verbindung = z == null
                   ? null
                   : z.schemaAnders
                   ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)
@@ -89,12 +91,24 @@ class _StartState extends State<Start> {
                   : !z.erreichbar
                   ? t.offline(z.ausstehend)
                   : null;
+              final speicher = sp == null
+                  ? null
+                  : sp.voll
+                  ? t.speicherVoll
+                  : sp.knapp
+                  ? t.speicherKnapp(groessentext(sp.frei ?? 0))
+                  : null;
+              final text = verbindung ?? speicher;
               if (text == null) return const SizedBox.shrink();
               return Material(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: ListTile(
                   dense: true,
-                  leading: const Icon(Icons.cloud_off_outlined),
+                  leading: Icon(
+                    verbindung != null
+                        ? Icons.cloud_off_outlined
+                        : Icons.storage_outlined,
+                  ),
                   title: Text(text),
                 ),
               );

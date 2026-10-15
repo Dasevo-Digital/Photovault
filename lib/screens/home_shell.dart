@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
+import '../services/groessentext.dart';
 import '../utils/dauertext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
@@ -192,7 +193,15 @@ class _AnalyseBanner extends StatelessWidget {
         : !z.erreichbar
         ? t.serverOffline(z.ausstehend)
         : null;
-    if (a == null && laeufe.isEmpty && server == null) {
+    final sp = library.verbunden ? library.serverspeicher : null;
+    final speicher = sp == null
+        ? null
+        : sp.voll
+        ? t.serverSpeicherVoll
+        : sp.knapp
+        ? t.serverSpeicherKnapp(groessentext(sp.frei ?? 0))
+        : null;
+    if (a == null && laeufe.isEmpty && server == null && speicher == null) {
       return const SizedBox.shrink();
     }
 
@@ -206,6 +215,15 @@ class _AnalyseBanner extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.cloud_off_outlined),
               title: Text(server),
+            ),
+          if (speicher != null)
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.storage_outlined,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(speicher),
             ),
           if (a != null)
             _Laufzeile(

@@ -46,6 +46,8 @@ class Einstellungen {
     this.onnxRuntime,
     this.beschleuniger = Beschleuniger.cpu,
     this.selbstRechnen = const {...Analysestufe.values},
+    this.speicherWarnung = 0.85,
+    this.speicherMindestGb = 2,
     Directory? geodaten,
     this.totpPflicht = true,
     this.proxys = const [],
@@ -73,6 +75,8 @@ class Einstellungen {
           : File(p.absolute(u['PV_ONNXRUNTIME']!)),
       beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
       selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
+      speicherWarnung: _prozent(u['PV_SPEICHER_WARNUNG'], 85) / 100,
+      speicherMindestGb: _zahl(u['PV_SPEICHER_MINDEST'], 2),
       geodaten: u['PV_GEODATEN'] == null
           ? null
           : Directory(p.absolute(u['PV_GEODATEN']!)),
@@ -141,6 +145,29 @@ class Einstellungen {
   /// rechnen verbundene Rechner mit eingeschalteter Rechenhilfe – eine
   /// schwache Maschine überlässt so die Bildmodelle dem Rechner.
   final Set<Analysestufe> selbstRechnen;
+
+  /// Ab welchem Anteil belegt der Speicher als knapp gilt
+  /// (`PV_SPEICHER_WARNUNG` in Prozent, Vorgabe 85).
+  final double speicherWarnung;
+
+  /// Unter so vielen GB frei nimmt der Server keine Uploads mehr an
+  /// (`PV_SPEICHER_MINDEST`, Vorgabe 2).
+  final int speicherMindestGb;
+
+  static int _prozent(String? text, int vorgabe) {
+    final w = _zahl(text, vorgabe);
+    if (w < 1 || w > 99) {
+      throw ArgumentError('PV_SPEICHER_WARNUNG: „$text“ – 1 bis 99 Prozent');
+    }
+    return w;
+  }
+
+  static int _zahl(String? text, int vorgabe) {
+    final t = (text ?? '').trim();
+    if (t.isEmpty) return vorgabe;
+    return int.tryParse(t) ??
+        (throw ArgumentError('„$t“ ist keine ganze Zahl'));
+  }
 
   /// Liest `PV_SELBST_RECHNEN`.
   static Set<Analysestufe> selbstRechnenAus(String? text) {

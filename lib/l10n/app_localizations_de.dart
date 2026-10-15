@@ -9290,6 +9290,20 @@ class AppTexteDe extends AppTexte {
       'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
 
   @override
+  String serverSpeicherStand(String frei, String gesamt) {
+    return 'Speicher auf dem Server: $frei frei von $gesamt';
+  }
+
+  @override
+  String serverSpeicherKnapp(String frei) {
+    return 'Der Speicher des Servers wird knapp: noch $frei frei.';
+  }
+
+  @override
+  String get serverSpeicherVoll =>
+      'Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.';
+
+  @override
   String get serverErstesTitel => 'Erstes Konto anlegen';
 
   @override

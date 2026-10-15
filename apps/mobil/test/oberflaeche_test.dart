@@ -7,12 +7,15 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/karte.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
+import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
@@ -237,6 +240,33 @@ void main() {
     expect(find.text(t.sicherungJetzt), findsOneWidget);
     expect(find.text(t.sicherungAlleFotos), findsOneWidget);
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
+  });
+
+  testWidgets('die Kontoseite zeigt den Speicher des Servers', (tester) async {
+    final sitzung = Sitzung()
+      ..verbindung = Verbindungsdatei(
+        server: Uri.parse('https://fotos.example.de/'),
+        konto: 'anna',
+        geraet: 'Telefon',
+        token: 't',
+      )
+      ..serverspeicher = const Serverspeicher(
+        stufe: 'knapp',
+        gesamt: 200 << 30,
+        frei: 20 << 30,
+      );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Konto(sitzung: sitzung),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Konto)));
+    expect(find.text(t.speicherStand('20.00 GB', '200.00 GB')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 

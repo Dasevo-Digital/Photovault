@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/auswertung/rechenhilfe.dart' show Rechenfaehigkeit;
 
 import '../../l10n/app_localizations.dart';
+import '../../services/groessentext.dart';
 import '../../services/library_location.dart';
 import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
@@ -72,6 +74,22 @@ class ServerGruppe extends StatelessWidget {
           subtitle: Text(t.serverKontoGeraet(v.konto, v.geraet)),
         ),
         if (zustand != null) Text(zustand),
+        if (library.serverspeicher
+            case Serverspeicher(:final gesamt?, :final frei?) && final sp)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Text(
+              sp.voll
+                  ? t.serverSpeicherVoll
+                  : t.serverSpeicherStand(
+                      groessentext(frei),
+                      groessentext(gesamt),
+                    ),
+              style: sp.knapp || sp.voll
+                  ? TextStyle(color: Theme.of(context).colorScheme.error)
+                  : null,
+            ),
+          ),
         if (z != null && z.abgelehnt.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(

@@ -141,6 +141,20 @@ class AppTexteDe extends AppTexte {
   String get kontoAbgeglichen => 'Abgeglichen';
 
   @override
+  String speicherStand(String frei, String gesamt) {
+    return 'Speicher auf dem Server: $frei frei von $gesamt';
+  }
+
+  @override
+  String speicherKnapp(String frei) {
+    return 'Der Speicher des Servers wird knapp: noch $frei frei.';
+  }
+
+  @override
+  String get speicherVoll =>
+      'Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.';
+
+  @override
   String kontoSendet(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,

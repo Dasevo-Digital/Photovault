@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/services/groessentext.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -75,6 +77,25 @@ class Konto extends StatelessWidget {
                         : t.kontoAbgeglichen,
                   ),
                 ),
+                if (sitzung.serverspeicher
+                    case Serverspeicher(:final gesamt?, :final frei?) &&
+                        final sp)
+                  ListTile(
+                    leading: Icon(
+                      Icons.storage_outlined,
+                      color: sp.knapp || sp.voll
+                          ? Theme.of(context).colorScheme.error
+                          : null,
+                    ),
+                    title: Text(
+                      sp.voll
+                          ? t.speicherVoll
+                          : t.speicherStand(
+                              groessentext(frei),
+                              groessentext(gesamt),
+                            ),
+                    ),
+                  ),
               ],
               if (sitzung.sicherung case final d?)
                 ListenableBuilder(

@@ -55,6 +55,7 @@ import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
+import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -982,6 +983,35 @@ class LibraryState extends ChangeNotifier {
     });
     abgleich = a;
     a.starte();
+    unawaited(pruefeServerspeicher());
+    _speicherUhr = Timer.periodic(
+      const Duration(minutes: 15),
+      (_) => pruefeServerspeicher(),
+    );
+  }
+
+  /// Wie es um den Speicher des Servers steht (Issue #123) – für die
+  /// Statuszeile und die Einstellungen. `null`, solange es nicht bekannt
+  /// ist oder der Server es nicht meldet.
+  Serverspeicher? get serverspeicher => _serverspeicher;
+  Serverspeicher? _serverspeicher;
+  @visibleForTesting
+  set serverspeicherFuerTests(Serverspeicher? s) => _serverspeicher = s;
+  Timer? _speicherUhr;
+
+  Future<void> pruefeServerspeicher() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final neu = await Serverspeicher.hole(a.verbindung);
+      final vorher = _serverspeicher;
+      _serverspeicher = neu;
+      if (Serverspeicher.anders(vorher, neu)) notifyListeners();
+    } on KeineVerbindung {
+      // Dann eben beim nächsten Mal.
+    } on Serverfehler {
+      // Ebenso.
+    }
   }
 
   // --- Rechenhilfe (Issue #104) ------------------------------------------
@@ -1073,6 +1103,8 @@ class LibraryState extends ChangeNotifier {
         gescheitert: ausgang == null || ausgang == 'failed',
       );
     }
+    // Was dazukam, zählt auch beim Speicher des Servers.
+    unawaited(pruefeServerspeicher());
     // Die neuen Aufnahmen gleich holen: Wer nach dem Import zu ihnen
     // springt, soll sie hier schon finden.
     try {
@@ -3926,6 +3958,7 @@ class LibraryState extends ChangeNotifier {
     // Pruefung fiel es als „A Timer is still pending even after the
     // widget tree was disposed" auf (drei Tests).
     _embeddingCacheTimer?.cancel();
+    _speicherUhr?.cancel();
     unawaited(_abgleichsAbo?.cancel());
     unawaited(abgleich?.beende());
     unawaited(beendeRechenhilfe());
