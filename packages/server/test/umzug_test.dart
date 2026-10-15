@@ -106,6 +106,14 @@ void main() {
     ).laufe().toList();
     expect(staende.last.fertig, isTrue);
     expect(staende.last.gesamt, greaterThan(0));
+    // Die Anzahl steht von Anfang an fest und zählt hoch – nicht „n von n“
+    // mit dem, was bisher geschickt wurde.
+    final anzahl = staende.first.dateienGesamt;
+    expect(anzahl, greaterThan(1));
+    expect(staende.first.dateienErledigt, 0);
+    expect(staende.map((s) => s.dateienGesamt).toSet(), {anzahl});
+    expect(staende[1].dateienErledigt, 1);
+    expect(staende.last.dateienErledigt, anzahl);
 
     final b = (await bibliotheken.fuer(erika.id)).bibliothek;
     expect((await b.db.assetsByIds(['a1'])).single.rating, 4);
@@ -158,9 +166,15 @@ void main() {
         'sha256': (await sha256.bind(datei.openRead()).first).toString(),
       });
       final hochgeladen = <String>[];
+      final staende = <Umzugsstand>[];
       await for (final s in Umzug(v, rechner, rechnerOrdner).laufe()) {
+        staende.add(s);
         if (s.datei != null) hochgeladen.add(s.datei!);
       }
+      // Was schon da war, zählt als erledigt: eine Datei weniger geschickt,
+      // und am Ende stehen trotzdem alle da.
+      expect(hochgeladen, hasLength(staende.last.dateienGesamt - 1));
+      expect(staende.last.dateienErledigt, staende.last.dateienGesamt);
       expect(hochgeladen, isNot(contains('originals/2025/01/a1.jpg')));
       expect(hochgeladen, contains('originals/2025/01/a2.jpg'));
     },

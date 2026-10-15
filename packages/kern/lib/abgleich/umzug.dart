@@ -14,6 +14,8 @@ class Umzugsstand {
     this.gesamt, {
     this.datei,
     this.fertig = false,
+    this.dateienErledigt = 0,
+    this.dateienGesamt = 0,
   });
 
   /// Bytes.
@@ -21,6 +23,12 @@ class Umzugsstand {
   final int gesamt;
   final String? datei;
   final bool fertig;
+
+  /// Dateien – erledigt zählt auch die, die der Server von einem
+  /// unterbrochenen Umzug schon hatte. Die Datenbank kommt danach und
+  /// zählt nicht mit.
+  final int dateienErledigt;
+  final int dateienGesamt;
 }
 
 /// Zieht die Bibliothek dieses Rechners auf den Server (siehe dort
@@ -61,11 +69,14 @@ class Umzug {
       dateien.add((e, rel, await e.length()));
     }
     final gesamt = dateien.fold<int>(0, (s, d) => s + d.$3);
+    final anzahl = dateien.length;
     var erledigt = 0;
-    yield Umzugsstand(0, gesamt);
+    var fertige = 0;
+    yield Umzugsstand(0, gesamt, dateienGesamt: anzahl);
     for (final (datei, rel, groesse) in dateien) {
       if (vorhanden[rel] == groesse) {
         erledigt += groesse;
+        fertige++;
         continue;
       }
       final summe = (await sha256.bind(datei.openRead()).first).toString();
@@ -77,7 +88,14 @@ class Umzug {
         throw StateError('Umzug von $rel: ${kopf['pv-ausgang']}');
       }
       erledigt += groesse;
-      yield Umzugsstand(erledigt, gesamt, datei: rel);
+      fertige++;
+      yield Umzugsstand(
+        erledigt,
+        gesamt,
+        datei: rel,
+        dateienErledigt: fertige,
+        dateienGesamt: anzahl,
+      );
     }
 
     // Zuletzt die Datenbank, als Abzug in einem Zug.
@@ -98,6 +116,12 @@ class Umzug {
       await tmp.delete(recursive: true);
     }
     await verbindung.schicke('api/v1/umzug/abschliessen', const {});
-    yield Umzugsstand(gesamt, gesamt, fertig: true);
+    yield Umzugsstand(
+      gesamt,
+      gesamt,
+      fertig: true,
+      dateienErledigt: anzahl,
+      dateienGesamt: anzahl,
+    );
   }
 }

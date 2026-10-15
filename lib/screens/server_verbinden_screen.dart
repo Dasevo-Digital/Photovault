@@ -278,7 +278,6 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
     final t = AppTexte.of(context);
     final library = widget.stand.library;
     final fortschritt = ValueNotifier<BibliotheksVerschiebefortschritt?>(null);
-    var dateien = 0;
     await verlegeBibliothek(
       widget.stand,
       loadingText: t.serverZiehtUm,
@@ -293,12 +292,14 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
             library.db,
             library.paths.root,
           ).laufe()) {
-            if (s.datei != null) dateien++;
+            // Die Anzahl aus dem Umzug selbst: Ein eigener Zähler kannte nur
+            // die bisher geschickten Dateien und zeigte „3988 von 3988“,
+            // während noch neun Zehntel fehlten.
             fortschritt.value = BibliotheksVerschiebefortschritt(
               kopierteBytes: s.erledigt,
               gesamtBytes: s.gesamt,
-              kopierteDateien: dateien,
-              gesamtDateien: dateien,
+              kopierteDateien: s.dateienErledigt,
+              gesamtDateien: s.dateienGesamt,
             );
           }
         } finally {
