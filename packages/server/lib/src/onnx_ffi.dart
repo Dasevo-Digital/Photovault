@@ -360,6 +360,9 @@ final class _Sitzung {
   /// Dieselbe Sitzung auf der CPU, solange die Gegenprobe läuft.
   _Zeiger? zwilling;
   var offen = _probelaeufe;
+
+  /// Die Läufe der Gegenprobe in Mikrosekunden: `(cpu, beschleunigt)`.
+  final zeiten = <(int, int)>[];
 }
 
 typedef _Sitzungsoptionen = ({
@@ -440,6 +443,7 @@ class _Ort {
 
   /// Modelle (Pfad), die die Gegenprobe bestanden haben …
   final _bestanden = <String>{};
+  final _tempo = <String, ({double cpu, double beschleunigt})>{};
 
   /// … und die, die durchfielen, mit Grund.
   final _verworfen = <String, String>{};
@@ -878,6 +882,17 @@ class _Ort {
         if (s.zwilling != null) _kurz(s.pfad),
     }.toList()..sort(),
     'verworfen': {for (final e in _verworfen.entries) _kurz(e.key): e.value},
+    // Was der Beschleuniger bringt: mittlere Millisekunden je Lauf in der
+    // Gegenprobe, ohne den ersten.
+    'tempo': {
+      for (final e in _tempo.entries)
+        _kurz(e.key): {
+          'cpu': double.parse(e.value.cpu.toStringAsFixed(1)),
+          'beschleuniger': double.parse(
+            e.value.beschleunigt.toStringAsFixed(1),
+          ),
+        },
+    },
   };
 
   static String _kurz(String pfad) => pfad.split(RegExp(r'[/\\]')).last;
@@ -949,10 +964,14 @@ class _Ort {
         (throw StateError('Sitzung $sitzungId gibt es nicht'));
     final zwilling = s.zwilling;
     if (zwilling != null) {
+      final uhr = Stopwatch()..start();
       final cpu = _lauf(zwilling, s, eingaben);
+      final aufCpu = uhr.elapsedMicroseconds;
       String? abweichung;
       try {
+        uhr.reset();
         final beschleunigt = _lauf(s.zeiger, s, eingaben);
+        s.zeiten.add((aufCpu, uhr.elapsedMicroseconds));
         try {
           abweichung = _vergleiche(cpu, beschleunigt, s.ausgaenge);
         } finally {
@@ -961,6 +980,8 @@ class _Ort {
       } on StateError catch (f) {
         abweichung = 'rechnet nicht: ${f.message}';
       }
+      // Richtig, aber langsamer: Dann rechnet die CPU es besser selbst.
+      if (abweichung == null && s.offen <= 1) abweichung = langsamer(s.zeiten);
       if (abweichung != null) {
         _verworfen[s.pfad] = abweichung;
         _releaseSession(s.zeiger);
@@ -970,6 +991,7 @@ class _Ort {
           ..anbieter = 'CPU';
       } else if (--s.offen <= 0) {
         _bestanden.add(s.pfad);
+        if (tempo(s.zeiten) case final t?) _tempo[s.pfad] = t;
         _releaseSession(zwilling);
         s.zwilling = null;
       }

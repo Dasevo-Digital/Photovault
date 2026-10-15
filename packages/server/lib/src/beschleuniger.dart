@@ -126,3 +126,35 @@ String? abweichung(Float32List cpu, Float32List anderer) {
   return 'Kosinus ${kosinus.toStringAsFixed(6)}, '
       'Abweichung ${relativ.toStringAsExponential(2)}';
 }
+
+/// `null`, wenn der Beschleuniger in der Gegenprobe nicht langsamer war als
+/// die CPU; sonst, um wie viel. [zeiten] sind die Läufe der Probe in
+/// Mikrosekunden, `(cpu, beschleunigt)`.
+///
+/// **Der erste Lauf zählt nicht:** In ihm übersetzt der Beschleuniger das
+/// Modell oft erst. **Verglichen wird der beste Lauf** jeder Seite: Ein
+/// einzelner Ausreisser (der Rechner lagert gerade aus) soll nicht
+/// entscheiden – gemessen bestand die Gesichtserkennung einmal mit 5,7
+/// gegen 10,4 ms und fiel beim nächsten Mal mit 21 gegen 14 ms durch.
+///
+/// **Ein Modell, dessen Eingaben jedes Mal anders geformt sind** (der
+/// Decoder der Bildbeschreibung wächst Wort für Wort), lässt OpenVINO auf
+/// der Grafik bei jedem Lauf neu übersetzen: 45 ms statt 5,5 ms je Lauf,
+/// und der Speicher lief über. Richtig rechnet er trotzdem; nur dieser
+/// Vergleich fängt es.
+String? langsamer(List<(int, int)> zeiten) {
+  final t = tempo(zeiten);
+  if (t == null || t.beschleunigt <= t.cpu) return null;
+  return 'langsamer als die CPU: ${t.beschleunigt.toStringAsFixed(1)} ms '
+      'gegen ${t.cpu.toStringAsFixed(1)} ms im besten Lauf';
+}
+
+/// Der beste Lauf jeder Seite in Millisekunden, ohne den ersten (siehe
+/// [langsamer]) – auch für die Anzeige, was der Beschleuniger bringt.
+({double cpu, double beschleunigt})? tempo(List<(int, int)> zeiten) {
+  final gezaehlt = (zeiten.length > 1 ? zeiten.skip(1) : zeiten).toList();
+  if (gezaehlt.isEmpty) return null;
+  double bester(int Function((int, int)) f) =>
+      gezaehlt.map(f).reduce(math.min) / 1000;
+  return (cpu: bester((z) => z.$1), beschleunigt: bester((z) => z.$2));
+}

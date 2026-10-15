@@ -5,7 +5,8 @@ import 'package:image/image.dart' as img;
 import 'package:kern/auswertung/modelle.dart';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
-import 'package:photo_vault_server/src/beschleuniger.dart' show abweichung;
+import 'package:photo_vault_server/src/beschleuniger.dart'
+    show abweichung, langsamer, tempo;
 import 'package:test/test.dart';
 
 /// Beschleuniger (Issue #104): wie sie eingestellt werden, wann eine
@@ -52,6 +53,21 @@ void main() {
       // Fast überall null (Texterkennung ohne Text): Rauschen von 1e-7
       // drückt den Kosinus, ändert aber nichts.
       expect(abweichung(v([1e-6, 2e-6, 0]), v([1.1e-6, 1.9e-6, 1e-7])), isNull);
+    });
+
+    test('langsamer als die CPU fällt durch, der erste Lauf zählt nicht', () {
+      // Der erste Lauf übersetzt das Modell erst – danach schneller.
+      expect(langsamer([(10000, 90000), (10000, 4000), (10000, 5000)]), isNull);
+      expect(
+        langsamer([(10000, 90000), (10000, 30000), (10000, 50000)]),
+        'langsamer als die CPU: 30.0 ms gegen 10.0 ms im besten Lauf',
+      );
+      // Ein Ausreisser entscheidet nicht.
+      expect(langsamer([(9000, 9000), (10000, 21000), (14000, 5700)]), isNull);
+      expect(langsamer([(10000, 12000)]), contains('langsamer'));
+      expect(langsamer(const []), isNull);
+      final t = tempo([(10000, 90000), (12000, 4000), (8000, 6000)])!;
+      expect((t.cpu, t.beschleunigt), (8.0, 4.0));
     });
 
     test('ein anderes Ergebnis nicht', () {

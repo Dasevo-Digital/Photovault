@@ -42,8 +42,8 @@ class Auswertungsstand {
 /// nichts mehr hereinkommt. Kommt während eines Laufs etwas dazu, folgt ein
 /// zweiter: Jede Stufe sucht ihre offenen Aufnahmen beim Beginn.
 ///
-/// **Modelle bleiben nicht liegen.** Alle [freigabeTakt] gibt der Dienst
-/// frei, was gerade niemand benutzt – wie die App. Ein Server mit der
+/// **Modelle bleiben nicht liegen.** Nach jeder Stufe und alle
+/// [freigabeTakt] gibt der Dienst frei, was gerade niemand benutzt. Ein Server mit der
 /// Bildbeschreibung im Speicher hielte sonst Tag und Nacht ein Gigabyte.
 class Auswertungsdienst {
   Auswertungsdienst(
@@ -159,6 +159,11 @@ class Auswertungsdienst {
       } catch (e) {
         protokoll('Auswertung ${stufe.name} gescheitert: $e');
       }
+      // Die Modelle dieser Stufe gleich abgeben, nicht erst nach dem Takt:
+      // Sonst lägen CLIP, Gesichter und Texterkennung noch im Speicher,
+      // während die Bildbeschreibung lädt – mit der Grafik lagerte ein
+      // Container mit 4 GiB dabei fast ein Gigabyte aus.
+      await _gibFrei();
     }
     protokoll('Auswertung fertig nach ${uhr.elapsed.inSeconds} s');
   }

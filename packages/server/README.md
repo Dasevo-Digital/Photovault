@@ -226,13 +226,25 @@ sagt:
 
 **Jedes Modell besteht erst eine Gegenprobe.** Seine ersten drei Läufe
 rechnen auf dem Beschleuniger und auf der CPU; nur wenn die Ausgaben
-übereinstimmen (Kosinus ≥ 0,9999, Abweichung ≤ 1 %), übernimmt der
-Beschleuniger. Sonst bleibt das Modell auf der CPU. Gemessen mit OpenVINO:
-CLIP, Gesichter und Texterkennung bestehen; Teile der Bildbeschreibung
-weichen ab oder laden nicht und bleiben auf der CPU. `GET
-/api/v1/auswertung` zeigt unter `beschleuniger`, welche Modelle geprüft,
-noch in Prüfung oder verworfen sind (mit Grund). Jedes Ergebnis vermerkt in
-der Bibliothek, mit welchem Modell, wo und worauf es gerechnet wurde.
+übereinstimmen (Kosinus ≥ 0,9999, Abweichung ≤ 1 %) **und** der
+Beschleuniger im besten Lauf nicht langsamer ist (den ersten, in dem er
+oft noch übersetzt, nicht gezählt), übernimmt er. Sonst bleibt das Modell
+auf der CPU. `GET /api/v1/auswertung` zeigt unter `beschleuniger`, welche
+Modelle geprüft, noch in Prüfung oder verworfen sind (mit Grund), und
+unter `tempo` die Millisekunden je Lauf auf beiden Seiten. Jedes Ergebnis
+vermerkt in der Bibliothek, mit welchem Modell, wo und worauf es gerechnet
+wurde.
+
+**Gemessen auf einer Intel Iris Xe** (i9-12900HK, Container mit vier
+Kernen und 4 GiB): CLIP rechnet auf der Grafik 30 statt 50 ms, die
+Gesichtserkennung 6 statt 10 ms – die Ergebnisse sind dieselben wie auf
+der CPU. Texterkennung, Augenprüfung und die Bildbeschreibung sind dort
+langsamer oder laden nicht und bleiben auf der CPU. Weil die
+Bildbeschreibung den grössten Teil der Zeit braucht, war ein ganzer
+Durchgang über 30 Bilder mit der Grafik nur 3 % schneller (100 statt
+103 s) und brauchte 1,5 GB mehr Speicher. **Auf einer solchen Grafik ist
+die CPU die bessere Wahl** – zumal der Server dann mit derselben Fassung
+der ONNX Runtime rechnet wie die App.
 
 **Intel-Grafik mit Docker:** Das Bild mit OpenVINO baut ein eigenes Ziel
 (nur amd64):
