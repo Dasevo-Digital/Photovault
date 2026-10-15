@@ -12,6 +12,7 @@ environment:
 # später dem Server, der ohne Flutter gebaut wird.
 dependencies:
   crypto: ^3.0.5
+  cryptography: ^2.7.0
   dio: ^5.7.0
   drift: ^2.20.0
   exif: ^3.3.0
@@ -25,6 +26,7 @@ dependencies:
   path: ^1.9.0
   sqlite3: ^3.5.1
   uuid: ^4.5.1
+  xml: ^7.0.1
 
 dev_dependencies:
   build_runner: ^2.4.13
