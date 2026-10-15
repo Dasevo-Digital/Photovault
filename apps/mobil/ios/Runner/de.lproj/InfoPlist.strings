@@ -1,0 +1,2 @@
+/* Abfrage beim ersten Zugriff auf die Fotomediathek (Sicherung der Kamerarolle). */
+"NSPhotoLibraryUsageDescription" = "Photo Vault sichert die Fotos und Videos dieses Telefons auf deinem Server.";
