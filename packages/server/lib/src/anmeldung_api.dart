@@ -231,7 +231,7 @@ class Anmeldungsapi {
       );
       return Response.found(ziel, headers: {'cache-control': 'no-store'});
     } on OidcFehler catch (f) {
-      return _seite(f.text, status: 400);
+      return schlichteSeite(f.text, status: 400);
     }
   }
 
@@ -266,7 +266,7 @@ class Anmeldungsapi {
       final ziel = await o.zurueck(anfrage.url.queryParameters);
       return Response.found(ziel, headers: {'cache-control': 'no-store'});
     } on OidcFehler catch (f) {
-      return _seite(f.text, status: 400);
+      return schlichteSeite(f.text, status: 400);
     }
   }
 
@@ -322,25 +322,25 @@ class Anmeldungsapi {
         return _json({'verknuepft': true});
     }
   }
+}
 
-  /// Eine schlichte Seite für den Browser, wenn es keinen Weg zurück zur
-  /// App gibt.
-  Response _seite(String text, {int status = 200}) {
-    final sicher = const HtmlEscape().convert(text);
-    return Response(
-      status,
-      body:
-          '<!doctype html><html lang="de"><meta charset="utf-8">'
-          '<meta name="viewport" content="width=device-width">'
-          '<title>Photo Vault</title>'
-          '<body style="font-family:system-ui;max-width:32em;margin:3em auto;'
-          'padding:0 1em"><h1>Photo Vault</h1><p>$sicher</p></body></html>',
-      headers: {
-        'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'no-store',
-        'content-security-policy':
-            "default-src 'none'; style-src 'unsafe-inline'",
-      },
-    );
-  }
+/// Eine schlichte Seite für den Browser: wenn es bei der Anmeldung keinen
+/// Weg zurück zur App gibt, und als Startseite des Servers.
+Response schlichteSeite(String text, {int status = 200}) {
+  final sicher = const HtmlEscape().convert(text);
+  return Response(
+    status,
+    body:
+        '<!doctype html><html lang="de"><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width">'
+        '<title>Photo Vault</title>'
+        '<body style="font-family:system-ui;max-width:32em;margin:3em auto;'
+        'padding:0 1em"><h1>Photo Vault</h1><p>$sicher</p></body></html>',
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+      'content-security-policy':
+          "default-src 'none'; style-src 'unsafe-inline'",
+    },
+  );
 }

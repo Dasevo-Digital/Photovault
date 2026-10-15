@@ -47,6 +47,16 @@ Handler baueApi({
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
+    // Wer die Adresse im Browser öffnet, sah bisher nur „nicht angemeldet“
+    // und hielt den Server für kaputt.
+    ..get(
+      '/',
+      (Request _) => schlichteSeite(
+        'Der Server läuft. Eine Weboberfläche hat er nicht: Verbunden wird '
+        'über die App – am Rechner unter Einstellungen → Server, auf dem '
+        'Telefon beim ersten Start – mit dieser Adresse.',
+      ),
+    )
     ..get('/api/v1/zustand', (Request _) => api.zustand(konten, oidc))
     ..post('/api/v1/anmelden', anmeldung.anmelden)
     ..post('/api/v1/anmelden/totp', anmeldung.totp)
@@ -136,6 +146,7 @@ Handler baueApi({
           konten,
           von,
           offen: {
+            '',
             'api/v1/zustand',
             'api/v1/anmelden',
             'api/v1/anmelden/totp',

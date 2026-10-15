@@ -129,6 +129,10 @@ void main() {
       (await frag('GET', '/api/v1/zustand', schluessel: false)).statusCode,
       200,
     );
+    final start = await frag('GET', '/', schluessel: false);
+    expect(start.statusCode, 200);
+    expect(start.headers['content-type'], startsWith('text/html'));
+    expect(await start.readAsString(), contains('Einstellungen → Server'));
     final ohne = await frag('GET', '/api/v1/aufnahmen', schluessel: false);
     expect(ohne.statusCode, 401);
     final falsch = await frag(
