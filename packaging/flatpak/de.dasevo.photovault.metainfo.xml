@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.32.0" date="2026-10-15">
+      <description>
+        <p>Photo Vault can connect to its own home server. The library then lives on the server; this computer keeps a copy that also works offline and sends its changes once the server is reachable again. An existing library can move to the server, and imports are uploaded and analysed there with the same code as in the app.</p>
+        <p>A connected computer can help the server with image analysis, text recognition and captions, using its own models.</p>
+        <p>If the server has no account yet, the app creates the first one, from the home network only. Administrators manage further accounts in the settings.</p>
+        <p>Every analysis result records the model, device and accelerator that produced it (database schema 93).</p>
+      </description>
+    </release>
     <release version="3.31.0" date="2026-10-12">
       <description>
         <p>The family tree keeps the person in the middle under the trunk, with the father's side on the left and the mother's on the right. The family view of the life tree can show one to three generations above and none to three below, with or without siblings and in-laws.</p>
