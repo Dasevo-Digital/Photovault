@@ -95,6 +95,7 @@ class DesktopImageTools {
     '.bmp',
     '.tif',
     '.tiff',
+    '.psd',
   };
 
   /// Liest Kamera, Objektiv, Aufnahmewerte und Aufnahmezeitpunkt aus einer

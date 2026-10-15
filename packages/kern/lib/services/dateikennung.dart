@@ -58,6 +58,9 @@ String? kennungAus(List<int> kopf) {
 
   if (_text(kopf, 0, 'GIF8')) return '.gif';
 
+  // Photoshop: „8BPS" – ein Format, das die Kamerarolle des iPhones
+  // durchaus führt (bearbeitet in Photoshop, exportiert als PSD).
+  if (_text(kopf, 0, '8BPS')) return '.psd';
   // BMP: „BM". Nur zwei Bytes und damit die schwächste Signatur hier –
   // sie steht deshalb hinter allen längeren.
   if (kopf[0] == 0x42 && kopf[1] == 0x4D) return '.bmp';

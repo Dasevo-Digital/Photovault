@@ -69,6 +69,13 @@ class Sicherungsstand {
           id INTEGER PRIMARY KEY CHECK (id = 0),
           wert TEXT NOT NULL
         )''');
+    // Seit 3.33: warum der Server etwas abgelehnt hat. Ein Stand von davor
+    // hat die Spalte noch nicht.
+    if (!db
+        .select('PRAGMA table_info(erledigt)')
+        .any((z) => z['name'] == 'grund')) {
+      db.execute('ALTER TABLE erledigt ADD COLUMN grund TEXT');
+    }
     return Sicherungsstand._(db);
   }
 
@@ -137,14 +144,16 @@ class Sicherungsstand {
     DateTime geaendert, {
     required String ausgang,
     String? aufnahme,
+    String? grund,
   }) {
     _db
-      ..execute('INSERT OR REPLACE INTO erledigt VALUES (?, ?, ?, ?, ?)', [
+      ..execute('INSERT OR REPLACE INTO erledigt VALUES (?, ?, ?, ?, ?, ?)', [
         lokal,
         _ms(geaendert),
         ausgang,
         aufnahme,
         _jetzt,
+        grund,
       ])
       ..execute('DELETE FROM laufend WHERE lokal = ?', [lokal])
       ..execute('DELETE FROM fehler WHERE lokal = ?', [lokal]);
@@ -196,6 +205,14 @@ class Sicherungsstand {
               )
               .first['n']
           as int;
+
+  /// Warum der Server etwas abgelehnt hat, je Kennung – soweit er es sagte.
+  Map<String, String> get abgelehnteGruende => {
+    for (final z in _db.select(
+      "SELECT lokal, grund FROM erledigt WHERE ausgang = 'abgelehnt' AND grund IS NOT NULL",
+    ))
+      z['lokal'] as String: z['grund'] as String,
+  };
 
   /// Alles noch einmal versuchen – auch, was der Server abgelehnt hat.
   void vergissFehler() => _db

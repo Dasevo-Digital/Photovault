@@ -176,6 +176,26 @@ void main() {
   });
 
   test(
+    'ein Format, das der Server nicht kennt: abgelehnt, ohne ein Byte',
+    () async {
+      // Der Server ist für alle Tests derselbe – gezählt wird, was dazukommt.
+      final vorher = (await aufServer()).length;
+      rolle.foto('p', zufall('IMG_0401.xyz', 1000, 3));
+      final r = await lauf().laufe();
+      expect(r.fehlgeschlagen, 1);
+      expect(r.hochgeladen, 0);
+      expect(stand.bekannt().abgelehnt.keys, ['p']);
+      expect(stand.abgelehnteGruende['p'], contains('.xyz'));
+      // Beim nächsten Lauf wird nicht einmal mehr gefragt …
+      expect((await lauf().laufe()).fehlgeschlagen, 1);
+      // … und „Erneut versuchen“ kostet nur die eine Anfrage, kein Hochladen.
+      stand.vergissFehler();
+      expect((await lauf().laufe()).fehlgeschlagen, 1);
+      expect(await aufServer(), hasLength(vorher));
+    },
+  );
+
+  test(
     'abgebrochen geht es beim nächsten Lauf an derselben Stelle weiter',
     () async {
       final film = zufall('VID_0301.MOV', 600 * 1024, 2);

@@ -182,9 +182,14 @@ class Sicherungsseite extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.warning_amber_outlined),
           title: Text(t.sicherungProbleme(probleme)),
-          subtitle: dienst.fehlgeschlagen.isEmpty
-              ? null
-              : Text(dienst.fehlgeschlagen.values.first),
+          subtitle: switch ((
+            dienst.fehlgeschlagen.values,
+            dienst.abgelehntGruende.values,
+          )) {
+            (final f, _) when f.isNotEmpty => Text(f.first),
+            (_, final g) when g.isNotEmpty => Text(g.first),
+            _ => null,
+          },
           trailing: TextButton(
             onPressed: dienst.versucheFehlerErneut,
             child: Text(t.sicherungErneut),

@@ -99,6 +99,42 @@ void main() {
     }
   });
 
+  test('PSD: importiert, mit Miniatur und JPEG-Vorschau', () async {
+    // Photoshop-Dateien liest `image`, Flutter zeigt sie aber nicht an.
+    // Deshalb muss neben der Miniatur immer eine Vorschau entstehen –
+    // auch ohne nativen Wandler, wie hier im Test.
+    final file = File(p.join(sourceDir.path, 'probe.psd'))
+      ..writeAsBytesSync(File('test/fixtures/psd/probe.psd').readAsBytesSync());
+    expect(importService.isSupported(file.path), isTrue);
+    expect(unterstuetztesFormat('IMG_2258.PSD'), isTrue);
+    expect(unterstuetztesFormat('IMG_2258.xyz'), isFalse);
+
+    final result = await importService.importFile(file.path);
+    expect(result.outcome, ImportOutcome.imported, reason: result.error);
+    final asset = (await db.select(db.assets).get()).single;
+    expect((asset.widthPx, asset.heightPx), (48, 32));
+    expect(asset.dateiformat, 'psd');
+    for (final pfad in [
+      asset.thumbnailRelativePath,
+      asset.previewRelativePath,
+    ]) {
+      expect(pfad, isNotNull);
+      final bild = img.decodeJpg(
+        File(paths.absolute(pfad!).path).readAsBytesSync(),
+      );
+      expect(bild, isNotNull, reason: '$pfad ist kein JPEG');
+    }
+    final vorschau = img.decodeJpg(
+      File(paths.absolute(asset.previewRelativePath!).path).readAsBytesSync(),
+    )!;
+    expect((vorschau.width, vorschau.height), (48, 32));
+    // Die Farben stammen aus der Datei: links oben blau, rechts unten gelb.
+    final lo = vorschau.getPixel(0, 0);
+    final ru = vorschau.getPixel(47, 31);
+    expect(lo.b > lo.r && lo.b > lo.g, isTrue, reason: '$lo');
+    expect(ru.r > ru.b && ru.g > ru.b, isTrue, reason: '$ru');
+  });
+
   test(
     'erzeugte Beispieldateien tragen wirklich die passende Formatsignatur',
     () {

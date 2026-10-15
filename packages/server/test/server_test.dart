@@ -169,6 +169,38 @@ void main() {
     expect(nochmal.headers['pv-aufnahme'], id);
   });
 
+  test(
+    'ein Format, das der Import nicht kennt: Absage vor dem ersten Byte',
+    () async {
+      final r = await frag(
+        'POST',
+        '/api/v1/hochladen',
+        kopf: {
+          ...tus,
+          'upload-length': '1000',
+          'upload-metadata': meta({'filename': 'IMG_0001.xyz'}),
+        },
+      );
+      expect(r.statusCode, 415);
+      expect(await r.readAsString(), contains('.xyz'));
+      final eingang = Directory('${ordner.path}/eingang');
+      expect(!eingang.existsSync() || eingang.listSync().isEmpty, isTrue);
+    },
+  );
+
+  test('PSD aus der Kamerarolle: aufgenommen, Vorschau als JPEG', () async {
+    final psd = File('../../test/fixtures/psd/probe.psd').readAsBytesSync();
+    final r = await hochladen(psd, 'IMG_2258.psd');
+    expect(r.headers['pv-ausgang'], 'imported');
+    final id = r.headers['pv-aufnahme']!;
+    final v = await frag('GET', '/api/v1/aufnahmen/$id/vorschau');
+    expect(v.statusCode, 200);
+    final bytes = await v.read().expand((b) => b).toList();
+    expect(bytes.take(3), [0xFF, 0xD8, 0xFF], reason: 'JPEG erwartet');
+    final bild = img.decodeJpg(Uint8List.fromList(bytes))!;
+    expect((bild.width, bild.height), (48, 32));
+  });
+
   test('ein Stück an falscher Stelle wird abgewiesen, Stand bleibt', () async {
     final bytes = jpeg(80);
     final angelegt = await frag(

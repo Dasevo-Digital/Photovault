@@ -34,9 +34,23 @@ const _imageExtensions = {
   '.gif',
   '.bmp',
   '.tiff',
+  '.psd',
   ...rawImageExtensions,
 };
 const _videoExtensions = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'};
+
+/// Formate, die `package:image` liest, Flutter aber nicht anzeigt: Sie
+/// bekommen beim Import immer eine JPEG-Vorschau, so wie HEIC und RAW.
+/// Photoshop-Dateien führt die Kamerarolle eines iPhones durchaus; ohne
+/// Vorschau zeigte jeder Betrachter nur die Miniatur.
+const nurMitVorschau = {'.psd'};
+
+/// Ob der Import eine Datei dieses Namens überhaupt annimmt – nach der
+/// Endung. Der Server fragt das, bevor ein Telefon ein Byte hochlädt.
+bool unterstuetztesFormat(String name) {
+  final ext = p.extension(name).toLowerCase();
+  return _imageExtensions.contains(ext) || _videoExtensions.contains(ext);
+}
 
 /// Dekodieren + Verkleinern + JPEG-Encodieren eines Thumbnails sind reine,
 /// aber für große Fotos spürbar CPU-intensive Operationen (oft 100+ ms) –
@@ -75,6 +89,44 @@ const int videoStandbildKante = 2048;
     height: decoded.height,
   );
 }
+
+/// Wie [decodeAndResizeThumbnail], dazu eine Vorschau bis [vorschauKante]
+/// Punkte – für Formate, die Flutter nicht selbst anzeigt
+/// ([nurMitVorschau]), wenn kein nativer Wandler da ist. Ein Dekodieren
+/// für beides; das Original kann gross sein.
+({Uint8List jpegBytes, int width, int height, Uint8List vorschau})?
+decodeAndResizeThumbnailMitVorschau(Uint8List bytes) {
+  img.Image? decoded;
+  try {
+    decoded = img.decodeImage(bytes);
+  } catch (_) {
+    decoded = null;
+  }
+  if (decoded == null) return null;
+  final quer = decoded.width >= decoded.height;
+  final vorschau =
+      decoded.width <= vorschauKante && decoded.height <= vorschauKante
+      ? decoded
+      : img.copyResize(
+          decoded,
+          width: quer ? vorschauKante : null,
+          height: quer ? null : vorschauKante,
+        );
+  final thumb = img.copyResize(
+    decoded,
+    width: quer ? 400 : null,
+    height: quer ? null : 400,
+  );
+  return (
+    jpegBytes: Uint8List.fromList(img.encodeJpg(thumb, quality: 80)),
+    width: decoded.width,
+    height: decoded.height,
+    vorschau: Uint8List.fromList(img.encodeJpg(vorschau, quality: 90)),
+  );
+}
+
+/// Die längere Kante einer Vorschau – dieselbe wie bei HEIC und RAW.
+const int vorschauKante = 2048;
 
 enum ImportOutcome { imported, duplicateSkipped, failed }
 
@@ -120,10 +172,7 @@ class ImportService {
   final Bildwerkzeuge _bild;
   final _uuid = const Uuid();
 
-  bool isSupported(String filePath) {
-    final ext = p.extension(filePath).toLowerCase();
-    return _imageExtensions.contains(ext) || _videoExtensions.contains(ext);
-  }
+  bool isSupported(String filePath) => unterstuetztesFormat(filePath);
 
   Future<ImportResult> importFile(String filePath) async {
     String? unvollstaendigeAssetId;
@@ -310,12 +359,34 @@ class ImportService {
     // die Isolate-Grenze. Falls auf der Plattform kein Konverter verfügbar
     // ist, bleibt der bisherige Dart-Rückfall erhalten.
     final forceBoundedDecode = await sourceFile.length() > 32 * 1024 * 1024;
+    final brauchtVorschau =
+        nurMitVorschau.contains(ext) ||
+        (inhalt != null && nurMitVorschau.contains(inhalt));
 
     Uint8List? convertedBytes;
-    if (needsNativeConversion || forceBoundedDecode) {
+    if (needsNativeConversion || forceBoundedDecode || brauchtVorschau) {
       convertedBytes = await _bild.convertToJpegBytes(
         sourceFile,
-        maxDimension: 2048,
+        maxDimension: vorschauKante,
+      );
+    }
+    if (convertedBytes == null && brauchtVorschau) {
+      // Kein Wandler (etwa die App ohne native Schicht): Dart liest das
+      // Format selbst und liefert Miniatur und Vorschau in einem Zug.
+      final beides = await berechne(
+        decodeAndResizeThumbnailMitVorschau,
+        alreadyReadBytes ?? await sourceFile.readAsBytes(),
+      );
+      if (beides == null) return const ThumbnailResult();
+      final thumbRelativePath = _paths.thumbnailRelativePath(assetId);
+      await _paths.absolute(thumbRelativePath).writeAsBytes(beides.jpegBytes);
+      final previewRelativePath = _paths.previewRelativePath(assetId);
+      await _paths.absolute(previewRelativePath).writeAsBytes(beides.vorschau);
+      return ThumbnailResult(
+        thumbnailRelativePath: thumbRelativePath,
+        previewRelativePath: previewRelativePath,
+        width: beides.width,
+        height: beides.height,
       );
     }
 

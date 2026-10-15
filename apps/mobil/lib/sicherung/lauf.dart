@@ -221,7 +221,16 @@ class Sicherungslauf {
           );
         } on Serverfehler catch (s) {
           if (s.abgemeldet) rethrow;
-          abgelehnt = 'Server: ${s.status}';
+          if (s.status == 415) {
+            // Der Server kennt das Format nicht und sagt es, bevor ein
+            // Byte unterwegs ist – das ändert kein weiterer Versuch.
+            abgelehnt = s.text.trim().isEmpty
+                ? 'Der Server kennt das Format von ${f.name} nicht'
+                : s.text.trim();
+            endgueltig = true;
+          } else {
+            abgelehnt = 'Server: ${s.status}';
+          }
           break;
         } on FileSystemException catch (s) {
           abgelehnt = s.message;
@@ -244,7 +253,12 @@ class Sicherungslauf {
       }
       if (abgelehnt != null) {
         if (endgueltig) {
-          stand.erledige(x.id, x.geaendert, ausgang: 'abgelehnt');
+          stand.erledige(
+            x.id,
+            x.geaendert,
+            ausgang: 'abgelehnt',
+            grund: abgelehnt,
+          );
           aus[x.id] = _Erfolg.fehlgeschlagen;
         } else {
           _scheitert(x, abgelehnt, aus);

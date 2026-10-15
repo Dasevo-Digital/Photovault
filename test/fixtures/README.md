@@ -12,6 +12,7 @@ Klonen durch, ohne dass irgendetwas heruntergeladen werden muss.
 | `entwickeln_referenz/` | Die Prüftafel aus `test/hilfen/entwickeln_tafel.dart`, von Core Image entwickelt (Schärfe, Rauschminderung, Klarheit, Vignette, Maske) – Sollwerte für den GPU-Weg von Linux und Windows | selbst erzeugt mit `integration_test/nachbarregler_test.dart` unter macOS |
 | `clip/vocab.json`, `clip/merges.txt` | Winziges, handgeschriebenes Vokabular für die Tokenizer-Tests (nicht die echten CLIP-Dateien) | selbst erstellt |
 | `whisper/referenz.json` | Sollwerte für das Mel-Spektrogramm der Spracherkennung: die Filterbank des Originals (nur die Werte ungleich null) und das Log-Mel-Spektrogramm eines erzeugten Gleittons an neun Stellen | gerechnet mit numpy aus `mel_filters.npz` des [Whisper-Repositorys](https://github.com/openai/whisper) (MIT) |
+| `psd/probe.psd` | Eine 48×32-Photoshop-Datei (RGB, 8 Bit, Farbverlauf) für den Import von PSD | selbst erzeugt: ein mit Pillow gemaltes PNG, mit `sips -s format psd` gewandelt |
 | `samples/` | Echte Kameradateien, per Skript geladen | extern, **nicht versioniert** |
 
 ## Automatisierte Formatprüfung
@@ -21,7 +22,8 @@ das reine Dart-Paket `image` schreiben kann, und schickt sie durch den
 kompletten Import: Formaterkennung → Import → Maße aus den echten Daten →
 Thumbnail, das anschließend wieder dekodiert wird.
 
-Abgedeckt: `.jpg`, `.png`, `.tiff`, `.bmp`, `.gif`
+Abgedeckt: `.jpg`, `.png`, `.tiff`, `.bmp`, `.gif` – und `.psd` aus der
+Fixture `psd/probe.psd` (das Paket liest PSD, schreibt es aber nicht).
 
 ## Was sich NICHT automatisiert prüfen lässt
 

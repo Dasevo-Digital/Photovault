@@ -120,6 +120,16 @@ class Hochladen {
     if (name.isEmpty || name == '.' || name == '..') {
       return Response(400, body: 'Dateiname fehlt', headers: _tus);
     }
+    // Was der Import nicht kennt, braucht nicht erst anzukommen: Fünf
+    // PSD-Dateien einer Kamerarolle gingen dreimal vollständig hoch, nur
+    // um jedes Mal abgelehnt zu werden. (Der Umzug trägt eigene Dateien.)
+    if (abschluss == null && !unterstuetztesFormat(name)) {
+      return Response(
+        415,
+        body: 'Format nicht unterstützt: ${p.extension(name)}',
+        headers: _tus,
+      );
+    }
     final id = const Uuid().v4();
     await eingang.create(recursive: true);
     await _teil(id).writeAsBytes(const [], flush: true);

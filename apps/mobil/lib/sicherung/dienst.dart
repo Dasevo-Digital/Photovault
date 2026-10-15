@@ -51,6 +51,7 @@ class Sicherungsdienst extends ChangeNotifier {
   Laufbericht? get letzterLauf => _stand.letzterLauf;
   Map<String, String> get fehlgeschlagen => _stand.fehler;
   int get abgelehnt => _stand.anzahlAbgelehnt;
+  Map<String, String> get abgelehntGruende => _stand.abgelehnteGruende;
 
   Timer? _nachAenderung;
   DateTime _gemeldet = DateTime(0);
