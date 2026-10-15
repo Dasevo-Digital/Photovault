@@ -249,5 +249,28 @@
       }
     }
   },
-  "auswahlKeinZugriff": "No access to the photo library – allow it in the phone's settings."
+  "auswahlKeinZugriff": "No access to the photo library – allow it in the phone's settings.",
+  "kontoZwischenspeicher": "Cache on this phone",
+  "kontoZwischenspeicherStand": "{belegt} of {grenze} – previews and originals you have viewed. Tap to set the limit.",
+  "@kontoZwischenspeicherStand": {
+    "placeholders": {
+      "belegt": {
+        "type": "String"
+      },
+      "grenze": {
+        "type": "String"
+      }
+    }
+  },
+  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, no limit – previews and originals you have viewed. Tap to set the limit.",
+  "@kontoZwischenspeicherOhneGrenzeStand": {
+    "placeholders": {
+      "belegt": {
+        "type": "String"
+      }
+    }
+  },
+  "kontoZwischenspeicherLeeren": "Clear",
+  "kontoZwischenspeicherGrenze": "Use at most",
+  "kontoZwischenspeicherOhneGrenze": "No limit"
 }

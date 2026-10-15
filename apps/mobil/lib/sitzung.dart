@@ -8,6 +8,7 @@ import 'package:kern/abgleich/sicherung.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:kern/abgleich/zwischenspeicher.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
@@ -124,7 +125,33 @@ class Sitzung extends ChangeNotifier {
     _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
       pruefeServerspeicher();
       pruefeServersicherung();
+      pflegeZwischenspeicher();
     });
+    unawaited(pflegeZwischenspeicher());
+  }
+
+  /// Vorschauen und Originale, die das Telefon vom Server geholt hat.
+  Zwischenspeicher get zwischenspeicher => Zwischenspeicher(paths);
+
+  /// Die Grenze in MB; 0 heisst ohne Grenze.
+  int get zwischenspeicherGrenzeMb =>
+      verbindung?.zwischenspeicherMb ?? Zwischenspeicher.vorgabeMb;
+
+  /// Hält den Zwischenspeicher unter seiner Grenze.
+  Future<void> pflegeZwischenspeicher() async {
+    final mb = zwischenspeicherGrenzeMb;
+    if (mb <= 0 || abgleich == null) return;
+    await zwischenspeicher.begrenze(mb * 1024 * 1024);
+  }
+
+  /// Setzt die Grenze (0 = ohne) und räumt gleich auf.
+  Future<void> setzeZwischenspeicherGrenze(int mb) async {
+    final v = verbindung;
+    if (v == null) return;
+    verbindung = v.mitZwischenspeicher(mb);
+    await verbindung!.schreibe(await _ordner());
+    notifyListeners();
+    await pflegeZwischenspeicher();
   }
 
   /// Die Sicherung des Servers – nur für Verwalter, sonst `null`.

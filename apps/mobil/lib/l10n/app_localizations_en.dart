@@ -608,4 +608,26 @@ class AppTexteEn extends AppTexte {
   @override
   String get auswahlKeinZugriff =>
       'No access to the photo library – allow it in the phone\'s settings.';
+
+  @override
+  String get kontoZwischenspeicher => 'Cache on this phone';
+
+  @override
+  String kontoZwischenspeicherStand(String belegt, String grenze) {
+    return '$belegt of $grenze – previews and originals you have viewed. Tap to set the limit.';
+  }
+
+  @override
+  String kontoZwischenspeicherOhneGrenzeStand(String belegt) {
+    return '$belegt, no limit – previews and originals you have viewed. Tap to set the limit.';
+  }
+
+  @override
+  String get kontoZwischenspeicherLeeren => 'Clear';
+
+  @override
+  String get kontoZwischenspeicherGrenze => 'Use at most';
+
+  @override
+  String get kontoZwischenspeicherOhneGrenze => 'No limit';
 }

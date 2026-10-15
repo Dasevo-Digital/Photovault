@@ -186,7 +186,18 @@ class StoragePaths {
   Future<File> bereit(String relativePath) async {
     final f = absolute(relativePath);
     final holen = beschaffe;
-    if (holen != null && !await f.exists()) await holen(relativePath);
+    if (holen == null) return f;
+    if (!await f.exists()) {
+      await holen(relativePath);
+    } else {
+      // In der Kopie ist die Datei Zwischenspeicher: Die Zeit des letzten
+      // Zugriffs entscheidet, was beim Begrenzen zuerst geht.
+      try {
+        await f.setLastModified(DateTime.now());
+      } on FileSystemException {
+        // Nur ein Hinweis fürs Aufräumen, kein Grund zu scheitern.
+      }
+    }
     return f;
   }
 

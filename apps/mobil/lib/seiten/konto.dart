@@ -118,6 +118,7 @@ class Konto extends StatelessWidget {
                         : t.serverSicherungOffen,
                   ),
                 ),
+              if (sitzung.abgleich != null) _Zwischenspeicherzeile(sitzung),
               if (sitzung.sicherung case final d?)
                 ListenableBuilder(
                   listenable: d,
@@ -184,6 +185,92 @@ class _KontenZugangState extends State<_KontenZugang> {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// Wie viel Platz die vom Server geholten Vorschauen und Originale auf
+/// dem Telefon belegen – mit Grenze zum Wählen und einem Knopf zum Leeren
+/// (Issue #131).
+class _Zwischenspeicherzeile extends StatefulWidget {
+  const _Zwischenspeicherzeile(this.sitzung);
+
+  final Sitzung sitzung;
+
+  @override
+  State<_Zwischenspeicherzeile> createState() => _ZwischenspeicherzeileState();
+}
+
+class _ZwischenspeicherzeileState extends State<_Zwischenspeicherzeile> {
+  late Future<int> _groesse = widget.sitzung.zwischenspeicher.groesse();
+
+  static const _stufenMb = [512, 1024, 2048, 5120, 0];
+
+  void _neuMessen() =>
+      setState(() => _groesse = widget.sitzung.zwischenspeicher.groesse());
+
+  Future<void> _leeren() async {
+    await widget.sitzung.zwischenspeicher.leere();
+    if (mounted) _neuMessen();
+  }
+
+  Future<void> _grenze() async {
+    final t = AppTexte.of(context);
+    final jetzt = widget.sitzung.zwischenspeicherGrenzeMb;
+    final mb = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(t.kontoZwischenspeicherGrenze),
+        children: [
+          RadioGroup<int>(
+            groupValue: jetzt,
+            onChanged: (w) => Navigator.pop(context, w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final s in _stufenMb)
+                  RadioListTile<int>(
+                    value: s,
+                    title: Text(
+                      s == 0
+                          ? t.kontoZwischenspeicherOhneGrenze
+                          : groessentext(s << 20),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (mb == null || mb == jetzt) return;
+    await widget.sitzung.setzeZwischenspeicherGrenze(mb);
+    if (mounted) _neuMessen();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final mb = widget.sitzung.zwischenspeicherGrenzeMb;
+    return FutureBuilder<int>(
+      future: _groesse,
+      builder: (context, s) {
+        final belegt = s.data == null ? '…' : groessentext(s.data!);
+        return ListTile(
+          leading: const Icon(Icons.sd_storage_outlined),
+          title: Text(t.kontoZwischenspeicher),
+          subtitle: Text(
+            mb == 0
+                ? t.kontoZwischenspeicherOhneGrenzeStand(belegt)
+                : t.kontoZwischenspeicherStand(belegt, groessentext(mb << 20)),
+          ),
+          trailing: TextButton(
+            onPressed: _leeren,
+            child: Text(t.kontoZwischenspeicherLeeren),
+          ),
+          onTap: _grenze,
+        );
+      },
     );
   }
 }

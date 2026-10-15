@@ -1014,6 +1014,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.'**
   String get auswahlKeinZugriff;
+
+  /// No description provided for @kontoZwischenspeicher.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwischenspeicher auf dem Telefon'**
+  String get kontoZwischenspeicher;
+
+  /// No description provided for @kontoZwischenspeicherStand.
+  ///
+  /// In de, this message translates to:
+  /// **'{belegt} von {grenze} – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.'**
+  String kontoZwischenspeicherStand(String belegt, String grenze);
+
+  /// No description provided for @kontoZwischenspeicherOhneGrenzeStand.
+  ///
+  /// In de, this message translates to:
+  /// **'{belegt}, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.'**
+  String kontoZwischenspeicherOhneGrenzeStand(String belegt);
+
+  /// No description provided for @kontoZwischenspeicherLeeren.
+  ///
+  /// In de, this message translates to:
+  /// **'Leeren'**
+  String get kontoZwischenspeicherLeeren;
+
+  /// No description provided for @kontoZwischenspeicherGrenze.
+  ///
+  /// In de, this message translates to:
+  /// **'Höchstens belegen'**
+  String get kontoZwischenspeicherGrenze;
+
+  /// No description provided for @kontoZwischenspeicherOhneGrenze.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Grenze'**
+  String get kontoZwischenspeicherOhneGrenze;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

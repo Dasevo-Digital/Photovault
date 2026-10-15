@@ -17,6 +17,7 @@ class Verbindungsdatei {
     required this.geraet,
     required this.token,
     this.rechenhilfe = false,
+    this.zwischenspeicherMb,
   });
 
   /// Die Adresse des Servers, z. B. `https://fotos.example.de/`.
@@ -28,12 +29,26 @@ class Verbindungsdatei {
   /// Rechnet dieser Rechner für den Server mit (siehe `Rechenhilfe`)?
   final bool rechenhilfe;
 
+  /// Wie viele MB Vorschauen und Originale hier liegen dürfen (siehe
+  /// `Zwischenspeicher`); `null` heisst Vorgabe, 0 heisst ohne Grenze.
+  final int? zwischenspeicherMb;
+
   Verbindungsdatei mitRechenhilfe(bool an) => Verbindungsdatei(
     server: server,
     konto: konto,
     geraet: geraet,
     token: token,
     rechenhilfe: an,
+    zwischenspeicherMb: zwischenspeicherMb,
+  );
+
+  Verbindungsdatei mitZwischenspeicher(int? mb) => Verbindungsdatei(
+    server: server,
+    konto: konto,
+    geraet: geraet,
+    token: token,
+    rechenhilfe: rechenhilfe,
+    zwischenspeicherMb: mb,
   );
 
   static File _datei(Directory bibliothek) =>
@@ -51,6 +66,7 @@ class Verbindungsdatei {
       geraet: j['geraet'] as String,
       token: j['token'] as String,
       rechenhilfe: j['rechenhilfe'] == true,
+      zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
     );
   }
 
@@ -71,6 +87,8 @@ class Verbindungsdatei {
         'geraet': geraet,
         'token': token,
         if (rechenhilfe) 'rechenhilfe': true,
+        if (zwischenspeicherMb != null)
+          'zwischenspeicherMb': zwischenspeicherMb,
       }),
       flush: true,
     );

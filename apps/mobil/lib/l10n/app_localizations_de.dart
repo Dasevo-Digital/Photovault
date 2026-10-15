@@ -609,4 +609,26 @@ class AppTexteDe extends AppTexte {
   @override
   String get auswahlKeinZugriff =>
       'Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.';
+
+  @override
+  String get kontoZwischenspeicher => 'Zwischenspeicher auf dem Telefon';
+
+  @override
+  String kontoZwischenspeicherStand(String belegt, String grenze) {
+    return '$belegt von $grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.';
+  }
+
+  @override
+  String kontoZwischenspeicherOhneGrenzeStand(String belegt) {
+    return '$belegt, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.';
+  }
+
+  @override
+  String get kontoZwischenspeicherLeeren => 'Leeren';
+
+  @override
+  String get kontoZwischenspeicherGrenze => 'Höchstens belegen';
+
+  @override
+  String get kontoZwischenspeicherOhneGrenze => 'Ohne Grenze';
 }

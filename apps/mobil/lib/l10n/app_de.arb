@@ -325,5 +325,28 @@
       }
     }
   },
-  "auswahlKeinZugriff": "Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben."
+  "auswahlKeinZugriff": "Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.",
+  "kontoZwischenspeicher": "Zwischenspeicher auf dem Telefon",
+  "kontoZwischenspeicherStand": "{belegt} von {grenze} – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.",
+  "@kontoZwischenspeicherStand": {
+    "placeholders": {
+      "belegt": {
+        "type": "String"
+      },
+      "grenze": {
+        "type": "String"
+      }
+    }
+  },
+  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.",
+  "@kontoZwischenspeicherOhneGrenzeStand": {
+    "placeholders": {
+      "belegt": {
+        "type": "String"
+      }
+    }
+  },
+  "kontoZwischenspeicherLeeren": "Leeren",
+  "kontoZwischenspeicherGrenze": "Höchstens belegen",
+  "kontoZwischenspeicherOhneGrenze": "Ohne Grenze"
 }
