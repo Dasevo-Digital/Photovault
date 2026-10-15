@@ -201,7 +201,15 @@ class _AnalyseBanner extends StatelessWidget {
         : sp.knapp
         ? t.serverSpeicherKnapp(groessentext(sp.frei ?? 0))
         : null;
-    if (a == null && laeufe.isEmpty && server == null && speicher == null) {
+    final sicherung =
+        library.verbunden && (library.serversicherung?.warnt ?? false)
+        ? t.serverSicherungWarnung
+        : null;
+    if (a == null &&
+        laeufe.isEmpty &&
+        server == null &&
+        speicher == null &&
+        sicherung == null) {
       return const SizedBox.shrink();
     }
 
@@ -215,6 +223,15 @@ class _AnalyseBanner extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.cloud_off_outlined),
               title: Text(server),
+            ),
+          if (sicherung != null)
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.backup_outlined,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(sicherung),
             ),
           if (speicher != null)
             ListTile(

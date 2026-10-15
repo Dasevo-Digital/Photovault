@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -97,6 +98,26 @@ class Konto extends StatelessWidget {
                     ),
                   ),
               ],
+              if (sitzung.serversicherung case final sv? when sv.stufe != 'aus')
+                ListTile(
+                  leading: Icon(
+                    Icons.backup_outlined,
+                    color: sv.warnt
+                        ? Theme.of(context).colorScheme.error
+                        : null,
+                  ),
+                  title: Text(
+                    sv.warnt
+                        ? t.serverSicherungWarnung
+                        : sv.letzterErfolg != null
+                        ? t.serverSicherungStand(
+                            DateFormat.yMd(
+                              Localizations.localeOf(context).toString(),
+                            ).add_Hm().format(sv.letzterErfolg!),
+                          )
+                        : t.serverSicherungOffen,
+                  ),
+                ),
               if (sitzung.sicherung case final d?)
                 ListenableBuilder(
                   listenable: d,

@@ -32,11 +32,8 @@ Future<void> main(List<String> argumente) async {
   Bildwerkzeuge.standard = const WerkzeugBildwerkzeuge();
 
   final sdb = Serverdatenbank.oeffne(e.serverdatenbank);
-  final konten = Kontodienst(
-    sdb,
-    Tresorschluessel.ladeOderLegeAn(e.tresorschluessel),
-    totpPflicht: e.totpPflicht,
-  );
+  final tresor = Tresorschluessel.ladeOderLegeAn(e.tresorschluessel);
+  final konten = Kontodienst(sdb, tresor, totpPflicht: e.totpPflicht);
   if (e.alteZugangsdatei.existsSync()) {
     protokoll(
       '${e.alteZugangsdatei.path} gilt nicht mehr – angemeldet wird mit '
@@ -83,6 +80,22 @@ Future<void> main(List<String> argumente) async {
     warnAnteil: e.speicherWarnung,
     mindestFrei: e.speicherMindestGb * 1000 * 1000 * 1000,
   )..starte();
+  final sicherung = Serversicherung(
+    daten: e.daten,
+    ziel: e.sicherung,
+    tresor: tresor,
+    konten: konten,
+    bibliotheken: bibliotheken,
+    um: e.sicherungUm,
+  )..starte();
+  if (e.sicherung != null) {
+    protokoll(
+      'Sicherung nach ${e.sicherung!.path}, täglich um '
+      '${e.sicherungUm.stunde.toString().padLeft(2, '0')}:'
+      '${e.sicherungUm.minute.toString().padLeft(2, '0')}'
+      '${sicherung.eingerichtet ? '' : ' – noch nicht eingerichtet (App: Einstellungen → Server)'}',
+    );
+  }
 
   final server = await shelf_io.serve(
     baueApi(
@@ -92,6 +105,7 @@ Future<void> main(List<String> argumente) async {
       oidc: oidc,
       beschleunigerZustand: onnx?.zustand,
       speicher: speicher,
+      sicherung: sicherung,
     ),
     e.adresse,
     e.port,
@@ -125,6 +139,7 @@ Future<void> main(List<String> argumente) async {
   protokoll('Beende …');
   await server.close();
   speicher.beende();
+  sicherung.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
   sdb.schliesse();

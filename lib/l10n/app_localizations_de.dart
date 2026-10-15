@@ -9290,6 +9290,83 @@ class AppTexteDe extends AppTexte {
       'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
 
   @override
+  String get serverSicherungTitel => 'Sicherung des Servers';
+
+  @override
+  String get serverSicherungAus =>
+      'Auf dem Server ist kein Sicherungsziel eingestellt (PV_SICHERUNG).';
+
+  @override
+  String serverSicherungNichtEingerichtet(String ziel) {
+    return 'Das Sicherungsziel $ziel ist eingestellt, die Sicherung aber noch nicht eingerichtet.';
+  }
+
+  @override
+  String get serverSicherungEinrichten => 'Sicherung einrichten …';
+
+  @override
+  String get serverSicherungEinrichtenText =>
+      'Die Sicherung wird mit dieser Passphrase verschlüsselt. Ohne sie lässt sie sich nicht wiederherstellen – bitte sicher aufbewahren, nicht auf dem Server. Sie lässt sich später nicht ändern.';
+
+  @override
+  String get serverSicherungPassphrase => 'Passphrase';
+
+  @override
+  String serverSicherungOk(String wann, int neu, String naechste) {
+    String _temp0 = intl.Intl.pluralLogic(
+      neu,
+      locale: localeName,
+      other: '$neu neue Dateien',
+      one: '1 neue Datei',
+      zero: 'nichts Neues',
+    );
+    return 'Letzte Sicherung: $wann, $_temp0. Nächste: $naechste.';
+  }
+
+  @override
+  String serverSicherungNochNie(String naechste) {
+    return 'Noch nicht gelaufen. Nächste: $naechste.';
+  }
+
+  @override
+  String get serverSicherungLaeuft => 'Die Sicherung läuft gerade …';
+
+  @override
+  String serverSicherungFehler(String grund) {
+    return 'Die letzte Sicherung ist gescheitert: $grund';
+  }
+
+  @override
+  String serverSicherungVeraltet(String wann) {
+    return 'Seit $wann keine gelungene Sicherung.';
+  }
+
+  @override
+  String get serverSicherungVeraltetNie =>
+      'Seit dem Einrichten keine gelungene Sicherung.';
+
+  @override
+  String get serverSicherungZielFehlt =>
+      'Am Sicherungsziel fehlt die Kennmarke – ist das NAS eingehängt?';
+
+  @override
+  String get serverSicherungZielNeu => 'Ziel neu einrichten …';
+
+  @override
+  String get serverSicherungZielNeuText =>
+      'Nur, wenn das Sicherungsziel neu oder leer ist. Ist das NAS bloß nicht eingehängt, bitte zuerst das prüfen. Was am Ziel fehlt, kommt beim nächsten Lauf von selbst hinzu.';
+
+  @override
+  String get serverSicherungJetzt => 'Jetzt sichern';
+
+  @override
+  String get serverSicherungGestartet => 'Die Sicherung läuft.';
+
+  @override
+  String get serverSicherungWarnung =>
+      'Die Sicherung des Servers braucht Aufmerksamkeit (Einstellungen → Server).';
+
+  @override
   String serverSpeicherStand(String frei, String gesamt) {
     return 'Speicher auf dem Server: $frei frei von $gesamt';
   }

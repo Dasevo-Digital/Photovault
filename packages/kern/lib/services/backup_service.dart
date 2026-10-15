@@ -136,6 +136,10 @@ class BackupService {
   @visibleForTesting
   int? get zwischenlagerGrenze => _zwischenlagerGrenze;
 
+  /// Wie viele Dateien der letzte automatische Lauf tatsächlich geschrieben
+  /// hat – mit `amZielPruefen` die neuen, ohne alle markierten.
+  int letzterLaufNeu = 0;
+
   /// Schreibt eine Datei über eine Zwischenablage und legt sie erst
   /// fertig ins Ziel.
   ///
@@ -674,6 +678,37 @@ class BackupService {
         }
       }
 
+      // Ohne metadata.json (jede automatische Sicherung vor 3.33) kennt
+      // nur der Schnappschuss der Datenbank die Fotos. Er wird hier einmal
+      // entschlüsselt und unten für die übrigen Daten wiederverwendet.
+      final schnappschuss = await _restoreSnapshot(
+        backupRootPath,
+        generationSnapshotPath,
+      );
+      if (metaAssets.isEmpty &&
+          decryptionKey != null &&
+          await Directory(
+            p.join(backupRootPath, VerschluesselteNamen.ordner),
+          ).exists() &&
+          await schnappschuss.exists()) {
+        entschluesselterSchnappschuss = File(
+          p.join(
+            Directory.systemTemp.path,
+            'photovault_restore_${_uuid.v4()}.sqlite',
+          ),
+        );
+        try {
+          await VaultCrypto.decryptFile(
+            schnappschuss,
+            entschluesselterSchnappschuss,
+            decryptionKey,
+          );
+          metaAssets = _fotosAusSchnappschuss(entschluesselterSchnappschuss);
+        } catch (e) {
+          protokoll('Schnappschuss als Liste der Fotos unlesbar: $e');
+        }
+      }
+
       // Was wiederhergestellt werden soll: Pfad plus die Endung, die die Datei
       // im Original hatte (beim neuen Format steckt sie nicht mehr im Namen).
       final files = <({String pfad, String endung})>[];
@@ -775,29 +810,21 @@ class BackupService {
       // Suchen. Die automatische Sicherung legt dafür seit jeher einen
       // verschlüsselten Schnappschuss der Datenbank ab – bis zur
       // 19. Prüfrunde las ihn nur der Prüfstand.
-      final schnappschuss = await _restoreSnapshot(
-        backupRootPath,
-        generationSnapshotPath,
-      );
       if (decryptionKey != null && await schnappschuss.exists()) {
         // Dieselbe Sorgfalt wie bei den Metadaten oben: Ab hier liegt eine
         // vollständige Klartext-Datenbank im Temp-Verzeichnis, und die muss
         // in jedem Fall wieder verschwinden – auch bei einem Abbruch.
-        entschluesselterSchnappschuss = File(
-          p.join(
-            Directory.systemTemp.path,
-            'photovault_restore_${_uuid.v4()}.sqlite',
-          ),
-        );
         try {
-          await VaultCrypto.decryptFile(
-            schnappschuss,
-            entschluesselterSchnappschuss,
-            decryptionKey,
+          final klar = entschluesselterSchnappschuss ??= File(
+            p.join(
+              Directory.systemTemp.path,
+              'photovault_restore_${_uuid.v4()}.sqlite',
+            ),
           );
-          final zeilen = await uebernimmAusSchnappschuss(
-            entschluesselterSchnappschuss,
-          );
+          if (!await klar.exists()) {
+            await VaultCrypto.decryptFile(schnappschuss, klar, decryptionKey);
+          }
+          final zeilen = await uebernimmAusSchnappschuss(klar);
           yield BackupProgress(
             files.length,
             files.length,
@@ -889,6 +916,26 @@ class BackupService {
   /// Eine ältere Sicherung kennt weniger Spalten als die laufende Fassung,
   /// und eine von Hand gepflegte Aufzählung wäre die naheliegendste Art,
   /// dass eine neue Spalte still verlorengeht.
+  /// Die gesicherten Fotos laut Schnappschuss – Prüfsumme und Dateiname,
+  /// in der Form der Einträge von `metadata.json`.
+  static List<Map<String, dynamic>> _fotosAusSchnappschuss(File datei) {
+    final db = sqlite3.open(datei.path, mode: OpenMode.readOnly);
+    try {
+      return [
+        for (final z in db.select(
+          'SELECT checksum, original_file_name FROM assets '
+          'WHERE is_trashed = 0 AND is_locked = 0',
+        ))
+          {
+            'checksum': z['checksum'],
+            'originalFileName': z['original_file_name'],
+          },
+      ];
+    } finally {
+      db.close();
+    }
+  }
+
   @visibleForTesting
   Future<int> uebernimmAusSchnappschuss(File schnappschuss) async {
     final quelle = sqlite3.open(schnappschuss.path, mode: OpenMode.readOnly);
@@ -1309,10 +1356,20 @@ class BackupService {
   /// [maxBytesPerRun] siehe [performBackup] – hier besonders wichtig, weil
   /// das automatische Backup typischerweise auf einen Cloud-Sync-Ordner
   /// zeigt und ungefragt im Hintergrund läuft.
+  ///
+  /// Mit [amZielPruefen] (der Server) entscheidet nicht die Markierung
+  /// [Assets.autoBackedUp], was noch fehlt, sondern das Ziel selbst: Liegt
+  /// die verschlüsselte Datei dort schon (ihr Name folgt fest aus der
+  /// Prüfsumme), wird sie übersprungen. Die Markierung wird dabei weder
+  /// gelesen noch gesetzt – sie wird mit den Geräten abgeglichen und
+  /// beschreibt die Sicherung eines Rechners, nicht die des Servers; nach
+  /// einem Umzug stünde sie sonst auf Aufnahmen, die dieser Server nie
+  /// gesichert hat. Ein neues, leeres Ziel füllt sich so von selbst.
   Stream<BackupProgress> performAutoBackup(
     String destinationRootPath,
     SecretKey encryptionKey, {
     int maxBytesPerRun = 0,
+    bool amZielPruefen = false,
   }) async* {
     final backupRoot = Directory(
       p.join(destinationRootPath, _autoBackupFolderName),
@@ -1327,12 +1384,15 @@ class BackupService {
     final staging =
         _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_autobackup_stage_');
-    final pending = await _db.assetsNotAutoBackedUp();
+    final pending = amZielPruefen
+        ? await _db.assetsFuerSicherung()
+        : await _db.assetsNotAutoBackedUp();
     var done = 0;
     var geschriebeneBytes = 0;
     var abgebrochenWegenLimit = false;
     final autoBackedUpIds = <String>[];
     var fehlgeschlagen = 0;
+    var neu = 0;
     yield BackupProgress(0, pending.length);
 
     try {
@@ -1359,15 +1419,22 @@ class BackupService {
                 ),
               ),
             );
-            await target.parent.create(recursive: true);
-            await _ueberZwischendatei(
-              zwischenlager: staging,
-              ziel: target,
-              quellGroesse: await source.length(),
-              schreibe: (zwischen) =>
-                  VaultCrypto.encryptFile(source, zwischen, encryptionKey),
-            );
-            geschriebeneBytes += await target.length();
+            if (amZielPruefen &&
+                await target.exists() &&
+                await target.length() > 0) {
+              // Schon gesichert (ein früherer Lauf).
+            } else {
+              await target.parent.create(recursive: true);
+              await _ueberZwischendatei(
+                zwischenlager: staging,
+                ziel: target,
+                quellGroesse: await source.length(),
+                schreibe: (zwischen) =>
+                    VaultCrypto.encryptFile(source, zwischen, encryptionKey),
+              );
+              geschriebeneBytes += await target.length();
+              neu++;
+            }
           }
           autoBackedUpIds.add(asset.id);
         } catch (e) {
@@ -1401,9 +1468,15 @@ class BackupService {
       }
     }
 
-    if (autoBackedUpIds.isNotEmpty) {
+    if (autoBackedUpIds.isNotEmpty && !amZielPruefen) {
       await _db.markAutoBackedUp(autoBackedUpIds);
     }
+    letzterLaufNeu = neu;
+    // Verschlüsselt, wie bei der Sicherung von Hand: Ohne diese Liste fand
+    // die Wiederherstellung die namenlosen Dateien nicht – eine
+    // automatische Sicherung brachte Namen und Stammbaum zurück, aber kein
+    // einziges Foto.
+    await _writeMetadataExport(backupRoot, encryptionKey: encryptionKey);
 
     if (abgebrochenWegenLimit) {
       yield BackupProgress(

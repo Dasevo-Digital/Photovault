@@ -14257,6 +14257,114 @@ abstract class AppTexte {
   /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
   String get serverZuAlt;
 
+  /// No description provided for @serverSicherungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung des Servers'**
+  String get serverSicherungTitel;
+
+  /// No description provided for @serverSicherungAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf dem Server ist kein Sicherungsziel eingestellt (PV_SICHERUNG).'**
+  String get serverSicherungAus;
+
+  /// No description provided for @serverSicherungNichtEingerichtet.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Sicherungsziel {ziel} ist eingestellt, die Sicherung aber noch nicht eingerichtet.'**
+  String serverSicherungNichtEingerichtet(String ziel);
+
+  /// No description provided for @serverSicherungEinrichten.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung einrichten …'**
+  String get serverSicherungEinrichten;
+
+  /// No description provided for @serverSicherungEinrichtenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung wird mit dieser Passphrase verschlüsselt. Ohne sie lässt sie sich nicht wiederherstellen – bitte sicher aufbewahren, nicht auf dem Server. Sie lässt sich später nicht ändern.'**
+  String get serverSicherungEinrichtenText;
+
+  /// No description provided for @serverSicherungPassphrase.
+  ///
+  /// In de, this message translates to:
+  /// **'Passphrase'**
+  String get serverSicherungPassphrase;
+
+  /// No description provided for @serverSicherungOk.
+  ///
+  /// In de, this message translates to:
+  /// **'Letzte Sicherung: {wann}, {neu, plural, =0{nichts Neues} =1{1 neue Datei} other{{neu} neue Dateien}}. Nächste: {naechste}.'**
+  String serverSicherungOk(String wann, int neu, String naechste);
+
+  /// No description provided for @serverSicherungNochNie.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nicht gelaufen. Nächste: {naechste}.'**
+  String serverSicherungNochNie(String naechste);
+
+  /// No description provided for @serverSicherungLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung läuft gerade …'**
+  String get serverSicherungLaeuft;
+
+  /// No description provided for @serverSicherungFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die letzte Sicherung ist gescheitert: {grund}'**
+  String serverSicherungFehler(String grund);
+
+  /// No description provided for @serverSicherungVeraltet.
+  ///
+  /// In de, this message translates to:
+  /// **'Seit {wann} keine gelungene Sicherung.'**
+  String serverSicherungVeraltet(String wann);
+
+  /// No description provided for @serverSicherungVeraltetNie.
+  ///
+  /// In de, this message translates to:
+  /// **'Seit dem Einrichten keine gelungene Sicherung.'**
+  String get serverSicherungVeraltetNie;
+
+  /// No description provided for @serverSicherungZielFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Sicherungsziel fehlt die Kennmarke – ist das NAS eingehängt?'**
+  String get serverSicherungZielFehlt;
+
+  /// No description provided for @serverSicherungZielNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel neu einrichten …'**
+  String get serverSicherungZielNeu;
+
+  /// No description provided for @serverSicherungZielNeuText.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur, wenn das Sicherungsziel neu oder leer ist. Ist das NAS bloß nicht eingehängt, bitte zuerst das prüfen. Was am Ziel fehlt, kommt beim nächsten Lauf von selbst hinzu.'**
+  String get serverSicherungZielNeuText;
+
+  /// No description provided for @serverSicherungJetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt sichern'**
+  String get serverSicherungJetzt;
+
+  /// No description provided for @serverSicherungGestartet.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung läuft.'**
+  String get serverSicherungGestartet;
+
+  /// No description provided for @serverSicherungWarnung.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung des Servers braucht Aufmerksamkeit (Einstellungen → Server).'**
+  String get serverSicherungWarnung;
+
   /// No description provided for @serverSpeicherStand.
   ///
   /// In de, this message translates to:

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/sicherung.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -119,10 +120,31 @@ class Sitzung extends ChangeNotifier {
     _setze(Sitzungszustand.bereit);
     unawaited(d.starte());
     unawaited(pruefeServerspeicher());
-    _speicherUhr = Timer.periodic(
-      const Duration(minutes: 15),
-      (_) => pruefeServerspeicher(),
-    );
+    unawaited(pruefeServersicherung());
+    _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
+      pruefeServerspeicher();
+      pruefeServersicherung();
+    });
+  }
+
+  /// Die Sicherung des Servers – nur für Verwalter, sonst `null`.
+  Serversicherungsstand? serversicherung;
+
+  Future<void> pruefeServersicherung() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final neu = await Serversicherungsstand.hole(a.verbindung);
+      final vorher = serversicherung;
+      serversicherung = neu;
+      if (vorher?.stufe != neu?.stufe || vorher?.ende != neu?.ende) {
+        notifyListeners();
+      }
+    } on KeineVerbindung {
+      // Beim nächsten Mal.
+    } on Serverfehler {
+      // Ebenso.
+    }
   }
 
   /// Wie es um den Speicher des Servers steht (siehe dort
@@ -203,6 +225,7 @@ class Sitzung extends ChangeNotifier {
     abgleich = null;
     _speicherUhr?.cancel();
     serverspeicher = null;
+    serversicherung = null;
     sicherung?.dispose();
     sicherung = null;
     await _abo?.cancel();

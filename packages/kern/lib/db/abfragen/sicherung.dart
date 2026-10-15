@@ -156,6 +156,13 @@ extension SicherungsAbfragen on AppDatabase {
           ))
           .get();
 
+  /// Alles, was eine Sicherung enthalten soll – ohne Rücksicht auf
+  /// [Assets.autoBackedUp]. Für den Server, der am Ziel nachsieht, was schon
+  /// da ist (siehe `BackupService.performAutoBackup`, `amZielPruefen`).
+  Future<List<AssetData>> assetsFuerSicherung() => (select(
+    assets,
+  )..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))).get();
+
   Future<void> markAutoBackedUp(List<String> assetIds) =>
       (update(assets)..where((t) => t.id.isIn(assetIds))).write(
         const AssetsCompanion(autoBackedUp: Value(true)),

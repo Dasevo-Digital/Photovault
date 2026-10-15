@@ -9240,6 +9240,82 @@ class AppTexteEn extends AppTexte {
       'The server is older than this app – please update the server. Nothing syncs until then.';
 
   @override
+  String get serverSicherungTitel => 'Server backup';
+
+  @override
+  String get serverSicherungAus =>
+      'No backup target is set on the server (PV_SICHERUNG).';
+
+  @override
+  String serverSicherungNichtEingerichtet(String ziel) {
+    return 'The backup target $ziel is set, but the backup is not set up yet.';
+  }
+
+  @override
+  String get serverSicherungEinrichten => 'Set up backup …';
+
+  @override
+  String get serverSicherungEinrichtenText =>
+      'The backup is encrypted with this passphrase. It cannot be restored without it – keep it safe, not on the server. It cannot be changed later.';
+
+  @override
+  String get serverSicherungPassphrase => 'Passphrase';
+
+  @override
+  String serverSicherungOk(String wann, int neu, String naechste) {
+    String _temp0 = intl.Intl.pluralLogic(
+      neu,
+      locale: localeName,
+      other: '$neu new files',
+      one: '1 new file',
+      zero: 'nothing new',
+    );
+    return 'Last backup: $wann, $_temp0. Next: $naechste.';
+  }
+
+  @override
+  String serverSicherungNochNie(String naechste) {
+    return 'Not run yet. Next: $naechste.';
+  }
+
+  @override
+  String get serverSicherungLaeuft => 'The backup is running …';
+
+  @override
+  String serverSicherungFehler(String grund) {
+    return 'The last backup failed: $grund';
+  }
+
+  @override
+  String serverSicherungVeraltet(String wann) {
+    return 'No successful backup since $wann.';
+  }
+
+  @override
+  String get serverSicherungVeraltetNie => 'No successful backup since setup.';
+
+  @override
+  String get serverSicherungZielFehlt =>
+      'The backup target lacks its marker – is the NAS mounted?';
+
+  @override
+  String get serverSicherungZielNeu => 'Set up target again …';
+
+  @override
+  String get serverSicherungZielNeuText =>
+      'Only if the backup target is new or empty. If the NAS is merely not mounted, check that first. Whatever is missing at the target is added on the next run.';
+
+  @override
+  String get serverSicherungJetzt => 'Back up now';
+
+  @override
+  String get serverSicherungGestartet => 'The backup is running.';
+
+  @override
+  String get serverSicherungWarnung =>
+      'The server backup needs attention (Settings → Server).';
+
+  @override
   String serverSpeicherStand(String frei, String gesamt) {
     return 'Storage on the server: $frei free of $gesamt';
   }

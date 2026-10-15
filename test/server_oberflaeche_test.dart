@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/sicherung.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -17,6 +18,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/einstellungen/einstellungsstand.dart';
 import 'package:photo_vault/screens/einstellungen/server.dart';
+import 'package:photo_vault/screens/einstellungen/server_sicherung.dart';
 import 'package:photo_vault/screens/server_konten_screen.dart';
 import 'package:photo_vault/screens/server_verbinden_screen.dart';
 import 'package:photo_vault/services/library_location.dart';
@@ -278,6 +280,49 @@ void main() {
     );
     t = await zeige(tester, ServerGruppe.new);
     expect(find.text(t.serverSpeicherVoll), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('die Sicherung des Servers: Stand, Warnung, Einrichten', (
+    tester,
+  ) async {
+    bib.serversicherungFuerTests = Serversicherungsstand(
+      stufe: 'ok',
+      letzterErfolg: DateTime(2026, 10, 15, 3, 41),
+      naechster: DateTime(2026, 10, 16, 3, 30),
+      neu: 12,
+    );
+    var t = await zeige(tester, (_) => ServerSicherungAbschnitt(bib));
+    expect(find.textContaining('12'), findsOneWidget);
+    expect(find.text(t.serverSicherungJetzt), findsOneWidget);
+
+    bib.serversicherungFuerTests = const Serversicherungsstand(
+      stufe: 'zielFehlt',
+    );
+    t = await zeige(tester, (_) => ServerSicherungAbschnitt(bib));
+    expect(find.text(t.serverSicherungZielFehlt), findsOneWidget);
+    expect(find.text(t.serverSicherungZielNeu), findsOneWidget);
+    expect(find.text(t.serverSicherungJetzt), findsNothing);
+
+    bib.serversicherungFuerTests = const Serversicherungsstand(
+      stufe: 'nichtEingerichtet',
+      ziel: '/mnt/sicherung',
+    );
+    t = await zeige(tester, (_) => ServerSicherungAbschnitt(bib));
+    await tester.tap(find.text(t.serverSicherungEinrichten));
+    await tester.pumpAndSettle();
+    final felder = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(felder.at(0), 'zu kurz');
+    await tester.enterText(felder.at(1), 'zu kurz');
+    await tester.tap(find.text(t.allgFestlegen));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(t.serverPasswortZuKurz(passwortMindestlaenge)),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

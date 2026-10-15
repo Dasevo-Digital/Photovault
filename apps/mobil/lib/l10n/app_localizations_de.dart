@@ -141,6 +141,19 @@ class AppTexteDe extends AppTexte {
   String get kontoAbgeglichen => 'Abgeglichen';
 
   @override
+  String serverSicherungStand(String wann) {
+    return 'Sicherung des Servers: zuletzt $wann';
+  }
+
+  @override
+  String get serverSicherungWarnung =>
+      'Die Sicherung des Servers braucht Aufmerksamkeit – am Rechner unter Einstellungen → Server.';
+
+  @override
+  String get serverSicherungOffen =>
+      'Die Sicherung des Servers ist noch nicht eingerichtet – am Rechner unter Einstellungen → Server.';
+
+  @override
   String speicherStand(String frei, String gesamt) {
     return 'Speicher auf dem Server: $frei frei von $gesamt';
   }

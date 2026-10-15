@@ -48,6 +48,8 @@ class Einstellungen {
     this.selbstRechnen = const {...Analysestufe.values},
     this.speicherWarnung = 0.85,
     this.speicherMindestGb = 2,
+    this.sicherung,
+    this.sicherungUm = (stunde: 3, minute: 30),
     Directory? geodaten,
     this.totpPflicht = true,
     this.proxys = const [],
@@ -77,6 +79,10 @@ class Einstellungen {
       selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
       speicherWarnung: _prozent(u['PV_SPEICHER_WARNUNG'], 85) / 100,
       speicherMindestGb: _zahl(u['PV_SPEICHER_MINDEST'], 2),
+      sicherung: (u['PV_SICHERUNG'] ?? '').trim().isEmpty
+          ? null
+          : Directory(p.absolute(u['PV_SICHERUNG']!.trim())),
+      sicherungUm: _uhrzeit(u['PV_SICHERUNG_UM']),
       geodaten: u['PV_GEODATEN'] == null
           ? null
           : Directory(p.absolute(u['PV_GEODATEN']!)),
@@ -153,6 +159,25 @@ class Einstellungen {
   /// Unter so vielen GB frei nimmt der Server keine Uploads mehr an
   /// (`PV_SPEICHER_MINDEST`, Vorgabe 2).
   final int speicherMindestGb;
+
+  /// Wohin der Server jede Nacht sichert (`PV_SICHERUNG`, z. B. die
+  /// eingehängte Freigabe eines NAS) – `null`: keine Sicherung.
+  final Directory? sicherung;
+
+  /// Wann (`PV_SICHERUNG_UM`, Vorgabe 03:30, Ortszeit).
+  final ({int stunde, int minute}) sicherungUm;
+
+  static ({int stunde, int minute}) _uhrzeit(String? text) {
+    final t = (text ?? '').trim();
+    if (t.isEmpty) return (stunde: 3, minute: 30);
+    final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(t);
+    final h = int.tryParse(m?.group(1) ?? '');
+    final min = int.tryParse(m?.group(2) ?? '');
+    if (h == null || min == null || h > 23 || min > 59) {
+      throw ArgumentError('PV_SICHERUNG_UM: „$t“ – Uhrzeit wie 03:30');
+    }
+    return (stunde: h, minute: min);
+  }
 
   static int _prozent(String? text, int vorgabe) {
     final w = _zahl(text, vorgabe);

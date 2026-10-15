@@ -15,6 +15,7 @@ import '../server_konten_screen.dart';
 import '../server_verbinden_screen.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
+import 'server_sicherung.dart';
 
 /// Die Verbindung zu einem Photo Vault Server (Issue #86, Stufe 2): wie
 /// es steht, verbinden, trennen.
@@ -98,6 +99,10 @@ class ServerGruppe extends StatelessWidget {
           ),
         ],
         if (library.abgleich case final a?) _KontenZugang(a.verbindung),
+        if (library.serversicherung != null) ...[
+          const Divider(height: AppSpacing.xl),
+          ServerSicherungAbschnitt(library),
+        ],
         const Divider(height: AppSpacing.xl),
         _Rechenhilfe(library),
         const SizedBox(height: AppSpacing.md),

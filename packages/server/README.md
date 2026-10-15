@@ -46,6 +46,8 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_SELBST_RECHNEN`       | `alles`               | `nichts` oder Stufen, siehe Rechenhilfe |
 | `PV_SPEICHER_WARNUNG`     | `85`                  | ab so viel Prozent belegt: knapp        |
 | `PV_SPEICHER_MINDEST`     | `2`                   | unter so vielen GB frei: keine Uploads  |
+| `PV_SICHERUNG`            | –                     | Ziel der nächtlichen Sicherung, siehe unten |
+| `PV_SICHERUNG_UM`         | `03:30`               | wann sie läuft (Ortszeit)               |
 | `PV_GEODATEN`             | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                  |
 | `PV_TOTP`                 | `pflicht`             | `frei`: TOTP nur, wer es einrichtet     |
 | `PV_PROXY`                | –                     | vertraute Proxys, siehe unten           |
@@ -364,6 +366,57 @@ sind `bildanalyse`, `texterkennung`, `schlagwoerter`, `bildbeschreibung`,
 `spracherkennung` und `wiedererkennung`. Was dann kein Rechner übernimmt,
 bleibt offen, bis einer kommt.
 
+## Sicherung aufs NAS
+
+Der Server sichert jede Nacht jede Bibliothek nach `PV_SICHERUNG` –
+verschlüsselt (AES-256-GCM) und im Format der automatischen Sicherung der
+App, also mit ihr wiederherstellbar. Geschrieben wird nur, was am Ziel
+noch fehlt; ein neues, leeres Ziel füllt sich beim nächsten Lauf von
+selbst. Gelöscht wird am Ziel nie etwas, und vom Datenbankstand bleiben
+sieben Generationen.
+
+**Einrichten:** `PV_SICHERUNG` auf einen Ordner setzen, der auf dem NAS
+liegt, dann in der App als Verwalter unter Einstellungen → Server →
+„Sicherung einrichten“ eine Passphrase festlegen (mindestens 12 Zeichen,
+später nicht änderbar). Ohne sie lässt sich nichts wiederherstellen – sie
+gehört nicht auf den Server. Der Server legt dabei eine Kennmarke ins Ziel
+(`PHOTOVAULT-SICHERUNGSZIEL.json`) und sichert nur, wenn sie da ist: Ist
+das NAS nicht eingehängt, ist der Ordner leer und liegt auf der eigenen
+Platte – dorthin zu sichern, füllte sie still. Ein wirklich neues Ziel
+nimmt „Ziel neu einrichten“ an.
+
+Damit der Server nachts ohne Passphrase sichern kann, liegt der Schlüssel
+zusätzlich mit `server.schluessel` verschlüsselt im Datenordner. Den Stand
+sehen Verwalter in der App; ein gescheiterter Lauf, eine fehlende
+Kennmarke oder 36 Stunden ohne Erfolg erscheinen als Warnung.
+
+**Wiederherstellen:** In der Desktop-App eine neue, leere Bibliothek
+öffnen, unter Einstellungen → Sicherung „Wiederherstellen“ den Ordner
+`<Konto>_<Kennung>/PhotoVault-AutoBackup` auf dem NAS wählen und die
+Passphrase eingeben. Soll die Bibliothek wieder auf den Server, danach
+„Diese Bibliothek auf den Server umziehen“.
+
+**Mit systemd** braucht das Ziel ein `ReadWritePaths=` (die Einheit
+schützt das Dateisystem sonst gegen Schreiben):
+
+```sh
+sudo systemctl edit photo-vault-server   # [Service] ReadWritePaths=/mnt/sicherung
+```
+
+**SMB-Freigabe in einem LXC-Container unter Proxmox:** Ein
+unprivilegierter Container kann SMB nicht selbst einhängen. Der Wirt
+hängt die Freigabe ein und reicht den Ordner durch; `uid`/`gid` sind die
+des Benutzers `photovault` im Container plus 100000 (`id photovault`):
+
+```sh
+# als root auf dem Wirt
+mkdir -p /mnt/pv-sicherung
+install -m 600 /dev/null /root/.smb-pv-sicherung   # username=…, password=…
+echo '//NAS/Freigabe /mnt/pv-sicherung cifs credentials=/root/.smb-pv-sicherung,uid=100999,gid=100988,file_mode=0660,dir_mode=0770,_netdev,nofail 0 0' >> /etc/fstab
+mount /mnt/pv-sicherung
+pct set <ID> -mp1 /mnt/pv-sicherung,mp=/mnt/sicherung
+```
+
 ## Einzeldatei mit systemd
 
 Dasselbe Programm als Bündel (`bin/`, `lib/` mit SQLite und ONNX Runtime,
@@ -443,6 +496,8 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
 | `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt; der Beschleuniger und seine Gegenproben |
+| `GET /sicherung` | Verwalter: `{stufe: aus \| nichtEingerichtet \| zielFehlt \| fehler \| veraltet \| ok, ziel, laeuft, naechster, letzterErfolg, konten: [{konto, dateien, neu, fehlgeschlagen}]}` |
+| `POST /sicherung/einrichten`, `/sicherung/ziel`, `/sicherung/jetzt` | Verwalter: `{passphrase}` einmalig; neues Ziel annehmen; sofort sichern |
 | `GET /speicher` | `{stufe: ausreichend \| knapp \| voll \| unbekannt, gesamt, frei, belegt}` – bei `voll` antworten Hochladen und Umzug mit 507 |
 | `POST /rechnen/auftraege` | `{arten, teile?, anzahl?}` → `{auftraege: [{id, art, aufnahme, datei, teile?, deutsch?}], gueltig}` – Arbeit für einen Rechner (Rechenhilfe) |
 | `POST /rechnen/ergebnis` | `{auftrag, ergebnis}` – trägt ein; 409, wenn der Auftrag abgelaufen oder fremd ist, 400 bei unbrauchbaren Werten |

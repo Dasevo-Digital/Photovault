@@ -313,6 +313,24 @@ abstract class AppTexte {
   /// **'Abgeglichen'**
   String get kontoAbgeglichen;
 
+  /// No description provided for @serverSicherungStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung des Servers: zuletzt {wann}'**
+  String serverSicherungStand(String wann);
+
+  /// No description provided for @serverSicherungWarnung.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung des Servers braucht Aufmerksamkeit – am Rechner unter Einstellungen → Server.'**
+  String get serverSicherungWarnung;
+
+  /// No description provided for @serverSicherungOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung des Servers ist noch nicht eingerichtet – am Rechner unter Einstellungen → Server.'**
+  String get serverSicherungOffen;
+
   /// No description provided for @speicherStand.
   ///
   /// In de, this message translates to:

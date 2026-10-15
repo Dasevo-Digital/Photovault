@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
@@ -17,6 +18,7 @@ import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'oidc.dart';
 import 'rechnen.dart';
+import 'sicherung.dart';
 import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
@@ -39,6 +41,7 @@ Handler baueApi({
   Oidc? oidc,
   Future<Map<String, Object?>> Function()? beschleunigerZustand,
   Speicherwaechter? speicher,
+  Serversicherung? sicherung,
 }) {
   final von = absender ?? Absender();
   final anmeldung = Anmeldungsapi(konten, von, oidc);
@@ -140,6 +143,75 @@ Handler baueApi({
       '/api/v1/speicher',
       (Request _) => _json(speicher?.alsJson() ?? const {'stufe': 'unbekannt'}),
     )
+    ..get(
+      '/api/v1/sicherung',
+      (Request r) => _nurVerwalter(r, () async {
+        return _json(
+          sicherung == null ? const {'stufe': 'aus'} : await sicherung.stand(),
+        );
+      }),
+    )
+    ..post(
+      '/api/v1/sicherung/einrichten',
+      (Request r) => _nurVerwalter(r, () async {
+        final s = sicherung;
+        if (s == null) {
+          return _json({
+            'fehler': 'Kein Sicherungsziel eingestellt.',
+          }, status: 409);
+        }
+        final k = jsonDecode(await r.readAsString());
+        final pp = k is Map ? k['passphrase'] : null;
+        if (pp is! String) {
+          return _json({'fehler': 'passphrase fehlt'}, status: 400);
+        }
+        try {
+          await s.einrichten(pp);
+        } on ArgumentError catch (f) {
+          return _json({'fehler': '${f.message}'}, status: 400);
+        } on StateError catch (f) {
+          return _json({'fehler': f.message}, status: 409);
+        } on FileSystemException catch (f) {
+          return _json({
+            'fehler': 'Das Sicherungsziel ist nicht beschreibbar: ${f.message}',
+          }, status: 409);
+        }
+        unawaited(s.jetzt());
+        return _json(await s.stand());
+      }),
+    )
+    ..post(
+      '/api/v1/sicherung/ziel',
+      (Request r) => _nurVerwalter(r, () async {
+        final s = sicherung;
+        if (s == null || !s.eingerichtet) {
+          return _json({
+            'fehler': 'Die Sicherung ist nicht eingerichtet.',
+          }, status: 409);
+        }
+        try {
+          await s.zielNeu();
+        } on FileSystemException catch (f) {
+          return _json({
+            'fehler': 'Ziel nicht beschreibbar: ${f.message}',
+          }, status: 409);
+        }
+        return _json(await s.stand());
+      }),
+    )
+    ..post(
+      '/api/v1/sicherung/jetzt',
+      (Request r) => _nurVerwalter(r, () async {
+        final s = sicherung;
+        if (s == null || !s.eingerichtet) {
+          return _json({
+            'fehler': 'Die Sicherung ist nicht eingerichtet.',
+          }, status: 409);
+        }
+        unawaited(s.jetzt());
+        return _json(await s.stand(), status: 202);
+      }),
+    )
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
     ..add(
@@ -204,6 +276,14 @@ Middleware get _sicherheitskoepfe =>
         },
       );
     };
+
+/// Nur für Verwalter; sonst 403.
+Future<Response> _nurVerwalter(
+  Request r,
+  Future<Response> Function() erlaubt,
+) async => kontoVon(r).verwalter
+    ? erlaubt()
+    : _json({'fehler': 'Nur für Verwalter.'}, status: 403);
 
 /// 507 Insufficient Storage – der Client bricht ab, statt es weiter zu
 /// versuchen.

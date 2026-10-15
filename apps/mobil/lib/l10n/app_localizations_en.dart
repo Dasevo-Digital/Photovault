@@ -141,6 +141,19 @@ class AppTexteEn extends AppTexte {
   String get kontoAbgeglichen => 'In sync';
 
   @override
+  String serverSicherungStand(String wann) {
+    return 'Server backup: last $wann';
+  }
+
+  @override
+  String get serverSicherungWarnung =>
+      'The server backup needs attention – on the computer under Settings → Server.';
+
+  @override
+  String get serverSicherungOffen =>
+      'The server backup is not set up yet – on the computer under Settings → Server.';
+
+  @override
   String speicherStand(String frei, String gesamt) {
     return 'Storage on the server: $frei free of $gesamt';
   }

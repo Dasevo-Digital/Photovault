@@ -55,6 +55,7 @@ import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
+import 'package:kern/abgleich/sicherung.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -984,10 +985,38 @@ class LibraryState extends ChangeNotifier {
     abgleich = a;
     a.starte();
     unawaited(pruefeServerspeicher());
-    _speicherUhr = Timer.periodic(
-      const Duration(minutes: 15),
-      (_) => pruefeServerspeicher(),
-    );
+    unawaited(pruefeServersicherung());
+    _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
+      pruefeServerspeicher();
+      pruefeServersicherung();
+    });
+  }
+
+  /// Wie die Sicherung des Servers steht (Issue #125) – nur für
+  /// Verwalter; sonst `null`.
+  Serversicherungsstand? get serversicherung => _serversicherung;
+  Serversicherungsstand? _serversicherung;
+  @visibleForTesting
+  set serversicherungFuerTests(Serversicherungsstand? s) =>
+      _serversicherung = s;
+
+  Future<void> pruefeServersicherung() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final neu = await Serversicherungsstand.hole(a.verbindung);
+      final vorher = _serversicherung;
+      _serversicherung = neu;
+      if (vorher?.stufe != neu?.stufe ||
+          vorher?.laeuft != neu?.laeuft ||
+          vorher?.ende != neu?.ende) {
+        notifyListeners();
+      }
+    } on KeineVerbindung {
+      // Beim nächsten Mal.
+    } on Serverfehler {
+      // Ebenso.
+    }
   }
 
   /// Wie es um den Speicher des Servers steht (Issue #123) – für die

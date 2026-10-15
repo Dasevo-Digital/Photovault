@@ -98,7 +98,10 @@ class _StartState extends State<Start> {
                   : sp.knapp
                   ? t.speicherKnapp(groessentext(sp.frei ?? 0))
                   : null;
-              final text = verbindung ?? speicher;
+              final sicherung = s.serversicherung?.warnt ?? false
+                  ? t.serverSicherungWarnung
+                  : null;
+              final text = verbindung ?? speicher ?? sicherung;
               if (text == null) return const SizedBox.shrink();
               return Material(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -107,7 +110,9 @@ class _StartState extends State<Start> {
                   leading: Icon(
                     verbindung != null
                         ? Icons.cloud_off_outlined
-                        : Icons.storage_outlined,
+                        : speicher != null
+                        ? Icons.storage_outlined
+                        : Icons.backup_outlined,
                   ),
                   title: Text(text),
                 ),
