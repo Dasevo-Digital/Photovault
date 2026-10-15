@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.32.1" date="2026-10-15">
+      <description>
+        <p>Every text field, password fields included, offers Paste in its right-click menu again; before, the entry was missing whenever the app had not recognised the clipboard as pasteable.</p>
+      </description>
+    </release>
     <release version="3.32.0" date="2026-10-15">
       <description>
         <p>Photo Vault can connect to its own home server. The library then lives on the server; this computer keeps a copy that also works offline and sends its changes once the server is reachable again. An existing library can move to the server, and imports are uploaded and analysed there with the same code as in the app.</p>
