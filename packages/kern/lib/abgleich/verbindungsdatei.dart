@@ -59,7 +59,11 @@ class Verbindungsdatei {
     await f.parent.create(recursive: true);
     final teil = File('${f.path}.neu');
     await teil.create();
-    if (!Platform.isWindows) await Process.run('chmod', ['600', teil.path]);
+    // Auf dem Telefon darf eine App kein Programm starten (auf dem iPhone
+    // hing die Anmeldung daran); dort schützt ohnehin ihr eigener Ordner.
+    if (Platform.isMacOS || Platform.isLinux) {
+      await Process.run('chmod', ['600', teil.path]);
+    }
     await teil.writeAsString(
       const JsonEncoder.withIndent('  ').convert({
         'server': '$server',

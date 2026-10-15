@@ -85,6 +85,9 @@ class _AnmeldenState extends State<Anmelden> {
       _fehler = t.anmeldenNichtErreichbar;
     } on Serverfehler {
       _fehler = t.anmeldenKeinServer;
+    } catch (e) {
+      // Sonst bliebe die Seite ohne Meldung im letzten Schritt stehen.
+      _fehler = '${t.fehlerAllgemein} ($e)';
     } finally {
       if (mounted) setState(() => _arbeitet = false);
     }
