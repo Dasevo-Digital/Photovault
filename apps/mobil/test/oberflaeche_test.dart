@@ -3,10 +3,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/karte.dart';
+import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
@@ -91,6 +97,105 @@ void main() {
     expect(find.text(t.anmeldenNichtErreichbar), findsOneWidget);
   });
 
+  testWidgets('ein leerer Server: das erste Konto vom Telefon', (tester) async {
+    var versuche = 0;
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/zustand') {
+        return http.Response(
+          jsonEncode({
+            'dienst': 'photo-vault',
+            'protokoll': 2,
+            'anmeldung': {'totp': true, 'oidc': false},
+            'einrichten': true,
+          }),
+          200,
+        );
+      }
+      if (r.url.path == '/api/v1/einrichten') {
+        versuche++;
+        // Jemand war schneller.
+        return http.Response('{"fehler": "schon eingerichtet"}', 409);
+      }
+      return http.Response('{}', 404);
+    });
+    await tester.binding.setSurfaceSize(const Size(360, 780));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Anmelden(
+          sitzung: Sitzung(),
+          anmeldungFuer: (s) => Anmeldung(s, client: client),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Anmelden)));
+    await tester.enterText(
+      find.widgetWithText(TextField, t.anmeldenAdresse),
+      'http://127.0.0.1:8790',
+    );
+    await tester.enterText(find.widgetWithText(TextField, t.anmeldenName), 'a');
+    await tester.enterText(
+      find.widgetWithText(TextField, t.anmeldenPasswort),
+      'ein langes passwort',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, t.anmeldenAnmelden));
+    await tester.pumpAndSettle();
+    expect(find.text(t.anmeldenNameUngueltig), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, t.anmeldenName),
+      'anna',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, t.anmeldenAnmelden));
+    await tester.pumpAndSettle();
+    expect(find.text(t.anmeldenErstesText('anna')), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, t.anmeldenPasswortWiederholen),
+      'ein langes passwort',
+    );
+    await tester.tap(find.text(t.anmeldenErstesAnlegen));
+    await tester.pumpAndSettle();
+    expect(versuche, 1);
+    expect(find.text(t.anmeldenSchonEingerichtet), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, t.anmeldenAnmelden),
+      findsOneWidget,
+      reason: 'zurück zur Anmeldung',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Konten: Liste und Aktionen für andere, nicht für sich', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 780));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Konten(verwaltung: _Verwaltung()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Konten)));
+    expect(find.text('anna · ${t.kontoDu}'), findsOneWidget);
+    await tester.tap(find.text('anna · ${t.kontoDu}'));
+    await tester.pumpAndSettle();
+    expect(find.text(t.kontoPasswortSetzen), findsNothing);
+    await tester.tap(find.text('max'));
+    await tester.pumpAndSettle();
+    expect(find.text(t.kontoPasswortSetzen), findsOneWidget);
+    expect(find.text(t.kontoEntsperren), findsOneWidget);
+    expect(find.text(t.kontoTotpZuruecksetzen), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('die Sicherungsseite zeigt Stand, Probleme und Knopf', (
     tester,
   ) async {
@@ -133,4 +238,31 @@ void main() {
     expect(find.text(t.sicherungAlleFotos), findsOneWidget);
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
   });
+}
+
+/// Eine Kontenverwaltung ohne Server.
+class _Verwaltung extends Kontenverwaltung {
+  _Verwaltung() : super(Serververbindung(Uri.parse('http://test/'), 't'));
+
+  @override
+  Future<List<Kontoeintrag>> liste() async => const [
+    Kontoeintrag(
+      id: '1',
+      name: 'anna',
+      verwalter: true,
+      totp: true,
+      gesperrt: false,
+      geraete: 1,
+      du: true,
+    ),
+    Kontoeintrag(
+      id: '2',
+      name: 'max',
+      verwalter: false,
+      totp: false,
+      gesperrt: true,
+      geraete: 0,
+      du: false,
+    ),
+  ];
 }

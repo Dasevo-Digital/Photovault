@@ -481,6 +481,192 @@ abstract class AppTexte {
   /// **'Die Bibliothek kommt vom Server …'**
   String get anmeldenLaedt;
 
+  /// No description provided for @anmeldenErstesTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erstes Konto anlegen'**
+  String get anmeldenErstesTitel;
+
+  /// No description provided for @anmeldenErstesText.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Server hat noch kein Konto. Mit dem Namen „{name}“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.'**
+  String anmeldenErstesText(String name);
+
+  /// No description provided for @anmeldenPasswortWiederholen.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort wiederholen'**
+  String get anmeldenPasswortWiederholen;
+
+  /// No description provided for @anmeldenErstesAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto anlegen und anmelden'**
+  String get anmeldenErstesAnlegen;
+
+  /// No description provided for @anmeldenPasswortUngleich.
+  ///
+  /// In de, this message translates to:
+  /// **'Die beiden Passwörter stimmen nicht überein.'**
+  String get anmeldenPasswortUngleich;
+
+  /// No description provided for @anmeldenPasswortZuKurz.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Passwort braucht mindestens {n} Zeichen.'**
+  String anmeldenPasswortZuKurz(int n);
+
+  /// No description provided for @anmeldenNameUngueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.'**
+  String get anmeldenNameUngueltig;
+
+  /// No description provided for @anmeldenErstesNurHeimnetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.'**
+  String get anmeldenErstesNurHeimnetz;
+
+  /// No description provided for @anmeldenSchonEingerichtet.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server hat inzwischen ein Konto. Bitte damit anmelden.'**
+  String get anmeldenSchonEingerichtet;
+
+  /// No description provided for @fehlerAllgemein.
+  ///
+  /// In de, this message translates to:
+  /// **'Hat nicht geklappt.'**
+  String get fehlerAllgemein;
+
+  /// No description provided for @speichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get speichern;
+
+  /// No description provided for @entfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get entfernen;
+
+  /// No description provided for @kontenVerwalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Konten verwalten'**
+  String get kontenVerwalten;
+
+  /// No description provided for @kontenVerwaltenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Konten für die Familie anlegen, Passwörter neu setzen'**
+  String get kontenVerwaltenHinweis;
+
+  /// No description provided for @kontenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Konten auf dem Server'**
+  String get kontenTitel;
+
+  /// No description provided for @kontoAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto anlegen'**
+  String get kontoAnlegen;
+
+  /// No description provided for @kontoVerwalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwalter'**
+  String get kontoVerwalter;
+
+  /// No description provided for @kontoAlsVerwalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Darf ebenfalls Konten verwalten'**
+  String get kontoAlsVerwalter;
+
+  /// No description provided for @kontoGeraete.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{kein Gerät} =1{1 Gerät} other{{n} Geräte}}'**
+  String kontoGeraete(int n);
+
+  /// No description provided for @kontoMitTotp.
+  ///
+  /// In de, this message translates to:
+  /// **'mit TOTP'**
+  String get kontoMitTotp;
+
+  /// No description provided for @kontoOhneTotp.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne TOTP'**
+  String get kontoOhneTotp;
+
+  /// No description provided for @kontoGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'gesperrt nach Fehlversuchen'**
+  String get kontoGesperrt;
+
+  /// No description provided for @kontoDu.
+  ///
+  /// In de, this message translates to:
+  /// **'dein Konto'**
+  String get kontoDu;
+
+  /// No description provided for @kontoPasswortSetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort neu setzen'**
+  String get kontoPasswortSetzen;
+
+  /// No description provided for @kontoPasswortSetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Geräte von „{name}“ werden dabei abgemeldet.'**
+  String kontoPasswortSetzenText(String name);
+
+  /// No description provided for @kontoTotpZuruecksetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'TOTP zurücksetzen'**
+  String get kontoTotpZuruecksetzen;
+
+  /// No description provided for @kontoTotpZurueckgesetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ richtet TOTP bei der nächsten Anmeldung neu ein.'**
+  String kontoTotpZurueckgesetzt(String name);
+
+  /// No description provided for @kontoEntsperren.
+  ///
+  /// In de, this message translates to:
+  /// **'Entsperren'**
+  String get kontoEntsperren;
+
+  /// No description provided for @kontoEntfernenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ entfernen?'**
+  String kontoEntfernenTitel(String name);
+
+  /// No description provided for @kontoEntfernenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Konto und seine Geräte werden entfernt. Die Bibliothek mit allen Fotos bleibt auf dem Server liegen: Sie wird beiseitegelegt, nicht gelöscht, und lässt sich nur dort von Hand löschen.'**
+  String get kontoEntfernenText;
+
+  /// No description provided for @kontoErledigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Erledigt.'**
+  String get kontoErledigt;
+
   /// No description provided for @sicherungTitel.
   ///
   /// In de, this message translates to:

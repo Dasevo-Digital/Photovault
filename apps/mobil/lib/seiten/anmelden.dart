@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
 import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 
-enum _Schritt { eingabe, code, einrichten, codes, laden }
+enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, laden }
 
 /// Das Telefon mit einem Photo Vault Server verbinden: Adresse, Name,
 /// Passwort, dann der Code der Authenticator-App – beim ersten Mal mit
@@ -17,10 +18,22 @@ enum _Schritt { eingabe, code, einrichten, codes, laden }
 /// Anders als am Desktop gibt es hier keinen QR-Code: Die Authenticator-App
 /// läuft auf demselben Telefon. Der Knopf öffnet sie mit dem Geheimnis
 /// (`otpauth://`); wer eine App ohne diesen Weg hat, tippt es ab.
+///
+/// Hat der Server noch kein Konto, legt diese Seite das erste an (nur aus
+/// dem Heimnetz) – mit Name und Passwort von eben, nach einer zweiten
+/// Eingabe des Passworts.
 class Anmelden extends StatefulWidget {
-  const Anmelden({super.key, required this.sitzung});
+  const Anmelden({
+    super.key,
+    required this.sitzung,
+    @visibleForTesting this.anmeldungFuer = Anmeldung.new,
+  });
 
   final Sitzung sitzung;
+
+  /// Wie die Anmeldung an einen Server entsteht – im Test gegen einen
+  /// nachgestellten.
+  final Anmeldung Function(Uri server) anmeldungFuer;
 
   @override
   State<Anmelden> createState() => _AnmeldenState();
@@ -30,6 +43,7 @@ class _AnmeldenState extends State<Anmelden> {
   final _adresse = TextEditingController();
   final _name = TextEditingController();
   final _passwort = TextEditingController();
+  final _passwort2 = TextEditingController();
   final _geraet = TextEditingController();
   final _code = TextEditingController();
 
@@ -52,7 +66,7 @@ class _AnmeldenState extends State<Anmelden> {
   @override
   void dispose() {
     _anmeldung?.schliesse();
-    for (final c in [_adresse, _name, _passwort, _geraet, _code]) {
+    for (final c in [_adresse, _name, _passwort, _passwort2, _geraet, _code]) {
       c.dispose();
     }
     super.dispose();
@@ -87,11 +101,22 @@ class _AnmeldenState extends State<Anmelden> {
       return;
     }
     _anmeldung?.schliesse();
-    final a = _anmeldung = Anmeldung(server);
+    final a = _anmeldung = widget.anmeldungFuer(server);
     _server = server;
     final z = await a.zustand();
     if (((z['protokoll'] as int?) ?? 0) < 2) {
       _fehler = t.anmeldenKeinServer;
+      return;
+    }
+    if (z['einrichten'] == true) {
+      // Noch kein Konto: Name und Passwort von eben werden das erste.
+      if (!kontonameGueltig(_name.text)) {
+        _fehler = t.anmeldenNameUngueltig;
+      } else if (_passwort.text.length < passwortMindestlaenge) {
+        _fehler = t.anmeldenPasswortZuKurz(passwortMindestlaenge);
+      } else {
+        _schritt = _Schritt.erstesKonto;
+      }
       return;
     }
     _verarbeite(
@@ -101,6 +126,35 @@ class _AnmeldenState extends State<Anmelden> {
         geraet: _geraet.text.trim(),
       ),
     );
+  });
+
+  Future<void> _erstesAnlegen() => _mitArbeit(() async {
+    final t = AppTexte.of(context);
+    if (_passwort2.text != _passwort.text) {
+      _fehler = t.anmeldenPasswortUngleich;
+      return;
+    }
+    try {
+      _verarbeite(
+        await _anmeldung!.einrichten(
+          _name.text.trim(),
+          _passwort.text,
+          geraet: _geraet.text.trim(),
+        ),
+      );
+      _passwort2.clear();
+    } on Serverfehler catch (f) {
+      switch (f.status) {
+        case 403:
+          _fehler = t.anmeldenErstesNurHeimnetz;
+        case 409:
+          _fehler = t.anmeldenSchonEingerichtet;
+          _passwort2.clear();
+          _schritt = _Schritt.eingabe;
+        default:
+          _fehler = grundAus(f) ?? t.fehlerAllgemein;
+      }
+    }
   });
 
   Future<void> _bestaetigen() => _mitArbeit(() async {
@@ -212,6 +266,36 @@ class _AnmeldenState extends State<Anmelden> {
       FilledButton(
         onPressed: _arbeitet ? null : _anmelden,
         child: Text(t.anmeldenAnmelden),
+      ),
+    ],
+    _Schritt.erstesKonto => [
+      Text(
+        t.anmeldenErstesTitel,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      const SizedBox(height: 8),
+      Text(t.anmeldenErstesText(_name.text.trim())),
+      TextField(
+        controller: _passwort2,
+        autofocus: true,
+        obscureText: true,
+        decoration: InputDecoration(labelText: t.anmeldenPasswortWiederholen),
+        onSubmitted: (_) => _arbeitet ? null : _erstesAnlegen(),
+      ),
+      const SizedBox(height: 20),
+      FilledButton(
+        onPressed: _arbeitet ? null : _erstesAnlegen,
+        child: Text(t.anmeldenErstesAnlegen),
+      ),
+      TextButton(
+        onPressed: _arbeitet
+            ? null
+            : () => setState(() {
+                _passwort2.clear();
+                _fehler = null;
+                _schritt = _Schritt.eingabe;
+              }),
+        child: Text(t.abbrechen),
       ),
     ],
     _Schritt.code => [

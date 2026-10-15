@@ -96,9 +96,24 @@ gelöscht; ein unterbrochener Umzug setzt fort.
 
 ## Konten
 
-Konten entstehen auf der Kommandozeile – das erste muss es geben, bevor
-sich jemand anmelden kann, und wer auf der Maschine Befehle ausführen
-darf, darf ohnehin alles:
+**Das erste Konto entsteht in der App.** Hat der Server noch keines,
+bietet die Desktop- oder Handy-App beim Verbinden an, es mit dem
+eingegebenen Namen und Passwort anzulegen; es wird Verwalter, danach
+folgt die Einrichtung von TOTP wie bei jeder Anmeldung. Das geht nur,
+solange es kein Konto gibt, und nur aus dem Heimnetz (private Adressen,
+auch über VPN) – nicht über einen Proxy, dem der Server nicht traut, und
+nicht von aussen: Wer den Server zuerst erreicht, bekommt ihn.
+
+**Weitere Konten legt ein Verwalter in der App an** (Desktop:
+Einstellungen → Server → Konten verwalten; Handy: Konto → Konten
+verwalten). Dort setzt er auch Passwörter neu, setzt TOTP zurück,
+entsperrt und entfernt Konten. Ein entferntes Konto verliert seine Geräte;
+seine Bibliothek legt der Server beiseite
+(`bibliotheken/<Konto>.entfernt-<Zeit>`), gelöscht wird sie nur von Hand.
+Das eigene Konto ändert jeder für sich.
+
+Auf der Kommandozeile geht dasselbe – auch das erste Konto, und wer auf
+der Maschine Befehle ausführen darf, darf ohnehin alles:
 
 ```sh
 photo_vault_server konto anlegen NAME [--verwalter] [--totp-spaeter]
@@ -391,6 +406,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 |---|---|
 | `GET /zustand` | Lebenszeichen; ob TOTP Pflicht und OIDC eingerichtet ist |
 | `POST /anmelden` | `{name, passwort, geraet}` → `{token}` oder `{schritt: totp \| totp_einrichten, vorgang, …}` |
+| `POST /einrichten` | wie `/anmelden`, legt aber zuerst das erste Konto an – nur ohne Konto und aus dem Heimnetz (sonst 409 bzw. 403); `zustand` meldet dann `einrichten: true` |
 | `POST /anmelden/totp` | `{vorgang, code}` – Code oder Wiederherstellungscode → `{token, geraet}` |
 | `GET /anmelden/oidc?geraet&rueckweg&pruefwert&zustand` | im Browser öffnen: weiter zum Anbieter |
 | `POST /anmelden/oidc/einloesen` | `{code, pruefer}` → `{token}` (Verknüpfen: mit Token → `{verknuepft}`) |
@@ -400,6 +416,8 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /konto/wiederherstellungscodes` | `{code}` → zehn neue |
 | `POST /konto/oidc` | `{rueckweg, pruefwert}` → `{adresse}` zum Verknüpfen |
 | `GET /geraete`, `DELETE /geraete/<id>` | angemeldete Geräte, eines abmelden |
+| `GET /konten`, `POST /konten` | Verwalter: alle Konten; `{name, passwort, verwalter?}` legt eines an |
+| `POST /konten/<id>/passwort\|totp-zuruecksetzen\|entsperren`, `DELETE /konten/<id>` | Verwalter: für ein anderes Konto – `{neu}` meldet dessen Geräte ab; Entfernen legt die Bibliothek beiseite |
 | `GET /abgleich/stand` | wie weit das Protokoll reicht |
 | `GET /abgleich/aenderungen?nach=N&warten=25` | geänderte Zeilen seit N (Long-Poll) |
 | `POST /abgleich/zeilen` | einzelne Zeilen, wie der Server sie sieht |

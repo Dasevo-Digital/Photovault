@@ -124,6 +124,24 @@ class Bibliotheken {
     await b.bibliothek.schliesse();
   }
 
+  /// Legt die Bibliothek von [kontoId] beiseite, wenn das Konto entfernt
+  /// wird: `bibliotheken/<Konto>.entfernt-<Zeit>`, nicht gelöscht – wie beim
+  /// Umzug. Wer sie wirklich los sein will, löscht den Ordner von Hand.
+  /// Halb hochgeladene Dateien im Eingang gehen weg.
+  Future<Directory?> legeBeiseite(String kontoId) async {
+    await schliesse(kontoId);
+    final eingangKonto = Directory(p.join(eingang.path, kontoId));
+    if (await eingangKonto.exists()) await eingangKonto.delete(recursive: true);
+    final ordner = Directory(p.join(wurzel.path, kontoId));
+    if (!await ordner.exists()) return null;
+    final stempel = DateTime.now()
+        .toUtc()
+        .toIso8601String()
+        .replaceAll(RegExp(r'[^0-9]'), '')
+        .substring(0, 14);
+    return ordner.rename(p.join(wurzel.path, '$kontoId.entfernt-$stempel'));
+  }
+
   Future<void> schliesseAlle() async {
     for (final f in _offen.values) {
       final b = await f;

@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:kern/abgleich/anmeldung.dart' show passwortMindestlaenge;
 
 /// Passwörter als Argon2id-Prüfwert im PHC-Format
 /// (`$argon2id$v=19$m=…,t=…,p=…$salz$wert`), so wie ihn auch andere
@@ -26,7 +27,7 @@ class Passwort {
   /// Kürzer ist ein Passwort nicht zu haben: Mit TOTP davor wird nicht
   /// mehr jedes Passwort geraten, aber eines aus einem fremden Datenleck
   /// soll trotzdem nicht reichen.
-  static const mindestlaenge = 12;
+  static const mindestlaenge = passwortMindestlaenge;
 
   static const _praefix = r'$argon2id$v=19$';
 

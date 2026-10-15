@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:kern/abgleich/anmeldung.dart' show kontonameGueltig;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,6 +22,7 @@ class Konto {
     required this.hatPasswort,
     required this.hatTotp,
     required this.angelegt,
+    this.gesperrtBis,
   });
 
   final String id;
@@ -30,6 +32,9 @@ class Konto {
   final bool hatTotp;
   final DateTime angelegt;
 
+  /// Nach zu vielen Fehlversuchen gesperrt bis dann.
+  final DateTime? gesperrtBis;
+
   static Konto _aus(Row z) => Konto(
     id: z['id'] as String,
     name: z['name'] as String,
@@ -37,6 +42,9 @@ class Konto {
     hatPasswort: z['passwort'] != null,
     hatTotp: z['totp'] != null,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt'] as int),
+    gesperrtBis: z['gesperrt_bis'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(z['gesperrt_bis'] as int),
   );
 }
 
@@ -180,19 +188,29 @@ class Kontodienst {
     return z.isEmpty ? null : Konto._aus(z.first);
   }
 
+  /// Ob es schon ein Konto gibt – vorher lässt sich das erste über die App
+  /// anlegen (siehe `Anmeldungsapi.einrichten`).
+  bool get eingerichtet =>
+      _db.select('SELECT 1 FROM konten LIMIT 1').isNotEmpty;
+
   Konto? kontoNamens(String name) {
     final z = _db.select('SELECT * FROM konten WHERE name = ?', [name.trim()]);
     return z.isEmpty ? null : Konto._aus(z.first);
   }
 
   /// Ein neues Konto. Das erste ist Verwalter, gleich was [verwalter] sagt.
+  ///
+  /// Mit [nurAlsErstes] nur, solange es noch keines gibt – geprüft
+  /// unmittelbar vor dem Eintragen, ohne Pause dazwischen: Zwei, die
+  /// zugleich einrichten, bekommen nicht beide ein Verwalterkonto.
   Future<Konto> legeAn(
     String name,
     String passwortKlartext, {
     bool verwalter = false,
+    bool nurAlsErstes = false,
   }) async {
     final n = name.trim();
-    if (!RegExp(r'^[\p{L}\p{N}._-]{2,40}$', unicode: true).hasMatch(n)) {
+    if (!kontonameGueltig(n)) {
       throw ArgumentError(
         'Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich '
         'oder Unterstrich.',
@@ -206,7 +224,13 @@ class Kontodienst {
       () => passwort.pruefwertFuer(passwortKlartext),
     );
     final id = const Uuid().v4();
-    final erstes = alle().isEmpty;
+    final erstes = !eingerichtet;
+    if (nurAlsErstes && !erstes) {
+      throw StateError('Der Server ist schon eingerichtet.');
+    }
+    if (kontoNamens(n) != null) {
+      throw StateError('Ein Konto „$n“ gibt es schon.');
+    }
     _db.execute(
       'INSERT INTO konten (id, name, passwort, verwalter, angelegt) '
       'VALUES (?, ?, ?, ?, ?)',
@@ -281,6 +305,14 @@ class Kontodienst {
       ]);
     }
     return true;
+  }
+
+  /// Entfernt das Konto samt Geräten, Codes und Verknüpfungen. Seine
+  /// Bibliothek legt `Bibliotheken.legeBeiseite` beiseite – die gehört nicht
+  /// hierher.
+  void entferne(String kontoId) {
+    _vorgaenge.removeWhere((_, v) => v.konto == kontoId);
+    _db.execute('DELETE FROM konten WHERE id = ?', [kontoId]);
   }
 
   void entsperre(String kontoId) => _db.execute(

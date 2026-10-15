@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/konten.dart';
+import 'package:kern/abgleich/verbindung.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'konten.dart';
 import 'sicherung.dart';
 
 /// Womit das Telefon verbunden ist, wie der Abgleich steht – und abmelden.
@@ -88,6 +91,7 @@ class Konto extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (sitzung.abgleich case final a?) _KontenZugang(a.verbindung),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout),
@@ -99,6 +103,45 @@ class Konto extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// „Konten verwalten“ – nur für Verwalter; ob man einer ist, fragt die
+/// Zeile einmal beim Server nach.
+class _KontenZugang extends StatefulWidget {
+  const _KontenZugang(this.verbindung);
+
+  final Serververbindung verbindung;
+
+  @override
+  State<_KontenZugang> createState() => _KontenZugangState();
+}
+
+class _KontenZugangState extends State<_KontenZugang> {
+  late final _verwaltung = Kontenverwaltung(widget.verbindung);
+  late final Future<bool> _verwalter = _verwaltung.binVerwalter().catchError(
+    (_) => false,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return FutureBuilder<bool>(
+      future: _verwalter,
+      builder: (context, s) => s.data != true
+          ? const SizedBox.shrink()
+          : ListTile(
+              leading: const Icon(Icons.manage_accounts_outlined),
+              title: Text(t.kontenVerwalten),
+              subtitle: Text(t.kontenVerwaltenHinweis),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Konten(verwaltung: _verwaltung),
+                ),
+              ),
+            ),
     );
   }
 }

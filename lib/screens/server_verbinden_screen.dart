@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
 import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/umzug.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -19,19 +20,31 @@ import '../widgets/qr_bild.dart';
 import 'einstellungen/einstellungsstand.dart';
 import 'einstellungen/gemeinsam.dart';
 
-enum _Schritt { eingabe, code, einrichten, codes, wahl }
+enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, wahl }
 
 /// Verbindet diesen Rechner mit einem Photo Vault Server (Issue #86,
 /// Stufe 2): anmelden – mit Zwei-Faktor-Code, beim ersten Mal mit dessen
 /// Einrichtung –, dann entweder die Bibliothek des Servers hierher holen
 /// oder die Bibliothek dieses Rechners zum Server umziehen.
 ///
+/// Hat der Server noch kein Konto, legt dieser Bildschirm das erste an
+/// (aus dem Heimnetz) – mit dem Namen und Passwort, die eben eingegeben
+/// wurden, nach einer zweiten Eingabe des Passworts.
+///
 /// Beides endet mit einem Neustart: Datenbank, Pfade und Zwischenspeicher
 /// hängen an der Bibliothek, die beim Start geöffnet wurde.
 class ServerVerbindenScreen extends StatefulWidget {
-  const ServerVerbindenScreen({super.key, required this.stand});
+  const ServerVerbindenScreen({
+    super.key,
+    required this.stand,
+    @visibleForTesting this.anmeldungFuer = Anmeldung.new,
+  });
 
   final Einstellungsstand stand;
+
+  /// Wie die Anmeldung an einen Server entsteht – im Test gegen einen
+  /// nachgestellten.
+  final Anmeldung Function(Uri server) anmeldungFuer;
 
   @override
   State<ServerVerbindenScreen> createState() => _ServerVerbindenScreenState();
@@ -41,6 +54,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
   final _adresse = TextEditingController();
   final _name = TextEditingController();
   final _passwort = TextEditingController();
+  final _passwort2 = TextEditingController();
   final _geraet = TextEditingController(text: Platform.localHostname);
   final _code = TextEditingController();
 
@@ -60,7 +74,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
   @override
   void dispose() {
     _anmeldung?.schliesse();
-    for (final c in [_adresse, _name, _passwort, _geraet, _code]) {
+    for (final c in [_adresse, _name, _passwort, _passwort2, _geraet, _code]) {
       c.dispose();
     }
     super.dispose();
@@ -95,11 +109,22 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       return;
     }
     _anmeldung?.schliesse();
-    final a = _anmeldung = Anmeldung(server);
+    final a = _anmeldung = widget.anmeldungFuer(server);
     _server = server;
     final zustand = await a.zustand();
     if (((zustand['protokoll'] as int?) ?? 0) < 2) {
       _fehler = t.serverKeinPhotoVault;
+      return;
+    }
+    if (zustand['einrichten'] == true) {
+      // Noch kein Konto: Name und Passwort von eben werden das erste.
+      if (!kontonameGueltig(_name.text)) {
+        _fehler = t.serverNameUngueltig;
+      } else if (_passwort.text.length < passwortMindestlaenge) {
+        _fehler = t.serverPasswortZuKurz(passwortMindestlaenge);
+      } else {
+        _schritt = _Schritt.erstesKonto;
+      }
       return;
     }
     _verarbeite(
@@ -109,6 +134,36 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
         geraet: _geraet.text.trim(),
       ),
     );
+  });
+
+  Future<void> _erstesAnlegen() => _mitArbeit(() async {
+    final t = AppTexte.of(context);
+    if (_passwort2.text != _passwort.text) {
+      _fehler = t.serverPasswortUngleich;
+      return;
+    }
+    try {
+      _verarbeite(
+        await _anmeldung!.einrichten(
+          _name.text.trim(),
+          _passwort.text,
+          geraet: _geraet.text.trim(),
+        ),
+      );
+      _passwort2.clear();
+    } on Serverfehler catch (f) {
+      switch (f.status) {
+        case 403:
+          _fehler = t.serverErstesNurHeimnetz;
+        case 409:
+          // Jemand war schneller (oder ein zweites Fenster): anmelden.
+          _fehler = t.serverSchonEingerichtet;
+          _passwort2.clear();
+          _schritt = _Schritt.eingabe;
+        default:
+          _fehler = grundAus(f) ?? t.serverFehler;
+      }
+    }
   });
 
   Future<void> _bestaetigen() => _mitArbeit(() async {
@@ -322,6 +377,41 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       FilledButton(
         onPressed: _arbeitet ? null : _anmelden,
         child: Text(t.serverAnmelden),
+      ),
+    ],
+    _Schritt.erstesKonto => [
+      Text(t.serverErstesTitel, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: AppSpacing.sm),
+      Text(t.serverErstesText(_name.text.trim())),
+      TextField(
+        controller: _passwort2,
+        autofocus: true,
+        obscureText: true,
+        decoration: InputDecoration(labelText: t.serverPasswortWiederholen),
+        onSubmitted: (_) => _arbeitet ? null : _erstesAnlegen(),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      // Schmal stehen die Knöpfe untereinander, statt überzulaufen.
+      OverflowBar(
+        alignment: MainAxisAlignment.spaceBetween,
+        overflowAlignment: OverflowBarAlignment.end,
+        overflowSpacing: AppSpacing.sm,
+        children: [
+          TextButton(
+            onPressed: _arbeitet
+                ? null
+                : () => setState(() {
+                    _passwort2.clear();
+                    _fehler = null;
+                    _schritt = _Schritt.eingabe;
+                  }),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: _arbeitet ? null : _erstesAnlegen,
+            child: Text(t.serverErstesAnlegen),
+          ),
+        ],
       ),
     ],
     _Schritt.code => [

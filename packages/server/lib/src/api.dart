@@ -14,6 +14,7 @@ import 'anmeldung_api.dart';
 import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'konten/kontodienst.dart';
+import 'konten_api.dart';
 import 'oidc.dart';
 import 'rechnen.dart';
 import 'suche_api.dart';
@@ -44,6 +45,7 @@ Handler baueApi({
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
   final rechnen = Rechenapi(bibliotheken);
+  final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
   final r = Router()
@@ -57,7 +59,24 @@ Handler baueApi({
         'Telefon beim ersten Start – mit dieser Adresse.',
       ),
     )
-    ..get('/api/v1/zustand', (Request _) => api.zustand(konten, oidc))
+    ..get(
+      '/api/v1/zustand',
+      (Request r) => api.zustand(
+        konten,
+        oidc,
+        einrichten: !konten.eingerichtet && von.ausDemHeimnetz(r),
+      ),
+    )
+    ..post('/api/v1/einrichten', anmeldung.einrichten)
+    ..get('/api/v1/konten', kontenapi.liste)
+    ..post('/api/v1/konten', kontenapi.anlegen)
+    ..post('/api/v1/konten/<id>/passwort', kontenapi.passwort)
+    ..post(
+      '/api/v1/konten/<id>/totp-zuruecksetzen',
+      kontenapi.totpZuruecksetzen,
+    )
+    ..post('/api/v1/konten/<id>/entsperren', kontenapi.entsperren)
+    ..delete('/api/v1/konten/<id>', kontenapi.entfernen)
     ..post('/api/v1/anmelden', anmeldung.anmelden)
     ..post('/api/v1/anmelden/totp', anmeldung.totp)
     ..get('/api/v1/anmelden/oidc', anmeldung.oidcStart)
@@ -148,6 +167,7 @@ Handler baueApi({
           offen: {
             '',
             'api/v1/zustand',
+            'api/v1/einrichten',
             'api/v1/anmelden',
             'api/v1/anmelden/totp',
             'api/v1/anmelden/oidc',
@@ -188,11 +208,15 @@ class _Api {
 
   /// Lebenszeichen, ohne Anmeldung – für Docker, den Reverse Proxy und
   /// Clients, die wissen wollen, wie sie sich anmelden.
-  Response zustand(Kontodienst konten, Oidc? oidc) => _json({
-    'dienst': 'photo-vault',
-    'protokoll': protokollFassung,
-    'anmeldung': {'totp': konten.totpPflicht, 'oidc': oidc != null},
-  });
+  /// Mit [einrichten], wenn es noch kein Konto gibt und die Anfrage aus
+  /// dem Heimnetz kommt: Dann bietet die App an, das erste anzulegen.
+  Response zustand(Kontodienst konten, Oidc? oidc, {bool einrichten = false}) =>
+      _json({
+        'dienst': 'photo-vault',
+        'protokoll': protokollFassung,
+        'anmeldung': {'totp': konten.totpPflicht, 'oidc': oidc != null},
+        if (einrichten) 'einrichten': true,
+      });
 
   Future<Response> bibliothek(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;

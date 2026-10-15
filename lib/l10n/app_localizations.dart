@@ -14257,6 +14257,174 @@ abstract class AppTexte {
   /// **'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.'**
   String get serverZuAlt;
 
+  /// No description provided for @serverErstesTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erstes Konto anlegen'**
+  String get serverErstesTitel;
+
+  /// No description provided for @serverErstesText.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Server hat noch kein Konto. Mit dem Namen „{name}“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.'**
+  String serverErstesText(String name);
+
+  /// No description provided for @serverPasswortWiederholen.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort wiederholen'**
+  String get serverPasswortWiederholen;
+
+  /// No description provided for @serverErstesAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto anlegen und anmelden'**
+  String get serverErstesAnlegen;
+
+  /// No description provided for @serverPasswortUngleich.
+  ///
+  /// In de, this message translates to:
+  /// **'Die beiden Passwörter stimmen nicht überein.'**
+  String get serverPasswortUngleich;
+
+  /// No description provided for @serverPasswortZuKurz.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Passwort braucht mindestens {n} Zeichen.'**
+  String serverPasswortZuKurz(int n);
+
+  /// No description provided for @serverNameUngueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.'**
+  String get serverNameUngueltig;
+
+  /// No description provided for @serverErstesNurHeimnetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.'**
+  String get serverErstesNurHeimnetz;
+
+  /// No description provided for @serverSchonEingerichtet.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server hat inzwischen ein Konto. Bitte damit anmelden.'**
+  String get serverSchonEingerichtet;
+
+  /// No description provided for @serverKontenVerwalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Konten verwalten …'**
+  String get serverKontenVerwalten;
+
+  /// No description provided for @serverKontenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Konten auf dem Server'**
+  String get serverKontenTitel;
+
+  /// No description provided for @serverKontoAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Konto anlegen …'**
+  String get serverKontoAnlegen;
+
+  /// No description provided for @serverKontoVerwalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwalter'**
+  String get serverKontoVerwalter;
+
+  /// No description provided for @serverKontoAlsVerwalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Darf ebenfalls Konten verwalten'**
+  String get serverKontoAlsVerwalter;
+
+  /// No description provided for @serverKontoGeraete.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{kein Gerät} =1{1 Gerät} other{{n} Geräte}}'**
+  String serverKontoGeraete(int n);
+
+  /// No description provided for @serverKontoMitTotp.
+  ///
+  /// In de, this message translates to:
+  /// **'mit TOTP'**
+  String get serverKontoMitTotp;
+
+  /// No description provided for @serverKontoOhneTotp.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne TOTP'**
+  String get serverKontoOhneTotp;
+
+  /// No description provided for @serverKontoGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'gesperrt nach Fehlversuchen'**
+  String get serverKontoGesperrt;
+
+  /// No description provided for @serverKontoDu.
+  ///
+  /// In de, this message translates to:
+  /// **'dein Konto'**
+  String get serverKontoDu;
+
+  /// No description provided for @serverKontoPasswortSetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort neu setzen …'**
+  String get serverKontoPasswortSetzen;
+
+  /// No description provided for @serverKontoPasswortSetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Geräte von „{name}“ werden dabei abgemeldet.'**
+  String serverKontoPasswortSetzenText(String name);
+
+  /// No description provided for @serverKontoTotpZuruecksetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'TOTP zurücksetzen'**
+  String get serverKontoTotpZuruecksetzen;
+
+  /// No description provided for @serverKontoTotpZurueckgesetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ richtet TOTP bei der nächsten Anmeldung neu ein.'**
+  String serverKontoTotpZurueckgesetzt(String name);
+
+  /// No description provided for @serverKontoEntsperren.
+  ///
+  /// In de, this message translates to:
+  /// **'Entsperren'**
+  String get serverKontoEntsperren;
+
+  /// No description provided for @serverKontoEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen …'**
+  String get serverKontoEntfernen;
+
+  /// No description provided for @serverKontoEntfernenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ entfernen?'**
+  String serverKontoEntfernenTitel(String name);
+
+  /// No description provided for @serverKontoEntfernenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Konto und seine Geräte werden entfernt. Die Bibliothek mit allen Fotos bleibt auf dem Server liegen: Sie wird beiseitegelegt, nicht gelöscht, und lässt sich nur dort von Hand löschen.'**
+  String get serverKontoEntfernenText;
+
+  /// No description provided for @serverKontoErledigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Erledigt.'**
+  String get serverKontoErledigt;
+
   /// No description provided for @serverRechenhilfe.
   ///
   /// In de, this message translates to:

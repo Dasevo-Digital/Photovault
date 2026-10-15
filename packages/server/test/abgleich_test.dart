@@ -9,6 +9,7 @@ import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -543,6 +544,68 @@ void main() {
     expect(f.wiederherstellungscodes, hasLength(10));
     expect(pflicht.pruefeToken(f.token, 'x')!.konto.name, 'max');
     anmeldung.schliesse();
+  });
+
+  test('Ersteinrichtung und Konten als Client', () async {
+    final leer = Serverdatenbank.imSpeicher();
+    addTearDown(leer.schliesse);
+    final dienst = Kontodienst(
+      leer,
+      Tresorschluessel(List.filled(32, 1)),
+      passwort: const Passwort(speicher: 64, durchgaenge: 1),
+      totpPflicht: false,
+    );
+    await server.close(force: true);
+    api = baueApi(konten: dienst, bibliotheken: bibliotheken);
+    await starteServer();
+    final adresse = Uri.parse('http://127.0.0.1:$port');
+    final anmeldung = Anmeldung(adresse);
+    addTearDown(anmeldung.schliesse);
+
+    // Vom eigenen Rechner: das zählt als Heimnetz.
+    expect((await anmeldung.zustand())['einrichten'], isTrue);
+    final anna =
+        await anmeldung.einrichten(
+              'anna',
+              'ein langes passwort',
+              geraet: 'Rechner',
+            )
+            as AnmeldungFertig;
+    expect((await anmeldung.zustand())['einrichten'], isNull);
+    await expectLater(
+      anmeldung.einrichten('max', 'noch ein passwort', geraet: 'x'),
+      throwsA(isA<Serverfehler>().having((f) => f.status, 'status', 409)),
+    );
+
+    final v = Serververbindung(adresse, anna.token);
+    addTearDown(v.schliesse);
+    final verwaltung = Kontenverwaltung(v);
+    expect(await verwaltung.binVerwalter(), isTrue);
+    final max = await verwaltung.legeAn('max', 'noch ein passwort');
+    expect(
+      [for (final k in await verwaltung.liste()) (k.name, k.du)],
+      [('anna', true), ('max', false)],
+    );
+
+    // Wer nicht Verwalter ist, sieht die Konten nicht.
+    final alsMax =
+        await anmeldung.anmelden('max', 'noch ein passwort', geraet: 'Tel')
+            as AnmeldungFertig;
+    final vm = Serververbindung(adresse, alsMax.token);
+    addTearDown(vm.schliesse);
+    expect(await Kontenverwaltung(vm).binVerwalter(), isFalse);
+    await expectLater(
+      Kontenverwaltung(vm).liste(),
+      throwsA(isA<Serverfehler>().having((f) => f.status, 'status', 403)),
+    );
+
+    await verwaltung.setzePasswort(max.id, 'ein ganz neues passwort');
+    await expectLater(
+      vm.hole('api/v1/konto'),
+      throwsA(isA<Serverfehler>().having((f) => f.abgemeldet, 'ab', true)),
+    );
+    await verwaltung.entferne(max.id);
+    expect([for (final k in await verwaltung.liste()) k.name], ['anna']);
   });
 }
 

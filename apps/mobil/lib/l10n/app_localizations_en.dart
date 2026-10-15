@@ -243,6 +243,123 @@ class AppTexteEn extends AppTexte {
   String get anmeldenLaedt => 'Loading the library from the server …';
 
   @override
+  String get anmeldenErstesTitel => 'Create the first account';
+
+  @override
+  String anmeldenErstesText(String name) {
+    return 'This server has no account yet. The first one will be created with the name “$name” and the password you just entered. It becomes the administrator and can add more accounts later.';
+  }
+
+  @override
+  String get anmeldenPasswortWiederholen => 'Repeat password';
+
+  @override
+  String get anmeldenErstesAnlegen => 'Create account and sign in';
+
+  @override
+  String get anmeldenPasswortUngleich => 'The two passwords do not match.';
+
+  @override
+  String anmeldenPasswortZuKurz(int n) {
+    return 'The password needs at least $n characters.';
+  }
+
+  @override
+  String get anmeldenNameUngueltig =>
+      'The name needs 2 to 40 letters, digits, dots, hyphens or underscores.';
+
+  @override
+  String get anmeldenErstesNurHeimnetz =>
+      'The first account can only be created from the home network, not through access from outside.';
+
+  @override
+  String get anmeldenSchonEingerichtet =>
+      'The server already has an account now. Please sign in with it.';
+
+  @override
+  String get fehlerAllgemein => 'That did not work.';
+
+  @override
+  String get speichern => 'Save';
+
+  @override
+  String get entfernen => 'Remove';
+
+  @override
+  String get kontenVerwalten => 'Manage accounts';
+
+  @override
+  String get kontenVerwaltenHinweis =>
+      'Add accounts for the family, set new passwords';
+
+  @override
+  String get kontenTitel => 'Accounts on the server';
+
+  @override
+  String get kontoAnlegen => 'Add account';
+
+  @override
+  String get kontoVerwalter => 'Administrator';
+
+  @override
+  String get kontoAlsVerwalter => 'May also manage accounts';
+
+  @override
+  String kontoGeraete(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n devices',
+      one: '1 device',
+      zero: 'no device',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kontoMitTotp => 'with TOTP';
+
+  @override
+  String get kontoOhneTotp => 'without TOTP';
+
+  @override
+  String get kontoGesperrt => 'locked after failed attempts';
+
+  @override
+  String get kontoDu => 'your account';
+
+  @override
+  String get kontoPasswortSetzen => 'Set new password';
+
+  @override
+  String kontoPasswortSetzenText(String name) {
+    return 'All devices of “$name” will be signed out.';
+  }
+
+  @override
+  String get kontoTotpZuruecksetzen => 'Reset TOTP';
+
+  @override
+  String kontoTotpZurueckgesetzt(String name) {
+    return '“$name” will set up TOTP again at the next sign-in.';
+  }
+
+  @override
+  String get kontoEntsperren => 'Unlock';
+
+  @override
+  String kontoEntfernenTitel(String name) {
+    return 'Remove “$name”?';
+  }
+
+  @override
+  String get kontoEntfernenText =>
+      'The account and its devices will be removed. The library with all its photos stays on the server: it is set aside, not deleted, and can only be deleted there by hand.';
+
+  @override
+  String get kontoErledigt => 'Done.';
+
+  @override
   String get sicherungTitel => 'Back up camera roll';
 
   @override

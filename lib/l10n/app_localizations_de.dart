@@ -9290,6 +9290,114 @@ class AppTexteDe extends AppTexte {
       'Der Server ist älter als diese App – bitte den Server aktualisieren. Bis dahin gleicht nichts ab.';
 
   @override
+  String get serverErstesTitel => 'Erstes Konto anlegen';
+
+  @override
+  String serverErstesText(String name) {
+    return 'Dieser Server hat noch kein Konto. Mit dem Namen „$name“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.';
+  }
+
+  @override
+  String get serverPasswortWiederholen => 'Passwort wiederholen';
+
+  @override
+  String get serverErstesAnlegen => 'Konto anlegen und anmelden';
+
+  @override
+  String get serverPasswortUngleich =>
+      'Die beiden Passwörter stimmen nicht überein.';
+
+  @override
+  String serverPasswortZuKurz(int n) {
+    return 'Das Passwort braucht mindestens $n Zeichen.';
+  }
+
+  @override
+  String get serverNameUngueltig =>
+      'Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.';
+
+  @override
+  String get serverErstesNurHeimnetz =>
+      'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.';
+
+  @override
+  String get serverSchonEingerichtet =>
+      'Der Server hat inzwischen ein Konto. Bitte damit anmelden.';
+
+  @override
+  String get serverKontenVerwalten => 'Konten verwalten …';
+
+  @override
+  String get serverKontenTitel => 'Konten auf dem Server';
+
+  @override
+  String get serverKontoAnlegen => 'Konto anlegen …';
+
+  @override
+  String get serverKontoVerwalter => 'Verwalter';
+
+  @override
+  String get serverKontoAlsVerwalter => 'Darf ebenfalls Konten verwalten';
+
+  @override
+  String serverKontoGeraete(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Geräte',
+      one: '1 Gerät',
+      zero: 'kein Gerät',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get serverKontoMitTotp => 'mit TOTP';
+
+  @override
+  String get serverKontoOhneTotp => 'ohne TOTP';
+
+  @override
+  String get serverKontoGesperrt => 'gesperrt nach Fehlversuchen';
+
+  @override
+  String get serverKontoDu => 'dein Konto';
+
+  @override
+  String get serverKontoPasswortSetzen => 'Passwort neu setzen …';
+
+  @override
+  String serverKontoPasswortSetzenText(String name) {
+    return 'Alle Geräte von „$name“ werden dabei abgemeldet.';
+  }
+
+  @override
+  String get serverKontoTotpZuruecksetzen => 'TOTP zurücksetzen';
+
+  @override
+  String serverKontoTotpZurueckgesetzt(String name) {
+    return '„$name“ richtet TOTP bei der nächsten Anmeldung neu ein.';
+  }
+
+  @override
+  String get serverKontoEntsperren => 'Entsperren';
+
+  @override
+  String get serverKontoEntfernen => 'Entfernen …';
+
+  @override
+  String serverKontoEntfernenTitel(String name) {
+    return '„$name“ entfernen?';
+  }
+
+  @override
+  String get serverKontoEntfernenText =>
+      'Das Konto und seine Geräte werden entfernt. Die Bibliothek mit allen Fotos bleibt auf dem Server liegen: Sie wird beiseitegelegt, nicht gelöscht, und lässt sich nur dort von Hand löschen.';
+
+  @override
+  String get serverKontoErledigt => 'Erledigt.';
+
+  @override
   String get serverRechenhilfe => 'Für den Server mitrechnen';
 
   @override

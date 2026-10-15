@@ -37,6 +37,15 @@ final class AnmeldungAbgewiesen extends Anmeldeschritt {
   final Duration? warte;
 }
 
+/// So lang muss das Passwort eines Kontos mindestens sein – die App prüft
+/// es vorher, der Server ohnehin.
+const passwortMindestlaenge = 12;
+
+/// Ob [name] als Kontoname taugt: 2 bis 40 Buchstaben, Ziffern, Punkt,
+/// Strich oder Unterstrich.
+bool kontonameGueltig(String name) =>
+    RegExp(r'^[\p{L}\p{N}._-]{2,40}$', unicode: true).hasMatch(name.trim());
+
 /// Meldet ein Gerät bei einem Server an (siehe dort `Anmeldungsapi`).
 class Anmeldung {
   Anmeldung(this.server, {http.Client? client})
@@ -68,6 +77,20 @@ class Anmeldung {
     String passwort, {
     required String geraet,
   }) => _schritt('api/v1/anmelden', {
+    'name': name,
+    'passwort': passwort,
+    'geraet': geraet,
+  });
+
+  /// Legt das erste Konto an und meldet an wie [anmelden] – nur, solange
+  /// der Server noch keines hat (`zustand()['einrichten']`) und nur aus dem
+  /// Heimnetz. Sonst ein [Serverfehler]: 403 von aussen, 409 schon
+  /// eingerichtet, 400 Name oder Passwort taugen nicht.
+  Future<Anmeldeschritt> einrichten(
+    String name,
+    String passwort, {
+    required String geraet,
+  }) => _schritt('api/v1/einrichten', {
     'name': name,
     'passwort': passwort,
     'geraet': geraet,

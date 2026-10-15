@@ -45,7 +45,8 @@ Future<void> main(List<String> argumente) async {
   }
   if (konten.alle().isEmpty) {
     protokoll(
-      'Noch kein Konto. Anlegen mit: photo_vault_server konto anlegen NAME',
+      'Noch kein Konto. Das erste legt die App beim Verbinden an (aus dem '
+      'Heimnetz) – oder: photo_vault_server konto anlegen NAME',
     );
   }
 

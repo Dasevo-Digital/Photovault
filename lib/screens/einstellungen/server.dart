@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -8,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/library_location.dart';
 import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
+import '../server_konten_screen.dart';
 import '../server_verbinden_screen.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
@@ -77,6 +79,7 @@ class ServerGruppe extends StatelessWidget {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
+        if (library.abgleich case final a?) _KontenZugang(a.verbindung),
         const Divider(height: AppSpacing.xl),
         _Rechenhilfe(library),
         const SizedBox(height: AppSpacing.md),
@@ -88,6 +91,43 @@ class ServerGruppe extends StatelessWidget {
       ],
     );
   }
+}
+
+/// „Konten verwalten“ – nur für Verwalter; ob man einer ist, fragt der
+/// Knopf einmal beim Server nach.
+class _KontenZugang extends StatefulWidget {
+  const _KontenZugang(this.verbindung);
+
+  final Serververbindung verbindung;
+
+  @override
+  State<_KontenZugang> createState() => _KontenZugangState();
+}
+
+class _KontenZugangState extends State<_KontenZugang> {
+  late final _verwaltung = Kontenverwaltung(widget.verbindung);
+  late final Future<bool> _verwalter = _verwaltung.binVerwalter().catchError(
+    (_) => false,
+  );
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+    future: _verwalter,
+    builder: (context, s) => s.data != true
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.manage_accounts_outlined),
+              label: Text(AppTexte.of(context).serverKontenVerwalten),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ServerKontenScreen(verwaltung: _verwaltung),
+                ),
+              ),
+            ),
+          ),
+  );
 }
 
 /// Für den Server mitrechnen (Issue #104).

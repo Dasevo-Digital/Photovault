@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:kern/protokoll.dart';
 import 'package:shelf/shelf.dart';
 
 import 'absender.dart';
@@ -116,6 +117,54 @@ class Anmeldungsapi {
     if (name is! String || passwort is! String) {
       return _json({'fehler': 'name und passwort fehlen'}, status: 400);
     }
+    return _ergebnis(
+      await konten.anmelden(
+        name,
+        passwort,
+        geraet: '${k!['geraet'] ?? ''}',
+        adresse: absender.von(anfrage),
+      ),
+    );
+  }
+
+  /// `{name, passwort, geraet}` – legt das erste Konto an (es wird
+  /// Verwalter) und meldet an wie [anmelden]; mit TOTP-Pflicht folgt die
+  /// Einrichtung.
+  ///
+  /// **Nur, solange es kein Konto gibt, und nur aus dem Heimnetz:** Wer den
+  /// Server zuerst erreicht, bekommt ihn. Von aussen – über den Proxy oder
+  /// eine offene Portweiterleitung – soll das niemand sein. Danach geht der
+  /// Weg zu; weitere Konten legt ein Verwalter an.
+  Future<Response> einrichten(Request anfrage) async {
+    if (konten.eingerichtet) {
+      return _json({
+        'fehler': 'Der Server ist schon eingerichtet.',
+      }, status: 409);
+    }
+    if (!absender.ausDemHeimnetz(anfrage)) {
+      return _json({
+        'fehler':
+            'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht '
+            'von aussen.',
+      }, status: 403);
+    }
+    final k = await _koerper(anfrage);
+    final name = k?['name'], passwort = k?['passwort'];
+    if (name is! String || passwort is! String) {
+      return _json({'fehler': 'name und passwort fehlen'}, status: 400);
+    }
+    final Konto konto;
+    try {
+      konto = await konten.legeAn(name, passwort, nurAlsErstes: true);
+    } on ArgumentError catch (f) {
+      return _json({'fehler': '${f.message}'}, status: 400);
+    } on StateError catch (f) {
+      return _json({'fehler': f.message}, status: 409);
+    }
+    protokoll(
+      'Erstes Konto „${konto.name}“ über die App angelegt '
+      '(von ${absender.von(anfrage)})',
+    );
     return _ergebnis(
       await konten.anmelden(
         name,

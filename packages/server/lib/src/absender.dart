@@ -45,6 +45,28 @@ class Absender {
     return kette.isEmpty ? direkt : kette.first;
   }
 
+  /// Ob [anfrage] aus dem Heimnetz kommt: von einer privaten Adresse, und
+  /// nicht über einen Proxy, dem der Server nicht traut. Hinter so einem
+  /// Proxy sähe jede Anfrage aus wie aus dem Heimnetz – auch die von
+  /// aussen.
+  bool ausDemHeimnetz(Request anfrage) {
+    final info = anfrage.context['shelf.io.connection_info'];
+    final direkt = info is HttpConnectionInfo
+        ? info.remoteAddress.address
+        : 'unbekannt';
+    final weitergeleitet = anfrage.headers.keys.any(
+      (k) => const {'x-forwarded-for', 'forwarded', 'x-real-ip'}.contains(k),
+    );
+    if (weitergeleitet && !_vertraut(direkt)) return false;
+    final a = InternetAddress.tryParse(von(anfrage));
+    return a != null && _heimnetz.any((n) => n.enthaelt(a));
+  }
+
+  static final _heimnetz = [
+    ..._netzeAus('privat').whereType<_Netz>(),
+    ?_Netz.aus('fe80::/10'),
+  ];
+
   bool _vertraut(String adresse) {
     final a = InternetAddress.tryParse(adresse);
     if (a == null) return false;
