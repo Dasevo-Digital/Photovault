@@ -2,7 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/rueckblick.dart';
+import 'package:kern/services/rueckblick.dart';
 
 /// **Der Abschnitt verschwand an 104 Tagen im Jahr wortlos.**
 ///

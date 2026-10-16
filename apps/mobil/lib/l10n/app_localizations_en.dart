@@ -630,4 +630,40 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kontoZwischenspeicherOhneGrenze => 'No limit';
+
+  @override
+  String get erinnerungenTitel => 'Memories';
+
+  @override
+  String erinnerungenVorJahren(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n years ago',
+      one: '1 year ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String erinnerungenMonatVorJahren(String monat, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n years ago',
+      one: '1 year ago',
+    );
+    return '$monat $_temp0';
+  }
+
+  @override
+  String erinnerungenAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
 }

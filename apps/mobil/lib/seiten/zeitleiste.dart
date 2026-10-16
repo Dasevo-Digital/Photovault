@@ -4,6 +4,7 @@ import 'package:kern/db/rasterzeile.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'erinnerungen.dart';
 import 'raster.dart';
 
 /// Alle Aufnahmen, neueste zuerst, nach Tagen.
@@ -38,6 +39,10 @@ class Zeitleiste extends StatelessWidget {
                 sitzung: sitzung,
                 zeilen: zeilen,
                 nachTagen: true,
+                kopf: Erinnerungsstreifen(
+                  sitzung: sitzung,
+                  stand: zeilen.length,
+                ),
               ),
       );
     },

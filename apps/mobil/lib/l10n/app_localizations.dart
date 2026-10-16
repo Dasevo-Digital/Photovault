@@ -1050,6 +1050,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Ohne Grenze'**
   String get kontoZwischenspeicherOhneGrenze;
+
+  /// No description provided for @erinnerungenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erinnerungen'**
+  String get erinnerungenTitel;
+
+  /// No description provided for @erinnerungenVorJahren.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Vor 1 Jahr} other{Vor {n} Jahren}}'**
+  String erinnerungenVorJahren(int n);
+
+  /// No description provided for @erinnerungenMonatVorJahren.
+  ///
+  /// In de, this message translates to:
+  /// **'{monat} {n, plural, =1{vor 1 Jahr} other{vor {n} Jahren}}'**
+  String erinnerungenMonatVorJahren(String monat, int n);
+
+  /// No description provided for @erinnerungenAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}'**
+  String erinnerungenAnzahl(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -348,5 +348,33 @@
   },
   "kontoZwischenspeicherLeeren": "Leeren",
   "kontoZwischenspeicherGrenze": "Höchstens belegen",
-  "kontoZwischenspeicherOhneGrenze": "Ohne Grenze"
+  "kontoZwischenspeicherOhneGrenze": "Ohne Grenze",
+  "erinnerungenTitel": "Erinnerungen",
+  "erinnerungenVorJahren": "{n, plural, =1{Vor 1 Jahr} other{Vor {n} Jahren}}",
+  "@erinnerungenVorJahren": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "erinnerungenMonatVorJahren": "{monat} {n, plural, =1{vor 1 Jahr} other{vor {n} Jahren}}",
+  "@erinnerungenMonatVorJahren": {
+    "placeholders": {
+      "monat": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "erinnerungenAnzahl": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
+  "@erinnerungenAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

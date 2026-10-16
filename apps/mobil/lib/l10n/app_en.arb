@@ -272,5 +272,33 @@
   },
   "kontoZwischenspeicherLeeren": "Clear",
   "kontoZwischenspeicherGrenze": "Use at most",
-  "kontoZwischenspeicherOhneGrenze": "No limit"
+  "kontoZwischenspeicherOhneGrenze": "No limit",
+  "erinnerungenTitel": "Memories",
+  "erinnerungenVorJahren": "{n, plural, =1{1 year ago} other{{n} years ago}}",
+  "@erinnerungenVorJahren": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "erinnerungenMonatVorJahren": "{monat} {n, plural, =1{1 year ago} other{{n} years ago}}",
+  "@erinnerungenMonatVorJahren": {
+    "placeholders": {
+      "monat": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "erinnerungenAnzahl": "{n, plural, =1{1 photo} other{{n} photos}}",
+  "@erinnerungenAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

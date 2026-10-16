@@ -7,7 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/rasterstufen.dart';
-import '../services/rueckblick.dart';
+import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/search_filters.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';

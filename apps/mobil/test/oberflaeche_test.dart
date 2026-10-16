@@ -18,6 +18,8 @@ import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
+import 'package:photo_vault_mobil/seiten/betrachter.dart';
+import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/karte.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -344,6 +346,63 @@ void main() {
     expect((await a('a1')).isTrashed, isTrue);
     expect((await a('a2')).isTrashed, isFalse);
     expect(find.byType(Auswahlleiste), findsNothing);
+  });
+
+  testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_erinnerungen_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final heute = DateTime(2026, 10, 15, 9);
+    // Nicht zur vollen Stunde – das gälte als erfundene Uhrzeit.
+    for (final (id, wann) in [
+      ('vor2', DateTime(2024, 10, 15, 10, 17)),
+      ('vor5a', DateTime(2021, 10, 15, 8, 3)),
+      ('vor5b', DateTime(2021, 10, 15, 19, 41)),
+      ('anderer', DateTime(2021, 3, 2, 12, 5)),
+    ]) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: wann,
+          importedAt: DateTime(2026),
+        ),
+      );
+    }
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: ListView(
+            children: [Erinnerungsstreifen(sitzung: sitzung, heute: heute)],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Erinnerungsstreifen)));
+    expect(find.text(t.erinnerungenVorJahren(2)), findsOneWidget);
+    expect(find.text(t.erinnerungenVorJahren(5)), findsOneWidget);
+    expect(find.text(t.erinnerungenAnzahl(2)), findsOneWidget);
+    expect(find.text(t.erinnerungenVorJahren(1)), findsNothing);
+
+    await tester.tap(find.text(t.erinnerungenVorJahren(5)));
+    await tester.pumpAndSettle();
+    expect(find.byType(Betrachter), findsOneWidget);
   });
 
   testWidgets('die Kontoseite zeigt den Speicher des Servers', (tester) async {
