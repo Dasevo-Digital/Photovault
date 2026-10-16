@@ -27,6 +27,7 @@ class Rolleneintrag {
     required this.aufgenommen,
     required this.video,
     required this.dateien,
+    this.quelle,
   });
 
   /// Die Kennung auf dem Telefon (MediaStore bzw. Fotomediathek).
@@ -42,6 +43,10 @@ class Rolleneintrag {
   /// Video, sonst eine. Lädt sie bei Bedarf (iCloud); `null`, wenn das
   /// nicht geht.
   final Future<List<Rollendatei>?> Function() dateien;
+
+  /// Der Eintrag der Plattform dahinter (`AssetEntity`) – für Miniaturen
+  /// in der Zeitleiste; `null` in einer Rolle aus Dateien.
+  final Object? quelle;
 }
 
 /// Eine Datei eines Eintrags.

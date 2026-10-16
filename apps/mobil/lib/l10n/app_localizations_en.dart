@@ -710,4 +710,22 @@ class AppTexteEn extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get lokalNochNichtGesichert =>
+      'Only on this phone – not on the server yet';
+
+  @override
+  String get lokalJetztSichern => 'Back up now';
+
+  @override
+  String lokalAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos only on this phone',
+      one: '1 photo only on this phone',
+    );
+    return '$_temp0';
+  }
 }

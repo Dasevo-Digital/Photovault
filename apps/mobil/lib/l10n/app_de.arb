@@ -398,5 +398,15 @@
         "type": "int"
       }
     }
+  },
+  "lokalNochNichtGesichert": "Nur auf dem Telefon – noch nicht auf dem Server",
+  "lokalJetztSichern": "Jetzt sichern",
+  "lokalAnzahl": "{n, plural, =1{1 Aufnahme nur auf dem Telefon} other{{n} Aufnahmen nur auf dem Telefon}}",
+  "@lokalAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

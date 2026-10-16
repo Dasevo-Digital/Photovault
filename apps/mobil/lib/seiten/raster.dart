@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:kern/db/rasterzeile.dart';
 
 import '../bilder.dart';
+import '../lokal/lokalbetrachter.dart';
+import '../lokal/ungesichert.dart';
 import '../sitzung.dart';
 import 'auswahl.dart';
 import 'betrachter.dart';
@@ -18,11 +20,17 @@ class AufnahmenRaster extends StatefulWidget {
     required this.zeilen,
     this.nachTagen = false,
     this.kopf,
+    this.lokal = const {},
   });
 
   final Sitzung sitzung;
   final List<Rasterzeile> zeilen;
   final bool nachTagen;
+
+  /// Zeilen aus [zeilen], die nur auf dem Telefon liegen (Issue #127),
+  /// nach ihrer Kennung – sie zeigen die Fotomediathek, nicht die
+  /// Bibliothek, und lassen sich nicht auswählen.
+  final Map<String, LokaleAufnahme> lokal;
 
   /// Etwas über dem Raster (z. B. das Suchfeld), das mitscrollt.
   final Widget? kopf;
@@ -47,26 +55,46 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     _auswahl.removeWhere((id) => !da.contains(id));
   }
 
-  void _oeffne(int index) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => Betrachter(
+  void _oeffne(int index) {
+    final z = widget.zeilen[index];
+    final l = widget.lokal[z.id];
+    final Widget seite;
+    if (l != null) {
+      // Nur die vom Telefon, in der Reihenfolge des Rasters.
+      final lokale = [for (final x in widget.zeilen) ?widget.lokal[x.id]];
+      seite = Lokalbetrachter(
         sitzung: widget.sitzung,
-        zeilen: widget.zeilen,
-        start: index,
-      ),
-    ),
-  );
+        aufnahmen: lokale,
+        start: lokale.indexOf(l),
+      );
+    } else {
+      final server = [
+        for (final x in widget.zeilen)
+          if (!widget.lokal.containsKey(x.id)) x,
+      ];
+      seite = Betrachter(
+        sitzung: widget.sitzung,
+        zeilen: server,
+        start: server.indexWhere((x) => x.id == z.id),
+      );
+    }
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => seite));
+  }
 
-  void _schalte(String id) => setState(() {
-    if (!_auswahl.remove(id)) _auswahl.add(id);
-  });
+  void _schalte(String id) {
+    if (widget.lokal.containsKey(id)) return;
+    setState(() {
+      if (!_auswahl.remove(id)) _auswahl.add(id);
+    });
+  }
 
   Widget _kachel(int i) {
     final z = widget.zeilen[i];
+    final l = widget.lokal[z.id];
     final gewaehlt = _auswahl.contains(z.id);
     final farben = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => _waehlt ? _schalte(z.id) : _oeffne(i),
+      onTap: () => _waehlt && l == null ? _schalte(z.id) : _oeffne(i),
       onLongPress: () => _schalte(z.id),
       child: Stack(
         fit: StackFit.expand,
@@ -77,10 +105,22 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             child: Miniatur(
               paths: widget.sitzung.paths,
               relativ: z.thumbnailRelativePath,
+              bild: l?.bild,
               video: z.type == 'VIDEO',
               favorit: z.isFavorite,
             ),
           ),
+          if (l != null)
+            const Positioned(
+              right: 4,
+              top: 4,
+              child: Icon(
+                Icons.cloud_off_outlined,
+                color: Colors.white,
+                size: 18,
+                shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+              ),
+            ),
           if (gewaehlt) ...[
             ColoredBox(color: farben.primary.withValues(alpha: 0.15)),
             Positioned(

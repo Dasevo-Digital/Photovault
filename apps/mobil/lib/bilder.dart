@@ -60,10 +60,15 @@ class Miniatur extends StatelessWidget {
     required this.relativ,
     this.video = false,
     this.favorit = false,
+    this.bild,
   });
 
   final StoragePaths paths;
   final String? relativ;
+
+  /// Statt einer Datei der Bibliothek – etwa eine Miniatur aus der
+  /// Fotomediathek des Telefons.
+  final ImageProvider? bild;
   final bool video;
   final bool favorit;
 
@@ -80,11 +85,14 @@ class Miniatur extends StatelessWidget {
         return Stack(
           fit: StackFit.expand,
           children: [
-            if (r == null)
+            if (bild == null && r == null)
               flaeche
             else
               Image(
-                image: ResizeImage(BibliotheksBild(paths, r), width: breite),
+                image: ResizeImage(
+                  bild ?? BibliotheksBild(paths, r!),
+                  width: breite,
+                ),
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
                 errorBuilder: (_, _, _) => flaeche,

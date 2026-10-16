@@ -8,6 +8,7 @@ import 'package:photo_manager/photo_manager.dart';
 
 import 'package:kern/db/database.dart';
 
+import '../lokal/ungesichert.dart';
 import 'freigabe.dart';
 import 'hintergrund.dart';
 import 'lauf.dart';
@@ -44,6 +45,27 @@ class Sicherungsdienst extends ChangeNotifier {
 
   /// Wie weit der laufende Lauf ist.
   Fortschritt? fortschritt;
+
+  /// Was auf dem Telefon liegt und noch nicht auf dem Server – für die
+  /// Zeitleiste (Issue #127); `null`, solange noch nicht nachgesehen.
+  List<LokaleAufnahme>? ungesichert;
+
+  /// Sieht nach, was noch nicht gesichert ist – nach jedem Lauf und wenn
+  /// Fotos dazukommen. Ohne Sicherung oder Zugriff: nichts.
+  Future<void> zaehleUngesicherte() async {
+    if (!einstellungen.an ||
+        (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise)) {
+      ungesichert = const [];
+    } else {
+      try {
+        final alle = await PhotoManagerRolle().eintraege(videos: true);
+        ungesichert = nochNichtGesichert(alle, _stand.bekannt().erledigt);
+      } on MissingPluginException {
+        return; // in Tests ohne Telefon
+      }
+    }
+    if (!_beendet) notifyListeners();
+  }
 
   /// Warum gerade nicht gesichert wird, obwohl etwas offen ist.
   Wartegrund? wartet;
@@ -110,6 +132,7 @@ class Sicherungsdienst extends ChangeNotifier {
   Future<void> schalteAus() async {
     _abbruch = true;
     _beobachteNicht();
+    ungesichert = const [];
     await setze(einstellungen.mit(an: false));
   }
 
@@ -176,6 +199,7 @@ class Sicherungsdienst extends ChangeNotifier {
         _schliesse();
       } else {
         notifyListeners();
+        unawaited(zaehleUngesicherte());
       }
     }
   }

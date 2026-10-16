@@ -16,6 +16,8 @@ import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
+import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
+import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
@@ -51,6 +53,9 @@ Rasterzeile _zeile(String id, double breite, double laenge) => Rasterzeile(
   cameraMake: null,
   isLocked: false,
 );
+
+final _spaeter = DateTime(2026, 10, 15, 12);
+final _frueher = DateTime(2020, 1, 1, 12);
 
 void main() {
   test('die Karte fasst nahe Fotos zusammen, je nach Zoom', () {
@@ -404,6 +409,61 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(Betrachter), findsOneWidget);
   });
+
+  test('Telefon-Aufnahmen reihen sich nach Datum zwischen die vom Server', () {
+    final server = [_zeile('s1', 0, 0), _zeile('s2', 0, 0)];
+    final lokal = [
+      LokaleAufnahme(id: 'neu', aufgenommen: _spaeter, video: false),
+      LokaleAufnahme(id: 'alt', aufgenommen: _frueher, video: true),
+    ];
+    final g = mischeMitServer(server, lokal);
+    expect(g.zeilen.map((z) => z.id), ['lokal:neu', 's1', 's2', 'lokal:alt']);
+    expect(g.lokal.keys, ['lokal:neu', 'lokal:alt']);
+    expect(g.zeilen.last.type, 'VIDEO');
+    expect(mischeMitServer(server, const []).zeilen, same(server));
+  });
+
+  testWidgets(
+    'Telefon-Aufnahmen im Raster: Wolke, keine Auswahl, eigener Betrachter',
+    (tester) async {
+      final ordner = Directory.systemTemp.createTempSync('pv_lokal_');
+      addTearDown(() => ordner.deleteSync(recursive: true));
+      final pfade = (await tester.runAsync(
+        () => StoragePaths.forTesting(ordner),
+      ))!;
+      final sitzung = Sitzung()
+        ..db = AppDatabase(NativeDatabase.memory())
+        ..paths = pfade;
+      addTearDown(sitzung.db.close);
+      final l = LokaleAufnahme(id: 'p1', aufgenommen: _spaeter, video: false);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AufnahmenRaster(
+              sitzung: sitzung,
+              zeilen: [l.zeile, _zeile('s1', 0, 0)],
+              lokal: {l.kennung: l},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+
+      await tester.longPress(find.byType(Miniatur).at(0));
+      await tester.pumpAndSettle();
+      expect(find.byType(Auswahlleiste), findsNothing, reason: 'nicht wählbar');
+
+      await tester.tap(find.byType(Miniatur).at(0));
+      await tester.pumpAndSettle();
+      expect(find.byType(Lokalbetrachter), findsOneWidget);
+      final t = AppTexte.of(tester.element(find.byType(Lokalbetrachter)));
+      expect(find.text(t.lokalNochNichtGesichert), findsOneWidget);
+    },
+  );
 
   testWidgets('die Kontoseite zeigt den Speicher des Servers', (tester) async {
     final sitzung = Sitzung()

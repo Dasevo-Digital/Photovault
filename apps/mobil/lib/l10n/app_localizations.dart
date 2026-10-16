@@ -1122,6 +1122,24 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n, plural, =0{Nichts gelöscht} =1{1 Aufnahme vom Telefon gelöscht} other{{n} Aufnahmen vom Telefon gelöscht}}'**
   String sicherungFreigegeben(int n);
+
+  /// No description provided for @lokalNochNichtGesichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur auf dem Telefon – noch nicht auf dem Server'**
+  String get lokalNochNichtGesichert;
+
+  /// No description provided for @lokalJetztSichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt sichern'**
+  String get lokalJetztSichern;
+
+  /// No description provided for @lokalAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme nur auf dem Telefon} other{{n} Aufnahmen nur auf dem Telefon}}'**
+  String lokalAnzahl(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

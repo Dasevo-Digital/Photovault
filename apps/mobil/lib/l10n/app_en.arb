@@ -322,5 +322,15 @@
         "type": "int"
       }
     }
+  },
+  "lokalNochNichtGesichert": "Only on this phone – not on the server yet",
+  "lokalJetztSichern": "Back up now",
+  "lokalAnzahl": "{n, plural, =1{1 photo only on this phone} other{{n} photos only on this phone}}",
+  "@lokalAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

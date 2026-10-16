@@ -58,6 +58,7 @@ class PhotoManagerRolle implements Kamerarolle {
     aufgenommen: a.createDateTime,
     video: a.type == AssetType.video,
     dateien: () => _dateien(a),
+    quelle: a,
   );
 
   static Future<List<Rollendatei>?> _dateien(AssetEntity a) async {

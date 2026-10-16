@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:kern/db/database.dart';
+import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:photo_vault_mobil/sicherung/freigabe.dart';
 import 'dart:math';
 
@@ -203,6 +204,25 @@ void main() {
       stand.vergissFehler();
       expect((await lauf().laufe()).fehlgeschlagen, 1);
       expect(await aufServer(), hasLength(vorher));
+    },
+  );
+
+  test(
+    'was noch nicht gesichert ist: Neues und seither Bearbeitetes',
+    () async {
+      rolle.foto('g1', server.jpeg('IMG_0601.JPG', 61));
+      rolle.foto('g2', server.jpeg('IMG_0602.JPG', 62));
+      await lauf().laufe();
+      final alle = await rolle.eintraege(videos: true);
+      expect(nochNichtGesichert(alle, stand.bekannt().erledigt), isEmpty);
+      rolle.bearbeite('g1');
+      rolle.foto('g3', server.jpeg('IMG_0603.JPG', 63));
+      final danach = nochNichtGesichert(
+        await rolle.eintraege(videos: true),
+        stand.bekannt().erledigt,
+      );
+      expect(danach.map((a) => a.id), unorderedEquals(['g1', 'g3']));
+      expect(danach.first.entity, isNull);
     },
   );
 
