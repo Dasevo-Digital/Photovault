@@ -300,5 +300,27 @@
         "type": "int"
       }
     }
+  },
+  "sicherungFreigeben": "Free up space",
+  "sicherungFreigebenHinweis": "Delete backed-up photos from this phone – they stay on the server.",
+  "sicherungFreigebenSucht": "Looking for backed-up photos …",
+  "sicherungFreigebenNichts": "Nothing to free up: what is on the server is already off the phone – or not backed up yet.",
+  "sicherungFreigebenTitel": "{n, plural, =1{Delete 1 photo from this phone?} other{Delete {n} photos from this phone?}}",
+  "@sicherungFreigebenTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungFreigebenText": "Only photos that are unchanged and safely on the server. The phone will ask once more.",
+  "sicherungFreigebenLoeschen": "Delete",
+  "sicherungFreigegeben": "{n, plural, =0{Nothing deleted} =1{1 photo deleted from this phone} other{{n} photos deleted from this phone}}",
+  "@sicherungFreigegeben": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

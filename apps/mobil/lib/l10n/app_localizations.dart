@@ -1074,6 +1074,54 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}'**
   String erinnerungenAnzahl(int n);
+
+  /// No description provided for @sicherungFreigeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicher freigeben'**
+  String get sicherungFreigeben;
+
+  /// No description provided for @sicherungFreigebenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.'**
+  String get sicherungFreigebenHinweis;
+
+  /// No description provided for @sicherungFreigebenSucht.
+  ///
+  /// In de, this message translates to:
+  /// **'Sucht gesicherte Aufnahmen …'**
+  String get sicherungFreigebenSucht;
+
+  /// No description provided for @sicherungFreigebenNichts.
+  ///
+  /// In de, this message translates to:
+  /// **'Nichts freizugeben: Was auf dem Server liegt, ist schon vom Telefon – oder noch nicht gesichert.'**
+  String get sicherungFreigebenNichts;
+
+  /// No description provided for @sicherungFreigebenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme vom Telefon löschen?} other{{n} Aufnahmen vom Telefon löschen?}}'**
+  String sicherungFreigebenTitel(int n);
+
+  /// No description provided for @sicherungFreigebenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur Aufnahmen, die unverändert und sicher auf dem Server liegen. Das Telefon fragt gleich noch einmal nach.'**
+  String get sicherungFreigebenText;
+
+  /// No description provided for @sicherungFreigebenLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Löschen'**
+  String get sicherungFreigebenLoeschen;
+
+  /// No description provided for @sicherungFreigegeben.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Nichts gelöscht} =1{1 Aufnahme vom Telefon gelöscht} other{{n} Aufnahmen vom Telefon gelöscht}}'**
+  String sicherungFreigegeben(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

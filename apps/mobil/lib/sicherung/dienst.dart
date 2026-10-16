@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_manager/photo_manager.dart';
 
+import 'package:kern/db/database.dart';
+
+import 'freigabe.dart';
 import 'hintergrund.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
@@ -123,6 +126,14 @@ class Sicherungsdienst extends ChangeNotifier {
   }
 
   Future<void> oeffneEinstellungen() => PhotoManager.openSetting();
+
+  /// Speicher auf dem Telefon freigeben – mit der Kopie [db] als Beleg,
+  /// dass die Aufnahmen auf dem Server noch da sind.
+  Speicherfreigabe freigabe(AppDatabase db) => Speicherfreigabe(
+    stand: _stand,
+    rolle: PhotoManagerRolle(alben: einstellungen.alben),
+    db: db,
+  );
 
   /// Was scheiterte, noch einmal versuchen.
   void versucheFehlerErneut() {

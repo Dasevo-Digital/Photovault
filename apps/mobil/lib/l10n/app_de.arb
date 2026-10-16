@@ -376,5 +376,27 @@
         "type": "int"
       }
     }
+  },
+  "sicherungFreigeben": "Speicher freigeben",
+  "sicherungFreigebenHinweis": "Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.",
+  "sicherungFreigebenSucht": "Sucht gesicherte Aufnahmen …",
+  "sicherungFreigebenNichts": "Nichts freizugeben: Was auf dem Server liegt, ist schon vom Telefon – oder noch nicht gesichert.",
+  "sicherungFreigebenTitel": "{n, plural, =1{1 Aufnahme vom Telefon löschen?} other{{n} Aufnahmen vom Telefon löschen?}}",
+  "@sicherungFreigebenTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungFreigebenText": "Nur Aufnahmen, die unverändert und sicher auf dem Server liegen. Das Telefon fragt gleich noch einmal nach.",
+  "sicherungFreigebenLoeschen": "Löschen",
+  "sicherungFreigegeben": "{n, plural, =0{Nichts gelöscht} =1{1 Aufnahme vom Telefon gelöscht} other{{n} Aufnahmen vom Telefon gelöscht}}",
+  "@sicherungFreigegeben": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
   }
 }

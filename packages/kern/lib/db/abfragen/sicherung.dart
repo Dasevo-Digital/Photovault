@@ -23,6 +23,30 @@ extension SicherungsAbfragen on AppDatabase {
   Future<List<AssetData>> assetsFuerMetadatenexport() =>
       (select(assets)..where((t) => t.isLocked.equals(false))).get();
 
+  /// Welche dieser Kennungen als Aufnahmen da sind – nicht im Papierkorb.
+  /// Fürs Freigeben von Speicher auf dem Telefon: Dort geht nur, was hier
+  /// noch steht. In Stücken, weil SQLite die Platzhalter je Abfrage
+  /// begrenzt.
+  Future<Set<String>> vorhandeneAufnahmen(Iterable<String> ids) async {
+    final liste = ids.toSet().toList();
+    final da = <String>{};
+    for (var i = 0; i < liste.length; i += 500) {
+      final teil = liste.sublist(
+        i,
+        i + 500 > liste.length ? liste.length : i + 500,
+      );
+      final zeilen =
+          await (selectOnly(assets)
+                ..addColumns([assets.id])
+                ..where(assets.id.isIn(teil) & assets.isTrashed.equals(false)))
+              .get();
+      for (final z in zeilen) {
+        da.add(z.read(assets.id)!);
+      }
+    }
+    return da;
+  }
+
   Future<List<AssetData>> assetsNotBackedUp() =>
       (select(assets)..where(
             (t) =>

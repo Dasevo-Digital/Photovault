@@ -192,6 +192,18 @@ class Sicherungsstand {
   );
 
   /// Die Einträge, die zuletzt scheiterten, mit Grund.
+  /// Was hochgeladen oder als vorhanden erkannt wurde, mit dem
+  /// Änderungsstand von damals und der Kennung der Aufnahme auf dem Server.
+  Map<String, ({int geaendert, String aufnahme})> gesichertMitAufnahme() => {
+    for (final z in _db.select(
+      "SELECT lokal, geaendert, aufnahme FROM erledigt WHERE ausgang IN ('hochgeladen', 'vorhanden') AND aufnahme IS NOT NULL",
+    ))
+      z['lokal'] as String: (
+        geaendert: z['geaendert'] as int,
+        aufnahme: z['aufnahme'] as String,
+      ),
+  };
+
   Map<String, String> get fehler => {
     for (final z in _db.select('SELECT lokal, text FROM fehler'))
       z['lokal'] as String: z['text'] as String,

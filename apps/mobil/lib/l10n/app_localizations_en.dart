@@ -666,4 +666,48 @@ class AppTexteEn extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get sicherungFreigeben => 'Free up space';
+
+  @override
+  String get sicherungFreigebenHinweis =>
+      'Delete backed-up photos from this phone – they stay on the server.';
+
+  @override
+  String get sicherungFreigebenSucht => 'Looking for backed-up photos …';
+
+  @override
+  String get sicherungFreigebenNichts =>
+      'Nothing to free up: what is on the server is already off the phone – or not backed up yet.';
+
+  @override
+  String sicherungFreigebenTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Delete $n photos from this phone?',
+      one: 'Delete 1 photo from this phone?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungFreigebenText =>
+      'Only photos that are unchanged and safely on the server. The phone will ask once more.';
+
+  @override
+  String get sicherungFreigebenLoeschen => 'Delete';
+
+  @override
+  String sicherungFreigegeben(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos deleted from this phone',
+      one: '1 photo deleted from this phone',
+      zero: 'Nothing deleted',
+    );
+    return '$_temp0';
+  }
 }

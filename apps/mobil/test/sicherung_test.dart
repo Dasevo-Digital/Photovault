@@ -1,4 +1,8 @@
 import 'dart:io';
+
+import 'package:drift/native.dart';
+import 'package:kern/db/database.dart';
+import 'package:photo_vault_mobil/sicherung/freigabe.dart';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -69,6 +73,13 @@ class _Rolle implements Kamerarolle {
 
   @override
   Future<void> aufraeumen() async => aufgeraeumt++;
+
+  @override
+  Future<int> loesche(List<String> ids) async {
+    final vorher = eintraege_.length;
+    eintraege_.removeWhere((x) => ids.contains(x.id));
+    return vorher - eintraege_.length;
+  }
 }
 
 void main() {
@@ -192,6 +203,50 @@ void main() {
       stand.vergissFehler();
       expect((await lauf().laufe()).fehlgeschlagen, 1);
       expect(await aufServer(), hasLength(vorher));
+    },
+  );
+
+  test(
+    'Speicher freigeben: nur Unverändertes, das am Server noch da ist',
+    () async {
+      rolle.foto('f1', server.jpeg('IMG_0501.JPG', 51));
+      rolle.foto('f2', server.jpeg('IMG_0502.JPG', 52));
+      rolle.foto('offen', zufall('IMG_0503.xyz', 100, 9));
+      await lauf().laufe();
+      final amServer = {for (final a in await aufServer()) a['name']: a['id']};
+      // Die Kopie der Bibliothek auf dem Telefon, wie der Abgleich sie füllt.
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      for (final name in ['IMG_0501.JPG', 'IMG_0502.JPG']) {
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: amServer[name]! as String,
+            originalFileName: name,
+            relativePath: 'originals/$name',
+            checksum: 'pruef-$name',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2025),
+            importedAt: DateTime(2026),
+          ),
+        );
+      }
+      final f = Speicherfreigabe(stand: stand, rolle: rolle, db: db);
+      expect(await f.kandidaten(), unorderedEquals(['f1', 'f2']));
+
+      // Seit der Sicherung bearbeitet: bleibt.
+      rolle.bearbeite('f1');
+      expect(await f.kandidaten(), ['f2']);
+      // Am Server im Papierkorb: bleibt ebenfalls.
+      await db.moveToTrash([amServer['IMG_0502.JPG']! as String]);
+      expect(await f.kandidaten(), isEmpty);
+      await db.restoreFromTrash([amServer['IMG_0502.JPG']! as String]);
+
+      expect(await f.gib(await f.kandidaten()), 1);
+      expect(
+        (await rolle.eintraege(videos: true)).map((x) => x.id),
+        isNot(contains('f2')),
+      );
+      expect(await f.kandidaten(), isEmpty);
     },
   );
 

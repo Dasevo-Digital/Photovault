@@ -667,4 +667,48 @@ class AppTexteDe extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get sicherungFreigeben => 'Speicher freigeben';
+
+  @override
+  String get sicherungFreigebenHinweis =>
+      'Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.';
+
+  @override
+  String get sicherungFreigebenSucht => 'Sucht gesicherte Aufnahmen …';
+
+  @override
+  String get sicherungFreigebenNichts =>
+      'Nichts freizugeben: Was auf dem Server liegt, ist schon vom Telefon – oder noch nicht gesichert.';
+
+  @override
+  String sicherungFreigebenTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen vom Telefon löschen?',
+      one: '1 Aufnahme vom Telefon löschen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungFreigebenText =>
+      'Nur Aufnahmen, die unverändert und sicher auf dem Server liegen. Das Telefon fragt gleich noch einmal nach.';
+
+  @override
+  String get sicherungFreigebenLoeschen => 'Löschen';
+
+  @override
+  String sicherungFreigegeben(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen vom Telefon gelöscht',
+      one: '1 Aufnahme vom Telefon gelöscht',
+      zero: 'Nichts gelöscht',
+    );
+    return '$_temp0';
+  }
 }

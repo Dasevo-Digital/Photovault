@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/db/database.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../l10n/app_localizations.dart';
@@ -12,9 +13,47 @@ import '../sicherung/photo_manager_rolle.dart';
 /// Kamerarolle sichern: ein- und ausschalten, sehen, wie weit es ist, und
 /// was mitgeht.
 class Sicherungsseite extends StatelessWidget {
-  const Sicherungsseite({super.key, required this.dienst});
+  const Sicherungsseite({super.key, required this.dienst, this.db});
 
   final Sicherungsdienst dienst;
+
+  /// Die Kopie der Bibliothek – für „Speicher freigeben“; ohne sie fehlt
+  /// der Punkt.
+  final AppDatabase? db;
+
+  Future<void> _freigeben(BuildContext context, AppDatabase db) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    bote.showSnackBar(SnackBar(content: Text(t.sicherungFreigebenSucht)));
+    final f = dienst.freigabe(db);
+    final ids = await f.kandidaten();
+    bote.hideCurrentSnackBar();
+    if (!context.mounted) return;
+    if (ids.isEmpty) {
+      bote.showSnackBar(SnackBar(content: Text(t.sicherungFreigebenNichts)));
+      return;
+    }
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.sicherungFreigebenTitel(ids.length)),
+        content: Text(t.sicherungFreigebenText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.abbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.sicherungFreigebenLoeschen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true) return;
+    final n = await f.gib(ids);
+    bote.showSnackBar(SnackBar(content: Text(t.sicherungFreigegeben(n))));
+  }
 
   Future<void> _einschalten(BuildContext context, bool an) async {
     if (!an) return dienst.schalteAus();
@@ -41,6 +80,13 @@ class Sicherungsseite extends StatelessWidget {
               ),
               ..._zugriff(t),
               if (e.an) ..._stand(context, t),
+              if (e.an && db != null)
+                ListTile(
+                  leading: const Icon(Icons.cleaning_services_outlined),
+                  title: Text(t.sicherungFreigeben),
+                  subtitle: Text(t.sicherungFreigebenHinweis),
+                  onTap: () => _freigeben(context, db!),
+                ),
               const Divider(),
               SwitchListTile(
                 secondary: const Icon(Icons.videocam_outlined),

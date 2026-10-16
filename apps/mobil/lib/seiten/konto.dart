@@ -129,7 +129,8 @@ class Konto extends StatelessWidget {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => Sicherungsseite(dienst: d),
+                        builder: (_) =>
+                            Sicherungsseite(dienst: d, db: sitzung.db),
                       ),
                     ),
                   ),

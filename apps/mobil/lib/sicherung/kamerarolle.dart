@@ -13,6 +13,10 @@ abstract class Kamerarolle {
   /// Gibt Platz frei, den das Bereitstellen der Dateien gekostet hat
   /// (iOS kopiert jedes Original erst in einen Zwischenspeicher).
   Future<void> aufraeumen();
+
+  /// Löscht Einträge vom Telefon (siehe `Speicherfreigabe`); das System
+  /// fragt den Nutzer dabei selbst. Gibt zurück, wie viele gingen.
+  Future<int> loesche(List<String> ids);
 }
 
 /// Ein Eintrag der Kamerarolle: ein Foto, ein Video oder ein Live Photo.
