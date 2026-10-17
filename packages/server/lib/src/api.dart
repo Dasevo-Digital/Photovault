@@ -183,6 +183,7 @@ Handler baueApi({
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/statistik', api.statistik)
+    ..get('/api/v1/einstellungen', api.einstellungen)
     ..get('/api/v1/stammbaum', api.stammbaum)
     ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
@@ -748,6 +749,26 @@ class _Api {
           if (e.value) e.key,
       ],
       'verschwiegen': g.verschwiegen,
+    });
+  }
+
+  /// Die Einstellungen, die in der Bibliothek stehen und damit für jedes
+  /// verbundene Gerät gelten – geändert wird über die Befehle.
+  Future<Response> einstellungen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final papierkorb = await db.trashSettingsRow();
+    final app = await (db.select(
+      db.appSettings,
+    )..where((t) => t.id.equals(0))).getSingleOrNull();
+    final privat = await db.privacySettingsRow();
+    return _json({
+      'papierkorbLeeren': papierkorb?.autoDeleteEnabled ?? false,
+      'papierkorbTage': papierkorb?.autoDeleteAfterDays ?? 30,
+      'gesichtsschwelle': await db.faceSimilarityThresholdWert(),
+      'vorschlaegeAb': await db.vorschlaegeAutomatischAbWert(),
+      'auswertenNachImport': app?.autoAnalyzeAfterImport ?? true,
+      'sucheUebersetzen': await db.uebersetzeSucheUndTags(),
+      'angabenSchuetzen': privat?.protectMetadata ?? true,
     });
   }
 

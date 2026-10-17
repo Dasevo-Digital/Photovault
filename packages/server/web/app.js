@@ -597,6 +597,63 @@ function baumSvg(d) {
   return svg;
 }
 
+// --- Einstellungen der Bibliothek ------------------------------------------
+
+async function zeigeEinstellungen() {
+  markiereNav('einstellungen');
+  zeigeBereich(['einstellungen']);
+  const e = await api('/api/v1/einstellungen');
+  const ziel = $('einst-liste');
+  const melde = (t) => { $('einst-meldung').textContent = t; };
+  const sende = async (art, werte) => {
+    try { await befehl(art, werte); melde('Gespeichert.'); } catch (x) { melde(x.message); }
+  };
+  const zeile = (titel, text, an, beiAenderung, zusatz) => {
+    const z = el('label', 'einst');
+    const kasten = el('input');
+    kasten.type = 'checkbox';
+    kasten.checked = an;
+    kasten.addEventListener('change', () => beiAenderung(kasten.checked));
+    const inhalt = el('div', 'inhalt');
+    inhalt.append(el('div', 'titel', titel), el('div', 'text', text));
+    if (zusatz) inhalt.append(zusatz);
+    z.append(kasten, inhalt);
+    return z;
+  };
+  const regler = (min, max, schritt, wert, anzeige, beiAenderung) => {
+    const box = el('div', 'regler');
+    const r = el('input');
+    r.type = 'range'; r.min = min; r.max = max; r.step = schritt; r.value = wert;
+    const w = el('span', null, anzeige(wert));
+    r.addEventListener('input', () => { w.textContent = anzeige(r.value); });
+    r.addEventListener('change', () => beiAenderung(Number(r.value)));
+    box.append(r, w);
+    return box;
+  };
+  const tage = el('input');
+  tage.type = 'number'; tage.min = '1'; tage.max = '3650'; tage.value = e.papierkorbTage;
+  const tageBox = el('div', 'regler');
+  tageBox.append(el('span', null, 'nach'), tage, el('span', null, 'Tagen'));
+  let leeren = e.papierkorbLeeren;
+  tage.addEventListener('change', () => sende('papierkorbFristSetzen', { an: leeren, tage: Number(tage.value) }));
+  let vorschlaegeAb = e.vorschlaegeAb ?? 0.9;
+  const vorschlagRegler = regler(0.8, 0.99, 0.01, vorschlaegeAb, (v) => `ab ${Math.round(v * 100)} %`, (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
+  let vorschlaegeAn = e.vorschlaegeAb != null;
+  ziel.replaceChildren(
+    zeile('Papierkorb automatisch leeren', 'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.', leeren, (an) => { leeren = an; sende('papierkorbFristSetzen', { an, tage: Number(tage.value) }); }, tageBox),
+    zeile('Sichere Vorschläge automatisch übernehmen', 'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.', vorschlaegeAn, (an) => { vorschlaegeAn = an; sende('vorschlaegeAutomatischSetzen', { ab: an ? vorschlaegeAb : null }); }, vorschlagRegler),
+    zeile('KI-Auswertung nach dem Import automatisch nachholen', 'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.', e.auswertenNachImport, (an) => sende('auswertenNachImportSetzen', { an })),
+    zeile('Suche und Schlagwörter übersetzen', 'Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.', e.sucheUebersetzen, (an) => sende('sucheUebersetzenSetzen', { an })),
+    zeile('Private Metadaten schützen', 'Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.', e.angabenSchuetzen, (an) => sende('angabenSchuetzenSetzen', { an })),
+  );
+  const schwelle = el('div', 'einst');
+  const sInhalt = el('div', 'inhalt');
+  sInhalt.append(el('div', 'titel', 'Schwelle der Gesichtserkennung'), el('div', 'text', 'Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.'), regler(0.2, 0.8, 0.01, e.gesichtsschwelle, (v) => Number(v).toFixed(2), (v) => sende('gesichtsschwelleSetzen', { schwelle: v })));
+  schwelle.append(el('span'), sInhalt);
+  ziel.append(schwelle);
+  melde('');
+}
+
 async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
@@ -1099,6 +1156,7 @@ async function zeigeWeg() {
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'statistik': await zeigeStatistik(); break;
+      case 'einstellungen': await zeigeEinstellungen(); break;
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'serie': await zeigeSerie(teile[1]); break;

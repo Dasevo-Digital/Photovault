@@ -452,6 +452,40 @@ void main() {
     },
   );
 
+  test('Einstellungen: Vorgaben lesen, über Befehle ändern', () async {
+    Future<Map<String, Object?>> lies() async =>
+        jsonAus(await frag('GET', '/api/v1/einstellungen', token: erikaToken));
+    final vorher = await lies();
+    expect(vorher['papierkorbLeeren'], false);
+    expect(vorher['vorschlaegeAb'], isNull);
+    for (final (art, werte) in [
+      ('papierkorbFristSetzen', {'an': true, 'tage': 14}),
+      ('vorschlaegeAutomatischSetzen', {'ab': 0.93}),
+      ('auswertenNachImportSetzen', {'an': false}),
+      ('sucheUebersetzenSetzen', {'an': true}),
+      ('angabenSchuetzenSetzen', {'an': false}),
+      ('gesichtsschwelleSetzen', {'schwelle': 0.5}),
+    ]) {
+      expect(
+        (await befehl(erikaToken, art, werte)).statusCode,
+        200,
+        reason: art,
+      );
+    }
+    final nachher = await lies();
+    expect(nachher['papierkorbLeeren'], true);
+    expect(nachher['papierkorbTage'], 14);
+    expect(nachher['vorschlaegeAb'], closeTo(0.93, 1e-9));
+    expect(nachher['auswertenNachImport'], false);
+    expect(nachher['sucheUebersetzen'], true);
+    expect(nachher['angabenSchuetzen'], false);
+    expect(nachher['gesichtsschwelle'], closeTo(0.5, 1e-9));
+    final fremd = await jsonAus(
+      await frag('GET', '/api/v1/einstellungen', token: maxToken),
+    );
+    expect(fremd['papierkorbLeeren'], false);
+  });
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

@@ -216,3 +216,13 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .baum-kante { fill: none; stroke: var(--leise); stroke-width: 1.5; }
 .baum-paar { stroke: var(--akzent); stroke-width: 2; }
 .baum-pfeil { fill: var(--leise); font-size: 14px; text-anchor: middle; }
+
+/* --- Einstellungen --------------------------------------------------------- */
+#bereich-einstellungen { padding: 0 12px 24px; max-width: 44em; }
+.einst { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--rand); }
+.einst .inhalt { flex: 1; }
+.einst .titel { font-weight: 600; }
+.einst .text { color: var(--leise); font-size: 0.9em; }
+.einst input[type=checkbox] { width: 20px; height: 20px; margin-top: 2px; }
+.einst .regler { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.einst input[type=number] { width: 5em; padding: 4px 6px; border: 1px solid var(--rand); border-radius: 6px; background: var(--grund); color: var(--text); }
