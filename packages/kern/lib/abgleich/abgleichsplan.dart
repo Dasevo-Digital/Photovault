@@ -29,6 +29,7 @@ class Abgleichsplan {
       'id',
       'auto_analyze_after_import',
       'face_similarity_threshold',
+      'vorschlaege_automatisch_ab',
       'translate_captions',
       'translate_search_and_tags',
     },

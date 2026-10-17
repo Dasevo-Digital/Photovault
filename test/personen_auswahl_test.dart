@@ -355,6 +355,7 @@ void main() {
       boxW: 0.1,
       boxH: 0.1,
       isIgnored: false,
+      automatischZugeordnet: false,
     );
 
     test('behält die Reihenfolge des Rasters bei', () {

@@ -4818,5 +4818,16 @@
   "serverLaedt": "Loading the library from the server …",
   "serverZiehtUm": "Moving the library to the server …",
   "serverFertigNeustart": "Done. Photo Vault needs to restart and will then open the connected library.",
-  "serverFehler": "That did not work"
+  "serverFehler": "That did not work",
+  "stufeVideobilder": "Video stills",
+  "werkzAutoVorschlaege": "Accept confident suggestions automatically",
+  "werkzAutoVorschlaegeText": "Recognised faces at or above this confidence are assigned without asking and marked as such; uncertain ones remain suggestions.",
+  "werkzAutoVorschlaegeAb": "from {wert}",
+  "@werkzAutoVorschlaegeAb": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  }
 }

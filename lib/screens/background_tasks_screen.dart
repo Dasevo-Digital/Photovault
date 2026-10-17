@@ -1165,6 +1165,7 @@ List<Aufgabe> _aufgaben(
   ),
   Aufgabe(
     schluessel: 'videobilder',
+    stufe: Analysestufe.videobilder,
     rechenintensiv: true,
     icon: Icons.video_library_outlined,
     titel: t.aufgVideobilderTitel,

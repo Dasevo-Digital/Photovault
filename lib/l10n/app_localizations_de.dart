@@ -9623,4 +9623,20 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get serverFehler => 'Hat nicht geklappt';
+
+  @override
+  String get stufeVideobilder => 'Videobilder';
+
+  @override
+  String get werkzAutoVorschlaege =>
+      'Sichere Vorschläge automatisch übernehmen';
+
+  @override
+  String get werkzAutoVorschlaegeText =>
+      'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet; unsichere bleiben Vorschläge.';
+
+  @override
+  String werkzAutoVorschlaegeAb(String wert) {
+    return 'ab $wert';
+  }
 }

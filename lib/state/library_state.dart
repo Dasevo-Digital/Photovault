@@ -80,6 +80,7 @@ String analysestufeName(AppTexte t, Analysestufe stufe) => switch (stufe) {
   Analysestufe.texterkennung => t.stufeTexterkennung,
   Analysestufe.schlagwoerter => t.stufeSchlagwoerter,
   Analysestufe.bildbeschreibung => t.stufeBildbeschreibung,
+  Analysestufe.videobilder => t.stufeVideobilder,
   Analysestufe.spracherkennung => t.stufeSpracherkennung,
   Analysestufe.wiedererkennung => t.stufeWiedererkennung,
 };
@@ -547,7 +548,18 @@ class LibraryState extends ChangeNotifier {
 
   Future<void> ladeGesichtsSchwelle() async {
     faceSimilarityThreshold = await db.faceSimilarityThresholdWert();
+    vorschlaegeAutomatischAb = await db.vorschlaegeAutomatischAbWert();
     notifyListeners();
+  }
+
+  /// Ab welcher Sicherheit Vorschläge der Wiedererkennung von selbst
+  /// übernommen werden; `null` = nie (Issue #135).
+  double? vorschlaegeAutomatischAb;
+
+  Future<void> setVorschlaegeAutomatischAb(double? ab) async {
+    vorschlaegeAutomatischAb = ab;
+    notifyListeners();
+    await db.fuehreAus(VorschlaegeAutomatischSetzen(ab));
   }
 
   /// Setzt die allgemeine Schwelle. Die persönlichen Schwellen einzelner

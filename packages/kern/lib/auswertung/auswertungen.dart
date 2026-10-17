@@ -52,6 +52,11 @@ import 'rechenhilfe.dart';
 /// Oberflächensprache. Den Namen gibt die App dazu.
 enum Analysestufe {
   bildanalyse,
+
+  /// Weitere Standbilder je Video, für Bildsuche und Gesichter – nach der
+  /// Bildanalyse, weil sie dieselben Modelle braucht, und als eigene Stufe,
+  /// weil ein langes Video so viel kostet wie viele Fotos.
+  videobilder,
   texterkennung,
 
   /// Kein eigener CLIP-Schritt davor – die Einbettungen entstehen bereits
@@ -168,6 +173,7 @@ class Auswertungen {
   /// von Hand.
   Stream<ImportProgress> stufe(Analysestufe stufe) => switch (stufe) {
     Analysestufe.bildanalyse => bildinhaltsAnalyse(),
+    Analysestufe.videobilder => backfillVideobilder(),
     Analysestufe.texterkennung => backfillOcrText(),
     Analysestufe.schlagwoerter => backfillAiTags(onlyUntagged: true),
     Analysestufe.bildbeschreibung => backfillCaptions(),

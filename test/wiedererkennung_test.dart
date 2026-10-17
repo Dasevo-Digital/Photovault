@@ -244,6 +244,52 @@ void main() {
   });
 
   group('was nach der Entscheidung passiert', () {
+    test(
+      'sichere Vorschläge werden ab der Schwelle von selbst übernommen',
+      () async {
+        await foto('a');
+        final anna = await person('Anna');
+        await gesicht('sicher', assetId: 'a', einbettung: [1, 0]);
+        await gesicht('unsicher', assetId: 'a', einbettung: [1, 0]);
+        await gesicht(
+          'beiseite',
+          assetId: 'a',
+          einbettung: [1, 0],
+          beiseite: true,
+        );
+        Future<void> lauf() => db.merkeVorschlaege([
+          (faceId: 'sicher', personId: anna, wert: 0.81),
+          (faceId: 'unsicher', personId: anna, wert: 0.55),
+          (faceId: 'beiseite', personId: anna, wert: 0.95),
+        ]);
+        Future<FaceData> g(String id) async => (await (db.select(
+          db.faces,
+        )..where((t) => t.id.equals(id))).getSingle());
+
+        // Ohne Schwelle: alles bleibt Vorschlag.
+        await lauf();
+        expect((await g('sicher')).personId, isNull);
+        expect((await g('sicher')).vorschlagPersonId, anna);
+
+        await db.setVorschlaegeAutomatischAb(0.7);
+        await lauf();
+        final sicher = await g('sicher');
+        expect(sicher.personId, anna);
+        expect(sicher.automatischZugeordnet, isTrue);
+        expect(sicher.vorschlagPersonId, isNull, reason: 'erledigt');
+        final unsicher = await g('unsicher');
+        expect(unsicher.personId, isNull);
+        expect(unsicher.vorschlagPersonId, anna, reason: 'wartet weiter');
+        expect(
+          (await g('beiseite')).personId,
+          isNull,
+          reason: 'Beiseitegelegtes bleibt liegen',
+        );
+        // Die Person hat damit ein Titelbild bekommen, wie bei einem Ja.
+        expect((await db.vorschlaegeJePerson()).single.anzahl, 1);
+      },
+    );
+
     test('ein angenommener Vorschlag verschwindet aus der Schlange', () async {
       final anna = await person('Anna');
       await foto('a');

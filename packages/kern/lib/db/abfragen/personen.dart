@@ -493,6 +493,43 @@ extension PersonenAbfragen on AppDatabase {
         );
       }
     });
+    await uebernimmSichereVorschlaege([
+      for (final e in ergebnisse)
+        if (e.personId != null) e.faceId,
+    ]);
+  }
+
+  /// Übernimmt unter [faceIds] die Vorschläge, die mindestens so sicher
+  /// sind wie `vorschlaegeAutomatischAb` verlangt – ohne Rückfrage, aber
+  /// gekennzeichnet (`automatischZugeordnet`). Ohne Schwelle geschieht
+  /// nichts; Beiseitegelegtes bleibt liegen. Gibt zurück, wie viele es
+  /// waren.
+  Future<int> uebernimmSichereVorschlaege(List<String> faceIds) async {
+    if (faceIds.isEmpty) return 0;
+    final ab = await vorschlaegeAutomatischAbWert();
+    if (ab == null) return 0;
+    final sicher =
+        await (select(faces)..where(
+              (t) =>
+                  t.id.isIn(faceIds) &
+                  t.personId.isNull() &
+                  t.isIgnored.equals(false) &
+                  t.vorschlagPersonId.isNotNull() &
+                  t.vorschlagWert.isBiggerOrEqualValue(ab),
+            ))
+            .get();
+    if (sicher.isEmpty) return 0;
+    final jePerson = <String, List<String>>{};
+    for (final f in sicher) {
+      jePerson.putIfAbsent(f.vorschlagPersonId!, () => []).add(f.id);
+    }
+    for (final MapEntry(key: person, value: ids) in jePerson.entries) {
+      await assignFacesToPerson(ids, person);
+      await (update(faces)..where((t) => t.id.isIn(ids))).write(
+        const FacesCompanion(automatischZugeordnet: Value(true)),
+      );
+    }
+    return sicher.length;
   }
 
   /// Die wartenden Vorschlaege, nach Person gebuendelt und nach Menge

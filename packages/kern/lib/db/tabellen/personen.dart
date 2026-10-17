@@ -228,6 +228,12 @@ class Faces extends Table {
   /// allen 14.065 an.
   DateTimeColumn get vorschlagGeprueftAm => dateTime().nullable()();
 
+  /// Von der Wiedererkennung ohne Rückfrage zugeordnet (siehe
+  /// `AppSettings.vorschlaegeAutomatischAb`) – damit sich das später
+  /// nachsehen und zurücknehmen lässt.
+  BoolColumn get automatischZugeordnet =>
+      boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

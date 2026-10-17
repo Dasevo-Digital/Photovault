@@ -160,6 +160,11 @@ class AppSettings extends Table {
   RealColumn get faceSimilarityThreshold =>
       real().withDefault(const Constant(0.363))();
 
+  /// Ab welcher Sicherheit die Wiedererkennung einen Vorschlag von selbst
+  /// übernimmt (Issue #135). `null` heisst: nie – jeder Vorschlag wartet
+  /// auf ein Ja. Auch mit Schwelle bleiben unsichere Treffer Vorschläge.
+  RealColumn get vorschlaegeAutomatischAb => real().nullable()();
+
   /// Zuletzt gewählte Kartenansicht: `'hell'`, `'dunkel'`, `'topo'` oder
   /// `'globus'` (siehe `Kartenansicht` in map_screen.dart).
   ///

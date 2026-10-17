@@ -242,6 +242,26 @@ final class GesichtsschwelleSetzen extends Befehl<void> {
       db.setFaceSimilarityThreshold(schwelle);
 }
 
+/// Ab welcher Sicherheit die Wiedererkennung Vorschläge von selbst
+/// übernimmt; `null` schaltet es aus.
+final class VorschlaegeAutomatischSetzen extends Befehl<void> {
+  const VorschlaegeAutomatischSetzen(this.ab);
+
+  static VorschlaegeAutomatischSetzen aus(Map<String, Object?> w) =>
+      VorschlaegeAutomatischSetzen((w['ab'] as num?)?.toDouble());
+
+  final double? ab;
+
+  @override
+  String get art => 'vorschlaegeAutomatischSetzen';
+
+  @override
+  Map<String, Object?> get werte => {'ab': ab};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setVorschlaegeAutomatischAb(ab);
+}
+
 /// Ob nach jedem Import gleich ausgewertet wird.
 final class AuswertenNachImportSetzen extends Befehl<void> {
   const AuswertenNachImportSetzen(this.an);

@@ -14742,6 +14742,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Hat nicht geklappt'**
   String get serverFehler;
+
+  /// No description provided for @stufeVideobilder.
+  ///
+  /// In de, this message translates to:
+  /// **'Videobilder'**
+  String get stufeVideobilder;
+
+  /// No description provided for @werkzAutoVorschlaege.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichere Vorschläge automatisch übernehmen'**
+  String get werkzAutoVorschlaege;
+
+  /// No description provided for @werkzAutoVorschlaegeText.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet; unsichere bleiben Vorschläge.'**
+  String get werkzAutoVorschlaegeText;
+
+  /// No description provided for @werkzAutoVorschlaegeAb.
+  ///
+  /// In de, this message translates to:
+  /// **'ab {wert}'**
+  String werkzAutoVorschlaegeAb(String wert);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

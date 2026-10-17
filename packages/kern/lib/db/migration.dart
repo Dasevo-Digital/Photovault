@@ -1358,5 +1358,21 @@ extension Migrationsschritte on AppDatabase {
       // Leer: Was vorher gerechnet wurde, hat keine bekannte Herkunft.
       await m.createTable(ergebnisherkunft);
     }
+    if (from < 94) {
+      await _addColumnIfMissing(
+        m,
+        appSettings,
+        appSettings.vorschlaegeAutomatischAb,
+        'app_settings',
+        'vorschlaege_automatisch_ab',
+      );
+      await _addColumnIfMissing(
+        m,
+        faces,
+        faces.automatischZugeordnet,
+        'faces',
+        'automatisch_zugeordnet',
+      );
+    }
   }
 }

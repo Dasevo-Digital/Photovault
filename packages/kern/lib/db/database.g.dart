@@ -5457,6 +5457,21 @@ class $FacesTable extends Faces with TableInfo<$FacesTable, FaceData> {
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _automatischZugeordnetMeta =
+      const VerificationMeta('automatischZugeordnet');
+  @override
+  late final GeneratedColumn<bool> automatischZugeordnet =
+      GeneratedColumn<bool>(
+        'automatisch_zugeordnet',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("automatisch_zugeordnet" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5474,6 +5489,7 @@ class $FacesTable extends Faces with TableInfo<$FacesTable, FaceData> {
     vorschlagPersonId,
     vorschlagWert,
     vorschlagGeprueftAm,
+    automatischZugeordnet,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5601,6 +5617,15 @@ class $FacesTable extends Faces with TableInfo<$FacesTable, FaceData> {
         ),
       );
     }
+    if (data.containsKey('automatisch_zugeordnet')) {
+      context.handle(
+        _automatischZugeordnetMeta,
+        automatischZugeordnet.isAcceptableOrUnknown(
+          data['automatisch_zugeordnet']!,
+          _automatischZugeordnetMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -5670,6 +5695,10 @@ class $FacesTable extends Faces with TableInfo<$FacesTable, FaceData> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}vorschlag_geprueft_am'],
       ),
+      automatischZugeordnet: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}automatisch_zugeordnet'],
+      )!,
     );
   }
 
@@ -5761,6 +5790,11 @@ class FaceData extends DataClass implements Insertable<FaceData> {
   /// gefunden" nicht zu unterscheiden, und jeder Lauf faenge wieder bei
   /// allen 14.065 an.
   final DateTime? vorschlagGeprueftAm;
+
+  /// Von der Wiedererkennung ohne Rückfrage zugeordnet (siehe
+  /// `AppSettings.vorschlaegeAutomatischAb`) – damit sich das später
+  /// nachsehen und zurücknehmen lässt.
+  final bool automatischZugeordnet;
   const FaceData({
     required this.id,
     required this.assetId,
@@ -5777,6 +5811,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
     this.vorschlagPersonId,
     this.vorschlagWert,
     this.vorschlagGeprueftAm,
+    required this.automatischZugeordnet,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5812,6 +5847,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
     if (!nullToAbsent || vorschlagGeprueftAm != null) {
       map['vorschlag_geprueft_am'] = Variable<DateTime>(vorschlagGeprueftAm);
     }
+    map['automatisch_zugeordnet'] = Variable<bool>(automatischZugeordnet);
     return map;
   }
 
@@ -5848,6 +5884,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
       vorschlagGeprueftAm: vorschlagGeprueftAm == null && nullToAbsent
           ? const Value.absent()
           : Value(vorschlagGeprueftAm),
+      automatischZugeordnet: Value(automatischZugeordnet),
     );
   }
 
@@ -5876,6 +5913,9 @@ class FaceData extends DataClass implements Insertable<FaceData> {
       vorschlagGeprueftAm: serializer.fromJson<DateTime?>(
         json['vorschlagGeprueftAm'],
       ),
+      automatischZugeordnet: serializer.fromJson<bool>(
+        json['automatischZugeordnet'],
+      ),
     );
   }
   @override
@@ -5897,6 +5937,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
       'vorschlagPersonId': serializer.toJson<String?>(vorschlagPersonId),
       'vorschlagWert': serializer.toJson<double?>(vorschlagWert),
       'vorschlagGeprueftAm': serializer.toJson<DateTime?>(vorschlagGeprueftAm),
+      'automatischZugeordnet': serializer.toJson<bool>(automatischZugeordnet),
     };
   }
 
@@ -5916,6 +5957,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
     Value<String?> vorschlagPersonId = const Value.absent(),
     Value<double?> vorschlagWert = const Value.absent(),
     Value<DateTime?> vorschlagGeprueftAm = const Value.absent(),
+    bool? automatischZugeordnet,
   }) => FaceData(
     id: id ?? this.id,
     assetId: assetId ?? this.assetId,
@@ -5940,6 +5982,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
     vorschlagGeprueftAm: vorschlagGeprueftAm.present
         ? vorschlagGeprueftAm.value
         : this.vorschlagGeprueftAm,
+    automatischZugeordnet: automatischZugeordnet ?? this.automatischZugeordnet,
   );
   FaceData copyWithCompanion(FacesCompanion data) {
     return FaceData(
@@ -5968,6 +6011,9 @@ class FaceData extends DataClass implements Insertable<FaceData> {
       vorschlagGeprueftAm: data.vorschlagGeprueftAm.present
           ? data.vorschlagGeprueftAm.value
           : this.vorschlagGeprueftAm,
+      automatischZugeordnet: data.automatischZugeordnet.present
+          ? data.automatischZugeordnet.value
+          : this.automatischZugeordnet,
     );
   }
 
@@ -5988,7 +6034,8 @@ class FaceData extends DataClass implements Insertable<FaceData> {
           ..write('isIgnored: $isIgnored, ')
           ..write('vorschlagPersonId: $vorschlagPersonId, ')
           ..write('vorschlagWert: $vorschlagWert, ')
-          ..write('vorschlagGeprueftAm: $vorschlagGeprueftAm')
+          ..write('vorschlagGeprueftAm: $vorschlagGeprueftAm, ')
+          ..write('automatischZugeordnet: $automatischZugeordnet')
           ..write(')'))
         .toString();
   }
@@ -6010,6 +6057,7 @@ class FaceData extends DataClass implements Insertable<FaceData> {
     vorschlagPersonId,
     vorschlagWert,
     vorschlagGeprueftAm,
+    automatischZugeordnet,
   );
   @override
   bool operator ==(Object other) =>
@@ -6029,7 +6077,8 @@ class FaceData extends DataClass implements Insertable<FaceData> {
           other.isIgnored == this.isIgnored &&
           other.vorschlagPersonId == this.vorschlagPersonId &&
           other.vorschlagWert == this.vorschlagWert &&
-          other.vorschlagGeprueftAm == this.vorschlagGeprueftAm);
+          other.vorschlagGeprueftAm == this.vorschlagGeprueftAm &&
+          other.automatischZugeordnet == this.automatischZugeordnet);
 }
 
 class FacesCompanion extends UpdateCompanion<FaceData> {
@@ -6048,6 +6097,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
   final Value<String?> vorschlagPersonId;
   final Value<double?> vorschlagWert;
   final Value<DateTime?> vorschlagGeprueftAm;
+  final Value<bool> automatischZugeordnet;
   final Value<int> rowid;
   const FacesCompanion({
     this.id = const Value.absent(),
@@ -6065,6 +6115,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
     this.vorschlagPersonId = const Value.absent(),
     this.vorschlagWert = const Value.absent(),
     this.vorschlagGeprueftAm = const Value.absent(),
+    this.automatischZugeordnet = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FacesCompanion.insert({
@@ -6083,6 +6134,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
     this.vorschlagPersonId = const Value.absent(),
     this.vorschlagWert = const Value.absent(),
     this.vorschlagGeprueftAm = const Value.absent(),
+    this.automatischZugeordnet = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        assetId = Value(assetId),
@@ -6106,6 +6158,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
     Expression<String>? vorschlagPersonId,
     Expression<double>? vorschlagWert,
     Expression<DateTime>? vorschlagGeprueftAm,
+    Expression<bool>? automatischZugeordnet,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6125,6 +6178,8 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
       if (vorschlagWert != null) 'vorschlag_wert': vorschlagWert,
       if (vorschlagGeprueftAm != null)
         'vorschlag_geprueft_am': vorschlagGeprueftAm,
+      if (automatischZugeordnet != null)
+        'automatisch_zugeordnet': automatischZugeordnet,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6145,6 +6200,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
     Value<String?>? vorschlagPersonId,
     Value<double?>? vorschlagWert,
     Value<DateTime?>? vorschlagGeprueftAm,
+    Value<bool>? automatischZugeordnet,
     Value<int>? rowid,
   }) {
     return FacesCompanion(
@@ -6163,6 +6219,8 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
       vorschlagPersonId: vorschlagPersonId ?? this.vorschlagPersonId,
       vorschlagWert: vorschlagWert ?? this.vorschlagWert,
       vorschlagGeprueftAm: vorschlagGeprueftAm ?? this.vorschlagGeprueftAm,
+      automatischZugeordnet:
+          automatischZugeordnet ?? this.automatischZugeordnet,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6217,6 +6275,11 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
         vorschlagGeprueftAm.value,
       );
     }
+    if (automatischZugeordnet.present) {
+      map['automatisch_zugeordnet'] = Variable<bool>(
+        automatischZugeordnet.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6241,6 +6304,7 @@ class FacesCompanion extends UpdateCompanion<FaceData> {
           ..write('vorschlagPersonId: $vorschlagPersonId, ')
           ..write('vorschlagWert: $vorschlagWert, ')
           ..write('vorschlagGeprueftAm: $vorschlagGeprueftAm, ')
+          ..write('automatischZugeordnet: $automatischZugeordnet, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13799,6 +13863,17 @@ class $AppSettingsTable extends AppSettings
         requiredDuringInsert: false,
         defaultValue: const Constant(0.363),
       );
+  static const VerificationMeta _vorschlaegeAutomatischAbMeta =
+      const VerificationMeta('vorschlaegeAutomatischAb');
+  @override
+  late final GeneratedColumn<double> vorschlaegeAutomatischAb =
+      GeneratedColumn<double>(
+        'vorschlaege_automatisch_ab',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _kartenansichtMeta = const VerificationMeta(
     'kartenansicht',
   );
@@ -14186,6 +14261,7 @@ class $AppSettingsTable extends AppSettings
     watchedFolderPath,
     watchedFolderToken,
     faceSimilarityThreshold,
+    vorschlaegeAutomatischAb,
     kartenansicht,
     cartoSchluessel,
     eigeneKarteName,
@@ -14278,6 +14354,15 @@ class $AppSettingsTable extends AppSettings
         faceSimilarityThreshold.isAcceptableOrUnknown(
           data['face_similarity_threshold']!,
           _faceSimilarityThresholdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vorschlaege_automatisch_ab')) {
+      context.handle(
+        _vorschlaegeAutomatischAbMeta,
+        vorschlaegeAutomatischAb.isAcceptableOrUnknown(
+          data['vorschlaege_automatisch_ab']!,
+          _vorschlaegeAutomatischAbMeta,
         ),
       );
     }
@@ -14597,6 +14682,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.double,
         data['${effectivePrefix}face_similarity_threshold'],
       )!,
+      vorschlaegeAutomatischAb: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}vorschlaege_automatisch_ab'],
+      ),
       kartenansicht: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}kartenansicht'],
@@ -14765,6 +14854,11 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
   /// war bei jedem Programmstart wieder auf dem Ausgangswert, ohne dass
   /// das irgendwo stand.
   final double faceSimilarityThreshold;
+
+  /// Ab welcher Sicherheit die Wiedererkennung einen Vorschlag von selbst
+  /// übernimmt (Issue #135). `null` heisst: nie – jeder Vorschlag wartet
+  /// auf ein Ja. Auch mit Schwelle bleiben unsichere Treffer Vorschläge.
+  final double? vorschlaegeAutomatischAb;
 
   /// Zuletzt gewählte Kartenansicht: `'hell'`, `'dunkel'`, `'topo'` oder
   /// `'globus'` (siehe `Kartenansicht` in map_screen.dart).
@@ -15039,6 +15133,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     this.watchedFolderPath,
     this.watchedFolderToken,
     required this.faceSimilarityThreshold,
+    this.vorschlaegeAutomatischAb,
     required this.kartenansicht,
     this.cartoSchluessel,
     this.eigeneKarteName,
@@ -15087,6 +15182,11 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     map['face_similarity_threshold'] = Variable<double>(
       faceSimilarityThreshold,
     );
+    if (!nullToAbsent || vorschlaegeAutomatischAb != null) {
+      map['vorschlaege_automatisch_ab'] = Variable<double>(
+        vorschlaegeAutomatischAb,
+      );
+    }
     map['kartenansicht'] = Variable<String>(kartenansicht);
     if (!nullToAbsent || cartoSchluessel != null) {
       map['carto_schluessel'] = Variable<String>(cartoSchluessel);
@@ -15164,6 +15264,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ? const Value.absent()
           : Value(watchedFolderToken),
       faceSimilarityThreshold: Value(faceSimilarityThreshold),
+      vorschlaegeAutomatischAb: vorschlaegeAutomatischAb == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vorschlaegeAutomatischAb),
       kartenansicht: Value(kartenansicht),
       cartoSchluessel: cartoSchluessel == null && nullToAbsent
           ? const Value.absent()
@@ -15247,6 +15350,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       faceSimilarityThreshold: serializer.fromJson<double>(
         json['faceSimilarityThreshold'],
       ),
+      vorschlaegeAutomatischAb: serializer.fromJson<double?>(
+        json['vorschlaegeAutomatischAb'],
+      ),
       kartenansicht: serializer.fromJson<String>(json['kartenansicht']),
       cartoSchluessel: serializer.fromJson<String?>(json['cartoSchluessel']),
       eigeneKarteName: serializer.fromJson<String?>(json['eigeneKarteName']),
@@ -15321,6 +15427,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       'faceSimilarityThreshold': serializer.toJson<double>(
         faceSimilarityThreshold,
       ),
+      'vorschlaegeAutomatischAb': serializer.toJson<double?>(
+        vorschlaegeAutomatischAb,
+      ),
       'kartenansicht': serializer.toJson<String>(kartenansicht),
       'cartoSchluessel': serializer.toJson<String?>(cartoSchluessel),
       'eigeneKarteName': serializer.toJson<String?>(eigeneKarteName),
@@ -15365,6 +15474,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     Value<String?> watchedFolderPath = const Value.absent(),
     Value<String?> watchedFolderToken = const Value.absent(),
     double? faceSimilarityThreshold,
+    Value<double?> vorschlaegeAutomatischAb = const Value.absent(),
     String? kartenansicht,
     Value<String?> cartoSchluessel = const Value.absent(),
     Value<String?> eigeneKarteName = const Value.absent(),
@@ -15410,6 +15520,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
         : this.watchedFolderToken,
     faceSimilarityThreshold:
         faceSimilarityThreshold ?? this.faceSimilarityThreshold,
+    vorschlaegeAutomatischAb: vorschlaegeAutomatischAb.present
+        ? vorschlaegeAutomatischAb.value
+        : this.vorschlaegeAutomatischAb,
     kartenansicht: kartenansicht ?? this.kartenansicht,
     cartoSchluessel: cartoSchluessel.present
         ? cartoSchluessel.value
@@ -15489,6 +15602,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       faceSimilarityThreshold: data.faceSimilarityThreshold.present
           ? data.faceSimilarityThreshold.value
           : this.faceSimilarityThreshold,
+      vorschlaegeAutomatischAb: data.vorschlaegeAutomatischAb.present
+          ? data.vorschlaegeAutomatischAb.value
+          : this.vorschlaegeAutomatischAb,
       kartenansicht: data.kartenansicht.present
           ? data.kartenansicht.value
           : this.kartenansicht,
@@ -15595,6 +15711,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ..write('watchedFolderPath: $watchedFolderPath, ')
           ..write('watchedFolderToken: $watchedFolderToken, ')
           ..write('faceSimilarityThreshold: $faceSimilarityThreshold, ')
+          ..write('vorschlaegeAutomatischAb: $vorschlaegeAutomatischAb, ')
           ..write('kartenansicht: $kartenansicht, ')
           ..write('cartoSchluessel: $cartoSchluessel, ')
           ..write('eigeneKarteName: $eigeneKarteName, ')
@@ -15639,6 +15756,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     watchedFolderPath,
     watchedFolderToken,
     faceSimilarityThreshold,
+    vorschlaegeAutomatischAb,
     kartenansicht,
     cartoSchluessel,
     eigeneKarteName,
@@ -15682,6 +15800,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           other.watchedFolderPath == this.watchedFolderPath &&
           other.watchedFolderToken == this.watchedFolderToken &&
           other.faceSimilarityThreshold == this.faceSimilarityThreshold &&
+          other.vorschlaegeAutomatischAb == this.vorschlaegeAutomatischAb &&
           other.kartenansicht == this.kartenansicht &&
           other.cartoSchluessel == this.cartoSchluessel &&
           other.eigeneKarteName == this.eigeneKarteName &&
@@ -15723,6 +15842,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
   final Value<String?> watchedFolderPath;
   final Value<String?> watchedFolderToken;
   final Value<double> faceSimilarityThreshold;
+  final Value<double?> vorschlaegeAutomatischAb;
   final Value<String> kartenansicht;
   final Value<String?> cartoSchluessel;
   final Value<String?> eigeneKarteName;
@@ -15762,6 +15882,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.watchedFolderPath = const Value.absent(),
     this.watchedFolderToken = const Value.absent(),
     this.faceSimilarityThreshold = const Value.absent(),
+    this.vorschlaegeAutomatischAb = const Value.absent(),
     this.kartenansicht = const Value.absent(),
     this.cartoSchluessel = const Value.absent(),
     this.eigeneKarteName = const Value.absent(),
@@ -15802,6 +15923,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.watchedFolderPath = const Value.absent(),
     this.watchedFolderToken = const Value.absent(),
     this.faceSimilarityThreshold = const Value.absent(),
+    this.vorschlaegeAutomatischAb = const Value.absent(),
     this.kartenansicht = const Value.absent(),
     this.cartoSchluessel = const Value.absent(),
     this.eigeneKarteName = const Value.absent(),
@@ -15842,6 +15964,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Expression<String>? watchedFolderPath,
     Expression<String>? watchedFolderToken,
     Expression<double>? faceSimilarityThreshold,
+    Expression<double>? vorschlaegeAutomatischAb,
     Expression<String>? kartenansicht,
     Expression<String>? cartoSchluessel,
     Expression<String>? eigeneKarteName,
@@ -15885,6 +16008,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
         'watched_folder_token': watchedFolderToken,
       if (faceSimilarityThreshold != null)
         'face_similarity_threshold': faceSimilarityThreshold,
+      if (vorschlaegeAutomatischAb != null)
+        'vorschlaege_automatisch_ab': vorschlaegeAutomatischAb,
       if (kartenansicht != null) 'kartenansicht': kartenansicht,
       if (cartoSchluessel != null) 'carto_schluessel': cartoSchluessel,
       if (eigeneKarteName != null) 'eigene_karte_name': eigeneKarteName,
@@ -15942,6 +16067,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Value<String?>? watchedFolderPath,
     Value<String?>? watchedFolderToken,
     Value<double>? faceSimilarityThreshold,
+    Value<double?>? vorschlaegeAutomatischAb,
     Value<String>? kartenansicht,
     Value<String?>? cartoSchluessel,
     Value<String?>? eigeneKarteName,
@@ -15984,6 +16110,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       watchedFolderToken: watchedFolderToken ?? this.watchedFolderToken,
       faceSimilarityThreshold:
           faceSimilarityThreshold ?? this.faceSimilarityThreshold,
+      vorschlaegeAutomatischAb:
+          vorschlaegeAutomatischAb ?? this.vorschlaegeAutomatischAb,
       kartenansicht: kartenansicht ?? this.kartenansicht,
       cartoSchluessel: cartoSchluessel ?? this.cartoSchluessel,
       eigeneKarteName: eigeneKarteName ?? this.eigeneKarteName,
@@ -16053,6 +16181,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     if (faceSimilarityThreshold.present) {
       map['face_similarity_threshold'] = Variable<double>(
         faceSimilarityThreshold.value,
+      );
+    }
+    if (vorschlaegeAutomatischAb.present) {
+      map['vorschlaege_automatisch_ab'] = Variable<double>(
+        vorschlaegeAutomatischAb.value,
       );
     }
     if (kartenansicht.present) {
@@ -16179,6 +16312,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
           ..write('watchedFolderPath: $watchedFolderPath, ')
           ..write('watchedFolderToken: $watchedFolderToken, ')
           ..write('faceSimilarityThreshold: $faceSimilarityThreshold, ')
+          ..write('vorschlaegeAutomatischAb: $vorschlaegeAutomatischAb, ')
           ..write('kartenansicht: $kartenansicht, ')
           ..write('cartoSchluessel: $cartoSchluessel, ')
           ..write('eigeneKarteName: $eigeneKarteName, ')
@@ -28608,6 +28742,7 @@ typedef $$FacesTableCreateCompanionBuilder =
       Value<String?> vorschlagPersonId,
       Value<double?> vorschlagWert,
       Value<DateTime?> vorschlagGeprueftAm,
+      Value<bool> automatischZugeordnet,
       Value<int> rowid,
     });
 typedef $$FacesTableUpdateCompanionBuilder =
@@ -28627,6 +28762,7 @@ typedef $$FacesTableUpdateCompanionBuilder =
       Value<String?> vorschlagPersonId,
       Value<double?> vorschlagWert,
       Value<DateTime?> vorschlagGeprueftAm,
+      Value<bool> automatischZugeordnet,
       Value<int> rowid,
     });
 
@@ -28710,6 +28846,11 @@ class $$FacesTableFilterComposer extends Composer<_$AppDatabase, $FacesTable> {
 
   ColumnFilters<DateTime> get vorschlagGeprueftAm => $composableBuilder(
     column: $table.vorschlagGeprueftAm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get automatischZugeordnet => $composableBuilder(
+    column: $table.automatischZugeordnet,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -28797,6 +28938,11 @@ class $$FacesTableOrderingComposer
     column: $table.vorschlagGeprueftAm,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get automatischZugeordnet => $composableBuilder(
+    column: $table.automatischZugeordnet,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FacesTableAnnotationComposer
@@ -28862,6 +29008,11 @@ class $$FacesTableAnnotationComposer
     column: $table.vorschlagGeprueftAm,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get automatischZugeordnet => $composableBuilder(
+    column: $table.automatischZugeordnet,
+    builder: (column) => column,
+  );
 }
 
 class $$FacesTableTableManager
@@ -28907,6 +29058,7 @@ class $$FacesTableTableManager
                 Value<String?> vorschlagPersonId = const Value.absent(),
                 Value<double?> vorschlagWert = const Value.absent(),
                 Value<DateTime?> vorschlagGeprueftAm = const Value.absent(),
+                Value<bool> automatischZugeordnet = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacesCompanion(
                 id: id,
@@ -28924,6 +29076,7 @@ class $$FacesTableTableManager
                 vorschlagPersonId: vorschlagPersonId,
                 vorschlagWert: vorschlagWert,
                 vorschlagGeprueftAm: vorschlagGeprueftAm,
+                automatischZugeordnet: automatischZugeordnet,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -28943,6 +29096,7 @@ class $$FacesTableTableManager
                 Value<String?> vorschlagPersonId = const Value.absent(),
                 Value<double?> vorschlagWert = const Value.absent(),
                 Value<DateTime?> vorschlagGeprueftAm = const Value.absent(),
+                Value<bool> automatischZugeordnet = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FacesCompanion.insert(
                 id: id,
@@ -28960,6 +29114,7 @@ class $$FacesTableTableManager
                 vorschlagPersonId: vorschlagPersonId,
                 vorschlagWert: vorschlagWert,
                 vorschlagGeprueftAm: vorschlagGeprueftAm,
+                automatischZugeordnet: automatischZugeordnet,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -32952,6 +33107,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String?> watchedFolderPath,
       Value<String?> watchedFolderToken,
       Value<double> faceSimilarityThreshold,
+      Value<double?> vorschlaegeAutomatischAb,
       Value<String> kartenansicht,
       Value<String?> cartoSchluessel,
       Value<String?> eigeneKarteName,
@@ -32993,6 +33149,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String?> watchedFolderPath,
       Value<String?> watchedFolderToken,
       Value<double> faceSimilarityThreshold,
+      Value<double?> vorschlaegeAutomatischAb,
       Value<String> kartenansicht,
       Value<String?> cartoSchluessel,
       Value<String?> eigeneKarteName,
@@ -33067,6 +33224,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<double> get faceSimilarityThreshold => $composableBuilder(
     column: $table.faceSimilarityThreshold,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get vorschlaegeAutomatischAb => $composableBuilder(
+    column: $table.vorschlaegeAutomatischAb,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33270,6 +33432,11 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get vorschlaegeAutomatischAb => $composableBuilder(
+    column: $table.vorschlaegeAutomatischAb,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get kartenansicht => $composableBuilder(
     column: $table.kartenansicht,
     builder: (column) => ColumnOrderings(column),
@@ -33461,6 +33628,11 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<double> get faceSimilarityThreshold => $composableBuilder(
     column: $table.faceSimilarityThreshold,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get vorschlaegeAutomatischAb => $composableBuilder(
+    column: $table.vorschlaegeAutomatischAb,
     builder: (column) => column,
   );
 
@@ -33658,6 +33830,7 @@ class $$AppSettingsTableTableManager
                 Value<String?> watchedFolderPath = const Value.absent(),
                 Value<String?> watchedFolderToken = const Value.absent(),
                 Value<double> faceSimilarityThreshold = const Value.absent(),
+                Value<double?> vorschlaegeAutomatischAb = const Value.absent(),
                 Value<String> kartenansicht = const Value.absent(),
                 Value<String?> cartoSchluessel = const Value.absent(),
                 Value<String?> eigeneKarteName = const Value.absent(),
@@ -33697,6 +33870,7 @@ class $$AppSettingsTableTableManager
                 watchedFolderPath: watchedFolderPath,
                 watchedFolderToken: watchedFolderToken,
                 faceSimilarityThreshold: faceSimilarityThreshold,
+                vorschlaegeAutomatischAb: vorschlaegeAutomatischAb,
                 kartenansicht: kartenansicht,
                 cartoSchluessel: cartoSchluessel,
                 eigeneKarteName: eigeneKarteName,
@@ -33738,6 +33912,7 @@ class $$AppSettingsTableTableManager
                 Value<String?> watchedFolderPath = const Value.absent(),
                 Value<String?> watchedFolderToken = const Value.absent(),
                 Value<double> faceSimilarityThreshold = const Value.absent(),
+                Value<double?> vorschlaegeAutomatischAb = const Value.absent(),
                 Value<String> kartenansicht = const Value.absent(),
                 Value<String?> cartoSchluessel = const Value.absent(),
                 Value<String?> eigeneKarteName = const Value.absent(),
@@ -33777,6 +33952,7 @@ class $$AppSettingsTableTableManager
                 watchedFolderPath: watchedFolderPath,
                 watchedFolderToken: watchedFolderToken,
                 faceSimilarityThreshold: faceSimilarityThreshold,
+                vorschlaegeAutomatischAb: vorschlaegeAutomatischAb,
                 kartenansicht: kartenansicht,
                 cartoSchluessel: cartoSchluessel,
                 eigeneKarteName: eigeneKarteName,

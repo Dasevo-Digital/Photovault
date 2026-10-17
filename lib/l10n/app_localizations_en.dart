@@ -9570,4 +9570,20 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get serverFehler => 'That did not work';
+
+  @override
+  String get stufeVideobilder => 'Video stills';
+
+  @override
+  String get werkzAutoVorschlaege =>
+      'Accept confident suggestions automatically';
+
+  @override
+  String get werkzAutoVorschlaegeText =>
+      'Recognised faces at or above this confidence are assigned without asking and marked as such; uncertain ones remain suggestions.';
+
+  @override
+  String werkzAutoVorschlaegeAb(String wert) {
+    return 'from $wert';
+  }
 }

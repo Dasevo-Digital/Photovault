@@ -92,6 +92,23 @@ extension EinstellungsAbfragen on AppDatabase {
     return row?.faceSimilarityThreshold ?? 0.363;
   }
 
+  /// Ab welcher Sicherheit Vorschläge von selbst übernommen werden;
+  /// `null` = nie (siehe `AppSettings.vorschlaegeAutomatischAb`).
+  Future<void> setVorschlaegeAutomatischAb(double? ab) =>
+      into(appSettings).insertOnConflictUpdate(
+        AppSettingsCompanion.insert(
+          id: const Value(0),
+          vorschlaegeAutomatischAb: Value(ab),
+        ),
+      );
+
+  Future<double?> vorschlaegeAutomatischAbWert() async {
+    final row = await (select(
+      appSettings,
+    )..where((t) => t.id.equals(0))).getSingleOrNull();
+    return row?.vorschlaegeAutomatischAb;
+  }
+
   /// Benennt Vokabelbegriffe und die zugehörigen Schlagwörter um – für das
   /// Angebot beim Sprachwechsel.
   ///

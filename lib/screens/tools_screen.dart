@@ -315,6 +315,51 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ),
                   ),
                 ),
+                const Divider(height: 1),
+                // Vorschläge der Wiedererkennung von selbst übernehmen, ab
+                // einer Sicherheit (Issue #135). Die Einstellung gehört der
+                // Bibliothek – der Server hält sich daran.
+                SwitchListTile(
+                  title: Text(t.werkzAutoVorschlaege),
+                  subtitle: Text(t.werkzAutoVorschlaegeText),
+                  value: widget.library.vorschlaegeAutomatischAb != null,
+                  onChanged: (an) {
+                    widget.library.setVorschlaegeAutomatischAb(an ? 0.7 : null);
+                    setState(() {});
+                  },
+                ),
+                if (widget.library.vorschlaegeAutomatischAb case final ab?)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Slider(
+                            value: ab.clamp(0.6, 0.9),
+                            min: 0.6,
+                            max: 0.9,
+                            divisions: 6,
+                            label: ab.toStringAsFixed(2),
+                            onChanged: (v) {
+                              widget.library.setVorschlaegeAutomatischAb(v);
+                              setState(() {});
+                            },
+                          ),
+                        ),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            t.werkzAutoVorschlaegeAb(ab.toStringAsFixed(2)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
