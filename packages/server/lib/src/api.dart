@@ -23,6 +23,7 @@ import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 import 'web.dart';
+import 'zeilen_json.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
 /// etwas so ändert, dass ein älterer Client es falsch verstünde.
@@ -152,6 +153,11 @@ Handler baueApi({
     ..get('/api/v1/abgleich/abzug', abgleich.abzug)
     ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
     ..post('/api/v1/suche/text', suche.text)
+    ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/alben', api.alben)
+    ..get('/api/v1/alben/<id>', api.album)
+    ..get('/api/v1/personen', api.personen)
+    ..get('/api/v1/personen/<id>', api.person)
     ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
     ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
@@ -438,10 +444,77 @@ class _Api {
         .get();
     final liste = [for (final z in zeilen) Rasterzeile.ausZeile(z)];
     return _json({
-      'aufnahmen': [for (final r in liste) _alsJson(r)],
+      'aufnahmen': [for (final r in liste) zeileAlsJson(r)],
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    });
+  }
+
+  /// Die Alben mit Anzahl und Titelbild – für den Browser.
+  Future<Response> alben(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final liste = await db.alleAlben();
+    final anzahlen = await db.albumAnzahlen();
+    return _json({
+      'alben': [
+        for (final a in liste)
+          {
+            'id': a.id,
+            'name': a.name,
+            'anzahl': anzahlen[a.id] ?? 0,
+            'titelbild': (await db.albumTitelbild(a))?.id,
+          },
+      ],
+    });
+  }
+
+  Future<Response> album(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final a = (await db.alleAlben()).where((x) => x.id == id).firstOrNull;
+    if (a == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'album': {'id': a.id, 'name': a.name},
+      'aufnahmen': [
+        for (final x in await db.albumAufnahmen(id))
+          zeileAlsJson(Rasterzeile.aus(x)),
+      ],
+    });
+  }
+
+  /// Die Personen mit Anzahl und Gesichtsausschnitt (ein Pfad für
+  /// `/api/v1/dateien/…`), die mit den meisten Aufnahmen zuerst.
+  Future<Response> personen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final liste = await db.select(db.people).get();
+    final anzahlen = await db.personenAnzahlen();
+    final sortiert = [...liste]
+      ..sort((a, b) => (anzahlen[b.id] ?? 0).compareTo(anzahlen[a.id] ?? 0));
+    return _json({
+      'personen': [
+        for (final p in sortiert)
+          {
+            'id': p.id,
+            'name': p.name,
+            'anzahl': anzahlen[p.id] ?? 0,
+            'bild': p.coverFaceCropPath,
+          },
+      ],
+    });
+  }
+
+  Future<Response> person(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final p = await (db.select(
+      db.people,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (p == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'person': {'id': p.id, 'name': p.name},
+      'aufnahmen': [
+        for (final x in await db.assetsFuerPersonen([id]))
+          zeileAlsJson(Rasterzeile.aus(x)),
+      ],
     });
   }
 
@@ -513,26 +586,6 @@ class _Api {
     return dateiAntwort(anfrage, datei);
   }
 }
-
-Map<String, Object?> _alsJson(Rasterzeile r) => {
-  'id': r.id,
-  'art': r.type == 'VIDEO' ? 'video' : 'bild',
-  'name': r.originalFileName,
-  'aufgenommen': r.fileCreatedAt.toIso8601String(),
-  if (r.durationSeconds != null) 'dauer': r.durationSeconds,
-  if (r.isFavorite) 'favorit': true,
-  if (r.rating > 0) 'bewertung': r.rating,
-  if (r.colorLabel != null) 'farbe': r.colorLabel,
-  if (r.widthPx != null) 'breite': r.widthPx,
-  if (r.heightPx != null) 'hoehe': r.heightPx,
-  if (r.latitude != null && r.longitude != null)
-    'ort': {'breite': r.latitude, 'laenge': r.longitude},
-  if (r.cameraMake != null) 'kamera': r.cameraMake,
-  if (r.stackId != null)
-    'serie': {'id': r.stackId, 'titel': r.isStackCover, 'groesse': r.stackSize},
-  if (r.linkedAssetId != null) 'partner': r.linkedAssetId,
-  'miniatur': r.thumbnailRelativePath != null,
-};
 
 /// Wo eine Seite der Zeitleiste endet: Zeitpunkt und Kennung der letzten
 /// Aufnahme, als Text für die Adresse.

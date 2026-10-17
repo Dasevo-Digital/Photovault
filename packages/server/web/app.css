@@ -54,3 +54,56 @@ input { font: inherit; }
 #zurueck { left: 12px; top: 50%; transform: translateY(-50%); }
 #vor { right: 12px; top: 50%; transform: translateY(-50%); }
 #favorit { top: 12px; left: 12px; font-size: 22px; }
+
+/* --- Stufe 2: Wege, Karten, Auswahl, Konto -------------------------------- */
+#nav { display: flex; gap: 4px; flex: 1; }
+#nav a { color: var(--leise); text-decoration: none; padding: 4px 10px; border-radius: 8px; }
+#nav a.aktiv { color: var(--text); background: var(--karte); border: 1px solid var(--rand); }
+#kopf h1 { flex: 0; white-space: nowrap; margin-right: 8px; }
+#auswaehlen.aktiv { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+main#inhalt section h2 { font-size: 1.1em; margin: 16px 12px 8px; }
+#raster-titel { font-size: 1.1em; margin: 16px 12px 4px; }
+
+.zeile { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; }
+.zeile input[type=search] { flex: 1; min-width: 12em; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+.zeile button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+
+#karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; padding: 0 12px 24px; }
+.albumkarte { color: var(--text); text-decoration: none; }
+.albumbild { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--rand); }
+.albumbild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.albumkarte.person .albumbild { border-radius: 50%; width: 70%; margin: 0 auto 6px; }
+.albumkarte.person { text-align: center; }
+.albumkarte .titel { margin-top: 6px; font-weight: 600; }
+.klein { font-size: 0.85em; padding: 0; text-align: inherit; }
+
+#raster .kachel.gewaehlt { outline: 3px solid var(--akzent); outline-offset: -3px; }
+#raster .kachel.gewaehlt img { transform: scale(0.88); }
+#raster .kachel.gewaehlt::after { content: '✓'; position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--akzent); color: #fff; font-size: 14px; line-height: 22px; text-align: center; }
+#auswahlleiste { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; align-items: center; padding: 10px 12px; background: var(--karte); border-top: 1px solid var(--rand); z-index: 5; flex-wrap: wrap; }
+#auswahlleiste button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+#auswahlleiste #auswahl-anzahl { flex: 1; font-weight: 600; }
+body.mit-leiste #ende { padding-bottom: 80px; }
+
+#bereich-konto { padding: 0 12px 24px; max-width: 40em; }
+#bereich-konto h3 { margin: 20px 0 6px; font-size: 1em; }
+#geraete { list-style: none; padding: 0; margin: 0; }
+#geraete li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rand); }
+#geraete button, #bereich-konto > button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+.karte.schmal { margin: 8px 0; max-width: none; }
+.karte.schmal .zeile { padding: 8px 0 0; }
+
+dialog { border: 1px solid var(--rand); border-radius: 12px; background: var(--karte); color: var(--text); padding: 20px; max-width: 24em; }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+dialog h3 { margin-top: 0; }
+#album-liste { list-style: none; padding: 0; max-height: 40vh; overflow: auto; }
+#album-liste li { padding: 4px 0; }
+dialog label { display: block; margin: 10px 0 4px; }
+dialog input[type=text], dialog input:not([type]) { width: 100%; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 16px 0 0; }
+dialog menu button { padding: 8px 14px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+dialog menu button[type=submit] { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+
+#laden { position: absolute; top: 12px; left: 68px; background: rgba(0,0,0,.45); color: #fff; border-radius: 50%; width: 44px; height: 44px; font-size: 22px; line-height: 44px; text-align: center; text-decoration: none; }
+.karte label.zeile { display: flex; align-items: center; gap: 8px; padding: 12px 0 0; }
+.karte label.zeile input { width: auto; display: inline; }

@@ -43,6 +43,37 @@ extension AlbenAbfragen on AppDatabase {
   /// im Album –, die neueste Aufnahme darin. `null` nur bei einem leeren
   /// Album. Ein Titelbild, das aus dem Album entfernt wurde, würde sonst
   /// weiter dafür werben.
+  /// Die Aufnahmen eines Albums einmalig – für die Weboberfläche, die
+  /// keine Kopie hält (siehe [watchAlbumAssets]).
+  Future<List<AssetData>> albumAufnahmen(String albumId) =>
+      (select(assets).join([
+              innerJoin(albumAssets, albumAssets.assetId.equalsExp(assets.id)),
+            ])
+            ..where(albumAssets.albumId.equals(albumId))
+            ..where(assets.isTrashed.equals(false))
+            ..where(assets.isLocked.equals(false))
+            ..where(_isPrimaryGridEntry(assets))
+            ..orderBy([OrderingTerm.desc(assets.fileCreatedAt)]))
+          .map((r) => r.readTable(assets))
+          .get();
+
+  /// Wie viele sichtbare Aufnahmen jedes Album hat, nach Kennung.
+  Future<Map<String, int>> albumAnzahlen() async {
+    final n = albumAssets.assetId.count();
+    final q =
+        selectOnly(
+            albumAssets,
+          ).join([innerJoin(assets, assets.id.equalsExp(albumAssets.assetId))])
+          ..addColumns([albumAssets.albumId, n])
+          ..where(
+            assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+          )
+          ..groupBy([albumAssets.albumId]);
+    return {
+      for (final z in await q.get()) z.read(albumAssets.albumId)!: z.read(n)!,
+    };
+  }
+
   Future<AssetData?> albumTitelbild(AlbumData album) async {
     final gewaehlt = album.coverAssetId;
     if (gewaehlt != null) {

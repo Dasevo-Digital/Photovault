@@ -17,6 +17,24 @@ extension PersonenAbfragen on AppDatabase {
   /// derselben Tabelle würde bei jeder Zuordnung den ganzen Bildschirm neu
   /// aufbauen, samt der 200 Gesichtskacheln darunter – genau das, was das
   /// stückweise Entfernen im Raster gerade vermeidet.
+  /// Wie viele Aufnahmen jede Person zeigt (Gesichter je Aufnahme einmal
+  /// gezählt), nach Kennung – für Listen, die keine Kopie halten.
+  Future<Map<String, int>> personenAnzahlen() async {
+    final n = faces.assetId.count(distinct: true);
+    final q =
+        selectOnly(
+            faces,
+          ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])
+          ..addColumns([faces.personId, n])
+          ..where(
+            faces.personId.isNotNull() &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false),
+          )
+          ..groupBy([faces.personId]);
+    return {for (final z in await q.get()) z.read(faces.personId)!: z.read(n)!};
+  }
+
   Future<int> countPeople() async {
     final anzahl = people.id.count();
     final row = await (selectOnly(people)..addColumns([anzahl])).getSingle();

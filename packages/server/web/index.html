@@ -11,8 +11,14 @@
 <body>
 <header id="kopf" hidden>
   <h1>Photo Vault</h1>
-  <span id="wer"></span>
-  <button id="abmelden" type="button">Abmelden</button>
+  <nav id="nav">
+    <a href="#/" data-bereich="fotos">Fotos</a>
+    <a href="#/suche" data-bereich="suche">Suche</a>
+    <a href="#/alben" data-bereich="alben">Alben</a>
+    <a href="#/personen" data-bereich="personen">Personen</a>
+    <a href="#/konto" data-bereich="konto">Konto</a>
+  </nav>
+  <button id="auswaehlen" type="button" title="Mehrere auswählen">Auswählen</button>
 </header>
 
 <main id="anmeldung" class="karte" hidden>
@@ -32,10 +38,64 @@
   <p id="fehler" class="fehler" role="alert"></p>
 </main>
 
-<main id="zeitleiste" hidden>
-  <div id="raster"></div>
-  <p id="ende" class="leise"></p>
+<main id="inhalt" hidden>
+  <section id="bereich-suche" hidden>
+    <form id="form-suche" class="zeile">
+      <input name="text" type="search" placeholder="Wonach suchst du?" autocomplete="off" required>
+      <label><input type="radio" name="art" value="inhalt" checked> Bildinhalt</label>
+      <label><input type="radio" name="art" value="text"> Text</label>
+      <button type="submit">Suchen</button>
+    </form>
+    <p id="suche-hinweis" class="leise"></p>
+  </section>
+  <section id="bereich-karten" hidden>
+    <h2 id="karten-titel"></h2>
+    <div id="karten"></div>
+  </section>
+  <section id="bereich-konto" hidden>
+    <h2>Konto</h2>
+    <p id="konto-wer"></p>
+    <h3>Geräte</h3>
+    <ul id="geraete"></ul>
+    <h3>Passwort ändern</h3>
+    <form id="form-passwort" class="karte schmal">
+      <label>Aktuelles Passwort <input name="alt" type="password" autocomplete="current-password" required></label>
+      <label>Neues Passwort <input name="neu" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label>Noch einmal <input name="neu2" type="password" autocomplete="new-password" required></label>
+      <label id="passwort-code-feld" hidden>TOTP-Code <input name="code" inputmode="numeric" autocomplete="one-time-code"></label>
+      <label class="zeile"><input type="checkbox" name="andere"> Andere Geräte abmelden</label>
+      <button type="submit">Ändern</button>
+      <p id="passwort-meldung" class="leise"></p>
+    </form>
+    <button id="abmelden" type="button">Abmelden</button>
+  </section>
+  <section id="bereich-raster" hidden>
+    <h2 id="raster-titel" hidden></h2>
+    <div id="raster"></div>
+    <p id="ende" class="leise"></p>
+  </section>
 </main>
+
+<div id="auswahlleiste" hidden>
+  <button id="auswahl-zu" type="button" aria-label="Auswahl aufheben">×</button>
+  <span id="auswahl-anzahl"></span>
+  <button id="auswahl-favorit" type="button">♥ Favorit</button>
+  <button id="auswahl-album" type="button">Album</button>
+  <button id="auswahl-laden" type="button">Herunterladen</button>
+  <button id="auswahl-papierkorb" type="button">Papierkorb</button>
+</div>
+
+<dialog id="album-dialog">
+  <form method="dialog" id="form-album">
+    <h3>Zum Album hinzufügen</h3>
+    <ul id="album-liste"></ul>
+    <label>Neues Album <input name="neu" autocomplete="off" placeholder="Name"></label>
+    <menu>
+      <button value="abbrechen" type="button" id="album-abbrechen">Abbrechen</button>
+      <button value="ok" type="submit">Hinzufügen</button>
+    </menu>
+  </form>
+</dialog>
 
 <div id="betrachter" hidden>
   <button id="zu" type="button" aria-label="Schliessen">×</button>
@@ -47,6 +107,7 @@
   </figure>
   <button id="vor" type="button" aria-label="Nächste">›</button>
   <button id="favorit" type="button" aria-label="Favorit">♡</button>
+  <a id="laden" download aria-label="Original herunterladen">⤓</a>
 </div>
 
 <script src="app.js"></script>
