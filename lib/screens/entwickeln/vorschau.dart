@@ -117,7 +117,7 @@ mixin _Vorschau on _EntwickelnBasis {
     // Nach dem Anzeigen, nicht davor: Der Bildschirm soll nicht auf eine
     // Auskunft warten, die nur eine Beschriftung betrifft.
     final stand = await NativeImageConverter.lensCorrectionStatus(
-      widget.paths.absolute(widget.asset.relativePath),
+      await widget.paths.bereit(widget.asset.relativePath),
     );
     if (mounted) setState(() => _korrekturstand = stand);
 
@@ -295,7 +295,7 @@ mixin _Vorschau on _EntwickelnBasis {
   Future<void> _requestPreview() async {
     final token = ++_requestToken;
     setState(() => _rendering = true);
-    final sourceFile = widget.paths.absolute(widget.asset.relativePath);
+    final sourceFile = await widget.paths.bereit(widget.asset.relativePath);
     final bytes = await NativeImageConverter.developImage(
       sourceFile,
       adjustments: _currentAdjustments(),
@@ -411,7 +411,7 @@ mixin _Vorschau on _EntwickelnBasis {
   Future<void> _ensureOriginalPreviewLoaded() async {
     if (_originalPreviewBytes != null || _loadingOriginalPreview) return;
     _loadingOriginalPreview = true;
-    final sourceFile = widget.paths.absolute(widget.asset.relativePath);
+    final sourceFile = await widget.paths.bereit(widget.asset.relativePath);
     final bytes = await NativeImageConverter.developImage(
       sourceFile,
       adjustments: DevelopAdjustments.neutral,

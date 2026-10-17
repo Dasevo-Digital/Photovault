@@ -609,7 +609,22 @@
   "einstSpeicherort": "Speicherort",
   "einstSpeicherortVerschiebenLaeuft": "Verschiebe Bibliothek …",
   "einstSpeicherortFortschritt": "{kopiert} von {gesamt} · {dateien} von {dateienGesamt} Dateien",
-  "@einstSpeicherortFortschritt": {"placeholders": {"kopiert": {"type": "String"}, "gesamt": {"type": "String"}, "dateien": {"type": "int"}, "dateienGesamt": {"type": "int"}}},
+  "@einstSpeicherortFortschritt": {
+    "placeholders": {
+      "kopiert": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      },
+      "dateien": {
+        "type": "int"
+      },
+      "dateienGesamt": {
+        "type": "int"
+      }
+    }
+  },
   "einstSpeicherbedarf": "Speicherbedarf",
   "belegung_originals": "Originale",
   "belegung_previews": "Vorschauen",
@@ -706,9 +721,27 @@
   "einstBackupPruefen": "Backup prüfen",
   "einstBackupPruefungLaeuft": "Prüfe Wiederherstellbarkeit …",
   "einstBackupPruefungErfolgreich": "{anzahl} Datei(en) sind vollständig wiederherstellbar.",
-  "@einstBackupPruefungErfolgreich": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@einstBackupPruefungErfolgreich": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstBackupPruefungFehler": "{gueltig} gültig, {fehlend} fehlend, {beschaedigt} beschädigt.",
-  "@einstBackupPruefungFehler": {"placeholders": {"gueltig": {"type": "int"}, "fehlend": {"type": "int"}, "beschaedigt": {"type": "int"}}},
+  "@einstBackupPruefungFehler": {
+    "placeholders": {
+      "gueltig": {
+        "type": "int"
+      },
+      "fehlend": {
+        "type": "int"
+      },
+      "beschaedigt": {
+        "type": "int"
+      }
+    }
+  },
   "einstZielordner": "Zielordner",
   "einstIntervall": "Intervall",
   "einstIntervallSechsStunden": "Alle 6 Stunden",
@@ -759,10 +792,25 @@
   "modellSfaceLizenz": "Apache-2.0",
   "modellClipTitel": "KI-Bildsuche – CLIP ViT-B/32",
   "einstAlleModelleLaden": "Alle fehlenden laden ({anzahl})",
-  "@einstAlleModelleLaden": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@einstAlleModelleLaden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstAlleModelleDa": "Alle Modelle liegen bereit",
   "einstAlleModelleLaeuft": "Modell {nummer} von {gesamt}",
-  "@einstAlleModelleLaeuft": { "placeholders": { "nummer": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "@einstAlleModelleLaeuft": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "modellClipText": "Ermöglicht die Suche nach Fotos in natürlicher Sprache (z.B. \"Sonnenuntergang am Meer\"). OpenAI-Originalgewichte, als separate Bild-/Text-Encoder-ONNX-Graphen exportiert.",
   "modellClipLizenz": "MIT (Gewichte: OpenAI CLIP, siehe Quelle)",
   "modellSamTitel": "KI-Objektmasken – SAM ViT-Base",
@@ -1187,6 +1235,7 @@
   "entwKopiert": "Einstellungen kopiert. Sie lassen sich jetzt auf andere Fotos übertragen – auch ohne dieses hier zu speichern.",
   "entwEingesetzt": "Kopierte Einstellungen eingesetzt – noch nicht gespeichert.",
   "entwSpeichernFehlgeschlagen": "Speichern fehlgeschlagen: Bild konnte nicht gerendert werden.",
+  "entwSpeichernServerFehlt": "Speichern fehlgeschlagen: Der Server ist nicht erreichbar – das entwickelte Bild muss zu ihm.",
   "entwRestaurierungLaeuft": "KI-Restaurierung",
   "entwRestaurierungEingereiht": "Zur Warteschlange für KI-Restaurierung hinzugefügt.",
   "entwRestaurierungFehler": "Konnte nicht zur Warteschlange hinzugefügt werden: {fehler}",
@@ -1458,7 +1507,13 @@
   "albumTitelbildSetzen": "Als Titelbild",
   "albumTitelbildGesetzt": "Titelbild gesetzt",
   "albumFotosWaehlenTitel": "Fotos für „{album}“",
-  "@albumFotosWaehlenTitel": { "placeholders": { "album": { "type": "String" } } },
+  "@albumFotosWaehlenTitel": {
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
   "regelLoeschenTitel": "Regel löschen?",
   "regelLoeschenText": "Die Regel \"{name}\" wirklich löschen? Bereits angewendete Aktionen bleiben erhalten.",
   "@regelLoeschenText": {
@@ -1553,13 +1608,34 @@
   "duplZusammenfuehren": "Zusammenführen",
   "duplZusammenfuehrenTitel": "Ähnliche Fotos zusammenführen",
   "duplZusammenfuehrenText": "Metadaten aller {anzahl} Fotos werden auf die gewählte Aufnahme übertragen. Die übrigen Fotos landen im Papierkorb und können dort wiederhergestellt werden.",
-  "@duplZusammenfuehrenText": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@duplZusammenfuehrenText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "duplBehaltenAuswahl": "Diese Aufnahme behalten",
   "duplBehaltenDetails": "{sterne} Sterne · {favorit} Favorit(en)",
-  "@duplBehaltenDetails": {"placeholders": {"sterne": {"type": "int"}, "favorit": {"type": "int"}}},
+  "@duplBehaltenDetails": {
+    "placeholders": {
+      "sterne": {
+        "type": "int"
+      },
+      "favorit": {
+        "type": "int"
+      }
+    }
+  },
   "duplBeschreibungenVerbinden": "Unterschiedliche Beschreibungen verbinden",
   "duplZusammengefuehrt": "{anzahl} Foto(s) zusammengeführt und in den Papierkorb verschoben.",
-  "@duplZusammengefuehrt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@duplZusammengefuehrt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "clusterTitel": "Vorschläge prüfen",
   "clusterFertig": "Alle Vorschläge durchgesehen.",
   "clusterAehnlichZu": "Ähnlich zu: {name}",
@@ -1601,11 +1677,29 @@
   "importNichtsAufDatentraeger": "Keine unterstützten Fotos/Videos auf diesem Datenträger gefunden.",
   "importAbgeschlossen": "Import abgeschlossen",
   "importBilanzNeu": "{anzahl, plural, =1{1 neu hereingekommen} other{{anzahl} neu hereingekommen}}",
-  "@importBilanzNeu": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzNeu": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importBilanzDuplikate": "{anzahl, plural, =1{1 lag schon in der Bibliothek und wurde übersprungen} other{{anzahl} lagen schon in der Bibliothek und wurden übersprungen}}",
-  "@importBilanzDuplikate": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzDuplikate": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importBilanzFehler": "{anzahl, plural, =1{1 kam nicht herein} other{{anzahl} kamen nicht herein}}",
-  "@importBilanzFehler": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzFehler": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importLaeuft": "Importiere Fotos & Videos …",
   "importJetztSichten": "Jetzt sichten",
   "integPruefungFehlgeschlagen": "Prüfung fehlgeschlagen: {fehler}",
@@ -2085,7 +2179,14 @@
   },
   "downloadZuGross": "{datei} überschreitet die erlaubte Größe von {grenze} Byte.",
   "@downloadZuGross": {
-    "placeholders": {"datei": {"type": "String"}, "grenze": {"type": "int"}}
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      },
+      "grenze": {
+        "type": "int"
+      }
+    }
   },
   "downloadNichtImZip": "{datei} nicht im Zip gefunden.",
   "@downloadNichtImZip": {
@@ -2265,7 +2366,16 @@
     }
   },
   "erkundenImMonatVorJahren": "Im {monat} vor {jahre} Jahren",
-  "@erkundenImMonatVorJahren": {"placeholders": {"monat": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@erkundenImMonatVorJahren": {
+    "placeholders": {
+      "monat": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "gesichtBenennen": "Gesicht benennen",
   "gesichtUnbenannt": "Unbenannt",
   "bearbZuschneiden": "Zuschneiden",
@@ -4265,9 +4375,14 @@
     }
   },
   "spurTitel": "Aufgezeichnete Spur",
-    "spurKm": "{km} km",
   "spurKm": "{km} km",
-  "@spurKm": {"placeholders": {"km": {"type": "String"}}},
+  "@spurKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
   "spurKennzahlen": "{km} km · ▲ {auf} m · ▼ {ab} m",
   "@spurKennzahlen": {
     "placeholders": {
@@ -4341,25 +4456,63 @@
   "flugVideo": "Als Video ausgeben",
   "flugVideoAbbrechen": "Ausgabe abbrechen",
   "flugVideoFertig": "Video gespeichert: {datei}",
-  "@flugVideoFertig": {"placeholders": {"datei": {"type": "String"}}},
+  "@flugVideoFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
   "flugVideoAbgebrochen": "Ausgabe abgebrochen",
   "flugVideoKeinWerkzeug": "Für die Videoausgabe fehlt der Videoschreiber. Unter macOS gehört er zum System, unter Linux und Windows liegt er im Paket – erscheint diese Meldung, ist die Installation unvollständig.",
-    "flugVideoLaeuft": "Video wird geschrieben – {prozent} %",
   "flugVideoLaeuft": "Video wird geschrieben – {prozent} %",
-  "@flugVideoLaeuft": {"placeholders": {"prozent": {"type": "int"}}},
+  "@flugVideoLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoLaeuftMitRest": "Video wird geschrieben – {prozent} %, noch etwa {rest}",
-  "@flugVideoLaeuftMitRest": {"placeholders": {"prozent": {"type": "int"}, "rest": {"type": "String"}}},
+  "@flugVideoLaeuftMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
   "flugVideoEinstellungen": "Video ausgeben",
   "flugVideoAufloesung": "Auflösung",
   "flugVideoDauer": "Dauer",
   "flugVideoDauerWert": "{sekunden} Sekunden",
-  "@flugVideoDauerWert": {"placeholders": {"sekunden": {"type": "int"}}},
+  "@flugVideoDauerWert": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoBilder": "{bilder} Bilder",
-  "@flugVideoBilder": {"placeholders": {"bilder": {"type": "int"}}},
+  "@flugVideoBilder": {
+    "placeholders": {
+      "bilder": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoWeiter": "Speichern unter …",
   "flugVideoWaehrenddessen": "Die Bilder entstehen abseits des Bildschirms – der Flug wird dafür nicht abgespielt. Diese Ansicht muss so lange offen bleiben.",
   "flugVideoFehler": "Die Videoausgabe ist fehlgeschlagen: {grund}",
-  "@flugVideoFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "@flugVideoFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "flugAufstieg": "Aufstieg",
   "flugUnterwegs": "unterwegs",
   "flugOhneZeit": "Die Spur trägt keine Zeitstempel – ohne sie gibt es kein Tempo.",
@@ -4573,7 +4726,16 @@
   "werkzOrdneAblage": "Ordne die Ablage …",
   "werkzAblageStimmt": "Jede Aufnahme liegt im Ordner ihres Datums.",
   "werkzAblageBilanz": "{verschoben} von {gesamt} umgelegt",
-  "@werkzAblageBilanz": { "placeholders": { "verschoben": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "@werkzAblageBilanz": {
+    "placeholders": {
+      "verschoben": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "werkzAblageFrageTitel": "Ablage neu ordnen?",
   "werkzAblageFrage": "Aufnahmen, deren Ordner nicht zu ihrem Aufnahmedatum passt, werden in den richtigen Monatsordner verschoben. Die Aufnahmedaten selbst bleiben unverändert. In der App ändert sich dadurch nichts Sichtbares – wohl aber die Ordnerstruktur der Bibliothek auf der Platte.",
   "werkzAblageStarten": "Ablage ordnen",
@@ -4820,14 +4982,44 @@
   "ortVorschlagErklaerung": "Diese Aufnahmen tragen keinen Ort – aber die Aufnahmen kurz davor und danach tun es, und sie sind sich einig. Übernommene Orte werden als geerbt gekennzeichnet: Sie sind eine begründete Vermutung, keine Messung.",
   "ortVorschlagKeine": "Keine Aufnahme lässt sich über ihre Nachbarn verorten.",
   "ortVorschlagAnzahl": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
-  "@ortVorschlagAnzahl": {"placeholders": {"n": {"type": "int"}}},
+  "@ortVorschlagAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagBegruendung": "{nachbarn, plural, =1{1 verorteter Nachbar} other{{nachbarn} verortete Nachbarn}}, höchstens {minuten} Minuten entfernt",
-  "@ortVorschlagBegruendung": {"placeholders": {"nachbarn": {"type": "int"}, "minuten": {"type": "int"}}},
+  "@ortVorschlagBegruendung": {
+    "placeholders": {
+      "nachbarn": {
+        "type": "int"
+      },
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagAlleUebernehmen": "Alle {n} übernehmen",
-  "@ortVorschlagAlleUebernehmen": {"placeholders": {"n": {"type": "int"}}},
+  "@ortVorschlagAlleUebernehmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagAlleFrageTitel": "Alle Vorschläge übernehmen?",
   "ortVorschlagAlleFrage": "{gruppen} Gruppen mit zusammen {aufnahmen} Aufnahmen bekommen den Ort ihrer Nachbarn. Der Ort bleibt als geerbt gekennzeichnet und lässt sich einzeln wieder entfernen.",
-  "@ortVorschlagAlleFrage": {"placeholders": {"gruppen": {"type": "int"}, "aufnahmen": {"type": "int"}}},
+  "@ortVorschlagAlleFrage": {
+    "placeholders": {
+      "gruppen": {
+        "type": "int"
+      },
+      "aufnahmen": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagWerkzTitel": "Orte von Nachbarn erben",
   "ortVorschlagWerkzText": "Aufnahmen ohne Ort, deren zeitliche Nachbarn alle am selben Ort waren.",
   "infoOrtGeerbt": "Von den Nachbaraufnahmen geerbt",
@@ -4855,30 +5047,75 @@
   "gesundheitSicherungAus": "Die automatische Sicherung ist ausgeschaltet.",
   "gesundheitSicherungNie": "Die automatische Sicherung ist eingerichtet, aber noch nie erfolgreich gelaufen.",
   "gesundheitLetzteSicherung": "Letzter erfolgreicher Lauf: {datum}",
-  "@gesundheitLetzteSicherung": {"placeholders": {"datum": {"type": "String"}}},
+  "@gesundheitLetzteSicherung": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
   "gesundheitSicherungOffen": "{anzahl, plural, =0{Alle aktuellen Aufnahmen sind gesichert.} =1{1 Aufnahme wartet auf die Sicherung.} other{{anzahl} Aufnahmen warten auf die Sicherung.}}",
-  "@gesundheitSicherungOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitSicherungOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitSpeicher": "Speicherbelegung",
   "gesundheitSpeicherWirdGezaehlt": "wird gezählt …",
   "gesundheitMedien": "{fotos} Fotos, {videos} Videos",
-  "@gesundheitMedien": {"placeholders": {"fotos": {"type": "int"}, "videos": {"type": "int"}}},
+  "@gesundheitMedien": {
+    "placeholders": {
+      "fotos": {
+        "type": "int"
+      },
+      "videos": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitModelle": "Lokale Funktionen",
   "gesundheitModelleStand": "{bereit} von {gesamt} lokalen Daten- und KI-Funktionen sind bereit.",
   "gesundheitOrteTitel": "Orte zum Erben",
   "gesundheitOrteOffen": "{anzahl} Aufnahme(n) ohne Ort haben einen verorteten Nachbarn in zeitlicher Nähe.",
-  "@gesundheitOrteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitOrteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitOrteAnsehen": "Vorschläge ansehen",
   "gesundheitGesichterTitel": "Gesichter ohne Person",
   "gesundheitGesichterOffen": "{anzahl} erkannte(s) Gesicht(er) gehören noch zu niemandem. Unter Personen lassen sie sich in Gruppen zuordnen.",
-  "@gesundheitGesichterOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitGesichterOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitGesichterZuordnen": "Zu den Personen",
   "gesundheitDatumTitel": "Fragwürdige Aufnahmedaten",
   "gesundheitDatumOffen": "{anzahl} Aufnahme(n) tragen einen Zeitstempel auf voller Stunde – bei einem echten Auslösezeitpunkt wären das rund zwei. Der Lauf sieht in der Datei nach, was wirklich dort steht.",
-  "@gesundheitDatumOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitDatumOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitDatumPruefen": "Datumsherkunft prüfen",
   "gesundheitVideobilderTitel": "Videos aus einem Standbild",
   "gesundheitVideobilderOffen": "{anzahl} Video(s) sind länger als zehn Sekunden und werden trotzdem nur nach ihrem ersten Standbild durchsucht.",
-  "@gesundheitVideobilderOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitVideobilderOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitVideobilderHolen": "Weitere Standbilder holen",
   "stufeWiedererkennung": "Wiedererkennung",
   "aufgWiedererkennungTitel": "Wer könnte das sein?",
@@ -4887,12 +5124,24 @@
   "werkzAlleVerglichen": "Alle Gesichter sind bereits verglichen.",
   "gesundheitVorschlaegeTitel": "Erkannte Gesichter warten",
   "gesundheitVorschlaegeOffen": "{anzahl} namenlose(s) Gesicht(er) ähneln einer benannten Person genug für einen Vorschlag.",
-  "@gesundheitVorschlaegeOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitVorschlaegeOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitVorschlaegeAnsehen": "Vorschläge ansehen",
   "vorschlaegeTitel": "Wer könnte das sein?",
   "vorschlaegeEinleitung": "Vorgeschlagen, nicht zugeordnet. Sie sehen je Person, was die Erkennung gefunden hat, und entscheiden.",
   "vorschlaegeAnzahl": "{anzahl} Vorschlag/Vorschläge",
-  "@vorschlaegeAnzahl": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@vorschlaegeAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "vorschlaegeKeine": "Zurzeit gibt es keine Vorschläge.",
   "vorschlaegeBeiseite": "Beiseitegelegte einbeziehen",
   "vorschlaegeBeiseiteHinweis": "Sie haben diese Gesichter einmal weggelegt – damals gab es die heutigen Personen zum Teil noch nicht. Hier steht, was die Erkennung darin jetzt findet.",
@@ -4900,40 +5149,109 @@
   "vorschlaegeLaufHinweis": "Noch nichts verglichen. Der Lauf „Wer könnte das sein?“ füllt diese Liste.",
   "gesundheitBeiseiteTitel": "Beiseitegelegte Gesichter, nie verglichen",
   "gesundheitBeiseiteOffen": "{anzahl} beiseitegelegte(s) Gesicht(er) wurden nie mit Ihren benannten Personen verglichen – weggelegt wurde, bevor es diese Personen gab.",
-  "@gesundheitBeiseiteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitBeiseiteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitBeiseiteAnsehen": "Nachsehen",
   "vorschlaegeJetztVergleichen": "Jetzt vergleichen",
   "vorschlaegeBeiseiteNieVerglichen": "{anzahl} beiseitegelegte(s) Gesicht(er) wurden noch nie verglichen. Der Durchgang ändert nichts – er sagt nur, wer darunter zu einer benannten Person passen könnte.",
-  "@vorschlaegeBeiseiteNieVerglichen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@vorschlaegeBeiseiteNieVerglichen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "vorschlaegeLaeuft": "Der Durchgang läuft …",
-  "@gesundheitModelleStand": {"placeholders": {"bereit": {"type": "int"}, "gesamt": {"type": "int"}}},
+  "@gesundheitModelleStand": {
+    "placeholders": {
+      "bereit": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "datenschutzExportTitel": "Datenschutzexport",
   "datenschutzExportText": "JPEG bis 2048 Pixel, ohne EXIF, GPS oder XMP; bekannte Gesichter und erkannte Kennzeichen werden lokal unkenntlich gemacht.",
   "datenschutzAusgelassen": "{anzahl} Aufnahme(n) ausgelassen: Videos und nicht renderbare Bilder lassen sich nicht von ihren Metadaten befreien.",
-  "@datenschutzAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datenschutzAusgelassen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "sicherTeilenTitel": "Verschlüsseltes Austauschpaket",
   "sicherTeilenText": "Originale und Dateinamen in einer passwortgeschützten .pvshare-Datei weitergeben.",
   "sicherTeilenZiel": "Austauschpaket speichern",
   "sicherTeilenDateiname": "PhotoVault-Austausch.pvshare",
   "sicherTeilenFertig": "Verschlüsseltes Austauschpaket gespeichert: {pfad}",
-  "@sicherTeilenFertig": {"placeholders": {"pfad": {"type": "String"}}},
+  "@sicherTeilenFertig": {
+    "placeholders": {
+      "pfad": {
+        "type": "String"
+      }
+    }
+  },
   "sicherTeilenFehler": "Austauschpaket konnte nicht erstellt werden: {fehler}",
-  "@sicherTeilenFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@sicherTeilenFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "einstPrivateMetadatenTitel": "Private Metadaten schützen",
   "einstPrivateMetadatenText": "Entfernt bei neu gesperrten Aufnahmen Dateiname, Datum, Standort, Beschreibung, Schlagwörter und Albumzuordnungen aus der lesbaren Datenbank. Die Angaben werden mit dem Tresorschlüssel verschlüsselt und beim dauerhaften Entsperren wiederhergestellt.",
   "gesundheitBereinigen": "Temporäre Dateien bereinigen",
   "gesundheitBereinigt": "{anzahl, plural, =0{Keine temporären Reste gefunden.} =1{1 temporäre Datei entfernt ({groesse}).} other{{anzahl} temporäre Dateien entfernt ({groesse}).}}",
-  "@gesundheitBereinigt": {"placeholders": {"anzahl": {"type": "int"}, "groesse": {"type": "String"}}},
+  "@gesundheitBereinigt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "groesse": {
+        "type": "String"
+      }
+    }
+  },
   "sicherTeilenImportTitel": "Austauschpaket öffnen",
   "sicherTeilenImportText": "Eine passwortgeschützte .pvshare-Datei prüfen, entschlüsseln und in diese Bibliothek importieren.",
   "sicherTeilenImportPassphrase": "Passphrase des Austauschpakets",
   "sicherTeilenImportFertig": "{importiert} Aufnahmen importiert, {duplikate} Duplikate übersprungen.",
-  "@sicherTeilenImportFertig": {"placeholders": {"importiert": {"type": "int"}, "duplikate": {"type": "int"}}},
+  "@sicherTeilenImportFertig": {
+    "placeholders": {
+      "importiert": {
+        "type": "int"
+      },
+      "duplikate": {
+        "type": "int"
+      }
+    }
+  },
   "sicherTeilenImportFehler": "Austauschpaket konnte nicht geöffnet werden: {fehler}",
-  "@sicherTeilenImportFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@sicherTeilenImportFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "gesundheitModellwechselTitel": "KI-Ergebnisse aktualisieren",
   "gesundheitModellwechselText": "{anzahl, plural, =1{Eine Verarbeitung stammt von einer älteren Fassung des Modells oder der Auswertung.} other{{anzahl} Verarbeitungen stammen von älteren Fassungen der Modelle oder der Auswertung.}} Die bisherigen Ergebnisse bleiben sichtbar, bis Sie die jeweilige Aufgabe vollständig neu ausführen.",
-  "@gesundheitModellwechselText": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitModellwechselText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitModellwechselAufgaben": "Aufgaben öffnen",
   "einstBackupGenerationenTitel": "Wiederherstellungspunkte",
   "einstBackupGenerationenText": "Das automatische Backup bewahrt die sieben jüngsten verschlüsselten Datenbankstände auf. Originale liegen weiterhin nur einmal im gemeinsamen verschlüsselten Datenbestand.",
@@ -4941,7 +5259,13 @@
   "einstBackupAktuellerStand": "Aktueller Stand",
   "einstBackupAktuellerStandText": "Den neuesten Datenbankstand des Backups wiederherstellen.",
   "einstBackupGenerationZeit": "Gesichert am {datum}",
-  "@einstBackupGenerationZeit": {"placeholders": {"datum": {"type": "String"}}},
+  "@einstBackupGenerationZeit": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
   "einstBackupGenerationText": "Datenbankstand; die verschlüsselten Originale werden gemeinsam verwendet.",
   "sicherTeilenAblaufTitel": "Freigabe begrenzen?",
   "sicherTeilenAblaufText": "Optional lehnt Photo Vault dieses Austauschpaket nach einem Datum ab. Die Frist steht verschlüsselt im Paket; sie hält einen ehrlichen Empfänger davon ab, es später noch einzuspielen – gegen jemanden, der das Paket samt Passphrase behält und seine Uhr stellt, schützt sie nicht.",
@@ -4955,15 +5279,42 @@
   "kontaktblattDateiname": "PhotoVault-Kontaktblatt.pdf",
   "kontaktblattLeer": "Keine ausgewählte Aufnahme lässt sich für ein Kontaktblatt darstellen.",
   "kontaktblattFertig": "Kontaktblatt gespeichert: {enthalten} Aufnahmen, {ausgelassen} ausgelassen.",
-  "@kontaktblattFertig": {"placeholders": {"enthalten": {"type": "int"}, "ausgelassen": {"type": "int"}}},
+  "@kontaktblattFertig": {
+    "placeholders": {
+      "enthalten": {
+        "type": "int"
+      },
+      "ausgelassen": {
+        "type": "int"
+      }
+    }
+  },
   "kontaktblattFehler": "Kontaktblatt konnte nicht erstellt werden: {fehler}",
-  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@kontaktblattFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "unerreichbarTitel": "Bibliothek nicht erreichbar",
   "unerreichbarText": "Photo Vault kann die Bibliothek „{name}“ gerade nicht öffnen. Ist das Laufwerk angeschlossen?\n\nUnter macOS muss der Ordner nach dem Wechsel auf die neue Programmkennung außerdem einmal neu freigegeben werden. Dabei bleibt alles, wie es ist – es wird nur der Zugriff erneuert.",
-  "@unerreichbarText": {"placeholders": {"name": {"type": "String"}}},
+  "@unerreichbarText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "unerreichbarFreigeben": "Ordner freigeben …",
   "unerreichbarDialog": "Ordner der Bibliothek „{name}“ wählen",
-  "@unerreichbarDialog": {"placeholders": {"name": {"type": "String"}}},
+  "@unerreichbarDialog": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "unerreichbarStandard": "Standardbibliothek öffnen",
   "unerreichbarNochImmer": "Die Bibliothek ist weiterhin nicht erreichbar.",
   "unerreichbarKeineBibliothek": "In diesem Ordner liegt keine Bibliothek (keine library.sqlite). Bitte den Ordner wählen, in dem die Bibliothek liegt – nicht den darüber oder darunter.",
@@ -4974,17 +5325,41 @@
   "lebensbaumFamilie": "Familie",
   "lebensbaumKeineFamilie": "Für diese Person sind noch keine Verwandten eingetragen. Füge oben rechts Eltern, Geschwister, einen Partner oder Kinder hinzu.",
   "lebensbaumUntertitelFamilie": "Die Familie von {name}",
-  "@lebensbaumUntertitelFamilie": {"placeholders": {"name": {"type": "String"}}},
+  "@lebensbaumUntertitelFamilie": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "lebensbaumStilPergament": "Pergament",
   "lebensbaumStilLandschaft": "Landschaft",
   "lebensbaumStilWappen": "Wappen",
   "lebensbaumStilGold": "Gold",
   "lebensbaumGenerationen": "{anzahl} Generationen",
-  "@lebensbaumGenerationen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@lebensbaumGenerationen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "lebensbaumFamilieOben": "{anzahl, plural, =0{Keine Generation darüber} =1{1 Generation darüber} other{{anzahl} Generationen darüber}}",
-  "@lebensbaumFamilieOben": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@lebensbaumFamilieOben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "lebensbaumFamilieUnten": "{anzahl, plural, =0{Keine Generation darunter} =1{1 Generation darunter} other{{anzahl} Generationen darunter}}",
-  "@lebensbaumFamilieUnten": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@lebensbaumFamilieUnten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "lebensbaumKreisLinie": "Nur die direkte Linie",
   "lebensbaumKreisGeschwister": "Mit Geschwistern",
   "lebensbaumKreisAlle": "Mit angeheirateten Familien",
@@ -5010,19 +5385,59 @@
   "fotobuchSpeichern": "Fotobuch speichern",
   "fotobuchWirdErstellt": "Fotobuch wird erstellt …",
   "fotobuchUmfang": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}",
-  "@fotobuchUmfang": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@fotobuchUmfang": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "fotobuchUmJahr": "um {jahr}",
-  "@fotobuchUmJahr": {"placeholders": {"jahr": {"type": "int", "format": "decimalPattern"}}},
+  "@fotobuchUmJahr": {
+    "placeholders": {
+      "jahr": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "fotobuchFertig": "Fotobuch gespeichert: {datei}, {seiten, plural, =1{1 Seite} other{{seiten} Seiten}}.",
-  "@fotobuchFertig": {"placeholders": {"datei": {"type": "String"}, "seiten": {"type": "int"}}},
+  "@fotobuchFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      },
+      "seiten": {
+        "type": "int"
+      }
+    }
+  },
   "fotobuchGekuerzt": "Ein Fotobuch fasst höchstens {anzahl} Fotos; die ersten {anzahl} sind darin.",
-  "@fotobuchGekuerzt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@fotobuchGekuerzt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "fotobuchUebersprungen": "{anzahl, plural, =1{1 Aufnahme blieb draußen} other{{anzahl} Aufnahmen blieben draußen}} (Videos, gesperrte oder nicht lesbare Dateien).",
-  "@fotobuchUebersprungen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@fotobuchUebersprungen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "fotobuchKeineFotos": "Keine Fotos für ein Fotobuch – Videos und gesperrte Aufnahmen bleiben draußen.",
   "fotobuchAbgebrochen": "Fotobuch abgebrochen.",
   "fotobuchFehler": "Das Fotobuch ließ sich nicht erstellen: {fehler}",
-  "@fotobuchFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@fotobuchFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "suchePlatzhalterTranskript": "z.B. „Geburtstag“, „Hamburg“ …",
   "suchoptTypTranskript": "Gesprochenes (Videos)",
   "suchoptNachTranskript": "Suche nach Gesprochenem in Videos",
@@ -5043,45 +5458,135 @@
   "lebensbaumPortraitsAn": "Porträts zeigen",
   "lebensbaumPortraitsAus": "Porträts ausblenden",
   "lebensbaumTitel": "Stammbaum der Familie {name}",
-  "@lebensbaumTitel": {"placeholders": {"name": {"type": "String"}}},
+  "@lebensbaumTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "lebensbaumTitelOhneName": "Stammbaum",
   "lebensbaumTitelKurz": "Familie {name}",
-  "@lebensbaumTitelKurz": {"placeholders": {"name": {"type": "String"}}},
+  "@lebensbaumTitelKurz": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "lebensbaumUntertitelVorfahren": "Die Vorfahren von {name}",
-  "@lebensbaumUntertitelVorfahren": {"placeholders": {"name": {"type": "String"}}},
+  "@lebensbaumUntertitelVorfahren": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "lebensbaumUntertitelNachkommen": "Die Nachkommen von {name}",
-  "@lebensbaumUntertitelNachkommen": {"placeholders": {"name": {"type": "String"}}},
+  "@lebensbaumUntertitelNachkommen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "lebensbaumKeineVorfahren": "Für diese Person sind noch keine Vorfahren eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts einen Elternteil hinzu.",
   "lebensbaumKeineNachkommen": "Für diese Person sind noch keine Kinder eingetragen. Der Lebensbaum wächst aus ihr nach oben – füge oben rechts ein Kind hinzu.",
   "lebensbaumAusgelassen": "{anzahl} weitere Personen haben im Bild keinen Platz mehr. Weniger Generationen zeigen, oder eine Person darüber antippen, damit sie an den Stamm rückt.",
-  "@lebensbaumAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@lebensbaumAusgelassen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "familientageTitel": "Familientage",
   "familientagHeute": "Heute",
   "familientagMorgen": "Morgen",
   "familientagInTagen": "In {tage} Tagen",
-  "@familientagInTagen": {"placeholders": {"tage": {"type": "int"}}},
+  "@familientagInTagen": {
+    "placeholders": {
+      "tage": {
+        "type": "int"
+      }
+    }
+  },
   "familientagGeburtstag": "{name} wird {jahre}",
-  "@familientagGeburtstag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@familientagGeburtstag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "familientagGeburtstagVerstorben": "{name} wäre {jahre} geworden",
-  "@familientagGeburtstagVerstorben": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@familientagGeburtstagVerstorben": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "familientagTodestag": "{jahre, plural, =1{{name} starb vor einem Jahr} other{{name} starb vor {jahre} Jahren}}",
-  "@familientagTodestag": {"placeholders": {"name": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@familientagTodestag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "familientagHochzeitstag": "{jahre}. Hochzeitstag von {namen}",
-  "@familientagHochzeitstag": {"placeholders": {"namen": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@familientagHochzeitstag": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "entwLupe": "Lupe (dreifach)",
   "diashowAlsVideo": "Als Video speichern",
   "diashowSpeichern": "Diashow als Video speichern",
   "diashowWirdErstellt": "Video wird erstellt …",
   "diashowUmfang": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}",
-  "@diashowUmfang": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@diashowUmfang": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "diashowKeineFotos": "Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.",
   "jahresrueckblickTitel": "Dein Jahr {jahr}",
-  "@jahresrueckblickTitel": {"placeholders": {"jahr": {"type": "int"}}},
+  "@jahresrueckblickTitel": {
+    "placeholders": {
+      "jahr": {
+        "type": "int"
+      }
+    }
+  },
   "jahresrueckblickUntertitel": "In Zahlen und Bildern – mit Personen, Reisen und den besten Fotos",
   "jahresrueckblickVorjahr": "Vorjahr",
   "jahresrueckblickFolgejahr": "Folgejahr",
   "jahresrueckblickLeer": "Aus {jahr} gibt es keine Aufnahmen.",
-  "@jahresrueckblickLeer": {"placeholders": {"jahr": {"type": "int"}}},
+  "@jahresrueckblickLeer": {
+    "placeholders": {
+      "jahr": {
+        "type": "int"
+      }
+    }
+  },
   "jahresrueckblickFotos": "Fotos",
   "jahresrueckblickVideos": "Videos",
   "jahresrueckblickTage": "Tage mit Fotos",
@@ -5092,26 +5597,80 @@
   "jahresrueckblickPersonen": "Am häufigsten dabei",
   "jahresrueckblickReisen": "Reisen",
   "jahresrueckblickAufnahmen": "{anzahl, plural, =1{1 Aufnahme} other{{anzahl} Aufnahmen}}",
-  "@jahresrueckblickAufnahmen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@jahresrueckblickAufnahmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "jahresrueckblickUmfang": "{fotos} Fotos an {tage} Tagen",
-  "@jahresrueckblickUmfang": {"placeholders": {"fotos": {"type": "int"}, "tage": {"type": "int"}}},
+  "@jahresrueckblickUmfang": {
+    "placeholders": {
+      "fotos": {
+        "type": "int"
+      },
+      "tage": {
+        "type": "int"
+      }
+    }
+  },
   "modellDdcolorTitel": "Kolorieren (DDColor)",
   "modellDdcolorText": "Färbt alte Schwarzweiss-Fotos ein. Die Farbe rät das Modell aus dem, was im Bild zu sehen ist; die Schärfe bleibt die des Originals. Rund 130 MB, ein Foto dauert etwa eine Sekunde.",
   "modellDdcolorLizenz": "Apache 2.0 (DDColor, Kang u. a.), ONNX-Export von edgetools",
   "aufgDdcolorModell": "das DDColor-Modell",
   "bearbKolorieren": "Einfärben",
   "bearbKolorierenFehler": "Einfärben fehlgeschlagen: {grund}",
-  "@bearbKolorierenFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "@bearbKolorierenFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "auswRueckFavorit": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} als Favorit markiert",
-  "@auswRueckFavorit": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@auswRueckFavorit": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "auswRueckBewertung": "Bewertung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt",
-  "@auswRueckBewertung": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@auswRueckBewertung": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "auswRueckFarbe": "Farbmarkierung für {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} gesetzt",
-  "@auswRueckFarbe": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@auswRueckFarbe": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "auswRueckSchlagwort": "„{tag}“ an {anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} vergeben",
-  "@auswRueckSchlagwort": {"placeholders": {"tag": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "@auswRueckSchlagwort": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "auswRueckAlbum": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} ins Album gelegt",
-  "@auswRueckAlbum": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@auswRueckAlbum": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "suchOhnePerson": "ohne Person",
   "suchOhneSchlagwort": "ohne Schlagwort",
   "suchoptPersonenAusschliessen": "Ein Tipp wählt eine Person, ein zweiter schließt sie aus („ohne“), ein dritter hebt beides auf.",
@@ -5120,18 +5679,42 @@
   "soziogrammLeer": "Noch keine Verbindungen: Dafür müssen zwei benannte Personen auf mindestens zwei Fotos gemeinsam zu sehen sein.",
   "soziogrammStaerkste": "Die engsten Verbindungen",
   "soziogrammVerbindungenVon": "Mit {name} auf Fotos",
-  "@soziogrammVerbindungenVon": {"placeholders": {"name": {"type": "String"}}},
+  "@soziogrammVerbindungenVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "soziogrammGemeinsam": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}}",
-  "@soziogrammGemeinsam": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@soziogrammGemeinsam": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "soziogrammHinweis": "Je dicker die Linie, desto mehr gemeinsame Fotos. Ein Tipp auf eine Person zeigt ihre Verbindungen, ein Tipp auf eine Verbindung die gemeinsamen Fotos. Gezeigt werden die dreißig Personen mit den meisten Fotos.",
   "dokumenteTitel": "Ausweise und Karten",
   "dokumenteEinleitung": "Diese Fotos zeigen dem erkannten Text nach einen Ausweis, einen Pass, einen Führerschein oder eine Bankkarte. Im gesperrten Ordner sind sie verschlüsselt und nur mit PIN zu sehen. Ein Tipp wählt ab, ein Doppeltipp öffnet das Foto.",
   "dokumenteKeine": "Unter den Fotos mit erkanntem Text ist kein Ausweis und keine Karte, die offen liegt.",
   "dokumenteSperren": "{anzahl, plural, =1{1 Foto sperren} other{{anzahl} Fotos sperren}}",
-  "@dokumenteSperren": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@dokumenteSperren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "dokumenteVerwerfen": "Nicht mehr vorschlagen",
   "dokumenteGesperrt": "{anzahl, plural, =1{1 Foto liegt jetzt im gesperrten Ordner} other{{anzahl} Fotos liegen jetzt im gesperrten Ordner}}",
-  "@dokumenteGesperrt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@dokumenteGesperrt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "dokumentArtReisepass": "Reisepass",
   "dokumentArtAusweis": "Ausweis",
   "dokumentArtFuehrerschein": "Führerschein",
@@ -5142,11 +5725,23 @@
   "dokumentGrundSchluesselwort": "Aufdruck",
   "gesundheitDokumenteTitel": "Ausweise liegen offen",
   "gesundheitDokumenteOffen": "{anzahl, plural, =1{1 Foto zeigt dem Text nach einen Ausweis oder eine Karte und liegt nicht im gesperrten Ordner.} other{{anzahl} Fotos zeigen dem Text nach einen Ausweis oder eine Karte und liegen nicht im gesperrten Ordner.}}",
-  "@gesundheitDokumenteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitDokumenteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitDokumenteAnsehen": "Ansehen",
   "viewerVideobildSichern": "Dieses Bild als Foto sichern",
   "viewerVideobildGesichert": "Bild bei {stelle} als Foto gesichert – mit Datum und Ort des Videos",
-  "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
+  "@viewerVideobildGesichert": {
+    "placeholders": {
+      "stelle": {
+        "type": "String"
+      }
+    }
+  },
   "viewerVideobildSchonDa": "Genau dieses Bild ist schon als Foto gesichert.",
   "viewerVideobildFehler": "Aus dem Video ließ sich an dieser Stelle kein Bild greifen.",
   "datierungTitel": "Alte Fotos zeitlich einordnen",
@@ -5154,17 +5749,53 @@
   "datierungOhneModell": "Für die Schätzung braucht es das Modell der Bildsuche (CLIP). Es lässt sich unter Einstellungen → KI-Modelle laden.",
   "datierungKeine": "Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.",
   "datierungUm": "um {jahr}",
-  "@datierungUm": {"placeholders": {"jahr": {"type": "String"}}},
+  "@datierungUm": {
+    "placeholders": {
+      "jahr": {
+        "type": "String"
+      }
+    }
+  },
   "datierungSpanne": "{von} bis {bis}",
-  "@datierungSpanne": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "@datierungSpanne": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
   "datierungUnsicher": "zu unsicher ({von} bis {bis})",
-  "@datierungUnsicher": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "@datierungUnsicher": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
   "datierungUebernehmen": "Übernehmen",
   "datierungIstUebernommen": "Übernommen",
   "datierungAlleUebernehmen": "{anzahl, plural, =1{1 Schätzung übernehmen} other{{anzahl} Schätzungen übernehmen}}",
-  "@datierungAlleUebernehmen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datierungAlleUebernehmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "datierungUebernommen": "{anzahl, plural, =1{1 Foto zeitlich eingeordnet} other{{anzahl} Fotos zeitlich eingeordnet}}",
-  "@datierungUebernommen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datierungUebernommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "werkzDatierungText": "Schätzt für eingescannte und undatierte Fotos das Jahrzehnt – aus der Bildsuche, ohne neues Modell.",
   "diashowMusikTitel": "Musik unterlegen?",
   "diashowMusikText": "Ein Musikstück von der Platte läuft unter der Diashow – wiederholt, wenn es kürzer ist, sonst mit dem Video beendet, am Ende ausgeblendet. Das Stück wird nur in das Video geschrieben, nicht in die Bibliothek übernommen.",
@@ -5176,21 +5807,57 @@
   "erinnerungenLetzteTage": "Die letzten zwei Wochen",
   "erinnerungenKeine": "An keinem der letzten vierzehn Tage gibt es Fotos aus früheren Jahren.",
   "erinnerungenTagVorJahren": "{datum} · {jahre, plural, =1{vor einem Jahr} other{vor {jahre} Jahren}}",
-  "@erinnerungenTagVorJahren": {"placeholders": {"datum": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@erinnerungenTagVorJahren": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "erinnerungenMerken": "Merken",
   "erinnerungenVergessen": "Nicht mehr merken",
   "erinnerungenSchoensteReisen": "Die schönsten Reisen",
   "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 Lieblingsfoto} other{{anzahl} Lieblingsfotos}}",
-  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "@erinnerungenReise": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "jahr": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "karteAusschnittListe": "Fotos im Ausschnitt",
   "karteImAusschnitt": "{anzahl, plural, =0{Keine Fotos im Ausschnitt} =1{1 Foto im Ausschnitt} other{{anzahl} Fotos im Ausschnitt}}",
-  "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@karteImAusschnitt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "karteAusschnittLeer": "Hier liegt kein Foto. Die Liste folgt der Karte, sobald sie stillsteht.",
   "bearbKratzerSuchen": "Kratzer und Staub suchen",
   "bearbRadieren": "Radierer: aus dem Vorschlag herausnehmen",
   "bearbKratzerKeine": "Keine Kratzer und kein Staub gefunden.",
   "bearbKratzerGefunden": "Vorschlag: {kratzer, plural, =0{keine Kratzer} =1{1 Kratzer} other{{kratzer} Kratzer}}, {staub, plural, =0{kein Staub} =1{1 Staubkorn} other{{staub} Staubkörner}}. Prüfen, Falsches radieren, dann anwenden.",
-  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}},
+  "@bearbKratzerGefunden": {
+    "placeholders": {
+      "kratzer": {
+        "type": "int"
+      },
+      "staub": {
+        "type": "int"
+      }
+    }
+  },
   "sucheHerkunft": "Herkunft",
   "sucheHerkunftAlle": "Alle",
   "sucheHerkunftKamera": "Aus einer Kamera",
@@ -5200,9 +5867,21 @@
   "modellKratzerText": "Findet Kratzer, Knicke und Risse in eingescannten Fotos – im Bildeditor unter „Objekt entfernen“, gefüllt wird mit LaMa. Ohne dieses Modell sucht die App nur nach langen geraden Linien und Staub. 75 MB.",
   "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), nach ONNX umgewandelt",
   "bearbKratzerModellGefunden": "Vorschlag des Kratzer-Modells: {stellen, plural, =1{1 Stelle} other{{stellen} Stellen}}. Prüfen, Falsches radieren, dann anwenden.",
-  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}},
+  "@bearbKratzerModellGefunden": {
+    "placeholders": {
+      "stellen": {
+        "type": "int"
+      }
+    }
+  },
   "aufgNeuSeitLauf": "Neu seit dem letzten Lauf: {anzahl}",
-  "@aufgNeuSeitLauf": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@aufgNeuSeitLauf": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "aufgAmServer": "Diese Bibliothek ist mit einem Server verbunden – dort läuft diese Arbeit.",
   "nurOhneServer": "Geht in einer mit dem Server verbundenen Bibliothek noch nicht: Es ändert Dateien, und die liegen beim Server.",
   "serverTitel": "Server",
@@ -5210,16 +5889,49 @@
   "serverErklaerung": "Mit einem eigenen Photo-Vault-Server liegt die Bibliothek dort, und dieser Rechner arbeitet mit einer Kopie: Änderungen gehen zum Server, auch nach einer Zeit ohne Verbindung. Auswerten erledigt der Server, Originale kommen, wenn sie gebraucht werden.",
   "serverVerbinden": "Mit einem Server verbinden …",
   "serverVerbundenMit": "Verbunden mit {ort}",
-  "@serverVerbundenMit": {"placeholders": {"ort": {"type": "String"}}},
+  "@serverVerbundenMit": {
+    "placeholders": {
+      "ort": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoGeraet": "Konto {konto} · Gerät {geraet}",
-  "@serverKontoGeraet": {"placeholders": {"konto": {"type": "String"}, "geraet": {"type": "String"}}},
+  "@serverKontoGeraet": {
+    "placeholders": {
+      "konto": {
+        "type": "String"
+      },
+      "geraet": {
+        "type": "String"
+      }
+    }
+  },
   "serverAbgeglichen": "Abgeglichen",
   "serverOffline": "Server nicht erreichbar – {n} Änderungen warten",
-  "@serverOffline": {"placeholders": {"n": {"type": "int"}}},
+  "@serverOffline": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverSendet": "{n} Änderungen gehen zum Server",
-  "@serverSendet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverSendet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverAbgelehnt": "{n} Änderungen hat der Server abgelehnt; sie sind zurückgenommen.",
-  "@serverAbgelehnt": {"placeholders": {"n": {"type": "int"}}},
+  "@serverAbgelehnt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverAbgemeldet": "Dieses Gerät ist beim Server abgemeldet. Neu verbinden, um weiterzuarbeiten.",
   "serverTrennen": "Vom Server trennen …",
   "serverTrennenTitel": "Vom Server trennen?",
@@ -5242,19 +5954,55 @@
   "serverSicherungTitel": "Sicherung des Servers",
   "serverSicherungAus": "Auf dem Server ist kein Sicherungsziel eingestellt (PV_SICHERUNG).",
   "serverSicherungNichtEingerichtet": "Das Sicherungsziel {ziel} ist eingestellt, die Sicherung aber noch nicht eingerichtet.",
-  "@serverSicherungNichtEingerichtet": {"placeholders": {"ziel": {"type": "String"}}},
+  "@serverSicherungNichtEingerichtet": {
+    "placeholders": {
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungEinrichten": "Sicherung einrichten …",
   "serverSicherungEinrichtenText": "Die Sicherung wird mit dieser Passphrase verschlüsselt. Ohne sie lässt sie sich nicht wiederherstellen – bitte sicher aufbewahren, nicht auf dem Server. Sie lässt sich später nicht ändern.",
   "serverSicherungPassphrase": "Passphrase",
   "serverSicherungOk": "Letzte Sicherung: {wann}, {neu, plural, =0{nichts Neues} =1{1 neue Datei} other{{neu} neue Dateien}}. Nächste: {naechste}.",
-  "@serverSicherungOk": {"placeholders": {"wann": {"type": "String"}, "neu": {"type": "int"}, "naechste": {"type": "String"}}},
+  "@serverSicherungOk": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      },
+      "neu": {
+        "type": "int"
+      },
+      "naechste": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungNochNie": "Noch nicht gelaufen. Nächste: {naechste}.",
-  "@serverSicherungNochNie": {"placeholders": {"naechste": {"type": "String"}}},
+  "@serverSicherungNochNie": {
+    "placeholders": {
+      "naechste": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungLaeuft": "Die Sicherung läuft gerade …",
   "serverSicherungFehler": "Die letzte Sicherung ist gescheitert: {grund}",
-  "@serverSicherungFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "@serverSicherungFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungVeraltet": "Seit {wann} keine gelungene Sicherung.",
-  "@serverSicherungVeraltet": {"placeholders": {"wann": {"type": "String"}}},
+  "@serverSicherungVeraltet": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungVeraltetNie": "Seit dem Einrichten keine gelungene Sicherung.",
   "serverSicherungZielFehlt": "Am Sicherungsziel fehlt die Kennmarke – ist das NAS eingehängt?",
   "serverSicherungZielNeu": "Ziel neu einrichten …",
@@ -5263,18 +6011,45 @@
   "serverSicherungGestartet": "Die Sicherung läuft.",
   "serverSicherungWarnung": "Die Sicherung des Servers braucht Aufmerksamkeit (Einstellungen → Server).",
   "serverSpeicherStand": "Speicher auf dem Server: {frei} frei von {gesamt}",
-  "@serverSpeicherStand": {"placeholders": {"frei": {"type": "String"}, "gesamt": {"type": "String"}}},
+  "@serverSpeicherStand": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      }
+    }
+  },
   "serverSpeicherKnapp": "Der Speicher des Servers wird knapp: noch {frei} frei.",
-  "@serverSpeicherKnapp": {"placeholders": {"frei": {"type": "String"}}},
+  "@serverSpeicherKnapp": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      }
+    }
+  },
   "serverSpeicherVoll": "Der Speicher des Servers ist voll. Neue Fotos nimmt er erst wieder an, wenn Platz frei ist.",
   "serverErstesTitel": "Erstes Konto anlegen",
   "serverErstesText": "Dieser Server hat noch kein Konto. Mit dem Namen „{name}“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.",
-  "@serverErstesText": {"placeholders": {"name": {"type": "String"}}},
+  "@serverErstesText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverPasswortWiederholen": "Passwort wiederholen",
   "serverErstesAnlegen": "Konto anlegen und anmelden",
   "serverPasswortUngleich": "Die beiden Passwörter stimmen nicht überein.",
   "serverPasswortZuKurz": "Das Passwort braucht mindestens {n} Zeichen.",
-  "@serverPasswortZuKurz": {"placeholders": {"n": {"type": "int"}}},
+  "@serverPasswortZuKurz": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverNameUngueltig": "Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.",
   "serverErstesNurHeimnetz": "Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.",
   "serverSchonEingerichtet": "Der Server hat inzwischen ein Konto. Bitte damit anmelden.",
@@ -5284,37 +6059,85 @@
   "serverKontoVerwalter": "Verwalter",
   "serverKontoAlsVerwalter": "Darf ebenfalls Konten verwalten",
   "serverKontoGeraete": "{n, plural, =0{kein Gerät} =1{1 Gerät} other{{n} Geräte}}",
-  "@serverKontoGeraete": {"placeholders": {"n": {"type": "int"}}},
+  "@serverKontoGeraete": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverKontoMitTotp": "mit TOTP",
   "serverKontoOhneTotp": "ohne TOTP",
   "serverKontoGesperrt": "gesperrt nach Fehlversuchen",
   "serverKontoDu": "dein Konto",
   "serverKontoPasswortSetzen": "Passwort neu setzen …",
   "serverKontoPasswortSetzenText": "Alle Geräte von „{name}“ werden dabei abgemeldet.",
-  "@serverKontoPasswortSetzenText": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoPasswortSetzenText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoTotpZuruecksetzen": "TOTP zurücksetzen",
   "serverKontoTotpZurueckgesetzt": "„{name}“ richtet TOTP bei der nächsten Anmeldung neu ein.",
-  "@serverKontoTotpZurueckgesetzt": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoTotpZurueckgesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoEntsperren": "Entsperren",
   "serverKontoEntfernen": "Entfernen …",
   "serverKontoEntfernenTitel": "„{name}“ entfernen?",
-  "@serverKontoEntfernenTitel": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoEntfernenTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoEntfernenText": "Das Konto und seine Geräte werden entfernt. Die Bibliothek mit allen Fotos bleibt auf dem Server liegen: Sie wird beiseitegelegt, nicht gelöscht, und lässt sich nur dort von Hand löschen.",
   "serverKontoErledigt": "Erledigt.",
   "serverRechenhilfe": "Für den Server mitrechnen",
   "serverRechenhilfeText": "Solange Photo Vault hier offen ist, übernimmt dieser Rechner Bildanalyse, Texterkennung und Bildbeschreibung für den Server – mit den Modellen, die hier installiert sind. Eingetragen wird auf dem Server.",
   "serverRechenhilfeRechnet": "Rechnet – {n, plural, =1{1 Ergebnis} other{{n} Ergebnisse}} geliefert",
-  "@serverRechenhilfeRechnet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeRechnet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverRechenhilfeWartet": "Wartet auf Arbeit – {n, plural, =1{1 Ergebnis} other{{n} Ergebnisse}} geliefert",
-  "@serverRechenhilfeWartet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeWartet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverRechenhilfeKeinModell": "Hier ist kein Modell installiert, mit dem dieser Rechner dem Server helfen könnte.",
   "serverRechenhilfeOffline": "Der Server ist nicht erreichbar.",
   "serverRechenhilfeServerZuAlt": "Der Server kann das noch nicht – bitte den Server aktualisieren.",
   "serverRechenhilfeAusgelassen": "{n, plural, =1{Eine Aufnahme ließ} other{{n} Aufnahmen ließen}} sich hier nicht rechnen; die übernimmt der Server.",
-  "@serverRechenhilfeAusgelassen": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeAusgelassen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverFalsch": "Name, Passwort oder Code stimmt nicht.",
   "serverGebremst": "Zu viele Fehlversuche – bitte in {sekunden} Sekunden erneut versuchen.",
-  "@serverGebremst": {"placeholders": {"sekunden": {"type": "int"}}},
+  "@serverGebremst": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
   "serverCodeTitel": "Code aus der Authenticator-App",
   "serverCodeHinweis": "Sechs Ziffern – oder einer der Wiederherstellungscodes.",
   "serverBestaetigen": "Bestätigen",
@@ -5328,10 +6151,22 @@
   "serverWahlTitel": "Welche Bibliothek soll es sein?",
   "serverServerBib": "Die Bibliothek des Servers hier öffnen",
   "serverServerBibText": "{n} Aufnahmen. Auf diesem Rechner entsteht eine Kopie; Originale kommen, wenn sie gebraucht werden.",
-  "@serverServerBibText": {"placeholders": {"n": {"type": "int"}}},
+  "@serverServerBibText": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverUmziehen": "Diese Bibliothek auf den Server umziehen",
   "serverUmziehenText": "{n} Aufnahmen samt allen Dateien. Danach ist diese Bibliothek die Kopie der Bibliothek auf dem Server. Währenddessen bitte nichts ändern.",
-  "@serverUmziehenText": {"placeholders": {"n": {"type": "int"}}},
+  "@serverUmziehenText": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverUmziehenNichtLeer": "Geht nur, solange die Bibliothek auf dem Server leer ist.",
   "serverUmziehenSchonVerbunden": "Diese Bibliothek ist schon mit einem Server verbunden.",
   "serverLaedt": "Die Bibliothek kommt vom Server …",

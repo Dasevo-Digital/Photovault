@@ -21,7 +21,7 @@ extension BearbeitungsAbfragen on AppDatabase {
   /// Stand wieder ganz normal hier in der Historie.
   Future<void> saveDevelopResult(
     String assetId, {
-    required DevelopSettingsCompanion settings,
+    required Insertable<DevelopSettingsData> settings,
     required String developedRelativePath,
   }) => transaction(() async {
     final previous = await (select(

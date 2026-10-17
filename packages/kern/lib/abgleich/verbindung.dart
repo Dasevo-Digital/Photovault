@@ -151,5 +151,32 @@ class Serververbindung {
     await teil.rename(ziel.path);
   }
 
+  /// Legt [datei] auf dem Server unter [pfad] ab (`PUT`), als Ganzes –
+  /// für abgeleitete Dateien, die klein genug sind, dass ein Abbruch nur
+  /// einen neuen Versuch kostet.
+  Future<void> legeAb(String pfad, File datei) async {
+    final http.StreamedResponse r;
+    try {
+      final anfrage = http.StreamedRequest('PUT', adresse(pfad))
+        ..headers.addAll(_kopf)
+        ..headers['content-type'] = 'application/octet-stream'
+        ..contentLength = await datei.length();
+      unawaited(
+        datei.openRead().pipe(anfrage.sink).catchError((Object e) {
+          anfrage.sink.addError(e);
+        }),
+      );
+      r = await _http.send(anfrage).timeout(const Duration(minutes: 5));
+    } on SocketException catch (e) {
+      throw KeineVerbindung(e);
+    } on TimeoutException catch (e) {
+      throw KeineVerbindung(e);
+    } on http.ClientException catch (e) {
+      throw KeineVerbindung(e);
+    }
+    final text = await r.stream.bytesToString();
+    if (r.statusCode != 204) throw Serverfehler(r.statusCode, text);
+  }
+
   void schliesse() => _http.close();
 }

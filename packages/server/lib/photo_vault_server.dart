@@ -2,6 +2,7 @@
 /// mit demselben Kern wie die App.
 library;
 
+export 'src/abgleich_api.dart' show abgeleiteteOrdner, hoechstensAbgeleitet;
 export 'src/absender.dart' show Absender;
 export 'src/api.dart' show baueApi, protokollFassung;
 export 'src/auswertungsdienst.dart' show Auswertungsdienst, Auswertungsstand;

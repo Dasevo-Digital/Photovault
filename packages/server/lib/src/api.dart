@@ -152,6 +152,10 @@ Handler baueApi({
     ..post('/api/v1/abgleich/zeilen', abgleich.zeilen)
     ..get('/api/v1/abgleich/abzug', abgleich.abzug)
     ..get('/api/v1/dateien/<pfad|.+>', abgleich.datei)
+    ..put(
+      '/api/v1/dateien/<pfad|.+>',
+      wennPlatz((Request r) => abgleich.dateiAblegen(r, r.params['pfad']!)),
+    )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
     ..get('/api/v1/alben', api.alben)

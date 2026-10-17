@@ -175,6 +175,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'ortsmarkeSetzen': OrtsmarkeSetzen.aus,
   'ortsmarkeLoeschen': OrtsmarkeLoeschen.aus,
   'entwicklungZuruecksetzen': EntwicklungZuruecksetzen.aus,
+  'entwicklungSpeichern': EntwicklungSpeichern.aus,
   'maskeneinstellungAendern': MaskeneinstellungAendern.aus,
 };
 

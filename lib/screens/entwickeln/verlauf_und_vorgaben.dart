@@ -380,7 +380,9 @@ mixin _Verlauf on _EntwickelnBasis {
     setState(() => _saving = true);
     final adjustments = _currentAdjustments();
     final maskLayers = _currentMaskLayers();
-    final sourceFile = widget.paths.absolute(widget.asset.relativePath);
+    // In einer verbundenen Kopie liegt das Original erst hier, wenn es
+    // jemand geholt hat (Issue #109).
+    final sourceFile = await widget.paths.bereit(widget.asset.relativePath);
     final bytes = await NativeImageConverter.developImage(
       sourceFile,
       adjustments: adjustments,
@@ -402,42 +404,56 @@ mixin _Verlauf on _EntwickelnBasis {
     final targetFile = widget.paths.absolute(developedRelativePath);
     await targetFile.parent.create(recursive: true);
     await targetFile.writeAsBytes(bytes);
+    // Erst die Datei zum Server, dann der Befehl, der auf sie zeigt –
+    // nimmt der Server sie nicht, bleibt alles beim Alten.
+    try {
+      await widget.paths.abgelegt(developedRelativePath);
+    } catch (e) {
+      if (await targetFile.exists()) await targetFile.delete();
+      if (mounted) {
+        setState(() => _saving = false);
+        melde.fehler(AppTexte.of(context).entwSpeichernServerFehlt);
+      }
+      return;
+    }
 
     // Derselbe Pfad wie beim vorigen Entwickeln – Flutter merkt sich
     // dekodierte Bilder danach. Ohne dieses Vergessen zeigt die
     // Vollbildansicht das Ergebnis von vorhin.
     vergissAlleBilder();
 
-    await widget.db.saveDevelopResult(
-      widget.asset.id,
-      settings: DevelopSettingsCompanion.insert(
-        assetId: widget.asset.id,
-        exposure: Value(adjustments.exposure),
-        temperature: Value(adjustments.temperature),
-        tint: Value(adjustments.tint),
-        contrast: Value(adjustments.contrast),
-        shadows: Value(adjustments.shadows),
-        highlights: Value(adjustments.highlights),
-        sharpness: Value(adjustments.sharpness),
-        noiseReduction: Value(adjustments.noiseReduction),
-        clarity: Value(adjustments.clarity),
-        vignette: Value(adjustments.vignette),
-        lutPath: Value(_lutPfad),
-        lutStrength: Value(adjustments.lutStrength),
-        lensCorrectionEnabled: Value(adjustments.lensCorrectionEnabled),
-        toneCurveJson: Value(
-          adjustments.toneCurve.istNeutral
-              ? null
-              : adjustments.toneCurve.encode(),
+    await widget.db.fuehreAus(
+      EntwicklungSpeichern(
+        widget.asset.id,
+        DevelopSettingsCompanion.insert(
+          assetId: widget.asset.id,
+          exposure: Value(adjustments.exposure),
+          temperature: Value(adjustments.temperature),
+          tint: Value(adjustments.tint),
+          contrast: Value(adjustments.contrast),
+          shadows: Value(adjustments.shadows),
+          highlights: Value(adjustments.highlights),
+          sharpness: Value(adjustments.sharpness),
+          noiseReduction: Value(adjustments.noiseReduction),
+          clarity: Value(adjustments.clarity),
+          vignette: Value(adjustments.vignette),
+          lutPath: Value(_lutPfad),
+          lutStrength: Value(adjustments.lutStrength),
+          lensCorrectionEnabled: Value(adjustments.lensCorrectionEnabled),
+          toneCurveJson: Value(
+            adjustments.toneCurve.istNeutral
+                ? null
+                : adjustments.toneCurve.encode(),
+          ),
+          colorMixerJson: Value(
+            adjustments.colorMixer.istNeutral
+                ? null
+                : adjustments.colorMixer.encode(),
+          ),
+          updatedAt: DateTime.now(),
         ),
-        colorMixerJson: Value(
-          adjustments.colorMixer.istNeutral
-              ? null
-              : adjustments.colorMixer.encode(),
-        ),
-        updatedAt: DateTime.now(),
+        developedRelativePath,
       ),
-      developedRelativePath: developedRelativePath,
     );
 
     // Nur die gerade ausgewählte Maske kann seit dem letzten Speichern

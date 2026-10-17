@@ -230,7 +230,66 @@ class Abgleichsapi {
     }
     return dateiAntwort(anfrage, ziel);
   }
+
+  /// Ein Gerät legt eine abgeleitete Datei ab – das Bild einer Entwicklung,
+  /// eine Maske, einen Schnitt (Issue #109). Erst die Datei, dann der
+  /// Befehl, der auf sie zeigt: So sieht kein anderes Gerät je einen Pfad,
+  /// hinter dem nichts liegt. Nur in die Ordner aus [abgeleiteteOrdner],
+  /// nie darüber hinaus; geschrieben wird neben das Ziel und dann getauscht.
+  Future<Response> dateiAblegen(Request anfrage, String pfad) async {
+    final b = await _bib(anfrage);
+    final relativ = Uri.decodeComponent(pfad);
+    final teile = p.posix.split(relativ);
+    final ziel = File(p.normalize(p.join(b.pfade.root.path, relativ)));
+    if (relativ.isEmpty ||
+        p.isAbsolute(relativ) ||
+        teile.length != 2 ||
+        !abgeleiteteOrdner.contains(teile.first) ||
+        teile.last.startsWith('.') ||
+        !p.isWithin(b.pfade.root.path, ziel.path) ||
+        !p.equals(ziel.parent.path, p.join(b.pfade.root.path, teile.first))) {
+      return _json({'fehler': 'dorthin legt der Server nichts'}, status: 403);
+    }
+    final laenge = int.tryParse(anfrage.headers['content-length'] ?? '');
+    if (laenge == null || laenge <= 0) {
+      return _json({'fehler': 'Content-Length fehlt'}, status: 411);
+    }
+    if (laenge > hoechstensAbgeleitet) {
+      return _json({'fehler': 'zu gross'}, status: 413);
+    }
+    await ziel.parent.create(recursive: true);
+    final teil = File('${ziel.path}.teil');
+    final aus = teil.openWrite();
+    var bytes = 0;
+    try {
+      await for (final stueck in anfrage.read()) {
+        bytes += stueck.length;
+        if (bytes > laenge) {
+          throw const FormatException('mehr als angekündigt');
+        }
+        aus.add(stueck);
+      }
+      await aus.close();
+      if (bytes != laenge) {
+        throw const FormatException('weniger als angekündigt');
+      }
+      await teil.rename(ziel.path);
+    } catch (e) {
+      await aus.close().catchError((_) {});
+      if (await teil.exists()) await teil.delete();
+      return _json({'fehler': 'unvollständig: $e'}, status: 400);
+    }
+    return Response(204);
+  }
 }
+
+/// Mehr nimmt der Server als abgeleitete Datei nicht an – ein geschnittenes
+/// Video ist das Grösste, was hier kommt.
+const hoechstensAbgeleitet = 2 * 1024 * 1024 * 1024;
+
+/// Wohin ein Gerät Dateien legen darf: nur Abgeleitetes. Originale kommen
+/// über den Import, Miniaturen und Vorschauen rechnet der Server selbst.
+const abgeleiteteOrdner = {'developed', 'masks', 'trimmed', 'restored'};
 
 /// Was ein Befehl zurückgibt, als JSON.
 Object? ergebnisAlsJson(Object? e) => switch (e) {

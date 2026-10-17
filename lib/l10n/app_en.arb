@@ -390,7 +390,22 @@
   "einstSpeicherort": "Storage location",
   "einstSpeicherortVerschiebenLaeuft": "Moving library …",
   "einstSpeicherortFortschritt": "{kopiert} of {gesamt} · {dateien} of {dateienGesamt} files",
-  "@einstSpeicherortFortschritt": {"placeholders": {"kopiert": {"type": "String"}, "gesamt": {"type": "String"}, "dateien": {"type": "int"}, "dateienGesamt": {"type": "int"}}},
+  "@einstSpeicherortFortschritt": {
+    "placeholders": {
+      "kopiert": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      },
+      "dateien": {
+        "type": "int"
+      },
+      "dateienGesamt": {
+        "type": "int"
+      }
+    }
+  },
   "einstSpeicherbedarf": "Space used",
   "belegung_originals": "Originals",
   "belegung_previews": "Previews",
@@ -453,9 +468,27 @@
   "einstBackupPruefen": "Verify backup",
   "einstBackupPruefungLaeuft": "Checking recoverability …",
   "einstBackupPruefungErfolgreich": "{anzahl} file(s) can be fully restored.",
-  "@einstBackupPruefungErfolgreich": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@einstBackupPruefungErfolgreich": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstBackupPruefungFehler": "{gueltig} valid, {fehlend} missing, {beschaedigt} corrupted.",
-  "@einstBackupPruefungFehler": {"placeholders": {"gueltig": {"type": "int"}, "fehlend": {"type": "int"}, "beschaedigt": {"type": "int"}}},
+  "@einstBackupPruefungFehler": {
+    "placeholders": {
+      "gueltig": {
+        "type": "int"
+      },
+      "fehlend": {
+        "type": "int"
+      },
+      "beschaedigt": {
+        "type": "int"
+      }
+    }
+  },
   "einstZielordner": "Destination folder",
   "einstIntervall": "Interval",
   "einstIntervallSechsStunden": "Every 6 hours",
@@ -479,10 +512,25 @@
   "modellSfaceLizenz": "Apache-2.0",
   "modellClipTitel": "AI image search – CLIP ViT-B/32",
   "einstAlleModelleLaden": "Download all missing ({anzahl})",
-  "@einstAlleModelleLaden": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@einstAlleModelleLaden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstAlleModelleDa": "All models are ready",
   "einstAlleModelleLaeuft": "Model {nummer} of {gesamt}",
-  "@einstAlleModelleLaeuft": { "placeholders": { "nummer": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "@einstAlleModelleLaeuft": {
+    "placeholders": {
+      "nummer": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "modellClipText": "Lets you search for photos in plain language (for example “sunset over the sea”). Original OpenAI weights, exported as separate image and text encoder ONNX graphs.",
   "modellClipLizenz": "MIT (weights: OpenAI CLIP, see source)",
   "modellSamTitel": "AI object masks – SAM ViT-Base",
@@ -749,6 +797,7 @@
   "entwKopiert": "Settings copied. You can now paste them onto other photos, even without saving this one.",
   "entwEingesetzt": "Copied settings applied – not saved yet.",
   "entwSpeichernFehlgeschlagen": "Saving failed: the image could not be rendered.",
+  "entwSpeichernServerFehlt": "Saving failed: the server is unreachable – the developed image has to go there.",
   "entwRestaurierungLaeuft": "AI restoration",
   "entwRestaurierungEingereiht": "Added to the AI restoration queue.",
   "entwRestaurierungFehler": "Could not be added to the queue: {fehler}",
@@ -895,7 +944,13 @@
   "albumTitelbildSetzen": "Use as cover",
   "albumTitelbildGesetzt": "Cover set",
   "albumFotosWaehlenTitel": "Photos for “{album}”",
-  "@albumFotosWaehlenTitel": { "placeholders": { "album": { "type": "String" } } },
+  "@albumFotosWaehlenTitel": {
+    "placeholders": {
+      "album": {
+        "type": "String"
+      }
+    }
+  },
   "regelLoeschenTitel": "Delete the rule?",
   "regelLoeschenText": "Really delete the rule \"{name}\"? Actions it has already applied are kept.",
   "regelOrtUnvollstaendig": "Location: not fully configured",
@@ -952,13 +1007,34 @@
   "duplZusammenfuehren": "Merge",
   "duplZusammenfuehrenTitel": "Merge similar photos",
   "duplZusammenfuehrenText": "Metadata from all {anzahl} photos is transferred to the selected photo. The remaining photos go to the trash and can be restored there.",
-  "@duplZusammenfuehrenText": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@duplZusammenfuehrenText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "duplBehaltenAuswahl": "Keep this photo",
   "duplBehaltenDetails": "{sterne} stars · {favorit} favourite(s)",
-  "@duplBehaltenDetails": {"placeholders": {"sterne": {"type": "int"}, "favorit": {"type": "int"}}},
+  "@duplBehaltenDetails": {
+    "placeholders": {
+      "sterne": {
+        "type": "int"
+      },
+      "favorit": {
+        "type": "int"
+      }
+    }
+  },
   "duplBeschreibungenVerbinden": "Combine distinct descriptions",
   "duplZusammengefuehrt": "Merged {anzahl} photo(s) and moved them to trash.",
-  "@duplZusammengefuehrt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@duplZusammengefuehrt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "clusterTitel": "Review suggestions",
   "clusterFertig": "All suggestions have been reviewed.",
   "clusterAehnlichZu": "Similar to: {name}",
@@ -986,11 +1062,29 @@
   "importNichtsAufDatentraeger": "No supported photos or videos found on that volume.",
   "importAbgeschlossen": "Import finished",
   "importBilanzNeu": "{anzahl, plural, =1{1 added} other{{anzahl} added}}",
-  "@importBilanzNeu": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzNeu": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importBilanzDuplikate": "{anzahl, plural, =1{1 was already in the library and was skipped} other{{anzahl} were already in the library and were skipped}}",
-  "@importBilanzDuplikate": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzDuplikate": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importBilanzFehler": "{anzahl, plural, =1{1 did not come in} other{{anzahl} did not come in}}",
-  "@importBilanzFehler": { "placeholders": { "anzahl": { "type": "int" } } },
+  "@importBilanzFehler": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "importLaeuft": "Importing photos & videos …",
   "importJetztSichten": "Cull them now",
   "integPruefungFehlgeschlagen": "The check failed: {fehler}",
@@ -1288,7 +1382,14 @@
   "downloadEntpackenFehler": "Unpacking {datei} failed: {fehler}",
   "downloadZuGross": "{datei} exceeds the permitted size of {grenze} bytes.",
   "@downloadZuGross": {
-    "placeholders": {"datei": {"type": "String"}, "grenze": {"type": "int"}}
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      },
+      "grenze": {
+        "type": "int"
+      }
+    }
   },
   "downloadNichtImZip": "{datei} was not found in the zip.",
   "regelAusloeserOrt": "Location (radius)",
@@ -1320,7 +1421,16 @@
   "allgUnbekannterFehler": "Unknown error",
   "erkundenVorJahren": "{jahre, plural, =1{1 year ago} other{{jahre} years ago}}",
   "erkundenImMonatVorJahren": "In {monat}, {jahre} years ago",
-  "@erkundenImMonatVorJahren": {"placeholders": {"monat": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@erkundenImMonatVorJahren": {
+    "placeholders": {
+      "monat": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "gesichtBenennen": "Name face",
   "gesichtUnbenannt": "Unnamed",
   "bearbZuschneiden": "Crop",
@@ -3178,9 +3288,14 @@
     }
   },
   "spurTitel": "Recorded track",
-    "spurKm": "{km} km",
   "spurKm": "{km} km",
-  "@spurKm": {"placeholders": {"km": {"type": "String"}}},
+  "@spurKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
   "spurKennzahlen": "{km} km · ▲ {auf} m · ▼ {ab} m",
   "@spurKennzahlen": {
     "placeholders": {
@@ -3254,25 +3369,63 @@
   "flugVideo": "Export as video",
   "flugVideoAbbrechen": "Cancel export",
   "flugVideoFertig": "Video saved: {datei}",
-  "@flugVideoFertig": {"placeholders": {"datei": {"type": "String"}}},
+  "@flugVideoFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
   "flugVideoAbgebrochen": "Export cancelled",
   "flugVideoKeinWerkzeug": "Video export is unavailable – the video encoder is missing. macOS provides it, Linux and Windows ship it in the package; if you see this, the installation is incomplete.",
-    "flugVideoLaeuft": "Writing video – {prozent} %",
   "flugVideoLaeuft": "Writing video – {prozent} %",
-  "@flugVideoLaeuft": {"placeholders": {"prozent": {"type": "int"}}},
+  "@flugVideoLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoLaeuftMitRest": "Writing video – {prozent} %, about {rest} left",
-  "@flugVideoLaeuftMitRest": {"placeholders": {"prozent": {"type": "int"}, "rest": {"type": "String"}}},
+  "@flugVideoLaeuftMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
   "flugVideoEinstellungen": "Export video",
   "flugVideoAufloesung": "Resolution",
   "flugVideoDauer": "Length",
   "flugVideoDauerWert": "{sekunden} seconds",
-  "@flugVideoDauerWert": {"placeholders": {"sekunden": {"type": "int"}}},
+  "@flugVideoDauerWert": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoBilder": "{bilder} frames",
-  "@flugVideoBilder": {"placeholders": {"bilder": {"type": "int"}}},
+  "@flugVideoBilder": {
+    "placeholders": {
+      "bilder": {
+        "type": "int"
+      }
+    }
+  },
   "flugVideoWeiter": "Save as …",
   "flugVideoWaehrenddessen": "The frames are rendered off screen – the flight is not played for it. This view has to stay open until it is done.",
   "flugVideoFehler": "Video export failed: {grund}",
-  "@flugVideoFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "@flugVideoFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "flugAufstieg": "Ascent",
   "flugUnterwegs": "elapsed",
   "flugOhneZeit": "The track carries no timestamps – without them there is no speed.",
@@ -3486,7 +3639,16 @@
   "werkzOrdneAblage": "Sorting the storage ...",
   "werkzAblageStimmt": "Every item sits in the folder of its date.",
   "werkzAblageBilanz": "{verschoben} of {gesamt} moved",
-  "@werkzAblageBilanz": { "placeholders": { "verschoben": { "type": "int" }, "gesamt": { "type": "int" } } },
+  "@werkzAblageBilanz": {
+    "placeholders": {
+      "verschoben": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "werkzAblageFrageTitel": "Sort the storage?",
   "werkzAblageFrage": "Items whose folder does not match their capture date are moved into the right month folder. The capture dates themselves stay untouched. Nothing visible changes inside the app - but the library's folder structure on disk does.",
   "werkzAblageStarten": "Sort storage",
@@ -3733,14 +3895,44 @@
   "ortVorschlagErklaerung": "These photos carry no place – but the ones taken just before and after do, and they agree. Places taken over are marked as inherited: they are a reasoned guess, not a measurement.",
   "ortVorschlagKeine": "No photo can be placed from its neighbours.",
   "ortVorschlagAnzahl": "{n, plural, =1{1 photo} other{{n} photos}}",
-  "@ortVorschlagAnzahl": {"placeholders": {"n": {"type": "int"}}},
+  "@ortVorschlagAnzahl": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagBegruendung": "{nachbarn, plural, =1{1 placed neighbour} other{{nachbarn} placed neighbours}}, at most {minuten} minutes away",
-  "@ortVorschlagBegruendung": {"placeholders": {"nachbarn": {"type": "int"}, "minuten": {"type": "int"}}},
+  "@ortVorschlagBegruendung": {
+    "placeholders": {
+      "nachbarn": {
+        "type": "int"
+      },
+      "minuten": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagAlleUebernehmen": "Take all {n}",
-  "@ortVorschlagAlleUebernehmen": {"placeholders": {"n": {"type": "int"}}},
+  "@ortVorschlagAlleUebernehmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagAlleFrageTitel": "Take all suggestions?",
   "ortVorschlagAlleFrage": "{gruppen} groups with {aufnahmen} photos in total will get the place of their neighbours. The place stays marked as inherited and can be removed individually.",
-  "@ortVorschlagAlleFrage": {"placeholders": {"gruppen": {"type": "int"}, "aufnahmen": {"type": "int"}}},
+  "@ortVorschlagAlleFrage": {
+    "placeholders": {
+      "gruppen": {
+        "type": "int"
+      },
+      "aufnahmen": {
+        "type": "int"
+      }
+    }
+  },
   "ortVorschlagWerkzTitel": "Inherit places from neighbours",
   "ortVorschlagWerkzText": "Photos without a place whose neighbours in time were all at the same spot.",
   "infoOrtGeerbt": "Inherited from neighbouring photos",
@@ -3768,30 +3960,75 @@
   "gesundheitSicherungAus": "Automatic backup is turned off.",
   "gesundheitSicherungNie": "Automatic backup is configured but has never completed successfully.",
   "gesundheitLetzteSicherung": "Last successful run: {datum}",
-  "@gesundheitLetzteSicherung": {"placeholders": {"datum": {"type": "String"}}},
+  "@gesundheitLetzteSicherung": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
   "gesundheitSicherungOffen": "{anzahl, plural, =0{All current photos are backed up.} =1{1 photo is waiting for backup.} other{{anzahl} photos are waiting for backup.}}",
-  "@gesundheitSicherungOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitSicherungOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitSpeicher": "Storage use",
   "gesundheitSpeicherWirdGezaehlt": "counting …",
   "gesundheitMedien": "{fotos} photos, {videos} videos",
-  "@gesundheitMedien": {"placeholders": {"fotos": {"type": "int"}, "videos": {"type": "int"}}},
+  "@gesundheitMedien": {
+    "placeholders": {
+      "fotos": {
+        "type": "int"
+      },
+      "videos": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitModelle": "Local features",
   "gesundheitModelleStand": "{bereit} of {gesamt} local data and AI features are ready.",
   "gesundheitOrteTitel": "Places to inherit",
   "gesundheitOrteOffen": "{anzahl} item(s) without a place have a located neighbour close in time.",
-  "@gesundheitOrteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitOrteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitOrteAnsehen": "Review suggestions",
   "gesundheitGesichterTitel": "Faces without a person",
   "gesundheitGesichterOffen": "{anzahl} detected face(s) belong to nobody yet. Under People they can be assigned in groups.",
-  "@gesundheitGesichterOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitGesichterOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitGesichterZuordnen": "Go to People",
   "gesundheitDatumTitel": "Questionable capture dates",
   "gesundheitDatumOffen": "{anzahl} item(s) carry a timestamp on the full hour – with a real shutter time about two would. The run looks into the file for what is actually there.",
-  "@gesundheitDatumOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitDatumOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitDatumPruefen": "Check date origin",
   "gesundheitVideobilderTitel": "Videos judged from one frame",
   "gesundheitVideobilderOffen": "{anzahl} video(s) run longer than ten seconds and are still searched by their first frame alone.",
-  "@gesundheitVideobilderOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitVideobilderOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitVideobilderHolen": "Fetch more frames",
   "stufeWiedererkennung": "Recognition",
   "aufgWiedererkennungTitel": "Who might this be?",
@@ -3800,12 +4037,24 @@
   "werkzAlleVerglichen": "All faces have already been compared.",
   "gesundheitVorschlaegeTitel": "Recognised faces are waiting",
   "gesundheitVorschlaegeOffen": "{anzahl} unnamed face(s) resemble a named person closely enough for a suggestion.",
-  "@gesundheitVorschlaegeOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitVorschlaegeOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitVorschlaegeAnsehen": "Review suggestions",
   "vorschlaegeTitel": "Who might this be?",
   "vorschlaegeEinleitung": "Suggested, not assigned. You see per person what recognition found, and you decide.",
   "vorschlaegeAnzahl": "{anzahl} suggestion(s)",
-  "@vorschlaegeAnzahl": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@vorschlaegeAnzahl": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "vorschlaegeKeine": "There are no suggestions at the moment.",
   "vorschlaegeBeiseite": "Include set-aside faces",
   "vorschlaegeBeiseiteHinweis": "You set these faces aside once – back then some of today's people did not exist yet. This is what recognition finds among them now.",
@@ -3813,40 +4062,109 @@
   "vorschlaegeLaufHinweis": "Nothing compared yet. The run \\u201cWho might this be?\\u201d fills this list.",
   "gesundheitBeiseiteTitel": "Set-aside faces, never compared",
   "gesundheitBeiseiteOffen": "{anzahl} set-aside face(s) have never been compared with your named people – they were set aside before those people existed.",
-  "@gesundheitBeiseiteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitBeiseiteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitBeiseiteAnsehen": "Take a look",
   "vorschlaegeJetztVergleichen": "Compare now",
   "vorschlaegeBeiseiteNieVerglichen": "{anzahl} set-aside face(s) have never been compared. The pass changes nothing – it only says which of them might belong to a named person.",
-  "@vorschlaegeBeiseiteNieVerglichen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@vorschlaegeBeiseiteNieVerglichen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "vorschlaegeLaeuft": "The pass is running …",
-  "@gesundheitModelleStand": {"placeholders": {"bereit": {"type": "int"}, "gesamt": {"type": "int"}}},
+  "@gesundheitModelleStand": {
+    "placeholders": {
+      "bereit": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
   "datenschutzExportTitel": "Privacy export",
   "datenschutzExportText": "JPEG up to 2048 pixels without EXIF, GPS or XMP; known faces and detected license plates are obscured locally.",
   "datenschutzAusgelassen": "{anzahl} item(s) left out: videos and images that cannot be re-rendered cannot be stripped of their metadata.",
-  "@datenschutzAusgelassen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datenschutzAusgelassen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "sicherTeilenTitel": "Encrypted sharing package",
   "sicherTeilenText": "Share originals and file names in one password-protected .pvshare file.",
   "sicherTeilenZiel": "Save sharing package",
   "sicherTeilenDateiname": "PhotoVault-Share.pvshare",
   "sicherTeilenFertig": "Encrypted sharing package saved: {pfad}",
-  "@sicherTeilenFertig": {"placeholders": {"pfad": {"type": "String"}}},
+  "@sicherTeilenFertig": {
+    "placeholders": {
+      "pfad": {
+        "type": "String"
+      }
+    }
+  },
   "sicherTeilenFehler": "Could not create the sharing package: {fehler}",
-  "@sicherTeilenFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@sicherTeilenFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "einstPrivateMetadatenTitel": "Protect private metadata",
   "einstPrivateMetadatenText": "Removes file names, dates, locations, descriptions, tags, and album assignments for newly locked items from the readable database. The values are encrypted with the vault key and restored when the item is permanently unlocked.",
   "gesundheitBereinigen": "Clean temporary files",
   "gesundheitBereinigt": "{anzahl, plural, =0{No temporary leftovers found.} =1{Removed 1 temporary file ({groesse}).} other{Removed {anzahl} temporary files ({groesse}).}}",
-  "@gesundheitBereinigt": {"placeholders": {"anzahl": {"type": "int"}, "groesse": {"type": "String"}}},
+  "@gesundheitBereinigt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "groesse": {
+        "type": "String"
+      }
+    }
+  },
   "sicherTeilenImportTitel": "Open sharing package",
   "sicherTeilenImportText": "Verify, decrypt, and import a password-protected .pvshare file into this library.",
   "sicherTeilenImportPassphrase": "Sharing package passphrase",
   "sicherTeilenImportFertig": "Imported {importiert} items and skipped {duplikate} duplicates.",
-  "@sicherTeilenImportFertig": {"placeholders": {"importiert": {"type": "int"}, "duplikate": {"type": "int"}}},
+  "@sicherTeilenImportFertig": {
+    "placeholders": {
+      "importiert": {
+        "type": "int"
+      },
+      "duplikate": {
+        "type": "int"
+      }
+    }
+  },
   "sicherTeilenImportFehler": "Could not open sharing package: {fehler}",
-  "@sicherTeilenImportFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@sicherTeilenImportFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "gesundheitModellwechselTitel": "Update AI results",
   "gesundheitModellwechselText": "{anzahl, plural, =1{One processing result comes from an older version of the model or the analysis.} other{{anzahl} processing results come from older versions of the models or the analysis.}} Existing results remain visible until you run the corresponding task completely again.",
-  "@gesundheitModellwechselText": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitModellwechselText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitModellwechselAufgaben": "Open tasks",
   "einstBackupGenerationenTitel": "Recovery points",
   "einstBackupGenerationenText": "Automatic backup retains the seven latest encrypted database states. Originals remain stored only once in the shared encrypted data store.",
@@ -3854,7 +4172,13 @@
   "einstBackupAktuellerStand": "Current state",
   "einstBackupAktuellerStandText": "Restore the latest database state from this backup.",
   "einstBackupGenerationZeit": "Saved on {datum}",
-  "@einstBackupGenerationZeit": {"placeholders": {"datum": {"type": "String"}}},
+  "@einstBackupGenerationZeit": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
   "einstBackupGenerationText": "Database state; encrypted originals are shared between recovery points.",
   "sicherTeilenAblaufTitel": "Limit this share?",
   "sicherTeilenAblaufText": "Optionally, Photo Vault refuses this sharing package after a chosen date. The deadline is stored encrypted inside the package; it keeps an honest recipient from importing it later - it does not protect against someone who keeps the package and passphrase and sets their clock back.",
@@ -3868,9 +4192,24 @@
   "kontaktblattDateiname": "PhotoVault-Contact-Sheet.pdf",
   "kontaktblattLeer": "None of the selected items can be rendered for a contact sheet.",
   "kontaktblattFertig": "Contact sheet saved: {enthalten} items, {ausgelassen} skipped.",
-  "@kontaktblattFertig": {"placeholders": {"enthalten": {"type": "int"}, "ausgelassen": {"type": "int"}}},
+  "@kontaktblattFertig": {
+    "placeholders": {
+      "enthalten": {
+        "type": "int"
+      },
+      "ausgelassen": {
+        "type": "int"
+      }
+    }
+  },
   "kontaktblattFehler": "Could not create contact sheet: {fehler}",
-  "@kontaktblattFehler": {"placeholders": {"fehler": {"type": "String"}}},
+  "@kontaktblattFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "unerreichbarTitel": "Library not available",
   "unerreichbarText": "Photo Vault cannot open the library “{name}” right now. Is the drive connected?\n\nOn macOS, the folder also has to be granted access once after the switch to the new app identifier. Nothing is changed by this – only the access is renewed.",
   "unerreichbarFreigeben": "Grant access to folder …",
@@ -4006,10 +4345,22 @@
   "dokumenteEinleitung": "Going by the recognised text, these photos show an ID card, a passport, a driving licence or a bank card. In the locked folder they are encrypted and only visible with the PIN. Tap to deselect, double-tap to open the photo.",
   "dokumenteKeine": "No ID or card among the photos with recognised text is lying in the open.",
   "dokumenteSperren": "{anzahl, plural, =1{Lock 1 photo} other{Lock {anzahl} photos}}",
-  "@dokumenteSperren": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@dokumenteSperren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "dokumenteVerwerfen": "Stop suggesting",
   "dokumenteGesperrt": "{anzahl, plural, =1{1 photo is now in the locked folder} other{{anzahl} photos are now in the locked folder}}",
-  "@dokumenteGesperrt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@dokumenteGesperrt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "dokumentArtReisepass": "Passport",
   "dokumentArtAusweis": "ID card",
   "dokumentArtFuehrerschein": "Driving licence",
@@ -4020,11 +4371,23 @@
   "dokumentGrundSchluesselwort": "Printed label",
   "gesundheitDokumenteTitel": "IDs are lying in the open",
   "gesundheitDokumenteOffen": "{anzahl, plural, =1{Going by its text, 1 photo shows an ID or a card and is not in the locked folder.} other{Going by their text, {anzahl} photos show an ID or a card and are not in the locked folder.}}",
-  "@gesundheitDokumenteOffen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@gesundheitDokumenteOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "gesundheitDokumenteAnsehen": "Review",
   "viewerVideobildSichern": "Save this frame as a photo",
   "viewerVideobildGesichert": "Frame at {stelle} saved as a photo – with the video's date and place",
-  "@viewerVideobildGesichert": {"placeholders": {"stelle": {"type": "String"}}},
+  "@viewerVideobildGesichert": {
+    "placeholders": {
+      "stelle": {
+        "type": "String"
+      }
+    }
+  },
   "viewerVideobildSchonDa": "This exact frame is already saved as a photo.",
   "viewerVideobildFehler": "Could not grab a frame from the video at this point.",
   "datierungTitel": "Date old photos",
@@ -4032,17 +4395,53 @@
   "datierungOhneModell": "The estimate needs the image search model (CLIP). You can download it under Settings → AI models.",
   "datierungKeine": "None of the photos without a real capture date looks old.",
   "datierungUm": "around {jahr}",
-  "@datierungUm": {"placeholders": {"jahr": {"type": "String"}}},
+  "@datierungUm": {
+    "placeholders": {
+      "jahr": {
+        "type": "String"
+      }
+    }
+  },
   "datierungSpanne": "{von} to {bis}",
-  "@datierungSpanne": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "@datierungSpanne": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
   "datierungUnsicher": "too uncertain ({von} to {bis})",
-  "@datierungUnsicher": {"placeholders": {"von": {"type": "String"}, "bis": {"type": "String"}}},
+  "@datierungUnsicher": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
   "datierungUebernehmen": "Apply",
   "datierungIstUebernommen": "Applied",
   "datierungAlleUebernehmen": "{anzahl, plural, =1{Apply 1 estimate} other{Apply {anzahl} estimates}}",
-  "@datierungAlleUebernehmen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datierungAlleUebernehmen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "datierungUebernommen": "{anzahl, plural, =1{Dated 1 photo} other{Dated {anzahl} photos}}",
-  "@datierungUebernommen": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@datierungUebernommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "werkzDatierungText": "Estimates the decade of scanned and undated photos – from image search, without a new model.",
   "diashowMusikTitel": "Add music?",
   "diashowMusikText": "A piece of music from disk plays under the slideshow – repeated if it is shorter, otherwise ending with the video, faded out at the end. The track is only written into the video, not added to the library.",
@@ -4054,21 +4453,57 @@
   "erinnerungenLetzteTage": "The last two weeks",
   "erinnerungenKeine": "None of the last fourteen days has photos from earlier years.",
   "erinnerungenTagVorJahren": "{datum} · {jahre, plural, =1{one year ago} other{{jahre} years ago}}",
-  "@erinnerungenTagVorJahren": {"placeholders": {"datum": {"type": "String"}, "jahre": {"type": "int"}}},
+  "@erinnerungenTagVorJahren": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "jahre": {
+        "type": "int"
+      }
+    }
+  },
   "erinnerungenMerken": "Keep",
   "erinnerungenVergessen": "Stop keeping",
   "erinnerungenSchoensteReisen": "The best trips",
   "erinnerungenReise": "{name} {jahr} · {anzahl, plural, =1{1 favourite} other{{anzahl} favourites}}",
-  "@erinnerungenReise": {"placeholders": {"name": {"type": "String"}, "jahr": {"type": "String"}, "anzahl": {"type": "int"}}},
+  "@erinnerungenReise": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "jahr": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "karteAusschnittListe": "Photos in view",
   "karteImAusschnitt": "{anzahl, plural, =0{No photos in view} =1{1 photo in view} other{{anzahl} photos in view}}",
-  "@karteImAusschnitt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@karteImAusschnitt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "karteAusschnittLeer": "No photos here. The list follows the map once it stops moving.",
   "bearbKratzerSuchen": "Find scratches and dust",
   "bearbRadieren": "Eraser: remove from the suggestion",
   "bearbKratzerKeine": "No scratches or dust found.",
   "bearbKratzerGefunden": "Suggestion: {kratzer, plural, =0{no scratches} =1{1 scratch} other{{kratzer} scratches}}, {staub, plural, =0{no dust} =1{1 dust spot} other{{staub} dust spots}}. Check it, erase anything wrong, then apply.",
-  "@bearbKratzerGefunden": {"placeholders": {"kratzer": {"type": "int"}, "staub": {"type": "int"}}},
+  "@bearbKratzerGefunden": {
+    "placeholders": {
+      "kratzer": {
+        "type": "int"
+      },
+      "staub": {
+        "type": "int"
+      }
+    }
+  },
   "sucheHerkunft": "Origin",
   "sucheHerkunftAlle": "All",
   "sucheHerkunftKamera": "From a camera",
@@ -4078,9 +4513,21 @@
   "modellKratzerText": "Finds scratches, creases and tears in scanned photos – in the image editor under “Remove object”, filled by LaMa. Without this model the app only looks for long straight lines and dust. 75 MB.",
   "modellKratzerLizenz": "MIT (Bringing Old Photos Back to Life, Microsoft), converted to ONNX",
   "bearbKratzerModellGefunden": "Scratch model suggestion: {stellen, plural, =1{1 spot} other{{stellen} spots}}. Check it, erase anything wrong, then apply.",
-  "@bearbKratzerModellGefunden": {"placeholders": {"stellen": {"type": "int"}}},
+  "@bearbKratzerModellGefunden": {
+    "placeholders": {
+      "stellen": {
+        "type": "int"
+      }
+    }
+  },
   "aufgNeuSeitLauf": "New since the last run: {anzahl}",
-  "@aufgNeuSeitLauf": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@aufgNeuSeitLauf": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "aufgAmServer": "This library is connected to a server – this work runs there.",
   "nurOhneServer": "Not yet available in a library connected to a server: it changes files, and those live on the server.",
   "serverTitel": "Server",
@@ -4088,16 +4535,49 @@
   "serverErklaerung": "With your own Photo Vault server, the library lives there and this computer works with a copy: changes go to the server, even after a while offline. The server does the analysis; originals arrive when they are needed.",
   "serverVerbinden": "Connect to a server …",
   "serverVerbundenMit": "Connected to {ort}",
-  "@serverVerbundenMit": {"placeholders": {"ort": {"type": "String"}}},
+  "@serverVerbundenMit": {
+    "placeholders": {
+      "ort": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoGeraet": "Account {konto} · device {geraet}",
-  "@serverKontoGeraet": {"placeholders": {"konto": {"type": "String"}, "geraet": {"type": "String"}}},
+  "@serverKontoGeraet": {
+    "placeholders": {
+      "konto": {
+        "type": "String"
+      },
+      "geraet": {
+        "type": "String"
+      }
+    }
+  },
   "serverAbgeglichen": "In sync",
   "serverOffline": "Server unreachable – {n} changes waiting",
-  "@serverOffline": {"placeholders": {"n": {"type": "int"}}},
+  "@serverOffline": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverSendet": "{n} changes going to the server",
-  "@serverSendet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverSendet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverAbgelehnt": "The server rejected {n} changes; they were undone.",
-  "@serverAbgelehnt": {"placeholders": {"n": {"type": "int"}}},
+  "@serverAbgelehnt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverAbgemeldet": "This device was signed out on the server. Connect again to continue.",
   "serverTrennen": "Disconnect from server …",
   "serverTrennenTitel": "Disconnect from the server?",
@@ -4120,19 +4600,55 @@
   "serverSicherungTitel": "Server backup",
   "serverSicherungAus": "No backup target is set on the server (PV_SICHERUNG).",
   "serverSicherungNichtEingerichtet": "The backup target {ziel} is set, but the backup is not set up yet.",
-  "@serverSicherungNichtEingerichtet": {"placeholders": {"ziel": {"type": "String"}}},
+  "@serverSicherungNichtEingerichtet": {
+    "placeholders": {
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungEinrichten": "Set up backup …",
   "serverSicherungEinrichtenText": "The backup is encrypted with this passphrase. It cannot be restored without it – keep it safe, not on the server. It cannot be changed later.",
   "serverSicherungPassphrase": "Passphrase",
   "serverSicherungOk": "Last backup: {wann}, {neu, plural, =0{nothing new} =1{1 new file} other{{neu} new files}}. Next: {naechste}.",
-  "@serverSicherungOk": {"placeholders": {"wann": {"type": "String"}, "neu": {"type": "int"}, "naechste": {"type": "String"}}},
+  "@serverSicherungOk": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      },
+      "neu": {
+        "type": "int"
+      },
+      "naechste": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungNochNie": "Not run yet. Next: {naechste}.",
-  "@serverSicherungNochNie": {"placeholders": {"naechste": {"type": "String"}}},
+  "@serverSicherungNochNie": {
+    "placeholders": {
+      "naechste": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungLaeuft": "The backup is running …",
   "serverSicherungFehler": "The last backup failed: {grund}",
-  "@serverSicherungFehler": {"placeholders": {"grund": {"type": "String"}}},
+  "@serverSicherungFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungVeraltet": "No successful backup since {wann}.",
-  "@serverSicherungVeraltet": {"placeholders": {"wann": {"type": "String"}}},
+  "@serverSicherungVeraltet": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
   "serverSicherungVeraltetNie": "No successful backup since setup.",
   "serverSicherungZielFehlt": "The backup target lacks its marker – is the NAS mounted?",
   "serverSicherungZielNeu": "Set up target again …",
@@ -4141,18 +4657,45 @@
   "serverSicherungGestartet": "The backup is running.",
   "serverSicherungWarnung": "The server backup needs attention (Settings → Server).",
   "serverSpeicherStand": "Storage on the server: {frei} free of {gesamt}",
-  "@serverSpeicherStand": {"placeholders": {"frei": {"type": "String"}, "gesamt": {"type": "String"}}},
+  "@serverSpeicherStand": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      }
+    }
+  },
   "serverSpeicherKnapp": "The server is running low on storage: {frei} left.",
-  "@serverSpeicherKnapp": {"placeholders": {"frei": {"type": "String"}}},
+  "@serverSpeicherKnapp": {
+    "placeholders": {
+      "frei": {
+        "type": "String"
+      }
+    }
+  },
   "serverSpeicherVoll": "The server storage is full. It accepts new photos again once space is freed.",
   "serverErstesTitel": "Create the first account",
   "serverErstesText": "This server has no account yet. The first one will be created with the name “{name}” and the password you just entered. It becomes the administrator and can add more accounts later.",
-  "@serverErstesText": {"placeholders": {"name": {"type": "String"}}},
+  "@serverErstesText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverPasswortWiederholen": "Repeat password",
   "serverErstesAnlegen": "Create account and sign in",
   "serverPasswortUngleich": "The two passwords do not match.",
   "serverPasswortZuKurz": "The password needs at least {n} characters.",
-  "@serverPasswortZuKurz": {"placeholders": {"n": {"type": "int"}}},
+  "@serverPasswortZuKurz": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverNameUngueltig": "The name needs 2 to 40 letters, digits, dots, hyphens or underscores.",
   "serverErstesNurHeimnetz": "The first account can only be created from the home network, not through access from outside.",
   "serverSchonEingerichtet": "The server already has an account now. Please sign in with it.",
@@ -4162,37 +4705,85 @@
   "serverKontoVerwalter": "Administrator",
   "serverKontoAlsVerwalter": "May also manage accounts",
   "serverKontoGeraete": "{n, plural, =0{no device} =1{1 device} other{{n} devices}}",
-  "@serverKontoGeraete": {"placeholders": {"n": {"type": "int"}}},
+  "@serverKontoGeraete": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverKontoMitTotp": "with TOTP",
   "serverKontoOhneTotp": "without TOTP",
   "serverKontoGesperrt": "locked after failed attempts",
   "serverKontoDu": "your account",
   "serverKontoPasswortSetzen": "Set new password …",
   "serverKontoPasswortSetzenText": "All devices of “{name}” will be signed out.",
-  "@serverKontoPasswortSetzenText": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoPasswortSetzenText": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoTotpZuruecksetzen": "Reset TOTP",
   "serverKontoTotpZurueckgesetzt": "“{name}” will set up TOTP again at the next sign-in.",
-  "@serverKontoTotpZurueckgesetzt": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoTotpZurueckgesetzt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoEntsperren": "Unlock",
   "serverKontoEntfernen": "Remove …",
   "serverKontoEntfernenTitel": "Remove “{name}”?",
-  "@serverKontoEntfernenTitel": {"placeholders": {"name": {"type": "String"}}},
+  "@serverKontoEntfernenTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverKontoEntfernenText": "The account and its devices will be removed. The library with all its photos stays on the server: it is set aside, not deleted, and can only be deleted there by hand.",
   "serverKontoErledigt": "Done.",
   "serverRechenhilfe": "Compute for the server",
   "serverRechenhilfeText": "While Photo Vault is open here, this computer takes on image analysis, text recognition and image captions for the server – with the models installed here. The results are stored on the server.",
   "serverRechenhilfeRechnet": "Computing – {n, plural, =1{1 result} other{{n} results}} delivered",
-  "@serverRechenhilfeRechnet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeRechnet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverRechenhilfeWartet": "Waiting for work – {n, plural, =1{1 result} other{{n} results}} delivered",
-  "@serverRechenhilfeWartet": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeWartet": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverRechenhilfeKeinModell": "No model is installed here that could help the server.",
   "serverRechenhilfeOffline": "The server cannot be reached.",
   "serverRechenhilfeServerZuAlt": "The server cannot do this yet – please update the server.",
   "serverRechenhilfeAusgelassen": "{n, plural, =1{One item} other{{n} items}} could not be computed here; the server takes them over.",
-  "@serverRechenhilfeAusgelassen": {"placeholders": {"n": {"type": "int"}}},
+  "@serverRechenhilfeAusgelassen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverFalsch": "Name, password or code is wrong.",
   "serverGebremst": "Too many failed attempts – please try again in {sekunden} seconds.",
-  "@serverGebremst": {"placeholders": {"sekunden": {"type": "int"}}},
+  "@serverGebremst": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
   "serverCodeTitel": "Code from the authenticator app",
   "serverCodeHinweis": "Six digits – or one of the recovery codes.",
   "serverBestaetigen": "Confirm",
@@ -4206,10 +4797,22 @@
   "serverWahlTitel": "Which library should it be?",
   "serverServerBib": "Open the server's library here",
   "serverServerBibText": "{n} items. A copy is created on this computer; originals arrive when they are needed.",
-  "@serverServerBibText": {"placeholders": {"n": {"type": "int"}}},
+  "@serverServerBibText": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverUmziehen": "Move this library to the server",
   "serverUmziehenText": "{n} items with all their files. Afterwards this library is the copy of the library on the server. Please change nothing while it runs.",
-  "@serverUmziehenText": {"placeholders": {"n": {"type": "int"}}},
+  "@serverUmziehenText": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "serverUmziehenNichtLeer": "Only possible while the server's library is empty.",
   "serverUmziehenSchonVerbunden": "This library is already connected to a server.",
   "serverLaedt": "Loading the library from the server …",

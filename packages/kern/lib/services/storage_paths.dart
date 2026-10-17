@@ -180,6 +180,19 @@ class StoragePaths {
   /// Originale und Vorschauen erst, wenn jemand sie braucht.
   Future<void> Function(String relativePath)? beschaffe;
 
+  /// Bringt eine hier geschriebene Datei dorthin, wo die Bibliothek wirklich
+  /// liegt – in einer verbundenen Kopie zum Server. `null` heisst: Die
+  /// Bibliothek liegt hier, es gibt nichts zu tun.
+  Future<void> Function(String relativePath)? ablege;
+
+  /// Nach dem Schreiben einer abgeleiteten Datei (entwickeltes Bild, Maske,
+  /// Schnitt): in der Kopie zum Server, sonst nichts. Wirft, wenn der
+  /// Server sie nicht nimmt – dann darf die Datenbank nicht auf sie zeigen.
+  Future<void> abgelegt(String relativePath) async {
+    final hoch = ablege;
+    if (hoch != null) await hoch(relativePath);
+  }
+
   /// [relativePath] als Datei, die da ist: in einer verbundenen Bibliothek
   /// vorher vom Server geholt, sonst wie [absolute]. Für alles, was eine
   /// Datei ganz liest (Betrachter, Video, Export, Bearbeiten).

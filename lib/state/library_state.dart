@@ -1983,7 +1983,7 @@ class LibraryState extends ChangeNotifier {
         );
         final masks = await db.masksForAsset(asset.id);
         final bytes = await NativeImageConverter.developImage(
-          paths.absolute(asset.relativePath),
+          await paths.bereit(asset.relativePath),
           adjustments: adjustments,
           masks: [
             for (final mask in masks)
@@ -2009,22 +2009,25 @@ class LibraryState extends ChangeNotifier {
           final targetFile = paths.absolute(developedRelativePath);
           await targetFile.parent.create(recursive: true);
           await targetFile.writeAsBytes(bytes);
-          await db.saveDevelopResult(
-            asset.id,
-            settings: DevelopSettingsCompanion.insert(
-              assetId: asset.id,
-              exposure: Value(settings.exposure),
-              temperature: Value(settings.temperature),
-              tint: Value(settings.tint),
-              contrast: Value(settings.contrast),
-              shadows: Value(settings.shadows),
-              highlights: Value(settings.highlights),
-              sharpness: Value(settings.sharpness),
-              noiseReduction: Value(settings.noiseReduction),
-              lensCorrectionEnabled: Value(settings.lensCorrectionEnabled),
-              updatedAt: DateTime.now(),
+          await paths.abgelegt(developedRelativePath);
+          await db.fuehreAus(
+            EntwicklungSpeichern(
+              asset.id,
+              DevelopSettingsCompanion.insert(
+                assetId: asset.id,
+                exposure: Value(settings.exposure),
+                temperature: Value(settings.temperature),
+                tint: Value(settings.tint),
+                contrast: Value(settings.contrast),
+                shadows: Value(settings.shadows),
+                highlights: Value(settings.highlights),
+                sharpness: Value(settings.sharpness),
+                noiseReduction: Value(settings.noiseReduction),
+                lensCorrectionEnabled: Value(settings.lensCorrectionEnabled),
+                updatedAt: DateTime.now(),
+              ),
+              developedRelativePath,
             ),
-            developedRelativePath: developedRelativePath,
           );
         }
       } catch (e) {
@@ -2912,7 +2915,7 @@ class LibraryState extends ChangeNotifier {
     for (final asset in ziele) {
       try {
         final bytes = await NativeImageConverter.developImage(
-          paths.absolute(asset.relativePath),
+          await paths.bereit(asset.relativePath),
           adjustments: werte,
           maxDimension: 4096,
           quality: 0.92,
@@ -2925,29 +2928,32 @@ class LibraryState extends ChangeNotifier {
         final datei = paths.absolute(zielPfad);
         await datei.parent.create(recursive: true);
         await datei.writeAsBytes(bytes);
+        await paths.abgelegt(zielPfad);
 
-        await db.saveDevelopResult(
-          asset.id,
-          settings: DevelopSettingsCompanion.insert(
-            assetId: asset.id,
-            exposure: Value(werte.exposure),
-            temperature: Value(werte.temperature),
-            tint: Value(werte.tint),
-            contrast: Value(werte.contrast),
-            shadows: Value(werte.shadows),
-            highlights: Value(werte.highlights),
-            sharpness: Value(werte.sharpness),
-            noiseReduction: Value(werte.noiseReduction),
-            lensCorrectionEnabled: Value(werte.lensCorrectionEnabled),
-            clarity: Value(werte.clarity),
-            vignette: Value(werte.vignette),
-            lutPath: Value(quelle.lutPath),
-            lutStrength: Value(werte.lutStrength),
-            toneCurveJson: Value(quelle.toneCurveJson),
-            colorMixerJson: Value(quelle.colorMixerJson),
-            updatedAt: DateTime.now(),
+        await db.fuehreAus(
+          EntwicklungSpeichern(
+            asset.id,
+            DevelopSettingsCompanion.insert(
+              assetId: asset.id,
+              exposure: Value(werte.exposure),
+              temperature: Value(werte.temperature),
+              tint: Value(werte.tint),
+              contrast: Value(werte.contrast),
+              shadows: Value(werte.shadows),
+              highlights: Value(werte.highlights),
+              sharpness: Value(werte.sharpness),
+              noiseReduction: Value(werte.noiseReduction),
+              lensCorrectionEnabled: Value(werte.lensCorrectionEnabled),
+              clarity: Value(werte.clarity),
+              vignette: Value(werte.vignette),
+              lutPath: Value(quelle.lutPath),
+              lutStrength: Value(werte.lutStrength),
+              toneCurveJson: Value(quelle.toneCurveJson),
+              colorMixerJson: Value(quelle.colorMixerJson),
+              updatedAt: DateTime.now(),
+            ),
+            zielPfad,
           ),
-          developedRelativePath: zielPfad,
         );
       } catch (e) {
         debugPrint(

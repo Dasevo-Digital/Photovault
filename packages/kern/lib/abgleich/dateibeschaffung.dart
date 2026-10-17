@@ -32,9 +32,17 @@ class Dateibeschaffung {
       'api/v1/dateien/'
       '${[for (final t in relativ.split('/')) Uri.encodeComponent(t)].join('/')}';
 
-  /// Verbindet [paths] mit dieser Beschaffung (siehe
-  /// [StoragePaths.beschaffe]).
-  void binde() => paths.beschaffe = hole;
+  /// Bringt eine hier geschriebene abgeleitete Datei zum Server (siehe
+  /// [StoragePaths.ablege]).
+  Future<void> lege(String relativ) =>
+      verbindung.legeAb(adresse(relativ), paths.absolute(relativ));
+
+  /// Verbindet [paths] mit dieser Beschaffung – holen und ablegen (siehe
+  /// [StoragePaths.beschaffe] und [StoragePaths.ablege]).
+  void binde() {
+    paths.beschaffe = hole;
+    paths.ablege = lege;
+  }
 }
 
 /// Lädt im Hintergrund vor, was das Raster und die Personen sofort zeigen:

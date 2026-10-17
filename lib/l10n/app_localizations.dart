@@ -4061,6 +4061,12 @@ abstract class AppTexte {
   /// **'Speichern fehlgeschlagen: Bild konnte nicht gerendert werden.'**
   String get entwSpeichernFehlgeschlagen;
 
+  /// No description provided for @entwSpeichernServerFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern fehlgeschlagen: Der Server ist nicht erreichbar – das entwickelte Bild muss zu ihm.'**
+  String get entwSpeichernServerFehlt;
+
   /// No description provided for @entwRestaurierungLaeuft.
   ///
   /// In de, this message translates to:

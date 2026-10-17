@@ -472,7 +472,7 @@ mixin _Masken on _EntwickelnBasis {
     final t = AppTexte.of(context);
     setState(() => _computingMask = true);
     final ergebnis = await NativeImageConverter.tiefenmaske(
-      widget.paths.absolute(widget.asset.relativePath),
+      await widget.paths.bereit(widget.asset.relativePath),
     );
     if (!mounted) return;
     setState(() => _computingMask = false);

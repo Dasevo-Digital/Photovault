@@ -2368,6 +2368,10 @@ class AppTexteDe extends AppTexte {
       'Speichern fehlgeschlagen: Bild konnte nicht gerendert werden.';
 
   @override
+  String get entwSpeichernServerFehlt =>
+      'Speichern fehlgeschlagen: Der Server ist nicht erreichbar – das entwickelte Bild muss zu ihm.';
+
+  @override
   String get entwRestaurierungLaeuft => 'KI-Restaurierung';
 
   @override

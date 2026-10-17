@@ -405,6 +405,50 @@ final class EntwicklungZuruecksetzen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.resetDevelopSettings(id);
 }
 
+/// Eine Entwicklung speichern: die Regler und wo das gerenderte Bild
+/// liegt. Die Datei selbst geht vorher ihren eigenen Weg (in einer
+/// verbundenen Bibliothek zum Server, siehe `StoragePaths.abgelegt`);
+/// der Befehl trägt nur ihren Pfad – wie bei jeder anderen Aufnahme auch.
+final class EntwicklungSpeichern extends Befehl<void> {
+  EntwicklungSpeichern(
+    this.id,
+    Insertable<DevelopSettingsData> einstellungen,
+    this.pfad,
+  ) : einstellungen = _zeileAlsWerte(einstellungen);
+
+  const EntwicklungSpeichern._(this.id, this.einstellungen, this.pfad);
+
+  static EntwicklungSpeichern aus(Map<String, Object?> w) =>
+      EntwicklungSpeichern._(
+        w['id']! as String,
+        _abbildung(w['einstellungen']),
+        w['pfad']! as String,
+      );
+
+  final String id;
+  final Map<String, Object?> einstellungen;
+
+  /// Der relative Pfad des gerenderten Bilds (`developed/<id>.jpg`).
+  final String pfad;
+
+  @override
+  String get art => 'entwicklungSpeichern';
+
+  @override
+  Map<String, Object?> get werte => {
+    'id': id,
+    'einstellungen': einstellungen,
+    'pfad': pfad,
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.saveDevelopResult(
+    id,
+    settings: _zeileAus(db.developSettings, einstellungen),
+    developedRelativePath: pfad,
+  );
+}
+
 /// Die Regler einer Maske ändern (ihre Form bleibt).
 final class MaskeneinstellungAendern extends Befehl<void> {
   MaskeneinstellungAendern(this.maskeId, Insertable<DevelopMaskData> aenderung)

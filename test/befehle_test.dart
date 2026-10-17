@@ -238,6 +238,16 @@ void main() {
       ),
       const OrtsmarkeLoeschen('land', 'IS'),
       const EntwicklungZuruecksetzen('a1'),
+      EntwicklungSpeichern(
+        'a1',
+        DevelopSettingsCompanion.insert(
+          assetId: 'a1',
+          exposure: const Value(0.7),
+          contrast: const Value(0.1),
+          updatedAt: DateTime(2026, 10, 17, 9),
+        ),
+        'developed/a1.jpg',
+      ),
       MaskeneinstellungAendern(
         4,
         const DevelopMasksCompanion(
@@ -339,6 +349,7 @@ void main() {
       OrtsmarkeSetzen() => 'ortsmarkeSetzen',
       OrtsmarkeLoeschen() => 'ortsmarkeLoeschen',
       EntwicklungZuruecksetzen() => 'entwicklungZuruecksetzen',
+      EntwicklungSpeichern() => 'entwicklungSpeichern',
       MaskeneinstellungAendern() => 'maskeneinstellungAendern',
     };
 
@@ -917,7 +928,7 @@ const _einordnung = <String, _Art>{
   'spurLoeschen': _Art.befehl,
   // Bearbeiten: Einstellungen sind Befehle, das gerechnete Bild eine Datei
   'resetDevelopSettings': _Art.befehl,
-  'saveDevelopResult': _Art.datei,
+  'saveDevelopResult': _Art.befehl,
   'createDevelopMask': _Art.datei,
   'updateDevelopMaskShape': _Art.datei,
   'updateDevelopMaskAdjustments': _Art.befehl,

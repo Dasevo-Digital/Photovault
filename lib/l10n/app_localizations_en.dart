@@ -2350,6 +2350,10 @@ class AppTexteEn extends AppTexte {
       'Saving failed: the image could not be rendered.';
 
   @override
+  String get entwSpeichernServerFehlt =>
+      'Saving failed: the server is unreachable – the developed image has to go there.';
+
+  @override
   String get entwRestaurierungLaeuft => 'AI restoration';
 
   @override
