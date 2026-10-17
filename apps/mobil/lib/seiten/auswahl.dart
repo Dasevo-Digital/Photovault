@@ -23,11 +23,15 @@ class Auswahlleiste extends StatefulWidget {
     required this.sitzung,
     required this.zeilen,
     required this.aufheben,
+    this.papierkorb = false,
   });
 
   final Sitzung sitzung;
   final List<Rasterzeile> zeilen;
   final VoidCallback aufheben;
+
+  /// Im Papierkorb: teilen und zurückholen, sonst nichts.
+  final bool papierkorb;
 
   @override
   State<Auswahlleiste> createState() => _AuswahlleisteState();
@@ -162,11 +166,17 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     aufheben();
   }
 
+  Future<void> _zurueckholen() async {
+    await _db.fuehreAus(AusDemPapierkorb(_ids));
+    aufheben();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
     final alleFavorit = zeilen.every((z) => z.isFavorite);
+    final papierkorb = widget.papierkorb;
     return Material(
       elevation: 12,
       color: farben.surfaceContainerHigh,
@@ -201,76 +211,93 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                 ),
               ],
             ),
-            Row(
-              children: [
-                _Aktion(
-                  icon: Icons.share_outlined,
-                  text: t.auswahlTeilen,
-                  onPressed: () => _teile(context),
-                ),
-                _Aktion(
-                  icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
-                  text: t.auswahlFavorit,
-                  onPressed: _favorit,
-                ),
-                _Aktion(
-                  icon: Icons.download_outlined,
-                  text: t.auswahlHerunterladen,
-                  onPressed: () => _aufsTelefon(context),
-                ),
-                _Aktion(
-                  icon: Icons.delete_outline,
-                  text: t.auswahlPapierkorb,
-                  onPressed: () => _papierkorb(context),
-                ),
-              ],
-            ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  t.auswahlAlbumTitel,
-                  style: Theme.of(context).textTheme.titleSmall,
+            if (papierkorb)
+              Row(
+                children: [
+                  _Aktion(
+                    icon: Icons.share_outlined,
+                    text: t.auswahlTeilen,
+                    onPressed: () => _teile(context),
+                  ),
+                  _Aktion(
+                    icon: Icons.restore_from_trash_outlined,
+                    text: t.auswahlZurueckholen,
+                    onPressed: _zurueckholen,
+                  ),
+                ],
+              ),
+            if (!papierkorb) ...[
+              Row(
+                children: [
+                  _Aktion(
+                    icon: Icons.share_outlined,
+                    text: t.auswahlTeilen,
+                    onPressed: () => _teile(context),
+                  ),
+                  _Aktion(
+                    icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
+                    text: t.auswahlFavorit,
+                    onPressed: _favorit,
+                  ),
+                  _Aktion(
+                    icon: Icons.download_outlined,
+                    text: t.auswahlHerunterladen,
+                    onPressed: () => _aufsTelefon(context),
+                  ),
+                  _Aktion(
+                    icon: Icons.delete_outline,
+                    text: t.auswahlPapierkorb,
+                    onPressed: () => _papierkorb(context),
+                  ),
+                ],
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    t.auswahlAlbumTitel,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
               ),
-            ),
-            SizedBox(
-              height: 100,
-              child: FutureBuilder<List<AlbumData>>(
-                future: _alben,
-                builder: (context, snap) => ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  children: [
-                    _Albumkachel(
-                      text: t.auswahlAlbumNeu,
-                      onTap: () => _insAlbum(context, null),
-                      bild: ColoredBox(
-                        color: farben.surfaceContainerHighest,
-                        child: Icon(Icons.add, color: farben.primary),
-                      ),
-                    ),
-                    for (final a in snap.data ?? const <AlbumData>[])
+              SizedBox(
+                height: 100,
+                child: FutureBuilder<List<AlbumData>>(
+                  future: _alben,
+                  builder: (context, snap) => ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
                       _Albumkachel(
-                        text: a.name,
-                        onTap: () => _insAlbum(context, a),
-                        bild: FutureBuilder<AssetData?>(
-                          future: _titelbilder.putIfAbsent(
-                            a.id,
-                            () => _db.albumTitelbild(a),
-                          ),
-                          builder: (context, bild) => Miniatur(
-                            paths: sitzung.paths,
-                            relativ: bild.data?.thumbnailRelativePath,
-                          ),
+                        text: t.auswahlAlbumNeu,
+                        onTap: () => _insAlbum(context, null),
+                        bild: ColoredBox(
+                          color: farben.surfaceContainerHighest,
+                          child: Icon(Icons.add, color: farben.primary),
                         ),
                       ),
-                  ],
+                      for (final a in snap.data ?? const <AlbumData>[])
+                        _Albumkachel(
+                          text: a.name,
+                          onTap: () => _insAlbum(context, a),
+                          bild: FutureBuilder<AssetData?>(
+                            future: _titelbilder.putIfAbsent(
+                              a.id,
+                              () => _db.albumTitelbild(a),
+                            ),
+                            builder: (context, bild) => Miniatur(
+                              paths: sitzung.paths,
+                              relativ: bild.data?.thumbnailRelativePath,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
             const SizedBox(height: 6),
           ],
         ),

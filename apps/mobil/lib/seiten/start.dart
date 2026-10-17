@@ -4,13 +4,14 @@ import 'package:kern/services/groessentext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'alben.dart';
-import 'karte.dart';
+import 'bibliothek.dart';
 import 'konto.dart';
-import 'personen.dart';
 import 'suche.dart';
 import 'zeitleiste.dart';
 
-/// Die fünf Bereiche der App, unten umzuschalten. Jeder behält seinen
+/// Die vier Bereiche der App, unten umzuschalten – wie in Immich: Fotos,
+/// Suche, Alben und die Bibliothek mit Favoriten, Papierkorb, Karte und
+/// Personen. Jeder behält seinen
 /// Stand (Scrollposition, Suchtext), während man die anderen ansieht.
 class Start extends StatefulWidget {
   const Start({super.key, required this.sitzung});
@@ -48,19 +49,12 @@ class _StartState extends State<Start> {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final s = widget.sitzung;
-    final titel = [
-      t.navZeitleiste,
-      t.navSuche,
-      t.navAlben,
-      t.navPersonen,
-      t.navKarte,
-    ];
+    final titel = [t.navZeitleiste, t.navSuche, t.navAlben, t.navBibliothek];
     Widget seite(int i) => switch (i) {
       0 => Zeitleiste(sitzung: s),
       1 => Suche(sitzung: s),
       2 => Alben(sitzung: s),
-      3 => Personen(sitzung: s),
-      _ => Karte(sitzung: s),
+      _ => Bibliothek(sitzung: s),
     };
     return Scaffold(
       appBar: AppBar(
@@ -123,9 +117,8 @@ class _StartState extends State<Start> {
             child: IndexedStack(
               index: _bereich,
               children: [
-                // Erst gebaut, wenn man ihn zum ersten Mal öffnet – die
-                // Karte lädt sonst Kacheln, die niemand ansieht.
-                for (var i = 0; i < 5; i++)
+                // Erst gebaut, wenn man ihn zum ersten Mal öffnet.
+                for (var i = 0; i < titel.length; i++)
                   _gebaut.contains(i) ? seite(i) : const SizedBox.shrink(),
               ],
             ),
@@ -154,14 +147,9 @@ class _StartState extends State<Start> {
             label: t.navAlben,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.people_outline),
-            selectedIcon: const Icon(Icons.people),
-            label: t.navPersonen,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.map_outlined),
-            selectedIcon: const Icon(Icons.map),
-            label: t.navKarte,
+            icon: const Icon(Icons.video_library_outlined),
+            selectedIcon: const Icon(Icons.video_library),
+            label: t.navBibliothek,
           ),
         ],
       ),

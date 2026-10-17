@@ -47,11 +47,10 @@ class Personen extends StatelessWidget {
               children: [
                 AspectRatio(
                   aspectRatio: 1,
-                  child: ClipOval(
-                    child: Miniatur(
-                      paths: sitzung.paths,
-                      relativ: p.coverFaceCropPath,
-                    ),
+                  child: Personenbild(
+                    paths: sitzung.paths,
+                    name: p.name,
+                    relativ: p.coverFaceCropPath,
                   ),
                 ),
                 const SizedBox(height: 6),

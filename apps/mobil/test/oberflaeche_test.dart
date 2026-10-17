@@ -12,6 +12,7 @@ import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -479,6 +480,154 @@ void main() {
     await ab.up();
     await tester.pumpAndSettle();
     expect(find.byType(Auswahlleiste), findsNothing);
+  });
+
+  testWidgets('zwei Finger ändern die Spaltenzahl', (tester) async {
+    final tag = DateTime(2025, 6, 2, 12);
+    await rasterMitTagen(tester, [
+      for (var i = 0; i < 12; i++)
+        amTag('k$i', tag.subtract(Duration(minutes: i))),
+    ]);
+    int spalten() =>
+        (tester.widget<SliverGrid>(find.byType(SliverGrid).first).gridDelegate
+                as SliverGridDelegateWithFixedCrossAxisCount)
+            .crossAxisCount;
+    expect(spalten(), 4);
+    final mitte = tester.getCenter(find.byType(AufnahmenRaster));
+    // Auseinander: grössere Kacheln, weniger Spalten.
+    final a = await tester.startGesture(mitte - const Offset(40, 0));
+    final b = await tester.startGesture(mitte + const Offset(40, 0));
+    await tester.pump();
+    for (var i = 1; i <= 8; i++) {
+      await a.moveTo(mitte - Offset(40.0 + i * 12, 0));
+      await b.moveTo(mitte + Offset(40.0 + i * 12, 0));
+      await tester.pump();
+    }
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(spalten(), lessThan(4));
+    final weniger = spalten();
+    // Zusammen: mehr Spalten.
+    final c = await tester.startGesture(mitte - const Offset(150, 0));
+    final d = await tester.startGesture(mitte + const Offset(150, 0));
+    await tester.pump();
+    for (var i = 1; i <= 10; i++) {
+      await c.moveTo(mitte - Offset(150.0 - i * 13, 0));
+      await d.moveTo(mitte + Offset(150.0 - i * 13, 0));
+      await tester.pump();
+    }
+    await c.up();
+    await d.up();
+    await tester.pumpAndSettle();
+    expect(spalten(), greaterThan(weniger));
+  });
+
+  Future<(Sitzung, AppDatabase)> sitzungMit(
+    WidgetTester tester,
+    List<String> ids, {
+    bool imPapierkorb = false,
+  }) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_betrachter_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    for (final id in ids) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025),
+          importedAt: DateTime(2026),
+          isTrashed: Value(imPapierkorb),
+        ),
+      );
+    }
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    return (
+      Sitzung()
+        ..db = db
+        ..paths = pfade,
+      db,
+    );
+  }
+
+  testWidgets('Betrachter: nach unten wischen schliesst ihn', (tester) async {
+    final (sitzung, _) = await sitzungMit(tester, ['b1']);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  betrachterWeg(
+                    Betrachter(
+                      sitzung: sitzung,
+                      zeilen: [_zeile('b1', 0, 0)],
+                      start: 0,
+                    ),
+                  ),
+                ),
+                child: const Text('auf'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('auf'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Betrachter), findsOneWidget);
+    // Ein kurzer Zug federt zurück.
+    await tester.drag(find.byType(Betrachter), const Offset(0, 40));
+    await tester.pumpAndSettle();
+    expect(find.byType(Betrachter), findsOneWidget);
+    await tester.drag(find.byType(Betrachter), const Offset(0, 300));
+    await tester.pumpAndSettle();
+    expect(find.byType(Betrachter), findsNothing);
+    expect(find.text('auf'), findsOneWidget);
+  });
+
+  testWidgets('Papierkorb: das Blatt holt zurück statt wegzuwerfen', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, [
+      'p1',
+      'p2',
+    ], imPapierkorb: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: AufnahmenRaster(
+            sitzung: sitzung,
+            zeilen: [_zeile('p1', 0, 0), _zeile('p2', 0, 0)],
+            papierkorb: true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(AufnahmenRaster)));
+    await tester.longPress(find.byType(Miniatur).at(0));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlPapierkorb), findsNothing);
+    expect(find.text(t.auswahlAlbumTitel), findsNothing);
+    await tester.tap(find.text(t.auswahlZurueckholen));
+    await tester.pumpAndSettle();
+    expect((await db.assetById('p1'))!.isTrashed, isFalse);
+    expect((await db.assetById('p2'))!.isTrashed, isTrue);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

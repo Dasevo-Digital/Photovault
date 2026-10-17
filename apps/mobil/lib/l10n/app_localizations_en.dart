@@ -36,6 +36,28 @@ class AppTexteEn extends AppTexte {
   String get navKarte => 'Map';
 
   @override
+  String get navBibliothek => 'Library';
+
+  @override
+  String get bibFavoriten => 'Favorites';
+
+  @override
+  String get bibPapierkorb => 'Trash';
+
+  @override
+  String get bibAlle => 'All';
+
+  @override
+  String get bibFavoritenLeer => 'No favorites yet.';
+
+  @override
+  String get bibPapierkorbLeer => 'The trash is empty.';
+
+  @override
+  String get bibPapierkorbHinweis =>
+      'Restore here; delete permanently on the computer.';
+
+  @override
   String get zeitleisteLeer =>
       'No photos yet. Whatever reaches the server appears here.';
 
@@ -537,6 +559,9 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get auswahlAufheben => 'Clear selection';
+
+  @override
+  String get auswahlZurueckholen => 'Restore';
 
   @override
   String get auswahlTagWaehlen => 'Select all from this day';

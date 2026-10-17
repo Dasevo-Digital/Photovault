@@ -121,3 +121,44 @@ class Miniatur extends StatelessWidget {
     );
   }
 }
+
+/// Das Gesicht einer Person – oder, ohne Gesichtsbild, ihr Anfangsbuchstabe
+/// auf einer Fläche, statt eines leeren grauen Kreises.
+class Personenbild extends StatelessWidget {
+  const Personenbild({
+    super.key,
+    required this.paths,
+    required this.name,
+    required this.relativ,
+  });
+
+  final StoragePaths paths;
+  final String name;
+  final String? relativ;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = relativ;
+    if (r != null) {
+      return ClipOval(
+        child: Miniatur(paths: paths, relativ: r),
+      );
+    }
+    final farben = Theme.of(context).colorScheme;
+    final anfang = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: farben.secondaryContainer,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          anfang,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: farben.onSecondaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+}

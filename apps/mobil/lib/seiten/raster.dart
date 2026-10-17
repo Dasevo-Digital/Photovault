@@ -31,7 +31,12 @@ class AufnahmenRaster extends StatefulWidget {
     this.nachTagen = false,
     this.kopf,
     this.lokal = const {},
+    this.papierkorb = false,
   });
+
+  /// Die Aufnahmen liegen im Papierkorb: Das Blatt holt zurück, statt
+  /// wegzuwerfen, und der Betrachter ebenso.
+  final bool papierkorb;
 
   final Sitzung sitzung;
   final List<Rasterzeile> zeilen;
@@ -57,7 +62,20 @@ class _Kachelmarke {
 }
 
 class _AufnahmenRasterState extends State<AufnahmenRaster> {
-  static const _spalten = 4;
+  /// Zwei Finger auseinander: weniger, grössere Kacheln; zusammen: mehr.
+  /// Die Zahl gilt für dieses Gerät und bleibt (siehe Sitzung).
+  late var _spalten = widget.sitzung.rasterspalten;
+  static const _wenigsteSpalten = 2, _meisteSpalten = 6;
+  final _kneifer = <int, Offset>{};
+  double? _startAbstand;
+  var _startSpalten = Sitzung.spaltenVorgabe;
+
+  // Die Bildlaufleiste rechts: erscheint beim Rollen, verschwindet nach
+  // einer Pause; beim Ziehen zeigt sie den Monat oben im Bild.
+  var _leisteSichtbar = false;
+  var _leisteGezogen = false;
+  Timer? _leisteAus;
+  String? _leisteText;
 
   /// Wie nah am oberen oder unteren Rand der Finger beim Ziehen stehen
   /// muss, damit das Raster von selbst weiterrollt.
@@ -80,11 +98,211 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   bool get _waehlt => _auswahl.isNotEmpty;
 
   @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_gerollt);
+  }
+
+  @override
   void dispose() {
     _rollen?.cancel();
+    _leisteAus?.cancel();
     _scroll.dispose();
     super.dispose();
   }
+
+  // --- Zwei Finger ---------------------------------------------------------
+
+  double _abstand() {
+    final f = _kneifer.values.toList();
+    return (f[0] - f[1]).distance;
+  }
+
+  void _fingerAb(PointerDownEvent e) {
+    _kneifer[e.pointer] = e.position;
+    if (_kneifer.length == 2) {
+      _startAbstand = _abstand();
+      _startSpalten = _spalten;
+    }
+  }
+
+  void _fingerZug(PointerMoveEvent e) {
+    if (!_kneifer.containsKey(e.pointer)) return;
+    _kneifer[e.pointer] = e.position;
+    final start = _startAbstand;
+    if (_kneifer.length != 2 || start == null || start < 30) return;
+    final ziel = (_startSpalten / (_abstand() / start)).round().clamp(
+      _wenigsteSpalten,
+      _meisteSpalten,
+    );
+    if (ziel != _spalten) {
+      HapticFeedback.selectionClick();
+      _setzeSpalten(ziel);
+    }
+  }
+
+  void _fingerWeg(PointerEvent e) {
+    _kneifer.remove(e.pointer);
+    if (_kneifer.length < 2 && _startAbstand != null) {
+      _startAbstand = null;
+      unawaited(widget.sitzung.setzeRasterspalten(_spalten));
+    }
+  }
+
+  /// Neue Spaltenzahl – und ungefähr dieselbe Stelle im Raster danach.
+  void _setzeSpalten(int n) {
+    final pos = _scroll.hasClients ? _scroll.position : null;
+    final anteil = pos == null || pos.maxScrollExtent <= 0
+        ? 0.0
+        : pos.pixels / pos.maxScrollExtent;
+    setState(() => _spalten = n);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final p = _scroll.position;
+      _scroll.jumpTo(
+        (anteil * p.maxScrollExtent).clamp(
+          p.minScrollExtent,
+          p.maxScrollExtent,
+        ),
+      );
+    });
+  }
+
+  // --- Bildlaufleiste ------------------------------------------------------
+
+  void _gerollt() {
+    if (!_scroll.hasClients) return;
+    final pos = _scroll.position;
+    // Kurze Listen brauchen keine.
+    if (pos.maxScrollExtent < pos.viewportDimension * 2) return;
+    if (!_leisteSichtbar) setState(() => _leisteSichtbar = true);
+    _leisteAus?.cancel();
+    if (!_leisteGezogen) {
+      _leisteAus = Timer(const Duration(milliseconds: 1500), () {
+        if (mounted && !_leisteGezogen) {
+          setState(() => _leisteSichtbar = false);
+        }
+      });
+    }
+  }
+
+  /// Der Monat der obersten sichtbaren Kachel.
+  String? _monatOben() {
+    final box = _flaeche.currentContext?.findRenderObject();
+    if (box is! RenderBox) return null;
+    for (var y = 8.0; y < 240; y += 24) {
+      final i = _indexBei(box.localToGlobal(Offset(24, y)));
+      if (i != null) {
+        final sprache = Localizations.localeOf(context).toLanguageTag();
+        return DateFormat.yMMMM(
+          sprache,
+        ).format(widget.zeilen[i].fileCreatedAt.toLocal());
+      }
+    }
+    return null;
+  }
+
+  Widget _bildlaufleiste() => AnimatedBuilder(
+    animation: _scroll,
+    builder: (context, _) => LayoutBuilder(
+      builder: (context, c) {
+        const griff = 44.0;
+        final farben = Theme.of(context).colorScheme;
+        final pos = _scroll.hasClients ? _scroll.position : null;
+        final max = pos?.maxScrollExtent ?? 0;
+        final spielraum = c.maxHeight - griff;
+        final anteil = pos == null || max <= 0
+            ? 0.0
+            : (pos.pixels / max).clamp(0.0, 1.0);
+        final oben = anteil * spielraum;
+        void ziehe(Offset global) {
+          final box = context.findRenderObject();
+          if (box is! RenderBox || pos == null || max <= 0) return;
+          final y = box.globalToLocal(global).dy;
+          final a = ((y - griff / 2) / spielraum).clamp(0.0, 1.0);
+          _scroll.jumpTo(a * max);
+          final text = _monatOben();
+          if (text != _leisteText) setState(() => _leisteText = text);
+        }
+
+        final sichtbar = _leisteSichtbar || _leisteGezogen;
+        return IgnorePointer(
+          ignoring: !sichtbar,
+          child: AnimatedOpacity(
+            opacity: sichtbar ? 1 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: Stack(
+              children: [
+                if (_leisteGezogen && _leisteText != null)
+                  Positioned(
+                    right: 52,
+                    top: oben + 6,
+                    child: Material(
+                      color: farben.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          _leisteText!,
+                          style: TextStyle(
+                            color: farben.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  right: 0,
+                  top: oben,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragStart: (d) {
+                      _leisteAus?.cancel();
+                      HapticFeedback.selectionClick();
+                      setState(() => _leisteGezogen = true);
+                      ziehe(d.globalPosition);
+                    },
+                    onVerticalDragUpdate: (d) => ziehe(d.globalPosition),
+                    onVerticalDragEnd: (_) {
+                      setState(() {
+                        _leisteGezogen = false;
+                        _leisteText = null;
+                      });
+                      _gerollt();
+                    },
+                    child: Container(
+                      key: const ValueKey('bildlaufleiste'),
+                      width: 40,
+                      height: griff,
+                      decoration: BoxDecoration(
+                        color: farben.surfaceContainerHighest,
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(22),
+                        ),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.unfold_more,
+                        size: 20,
+                        color: farben.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
 
   @override
   void didUpdateWidget(AufnahmenRaster alt) {
@@ -117,9 +335,14 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
         sitzung: widget.sitzung,
         zeilen: server,
         start: server.indexWhere((x) => x.id == z.id),
+        imPapierkorb: widget.papierkorb,
       );
     }
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => seite));
+    Navigator.of(context).push(
+      l != null
+          ? MaterialPageRoute<void>(builder: (_) => seite)
+          : betrachterWeg(seite),
+    );
   }
 
   /// Was nur auf dem Telefon liegt, lässt sich nicht wählen – es gibt
@@ -373,7 +596,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   }
 
   SliverGrid _gitter(int von, int bis) => SliverGrid(
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: _spalten,
       mainAxisSpacing: 2,
       crossAxisSpacing: 2,
@@ -439,7 +662,24 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     );
     return Stack(
       children: [
-        CustomScrollView(key: _flaeche, controller: _scroll, slivers: slivers),
+        Listener(
+          onPointerDown: _fingerAb,
+          onPointerMove: _fingerZug,
+          onPointerUp: _fingerWeg,
+          onPointerCancel: _fingerWeg,
+          child: CustomScrollView(
+            key: _flaeche,
+            controller: _scroll,
+            slivers: slivers,
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          bottom: _waehlt ? 300 : 0,
+          width: 240,
+          child: _bildlaufleiste(),
+        ),
         if (_waehlt)
           Positioned(
             left: 0,
@@ -447,6 +687,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             bottom: 0,
             child: Auswahlleiste(
               sitzung: widget.sitzung,
+              papierkorb: widget.papierkorb,
               zeilen: [
                 for (final z in zeilen)
                   if (_auswahl.contains(z.id)) z,

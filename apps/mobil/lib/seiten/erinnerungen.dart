@@ -62,8 +62,8 @@ class _ErinnerungsstreifenState extends State<Erinnerungsstreifen> {
   }
 
   void _oeffne(List<AssetData> dinge) => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => Betrachter(
+    betrachterWeg(
+      Betrachter(
         sitzung: widget.sitzung,
         zeilen: [for (final a in dinge) Rasterzeile.aus(a)],
         start: 0,

@@ -14,19 +14,41 @@ import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 
+/// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
+/// das Raster dahinter erscheint, und mit einer Blende statt eines Schubs
+/// von der Seite – wie in Immich.
+Route<void> betrachterWeg(Widget seite) => PageRouteBuilder<void>(
+  opaque: false,
+  barrierColor: Colors.transparent,
+  transitionDuration: const Duration(milliseconds: 180),
+  reverseTransitionDuration: const Duration(milliseconds: 160),
+  pageBuilder: (_, _, _) => seite,
+  transitionsBuilder: (_, animation, _, kind) =>
+      FadeTransition(opacity: animation, child: kind),
+);
+
 /// Eine Aufnahme nach der anderen: wischen, zoomen, abspielen – und das
 /// Wenige, was man am Telefon tut: Favorit, Teilen, Angaben, Papierkorb.
+///
+/// Wie in Immich: nach unten wischen schliesst (das Bild folgt dem Finger,
+/// der Hintergrund wird durchsichtig), nach oben wischen zeigt die Angaben.
+/// Ist das Bild vergrössert, gehört das Wischen dem Verschieben.
 class Betrachter extends StatefulWidget {
   const Betrachter({
     super.key,
     required this.sitzung,
     required this.zeilen,
     required this.start,
+    this.imPapierkorb = false,
   });
 
   final Sitzung sitzung;
   final List<Rasterzeile> zeilen;
   final int start;
+
+  /// Die Aufnahmen liegen im Papierkorb: zurückholen statt Favorit und
+  /// Papierkorb.
+  final bool imPapierkorb;
 
   @override
   State<Betrachter> createState() => _BetrachterState();
@@ -37,6 +59,13 @@ class _BetrachterState extends State<Betrachter> {
   late int _index = widget.start;
   final _daten = <String, AssetData>{};
   var _leiste = true;
+
+  // Das senkrechte Wischen: wie weit der Finger gezogen hat, ob er gerade
+  // zieht (dann folgt das Bild ohne Verzögerung) und ob das Bild
+  // vergrössert ist (dann wischt niemand).
+  var _zug = 0.0;
+  var _zieht = false;
+  var _gezoomt = false;
 
   AppDatabase get _db => widget.sitzung.db;
 
@@ -111,6 +140,11 @@ class _BetrachterState extends State<Betrachter> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _zurueckholen() async {
+    await _db.fuehreAus(AusDemPapierkorb([_aktuell]));
+    if (mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _angaben() async {
     final a = await _lade(_aktuell);
     if (a == null || !mounted) return;
@@ -180,15 +214,39 @@ class _BetrachterState extends State<Betrachter> {
     );
   }
 
+  void _zugWeiter(DragUpdateDetails d) => setState(() {
+    _zieht = true;
+    _zug += d.delta.dy;
+  });
+
+  void _zugEnde(DragEndDetails d) {
+    final tempo = d.primaryVelocity ?? 0;
+    final runter = _zug > 110 || tempo > 900;
+    final hoch = _zug < -50 || tempo < -700;
+    setState(() {
+      _zieht = false;
+      if (!runter) _zug = 0;
+    });
+    if (runter) {
+      Navigator.of(context).pop();
+    } else if (hoch) {
+      _angaben();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final zeile = widget.zeilen[_index];
     final favorit = _daten[zeile.id]?.isFavorite ?? zeile.isFavorite;
+    // Nach unten folgt das Bild dem Finger und wird kleiner; nach oben nur
+    // ein Stück, als Andeutung, dass dort etwas kommt.
+    final verschiebung = _zug > 0 ? _zug : _zug * 0.25;
+    final anteil = (_zug / 400).clamp(0.0, 1.0);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black.withValues(alpha: 1 - anteil * 0.85),
       extendBodyBehindAppBar: true,
-      appBar: _leiste
+      appBar: _leiste && _zug == 0
           ? AppBar(
               backgroundColor: Colors.black54,
               foregroundColor: Colors.white,
@@ -204,11 +262,14 @@ class _BetrachterState extends State<Betrachter> {
                 ).format(zeile.fileCreatedAt.toLocal()),
               ),
               actions: [
-                IconButton(
-                  tooltip: t.betrachterFavorit,
-                  icon: Icon(favorit ? Icons.favorite : Icons.favorite_border),
-                  onPressed: _favorit,
-                ),
+                if (!widget.imPapierkorb)
+                  IconButton(
+                    tooltip: t.betrachterFavorit,
+                    icon: Icon(
+                      favorit ? Icons.favorite : Icons.favorite_border,
+                    ),
+                    onPressed: _favorit,
+                  ),
                 IconButton(
                   tooltip: t.betrachterTeilen,
                   icon: const Icon(Icons.share_outlined),
@@ -219,41 +280,71 @@ class _BetrachterState extends State<Betrachter> {
                   icon: const Icon(Icons.info_outline),
                   onPressed: _angaben,
                 ),
-                IconButton(
-                  tooltip: t.betrachterPapierkorb,
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: _papierkorb,
-                ),
+                if (widget.imPapierkorb)
+                  IconButton(
+                    tooltip: t.auswahlZurueckholen,
+                    icon: const Icon(Icons.restore_from_trash_outlined),
+                    onPressed: _zurueckholen,
+                  )
+                else
+                  IconButton(
+                    tooltip: t.betrachterPapierkorb,
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: _papierkorb,
+                  ),
               ],
             )
           : null,
       body: GestureDetector(
         onTap: () => setState(() => _leiste = !_leiste),
-        child: PhotoViewGallery.builder(
-          pageController: _seiten,
-          itemCount: widget.zeilen.length,
-          onPageChanged: (i) => setState(() => _index = i),
-          loadingBuilder: (_, _) => const Center(
-            child: CircularProgressIndicator(color: Colors.white54),
-          ),
-          builder: (context, i) {
-            final z = widget.zeilen[i];
-            if (z.type == 'VIDEO') {
+        onVerticalDragUpdate: _gezoomt ? null : _zugWeiter,
+        onVerticalDragEnd: _gezoomt ? null : _zugEnde,
+        child: AnimatedContainer(
+          duration: _zieht ? Duration.zero : const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          transformAlignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..translateByDouble(0, verschiebung, 0, 1)
+            ..scaleByDouble(1 - anteil * 0.3, 1 - anteil * 0.3, 1, 1),
+          child: PhotoViewGallery.builder(
+            pageController: _seiten,
+            itemCount: widget.zeilen.length,
+            backgroundDecoration: const BoxDecoration(
+              color: Colors.transparent,
+            ),
+            scaleStateChangedCallback: (zustand) => setState(
+              () => _gezoomt = zustand != PhotoViewScaleState.initial,
+            ),
+            onPageChanged: (i) => setState(() {
+              _index = i;
+              _gezoomt = false;
+            }),
+            loadingBuilder: (_, _) => const Center(
+              child: CircularProgressIndicator(color: Colors.white54),
+            ),
+            builder: (context, i) {
+              final z = widget.zeilen[i];
+              if (z.type == 'VIDEO') {
+                return PhotoViewGalleryPageOptions.customChild(
+                  disableGestures: true,
+                  child: _VideoSeite(
+                    sitzung: widget.sitzung,
+                    id: z.id,
+                    lade: _lade,
+                  ),
+                );
+              }
               return PhotoViewGalleryPageOptions.customChild(
-                disableGestures: true,
-                child: _VideoSeite(
+                minScale: PhotoViewComputedScale.contained,
+                maxScale: PhotoViewComputedScale.covered * 4,
+                child: _BildSeite(
                   sitzung: widget.sitzung,
-                  id: z.id,
+                  zeile: z,
                   lade: _lade,
                 ),
               );
-            }
-            return PhotoViewGalleryPageOptions.customChild(
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 4,
-              child: _BildSeite(sitzung: widget.sitzung, zeile: z, lade: _lade),
-            );
-          },
+            },
+          ),
         ),
       ),
     );

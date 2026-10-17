@@ -36,6 +36,28 @@ class AppTexteDe extends AppTexte {
   String get navKarte => 'Karte';
 
   @override
+  String get navBibliothek => 'Bibliothek';
+
+  @override
+  String get bibFavoriten => 'Favoriten';
+
+  @override
+  String get bibPapierkorb => 'Papierkorb';
+
+  @override
+  String get bibAlle => 'Alle';
+
+  @override
+  String get bibFavoritenLeer => 'Noch keine Favoriten.';
+
+  @override
+  String get bibPapierkorbLeer => 'Der Papierkorb ist leer.';
+
+  @override
+  String get bibPapierkorbHinweis =>
+      'Zurückholen geht hier; endgültig löschen am Rechner.';
+
+  @override
   String get zeitleisteLeer =>
       'Noch keine Aufnahmen. Was auf den Server kommt, erscheint hier.';
 
@@ -538,6 +560,9 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get auswahlAufheben => 'Auswahl aufheben';
+
+  @override
+  String get auswahlZurueckholen => 'Zurückholen';
 
   @override
   String get auswahlTagWaehlen => 'Alle Aufnahmen dieses Tages auswählen';

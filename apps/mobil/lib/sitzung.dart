@@ -155,6 +155,17 @@ class Sitzung extends ChangeNotifier {
     await pflegeZwischenspeicher();
   }
 
+  /// Spalten des Rasters, mit zwei Fingern einstellbar (2 bis 6).
+  static const spaltenVorgabe = 4;
+  int get rasterspalten => verbindung?.rasterspalten ?? spaltenVorgabe;
+
+  Future<void> setzeRasterspalten(int n) async {
+    final v = verbindung;
+    if (v == null || n == rasterspalten) return;
+    verbindung = v.mitRasterspalten(n);
+    await verbindung!.schreibe(await _ordner());
+  }
+
   /// Welche Fassung der Server ist (`/api/v1/zustand`), für die Kontoseite.
   String? serverfassung;
 

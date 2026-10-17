@@ -18,6 +18,7 @@ class Verbindungsdatei {
     required this.token,
     this.rechenhilfe = false,
     this.zwischenspeicherMb,
+    this.rasterspalten,
   });
 
   /// Die Adresse des Servers, z. B. `https://fotos.example.de/`.
@@ -33,23 +34,32 @@ class Verbindungsdatei {
   /// `Zwischenspeicher`); `null` heisst Vorgabe, 0 heisst ohne Grenze.
   final int? zwischenspeicherMb;
 
-  Verbindungsdatei mitRechenhilfe(bool an) => Verbindungsdatei(
+  /// Wie viele Spalten das Raster auf diesem Gerät zeigt (Zwei-Finger-
+  /// Geste in der Handy-App); `null` heisst Vorgabe.
+  final int? rasterspalten;
+
+  Verbindungsdatei _mit({
+    bool? rechenhilfe,
+    int? Function()? zwischenspeicherMb,
+    int? Function()? rasterspalten,
+  }) => Verbindungsdatei(
     server: server,
     konto: konto,
     geraet: geraet,
     token: token,
-    rechenhilfe: an,
-    zwischenspeicherMb: zwischenspeicherMb,
+    rechenhilfe: rechenhilfe ?? this.rechenhilfe,
+    zwischenspeicherMb: zwischenspeicherMb == null
+        ? this.zwischenspeicherMb
+        : zwischenspeicherMb(),
+    rasterspalten: rasterspalten == null ? this.rasterspalten : rasterspalten(),
   );
 
-  Verbindungsdatei mitZwischenspeicher(int? mb) => Verbindungsdatei(
-    server: server,
-    konto: konto,
-    geraet: geraet,
-    token: token,
-    rechenhilfe: rechenhilfe,
-    zwischenspeicherMb: mb,
-  );
+  Verbindungsdatei mitRechenhilfe(bool an) => _mit(rechenhilfe: an);
+
+  Verbindungsdatei mitZwischenspeicher(int? mb) =>
+      _mit(zwischenspeicherMb: () => mb);
+
+  Verbindungsdatei mitRasterspalten(int? n) => _mit(rasterspalten: () => n);
 
   static File _datei(Directory bibliothek) =>
       File(p.join(bibliothek.path, 'verbindung.json'));
@@ -67,6 +77,7 @@ class Verbindungsdatei {
       token: j['token'] as String,
       rechenhilfe: j['rechenhilfe'] == true,
       zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
+      rasterspalten: (j['rasterspalten'] as num?)?.toInt(),
     );
   }
 
@@ -89,6 +100,7 @@ class Verbindungsdatei {
         if (rechenhilfe) 'rechenhilfe': true,
         if (zwischenspeicherMb != null)
           'zwischenspeicherMb': zwischenspeicherMb,
+        if (rasterspalten != null) 'rasterspalten': rasterspalten,
       }),
       flush: true,
     );

@@ -151,6 +151,48 @@ abstract class AppTexte {
   /// **'Karte'**
   String get navKarte;
 
+  /// No description provided for @navBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek'**
+  String get navBibliothek;
+
+  /// No description provided for @bibFavoriten.
+  ///
+  /// In de, this message translates to:
+  /// **'Favoriten'**
+  String get bibFavoriten;
+
+  /// No description provided for @bibPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb'**
+  String get bibPapierkorb;
+
+  /// No description provided for @bibAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle'**
+  String get bibAlle;
+
+  /// No description provided for @bibFavoritenLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Favoriten.'**
+  String get bibFavoritenLeer;
+
+  /// No description provided for @bibPapierkorbLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Papierkorb ist leer.'**
+  String get bibPapierkorbLeer;
+
+  /// No description provided for @bibPapierkorbHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurückholen geht hier; endgültig löschen am Rechner.'**
+  String get bibPapierkorbHinweis;
+
   /// No description provided for @zeitleisteLeer.
   ///
   /// In de, this message translates to:
@@ -924,6 +966,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Auswahl aufheben'**
   String get auswahlAufheben;
+
+  /// No description provided for @auswahlZurueckholen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurückholen'**
+  String get auswahlZurueckholen;
 
   /// No description provided for @auswahlTagWaehlen.
   ///
