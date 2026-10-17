@@ -75,6 +75,18 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.33.1" date="2026-10-17">
+      <description>
+        <p>The server shows its version in the browser and on the phone; the web interface gains memories, the trash with restore, and an administration section (storage, backup, analysis, accounts). The phone map turns dark in dark mode.</p>
+      </description>
+    </release>
+    <release version="3.33.0" date="2026-10-17">
+      <description>
+        <p>A web interface at /app/: sign-in with TOTP, timeline, viewer, search, albums, people, multi-select and account page, with a cookie session that is a device like any other and strict security headers.</p>
+        <p>The server backs up every library to a NAS each night, encrypted and restorable with the app; developing photos works on a connected computer again; confident face suggestions can be accepted automatically (database schema 94).</p>
+        <p>Phone: multi-select, memories, photos that only exist on the phone, cache limit, free up space, PSD files.</p>
+      </description>
+    </release>
     <release version="3.32.1" date="2026-10-15">
       <description>
         <p>Every text field, password fields included, offers Paste in its right-click menu again; before, the entry was missing whenever the app had not recognised the clipboard as pasteable.</p>
