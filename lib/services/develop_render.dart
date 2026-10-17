@@ -9,7 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
 import '../widgets/develop_preview.dart';
-import 'develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import 'develop_nachbarn.dart';
 import 'native_image_converter.dart';
 

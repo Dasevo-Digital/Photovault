@@ -102,6 +102,26 @@
     <div id="einst-liste"></div>
     <p id="einst-meldung" class="leise"></p>
   </section>
+  <section id="bereich-entwickeln" hidden>
+    <div class="entw">
+      <div class="entw-bild">
+        <canvas id="entw-leinwand"></canvas>
+        <p id="entw-hinweis" class="leise klein"></p>
+      </div>
+      <aside class="entw-seite">
+        <h2>Entwickeln</h2>
+        <div id="entw-felder"></div>
+        <p id="entw-meldung" class="leise klein" role="status"></p>
+        <div class="entw-knoepfe">
+          <button id="entw-vergleich" type="button" title="Gedrückt halten zeigt das Original">Vorher</button>
+          <button id="entw-zurueck" type="button">Regler zurücksetzen</button>
+          <button id="entw-original" type="button" hidden>Entwicklung entfernen</button>
+          <button id="entw-abbrechen" type="button">Abbrechen</button>
+          <button id="entw-speichern" type="button" class="haupt">Speichern</button>
+        </div>
+      </aside>
+    </div>
+  </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>
     <p id="konto-wer"></p>
@@ -176,10 +196,12 @@
   <button id="favorit" type="button" aria-label="Favorit">♡</button>
   <a id="laden" download aria-label="Original herunterladen">⤓</a>
   <button id="info" type="button" aria-label="Angaben" aria-pressed="false">i</button>
+  <button id="bearbeiten" type="button" aria-label="Entwickeln" title="Entwickeln">✎</button>
   <aside id="angaben-feld" hidden></aside>
 </div>
 
 <script src="leaflet/leaflet.js"></script>
 <script src="app.js"></script>
+<script src="entwickeln.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-import '../services/develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 

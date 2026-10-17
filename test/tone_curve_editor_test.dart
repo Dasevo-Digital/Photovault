@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import 'package:photo_vault/widgets/color_mixer_panel.dart';
 import 'package:photo_vault/widgets/tone_curve_editor.dart';
 

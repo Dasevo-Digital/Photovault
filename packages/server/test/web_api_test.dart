@@ -486,6 +486,102 @@ void main() {
     expect(fremd['papierkorbLeeren'], false);
   });
 
+  test(
+    'Entwickeln: Regler lesen, Kurve als Textur, Speichern über den Befehl',
+    () async {
+      final a = await ladeHoch(erikaToken, 'e1.jpg', 10);
+      var d = await jsonAus(
+        await frag('GET', '/api/v1/entwickeln/$a', token: erikaToken),
+      );
+      expect(d['quelle'], 'original');
+      expect(d['einstellungen'], isNull);
+      expect(d.containsKey('kurve'), isFalse);
+
+      // Eine Kurve vom Rechner kommt als fertige 256×1-Textur an.
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await db
+          .into(db.developSettings)
+          .insert(
+            DevelopSettingsCompanion.insert(
+              assetId: a,
+              exposure: const Value(0.5),
+              toneCurveJson: const Value(
+                '{"zusammen":[{"x":0,"y":0},{"x":0.5,"y":0.7},{"x":1,"y":1}]}',
+              ),
+              updatedAt: DateTime(2026, 10, 17),
+            ),
+          );
+      d = await jsonAus(
+        await frag('GET', '/api/v1/entwickeln/$a', token: erikaToken),
+      );
+      expect((d['einstellungen']! as Map)['exposure'], 0.5);
+      expect(base64Decode(d['kurve']! as String).length, 256 * 4);
+      expect(d.containsKey('wuerfel'), isFalse);
+
+      // So speichert der Browser: erst die Datei, dann der Befehl.
+      final jpeg = Uint8List.fromList(
+        img.encodeJpg(img.Image(width: 8, height: 8)),
+      );
+      final pfad = 'developed/$a-1.jpg';
+      expect(
+        (await frag(
+          'PUT',
+          '/api/v1/dateien/$pfad',
+          token: erikaToken,
+          kopf: {'content-length': '${jpeg.length}'},
+          inhalt: Stream.value(jpeg),
+        )).statusCode,
+        204,
+      );
+      expect(
+        (await befehl(erikaToken, 'entwicklungSpeichern', {
+          'id': a,
+          'pfad': pfad,
+          'einstellungen': {
+            'asset_id': a,
+            'exposure': 1.25,
+            'temperature': null,
+            'tint': null,
+            'contrast': 0.2,
+            'shadows': 0.0,
+            'highlights': 0.0,
+            'sharpness': 0.0,
+            'noise_reduction': 0.0,
+            'clarity': 0.0,
+            'vignette': 0.0,
+            'lut_path': null,
+            'lut_strength': 1.0,
+            'lens_correction_enabled': true,
+            'tone_curve_json': null,
+            'color_mixer_json': null,
+            'updated_at': DateTime(2026, 10, 17, 12).toIso8601String(),
+          },
+        })).statusCode,
+        200,
+      );
+      final nachher = (await db.assetById(a))!;
+      expect(nachher.developedRelativePath, pfad);
+      expect((await db.developSettingsForAsset(a))!.exposure, 1.25);
+      // Der Betrachter zeigt die entwickelte Fassung, das Entwickeln
+      // rechnet weiter aus dem Original.
+      Future<int> laenge(String art) async => (await (await frag(
+        'GET',
+        '/api/v1/aufnahmen/$a/$art',
+        token: erikaToken,
+      )).read().expand((x) => x).toList()).length;
+      expect(await laenge('ansicht'), jpeg.length);
+      expect(await laenge('original'), isNot(jpeg.length));
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/entwickeln/$a',
+          token: maxToken,
+        )).statusCode,
+        404,
+      );
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

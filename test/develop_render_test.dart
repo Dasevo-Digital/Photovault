@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import 'package:photo_vault/services/develop_render.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
 

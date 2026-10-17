@@ -995,8 +995,9 @@ function oeffne(i) {
   } else {
     video.hidden = true;
     bild.hidden = false;
-    bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/vorschau`;
+    bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
   }
+  $('bearbeiten').hidden = a.art === 'video';
   $('angaben').textContent = `${datumZeit.format(new Date(a.aufgenommen))} · ${a.name}`;
   $('favorit').textContent = a.favorit ? '♥' : '♡';
   $('laden').href = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
@@ -1101,6 +1102,11 @@ async function zeigeAngaben() {
   feld.replaceChildren(...teile);
 }
 
+$('bearbeiten').addEventListener('click', () => {
+  const a = liste && liste.aufnahmen[offen];
+  if (a && a.art !== 'video') location.hash = `#/entwickeln/${encodeURIComponent(a.id)}`;
+});
+
 $('info').addEventListener('click', () => {
   angabenOffen = !angabenOffen;
   $('info').setAttribute('aria-pressed', String(angabenOffen));
@@ -1160,6 +1166,7 @@ async function zeigeWeg() {
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
+      case 'entwickeln': await zeigeEntwickeln(teile[1]); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');

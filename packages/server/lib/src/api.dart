@@ -6,6 +6,9 @@ import 'dart:isolate';
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/asset_display_path.dart';
+import 'package:kern/services/cube_lut.dart';
+import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplicate_selection.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/kartengruppen.dart';
@@ -184,6 +187,7 @@ Handler baueApi({
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/statistik', api.statistik)
     ..get('/api/v1/einstellungen', api.einstellungen)
+    ..get('/api/v1/entwickeln/<id>', api.entwickeln)
     ..get('/api/v1/stammbaum', api.stammbaum)
     ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
@@ -772,6 +776,76 @@ class _Api {
     });
   }
 
+  /// Was der Browser zum Entwickeln braucht: die gespeicherten Regler –
+  /// unter den Spaltennamen, die `entwicklungSpeichern` erwartet –, aus
+  /// welcher Datei er rechnet, und Tonkurve und Farbwürfel als fertige
+  /// Texturen. Die Tabellen baut derselbe Code wie am Rechner
+  /// (develop_color.dart); der Browser schlägt nur nach, wie der Shader.
+  ///
+  /// Rohformate und HEIC kann ein Browser nicht lesen: Er rechnet dann aus
+  /// der Vorschau (`quelle: vorschau`).
+  Future<Response> entwickeln(Request anfrage, String id) async {
+    final b = (await _bereich(anfrage)).bibliothek;
+    final db = b.db;
+    final a = await db.assetById(id);
+    if (a == null || a.isLocked || a.type != 'IMAGE') {
+      return _json({'fehler': 'unbekannt'}, status: 404);
+    }
+    final e = await db.developSettingsForAsset(id);
+    final format =
+        (a.dateiformat ?? p.extension(a.originalFileName).replaceFirst('.', ''))
+            .toLowerCase();
+    final browserTauglich = const {
+      'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', //
+    }.contains(format);
+
+    final kurve = toneCurveAus(e?.toneCurveJson);
+    final mischer = colorMixerAus(e?.colorMixerJson);
+    CubeLut? lut;
+    final lutPfad = e?.lutPath;
+    if (lutPfad != null && (e?.lutStrength ?? 0) > 0) {
+      try {
+        lut = parseCubeLut(await b.pfade.absolute(lutPfad).readAsString());
+      } catch (_) {
+        // Eine fehlende oder kaputte Tabelle wirkt eben nicht.
+      }
+    }
+    return _json({
+      'aufnahme': zeileAlsJson(Rasterzeile.aus(a)),
+      'quelle': browserTauglich ? 'original' : 'vorschau',
+      'entwickelt': a.developedRelativePath != null,
+      'einstellungen': e == null
+          ? null
+          : {
+              'exposure': e.exposure,
+              'temperature': e.temperature,
+              'tint': e.tint,
+              'contrast': e.contrast,
+              'shadows': e.shadows,
+              'highlights': e.highlights,
+              'sharpness': e.sharpness,
+              'noise_reduction': e.noiseReduction,
+              'clarity': e.clarity,
+              'vignette': e.vignette,
+              'lut_path': e.lutPath,
+              'lut_strength': e.lutStrength,
+              'lens_correction_enabled': e.lensCorrectionEnabled,
+              'tone_curve_json': e.toneCurveJson,
+              'color_mixer_json': e.colorMixerJson,
+            },
+      if (!kurve.istNeutral)
+        'kurve': base64Encode(packCurveLutForTexture(buildCurveLut(kurve))),
+      if (!mischer.istNeutral || lut != null) ...{
+        'wuerfel': base64Encode(
+          packColorCubeForTexture(
+            buildColorCube(mischer, lut: lut, lutStaerke: e?.lutStrength ?? 1),
+          ),
+        ),
+        'wuerfelKante': colorCubeSize,
+      },
+    });
+  }
+
   Future<Response> orte(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final zoom =
@@ -976,6 +1050,12 @@ class _Api {
     if (a == null || a.isLocked) return Response.notFound(null);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
+      // Was der Betrachter zeigt – wie in den Apps: restauriert,
+      // entwickelt, gekürzt, Vorschau, Original (displayRelativePath).
+      'ansicht' =>
+        a.type == 'IMAGE'
+            ? displayRelativePath(a)
+            : (a.previewRelativePath ?? a.thumbnailRelativePath),
       'vorschau' =>
         a.previewRelativePath ??
             (a.type == 'IMAGE' ? a.relativePath : a.thumbnailRelativePath),

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import 'package:photo_vault/services/native_image_converter.dart';
 import 'package:photo_vault/widgets/develop_preview.dart';
 

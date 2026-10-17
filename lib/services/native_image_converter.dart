@@ -10,8 +10,8 @@ export 'package:kern/services/bildwerkzeuge.dart'
     show VideoThumbnailResult, heicAndRawExtensions;
 
 import 'package:kern/services/bildwerkzeuge.dart';
-import 'cube_lut.dart';
-import 'develop_color.dart';
+import 'package:kern/services/cube_lut.dart';
+import 'package:kern/services/develop_color.dart';
 import 'develop_render.dart';
 import 'package:kern/services/exif_camera.dart';
 import 'package:kern/services/objektivkorrektur.dart';

@@ -7,8 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as pfad;
 import 'package:kern/db/database.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
-import 'package:photo_vault/services/cube_lut.dart';
-import 'package:photo_vault/services/develop_color.dart';
+import 'package:kern/services/cube_lut.dart';
+import 'package:kern/services/develop_color.dart';
 
 /// Das Einlesen von `.cube`-Dateien und das Hineinrechnen in den
 /// vorhandenen Farbwürfel.

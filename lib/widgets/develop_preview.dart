@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../services/develop_color.dart';
+import 'package:kern/services/develop_color.dart';
 import '../services/develop_nachbarn.dart';
 import '../services/native_image_converter.dart';
 
