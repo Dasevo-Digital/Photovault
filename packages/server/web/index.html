@@ -19,6 +19,7 @@
     <a href="#/personen" data-bereich="personen">Personen</a>
     <a href="#/karte" data-bereich="karte">Karte</a>
     <a href="#/reisen" data-bereich="reisen">Reisen</a>
+    <a href="#/stammbaum" data-bereich="stammbaum">Stammbaum</a>
     <a href="#/statistik" data-bereich="statistik">Statistik</a>
     <a href="#/duplikate" data-bereich="duplikate">Duplikate</a>
     <a href="#/papierkorb" data-bereich="papierkorb">Papierkorb</a>
@@ -84,6 +85,15 @@
     </div>
     <p id="dupl-hinweis" class="leise"></p>
     <div id="dupl-gruppen"></div>
+  </section>
+  <section id="bereich-stammbaum" hidden>
+    <div class="zeile">
+      <h2>Stammbaum</h2>
+      <label>Person <select id="baum-person"></select></label>
+      <label>Zoom <input id="baum-zoom" type="range" min="0.4" max="1.6" step="0.1" value="1"></label>
+    </div>
+    <p id="baum-hinweis" class="leise"></p>
+    <div id="baum-flaeche"></div>
   </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>

@@ -392,6 +392,66 @@ void main() {
     }
   });
 
+  test(
+    'Stammbaum: Haushalte je Band und Elternhäuser, Fokus wählbar',
+    () async {
+      for (final (id, name) in [
+        ('oma', 'Oma'),
+        ('opa', 'Opa'),
+        ('kind', 'Kind'),
+      ]) {
+        await befehl(erikaToken, 'personAnlegen', {
+          'personId': id,
+          'name': name,
+        });
+      }
+      await befehl(erikaToken, 'beziehungHinzufuegen', {
+        'personId': 'kind',
+        'andereId': 'oma',
+        'verwandtschaft': 'elternteil',
+      });
+      await befehl(erikaToken, 'beziehungHinzufuegen', {
+        'personId': 'kind',
+        'andereId': 'opa',
+        'verwandtschaft': 'elternteil',
+      });
+      await befehl(erikaToken, 'beziehungHinzufuegen', {
+        'personId': 'oma',
+        'andereId': 'opa',
+        'verwandtschaft': 'partner',
+      });
+      await befehl(erikaToken, 'lebensdatenSetzen', {
+        'personId': 'oma',
+        'geburt': DateTime(1950, 3, 1).toIso8601String(),
+        'tod': null,
+      });
+      final d = await jsonAus(
+        await frag('GET', '/api/v1/stammbaum?fokus=kind', token: erikaToken),
+      );
+      expect(d['fokus'], 'kind');
+      final haushalte = (d['haushalte']! as List).cast<Map>();
+      final eltern = haushalte.singleWhere((h) => h['band'] == -1);
+      expect((eltern['personen'] as List), unorderedEquals(['oma', 'opa']));
+      final kind = haushalte.singleWhere((h) => h['band'] == 0);
+      expect(kind['personen'], ['kind']);
+      expect((d['elternhaeuser']! as Map)['kind'], [eltern['id']]);
+      final oma = (d['personen']! as List).cast<Map>().singleWhere(
+        (p) => p['id'] == 'oma',
+      );
+      expect(oma['geburt'], startsWith('1950-03-01'));
+      expect(oma['verwandt'], true);
+      // Ohne fokus: die erste Person mit Verwandtschaft.
+      final ohne = await jsonAus(
+        await frag('GET', '/api/v1/stammbaum', token: erikaToken),
+      );
+      expect(ohne['fokus'], isNotNull);
+      final fremd = await jsonAus(
+        await frag('GET', '/api/v1/stammbaum', token: maxToken),
+      );
+      expect(fremd['fokus'], isNull);
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

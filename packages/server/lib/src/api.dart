@@ -10,6 +10,7 @@ import 'package:kern/services/duplicate_selection.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/rueckblick.dart';
+import 'package:kern/services/stammbaum.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -182,6 +183,7 @@ Handler baueApi({
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/statistik', api.statistik)
+    ..get('/api/v1/stammbaum', api.stammbaum)
     ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
@@ -683,6 +685,69 @@ class _Api {
     if (sichtbar.isEmpty) return _json({'fehler': 'unbekannt'}, status: 404);
     return _json({
       'aufnahmen': [for (final a in sichtbar) zeileAlsJson(Rasterzeile.aus(a))],
+    });
+  }
+
+  /// Der Stammbaum um eine Person, wie der Rechner ihn zeigt: dasselbe
+  /// Geflecht aus dem Kern ([geflechtUm]) – Haushalte je Generationsband
+  /// und die Elternhäuser jeder Person. Gezeichnet wird im Browser.
+  ///
+  /// Ohne `fokus` die zuletzt am Rechner gewählte Person, sonst die erste
+  /// mit Verwandtschaft; alle Personen kommen für die Auswahl mit.
+  Future<Response> stammbaum(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final personen = db.nachAlterSortiert(await db.select(db.people).get());
+    if (personen.isEmpty) {
+      return _json({'fokus': null, 'personen': [], 'haushalte': []});
+    }
+    final netz = Verwandtschaftsnetz([
+      for (final z in await db.alleBeziehungen())
+        if (artAusText(z.art) case final art?)
+          kante(z.personId, z.andereId, art),
+    ]);
+    final nachId = {for (final p in personen) p.id: p};
+    bool verwandt(String id) =>
+        netz.eltern(id).isNotEmpty ||
+        netz.kinder(id).isNotEmpty ||
+        netz.partner(id).isNotEmpty;
+    var fokus = anfrage.url.queryParameters['fokus'];
+    if (fokus == null || !nachId.containsKey(fokus)) {
+      fokus = (await db.stammbaumZuletzt()).person;
+    }
+    if (fokus == null || !nachId.containsKey(fokus)) {
+      fokus = personen
+          .firstWhere((p) => verwandt(p.id), orElse: () => personen.first)
+          .id;
+    }
+    final g = geflechtUm(netz, fokus, [for (final p in personen) p.id]);
+    return _json({
+      'fokus': fokus,
+      'personen': [
+        for (final p in personen)
+          {
+            'id': p.id,
+            'name': p.name,
+            'geburt': p.geburtsdatum?.toIso8601String(),
+            'tod': p.sterbedatum?.toIso8601String(),
+            'bild': p.coverFaceCropPath,
+            'geschlecht': p.geschlecht,
+            'verwandt': verwandt(p.id),
+          },
+      ],
+      'haushalte': [
+        for (final h in g.haushalte)
+          {'id': h.id, 'personen': h.personen, 'band': g.band[h.id]},
+      ],
+      'elternhaeuser': g.elternhaeuserVon,
+      'weitereOben': [
+        for (final e in g.weitereOben.entries)
+          if (e.value) e.key,
+      ],
+      'weitereUnten': [
+        for (final e in g.weitereUnten.entries)
+          if (e.value) e.key,
+      ],
+      'verschwiegen': g.verschwiegen,
     });
   }
 

@@ -56,7 +56,8 @@ input { font: inherit; }
 #favorit { top: 12px; left: 12px; font-size: 22px; }
 
 /* --- Stufe 2: Wege, Karten, Auswahl, Konto -------------------------------- */
-#nav { display: flex; gap: 4px; flex: 1; }
+#nav { display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+#nav a { white-space: nowrap; }
 #nav a { color: var(--leise); text-decoration: none; padding: 4px 10px; border-radius: 8px; }
 #nav a.aktiv { color: var(--text); background: var(--karte); border: 1px solid var(--rand); }
 #kopf h1 { flex: 0; white-space: nowrap; margin-right: 8px; }
@@ -196,3 +197,22 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
   #angaben-feld { width: 100%; border-left: 0; }
   #betrachter.mit-angaben #vor, #betrachter.mit-angaben #zurueck { display: none; }
 }
+
+/* --- Stammbaum ------------------------------------------------------------- */
+#bereich-stammbaum { padding: 0 12px 24px; }
+#bereich-stammbaum .zeile { padding: 12px 0; }
+#bereich-stammbaum .zeile h2 { margin: 0; flex: 1; }
+#bereich-stammbaum .zeile label { display: flex; align-items: center; gap: 8px; color: var(--leise); }
+#baum-person { font: inherit; padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); max-width: 16em; }
+#baum-flaeche { overflow: auto; max-height: calc(100vh - 160px); background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+#baum-flaeche svg { display: block; margin: 0 auto; }
+.baum-karte { cursor: pointer; }
+.baum-karte rect { fill: var(--grund); stroke: var(--rand); }
+.baum-karte.fokus rect { stroke: var(--akzent); stroke-width: 3; }
+.baum-karte text { fill: var(--text); font-size: 12px; text-anchor: middle; }
+.baum-karte text.jahre { fill: var(--leise); font-size: 11px; }
+.baum-karte circle.rahmen { fill: var(--rand); stroke: var(--karte); stroke-width: 2; }
+.baum-karte text.initiale { fill: var(--leise); font-size: 22px; font-weight: 600; }
+.baum-kante { fill: none; stroke: var(--leise); stroke-width: 1.5; }
+.baum-paar { stroke: var(--akzent); stroke-width: 2; }
+.baum-pfeil { fill: var(--leise); font-size: 14px; text-anchor: middle; }

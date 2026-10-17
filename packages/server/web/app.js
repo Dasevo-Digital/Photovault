@@ -473,6 +473,130 @@ async function zeigeSerie(id) {
   zeigeListe({ aufnahmen: d.aufnahmen }, `Serie · ${d.aufnahmen.length} Aufnahmen`);
 }
 
+// --- Stammbaum -------------------------------------------------------------
+// Der Server liefert das Geflecht aus dem Kern (Haushalte je Band, die
+// Elternhäuser jeder Person); hier wird es als SVG gesetzt: ein Band je
+// Generation, Haushalte nebeneinander, Äste von den Elternhäusern zu den
+// Kindern. Ein Klick auf eine Person rückt sie in die Mitte.
+
+const svgNs = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs = {}, text) => {
+  const e = document.createElementNS(svgNs, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const jahr = (iso) => (iso ? String(new Date(iso).getFullYear()) : '');
+const lebensjahre = (p) => (p.geburt || p.tod ? `${jahr(p.geburt) || '?'} – ${p.tod ? jahr(p.tod) : ''}`.replace(/ – $/, p.tod ? '' : ' –') : '');
+
+let baumZoomWert = 1;
+$('baum-zoom').addEventListener('input', () => { baumZoomWert = Number($('baum-zoom').value); const svg = $('baum-flaeche').querySelector('svg'); if (svg) { svg.setAttribute('width', svg.dataset.breite * baumZoomWert); svg.setAttribute('height', svg.dataset.hoehe * baumZoomWert); } });
+$('baum-person').addEventListener('change', () => { location.hash = `#/stammbaum/${encodeURIComponent($('baum-person').value)}`; });
+
+async function zeigeStammbaum(fokus) {
+  markiereNav('stammbaum');
+  zeigeBereich(['stammbaum']);
+  $('baum-hinweis').textContent = '';
+  const d = await api(`/api/v1/stammbaum${fokus ? `?fokus=${encodeURIComponent(fokus)}` : ''}`);
+  const wahl = $('baum-person');
+  wahl.replaceChildren();
+  for (const p of [...d.personen].sort((a, b) => a.name.localeCompare(b.name))) {
+    const o = el('option', null, p.verwandt ? p.name : `${p.name} (ohne Verwandtschaft)`);
+    o.value = p.id;
+    wahl.append(o);
+  }
+  wahl.value = d.fokus || '';
+  $('baum-flaeche').replaceChildren();
+  if (!d.fokus) { $('baum-hinweis').textContent = 'Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'; return; }
+  const hinweise = [];
+  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1) hinweise.push('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.');
+  if (d.verschwiegen) hinweise.push(`${d.verschwiegen} Haushalte passen nicht mehr ins Bild.`);
+  $('baum-hinweis').textContent = hinweise.join(' ');
+  $('baum-flaeche').append(baumSvg(d));
+}
+
+function baumSvg(d) {
+  const nachId = Object.fromEntries(d.personen.map((p) => [p.id, p]));
+  const kB = 118, kH = 140, abstand = 10, hausAbstand = 36, bandH = 200, rand = 24;
+  const baender = [...new Set(d.haushalte.map((h) => h.band))].sort((a, b) => a - b);
+  // Breite je Band, dann alles auf die breiteste Zeile mittig.
+  const breiteVon = (h) => h.personen.length * kB + (h.personen.length - 1) * abstand;
+  const bandBreite = {};
+  for (const b of baender) bandBreite[b] = d.haushalte.filter((h) => h.band === b).reduce((s, h, i) => s + breiteVon(h) + (i ? hausAbstand : 0), 0);
+  const gesamt = Math.max(...Object.values(bandBreite)) + 2 * rand;
+  const hoehe = baender.length * bandH + 2 * rand;
+  const svg = svgEl('svg', { viewBox: `0 0 ${gesamt} ${hoehe}`, width: gesamt * baumZoomWert, height: hoehe * baumZoomWert });
+  svg.dataset.breite = gesamt;
+  svg.dataset.hoehe = hoehe;
+  const defs = svgEl('defs');
+  svg.append(defs);
+  const lage = {}; // personId -> {x, y, mitte}
+  const hausLage = {}; // haushaltId -> {mitte, unten, oben}
+  baender.forEach((b, zeile) => {
+    const y = rand + zeile * bandH + 20;
+    let x = (gesamt - bandBreite[b]) / 2;
+    for (const h of d.haushalte.filter((x) => x.band === b)) {
+      const links = x;
+      h.personen.forEach((id, i) => {
+        const px = x + i * (kB + abstand);
+        lage[id] = { x: px, y, mitte: px + kB / 2 };
+        if (i > 0) svg.append(svgEl('line', { class: 'baum-paar', x1: px - abstand, y1: y + 46, x2: px, y2: y + 46 }));
+      });
+      const breite = breiteVon(h);
+      hausLage[h.id] = { mitte: links + breite / 2, unten: y + kH, oben: y };
+      x += breite + hausAbstand;
+    }
+  });
+  // Äste: vom Elternhaus (unten) orthogonal zur Person (oben).
+  for (const [kind, haeuser] of Object.entries(d.elternhaeuser)) {
+    const k = lage[kind];
+    if (!k) continue;
+    for (const hid of haeuser) {
+      const h = hausLage[hid];
+      if (!h) continue;
+      const mitteY = (h.unten + k.y) / 2;
+      svg.append(svgEl('path', { class: 'baum-kante', d: `M${h.mitte},${h.unten} V${mitteY} H${k.mitte} V${k.y}` }));
+    }
+  }
+  // Schilder.
+  let n = 0;
+  for (const [id, l] of Object.entries(lage)) {
+    const p = nachId[id] || { name: '?' };
+    const g = svgEl('g', { class: `baum-karte${id === d.fokus ? ' fokus' : ''}`, transform: `translate(${l.x},${l.y})` });
+    g.append(svgEl('rect', { width: kB, height: kH, rx: 12 }));
+    g.append(svgEl('circle', { class: 'rahmen', cx: kB / 2, cy: 46, r: 32 }));
+    if (p.bild) {
+      const cid = `k${n++}`;
+      const clip = svgEl('clipPath', { id: cid });
+      clip.append(svgEl('circle', { cx: kB / 2, cy: 46, r: 30 }));
+      defs.append(clip);
+      g.append(svgEl('image', { href: `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}`, x: kB / 2 - 30, y: 16, width: 60, height: 60, preserveAspectRatio: 'xMidYMid slice', 'clip-path': `url(#${cid})` }));
+    } else {
+      g.append(svgEl('text', { class: 'initiale', x: kB / 2, y: 54 }, (p.name || '?').trim().charAt(0).toUpperCase()));
+    }
+    // Lange Namen auf zwei Zeilen, am letzten Leerzeichen vor der Grenze.
+    const zeilen = [];
+    let rest = p.name.trim();
+    while (rest && zeilen.length < 2) {
+      if (rest.length <= 16 || zeilen.length === 1) { zeilen.push(rest.length > 16 ? `${rest.slice(0, 15)}…` : rest); break; }
+      const schnitt = rest.lastIndexOf(' ', 16);
+      if (schnitt < 4) { zeilen.push(`${rest.slice(0, 15)}…`); break; }
+      zeilen.push(rest.slice(0, schnitt));
+      rest = rest.slice(schnitt + 1);
+    }
+    const titel = svgEl('title');
+    titel.textContent = p.name;
+    g.append(titel);
+    zeilen.forEach((z, i) => g.append(svgEl('text', { x: kB / 2, y: 98 + i * 14 }, z)));
+    g.append(svgEl('text', { class: 'jahre', x: kB / 2, y: 98 + zeilen.length * 14 }, lebensjahre(p)));
+    if (d.weitereOben.includes(id)) g.append(svgEl('text', { class: 'baum-pfeil', x: kB / 2, y: -6 }, '▲'));
+    if (d.weitereUnten.includes(id)) g.append(svgEl('text', { class: 'baum-pfeil', x: kB / 2, y: kH + 14 }, '▼'));
+    g.addEventListener('click', () => { location.hash = `#/stammbaum/${encodeURIComponent(id)}`; });
+    svg.append(g);
+  }
+  return svg;
+}
+
 async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
@@ -975,6 +1099,7 @@ async function zeigeWeg() {
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'statistik': await zeigeStatistik(); break;
+      case 'stammbaum': await zeigeStammbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
       case 'karte':
