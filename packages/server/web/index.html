@@ -100,6 +100,12 @@
   <section id="bereich-einstellungen" hidden>
     <h2>Einstellungen der Bibliothek</h2>
     <p class="leise klein">Diese Einstellungen stehen in der Bibliothek und gelten für alle verbundenen Geräte.</p>
+    <label class="einst einst-sprache"><span></span><span class="inhalt"><span class="titel">Sprache dieser Oberfläche</span><span class="text">Gilt nur in diesem Browser.</span>
+      <select id="einst-sprache">
+        <option value="auto">Automatisch</option>
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select></span></label>
     <div id="einst-liste"></div>
     <p id="einst-meldung" class="leise"></p>
   </section>
@@ -235,6 +241,7 @@
 </div>
 
 <script src="leaflet/leaflet.js"></script>
+<script src="texte.js"></script>
 <script src="app.js"></script>
 <script src="entwickeln.js"></script>
 <script src="lebensbaum.js"></script>

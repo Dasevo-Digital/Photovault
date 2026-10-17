@@ -370,9 +370,20 @@ bleibt offen, bis einer kommt.
 ## Weboberfläche
 
 Unter `/app/` liefert der Server eine Oberfläche für den Browser:
-Anmeldung (mit TOTP), Zeitleiste, Betrachter für Bilder und Videos,
-Favorit. Sie besteht aus drei Dateien ohne Bauschritt (`web/index.html`,
-`app.js`, `app.css`) und spricht dieselbe Schnittstelle wie die Apps.
+Anmeldung (mit TOTP), Zeitleiste mit Erinnerungen, Betrachter mit Angaben,
+Suche, Alben, Personen, Karte, Reisen, Stammbaum und Lebensbaum,
+Statistik, Duplikate, Papierkorb, Entwickeln, Mehrfachauswahl, die
+Einstellungen der Bibliothek und – für Verwalter – Speicher, Sicherung,
+Auswertung und Konten. Sie spricht Deutsch und Englisch (nach dem Browser
+oder wie in den Einstellungen gewählt). Die Dateien in `web/` brauchen
+keinen Bauschritt und sprechen dieselbe Schnittstelle wie die Apps;
+Vorlagenbilder und Schriften des Lebensbaums kommen beim Bau aus den
+Assets der App dazu (`web/lebensbaum`, `web/schrift`).
+
+**Entwickeln im Browser** rechnet mit WebGL 2 dieselben Shader wie die App
+unter Linux und Windows; Tonkurve und Farbmischer baut der Server
+(`GET /api/v1/entwickeln/<id>`). Rohformate und HEIC entwickelt der Browser
+aus der Vorschau.
 
 **Die Sitzung ist ein Gerät.** Der Browser bekommt ein Token wie die App,
 aber in einem Cookie, das nur der Server liest (`HttpOnly`,

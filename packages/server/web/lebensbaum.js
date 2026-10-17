@@ -176,10 +176,10 @@ async function zeigeLebensbaum(fokus) {
   for (const [name, id] of [['stil', 'lb-stil'], ['richtung', 'lb-richtung'], ['generationen', 'lb-generationen'], ['oben', 'lb-oben'], ['unten', 'lb-unten'], ['kreis', 'lb-kreis']]) {
     if (lb && lb.gewaehlt && lb.gewaehlt[name] != null) q.set(name, lb.gewaehlt[name]);
   }
-  $('lb-hinweis').textContent = 'Lade …';
+  $('lb-hinweis').textContent = t('Lade …');
   const d = await api(`/api/v1/lebensbaum?${q}`);
   if (!d.fokus) {
-    $('lb-hinweis').textContent = 'Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.';
+    $('lb-hinweis').textContent = t('Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.');
     return;
   }
   lb = { ...(lb || {}), d, gewaehlt: { ...d.optionen } };
@@ -218,8 +218,8 @@ async function zeigeLebensbaum(fokus) {
   }));
   lb.bilder = { hintergrund, schild, portraits };
   const hinweise = [];
-  if (!hintergrund) hinweise.push('Das Vorlagenbild fehlt auf dem Server.');
-  if (d.verschwiegen) hinweise.push(`${d.verschwiegen} Haushalte passen nicht mehr ins Bild.`);
+  if (!hintergrund) hinweise.push(t('Das Vorlagenbild fehlt auf dem Server.'));
+  if (d.verschwiegen) hinweise.push(t('{n} Haushalte passen nicht mehr ins Bild.', { n: d.verschwiegen }));
   $('lb-hinweis').textContent = hinweise.join(' ');
   lbMale();
 }

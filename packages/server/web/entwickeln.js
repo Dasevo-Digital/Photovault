@@ -359,12 +359,12 @@ function entwFelder() {
   const kasten = el('input');
   kasten.type = 'checkbox';
   kasten.checked = entw.werte.temperature == null;
-  auto.append(kasten, document.createTextNode(' Automatischer Weissabgleich'));
+  auto.append(kasten, document.createTextNode(` ${t('Automatischer Weissabgleich')}`));
   const wbRegler = [];
   for (const r of ENTW_REGLER) {
     if (r.spalte === 'temperature') ziel.append(auto);
     const zeile = el('label', 'entw-regler-zeile');
-    const kopf = el('span', 'entw-name', r.name);
+    const kopf = el('span', 'entw-name', t(r.name));
     const zahl = el('span', 'entw-zahl');
     const regler = el('input');
     regler.type = 'range';
@@ -393,7 +393,7 @@ function entwFelder() {
 async function zeigeEntwickeln(id) {
   markiereNav('');
   zeigeBereich(['entwickeln']);
-  entwFehler('Lade …');
+  entwFehler(t('Lade …'));
   $('entw-meldung').textContent = '';
   if (entw && entw.k) {
     const { gl } = entw.k;
@@ -406,7 +406,7 @@ async function zeigeEntwickeln(id) {
     try { entwK = entwKontext(); } catch (x) { entwFehler(`WebGL: ${x.message}`); return; }
   }
   const k = entwK;
-  if (!k) { entwFehler('Dieser Browser kann kein WebGL 2 – Entwickeln geht hier nicht.'); return; }
+  if (!k) { entwFehler(t('Dieser Browser kann kein WebGL 2 – Entwickeln geht hier nicht.')); return; }
   const e = d.einstellungen || {};
   entw = {
     id,
@@ -434,7 +434,7 @@ async function zeigeEntwickeln(id) {
   if (d.wuerfel) { entw.wuerfelKante = d.wuerfelKante; entw.wuerfel = entwTextur(gl, d.wuerfelKante * d.wuerfelKante, d.wuerfelKante, ausBase64(d.wuerfel)); }
 
   const antwort = await fetch(`/api/v1/aufnahmen/${encodeURIComponent(id)}/${d.quelle}`, { credentials: 'same-origin' });
-  if (!antwort.ok) { entwFehler(`Das Bild liess sich nicht laden (${antwort.status}).`); return; }
+  if (!antwort.ok) { entwFehler(t('Das Bild liess sich nicht laden ({n}).', { n: antwort.status })); return; }
   const blob = await antwort.blob();
   let quelle = await createImageBitmap(blob, { imageOrientation: 'from-image', premultiplyAlpha: 'none' });
   const grenze = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), 8192);
@@ -444,7 +444,7 @@ async function zeigeEntwickeln(id) {
     quelle.close();
     quelle = await createImageBitmap(blob, { imageOrientation: 'from-image', premultiplyAlpha: 'none', resizeWidth, resizeHeight, resizeQuality: 'high' }).catch(() => null);
   }
-  if (!quelle) { entwFehler('Das Bild ist für diesen Browser zu gross.'); return; }
+  if (!quelle) { entwFehler(t('Das Bild ist für diesen Browser zu gross.')); return; }
   entw.breite = quelle.width;
   entw.hoehe = quelle.height;
   entw.quellTextur = entwTextur(gl, quelle.width, quelle.height, quelle, { mipmap: true });
@@ -452,8 +452,8 @@ async function zeigeEntwickeln(id) {
   entw.vorschau = entwVorschauGroesse();
 
   const hinweise = [];
-  if (d.quelle === 'vorschau') hinweise.push('Rohformat oder HEIC: Der Browser rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.');
-  if (e.tone_curve_json || e.color_mixer_json || e.lut_path) hinweise.push('Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.');
+  if (d.quelle === 'vorschau') hinweise.push(t('Rohformat oder HEIC: Der Browser rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.'));
+  if (e.tone_curve_json || e.color_mixer_json || e.lut_path) hinweise.push(t('Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.'));
   entwFehler(hinweise.join(' '));
   $('entw-original').hidden = !d.entwickelt && !d.einstellungen;
   entwFelder();
@@ -465,7 +465,7 @@ async function entwSpeichern() {
   const knoepfe = ['entw-speichern', 'entw-zurueck', 'entw-original'].map($);
   for (const b of knoepfe) b.disabled = true;
   const meldung = $('entw-meldung');
-  meldung.textContent = `Rechne in voller Grösse (${entw.breite} × ${entw.hoehe}) …`;
+  meldung.textContent = t('Rechne in voller Grösse ({b} × {h}) …', { b: entw.breite, h: entw.hoehe });
   const weg = [];
   try {
     const { gl } = entw.k;
@@ -479,8 +479,8 @@ async function entwSpeichern() {
     flaeche.height = entw.hoehe;
     flaeche.getContext('2d').putImageData(new ImageData(pixel, entw.breite, entw.hoehe), 0, 0);
     const jpeg = await new Promise((fertig) => flaeche.toBlob(fertig, 'image/jpeg', 0.92));
-    if (!jpeg) throw new Error('Das Bild liess sich nicht kodieren.');
-    meldung.textContent = 'Lade hoch …';
+    if (!jpeg) throw new Error(t('Das Bild liess sich nicht kodieren.'));
+    meldung.textContent = t('Lade hoch …');
     // Ein neuer Name je Speichern: Geräte halten Dateien unter ihrem Namen vor.
     const pfad = `developed/${entw.id}-${Date.now()}.jpg`;
     const hoch = await fetch(`/api/v1/dateien/${pfad.split('/').map(encodeURIComponent).join('/')}`, {
@@ -489,7 +489,7 @@ async function entwSpeichern() {
       headers: { 'X-PV-Web': '1', 'Content-Type': 'image/jpeg' },
       body: jpeg,
     });
-    if (!hoch.ok) throw new Error(`Hochladen gescheitert (${hoch.status}).`);
+    if (!hoch.ok) throw new Error(t('Hochladen gescheitert ({n}).', { n: hoch.status }));
     const e = entw.d.einstellungen || {};
     await befehl('entwicklungSpeichern', {
       id: entw.id,
@@ -506,7 +506,7 @@ async function entwSpeichern() {
       },
     });
     entw.geaendert = false;
-    meldung.textContent = 'Gespeichert.';
+    meldung.textContent = t('Gespeichert.');
     history.back();
   } catch (x) {
     entwRaeumeAuf(weg);
@@ -518,7 +518,7 @@ async function entwSpeichern() {
 
 $('entw-speichern').addEventListener('click', entwSpeichern);
 $('entw-abbrechen').addEventListener('click', () => {
-  if (entw && entw.geaendert && !confirm('Änderungen verwerfen?')) return;
+  if (entw && entw.geaendert && !confirm(t('Änderungen verwerfen?'))) return;
   history.back();
 });
 $('entw-zurueck').addEventListener('click', () => {
@@ -529,7 +529,7 @@ $('entw-zurueck').addEventListener('click', () => {
   entwZeige();
 });
 $('entw-original').addEventListener('click', async () => {
-  if (!entw || !confirm('Die Entwicklung entfernen und das Original zeigen?')) return;
+  if (!entw || !confirm(t('Die Entwicklung entfernen und das Original zeigen?'))) return;
   try {
     await befehl('entwicklungZuruecksetzen', { id: entw.id });
     entw.geaendert = false;

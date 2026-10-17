@@ -21,7 +21,7 @@ const api = async (pfad, { methode = 'GET', json } = {}) => {
   try { daten = await antwort.json(); } catch (_) { /* keine Daten */ }
   if (antwort.status === 401) { zeigeAnmeldung(); throw new Error('nicht angemeldet'); }
   if (!antwort.ok) {
-    const f = new Error((daten && daten.fehler) || `Fehler ${antwort.status}`);
+    const f = new Error(daten && daten.fehler ? t(daten.fehler) : t('Fehler {n}', { n: antwort.status }));
     f.status = antwort.status;
     throw f;
   }
@@ -35,8 +35,8 @@ const el = (tag, klasse, text) => {
   return e;
 };
 const miniaturUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/miniatur`;
-const datum = new Intl.DateTimeFormat(undefined, { dateStyle: 'full' });
-const datumZeit = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
+const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
 
 let sitzung = null;   // {name, verwalter, geraet}
 
@@ -72,7 +72,7 @@ async function nachAnmeldung(d) {
   if (d.angemeldet) {
     fehler('');
     if (d.wiederherstellungscodes) {
-      alert('Deine Wiederherstellungscodes – bitte sicher aufbewahren:\n\n' + d.wiederherstellungscodes.join('\n'));
+      alert(`${t('Deine Wiederherstellungscodes – bitte sicher aufbewahren:')}\n\n${d.wiederherstellungscodes.join('\n')}`);
     }
     await starte();
     return;
@@ -83,8 +83,8 @@ async function nachAnmeldung(d) {
   const einrichten = d.schritt === 'totp_einrichten';
   $('totp-einrichten').hidden = !einrichten;
   $('totp-hinweis').textContent = einrichten
-    ? 'Dieses Konto braucht einen zweiten Faktor.'
-    : 'Gib den Code aus deiner Authenticator-App ein.';
+    ? t('Dieses Konto braucht einen zweiten Faktor.')
+    : t('Gib den Code aus deiner Authenticator-App ein.');
   if (einrichten) {
     $('totp-geheimnis').textContent = d.geheimnis;
     $('totp-link').href = d.adresse;
@@ -181,7 +181,7 @@ function zeigeListe(neu, titel) {
   $('raster-titel').textContent = titel || '';
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
-  if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? `${liste.aufnahmen.length} Aufnahmen` : 'Keine Aufnahmen.';
+  if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? t('{n} Aufnahmen', { n: liste.aufnahmen.length }) : t('Keine Aufnahmen.');
 }
 
 async function ladeMehr() {
@@ -192,7 +192,7 @@ async function ladeMehr() {
     haengeAn(d.aufnahmen);
     if (!d.weiter) {
       liste.mehr = null;
-      $('ende').textContent = liste.aufnahmen.length ? `${liste.aufnahmen.length} Aufnahmen` : 'Noch keine Aufnahmen.';
+      $('ende').textContent = liste.aufnahmen.length ? t('{n} Aufnahmen', { n: liste.aufnahmen.length }) : t('Noch keine Aufnahmen.');
     }
   } catch (x) {
     $('ende').textContent = x.message;
@@ -231,7 +231,7 @@ async function zeigeFotos() {
 }
 
 // „Vor x Jahren“ über der Zeitleiste – ein Kärtchen je Jahrgang.
-const monate = new Intl.DateTimeFormat(undefined, { month: 'long' });
+const monate = new Intl.DateTimeFormat(GEBIET, { month: 'long' });
 async function zeigeErinnerungen() {
   const d = await api('/api/v1/erinnerungen');
   const box = $('erinnerungen');
@@ -244,7 +244,9 @@ async function zeigeErinnerungen() {
     const k = el('button', 'erinnerung');
     k.type = 'button';
     const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.src = miniaturUrl(g.aufnahmen[0].id);
-    const text = d.art === 'tag' ? `Vor ${g.jahreHer} Jahr${g.jahreHer === 1 ? '' : 'en'}` : `${monat} vor ${g.jahreHer} Jahr${g.jahreHer === 1 ? '' : 'en'}`;
+    const text = d.art === 'tag'
+      ? (g.jahreHer === 1 ? t('Vor einem Jahr') : t('Vor {n} Jahren', { n: g.jahreHer }))
+      : (g.jahreHer === 1 ? t('{monat} vor einem Jahr', { monat }) : t('{monat} vor {n} Jahren', { monat, n: g.jahreHer }));
     k.append(img, el('span', null, `${text} · ${g.aufnahmen.length}`));
     k.addEventListener('click', () => { zeigeBereich(['raster']); $('erinnerungen').hidden = true; zeigeListe({ aufnahmen: g.aufnahmen }, text); oeffne(0); });
     karten.append(k);
@@ -255,8 +257,8 @@ async function zeigePapierkorb() {
   markiereNav('papierkorb');
   zeigeBereich(['raster']);
   const d = await api('/api/v1/papierkorb');
-  zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true }, 'Papierkorb');
-  if (d.aufnahmen.length === 0) $('ende').textContent = 'Der Papierkorb ist leer.';
+  zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true }, t('Papierkorb'));
+  if (d.aufnahmen.length === 0) $('ende').textContent = t('Der Papierkorb ist leer.');
 }
 
 function karte(bildUrl, titel, untertitel, ziel) {
@@ -271,12 +273,12 @@ function karte(bildUrl, titel, untertitel, ziel) {
 async function zeigeAlben() {
   markiereNav('alben');
   zeigeBereich(['karten']);
-  $('karten-titel').textContent = 'Alben';
+  $('karten-titel').textContent = t('Alben');
   $('karten').replaceChildren();
   const d = await api('/api/v1/alben');
-  if (d.alben.length === 0) $('karten').append(el('p', 'leise', 'Noch keine Alben.'));
+  if (d.alben.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Alben.')));
   for (const a of d.alben) {
-    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, `${a.anzahl} Aufnahmen`, `#/alben/${encodeURIComponent(a.id)}`));
+    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, t('{n} Aufnahmen', { n: a.anzahl }), `#/alben/${encodeURIComponent(a.id)}`));
   }
 }
 
@@ -287,16 +289,16 @@ async function zeigeAlbum(id) {
   zeigeListe({ aufnahmen: d.aufnahmen }, d.album.name);
 }
 
-const zeitraum = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+const zeitraum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium' });
 async function zeigeReisen() {
   markiereNav('reisen');
   zeigeBereich(['karten']);
-  $('karten-titel').textContent = 'Reisen';
+  $('karten-titel').textContent = t('Reisen');
   $('karten').replaceChildren();
   const d = await api('/api/v1/reisen');
-  if (d.reisen.length === 0) $('karten').append(el('p', 'leise', 'Noch keine Reisen.'));
+  if (d.reisen.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Reisen.')));
   for (const r of d.reisen) {
-    $('karten').append(karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name, `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${r.anzahl} Aufnahmen`, `#/reisen/${encodeURIComponent(r.id)}`));
+    $('karten').append(karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name, `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`, `#/reisen/${encodeURIComponent(r.id)}`));
   }
 }
 
@@ -307,9 +309,9 @@ async function zeigeReise(id) {
   zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true }, `${d.reise.name} · ${zeitraum.format(new Date(d.reise.von))} – ${zeitraum.format(new Date(d.reise.bis))}`);
 }
 
-const zahl = new Intl.NumberFormat();
+const zahl = new Intl.NumberFormat(GEBIET);
 const groesse = (b) => (b >= 1073741824 ? `${(b / 1073741824).toFixed(1)} GB` : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
-const monatsname = new Intl.DateTimeFormat(undefined, { month: 'short' });
+const monatsname = new Intl.DateTimeFormat(GEBIET, { month: 'short' });
 
 function kennzahl(wert, name) {
   const k = el('div', 'kennzahl');
@@ -342,13 +344,13 @@ async function zeigeStatistik() {
   $('stat-leer').hidden = s.insgesamt > 0;
   $('stat-diagramme').hidden = s.insgesamt === 0;
   $('stat-kennzahlen').replaceChildren(
-    kennzahl(zahl.format(s.insgesamt), 'Medien insgesamt'),
-    kennzahl(zahl.format(s.fotos), 'Fotos'),
-    kennzahl(zahl.format(s.videos), 'Videos'),
-    kennzahl(zahl.format(s.favoriten), 'Favoriten'),
-    kennzahl(groesse(s.bytes), 'Speicherplatz'),
-    kennzahl(zahl.format(s.papierkorb), 'Im Papierkorb'),
-    kennzahl(zahl.format(s.gesperrt), 'Gesperrter Ordner'),
+    kennzahl(zahl.format(s.insgesamt), t('Medien insgesamt')),
+    kennzahl(zahl.format(s.fotos), t('Fotos')),
+    kennzahl(zahl.format(s.videos), t('Videos')),
+    kennzahl(zahl.format(s.favoriten), t('Favoriten')),
+    kennzahl(groesse(s.bytes), t('Speicherplatz')),
+    kennzahl(zahl.format(s.papierkorb), t('Im Papierkorb')),
+    kennzahl(zahl.format(s.gesperrt), t('Gesperrter Ordner')),
   );
   if (s.insgesamt === 0) return;
   // Jahre lückenlos vom ersten bis zum letzten, damit leere Jahre sichtbar bleiben.
@@ -390,7 +392,7 @@ async function zeigeDuplikate() {
 }
 
 async function sucheDuplikate() {
-  $('dupl-hinweis').textContent = 'Suche …';
+  $('dupl-hinweis').textContent = t('Suche …');
   $('dupl-gruppen').replaceChildren();
   $('dupl-alle').hidden = true;
   duplikate = await api(`/api/v1/duplikate?schwelle=${$('dupl-schwelle').value}`);
@@ -403,13 +405,13 @@ function zeichneDuplikate() {
   ziel.replaceChildren();
   const loeschbar = d.gruppen.reduce((n, g) => n + g.loeschbar.length, 0);
   $('dupl-alle').hidden = loeschbar === 0;
-  $('dupl-alle').textContent = `${loeschbar} Kopien in den Papierkorb`;
+  $('dupl-alle').textContent = t('{n} Kopien in den Papierkorb', { n: loeschbar });
   if (d.einbettungen === 0) {
-    $('dupl-hinweis').textContent = 'Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.';
+    $('dupl-hinweis').textContent = t('Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.');
   } else if (d.gruppen.length === 0) {
-    $('dupl-hinweis').textContent = `Keine Duplikate bei ${prozent(d.schwelle)} Ähnlichkeit.${d.ausnahmen ? ` ${d.ausnahmen} Paare sind ausgenommen.` : ''}`;
+    $('dupl-hinweis').textContent = t('Keine Duplikate bei {p} Ähnlichkeit.', { p: prozent(d.schwelle) }) + (d.ausnahmen ? ` ${t('{n} Paare sind ausgenommen.', { n: d.ausnahmen })}` : '');
   } else {
-    $('dupl-hinweis').textContent = `${d.gruppen.length} Gruppen bei ${prozent(d.schwelle)} Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.`;
+    $('dupl-hinweis').textContent = t('{n} Gruppen bei {p} Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.', { n: d.gruppen.length, p: prozent(d.schwelle) });
   }
   for (const g of d.gruppen) ziel.append(duplikatgruppe(g));
 }
@@ -419,12 +421,12 @@ function duplikatgruppe(g) {
   const ids = g.aufnahmen.map((a) => a.id);
   const entferne = () => { duplikate.gruppen = duplikate.gruppen.filter((x) => x !== g); zeichneDuplikate(); };
   const kopf = el('div', 'gruppenkopf');
-  const ignorieren = el('button', null, 'Keine Duplikate');
+  const ignorieren = el('button', null, t('Keine Duplikate'));
   ignorieren.type = 'button';
   ignorieren.addEventListener('click', async () => {
     try { await befehl('duplikatgruppeIgnorieren', { ids }); entferne(); } catch (x) { $('dupl-hinweis').textContent = x.message; }
   });
-  kopf.append(el('span', null, `${g.aufnahmen.length} Aufnahmen${g.loeschbar.length ? '' : ' · mehrere ausgezeichnet, nur von Hand'}`), ignorieren);
+  kopf.append(el('span', null, g.loeschbar.length ? t('{n} Aufnahmen', { n: g.aufnahmen.length }) : t('{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand', { n: g.aufnahmen.length })), ignorieren);
   box.append(kopf);
   const reihe = el('div', 'reihe');
   g.aufnahmen.forEach((a, i) => {
@@ -435,11 +437,11 @@ function duplikatgruppe(g) {
     img.alt = '';
     img.src = miniaturUrl(a.id);
     img.addEventListener('click', () => { liste = { aufnahmen: g.aufnahmen, nachTagen: false, mehr: null }; oeffne(i); });
-    const knopf = el('button', null, 'Behalten');
+    const knopf = el('button', null, t('Behalten'));
     knopf.type = 'button';
     knopf.addEventListener('click', async () => {
       const andere = ids.filter((x) => x !== a.id);
-      if (!confirm(`„${a.name}“ behalten und ${andere.length === 1 ? 'die andere Aufnahme' : `die ${andere.length} anderen`} in den Papierkorb legen?`)) return;
+      if (!confirm(andere.length === 1 ? t('„{name}“ behalten und die andere Aufnahme in den Papierkorb legen?', { name: a.name }) : t('„{name}“ behalten und die {n} anderen in den Papierkorb legen?', { name: a.name, n: andere.length }))) return;
       try {
         await befehl('duplikateZusammenfuehren', { behaltenId: a.id, duplikatIds: andere, beschreibungenVerbinden: true });
         entferne();
@@ -458,7 +460,7 @@ function duplikatgruppe(g) {
 $('dupl-alle').addEventListener('click', async () => {
   const faellig = duplikate.gruppen.filter((g) => g.loeschbar.length);
   const n = faellig.reduce((s, g) => s + g.loeschbar.length, 0);
-  if (!confirm(`${n} Kopien aus ${faellig.length} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.`)) return;
+  if (!confirm(t('{n} Kopien aus {g} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.', { n, g: faellig.length }))) return;
   try {
     for (const g of faellig) {
       await befehl('duplikateZusammenfuehren', { behaltenId: g.behalten, duplikatIds: g.loeschbar, beschreibungenVerbinden: true });
@@ -470,7 +472,7 @@ $('dupl-alle').addEventListener('click', async () => {
 async function zeigeSerie(id) {
   zeigeBereich(['raster']);
   const d = await api(`/api/v1/serien/${encodeURIComponent(id)}`);
-  zeigeListe({ aufnahmen: d.aufnahmen }, `Serie · ${d.aufnahmen.length} Aufnahmen`);
+  zeigeListe({ aufnahmen: d.aufnahmen }, t('Serie · {n} Aufnahmen', { n: d.aufnahmen.length }));
 }
 
 // --- Stammbaum -------------------------------------------------------------
@@ -501,16 +503,16 @@ async function zeigeStammbaum(fokus) {
   const wahl = $('baum-person');
   wahl.replaceChildren();
   for (const p of [...d.personen].sort((a, b) => a.name.localeCompare(b.name))) {
-    const o = el('option', null, p.verwandt ? p.name : `${p.name} (ohne Verwandtschaft)`);
+    const o = el('option', null, p.verwandt ? p.name : t('{name} (ohne Verwandtschaft)', { name: p.name }));
     o.value = p.id;
     wahl.append(o);
   }
   wahl.value = d.fokus || '';
   $('baum-flaeche').replaceChildren();
-  if (!d.fokus) { $('baum-hinweis').textContent = 'Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'; return; }
+  if (!d.fokus) { $('baum-hinweis').textContent = t('Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'); return; }
   const hinweise = [];
-  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1) hinweise.push('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.');
-  if (d.verschwiegen) hinweise.push(`${d.verschwiegen} Haushalte passen nicht mehr ins Bild.`);
+  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1) hinweise.push(t('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.'));
+  if (d.verschwiegen) hinweise.push(t('{n} Haushalte passen nicht mehr ins Bild.', { n: d.verschwiegen }));
   $('baum-hinweis').textContent = hinweise.join(' ');
   $('baum-flaeche').append(baumSvg(d));
 }
@@ -599,14 +601,19 @@ function baumSvg(d) {
 
 // --- Einstellungen der Bibliothek ------------------------------------------
 
+$('einst-sprache').addEventListener('change', () => spracheWaehlen($('einst-sprache').value));
+
 async function zeigeEinstellungen() {
   markiereNav('einstellungen');
   zeigeBereich(['einstellungen']);
+  let gewaehlt = 'auto';
+  try { gewaehlt = localStorage.getItem(SPRACHE_MERKER) || 'auto'; } catch (_) { /* privat */ }
+  $('einst-sprache').value = gewaehlt;
   const e = await api('/api/v1/einstellungen');
   const ziel = $('einst-liste');
   const melde = (t) => { $('einst-meldung').textContent = t; };
   const sende = async (art, werte) => {
-    try { await befehl(art, werte); melde('Gespeichert.'); } catch (x) { melde(x.message); }
+    try { await befehl(art, werte); melde(t('Gespeichert.')); } catch (x) { melde(x.message); }
   };
   const zeile = (titel, text, an, beiAenderung, zusatz) => {
     const z = el('label', 'einst');
@@ -615,7 +622,7 @@ async function zeigeEinstellungen() {
     kasten.checked = an;
     kasten.addEventListener('change', () => beiAenderung(kasten.checked));
     const inhalt = el('div', 'inhalt');
-    inhalt.append(el('div', 'titel', titel), el('div', 'text', text));
+    inhalt.append(el('div', 'titel', t(titel)), el('div', 'text', t(text)));
     if (zusatz) inhalt.append(zusatz);
     z.append(kasten, inhalt);
     return z;
@@ -633,11 +640,11 @@ async function zeigeEinstellungen() {
   const tage = el('input');
   tage.type = 'number'; tage.min = '1'; tage.max = '3650'; tage.value = e.papierkorbTage;
   const tageBox = el('div', 'regler');
-  tageBox.append(el('span', null, 'nach'), tage, el('span', null, 'Tagen'));
+  tageBox.append(el('span', null, t('nach')), tage, el('span', null, t('Tagen')));
   let leeren = e.papierkorbLeeren;
   tage.addEventListener('change', () => sende('papierkorbFristSetzen', { an: leeren, tage: Number(tage.value) }));
   let vorschlaegeAb = e.vorschlaegeAb ?? 0.9;
-  const vorschlagRegler = regler(0.8, 0.99, 0.01, vorschlaegeAb, (v) => `ab ${Math.round(v * 100)} %`, (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
+  const vorschlagRegler = regler(0.8, 0.99, 0.01, vorschlaegeAb, (v) => t('ab {p}', { p: `${Math.round(v * 100)} %` }), (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
   let vorschlaegeAn = e.vorschlaegeAb != null;
   ziel.replaceChildren(
     zeile('Papierkorb automatisch leeren', 'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.', leeren, (an) => { leeren = an; sende('papierkorbFristSetzen', { an, tage: Number(tage.value) }); }, tageBox),
@@ -648,7 +655,7 @@ async function zeigeEinstellungen() {
   );
   const schwelle = el('div', 'einst');
   const sInhalt = el('div', 'inhalt');
-  sInhalt.append(el('div', 'titel', 'Schwelle der Gesichtserkennung'), el('div', 'text', 'Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.'), regler(0.2, 0.8, 0.01, e.gesichtsschwelle, (v) => Number(v).toFixed(2), (v) => sende('gesichtsschwelleSetzen', { schwelle: v })));
+  sInhalt.append(el('div', 'titel', t('Schwelle der Gesichtserkennung')), el('div', 'text', t('Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.')), regler(0.2, 0.8, 0.01, e.gesichtsschwelle, (v) => Number(v).toFixed(2), (v) => sende('gesichtsschwelleSetzen', { schwelle: v })));
   schwelle.append(el('span'), sInhalt);
   ziel.append(schwelle);
   melde('');
@@ -657,13 +664,13 @@ async function zeigeEinstellungen() {
 async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
-  $('karten-titel').textContent = 'Personen';
+  $('karten-titel').textContent = t('Personen');
   $('karten').replaceChildren();
   const d = await api('/api/v1/personen');
-  if (d.personen.length === 0) $('karten').append(el('p', 'leise', 'Noch keine Personen.'));
+  if (d.personen.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Personen.')));
   for (const p of d.personen) {
     const bild = p.bild ? `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}` : null;
-    const k = karte(bild, p.name, `${p.anzahl} Aufnahmen`, `#/personen/${encodeURIComponent(p.id)}`);
+    const k = karte(bild, p.name, t('{n} Aufnahmen', { n: p.anzahl }), `#/personen/${encodeURIComponent(p.id)}`);
     k.classList.add('person');
     $('karten').append(k);
   }
@@ -688,15 +695,15 @@ $('form-suche').addEventListener('submit', async (e) => {
   const f = e.target;
   const text = f.text.value.trim();
   if (!text) return;
-  $('suche-hinweis').textContent = 'Sucht …';
+  $('suche-hinweis').textContent = t('Sucht …');
   try {
     const q = new URLSearchParams({ text, art: f.art.value });
     const d = await api(`/api/v1/suche?${q}`);
     zeigeListe({ aufnahmen: d.aufnahmen, suche: true });
-    $('suche-hinweis').textContent = d.aufnahmen.length ? '' : 'Nichts gefunden.';
+    $('suche-hinweis').textContent = d.aufnahmen.length ? '' : t('Nichts gefunden.');
   } catch (x) {
     $('suche-hinweis').textContent = x.status === 404
-      ? 'Der Server hat kein Modell für die Bildsuche – suche nach Text.'
+      ? t('Der Server hat kein Modell für die Bildsuche – suche nach Text.')
       : x.message;
   }
 });
@@ -705,7 +712,7 @@ async function zeigeKonto() {
   markiereNav('konto');
   zeigeBereich(['konto']);
   const k = await api('/api/v1/konto');
-  $('konto-wer').textContent = `${k.name}${k.verwalter ? ' · Verwalter' : ''}${k.totp ? ' · TOTP eingerichtet' : ''}`;
+  $('konto-wer').textContent = `${k.name}${k.verwalter ? ` · ${t('Verwalter')}` : ''}${k.totp ? ` · ${t('TOTP eingerichtet')}` : ''}`;
   $('passwort-code-feld').hidden = !k.totp;
   zeigeFassung($('konto-fassung'));
   $('verwaltung').hidden = !k.verwalter;
@@ -716,12 +723,12 @@ async function zeigeKonto() {
   for (const x of g.geraete) {
     const li = el('li');
     const dieses = x.id === sitzung.geraet;
-    li.append(el('span', null, `${x.name}${dieses ? ' (dieser Browser)' : ''} · zuletzt ${datumZeit.format(new Date(x.zuletzt))}${x.adresse ? ' · ' + x.adresse : ''}`));
-    const b = el('button', null, dieses ? 'Abmelden' : 'Gerät abmelden');
+    li.append(el('span', null, `${x.name}${dieses ? ` ${t('(dieser Browser)')}` : ''} · ${t('zuletzt {datum}', { datum: datumZeit.format(new Date(x.zuletzt)) })}${x.adresse ? ' · ' + x.adresse : ''}`));
+    const b = el('button', null, dieses ? t('Abmelden') : t('Gerät abmelden'));
     b.type = 'button';
     b.addEventListener('click', async () => {
       if (dieses) return abmelden();
-      if (!confirm(`„${x.name}“ abmelden?`)) return;
+      if (!confirm(t('„{name}“ abmelden?', { name: x.name }))) return;
       try { await api(`/api/v1/geraete/${encodeURIComponent(x.id)}`, { methode: 'DELETE' }); li.remove(); } catch (y) { alert(y.message); }
     });
     li.append(b);
@@ -733,7 +740,7 @@ $('form-passwort').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target;
   const m = $('passwort-meldung');
-  if (f.neu.value !== f.neu2.value) { m.textContent = 'Die neuen Passwörter stimmen nicht überein.'; return; }
+  if (f.neu.value !== f.neu2.value) { m.textContent = t('Die neuen Passwörter stimmen nicht überein.'); return; }
   try {
     await api('/api/v1/konto/passwort', {
       methode: 'POST',
@@ -744,14 +751,14 @@ $('form-passwort').addEventListener('submit', async (e) => {
       },
     });
     f.reset();
-    m.textContent = 'Passwort geändert.';
+    m.textContent = t('Passwort geändert.');
   } catch (x) { m.textContent = x.message; }
 });
 
 async function zeigeFassung(ziel) {
   try {
     const z = await api('/api/v1/zustand');
-    ziel.textContent = `Server ${z.fassung || '?'}${z.commit ? ' (' + z.commit + ')' : ''} · Protokoll ${z.protokoll}`;
+    ziel.textContent = `${t('Server')} ${z.fassung || '?'}${z.commit ? ' (' + z.commit + ')' : ''} · ${t('Protokoll')} ${z.protokoll}`;
   } catch (_) { /* egal */ }
 }
 zeigeFassung($('anmeldung-fassung'));
@@ -796,7 +803,7 @@ async function ladeOrte(zentrieren = false) {
     m.on('click', async () => {
       if (g.anzahl > 1 && leafletKarte.getZoom() < 17) { leafletKarte.setView([g.breite, g.laenge], leafletKarte.getZoom() + 2); return; }
       const r = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: g.ids } });
-      karteGruppe = { aufnahmen: r.aufnahmen, titel: `${g.anzahl} Aufnahme${g.anzahl === 1 ? '' : 'n'} an diesem Ort` };
+      karteGruppe = { aufnahmen: r.aufnahmen, titel: t(g.anzahl === 1 ? '{n} Aufnahme an diesem Ort' : '{n} Aufnahmen an diesem Ort', { n: g.anzahl }) };
       location.hash = '#/karte/gruppe';
     });
     m.addTo(karteMarker);
@@ -814,26 +821,26 @@ async function zeigeVerwaltung() {
   const zeile = (t) => { const li = el('li'); li.append(el('span', null, t)); ul.append(li); };
   try {
     const sp = await api('/api/v1/speicher');
-    zeile(`Speicher: ${gb(sp.frei)} frei von ${gb(sp.gesamt)}${sp.stufe !== 'ok' ? ' – ' + sp.stufe : ''}`);
+    zeile(t('Speicher: {frei} frei von {gesamt}', { frei: gb(sp.frei), gesamt: gb(sp.gesamt) }) + (sp.stufe !== 'ok' ? ' – ' + t(sp.stufe) : ''));
   } catch (_) { /* kein Speicherwächter */ }
   try {
     const sv = await api('/api/v1/sicherung');
-    zeile(`Sicherung: ${sv.stufe}${sv.letzterErfolg ? ' · zuletzt ' + datumZeit.format(new Date(sv.letzterErfolg)) : ''}${sv.naechster ? ' · nächste ' + datumZeit.format(new Date(sv.naechster)) : ''}${sv.fehler ? ' · ' + sv.fehler : ''}`);
+    zeile(t('Sicherung: {stufe}', { stufe: t(sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sv.fehler : ''));
     $('sicherung-jetzt').hidden = sv.stufe === 'aus' || sv.stufe === 'nichtEingerichtet';
   } catch (_) { $('sicherung-jetzt').hidden = true; }
   try {
     const a = await api('/api/v1/auswertung');
-    zeile(a.laeuft && a.stand ? `Auswertung läuft: ${a.stand.stufe} (${a.stand.stufeNummer}/${a.stand.stufenGesamt}), ${a.stand.erledigt} von ${a.stand.gesamt}` : 'Auswertung: nichts offen');
+    zeile(a.laeuft && a.stand ? t('Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}', { stufe: a.stand.stufe, nr: a.stand.stufeNummer, von: a.stand.stufenGesamt, erledigt: a.stand.erledigt, gesamt: a.stand.gesamt }) : t('Auswertung: nichts offen'));
   } catch (_) { /* ohne Modelle */ }
   const kl = $('konten');
   kl.replaceChildren();
   const d = await api('/api/v1/konten');
   for (const k of d.konten) {
     const li = el('li');
-    li.append(el('span', null, `${k.name}${k.verwalter ? ' · Verwalter' : ''}${k.totp ? ' · TOTP' : ''}${k.gesperrt ? ' · gesperrt' : ''} · ${k.geraete} Gerät${k.geraete === 1 ? '' : 'e'}${k.du ? ' · du' : ''}`));
+    li.append(el('span', null, `${k.name}${k.verwalter ? ` · ${t('Verwalter')}` : ''}${k.totp ? ' · TOTP' : ''}${k.gesperrt ? ` · ${t('gesperrt')}` : ''} · ${t(k.geraete === 1 ? '{n} Gerät' : '{n} Geräte', { n: k.geraete })}${k.du ? ` · ${t('du')}` : ''}`));
     const kn = el('span');
-    if (k.gesperrt) { const b = el('button', null, 'Entsperren'); b.type = 'button'; b.addEventListener('click', async () => { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); zeigeVerwaltung(); }); kn.append(b); }
-    if (!k.du) { const b = el('button', null, 'Entfernen'); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(`„${k.name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.`)) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); zeigeVerwaltung(); } catch (x) { alert(x.message); } }); kn.append(b); }
+    if (k.gesperrt) { const b = el('button', null, t('Entsperren')); b.type = 'button'; b.addEventListener('click', async () => { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); zeigeVerwaltung(); }); kn.append(b); }
+    if (!k.du) { const b = el('button', null, t('Entfernen')); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(t('„{name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.', { name: k.name }))) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); zeigeVerwaltung(); } catch (x) { alert(x.message); } }); kn.append(b); }
     li.append(kn);
     kl.append(li);
   }
@@ -864,7 +871,7 @@ function schalteAuswahl(id, k) {
 function zeigeAuswahl() {
   const n = auswahl.size;
   $('auswahlleiste').hidden = n === 0;
-  $('auswahl-anzahl').textContent = `${n} ausgewählt`;
+  $('auswahl-anzahl').textContent = t('{n} ausgewählt', { n });
   $('auswaehlen').classList.toggle('aktiv', auswahlModus);
   document.body.classList.toggle('mit-leiste', n > 0);
 }
@@ -910,7 +917,7 @@ $('auswahl-laden').addEventListener('click', () => {
 
 $('auswahl-papierkorb').addEventListener('click', async () => {
   const g = gewaehlte();
-  if (!confirm(`${g.length} Aufnahme${g.length === 1 ? '' : 'n'} in den Papierkorb legen? Sie verschwinden überall – zurückholen geht am Rechner.`)) return;
+  if (!confirm(g.length === 1 ? t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.') : t('{n} Aufnahmen in den Papierkorb legen? Sie verschwinden überall – zurückholen geht am Rechner und hier im Papierkorb.', { n: g.length }))) return;
   try {
     await befehl('inDenPapierkorb', { ids: g.map((a) => a.id) });
     const weg = new Set(g.map((a) => a.id));
@@ -930,7 +937,7 @@ $('auswahl-zurueck').addEventListener('click', async () => {
     zeitleiste.leeren();
     auswahlAufheben();
     neuZeichnen();
-    $('ende').textContent = `${g.length} zurückgeholt`;
+    $('ende').textContent = t('{n} zurückgeholt', { n: g.length });
   } catch (x) { alert(x.message); }
 });
 
@@ -966,7 +973,7 @@ $('form-album').addEventListener('submit', async (e) => {
     }
     await befehl('albumFuellen', { albumId, ids: g.map((a) => a.id) });
     auswahlAufheben();
-    $('ende').textContent = `${g.length} im Album „${name}“`;
+    $('ende').textContent = t('{n} im Album „{name}“', { n: g.length, name });
   } catch (x) { alert(x.message); }
 });
 
@@ -1012,7 +1019,7 @@ function oeffne(i) {
 // Ort, Personen, Schlagwörter, Alben, Beschreibung, Bewertung, Serie.
 
 let angabenOffen = false;
-const landname = (() => { try { return new Intl.DisplayNames(undefined, { type: 'region' }); } catch (_) { return null; } })();
+const landname = (() => { try { return new Intl.DisplayNames(GEBIET, { type: 'region' }); } catch (_) { return null; } })();
 const land = (code) => (code && /^[A-Z]{2}$/.test(code) && landname ? landname.of(code) : code);
 const belichtung = (t) => (t >= 1 ? `${t} s` : `1/${Math.round(1 / t)} s`);
 
@@ -1040,14 +1047,14 @@ async function zeigeAngaben() {
   const a = liste && liste.aufnahmen[offen];
   const feld = $('angaben-feld');
   if (!a || !angabenOffen) return;
-  feld.replaceChildren(el('p', 'neben', 'Lade …'));
+  feld.replaceChildren(el('p', 'neben', t('Lade …')));
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
   if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
   const teile = [];
-  teile.push(el('h3', null, 'Angaben'));
-  teile.push(reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? 'Datum geschätzt' : null));
-  const datei = [d.breite && d.hoehe ? `${d.breite} × ${d.hoehe}` : '', d.bytes ? groesse(d.bytes) : '', d.format ? d.format.toUpperCase() : '', d.dauer ? `${Math.round(d.dauer)} s` : '', d.bearbeitet ? 'bearbeitet' : ''].filter(Boolean).join(' · ');
+  teile.push(el('h3', null, t('Angaben')));
+  teile.push(reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? t('Datum geschätzt') : null));
+  const datei = [d.breite && d.hoehe ? `${d.breite} × ${d.hoehe}` : '', d.bytes ? groesse(d.bytes) : '', d.format ? d.format.toUpperCase() : '', d.dauer ? `${Math.round(d.dauer)} s` : '', d.bearbeitet ? t('bearbeitet') : ''].filter(Boolean).join(' · ');
   teile.push(reihe('🖼', d.name, datei));
   const k = d.kamera;
   if (k.modell || k.hersteller) {
@@ -1057,7 +1064,7 @@ async function zeigeAngaben() {
   }
   if (d.ort) {
     const name = [d.ort.stadt, d.ort.region, land(d.ort.land)].filter(Boolean).join(', ');
-    teile.push(reihe('📍', name || 'Standort bekannt', `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ' · vom Nachbarfoto übernommen' : ''}`));
+    teile.push(reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`));
   }
   if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
   if (d.schlagwoerter.length) { const box = el('div'); for (const t of d.schlagwoerter) box.append(el('span', 'marke', t.name)); teile.push(reihe('🏷', box)); }
@@ -1065,23 +1072,23 @@ async function zeigeAngaben() {
   // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
   const text = el('textarea');
   text.value = d.beschreibung || '';
-  text.placeholder = 'Beschreibung';
-  const speichern = el('button', 'speichern', 'Speichern');
+  text.placeholder = t('Beschreibung');
+  const speichern = el('button', 'speichern', t('Speichern'));
   speichern.type = 'button';
   speichern.addEventListener('click', async () => {
-    try { await befehl('beschreibungSetzen', { ids: [a.id], beschreibung: text.value }); speichern.textContent = 'Gespeichert'; } catch (x) { speichern.textContent = x.message; }
+    try { await befehl('beschreibungSetzen', { ids: [a.id], beschreibung: text.value }); speichern.textContent = t('Gespeichert'); } catch (x) { speichern.textContent = x.message; }
   });
-  text.addEventListener('input', () => { speichern.textContent = 'Speichern'; });
+  text.addEventListener('input', () => { speichern.textContent = t('Speichern'); });
   const beschr = el('div', 'beschreibung');
   beschr.append(text, speichern);
-  teile.push(reihe('✎', beschr, d.kiBeschreibung ? `Automatisch: ${d.kiBeschreibung}` : null));
+  teile.push(reihe('✎', beschr, d.kiBeschreibung ? t('Automatisch: {text}', { text: d.kiBeschreibung }) : null));
   // Bewertung
   const sterne = el('div', 'sterne');
   const male = (n) => { for (const [i, b] of [...sterne.children].entries()) b.classList.toggle('voll', i < n); };
   for (let i = 1; i <= 5; i++) {
     const b = el('button', null, '★');
     b.type = 'button';
-    b.title = `${i} von 5`;
+    b.title = t('{i} von 5', { i });
     b.addEventListener('click', async () => {
       const neu = d.bewertung === i ? 0 : i;
       try { await befehl('bewertungSetzen', { ids: [a.id], bewertung: neu }); d.bewertung = neu; a.bewertung = neu || undefined; male(neu); } catch (x) { feld.append(el('p', 'fehler', x.message)); }
@@ -1091,14 +1098,14 @@ async function zeigeAngaben() {
   male(d.bewertung || 0);
   teile.push(reihe('☆', sterne));
   if (d.serie && d.serie.groesse > 1) {
-    const v = el('a', null, `Serie mit ${d.serie.groesse} Aufnahmen`);
+    const v = el('a', null, t('Serie mit {n} Aufnahmen', { n: d.serie.groesse }));
     v.href = `#/serie/${encodeURIComponent(d.serie.id)}`;
     v.addEventListener('click', schliesse);
     teile.push(reihe('⧉', v));
   }
-  if (d.text) { const det = el('details'); det.append(el('summary', null, 'Erkannter Text'), el('pre', null, d.text)); teile.push(det); }
-  if (d.transkript) { const det = el('details'); det.append(el('summary', null, 'Transkript'), el('pre', null, d.transkript)); teile.push(det); }
-  teile.push(el('p', 'neben', `Importiert ${datumZeit.format(new Date(d.importiert))}`));
+  if (d.text) { const det = el('details'); det.append(el('summary', null, t('Erkannter Text')), el('pre', null, d.text)); teile.push(det); }
+  if (d.transkript) { const det = el('details'); det.append(el('summary', null, t('Transkript')), el('pre', null, d.transkript)); teile.push(det); }
+  teile.push(el('p', 'neben', t('Importiert {datum}', { datum: datumZeit.format(new Date(d.importiert)) })));
   feld.replaceChildren(...teile);
 }
 

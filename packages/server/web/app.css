@@ -263,3 +263,5 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .lb-leiste button, #baum-zum-lebensbaum { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); font-weight: 400; }
 #lb-flaeche { display: flex; justify-content: center; }
 #lb-leinwand { max-width: 100%; max-height: calc(100vh - 170px); height: auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.35); cursor: pointer; }
+.einst-sprache .inhalt { display: flex; flex-direction: column; gap: 4px; }
+.einst-sprache select { align-self: flex-start; margin-top: 6px; font: inherit; padding: 4px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
