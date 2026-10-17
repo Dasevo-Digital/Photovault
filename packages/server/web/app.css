@@ -49,7 +49,7 @@ input { font: inherit; }
 #betrachter figure { margin: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #betrachter img, #betrachter video { max-width: 100vw; max-height: calc(100vh - 40px); object-fit: contain; }
 #betrachter figcaption { color: #ddd; font-size: 0.9em; padding: 8px; height: 40px; }
-#betrachter button { position: absolute; background: rgba(0,0,0,.45); color: #fff; border: 0; border-radius: 50%; width: 44px; height: 44px; font-size: 26px; line-height: 44px; padding: 0; }
+#betrachter > button { position: absolute; background: rgba(0,0,0,.45); color: #fff; border: 0; border-radius: 50%; width: 44px; height: 44px; font-size: 26px; line-height: 44px; padding: 0; }
 #zu { top: 12px; right: 12px; }
 #zurueck { left: 12px; top: 50%; transform: translateY(-50%); }
 #vor { right: 12px; top: 50%; transform: translateY(-50%); }
@@ -168,3 +168,31 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .dupl .angaben { color: var(--leise); }
 .dupl button { margin-top: 6px; }
 .dupl.beste button { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+
+/* --- Angaben im Betrachter, Serien ---------------------------------------- */
+#info { top: 12px; left: 124px; font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
+#info[aria-pressed=true] { background: var(--akzent); }
+#betrachter.mit-angaben figure { width: calc(100% - 340px); }
+#betrachter.mit-angaben #vor { right: 352px; }
+#angaben-feld { position: absolute; top: 0; right: 0; bottom: 0; width: 340px; overflow-y: auto; background: var(--karte); color: var(--text); padding: 16px 16px 24px; border-left: 1px solid var(--rand); font-size: 0.9em; }
+#angaben-feld h3 { margin: 0 0 12px; font-size: 1.05em; }
+#angaben-feld .reihe { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--rand); }
+#angaben-feld .reihe .zeichen { flex: 0 0 1.6em; text-align: center; color: var(--akzent); }
+#angaben-feld .reihe .haupt { font-weight: 600; overflow-wrap: anywhere; }
+#angaben-feld .reihe .neben { color: var(--leise); overflow-wrap: anywhere; white-space: pre-line; }
+#angaben-feld .reihe .inhalt { flex: 1; min-width: 0; }
+#angaben-feld a { color: var(--akzent); text-decoration: none; }
+#angaben-feld .marke { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 10px; background: var(--grund); border: 1px solid var(--rand); font-size: 0.9em; }
+#angaben-feld .beschreibung { display: grid; gap: 6px; justify-items: start; }
+#angaben-feld textarea { display: block; width: 100%; min-height: 3.5em; padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); font: inherit; resize: vertical; }
+#angaben-feld .sterne button { background: none; border: 0; color: var(--leise); font-size: 20px; padding: 0 2px; line-height: 1; }
+#angaben-feld .sterne button.voll { color: #e3a008; }
+#angaben-feld details { margin-top: 6px; }
+#angaben-feld details pre { white-space: pre-wrap; font: inherit; color: var(--leise); margin: 6px 0 0; }
+#angaben-feld .speichern { padding: 4px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+#raster .kachel .stapel { position: absolute; right: 6px; top: 6px; color: #fff; text-shadow: 0 0 4px #000; font-size: 13px; background: rgba(0,0,0,.45); border-radius: 8px; padding: 1px 6px; }
+@media (max-width: 700px) {
+  #betrachter.mit-angaben figure { display: none; }
+  #angaben-feld { width: 100%; border-left: 0; }
+  #betrachter.mit-angaben #vor, #betrachter.mit-angaben #zurueck { display: none; }
+}

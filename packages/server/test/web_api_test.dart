@@ -327,6 +327,71 @@ void main() {
     },
   );
 
+  test('Angaben: Datei, Kamera, Ort, Schlagwort, Album; Serie', () async {
+    final a = await ladeHoch(erikaToken, 'a1.jpg', 10);
+    final b = await ladeHoch(erikaToken, 'a2.jpg', 60);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    await (db.update(db.assets)..where((t) => t.id.equals(a))).write(
+      const AssetsCompanion(
+        cameraMake: Value('Canon'),
+        cameraModel: Value('EOS R5'),
+        fNumber: Value(2.8),
+        iso: Value(400),
+        exposureTimeSeconds: Value(0.004),
+        latitude: Value(54.32),
+        longitude: Value(10.13),
+        locationCity: Value('Kiel'),
+        locationCountry: Value('DE'),
+        description: Value('Am Hafen'),
+      ),
+    );
+    await befehl(erikaToken, 'schlagwortAnheften', {
+      'ids': [a],
+      'name': 'Hafen',
+      'quelle': 'hand',
+    });
+    await befehl(erikaToken, 'albumAnlegen', {
+      'albumId': 'alb1',
+      'name': 'Küste',
+      'angelegtAm': DateTime(2026, 7, 1).toIso8601String(),
+    });
+    await befehl(erikaToken, 'albumFuellen', {
+      'albumId': 'alb1',
+      'ids': [a],
+    });
+    await befehl(erikaToken, 'serieBilden', {
+      'serieId': 'st1',
+      'ids': [a, b],
+      'titelId': a,
+    });
+    final d = await jsonAus(
+      await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+    );
+    expect(d['name'], 'a1.jpg');
+    expect(d['bytes'], greaterThan(0));
+    expect((d['kamera']! as Map)['modell'], 'EOS R5');
+    expect((d['kamera']! as Map)['iso'], 400);
+    expect((d['ort']! as Map)['stadt'], 'Kiel');
+    expect((d['ort']! as Map)['land'], 'DE');
+    expect(d['beschreibung'], 'Am Hafen');
+    expect((d['schlagwoerter']! as List).cast<Map>().map((x) => x['name']), [
+      'Hafen',
+    ]);
+    expect((d['alben']! as List).cast<Map>().map((x) => x['name']), ['Küste']);
+    expect(d['personen'], isEmpty);
+    expect((d['serie']! as Map)['groesse'], 2);
+    final serie = await jsonAus(
+      await frag('GET', '/api/v1/serien/st1', token: erikaToken),
+    );
+    expect((serie['aufnahmen']! as List).cast<Map>().map((x) => x['id']), [
+      a,
+      b,
+    ], reason: 'Titelbild zuerst');
+    for (final pfad in ['/api/v1/aufnahmen/$a/angaben', '/api/v1/serien/st1']) {
+      expect((await frag('GET', pfad, token: maxToken)).statusCode, 404);
+    }
+  });
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

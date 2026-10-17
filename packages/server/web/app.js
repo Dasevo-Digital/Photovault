@@ -146,6 +146,7 @@ function kachel(a, index) {
   k.append(img);
   if (a.art === 'video') k.append(el('span', 'marke', '▶'));
   if (a.favorit) k.append(el('span', 'herz', '♥'));
+  if (a.serie && a.serie.titel && a.serie.groesse > 1) k.append(el('span', 'stapel', `⧉ ${a.serie.groesse}`));
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
   k.addEventListener('click', () => (auswahlModus ? schalteAuswahl(a.id, k) : oeffne(index)));
   let halten;
@@ -465,6 +466,12 @@ $('dupl-alle').addEventListener('click', async () => {
     await sucheDuplikate();
   } catch (x) { $('dupl-hinweis').textContent = x.message; }
 });
+
+async function zeigeSerie(id) {
+  zeigeBereich(['raster']);
+  const d = await api(`/api/v1/serien/${encodeURIComponent(id)}`);
+  zeigeListe({ aufnahmen: d.aufnahmen }, `Serie · ${d.aufnahmen.length} Aufnahmen`);
+}
 
 async function zeigePersonen() {
   markiereNav('personen');
@@ -814,8 +821,112 @@ function oeffne(i) {
   $('laden').href = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
   $('laden').download = a.name || '';
   $('betrachter').hidden = false;
+  zeigeAngaben();
   if (i >= liste.aufnahmen.length - 20) ladeMehr();
 }
+
+// --- Angaben zur Aufnahme --------------------------------------------------
+// Dieselben Zeilen wie die Info-Ansicht des Rechners: Datum, Datei, Kamera,
+// Ort, Personen, Schlagwörter, Alben, Beschreibung, Bewertung, Serie.
+
+let angabenOffen = false;
+const landname = (() => { try { return new Intl.DisplayNames(undefined, { type: 'region' }); } catch (_) { return null; } })();
+const land = (code) => (code && /^[A-Z]{2}$/.test(code) && landname ? landname.of(code) : code);
+const belichtung = (t) => (t >= 1 ? `${t} s` : `1/${Math.round(1 / t)} s`);
+
+function reihe(zeichen, haupt, neben) {
+  const r = el('div', 'reihe');
+  const inhalt = el('div', 'inhalt');
+  if (haupt instanceof Node) inhalt.append(haupt); else inhalt.append(el('div', 'haupt', haupt));
+  if (neben) { if (neben instanceof Node) inhalt.append(neben); else inhalt.append(el('div', 'neben', neben)); }
+  r.append(el('span', 'zeichen', zeichen), inhalt);
+  return r;
+}
+
+function verweise(liste, ziel) {
+  const box = el('div');
+  for (const x of liste) {
+    const a = el('a', 'marke', x.name);
+    a.href = `${ziel}/${encodeURIComponent(x.id)}`;
+    a.addEventListener('click', schliesse);
+    box.append(a);
+  }
+  return box;
+}
+
+async function zeigeAngaben() {
+  const a = liste && liste.aufnahmen[offen];
+  const feld = $('angaben-feld');
+  if (!a || !angabenOffen) return;
+  feld.replaceChildren(el('p', 'neben', 'Lade …'));
+  let d;
+  try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
+  if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
+  const teile = [];
+  teile.push(el('h3', null, 'Angaben'));
+  teile.push(reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? 'Datum geschätzt' : null));
+  const datei = [d.breite && d.hoehe ? `${d.breite} × ${d.hoehe}` : '', d.bytes ? groesse(d.bytes) : '', d.format ? d.format.toUpperCase() : '', d.dauer ? `${Math.round(d.dauer)} s` : '', d.bearbeitet ? 'bearbeitet' : ''].filter(Boolean).join(' · ');
+  teile.push(reihe('🖼', d.name, datei));
+  const k = d.kamera;
+  if (k.modell || k.hersteller) {
+    const modell = k.modell && k.hersteller && k.modell.toLowerCase().startsWith(k.hersteller.toLowerCase()) ? k.modell : [k.hersteller, k.modell].filter(Boolean).join(' ');
+    const werte = [k.brennweite ? `${k.brennweite} mm` : '', k.blende ? `f/${k.blende}` : '', k.belichtung ? belichtung(k.belichtung) : '', k.iso ? `ISO ${k.iso}` : ''].filter(Boolean).join(' · ');
+    teile.push(reihe('📷', modell, [k.objektiv, werte].filter(Boolean).join('\n')));
+  }
+  if (d.ort) {
+    const name = [d.ort.stadt, d.ort.region, land(d.ort.land)].filter(Boolean).join(', ');
+    teile.push(reihe('📍', name || 'Standort bekannt', `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ' · vom Nachbarfoto übernommen' : ''}`));
+  }
+  if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
+  if (d.schlagwoerter.length) { const box = el('div'); for (const t of d.schlagwoerter) box.append(el('span', 'marke', t.name)); teile.push(reihe('🏷', box)); }
+  if (d.alben.length) teile.push(reihe('📚', verweise(d.alben, '#/alben')));
+  // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
+  const text = el('textarea');
+  text.value = d.beschreibung || '';
+  text.placeholder = 'Beschreibung';
+  const speichern = el('button', 'speichern', 'Speichern');
+  speichern.type = 'button';
+  speichern.addEventListener('click', async () => {
+    try { await befehl('beschreibungSetzen', { ids: [a.id], beschreibung: text.value }); speichern.textContent = 'Gespeichert'; } catch (x) { speichern.textContent = x.message; }
+  });
+  text.addEventListener('input', () => { speichern.textContent = 'Speichern'; });
+  const beschr = el('div', 'beschreibung');
+  beschr.append(text, speichern);
+  teile.push(reihe('✎', beschr, d.kiBeschreibung ? `Automatisch: ${d.kiBeschreibung}` : null));
+  // Bewertung
+  const sterne = el('div', 'sterne');
+  const male = (n) => { for (const [i, b] of [...sterne.children].entries()) b.classList.toggle('voll', i < n); };
+  for (let i = 1; i <= 5; i++) {
+    const b = el('button', null, '★');
+    b.type = 'button';
+    b.title = `${i} von 5`;
+    b.addEventListener('click', async () => {
+      const neu = d.bewertung === i ? 0 : i;
+      try { await befehl('bewertungSetzen', { ids: [a.id], bewertung: neu }); d.bewertung = neu; a.bewertung = neu || undefined; male(neu); } catch (x) { feld.append(el('p', 'fehler', x.message)); }
+    });
+    sterne.append(b);
+  }
+  male(d.bewertung || 0);
+  teile.push(reihe('☆', sterne));
+  if (d.serie && d.serie.groesse > 1) {
+    const v = el('a', null, `Serie mit ${d.serie.groesse} Aufnahmen`);
+    v.href = `#/serie/${encodeURIComponent(d.serie.id)}`;
+    v.addEventListener('click', schliesse);
+    teile.push(reihe('⧉', v));
+  }
+  if (d.text) { const det = el('details'); det.append(el('summary', null, 'Erkannter Text'), el('pre', null, d.text)); teile.push(det); }
+  if (d.transkript) { const det = el('details'); det.append(el('summary', null, 'Transkript'), el('pre', null, d.transkript)); teile.push(det); }
+  teile.push(el('p', 'neben', `Importiert ${datumZeit.format(new Date(d.importiert))}`));
+  feld.replaceChildren(...teile);
+}
+
+$('info').addEventListener('click', () => {
+  angabenOffen = !angabenOffen;
+  $('info').setAttribute('aria-pressed', String(angabenOffen));
+  $('betrachter').classList.toggle('mit-angaben', angabenOffen);
+  $('angaben-feld').hidden = !angabenOffen;
+  zeigeAngaben();
+});
 
 function schliesse() {
   $('betrachter').hidden = true;
@@ -865,6 +976,7 @@ async function zeigeWeg() {
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'statistik': await zeigeStatistik(); break;
       case 'duplikate': await zeigeDuplikate(); break;
+      case 'serie': await zeigeSerie(teile[1]); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');

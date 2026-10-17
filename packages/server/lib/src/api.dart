@@ -162,7 +162,9 @@ Handler baueApi({
     ..get('/api/v1/bibliothek', api.bibliothek)
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
+    ..get('/api/v1/aufnahmen/<id>/angaben', api.angaben)
     ..get('/api/v1/aufnahmen/<id>/<art>', api.datei)
+    ..get('/api/v1/serien/<id>', api.serie)
     ..post('/api/v1/pruefsummen', api.pruefsummen)
     ..post('/api/v1/befehle', abgleich.befehle)
     ..get('/api/v1/abgleich/stand', abgleich.stand)
@@ -597,6 +599,90 @@ class _Api {
       'ausnahmen': ausnahmen.length,
       'schwelle': schwelle,
       'gruppen': ausgabe,
+    });
+  }
+
+  /// Alles, was die Info-Ansicht des Rechners zu einer Aufnahme zeigt:
+  /// Datei, Kamera, Ort, Personen, Schlagwörter, Alben, Beschreibung, Serie.
+  /// Die Rasterzeile liegt darunter, damit der Browser dieselben Schlüssel
+  /// wie in den Listen sieht; `ort` und `kamera` werden hier ausführlicher.
+  Future<Response> angaben(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final a = await db.assetById(id);
+    if (a == null || a.isLocked) {
+      return _json({'fehler': 'unbekannt'}, status: 404);
+    }
+    final personen = await db.peopleForAsset(id);
+    final tags = await db.tagsForAsset(id);
+    final alben = await (db.select(db.albums).join([
+      innerJoin(db.albumAssets, db.albumAssets.albumId.equalsExp(db.albums.id)),
+    ])..where(db.albumAssets.assetId.equals(id))).get();
+    return _json({
+      ...zeileAlsJson(Rasterzeile.aus(a)),
+      'importiert': a.importedAt.toIso8601String(),
+      'bytes': a.fileSizeBytes,
+      'format': a.dateiformat,
+      'beschreibung': a.description,
+      'kiBeschreibung': a.aiCaptionDe ?? a.aiCaption,
+      'text': a.ocrText,
+      'transkript': a.transkript,
+      'datumGeschaetzt': a.datumGeschaetzt,
+      'bearbeitet':
+          a.developedRelativePath != null ||
+          a.trimmedRelativePath != null ||
+          a.restoredRelativePath != null,
+      'kamera': {
+        'hersteller': a.cameraMake,
+        'modell': a.cameraModel,
+        'objektiv': a.lensModel,
+        'brennweite': a.focalLengthMm,
+        'brennweite35': a.focalLength35mm,
+        'blende': a.fNumber,
+        'iso': a.iso,
+        'belichtung': a.exposureTimeSeconds,
+        'korrektur': a.exposureBiasEv,
+      },
+      if (a.latitude != null && a.longitude != null)
+        'ort': {
+          'breite': a.latitude,
+          'laenge': a.longitude,
+          'land': a.locationCountry,
+          'region': a.locationState,
+          'stadt': a.locationCity,
+          'geerbt': a.ortGeerbt,
+        },
+      'personen': [
+        for (final p in personen) {'id': p.id, 'name': p.name},
+      ],
+      'schlagwoerter': [
+        for (final t in tags) {'id': t.id, 'name': t.name},
+      ],
+      'alben': [
+        for (final z in alben)
+          {
+            'id': z.readTable(db.albums).id,
+            'name': z.readTable(db.albums).name,
+          },
+      ],
+    });
+  }
+
+  /// Die Aufnahmen einer Serie (eines Stapels), Titelbild zuerst – im
+  /// Raster steht nur das Titelbild, der Rest öffnet sich hierüber.
+  Future<Response> serie(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final mitglieder = await db.assetsInStack(id);
+    final sichtbar =
+        [
+          for (final a in mitglieder)
+            if (!a.isTrashed && !a.isLocked) a,
+        ]..sort((x, y) {
+          if (x.isStackCover != y.isStackCover) return x.isStackCover ? -1 : 1;
+          return x.fileCreatedAt.compareTo(y.fileCreatedAt);
+        });
+    if (sichtbar.isEmpty) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'aufnahmen': [for (final a in sichtbar) zeileAlsJson(Rasterzeile.aus(a))],
     });
   }
 
