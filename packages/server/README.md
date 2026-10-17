@@ -519,6 +519,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /abgleich/zeilen` | einzelne Zeilen, wie der Server sie sieht |
 | `GET /abgleich/abzug` | die ganze Bibliothek als SQLite-Datei |
 | `GET /dateien/<pfad>` | eine Datei der Bibliothek, mit `Range` |
+| `PUT /dateien/<pfad>` | abgeleitete Datei eines Geräts ablegen – nur `developed/`, `masks/`, `trimmed/`, `restored/`; erst die Datei, dann der Befehl, der auf sie zeigt (Issue #109) |
 | `POST /umzug/beginnen`, `GET /umzug/stand`, `…/umzug/hochladen` (tus), `POST /umzug/abschliessen` | Umzug einer bestehenden Bibliothek |
 | `GET /bibliothek` | Schema, Zahl der Aufnahmen |
 | `GET /aufnahmen?anzahl=300&nach=…` | Zeitleiste, neueste zuerst; `weiter` der Antwort ist `nach` der nächsten Seite |
