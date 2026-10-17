@@ -213,6 +213,51 @@ void main() {
   });
 
   test(
+    'Zustand nennt die Fassung; Papierkorb listet, was drin liegt',
+    () async {
+      final z = await jsonAus(await frag('GET', '/api/v1/zustand'));
+      expect(z['fassung'], 'Entwicklung');
+      final a = await ladeHoch(erikaToken, 'weg.jpg', 30);
+      await ladeHoch(erikaToken, 'bleibt.jpg', 80);
+      expect(
+        (await befehl(erikaToken, 'inDenPapierkorb', {
+          'ids': [a],
+        })).statusCode,
+        200,
+      );
+      final korb = await jsonAus(
+        await frag('GET', '/api/v1/papierkorb', token: erikaToken),
+      );
+      expect((korb['aufnahmen']! as List).cast<Map>().map((x) => x['id']), [a]);
+      final sichtbar = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen', token: erikaToken),
+      );
+      expect((sichtbar['aufnahmen']! as List).length, 1);
+      expect(
+        (await befehl(erikaToken, 'ausDemPapierkorb', {
+          'ids': [a],
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await jsonAus(
+          await frag('GET', '/api/v1/papierkorb', token: erikaToken),
+        ))['aufnahmen'],
+        isEmpty,
+      );
+      expect(
+        (await frag('GET', '/api/v1/papierkorb', token: maxToken)).statusCode,
+        200,
+      );
+      final e = await jsonAus(
+        await frag('GET', '/api/v1/erinnerungen', token: erikaToken),
+      );
+      expect(e['art'], isIn(['tag', 'monat', 'keiner']));
+      expect(e['gruppen'], isA<List>());
+    },
+  );
+
+  test(
     'Suche: nach Text findet den Namen; nach Inhalt ohne Modell 404',
     () async {
       final a = await ladeHoch(erikaToken, 'Sonnenuntergang_Lanzarote.jpg', 10);

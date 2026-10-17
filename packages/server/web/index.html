@@ -16,6 +16,7 @@
     <a href="#/suche" data-bereich="suche">Suche</a>
     <a href="#/alben" data-bereich="alben">Alben</a>
     <a href="#/personen" data-bereich="personen">Personen</a>
+    <a href="#/papierkorb" data-bereich="papierkorb">Papierkorb</a>
     <a href="#/konto" data-bereich="konto">Konto</a>
   </nav>
   <button id="auswaehlen" type="button" title="Mehrere auswählen">Auswählen</button>
@@ -36,6 +37,7 @@
     <button type="submit">Bestätigen</button>
   </form>
   <p id="fehler" class="fehler" role="alert"></p>
+  <p id="anmeldung-fassung" class="leise klein"></p>
 </main>
 
 <main id="inhalt" hidden>
@@ -55,6 +57,21 @@
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>
     <p id="konto-wer"></p>
+    <p id="konto-fassung" class="leise"></p>
+    <div id="verwaltung" hidden>
+      <h3>Server</h3>
+      <ul id="server-stand"></ul>
+      <p><button id="auswertung-anstossen" type="button">Auswertung anstossen</button>
+         <button id="sicherung-jetzt" type="button">Jetzt sichern</button></p>
+      <h3>Konten</h3>
+      <ul id="konten"></ul>
+      <form id="form-konto-neu" class="zeile">
+        <input name="name" placeholder="Neues Konto" autocomplete="off" required>
+        <input name="passwort" type="password" placeholder="Passwort (mind. 12 Zeichen)" autocomplete="new-password" minlength="12" required>
+        <label><input type="checkbox" name="verwalter"> Verwalter</label>
+        <button type="submit">Anlegen</button>
+      </form>
+    </div>
     <h3>Geräte</h3>
     <ul id="geraete"></ul>
     <h3>Passwort ändern</h3>
@@ -70,6 +87,7 @@
     <button id="abmelden" type="button">Abmelden</button>
   </section>
   <section id="bereich-raster" hidden>
+    <div id="erinnerungen" hidden><h2>Erinnerungen</h2><div id="erinnerungen-karten"></div></div>
     <h2 id="raster-titel" hidden></h2>
     <div id="raster"></div>
     <p id="ende" class="leise"></p>
@@ -83,6 +101,7 @@
   <button id="auswahl-album" type="button">Album</button>
   <button id="auswahl-laden" type="button">Herunterladen</button>
   <button id="auswahl-papierkorb" type="button">Papierkorb</button>
+  <button id="auswahl-zurueck" type="button" hidden>Zurückholen</button>
 </div>
 
 <dialog id="album-dialog">

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/rueckblick.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -14,6 +15,7 @@ import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'bibliotheken.dart';
 import 'dateiantwort.dart';
+import 'fassung.dart';
 import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'oidc.dart';
@@ -158,6 +160,8 @@ Handler baueApi({
     )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/erinnerungen', api.erinnerungen)
+    ..get('/api/v1/papierkorb', api.papierkorb)
     ..get('/api/v1/alben', api.alben)
     ..get('/api/v1/alben/<id>', api.album)
     ..get('/api/v1/personen', api.personen)
@@ -382,6 +386,8 @@ class _Api {
       _json({
         'dienst': 'photo-vault',
         'protokoll': protokollFassung,
+        'fassung': serverFassung,
+        if (serverCommit.isNotEmpty) 'commit': serverCommit,
         'anmeldung': {'totp': konten.totpPflicht, 'oidc': oidc != null},
         if (einrichten) 'einrichten': true,
       });
@@ -452,6 +458,46 @@ class _Api {
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    });
+  }
+
+  /// „Vor x Jahren“ für den Browser – dieselbe Wahl wie am Rechner und auf
+  /// dem Telefon (siehe `waehleRueckblick`).
+  Future<Response> erinnerungen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final heute = DateTime.now();
+    final amTag = await db.assetsOnThisDay(heute);
+    final imMonat = amTag.isEmpty
+        ? await db.assetsInDiesemMonat(heute)
+        : const <AssetData>[];
+    final r = waehleRueckblick(
+      amTag: amTag,
+      imMonat: imMonat,
+      wann: (a) => a.fileCreatedAt.toLocal(),
+      heute: heute,
+    );
+    return _json({
+      'art': r.art.name,
+      'monat': heute.month,
+      'gruppen': [
+        for (final g in r.gruppen)
+          {
+            'jahreHer': g.jahreHer,
+            'aufnahmen': [
+              for (final a in g.dinge) zeileAlsJson(Rasterzeile.aus(a)),
+            ],
+          },
+      ],
+    });
+  }
+
+  /// Der Papierkorb – zurückholen geht über den Befehl `ausDemPapierkorb`.
+  Future<Response> papierkorb(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    return _json({
+      'aufnahmen': [
+        for (final a in await db.papierkorb()) zeileAlsJson(Rasterzeile.aus(a)),
+      ],
     });
   }
 

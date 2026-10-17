@@ -1140,6 +1140,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n, plural, =1{1 Aufnahme nur auf dem Telefon} other{{n} Aufnahmen nur auf dem Telefon}}'**
   String lokalAnzahl(int n);
+
+  /// No description provided for @kontoFassung.
+  ///
+  /// In de, this message translates to:
+  /// **'Fassung'**
+  String get kontoFassung;
+
+  /// No description provided for @kontoFassungText.
+  ///
+  /// In de, this message translates to:
+  /// **'App {app} · Server {server}'**
+  String kontoFassungText(String app, String server);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

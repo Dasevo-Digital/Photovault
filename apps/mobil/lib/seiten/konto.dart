@@ -4,6 +4,7 @@ import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/services/groessentext.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -136,6 +137,21 @@ class Konto extends StatelessWidget {
                   ),
                 ),
               if (sitzung.abgleich case final a?) _KontenZugang(a.verbindung),
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, s) => ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(t.kontoFassung),
+                  subtitle: Text(
+                    t.kontoFassungText(
+                      s.data == null
+                          ? '…'
+                          : '${s.data!.version} (${s.data!.buildNumber})',
+                      sitzung.serverfassung ?? '…',
+                    ),
+                  ),
+                ),
+              ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout),

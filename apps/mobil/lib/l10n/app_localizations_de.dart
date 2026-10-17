@@ -729,4 +729,12 @@ class AppTexteDe extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kontoFassung => 'Fassung';
+
+  @override
+  String kontoFassungText(String app, String server) {
+    return 'App $app · Server $server';
+  }
 }

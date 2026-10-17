@@ -332,5 +332,17 @@
         "type": "int"
       }
     }
+  },
+  "kontoFassung": "Version",
+  "kontoFassungText": "App {app} · server {server}",
+  "@kontoFassungText": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
   }
 }

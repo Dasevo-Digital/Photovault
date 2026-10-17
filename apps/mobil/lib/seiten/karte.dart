@@ -109,10 +109,22 @@ class _KarteState extends State<Karte> {
         },
       ),
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'de.dasevo.photovault',
-        ),
+        // Im dunklen Erscheinungsbild die Kacheln umkehren und den Farbton
+        // zurückdrehen – so bleibt Wasser blau und Grün grün, nur hell wird
+        // dunkel. Kein zweiter Kartendienst, kein Schlüssel.
+        if (Theme.of(context).brightness == Brightness.dark)
+          ColorFiltered(
+            colorFilter: const ColorFilter.matrix(_dunkleKarte),
+            child: TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'de.dasevo.photovault',
+            ),
+          )
+        else
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'de.dasevo.photovault',
+          ),
         MarkerLayer(
           markers: [
             for (final g in gruppen)
@@ -184,3 +196,12 @@ class _Punkt extends StatelessWidget {
     ],
   );
 }
+
+/// Umkehren (invert) und Farbton um 180° drehen, in einer Matrix: Die
+/// Helligkeit kippt, die Farben bleiben, wo sie waren.
+const _dunkleKarte = <double>[
+  0.574, -1.430, -0.144, 0, 255, //
+  -0.426, -0.430, -0.144, 0, 255, //
+  -0.426, -1.430, 0.856, 0, 255, //
+  0, 0, 0, 1, 0, //
+];

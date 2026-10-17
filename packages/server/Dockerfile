@@ -41,6 +41,10 @@ COPY packages/kern packages/kern
 COPY packages/server packages/server
 WORKDIR /quelle/packages/server
 RUN dart pub get --enforce-lockfile
+# Die Fassung ins Programm schreiben (siehe lib/src/fassung.dart).
+ARG PV_FASSUNG=Entwicklung
+ARG PV_COMMIT=
+RUN printf "const serverFassung = '%s';\nconst serverCommit = '%s';\n" "$PV_FASSUNG" "$PV_COMMIT" > lib/src/fassung.dart
 RUN dart build cli -o /aus
 
 # --- ONNX Runtime ------------------------------------------------------------

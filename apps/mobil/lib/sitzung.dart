@@ -122,6 +122,7 @@ class Sitzung extends ChangeNotifier {
     unawaited(d.starte());
     unawaited(pruefeServerspeicher());
     unawaited(pruefeServersicherung());
+    unawaited(holeServerfassung());
     _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
       pruefeServerspeicher();
       pruefeServersicherung();
@@ -152,6 +153,27 @@ class Sitzung extends ChangeNotifier {
     await verbindung!.schreibe(await _ordner());
     notifyListeners();
     await pflegeZwischenspeicher();
+  }
+
+  /// Welche Fassung der Server ist (`/api/v1/zustand`), für die Kontoseite.
+  String? serverfassung;
+
+  Future<void> holeServerfassung() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final z = await a.verbindung.hole('api/v1/zustand');
+      final f = z['fassung'] as String?;
+      final c = z['commit'] as String?;
+      serverfassung = f == null
+          ? null
+          : (c == null || c.isEmpty ? f : '$f ($c)');
+      notifyListeners();
+    } on KeineVerbindung {
+      // Beim nächsten Mal.
+    } on Serverfehler {
+      // Ebenso.
+    }
   }
 
   /// Die Sicherung des Servers – nur für Verwalter, sonst `null`.

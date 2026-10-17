@@ -514,6 +514,13 @@ extension AufnahmenAbfragen on AppDatabase {
   /// sonst könnte jeder ohne PIN ein gesperrtes Foto wiederherstellen oder
   /// sogar endgültig löschen, nur weil es zwischenzeitlich im Papierkorb
   /// liegt.
+  /// Der Papierkorb einmalig – für die Weboberfläche.
+  Future<List<AssetData>> papierkorb() =>
+      (select(assets)
+            ..where((t) => t.isTrashed.equals(true) & t.isLocked.equals(false))
+            ..orderBy([(t) => OrderingTerm.desc(t.trashedAt)]))
+          .get();
+
   Stream<List<AssetData>> watchTrash() {
     final abfrage = select(assets)
       ..where((t) => t.isTrashed.equals(true) & t.isLocked.equals(false))

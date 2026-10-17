@@ -171,6 +171,9 @@ function haengeAn(aufnahmen) {
 
 function zeigeListe(neu, titel) {
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [] };
+  $('erinnerungen').hidden = true;
+  $('auswahl-papierkorb').hidden = !!liste.papierkorb;
+  $('auswahl-zurueck').hidden = !liste.papierkorb;
   letzterTag = null;
   $('raster').replaceChildren();
   $('raster-titel').hidden = !titel;
@@ -223,6 +226,36 @@ async function zeigeFotos() {
   zeigeBereich(['raster']);
   zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: true, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
   if (zeitleiste.geladen.length === 0) await ladeMehr();
+  zeigeErinnerungen().catch(() => {});
+}
+
+// „Vor x Jahren“ über der Zeitleiste – ein Kärtchen je Jahrgang.
+const monate = new Intl.DateTimeFormat(undefined, { month: 'long' });
+async function zeigeErinnerungen() {
+  const d = await api('/api/v1/erinnerungen');
+  const box = $('erinnerungen');
+  const karten = $('erinnerungen-karten');
+  karten.replaceChildren();
+  box.hidden = d.art === 'keiner' || d.gruppen.length === 0;
+  if (box.hidden) return;
+  const monat = monate.format(new Date(2000, d.monat - 1, 1));
+  for (const g of d.gruppen) {
+    const k = el('button', 'erinnerung');
+    k.type = 'button';
+    const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.src = miniaturUrl(g.aufnahmen[0].id);
+    const text = d.art === 'tag' ? `Vor ${g.jahreHer} Jahr${g.jahreHer === 1 ? '' : 'en'}` : `${monat} vor ${g.jahreHer} Jahr${g.jahreHer === 1 ? '' : 'en'}`;
+    k.append(img, el('span', null, `${text} · ${g.aufnahmen.length}`));
+    k.addEventListener('click', () => { zeigeBereich(['raster']); $('erinnerungen').hidden = true; zeigeListe({ aufnahmen: g.aufnahmen }, text); oeffne(0); });
+    karten.append(k);
+  }
+}
+
+async function zeigePapierkorb() {
+  markiereNav('papierkorb');
+  zeigeBereich(['raster']);
+  const d = await api('/api/v1/papierkorb');
+  zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true }, 'Papierkorb');
+  if (d.aufnahmen.length === 0) $('ende').textContent = 'Der Papierkorb ist leer.';
 }
 
 function karte(bildUrl, titel, untertitel, ziel) {
@@ -306,6 +339,9 @@ async function zeigeKonto() {
   const k = await api('/api/v1/konto');
   $('konto-wer').textContent = `${k.name}${k.verwalter ? ' · Verwalter' : ''}${k.totp ? ' · TOTP eingerichtet' : ''}`;
   $('passwort-code-feld').hidden = !k.totp;
+  zeigeFassung($('konto-fassung'));
+  $('verwaltung').hidden = !k.verwalter;
+  if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   const g = await api('/api/v1/geraete');
   const ul = $('geraete');
   ul.replaceChildren();
@@ -342,6 +378,59 @@ $('form-passwort').addEventListener('submit', async (e) => {
     f.reset();
     m.textContent = 'Passwort geändert.';
   } catch (x) { m.textContent = x.message; }
+});
+
+async function zeigeFassung(ziel) {
+  try {
+    const z = await api('/api/v1/zustand');
+    ziel.textContent = `Server ${z.fassung || '?'}${z.commit ? ' (' + z.commit + ')' : ''} · Protokoll ${z.protokoll}`;
+  } catch (_) { /* egal */ }
+}
+zeigeFassung($('anmeldung-fassung'));
+
+// --- Verwaltung (nur Verwalter) -------------------------------------------
+
+const gb = (b) => `${(b / 1073741824).toFixed(1)} GB`;
+async function zeigeVerwaltung() {
+  const ul = $('server-stand');
+  ul.replaceChildren();
+  const zeile = (t) => { const li = el('li'); li.append(el('span', null, t)); ul.append(li); };
+  try {
+    const sp = await api('/api/v1/speicher');
+    zeile(`Speicher: ${gb(sp.frei)} frei von ${gb(sp.gesamt)}${sp.stufe !== 'ok' ? ' – ' + sp.stufe : ''}`);
+  } catch (_) { /* kein Speicherwächter */ }
+  try {
+    const sv = await api('/api/v1/sicherung');
+    zeile(`Sicherung: ${sv.stufe}${sv.letzterErfolg ? ' · zuletzt ' + datumZeit.format(new Date(sv.letzterErfolg)) : ''}${sv.naechster ? ' · nächste ' + datumZeit.format(new Date(sv.naechster)) : ''}${sv.fehler ? ' · ' + sv.fehler : ''}`);
+    $('sicherung-jetzt').hidden = sv.stufe === 'aus' || sv.stufe === 'nichtEingerichtet';
+  } catch (_) { $('sicherung-jetzt').hidden = true; }
+  try {
+    const a = await api('/api/v1/auswertung');
+    zeile(a.laeuft && a.stand ? `Auswertung läuft: ${a.stand.stufe} (${a.stand.stufeNummer}/${a.stand.stufenGesamt}), ${a.stand.erledigt} von ${a.stand.gesamt}` : 'Auswertung: nichts offen');
+  } catch (_) { /* ohne Modelle */ }
+  const kl = $('konten');
+  kl.replaceChildren();
+  const d = await api('/api/v1/konten');
+  for (const k of d.konten) {
+    const li = el('li');
+    li.append(el('span', null, `${k.name}${k.verwalter ? ' · Verwalter' : ''}${k.totp ? ' · TOTP' : ''}${k.gesperrt ? ' · gesperrt' : ''} · ${k.geraete} Gerät${k.geraete === 1 ? '' : 'e'}${k.du ? ' · du' : ''}`));
+    const kn = el('span');
+    if (k.gesperrt) { const b = el('button', null, 'Entsperren'); b.type = 'button'; b.addEventListener('click', async () => { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); zeigeVerwaltung(); }); kn.append(b); }
+    if (!k.du) { const b = el('button', null, 'Entfernen'); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(`„${k.name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.`)) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); zeigeVerwaltung(); } catch (x) { alert(x.message); } }); kn.append(b); }
+    li.append(kn);
+    kl.append(li);
+  }
+}
+$('auswertung-anstossen').addEventListener('click', async () => { try { await api('/api/v1/auswertung', { methode: 'POST', json: {} }); zeigeVerwaltung(); } catch (x) { alert(x.message); } });
+$('sicherung-jetzt').addEventListener('click', async () => { try { await api('/api/v1/sicherung/jetzt', { methode: 'POST', json: {} }); $('ende').textContent = ''; zeigeVerwaltung(); } catch (x) { alert(x.message); } });
+$('form-konto-neu').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await api('/api/v1/konten', { methode: 'POST', json: { name: f.name.value.trim(), passwort: f.passwort.value, verwalter: f.verwalter.checked } });
+    f.reset();
+    zeigeVerwaltung();
+  } catch (x) { alert(x.message); }
 });
 
 // --- Auswahl ---------------------------------------------------------------
@@ -415,6 +504,19 @@ $('auswahl-papierkorb').addEventListener('click', async () => {
   } catch (x) { alert(x.message); }
 });
 
+$('auswahl-zurueck').addEventListener('click', async () => {
+  const g = gewaehlte();
+  try {
+    await befehl('ausDemPapierkorb', { ids: g.map((a) => a.id) });
+    const weg = new Set(g.map((a) => a.id));
+    liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id));
+    zeitleiste.leeren();
+    auswahlAufheben();
+    neuZeichnen();
+    $('ende').textContent = `${g.length} zurückgeholt`;
+  } catch (x) { alert(x.message); }
+});
+
 $('auswahl-album').addEventListener('click', async () => {
   const d = await api('/api/v1/alben');
   const ul = $('album-liste');
@@ -454,7 +556,7 @@ $('form-album').addEventListener('submit', async (e) => {
 function neuZeichnen() {
   if (!liste) return;
   const alt = liste;
-  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
+  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
 }
 
 // --- Betrachter ------------------------------------------------------------
@@ -531,6 +633,7 @@ async function zeigeWeg() {
       case 'alben': await (teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
+      case 'papierkorb': await zeigePapierkorb(); break;
       default: await zeigeFotos();
     }
   } catch (x) {

@@ -107,3 +107,15 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #laden { position: absolute; top: 12px; left: 68px; background: rgba(0,0,0,.45); color: #fff; border-radius: 50%; width: 44px; height: 44px; font-size: 22px; line-height: 44px; text-align: center; text-decoration: none; }
 .karte label.zeile { display: flex; align-items: center; gap: 8px; padding: 12px 0 0; }
 .karte label.zeile input { width: auto; display: inline; }
+
+/* --- Stufe 3: Erinnerungen, Papierkorb, Verwaltung ------------------------- */
+#erinnerungen h2 { font-size: 1.1em; margin: 16px 12px 6px; }
+#erinnerungen-karten { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px 8px; }
+.erinnerung { position: relative; flex: 0 0 120px; height: 150px; border-radius: 12px; overflow: hidden; background: var(--rand); border: 0; padding: 0; cursor: pointer; }
+.erinnerung img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.erinnerung span { position: absolute; left: 8px; right: 8px; bottom: 8px; color: #fff; font-weight: 600; text-shadow: 0 0 6px #000; text-align: left; }
+#server-stand, #konten { list-style: none; padding: 0; margin: 0; }
+#server-stand li, #konten li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rand); }
+#konten button, #verwaltung > p button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); margin-left: 6px; }
+#form-konto-neu input { padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+#anmeldung-fassung { text-align: center; margin-top: 12px; }
