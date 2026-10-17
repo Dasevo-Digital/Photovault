@@ -106,9 +106,15 @@ Future<void> main(List<String> argumente) async {
       beschleunigerZustand: onnx?.zustand,
       speicher: speicher,
       sicherung: sicherung,
+      web: e.web,
     ),
     e.adresse,
     e.port,
+  );
+  protokoll(
+    e.web == null
+        ? 'Weboberfläche: keine (PV_WEB)'
+        : 'Weboberfläche unter /app/ aus ${e.web!.path}',
   );
   server.autoCompress = true;
   protokoll(

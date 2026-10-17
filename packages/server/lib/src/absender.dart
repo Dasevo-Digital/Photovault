@@ -67,6 +67,13 @@ class Absender {
     ?_Netz.aus('fe80::/10'),
   ];
 
+  /// Ob die Verbindung selbst von einem vertrauten Proxy kommt – dann
+  /// gelten auch dessen Angaben zum Weg, etwa `X-Forwarded-Proto`.
+  bool ueberVertrautenProxy(Request anfrage) {
+    final info = anfrage.context['shelf.io.connection_info'];
+    return info is HttpConnectionInfo && _vertraut(info.remoteAddress.address);
+  }
+
   bool _vertraut(String adresse) {
     final a = InternetAddress.tryParse(adresse);
     if (a == null) return false;

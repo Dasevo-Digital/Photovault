@@ -19,6 +19,7 @@ import 'oidc.dart';
 /// | `PV_PORT`            | `8790`                |                                       |
 /// | `PV_MODELLE`         | `<PV_DATEN>/modelle`  | die KI-Modelle                        |
 /// | `PV_ONNXRUNTIME`     | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle   |
+/// | `PV_WEB`             | im Bündel `web/`      | Dateien der Weboberfläche; `aus` = keine |
 /// | `PV_BESCHLEUNIGER`   | `cpu`                 | `openvino`, `cuda`, … (siehe `Beschleuniger`) |
 /// | `PV_SELBST_RECHNEN`  | `alles`               | welche Stufen der Server selbst rechnet: `alles`, `nichts` oder eine Liste wie `schlagwoerter,wiedererkennung,spracherkennung` |
 /// | `PV_GEODATEN`        | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                |
@@ -40,6 +41,7 @@ import 'oidc.dart';
 class Einstellungen {
   Einstellungen({
     required this.daten,
+    this.web,
     this.adresse = '127.0.0.1',
     this.port = 8790,
     Directory? modelle,
@@ -75,6 +77,11 @@ class Einstellungen {
       onnxRuntime: u['PV_ONNXRUNTIME'] == null
           ? onnxImBuendel()
           : File(p.absolute(u['PV_ONNXRUNTIME']!)),
+      web: switch (u['PV_WEB']) {
+        null => webImBuendel(),
+        'aus' => null,
+        final w => Directory(p.absolute(w)),
+      },
       beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
       selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
       speicherWarnung: _prozent(u['PV_SPEICHER_WARNUNG'], 85) / 100,
@@ -126,6 +133,22 @@ class Einstellungen {
     );
   }
 
+  /// Die Weboberfläche im Bündel (`web/` neben `bin/`); bei `dart run`
+  /// der Ordner im Quelltext.
+  static Directory? webImBuendel([String? programm]) {
+    for (final d in [
+      Directory(
+        p.join(p.dirname(programm ?? Platform.resolvedExecutable), '..', 'web'),
+      ),
+      Directory(p.join(Directory.current.path, 'web')),
+    ]) {
+      if (File(p.join(d.path, 'index.html')).existsSync()) {
+        return Directory(p.normalize(d.absolute.path));
+      }
+    }
+    return null;
+  }
+
   /// Die ONNX Runtime, die im Bündel neben dem Programm liegt
   /// (`bin/photo_vault_server` und `lib/libonnxruntime.so.*`) – so findet
   /// der Server sie ohne Einstellung, im Docker-Bild wie unter systemd.
@@ -143,6 +166,9 @@ class Einstellungen {
   }
 
   final Directory daten;
+
+  /// Die Dateien der Weboberfläche; `null` heisst keine.
+  final Directory? web;
   final String adresse;
   final int port;
   final Directory modelle;

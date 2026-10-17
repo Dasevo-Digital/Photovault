@@ -42,6 +42,7 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_PORT`                 | `8790`                |                                         |
 | `PV_MODELLE`              | `<PV_DATEN>/modelle`  | die KI-Modelle                          |
 | `PV_ONNXRUNTIME`          | im Bündel `lib/`      | `libonnxruntime.so` für die Modelle     |
+| `PV_WEB` | im Bündel `web/` | Ordner der Weboberfläche (`/app/`); `aus` schaltet sie ab |
 | `PV_BESCHLEUNIGER`        | `cpu`                 | `openvino`, `cuda`, siehe Beschleuniger |
 | `PV_SELBST_RECHNEN`       | `alles`               | `nichts` oder Stufen, siehe Rechenhilfe |
 | `PV_SPEICHER_WARNUNG`     | `85`                  | ab so viel Prozent belegt: knapp        |
@@ -365,6 +366,38 @@ einen schwachen Server, dem die Rechner die Bildmodelle abnehmen. Bekannt
 sind `bildanalyse`, `texterkennung`, `schlagwoerter`, `bildbeschreibung`,
 `spracherkennung` und `wiedererkennung`. Was dann kein Rechner übernimmt,
 bleibt offen, bis einer kommt.
+
+## Weboberfläche
+
+Unter `/app/` liefert der Server eine Oberfläche für den Browser:
+Anmeldung (mit TOTP), Zeitleiste, Betrachter für Bilder und Videos,
+Favorit. Sie besteht aus drei Dateien ohne Bauschritt (`web/index.html`,
+`app.js`, `app.css`) und spricht dieselbe Schnittstelle wie die Apps.
+
+**Die Sitzung ist ein Gerät.** Der Browser bekommt ein Token wie die App,
+aber in einem Cookie, das nur der Server liest (`HttpOnly`,
+`SameSite=Strict`, über HTTPS `Secure`). In der Geräteliste steht es als
+„Browser (…)“ und lässt sich dort abmelden; „Passwort neu setzen“ mit
+„andere abmelden“ wirft es ebenso hinaus.
+
+**Gegen fremde Seiten** (CSRF) stehen drei Dinge: `SameSite=Strict`,
+der Kopf `X-PV-Web`, den jede schreibende Anfrage tragen muss und den eine
+fremde Seite nicht setzen kann, und der Abgleich von `Origin` bzw.
+`Sec-Fetch-Site` mit der eigenen Adresse. Anfragen mit Geräte-Token sind
+davon nicht betroffen.
+
+**Jede Antwort trägt** `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`,
+`Cross-Origin-Opener-Policy` und `Cross-Origin-Resource-Policy:
+same-origin` sowie eine Content-Security-Policy – für die Seite eine, die
+nur eigene Skripte und Stile erlaubt, für alles andere `default-src
+'none'; sandbox`, damit eine direkt geöffnete JSON- oder Bilddatei
+nichts ausführt. JSON wird nie zwischengespeichert (`no-store`). HSTS
+setzt der Reverse Proxy.
+
+Hinter einem Reverse Proxy braucht `Secure` die Angabe `PV_PROXY` (nur
+einem vertrauten Proxy glaubt der Server `X-Forwarded-Proto: https`).
+Die Prüfungen dazu stehen in `test/web_test.dart`.
 
 ## Sicherung aufs NAS
 

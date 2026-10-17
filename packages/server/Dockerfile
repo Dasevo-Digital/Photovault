@@ -95,6 +95,7 @@ COPY --from=bau /aus/bundle /pv/photo-vault-server
 COPY --from=ort /libonnxruntime.so.${ORT_FASSUNG} /pv/photo-vault-server/lib/
 COPY packages/server/linux /pv/photo-vault-server/systemd
 COPY packages/server/README.md /pv/photo-vault-server/
+COPY packages/server/web /pv/photo-vault-server/web
 RUN tar -C /pv --owner=0 --group=0 -czf "/photo-vault-server-linux-${TARGETARCH}.tar.gz" photo-vault-server
 
 FROM scratch AS paket
@@ -129,6 +130,7 @@ RUN groupadd --system --gid 8790 photovault \
  && useradd --system --uid 8790 --gid 8790 --home-dir /daten --no-create-home photovault \
  && mkdir /daten && chown photovault:photovault /daten
 COPY --from=bau /aus/bundle /opt/photo-vault-server
+COPY packages/server/web /opt/photo-vault-server/web
 COPY --from=ort-openvino /ov /opt/photo-vault-server/lib/openvino
 RUN printf '#!/bin/sh\nexec /opt/photo-vault-server/bin/photo_vault_server "$@"\n' \
       > /usr/local/bin/photo_vault_server \
@@ -163,6 +165,7 @@ RUN groupadd --system --gid 8790 photovault \
  && useradd --system --uid 8790 --gid 8790 --home-dir /daten --no-create-home photovault \
  && mkdir /daten && chown photovault:photovault /daten
 COPY --from=bau /aus/bundle /opt/photo-vault-server
+COPY packages/server/web /opt/photo-vault-server/web
 COPY --from=ort /libonnxruntime.so.${ORT_FASSUNG} /opt/photo-vault-server/lib/
 # Für die Verwaltung: docker exec -it … photo_vault_server konto anlegen NAME.
 # Ein Startskript statt eines Symlinks: Die Bibliotheken liegen relativ zum

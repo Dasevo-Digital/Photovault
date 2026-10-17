@@ -22,6 +22,7 @@ import 'sicherung.dart';
 import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
+import 'web.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
 /// etwas so ändert, dass ein älterer Client es falsch verstünde.
@@ -42,8 +43,10 @@ Handler baueApi({
   Future<Map<String, Object?>> Function()? beschleunigerZustand,
   Speicherwaechter? speicher,
   Serversicherung? sicherung,
+  Directory? web,
 }) {
   final von = absender ?? Absender();
+  final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final api = _Api(bibliotheken, beschleunigerZustand);
   final abgleich = Abgleichsapi(bibliotheken);
@@ -62,11 +65,19 @@ Handler baueApi({
     // und hielt den Server für kaputt.
     ..get(
       '/',
-      (Request _) => schlichteSeite(
-        'Der Server läuft. Eine Weboberfläche hat er nicht: Verbunden wird '
-        'über die App – am Rechner unter Einstellungen → Server, auf dem '
-        'Telefon beim ersten Start – mit dieser Adresse.',
-      ),
+      (Request _) => oberflaeche == null
+          ? schlichteSeite(
+              'Der Server läuft. Eine Weboberfläche hat er nicht: Verbunden '
+              'wird über die App – am Rechner unter Einstellungen → Server, '
+              'auf dem Telefon beim ersten Start – mit dieser Adresse.',
+            )
+          : schlichteSeite(
+              'Der Server läuft. Verbunden wird über die App – am Rechner '
+              'unter Einstellungen → Server, auf dem Telefon beim ersten '
+              'Start – mit dieser Adresse. Oder im Browser:',
+              linkZiel: '/app/',
+              linkText: 'Weboberfläche öffnen',
+            ),
     )
     ..get(
       '/api/v1/zustand',
@@ -87,6 +98,37 @@ Handler baueApi({
     ..post('/api/v1/konten/<id>/entsperren', kontenapi.entsperren)
     ..delete('/api/v1/konten/<id>', kontenapi.entfernen)
     ..post('/api/v1/anmelden', anmeldung.anmelden)
+    ..get(
+      '/app',
+      (Request _) => oberflaeche == null
+          ? Response.notFound('nicht da')
+          : Response.found('/app/', headers: {'cache-control': 'no-store'}),
+    )
+    ..get(
+      '/app/',
+      (Request r) => oberflaeche?.seite(r) ?? Response.notFound('nicht da'),
+    )
+    ..get(
+      '/app/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name) ?? Response.notFound('nicht da'),
+    )
+    ..post(
+      '/api/v1/web/anmelden',
+      (Request r) => oberflaeche?.anmelden(r) ?? Response.notFound('nicht da'),
+    )
+    ..post(
+      '/api/v1/web/anmelden/totp',
+      (Request r) => oberflaeche?.totp(r) ?? Response.notFound('nicht da'),
+    )
+    ..post(
+      '/api/v1/web/abmelden',
+      (Request r) => oberflaeche?.abmelden(r) ?? Response.notFound('nicht da'),
+    )
+    ..get(
+      '/api/v1/web/sitzung',
+      (Request r) => oberflaeche?.sitzung(r) ?? Response.notFound('nicht da'),
+    )
     ..post('/api/v1/anmelden/totp', anmeldung.totp)
     ..get('/api/v1/anmelden/oidc', anmeldung.oidcStart)
     ..get('/api/v1/anmelden/oidc/zurueck', anmeldung.oidcZurueck)
@@ -258,21 +300,39 @@ Handler baueApi({
             'api/v1/anmelden/oidc',
             'api/v1/anmelden/oidc/zurueck',
             'api/v1/anmelden/oidc/einloesen',
+            'api/v1/web/anmelden',
+            'api/v1/web/anmelden/totp',
+            'app',
           },
+          offenPraefixe: {'app/'},
         ),
       )
       .addHandler(r.call);
 }
 
-/// Was jede Antwort trägt: Der Browser soll nichts erraten und keine
-/// Adresse weitergeben – die Rückwege der Anmeldung tragen Codes.
+/// Was jede Antwort trägt: Der Browser soll nichts erraten, keine Adresse
+/// weitergeben (die Rückwege der Anmeldung tragen Codes), nichts in eine
+/// fremde Seite einbetten und nichts ausführen, was als Datei kommt – eine
+/// JSON-Antwort oder ein Bild, direkt geöffnet, ist eine Seite ohne jedes
+/// Recht. Die Oberfläche bringt ihre eigene, weitere Regel mit.
 Middleware get _sicherheitskoepfe =>
     (innerer) => (anfrage) async {
       final antwort = await innerer(anfrage);
+      final k = antwort.headers;
+      final typ = k['content-type'] ?? '';
       return antwort.change(
         headers: {
           'x-content-type-options': 'nosniff',
           'referrer-policy': 'no-referrer',
+          'x-frame-options': 'DENY',
+          'cross-origin-opener-policy': 'same-origin',
+          'cross-origin-resource-policy': 'same-origin',
+          if (!k.containsKey('content-security-policy'))
+            'content-security-policy':
+                "default-src 'none'; frame-ancestors 'none'; sandbox",
+          if (!k.containsKey('cache-control') &&
+              typ.startsWith('application/json'))
+            'cache-control': 'no-store',
         },
       );
     };

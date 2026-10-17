@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Photo Vault</title>
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="symbol.png" type="image/png">
+</head>
+<body>
+<header id="kopf" hidden>
+  <h1>Photo Vault</h1>
+  <span id="wer"></span>
+  <button id="abmelden" type="button">Abmelden</button>
+</header>
+
+<main id="anmeldung" class="karte" hidden>
+  <h1>Photo Vault</h1>
+  <form id="form-anmelden" autocomplete="on">
+    <label>Konto <input name="name" autocomplete="username" required autofocus></label>
+    <label>Passwort <input name="passwort" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Anmelden</button>
+  </form>
+  <form id="form-totp" hidden>
+    <p id="totp-hinweis"></p>
+    <p id="totp-einrichten" hidden>Richte den Code in deiner Authenticator-App ein:
+      <code id="totp-geheimnis"></code> <a id="totp-link" href="#">In der App öffnen</a></p>
+    <label>Code <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required></label>
+    <button type="submit">Bestätigen</button>
+  </form>
+  <p id="fehler" class="fehler" role="alert"></p>
+</main>
+
+<main id="zeitleiste" hidden>
+  <div id="raster"></div>
+  <p id="ende" class="leise"></p>
+</main>
+
+<div id="betrachter" hidden>
+  <button id="zu" type="button" aria-label="Schliessen">×</button>
+  <button id="zurueck" type="button" aria-label="Vorige">‹</button>
+  <figure>
+    <img id="bild" alt="" hidden>
+    <video id="video" controls playsinline hidden></video>
+    <figcaption id="angaben"></figcaption>
+  </figure>
+  <button id="vor" type="button" aria-label="Nächste">›</button>
+  <button id="favorit" type="button" aria-label="Favorit">♡</button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

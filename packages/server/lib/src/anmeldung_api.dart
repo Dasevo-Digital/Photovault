@@ -10,6 +10,50 @@ import 'oidc.dart';
 
 const _kontoSchluessel = 'pv.konto';
 const _geraetSchluessel = 'pv.geraet';
+const _browserSchluessel = 'pv.browser';
+
+/// Das Cookie der Weboberfläche (siehe `Webapi`).
+const webCookie = 'pv_web';
+
+/// Ob die Anfrage mit dem Cookie der Weboberfläche angemeldet ist.
+bool ausDemBrowser(Request anfrage) =>
+    anfrage.context[_browserSchluessel] == true;
+
+/// Der Wert des Cookies [name], falls der Browser eins schickt.
+String? cookieWert(Request anfrage, String name) {
+  final kopf = anfrage.headers['cookie'];
+  if (kopf == null) return null;
+  for (final teil in kopf.split(';')) {
+    final t = teil.trim();
+    if (t.startsWith('$name=')) return t.substring(name.length + 1);
+  }
+  return null;
+}
+
+/// Schutz vor Anfragen fremder Seiten mit dem Cookie (CSRF). Lesende
+/// Anfragen dürfen – das Cookie geht mit `SameSite=Strict` fremd ohnehin
+/// nicht mit, und lesen heisst lesen. Alles andere braucht den Kopf
+/// `X-PV-Web`, den nur die eigene Oberfläche setzt (eine fremde Seite käme
+/// damit nicht an der CORS-Vorabfrage vorbei, die der Server nie bejaht);
+/// und sagt der Browser, woher die Anfrage kommt (`Origin`,
+/// `Sec-Fetch-Site`), muss es dieselbe Seite sein.
+bool anfrageAusDerOberflaeche(Request anfrage) {
+  if (const {'GET', 'HEAD', 'OPTIONS'}.contains(anfrage.method)) return true;
+  if (anfrage.headers['x-pv-web'] == null) return false;
+  final sfs = anfrage.headers['sec-fetch-site'];
+  if (sfs != null && sfs != 'same-origin' && sfs != 'none') return false;
+  final herkunft = anfrage.headers['origin'];
+  if (herkunft != null) {
+    final h = Uri.tryParse(herkunft);
+    final eigene = {
+      anfrage.requestedUri.authority,
+      ?anfrage.headers['host'],
+      ?anfrage.headers['x-forwarded-host'],
+    }..removeWhere((s) => s.isEmpty);
+    if (h == null || !eigene.contains(h.authority)) return false;
+  }
+  return true;
+}
 
 /// Das Konto hinter einer angemeldeten Anfrage.
 Konto kontoVon(Request anfrage) => anfrage.context[_kontoSchluessel]! as Konto;
@@ -24,20 +68,44 @@ Middleware anmeldungNoetig(
   Kontodienst konten,
   Absender absender, {
   Set<String> offen = const {},
+  Set<String> offenPraefixe = const {},
 }) =>
     (innerer) => (anfrage) {
-      if (offen.contains(anfrage.url.path)) return innerer(anfrage);
+      final pfad = anfrage.url.path;
+      if (offen.contains(pfad) || offenPraefixe.any(pfad.startsWith)) {
+        return innerer(anfrage);
+      }
       final kopf = anfrage.headers['authorization'];
-      final treffer = kopf != null && kopf.startsWith('Bearer ')
-          ? konten.pruefeToken(kopf.substring(7).trim(), absender.von(anfrage))
-          : null;
+      final String? token;
+      final bool browser;
+      if (kopf != null && kopf.startsWith('Bearer ')) {
+        token = kopf.substring(7).trim();
+        browser = false;
+      } else {
+        token = cookieWert(anfrage, webCookie);
+        browser = token != null;
+      }
+      final treffer = token == null
+          ? null
+          : konten.pruefeToken(token, absender.von(anfrage));
       if (treffer == null) {
         return Response(
           401,
           body: jsonEncode({'fehler': 'nicht angemeldet'}),
           headers: {
             'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'no-store',
             'www-authenticate': 'Bearer',
+          },
+        );
+      }
+      if (browser && !anfrageAusDerOberflaeche(anfrage)) {
+        return Response(
+          403,
+          body: jsonEncode({'fehler': 'Anfrage nicht aus der Weboberfläche'}),
+          headers: {
+            'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'no-store',
           },
         );
       }
@@ -46,6 +114,7 @@ Middleware anmeldungNoetig(
           context: {
             _kontoSchluessel: treffer.konto,
             _geraetSchluessel: treffer.geraet,
+            _browserSchluessel: browser,
           },
         ),
       );
@@ -375,8 +444,17 @@ class Anmeldungsapi {
 
 /// Eine schlichte Seite für den Browser: wenn es bei der Anmeldung keinen
 /// Weg zurück zur App gibt, und als Startseite des Servers.
-Response schlichteSeite(String text, {int status = 200}) {
+Response schlichteSeite(
+  String text, {
+  int status = 200,
+  String? linkZiel,
+  String? linkText,
+}) {
   final sicher = const HtmlEscape().convert(text);
+  final link = linkZiel == null
+      ? ''
+      : '<p><a href="${const HtmlEscape(HtmlEscapeMode.attribute).convert(linkZiel)}">'
+            '${const HtmlEscape().convert(linkText ?? linkZiel)}</a></p>';
   return Response(
     status,
     body:
@@ -384,12 +462,13 @@ Response schlichteSeite(String text, {int status = 200}) {
         '<meta name="viewport" content="width=device-width">'
         '<title>Photo Vault</title>'
         '<body style="font-family:system-ui;max-width:32em;margin:3em auto;'
-        'padding:0 1em"><h1>Photo Vault</h1><p>$sicher</p></body></html>',
+        'padding:0 1em"><h1>Photo Vault</h1><p>$sicher</p>$link</body></html>',
     headers: {
       'content-type': 'text/html; charset=utf-8',
       'cache-control': 'no-store',
       'content-security-policy':
-          "default-src 'none'; style-src 'unsafe-inline'",
+          "default-src 'none'; style-src 'unsafe-inline'; "
+          "frame-ancestors 'none'; base-uri 'none'",
     },
   );
 }
