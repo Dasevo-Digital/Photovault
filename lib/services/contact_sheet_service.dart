@@ -80,8 +80,11 @@ class ContactSheetService {
   }
 
   Future<pw.MemoryImage?> _loadImage(AssetData asset) async {
-    final thumbnail = _paths.absolute(_paths.thumbnailRelativePath(asset.id));
-    if (await thumbnail.exists()) {
+    // Der Name aus der Zeile, nicht aus der Kennung: Neu erzeugte
+    // Miniaturen tragen einen Zusatz (siehe bildnachlauf.dart).
+    final rel = asset.thumbnailRelativePath;
+    final thumbnail = rel == null ? null : _paths.absolute(rel);
+    if (thumbnail != null && await thumbnail.exists()) {
       final fromThumbnail = await _decode(thumbnail.readAsBytes());
       if (fromThumbnail != null) return fromThumbnail;
     }

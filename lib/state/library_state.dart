@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/ai_tagging_service.dart';
+import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/services/bildsuche.dart';
 import '../services/backup_service.dart';
 import '../services/bibliothekssperre.dart';
@@ -359,6 +360,31 @@ class LibraryState extends ChangeNotifier {
     _embeddingsCache = result;
     _embeddingsCacheGeneration = db.embeddingsGeneration;
     return result;
+  }
+
+  /// Einmal je Bibliothek: echte Bildgrössen statt der Grösse der Vorschau,
+  /// und unter Linux und Windows neue Vorschauen für ProRAW, die LibRaw zu
+  /// dunkel entwickelt hatte (siehe bildnachlauf.dart). Unter macOS
+  /// entwickelt Core Image richtig; dort nur die Grössen. Im verbundenen
+  /// Betrieb erledigt beides der Server.
+  Future<void> _bildnachlaeufe() async {
+    final laeufe = <(String, Future<int> Function())>[
+      if (!Platform.isMacOS)
+        (
+          nachlaufRohvorschau,
+          () => erneuereRohvorschauen(db, paths, importService),
+        ),
+      (nachlaufOriginalmasse, () => berichtigeOriginalmasse(db, paths)),
+    ];
+    for (final (schluessel, lauf) in laeufe) {
+      try {
+        if (await db.aufgabeFertigAm(schluessel) != null) continue;
+        await lauf();
+        await db.merkeAufgabenlauf(schluessel);
+      } catch (_) {
+        // Beim nächsten Start noch einmal.
+      }
+    }
   }
 
   /// Exakte Rangfolge auf allen Einbettungen – und warum hier kein
@@ -870,6 +896,7 @@ class LibraryState extends ChangeNotifier {
     // Restaurierung, Sicherung, Papierkorb-Ablauf und der überwachte
     // Ordner gehören dorthin oder kommen später als eigene Wege.
     if (!verbunden) unawaited(trageEreignisorteNach());
+    if (!verbunden) unawaited(_bildnachlaeufe());
     await clearDecryptCache();
 
     // Crash-Safety: ein Restaurierungs-Auftrag, der beim letzten Beenden

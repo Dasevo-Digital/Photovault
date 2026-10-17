@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:kern/auswertung/auswertungen.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/speicher_rueckgabe.dart';
 
@@ -127,6 +129,7 @@ class Auswertungsdienst {
   Future<void> _laufe() async {
     // Kann in der Reihe gewartet haben, während der Server beendet wurde.
     if (_beendet) return;
+    await _nachlaeufe();
     if (!await bibliothek.db.autoAnalyzeAfterImportEnabled()) return;
     bibliothek.auswertungAbbrechen = false;
     vergabe?.neuerDurchgang();
@@ -166,6 +169,44 @@ class Auswertungsdienst {
       await _gibFrei();
     }
     protokoll('Auswertung fertig nach ${uhr.elapsed.inSeconds} s');
+  }
+
+  /// Einmal je Bibliothek: was ein früherer Fehler an den Bilddateien
+  /// hinterlassen hat (siehe bildnachlauf.dart). Unabhängig davon, ob
+  /// ausgewertet wird – es sind keine Auswertungen, sondern Reparaturen.
+  Future<void> _nachlaeufe() async {
+    final db = bibliothek.db;
+    final laeufe = <(String, Future<int> Function())>[
+      (
+        nachlaufRohvorschau,
+        () => erneuereRohvorschauen(
+          db,
+          bibliothek.pfade,
+          bibliothek.importe,
+          abbrechen: () => _beendet,
+        ),
+      ),
+      (
+        nachlaufOriginalmasse,
+        () => berichtigeOriginalmasse(
+          db,
+          bibliothek.pfade,
+          abbrechen: () => _beendet,
+        ),
+      ),
+    ];
+    for (final (schluessel, lauf) in laeufe) {
+      if (_beendet) return;
+      if (await db.aufgabeFertigAm(schluessel) != null) continue;
+      try {
+        final n = await lauf();
+        if (_beendet) return;
+        await db.merkeAufgabenlauf(schluessel);
+        protokoll('Nachlauf $schluessel: $n Aufnahmen');
+      } catch (e) {
+        protokoll('Nachlauf $schluessel gescheitert: $e');
+      }
+    }
   }
 
   Future<void> _gibFrei() async {

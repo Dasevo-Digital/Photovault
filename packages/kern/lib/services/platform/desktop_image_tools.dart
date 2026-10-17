@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,6 +8,7 @@ import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
+import '../dateikopf.dart';
 import '../objektivkorrektur.dart';
 import '../raw_identify_parser.dart';
 import '../standort_parser.dart';
@@ -378,6 +380,43 @@ class DesktopImageTools {
       }
     }
 
+    // **ProRAW und andere DNGs mit eigenem Bild.** Ein lineares DNG ist
+    // schon entwickelt; wie es aussieht, legen Grundbelichtung, Tonkurve
+    // und eine örtliche Aufhellung fest, und LibRaw liest keine davon –
+    // dcraw_emu machte aus iPhone-ProRAW ein fast zwei Blenden zu dunkles
+    // Bild mit dunklen Ecken (siehe dateikopf.dart). Das JPEG, das die
+    // Kamera hineinlegt, ist das Bild, das sie selbst zeigt. Bei einem
+    // gewöhnlichen DNG nur, wenn es mindestens so gross ist wie verlangt.
+    double? grundbelichtung;
+    if (endung == '.dng') {
+      final kopf = leseRohkopf(datei);
+      final jpeg = kopf?.groesstes;
+      if (kopf != null &&
+          jpeg != null &&
+          (kopf.linear || jpeg.laengsteKante >= maxDimension)) {
+        try {
+          final eingebettet = await _lies(datei, jpeg.offset, jpeg.laenge);
+          final r = await berechne(
+            _skaliereUndKodiere,
+            _SkalierAuftrag(
+              eingebettet,
+              maxDimension,
+              quality,
+              // Nennt das JPEG eine eigene Lage, dreht es der Decoder
+              // schon danach.
+              ausrichtung: jpegExifLage(eingebettet) == null
+                  ? kopf.ausrichtung
+                  : null,
+            ),
+          );
+          if (r != null) return r;
+        } catch (_) {
+          // Weiter über LibRaw.
+        }
+      }
+      grundbelichtung = kopf?.grundbelichtung;
+    }
+
     Directory? temp;
     try {
       temp = await Directory.systemTemp.createTemp('pv_convert_');
@@ -412,7 +451,18 @@ class DesktopImageTools {
         // kopieren, damit die Bibliothek unangetastet bleibt.
         final kopie = p.join(temp.path, p.basename(datei.path));
         await datei.copy(kopie);
-        final r = await Process.run(werkzeug, ['-w', '-T', kopie]);
+        // Die Grundbelichtung des DNG, die LibRaw selbst übergeht – als
+        // Verstärkung, in den Grenzen, die dcraw_emu annimmt.
+        final be = grundbelichtung;
+        final verstaerkung = be == null || be.abs() < 0.05
+            ? null
+            : math.pow(2, be).clamp(0.25, 8.0).toStringAsFixed(3);
+        final r = await Process.run(werkzeug, [
+          '-w',
+          if (verstaerkung != null) ...['-aexpo', verstaerkung, '0'],
+          '-T',
+          kopie,
+        ]);
         if (r.exitCode != 0) return null;
         final tiff = '$kopie.tiff';
         if (!await File(tiff).exists()) return null;
@@ -439,6 +489,16 @@ class DesktopImageTools {
       try {
         await temp?.delete(recursive: true);
       } catch (_) {}
+    }
+  }
+
+  static Future<Uint8List> _lies(File datei, int offset, int laenge) async {
+    final f = await datei.open();
+    try {
+      await f.setPosition(offset);
+      return await f.read(laenge);
+    } finally {
+      await f.close();
     }
   }
 
@@ -699,12 +759,17 @@ class _SkalierAuftrag {
   /// Ob die Lage aus dem EXIF anzuwenden ist. Nur für Dateien, die Dart
   /// selbst liest: dcraw_emu und heif-dec liefern ihr Bild schon gedreht.
   final bool drehen;
+
+  /// Eine Lage von aussen (1 bis 8) – für das JPEG in einer Rohdatei, das
+  /// so liegt wie der Sensor und dessen Lage im Kopf der Rohdatei steht.
+  final int? ausrichtung;
   const _SkalierAuftrag(
     this.bytes,
     this.maxDimension,
     this.quality, {
     this.korrekturQuelle,
     this.drehen = false,
+    this.ausrichtung,
   });
 }
 
@@ -713,7 +778,17 @@ class _SkalierAuftrag {
 Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
   final gelesen = img.decodeImage(a.bytes);
   if (gelesen == null) return null;
-  final bild = a.drehen ? img.bakeOrientation(gelesen) : gelesen;
+  // Das Farbprofil gleich festhalten: Apple legt ProRAW-Vorschauen in
+  // Display P3 ab, und ohne Profil sähen sie blass aus.
+  final profil = gelesen.iccProfile;
+  final lage = a.ausrichtung;
+  final img.Image bild;
+  if (lage != null) {
+    gelesen.exif.imageIfd.orientation = lage;
+    bild = img.bakeOrientation(gelesen);
+  } else {
+    bild = a.drehen ? img.bakeOrientation(gelesen) : gelesen;
+  }
   final laengsteKante = bild.width > bild.height ? bild.width : bild.height;
   final fertig = laengsteKante > a.maxDimension
       ? img.copyResize(
@@ -738,5 +813,6 @@ Uint8List? _skaliereUndKodiere(_SkalierAuftrag a) {
   // Datenschutzexport, das Fotobuch –, verlässt sich darauf, dass nichts
   // davon mitkommt. heif-dec etwa reicht das EXIF einer HEIC weiter.
   ausgabe.exif = img.ExifData();
+  ausgabe.iccProfile ??= profil;
   return Uint8List.fromList(img.encodeJpg(ausgabe, quality: a.quality));
 }

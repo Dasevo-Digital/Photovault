@@ -95,14 +95,18 @@ class StoragePaths {
     return p.join('originals', yyyy, mm, '$assetId$extension');
   }
 
-  String thumbnailRelativePath(String assetId) =>
-      p.join('thumbnails', '$assetId.jpg');
+  ///
+  /// [zusatz] hängt an den Namen an (`-2`), wenn eine Miniatur neu entsteht:
+  /// Verbundene Geräte halten Dateien unter ihrem Namen vor, und eine neue
+  /// Datei unter dem alten Namen erreichte sie nie.
+  String thumbnailRelativePath(String assetId, [String zusatz = '']) =>
+      p.join('thumbnails', '$assetId$zusatz.jpg');
 
   /// Nur für Formate relevant, die Flutter nicht direkt rendern kann
   /// (HEIC/HEIF, DNG & Co.) – eine größere, konvertierte JPEG-Version für
   /// die Vollbildansicht (Thumbnails bleiben separat und kleiner).
-  String previewRelativePath(String assetId) =>
-      p.join('previews', '$assetId.jpg');
+  String previewRelativePath(String assetId, [String zusatz = '']) =>
+      p.join('previews', '$assetId$zusatz.jpg');
 
   /// Gerendertes Ergebnis der nicht-destruktiven Entwicklung (siehe
   /// DevelopScreen) – separat von [previewRelativePath], damit sich beide

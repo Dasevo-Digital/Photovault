@@ -15,6 +15,7 @@ import 'dateikennung.dart';
 import 'exif_camera.dart';
 import 'exif_gps.dart';
 import 'bildwerkzeuge.dart';
+import 'dateikopf.dart';
 import 'raw_formats.dart';
 import 'raw_identify_parser.dart';
 import 'storage_paths.dart';
@@ -161,6 +162,26 @@ class ThumbnailResult {
 /// Prüfsumme berechnen (Duplikate überspringen), Datei in `originals/`
 /// kopieren, Thumbnail erzeugen, EXIF-Aufnahmedatum lesen und einen
 /// Datenbank-Eintrag anlegen.
+/// Die Grösse einer Aufnahme: aus ihrem Dateikopf, wenn er eine angibt,
+/// die zu der gewandelten Vorschau ([breite] × [hoehe]) passt – gleiches
+/// Seitenverhältnis, nicht kleiner. Sonst die der Vorschau.
+///
+/// Die Probe hält einen falsch gelesenen Kopf fern: Eine Rohdatei, deren
+/// grösstes eingebettetes Bild nur eine kleine Vorschau ist, gäbe sonst
+/// eine kleinere Zahl als die, die schon dasteht.
+(int?, int?) echteMasse(File datei, int? breite, int? hoehe) {
+  if (breite == null || hoehe == null || breite <= 0 || hoehe <= 0) {
+    return (breite, hoehe);
+  }
+  final kopf = leseOriginalmasse(datei);
+  if (kopf == null) return (breite, hoehe);
+  final vorher = breite / hoehe, nachher = kopf.breite / kopf.hoehe;
+  final passt =
+      (vorher - nachher).abs() / vorher < 0.03 &&
+      kopf.breite * kopf.hoehe >= breite * hoehe;
+  return passt ? (kopf.breite, kopf.hoehe) : (breite, hoehe);
+}
+
 class ImportService {
   /// [bildwerkzeuge] ist der Weg der Plattform zu Pixeln und
   /// Aufnahmewerten; ohne Angabe gilt [Bildwerkzeuge.standard].
@@ -342,6 +363,7 @@ class ImportService {
     String assetId,
     String extension, {
     Uint8List? alreadyReadBytes,
+    String zusatz = '',
   }) async {
     final ext = extension.toLowerCase();
     // Die Endung sagt das eine, die ersten Bytes sagen unter Umständen
@@ -378,15 +400,16 @@ class ImportService {
         alreadyReadBytes ?? await sourceFile.readAsBytes(),
       );
       if (beides == null) return const ThumbnailResult();
-      final thumbRelativePath = _paths.thumbnailRelativePath(assetId);
+      final thumbRelativePath = _paths.thumbnailRelativePath(assetId, zusatz);
       await _paths.absolute(thumbRelativePath).writeAsBytes(beides.jpegBytes);
-      final previewRelativePath = _paths.previewRelativePath(assetId);
+      final previewRelativePath = _paths.previewRelativePath(assetId, zusatz);
       await _paths.absolute(previewRelativePath).writeAsBytes(beides.vorschau);
+      final echt = echteMasse(sourceFile, beides.width, beides.height);
       return ThumbnailResult(
         thumbnailRelativePath: thumbRelativePath,
         previewRelativePath: previewRelativePath,
-        width: beides.width,
-        height: beides.height,
+        width: echt.$1,
+        height: echt.$2,
       );
     }
 
@@ -403,7 +426,7 @@ class ImportService {
       return const ThumbnailResult();
     }
 
-    final thumbRelativePath = _paths.thumbnailRelativePath(assetId);
+    final thumbRelativePath = _paths.thumbnailRelativePath(assetId, zusatz);
     await _paths.absolute(thumbRelativePath).writeAsBytes(result.jpegBytes);
 
     String? previewRelativePath;
@@ -411,15 +434,20 @@ class ImportService {
       // Original ist für Flutter nicht direkt darstellbar → konvertierte
       // Version zusätzlich in Originalgröße (bis 2048px) für die
       // Vollbildansicht sichern.
-      previewRelativePath = _paths.previewRelativePath(assetId);
+      previewRelativePath = _paths.previewRelativePath(assetId, zusatz);
       await _paths.absolute(previewRelativePath).writeAsBytes(convertedBytes);
     }
 
+    // Aus einer gewandelten Vorschau stammen nur ihre eigenen Masse – die
+    // echte Grösse steht im Kopf der Datei (siehe dateikopf.dart).
+    final echt = convertedBytes == null
+        ? (result.width, result.height)
+        : echteMasse(sourceFile, result.width, result.height);
     return ThumbnailResult(
       thumbnailRelativePath: thumbRelativePath,
       previewRelativePath: previewRelativePath,
-      width: result.width,
-      height: result.height,
+      width: echt.$1,
+      height: echt.$2,
     );
   }
 
