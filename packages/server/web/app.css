@@ -150,3 +150,21 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .kameras .leiste { height: 14px; background: color-mix(in srgb, var(--akzent) 15%, transparent); border-radius: 4px; overflow: hidden; }
 .kameras .fuell { height: 100%; background: var(--akzent); border-radius: 4px; }
 .kameras .n { text-align: right; color: var(--leise); }
+
+/* --- Duplikate ------------------------------------------------------------- */
+#bereich-duplikate { padding: 0 12px 24px; }
+#bereich-duplikate .zeile { padding: 12px 0; }
+#bereich-duplikate .zeile h2 { margin: 0; flex: 1; }
+#bereich-duplikate .zeile label { display: flex; align-items: center; gap: 8px; color: var(--leise); }
+#dupl-alle { background: var(--fehler); }
+.gruppe { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.gruppenkopf { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--leise); }
+.gruppenkopf button, .dupl button { padding: 4px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+.reihe { display: flex; gap: 10px; overflow-x: auto; }
+.dupl { flex: 0 0 150px; font-size: 0.85em; }
+.dupl img { width: 150px; height: 150px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; background: var(--rand); }
+.dupl.beste img { outline: 3px solid var(--akzent); outline-offset: -3px; }
+.dupl .name { margin-top: 6px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dupl .angaben { color: var(--leise); }
+.dupl button { margin-top: 6px; }
+.dupl.beste button { background: var(--akzent); color: #fff; border-color: var(--akzent); }

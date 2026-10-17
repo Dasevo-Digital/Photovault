@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/duplicate_selection.dart';
+import 'package:kern/services/duplicate_selection.dart';
 
 /// Diese Regeln entscheiden, welche Fotos in den Papierkorb wandern –
 /// entsprechend eng geprüft, besonders die Fälle, in denen NICHT gelöscht

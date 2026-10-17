@@ -53,7 +53,7 @@ function zeigeAnmeldung() {
 }
 
 function zeigeBereich(name) {
-  for (const b of ['suche', 'karten', 'konto', 'raster', 'karte']) $(`bereich-${b}`).hidden = true;
+  for (const s of document.querySelectorAll('#inhalt > section')) s.hidden = true;
   for (const b of name) $(`bereich-${b}`).hidden = false;
 }
 
@@ -371,6 +371,100 @@ async function zeigeStatistik() {
     $('stat-kameras').append(li);
   }
 }
+
+// --- Duplikate -------------------------------------------------------------
+// Die Gruppen kommen vom Server (dieselbe Suche wie auf dem Rechner); hier
+// wird nur gezeigt und entschieden. „Behalten“ führt die Gruppe über den
+// Befehl zusammen, der Rest geht in den Papierkorb.
+
+let duplikate = null;
+const prozent = (w) => `${Math.round(w * 100)} %`;
+$('dupl-schwelle').addEventListener('input', () => { $('dupl-schwelle-wert').textContent = prozent($('dupl-schwelle').value); });
+$('dupl-suchen').addEventListener('click', () => sucheDuplikate().catch((x) => { $('dupl-hinweis').textContent = x.message; }));
+
+async function zeigeDuplikate() {
+  markiereNav('duplikate');
+  zeigeBereich(['duplikate']);
+  if (duplikate) zeichneDuplikate(); else await sucheDuplikate();
+}
+
+async function sucheDuplikate() {
+  $('dupl-hinweis').textContent = 'Suche …';
+  $('dupl-gruppen').replaceChildren();
+  $('dupl-alle').hidden = true;
+  duplikate = await api(`/api/v1/duplikate?schwelle=${$('dupl-schwelle').value}`);
+  zeichneDuplikate();
+}
+
+function zeichneDuplikate() {
+  const d = duplikate;
+  const ziel = $('dupl-gruppen');
+  ziel.replaceChildren();
+  const loeschbar = d.gruppen.reduce((n, g) => n + g.loeschbar.length, 0);
+  $('dupl-alle').hidden = loeschbar === 0;
+  $('dupl-alle').textContent = `${loeschbar} Kopien in den Papierkorb`;
+  if (d.einbettungen === 0) {
+    $('dupl-hinweis').textContent = 'Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.';
+  } else if (d.gruppen.length === 0) {
+    $('dupl-hinweis').textContent = `Keine Duplikate bei ${prozent(d.schwelle)} Ähnlichkeit.${d.ausnahmen ? ` ${d.ausnahmen} Paare sind ausgenommen.` : ''}`;
+  } else {
+    $('dupl-hinweis').textContent = `${d.gruppen.length} Gruppen bei ${prozent(d.schwelle)} Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.`;
+  }
+  for (const g of d.gruppen) ziel.append(duplikatgruppe(g));
+}
+
+function duplikatgruppe(g) {
+  const box = el('div', 'gruppe');
+  const ids = g.aufnahmen.map((a) => a.id);
+  const entferne = () => { duplikate.gruppen = duplikate.gruppen.filter((x) => x !== g); zeichneDuplikate(); };
+  const kopf = el('div', 'gruppenkopf');
+  const ignorieren = el('button', null, 'Keine Duplikate');
+  ignorieren.type = 'button';
+  ignorieren.addEventListener('click', async () => {
+    try { await befehl('duplikatgruppeIgnorieren', { ids }); entferne(); } catch (x) { $('dupl-hinweis').textContent = x.message; }
+  });
+  kopf.append(el('span', null, `${g.aufnahmen.length} Aufnahmen${g.loeschbar.length ? '' : ' · mehrere ausgezeichnet, nur von Hand'}`), ignorieren);
+  box.append(kopf);
+  const reihe = el('div', 'reihe');
+  g.aufnahmen.forEach((a, i) => {
+    const t = el('div', 'dupl');
+    if (a.id === g.behalten) t.classList.add('beste');
+    const img = el('img');
+    img.loading = 'lazy';
+    img.alt = '';
+    img.src = miniaturUrl(a.id);
+    img.addEventListener('click', () => { liste = { aufnahmen: g.aufnahmen, nachTagen: false, mehr: null }; oeffne(i); });
+    const knopf = el('button', null, 'Behalten');
+    knopf.type = 'button';
+    knopf.addEventListener('click', async () => {
+      const andere = ids.filter((x) => x !== a.id);
+      if (!confirm(`„${a.name}“ behalten und ${andere.length === 1 ? 'die andere Aufnahme' : `die ${andere.length} anderen`} in den Papierkorb legen?`)) return;
+      try {
+        await befehl('duplikateZusammenfuehren', { behaltenId: a.id, duplikatIds: andere, beschreibungenVerbinden: true });
+        entferne();
+      } catch (x) { $('dupl-hinweis').textContent = x.message; }
+    });
+    const angaben = [a.breite && a.hoehe ? `${a.breite} × ${a.hoehe}` : '', datumZeit.format(new Date(a.aufgenommen)), a.favorit ? '♥' : '', a.bewertung ? '★'.repeat(a.bewertung) : ''].filter(Boolean).join(' · ');
+    const name = el('div', 'name', a.name);
+    name.title = a.name;
+    t.append(img, name, el('div', 'angaben', angaben), knopf);
+    reihe.append(t);
+  });
+  box.append(reihe);
+  return box;
+}
+
+$('dupl-alle').addEventListener('click', async () => {
+  const faellig = duplikate.gruppen.filter((g) => g.loeschbar.length);
+  const n = faellig.reduce((s, g) => s + g.loeschbar.length, 0);
+  if (!confirm(`${n} Kopien aus ${faellig.length} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.`)) return;
+  try {
+    for (const g of faellig) {
+      await befehl('duplikateZusammenfuehren', { behaltenId: g.behalten, duplikatIds: g.loeschbar, beschreibungenVerbinden: true });
+    }
+    await sucheDuplikate();
+  } catch (x) { $('dupl-hinweis').textContent = x.message; }
+});
 
 async function zeigePersonen() {
   markiereNav('personen');
@@ -770,6 +864,7 @@ async function zeigeWeg() {
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'statistik': await zeigeStatistik(); break;
+      case 'duplikate': await zeigeDuplikate(); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');

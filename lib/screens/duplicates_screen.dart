@@ -7,7 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../services/suchfehler.dart';
 import 'package:kern/services/embedding_similarity.dart';
-import '../services/duplicate_selection.dart';
+import 'package:kern/services/duplicate_selection.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -104,7 +104,7 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
 
   /// Behält je Gruppe das beste Foto und verschiebt den Rest in den
   /// Papierkorb – erst nach Vorschau und Bestätigung. Die Regeln stehen in
-  /// services/duplicate_selection.dart; Gruppen mit mehreren favorisierten
+  /// kern/services/duplicate_selection.dart; Gruppen mit mehreren favorisierten
   /// oder bewerteten Fotos bleiben bewusst unangetastet.
   Future<void> _alleKopienLoeschen() async {
     final vorschau = berechneLoeschVorschau(_groups);

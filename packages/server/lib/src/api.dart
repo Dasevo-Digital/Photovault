@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/duplicate_selection.dart';
+import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:path/path.dart' as p;
@@ -177,6 +180,7 @@ Handler baueApi({
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/statistik', api.statistik)
+    ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
     ..get('/api/v1/papierkorb', api.papierkorb)
@@ -544,6 +548,55 @@ class _Api {
       'kameras': [
         for (final k in s.topCameras) {'name': k.label, 'anzahl': k.count},
       ],
+    });
+  }
+
+  /// Duplikatgruppen wie auf dem Rechner: dieselbe Suche
+  /// ([findDuplicateGroups]) auf den Bildeinbettungen der Bibliothek, in
+  /// einem eigenen Isolate, und je Gruppe das Foto, das die Regeln aus
+  /// duplicate_selection.dart behalten würden.
+  Future<Response> duplikate(Request anfrage) async {
+    final schwelle =
+        double.tryParse(anfrage.url.queryParameters['schwelle'] ?? '') ?? 0.92;
+    if (schwelle < 0.5 || schwelle > 1) {
+      return _json({'fehler': 'schwelle'}, status: 400);
+    }
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final einbettungen = await db.allEmbeddings();
+    final ausnahmen = await db.duplikatAusnahmeSchluessel();
+    final gruppen = einbettungen.length < 2
+        ? const <List<String>>[]
+        : await Isolate.run(
+            () => findDuplicateGroups(
+              DuplicateSearchParams(
+                einbettungen,
+                schwelle,
+                ausnahmen: ausnahmen,
+              ),
+            ),
+          );
+    final zeilen = await db.assetsByIds([for (final g in gruppen) ...g]);
+    final nachId = {for (final a in zeilen) a.id: a};
+    final ausgabe = <Map<String, Object?>>[];
+    for (final g in gruppen) {
+      final aufnahmen = [
+        for (final id in g)
+          if (nachId[id] != null) nachId[id]!,
+      ];
+      if (aufnahmen.length < 2) continue;
+      ausgabe.add({
+        'aufnahmen': [
+          for (final a in aufnahmen) zeileAlsJson(Rasterzeile.aus(a)),
+        ],
+        'behalten': besterDerGruppe(aufnahmen).id,
+        'loeschbar': [for (final a in zuLoeschendeDerGruppe(aufnahmen)) a.id],
+      });
+    }
+    return _json({
+      'einbettungen': einbettungen.length,
+      'ausnahmen': ausnahmen.length,
+      'schwelle': schwelle,
+      'gruppen': ausgabe,
     });
   }
 

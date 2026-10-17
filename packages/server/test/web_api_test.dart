@@ -287,6 +287,46 @@ void main() {
     },
   );
 
+  test(
+    'Duplikate: Gruppen aus den Einbettungen, bestes Foto markiert',
+    () async {
+      final a = await ladeHoch(erikaToken, 'd1.jpg', 10);
+      final b = await ladeHoch(erikaToken, 'd2.jpg', 60);
+      final c = await ladeHoch(erikaToken, 'd3.jpg', 120);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      Float32List vektor(int achse) => Float32List(64)..[achse] = 1;
+      await db.saveEmbedding(a, vektor(0));
+      await db.saveEmbedding(b, vektor(0));
+      await db.saveEmbedding(c, vektor(1));
+      await (db.update(db.assets)..where((t) => t.id.equals(b))).write(
+        const AssetsCompanion(isFavorite: Value(true)),
+      );
+      final d = await jsonAus(
+        await frag('GET', '/api/v1/duplikate?schwelle=0.95', token: erikaToken),
+      );
+      expect(d['einbettungen'], 3);
+      final gruppe = (d['gruppen']! as List).cast<Map>().single;
+      expect(
+        (gruppe['aufnahmen']! as List).cast<Map>().map((x) => x['id']),
+        unorderedEquals([a, b]),
+      );
+      expect(gruppe['behalten'], b, reason: 'der Favorit bleibt');
+      expect(gruppe['loeschbar'], [a]);
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/duplikate?schwelle=2',
+          token: erikaToken,
+        )).statusCode,
+        400,
+      );
+      final fremd = await jsonAus(
+        await frag('GET', '/api/v1/duplikate', token: maxToken),
+      );
+      expect(fremd['gruppen'], isEmpty);
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);
