@@ -7,15 +7,17 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 
-/// Die Leiste unter einem Raster, sobald etwas ausgewählt ist (Issue
-/// #128): wie viele, und was man mit ihnen tut – Favorit, Teilen, ins
-/// Album, aufs Telefon, Papierkorb. Jede Aktion ist ein Befehl aus dem
-/// Kern, also auch am Rechner und auf dem Server sichtbar.
-class Auswahlleiste extends StatelessWidget {
+/// Das Blatt unter einem Raster, sobald etwas ausgewählt ist (Issue
+/// #128), aufgebaut wie in Immich: oben wie viele, darunter die Aktionen
+/// – Favorit, Teilen, aufs Telefon, Papierkorb – und ein Streifen mit den
+/// Alben, in die ein Tipp die Auswahl legt. Jede Aktion ist ein Befehl aus
+/// dem Kern, also auch am Rechner und auf dem Server sichtbar.
+class Auswahlleiste extends StatefulWidget {
   const Auswahlleiste({
     super.key,
     required this.sitzung,
@@ -26,6 +28,20 @@ class Auswahlleiste extends StatelessWidget {
   final Sitzung sitzung;
   final List<Rasterzeile> zeilen;
   final VoidCallback aufheben;
+
+  @override
+  State<Auswahlleiste> createState() => _AuswahlleisteState();
+}
+
+class _AuswahlleisteState extends State<Auswahlleiste> {
+  // Einmal je Blatt gelesen, nicht bei jedem Neubau – das Blatt baut sich
+  // mit jeder gewählten Kachel neu.
+  late final Future<List<AlbumData>> _alben = _db.alleAlben();
+  final _titelbilder = <String, Future<AssetData?>>{};
+
+  Sitzung get sitzung => widget.sitzung;
+  List<Rasterzeile> get zeilen => widget.zeilen;
+  void aufheben() => widget.aufheben();
 
   List<String> get _ids => [for (final z in zeilen) z.id];
 
@@ -62,41 +78,19 @@ class Auswahlleiste extends StatelessWidget {
     }
   }
 
-  Future<void> _album(BuildContext context) async {
+  /// In [album] legen – oder, ohne Album, erst eines anlegen.
+  Future<void> _insAlbum(BuildContext context, AlbumData? album) async {
     final t = AppTexte.of(context);
-    final alben = await _db.alleAlben();
-    if (!context.mounted) return;
-    final wahl = await showDialog<Object>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(t.auswahlAlbumTitel),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, true),
-            child: Row(
-              children: [
-                const Icon(Icons.add),
-                const SizedBox(width: 12),
-                Text(t.auswahlAlbumNeu),
-              ],
-            ),
-          ),
-          for (final a in alben)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, a),
-              child: Text(a.name),
-            ),
-        ],
-      ),
-    );
-    if (wahl == null || !context.mounted) return;
     final String albumId;
     final String name;
-    if (wahl is AlbumData) {
-      albumId = wahl.id;
-      name = wahl.name;
+    if (album != null) {
+      albumId = album.id;
+      name = album.name;
     } else {
-      final neu = await _neuesAlbum(context);
+      final neu = await showDialog<String>(
+        context: context,
+        builder: (_) => const _AlbumNameDialog(),
+      );
       if (neu == null) return;
       albumId = const Uuid().v4();
       name = neu;
@@ -109,11 +103,6 @@ class Auswahlleiste extends StatelessWidget {
     );
     aufheben();
   }
-
-  Future<String?> _neuesAlbum(BuildContext context) => showDialog<String>(
-    context: context,
-    builder: (_) => const _AlbumNameDialog(),
-  );
 
   Future<void> _aufsTelefon(BuildContext context) async {
     final t = AppTexte.of(context);
@@ -176,15 +165,29 @@ class Auswahlleiste extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
     final alleFavorit = zeilen.every((z) => z.isFavorite);
     return Material(
-      elevation: 8,
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      elevation: 12,
+      color: farben.surfaceContainerHigh,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: farben.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             Row(
               children: [
                 IconButton(
@@ -201,19 +204,14 @@ class Auswahlleiste extends StatelessWidget {
             Row(
               children: [
                 _Aktion(
-                  icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
-                  text: t.auswahlFavorit,
-                  onPressed: _favorit,
-                ),
-                _Aktion(
                   icon: Icons.share_outlined,
                   text: t.auswahlTeilen,
                   onPressed: () => _teile(context),
                 ),
                 _Aktion(
-                  icon: Icons.photo_album_outlined,
-                  text: t.auswahlAlbum,
-                  onPressed: () => _album(context),
+                  icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
+                  text: t.auswahlFavorit,
+                  onPressed: _favorit,
                 ),
                 _Aktion(
                   icon: Icons.download_outlined,
@@ -227,6 +225,53 @@ class Auswahlleiste extends StatelessWidget {
                 ),
               ],
             ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  t.auswahlAlbumTitel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 100,
+              child: FutureBuilder<List<AlbumData>>(
+                future: _alben,
+                builder: (context, snap) => ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  children: [
+                    _Albumkachel(
+                      text: t.auswahlAlbumNeu,
+                      onTap: () => _insAlbum(context, null),
+                      bild: ColoredBox(
+                        color: farben.surfaceContainerHighest,
+                        child: Icon(Icons.add, color: farben.primary),
+                      ),
+                    ),
+                    for (final a in snap.data ?? const <AlbumData>[])
+                      _Albumkachel(
+                        text: a.name,
+                        onTap: () => _insAlbum(context, a),
+                        bild: FutureBuilder<AssetData?>(
+                          future: _titelbilder.putIfAbsent(
+                            a.id,
+                            () => _db.albumTitelbild(a),
+                          ),
+                          builder: (context, bild) => Miniatur(
+                            paths: sitzung.paths,
+                            relativ: bild.data?.thumbnailRelativePath,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
           ],
         ),
       ),
@@ -234,8 +279,48 @@ class Auswahlleiste extends StatelessWidget {
   }
 }
 
+/// Ein Album im Streifen des Auswahlblatts: Titelbild und Name.
+class _Albumkachel extends StatelessWidget {
+  const _Albumkachel({
+    required this.text,
+    required this.onTap,
+    required this.bild,
+  });
+
+  final String text;
+  final VoidCallback onTap;
+  final Widget bild;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox.square(dimension: 72, child: bild),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              text,
+              style: Theme.of(context).textTheme.labelSmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// Ein Knopf der Leiste: Symbol über kurzem Text, gleich breit wie die
-/// anderen – fünf davon passen auf jedes Telefon.
+/// anderen.
 class _Aktion extends StatelessWidget {
   const _Aktion({
     required this.icon,

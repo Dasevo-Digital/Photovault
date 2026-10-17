@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kern/abgleich/anmeldung.dart';
@@ -320,8 +322,7 @@ void main() {
     // Ins neue Album.
     await tester.longPress(find.byType(Miniatur).at(2));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(t.auswahlAlbum));
-    await tester.pumpAndSettle();
+    // Das neue Album steht als erste Kachel im Streifen des Blatts.
     await tester.tap(find.text(t.auswahlAlbumNeu));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Urlaub');
@@ -350,6 +351,133 @@ void main() {
     await tester.pumpAndSettle();
     expect((await a('a1')).isTrashed, isTrue);
     expect((await a('a2')).isTrashed, isFalse);
+    expect(find.byType(Auswahlleiste), findsNothing);
+  });
+
+  Future<(Sitzung, AppTexte)> rasterMitTagen(
+    WidgetTester tester,
+    List<Rasterzeile> zeilen,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_tage_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: AufnahmenRaster(
+            sitzung: sitzung,
+            zeilen: zeilen,
+            nachTagen: true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return (sitzung, AppTexte.of(tester.element(find.byType(AufnahmenRaster))));
+  }
+
+  Rasterzeile amTag(String id, DateTime wann) {
+    final z = _zeile(id, 0, 0);
+    return Rasterzeile(
+      id: z.id,
+      type: z.type,
+      originalFileName: z.originalFileName,
+      relativePath: z.relativePath,
+      thumbnailRelativePath: null,
+      fileCreatedAt: wann,
+      durationSeconds: null,
+      isFavorite: false,
+      isStackCover: false,
+      stackId: null,
+      stackSize: null,
+      linkedAssetId: null,
+      rating: 0,
+      colorLabel: null,
+      widthPx: null,
+      heightPx: null,
+      latitude: null,
+      longitude: null,
+      cameraMake: null,
+      isLocked: false,
+    );
+  }
+
+  testWidgets('Tipp auf das Datum wählt den ganzen Tag, ein zweiter hebt auf', (
+    tester,
+  ) async {
+    final montag = DateTime(2025, 6, 2, 12);
+    final sonntag = DateTime(2025, 6, 1, 12);
+    final (_, t) = await rasterMitTagen(tester, [
+      amTag('m1', montag),
+      amTag('m2', montag.subtract(const Duration(hours: 1))),
+      amTag('s1', sonntag),
+    ]);
+    final tagMontag = DateFormat.MMMMEEEEd('de').format(montag);
+    final tagSonntag = DateFormat.MMMMEEEEd('de').format(sonntag);
+    // Ein Monatskopf, darunter die Tage ohne Jahr.
+    expect(find.text(DateFormat.yMMMM('de').format(montag)), findsOneWidget);
+    expect(find.text(tagMontag), findsOneWidget);
+
+    await tester.tap(find.text(tagMontag));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(2)), findsOneWidget);
+    // Zwei gewählte Kacheln und der Kreis am Datum tragen den Haken.
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(3));
+
+    await tester.tap(find.text(tagSonntag));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(3)), findsOneWidget);
+
+    await tester.tap(find.text(tagMontag));
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(1)), findsOneWidget);
+    await tester.tap(find.text(tagSonntag));
+    await tester.pumpAndSettle();
+    expect(find.byType(Auswahlleiste), findsNothing);
+  });
+
+  testWidgets('Lang drücken und ziehen wählt die Strecke dazwischen', (
+    tester,
+  ) async {
+    final tag = DateTime(2025, 6, 2, 12);
+    final (_, t) = await rasterMitTagen(tester, [
+      for (var i = 0; i < 4; i++)
+        amTag('z$i', tag.subtract(Duration(minutes: i))),
+    ]);
+    final kacheln = find.byType(Miniatur);
+    final zug = await tester.startGesture(tester.getCenter(kacheln.at(0)));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    expect(find.text(t.auswahlAnzahl(1)), findsOneWidget);
+    await zug.moveTo(tester.getCenter(kacheln.at(1)));
+    await tester.pump();
+    await zug.moveTo(tester.getCenter(kacheln.at(2)));
+    await tester.pump();
+    expect(find.text(t.auswahlAnzahl(3)), findsOneWidget);
+    // Zurück nimmt wieder heraus, was nicht mehr in der Strecke liegt.
+    await zug.moveTo(tester.getCenter(kacheln.at(1)));
+    await tester.pump();
+    expect(find.text(t.auswahlAnzahl(2)), findsOneWidget);
+    await zug.up();
+    await tester.pumpAndSettle();
+    expect(find.text(t.auswahlAnzahl(2)), findsOneWidget);
+
+    // Ein Zug, der auf einer gewählten Kachel beginnt, wählt ab.
+    final ab = await tester.startGesture(tester.getCenter(kacheln.at(1)));
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await ab.moveTo(tester.getCenter(kacheln.at(0)));
+    await tester.pump();
+    await ab.up();
+    await tester.pumpAndSettle();
     expect(find.byType(Auswahlleiste), findsNothing);
   });
 

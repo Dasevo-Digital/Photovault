@@ -539,13 +539,16 @@ class AppTexteEn extends AppTexte {
   String get auswahlAufheben => 'Clear selection';
 
   @override
+  String get auswahlTagWaehlen => 'Select all from this day';
+
+  @override
+  String get auswahlTagAbwaehlen => 'Deselect this day';
+
+  @override
   String get auswahlFavorit => 'Favorite';
 
   @override
   String get auswahlTeilen => 'Share';
-
-  @override
-  String get auswahlAlbum => 'Album';
 
   @override
   String get auswahlHerunterladen => 'To phone';
@@ -572,7 +575,7 @@ class AppTexteEn extends AppTexte {
   String get auswahlAlbumTitel => 'Add to album';
 
   @override
-  String get auswahlAlbumNeu => 'New album …';
+  String get auswahlAlbumNeu => 'New album';
 
   @override
   String get auswahlAlbumName => 'Album name';

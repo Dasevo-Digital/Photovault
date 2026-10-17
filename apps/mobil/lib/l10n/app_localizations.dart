@@ -925,6 +925,18 @@ abstract class AppTexte {
   /// **'Auswahl aufheben'**
   String get auswahlAufheben;
 
+  /// No description provided for @auswahlTagWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmen dieses Tages auswählen'**
+  String get auswahlTagWaehlen;
+
+  /// No description provided for @auswahlTagAbwaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl dieses Tages aufheben'**
+  String get auswahlTagAbwaehlen;
+
   /// No description provided for @auswahlFavorit.
   ///
   /// In de, this message translates to:
@@ -936,12 +948,6 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Teilen'**
   String get auswahlTeilen;
-
-  /// No description provided for @auswahlAlbum.
-  ///
-  /// In de, this message translates to:
-  /// **'Album'**
-  String get auswahlAlbum;
 
   /// No description provided for @auswahlHerunterladen.
   ///
@@ -976,7 +982,7 @@ abstract class AppTexte {
   /// No description provided for @auswahlAlbumNeu.
   ///
   /// In de, this message translates to:
-  /// **'Neues Album …'**
+  /// **'Neues Album'**
   String get auswahlAlbumNeu;
 
   /// No description provided for @auswahlAlbumName.
