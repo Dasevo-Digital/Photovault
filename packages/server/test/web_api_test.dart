@@ -212,6 +212,47 @@ void main() {
     );
   });
 
+  test(
+    'Reisen: Liste mit Zeitraum und Anzahl, Inhalt, fremde unsichtbar',
+    () async {
+      final a = await ladeHoch(erikaToken, 'r1.jpg', 10);
+      final b = await ladeHoch(erikaToken, 'r2.jpg', 60);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await db.reiseAnlegen(
+        ReisenCompanion.insert(
+          id: 'sommer',
+          name: 'Sommer in Kiel',
+          von: DateTime(2026, 7, 1),
+          bis: DateTime(2026, 7, 10),
+          angelegtAm: DateTime(2026, 7, 11),
+        ),
+        [a, b],
+      );
+      final liste = await jsonAus(
+        await frag('GET', '/api/v1/reisen', token: erikaToken),
+      );
+      final reise = (liste['reisen']! as List).cast<Map>().single;
+      expect(reise['name'], 'Sommer in Kiel');
+      expect(reise['anzahl'], 2);
+      expect(reise['titelbild'], isIn([a, b]));
+      final inhalt = await jsonAus(
+        await frag('GET', '/api/v1/reisen/sommer', token: erikaToken),
+      );
+      expect(
+        (inhalt['aufnahmen']! as List).cast<Map>().map((x) => x['id']),
+        unorderedEquals([a, b]),
+      );
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/reisen/sommer',
+          token: maxToken,
+        )).statusCode,
+        404,
+      );
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

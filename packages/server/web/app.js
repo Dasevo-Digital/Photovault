@@ -286,6 +286,26 @@ async function zeigeAlbum(id) {
   zeigeListe({ aufnahmen: d.aufnahmen }, d.album.name);
 }
 
+const zeitraum = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+async function zeigeReisen() {
+  markiereNav('reisen');
+  zeigeBereich(['karten']);
+  $('karten-titel').textContent = 'Reisen';
+  $('karten').replaceChildren();
+  const d = await api('/api/v1/reisen');
+  if (d.reisen.length === 0) $('karten').append(el('p', 'leise', 'Noch keine Reisen.'));
+  for (const r of d.reisen) {
+    $('karten').append(karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name, `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${r.anzahl} Aufnahmen`, `#/reisen/${encodeURIComponent(r.id)}`));
+  }
+}
+
+async function zeigeReise(id) {
+  markiereNav('reisen');
+  zeigeBereich(['raster']);
+  const d = await api(`/api/v1/reisen/${encodeURIComponent(id)}`);
+  zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true }, `${d.reise.name} · ${zeitraum.format(new Date(d.reise.von))} – ${zeitraum.format(new Date(d.reise.bis))}`);
+}
+
 async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
@@ -682,6 +702,7 @@ async function zeigeWeg() {
       case 'alben': await (teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
+      case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');

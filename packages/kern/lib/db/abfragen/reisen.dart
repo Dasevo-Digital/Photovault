@@ -227,6 +227,24 @@ extension ReisenAbfragen on AppDatabase {
   /// `.first`. Gemessen an zwanzig Reisen mit je dreihundert Aufnahmen:
   /// 5865 geladene Zeilen und 92 ms, um zwanzig Vorschaubilder zu zeigen.
   /// Der Aufwand wächst mit der Größe der Reisen, der Nutzen nicht.
+  /// Wie viele sichtbare Aufnahmen jede Reise hat, nach Kennung.
+  Future<Map<String, int>> reiseAnzahlen() async {
+    final n = reiseAufnahmen.assetId.count();
+    final q =
+        selectOnly(reiseAufnahmen).join([
+            innerJoin(assets, assets.id.equalsExp(reiseAufnahmen.assetId)),
+          ])
+          ..addColumns([reiseAufnahmen.reiseId, n])
+          ..where(
+            assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+          )
+          ..groupBy([reiseAufnahmen.reiseId]);
+    return {
+      for (final z in await q.get())
+        z.read(reiseAufnahmen.reiseId)!: z.read(n)!,
+    };
+  }
+
   Future<AssetData?> ersteAufnahmeDerReise(String reiseId) async {
     final abfrage =
         select(assets).join([

@@ -173,6 +173,8 @@ Handler baueApi({
     )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/reisen', api.reisen)
+    ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/orte', api.orte)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
@@ -473,6 +475,48 @@ class _Api {
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    });
+  }
+
+  /// Die Reisen mit Zeitraum, Anzahl und Titelbild – für den Browser.
+  Future<Response> reisen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final liste = await (db.select(
+      db.reisen,
+    )..orderBy([(t) => OrderingTerm.desc(t.von)])).get();
+    final anzahlen = await db.reiseAnzahlen();
+    return _json({
+      'reisen': [
+        for (final r in liste)
+          {
+            'id': r.id,
+            'name': r.name,
+            'von': r.von.toIso8601String(),
+            'bis': r.bis.toIso8601String(),
+            'art': r.art,
+            'anzahl': anzahlen[r.id] ?? 0,
+            'titelbild': (await db.ersteAufnahmeDerReise(r.id))?.id,
+          },
+      ],
+    });
+  }
+
+  Future<Response> reiseAufnahmen(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final r = await db.reise(id);
+    if (r == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'reise': {
+        'id': r.id,
+        'name': r.name,
+        'von': r.von.toIso8601String(),
+        'bis': r.bis.toIso8601String(),
+        'notiz': r.notiz,
+      },
+      'aufnahmen': [
+        for (final a in await db.aufnahmenDerReise(id))
+          zeileAlsJson(Rasterzeile.aus(a)),
+      ],
     });
   }
 
