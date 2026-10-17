@@ -52,7 +52,7 @@ class Webapi {
   // Liste. Kein Pfadtrenner, kein zweiter Punkt – damit ist `..` von
   // vornherein draussen.
   static final _name = RegExp(
-    r'^[a-z0-9][a-z0-9_-]*\.(html|css|js|svg|png|ico|webmanifest|woff2)$',
+    r'^[a-z0-9][a-z0-9_-]*\.(html|css|js|svg|png|jpg|ico|webmanifest|woff2|ttf)$',
   );
 
   static const _typen = {
@@ -61,6 +61,8 @@ class Webapi {
     'js': 'text/javascript; charset=utf-8',
     'svg': 'image/svg+xml',
     'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'ttf': 'font/ttf',
     'ico': 'image/x-icon',
     'webmanifest': 'application/manifest+json',
     'woff2': 'font/woff2',
@@ -70,7 +72,27 @@ class Webapi {
 
   /// Die Unterordner, aus denen die Seite laden darf – mitgelieferte
   /// Bibliotheken, sonst nichts.
-  static const unterordner = {'leaflet', 'leaflet/images'};
+  static const unterordner = {
+    'leaflet',
+    'leaflet/images',
+    'lebensbaum',
+    'schrift',
+  };
+
+  /// Wo Vorlagenbilder und Schriften des Lebensbaums liegen, wenn der
+  /// Server aus dem Quelltext läuft statt aus dem Bündel: in den Assets der
+  /// App. Das Bündel bekommt sie beim Bau als web/lebensbaum und
+  /// web/schrift (siehe Dockerfile).
+  static const _ausDenAssets = {
+    'lebensbaum': ('assets/lebensbaum', <String, String>{}),
+    'schrift': (
+      'assets/fonts',
+      {
+        'ebgaramond.ttf': 'EBGaramond-Variable.ttf',
+        'greatvibes.ttf': 'GreatVibes-Regular.ttf',
+      },
+    ),
+  };
 
   /// Eine Datei der Oberfläche, wahlweise aus einem [unterordner]. Geprüft
   /// wird der Name, und zur Sicherheit noch einmal, dass die Datei im
@@ -84,8 +106,15 @@ class Webapi {
     if (ordnerName.isNotEmpty && !unterordner.contains(ordnerName)) {
       return _nichtDa();
     }
-    final f = File(p.join(ordner.path, ordnerName, name));
-    if (!p.isWithin(ordner.absolute.path, f.absolute.path) ||
+    var f = File(p.join(ordner.path, ordnerName, name));
+    var wurzel = ordner;
+    final asset = _ausDenAssets[ordnerName];
+    if (asset != null && !await f.exists()) {
+      // web/ liegt im Quelltext unter packages/server/web.
+      wurzel = Directory(p.join(ordner.path, '..', '..', '..', asset.$1));
+      f = File(p.join(wurzel.path, asset.$2[name] ?? name));
+    }
+    if (!p.isWithin(wurzel.absolute.path, f.absolute.path) ||
         !await f.exists()) {
       return _nichtDa();
     }

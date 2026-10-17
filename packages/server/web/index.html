@@ -92,6 +92,7 @@
       <h2>Stammbaum</h2>
       <label>Person <select id="baum-person"></select></label>
       <label>Zoom <input id="baum-zoom" type="range" min="0.4" max="1.6" step="0.1" value="1"></label>
+      <button id="baum-zum-lebensbaum" type="button">Lebensbaum</button>
     </div>
     <p id="baum-hinweis" class="leise"></p>
     <div id="baum-flaeche"></div>
@@ -121,6 +122,39 @@
         </div>
       </aside>
     </div>
+  </section>
+  <section id="bereich-lebensbaum" hidden>
+    <div class="zeile lb-leiste">
+      <h2>Lebensbaum</h2>
+      <label>Person <select id="lb-person"></select></label>
+      <label>Stil <select id="lb-stil">
+        <option value="pergament">Pergament</option>
+        <option value="landschaft">Landschaft</option>
+        <option value="wappen">Wappen</option>
+        <option value="gold">Gold</option>
+      </select></label>
+      <label>Zeigt <select id="lb-richtung">
+        <option value="vorfahren">Vorfahren</option>
+        <option value="nachkommen">Nachkommen</option>
+        <option value="paar">Paar</option>
+        <option value="familie">Familie</option>
+      </select></label>
+      <label class="lb-nicht-familie">Generationen <select id="lb-generationen">
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select></label>
+      <label class="lb-familie">Nach oben <select id="lb-oben"><option>1</option><option>2</option><option>3</option></select></label>
+      <label class="lb-familie">Nach unten <select id="lb-unten"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
+      <label class="lb-familie">Kreis <select id="lb-kreis">
+        <option value="linie">Direkte Linie</option>
+        <option value="geschwister">Mit Geschwistern</option>
+        <option value="alle">Alle</option>
+      </select></label>
+      <label><input id="lb-portraits" type="checkbox" checked> Porträts</label>
+      <button id="lb-laden" type="button">Als Bild speichern</button>
+      <button id="lb-zum-stammbaum" type="button">Stammbaum</button>
+    </div>
+    <p id="lb-hinweis" class="leise"></p>
+    <div id="lb-flaeche"><canvas id="lb-leinwand"></canvas></div>
   </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>
@@ -203,5 +237,6 @@
 <script src="leaflet/leaflet.js"></script>
 <script src="app.js"></script>
 <script src="entwickeln.js"></script>
+<script src="lebensbaum.js"></script>
 </body>
 </html>

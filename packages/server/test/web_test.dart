@@ -209,6 +209,35 @@ void main() {
         (await frag('GET', '/app/leaflet/images/..%2Fleaflet.js')).statusCode,
         anyOf(404, 401),
       );
+
+      // Vorlagenbilder und Schriften des Lebensbaums.
+      Directory('${web.path}/lebensbaum').createSync();
+      Directory('${web.path}/schrift').createSync();
+      File('${web.path}/lebensbaum/pergament.jpg').writeAsBytesSync([1]);
+      File('${web.path}/schrift/ebgaramond.ttf').writeAsBytesSync([1]);
+      expect(
+        (await frag(
+          'GET',
+          '/app/lebensbaum/pergament.jpg',
+        )).headers['content-type'],
+        'image/jpeg',
+      );
+      expect(
+        (await frag(
+          'GET',
+          '/app/schrift/ebgaramond.ttf',
+        )).headers['content-type'],
+        'font/ttf',
+      );
+      expect(
+        (await frag('GET', '/app/lebensbaum/..%2Findex.html')).statusCode,
+        anyOf(404, 401),
+      );
+      expect(
+        (await frag('GET', '/app/schrift/Gross.ttf')).statusCode,
+        404,
+        reason: 'nur kleingeschriebene Namen',
+      );
     });
 
     test('kein Weg aus dem Ordner heraus', () async {

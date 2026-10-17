@@ -582,6 +582,68 @@ void main() {
     },
   );
 
+  test(
+    'Lebensbaum: Anordnung aus dem Kern, Grad je Person, Optionen',
+    () async {
+      for (final (id, name) in [
+        ('oma', 'Gerda Kiel'),
+        ('opa', 'Heinz Kiel'),
+        ('kind', 'Anna Kiel'),
+      ]) {
+        await befehl(erikaToken, 'personAnlegen', {
+          'personId': id,
+          'name': name,
+        });
+      }
+      for (final (a, b, v) in [
+        ('kind', 'oma', 'elternteil'),
+        ('kind', 'opa', 'elternteil'),
+        ('oma', 'opa', 'partner'),
+      ]) {
+        await befehl(erikaToken, 'beziehungHinzufuegen', {
+          'personId': a,
+          'andereId': b,
+          'verwandtschaft': v,
+        });
+      }
+      final d = await jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/lebensbaum?fokus=kind&richtung=vorfahren&stil=gold',
+          token: erikaToken,
+        ),
+      );
+      expect(d['fokus'], 'kind');
+      expect((d['optionen']! as Map)['stil'], 'gold');
+      expect(d['nachname'], 'Kiel');
+      expect(d['hintergrund'], endsWith('.jpg'));
+      final plaetze = (d['plaetze']! as List).cast<Map>();
+      final imBild = {for (final p in plaetze) ...(p['personen'] as List)};
+      expect(imBild, containsAll(['kind', 'oma', 'opa']));
+      expect(plaetze.where((p) => p['amStamm'] == true), hasLength(1));
+      final personen = (d['personen']! as Map).cast<String, Map>();
+      expect((personen['oma']!['grad'] as Map)['art'], 'vorfahre');
+      expect((personen['oma']!['grad'] as Map)['aufwaerts'], 1);
+      // Die Person am Stamm trägt keine Bezeichnung: Um sie geht es.
+      expect(personen['kind']!.containsKey('grad'), isFalse);
+      expect(((d['vorlage']! as Map)['groesse'] as List), hasLength(2));
+
+      final familie = await jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/lebensbaum?fokus=kind&richtung=familie',
+          token: erikaToken,
+        ),
+      );
+      expect((familie['optionen']! as Map)['richtung'], 'familie');
+      expect(familie['plaetze'], isNotEmpty);
+      final fremd = await jsonAus(
+        await frag('GET', '/api/v1/lebensbaum', token: maxToken),
+      );
+      expect(fremd['fokus'], isNull);
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

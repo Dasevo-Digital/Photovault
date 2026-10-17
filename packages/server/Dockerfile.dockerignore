@@ -4,6 +4,9 @@
 !packages/kern
 !packages/server
 !third_party/onnxruntime_api
+# Vorlagenbilder und Schriften des Lebensbaums für die Weboberfläche.
+!assets/lebensbaum
+!assets/fonts
 **/.dart_tool
 **/build
 **/.packages

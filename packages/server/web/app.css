@@ -250,3 +250,16 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
   .entw-seite { width: auto; flex: none; border-left: 0; border-top: 1px solid var(--rand); max-height: none; }
   #entw-leinwand { max-height: 55vh; }
 }
+
+/* --- Lebensbaum ------------------------------------------------------------ */
+@font-face { font-family: 'Zierschrift'; src: url('schrift/ebgaramond.ttf') format('truetype'); font-weight: 400 800; font-style: normal; font-display: block; }
+@font-face { font-family: 'Zierschrift'; src: url('schrift/ebgaramond.ttf') format('truetype'); font-weight: 400 800; font-style: italic; font-display: block; }
+@font-face { font-family: 'Zierschrift Gross'; src: url('schrift/greatvibes.ttf') format('truetype'); font-display: block; }
+#bereich-lebensbaum { padding: 0 12px 24px; }
+.lb-leiste { padding: 12px 0; }
+.lb-leiste h2 { margin: 0; flex: 1 0 100%; }
+.lb-leiste label { display: flex; align-items: center; gap: 6px; color: var(--leise); }
+.lb-leiste select { font: inherit; padding: 4px 6px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); max-width: 14em; }
+.lb-leiste button, #baum-zum-lebensbaum { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); font-weight: 400; }
+#lb-flaeche { display: flex; justify-content: center; }
+#lb-leinwand { max-width: 100%; max-height: calc(100vh - 170px); height: auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.35); cursor: pointer; }

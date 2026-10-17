@@ -100,6 +100,10 @@ COPY --from=ort /libonnxruntime.so.${ORT_FASSUNG} /pv/photo-vault-server/lib/
 COPY packages/server/linux /pv/photo-vault-server/systemd
 COPY packages/server/README.md /pv/photo-vault-server/
 COPY packages/server/web /pv/photo-vault-server/web
+COPY assets/lebensbaum /pv/photo-vault-server/web/lebensbaum
+COPY assets/fonts/EBGaramond-Variable.ttf /pv/photo-vault-server/web/schrift/ebgaramond.ttf
+COPY assets/fonts/GreatVibes-Regular.ttf /pv/photo-vault-server/web/schrift/greatvibes.ttf
+COPY assets/fonts/OFL-EBGaramond.txt assets/fonts/OFL-GreatVibes.txt /pv/photo-vault-server/web/schrift/
 RUN tar -C /pv --owner=0 --group=0 -czf "/photo-vault-server-linux-${TARGETARCH}.tar.gz" photo-vault-server
 
 FROM scratch AS paket
@@ -135,6 +139,10 @@ RUN groupadd --system --gid 8790 photovault \
  && mkdir /daten && chown photovault:photovault /daten
 COPY --from=bau /aus/bundle /opt/photo-vault-server
 COPY packages/server/web /opt/photo-vault-server/web
+COPY assets/lebensbaum /opt/photo-vault-server/web/lebensbaum
+COPY assets/fonts/EBGaramond-Variable.ttf /opt/photo-vault-server/web/schrift/ebgaramond.ttf
+COPY assets/fonts/GreatVibes-Regular.ttf /opt/photo-vault-server/web/schrift/greatvibes.ttf
+COPY assets/fonts/OFL-EBGaramond.txt assets/fonts/OFL-GreatVibes.txt /opt/photo-vault-server/web/schrift/
 COPY --from=ort-openvino /ov /opt/photo-vault-server/lib/openvino
 RUN printf '#!/bin/sh\nexec /opt/photo-vault-server/bin/photo_vault_server "$@"\n' \
       > /usr/local/bin/photo_vault_server \
@@ -170,6 +178,10 @@ RUN groupadd --system --gid 8790 photovault \
  && mkdir /daten && chown photovault:photovault /daten
 COPY --from=bau /aus/bundle /opt/photo-vault-server
 COPY packages/server/web /opt/photo-vault-server/web
+COPY assets/lebensbaum /opt/photo-vault-server/web/lebensbaum
+COPY assets/fonts/EBGaramond-Variable.ttf /opt/photo-vault-server/web/schrift/ebgaramond.ttf
+COPY assets/fonts/GreatVibes-Regular.ttf /opt/photo-vault-server/web/schrift/greatvibes.ttf
+COPY assets/fonts/OFL-EBGaramond.txt assets/fonts/OFL-GreatVibes.txt /opt/photo-vault-server/web/schrift/
 COPY --from=ort /libonnxruntime.so.${ORT_FASSUNG} /opt/photo-vault-server/lib/
 # Für die Verwaltung: docker exec -it … photo_vault_server konto anlegen NAME.
 # Ein Startskript statt eines Symlinks: Die Bibliotheken liegen relativ zum

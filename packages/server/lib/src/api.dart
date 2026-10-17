@@ -11,7 +11,13 @@ import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplicate_selection.dart';
 import 'package:kern/services/embedding_similarity.dart';
+import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/kartengruppen.dart';
+import 'package:kern/services/lebensbaum.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_vorlage.dart';
+import 'package:kern/services/verwandtschaftsgrad.dart';
+import 'package:kern/services/zierbaum.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:path/path.dart' as p;
@@ -136,6 +142,18 @@ Handler baueApi({
           oberflaeche?.datei(r, name, ordnerName: 'leaflet/images') ??
           Response.notFound('nicht da'),
     )
+    ..get(
+      '/app/lebensbaum/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'lebensbaum') ??
+          Response.notFound('nicht da'),
+    )
+    ..get(
+      '/app/schrift/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'schrift') ??
+          Response.notFound('nicht da'),
+    )
     ..post(
       '/api/v1/web/anmelden',
       (Request r) => oberflaeche?.anmelden(r) ?? Response.notFound('nicht da'),
@@ -189,6 +207,7 @@ Handler baueApi({
     ..get('/api/v1/einstellungen', api.einstellungen)
     ..get('/api/v1/entwickeln/<id>', api.entwickeln)
     ..get('/api/v1/stammbaum', api.stammbaum)
+    ..get('/api/v1/lebensbaum', api.lebensbaum)
     ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
@@ -842,6 +861,198 @@ class _Api {
           ),
         ),
         'wuerfelKante': colorCubeSize,
+      },
+    });
+  }
+
+  /// Der Lebensbaum, wie ihn der Rechner zeichnet: dieselbe Anordnung aus
+  /// dem Kern (lebensbaumplan/passendeVorlage bzw. das Familienbild aus
+  /// dem Geflecht), die Vorlage mit ihren Flächen und Farben, und je Person
+  /// was auf ihrem Schild steht. Die Verwandtschaft kommt als Grad – die
+  /// Bezeichnung („Großmutter“) setzt der Browser in seiner Sprache.
+  ///
+  /// Ohne Angaben gilt, was am Rechner zuletzt eingestellt war.
+  Future<Response> lebensbaum(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final personen = db.nachAlterSortiert(await db.select(db.people).get());
+    if (personen.isEmpty) return _json({'fokus': null, 'personen': []});
+    final netz = Verwandtschaftsnetz([
+      for (final z in await db.alleBeziehungen())
+        if (artAusText(z.art) case final art?)
+          kante(z.personId, z.andereId, art),
+    ]);
+    final nachId = {for (final p in personen) p.id: p};
+    bool verwandt(String id) =>
+        netz.eltern(id).isNotEmpty ||
+        netz.kinder(id).isNotEmpty ||
+        netz.partner(id).isNotEmpty;
+    final q = anfrage.url.queryParameters;
+    var fokus = q['fokus'];
+    if (fokus == null || !nachId.containsKey(fokus)) {
+      fokus = (await db.stammbaumZuletzt()).person;
+    }
+    if (fokus == null || !nachId.containsKey(fokus)) {
+      fokus = personen
+          .firstWhere((p) => verwandt(p.id), orElse: () => personen.first)
+          .id;
+    }
+    final gemerkt = await db.lebensbaumZuletzt();
+    T wahl<T extends Enum>(List<T> werte, String? text, T vorgabe) {
+      for (final w in werte) {
+        if (w.name == text) return w;
+      }
+      return vorgabe;
+    }
+
+    final richtung = wahl(
+      Lebensbaumrichtung.values,
+      q['richtung'] ?? gemerkt.richtung,
+      Lebensbaumrichtung.vorfahren,
+    );
+    final stil = wahl(
+      Lebensbaumstil.values,
+      q['stil'] ?? gemerkt.stil,
+      Lebensbaumstil.pergament,
+    );
+    final kreis = wahl(
+      Verwandtenkreis.values,
+      q['kreis'] ?? gemerkt.familieKreis,
+      Verwandtenkreis.alle,
+    );
+    final generationen =
+        (int.tryParse(q['generationen'] ?? '') ?? gemerkt.generationen ?? 4)
+            .clamp(lebensbaumMinGenerationen + 1, lebensbaumMaxGenerationen);
+    final oben =
+        (int.tryParse(q['oben'] ?? '') ??
+                gemerkt.familieOben ??
+                geflechtGenerationen)
+            .clamp(1, geflechtGenerationen);
+    final unten =
+        (int.tryParse(q['unten'] ?? '') ??
+                gemerkt.familieUnten ??
+                geflechtGenerationen)
+            .clamp(0, geflechtGenerationen);
+    final reihenfolge = [for (final p in personen) p.id];
+    final rang = {
+      for (var i = 0; i < reihenfolge.length; i++) reihenfolge[i]: i,
+    };
+
+    final Lebensbaumbild bild;
+    if (richtung == Lebensbaumrichtung.familie) {
+      final geflecht = geflechtUm(
+        netz,
+        fokus,
+        reihenfolge,
+        oben: oben,
+        unten: unten,
+        kreis: kreis,
+      );
+      bild = familienbild(
+        zierbaumplan(geflecht),
+        grosseLebensbaumvorlage(stil),
+        verschwiegen: geflecht.verschwiegen,
+      );
+    } else {
+      final plan = lebensbaumplan(
+        netz,
+        fokus,
+        (id) => rang[id] ?? 1 << 30,
+        richtung: richtung,
+        generationen: generationen,
+      );
+      final (:vorlage, :belegung) = passendeVorlage(plan, stil);
+      bild = bildAusBelegung(vorlage, belegung);
+    }
+
+    List<double> r(g.Rect x) => [x.left, x.top, x.right, x.bottom];
+    Map<String, Object?> grad(Grad x) => {
+      'art': x.art.name,
+      if (x.aufwaerts != 0) 'aufwaerts': x.aufwaerts,
+      if (x.abwaerts != 0) 'abwaerts': x.abwaerts,
+      if (x.halb) 'halb': true,
+      if (x.elternArt != null) 'elternArt': x.elternArt!.name,
+    };
+    final imBild = bild.personen.toSet();
+    final grade = alleGrade(netz, fokus, imBild);
+    bool hatPortrait(String id) => nachId[id]?.coverFaceCropPath != null;
+    final v = bild.vorlage;
+    String datei(String asset) => p.basename(asset);
+
+    return _json({
+      'fokus': fokus,
+      'optionen': {
+        'richtung': richtung.name,
+        'stil': stil.name,
+        'generationen': generationen,
+        'oben': oben,
+        'unten': unten,
+        'kreis': kreis.name,
+      },
+      'alle': [
+        for (final p in personen)
+          {'id': p.id, 'name': p.name, 'verwandt': verwandt(p.id)},
+      ],
+      'nachname': haeufigsterNachname([
+        for (final id in imBild) nachId[id]!.name,
+      ]),
+      'fokusName': nachId[fokus]!.name,
+      'hintergrund': datei(bild.hintergrund),
+      'verschwiegen': bild.verschwiegen,
+      'vorlage': {
+        'groesse': [v.groesse.width, v.groesse.height],
+        'titel': r(v.titel),
+        if (v.untertitel != null) 'untertitel': r(v.untertitel!),
+        'schrift': v.schrift.css,
+        'nebenschrift': v.nebenschrift.css,
+        if (v.schildBild != null) 'schildBild': datei(v.schildBild!),
+      },
+      'plaetze': [
+        for (final pl in bild.plaetze)
+          {
+            'rahmen': r(pl.rahmen),
+            'schrift': r(pl.schrift),
+            'schriftMitPortrait': r(schriftUnterPortraits(pl, hatPortrait)),
+            'kreise': [
+              for (final (k, id) in portraitKreise(pl, hatPortrait))
+                {'kreis': r(k), 'id': id},
+            ],
+            'personen': pl.personen,
+            if (pl.amStamm) 'amStamm': true,
+            if (pl.zuSetzen) 'zuSetzen': true,
+          },
+      ],
+      'personen': {
+        for (final id in imBild)
+          id: () {
+            final person = nachId[id]!;
+            final gr = grade[id];
+            final umweg = gr?.art == Gradart.angeheiratet
+                ? umwegZu(
+                    netz,
+                    fokus!,
+                    id,
+                    reihenfolge: (x) => rang[x] ?? 1 << 30,
+                  )
+                : null;
+            final zwischen = umweg == null ? null : nachId[umweg.ueber];
+            return {
+              'name': person.name,
+              'lebensspanne': lebensspanne(
+                person.geburtsdatum,
+                person.sterbedatum,
+              ),
+              'bild': person.coverFaceCropPath,
+              'geschlecht': person.geschlecht,
+              if (gr != null) 'grad': grad(gr),
+              if (umweg != null && zwischen != null)
+                'umweg': {
+                  'name': zwischen.name,
+                  'geschlecht': zwischen.geschlecht,
+                  'schritt': grad(umweg.schritt),
+                  'ueberGrad': grad(umweg.ueberGrad),
+                },
+            };
+          }(),
       },
     });
   }

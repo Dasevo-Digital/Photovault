@@ -1164,6 +1164,7 @@ async function zeigeWeg() {
       case 'statistik': await zeigeStatistik(); break;
       case 'einstellungen': await zeigeEinstellungen(); break;
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
+      case 'lebensbaum': await zeigeLebensbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
       case 'entwickeln': await zeigeEntwickeln(teile[1]); break;
