@@ -43,7 +43,8 @@ class Webapi {
   /// Was die Seite laden und tun darf – und sonst nichts.
   static const csp =
       "default-src 'none'; script-src 'self'; style-src 'self'; "
-      "img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; "
+      "img-src 'self' blob: data: https://tile.openstreetmap.org; "
+      "media-src 'self' blob:; connect-src 'self'; "
       "font-src 'self'; manifest-src 'self'; base-uri 'none'; "
       "form-action 'none'; frame-ancestors 'none'";
 
@@ -67,11 +68,23 @@ class Webapi {
 
   Future<Response> seite(Request anfrage) => datei(anfrage, 'index.html');
 
-  /// Eine Datei der Oberfläche. Geprüft wird der Name, und zur Sicherheit
-  /// noch einmal, dass die Datei im Ordner liegt.
-  Future<Response> datei(Request anfrage, String name) async {
+  /// Die Unterordner, aus denen die Seite laden darf – mitgelieferte
+  /// Bibliotheken, sonst nichts.
+  static const unterordner = {'leaflet', 'leaflet/images'};
+
+  /// Eine Datei der Oberfläche, wahlweise aus einem [unterordner]. Geprüft
+  /// wird der Name, und zur Sicherheit noch einmal, dass die Datei im
+  /// Ordner liegt.
+  Future<Response> datei(
+    Request anfrage,
+    String name, {
+    String ordnerName = '',
+  }) async {
     if (!_name.hasMatch(name)) return _nichtDa();
-    final f = File(p.join(ordner.path, name));
+    if (ordnerName.isNotEmpty && !unterordner.contains(ordnerName)) {
+      return _nichtDa();
+    }
+    final f = File(p.join(ordner.path, ordnerName, name));
     if (!p.isWithin(ordner.absolute.path, f.absolute.path) ||
         !await f.exists()) {
       return _nichtDa();

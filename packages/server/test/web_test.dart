@@ -188,6 +188,27 @@ void main() {
       expect(svg.headers['content-security-policy'], contains('sandbox'));
 
       expect((await frag('GET', '/app/fehlt.js')).statusCode, 404);
+
+      // Mitgelieferte Bibliothek aus ihrem Unterordner – nur aus dem.
+      Directory('${web.path}/leaflet/images').createSync(recursive: true);
+      File('${web.path}/leaflet/leaflet.js').writeAsStringSync('L=1');
+      File('${web.path}/leaflet/images/marker-icon.png').writeAsBytesSync([1]);
+      expect((await frag('GET', '/app/leaflet/leaflet.js')).statusCode, 200);
+      expect(
+        (await frag(
+          'GET',
+          '/app/leaflet/images/marker-icon.png',
+        )).headers['content-type'],
+        'image/png',
+      );
+      expect(
+        (await frag('GET', '/app/leaflet/..%2Fapp.js')).statusCode,
+        anyOf(404, 401),
+      );
+      expect(
+        (await frag('GET', '/app/leaflet/images/..%2Fleaflet.js')).statusCode,
+        anyOf(404, 401),
+      );
     });
 
     test('kein Weg aus dem Ordner heraus', () async {

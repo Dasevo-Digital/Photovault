@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Photo Vault</title>
+<link rel="stylesheet" href="leaflet/leaflet.css">
 <link rel="stylesheet" href="app.css">
 <link rel="icon" href="symbol.png" type="image/png">
 </head>
@@ -16,6 +17,7 @@
     <a href="#/suche" data-bereich="suche">Suche</a>
     <a href="#/alben" data-bereich="alben">Alben</a>
     <a href="#/personen" data-bereich="personen">Personen</a>
+    <a href="#/karte" data-bereich="karte">Karte</a>
     <a href="#/papierkorb" data-bereich="papierkorb">Papierkorb</a>
     <a href="#/konto" data-bereich="konto">Konto</a>
   </nav>
@@ -53,6 +55,9 @@
   <section id="bereich-karten" hidden>
     <h2 id="karten-titel"></h2>
     <div id="karten"></div>
+  </section>
+  <section id="bereich-karte" hidden>
+    <div id="karte"></div>
   </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>
@@ -129,6 +134,7 @@
   <a id="laden" download aria-label="Original herunterladen">⤓</a>
 </div>
 
+<script src="leaflet/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

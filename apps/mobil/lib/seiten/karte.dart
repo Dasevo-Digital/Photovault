@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/kartengruppen.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../bilder.dart';
@@ -11,24 +10,6 @@ import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'betrachter.dart';
 import 'raster.dart';
-
-/// Die Aufnahmen in [orte], zusammengefasst in einem Raster von [kante]
-/// Bildpunkten bei Zoomstufe [zoom] (Web-Mercator, wie die Kacheln).
-List<List<Rasterzeile>> kartengruppen(
-  List<Rasterzeile> orte,
-  double zoom, {
-  double kante = 64,
-}) {
-  final welt = 256 * math.pow(2, zoom);
-  final zellen = <(int, int), List<Rasterzeile>>{};
-  for (final z in orte) {
-    final x = (z.longitude! + 180) / 360 * welt;
-    final s = math.sin(z.latitude! * math.pi / 180).clamp(-0.9999, 0.9999);
-    final y = (0.5 - math.log((1 + s) / (1 - s)) / (4 * math.pi)) * welt;
-    zellen.putIfAbsent((x ~/ kante, y ~/ kante), () => []).add(z);
-  }
-  return zellen.values.toList();
-}
 
 /// Die Aufnahmen mit Ort auf der Karte – nahe beieinander liegende zu
 /// einem Punkt zusammengefasst, damit die Karte bei tausend Fotos lesbar

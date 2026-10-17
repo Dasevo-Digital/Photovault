@@ -119,3 +119,14 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #konten button, #verwaltung > p button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); margin-left: 6px; }
 #form-konto-neu input { padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
 #anmeldung-fassung { text-align: center; margin-top: 12px; }
+
+/* --- Karte ----------------------------------------------------------------- */
+#karte { height: calc(100vh - 52px); background: var(--grund); }
+.punkt { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--akzent); color: #fff; font-weight: 700; font-size: 13px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+.punkt.gross { width: 44px; height: 44px; }
+@media (prefers-color-scheme: dark) {
+  /* Nur die Kacheln umkehren – Marker und Bedienelemente bleiben, wie sie sind. */
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9); }
+  .leaflet-container { background: #111; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.6); color: #ccc; }
+}

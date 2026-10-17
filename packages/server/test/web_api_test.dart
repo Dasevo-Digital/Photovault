@@ -212,6 +212,50 @@ void main() {
     );
   });
 
+  test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
+    final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
+    final b = await ladeHoch(erikaToken, 'dom.jpg', 60);
+    final c = await ladeHoch(erikaToken, 'hafen.jpg', 120);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    for (final (id, breite, laenge) in [
+      (a, 52.5163, 13.3777),
+      (b, 52.5191, 13.4010),
+      (c, 53.5413, 9.9841),
+    ]) {
+      await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+        AssetsCompanion(latitude: Value(breite), longitude: Value(laenge)),
+      );
+    }
+    final grob = await jsonAus(
+      await frag('GET', '/api/v1/orte?zoom=4', token: erikaToken),
+    );
+    final gruppen = (grob['gruppen']! as List).cast<Map>();
+    expect(gruppen.map((g) => g['anzahl']), unorderedEquals([2, 1]));
+    final fein = await jsonAus(
+      await frag('GET', '/api/v1/orte?zoom=16', token: erikaToken),
+    );
+    expect((fein['gruppen']! as List).length, 3);
+
+    final berlin = gruppen.firstWhere((g) => g['anzahl'] == 2);
+    final zeilen = await jsonAus(
+      await frag(
+        'POST',
+        '/api/v1/aufnahmen/liste',
+        token: erikaToken,
+        kopf: {'content-type': 'application/json'},
+        inhalt: jsonEncode({'ids': berlin['ids']}),
+      ),
+    );
+    expect(
+      (zeilen['aufnahmen']! as List).cast<Map>().map((x) => x['id']),
+      unorderedEquals([a, b]),
+    );
+    expect(
+      (await frag('GET', '/api/v1/orte', token: maxToken)).statusCode,
+      200,
+    );
+  });
+
   test(
     'Zustand nennt die Fassung; Papierkorb listet, was drin liegt',
     () async {

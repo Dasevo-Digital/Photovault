@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -116,6 +117,18 @@ Handler baueApi({
       (Request r, String name) =>
           oberflaeche?.datei(r, name) ?? Response.notFound('nicht da'),
     )
+    ..get(
+      '/app/leaflet/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'leaflet') ??
+          Response.notFound('nicht da'),
+    )
+    ..get(
+      '/app/leaflet/images/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'leaflet/images') ??
+          Response.notFound('nicht da'),
+    )
     ..post(
       '/api/v1/web/anmelden',
       (Request r) => oberflaeche?.anmelden(r) ?? Response.notFound('nicht da'),
@@ -160,6 +173,8 @@ Handler baueApi({
     )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/orte', api.orte)
+    ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
     ..get('/api/v1/papierkorb', api.papierkorb)
     ..get('/api/v1/alben', api.alben)
@@ -458,6 +473,53 @@ class _Api {
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    });
+  }
+
+  /// Die Aufnahmen mit Ort als Punkte für die Karte im Browser, bei
+  /// `?zoom=` zusammengefasst wie auf dem Telefon (siehe [kartengruppen]).
+  Future<Response> orte(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final zoom =
+        (double.tryParse(anfrage.url.queryParameters['zoom'] ?? '') ?? 4)
+            .clamp(0, 20)
+            .toDouble();
+    final orte = [
+      for (final a in await db.assetsWithLocation()) Rasterzeile.aus(a),
+    ];
+    return _json({
+      'gruppen': [
+        for (final g in kartengruppen(orte, zoom))
+          {
+            'breite': gruppenmitte(g).breite,
+            'laenge': gruppenmitte(g).laenge,
+            'anzahl': g.length,
+            'ids': [for (final z in g) z.id],
+          },
+      ],
+    });
+  }
+
+  /// `{ids}` → die Zeilen dazu, in dieser Reihenfolge – für eine Gruppe
+  /// der Karte und alles, was Kennungen hat, aber keine Zeilen.
+  Future<Response> liste(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final ids = k is Map ? k['ids'] : null;
+    if (ids is! List || ids.length > 5000) {
+      return _json({'fehler': 'ids fehlen oder zu viele'}, status: 400);
+    }
+    final zeilen = await db.assetsByIds(ids.cast<String>());
+    return _json({
+      'aufnahmen': [
+        for (final a in zeilen)
+          if (!a.isTrashed && !a.isLocked) zeileAlsJson(Rasterzeile.aus(a)),
+      ],
     });
   }
 

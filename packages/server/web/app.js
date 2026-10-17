@@ -53,7 +53,7 @@ function zeigeAnmeldung() {
 }
 
 function zeigeBereich(name) {
-  for (const b of ['suche', 'karten', 'konto', 'raster']) $(`bereich-${b}`).hidden = true;
+  for (const b of ['suche', 'karten', 'konto', 'raster', 'karte']) $(`bereich-${b}`).hidden = true;
   for (const b of name) $(`bereich-${b}`).hidden = false;
 }
 
@@ -388,6 +388,55 @@ async function zeigeFassung(ziel) {
 }
 zeigeFassung($('anmeldung-fassung'));
 
+// --- Karte -----------------------------------------------------------------
+//
+// Leaflet aus dem eigenen Bündel (web/leaflet, BSD-2), Kacheln von
+// OpenStreetMap. Die Punkte rechnet der Server mit derselben Regel wie das
+// Telefon (kartengruppen); bei jedem Verschieben oder Zoomen neu.
+
+let leafletKarte = null;
+let karteGruppe = null;  // die zuletzt angetippte Gruppe, für #/karte/gruppe
+let karteMarker = null;
+let karteLauf = 0;
+
+async function zeigeKarte() {
+  markiereNav('karte');
+  zeigeBereich(['karte']);
+  if (!leafletKarte) {
+    leafletKarte = L.map('karte', { worldCopyJump: true }).setView([51, 10], 5);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(leafletKarte);
+    karteMarker = L.layerGroup().addTo(leafletKarte);
+    leafletKarte.on('moveend', () => ladeOrte());
+    await ladeOrte(true);
+  } else {
+    setTimeout(() => leafletKarte.invalidateSize(), 50);
+  }
+}
+
+async function ladeOrte(zentrieren = false) {
+  const lauf = ++karteLauf;
+  const d = await api(`/api/v1/orte?zoom=${Math.round(leafletKarte.getZoom())}`);
+  if (lauf !== karteLauf) return;
+  karteMarker.clearLayers();
+  const punkte = [];
+  for (const g of d.gruppen) {
+    const icon = L.divIcon({ className: '', html: `<div class="punkt${g.anzahl > 99 ? ' gross' : ''}">${g.anzahl}</div>`, iconSize: [36, 36] });
+    const m = L.marker([g.breite, g.laenge], { icon });
+    m.on('click', async () => {
+      if (g.anzahl > 1 && leafletKarte.getZoom() < 17) { leafletKarte.setView([g.breite, g.laenge], leafletKarte.getZoom() + 2); return; }
+      const r = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: g.ids } });
+      karteGruppe = { aufnahmen: r.aufnahmen, titel: `${g.anzahl} Aufnahme${g.anzahl === 1 ? '' : 'n'} an diesem Ort` };
+      location.hash = '#/karte/gruppe';
+    });
+    m.addTo(karteMarker);
+    punkte.push([g.breite, g.laenge]);
+  }
+  if (zentrieren && punkte.length) leafletKarte.fitBounds(punkte, { padding: [30, 30], maxZoom: 12 });
+}
+
 // --- Verwaltung (nur Verwalter) -------------------------------------------
 
 const gb = (b) => `${(b / 1073741824).toFixed(1)} GB`;
@@ -633,6 +682,15 @@ async function zeigeWeg() {
       case 'alben': await (teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
+      case 'karte':
+        if (teile[1] === 'gruppe' && karteGruppe) {
+          markiereNav('karte');
+          zeigeBereich(['raster']);
+          zeigeListe({ aufnahmen: karteGruppe.aufnahmen }, karteGruppe.titel);
+        } else {
+          await zeigeKarte();
+        }
+        break;
       case 'papierkorb': await zeigePapierkorb(); break;
       default: await zeigeFotos();
     }
