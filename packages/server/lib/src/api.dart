@@ -176,6 +176,7 @@ Handler baueApi({
     ..get('/api/v1/reisen', api.reisen)
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/orte', api.orte)
+    ..get('/api/v1/statistik', api.statistik)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
     ..get('/api/v1/papierkorb', api.papierkorb)
@@ -522,6 +523,30 @@ class _Api {
 
   /// Die Aufnahmen mit Ort als Punkte für die Karte im Browser, bei
   /// `?zoom=` zusammengefasst wie auf dem Telefon (siehe [kartengruppen]).
+  /// Die Kennzahlen der Analyseseite des Rechners (LibraryStats) in Zahlen,
+  /// damit der Browser dieselbe Statistik zeigt: Anzahl, Speicher, Aufnahmen
+  /// je Jahr und Monat, häufigste Kameras.
+  Future<Response> statistik(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final s = await db.loadLibraryStats();
+    return _json({
+      'insgesamt': s.totalCount,
+      'fotos': s.imageCount,
+      'videos': s.videoCount,
+      'favoriten': s.favoriteCount,
+      'papierkorb': s.trashedCount,
+      'gesperrt': s.lockedCount,
+      'bytes': s.totalSizeBytes,
+      'proJahr': {for (final e in s.countsByYear.entries) '${e.key}': e.value},
+      'proMonat': {
+        for (final e in s.countsByMonth.entries) '${e.key}': e.value,
+      },
+      'kameras': [
+        for (final k in s.topCameras) {'name': k.label, 'anzahl': k.count},
+      ],
+    });
+  }
+
   Future<Response> orte(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final zoom =

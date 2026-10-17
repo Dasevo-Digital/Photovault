@@ -253,6 +253,40 @@ void main() {
     },
   );
 
+  test(
+    'Statistik: Kennzahlen wie auf dem Rechner, je Konto getrennt',
+    () async {
+      final a = await ladeHoch(erikaToken, 's1.jpg', 10);
+      await ladeHoch(erikaToken, 's2.jpg', 60);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await (db.update(db.assets)..where((t) => t.id.equals(a))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
+      final s = await jsonAus(
+        await frag('GET', '/api/v1/statistik', token: erikaToken),
+      );
+      expect(s['insgesamt'], 1);
+      expect(s['fotos'], 1);
+      expect(s['videos'], 0);
+      expect(s['papierkorb'], 1);
+      expect(s['bytes'], greaterThan(0));
+      final proJahr = (s['proJahr']! as Map).cast<String, int>();
+      expect(proJahr.values.fold(0, (x, y) => x + y), 1);
+      expect(
+        (s['proMonat']! as Map).cast<String, int>().values.fold(
+          0,
+          (x, y) => x + y,
+        ),
+        1,
+      );
+      expect(s['kameras'], isA<List>());
+      final fremd = await jsonAus(
+        await frag('GET', '/api/v1/statistik', token: maxToken),
+      );
+      expect(fremd['insgesamt'], 0);
+    },
+  );
+
   test('Orte: Punkte je Zoom, und die Zeilen zu einer Gruppe', () async {
     final a = await ladeHoch(erikaToken, 'tor.jpg', 10);
     final b = await ladeHoch(erikaToken, 'dom.jpg', 60);

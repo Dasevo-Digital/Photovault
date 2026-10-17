@@ -130,3 +130,23 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
   .leaflet-container { background: #111; }
   .leaflet-control-attribution { background: rgba(0,0,0,.6); color: #ccc; }
 }
+
+/* --- Statistik ------------------------------------------------------------- */
+#bereich-statistik { padding: 0 12px 24px; max-width: 60em; }
+#bereich-statistik h3 { margin: 24px 0 8px; font-size: 1em; }
+.kennzahlen { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.kennzahl { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 12px 14px; }
+.kennzahl .wert { font-size: 1.4em; font-weight: 600; }
+.kennzahl .name { color: var(--leise); font-size: 0.85em; }
+.balken { display: flex; align-items: stretch; gap: 4px; height: 190px; padding: 10px 12px 6px; background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; overflow-x: auto; }
+.balken .spalte { flex: 1 1 0; min-width: 24px; display: flex; flex-direction: column; align-items: center; }
+.balken .wert { font-size: 0.7em; color: var(--leise); height: 1.2em; }
+.balken .raum { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.balken .stab { width: 100%; max-width: 40px; background: var(--akzent); border-radius: 4px 4px 0 0; }
+.balken .achse { font-size: 0.75em; color: var(--leise); margin-top: 4px; white-space: nowrap; }
+.kameras { list-style: none; padding: 6px 0; margin: 0; background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+.kameras li { display: grid; grid-template-columns: minmax(8em, 14em) 1fr 4.5em; gap: 10px; align-items: center; padding: 6px 14px; font-size: 0.9em; }
+.kameras .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kameras .leiste { height: 14px; background: color-mix(in srgb, var(--akzent) 15%, transparent); border-radius: 4px; overflow: hidden; }
+.kameras .fuell { height: 100%; background: var(--akzent); border-radius: 4px; }
+.kameras .n { text-align: right; color: var(--leise); }

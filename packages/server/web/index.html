@@ -19,6 +19,7 @@
     <a href="#/personen" data-bereich="personen">Personen</a>
     <a href="#/karte" data-bereich="karte">Karte</a>
     <a href="#/reisen" data-bereich="reisen">Reisen</a>
+    <a href="#/statistik" data-bereich="statistik">Statistik</a>
     <a href="#/papierkorb" data-bereich="papierkorb">Papierkorb</a>
     <a href="#/konto" data-bereich="konto">Konto</a>
   </nav>
@@ -59,6 +60,19 @@
   </section>
   <section id="bereich-karte" hidden>
     <div id="karte"></div>
+  </section>
+  <section id="bereich-statistik" hidden>
+    <h2>Statistik</h2>
+    <p id="stat-leer" class="leise" hidden>Noch keine Fotos oder Videos in der Bibliothek.</p>
+    <div id="stat-kennzahlen" class="kennzahlen"></div>
+    <div id="stat-diagramme">
+      <h3>Fotos &amp; Videos pro Jahr</h3>
+      <div id="stat-jahre" class="balken" role="img"></div>
+      <h3>Saisonalität – Aufnahmen pro Monat</h3>
+      <div id="stat-monate" class="balken" role="img"></div>
+      <h3 id="stat-kameras-titel">Häufigste Kameras</h3>
+      <ul id="stat-kameras" class="kameras"></ul>
+    </div>
   </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>

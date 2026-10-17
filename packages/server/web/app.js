@@ -306,6 +306,72 @@ async function zeigeReise(id) {
   zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true }, `${d.reise.name} · ${zeitraum.format(new Date(d.reise.von))} – ${zeitraum.format(new Date(d.reise.bis))}`);
 }
 
+const zahl = new Intl.NumberFormat();
+const groesse = (b) => (b >= 1073741824 ? `${(b / 1073741824).toFixed(1)} GB` : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
+const monatsname = new Intl.DateTimeFormat(undefined, { month: 'short' });
+
+function kennzahl(wert, name) {
+  const k = el('div', 'kennzahl');
+  k.append(el('div', 'wert', wert), el('div', 'name', name));
+  return k;
+}
+
+// Ein Balkendiagramm aus Spalten; die Höhe setzt das Skript über das CSSOM,
+// was die CSP erlaubt (sie sperrt nur style-Attribute im Markup).
+function balken(ziel, werte, beschrifte) {
+  ziel.replaceChildren();
+  const max = Math.max(0, ...werte.map(([, n]) => n));
+  ziel.setAttribute('aria-label', werte.map(([k, n]) => `${beschrifte(k)}: ${zahl.format(n)}`).join(', '));
+  for (const [k, n] of werte) {
+    const spalte = el('div', 'spalte');
+    spalte.title = `${beschrifte(k)}: ${zahl.format(n)}`;
+    const raum = el('div', 'raum');
+    const stab = el('div', 'stab');
+    stab.style.height = max ? `${Math.max(n ? 2 : 0, Math.round((n / max) * 100))}%` : '0';
+    raum.append(stab);
+    spalte.append(el('span', 'wert', n ? zahl.format(n) : ''), raum, el('span', 'achse', beschrifte(k)));
+    ziel.append(spalte);
+  }
+}
+
+async function zeigeStatistik() {
+  markiereNav('statistik');
+  zeigeBereich(['statistik']);
+  const s = await api('/api/v1/statistik');
+  $('stat-leer').hidden = s.insgesamt > 0;
+  $('stat-diagramme').hidden = s.insgesamt === 0;
+  $('stat-kennzahlen').replaceChildren(
+    kennzahl(zahl.format(s.insgesamt), 'Medien insgesamt'),
+    kennzahl(zahl.format(s.fotos), 'Fotos'),
+    kennzahl(zahl.format(s.videos), 'Videos'),
+    kennzahl(zahl.format(s.favoriten), 'Favoriten'),
+    kennzahl(groesse(s.bytes), 'Speicherplatz'),
+    kennzahl(zahl.format(s.papierkorb), 'Im Papierkorb'),
+    kennzahl(zahl.format(s.gesperrt), 'Gesperrter Ordner'),
+  );
+  if (s.insgesamt === 0) return;
+  // Jahre lückenlos vom ersten bis zum letzten, damit leere Jahre sichtbar bleiben.
+  const jahre = Object.keys(s.proJahr).map(Number).sort((a, b) => a - b);
+  const jahrWerte = [];
+  for (let j = jahre[0]; j <= jahre[jahre.length - 1]; j++) jahrWerte.push([j, s.proJahr[j] || 0]);
+  balken($('stat-jahre'), jahrWerte, String);
+  balken($('stat-monate'), Array.from({ length: 12 }, (_, i) => [i + 1, s.proMonat[i + 1] || 0]), (m) => monatsname.format(new Date(2000, m - 1, 1)));
+  $('stat-kameras-titel').hidden = $('stat-kameras').hidden = s.kameras.length === 0;
+  $('stat-kameras').replaceChildren();
+  const max = Math.max(0, ...s.kameras.map((k) => k.anzahl));
+  for (const k of s.kameras) {
+    const li = el('li');
+    const leiste = el('div', 'leiste');
+    const fuell = el('div', 'fuell');
+    fuell.style.width = max ? `${Math.round((k.anzahl / max) * 100)}%` : '0';
+    leiste.append(fuell);
+    const name = el('span', 'name', k.name);
+    name.title = k.name;
+    li.append(name, leiste, el('span', 'n', zahl.format(k.anzahl)));
+    $('stat-kameras').append(li);
+  }
+}
+
 async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
@@ -703,6 +769,7 @@ async function zeigeWeg() {
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
+      case 'statistik': await zeigeStatistik(); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');
