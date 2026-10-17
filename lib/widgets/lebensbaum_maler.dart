@@ -4,8 +4,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 
-import '../services/lebensbaum_bild.dart';
-import '../services/lebensbaum_vorlage.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_vorlage.dart';
+import '../services/geometrie_ui.dart';
 import '../theme/zierbaum_farben.dart'
     show zierschrift, zierschriftGross, zierGewicht;
 
@@ -70,7 +71,7 @@ class LebensbaumMaler extends CustomPainter {
       canvas.drawImageRect(
         bild,
         Rect.fromLTWH(0, 0, bild.width.toDouble(), bild.height.toDouble()),
-        Offset.zero & vorlage.groesse,
+        Offset.zero & vorlage.groesse.alsUi,
         Paint()..filterQuality = FilterQuality.high,
       );
     }
@@ -85,7 +86,7 @@ class LebensbaumMaler extends CustomPainter {
             schild.width.toDouble(),
             schild.height.toDouble(),
           ),
-          p.rahmen,
+          p.rahmen.alsUi,
           Paint()..filterQuality = FilterQuality.high,
         );
       }
@@ -93,7 +94,7 @@ class LebensbaumMaler extends CustomPainter {
       final schrift = mitPortrait == null
           ? p.schrift
           : schriftUnterPortraits(p, mitPortrait.contains);
-      _beschrifte(canvas, schrift, [
+      _beschrifte(canvas, schrift.alsUi, [
         for (final id in p.personen) beschriftung(id),
       ], amStamm: p.amStamm);
     }
@@ -101,7 +102,7 @@ class LebensbaumMaler extends CustomPainter {
     if (portraits != null) {
       for (final p in inhalt.plaetze) {
         for (final (kreis, id) in portraitKreise(p, portraits.containsKey)) {
-          _portrait(canvas, kreis, portraits[id]!);
+          _portrait(canvas, kreis.alsUi, portraits[id]!);
         }
       }
     }
@@ -132,7 +133,7 @@ class LebensbaumMaler extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = kreis.width * 0.04
-          ..color = vorlage.nebenschrift,
+          ..color = vorlage.nebenschrift.alsUi,
       );
   }
 
@@ -195,7 +196,7 @@ class LebensbaumMaler extends CustomPainter {
       fontFamily: zierschrift,
       fontSize: groesse * 0.74,
       height: 1.1,
-      color: vorlage.nebenschrift,
+      color: vorlage.nebenschrift.alsUi,
     );
     for (final (n, l) in leute.indexed) {
       if (n > 0) zeile('&', klein);
@@ -210,7 +211,7 @@ class LebensbaumMaler extends CustomPainter {
           fontVariations: zierGewicht(620),
           fontSize: groesse,
           height: 1.05,
-          color: vorlage.schrift,
+          color: vorlage.schrift.alsUi,
         ),
         umbruch: 2,
       );
@@ -264,7 +265,7 @@ class LebensbaumMaler extends CustomPainter {
             fontFamily: zierschriftGross,
             fontSize: groesse,
             wordSpacing: groesse * 0.15,
-            color: vorlage.schrift,
+            color: vorlage.schrift.alsUi,
           ),
         ),
         textDirection: textRichtung,
@@ -290,7 +291,7 @@ class LebensbaumMaler extends CustomPainter {
           fontFamily: zierschrift,
           fontStyle: FontStyle.italic,
           fontSize: math.min(unten.height * 0.6, groesse * 0.42),
-          color: vorlage.nebenschrift,
+          color: vorlage.nebenschrift.alsUi,
         ),
       ),
       textAlign: TextAlign.center,

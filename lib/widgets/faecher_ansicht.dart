@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:kern/db/database.dart';
-import '../services/faechertafel.dart';
+import 'package:kern/services/faechertafel.dart';
 import 'package:kern/services/stammbaum.dart';
 import '../theme/app_spacing.dart';
 

@@ -10,10 +10,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/lebensbaum.dart';
-import 'package:photo_vault/services/lebensbaum_bild.dart';
-import 'package:photo_vault/services/lebensbaum_vorlage.dart';
-import 'package:photo_vault/services/zierbaum.dart';
+import 'package:kern/services/lebensbaum.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_vorlage.dart';
+import 'package:kern/services/zierbaum.dart';
+import 'package:photo_vault/services/geometrie_ui.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
 
@@ -144,7 +145,7 @@ void main() {
         }
       }
       const faktor = 2.0;
-      final groesse = vorlage.groesse * faktor;
+      final groesse = (vorlage.groesse * faktor).alsUi;
       final aufnahme = ui.PictureRecorder();
       LebensbaumMaler(
         inhalt: inhalt,

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/faechertafel.dart';
+import 'package:kern/services/faechertafel.dart';
 import 'package:kern/services/stammbaum.dart';
 
 /// Der Fächer und die Nachfahrengliederung.

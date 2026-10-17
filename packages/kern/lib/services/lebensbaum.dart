@@ -22,10 +22,10 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:ui';
+import 'geometrie.dart';
 
 import 'faechertafel.dart' show elternFuerTafel;
-import 'package:kern/services/stammbaum.dart';
+import 'stammbaum.dart';
 
 enum Lebensbaumrichtung {
   vorfahren,

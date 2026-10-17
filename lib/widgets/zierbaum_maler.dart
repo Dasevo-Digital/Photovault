@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../services/zierbaum.dart';
+import 'package:kern/services/zierbaum.dart';
 import '../theme/zierbaum_farben.dart';
 import 'zierbaum_ansicht.dart' show Schildinhalt;
 

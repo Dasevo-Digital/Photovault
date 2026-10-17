@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
 import 'lebensbaum_maler.dart';
 import 'profilbild.dart';
+import '../services/geometrie_ui.dart';
 
 /// Der Lebensbaum auf dem Schirm.
 ///
@@ -45,7 +46,7 @@ class LebensbaumAnsicht extends StatelessWidget {
               if (portrait(id) != null) id,
           };
     return SizedBox.fromSize(
-      size: vorlage.groesse,
+      size: vorlage.groesse.alsUi,
       child: Stack(
         children: [
           Positioned.fill(
@@ -64,7 +65,7 @@ class LebensbaumAnsicht extends StatelessWidget {
             for (final p in inhalt.plaetze)
               if (p.zuSetzen)
                 Positioned.fromRect(
-                  rect: p.rahmen,
+                  rect: p.rahmen.alsUi,
                   child: Image.asset(
                     schildBild,
                     fit: BoxFit.fill,
@@ -90,14 +91,14 @@ class LebensbaumAnsicht extends StatelessWidget {
             for (final p in inhalt.plaetze)
               for (final (kreis, id) in portraitKreise(p, mitPortrait.contains))
                 Positioned.fromRect(
-                  rect: kreis,
+                  rect: kreis.alsUi,
                   child: IgnorePointer(
                     child: DecoratedBox(
                       position: DecorationPosition.foreground,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: vorlage.nebenschrift,
+                          color: vorlage.nebenschrift.alsUi,
                           width: kreis.width * 0.04,
                         ),
                       ),
@@ -110,7 +111,7 @@ class LebensbaumAnsicht extends StatelessWidget {
                 ),
           for (final (rahmen, id) in inhalt.flaechen)
             Positioned.fromRect(
-              rect: rahmen,
+              rect: rahmen.alsUi,
               child: _Flaeche(
                 inhalt: beschriftung(id),
                 beiTipp: () => beiTipp(id),

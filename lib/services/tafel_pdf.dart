@@ -25,10 +25,10 @@ import '../theme/zierbaum_farben.dart';
 import '../widgets/faecher_ansicht.dart';
 import '../widgets/lebensbaum_maler.dart';
 import '../widgets/zierbaum_maler.dart';
-import 'faechertafel.dart';
-import 'lebensbaum_bild.dart';
+import 'package:kern/services/faechertafel.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/stammbaum.dart';
-import 'zierbaum.dart';
+import 'package:kern/services/zierbaum.dart';
 
 const tafelEndung = '.pdf';
 const tafelEndungOhnePunkt = 'pdf';

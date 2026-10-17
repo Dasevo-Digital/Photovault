@@ -2,13 +2,15 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/lebensbaum.dart';
-import 'package:photo_vault/services/lebensbaum_bild.dart';
-import 'package:photo_vault/services/lebensbaum_vorlage.dart';
-import 'package:photo_vault/services/zierbaum.dart';
+import 'package:kern/services/lebensbaum.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_vorlage.dart';
+import 'package:kern/services/zierbaum.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:photo_vault/widgets/lebensbaum_ansicht.dart';
 import 'package:photo_vault/widgets/lebensbaum_maler.dart';
+import 'package:kern/services/geometrie.dart' as g;
+import 'package:photo_vault/services/geometrie_ui.dart';
 
 /// Der Lebensbaum: eine Linie über mehrere Generationen auf einem
 /// gemalten Baum.
@@ -201,7 +203,7 @@ void main() {
     );
     final gv = plan.knoten.firstWhere((k) => k.personen.single == 'gv');
     expect(plan.personBei(gv.rahmen.center), 'gv');
-    expect(plan.personBei(Offset.zero), isNull);
+    expect(plan.personBei(g.Offset.zero), isNull);
   });
 
   group('Vorlagen', () {
@@ -210,7 +212,7 @@ void main() {
         for (final stil in Lebensbaumstil.values) ...lebensbaumvorlagen(stil),
       ]) {
         final stil = v.stil;
-        final bild = Offset.zero & v.groesse;
+        final bild = g.Offset.zero & v.groesse;
         final alle = [v.wurzel, ...v.felder];
         for (final (i, f) in alle.indexed) {
           expect(bild.contains(f.rahmen.topLeft), isTrue, reason: stil.name);
@@ -350,7 +352,7 @@ void main() {
       expect(b.felder.values.toSet(), {'k1', 'k2', 'e1'});
       final flaechen = vorlage.wurzelflaechen(b);
       expect(vorlage.personBei(b, flaechen[1].center), 'partner');
-      expect(vorlage.personBei(b, Offset.zero), isNull);
+      expect(vorlage.personBei(b, g.Offset.zero), isNull);
     });
   });
 
@@ -496,8 +498,8 @@ void main() {
 
   group('Porträts', () {
     const platz = Lebensbaumplatz(
-      rahmen: Rect.fromLTWH(100, 100, 200, 100),
-      schrift: Rect.fromLTWH(110, 110, 180, 80),
+      rahmen: g.Rect.fromLTWH(100, 100, 200, 100),
+      schrift: g.Rect.fromLTWH(110, 110, 180, 80),
       personen: ['a', 'b'],
     );
 
@@ -533,7 +535,7 @@ void main() {
     final belegung = belegeVorlage(plan, vorlage);
     final inhalt = bildAusBelegung(vorlage, belegung);
     String? getippt;
-    tester.view.physicalSize = vorlage.groesse;
+    tester.view.physicalSize = vorlage.groesse.alsUi;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -552,7 +554,7 @@ void main() {
       ),
     );
     final feld = belegung.felder.entries.firstWhere((e) => e.value == 'gv');
-    await tester.tapAt(vorlage.felder[feld.key].rahmen.center);
+    await tester.tapAt(vorlage.felder[feld.key].rahmen.center.alsUi);
     expect(getippt, 'gv');
     expect(find.bySemanticsLabel('Grad, Name gv'), findsOneWidget);
   });
@@ -574,7 +576,7 @@ void main() {
           ),
           titel: 'Titel',
           untertitel: 'Untertitel',
-        ).paint(ui.Canvas(aufnahme), vorlage.groesse);
+        ).paint(ui.Canvas(aufnahme), vorlage.groesse.alsUi);
         aufnahme.endRecording().dispose();
       }
     }

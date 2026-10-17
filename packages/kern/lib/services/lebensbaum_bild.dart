@@ -12,7 +12,7 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:ui';
+import 'geometrie.dart';
 
 import 'lebensbaum_vorlage.dart';
 import 'zierbaum.dart';

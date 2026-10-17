@@ -17,15 +17,15 @@ import 'package:kern/services/verwandtschaftsgrad.dart';
 import '../services/verwandte_anlegen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
-import '../services/faechertafel.dart';
+import 'package:kern/services/faechertafel.dart';
 import '../services/familienorte.dart';
 import '../services/familienstatistik.dart';
 import '../services/fotostatistik.dart';
 import '../services/gedcom_export.dart';
 import '../services/gedcom_import.dart';
-import '../services/lebensbaum.dart';
-import '../services/lebensbaum_bild.dart';
-import '../services/lebensbaum_vorlage.dart';
+import 'package:kern/services/lebensbaum.dart';
+import 'package:kern/services/lebensbaum_bild.dart';
+import 'package:kern/services/lebensbaum_vorlage.dart';
 import '../services/lebenslauf.dart';
 import '../services/zeitleiste.dart';
 import '../services/tafel_pdf.dart';
@@ -36,7 +36,7 @@ import '../widgets/lebensbaum_maler.dart';
 import '../widgets/familien_zeitleiste.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/sanduhr_ansicht.dart';
-import '../services/zierbaum.dart';
+import 'package:kern/services/zierbaum.dart';
 import '../theme/zierbaum_farben.dart';
 import '../widgets/verwandtschaft_text.dart';
 import '../widgets/zoomsteuerung.dart';
@@ -49,6 +49,7 @@ import 'lebenslauf_screen.dart';
 import 'person_detail_screen.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/profilbild.dart';
+import '../services/geometrie_ui.dart';
 
 /// Der Stammbaum um eine Person herum.
 ///
@@ -1812,7 +1813,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                   '${fenster.width.round()}x${fenster.height.round()}';
               if (_lebensEingepasst != schluessel) {
                 _lebensEingepasst = schluessel;
-                _lebensBlick.value = baumEingepasst(vorlage.groesse, fenster);
+                _lebensBlick.value = baumEingepasst(
+                  vorlage.groesse.alsUi,
+                  fenster,
+                );
               }
               return Stack(
                 children: [
@@ -1859,7 +1863,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                         Offset(fenster.width / 2, fenster.height / 2),
                       ),
                       beiEinpassen: () => _lebensBlick.value = baumEingepasst(
-                        vorlage.groesse,
+                        vorlage.groesse.alsUi,
                         fenster,
                       ),
                     ),

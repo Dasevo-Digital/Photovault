@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../services/zierbaum.dart';
+import 'package:kern/services/zierbaum.dart';
 import '../theme/zierbaum_farben.dart';
 import 'profilbild.dart';
 import 'zierbaum_maler.dart';
