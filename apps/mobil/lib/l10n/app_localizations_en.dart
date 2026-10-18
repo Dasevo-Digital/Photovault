@@ -897,4 +897,40 @@ class AppTexteEn extends AppTexte {
   String angabenSerieTitel(int n) {
     return 'Stack · $n items';
   }
+
+  @override
+  String get bibStatistik => 'Statistics';
+
+  @override
+  String get statLeer => 'No photos or videos in the library yet.';
+
+  @override
+  String get statInsgesamt => 'Total items';
+
+  @override
+  String get statFotos => 'Photos';
+
+  @override
+  String get statVideos => 'Videos';
+
+  @override
+  String get statFavoriten => 'Favorites';
+
+  @override
+  String get statSpeicher => 'Storage';
+
+  @override
+  String get statPapierkorb => 'In the trash';
+
+  @override
+  String get statGesperrt => 'Locked folder';
+
+  @override
+  String get statProJahr => 'Photos & videos per year';
+
+  @override
+  String get statProMonat => 'Seasonality – items per month';
+
+  @override
+  String get statKameras => 'Most used cameras';
 }

@@ -898,4 +898,40 @@ class AppTexteDe extends AppTexte {
   String angabenSerieTitel(int n) {
     return 'Serie · $n Aufnahmen';
   }
+
+  @override
+  String get bibStatistik => 'Statistik';
+
+  @override
+  String get statLeer => 'Noch keine Fotos oder Videos in der Bibliothek.';
+
+  @override
+  String get statInsgesamt => 'Medien insgesamt';
+
+  @override
+  String get statFotos => 'Fotos';
+
+  @override
+  String get statVideos => 'Videos';
+
+  @override
+  String get statFavoriten => 'Favoriten';
+
+  @override
+  String get statSpeicher => 'Speicherplatz';
+
+  @override
+  String get statPapierkorb => 'Im Papierkorb';
+
+  @override
+  String get statGesperrt => 'Gesperrter Ordner';
+
+  @override
+  String get statProJahr => 'Fotos & Videos pro Jahr';
+
+  @override
+  String get statProMonat => 'Saisonalität – Aufnahmen pro Monat';
+
+  @override
+  String get statKameras => 'Häufigste Kameras';
 }

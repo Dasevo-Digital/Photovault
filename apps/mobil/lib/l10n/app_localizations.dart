@@ -1404,6 +1404,78 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Serie · {n} Aufnahmen'**
   String angabenSerieTitel(int n);
+
+  /// No description provided for @bibStatistik.
+  ///
+  /// In de, this message translates to:
+  /// **'Statistik'**
+  String get bibStatistik;
+
+  /// No description provided for @statLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Fotos oder Videos in der Bibliothek.'**
+  String get statLeer;
+
+  /// No description provided for @statInsgesamt.
+  ///
+  /// In de, this message translates to:
+  /// **'Medien insgesamt'**
+  String get statInsgesamt;
+
+  /// No description provided for @statFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos'**
+  String get statFotos;
+
+  /// No description provided for @statVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos'**
+  String get statVideos;
+
+  /// No description provided for @statFavoriten.
+  ///
+  /// In de, this message translates to:
+  /// **'Favoriten'**
+  String get statFavoriten;
+
+  /// No description provided for @statSpeicher.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicherplatz'**
+  String get statSpeicher;
+
+  /// No description provided for @statPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Papierkorb'**
+  String get statPapierkorb;
+
+  /// No description provided for @statGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesperrter Ordner'**
+  String get statGesperrt;
+
+  /// No description provided for @statProJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos & Videos pro Jahr'**
+  String get statProJahr;
+
+  /// No description provided for @statProMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'Saisonalität – Aufnahmen pro Monat'**
+  String get statProMonat;
+
+  /// No description provided for @statKameras.
+  ///
+  /// In de, this message translates to:
+  /// **'Häufigste Kameras'**
+  String get statKameras;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

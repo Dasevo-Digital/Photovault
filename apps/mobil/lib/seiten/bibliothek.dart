@@ -9,6 +9,7 @@ import 'karte.dart';
 import 'personen.dart';
 import 'raster.dart';
 import 'reisen.dart';
+import 'statistik.dart';
 
 /// Was nicht in die Zeitleiste gehört, gesammelt wie in Immich: oben
 /// Favoriten, Papierkorb, Orte, Personen und Reisen (samt Aktivitäten) als
@@ -74,6 +75,12 @@ class Bibliothek extends StatelessWidget {
               text: t.bibReisen,
               onTap: () =>
                   _oeffne(context, t.bibReisen, ReisenSeite(sitzung: sitzung)),
+            ),
+            _Knopf(
+              icon: Icons.bar_chart,
+              text: t.bibStatistik,
+              onTap: () =>
+                  _oeffne(context, t.bibStatistik, Statistik(sitzung: sitzung)),
             ),
           ],
         ),

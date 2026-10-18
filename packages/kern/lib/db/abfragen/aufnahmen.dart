@@ -257,29 +257,37 @@ extension AufnahmenAbfragen on AppDatabase {
   /// zuvor) die komplette Zeitleiste zu laden und in Dart pro Jahr zu
   /// zählen. `strftime('%Y', ...)` arbeitet auf demselben, bereits über
   /// `idx_assets_trashed_locked_created` indexierten Filter.
-  Stream<Map<int, int>> watchAssetCountsByYear() {
-    // 'unixepoch' ist zwingend nötig: drift speichert DateTimeColumn
-    // standardmäßig als Unix-Timestamp (Sekunden) statt als ISO8601-Text –
-    // ohne den Modifier interpretiert SQLites strftime() die rohe Zahl als
-    // Julianisches Datum statt als Unix-Zeit und liefert NULL zurück.
-    const yearExpr = CustomExpression<String>(
-      "strftime('%Y', file_created_at, 'unixepoch')",
-    );
-    final query = selectOnly(assets)
-      ..addColumns([yearExpr, assets.id.count()])
-      ..where(
-        assets.isTrashed.equals(false) &
-            assets.isLocked.equals(false) &
-            _isPrimaryGridEntry(assets),
-      )
-      ..groupBy([yearExpr]);
-    return query.watch().map(
-      (rows) => {
-        for (final row in rows)
-          int.parse(row.read(yearExpr)!): row.read(assets.id.count())!,
-      },
-    );
-  }
+  Stream<Map<int, int>> watchAssetCountsByYear() =>
+      _jahresabfrage().watch().map(_jahreszahlen);
+
+  /// Dasselbe einmal statt fortlaufend – für die Statistik, die ohnehin
+  /// nur auf Anfrage rechnet. (Ein `.first` auf dem Strom hielte in einem
+  /// Widget-Test die Uhr an.)
+  Future<Map<int, int>> assetCountsByYear() =>
+      _jahresabfrage().get().then(_jahreszahlen);
+
+  // 'unixepoch' ist zwingend nötig: drift speichert DateTimeColumn
+  // standardmäßig als Unix-Timestamp (Sekunden) statt als ISO8601-Text –
+  // ohne den Modifier interpretiert SQLites strftime() die rohe Zahl als
+  // Julianisches Datum statt als Unix-Zeit und liefert NULL zurück.
+  static const _jahrAusdruck = CustomExpression<String>(
+    "strftime('%Y', file_created_at, 'unixepoch')",
+  );
+
+  JoinedSelectStatement<HasResultSet, dynamic> _jahresabfrage() =>
+      selectOnly(assets)
+        ..addColumns([_jahrAusdruck, assets.id.count()])
+        ..where(
+          assets.isTrashed.equals(false) &
+              assets.isLocked.equals(false) &
+              _isPrimaryGridEntry(assets),
+        )
+        ..groupBy([_jahrAusdruck]);
+
+  Map<int, int> _jahreszahlen(List<TypedResult> zeilen) => {
+    for (final z in zeilen)
+      int.parse(z.read(_jahrAusdruck)!): z.read(assets.id.count())!,
+  };
 
   Future<int> _countWhere(Expression<bool> predicate) async {
     final countExpr = assets.id.count();
@@ -316,7 +324,7 @@ extension AufnahmenAbfragen on AppDatabase {
         assets.isLocked.equals(true) & assets.isTrashed.equals(false),
       ),
       _loadTotalSizeBytes(),
-      watchAssetCountsByYear().first,
+      assetCountsByYear(),
       _loadCountsByMonth(visible),
       _loadTopCameras(visible),
     ]);

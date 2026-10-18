@@ -386,5 +386,17 @@
   "angabenText": "Recognized text",
   "angabenTranskript": "Transcript",
   "angabenImportiert": "Imported {datum}",
-  "angabenSerieTitel": "Stack · {n} items"
+  "angabenSerieTitel": "Stack · {n} items",
+  "bibStatistik": "Statistics",
+  "statLeer": "No photos or videos in the library yet.",
+  "statInsgesamt": "Total items",
+  "statFotos": "Photos",
+  "statVideos": "Videos",
+  "statFavoriten": "Favorites",
+  "statSpeicher": "Storage",
+  "statPapierkorb": "In the trash",
+  "statGesperrt": "Locked folder",
+  "statProJahr": "Photos & videos per year",
+  "statProMonat": "Seasonality – items per month",
+  "statKameras": "Most used cameras"
 }

@@ -34,6 +34,7 @@ import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
+import 'package:photo_vault_mobil/seiten/statistik.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
@@ -821,6 +822,63 @@ void main() {
     await tester.tap(find.byTooltip('4 von 5'));
     await tester.pumpAndSettle();
     expect((await db.assetById('x1'))!.rating, 0);
+  });
+
+  testWidgets('Statistik wie im Browser: Kennzahlen, Jahre, Monate, Kameras', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['s1', 's2', 's3']);
+    await (db.update(db.assets)..where((t) => t.id.equals('s1'))).write(
+      AssetsCompanion(
+        cameraMake: const Value('Canon'),
+        cameraModel: const Value('EOS R6'),
+        fileCreatedAt: Value(DateTime(2023, 5, 1)),
+        isFavorite: const Value(true),
+      ),
+    );
+    await (db.update(db.assets)..where((t) => t.id.equals('s2'))).write(
+      AssetsCompanion(
+        type: const Value('VIDEO'),
+        fileCreatedAt: Value(DateTime(2025, 6, 1)),
+      ),
+    );
+    await (db.update(db.assets)..where((t) => t.id.equals('s3'))).write(
+      AssetsCompanion(fileCreatedAt: Value(DateTime(2025, 6, 2))),
+    );
+    // Hoch genug, dass alles auf einmal zu sehen ist.
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Statistik(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Statistik)));
+    for (final (wert, name) in [
+      ('3', t.statInsgesamt),
+      ('2', t.statFotos),
+      ('1', t.statVideos),
+    ]) {
+      expect(
+        find.ancestor(of: find.text(name), matching: find.byType(Column)),
+        findsWidgets,
+      );
+      expect(find.text(wert), findsWidgets);
+    }
+    expect(find.text(t.statProJahr), findsOneWidget);
+    expect(find.text(t.statProMonat), findsOneWidget);
+    // Lückenlos von 2023 bis 2025 – auch das leere Jahr dazwischen.
+    for (final j in ['2023', '2024', '2025']) {
+      expect(find.text(j), findsOneWidget);
+    }
+    expect(find.text(t.statKameras), findsOneWidget);
+    expect(find.text('Canon EOS R6'), findsOneWidget);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

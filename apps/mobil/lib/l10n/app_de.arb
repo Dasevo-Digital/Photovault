@@ -542,5 +542,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bibStatistik": "Statistik",
+  "statLeer": "Noch keine Fotos oder Videos in der Bibliothek.",
+  "statInsgesamt": "Medien insgesamt",
+  "statFotos": "Fotos",
+  "statVideos": "Videos",
+  "statFavoriten": "Favoriten",
+  "statSpeicher": "Speicherplatz",
+  "statPapierkorb": "Im Papierkorb",
+  "statGesperrt": "Gesperrter Ordner",
+  "statProJahr": "Fotos & Videos pro Jahr",
+  "statProMonat": "Saisonalität – Aufnahmen pro Monat",
+  "statKameras": "Häufigste Kameras"
 }
