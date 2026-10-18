@@ -54,6 +54,13 @@ void main() {
     // gehörten sie nicht – dort stünden 250 Schlüssel, die niemand je
     // einzeln anfasst, und der englische Teil käme trotzdem aus GeoNames.
     'packages/kern/lib/services/laendernamen.dart',
+    // Die Verwandtschaftsbezeichnungen für die Handy-App – wie die
+    // Ländernamen eine zweisprachige Tabelle, Deutsch und Englisch Seite
+    // an Seite, gewählt nach der Sprache des Telefons. Die Rechner-App
+    // nimmt dieselben Wörter aus ihren ARB-Dateien (verwandtschaft_text.dart);
+    // die Handy-App hat diese Bausteine nicht, und doppelt in ihre ARB
+    // gehörten sie mit über fünfzig Formen je Geschlecht nicht.
+    'packages/kern/lib/services/verwandtschaftstext.dart',
   };
 
   List<String> zuPruefen() {
