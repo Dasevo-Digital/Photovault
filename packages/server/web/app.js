@@ -127,6 +127,8 @@ function baueNavigation() {
     const a = el('a', e.bereich === 'bibliothek' ? 'nur-schmal' : null);
     a.href = e.weg;
     a.dataset.bereich = e.bereich;
+    a.title = t(e.text);
+    a.setAttribute('aria-label', t(e.text));
     a.append(el('span', 'nav-symbol'), el('span', 'nav-text', t(e.text)));
     a.firstChild.append(symbol(e.symbol));
     haupt.append(a);
@@ -145,6 +147,8 @@ function baueNavigation() {
       const a = el('a');
       a.href = e.weg;
       a.dataset.bereich = e.bereich;
+      a.title = t(e.text);
+      a.setAttribute('aria-label', t(e.text));
       a.append(farbsymbol(e), el('span', 'nav-text', t(e.text)));
       gruppe.append(a);
     }
@@ -170,6 +174,22 @@ function baueNavigation() {
   }
 }
 baueNavigation();
+
+// Die Seitenleiste lässt sich zu einer Leiste aus Symbolen einklappen;
+// der Browser merkt es sich (nur dieser, nur als Bequemlichkeit).
+const NAV_MERKER = 'pv-nav-schmal';
+function setzeNavSchmal(schmal) {
+  document.body.classList.toggle('nav-schmal', schmal);
+  $('nav-umschalter').setAttribute('aria-expanded', String(!schmal));
+  // Die Karte misst ihre Fläche nur beim Anlegen nach.
+  setTimeout(() => { if (typeof leafletKarte !== 'undefined' && leafletKarte) leafletKarte.invalidateSize(); }, 250);
+}
+try { setzeNavSchmal(localStorage.getItem(NAV_MERKER) === '1'); } catch (_) { /* privat */ }
+$('nav-umschalter').addEventListener('click', () => {
+  const schmal = !document.body.classList.contains('nav-schmal');
+  setzeNavSchmal(schmal);
+  try { localStorage.setItem(NAV_MERKER, schmal ? '1' : '0'); } catch (_) { /* privat */ }
+});
 
 const BEREICHSTITEL = Object.fromEntries([
   ...HAUPTBEREICHE.map((e) => [e.bereich, e.text]),
@@ -844,46 +864,29 @@ async function zeigeStammbaum(fokus) {
 
 function baumSvg(d) {
   const nachId = Object.fromEntries(d.personen.map((p) => [p.id, p]));
-  const kB = 118, kH = 140, abstand = 10, hausAbstand = 36, bandH = 200, rand = 24;
-  const baender = [...new Set(d.haushalte.map((h) => h.band))].sort((a, b) => a - b);
-  // Breite je Band, dann alles auf die breiteste Zeile mittig.
-  const breiteVon = (h) => h.personen.length * kB + (h.personen.length - 1) * abstand;
-  const bandBreite = {};
-  for (const b of baender) bandBreite[b] = d.haushalte.filter((h) => h.band === b).reduce((s, h, i) => s + breiteVon(h) + (i ? hausAbstand : 0), 0);
-  const gesamt = Math.max(...Object.values(bandBreite)) + 2 * rand;
-  const hoehe = baender.length * bandH + 2 * rand;
+  const kB = 118, kH = 140;
+  // Die Plätze rechnet der Server wie der Rechner (zierbaumplan): Kinder
+  // unter ihren Elternhäusern. Vorher wurden die Haushalte eines Bandes
+  // nur der Reihe nach gesetzt, und ein Kind konnte unter dem falschen
+  // Paar stehen.
+  const plan = d.plan;
+  const gesamt = plan.breite, hoehe = plan.hoehe;
   const svg = svgEl('svg', { viewBox: `0 0 ${gesamt} ${hoehe}`, width: gesamt * baumZoomWert, height: hoehe * baumZoomWert });
   svg.dataset.breite = gesamt;
   svg.dataset.hoehe = hoehe;
   const defs = svgEl('defs');
   svg.append(defs);
-  const lage = {}; // personId -> {x, y, mitte}
-  const hausLage = {}; // haushaltId -> {mitte, unten, oben}
-  baender.forEach((b, zeile) => {
-    const y = rand + zeile * bandH + 20;
-    let x = (gesamt - bandBreite[b]) / 2;
-    for (const h of d.haushalte.filter((x) => x.band === b)) {
-      const links = x;
-      h.personen.forEach((id, i) => {
-        const px = x + i * (kB + abstand);
-        lage[id] = { x: px, y, mitte: px + kB / 2 };
-        if (i > 0) svg.append(svgEl('line', { class: 'baum-paar', x1: px - abstand, y1: y + 46, x2: px, y2: y + 46 }));
-      });
-      const breite = breiteVon(h);
-      hausLage[h.id] = { mitte: links + breite / 2, unten: y + kH, oben: y };
-      x += breite + hausAbstand;
-    }
-  });
-  // Äste: vom Elternhaus (unten) orthogonal zur Person (oben).
-  for (const [kind, haeuser] of Object.entries(d.elternhaeuser)) {
-    const k = lage[kind];
-    if (!k) continue;
-    for (const hid of haeuser) {
-      const h = hausLage[hid];
-      if (!h) continue;
-      const mitteY = (h.unten + k.y) / 2;
-      svg.append(svgEl('path', { class: 'baum-kante', d: `M${h.mitte},${h.unten} V${mitteY} H${k.mitte} V${k.y}` }));
-    }
+  const lage = {}; // personId -> {x, y}
+  for (const s of plan.schilder) lage[s.id] = { x: s.x, y: s.y };
+  // Äste: vom Schild (oben) in einer Kurve zur Mitte des Elternhauses.
+  for (const a of plan.aeste) {
+    const m = (a.y1 + a.y2) / 2;
+    svg.append(svgEl('path', { class: 'baum-kante', d: `M${a.x1},${a.y1} C${a.x1},${m} ${a.x2},${m} ${a.x2},${a.y2}` }));
+  }
+  // Partner: auf Höhe der Bilder verbunden.
+  for (const p of plan.paare) {
+    const y = p.y - kH / 2 + 46;
+    svg.append(svgEl('line', { class: 'baum-paar', x1: p.x1, y1: y, x2: p.x2, y2: y }));
   }
   // Schilder.
   let n = 0;

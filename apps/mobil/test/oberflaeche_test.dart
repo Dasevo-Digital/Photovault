@@ -983,6 +983,88 @@ void main() {
     expect(find.text(t.einstGespeichert), findsOneWidget);
   });
 
+  testWidgets('Stammbaum: jedes Kind unter seinem Elternhaus', (tester) async {
+    // Dieselbe Familie wie im Servertest: Der Neffe ist der Älteste und
+    // stand der Reihe nach gesetzt unter dem Bruder – wie dessen Sohn.
+    tester.view.physicalSize = const Size(2400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (sitzung, db) = await sitzungMit(tester, ['f1']);
+    Future<void> b(String art, Map<String, Object?> werte) =>
+        db.fuehreAus(Befehl.ausJson({'art': art, 'werte': werte}));
+    for (final id in [
+      'Oma',
+      'Bruder',
+      'Partnerin',
+      'Schwester',
+      'Schwager',
+      'Kind1',
+      'Kind2',
+      'Neffe',
+    ]) {
+      await b('personAnlegen', {'personId': id, 'name': id});
+    }
+    Future<void> eltern(String kind, String e) => b('beziehungHinzufuegen', {
+      'personId': kind,
+      'andereId': e,
+      'verwandtschaft': 'elternteil',
+    });
+    Future<void> paar(String x, String y) => b('beziehungHinzufuegen', {
+      'personId': x,
+      'andereId': y,
+      'verwandtschaft': 'partner',
+    });
+    await eltern('Bruder', 'Oma');
+    await eltern('Schwester', 'Oma');
+    await paar('Bruder', 'Partnerin');
+    await paar('Schwester', 'Schwager');
+    await eltern('Neffe', 'Schwester');
+    await eltern('Neffe', 'Schwager');
+    for (final k in ['Kind1', 'Kind2']) {
+      await eltern(k, 'Bruder');
+      await eltern(k, 'Partnerin');
+    }
+    for (final (id, jahr) in [
+      ('Neffe', 2018),
+      ('Kind1', 2022),
+      ('Kind2', 2024),
+    ]) {
+      await b('lebensdatenSetzen', {
+        'personId': id,
+        'geburt': DateTime(jahr, 5, 1).toIso8601String(),
+        'tod': null,
+      });
+    }
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Stammbaum(sitzung: sitzung, fokus: 'Oma'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    double x(String name) => tester
+        .getCenter(
+          find.descendant(
+            of: find.byType(InteractiveViewer),
+            matching: find.text(name),
+          ),
+        )
+        .dx;
+    final bruderHaus = (x('Bruder') + x('Partnerin')) / 2;
+    final schwesterHaus = (x('Schwester') + x('Schwager')) / 2;
+    expect(
+      (x('Neffe') - schwesterHaus).abs(),
+      lessThan((x('Neffe') - bruderHaus).abs()),
+    );
+    for (final k in ['Kind1', 'Kind2']) {
+      expect((x(k) - bruderHaus).abs(), lessThan((x(k) - schwesterHaus).abs()));
+    }
+  });
+
   testWidgets('Stammbaum wie im Browser: Bänder, Karten, Fokus wählbar', (
     tester,
   ) async {

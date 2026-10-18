@@ -584,6 +584,92 @@ void main() {
     },
   );
 
+  test(
+    'Stammbaum: jedes Kind steht unter seinem Elternhaus, nicht der Reihe nach',
+    () async {
+      // Zwei Geschwister mit Partnern, darunter ihre Kinder. Das Geflecht
+      // führt das Kind der Schwester vor denen des Bruders – der Reihe
+      // nach gesetzt stand es unter dem Bruder und sah aus wie sein Sohn.
+      for (final id in [
+        'oma',
+        'bruder',
+        'partnerin',
+        'schwester',
+        'schwager',
+        'kind1',
+        'kind2',
+        'neffe',
+      ]) {
+        await befehl(erikaToken, 'personAnlegen', {'personId': id, 'name': id});
+      }
+      Future<void> eltern(String kind, String elternteil) =>
+          befehl(erikaToken, 'beziehungHinzufuegen', {
+            'personId': kind,
+            'andereId': elternteil,
+            'verwandtschaft': 'elternteil',
+          });
+      Future<void> paar(String a, String b) => befehl(
+        erikaToken,
+        'beziehungHinzufuegen',
+        {'personId': a, 'andereId': b, 'verwandtschaft': 'partner'},
+      );
+      await eltern('bruder', 'oma');
+      await eltern('schwester', 'oma');
+      await paar('bruder', 'partnerin');
+      await paar('schwester', 'schwager');
+      await eltern('neffe', 'schwester');
+      await eltern('neffe', 'schwager');
+      for (final k in ['kind1', 'kind2']) {
+        await eltern(k, 'bruder');
+        await eltern(k, 'partnerin');
+      }
+      // Der Neffe ist der Älteste – nach Alter geordnet kommt er zuerst.
+      for (final (id, jahr) in [
+        ('neffe', 2018),
+        ('kind1', 2022),
+        ('kind2', 2024),
+      ]) {
+        await befehl(erikaToken, 'lebensdatenSetzen', {
+          'personId': id,
+          'geburt': DateTime(jahr, 5, 1).toIso8601String(),
+          'tod': null,
+        });
+      }
+      final d = await jsonAus(
+        await frag('GET', '/api/v1/stammbaum?fokus=oma', token: erikaToken),
+      );
+      // So stand es vorher im Geflecht – der Reihe nach gesetzt also
+      // links, unter dem Bruder.
+      final kinder = [
+        for (final h in (d['haushalte']! as List).cast<Map>())
+          if (h['band'] == 2) ...(h['personen'] as List),
+      ];
+      expect(kinder.first, 'neffe');
+      final plan = d['plan']! as Map;
+      final mitte = {
+        for (final s in (plan['schilder']! as List).cast<Map>())
+          s['id'] as String: (s['x'] as num) + 59,
+      };
+      double haus(String a, String b) => (mitte[a]! + mitte[b]!) / 2;
+      final bruderHaus = haus('bruder', 'partnerin');
+      final schwesterHaus = haus('schwester', 'schwager');
+      double naeher(String kind, double zu, double weg) =>
+          (mitte[kind]! - weg).abs() - (mitte[kind]! - zu).abs();
+      expect(naeher('neffe', schwesterHaus, bruderHaus), greaterThan(0));
+      for (final k in ['kind1', 'kind2']) {
+        expect(naeher(k, bruderHaus, schwesterHaus), greaterThan(0));
+      }
+      // Die Äste enden an den Häusern, aus denen die Kinder stammen.
+      final aeste = (plan['aeste']! as List).cast<Map>();
+      final astNeffe = aeste.singleWhere((a) => a['id'] == 'neffe');
+      expect(((astNeffe['x2'] as num) - schwesterHaus).abs(), lessThan(1));
+      // Die Kinder des Bruders stehen beieinander, der Neffe nicht dazwischen.
+      final reihe = ['kind1', 'kind2', 'neffe']
+        ..sort((a, b) => mitte[a]!.compareTo(mitte[b]!));
+      expect(reihe.indexOf('neffe'), anyOf(0, 2));
+    },
+  );
+
   test('Einstellungen: Vorgaben lesen, über Befehle ändern', () async {
     Future<Map<String, Object?>> lies() async =>
         jsonAus(await frag('GET', '/api/v1/einstellungen', token: erikaToken));

@@ -1,9 +1,32 @@
 import '../db/database.dart';
 import 'stammbaum.dart';
+import 'zierbaum.dart';
+
+/// Die Masse von Browser und Telefon: Schild 118 × 140, darüber und
+/// darunter Platz für die Pfeile auf weitere Verwandte.
+const stammbaumMasse = Zierbaummasse(
+  schildBreite: 118,
+  schildHoehe: 140,
+  partnerLuecke: 10,
+  haushaltLuecke: 36,
+  bandLuecke: 60,
+  rand: 24,
+  randUnten: 24,
+);
 
 /// Der Stammbaum um eine Person, wie Browser (über den Server) und Telefon
 /// ihn zeigen: dasselbe Geflecht wie am Rechner ([geflechtUm]) – Haushalte
-/// je Generationsband und die Elternhäuser jeder Person.
+/// je Generationsband und die Elternhäuser jeder Person – und dieselbe
+/// Anordnung ([zierbaumplan]).
+///
+/// **Die Anordnung kommt mit.** Vorher setzten Browser und Telefon die
+/// Haushalte eines Bandes einfach in der Reihenfolge des Geflechts von
+/// links nach rechts. Die folgt aber nicht den Elternhäusern: Unter
+/// „Bruder + Partnerin“ und „Schwester + Schwager“ stand das Kind der
+/// Schwester ganz links – genau unter dem Bruder –, und sein Ast lief auf
+/// derselben Höhe wie die der Kinder des Bruders. Im Bild war es dessen
+/// Sohn. Der Rechner rechnet die Plätze aus den Elternhäusern; jetzt tun
+/// es alle drei.
 typedef Stammbaumansicht = ({
   /// `null`, wenn es noch keine Person gibt.
   String? fokus,
@@ -14,6 +37,9 @@ typedef Stammbaumansicht = ({
   /// Wer überhaupt Verwandtschaft eingetragen hat.
   Set<String> verwandt,
   Stammbaumgeflecht? geflecht,
+
+  /// Wo jedes Schild steht und wohin die Äste laufen, in [stammbaumMasse].
+  Zierbaumplan? plan,
 });
 
 /// Ohne [fokus] die zuletzt am Rechner gewählte Person, sonst die erste
@@ -29,6 +55,7 @@ Future<Stammbaumansicht> stammbaumansicht(
       personen: const <PersonData>[],
       verwandt: const <String>{},
       geflecht: null,
+      plan: null,
     );
   }
   final netz = Verwandtschaftsnetz([
@@ -53,10 +80,12 @@ Future<Stammbaumansicht> stammbaumansicht(
         )
         .id;
   }
+  final geflecht = geflechtUm(netz, f, [for (final p in personen) p.id]);
   return (
     fokus: f,
     personen: personen,
     verwandt: verwandt,
-    geflecht: geflechtUm(netz, f, [for (final p in personen) p.id]),
+    geflecht: geflecht,
+    plan: zierbaumplan(geflecht, masse: stammbaumMasse),
   );
 }

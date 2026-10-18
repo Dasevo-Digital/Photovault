@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
+import 'package:kern/services/zierbaum.dart';
 
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
@@ -35,10 +36,6 @@ class Stammbaum extends StatefulWidget {
   @override
   State<Stammbaum> createState() => _StammbaumState();
 }
-
-// Die Masse des Browsers: Karte, Abstände, Bandhöhe, Rand.
-const _kB = 118.0, _kH = 140.0, _abstand = 10.0, _hausAbstand = 36.0;
-const _bandH = 200.0, _rand = 24.0;
 
 class _StammbaumState extends State<Stammbaum> {
   late String? _fokus = widget.fokus;
@@ -142,8 +139,6 @@ class _StammbaumState extends State<Stammbaum> {
   }
 }
 
-typedef _Lage = ({double x, double y, double mitte});
-
 class _Baum extends StatefulWidget {
   const _Baum({
     super.key,
@@ -180,58 +175,11 @@ class _BaumState extends State<_Baum> {
   Widget build(BuildContext context) {
     final g = widget.geflecht;
     final nachId = {for (final p in ansicht.personen) p.id: p};
-    final baender = {for (final h in g.haushalte) g.band[h.id] ?? 0}.toList()
-      ..sort();
-    double breiteVon(Haushalt h) =>
-        h.personen.length * _kB + (h.personen.length - 1) * _abstand;
-    final bandBreite = <int, double>{
-      for (final b in baender)
-        b: [
-          for (final h in g.haushalte)
-            if ((g.band[h.id] ?? 0) == b) breiteVon(h),
-        ].fold<double>(0, (s, w) => s + w),
-    };
-    for (final b in baender) {
-      final n = g.haushalte.where((h) => (g.band[h.id] ?? 0) == b).length;
-      bandBreite[b] = bandBreite[b]! + (n - 1) * _hausAbstand;
-    }
-    final gesamt = bandBreite.values.fold<double>(0, math.max) + 2 * _rand;
-    final hoehe = baender.length * _bandH + 2 * _rand;
-    final lage = <String, _Lage>{};
-    final hausLage = <String, ({double mitte, double unten})>{};
-    final paare = <Offset>[];
-    for (final (zeile, b) in baender.indexed) {
-      final y = _rand + zeile * _bandH + 20;
-      var x = (gesamt - bandBreite[b]!) / 2;
-      for (final h in g.haushalte.where((h) => (g.band[h.id] ?? 0) == b)) {
-        final links = x;
-        for (final (i, id) in h.personen.indexed) {
-          final px = x + i * (_kB + _abstand);
-          lage[id] = (x: px, y: y, mitte: px + _kB / 2);
-          if (i > 0) paare.add(Offset(px - _abstand, y + 46));
-        }
-        final breite = breiteVon(h);
-        hausLage[h.id] = (mitte: links + breite / 2, unten: y + _kH);
-        x += breite + _hausAbstand;
-      }
-    }
-    final aeste = <List<Offset>>[];
-    for (final MapEntry(key: kind, value: haeuser)
-        in g.elternhaeuserVon.entries) {
-      final k = lage[kind];
-      if (k == null) continue;
-      for (final hid in haeuser) {
-        final h = hausLage[hid];
-        if (h == null) continue;
-        final mitteY = (h.unten + k.y) / 2;
-        aeste.add([
-          Offset(h.mitte, h.unten),
-          Offset(h.mitte, mitteY),
-          Offset(k.mitte, mitteY),
-          Offset(k.mitte, k.y),
-        ]);
-      }
-    }
+    // Die Plätze rechnet der Kern wie für den Rechner (zierbaumplan):
+    // Kinder unter ihren Elternhäusern statt der Reihe nach.
+    final plan = ansicht.plan!;
+    final gesamt = plan.breite;
+    final hoehe = plan.hoehe;
     final farben = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, c) {
@@ -256,26 +204,25 @@ class _BaumState extends State<_Baum> {
                 Positioned.fill(
                   child: CustomPaint(
                     painter: _Aeste(
-                      aeste: aeste,
-                      paare: paare,
+                      plan: plan,
                       linie: farben.onSurfaceVariant,
                       paar: farben.primary,
                     ),
                   ),
                 ),
-                for (final MapEntry(key: id, value: l) in lage.entries)
+                for (final schild in plan.schilder)
                   Positioned(
-                    left: l.x,
-                    top: l.y - 20,
-                    width: _kB,
-                    height: _kH + 40,
+                    left: schild.links,
+                    top: schild.oben - 20,
+                    width: schild.breite,
+                    height: schild.hoehe + 40,
                     child: _Karte(
                       sitzung: sitzung,
-                      person: nachId[id],
-                      fokus: id == ansicht.fokus,
-                      oben: g.weitereOben[id] ?? false,
-                      unten: g.weitereUnten[id] ?? false,
-                      onTap: () => waehle(id),
+                      person: nachId[schild.personId],
+                      fokus: schild.personId == ansicht.fokus,
+                      oben: g.weitereOben[schild.personId] ?? false,
+                      unten: g.weitereUnten[schild.personId] ?? false,
+                      onTap: () => waehle(schild.personId),
                     ),
                   ),
               ],
@@ -288,15 +235,9 @@ class _BaumState extends State<_Baum> {
 }
 
 class _Aeste extends CustomPainter {
-  _Aeste({
-    required this.aeste,
-    required this.paare,
-    required this.linie,
-    required this.paar,
-  });
+  _Aeste({required this.plan, required this.linie, required this.paar});
 
-  final List<List<Offset>> aeste;
-  final List<Offset> paare;
+  final Zierbaumplan plan;
   final Color linie;
   final Color paar;
 
@@ -306,27 +247,29 @@ class _Aeste extends CustomPainter {
       ..color = linie
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-    for (final a in aeste) {
+    // Vom Schild oben in einer Kurve zur Mitte des Elternhauses – wie im
+    // Browser und am Rechner.
+    for (final a in plan.aeste) {
       canvas.drawPath(
         Path()
-          ..moveTo(a.first.dx, a.first.dy)
-          ..lineTo(a[1].dx, a[1].dy)
-          ..lineTo(a[2].dx, a[2].dy)
-          ..lineTo(a[3].dx, a[3].dy),
+          ..moveTo(a.vonX, a.vonY)
+          ..cubicTo(a.vonX, a.steuer1Y, a.nachX, a.steuer2Y, a.nachX, a.nachY),
         ast,
       );
     }
+    // Partner: auf Höhe der Bilder verbunden.
     final p = Paint()
       ..color = paar
       ..strokeWidth = 2;
-    for (final o in paare) {
-      canvas.drawLine(o, o.translate(_abstand, 0), p);
+    for (final b in plan.baender) {
+      final y = b.y - stammbaumMasse.schildHoehe / 2 + 46;
+      canvas.drawLine(Offset(b.vonX, y), Offset(b.nachX, y), p);
     }
   }
 
   @override
   bool shouldRepaint(_Aeste alt) =>
-      alt.aeste != aeste || alt.paare != paare || alt.linie != linie;
+      alt.plan != plan || alt.linie != linie || alt.paar != paar;
 }
 
 /// Lange Namen auf zwei Zeilen, am letzten Leerzeichen vor der Grenze –

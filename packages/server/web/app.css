@@ -60,7 +60,20 @@ input { font: inherit; }
   .nav-gruppe { margin-top: 16px; }
   .nav-gruppe h2 { margin: 0 10px 6px; font-size: .72em; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--leise); }
   .nur-schmal { display: none !important; }
+  #nav, #kopf, #inhalt, #auswahlleiste { transition: width .2s ease, margin-left .2s ease, left .2s ease; }
+  #kopf #nav-umschalter { width: 36px; padding: 0; justify-content: center; margin-left: -6px; border-color: transparent; background: none; color: var(--leise); }
+  #kopf #nav-umschalter:hover { background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+  /* Eingeklappt: nur die Symbole, die Namen stehen im Tooltip. */
+  body.nav-schmal { --seite: 68px; }
+  body.nav-schmal #nav { padding: 14px 10px 24px; overflow-x: hidden; }
+  body.nav-schmal .nav-text, body.nav-schmal .nav-marke span { display: none; }
+  body.nav-schmal .nav-marke { justify-content: center; padding: 4px 0 16px; }
+  body.nav-schmal .nav-haupt a, body.nav-schmal .nav-gruppe a { justify-content: center; padding: 7px 0; }
+  body.nav-schmal .nav-gruppe { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rand); }
+  body.nav-schmal .nav-gruppe h2 { display: none; }
 }
+#kopf #nav-umschalter { display: none; }
+@media (min-width: 900px) { #kopf #nav-umschalter { display: inline-flex; } }
 @media (max-width: 899.98px) {
   :root { --unten: calc(64px + env(safe-area-inset-bottom)); }
   .nav-marke, .nav-gruppe { display: none; }

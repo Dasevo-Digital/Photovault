@@ -43,6 +43,7 @@ const EN = {
   'Entdecken': 'Explore',
   'Verwalten': 'Manage',
   'Bereiche': 'Sections',
+  'Seitenleiste ein- oder ausklappen': 'Collapse or expand the sidebar',
   'Karte': 'Map',
   'Reisen': 'Trips',
   'Stammbaum': 'Family tree',

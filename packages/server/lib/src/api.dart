@@ -809,6 +809,30 @@ class _Api {
           if (e.value) e.key,
       ],
       'verschwiegen': g.verschwiegen,
+      // Die Plätze, wie der Rechner sie rechnet (siehe stammbaumansicht).
+      if (s.plan case final plan?)
+        'plan': {
+          'breite': plan.breite,
+          'hoehe': plan.hoehe,
+          'schilder': [
+            for (final x in plan.schilder)
+              {'id': x.personId, 'x': x.links, 'y': x.oben},
+          ],
+          'aeste': [
+            for (final a in plan.aeste)
+              {
+                'id': a.personId,
+                'x1': a.vonX,
+                'y1': a.vonY,
+                'x2': a.nachX,
+                'y2': a.nachY,
+              },
+          ],
+          'paare': [
+            for (final b in plan.baender)
+              {'x1': b.vonX, 'x2': b.nachX, 'y': b.y},
+          ],
+        },
     });
   }
 
