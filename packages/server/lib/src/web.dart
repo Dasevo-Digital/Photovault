@@ -7,6 +7,7 @@ import 'package:shelf/shelf.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'konten/kontodienst.dart';
+import 'packen.dart';
 
 /// Die Weboberfläche: ihre Dateien unter `/app/` und die Anmeldung im
 /// Browser (Issue #133).
@@ -119,20 +120,31 @@ class Webapi {
       return _nichtDa();
     }
     final endung = name.substring(name.lastIndexOf('.') + 1);
+    final stand = await f.stat();
+    // Ohne Etikett konnte der Browser beim Nachfragen (`no-cache`) nur
+    // alles neu laden: bei jedem Aufruf der Seite gut 300 KB Skript, Stil
+    // und Karte. Mit Etikett ist die Antwort ein leeres 304.
+    final etag =
+        '"${stand.modified.millisecondsSinceEpoch.toRadixString(36)}-'
+        '${stand.size.toRadixString(36)}"';
+    final kopf = {
+      'content-type': _typen[endung]!,
+      // Die Seite nie aus dem Speicher des Browsers (nach dem Abmelden
+      // soll nichts zurückbleiben); die übrigen Dateien immer nachfragen.
+      'cache-control': endung == 'html' ? 'no-store' : 'no-cache',
+      if (endung != 'html') 'etag': etag,
+      if (endung == 'html') 'content-security-policy': csp,
+      // Ein SVG kann Skript tragen – nur als Bild, nie als Seite.
+      if (endung == 'svg')
+        'content-security-policy':
+            "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    };
+    if (endung != 'html' && etagPasst(anfrage, etag)) {
+      return Response.notModified(headers: kopf);
+    }
     return Response.ok(
       f.openRead(),
-      headers: {
-        'content-type': _typen[endung]!,
-        'content-length': '${await f.length()}',
-        // Die Seite nie aus dem Speicher des Browsers (nach dem Abmelden
-        // soll nichts zurückbleiben); die übrigen Dateien immer nachfragen.
-        'cache-control': endung == 'html' ? 'no-store' : 'no-cache',
-        if (endung == 'html') 'content-security-policy': csp,
-        // Ein SVG kann Skript tragen – nur als Bild, nie als Seite.
-        if (endung == 'svg')
-          'content-security-policy':
-              "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      },
+      headers: {...kopf, 'content-length': '${stand.size}'},
     );
   }
 

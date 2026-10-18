@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
+import 'packen.dart';
+
 const _typen = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -34,7 +36,7 @@ Future<Response> dateiAntwort(Request anfrage, File datei) async {
     'etag': etag,
     'cache-control': 'private, max-age=86400',
   };
-  if (anfrage.headers['if-none-match'] == etag) {
+  if (etagPasst(anfrage, etag)) {
     return Response.notModified(headers: kopf);
   }
   final bereich = RegExp(

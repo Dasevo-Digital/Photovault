@@ -35,6 +35,7 @@ import 'fassung.dart';
 import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'oidc.dart';
+import 'packen.dart';
 import 'rechnen.dart';
 import 'sicherung.dart';
 import 'speicher.dart';
@@ -353,6 +354,7 @@ Handler baueApi({
           (await bereich(r)).hochladen.verwerfen(r, id),
     );
   return const Pipeline()
+      .addMiddleware(packen)
       .addMiddleware(_sicherheitskoepfe)
       .addMiddleware(
         anmeldungNoetig(

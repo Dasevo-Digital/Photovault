@@ -246,22 +246,21 @@ extension ReisenAbfragen on AppDatabase {
   }
 
   Future<AssetData?> ersteAufnahmeDerReise(String reiseId) async {
-    final abfrage =
-        select(assets).join([
-            innerJoin(
-              reiseAufnahmen,
-              reiseAufnahmen.assetId.equalsExp(assets.id),
-            ),
-          ])
-          ..where(
-            reiseAufnahmen.reiseId.equals(reiseId) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false),
-          )
-          ..orderBy([OrderingTerm.asc(assets.fileCreatedAt)])
-          ..limit(1);
-    final zeile = await abfrage.getSingleOrNull();
-    return zeile?.readTable(assets);
+    // **CROSS JOIN legt die Reihenfolge fest.** Mit einem gewöhnlichen
+    // Join nahm SQLite den Datumsindex über ALLE Aufnahmen und fragte für
+    // jede nach, ob sie dazugehört – bis zur ersten, die passte. Je
+    // jünger die Reise, desto mehr Aufnahmen kamen vorher an die Reihe.
+    // Erst die Zuordnungen, dann die Aufnahmen dazu (siehe
+    // ersteAufnahmeDerAktivitaet, wo es gemessen wurde).
+    final zeile = await customSelect(
+      'SELECT a.id AS id FROM reise_aufnahmen x CROSS JOIN assets a '
+      'ON a.id = x.asset_id '
+      'WHERE x.reise_id = ? AND a.is_trashed = 0 AND a.is_locked = 0 '
+      'ORDER BY a.file_created_at ASC LIMIT 1',
+      variables: [Variable.withString(reiseId)],
+      readsFrom: {assets, reiseAufnahmen},
+    ).getSingleOrNull();
+    return zeile == null ? null : assetById(zeile.read<String>('id'));
   }
 
   /// Der Ortsbezug jeder Reise, in einer Abfrage für alle.

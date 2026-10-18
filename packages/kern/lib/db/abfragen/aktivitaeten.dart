@@ -109,22 +109,21 @@ extension AktivitaetenAbfragen on AppDatabase {
   /// Abfrage mit `LIMIT 1`, aus demselben Grund wie
   /// [ersteAufnahmeDerReise].
   Future<AssetData?> ersteAufnahmeDerAktivitaet(String aktivitaetId) async {
-    final abfrage =
-        select(assets).join([
-            innerJoin(
-              aktivitaetAufnahmen,
-              aktivitaetAufnahmen.assetId.equalsExp(assets.id),
-            ),
-          ])
-          ..where(
-            aktivitaetAufnahmen.aktivitaetId.equals(aktivitaetId) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false),
-          )
-          ..orderBy([OrderingTerm.asc(assets.fileCreatedAt)])
-          ..limit(1);
-    final zeile = await abfrage.getSingleOrNull();
-    return zeile?.readTable(assets);
+    // **CROSS JOIN legt die Reihenfolge fest.** Mit einem gewöhnlichen
+    // Join nahm SQLite den Datumsindex über ALLE Aufnahmen und fragte für
+    // jede nach, ob sie dazugehört – bis zur ersten, die passte. Für eine
+    // Aktivität vom letzten Sommer waren das fast alle 8700 Aufnahmen der
+    // Bibliothek, gut 2 ms je Karte. Erst die Zuordnungen, dann die
+    // wenigen Aufnahmen dazu: ein Bruchteil davon.
+    final zeile = await customSelect(
+      'SELECT a.id AS id FROM aktivitaet_aufnahmen x CROSS JOIN assets a '
+      'ON a.id = x.asset_id '
+      'WHERE x.aktivitaet_id = ? AND a.is_trashed = 0 AND a.is_locked = 0 '
+      'ORDER BY a.file_created_at ASC LIMIT 1',
+      variables: [Variable.withString(aktivitaetId)],
+      readsFrom: {assets, aktivitaetAufnahmen},
+    ).getSingleOrNull();
+    return zeile == null ? null : assetById(zeile.read<String>('id'));
   }
 
   /// Die Aufnahmen eines Zeitraums – für eine von Hand angelegte Reise

@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:kern/db/rasterzeile.dart';
 
 import '../bilder.dart';
@@ -71,17 +72,75 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   var _startSpalten = Sitzung.spaltenVorgabe;
 
   // Die Bildlaufleiste rechts: erscheint beim Rollen, verschwindet nach
-  // einer Pause; beim Ziehen zeigt sie den Monat oben im Bild.
-  var _leisteSichtbar = false;
-  var _leisteGezogen = false;
+  // einer Pause; beim Ziehen zeigt sie den Monat oben im Bild. Eigene
+  // Benachrichtiger statt setState – siehe [_auswahlStand].
+  final _leisteSichtbar = ValueNotifier(false);
+  final _leisteGezogen = ValueNotifier(false);
   Timer? _leisteAus;
-  String? _leisteText;
+  final _leisteText = ValueNotifier<String?>(null);
 
   /// Wie nah am oberen oder unteren Rand der Finger beim Ziehen stehen
   /// muss, damit das Raster von selbst weiterrollt.
   static const _rollrand = 72.0;
 
   final _auswahl = <String>{};
+
+  /// Zählt jede Änderung an [_auswahl]. Kacheln, Tagesköpfe und das Blatt
+  /// hören darauf; neu gebaut wird nur, was gerade zu sehen ist.
+  ///
+  /// **Vorher baute jede Änderung das ganze Raster.** Ein Tipp auf einen
+  /// Tag, jeder Schritt beim Ziehen und jedes Ein- und Ausblenden der
+  /// Bildlaufleiste gruppierte alle Aufnahmen neu nach Tagen und legte für
+  /// jeden Tag einen Kopf an – bei 8000 Aufnahmen im Test gut eine halbe
+  /// Sekunde je Tipp.
+  final _auswahlStand = ValueNotifier(0);
+
+  /// Die Tage von [AufnahmenRaster.zeilen], einmal je Liste gerechnet –
+  /// erkannt an der Liste selbst und ihrer Länge.
+  List<_Tag> _tageCache = const [];
+  List<Rasterzeile>? _tageFuer;
+  var _tageLaenge = -1;
+
+  List<_Tag> _tageVon(List<Rasterzeile> zeilen) {
+    if (!identical(zeilen, _tageFuer) || zeilen.length != _tageLaenge) {
+      _tageCache = _tage(zeilen);
+      _tageFuer = zeilen;
+      _tageLaenge = zeilen.length;
+    }
+    return _tageCache;
+  }
+
+  /// Die Zeilen der Liste nach Tagen – Monatsköpfe, Tagesköpfe und
+  /// Kachelreihen –, neu nur für neue Tage oder eine andere Spaltenzahl.
+  List<_Eintrag> _eintraege = const [];
+  List<_Tag>? _eintraegeFuer;
+  var _eintraegeSpalten = 0;
+
+  List<_Eintrag> _eintraegeVon(List<_Tag> tage) {
+    if (!identical(tage, _eintraegeFuer) || _spalten != _eintraegeSpalten) {
+      final liste = <_Eintrag>[];
+      DateTime? monat;
+      for (var t = 0; t < tage.length; t++) {
+        final (:tag, :von, :bis) = tage[t];
+        // Ein Monatskopf über dem ersten Tag jedes Monats, wie in Immich –
+        // die Tage darunter brauchen dann kein Jahr mehr.
+        final dieserMonat = DateTime(tag.year, tag.month);
+        if (dieserMonat != monat) {
+          monat = dieserMonat;
+          liste.add((art: _Art.monat, tag: t, von: von));
+        }
+        liste.add((art: _Art.tag, tag: t, von: von));
+        for (var i = von; i < bis; i += _spalten) {
+          liste.add((art: _Art.reihe, tag: t, von: i));
+        }
+      }
+      _eintraege = liste;
+      _eintraegeFuer = tage;
+      _eintraegeSpalten = _spalten;
+    }
+    return _eintraege;
+  }
+
   final _scroll = ScrollController();
   final _flaeche = GlobalKey();
 
@@ -97,6 +156,15 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
 
   bool get _waehlt => _auswahl.isNotEmpty;
 
+  /// Ändert die Auswahl. Ein ganzer Neubau nur, wenn das Wählen damit
+  /// beginnt oder endet (Kreise an den Kacheln, das Blatt unten).
+  void _aendereAuswahl(VoidCallback aenderung) {
+    final vorher = _waehlt;
+    aenderung();
+    _auswahlStand.value++;
+    if (_waehlt != vorher) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -108,6 +176,10 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     _rollen?.cancel();
     _leisteAus?.cancel();
     _scroll.dispose();
+    _auswahlStand.dispose();
+    _leisteSichtbar.dispose();
+    _leisteGezogen.dispose();
+    _leisteText.dispose();
     super.dispose();
   }
 
@@ -175,13 +247,11 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     final pos = _scroll.position;
     // Kurze Listen brauchen keine.
     if (pos.maxScrollExtent < pos.viewportDimension * 2) return;
-    if (!_leisteSichtbar) setState(() => _leisteSichtbar = true);
+    _leisteSichtbar.value = true;
     _leisteAus?.cancel();
-    if (!_leisteGezogen) {
+    if (!_leisteGezogen.value) {
       _leisteAus = Timer(const Duration(milliseconds: 1500), () {
-        if (mounted && !_leisteGezogen) {
-          setState(() => _leisteSichtbar = false);
-        }
+        if (mounted && !_leisteGezogen.value) _leisteSichtbar.value = false;
       });
     }
   }
@@ -202,8 +272,13 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     return null;
   }
 
-  Widget _bildlaufleiste() => AnimatedBuilder(
-    animation: _scroll,
+  Widget _bildlaufleiste() => ListenableBuilder(
+    listenable: Listenable.merge([
+      _scroll,
+      _leisteSichtbar,
+      _leisteGezogen,
+      _leisteText,
+    ]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, c) {
         const griff = 44.0;
@@ -221,11 +296,11 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
           final y = box.globalToLocal(global).dy;
           final a = ((y - griff / 2) / spielraum).clamp(0.0, 1.0);
           _scroll.jumpTo(a * max);
-          final text = _monatOben();
-          if (text != _leisteText) setState(() => _leisteText = text);
+          _leisteText.value = _monatOben();
         }
 
-        final sichtbar = _leisteSichtbar || _leisteGezogen;
+        final text = _leisteText.value;
+        final sichtbar = _leisteSichtbar.value || _leisteGezogen.value;
         return IgnorePointer(
           ignoring: !sichtbar,
           child: AnimatedOpacity(
@@ -233,7 +308,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             duration: const Duration(milliseconds: 200),
             child: Stack(
               children: [
-                if (_leisteGezogen && _leisteText != null)
+                if (_leisteGezogen.value && text != null)
                   Positioned(
                     right: 52,
                     top: oben + 6,
@@ -247,7 +322,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                           vertical: 6,
                         ),
                         child: Text(
-                          _leisteText!,
+                          text,
                           style: TextStyle(
                             color: farben.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
@@ -264,15 +339,13 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                     onVerticalDragStart: (d) {
                       _leisteAus?.cancel();
                       HapticFeedback.selectionClick();
-                      setState(() => _leisteGezogen = true);
+                      _leisteGezogen.value = true;
                       ziehe(d.globalPosition);
                     },
                     onVerticalDragUpdate: (d) => ziehe(d.globalPosition),
                     onVerticalDragEnd: (_) {
-                      setState(() {
-                        _leisteGezogen = false;
-                        _leisteText = null;
-                      });
+                      _leisteGezogen.value = false;
+                      _leisteText.value = null;
                       _gerollt();
                     },
                     child: Container(
@@ -351,7 +424,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
 
   void _schalte(String id) {
     if (widget.lokal.containsKey(id)) return;
-    setState(() {
+    _aendereAuswahl(() {
       if (!_auswahl.remove(id)) _auswahl.add(id);
     });
   }
@@ -366,7 +439,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     final ids = _waehlbareIds(von, bis);
     if (ids.isEmpty) return;
     HapticFeedback.selectionClick();
-    setState(() {
+    _aendereAuswahl(() {
       if (ids.every(_auswahl.contains)) {
         _auswahl.removeAll(ids);
       } else {
@@ -419,7 +492,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     final anker = _anker!;
     final von = anker <= bis ? anker : bis;
     final zu = anker <= bis ? bis : anker;
-    setState(() {
+    _aendereAuswahl(() {
       _auswahl
         ..clear()
         ..addAll(_vorDemZiehen);
@@ -484,7 +557,6 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   Widget _kachel(int i) {
     final z = widget.zeilen[i];
     final l = widget.lokal[z.id];
-    final gewaehlt = _auswahl.contains(z.id);
     final farben = Theme.of(context).colorScheme;
     return MetaData(
       metaData: _Kachelmarke(i),
@@ -494,61 +566,71 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
         onLongPressStart: (_) => _ziehBeginn(i),
         onLongPressMoveUpdate: (d) => _ziehWeiter(d.globalPosition),
         onLongPressEnd: (_) => _ziehEnde(),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Gewählt rückt die Kachel ein und rundet sich – wie in Immich.
-            AnimatedPadding(
-              duration: const Duration(milliseconds: 140),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.all(gewaehlt ? 10 : 0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(gewaehlt ? 12 : 0),
-                child: Miniatur(
-                  paths: widget.sitzung.paths,
-                  relativ: z.thumbnailRelativePath,
-                  bild: l?.bild,
-                  video: z.type == 'VIDEO',
-                  favorit: z.isFavorite,
-                  serie: z.isStackCover ? (z.stackSize ?? 0) : 0,
+        child: ListenableBuilder(
+          listenable: _auswahlStand,
+          // Das Bild selbst bleibt beim Wählen, wie es ist.
+          child: Miniatur(
+            paths: widget.sitzung.paths,
+            relativ: z.thumbnailRelativePath,
+            bild: l?.bild,
+            video: z.type == 'VIDEO',
+            favorit: z.isFavorite,
+            serie: z.isStackCover ? (z.stackSize ?? 0) : 0,
+          ),
+          builder: (context, bild) {
+            final gewaehlt = _auswahl.contains(z.id);
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // Gewählt rückt die Kachel ein und rundet sich – wie in Immich.
+                AnimatedPadding(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOut,
+                  padding: EdgeInsets.all(gewaehlt ? 10 : 0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(gewaehlt ? 12 : 0),
+                    child: bild,
+                  ),
                 ),
-              ),
-            ),
-            if (l != null)
-              const Positioned(
-                right: 4,
-                top: 4,
-                child: Icon(
-                  Icons.cloud_off_outlined,
-                  color: Colors.white,
-                  size: 18,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                ),
-              ),
-            if (_waehlt && l == null)
-              Positioned(
-                left: 4,
-                top: 4,
-                child: gewaehlt
-                    ? DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.check_circle,
-                          color: farben.primary,
-                          size: 22,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.circle_outlined,
-                        color: Colors.white,
-                        size: 22,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                      ),
-              ),
-          ],
+                if (l != null)
+                  const Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Icon(
+                      Icons.cloud_off_outlined,
+                      color: Colors.white,
+                      size: 18,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                    ),
+                  ),
+                if (_waehlt && l == null)
+                  Positioned(
+                    left: 4,
+                    top: 4,
+                    child: gewaehlt
+                        ? DecoratedBox(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_circle,
+                              color: farben.primary,
+                              size: 22,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.circle_outlined,
+                            color: Colors.white,
+                            size: 22,
+                            shadows: [
+                              Shadow(color: Colors.black54, blurRadius: 4),
+                            ],
+                          ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -556,7 +638,12 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
 
   /// Der Kopf eines Tages: das Datum und der Kreis, der den ganzen Tag
   /// wählt. Antippen lässt sich die ganze Zeile, nicht nur der Kreis.
-  Widget _tageskopf(String datum, int von, int bis) {
+  Widget _tageskopf(String datum, int von, int bis) => ListenableBuilder(
+    listenable: _auswahlStand,
+    builder: (context, _) => _tageskopfInhalt(datum, von, bis),
+  );
+
+  Widget _tageskopfInhalt(String datum, int von, int bis) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
     final ids = _waehlbareIds(von, bis);
@@ -596,6 +683,23 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     );
   }
 
+  /// Eine Reihe Kacheln eines Tages, von [von] bis höchstens [bis] – so
+  /// breit und mit denselben Abständen wie im [SliverGrid] von [_gitter].
+  Widget _reihe(int von, int bis, bool letzte) => Padding(
+    padding: EdgeInsets.only(bottom: letzte ? 0 : 2),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var c = 0; c < _spalten; c++) ...[
+          if (c > 0) const SizedBox(width: 2),
+          Expanded(
+            child: von + c < bis ? _kachel(von + c) : const SizedBox.shrink(),
+          ),
+        ],
+      ],
+    ),
+  );
+
   SliverGrid _gitter(int von, int bis) => SliverGrid(
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: _spalten,
@@ -617,45 +721,67 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     if (!widget.nachTagen) {
       slivers.add(_gitter(0, zeilen.length));
     } else {
+      // **Eine einzige Liste, gebaut wird nur, was zu sehen ist.** Vorher
+      // war jeder Tag ein eigener Abschnitt mit eigenem Kopf, und Köpfe
+      // baut Flutter sofort, auch weit ausserhalb des Bildes: bei 8000
+      // Aufnahmen gut 2000 Tagesköpfe bei jedem Neubau, und jeder davon
+      // hörte auf die Auswahl. Die Höhen stehen fest (die Köpfe aus ihrer
+      // Schrift gerechnet), deshalb kennt die Liste ihre Länge genau und
+      // die Bildlaufleiste springt dorthin, wo sie soll.
       final sprache = Localizations.localeOf(context).toLanguageTag();
       final monatFormat = DateFormat.yMMMM(sprache);
       final tagFormat = DateFormat.MMMMEEEEd(sprache);
-      final monatStil = Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600);
-      DateTime? monat;
-      var von = 0;
-      while (von < zeilen.length) {
-        final tag = DateUtils.dateOnly(zeilen[von].fileCreatedAt.toLocal());
-        var bis = von + 1;
-        while (bis < zeilen.length &&
-            DateUtils.dateOnly(zeilen[bis].fileCreatedAt.toLocal()) == tag) {
-          bis++;
-        }
-        // Ein Monatskopf über dem ersten Tag jedes Monats, wie in Immich –
-        // die Tage darunter brauchen dann kein Jahr mehr.
-        final dieserMonat = DateTime(tag.year, tag.month);
-        if (dieserMonat != monat) {
-          monat = dieserMonat;
-          slivers.add(
-            SliverToBoxAdapter(
-              child: Padding(
+      final themen = Theme.of(context).textTheme;
+      final monatStil = themen.titleLarge?.copyWith(
+        fontWeight: FontWeight.w600,
+      );
+      final skala = MediaQuery.textScalerOf(context);
+      double zeilenhoehe(TextStyle? stil) {
+        final maler = TextPainter(
+          text: TextSpan(text: 'Ág', style: stil),
+          textDirection: TextDirection.ltr,
+          textScaler: skala,
+        )..layout();
+        final h = maler.height;
+        maler.dispose();
+        return h;
+      }
+
+      final double monatHoehe = 20 + zeilenhoehe(monatStil);
+      final double tagHoehe =
+          18 + math.max(22.0, zeilenhoehe(themen.titleSmall));
+      final tage = _tageVon(zeilen);
+      final eintraege = _eintraegeVon(tage);
+      final spalten = _spalten;
+      bool letzteReihe(_Eintrag e) => e.von + spalten >= tage[e.tag].bis;
+      slivers.add(
+        SliverVariedExtentList.builder(
+          itemCount: eintraege.length,
+          itemExtentBuilder: (i, masse) {
+            if (i >= eintraege.length) return null;
+            final e = eintraege[i];
+            return switch (e.art) {
+              _Art.monat => monatHoehe,
+              _Art.tag => tagHoehe,
+              _Art.reihe =>
+                (masse.crossAxisExtent - 2 * (spalten - 1)) / spalten +
+                    (letzteReihe(e) ? 0.0 : 2.0),
+            };
+          },
+          itemBuilder: (context, i) {
+            final e = eintraege[i];
+            final (:tag, :von, :bis) = tage[e.tag];
+            return switch (e.art) {
+              _Art.monat => Padding(
                 padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
                 child: Text(monatFormat.format(tag), style: monatStil),
               ),
-            ),
-          );
-        }
-        final tagVon = von, tagBis = bis;
-        slivers
-          ..add(
-            SliverToBoxAdapter(
-              child: _tageskopf(tagFormat.format(tag), tagVon, tagBis),
-            ),
-          )
-          ..add(_gitter(von, bis));
-        von = bis;
-      }
+              _Art.tag => _tageskopf(tagFormat.format(tag), von, bis),
+              _Art.reihe => _reihe(e.von, bis, letzteReihe(e)),
+            };
+          },
+        ),
+      );
     }
     // Unter dem letzten Rand bleibt Platz für die Leiste.
     slivers.add(
@@ -686,17 +812,46 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Auswahlleiste(
-              sitzung: widget.sitzung,
-              papierkorb: widget.papierkorb,
-              zeilen: [
-                for (final z in zeilen)
-                  if (_auswahl.contains(z.id)) z,
-              ],
-              aufheben: () => setState(_auswahl.clear),
+            child: ListenableBuilder(
+              listenable: _auswahlStand,
+              builder: (context, _) => Auswahlleiste(
+                sitzung: widget.sitzung,
+                papierkorb: widget.papierkorb,
+                zeilen: [
+                  for (final z in zeilen)
+                    if (_auswahl.contains(z.id)) z,
+                ],
+                aufheben: () => _aendereAuswahl(_auswahl.clear),
+              ),
             ),
           ),
       ],
     );
   }
+}
+
+/// Ein Tag im Raster: die Aufnahmen [von] bis ausschliesslich [bis].
+typedef _Tag = ({DateTime tag, int von, int bis});
+
+enum _Art { monat, tag, reihe }
+
+/// Eine Zeile der Liste nach Tagen: zum Tag Nummer [tag] in den Tagen, bei
+/// einer Reihe ab der Aufnahme [von].
+typedef _Eintrag = ({_Art art, int tag, int von});
+
+/// Die Tage der nach Zeit geordneten [zeilen], in der Ortszeit des Geräts.
+List<_Tag> _tage(List<Rasterzeile> zeilen) {
+  final tage = <_Tag>[];
+  var von = 0;
+  while (von < zeilen.length) {
+    final tag = DateUtils.dateOnly(zeilen[von].fileCreatedAt.toLocal());
+    var bis = von + 1;
+    while (bis < zeilen.length &&
+        DateUtils.dateOnly(zeilen[bis].fileCreatedAt.toLocal()) == tag) {
+      bis++;
+    }
+    tage.add((tag: tag, von: von, bis: bis));
+    von = bis;
+  }
+  return tage;
 }

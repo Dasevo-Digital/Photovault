@@ -503,10 +503,17 @@ void main() {
       for (var i = 0; i < 12; i++)
         amTag('k$i', tag.subtract(Duration(minutes: i))),
     ]);
-    int spalten() =>
-        (tester.widget<SliverGrid>(find.byType(SliverGrid).first).gridDelegate
-                as SliverGridDelegateWithFixedCrossAxisCount)
-            .crossAxisCount;
+    // Wie viele Kacheln in der ersten Reihe stehen – gleich, ob das
+    // Raster ein Gitter ist oder eine Liste aus Reihen.
+    int spalten() {
+      final oben = [
+        for (final e in find.byType(Miniatur).evaluate())
+          (e.renderObject! as RenderBox).localToGlobal(Offset.zero).dy,
+      ];
+      final erste = oben.reduce((a, b) => a < b ? a : b);
+      return oben.where((y) => (y - erste).abs() < 1).length;
+    }
+
     expect(spalten(), 4);
     final mitte = tester.getCenter(find.byType(AufnahmenRaster));
     // Auseinander: grössere Kacheln, weniger Spalten.

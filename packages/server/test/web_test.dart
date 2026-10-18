@@ -240,6 +240,57 @@ void main() {
       );
     });
 
+    test('gepackt, mit Etikett und 304 beim Nachfragen', () async {
+      final inhalt = 'const x = 1;\n' * 400;
+      File('${web.path}/app.js').writeAsStringSync(inhalt);
+
+      final roh = await frag('GET', '/app/app.js');
+      expect(roh.headers['content-encoding'], isNull);
+      final etikett = roh.headers['etag']!;
+      expect(await roh.readAsString(), inhalt);
+
+      final gz = await frag(
+        'GET',
+        '/app/app.js',
+        kopf: {'accept-encoding': 'gzip, deflate, br'},
+      );
+      expect(gz.statusCode, 200);
+      expect(gz.headers['content-encoding'], 'gzip');
+      expect(gz.headers['vary'], 'accept-encoding');
+      expect(gz.headers['content-length'], isNull);
+      // Eine andere Darstellung, ein anderes Etikett.
+      expect(gz.headers['etag'], isNot(etikett));
+      final bytes = await gz.read().expand((b) => b).toList();
+      expect(bytes.length, lessThan(inhalt.length ~/ 10));
+      expect(utf8.decode(gzip.decode(bytes)), inhalt);
+
+      // Beide Etiketten führen zum 304.
+      for (final e in [etikett, gz.headers['etag']!]) {
+        final nochmal = await frag(
+          'GET',
+          '/app/app.js',
+          kopf: {'if-none-match': e, 'accept-encoding': 'gzip'},
+        );
+        expect(nochmal.statusCode, 304, reason: e);
+        expect(await nochmal.readAsString(), isEmpty);
+      }
+
+      // Die Seite selbst trägt keines: Sie bleibt nie im Speicher.
+      final seite = await frag('GET', '/app/');
+      expect(seite.headers['etag'], isNull);
+
+      // Kleines bleibt ungepackt.
+      File('${web.path}/klein.js').writeAsStringSync('1');
+      expect(
+        (await frag(
+          'GET',
+          '/app/klein.js',
+          kopf: {'accept-encoding': 'gzip'},
+        )).headers['content-encoding'],
+        isNull,
+      );
+    });
+
     test('kein Weg aus dem Ordner heraus', () async {
       for (final pfad in [
         '/app/../geheim.env',

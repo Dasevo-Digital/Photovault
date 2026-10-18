@@ -180,7 +180,9 @@ function tageskopf(a, tag) {
 }
 
 function haengeAn(aufnahmen) {
-  const raster = $('raster');
+  // Erst sammeln, dann auf einmal einhängen: 200 einzelne Einfügungen in
+  // die lebende Seite waren 200 Gelegenheiten, das Layout zu verwerfen.
+  const raster = document.createDocumentFragment();
   for (const a of aufnahmen) {
     const tag = tagVon(a);
     if (liste.nachTagen) {
@@ -193,19 +195,24 @@ function haengeAn(aufnahmen) {
       }
       if (tag !== letzterTag) {
         letzterTag = tag;
-        raster.append(tageskopf(a, tag));
+        const kopf = tageskopf(a, tag);
+        liste.koepfe.set(tag, kopf);
+        raster.append(kopf);
       }
     }
     if (!liste.tage.has(tag)) liste.tage.set(tag, []);
     liste.tage.get(tag).push(a.id);
-    raster.append(kachel(a, liste.aufnahmen.length));
+    const k = kachel(a, liste.aufnahmen.length);
+    liste.kacheln.push(k);
+    raster.append(k);
     liste.aufnahmen.push(a);
   }
+  $('raster').append(raster);
   if (liste.nachTagen) zeichneTage();
 }
 
 function zeigeListe(neu, titel) {
-  liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map() };
+  liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
   $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
@@ -1037,7 +1044,8 @@ const auswahl = new Set();
 function schalteAuswahl(id, k) {
   if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id);
   k.classList.toggle('gewaehlt', auswahl.has(id));
-  zeichneTage();
+  const a = liste && liste.aufnahmen[Number(k.dataset.index)];
+  zeichneTage(a ? [tagVon(a)] : undefined);
   zeigeAuswahl();
 }
 
@@ -1050,25 +1058,35 @@ function schalteTag(tag) {
   zeichneAuswahl();
 }
 
-// Der Kreis am Tageskopf ist voll, wenn der ganze Tag gewählt ist.
-function zeichneTage() {
-  if (!liste) return;
-  for (const h of $('raster').querySelectorAll('.tageskopf')) {
-    const ids = liste.tage.get(h.dataset.tag) || [];
+// Der Kreis am Tageskopf ist voll, wenn der ganze Tag gewählt ist – für
+// alle Tage oder nur die genannten.
+function zeichneTage(nur) {
+  if (!liste || !liste.koepfe) return;
+  for (const tag of nur || liste.koepfe.keys()) {
+    const h = liste.koepfe.get(tag);
+    if (!h) continue;
+    const ids = liste.tage.get(tag) || [];
     const alle = ids.length > 0 && ids.every((id) => auswahl.has(id));
     h.classList.toggle('alle', alle);
     h.title = alle ? t('Ganzen Tag abwählen') : t('Ganzen Tag auswählen');
   }
 }
 
-function zeichneAuswahl() {
-  if (liste) {
-    for (const k of $('raster').querySelectorAll('.kachel')) {
-      const a = liste.aufnahmen[Number(k.dataset.index)];
-      k.classList.toggle('gewaehlt', !!a && auswahl.has(a.id));
+// Alle Kacheln oder nur die von `von` bis `bis` (samt ihren Tagen). Beim
+// Ziehen ändert sich nur dieser Bereich; jedes Mal alle abzulaufen
+// kostete bei 6000 geladenen Kacheln 8 ms je Schritt am Rechner.
+function zeichneAuswahl(von, bis) {
+  if (liste && liste.kacheln) {
+    const ganz = von === undefined;
+    const a0 = ganz ? 0 : Math.max(0, von), a1 = ganz ? liste.kacheln.length - 1 : Math.min(bis, liste.kacheln.length - 1);
+    const tage = ganz ? undefined : new Set();
+    for (let i = a0; i <= a1; i++) {
+      const a = liste.aufnahmen[i];
+      liste.kacheln[i].classList.toggle('gewaehlt', !!a && auswahl.has(a.id));
+      if (tage && a) tage.add(tagVon(a));
     }
+    zeichneTage(tage);
   }
-  zeichneTage();
   zeigeAuswahl();
 }
 
@@ -1098,7 +1116,7 @@ function auswahlAufheben() {
 // schon gewählt war. Mit der Maus geht es, solange ausgewählt wird, auch
 // ohne Warten. Am oberen und unteren Rand rollt das Raster weiter.
 
-const zieh = { anker: null, letzter: null, waehlt: true, vorher: null, x: 0, y: 0, art: null, rollen: null, schlucke: false };
+const zieh = { anker: null, letzter: null, waehlt: true, vorher: null, x: 0, y: 0, art: null, rollen: null, schlucke: false, von: 0, zu: -1 };
 let druck = null;
 let halteUhr = null;
 
@@ -1108,20 +1126,27 @@ function ziehBeginn(i, art) {
   druck = null;
   if (!a) return;
   auswahlModus = true;
-  Object.assign(zieh, { anker: i, letzter: i, art, waehlt: !auswahl.has(a.id), vorher: new Set(auswahl), schlucke: true });
+  Object.assign(zieh, { anker: i, letzter: i, art, waehlt: !auswahl.has(a.id), vorher: new Set(auswahl), schlucke: true, von: i, zu: i });
   if (navigator.vibrate) navigator.vibrate(8);
   wendeAn(i);
 }
 
 function wendeAn(bis) {
   const von = Math.min(zieh.anker, bis), zu = Math.max(zieh.anker, bis);
-  auswahl.clear();
-  for (const id of zieh.vorher) auswahl.add(id);
+  // Was vorher im Bereich lag, bekommt seinen alten Stand zurück; nur der
+  // alte und der neue Bereich zusammen müssen neu gezeichnet werden.
+  for (let i = zieh.von; i <= zieh.zu; i++) {
+    const id = liste.aufnahmen[i].id;
+    if (zieh.vorher.has(id)) auswahl.add(id); else auswahl.delete(id);
+  }
   for (let i = von; i <= zu; i++) {
     const id = liste.aufnahmen[i].id;
     if (zieh.waehlt) auswahl.add(id); else auswahl.delete(id);
   }
-  zeichneAuswahl();
+  const a0 = Math.min(von, zieh.von), a1 = Math.max(zu, zieh.zu);
+  zieh.von = von;
+  zieh.zu = zu;
+  zeichneAuswahl(a0, a1);
 }
 
 function folge() {
@@ -1286,8 +1311,13 @@ function zeigeBildlauf() {
   const b = $('bildlauf');
   const lang = !$('bereich-raster').hidden && $('betrachter').hidden && liste && liste.aufnahmen.length > 0 && bildlaufHoehe() > innerHeight * 2;
   if (!lang) { b.classList.remove('sichtbar'); return; }
-  b.style.top = `${$('kopf').getBoundingClientRect().bottom + 6}px`;
-  b.style.bottom = `${($('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height) + 12}px`;
+  // Erst lesen, dann nur schreiben, was sich geändert hat: Jedes Setzen
+  // verwarf das Layout, und das Lesen gleich danach rechnete es neu – bei
+  // jedem Bildlauf-Ereignis zweimal.
+  const oben = `${$('kopf').getBoundingClientRect().bottom + 6}px`;
+  const unten = `${($('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height) + 12}px`;
+  if (b.style.top !== oben) b.style.top = oben;
+  if (b.style.bottom !== unten) b.style.bottom = unten;
   b.classList.add('sichtbar');
   setzeGriff();
   clearTimeout(bildlauf.aus);
@@ -1325,7 +1355,12 @@ function zieheBildlauf(y) {
   setzeGriff();
 }
 
-window.addEventListener('scroll', zeigeBildlauf, { passive: true });
+let bildlaufGeplant = false;
+window.addEventListener('scroll', () => {
+  if (bildlaufGeplant) return;
+  bildlaufGeplant = true;
+  requestAnimationFrame(() => { bildlaufGeplant = false; zeigeBildlauf(); });
+}, { passive: true });
 $('bildlauf-griff').addEventListener('pointerdown', (e) => {
   e.preventDefault();
   try { $('bildlauf-griff').setPointerCapture(e.pointerId); } catch (_) { /* ohne geht es auch */ }
