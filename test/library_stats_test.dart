@@ -126,11 +126,8 @@ void main() {
     });
 
     test('countsByYear und countsByMonth zählen korrekt', () async {
-      // Uhrzeit bewusst NICHT auf Mitternacht: drift speichert DateTime als
-      // UTC-Unixzeit, und strftime(..., 'unixepoch') liest wieder UTC – bei
-      // 00:00 Lokalzeit in einer Zeitzone vor UTC (z.B. CET) würde die
-      // UTC-Umrechnung sonst auf den Vortag zurückfallen und knapp den
-      // Monats-/Jahreswechsel verpassen.
+      // Mittags, weit weg von jeder Grenze: Die Grenzen selbst prüft die
+      // Gruppe „Ortszeit an Jahres- und Monatsgrenzen“ unten.
       await insertStatsAsset(db, 'a', fileCreatedAt: DateTime(2019, 6, 15, 12));
       await insertStatsAsset(
         db,
@@ -197,6 +194,107 @@ void main() {
         expect(stats.topCameras[2].label, 'Unbekannt');
       },
     );
+  });
+
+  /// **Gezählt wird nach Ortszeit**, wie die Zeitleiste ihre Tage mit
+  /// `toLocal()` bildet. Bis hierher rechnete `strftime` in UTC: In
+  /// Mitteleuropa fiel ein Foto vom 1. Januar um 00:30 ins Vorjahr,
+  /// westlich von Greenwich eines vom 31. Dezember um 23:30 ins Folgejahr.
+  ///
+  /// Aussagekräftig ist das nur ausserhalb von UTC – auf dem Rechner in
+  /// Europe/Berlin scheitert die alte Fassung an jedem dieser Tests, auf
+  /// einem Läufer in UTC bestünde sie sie.
+  group('Ortszeit an Jahres- und Monatsgrenzen', () {
+    late AppDatabase db;
+
+    setUp(() {
+      db = AppDatabase(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('Silvester 23:30 und Neujahr 00:30 zählen zu ihrem Jahr', () async {
+      await insertStatsAsset(
+        db,
+        'silvester',
+        fileCreatedAt: DateTime(2025, 12, 31, 23, 30),
+      );
+      await insertStatsAsset(
+        db,
+        'neujahr',
+        fileCreatedAt: DateTime(2026, 1, 1, 0, 30),
+      );
+
+      final stats = await db.loadLibraryStats();
+      expect(stats.countsByYear, {2025: 1, 2026: 1});
+      expect(stats.countsByMonth, {12: 1, 1: 1});
+      expect(await db.assetCountsByYear(), {2025: 1, 2026: 1});
+      expect(await db.watchAssetCountsByYear().first, {2025: 1, 2026: 1});
+    });
+
+    test('die Monate eines Jahres passen zu dessen Zeitleiste', () async {
+      // Das Jahr grenzte schon vorher nach Ortszeit ab, die Monate darin
+      // zählten aber in UTC: Neujahr 00:30 lag im Jahr – im Dezember.
+      await insertStatsAsset(
+        db,
+        'erster',
+        fileCreatedAt: DateTime(2026, 1, 1, 0, 30),
+      );
+      await insertStatsAsset(
+        db,
+        'letzter',
+        fileCreatedAt: DateTime(2026, 12, 31, 23, 30),
+      );
+
+      expect(await db.watchAssetCountsByMonth(2026).first, {1: 1, 12: 1});
+      expect(
+        (await db.watchTimelineForYear(2026).first).map((a) => a.id).toSet(),
+        {'erster', 'letzter'},
+      );
+    });
+
+    test('vor 1970 ordnet Dart zu, nicht SQLite', () async {
+      // SQLite setzt vor 1970 ein Ersatzjahr ein und kennt die damalige
+      // Sommerzeit nicht. In Berlin lief sie vom 1.4.1940 bis 2.11.1942
+      // durch – Neujahr 1941 um Mitternacht lag bei SQLite im Dezember
+      // 1940. Und 1955 gab es keine, SQLite rechnet mit der von 2003: Der
+      // 30. Juni um 23:30 rutschte in den Juli.
+      await insertStatsAsset(db, 'neujahr1941', fileCreatedAt: DateTime(1941));
+      await insertStatsAsset(
+        db,
+        'juni1955a',
+        fileCreatedAt: DateTime(1955, 6, 30, 23, 30),
+      );
+      await insertStatsAsset(
+        db,
+        'juni1955b',
+        fileCreatedAt: DateTime(1955, 6, 30, 23, 30),
+      );
+
+      final stats = await db.loadLibraryStats();
+      expect(stats.countsByYear, {1941: 1, 1955: 2});
+      expect(stats.countsByMonth, {1: 1, 6: 2});
+      expect(await db.watchAssetCountsByMonth(1941).first, {1: 1});
+    });
+
+    test('Zeilen vor und nach 1970 im selben Monat zählen zusammen', () async {
+      await insertStatsAsset(
+        db,
+        'alt',
+        fileCreatedAt: DateTime(1969, 3, 10, 12),
+      );
+      await insertStatsAsset(
+        db,
+        'neu',
+        fileCreatedAt: DateTime(2024, 3, 10, 12),
+      );
+
+      final stats = await db.loadLibraryStats();
+      expect(stats.countsByMonth, {3: 2});
+      expect(stats.countsByYear, {1969: 1, 2024: 1});
+    });
   });
 
   group('CameraStat.label', () {

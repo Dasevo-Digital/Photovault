@@ -256,7 +256,8 @@ extension AufnahmenAbfragen on AppDatabase {
   /// (CalendarScreen) – eine einzelne aggregierte SQL-Abfrage statt (wie
   /// zuvor) die komplette Zeitleiste zu laden und in Dart pro Jahr zu
   /// zählen. `strftime('%Y', ...)` arbeitet auf demselben, bereits über
-  /// `idx_assets_trashed_locked_created` indexierten Filter.
+  /// `idx_assets_trashed_locked_created` indexierten Filter. Gezählt wird
+  /// nach Ortszeit, siehe [_jahrAusdruck].
   Stream<Map<int, int>> watchAssetCountsByYear() =>
       _jahresabfrage().watch().map(_jahreszahlen);
 
@@ -266,28 +267,86 @@ extension AufnahmenAbfragen on AppDatabase {
   Future<Map<int, int>> assetCountsByYear() =>
       _jahresabfrage().get().then(_jahreszahlen);
 
-  // 'unixepoch' ist zwingend nötig: drift speichert DateTimeColumn
-  // standardmäßig als Unix-Timestamp (Sekunden) statt als ISO8601-Text –
-  // ohne den Modifier interpretiert SQLites strftime() die rohe Zahl als
-  // Julianisches Datum statt als Unix-Zeit und liefert NULL zurück.
+  /// Jahr und Monat einer Aufnahme **in Ortszeit** – so, wie die
+  /// Zeitleiste sie mit `toLocal()` bildet und [watchTimelineForYear] sie
+  /// mit `DateTime(jahr)` abgrenzt.
+  ///
+  /// Ohne `'localtime'` rechnete `strftime` in UTC: In Mitteleuropa zählte
+  /// ein Foto vom 1. Januar um 00:30 zum Vorjahr, westlich von Greenwich
+  /// eines vom 31. Dezember um 23:30 zum Folgejahr. Gespeichert ist ein
+  /// echter Zeitpunkt (EXIF-Zeiten als Ortszeit des importierenden
+  /// Rechners gelesen, siehe docs/releases/v2.6.0.md), und SQLite und Dart
+  /// fragen dafür dieselbe Zeitzone des Prozesses ab. Auf dem Server ist
+  /// das dessen Zone – dieselbe, in der er `aufgenommen` ohne Versatz an
+  /// Browser und Handy schickt, die dort die Tage der Zeitleiste daraus
+  /// bilden.
+  ///
+  /// **Vor 1970 rechnet Dart.** Dort setzt SQLite ein Ersatzjahr ein
+  /// (2000 + Jahr % 4) und übersieht die damalige Sommerzeit. Gegen
+  /// `toLocal()` geprüft, jede Viertelstunde drei Stunden vor bis drei
+  /// nach jeder Monatsgrenze 1900–2037 (Europe/Berlin, 41.400 Zeitpunkte):
+  /// ab 1970 keine Abweichung, davor 1660 – eine Stunde an den
+  /// Sommermonaten, und am 1. Januar 1941 und 1942, als die Sommerzeit
+  /// den Winter durchlief, fiel Mitternacht ins Vorjahr. Diese Zeilen
+  /// gruppiert die Abfrage deshalb nach ihrem Zeitstempel ([_vor1970]),
+  /// und erst [_ortszeitZaehlung] ordnet sie zu. Alte Aufnahmen sind
+  /// wenige, verschiedene Zeitstempel davon noch weniger.
+  ///
+  /// 'unixepoch' ist zwingend nötig: drift speichert DateTimeColumn
+  /// standardmäßig als Unix-Timestamp (Sekunden) statt als ISO8601-Text –
+  /// ohne den Modifier interpretiert SQLites strftime() die rohe Zahl als
+  /// Julianisches Datum statt als Unix-Zeit und liefert NULL zurück.
   static const _jahrAusdruck = CustomExpression<String>(
-    "strftime('%Y', file_created_at, 'unixepoch')",
+    'CASE WHEN file_created_at >= 0 THEN '
+    "strftime('%Y', file_created_at, 'unixepoch', 'localtime') END",
   );
+
+  /// Wie [_jahrAusdruck], nur der Monat (`01`..`12`).
+  static const _monatAusdruck = CustomExpression<String>(
+    'CASE WHEN file_created_at >= 0 THEN '
+    "strftime('%m', file_created_at, 'unixepoch', 'localtime') END",
+  );
+
+  /// Der Zeitstempel einer Aufnahme vor 1970, sonst `NULL` – siehe
+  /// [_jahrAusdruck].
+  static const _vor1970 = CustomExpression<int>(
+    'CASE WHEN file_created_at < 0 THEN file_created_at END',
+  );
+
+  /// Zählungen je Jahr oder Monat aus einer Abfrage, die nach [teil] und
+  /// [_vor1970] gruppiert: die Zeilen ab 1970 tragen ihren Schlüssel aus
+  /// SQL, die davor bekommen ihn von [ausDart].
+  Map<int, int> _ortszeitZaehlung(
+    List<TypedResult> zeilen,
+    CustomExpression<String> teil,
+    int Function(DateTime ortszeit) ausDart,
+  ) {
+    final zahlen = <int, int>{};
+    for (final z in zeilen) {
+      final text = z.read(teil);
+      final schluessel = text != null
+          ? int.parse(text)
+          : ausDart(
+              DateTime.fromMillisecondsSinceEpoch(z.read(_vor1970)! * 1000),
+            );
+      zahlen[schluessel] =
+          (zahlen[schluessel] ?? 0) + z.read(assets.id.count())!;
+    }
+    return zahlen;
+  }
 
   JoinedSelectStatement<HasResultSet, dynamic> _jahresabfrage() =>
       selectOnly(assets)
-        ..addColumns([_jahrAusdruck, assets.id.count()])
+        ..addColumns([_jahrAusdruck, _vor1970, assets.id.count()])
         ..where(
           assets.isTrashed.equals(false) &
               assets.isLocked.equals(false) &
               _isPrimaryGridEntry(assets),
         )
-        ..groupBy([_jahrAusdruck]);
+        ..groupBy([_jahrAusdruck, _vor1970]);
 
-  Map<int, int> _jahreszahlen(List<TypedResult> zeilen) => {
-    for (final z in zeilen)
-      int.parse(z.read(_jahrAusdruck)!): z.read(assets.id.count())!,
-  };
+  Map<int, int> _jahreszahlen(List<TypedResult> zeilen) =>
+      _ortszeitZaehlung(zeilen, _jahrAusdruck, (d) => d.year);
 
   Future<int> _countWhere(Expression<bool> predicate) async {
     final countExpr = assets.id.count();
@@ -360,20 +419,13 @@ extension AufnahmenAbfragen on AppDatabase {
 
   /// Anzahl Fotos/Videos je Kalendermonat (1-12), über alle Jahre summiert –
   /// zeigt saisonale Muster (z.B. mehr Fotos im Sommer/an Feiertagen).
+  /// Nach Ortszeit, siehe [_jahrAusdruck].
   Future<Map<int, int>> _loadCountsByMonth(Expression<bool> visible) async {
-    const monthExpr = CustomExpression<String>(
-      "strftime('%m', file_created_at, 'unixepoch')",
-    );
-    final countExpr = assets.id.count();
     final query = selectOnly(assets)
-      ..addColumns([monthExpr, countExpr])
+      ..addColumns([_monatAusdruck, _vor1970, assets.id.count()])
       ..where(visible)
-      ..groupBy([monthExpr]);
-    final rows = await query.get();
-    return {
-      for (final row in rows)
-        int.parse(row.read<String>(monthExpr)!): row.read<int>(countExpr) ?? 0,
-    };
+      ..groupBy([_monatAusdruck, _vor1970]);
+    return _ortszeitZaehlung(await query.get(), _monatAusdruck, (d) => d.month);
   }
 
   /// Die [limit] häufigsten Kamera-Kombinationen (Hersteller + Modell) für
@@ -435,15 +487,14 @@ extension AufnahmenAbfragen on AppDatabase {
   /// `strftime`-Bedingung: So bleibt der Index nutzbar, während ein
   /// `strftime('%Y', …) = '2026'` ihn verwürfe.
   ///
-  /// Der Schlüssel ist die Monatszahl 1..12.
+  /// Der Schlüssel ist die Monatszahl 1..12. Die Grenzen sind Ortszeit,
+  /// also auch die Monate ([_monatAusdruck]): In UTC gezählt, landete der
+  /// 1. Januar um 00:30 innerhalb des Jahres im Dezember.
   Stream<Map<int, int>> watchAssetCountsByMonth(int jahr) {
-    const monatExpr = CustomExpression<String>(
-      "strftime('%m', file_created_at, 'unixepoch')",
-    );
     final start = DateTime(jahr);
     final ende = DateTime(jahr + 1);
     final query = selectOnly(assets)
-      ..addColumns([monatExpr, assets.id.count()])
+      ..addColumns([_monatAusdruck, _vor1970, assets.id.count()])
       ..where(
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
@@ -451,12 +502,9 @@ extension AufnahmenAbfragen on AppDatabase {
             assets.fileCreatedAt.isBiggerOrEqualValue(start) &
             assets.fileCreatedAt.isSmallerThanValue(ende),
       )
-      ..groupBy([monatExpr]);
+      ..groupBy([_monatAusdruck, _vor1970]);
     return query.watch().map(
-      (rows) => {
-        for (final row in rows)
-          int.parse(row.read(monatExpr)!): row.read(assets.id.count())!,
-      },
+      (rows) => _ortszeitZaehlung(rows, _monatAusdruck, (d) => d.month),
     );
   }
 

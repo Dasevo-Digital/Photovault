@@ -397,6 +397,28 @@ void main() {
     },
   );
 
+  test('Statistik: Jahre und Monate nach der Ortszeit des Servers', () async {
+    // Dieselbe Zone, in der `aufgenommen` ohne Versatz hinausgeht und im
+    // Browser die Tage der Zeitleiste bildet. In UTC gezählt, fiel in
+    // Mitteleuropa Neujahr 00:30 ins Vorjahr.
+    final silvester = await ladeHoch(erikaToken, 'sv.jpg', 10);
+    final neujahr = await ladeHoch(erikaToken, 'nj.jpg', 60);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    for (final (id, wann) in [
+      (silvester, DateTime(2025, 12, 31, 23, 30)),
+      (neujahr, DateTime(2026, 1, 1, 0, 30)),
+    ]) {
+      await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+        AssetsCompanion(fileCreatedAt: Value(wann)),
+      );
+    }
+    final s = await jsonAus(
+      await frag('GET', '/api/v1/statistik', token: erikaToken),
+    );
+    expect(s['proJahr'], {'2025': 1, '2026': 1});
+    expect(s['proMonat'], {'12': 1, '1': 1});
+  });
+
   test(
     'Duplikate: Gruppen aus den Einbettungen, bestes Foto markiert',
     () async {
