@@ -1314,6 +1314,96 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Sonstiges'**
   String get aktArtSonstiges;
+
+  /// No description provided for @angabenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Angaben'**
+  String get angabenTitel;
+
+  /// No description provided for @angabenDatumGeschaetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum geschätzt'**
+  String get angabenDatumGeschaetzt;
+
+  /// No description provided for @angabenBearbeitet.
+  ///
+  /// In de, this message translates to:
+  /// **'bearbeitet'**
+  String get angabenBearbeitet;
+
+  /// No description provided for @angabenStandortBekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Standort bekannt'**
+  String get angabenStandortBekannt;
+
+  /// No description provided for @angabenGeerbt.
+  ///
+  /// In de, this message translates to:
+  /// **'vom Nachbarfoto übernommen'**
+  String get angabenGeerbt;
+
+  /// No description provided for @angabenBeschreibung.
+  ///
+  /// In de, this message translates to:
+  /// **'Beschreibung'**
+  String get angabenBeschreibung;
+
+  /// No description provided for @angabenSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get angabenSpeichern;
+
+  /// No description provided for @angabenGespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeichert'**
+  String get angabenGespeichert;
+
+  /// No description provided for @angabenAutomatisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch: {text}'**
+  String angabenAutomatisch(String text);
+
+  /// No description provided for @angabenSterne.
+  ///
+  /// In de, this message translates to:
+  /// **'{i} von 5'**
+  String angabenSterne(int i);
+
+  /// No description provided for @angabenSerie.
+  ///
+  /// In de, this message translates to:
+  /// **'Serie mit {n} Aufnahmen'**
+  String angabenSerie(int n);
+
+  /// No description provided for @angabenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Erkannter Text'**
+  String get angabenText;
+
+  /// No description provided for @angabenTranskript.
+  ///
+  /// In de, this message translates to:
+  /// **'Transkript'**
+  String get angabenTranskript;
+
+  /// No description provided for @angabenImportiert.
+  ///
+  /// In de, this message translates to:
+  /// **'Importiert {datum}'**
+  String angabenImportiert(String datum);
+
+  /// No description provided for @angabenSerieTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Serie · {n} Aufnahmen'**
+  String angabenSerieTitel(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

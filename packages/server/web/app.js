@@ -1610,7 +1610,7 @@ async function zeigeAngaben() {
   if (!a || !angabenOffen) return;
   feld.replaceChildren(el('p', 'neben', t('Lade …')));
   let d;
-  try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
+  try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
   if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
   const teile = [];
   teile.push(el('h3', null, t('Angaben')));

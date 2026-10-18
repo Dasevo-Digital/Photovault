@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'angaben.dart';
 
 /// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
 /// das Raster dahinter erscheint, und mit einer Blende statt eines Schubs
@@ -145,74 +146,7 @@ class _BetrachterState extends State<Betrachter> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  Future<void> _angaben() async {
-    final a = await _lade(_aktuell);
-    if (a == null || !mounted) return;
-    final t = AppTexte.of(context);
-    final sprache = Localizations.localeOf(context).toLanguageTag();
-    final zeit = DateFormat.yMMMMEEEEd(
-      sprache,
-    ).add_Hm().format(a.fileCreatedAt.toLocal());
-    final ort = [
-      a.locationCity,
-      a.locationState,
-      a.locationCountry,
-    ].whereType<String>().where((s) => s.isNotEmpty).join(', ');
-    // Ohne Ortsnamen (der Server hat die Umkehr-Geokodierung nicht
-    // eingerichtet) wenigstens die Koordinaten.
-    final koordinaten = a.latitude == null || a.longitude == null
-        ? null
-        : '${a.latitude!.toStringAsFixed(5)}, '
-              '${a.longitude!.toStringAsFixed(5)}';
-    final kamera = [a.cameraMake, a.cameraModel].whereType<String>().join(' ');
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: Text(zeit),
-            ),
-            ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: Text(a.originalFileName),
-              subtitle: a.widthPx == null
-                  ? null
-                  : Text('${a.widthPx} × ${a.heightPx}'),
-            ),
-            if (ort.isNotEmpty || koordinaten != null)
-              ListTile(
-                leading: const Icon(Icons.place_outlined),
-                title: Text(ort.isNotEmpty ? ort : koordinaten!),
-                subtitle: ort.isNotEmpty && koordinaten != null
-                    ? Text(koordinaten)
-                    : null,
-              ),
-            if (kamera.trim().isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: Text(kamera),
-                subtitle: a.lensModel == null ? null : Text(a.lensModel!),
-              ),
-            if ((a.description ?? '').isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.notes_outlined),
-                title: Text(a.description!),
-              ),
-            if ((a.aiCaption ?? '').isNotEmpty)
-              ListTile(
-                leading: const Icon(Icons.auto_awesome_outlined),
-                title: Text(a.aiCaption!),
-                subtitle: Text(t.betrachterBeschreibungKi),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> _angaben() => zeigeAngaben(context, widget.sitzung, _aktuell);
 
   void _zugWeiter(DragUpdateDetails d) => setState(() {
     _zieht = true;

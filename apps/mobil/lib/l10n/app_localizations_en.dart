@@ -842,4 +842,59 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get aktArtSonstiges => 'Other';
+
+  @override
+  String get angabenTitel => 'Details';
+
+  @override
+  String get angabenDatumGeschaetzt => 'Date estimated';
+
+  @override
+  String get angabenBearbeitet => 'edited';
+
+  @override
+  String get angabenStandortBekannt => 'Location known';
+
+  @override
+  String get angabenGeerbt => 'taken from a neighbouring photo';
+
+  @override
+  String get angabenBeschreibung => 'Description';
+
+  @override
+  String get angabenSpeichern => 'Save';
+
+  @override
+  String get angabenGespeichert => 'Saved';
+
+  @override
+  String angabenAutomatisch(String text) {
+    return 'Automatic: $text';
+  }
+
+  @override
+  String angabenSterne(int i) {
+    return '$i of 5';
+  }
+
+  @override
+  String angabenSerie(int n) {
+    return 'Stack with $n items';
+  }
+
+  @override
+  String get angabenText => 'Recognized text';
+
+  @override
+  String get angabenTranskript => 'Transcript';
+
+  @override
+  String angabenImportiert(String datum) {
+    return 'Imported $datum';
+  }
+
+  @override
+  String angabenSerieTitel(int n) {
+    return 'Stack · $n items';
+  }
 }

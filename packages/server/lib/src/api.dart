@@ -7,12 +7,14 @@ import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
+import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplicate_selection.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/kartengruppen.dart';
+import 'package:kern/services/laendernamen.dart';
 import 'package:kern/services/lebensbaum.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/lebensbaum_vorlage.dart';
@@ -722,29 +724,23 @@ class _Api {
   /// wie in den Listen sieht; `ort` und `kamera` werden hier ausführlicher.
   Future<Response> angaben(Request anfrage, String id) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final a = await db.assetById(id);
-    if (a == null || a.isLocked) {
-      return _json({'fehler': 'unbekannt'}, status: 404);
-    }
-    final personen = await db.peopleForAsset(id);
-    final tags = await db.tagsForAsset(id);
-    final alben = await (db.select(db.albums).join([
-      innerJoin(db.albumAssets, db.albumAssets.albumId.equalsExp(db.albums.id)),
-    ])..where(db.albumAssets.assetId.equals(id))).get();
+    final angaben = await aufnahmeangaben(db, id);
+    if (angaben == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final a = angaben.aufnahme;
     return _json({
       ...zeileAlsJson(Rasterzeile.aus(a)),
       'importiert': a.importedAt.toIso8601String(),
       'bytes': a.fileSizeBytes,
       'format': a.dateiformat,
       'beschreibung': a.description,
-      'kiBeschreibung': a.aiCaptionDe ?? a.aiCaption,
+      // In der Sprache der Oberfläche, wie auf dem Telefon.
+      'kiBeschreibung': _sprache(anfrage) == 'de'
+          ? (a.aiCaptionDe ?? a.aiCaption)
+          : a.aiCaption,
       'text': a.ocrText,
       'transkript': a.transkript,
       'datumGeschaetzt': a.datumGeschaetzt,
-      'bearbeitet':
-          a.developedRelativePath != null ||
-          a.trimmedRelativePath != null ||
-          a.restoredRelativePath != null,
+      'bearbeitet': angaben.bearbeitet,
       'kamera': {
         'hersteller': a.cameraMake,
         'modell': a.cameraModel,
@@ -760,23 +756,19 @@ class _Api {
         'ort': {
           'breite': a.latitude,
           'laenge': a.longitude,
-          'land': a.locationCountry,
+          'land': landAnzeige(a.locationCountry, _sprache(anfrage)),
           'region': a.locationState,
           'stadt': a.locationCity,
           'geerbt': a.ortGeerbt,
         },
       'personen': [
-        for (final p in personen) {'id': p.id, 'name': p.name},
+        for (final p in angaben.personen) {'id': p.id, 'name': p.name},
       ],
       'schlagwoerter': [
-        for (final t in tags) {'id': t.id, 'name': t.name},
+        for (final t in angaben.schlagwoerter) {'id': t.id, 'name': t.name},
       ],
       'alben': [
-        for (final z in alben)
-          {
-            'id': z.readTable(db.albums).id,
-            'name': z.readTable(db.albums).name,
-          },
+        for (final b in angaben.alben) {'id': b.id, 'name': b.name},
       ],
     });
   }
@@ -785,15 +777,7 @@ class _Api {
   /// Raster steht nur das Titelbild, der Rest öffnet sich hierüber.
   Future<Response> serie(Request anfrage, String id) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final mitglieder = await db.assetsInStack(id);
-    final sichtbar =
-        [
-          for (final a in mitglieder)
-            if (!a.isTrashed && !a.isLocked) a,
-        ]..sort((x, y) {
-          if (x.isStackCover != y.isStackCover) return x.isStackCover ? -1 : 1;
-          return x.fileCreatedAt.compareTo(y.fileCreatedAt);
-        });
+    final sichtbar = await serieZumAnsehen(db, id);
     if (sichtbar.isEmpty) return _json({'fehler': 'unbekannt'}, status: 404);
     return _json({
       'aufnahmen': [for (final a in sichtbar) zeileAlsJson(Rasterzeile.aus(a))],

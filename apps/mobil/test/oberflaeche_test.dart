@@ -23,6 +23,8 @@ import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
 import 'package:photo_vault_mobil/lokal/ungesichert.dart';
+import 'package:kern/services/aufnahmeangaben.dart';
+import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
@@ -727,6 +729,98 @@ void main() {
     expect(find.text(t.aktivitaetenTitel), findsOneWidget);
     expect(find.textContaining('3 Aufnahmen'), findsOneWidget);
     expect(find.text('Zur Hütte'), findsOneWidget);
+  });
+
+  testWidgets('Angaben wie im Browser: Zeilen, Beschreibung, Bewertung', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['x1']);
+    await (db.update(db.assets)..where((t) => t.id.equals('x1'))).write(
+      const AssetsCompanion(
+        widthPx: Value(4032),
+        heightPx: Value(3024),
+        fileSizeBytes: Value(2516582),
+        cameraMake: Value('Apple'),
+        cameraModel: Value('iPhone 17 Pro'),
+        lensModel: Value('Hauptkamera'),
+        focalLengthMm: Value(6.8),
+        fNumber: Value(1.8),
+        exposureTimeSeconds: Value(0.004),
+        iso: Value(80),
+        latitude: Value(47.26),
+        longitude: Value(11.39),
+        locationCity: Value('Innsbruck'),
+        locationCountry: Value('Austria'),
+        ocrText: Value('Gipfelkreuz 2026'),
+        aiCaption: Value('A cross on a summit'),
+        aiCaptionDe: Value('Ein Kreuz auf einem Gipfel'),
+      ),
+    );
+    await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Erika'));
+    await db.insertFace(
+      FacesCompanion.insert(
+        id: 'g1',
+        assetId: 'x1',
+        personId: const Value('p1'),
+        boxX: 0.1,
+        boxY: 0.1,
+        boxW: 0.2,
+        boxH: 0.2,
+      ),
+    );
+    await db.into(db.tags).insert(TagsCompanion.insert(id: 't1', name: 'Berg'));
+    await db
+        .into(db.assetTags)
+        .insert(AssetTagsCompanion.insert(assetId: 'x1', tagId: 't1'));
+    await db.createAlbum(
+      AlbumsCompanion.insert(
+        id: 'b1',
+        name: 'Alpen',
+        createdAt: DateTime(2026),
+      ),
+    );
+    await db.addAssetsToAlbum('b1', ['x1']);
+    final angaben = (await aufnahmeangaben(db, 'x1'))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Angabenliste(sitzung: sitzung, angaben: angaben),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('x1.jpg'), findsOneWidget);
+    expect(find.text('4032 × 3024 · 2.4 MB'), findsOneWidget);
+    expect(find.text('Apple iPhone 17 Pro'), findsOneWidget);
+    expect(
+      find.text('Hauptkamera\n6.8 mm · f/1.8 · 1/250 s · ISO 80'),
+      findsOneWidget,
+    );
+    expect(find.text('Innsbruck, Österreich'), findsOneWidget);
+    expect(find.text('Erika'), findsOneWidget);
+    expect(find.text('Berg'), findsOneWidget);
+    expect(find.text('Alpen'), findsOneWidget);
+    expect(
+      find.text('Automatisch: Ein Kreuz auf einem Gipfel'),
+      findsOneWidget,
+    );
+    await tester.enterText(find.byType(TextField), 'Am Gipfel');
+    await tester.ensureVisible(find.text('Speichern'));
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gespeichert'), findsOneWidget);
+    expect((await db.assetById('x1'))!.description, 'Am Gipfel');
+    await tester.ensureVisible(find.byTooltip('4 von 5'));
+    await tester.tap(find.byTooltip('4 von 5'));
+    await tester.pumpAndSettle();
+    expect((await db.assetById('x1'))!.rating, 4);
+    // Dieselbe Bewertung noch einmal nimmt sie weg.
+    await tester.tap(find.byTooltip('4 von 5'));
+    await tester.pumpAndSettle();
+    expect((await db.assetById('x1'))!.rating, 0);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

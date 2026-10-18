@@ -371,5 +371,20 @@
   "aktArtAusflug": "Outing",
   "aktArtBesichtigung": "Sightseeing",
   "aktArtBootsfahrt": "Boat trip",
-  "aktArtSonstiges": "Other"
+  "aktArtSonstiges": "Other",
+  "angabenTitel": "Details",
+  "angabenDatumGeschaetzt": "Date estimated",
+  "angabenBearbeitet": "edited",
+  "angabenStandortBekannt": "Location known",
+  "angabenGeerbt": "taken from a neighbouring photo",
+  "angabenBeschreibung": "Description",
+  "angabenSpeichern": "Save",
+  "angabenGespeichert": "Saved",
+  "angabenAutomatisch": "Automatic: {text}",
+  "angabenSterne": "{i} of 5",
+  "angabenSerie": "Stack with {n} items",
+  "angabenText": "Recognized text",
+  "angabenTranskript": "Transcript",
+  "angabenImportiert": "Imported {datum}",
+  "angabenSerieTitel": "Stack · {n} items"
 }

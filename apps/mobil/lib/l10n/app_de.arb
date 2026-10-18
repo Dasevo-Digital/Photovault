@@ -492,5 +492,55 @@
   "aktArtAusflug": "Ausflug",
   "aktArtBesichtigung": "Besichtigung",
   "aktArtBootsfahrt": "Bootsfahrt",
-  "aktArtSonstiges": "Sonstiges"
+  "aktArtSonstiges": "Sonstiges",
+  "angabenTitel": "Angaben",
+  "angabenDatumGeschaetzt": "Datum geschätzt",
+  "angabenBearbeitet": "bearbeitet",
+  "angabenStandortBekannt": "Standort bekannt",
+  "angabenGeerbt": "vom Nachbarfoto übernommen",
+  "angabenBeschreibung": "Beschreibung",
+  "angabenSpeichern": "Speichern",
+  "angabenGespeichert": "Gespeichert",
+  "angabenAutomatisch": "Automatisch: {text}",
+  "@angabenAutomatisch": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "angabenSterne": "{i} von 5",
+  "@angabenSterne": {
+    "placeholders": {
+      "i": {
+        "type": "int"
+      }
+    }
+  },
+  "angabenSerie": "Serie mit {n} Aufnahmen",
+  "@angabenSerie": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "angabenText": "Erkannter Text",
+  "angabenTranskript": "Transkript",
+  "angabenImportiert": "Importiert {datum}",
+  "@angabenImportiert": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "angabenSerieTitel": "Serie · {n} Aufnahmen",
+  "@angabenSerieTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

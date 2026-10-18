@@ -7,6 +7,7 @@ import 'package:kern/services/reiseuebersicht.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../bilder.dart';
+import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'betrachter.dart';
@@ -151,12 +152,6 @@ void _oeffne(BuildContext context, String titel, Widget inhalt) =>
         ),
       ),
     );
-
-/// Das Datum wie im Browser (`dateStyle: 'medium'`): „30.08.2026“ bzw.
-/// „Aug 30, 2026“.
-DateFormat datumMittel(String sprache) => sprache.startsWith('de')
-    ? DateFormat('dd.MM.yyyy', sprache)
-    : DateFormat.yMMMd(sprache);
 
 IconData symbolFuerArt(String kennung) => switch (kennung) {
   'spaziergang' => Icons.directions_walk,
