@@ -715,8 +715,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        'Wanderung · 03.07.2026 · 09:00–12:00 · 3 h 0 min · 11,1 km · '
-        '2 Aufnahmen',
+        'Wanderung · 03.07.2026 · 09:00–12:00 · 3\u00a0h 0\u00a0min · '
+        '11,1\u00a0km · 2 Aufnahmen',
       ),
       findsOneWidget,
     );

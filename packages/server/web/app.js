@@ -34,6 +34,8 @@ const el = (tag, klasse, text) => {
   if (text !== undefined) e.textContent = text;
   return e;
 };
+// „1 Aufnahme“, „3 Aufnahmen“ – wie auf dem Telefon.
+const anzahlText = (n) => (n === 1 ? t('1 Aufnahme') : t('{n} Aufnahmen', { n }));
 const miniaturUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/miniatur`;
 const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
 const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
@@ -216,7 +218,7 @@ function zeigeListe(neu, titel) {
   $('raster-kopf').hidden = !liste.kopf;
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
-  if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? t('{n} Aufnahmen', { n: liste.aufnahmen.length }) : t('Keine Aufnahmen.');
+  if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Keine Aufnahmen.');
 }
 
 async function ladeMehr() {
@@ -227,7 +229,7 @@ async function ladeMehr() {
     haengeAn(d.aufnahmen);
     if (!d.weiter) {
       liste.mehr = null;
-      $('ende').textContent = liste.aufnahmen.length ? t('{n} Aufnahmen', { n: liste.aufnahmen.length }) : t('Noch keine Aufnahmen.');
+      $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Noch keine Aufnahmen.');
     }
   } catch (x) {
     $('ende').textContent = x.message;
@@ -337,7 +339,7 @@ async function zeigeAlben() {
   const d = await api('/api/v1/alben');
   if (d.alben.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Alben.')));
   for (const a of d.alben) {
-    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, t('{n} Aufnahmen', { n: a.anzahl }), `#/alben/${encodeURIComponent(a.id)}`));
+    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`));
   }
 }
 
@@ -378,19 +380,19 @@ function ortText(o) {
 
 function dauerText(von, bis) {
   const minuten = Math.max(0, Math.round((new Date(bis) - new Date(von)) / 60000));
-  return minuten < 60 ? t('{m} min', { m: minuten }) : t('{h} h {m} min', { h: Math.floor(minuten / 60), m: minuten % 60 });
+  return minuten < 60 ? t('{m}\u00a0min', { m: minuten }) : t('{h}\u00a0h {m}\u00a0min', { h: Math.floor(minuten / 60), m: minuten % 60 });
 }
 
 function reisekarte(r) {
   return karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name,
-    `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`,
+    `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${anzahlText(r.anzahl)}`,
     `#/reisen/${encodeURIComponent(r.id)}`, { zusatz: ortText(r.ort) });
 }
 
 function aktivitaetskarte(a, inReise) {
   const zusatz = [ortText(a.ort), !inReise && a.reisename ? t('Gehört zu: {reise}', { reise: a.reisename }) : null].filter(Boolean).join(' · ');
   return karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name,
-    `${zeitraum.format(new Date(a.von))} · ${t('{n} Aufnahmen', { n: a.anzahl })}`,
+    `${zeitraum.format(new Date(a.von))} · ${anzahlText(a.anzahl)}`,
     `#/aktivitaeten/${encodeURIComponent(a.id)}`, { zusatz, kennzeichen: `${artZeichen(a.art)} ${artName(a.art)}` });
 }
 
@@ -414,7 +416,7 @@ async function zeigeReise(id) {
   const d = await api(`/api/v1/reisen/${encodeURIComponent(id)}?sprache=${SPRACHE}`);
   const r = d.reise;
   const kopf = el('div', 'reisekopf');
-  kopf.append(el('p', 'fakten', `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`));
+  kopf.append(el('p', 'fakten', `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${anzahlText(r.anzahl)}`));
   if (r.notiz) kopf.append(el('p', 'notiz', r.notiz));
   if (d.aktivitaeten.length) {
     kopf.append(el('h3', null, t('Aktivitäten')));
@@ -436,8 +438,8 @@ async function zeigeAktivitaet(id) {
     zeitraum.format(new Date(a.von)),
     `${uhrzeit.format(new Date(a.von))}–${uhrzeit.format(new Date(a.bis))}`,
     dauerText(a.von, a.bis),
-    a.streckeKm > 0 ? t('{km} km', { km: kilometer.format(a.streckeKm) }) : null,
-    t('{n} Aufnahmen', { n: a.anzahl }),
+    a.streckeKm > 0 ? t('{km}\u00a0km', { km: kilometer.format(a.streckeKm) }) : null,
+    anzahlText(a.anzahl),
   ].filter(Boolean).join(' · ')));
   const ort = ortText(a.ort);
   if (ort) kopf.append(el('p', 'nebenzeile', `📍 ${ort}`));
@@ -596,7 +598,7 @@ function duplikatgruppe(g) {
   ignorieren.addEventListener('click', async () => {
     try { await befehl('duplikatgruppeIgnorieren', { ids }); entferne(); } catch (x) { $('dupl-hinweis').textContent = x.message; }
   });
-  kopf.append(el('span', null, g.loeschbar.length ? t('{n} Aufnahmen', { n: g.aufnahmen.length }) : t('{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand', { n: g.aufnahmen.length })), ignorieren);
+  kopf.append(el('span', null, g.loeschbar.length ? anzahlText(g.aufnahmen.length) : t('{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand', { n: g.aufnahmen.length })), ignorieren);
   box.append(kopf);
   const reihe = el('div', 'reihe');
   g.aufnahmen.forEach((a, i) => {
@@ -840,7 +842,7 @@ async function zeigePersonen() {
   if (d.personen.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Personen.')));
   for (const p of d.personen) {
     const bild = p.bild ? `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}` : null;
-    const k = karte(bild, p.name, t('{n} Aufnahmen', { n: p.anzahl }), `#/personen/${encodeURIComponent(p.id)}`);
+    const k = karte(bild, p.name, anzahlText(p.anzahl), `#/personen/${encodeURIComponent(p.id)}`);
     k.classList.add('person');
     $('karten').append(k);
   }

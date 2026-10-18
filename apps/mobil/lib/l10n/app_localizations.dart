@@ -1252,19 +1252,19 @@ abstract class AppTexte {
   /// No description provided for @dauerMinuten.
   ///
   /// In de, this message translates to:
-  /// **'{m} min'**
+  /// **'{m} min'**
   String dauerMinuten(int m);
 
   /// No description provided for @dauerStunden.
   ///
   /// In de, this message translates to:
-  /// **'{h} h {m} min'**
+  /// **'{h} h {m} min'**
   String dauerStunden(int h, int m);
 
   /// No description provided for @streckeKm.
   ///
   /// In de, this message translates to:
-  /// **'{km} km'**
+  /// **'{km} km'**
   String streckeKm(String km);
 
   /// No description provided for @keineRoute.

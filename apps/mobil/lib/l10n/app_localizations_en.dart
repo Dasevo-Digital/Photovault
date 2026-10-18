@@ -806,17 +806,17 @@ class AppTexteEn extends AppTexte {
 
   @override
   String dauerMinuten(int m) {
-    return '$m min';
+    return '$m min';
   }
 
   @override
   String dauerStunden(int h, int m) {
-    return '$h h $m min';
+    return '$h h $m min';
   }
 
   @override
   String streckeKm(String km) {
-    return '$km km';
+    return '$km km';
   }
 
   @override

@@ -253,7 +253,7 @@ class _ReiseSeiteState extends State<ReiseSeite> {
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 236,
+                    height: 300,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: aktivitaeten.length,
@@ -481,8 +481,13 @@ class _Routenkarte extends StatelessWidget {
                   ),
               ],
             ),
-            const SimpleAttributionWidget(
-              source: Text('OpenStreetMap contributors'),
+            // Klein, als Knopf zum Aufklappen: Die Zeile der grossen Karte
+            // deckte auf 260 Punkten ein Fünftel der Route zu.
+            const RichAttributionWidget(
+              popupInitialDisplayDuration: Duration.zero,
+              attributions: [
+                TextSourceAttribution('OpenStreetMap contributors'),
+              ],
             ),
           ],
         ),
@@ -492,7 +497,9 @@ class _Routenkarte extends StatelessWidget {
 }
 
 /// Die Karten der Liste, so viele nebeneinander, wie Platz haben – auf
-/// dem Telefon zwei, wie im schmalen Browser.
+/// dem Telefon zwei, wie im schmalen Browser. Zeile für Zeile, damit jede
+/// Zeile so hoch wird, wie ihr längster Text es braucht – eine feste Höhe
+/// schnitt bei grosser Schrift den Ort ab.
 class _Kartengitter extends StatelessWidget {
   const _Kartengitter({required this.karten});
 
@@ -505,15 +512,25 @@ class _Kartengitter extends StatelessWidget {
       builder: (context, c) {
         const abstand = 14.0;
         final spalten = (c.crossAxisExtent / 200).floor().clamp(2, 8);
-        final breite = (c.crossAxisExtent - abstand * (spalten - 1)) / spalten;
-        return SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: spalten,
-            mainAxisSpacing: abstand,
-            crossAxisSpacing: abstand,
-            mainAxisExtent: breite + 76,
+        final zeilen = (karten.length / spalten).ceil();
+        return SliverList.builder(
+          itemCount: zeilen,
+          itemBuilder: (context, z) => Padding(
+            padding: EdgeInsets.only(top: z == 0 ? 0 : abstand),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < spalten; i++) ...[
+                  if (i > 0) const SizedBox(width: abstand),
+                  Expanded(
+                    child: z * spalten + i < karten.length
+                        ? karten[z * spalten + i]
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
           ),
-          delegate: SliverChildListDelegate(karten),
         );
       },
     ),
@@ -552,6 +569,7 @@ class _Karte extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AspectRatio(
@@ -612,14 +630,14 @@ class _Karte extends StatelessWidget {
           ),
           Text(
             untertitel,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: klein,
           ),
           if (zusatz != null)
             Text(
               zusatz!,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: klein,
             ),

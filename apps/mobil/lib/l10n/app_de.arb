@@ -458,7 +458,7 @@
       }
     }
   },
-  "dauerMinuten": "{m} min",
+  "dauerMinuten": "{m} min",
   "@dauerMinuten": {
     "placeholders": {
       "m": {
@@ -466,7 +466,7 @@
       }
     }
   },
-  "dauerStunden": "{h} h {m} min",
+  "dauerStunden": "{h} h {m} min",
   "@dauerStunden": {
     "placeholders": {
       "h": {
@@ -477,7 +477,7 @@
       }
     }
   },
-  "streckeKm": "{km} km",
+  "streckeKm": "{km} km",
   "@streckeKm": {
     "placeholders": {
       "km": {
