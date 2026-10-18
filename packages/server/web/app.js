@@ -1688,7 +1688,7 @@ async function zeigeAlbumDialog() {
   for (const a of d.alben) {
     const li = el('li');
     const lab = el('label');
-    const r = el('input'); r.type = 'radio'; r.name = 'album'; r.value = a.id;
+    const r = el('input'); r.type = 'radio'; r.name = 'album'; r.value = a.id; r.dataset.name = a.name;
     lab.append(r, document.createTextNode(` ${a.name} (${a.anzahl})`));
     li.append(lab);
     ul.append(li);
@@ -1702,11 +1702,15 @@ $('form-album').addEventListener('submit', async (e) => {
   const f = e.target;
   const g = gewaehlte();
   const neu = f.neu.value.trim();
-  const gewaehlt = f.album && f.album.value;
+  // Nicht über `f.album`: Bei genau einem Album ist das der eine Knopf
+  // statt einer Liste – sein `value` steht dann auch ohne Haken, und
+  // darüber zu laufen warf „f.album is not iterable“.
+  const knopf = f.querySelector('input[name="album"]:checked');
+  const gewaehlt = knopf ? knopf.value : '';
   if (!neu && !gewaehlt) { e.preventDefault(); return; }
   try {
     let albumId = gewaehlt;
-    let name = gewaehlt ? [...f.album].find((r) => r.checked)?.parentElement.textContent.trim() : neu;
+    let name = knopf ? knopf.dataset.name : neu;
     if (neu) {
       albumId = crypto.randomUUID();
       name = neu;
