@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.35.0" date="2026-10-18">
+      <description>
+        <p>The web interface and the phone app now offer the same features: trips with their activities and routes in both; in the browser the day and drag selection, columns, scrubber, swipe gestures, favorites and uploading; on the phone statistics, duplicates, family tree and tree of life, editing, library settings, devices and password, and the full photo details.</p>
+        <p>Statistics count years and months in local time instead of UTC.</p>
+      </description>
+    </release>
     <release version="3.34.0" date="2026-10-18">
       <description>
         <p>Apple ProRAW previews are no longer too dark: linear DNGs now use the full-size JPEG the iPhone embeds. The stored size of HEIC, RAW and PSD photos now comes from the file itself; existing entries are corrected once.</p>
