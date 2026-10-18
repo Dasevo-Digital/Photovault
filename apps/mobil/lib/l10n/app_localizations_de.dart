@@ -1256,4 +1256,54 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get entwSpeichern => 'Speichern';
+
+  @override
+  String get eigenGeraete => 'Geräte';
+
+  @override
+  String get eigenDiesesTelefon => '(dieses Telefon)';
+
+  @override
+  String eigenZuletzt(String datum) {
+    return 'zuletzt $datum';
+  }
+
+  @override
+  String get eigenGeraetAbmelden => 'Gerät abmelden';
+
+  @override
+  String eigenGeraetAbmeldenFrage(String name) {
+    return '„$name“ abmelden?';
+  }
+
+  @override
+  String get eigenPasswortAendern => 'Passwort ändern';
+
+  @override
+  String get eigenPasswortAlt => 'Aktuelles Passwort';
+
+  @override
+  String get eigenPasswortNeu => 'Neues Passwort';
+
+  @override
+  String get eigenPasswortNochmal => 'Noch einmal';
+
+  @override
+  String get eigenTotpCode => 'TOTP-Code';
+
+  @override
+  String get eigenAndereAbmelden => 'Andere Geräte abmelden';
+
+  @override
+  String get eigenAendern => 'Ändern';
+
+  @override
+  String get eigenPasswortUngleich =>
+      'Die neuen Passwörter stimmen nicht überein.';
+
+  @override
+  String get eigenPasswortGeaendert => 'Passwort geändert.';
+
+  @override
+  String get eigenTotpEingerichtet => 'TOTP eingerichtet';
 }

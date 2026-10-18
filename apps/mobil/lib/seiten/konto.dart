@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'eigenes_konto.dart';
 import 'konten.dart';
 import 'sicherung.dart';
 
@@ -136,8 +137,13 @@ class Konto extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (sitzung.abgleich case final a?)
+              if (sitzung.abgleich case final a?) ...[
+                EigenesKonto(
+                  verbindung: a.verbindung,
+                  abmelden: () => _abmelden(context),
+                ),
                 _KontenZugang(sitzung, a.verbindung),
+              ],
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, s) => ListTile(

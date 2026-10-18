@@ -2034,6 +2034,96 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Speichern'**
   String get entwSpeichern;
+
+  /// No description provided for @eigenGeraete.
+  ///
+  /// In de, this message translates to:
+  /// **'Geräte'**
+  String get eigenGeraete;
+
+  /// No description provided for @eigenDiesesTelefon.
+  ///
+  /// In de, this message translates to:
+  /// **'(dieses Telefon)'**
+  String get eigenDiesesTelefon;
+
+  /// No description provided for @eigenZuletzt.
+  ///
+  /// In de, this message translates to:
+  /// **'zuletzt {datum}'**
+  String eigenZuletzt(String datum);
+
+  /// No description provided for @eigenGeraetAbmelden.
+  ///
+  /// In de, this message translates to:
+  /// **'Gerät abmelden'**
+  String get eigenGeraetAbmelden;
+
+  /// No description provided for @eigenGeraetAbmeldenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ abmelden?'**
+  String eigenGeraetAbmeldenFrage(String name);
+
+  /// No description provided for @eigenPasswortAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort ändern'**
+  String get eigenPasswortAendern;
+
+  /// No description provided for @eigenPasswortAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktuelles Passwort'**
+  String get eigenPasswortAlt;
+
+  /// No description provided for @eigenPasswortNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neues Passwort'**
+  String get eigenPasswortNeu;
+
+  /// No description provided for @eigenPasswortNochmal.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch einmal'**
+  String get eigenPasswortNochmal;
+
+  /// No description provided for @eigenTotpCode.
+  ///
+  /// In de, this message translates to:
+  /// **'TOTP-Code'**
+  String get eigenTotpCode;
+
+  /// No description provided for @eigenAndereAbmelden.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere Geräte abmelden'**
+  String get eigenAndereAbmelden;
+
+  /// No description provided for @eigenAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Ändern'**
+  String get eigenAendern;
+
+  /// No description provided for @eigenPasswortUngleich.
+  ///
+  /// In de, this message translates to:
+  /// **'Die neuen Passwörter stimmen nicht überein.'**
+  String get eigenPasswortUngleich;
+
+  /// No description provided for @eigenPasswortGeaendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort geändert.'**
+  String get eigenPasswortGeaendert;
+
+  /// No description provided for @eigenTotpEingerichtet.
+  ///
+  /// In de, this message translates to:
+  /// **'TOTP eingerichtet'**
+  String get eigenTotpEingerichtet;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

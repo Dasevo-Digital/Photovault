@@ -33,6 +33,7 @@ import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
 import 'package:photo_vault_mobil/seiten/duplikate.dart';
+import 'package:photo_vault_mobil/seiten/eigenes_konto.dart';
 import 'package:photo_vault_mobil/seiten/einstellungen.dart';
 import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
@@ -1170,6 +1171,111 @@ void main() {
     expect(e.temperature, isNull, reason: 'automatischer Weissabgleich');
     final datei = sitzung.paths.absolute(a.developedRelativePath!);
     expect(await tester.runAsync(datei.exists), isTrue);
+  });
+
+  testWidgets('Konto wie im Browser: Geräte abmelden, Passwort ändern', (
+    tester,
+  ) async {
+    final anfragen = <String>[];
+    var geraete = [
+      {'id': 'g1', 'name': 'Telefon', 'zuletzt': '2026-10-18T09:00:00Z'},
+      {
+        'id': 'g2',
+        'name': 'Browser (Firefox)',
+        'zuletzt': '2026-10-17T20:00:00Z',
+        'adresse': '192.0.2.7',
+      },
+    ];
+    Map<String, Object?>? passwort;
+    final client = MockClient((r) async {
+      anfragen.add('${r.method} ${r.url.path}');
+      switch ('${r.method} ${r.url.path}') {
+        case 'GET /api/v1/konto':
+          return http.Response(
+            jsonEncode({
+              'name': 'erika',
+              'verwalter': true,
+              'totp': true,
+              'geraet': 'g1',
+            }),
+            200,
+          );
+        case 'GET /api/v1/geraete':
+          return http.Response(jsonEncode({'geraete': geraete}), 200);
+        case 'DELETE /api/v1/geraete/g2':
+          geraete = [geraete.first];
+          return http.Response('{}', 200);
+        case 'POST /api/v1/konto/passwort':
+          passwort = (jsonDecode(r.body) as Map).cast<String, Object?>();
+          return http.Response('{}', 200);
+      }
+      return http.Response('{}', 404);
+    });
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    var abgemeldet = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: ListView(
+            children: [
+              EigenesKonto(
+                verbindung: verbindung,
+                abmelden: () => abgemeldet = true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(EigenesKonto)));
+    expect(
+      find.text('erika · ${t.kontoVerwalter} · ${t.eigenTotpEingerichtet}'),
+      findsOneWidget,
+    );
+    expect(find.text('Telefon ${t.eigenDiesesTelefon}'), findsOneWidget);
+    expect(find.text('Browser (Firefox)'), findsOneWidget);
+    // Das eigene Gerät meldet ab wie der Knopf unten auf der Kontoseite.
+    await tester.tap(find.text(t.kontoAbmelden));
+    expect(abgemeldet, isTrue);
+    // Ein anderes Gerät nach Rückfrage.
+    await tester.tap(find.text(t.eigenGeraetAbmelden).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.eigenGeraetAbmelden).last);
+    await tester.pumpAndSettle();
+    expect(anfragen, contains('DELETE /api/v1/geraete/g2'));
+    expect(find.text('Browser (Firefox)'), findsNothing);
+
+    await tester.tap(find.text(t.eigenPasswortAendern));
+    await tester.pumpAndSettle();
+    final felder = find.byType(TextField);
+    expect(felder, findsNWidgets(4), reason: 'mit TOTP-Code');
+    await tester.enterText(felder.at(0), 'altes passwort!');
+    await tester.enterText(felder.at(1), 'ein neues langes passwort');
+    await tester.enterText(felder.at(2), 'ein anderes');
+    await tester.tap(find.text(t.eigenAendern));
+    await tester.pumpAndSettle();
+    expect(find.text(t.eigenPasswortUngleich), findsOneWidget);
+    expect(passwort, isNull);
+    await tester.enterText(felder.at(2), 'ein neues langes passwort');
+    await tester.enterText(felder.at(3), '123 456');
+    await tester.tap(find.text(t.eigenAndereAbmelden));
+    await tester.tap(find.text(t.eigenAendern));
+    await tester.pumpAndSettle();
+    expect(find.text(t.eigenPasswortGeaendert), findsOneWidget);
+    expect(passwort, {
+      'alt': 'altes passwort!',
+      'neu': 'ein neues langes passwort',
+      'code': '123 456',
+      'andereAbmelden': true,
+    });
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

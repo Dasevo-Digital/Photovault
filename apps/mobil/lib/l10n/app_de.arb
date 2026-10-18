@@ -761,5 +761,34 @@
   "entwVerwerfen": "Änderungen verwerfen?",
   "entwEntfernenFrage": "Die Entwicklung entfernen und das Original zeigen?",
   "entwNichtGeladen": "Das Bild liess sich nicht laden.",
-  "entwSpeichern": "Speichern"
+  "entwSpeichern": "Speichern",
+  "eigenGeraete": "Geräte",
+  "eigenDiesesTelefon": "(dieses Telefon)",
+  "eigenZuletzt": "zuletzt {datum}",
+  "@eigenZuletzt": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "eigenGeraetAbmelden": "Gerät abmelden",
+  "eigenGeraetAbmeldenFrage": "„{name}“ abmelden?",
+  "@eigenGeraetAbmeldenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "eigenPasswortAendern": "Passwort ändern",
+  "eigenPasswortAlt": "Aktuelles Passwort",
+  "eigenPasswortNeu": "Neues Passwort",
+  "eigenPasswortNochmal": "Noch einmal",
+  "eigenTotpCode": "TOTP-Code",
+  "eigenAndereAbmelden": "Andere Geräte abmelden",
+  "eigenAendern": "Ändern",
+  "eigenPasswortUngleich": "Die neuen Passwörter stimmen nicht überein.",
+  "eigenPasswortGeaendert": "Passwort geändert.",
+  "eigenTotpEingerichtet": "TOTP eingerichtet"
 }

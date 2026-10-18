@@ -490,5 +490,20 @@
   "entwVerwerfen": "Discard changes?",
   "entwEntfernenFrage": "Remove the edits and show the original?",
   "entwNichtGeladen": "The image could not be loaded.",
-  "entwSpeichern": "Save"
+  "entwSpeichern": "Save",
+  "eigenGeraete": "Devices",
+  "eigenDiesesTelefon": "(this phone)",
+  "eigenZuletzt": "last {datum}",
+  "eigenGeraetAbmelden": "Sign out device",
+  "eigenGeraetAbmeldenFrage": "Sign out “{name}”?",
+  "eigenPasswortAendern": "Change password",
+  "eigenPasswortAlt": "Current password",
+  "eigenPasswortNeu": "New password",
+  "eigenPasswortNochmal": "Repeat",
+  "eigenTotpCode": "TOTP code",
+  "eigenAndereAbmelden": "Sign out other devices",
+  "eigenAendern": "Change",
+  "eigenPasswortUngleich": "The new passwords do not match.",
+  "eigenPasswortGeaendert": "Password changed.",
+  "eigenTotpEingerichtet": "TOTP set up"
 }
