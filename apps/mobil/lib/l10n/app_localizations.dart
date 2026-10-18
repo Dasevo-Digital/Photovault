@@ -1770,6 +1770,126 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n} Haushalte passen nicht mehr ins Bild.'**
   String baumVerschwiegen(int n);
+
+  /// No description provided for @lbStil.
+  ///
+  /// In de, this message translates to:
+  /// **'Stil'**
+  String get lbStil;
+
+  /// No description provided for @lbPergament.
+  ///
+  /// In de, this message translates to:
+  /// **'Pergament'**
+  String get lbPergament;
+
+  /// No description provided for @lbLandschaft.
+  ///
+  /// In de, this message translates to:
+  /// **'Landschaft'**
+  String get lbLandschaft;
+
+  /// No description provided for @lbWappen.
+  ///
+  /// In de, this message translates to:
+  /// **'Wappen'**
+  String get lbWappen;
+
+  /// No description provided for @lbGold.
+  ///
+  /// In de, this message translates to:
+  /// **'Gold'**
+  String get lbGold;
+
+  /// No description provided for @lbZeigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeigt'**
+  String get lbZeigt;
+
+  /// No description provided for @lbVorfahren.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorfahren'**
+  String get lbVorfahren;
+
+  /// No description provided for @lbNachkommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachkommen'**
+  String get lbNachkommen;
+
+  /// No description provided for @lbPaar.
+  ///
+  /// In de, this message translates to:
+  /// **'Paar'**
+  String get lbPaar;
+
+  /// No description provided for @lbFamilie.
+  ///
+  /// In de, this message translates to:
+  /// **'Familie'**
+  String get lbFamilie;
+
+  /// No description provided for @lbGenerationen.
+  ///
+  /// In de, this message translates to:
+  /// **'Generationen'**
+  String get lbGenerationen;
+
+  /// No description provided for @lbNachOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach oben'**
+  String get lbNachOben;
+
+  /// No description provided for @lbNachUnten.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach unten'**
+  String get lbNachUnten;
+
+  /// No description provided for @lbKreis.
+  ///
+  /// In de, this message translates to:
+  /// **'Kreis'**
+  String get lbKreis;
+
+  /// No description provided for @lbDirekteLinie.
+  ///
+  /// In de, this message translates to:
+  /// **'Direkte Linie'**
+  String get lbDirekteLinie;
+
+  /// No description provided for @lbMitGeschwistern.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Geschwistern'**
+  String get lbMitGeschwistern;
+
+  /// No description provided for @lbAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle'**
+  String get lbAlle;
+
+  /// No description provided for @lbPortraits.
+  ///
+  /// In de, this message translates to:
+  /// **'Porträts'**
+  String get lbPortraits;
+
+  /// No description provided for @lbSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Bild speichern'**
+  String get lbSpeichern;
+
+  /// No description provided for @lbStammbaum.
+  ///
+  /// In de, this message translates to:
+  /// **'Stammbaum'**
+  String get lbStammbaum;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

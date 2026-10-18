@@ -73,6 +73,8 @@ dependencies:
   # (packages/kern/README.md).
   kern:
     path: packages/kern
+  zierbild:
+    path: packages/zierbild
 
   # HTTP-Downloads der offenen Modelldateien (mit Fortschrittsanzeige)
   dio: ^5.7.0

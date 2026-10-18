@@ -8,6 +8,16 @@ import 'package:kern/services/stammbaumansicht.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'lebensbaum.dart';
+
+/// Der Weg zum Stammbaum – mit Titelleiste, wie die Seiten der Bibliothek.
+Route<void> stammbaumWeg(Sitzung sitzung, {String? fokus}) =>
+    MaterialPageRoute<void>(
+      builder: (context) => Scaffold(
+        appBar: AppBar(title: Text(AppTexte.of(context).bibStammbaum)),
+        body: Stammbaum(sitzung: sitzung, fokus: fokus),
+      ),
+    );
 
 /// Der Stammbaum um eine Person – dasselbe Bild wie im Browser (web/app.js,
 /// baumSvg): ein Band je Generation, Haushalte nebeneinander, Äste von den
@@ -15,12 +25,12 @@ import '../sitzung.dart';
 /// Mitte; zwei Finger zoomen. Das Geflecht rechnet der Kern
 /// (stammbaumansicht.dart), wie für den Server.
 class Stammbaum extends StatefulWidget {
-  const Stammbaum({super.key, required this.sitzung, this.lebensbaum});
+  const Stammbaum({super.key, required this.sitzung, this.fokus});
 
   final Sitzung sitzung;
 
-  /// Öffnet den Lebensbaum für eine Person – vom Knopf über dem Baum.
-  final void Function(String personId)? lebensbaum;
+  /// Die Person in der Mitte; ohne die zuletzt am Rechner gewählte.
+  final String? fokus;
 
   @override
   State<Stammbaum> createState() => _StammbaumState();
@@ -31,7 +41,7 @@ const _kB = 118.0, _kH = 140.0, _abstand = 10.0, _hausAbstand = 36.0;
 const _bandH = 200.0, _rand = 24.0;
 
 class _StammbaumState extends State<Stammbaum> {
-  String? _fokus;
+  late String? _fokus = widget.fokus;
   late Future<Stammbaumansicht> _daten = _lade();
 
   Future<Stammbaumansicht> _lade() =>
@@ -94,10 +104,12 @@ class _StammbaumState extends State<Stammbaum> {
                       },
                     ),
                   ),
-                  if (widget.lebensbaum != null && s.fokus != null) ...[
+                  if (s.fokus != null) ...[
                     const SizedBox(width: 8),
                     OutlinedButton(
-                      onPressed: () => widget.lebensbaum!(s.fokus!),
+                      onPressed: () => Navigator.of(context).pushReplacement(
+                        lebensbaumWeg(widget.sitzung, fokus: s.fokus),
+                      ),
                       child: Text(t.baumLebensbaum),
                     ),
                   ],
@@ -115,6 +127,8 @@ class _StammbaumState extends State<Stammbaum> {
             if (g != null)
               Expanded(
                 child: _Baum(
+                  // Eine andere Person in der Mitte: neu einpassen.
+                  key: ValueKey(s.fokus),
                   sitzung: widget.sitzung,
                   ansicht: s,
                   geflecht: g,
@@ -130,8 +144,9 @@ class _StammbaumState extends State<Stammbaum> {
 
 typedef _Lage = ({double x, double y, double mitte});
 
-class _Baum extends StatelessWidget {
+class _Baum extends StatefulWidget {
   const _Baum({
+    super.key,
     required this.sitzung,
     required this.ansicht,
     required this.geflecht,
@@ -144,8 +159,26 @@ class _Baum extends StatelessWidget {
   final void Function(String) waehle;
 
   @override
+  State<_Baum> createState() => _BaumState();
+}
+
+class _BaumState extends State<_Baum> {
+  final _steuerung = TransformationController();
+  var _eingepasst = false;
+
+  @override
+  void dispose() {
+    _steuerung.dispose();
+    super.dispose();
+  }
+
+  Sitzung get sitzung => widget.sitzung;
+  Stammbaumansicht get ansicht => widget.ansicht;
+  void waehle(String id) => widget.waehle(id);
+
+  @override
   Widget build(BuildContext context) {
-    final g = geflecht;
+    final g = widget.geflecht;
     final nachId = {for (final p in ansicht.personen) p.id: p};
     final baender = {for (final h in g.haushalte) g.band[h.id] ?? 0}.toList()
       ..sort();
@@ -200,44 +233,56 @@ class _Baum extends StatelessWidget {
       }
     }
     final farben = Theme.of(context).colorScheme;
-    return InteractiveViewer(
-      constrained: false,
-      minScale: 0.3,
-      maxScale: 2.5,
-      boundaryMargin: const EdgeInsets.all(200),
-      child: SizedBox(
-        width: gesamt,
-        height: hoehe,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _Aeste(
-                  aeste: aeste,
-                  paare: paare,
-                  linie: farben.onSurfaceVariant,
-                  paar: farben.primary,
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Zu Beginn der ganze Baum in der Breite – heranzoomen geht mit
+        // zwei Fingern.
+        if (!_eingepasst) {
+          _eingepasst = true;
+          final massstab = math.min(1.0, c.maxWidth / gesamt);
+          _steuerung.value = Matrix4.diagonal3Values(massstab, massstab, 1);
+        }
+        return InteractiveViewer(
+          transformationController: _steuerung,
+          constrained: false,
+          minScale: 0.2,
+          maxScale: 2.5,
+          boundaryMargin: const EdgeInsets.all(200),
+          child: SizedBox(
+            width: gesamt,
+            height: hoehe,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _Aeste(
+                      aeste: aeste,
+                      paare: paare,
+                      linie: farben.onSurfaceVariant,
+                      paar: farben.primary,
+                    ),
+                  ),
                 ),
-              ),
+                for (final MapEntry(key: id, value: l) in lage.entries)
+                  Positioned(
+                    left: l.x,
+                    top: l.y - 20,
+                    width: _kB,
+                    height: _kH + 40,
+                    child: _Karte(
+                      sitzung: sitzung,
+                      person: nachId[id],
+                      fokus: id == ansicht.fokus,
+                      oben: g.weitereOben[id] ?? false,
+                      unten: g.weitereUnten[id] ?? false,
+                      onTap: () => waehle(id),
+                    ),
+                  ),
+              ],
             ),
-            for (final MapEntry(key: id, value: l) in lage.entries)
-              Positioned(
-                left: l.x,
-                top: l.y - 20,
-                width: _kB,
-                height: _kH + 40,
-                child: _Karte(
-                  sitzung: sitzung,
-                  person: nachId[id],
-                  fokus: id == ansicht.fokus,
-                  oben: g.weitereOben[id] ?? false,
-                  unten: g.weitereUnten[id] ?? false,
-                  onTap: () => waehle(id),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

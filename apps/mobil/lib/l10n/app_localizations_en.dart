@@ -1117,4 +1117,64 @@ class AppTexteEn extends AppTexte {
   String baumVerschwiegen(int n) {
     return '$n households no longer fit in the picture.';
   }
+
+  @override
+  String get lbStil => 'Style';
+
+  @override
+  String get lbPergament => 'Parchment';
+
+  @override
+  String get lbLandschaft => 'Landscape';
+
+  @override
+  String get lbWappen => 'Heraldic';
+
+  @override
+  String get lbGold => 'Gold';
+
+  @override
+  String get lbZeigt => 'Shows';
+
+  @override
+  String get lbVorfahren => 'Ancestors';
+
+  @override
+  String get lbNachkommen => 'Descendants';
+
+  @override
+  String get lbPaar => 'Couple';
+
+  @override
+  String get lbFamilie => 'Family';
+
+  @override
+  String get lbGenerationen => 'Generations';
+
+  @override
+  String get lbNachOben => 'Upwards';
+
+  @override
+  String get lbNachUnten => 'Downwards';
+
+  @override
+  String get lbKreis => 'Circle';
+
+  @override
+  String get lbDirekteLinie => 'Direct line';
+
+  @override
+  String get lbMitGeschwistern => 'With siblings';
+
+  @override
+  String get lbAlle => 'All';
+
+  @override
+  String get lbPortraits => 'Portraits';
+
+  @override
+  String get lbSpeichern => 'Save as image';
+
+  @override
+  String get lbStammbaum => 'Family tree';
 }

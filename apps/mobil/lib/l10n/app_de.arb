@@ -707,5 +707,25 @@
         "type": "int"
       }
     }
-  }
+  },
+  "lbStil": "Stil",
+  "lbPergament": "Pergament",
+  "lbLandschaft": "Landschaft",
+  "lbWappen": "Wappen",
+  "lbGold": "Gold",
+  "lbZeigt": "Zeigt",
+  "lbVorfahren": "Vorfahren",
+  "lbNachkommen": "Nachkommen",
+  "lbPaar": "Paar",
+  "lbFamilie": "Familie",
+  "lbGenerationen": "Generationen",
+  "lbNachOben": "Nach oben",
+  "lbNachUnten": "Nach unten",
+  "lbKreis": "Kreis",
+  "lbDirekteLinie": "Direkte Linie",
+  "lbMitGeschwistern": "Mit Geschwistern",
+  "lbAlle": "Alle",
+  "lbPortraits": "Porträts",
+  "lbSpeichern": "Als Bild speichern",
+  "lbStammbaum": "Stammbaum"
 }

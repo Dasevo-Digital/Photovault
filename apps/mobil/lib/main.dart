@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:zierbild/zierschrift.dart';
 import 'package:kern/protokoll.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -17,6 +18,8 @@ Future<void> main() async {
   // Die Sicherung der Kamerarolle im Hintergrund (sicherung/hintergrund.dart).
   await Workmanager().initialize(sicherungImHintergrund);
   final sitzung = Sitzung();
+  // Die Schriften des Lebensbaums stehen unter der SIL Open Font License.
+  zierschriftenLizenzenAnmelden();
   runApp(PhotoVaultMobil(sitzung: sitzung));
   unawaited(sitzung.starte());
 }

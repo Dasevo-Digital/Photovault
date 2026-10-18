@@ -20,6 +20,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:zierbild/lebensbaum_flaeche.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
@@ -35,6 +36,7 @@ import 'package:photo_vault_mobil/seiten/einstellungen.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
+import 'package:photo_vault_mobil/seiten/lebensbaum.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
@@ -1038,6 +1040,64 @@ void main() {
           .value,
       'oma',
     );
+  });
+
+  testWidgets('Lebensbaum wie im Browser: Vorlage, Bezeichnungen, Tipp', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['l1']);
+    Future<void> b(String art, Map<String, Object?> werte) =>
+        db.fuehreAus(Befehl.ausJson({'art': art, 'werte': werte}));
+    for (final (id, name, geschlecht) in [
+      ('oma', 'Erika Muster', 'w'),
+      ('opa', 'Hans Muster', 'm'),
+      ('kind', 'Kai Muster', 'm'),
+    ]) {
+      await b('personAnlegen', {'personId': id, 'name': name});
+      await b('geschlechtSetzen', {'personId': id, 'geschlecht': geschlecht});
+    }
+    for (final eltern in ['oma', 'opa']) {
+      await b('beziehungHinzufuegen', {
+        'personId': 'kind',
+        'andereId': eltern,
+        'verwandtschaft': 'elternteil',
+      });
+    }
+    await b('beziehungHinzufuegen', {
+      'personId': 'oma',
+      'andereId': 'opa',
+      'verwandtschaft': 'partner',
+    });
+    tester.view
+      ..physicalSize = const Size(1200, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Lebensbaum(sitzung: sitzung, fokus: 'kind'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(Lebensbaumflaeche), findsOneWidget);
+    Finder schild(String text) => find.byWidgetPredicate(
+      (w) => w is Semantics && w.properties.label == text,
+    );
+    // Die Schilder tragen die Verwandtschaft zur Person am Stamm, wie im
+    // Browser.
+    expect(schild('Kai Muster'), findsOneWidget);
+    expect(schild('Mutter, Erika Muster'), findsOneWidget);
+    expect(schild('Vater, Hans Muster'), findsOneWidget);
+    // Ein Tipp auf die Mutter setzt sie an den Stamm – ohne Bezeichnung,
+    // und ihr Sohn gehört nicht zu ihren Vorfahren.
+    await tester.tap(schild('Mutter, Erika Muster'));
+    await tester.pumpAndSettle();
+    expect(schild('Erika Muster'), findsOneWidget);
+    expect(schild('Kai Muster'), findsNothing);
   });
 
   test('Namen im Stammbaum brechen wie im Browser um', () {

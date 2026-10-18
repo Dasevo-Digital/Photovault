@@ -94,8 +94,7 @@ class Bibliothek extends StatelessWidget {
             _Knopf(
               icon: Icons.account_tree_outlined,
               text: t.bibStammbaum,
-              onTap: () =>
-                  _oeffne(context, t.bibStammbaum, Stammbaum(sitzung: sitzung)),
+              onTap: () => Navigator.of(context).push(stammbaumWeg(sitzung)),
             ),
             _Knopf(
               icon: Icons.tune,

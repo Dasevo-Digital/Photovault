@@ -19,6 +19,8 @@ dependencies:
   # Server.
   kern:
     path: ../../packages/kern
+  zierbild:
+    path: ../../packages/zierbild
   drift: ^2.20.0
   flutter_map: ^8.3.1
   http: ^1.6.0
@@ -52,3 +54,18 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+
+  # Vorlagenbilder und Schriften des Lebensbaums – dieselben Dateien wie
+  # am Rechner (Verweise auf assets/ im Wurzelverzeichnis), damit die Bilder
+  # gleich aussehen.
+  assets:
+    - assets/lebensbaum/
+    - assets/fonts/OFL-EBGaramond.txt
+    - assets/fonts/OFL-GreatVibes.txt
+  fonts:
+    - family: Zierschrift
+      fonts:
+        - asset: assets/fonts/EBGaramond-Variable.ttf
+    - family: Zierschrift Gross
+      fonts:
+        - asset: assets/fonts/GreatVibes-Regular.ttf

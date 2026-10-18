@@ -15,12 +15,10 @@ import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/laendernamen.dart';
-import 'package:kern/services/lebensbaum.dart';
+import 'package:kern/services/lebensbaumansicht.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
-import 'package:kern/services/lebensbaum_vorlage.dart';
 import 'package:kern/services/reiseuebersicht.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
-import 'package:kern/services/zierbaum.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
@@ -907,96 +905,19 @@ class _Api {
   /// Ohne Angaben gilt, was am Rechner zuletzt eingestellt war.
   Future<Response> lebensbaum(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final personen = db.nachAlterSortiert(await db.select(db.people).get());
-    if (personen.isEmpty) return _json({'fokus': null, 'personen': []});
-    final netz = Verwandtschaftsnetz([
-      for (final z in await db.alleBeziehungen())
-        if (artAusText(z.art) case final art?)
-          kante(z.personId, z.andereId, art),
-    ]);
-    final nachId = {for (final p in personen) p.id: p};
-    bool verwandt(String id) =>
-        netz.eltern(id).isNotEmpty ||
-        netz.kinder(id).isNotEmpty ||
-        netz.partner(id).isNotEmpty;
     final q = anfrage.url.queryParameters;
-    var fokus = q['fokus'];
-    if (fokus == null || !nachId.containsKey(fokus)) {
-      fokus = (await db.stammbaumZuletzt()).person;
-    }
-    if (fokus == null || !nachId.containsKey(fokus)) {
-      fokus = personen
-          .firstWhere((p) => verwandt(p.id), orElse: () => personen.first)
-          .id;
-    }
-    final gemerkt = await db.lebensbaumZuletzt();
-    T wahl<T extends Enum>(List<T> werte, String? text, T vorgabe) {
-      for (final w in werte) {
-        if (w.name == text) return w;
-      }
-      return vorgabe;
-    }
-
-    final richtung = wahl(
-      Lebensbaumrichtung.values,
-      q['richtung'] ?? gemerkt.richtung,
-      Lebensbaumrichtung.vorfahren,
+    final l = await lebensbaumansicht(
+      db,
+      fokus: q['fokus'],
+      richtung: q['richtung'],
+      stil: q['stil'],
+      kreis: q['kreis'],
+      generationen: int.tryParse(q['generationen'] ?? ''),
+      oben: int.tryParse(q['oben'] ?? ''),
+      unten: int.tryParse(q['unten'] ?? ''),
     );
-    final stil = wahl(
-      Lebensbaumstil.values,
-      q['stil'] ?? gemerkt.stil,
-      Lebensbaumstil.pergament,
-    );
-    final kreis = wahl(
-      Verwandtenkreis.values,
-      q['kreis'] ?? gemerkt.familieKreis,
-      Verwandtenkreis.alle,
-    );
-    final generationen =
-        (int.tryParse(q['generationen'] ?? '') ?? gemerkt.generationen ?? 4)
-            .clamp(lebensbaumMinGenerationen + 1, lebensbaumMaxGenerationen);
-    final oben =
-        (int.tryParse(q['oben'] ?? '') ??
-                gemerkt.familieOben ??
-                geflechtGenerationen)
-            .clamp(1, geflechtGenerationen);
-    final unten =
-        (int.tryParse(q['unten'] ?? '') ??
-                gemerkt.familieUnten ??
-                geflechtGenerationen)
-            .clamp(0, geflechtGenerationen);
-    final reihenfolge = [for (final p in personen) p.id];
-    final rang = {
-      for (var i = 0; i < reihenfolge.length; i++) reihenfolge[i]: i,
-    };
-
-    final Lebensbaumbild bild;
-    if (richtung == Lebensbaumrichtung.familie) {
-      final geflecht = geflechtUm(
-        netz,
-        fokus,
-        reihenfolge,
-        oben: oben,
-        unten: unten,
-        kreis: kreis,
-      );
-      bild = familienbild(
-        zierbaumplan(geflecht),
-        grosseLebensbaumvorlage(stil),
-        verschwiegen: geflecht.verschwiegen,
-      );
-    } else {
-      final plan = lebensbaumplan(
-        netz,
-        fokus,
-        (id) => rang[id] ?? 1 << 30,
-        richtung: richtung,
-        generationen: generationen,
-      );
-      final (:vorlage, :belegung) = passendeVorlage(plan, stil);
-      bild = bildAusBelegung(vorlage, belegung);
-    }
-
+    final bild = l.bild;
+    if (bild == null) return _json({'fokus': null, 'personen': []});
     List<double> r(g.Rect x) => [x.left, x.top, x.right, x.bottom];
     Map<String, Object?> grad(Grad x) => {
       'art': x.art.name,
@@ -1005,30 +926,27 @@ class _Api {
       if (x.halb) 'halb': true,
       if (x.elternArt != null) 'elternArt': x.elternArt!.name,
     };
-    final imBild = bild.personen.toSet();
-    final grade = alleGrade(netz, fokus, imBild);
-    bool hatPortrait(String id) => nachId[id]?.coverFaceCropPath != null;
+    bool hatPortrait(String id) =>
+        l.personen[id]?.person.coverFaceCropPath != null;
     final v = bild.vorlage;
     String datei(String asset) => p.basename(asset);
-
+    final o = l.optionen;
     return _json({
-      'fokus': fokus,
+      'fokus': l.fokus,
       'optionen': {
-        'richtung': richtung.name,
-        'stil': stil.name,
-        'generationen': generationen,
-        'oben': oben,
-        'unten': unten,
-        'kreis': kreis.name,
+        'richtung': o.richtung.name,
+        'stil': o.stil.name,
+        'generationen': o.generationen,
+        'oben': o.oben,
+        'unten': o.unten,
+        'kreis': o.kreis.name,
       },
       'alle': [
-        for (final p in personen)
-          {'id': p.id, 'name': p.name, 'verwandt': verwandt(p.id)},
+        for (final x in l.alle)
+          {'id': x.id, 'name': x.name, 'verwandt': l.verwandt.contains(x.id)},
       ],
-      'nachname': haeufigsterNachname([
-        for (final id in imBild) nachId[id]!.name,
-      ]),
-      'fokusName': nachId[fokus]!.name,
+      'nachname': l.nachname,
+      'fokusName': l.alle.firstWhere((x) => x.id == l.fokus).name,
       'hintergrund': datei(bild.hintergrund),
       'verschwiegen': bild.verschwiegen,
       'vorlage': {
@@ -1055,37 +973,21 @@ class _Api {
           },
       ],
       'personen': {
-        for (final id in imBild)
-          id: () {
-            final person = nachId[id]!;
-            final gr = grade[id];
-            final umweg = gr?.art == Gradart.angeheiratet
-                ? umwegZu(
-                    netz,
-                    fokus!,
-                    id,
-                    reihenfolge: (x) => rang[x] ?? 1 << 30,
-                  )
-                : null;
-            final zwischen = umweg == null ? null : nachId[umweg.ueber];
-            return {
-              'name': person.name,
-              'lebensspanne': lebensspanne(
-                person.geburtsdatum,
-                person.sterbedatum,
-              ),
-              'bild': person.coverFaceCropPath,
-              'geschlecht': person.geschlecht,
-              if (gr != null) 'grad': grad(gr),
-              if (umweg != null && zwischen != null)
-                'umweg': {
-                  'name': zwischen.name,
-                  'geschlecht': zwischen.geschlecht,
-                  'schritt': grad(umweg.schritt),
-                  'ueberGrad': grad(umweg.ueberGrad),
-                },
-            };
-          }(),
+        for (final MapEntry(key: id, value: x) in l.personen.entries)
+          id: {
+            'name': x.person.name,
+            'lebensspanne': x.lebensspanne,
+            'bild': x.person.coverFaceCropPath,
+            'geschlecht': x.person.geschlecht,
+            if (x.grad != null) 'grad': grad(x.grad!),
+            if (x.umweg case final u?)
+              'umweg': {
+                'name': u.ueber.name,
+                'geschlecht': u.ueber.geschlecht,
+                'schritt': grad(u.schritt),
+                'ueberGrad': grad(u.ueberGrad),
+              },
+          },
       },
     });
   }
