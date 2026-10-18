@@ -180,6 +180,55 @@ void main() {
     );
   });
 
+  /// **Vor 1970 entscheidet Dart.** SQLite setzt dort ein Ersatzjahr ohne
+  /// die damalige Sommerzeit ein; in Berlin lief sie vom 1.4.1940 bis
+  /// 2.11.1942 durch, und 1955 gab es keine. Aussagekräftig ist das nur
+  /// ausserhalb von UTC – auf dem Rechner in Europe/Berlin scheitert die
+  /// alte Abfrage an jedem dieser drei Fälle.
+  group('Aufnahmen vor 1970', () {
+    Future<AssetData> datiere(String name, DateTime wann) async {
+      final a = await lege(name, DateTime(2020, 4, 5, 12));
+      await library.setzeAufnahmedatumVonHand([a.id], wann);
+      return (await db.assetById(a.id))!;
+    }
+
+    Future<void> nichtsOffen() async {
+      expect(await db.assetsFuerAblageordnung(), isEmpty);
+      expect(await db.countAblageordnung(), 0);
+    }
+
+    test('Neujahr 1941 um Mitternacht liegt richtig', () async {
+      // Das typische Datum eines von Hand datierten alten Abzugs. SQLite
+      // sah 1940/12 – und die Aufgabe blieb für immer offen, weil der
+      // Lauf denselben Pfad berechnet und nichts verschiebt.
+      final a = await datiere('n.jpg', DateTime(1941));
+      expect(a.relativePath, contains(p.join('1941', '01')));
+      await nichtsOffen();
+    });
+
+    test('der 30. Juni 1955 um 23:30 liegt richtig', () async {
+      final a = await datiere('o.jpg', DateTime(1955, 6, 30, 23, 30));
+      expect(a.relativePath, contains(p.join('1955', '06')));
+      await nichtsOffen();
+    });
+
+    test('falsch abgelegt wird gefunden und umgelegt', () async {
+      // Liegt im Juli, gehört in den Juni. SQLite sah ebenfalls Juli und
+      // hielt die Ablage für richtig.
+      final a = await datiere('q.jpg', DateTime(1955, 7, 15, 12));
+      await nurSpalteAendern(a.id, DateTime(1955, 6, 30, 23, 30));
+
+      expect((await db.assetsFuerAblageordnung()).map((x) => x.id), [a.id]);
+      expect(await db.countAblageordnung(), 1);
+
+      await library.ordneAblageNeu().drain<void>();
+      final neu = (await db.assetById(a.id))!;
+      expect(neu.relativePath, contains(p.join('1955', '06')));
+      expect(File(pfade.absolute(neu.relativePath).path).existsSync(), isTrue);
+      await nichtsOffen();
+    });
+  });
+
   test('eine Aufnahme ausserhalb von originals/ bleibt aussen vor', () async {
     // Zugesicherte Grenze der Abfrage: Sie schneidet die sieben Zeichen
     // hinter „originals/" heraus. Was anderswo liegt, hat dort nichts zu

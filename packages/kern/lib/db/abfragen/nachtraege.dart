@@ -586,24 +586,70 @@ extension NachtragsAbfragen on AppDatabase {
   ///
   /// `'localtime'` ist zwingend: `originalRelativePath` nimmt Jahr und
   /// Monat der **Ortszeit**. Ohne den Modifier läge jede Aufnahme aus der
-  /// ersten Stunde eines Monats scheinbar falsch. Sollten sich die beiden
-  /// Zeitrechnungen doch einmal um eine Stunde uneinig sein, ist das
-  /// harmlos: Der Lauf berechnet denselben Pfad und verschiebt nichts.
+  /// ersten Stunde eines Monats scheinbar falsch.
+  ///
+  /// **Vor 1970 entscheidet Dart** ([_ablageVor1970], [_ablageStimmt]).
+  /// Dort setzt SQLite ein Ersatzjahr ohne die damalige Sommerzeit ein
+  /// (gemessen, siehe `_jahrAusdruck` in aufnahmen.dart), und das war
+  /// nicht harmlos: Ein auf Neujahr 1941 datiertes Foto lag richtig unter
+  /// `1941/01`, SQLite sah `1940/12`. Der Lauf berechnete denselben Pfad
+  /// und verschob nichts – die Aufgabe blieb für immer offen. Umgekehrt
+  /// blieb ein Foto vom 30. Juni 1955, 23:30, unter `1955/07` unentdeckt
+  /// liegen.
   ///
   /// **Der Papierkorb ist dabei**, anders als bei der Datumskorrektur: Ein
   /// gelöschtes Foto liegt weiterhin unter `originals/`, und die Frage
   /// lautet hier nicht „stimmt das Datum", sondern „stimmt der Ordner".
   Expression<bool> get _ablageFalsch => const CustomExpression<bool>(
+    'file_created_at >= 0 AND '
     "replace(relative_path, char(92), '/') LIKE 'originals/%' AND "
     "substr(replace(relative_path, char(92), '/'), 11, 7) "
     "<> strftime('%Y/%m', file_created_at, 'unixepoch', 'localtime')",
   );
 
-  Future<List<AssetData>> assetsFuerAblageordnung() =>
-      (select(assets)..where((_) => _ablageFalsch)).get();
+  /// Die Aufnahmen vor 1970 unter `originals/` – ob ihr Ordner stimmt,
+  /// sagt erst [_ablageStimmt]. Alte Aufnahmen sind wenige.
+  Expression<bool> get _ablageVor1970 => const CustomExpression<bool>(
+    'file_created_at < 0 AND '
+    "replace(relative_path, char(92), '/') LIKE 'originals/%'",
+  );
+
+  /// Ob [relativPfad] im Monatsordner von [aufgenommen] liegt – dieselbe
+  /// Rechnung wie [StoragePaths.originalRelativePath] und derselbe
+  /// Vergleich wie [_ablageFalsch]: die sieben Zeichen `JJJJ/MM` hinter
+  /// `originals/`.
+  static bool _ablageStimmt(String relativPfad, DateTime aufgenommen) {
+    final pfad = relativPfad.replaceAll(r'\', '/');
+    final ortszeit = aufgenommen.toLocal();
+    final ordner =
+        '${ortszeit.year.toString().padLeft(4, '0')}/'
+        '${ortszeit.month.toString().padLeft(2, '0')}';
+    return pfad.length >= 17 && pfad.substring(10, 17) == ordner;
+  }
+
+  Future<List<AssetData>> assetsFuerAblageordnung() async => [
+    ...await (select(assets)..where((_) => _ablageFalsch)).get(),
+    for (final a in await (select(assets)..where((_) => _ablageVor1970)).get())
+      if (!_ablageStimmt(a.relativePath, a.fileCreatedAt)) a,
+  ];
 
   /// Zählvariante von [assetsFuerAblageordnung], siehe [countLocationBackfill].
-  Future<int> countAblageordnung() => _countWhere(_ablageFalsch);
+  /// Für die Aufnahmen vor 1970 kommen nur Pfad und Datum herüber.
+  Future<int> countAblageordnung() async {
+    final vor1970 = selectOnly(assets)
+      ..addColumns([assets.relativePath, assets.fileCreatedAt])
+      ..where(_ablageVor1970);
+    final alte = await vor1970.get();
+    return await _countWhere(_ablageFalsch) +
+        alte
+            .where(
+              (z) => !_ablageStimmt(
+                z.read(assets.relativePath)!,
+                z.read(assets.fileCreatedAt)!,
+              ),
+            )
+            .length;
+  }
 
   Future<List<AssetData>> assetsFuerDatumskorrektur() =>
       (select(assets)..where((_) => _rohaufnahme)).get();
