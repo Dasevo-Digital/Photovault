@@ -10,28 +10,42 @@
 <link rel="icon" href="symbol.png" type="image/png">
 </head>
 <body>
+<!-- Die Symbole der Navigation: eigene Linienzeichnungen, je 24 × 24. -->
+<svg class="symbolsatz" width="0" height="0" aria-hidden="true" focusable="false">
+  <symbol id="i-fotos" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="M21 15.5l-5-5L5.5 21"/></symbol>
+  <symbol id="i-suche" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.6-4.6"/></symbol>
+  <symbol id="i-alben" viewBox="0 0 24 24"><rect x="7" y="7" width="14" height="14" rx="3"/><path d="M3.5 15.5V7a3.5 3.5 0 0 1 3.5-3.5h8.5M21 17l-4-4-6.5 6.5"/></symbol>
+  <symbol id="i-bibliothek" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+  <symbol id="i-favoriten" viewBox="0 0 24 24"><path d="M12 20.5s-8-4.6-8-10.6A4.4 4.4 0 0 1 12 7.3a4.4 4.4 0 0 1 8 2.6c0 6-8 10.6-8 10.6z"/></symbol>
+  <symbol id="i-personen" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c.5-3.6 3-5.8 6.2-5.8s5.7 2.2 6.2 5.8"/><circle cx="17.2" cy="9" r="2.6"/><path d="M16.6 14.4c2.7.3 4.4 2.3 4.7 5.6"/></symbol>
+  <symbol id="i-karte" viewBox="0 0 24 24"><path d="M12 21.5s-7-6-7-11.6a7 7 0 0 1 14 0c0 5.6-7 11.6-7 11.6z"/><circle cx="12" cy="9.8" r="2.6"/></symbol>
+  <symbol id="i-reisen" viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="13.5" rx="3"/><path d="M9 7V5.2A1.7 1.7 0 0 1 10.7 3.5h2.6A1.7 1.7 0 0 1 15 5.2V7M8.5 11v5.5M15.5 11v5.5"/></symbol>
+  <symbol id="i-stammbaum" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.3"/><circle cx="5.5" cy="19" r="2.3"/><circle cx="18.5" cy="19" r="2.3"/><path d="M12 7.3V12M5.5 16.7v-2.2A2.5 2.5 0 0 1 8 12h8a2.5 2.5 0 0 1 2.5 2.5v2.2"/></symbol>
+  <symbol id="i-statistik" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.4" height="6.5" rx="1.2"/><rect x="10.3" y="5" width="3.4" height="12.5" rx="1.2"/><rect x="15.6" y="13.5" width="3.4" height="4" rx="1.2"/></symbol>
+  <symbol id="i-duplikate" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="11.5" height="11.5" rx="2.5"/><rect x="9" y="9" width="11.5" height="11.5" rx="2.5"/></symbol>
+  <symbol id="i-papierkorb" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6 6.5l.9 12.2A2 2 0 0 0 8.9 20.5h6.2a2 2 0 0 0 2-1.8L18 6.5M10 10.5v6M14 10.5v6"/></symbol>
+  <symbol id="i-einstellungen" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="9.5" cy="17" r="2.5"/></symbol>
+  <symbol id="i-hochladen" viewBox="0 0 24 24"><path d="M12 15.5V4M7 8.5l5-5 5 5M4.5 20h15"/></symbol>
+  <symbol id="i-auswaehlen" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></symbol>
+  <symbol id="i-weiter" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-laden" viewBox="0 0 24 24"><path d="M12 3.5V15M7 10.5l5 5 5-5M4.5 20h15"/></symbol>
+  <symbol id="i-teilen" viewBox="0 0 24 24"><path d="M12 14V3.5M8 7.5l4-4 4 4M7.5 10.5H6.5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></symbol>
+  <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M4.5 9.5h10a5 5 0 0 1 0 10H8M8.5 5.5l-4 4 4 4"/></symbol>
+</svg>
+
 <header id="kopf" hidden>
-  <h1>Photo Vault</h1>
-  <nav id="nav">
-    <a href="#/" data-bereich="fotos">Fotos</a>
-    <a href="#/suche" data-bereich="suche">Suche</a>
-    <a href="#/alben" data-bereich="alben">Alben</a>
-    <a href="#/favoriten" data-bereich="favoriten">Favoriten</a>
-    <a href="#/personen" data-bereich="personen">Personen</a>
-    <a href="#/karte" data-bereich="karte">Karte</a>
-    <a href="#/reisen" data-bereich="reisen">Reisen</a>
-    <a href="#/stammbaum" data-bereich="stammbaum">Stammbaum</a>
-    <a href="#/statistik" data-bereich="statistik">Statistik</a>
-    <a href="#/duplikate" data-bereich="duplikate">Duplikate</a>
-    <a href="#/papierkorb" data-bereich="papierkorb">Papierkorb</a>
-    <a href="#/einstellungen" data-bereich="einstellungen">Einstellungen</a>
-    <a href="#/konto" data-bereich="konto">Konto</a>
-  </nav>
-  <button id="hochladen" type="button" title="Fotos und Videos hochladen"><span class="lang">Hochladen</span><span class="kurz" aria-hidden="true">⤒</span></button>
+  <h1 id="kopf-titel"></h1>
+  <button id="hochladen" type="button" class="primaer" title="Fotos und Videos hochladen"><svg class="symbol"><use href="#i-hochladen"/></svg><span class="lang">Hochladen</span></button>
   <input id="hochladen-datei" type="file" multiple hidden
     accept="image/*,video/*,.heic,.heif,.avif,.psd,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw,.x3f,.3fr,.iiq,.erf,.mef,.mos,.kdc,.dcr,.raw,.mkv,.avi,.m4v">
-  <button id="auswaehlen" type="button" title="Mehrere auswählen"><span class="lang">Auswählen</span><span class="kurz" aria-hidden="true">☑&#xFE0E;</span></button>
+  <button id="auswaehlen" type="button" title="Mehrere auswählen"><svg class="symbol"><use href="#i-auswaehlen"/></svg><span class="lang">Auswählen</span></button>
+  <a id="konto-knopf" href="#/konto" data-bereich="konto" title="Konto" aria-label="Konto"></a>
 </header>
+
+<!-- Dieselben Bereiche wie in der Handy-App: am breiten Bildschirm als
+     Seitenleiste mit den Gruppen der Bibliothek, am schmalen als Leiste
+     unten mit vier Reitern. Gefüllt von app.js (navigation). -->
+<nav id="nav" aria-label="Bereiche" hidden></nav>
 
 <main id="anmeldung" class="karte" hidden>
   <h1>Photo Vault</h1>
@@ -52,6 +66,13 @@
 </main>
 
 <main id="inhalt" hidden>
+  <section id="bereich-bibliothek" hidden>
+    <div class="bib-abschnitt">
+      <div class="bib-kopf"><h2>Personen</h2><a href="#/personen">Alle</a></div>
+      <div id="bib-personen" class="bib-personen"></div>
+    </div>
+    <div id="bib-gruppen"></div>
+  </section>
   <section id="bereich-suche" hidden>
     <form id="form-suche" class="zeile">
       <input name="text" type="search" placeholder="Wonach suchst du?" autocomplete="off" required>
@@ -214,12 +235,12 @@
     <span id="auswahl-anzahl"></span>
   </div>
   <div class="auswahl-aktionen">
-    <button id="auswahl-teilen" type="button" hidden><span class="zeichen" aria-hidden="true">⇪</span>Teilen</button>
-    <button id="auswahl-favorit" type="button"><span class="zeichen" aria-hidden="true">♥</span>Favorit</button>
-    <button id="auswahl-album" type="button"><span class="zeichen" aria-hidden="true">▤</span>Album</button>
-    <button id="auswahl-laden" type="button"><span class="zeichen" aria-hidden="true">⤓</span>Herunterladen</button>
-    <button id="auswahl-papierkorb" type="button"><span class="zeichen" aria-hidden="true">🗑&#xFE0E;</span>Papierkorb</button>
-    <button id="auswahl-zurueck" type="button" hidden><span class="zeichen" aria-hidden="true">↺</span>Zurückholen</button>
+    <button id="auswahl-teilen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-teilen"/></svg>Teilen</button>
+    <button id="auswahl-favorit" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-favoriten"/></svg>Favorit</button>
+    <button id="auswahl-album" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-alben"/></svg>Album</button>
+    <button id="auswahl-laden" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-laden"/></svg>Herunterladen</button>
+    <button id="auswahl-papierkorb" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-papierkorb"/></svg>Papierkorb</button>
+    <button id="auswahl-zurueck" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-zurueck"/></svg>Zurückholen</button>
   </div>
   <div id="auswahl-alben-feld">
     <h3>In ein Album</h3>

@@ -1095,6 +1095,12 @@ class AppTexteEn extends AppTexte {
   String get bibStammbaum => 'Family tree';
 
   @override
+  String get bibEntdecken => 'Explore';
+
+  @override
+  String get bibVerwalten => 'Manage';
+
+  @override
   String get baumPerson => 'Person';
 
   @override

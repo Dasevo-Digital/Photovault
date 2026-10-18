@@ -49,6 +49,7 @@ let sitzung = null;   // {name, verwalter, geraet}
 function zeigeAnmeldung() {
   sitzung = null;
   $('kopf').hidden = true;
+  $('nav').hidden = true;
   $('inhalt').hidden = true;
   $('anmeldung').hidden = false;
   $('form-anmelden').hidden = false;
@@ -61,9 +62,154 @@ function zeigeBereich(name) {
   for (const b of name) $(`bereich-${b}`).hidden = false;
 }
 
+// --- Navigation ------------------------------------------------------------
+//
+// Wie in der Handy-App: vier Hauptbereiche, und was sonst dazugehört,
+// gesammelt in der Bibliothek – in Gruppen, jedes mit eigener Farbe. Am
+// breiten Bildschirm steht das alles in der Seitenleiste, am schmalen
+// bleiben unten die vier Reiter und die Bibliothek ist eine eigene Seite.
+
+const HAUPTBEREICHE = [
+  { bereich: 'fotos', weg: '#/', text: 'Fotos', symbol: 'fotos' },
+  { bereich: 'suche', weg: '#/suche', text: 'Suche', symbol: 'suche' },
+  { bereich: 'alben', weg: '#/alben', text: 'Alben', symbol: 'alben' },
+  { bereich: 'bibliothek', weg: '#/bibliothek', text: 'Bibliothek', symbol: 'bibliothek' },
+];
+
+// Dieselben Gruppen, Reihenfolge und Farben wie auf dem Telefon
+// (apps/mobil/lib/seiten/bibliothek.dart).
+const BIBLIOTHEK = [
+  {
+    titel: 'Entdecken',
+    eintraege: [
+      { bereich: 'favoriten', weg: '#/favoriten', text: 'Favoriten', symbol: 'favoriten', farbe: '#e5484d' },
+      { bereich: 'personen', weg: '#/personen', text: 'Personen', symbol: 'personen', farbe: '#8e4ec6' },
+      { bereich: 'karte', weg: '#/karte', text: 'Karte', symbol: 'karte', farbe: '#30a46c' },
+      { bereich: 'reisen', weg: '#/reisen', text: 'Reisen', symbol: 'reisen', farbe: '#f76b15' },
+      { bereich: 'stammbaum', weg: '#/stammbaum', text: 'Stammbaum', symbol: 'stammbaum', farbe: '#a18072' },
+      { bereich: 'statistik', weg: '#/statistik', text: 'Statistik', symbol: 'statistik', farbe: '#0090ff' },
+    ],
+  },
+  {
+    titel: 'Verwalten',
+    eintraege: [
+      { bereich: 'duplikate', weg: '#/duplikate', text: 'Duplikate', symbol: 'duplikate', farbe: '#3e63dd' },
+      { bereich: 'papierkorb', weg: '#/papierkorb', text: 'Papierkorb', symbol: 'papierkorb', farbe: '#8b8d98' },
+      { bereich: 'einstellungen', weg: '#/einstellungen', text: 'Einstellungen', symbol: 'einstellungen', farbe: '#12a594' },
+    ],
+  },
+];
+const ZUR_BIBLIOTHEK = new Set(BIBLIOTHEK.flatMap((g) => g.eintraege.map((e) => e.bereich)));
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function symbol(name) {
+  const s = document.createElementNS(SVG_NS, 'svg');
+  s.setAttribute('class', 'symbol');
+  s.setAttribute('aria-hidden', 'true');
+  const u = document.createElementNS(SVG_NS, 'use');
+  u.setAttribute('href', `#i-${name}`);
+  s.append(u);
+  return s;
+}
+
+// Das farbige Feld mit dem Symbol eines Eintrags der Bibliothek.
+function farbsymbol(e) {
+  const f = el('span', 'farbsymbol');
+  f.style.setProperty('--farbe', e.farbe);
+  f.append(symbol(e.symbol));
+  return f;
+}
+
+function baueNavigation() {
+  const nav = $('nav');
+  const haupt = el('div', 'nav-haupt');
+  for (const e of HAUPTBEREICHE) {
+    const a = el('a', e.bereich === 'bibliothek' ? 'nur-schmal' : null);
+    a.href = e.weg;
+    a.dataset.bereich = e.bereich;
+    a.append(el('span', 'nav-symbol'), el('span', 'nav-text', t(e.text)));
+    a.firstChild.append(symbol(e.symbol));
+    haupt.append(a);
+  }
+  const marke = el('a', 'nav-marke');
+  marke.href = '#/';
+  const bild = el('img');
+  bild.src = 'symbol.png';
+  bild.alt = '';
+  marke.append(bild, el('span', null, 'Photo Vault'));
+  nav.replaceChildren(marke, haupt);
+  for (const g of BIBLIOTHEK) {
+    const gruppe = el('div', 'nav-gruppe');
+    gruppe.append(el('h2', null, t(g.titel)));
+    for (const e of g.eintraege) {
+      const a = el('a');
+      a.href = e.weg;
+      a.dataset.bereich = e.bereich;
+      a.append(farbsymbol(e), el('span', 'nav-text', t(e.text)));
+      gruppe.append(a);
+    }
+    nav.append(gruppe);
+  }
+  // Die Bibliothek als Seite: dieselben Gruppen als Kacheln.
+  const seite = $('bib-gruppen');
+  seite.replaceChildren();
+  for (const g of BIBLIOTHEK) {
+    const abschnitt = el('div', 'bib-abschnitt');
+    abschnitt.append(el('div', 'bib-kopf'));
+    abschnitt.firstChild.append(el('h2', null, t(g.titel)));
+    const liste = el('div', g.titel === 'Verwalten' ? 'bib-liste' : 'bib-kacheln');
+    for (const e of g.eintraege) {
+      const a = el('a', 'bib-eintrag');
+      a.href = e.weg;
+      a.append(farbsymbol(e), el('span', 'nav-text', t(e.text)));
+      if (g.titel === 'Verwalten') a.append(symbol('weiter'));
+      liste.append(a);
+    }
+    abschnitt.append(liste);
+    seite.append(abschnitt);
+  }
+}
+baueNavigation();
+
+const BEREICHSTITEL = Object.fromEntries([
+  ...HAUPTBEREICHE.map((e) => [e.bereich, e.text]),
+  ...BIBLIOTHEK.flatMap((g) => g.eintraege.map((e) => [e.bereich, e.text])),
+  ['konto', 'Konto'],
+]);
+
 function markiereNav(bereich) {
-  for (const a of $('nav').querySelectorAll('a')) {
-    a.classList.toggle('aktiv', a.dataset.bereich === bereich);
+  for (const a of document.querySelectorAll('#nav a[data-bereich], #konto-knopf')) {
+    const b = a.dataset.bereich;
+    a.classList.toggle('aktiv', b === bereich || (b === 'bibliothek' && ZUR_BIBLIOTHEK.has(bereich)));
+  }
+  $('kopf-titel').textContent = BEREICHSTITEL[bereich] ? t(BEREICHSTITEL[bereich]) : '';
+}
+
+// Die Bibliothek als Seite – vor allem für den schmalen Bildschirm, wo die
+// Seitenleiste fehlt: oben die Personen, darunter die Gruppen.
+async function zeigeBibliothek() {
+  markiereNav('bibliothek');
+  zeigeBereich(['bibliothek']);
+  const streifen = $('bib-personen');
+  const d = await api('/api/v1/personen');
+  const benannt = d.personen.filter((p) => (p.name || '').trim());
+  streifen.replaceChildren();
+  if (benannt.length === 0) { streifen.append(el('p', 'leise', t('Noch keine Personen.'))); return; }
+  for (const p of benannt) {
+    const a = el('a', 'bib-person');
+    a.href = `#/personen/${encodeURIComponent(p.id)}`;
+    const rund = el('span', 'bib-gesicht');
+    if (p.bild) {
+      const img = el('img');
+      img.loading = 'lazy';
+      img.alt = '';
+      img.src = `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}`;
+      rund.append(img);
+    } else {
+      rund.textContent = p.name.trim().charAt(0).toUpperCase();
+    }
+    a.append(rund, el('span', 'bib-name', p.name));
+    streifen.append(a);
   }
 }
 
@@ -1162,8 +1308,7 @@ function folge() {
 // -1 oben am Rand, 1 unten, sonst 0.
 function randRichtung() {
   const oben = $('kopf').getBoundingClientRect().bottom + 56;
-  const leiste = $('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height;
-  const unten = innerHeight - leiste - 56;
+  const unten = innerHeight - untenBelegt() - 56;
   return zieh.y < oben ? -1 : zieh.y > unten ? 1 : 0;
 }
 
@@ -1305,6 +1450,15 @@ $('raster').addEventListener('gestureend', (e) => { e.preventDefault(); if (gest
 
 const bildlauf = { aus: null, zieht: false };
 
+// Was unten über dem Raster liegt: das Auswahlblatt oder, am schmalen
+// Bildschirm, die Reiter.
+function untenBelegt() {
+  const leiste = $('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height;
+  const n = $('nav').getBoundingClientRect();
+  const reiter = !$('nav').hidden && n.top > innerHeight / 2 ? n.height : 0;
+  return Math.max(leiste, reiter);
+}
+
 function bildlaufHoehe() { return document.documentElement.scrollHeight - innerHeight; }
 
 function zeigeBildlauf() {
@@ -1315,7 +1469,7 @@ function zeigeBildlauf() {
   // verwarf das Layout, und das Lesen gleich danach rechnete es neu – bei
   // jedem Bildlauf-Ereignis zweimal.
   const oben = `${$('kopf').getBoundingClientRect().bottom + 6}px`;
-  const unten = `${($('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height) + 12}px`;
+  const unten = `${untenBelegt() + 12}px`;
   if (b.style.top !== oben) b.style.top = oben;
   if (b.style.bottom !== unten) b.style.bottom = unten;
   b.classList.add('sichtbar');
@@ -1978,6 +2132,7 @@ async function zeigeWeg() {
         break;
       case 'papierkorb': await zeigePapierkorb(); break;
       case 'favoriten': await zeigeFavoriten(); break;
+      case 'bibliothek': await zeigeBibliothek(); break;
       default: await zeigeFotos();
     }
   } catch (x) {
@@ -1990,7 +2145,12 @@ async function starte() {
   sitzung = await api('/api/v1/web/sitzung');
   $('anmeldung').hidden = true;
   $('kopf').hidden = false;
+  $('nav').hidden = false;
   $('inhalt').hidden = false;
+  // Das Konto als Kreis mit dem Anfangsbuchstaben, oben rechts wie auf
+  // dem Telefon.
+  $('konto-knopf').textContent = (sitzung.name || '?').trim().charAt(0).toUpperCase();
+  $('konto-knopf').title = `${t('Konto')}: ${sitzung.name}`;
   await zeigeWeg();
 }
 

@@ -688,6 +688,14 @@
   "verwAnstossen": "Auswertung anstossen",
   "verwJetztSichern": "Jetzt sichern",
   "bibStammbaum": "Stammbaum",
+  "bibEntdecken": "Entdecken",
+  "@bibEntdecken": {
+    "description": "Gruppe der Bibliothek: Favoriten, Personen, Karte, Reisen, Stammbaum, Statistik"
+  },
+  "bibVerwalten": "Verwalten",
+  "@bibVerwalten": {
+    "description": "Gruppe der Bibliothek: Duplikate, Papierkorb, Einstellungen"
+  },
   "baumPerson": "Person",
   "baumLebensbaum": "Lebensbaum",
   "baumOhneVerwandtschaft": "{name} (ohne Verwandtschaft)",

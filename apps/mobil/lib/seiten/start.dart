@@ -60,9 +60,10 @@ class _StartState extends State<Start> {
       appBar: AppBar(
         title: Text(titel[_bereich]),
         actions: [
+          // Das Konto als Kreis mit dem Anfangsbuchstaben – wie im Browser.
           IconButton(
             tooltip: t.kontoTitel,
-            icon: const Icon(Icons.account_circle_outlined),
+            icon: _Kontokreis(name: s.verbindung?.konto ?? ''),
             onPressed: () => Navigator.of(
               context,
             ).push(MaterialPageRoute<void>(builder: (_) => Konto(sitzung: s))),
@@ -142,16 +143,49 @@ class _StartState extends State<Start> {
             label: t.navSuche,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.collections_bookmark_outlined),
-            selectedIcon: const Icon(Icons.collections_bookmark),
+            icon: const Icon(Icons.photo_album_outlined),
+            selectedIcon: const Icon(Icons.photo_album),
             label: t.navAlben,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.video_library_outlined),
-            selectedIcon: const Icon(Icons.video_library),
+            icon: const Icon(Icons.grid_view_outlined),
+            selectedIcon: const Icon(Icons.grid_view_rounded),
             label: t.navBibliothek,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Kontokreis extends StatelessWidget {
+  const _Kontokreis({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final farben = Theme.of(context).colorScheme;
+    final n = name.trim();
+    return Container(
+      width: 32,
+      height: 32,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Bibliotheksfarben.personen, farben.primary],
+        ),
+      ),
+      child: Text(
+        n.isEmpty ? '?' : n.characters.first.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
       ),
     );
   }

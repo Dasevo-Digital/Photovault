@@ -25,9 +25,81 @@ html, body { margin: 0; background: var(--grund); color: var(--text); font: 15px
 button { font: inherit; cursor: pointer; }
 input { font: inherit; }
 
-#kopf { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--rand); position: sticky; top: 0; background: var(--grund); z-index: 2; }
-#kopf h1 { font-size: 1.1em; margin: 0; flex: 1; }
-#kopf button { background: none; border: 1px solid var(--rand); border-radius: 8px; padding: 4px 10px; color: var(--text); }
+/* --- Kopf und Navigation ----------------------------------------------------
+   Wie die Handy-App: vier Hauptbereiche und die Bibliothek in Gruppen. Breit
+   eine Seitenleiste, schmal die Reiter unten. --seite und --unten sind der
+   Platz, den die Navigation links bzw. unten belegt. */
+:root { --kopf: 56px; --seite: 0px; --unten: 0px; }
+#kopf { display: flex; align-items: center; gap: 8px; height: var(--kopf); padding: 0 16px; position: sticky; top: 0; z-index: 3; margin-left: var(--seite); background: color-mix(in srgb, var(--grund) 86%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid var(--rand); }
+#kopf-titel { flex: 1; min-width: 0; margin: 0; font-size: 1.2em; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#kopf button { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-weight: 560; }
+#kopf button:hover { border-color: color-mix(in srgb, var(--akzent) 55%, var(--rand)); }
+#kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#kopf .symbol { width: 20px; height: 20px; }
+#konto-knopf { flex: 0 0 36px; height: 36px; margin-left: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #8e4ec6, var(--akzent)); color: #fff; font-weight: 700; text-decoration: none; box-shadow: 0 0 0 2px var(--grund); }
+#konto-knopf.aktiv { box-shadow: 0 0 0 2px var(--grund), 0 0 0 4px var(--akzent); }
+.symbolsatz { position: absolute; width: 0; height: 0; overflow: hidden; }
+.symbol { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#nav a { text-decoration: none; }
+.nav-marke, .nav-gruppe a, .nav-haupt a { color: var(--text); }
+.farbsymbol { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; border-radius: 10px; color: var(--farbe); background: color-mix(in srgb, var(--farbe) 15%, transparent); }
+.farbsymbol .symbol { width: 19px; height: 19px; stroke-width: 2; }
+
+@media (min-width: 900px) {
+  :root { --seite: 248px; }
+  #inhalt { margin-left: var(--seite); }
+  #nav { position: fixed; left: 0; top: 0; bottom: 0; width: var(--seite); z-index: 4; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; padding: 14px 12px 24px; background: var(--karte); border-right: 1px solid var(--rand); }
+  .nav-marke { display: flex; align-items: center; gap: 10px; padding: 4px 10px 16px; font-weight: 700; font-size: 1.1em; }
+  .nav-marke img { width: 30px; height: 30px; border-radius: 8px; }
+  .nav-haupt, .nav-gruppe { display: flex; flex-direction: column; gap: 2px; }
+  .nav-haupt a, .nav-gruppe a { display: flex; align-items: center; gap: 12px; padding: 7px 10px; border-radius: 12px; font-weight: 520; }
+  .nav-haupt .nav-symbol { display: inline-flex; justify-content: center; width: 32px; color: var(--leise); }
+  .nav-haupt a:hover, .nav-gruppe a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .nav-haupt a.aktiv, .nav-gruppe a.aktiv { background: color-mix(in srgb, var(--akzent) 14%, transparent); font-weight: 650; }
+  .nav-haupt a.aktiv .nav-symbol { color: var(--akzent); }
+  .nav-gruppe { margin-top: 16px; }
+  .nav-gruppe h2 { margin: 0 10px 6px; font-size: .72em; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--leise); }
+  .nur-schmal { display: none !important; }
+}
+@media (max-width: 899.98px) {
+  :root { --unten: calc(64px + env(safe-area-inset-bottom)); }
+  .nav-marke, .nav-gruppe { display: none; }
+  #nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; height: var(--unten); padding-bottom: env(safe-area-inset-bottom); background: color-mix(in srgb, var(--karte) 90%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px); border-top: 1px solid var(--rand); }
+  .nav-haupt { display: flex; height: 64px; }
+  #nav .nav-haupt a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--leise); font-size: .75em; font-weight: 600; }
+  .nav-haupt .nav-symbol { display: flex; align-items: center; justify-content: center; width: 60px; height: 30px; border-radius: 15px; transition: background .15s; }
+  #nav .nav-haupt a.aktiv { color: var(--text); }
+  .nav-haupt a.aktiv .nav-symbol { color: var(--akzent); background: color-mix(in srgb, var(--akzent) 20%, transparent); }
+  #inhalt { padding-bottom: var(--unten); }
+  #kopf { padding: 0 10px 0 14px; }
+  #kopf .lang { display: none; }
+  #kopf button { width: 40px; padding: 0; justify-content: center; }
+  #hochladen-stand { bottom: calc(var(--unten) + 12px); }
+  #meldung { bottom: calc(var(--unten) + 16px); }
+}
+
+/* Die Bibliothek als Seite: Personen, dann die Gruppen. */
+#bereich-bibliothek { padding: 4px 16px 32px; max-width: 760px; }
+.bib-abschnitt { margin-top: 18px; }
+.bib-kopf { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 10px; }
+main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
+.bib-kopf a { color: var(--akzent); text-decoration: none; font-weight: 600; }
+.bib-personen { display: flex; gap: 14px; overflow-x: auto; padding: 2px 4px 6px; scrollbar-width: none; }
+.bib-person { flex: 0 0 76px; text-align: center; color: var(--text); text-decoration: none; }
+.bib-gesicht { display: flex; align-items: center; justify-content: center; width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, #8e4ec6 18%, var(--karte)); color: #8e4ec6; font-size: 28px; font-weight: 700; }
+.bib-gesicht img { width: 100%; height: 100%; object-fit: cover; }
+.bib-name { display: block; margin-top: 6px; font-size: .8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bib-kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.bib-kacheln .bib-eintrag { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--karte); border: 1px solid var(--rand); color: var(--text); text-decoration: none; font-weight: 600; transition: transform .12s, box-shadow .12s; }
+.bib-kacheln .bib-eintrag:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.bib-kacheln .farbsymbol { width: 40px; height: 40px; border-radius: 12px; }
+.bib-kacheln .farbsymbol .symbol { width: 22px; height: 22px; }
+.bib-liste { background: var(--karte); border: 1px solid var(--rand); border-radius: 16px; overflow: hidden; }
+.bib-liste .bib-eintrag { display: flex; align-items: center; gap: 12px; padding: 10px 14px; color: var(--text); text-decoration: none; font-weight: 560; }
+.bib-liste .bib-eintrag + .bib-eintrag { border-top: 1px solid var(--rand); }
+.bib-liste .bib-eintrag .nav-text { flex: 1; }
+.bib-liste .bib-eintrag > .symbol { width: 18px; height: 18px; color: var(--leise); }
+.bib-liste .bib-eintrag:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
 
 .karte { max-width: 22em; margin: 12vh auto; padding: 24px; background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
 .karte h1 { margin-top: 0; }
@@ -68,12 +140,7 @@ input { font: inherit; }
 #teilen, #weg, #holen { font-size: 20px; }
 
 /* --- Stufe 2: Wege, Karten, Auswahl, Konto -------------------------------- */
-#nav { display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-#nav a { white-space: nowrap; }
-#nav a { color: var(--leise); text-decoration: none; padding: 4px 10px; border-radius: 8px; }
-#nav a.aktiv { color: var(--text); background: var(--karte); border: 1px solid var(--rand); }
-#kopf h1 { flex: 0; white-space: nowrap; margin-right: 8px; }
-#auswaehlen.aktiv { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+#kopf #auswaehlen.aktiv { background: color-mix(in srgb, var(--akzent) 16%, var(--karte)); border-color: var(--akzent); color: var(--akzent); }
 main#inhalt section h2 { font-size: 1.1em; margin: 16px 12px 8px; }
 #raster-titel { font-size: 1.1em; margin: 16px 12px 4px; }
 
@@ -106,7 +173,7 @@ body.waehlt #raster .kachel::before { content: ''; position: absolute; left: 6px
 #raster .tageskopf.alle .kreis::after { content: '✓'; position: absolute; inset: 0; color: #fff; font-size: 12px; line-height: 18px; text-align: center; }
 
 /* Das Blatt unter dem Raster, sobald etwas gewählt ist. */
-#auswahlleiste { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--karte); border-top: 1px solid var(--rand); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 18px rgba(0,0,0,.18); padding: 6px 12px calc(10px + env(safe-area-inset-bottom)); max-width: 720px; margin: 0 auto; }
+#auswahlleiste { position: fixed; left: var(--seite); right: 0; bottom: 0; z-index: 5; background: var(--karte); border-top: 1px solid var(--rand); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 18px rgba(0,0,0,.18); padding: 6px 12px calc(10px + env(safe-area-inset-bottom)); max-width: 720px; margin: 0 auto; }
 #auswahlleiste .griffleiste { width: 36px; height: 4px; border-radius: 2px; background: var(--leise); opacity: .4; margin: 2px auto 4px; }
 #auswahlleiste .auswahl-kopf { display: flex; align-items: center; gap: 8px; }
 #auswahlleiste #auswahl-zu { background: none; border: 0; color: var(--text); font-size: 24px; width: 40px; height: 40px; padding: 0; }
@@ -115,6 +182,7 @@ body.waehlt #raster .kachel::before { content: ''; position: absolute; left: 6px
 #auswahlleiste .auswahl-aktionen button { flex: 1 0 72px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px; border: 0; border-radius: 10px; background: none; color: var(--text); font-size: 0.8em; }
 #auswahlleiste .auswahl-aktionen button:hover { background: var(--grund); }
 #auswahlleiste .auswahl-aktionen .zeichen { font-size: 20px; line-height: 24px; color: var(--akzent); }
+#auswahlleiste .auswahl-aktionen svg.zeichen { width: 24px; height: 24px; stroke-width: 1.9; }
 #auswahl-alben-feld { border-top: 1px solid var(--rand); padding-top: 8px; }
 #auswahl-alben-feld h3 { margin: 0 4px 6px; font-size: 0.9em; }
 #auswahl-alben { display: flex; gap: 10px; overflow-x: auto; padding: 0 4px 4px; }
@@ -144,15 +212,10 @@ body.mit-leiste #meldung { bottom: 250px; }
 #hochladen-abbrechen { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 #ablage { position: fixed; inset: 0; z-index: 30; background: color-mix(in srgb, var(--akzent) 25%, transparent); border: 4px dashed var(--akzent); display: flex; align-items: center; justify-content: center; pointer-events: none; }
 #ablage p { background: var(--karte); color: var(--text); padding: 14px 20px; border-radius: 12px; font-weight: 600; }
-#kopf .kurz { display: none; }
 @media (max-width: 520px) {
   #betrachter > button, #laden { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
   #betrachter .oben-links { top: 8px; left: calc(8px + var(--platz, 0) * 44px); }
   #zu { top: 8px; right: 8px; }
-  #kopf { gap: 6px; padding: 8px 10px; }
-  #kopf h1 { display: none; }
-  #kopf .lang { display: none; }
-  #kopf .kurz { display: inline; font-size: 18px; }
 }
 
 #bereich-konto { padding: 0 12px 24px; max-width: 40em; }
@@ -191,7 +254,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #anmeldung-fassung { text-align: center; margin-top: 12px; }
 
 /* --- Karte ----------------------------------------------------------------- */
-#karte { height: calc(100vh - 52px); background: var(--grund); }
+#karte { height: calc(100vh - var(--kopf) - var(--unten)); background: var(--grund); }
 .punkt { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--akzent); color: #fff; font-weight: 700; font-size: 13px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
 .punkt.gross { width: 44px; height: 44px; }
 @media (prefers-color-scheme: dark) {
@@ -273,7 +336,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #bereich-stammbaum .zeile h2 { margin: 0; flex: 1; }
 #bereich-stammbaum .zeile label { display: flex; align-items: center; gap: 8px; color: var(--leise); }
 #baum-person { font: inherit; padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); max-width: 16em; }
-#baum-flaeche { overflow: auto; max-height: calc(100vh - 160px); background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
+#baum-flaeche { overflow: auto; max-height: calc(100vh - 160px - var(--unten)); background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
 #baum-flaeche svg { display: block; margin: 0 auto; }
 .baum-karte { cursor: pointer; }
 .baum-karte rect { fill: var(--grund); stroke: var(--rand); }
@@ -298,11 +361,11 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 
 /* --- Entwickeln ------------------------------------------------------------ */
 #bearbeiten { font-size: 20px; }
-.entw { display: flex; gap: 0; min-height: calc(100vh - 52px); background: #111; }
+.entw { display: flex; gap: 0; min-height: calc(100vh - var(--kopf) - var(--unten)); background: #111; }
 .entw-bild { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; min-width: 0; }
-#entw-leinwand { max-width: 100%; max-height: calc(100vh - 130px); object-fit: contain; display: block; }
+#entw-leinwand { max-width: 100%; max-height: calc(100vh - 130px - var(--unten)); object-fit: contain; display: block; }
 .entw-bild .leise { color: #aaa; max-width: 40em; text-align: center; }
-.entw-seite { width: 320px; flex: 0 0 320px; background: var(--karte); border-left: 1px solid var(--rand); padding: 12px 16px 24px; overflow-y: auto; max-height: calc(100vh - 52px); }
+.entw-seite { width: 320px; flex: 0 0 320px; background: var(--karte); border-left: 1px solid var(--rand); padding: 12px 16px 24px; overflow-y: auto; max-height: calc(100vh - var(--kopf) - var(--unten)); }
 .entw-seite h2 { margin: 4px 0 12px; font-size: 1.1em; }
 .entw-regler-zeile { display: block; margin: 10px 0; }
 .entw-regler-zeile.aus { opacity: .45; }
@@ -331,7 +394,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .lb-leiste select { font: inherit; padding: 4px 6px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); max-width: 14em; }
 .lb-leiste button, #baum-zum-lebensbaum { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); font-weight: 400; }
 #lb-flaeche { display: flex; justify-content: center; }
-#lb-leinwand { max-width: 100%; max-height: calc(100vh - 170px); height: auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.35); cursor: pointer; }
+#lb-leinwand { max-width: 100%; max-height: calc(100vh - 170px - var(--unten)); height: auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.35); cursor: pointer; }
 .einst-sprache .inhalt { display: flex; flex-direction: column; gap: 4px; }
 .einst-sprache select { align-self: flex-start; margin-top: 6px; font: inherit; padding: 4px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
 

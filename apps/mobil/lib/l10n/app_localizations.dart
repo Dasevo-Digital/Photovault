@@ -1735,6 +1735,18 @@ abstract class AppTexte {
   /// **'Stammbaum'**
   String get bibStammbaum;
 
+  /// Gruppe der Bibliothek: Favoriten, Personen, Karte, Reisen, Stammbaum, Statistik
+  ///
+  /// In de, this message translates to:
+  /// **'Entdecken'**
+  String get bibEntdecken;
+
+  /// Gruppe der Bibliothek: Duplikate, Papierkorb, Einstellungen
+  ///
+  /// In de, this message translates to:
+  /// **'Verwalten'**
+  String get bibVerwalten;
+
   /// No description provided for @baumPerson.
   ///
   /// In de, this message translates to:
