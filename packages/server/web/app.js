@@ -154,6 +154,15 @@ function baueNavigation() {
     }
     nav.append(gruppe);
   }
+  // Unten die Pinnnadel: hält die Leiste offen (nur am breiten Bildschirm).
+  const fuss = el('div', 'nav-fuss');
+  const nadel = el('button', 'nav-nadel');
+  nadel.type = 'button';
+  nadel.id = 'nav-nadel';
+  nadel.append(el('span', 'nav-symbol'), el('span', 'nav-text'));
+  nadel.firstChild.append(symbol('pinnen'));
+  fuss.append(nadel);
+  nav.append(fuss);
   // Die Bibliothek als Seite: dieselben Gruppen als Kacheln.
   const seite = $('bib-gruppen');
   seite.replaceChildren();
@@ -175,20 +184,35 @@ function baueNavigation() {
 }
 baueNavigation();
 
-// Die Seitenleiste lässt sich zu einer Leiste aus Symbolen einklappen;
-// der Browser merkt es sich (nur dieser, nur als Bequemlichkeit).
-const NAV_MERKER = 'pv-nav-schmal';
-function setzeNavSchmal(schmal) {
-  document.body.classList.toggle('nav-schmal', schmal);
-  $('nav-umschalter').setAttribute('aria-expanded', String(!schmal));
+// Die Seitenleiste am breiten Bildschirm: sonst eine schmale Leiste aus
+// Symbolen, die sich öffnet, sobald die Maus darauf kommt (oder ein
+// Eintrag den Fokus hat) – über dem Inhalt, ohne ihn zu verschieben. Die
+// Pinnnadel hält sie offen; das merkt sich dieser Browser.
+const NAV_MERKER = 'pv-nav-fixiert';
+function setzeNavFixiert(fixiert) {
+  document.body.classList.toggle('nav-fixiert', fixiert);
+  const nadel = $('nav-nadel');
+  const text = fixiert ? t('Fixierung lösen') : t('Leiste fixieren');
+  nadel.setAttribute('aria-pressed', String(fixiert));
+  nadel.title = text;
+  nadel.querySelector('.nav-text').textContent = text;
   // Die Karte misst ihre Fläche nur beim Anlegen nach.
   setTimeout(() => { if (typeof leafletKarte !== 'undefined' && leafletKarte) leafletKarte.invalidateSize(); }, 250);
 }
-try { setzeNavSchmal(localStorage.getItem(NAV_MERKER) === '1'); } catch (_) { /* privat */ }
-$('nav-umschalter').addEventListener('click', () => {
-  const schmal = !document.body.classList.contains('nav-schmal');
-  setzeNavSchmal(schmal);
-  try { localStorage.setItem(NAV_MERKER, schmal ? '1' : '0'); } catch (_) { /* privat */ }
+{
+  let fixiert = false;
+  try {
+    fixiert = localStorage.getItem(NAV_MERKER) === '1';
+    localStorage.removeItem('pv-nav-schmal');
+  } catch (_) { /* privat */ }
+  setzeNavFixiert(fixiert);
+}
+$('nav-nadel').addEventListener('click', () => {
+  const fixiert = !document.body.classList.contains('nav-fixiert');
+  setzeNavFixiert(fixiert);
+  // Gelöst: gleich zuklappen, nicht erst, wenn die Maus geht.
+  if (!fixiert) $('nav-nadel').blur();
+  try { localStorage.setItem(NAV_MERKER, fixiert ? '1' : '0'); } catch (_) { /* privat */ }
 });
 
 const BEREICHSTITEL = Object.fromEntries([
