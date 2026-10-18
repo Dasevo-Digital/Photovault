@@ -5,6 +5,7 @@ import 'package:kern/db/rasterzeile.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'duplikate.dart';
 import 'karte.dart';
 import 'personen.dart';
 import 'raster.dart';
@@ -81,6 +82,12 @@ class Bibliothek extends StatelessWidget {
               text: t.bibStatistik,
               onTap: () =>
                   _oeffne(context, t.bibStatistik, Statistik(sitzung: sitzung)),
+            ),
+            _Knopf(
+              icon: Icons.copy_all_outlined,
+              text: t.bibDuplikate,
+              onTap: () =>
+                  _oeffne(context, t.bibDuplikate, Duplikate(sitzung: sitzung)),
             ),
           ],
         ),

@@ -510,6 +510,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                   bild: l?.bild,
                   video: z.type == 'VIDEO',
                   favorit: z.isFavorite,
+                  serie: z.isStackCover ? (z.stackSize ?? 0) : 0,
                 ),
               ),
             ),

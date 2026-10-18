@@ -554,5 +554,85 @@
   "statGesperrt": "Gesperrter Ordner",
   "statProJahr": "Fotos & Videos pro Jahr",
   "statProMonat": "Saisonalität – Aufnahmen pro Monat",
-  "statKameras": "Häufigste Kameras"
+  "statKameras": "Häufigste Kameras",
+  "bibDuplikate": "Duplikate",
+  "duplAehnlichkeit": "Ähnlichkeit",
+  "duplSuchen": "Suchen",
+  "duplSucht": "Suche …",
+  "duplAlle": "{n} Kopien in den Papierkorb",
+  "@duplAlle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplKeineEinbettungen": "Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.",
+  "duplKeine": "Keine Duplikate bei {p} Ähnlichkeit.",
+  "@duplKeine": {
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "duplAusnahmen": "{n} Paare sind ausgenommen.",
+  "@duplAusnahmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplGruppen": "{n} Gruppen bei {p} Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.",
+  "@duplGruppen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "duplKeineDuplikate": "Keine Duplikate",
+  "duplNurVonHand": "{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand",
+  "@duplNurVonHand": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplBehalten": "Behalten",
+  "duplBehaltenEine": "„{name}“ behalten und die andere Aufnahme in den Papierkorb legen?",
+  "@duplBehaltenEine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "duplBehaltenMehrere": "„{name}“ behalten und die {n} anderen in den Papierkorb legen?",
+  "@duplBehaltenMehrere": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplAlleFrage": "{n} Kopien aus {g} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.",
+  "@duplAlleFrage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "g": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1476,6 +1476,96 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Häufigste Kameras'**
   String get statKameras;
+
+  /// No description provided for @bibDuplikate.
+  ///
+  /// In de, this message translates to:
+  /// **'Duplikate'**
+  String get bibDuplikate;
+
+  /// No description provided for @duplAehnlichkeit.
+  ///
+  /// In de, this message translates to:
+  /// **'Ähnlichkeit'**
+  String get duplAehnlichkeit;
+
+  /// No description provided for @duplSuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'Suchen'**
+  String get duplSuchen;
+
+  /// No description provided for @duplSucht.
+  ///
+  /// In de, this message translates to:
+  /// **'Suche …'**
+  String get duplSucht;
+
+  /// No description provided for @duplAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Kopien in den Papierkorb'**
+  String duplAlle(int n);
+
+  /// No description provided for @duplKeineEinbettungen.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.'**
+  String get duplKeineEinbettungen;
+
+  /// No description provided for @duplKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Duplikate bei {p} Ähnlichkeit.'**
+  String duplKeine(String p);
+
+  /// No description provided for @duplAusnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Paare sind ausgenommen.'**
+  String duplAusnahmen(int n);
+
+  /// No description provided for @duplGruppen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Gruppen bei {p} Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.'**
+  String duplGruppen(int n, String p);
+
+  /// No description provided for @duplKeineDuplikate.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Duplikate'**
+  String get duplKeineDuplikate;
+
+  /// No description provided for @duplNurVonHand.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand'**
+  String duplNurVonHand(int n);
+
+  /// No description provided for @duplBehalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Behalten'**
+  String get duplBehalten;
+
+  /// No description provided for @duplBehaltenEine.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ behalten und die andere Aufnahme in den Papierkorb legen?'**
+  String duplBehaltenEine(String name);
+
+  /// No description provided for @duplBehaltenMehrere.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ behalten und die {n} anderen in den Papierkorb legen?'**
+  String duplBehaltenMehrere(String name, int n);
+
+  /// No description provided for @duplAlleFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Kopien aus {g} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.'**
+  String duplAlleFrage(int n, int g);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

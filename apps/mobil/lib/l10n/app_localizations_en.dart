@@ -933,4 +933,66 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get statKameras => 'Most used cameras';
+
+  @override
+  String get bibDuplikate => 'Duplicates';
+
+  @override
+  String get duplAehnlichkeit => 'Similarity';
+
+  @override
+  String get duplSuchen => 'Search';
+
+  @override
+  String get duplSucht => 'Searching …';
+
+  @override
+  String duplAlle(int n) {
+    return '$n copies to the trash';
+  }
+
+  @override
+  String get duplKeineEinbettungen =>
+      'No image embeddings yet – the analysis on the server has to run first.';
+
+  @override
+  String duplKeine(String p) {
+    return 'No duplicates at $p similarity.';
+  }
+
+  @override
+  String duplAusnahmen(int n) {
+    return '$n pairs are excluded.';
+  }
+
+  @override
+  String duplGruppen(int n, String p) {
+    return '$n groups at $p similarity. The outlined photo would be kept when cleaning up; groups with several favorites or ratings stay untouched.';
+  }
+
+  @override
+  String get duplKeineDuplikate => 'Not duplicates';
+
+  @override
+  String duplNurVonHand(int n) {
+    return '$n items · several marked, by hand only';
+  }
+
+  @override
+  String get duplBehalten => 'Keep';
+
+  @override
+  String duplBehaltenEine(String name) {
+    return 'Keep “$name” and move the other item to the trash?';
+  }
+
+  @override
+  String duplBehaltenMehrere(String name, int n) {
+    return 'Keep “$name” and move the $n others to the trash?';
+  }
+
+  @override
+  String duplAlleFrage(int n, int g) {
+    return 'Move $n copies from $g groups to the trash? In each group the outlined photo stays.';
+  }
 }

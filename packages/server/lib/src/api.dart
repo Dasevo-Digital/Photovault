@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
@@ -10,7 +9,7 @@ import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
-import 'package:kern/services/duplicate_selection.dart';
+import 'package:kern/services/duplikatsuche.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/kartengruppen.dart';
@@ -680,41 +679,21 @@ class _Api {
       return _json({'fehler': 'schwelle'}, status: 400);
     }
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final einbettungen = await db.allEmbeddings();
-    final ausnahmen = await db.duplikatAusnahmeSchluessel();
-    final gruppen = einbettungen.length < 2
-        ? const <List<String>>[]
-        : await Isolate.run(
-            () => findDuplicateGroups(
-              DuplicateSearchParams(
-                einbettungen,
-                schwelle,
-                ausnahmen: ausnahmen,
-              ),
-            ),
-          );
-    final zeilen = await db.assetsByIds([for (final g in gruppen) ...g]);
-    final nachId = {for (final a in zeilen) a.id: a};
-    final ausgabe = <Map<String, Object?>>[];
-    for (final g in gruppen) {
-      final aufnahmen = [
-        for (final id in g)
-          if (nachId[id] != null) nachId[id]!,
-      ];
-      if (aufnahmen.length < 2) continue;
-      ausgabe.add({
-        'aufnahmen': [
-          for (final a in aufnahmen) zeileAlsJson(Rasterzeile.aus(a)),
-        ],
-        'behalten': besterDerGruppe(aufnahmen).id,
-        'loeschbar': [for (final a in zuLoeschendeDerGruppe(aufnahmen)) a.id],
-      });
-    }
+    final d = await sucheDuplikate(db, schwelle);
     return _json({
-      'einbettungen': einbettungen.length,
-      'ausnahmen': ausnahmen.length,
-      'schwelle': schwelle,
-      'gruppen': ausgabe,
+      'einbettungen': d.einbettungen,
+      'ausnahmen': d.ausnahmen,
+      'schwelle': d.schwelle,
+      'gruppen': [
+        for (final g in d.gruppen)
+          {
+            'aufnahmen': [
+              for (final a in g.aufnahmen) zeileAlsJson(Rasterzeile.aus(a)),
+            ],
+            'behalten': g.behalten.id,
+            'loeschbar': [for (final a in g.loeschbar) a.id],
+          },
+      ],
     });
   }
 

@@ -398,5 +398,20 @@
   "statGesperrt": "Locked folder",
   "statProJahr": "Photos & videos per year",
   "statProMonat": "Seasonality – items per month",
-  "statKameras": "Most used cameras"
+  "statKameras": "Most used cameras",
+  "bibDuplikate": "Duplicates",
+  "duplAehnlichkeit": "Similarity",
+  "duplSuchen": "Search",
+  "duplSucht": "Searching …",
+  "duplAlle": "{n} copies to the trash",
+  "duplKeineEinbettungen": "No image embeddings yet – the analysis on the server has to run first.",
+  "duplKeine": "No duplicates at {p} similarity.",
+  "duplAusnahmen": "{n} pairs are excluded.",
+  "duplGruppen": "{n} groups at {p} similarity. The outlined photo would be kept when cleaning up; groups with several favorites or ratings stay untouched.",
+  "duplKeineDuplikate": "Not duplicates",
+  "duplNurVonHand": "{n} items · several marked, by hand only",
+  "duplBehalten": "Keep",
+  "duplBehaltenEine": "Keep “{name}” and move the other item to the trash?",
+  "duplBehaltenMehrere": "Keep “{name}” and move the {n} others to the trash?",
+  "duplAlleFrage": "Move {n} copies from {g} groups to the trash? In each group the outlined photo stays."
 }

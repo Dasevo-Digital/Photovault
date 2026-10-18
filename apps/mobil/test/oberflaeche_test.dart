@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
+import 'package:photo_vault_mobil/seiten/duplikate.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -879,6 +881,48 @@ void main() {
     }
     expect(find.text(t.statKameras), findsOneWidget);
     expect(find.text('Canon EOS R6'), findsOneWidget);
+  });
+
+  testWidgets('Duplikate wie im Browser: Gruppe, bestes Foto, Behalten', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['d1', 'd2', 'd3']);
+    Float32List vektor(int achse) => Float32List(64)..[achse] = 1;
+    await db.saveEmbedding('d1', vektor(0));
+    await db.saveEmbedding('d2', vektor(0));
+    await db.saveEmbedding('d3', vektor(1));
+    await (db.update(db.assets)..where((t) => t.id.equals('d2'))).write(
+      const AssetsCompanion(isFavorite: Value(true)),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Duplikate(sitzung: sitzung)),
+      ),
+    );
+    // Gesucht wird in einem eigenen Isolate – das braucht echte Zeit.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 800)),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Duplikate)));
+    expect(find.text(t.duplGruppen(1, '92 %')), findsOneWidget);
+    expect(find.text('d1.jpg'), findsOneWidget);
+    expect(find.text('d2.jpg'), findsOneWidget);
+    expect(find.text('d3.jpg'), findsNothing);
+    expect(find.text(t.duplAlle(1)), findsOneWidget);
+    // Der Favorit ist das beste Foto: sein Knopf ist gefüllt.
+    final gefuellt = find.widgetWithText(FilledButton, t.duplBehalten);
+    expect(gefuellt, findsOneWidget);
+    await tester.tap(gefuellt);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect((await db.assetById('d1'))!.isTrashed, isTrue);
+    expect((await db.assetById('d2'))!.isTrashed, isFalse);
+    expect(find.text('d1.jpg'), findsNothing);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

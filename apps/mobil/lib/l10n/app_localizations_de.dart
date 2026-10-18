@@ -934,4 +934,66 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get statKameras => 'Häufigste Kameras';
+
+  @override
+  String get bibDuplikate => 'Duplikate';
+
+  @override
+  String get duplAehnlichkeit => 'Ähnlichkeit';
+
+  @override
+  String get duplSuchen => 'Suchen';
+
+  @override
+  String get duplSucht => 'Suche …';
+
+  @override
+  String duplAlle(int n) {
+    return '$n Kopien in den Papierkorb';
+  }
+
+  @override
+  String get duplKeineEinbettungen =>
+      'Noch keine Bildeinbettungen – die Auswertung auf dem Server muss zuerst gelaufen sein.';
+
+  @override
+  String duplKeine(String p) {
+    return 'Keine Duplikate bei $p Ähnlichkeit.';
+  }
+
+  @override
+  String duplAusnahmen(int n) {
+    return '$n Paare sind ausgenommen.';
+  }
+
+  @override
+  String duplGruppen(int n, String p) {
+    return '$n Gruppen bei $p Ähnlichkeit. Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet.';
+  }
+
+  @override
+  String get duplKeineDuplikate => 'Keine Duplikate';
+
+  @override
+  String duplNurVonHand(int n) {
+    return '$n Aufnahmen · mehrere ausgezeichnet, nur von Hand';
+  }
+
+  @override
+  String get duplBehalten => 'Behalten';
+
+  @override
+  String duplBehaltenEine(String name) {
+    return '„$name“ behalten und die andere Aufnahme in den Papierkorb legen?';
+  }
+
+  @override
+  String duplBehaltenMehrere(String name, int n) {
+    return '„$name“ behalten und die $n anderen in den Papierkorb legen?';
+  }
+
+  @override
+  String duplAlleFrage(int n, int g) {
+    return '$n Kopien aus $g Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.';
+  }
 }

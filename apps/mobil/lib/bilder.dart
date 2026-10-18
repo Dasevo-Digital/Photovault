@@ -60,6 +60,7 @@ class Miniatur extends StatelessWidget {
     required this.relativ,
     this.video = false,
     this.favorit = false,
+    this.serie = 0,
     this.bild,
   });
 
@@ -71,6 +72,10 @@ class Miniatur extends StatelessWidget {
   final ImageProvider? bild;
   final bool video;
   final bool favorit;
+
+  /// Steht die Kachel für eine Serie, wie viele Aufnahmen dazugehören –
+  /// oben rechts „⧉ 5“, wie im Browser.
+  final int serie;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +119,27 @@ class Miniatur extends StatelessWidget {
                 left: 4,
                 bottom: 4,
                 child: Icon(Icons.favorite, color: Colors.white, size: 16),
+              ),
+            if (serie > 1)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1,
+                    ),
+                    child: Text(
+                      '⧉ $serie',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
               ),
           ],
         );
