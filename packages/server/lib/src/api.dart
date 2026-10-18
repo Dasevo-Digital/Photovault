@@ -13,6 +13,7 @@ import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplikatsuche.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
+import 'package:kern/services/gesichtsuebersicht.dart' as gesichtsuebersicht;
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/laendernamen.dart';
 import 'package:kern/services/lebensbaumansicht.dart';
@@ -222,6 +223,7 @@ Handler baueApi({
     ..get('/api/v1/alben/<id>', api.album)
     ..get('/api/v1/personen', api.personen)
     ..get('/api/v1/personen/<id>', api.person)
+    ..get('/api/v1/gesichter/ohne-namen', api.gesichterOhneNamen)
     ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
     ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
@@ -750,6 +752,19 @@ class _Api {
       'personen': [
         for (final p in angaben.personen) {'id': p.id, 'name': p.name},
       ],
+      // Jedes Gesicht für sich – zum Benennen und Ändern (Issue #166).
+      'gesichter': [
+        for (final (:gesicht, :person)
+            in await gesichtsuebersicht.gesichterDerAufnahme(db, id))
+          {
+            'id': gesicht.id,
+            'ausschnitt': gesicht.cropRelativePath,
+            'person': person == null
+                ? null
+                : {'id': person.id, 'name': person.name},
+            if (gesicht.isIgnored) 'beiseite': true,
+          },
+      ],
       'schlagwoerter': [
         for (final t in angaben.schlagwoerter) {'id': t.id, 'name': t.name},
       ],
@@ -1157,6 +1172,36 @@ class _Api {
             'bild': p.coverFaceCropPath,
           },
       ],
+    });
+  }
+
+  /// Ähnliche Gesichter ohne Namen, zum Benennen – dieselbe Rechnung wie
+  /// am Rechner (gesichtsuebersicht.dart).
+  Future<Response> gesichterOhneNamen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final o = await gesichtsuebersicht.gesichterOhneNamen(db);
+    Map<String, Object?> gesicht(FaceData f) => {
+      'id': f.id,
+      'ausschnitt': f.cropRelativePath,
+    };
+    return _json({
+      'gruppen': [
+        for (final g in o.gruppen)
+          {
+            'gesichter': [for (final f in g.gesichter) gesicht(f)],
+            'vorschlag': g.vorschlag == null
+                ? null
+                : {
+                    'id': g.vorschlag!.id,
+                    'name': g.vorschlag!.name,
+                    'bild': g.vorschlag!.coverFaceCropPath,
+                  },
+            'aehnlichkeit': g.aehnlichkeit,
+          },
+      ],
+      'einzeln': o.einzeln,
+      'angesehen': o.angesehen,
+      'gesamt': o.gesamt,
     });
   }
 

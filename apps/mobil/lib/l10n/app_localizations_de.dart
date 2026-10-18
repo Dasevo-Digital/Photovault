@@ -1319,4 +1319,75 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get eigenTotpEingerichtet => 'TOTP eingerichtet';
+
+  @override
+  String get gesichterOhneNamen => 'Ohne Namen';
+
+  @override
+  String gesichterAnzahl(int n) {
+    return '$n Gesichter';
+  }
+
+  @override
+  String gesichterVorschlagFrage(String name) {
+    return '$name?';
+  }
+
+  @override
+  String get gesichterWerIstDas => 'Wer ist das?';
+
+  @override
+  String gesichterAehnliche(int n) {
+    return '$n ähnliche Gesichter';
+  }
+
+  @override
+  String gesichterDasIst(String name) {
+    return 'Das ist $name';
+  }
+
+  @override
+  String get gesichterHinweis =>
+      'Antippen nimmt ein Gesicht heraus, das nicht dazugehört.';
+
+  @override
+  String get gesichterName => 'Name';
+
+  @override
+  String get gesichterNamePlatzhalter => 'Neue oder vorhandene Person';
+
+  @override
+  String get gesichterNameFehlt => 'Bitte einen Namen eingeben.';
+
+  @override
+  String get gesichterBenennen => 'Benennen';
+
+  @override
+  String get gesichterBeiseite => 'Beiseitelegen';
+
+  @override
+  String get gesichterLoesen => 'Zuordnung lösen';
+
+  @override
+  String get gesichterKeinGesicht => 'Kein Gesicht gewählt.';
+
+  @override
+  String get gesichterAntippen => 'Antippen, um zu benennen oder zu ändern';
+
+  @override
+  String get personZusammenfuehren => 'Zusammenführen';
+
+  @override
+  String personZusammenfuehrenTitel(String name) {
+    return 'In „$name“ aufnehmen';
+  }
+
+  @override
+  String get personZusammenfuehrenText =>
+      'Die gewählte Person geht in dieser auf: ihre Gesichter, Fotos und Verwandtschaft kommen hierher, ihr Name verschwindet.';
+
+  @override
+  String personZusammenfuehrenFrage(String andere, String name) {
+    return '„$andere“ in „$name“ aufnehmen? Das lässt sich nicht rückgängig machen.';
+  }
 }

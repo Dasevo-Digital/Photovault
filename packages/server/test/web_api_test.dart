@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
@@ -181,6 +182,104 @@ void main() {
       404,
     );
   }, skip: _hatFfmpeg() ? false : 'ohne ffmpeg');
+
+  test(
+    'Gesichter: Gruppen ohne Namen mit Vorschlag, benennen, Angaben',
+    () async {
+      final a = await ladeHoch(erikaToken, 'feier.jpg', 40);
+      final b = await ladeHoch(erikaToken, 'garten.jpg', 140);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      // Normierte Einbettungen in zwei Richtungen: Wer nah an (0, 1) liegt,
+      // ähnelt einander.
+      Uint8List vektor(double x) {
+        final v = Float32List(128);
+        final laenge = math.sqrt(x * x + 1);
+        v[0] = x / laenge;
+        v[1] = 1 / laenge;
+        return Uint8List.view(v.buffer);
+      }
+
+      await befehl(erikaToken, 'personAnlegen', {
+        'personId': 'anna',
+        'name': 'Anna',
+      });
+      Future<void> gesicht(
+        String id,
+        String aufnahme,
+        String? person,
+        double x,
+        double links,
+      ) => db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: id,
+              assetId: aufnahme,
+              personId: Value(person),
+              boxX: links,
+              boxY: 0.1,
+              boxW: 0.2,
+              boxH: 0.2,
+              cropRelativePath: Value('faces/$id.jpg'),
+              embedding: Value(vektor(x)),
+            ),
+          );
+      // Anna kennt man schon; zwei weitere Gesichter sehen ihr ähnlich, ein
+      // drittes niemandem.
+      await gesicht('f-anna', b, 'anna', 0.05, 0.1);
+      await gesicht('f1', a, null, 0.0, 0.6);
+      await gesicht('f2', b, null, 0.02, 0.5);
+      await gesicht('f3', a, null, -40, 0.2);
+
+      final o = await jsonAus(
+        await frag('GET', '/api/v1/gesichter/ohne-namen', token: erikaToken),
+      );
+      final gruppen = (o['gruppen']! as List).cast<Map>();
+      expect(gruppen, hasLength(1));
+      expect([
+        for (final g in (gruppen.single['gesichter'] as List).cast<Map>())
+          g['id'],
+      ], unorderedEquals(['f1', 'f2']));
+      expect((gruppen.single['vorschlag'] as Map)['name'], 'Anna');
+      expect(o['einzeln'], 1);
+      expect(o['gesamt'], 3);
+      // Ein anderes Konto sieht nichts davon.
+      final fremd = await jsonAus(
+        await frag('GET', '/api/v1/gesichter/ohne-namen', token: maxToken),
+      );
+      expect(fremd['gruppen'], isEmpty);
+
+      // Die Angaben zeigen jedes Gesicht, von links nach rechts.
+      final vorher = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+      );
+      final g = (vorher['gesichter']! as List).cast<Map>();
+      expect([for (final x in g) x['id']], ['f3', 'f1']);
+      expect(g.first['person'], isNull);
+      expect(g.first['ausschnitt'], 'faces/f3.jpg');
+
+      // Benennen geht über die Befehle – danach ist die Gruppe weg.
+      expect(
+        (await befehl(erikaToken, 'gesichterZuordnen', {
+          'gesichtIds': ['f1', 'f2'],
+          'personId': 'anna',
+        })).statusCode,
+        200,
+      );
+      final nachher = await jsonAus(
+        await frag('GET', '/api/v1/gesichter/ohne-namen', token: erikaToken),
+      );
+      expect(nachher['gruppen'], isEmpty);
+      final angaben = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+      );
+      expect(
+        ((angaben['gesichter']! as List).cast<Map>().last['person']
+            as Map)['name'],
+        'Anna',
+      );
+    },
+  );
 
   test(
     'Alben: Liste mit Anzahl und Titelbild, Inhalt, fremde unsichtbar',

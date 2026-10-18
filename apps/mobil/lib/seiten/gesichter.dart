@@ -1,0 +1,640 @@
+import 'package:flutter/material.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/gesichtsuebersicht.dart';
+import 'package:uuid/uuid.dart';
+
+import '../bilder.dart';
+import '../einfuegbares_menue.dart';
+import '../l10n/app_localizations.dart';
+import '../sitzung.dart';
+
+/// Gesichter benennen – wie im Browser (web/app.js, oeffneGesichter) und
+/// am Rechner: einer vorhandenen Person zuordnen oder eine neue anlegen,
+/// den Vorschlag bestätigen, beiseitelegen oder die Zuordnung lösen. Bei
+/// mehreren Gesichtern nimmt ein Tipp eines heraus, das nicht dazugehört.
+///
+/// `true`, wenn sich etwas geändert hat.
+Future<bool> benenneGesichter(
+  BuildContext context,
+  Sitzung sitzung, {
+  required String titel,
+  required List<FaceData> gesichter,
+  PersonData? vorschlag,
+  PersonData? person,
+}) async =>
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: _Benennen(
+          sitzung: sitzung,
+          titel: titel,
+          gesichter: gesichter,
+          vorschlag: vorschlag,
+          person: person,
+        ),
+      ),
+    ) ??
+    false;
+
+class _Benennen extends StatefulWidget {
+  const _Benennen({
+    required this.sitzung,
+    required this.titel,
+    required this.gesichter,
+    this.vorschlag,
+    this.person,
+  });
+
+  final Sitzung sitzung;
+  final String titel;
+  final List<FaceData> gesichter;
+  final PersonData? vorschlag;
+  final PersonData? person;
+
+  @override
+  State<_Benennen> createState() => _BenennenState();
+}
+
+class _BenennenState extends State<_Benennen> {
+  final _aus = <String>{};
+  late final _name = TextEditingController(text: widget.person?.name ?? '');
+  List<PersonData> _personen = const [];
+  String? _meldung;
+  var _laeuft = false;
+
+  AppDatabase get _db => widget.sitzung.db;
+
+  @override
+  void initState() {
+    super.initState();
+    _db.select(_db.people).get().then((p) {
+      if (mounted) {
+        setState(
+          () => _personen =
+              [
+                for (final x in p)
+                  if (x.name.trim().isNotEmpty) x,
+              ]..sort(
+                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+              ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  List<String> get _ids => [
+    for (final g in widget.gesichter)
+      if (!_aus.contains(g.id)) g.id,
+  ];
+
+  Future<void> _fertig(Future<void> Function(List<String> ids) arbeit) async {
+    final t = AppTexte.of(context);
+    final ids = _ids;
+    if (ids.isEmpty) {
+      setState(() => _meldung = t.gesichterKeinGesicht);
+      return;
+    }
+    setState(() {
+      _laeuft = true;
+      _meldung = null;
+    });
+    try {
+      await arbeit(ids);
+      if (mounted) Navigator.pop(context, true);
+    } catch (x) {
+      if (mounted) {
+        setState(() {
+          _laeuft = false;
+          _meldung = '$x';
+        });
+      }
+    }
+  }
+
+  Future<void> _benennen() async {
+    final t = AppTexte.of(context);
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      setState(() => _meldung = t.gesichterNameFehlt);
+      return;
+    }
+    await _fertig((ids) async {
+      // Ein vorhandener Name heisst: diese Person – sonst eine neue.
+      final da = _personen
+          .where((p) => p.name.trim().toLowerCase() == name.toLowerCase())
+          .firstOrNull;
+      var personId = da?.id;
+      if (personId == null) {
+        personId = const Uuid().v4();
+        await _db.fuehreAus(PersonAnlegen(personId, name));
+      }
+      await _db.fuehreAus(GesichterZuordnen(ids, personId));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    final vorschlag = widget.vorschlag;
+    final mehrere = widget.gesichter.length > 1;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(widget.titel, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.3,
+              ),
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final g in widget.gesichter)
+                      GestureDetector(
+                        onTap: mehrere
+                            ? () => setState(() {
+                                if (!_aus.remove(g.id)) _aus.add(g.id);
+                              })
+                            : null,
+                        child: Opacity(
+                          opacity: _aus.contains(g.id) ? 0.25 : 1,
+                          child: SizedBox.square(
+                            dimension: 64,
+                            child: Personenbild(
+                              paths: widget.sitzung.paths,
+                              name: '?',
+                              relativ: g.cropRelativePath,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (mehrere)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  t.gesichterHinweis,
+                  style: TextStyle(
+                    color: farben.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            if (vorschlag != null) ...[
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _laeuft
+                    ? null
+                    : () => _fertig(
+                        (ids) =>
+                            _db.fuehreAus(GesichterZuordnen(ids, vorschlag.id)),
+                      ),
+                child: Text(t.gesichterDasIst(vorschlag.name)),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Autocomplete<PersonData>(
+              initialValue: TextEditingValue(text: _name.text),
+              optionsBuilder: (wert) {
+                final s = wert.text.trim().toLowerCase();
+                if (s.isEmpty) return const Iterable<PersonData>.empty();
+                return _personen
+                    .where((p) => p.name.toLowerCase().contains(s))
+                    .take(8);
+              },
+              displayStringForOption: (p) => p.name,
+              onSelected: (p) => _name.text = p.name,
+              fieldViewBuilder: (context, feld, fokus, absenden) {
+                feld.addListener(() => _name.text = feld.text);
+                return TextField(
+                  controller: feld,
+                  focusNode: fokus,
+                  contextMenuBuilder: einfuegbaresMenue,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: t.gesichterName,
+                    hintText: t.gesichterNamePlatzhalter,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _benennen(),
+                );
+              },
+            ),
+            if (_meldung != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_meldung!, style: TextStyle(color: farben.error)),
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (widget.person != null)
+                  TextButton(
+                    onPressed: _laeuft
+                        ? null
+                        : () => _fertig((ids) async {
+                            for (final id in ids) {
+                              await _db.fuehreAus(ZuordnungLoesen(id));
+                            }
+                          }),
+                    child: Text(t.gesichterLoesen),
+                  ),
+                TextButton(
+                  onPressed: _laeuft
+                      ? null
+                      : () => _fertig(
+                          (ids) =>
+                              _db.fuehreAus(GesichterBeiseitelegen(ids, true)),
+                        ),
+                  child: Text(t.gesichterBeiseite),
+                ),
+                FilledButton.tonal(
+                  onPressed: _laeuft ? null : _benennen,
+                  child: Text(t.gesichterBenennen),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ähnliche Gesichter ohne Namen, oben auf der Personenseite – dieselben
+/// Gruppen wie im Browser (gesichtsuebersicht.dart).
+class OhneNamenAbschnitt extends StatefulWidget {
+  const OhneNamenAbschnitt({super.key, required this.sitzung});
+
+  final Sitzung sitzung;
+
+  @override
+  State<OhneNamenAbschnitt> createState() => _OhneNamenAbschnittState();
+}
+
+class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
+  late Future<GesichterOhneNamen> _daten = gesichterOhneNamen(
+    widget.sitzung.db,
+  );
+
+  void _neu() => setState(() {
+    _daten = gesichterOhneNamen(widget.sitzung.db);
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    return FutureBuilder<GesichterOhneNamen>(
+      future: _daten,
+      builder: (context, snap) {
+        final d = snap.data;
+        if (d == null || d.gruppen.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.gesichterOhneNamen,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  Text(
+                    t.gesichterAnzahl(d.gesamt),
+                    style: TextStyle(color: farben.onSurfaceVariant),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                // Bild, zwei Zeilen Text und Rand – mit Luft für grössere
+                // Schrift.
+                height:
+                    108 +
+                    16 +
+                    6 +
+                    2 * 22 * MediaQuery.textScalerOf(context).scale(1),
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: d.gruppen.length.clamp(0, 60),
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) {
+                    final g = d.gruppen[i];
+                    final vorschlag = g.vorschlag;
+                    return _Gruppenkarte(
+                      sitzung: widget.sitzung,
+                      gruppe: g,
+                      text: vorschlag == null
+                          ? t.gesichterWerIstDas
+                          : t.gesichterVorschlagFrage(vorschlag.name),
+                      anzahl: t.gesichterAnzahl(g.gesichter.length),
+                      onTap: () async {
+                        final geaendert = await benenneGesichter(
+                          context,
+                          widget.sitzung,
+                          titel: t.gesichterAehnliche(g.gesichter.length),
+                          gesichter: g.gesichter,
+                          vorschlag: vorschlag,
+                        );
+                        if (geaendert) _neu();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _Gruppenkarte extends StatelessWidget {
+  const _Gruppenkarte({
+    required this.sitzung,
+    required this.gruppe,
+    required this.text,
+    required this.anzahl,
+    required this.onTap,
+  });
+
+  final Sitzung sitzung;
+  final Gesichtsgruppe gruppe;
+  final String text;
+  final String anzahl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final farben = Theme.of(context).colorScheme;
+    final bilder = gruppe.gesichter.take(4).toList();
+    final form = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+      side: BorderSide(color: farben.outlineVariant),
+    );
+    return SizedBox(
+      width: 124,
+      child: Material(
+        color: farben.surfaceContainerLow,
+        shape: form,
+        child: InkWell(
+          customBorder: form,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox.square(
+                    dimension: 108,
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 2,
+                      crossAxisSpacing: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        for (var i = 0; i < 4; i++)
+                          i < bilder.length
+                              ? Miniatur(
+                                  paths: sitzung.paths,
+                                  relativ: bilder[i].cropRelativePath,
+                                )
+                              : ColoredBox(color: farben.surfaceContainerHigh),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  anzahl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: farben.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Die Gesichter einer Aufnahme in den Angaben – jedes antippbar.
+class GesichterDerAufnahme extends StatefulWidget {
+  const GesichterDerAufnahme({
+    super.key,
+    required this.sitzung,
+    required this.assetId,
+    this.rahmen,
+  });
+
+  final Sitzung sitzung;
+  final String assetId;
+
+  /// Um die Gesichter herum – nur, wenn es welche gibt.
+  final Widget Function(Widget inhalt)? rahmen;
+
+  @override
+  State<GesichterDerAufnahme> createState() => _GesichterDerAufnahmeState();
+}
+
+class _GesichterDerAufnahmeState extends State<GesichterDerAufnahme> {
+  late Future<List<GesichtAufAufnahme>> _daten = _lade();
+
+  Future<List<GesichtAufAufnahme>> _lade() =>
+      gesichterDerAufnahme(widget.sitzung.db, widget.assetId);
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    return FutureBuilder<List<GesichtAufAufnahme>>(
+      future: _daten,
+      builder: (context, snap) {
+        final liste = snap.data;
+        if (liste == null || liste.isEmpty) return const SizedBox.shrink();
+        final inhalt = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                for (final (:gesicht, :person) in liste)
+                  Semantics(
+                    button: true,
+                    label: person?.name ?? t.gesichterWerIstDas,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(28),
+                      onTap: () async {
+                        final geaendert = await benenneGesichter(
+                          context,
+                          widget.sitzung,
+                          titel: person?.name ?? t.gesichterWerIstDas,
+                          gesichter: [gesicht],
+                          person: person,
+                        );
+                        if (geaendert && mounted) {
+                          setState(() {
+                            _daten = _lade();
+                          });
+                        }
+                      },
+                      child: SizedBox(
+                        width: 56,
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: person == null
+                                    ? Border.all(
+                                        color: farben.primary,
+                                        width: 2,
+                                      )
+                                    : null,
+                              ),
+                              child: Personenbild(
+                                paths: widget.sitzung.paths,
+                                name: person?.name ?? '?',
+                                relativ: gesicht.cropRelativePath,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              person?.name ?? '?',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t.gesichterAntippen,
+              style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+            ),
+          ],
+        );
+        return widget.rahmen?.call(inhalt) ?? inhalt;
+      },
+    );
+  }
+}
+
+/// Zwei Einträge für dieselbe Person: die gewählte geht in [person] auf.
+/// `true`, wenn zusammengeführt wurde.
+Future<bool> zusammenfuehren(
+  BuildContext context,
+  Sitzung sitzung,
+  PersonData person,
+) async {
+  final t = AppTexte.of(context);
+  final db = sitzung.db;
+  final andere = [
+    for (final p in await db.select(db.people).get())
+      if (p.id != person.id && p.name.trim().isNotEmpty) p,
+  ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  if (!context.mounted) return false;
+  final wahl = await showDialog<PersonData>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: Text(t.personZusammenfuehrenTitel(person.name)),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          child: Text(t.personZusammenfuehrenText),
+        ),
+        for (final p in andere)
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, p),
+            child: Row(
+              children: [
+                SizedBox.square(
+                  dimension: 36,
+                  child: Personenbild(
+                    paths: sitzung.paths,
+                    name: p.name,
+                    relativ: p.coverFaceCropPath,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(p.name)),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+  if (wahl == null || !context.mounted) return false;
+  final ja = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      content: Text(t.personZusammenfuehrenFrage(wahl.name, person.name)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(t.abbrechen),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(t.personZusammenfuehren),
+        ),
+      ],
+    ),
+  );
+  if (ja != true) return false;
+  await db.fuehreAus(
+    PersonenZusammenfuehren(behalten: person.id, entfernen: wahl.id),
+  );
+  return true;
+}

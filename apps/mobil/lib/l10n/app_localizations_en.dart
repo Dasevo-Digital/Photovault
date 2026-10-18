@@ -1315,4 +1315,75 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get eigenTotpEingerichtet => 'TOTP set up';
+
+  @override
+  String get gesichterOhneNamen => 'Unnamed';
+
+  @override
+  String gesichterAnzahl(int n) {
+    return '$n faces';
+  }
+
+  @override
+  String gesichterVorschlagFrage(String name) {
+    return '$name?';
+  }
+
+  @override
+  String get gesichterWerIstDas => 'Who is this?';
+
+  @override
+  String gesichterAehnliche(int n) {
+    return '$n similar faces';
+  }
+
+  @override
+  String gesichterDasIst(String name) {
+    return 'This is $name';
+  }
+
+  @override
+  String get gesichterHinweis =>
+      'Tap a face to leave it out if it does not belong.';
+
+  @override
+  String get gesichterName => 'Name';
+
+  @override
+  String get gesichterNamePlatzhalter => 'New or existing person';
+
+  @override
+  String get gesichterNameFehlt => 'Please enter a name.';
+
+  @override
+  String get gesichterBenennen => 'Name';
+
+  @override
+  String get gesichterBeiseite => 'Set aside';
+
+  @override
+  String get gesichterLoesen => 'Remove name';
+
+  @override
+  String get gesichterKeinGesicht => 'No face selected.';
+
+  @override
+  String get gesichterAntippen => 'Tap to name or change';
+
+  @override
+  String get personZusammenfuehren => 'Merge';
+
+  @override
+  String personZusammenfuehrenTitel(String name) {
+    return 'Merge into “$name”';
+  }
+
+  @override
+  String get personZusammenfuehrenText =>
+      'The chosen person is merged into this one: their faces, photos and relationships move here, and their name disappears.';
+
+  @override
+  String personZusammenfuehrenFrage(String andere, String name) {
+    return 'Merge “$andere” into “$name”? This cannot be undone.';
+  }
 }

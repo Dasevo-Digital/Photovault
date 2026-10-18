@@ -2148,6 +2148,120 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'TOTP eingerichtet'**
   String get eigenTotpEingerichtet;
+
+  /// No description provided for @gesichterOhneNamen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Namen'**
+  String get gesichterOhneNamen;
+
+  /// No description provided for @gesichterAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Gesichter'**
+  String gesichterAnzahl(int n);
+
+  /// No description provided for @gesichterVorschlagFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{name}?'**
+  String gesichterVorschlagFrage(String name);
+
+  /// No description provided for @gesichterWerIstDas.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer ist das?'**
+  String get gesichterWerIstDas;
+
+  /// No description provided for @gesichterAehnliche.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} ähnliche Gesichter'**
+  String gesichterAehnliche(int n);
+
+  /// No description provided for @gesichterDasIst.
+  ///
+  /// In de, this message translates to:
+  /// **'Das ist {name}'**
+  String gesichterDasIst(String name);
+
+  /// No description provided for @gesichterHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Antippen nimmt ein Gesicht heraus, das nicht dazugehört.'**
+  String get gesichterHinweis;
+
+  /// No description provided for @gesichterName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get gesichterName;
+
+  /// No description provided for @gesichterNamePlatzhalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue oder vorhandene Person'**
+  String get gesichterNamePlatzhalter;
+
+  /// No description provided for @gesichterNameFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte einen Namen eingeben.'**
+  String get gesichterNameFehlt;
+
+  /// No description provided for @gesichterBenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Benennen'**
+  String get gesichterBenennen;
+
+  /// No description provided for @gesichterBeiseite.
+  ///
+  /// In de, this message translates to:
+  /// **'Beiseitelegen'**
+  String get gesichterBeiseite;
+
+  /// No description provided for @gesichterLoesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuordnung lösen'**
+  String get gesichterLoesen;
+
+  /// No description provided for @gesichterKeinGesicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Gesicht gewählt.'**
+  String get gesichterKeinGesicht;
+
+  /// No description provided for @gesichterAntippen.
+  ///
+  /// In de, this message translates to:
+  /// **'Antippen, um zu benennen oder zu ändern'**
+  String get gesichterAntippen;
+
+  /// No description provided for @personZusammenfuehren.
+  ///
+  /// In de, this message translates to:
+  /// **'Zusammenführen'**
+  String get personZusammenfuehren;
+
+  /// No description provided for @personZusammenfuehrenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'In „{name}“ aufnehmen'**
+  String personZusammenfuehrenTitel(String name);
+
+  /// No description provided for @personZusammenfuehrenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die gewählte Person geht in dieser auf: ihre Gesichter, Fotos und Verwandtschaft kommen hierher, ihr Name verschwindet.'**
+  String get personZusammenfuehrenText;
+
+  /// No description provided for @personZusammenfuehrenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{andere}“ in „{name}“ aufnehmen? Das lässt sich nicht rückgängig machen.'**
+  String personZusammenfuehrenFrage(String andere, String name);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

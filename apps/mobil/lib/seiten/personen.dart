@@ -5,6 +5,7 @@ import 'package:kern/db/rasterzeile.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'gesichter.dart';
 import 'raster.dart';
 
 /// Die benannten Personen, jede mit ihrem Gesicht.
@@ -23,47 +24,61 @@ class Personen extends StatelessWidget {
         for (final p in alle)
           if (p.name.trim().isNotEmpty) p,
       ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      if (personen.isEmpty) {
-        return Center(child: Text(AppTexte.of(context).personenLeer));
-      }
-      return GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 120,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.78,
+      // Oben die Gesichter ohne Namen (wie im Browser), darunter alle
+      // benannten.
+      return CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: OhneNamenAbschnitt(sitzung: sitzung)),
+          if (personen.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Text(AppTexte.of(context).personenLeer)),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(12),
+              sliver: _personenGitter(personen),
+            ),
+        ],
+      );
+    },
+  );
+
+  Widget _personenGitter(List<PersonData> personen) => SliverGrid.builder(
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 120,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 12,
+      childAspectRatio: 0.78,
+    ),
+    itemCount: personen.length,
+    itemBuilder: (context, i) {
+      final p = personen[i];
+      return InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PersonSeite(sitzung: sitzung, person: p),
+          ),
         ),
-        itemCount: personen.length,
-        itemBuilder: (context, i) {
-          final p = personen[i];
-          return InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => PersonSeite(sitzung: sitzung, person: p),
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Personenbild(
+                paths: sitzung.paths,
+                name: p.name,
+                relativ: p.coverFaceCropPath,
               ),
             ),
-            child: Column(
-              children: [
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: Personenbild(
-                    paths: sitzung.paths,
-                    name: p.name,
-                    relativ: p.coverFaceCropPath,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  p.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            const SizedBox(height: 6),
+            Text(
+              p.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
-          );
-        },
+          ],
+        ),
       );
     },
   );
@@ -78,7 +93,26 @@ class PersonSeite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(person.name)),
+    appBar: AppBar(
+      title: Text(person.name),
+      actions: [
+        IconButton(
+          tooltip: AppTexte.of(context).personZusammenfuehren,
+          icon: const Icon(Icons.merge_type_rounded),
+          onPressed: () async {
+            if (await zusammenfuehren(context, sitzung, person) &&
+                context.mounted) {
+              // Neu laden: Die Fotos der anderen gehören jetzt dazu.
+              await Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => PersonSeite(sitzung: sitzung, person: person),
+                ),
+              );
+            }
+          },
+        ),
+      ],
+    ),
     body: FutureBuilder<List<AssetData>>(
       future: sitzung.db.assetsFuerPersonen([person.id]),
       builder: (context, snap) {

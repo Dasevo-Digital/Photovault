@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
@@ -37,9 +38,11 @@ import 'package:photo_vault_mobil/seiten/eigenes_konto.dart';
 import 'package:photo_vault_mobil/seiten/einstellungen.dart';
 import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
+import 'package:photo_vault_mobil/seiten/gesichter.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/lebensbaum.dart';
+import 'package:photo_vault_mobil/seiten/personen.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
@@ -619,6 +622,89 @@ void main() {
     expect(find.text('auf'), findsOneWidget);
   });
 
+  testWidgets('Gesichter ohne Namen: Gruppe mit Vorschlag, bestätigen', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['g1', 'g2', 'g3']);
+    Uint8List vektor(double x) {
+      final v = Float32List(128);
+      final laenge = math.sqrt(x * x + 1);
+      v[0] = x / laenge;
+      v[1] = 1 / laenge;
+      return Uint8List.view(v.buffer);
+    }
+
+    await tester.runAsync(() async {
+      await db.fuehreAus(const PersonAnlegen('anna', 'Anna'));
+      for (final (id, aufnahme, person, x) in [
+        ('fa', 'g1', 'anna', 0.05),
+        ('f1', 'g2', null, 0.0),
+        ('f2', 'g3', null, 0.02),
+      ]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: aufnahme,
+                personId: Value(person),
+                boxX: 0.1,
+                boxY: 0.1,
+                boxW: 0.2,
+                boxH: 0.2,
+                embedding: Value(vektor(x)),
+              ),
+            );
+      }
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Personen(sitzung: sitzung)),
+      ),
+    );
+    // Die Gruppierung läuft in einem eigenen Isolate.
+    for (var i = 0; i < 20 && find.text('Anna?').evaluate().isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Ohne Namen'), findsOneWidget);
+    expect(find.text('Anna?'), findsOneWidget);
+    await tester.tap(find.text('Anna?'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 ähnliche Gesichter'), findsOneWidget);
+    await tester.tap(find.text('Das ist Anna'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+    final zugeordnet = await tester.runAsync(
+      () =>
+          (db.select(db.faces)..where((t) => t.personId.equals('anna'))).get(),
+    );
+    expect({for (final f in zugeordnet!) f.id}, {'fa', 'f1', 'f2'});
+    for (
+      var i = 0;
+      i < 20 && find.text('Ohne Namen').evaluate().isNotEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Ohne Namen'), findsNothing);
+    // Der Stream der Personen schliesst mit einem Timer – vor dem Ende
+    // abbauen, sonst steht er beim Aufräumen noch aus.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Betrachter: LIVE nur bei Live Photos', (tester) async {
     final (sitzung, _) = await sitzungMit(tester, ['b1', 'l1']);
     final z = _zeile('l1', 0, 0);
@@ -860,7 +946,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Innsbruck, Österreich'), findsOneWidget);
-    expect(find.text('Erika'), findsOneWidget);
+    // Erika einmal als Person der Aufnahme, einmal unter ihrem Gesicht.
+    expect(find.widgetWithText(ActionChip, 'Erika'), findsOneWidget);
+    expect(find.byType(GesichterDerAufnahme), findsOneWidget);
+    expect(find.text('Erika'), findsNWidgets(2));
     expect(find.text('Berg'), findsOneWidget);
     expect(find.text('Alpen'), findsOneWidget);
     expect(
@@ -868,7 +957,9 @@ void main() {
       findsOneWidget,
     );
     await tester.enterText(find.byType(TextField), 'Am Gipfel');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Speichern'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
     expect(find.text('Gespeichert'), findsOneWidget);

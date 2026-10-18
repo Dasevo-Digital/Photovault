@@ -9,6 +9,7 @@ import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'alben.dart';
+import 'gesichter.dart';
 import 'personen.dart';
 import 'raster.dart';
 
@@ -174,6 +175,14 @@ class _AngabenlisteState extends State<Angabenliste> {
               ],
             ),
           ),
+        // Jedes Gesicht für sich – zum Benennen und Ändern (wie im
+        // Browser).
+        GesichterDerAufnahme(
+          sitzung: widget.sitzung,
+          assetId: a.id,
+          rahmen: (inhalt) =>
+              _Reihe(symbol: Icons.face_outlined, haupt: inhalt),
+        ),
         if (g.schlagwoerter.isNotEmpty)
           _Reihe(
             symbol: Icons.sell_outlined,

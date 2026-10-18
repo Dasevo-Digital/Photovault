@@ -84,6 +84,7 @@
   </section>
   <section id="bereich-karten" hidden>
     <h2 id="karten-titel"></h2>
+    <div id="ohne-namen" hidden></div>
     <div id="karten"></div>
   </section>
   <section id="bereich-karte" hidden>
@@ -272,6 +273,37 @@
     <menu>
       <button value="abbrechen" type="button" id="album-abbrechen">Abbrechen</button>
       <button value="ok" type="submit">Hinzufügen</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="gesicht-dialog">
+  <form method="dialog" id="form-gesicht">
+    <h3 id="gesicht-titel"></h3>
+    <div id="gesicht-auswahl"></div>
+    <p id="gesicht-hinweis" class="leise klein" hidden>Antippen nimmt ein Gesicht heraus, das nicht dazugehört.</p>
+    <button type="button" id="gesicht-ja" class="breit primaer" hidden></button>
+    <label>Name <input name="name" list="gesicht-namen" autocomplete="off" placeholder="Neue oder vorhandene Person"></label>
+    <datalist id="gesicht-namen"></datalist>
+    <p id="gesicht-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="gesicht-loesen" hidden>Zuordnung lösen</button>
+      <button type="button" id="gesicht-beiseite">Beiseitelegen</button>
+      <button type="button" id="gesicht-abbrechen">Abbrechen</button>
+      <button type="submit">Benennen</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="zusammen-dialog">
+  <form method="dialog" id="form-zusammen">
+    <h3 id="zusammen-titel"></h3>
+    <p class="leise klein">Die gewählte Person geht in dieser auf: ihre Gesichter, Fotos und Verwandtschaft kommen hierher, ihr Name verschwindet.</p>
+    <label>Person <select name="andere" id="zusammen-andere"></select></label>
+    <p id="zusammen-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="zusammen-abbrechen">Abbrechen</button>
+      <button type="submit">Zusammenführen</button>
     </menu>
   </form>
 </dialog>

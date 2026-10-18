@@ -800,5 +800,42 @@
   "eigenAendern": "Ändern",
   "eigenPasswortUngleich": "Die neuen Passwörter stimmen nicht überein.",
   "eigenPasswortGeaendert": "Passwort geändert.",
-  "eigenTotpEingerichtet": "TOTP eingerichtet"
+  "eigenTotpEingerichtet": "TOTP eingerichtet",
+  "gesichterOhneNamen": "Ohne Namen",
+  "gesichterAnzahl": "{n} Gesichter",
+  "@gesichterAnzahl": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "gesichterVorschlagFrage": "{name}?",
+  "@gesichterVorschlagFrage": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "gesichterWerIstDas": "Wer ist das?",
+  "gesichterAehnliche": "{n} ähnliche Gesichter",
+  "@gesichterAehnliche": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "gesichterDasIst": "Das ist {name}",
+  "@gesichterDasIst": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "gesichterHinweis": "Antippen nimmt ein Gesicht heraus, das nicht dazugehört.",
+  "gesichterName": "Name",
+  "gesichterNamePlatzhalter": "Neue oder vorhandene Person",
+  "gesichterNameFehlt": "Bitte einen Namen eingeben.",
+  "gesichterBenennen": "Benennen",
+  "gesichterBeiseite": "Beiseitelegen",
+  "gesichterLoesen": "Zuordnung lösen",
+  "gesichterKeinGesicht": "Kein Gesicht gewählt.",
+  "gesichterAntippen": "Antippen, um zu benennen oder zu ändern",
+  "personZusammenfuehren": "Zusammenführen",
+  "personZusammenfuehrenTitel": "In „{name}“ aufnehmen",
+  "@personZusammenfuehrenTitel": {
+    "placeholders": {"name": {"type": "String"}}
+  },
+  "personZusammenfuehrenText": "Die gewählte Person geht in dieser auf: ihre Gesichter, Fotos und Verwandtschaft kommen hierher, ihr Name verschwindet.",
+  "personZusammenfuehrenFrage": "„{andere}“ in „{name}“ aufnehmen? Das lässt sich nicht rückgängig machen.",
+  "@personZusammenfuehrenFrage": {
+    "placeholders": {"andere": {"type": "String"}, "name": {"type": "String"}}
+  }
 }

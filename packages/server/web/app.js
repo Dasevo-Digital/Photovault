@@ -59,6 +59,7 @@ function zeigeAnmeldung() {
 
 function zeigeBereich(name) {
   for (const s of document.querySelectorAll('#inhalt > section')) s.hidden = true;
+  $('ohne-namen').hidden = true;
   for (const b of name) $(`bereich-${b}`).hidden = false;
 }
 
@@ -1054,13 +1055,197 @@ async function zeigePersonen() {
     k.classList.add('person');
     $('karten').append(k);
   }
+  zeigeOhneNamen().catch(() => {});
 }
+
+// --- Gesichter benennen ----------------------------------------------------
+//
+// Wie am Rechner und auf dem Telefon: Ähnliche Gesichter ohne Namen stehen
+// als Gruppe oben bei den Personen; die Angaben eines Fotos zeigen jedes
+// Gesicht für sich. Benennen heisst: einer vorhandenen Person zuordnen
+// oder eine neue anlegen. Alles geht über die Befehle des Kerns.
+
+const dateiUrl = (pfad) => `/api/v1/dateien/${pfad.split('/').map(encodeURIComponent).join('/')}`;
+
+// Eine Kennung wie crypto.randomUUID – das gibt es nur über HTTPS, im
+// Heimnetz läuft der Browser aber oft über http.
+function neueKennung() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function gesichtsbild(g) {
+  const img = el('img');
+  img.alt = '';
+  img.loading = 'lazy';
+  if (g.ausschnitt) img.src = dateiUrl(g.ausschnitt);
+  return img;
+}
+
+async function zeigeOhneNamen() {
+  const box = $('ohne-namen');
+  const d = await api('/api/v1/gesichter/ohne-namen');
+  box.replaceChildren();
+  if (!d.gruppen.length) { box.hidden = true; return; }
+  const kopf = el('div', 'bib-kopf');
+  kopf.append(el('h3', null, t('Ohne Namen')), el('span', 'leise', t('{n} Gesichter', { n: d.gesamt })));
+  const reihe = el('div', 'gesichtsgruppen');
+  for (const g of d.gruppen.slice(0, 60)) {
+    const b = el('button', 'gesichtsgruppe');
+    b.type = 'button';
+    const mosaik = el('span', 'mosaik');
+    for (const f of g.gesichter.slice(0, 4)) mosaik.append(gesichtsbild(f));
+    b.append(mosaik, el('span', 'wer', g.vorschlag ? t('{name}?', { name: g.vorschlag.name }) : t('Wer ist das?')), el('span', 'leise', t('{n} Gesichter', { n: g.gesichter.length })));
+    b.addEventListener('click', () => oeffneGesichter({
+      titel: t('{n} ähnliche Gesichter', { n: g.gesichter.length }),
+      gesichter: g.gesichter,
+      vorschlag: g.vorschlag,
+      fertig: () => zeigePersonen(),
+    }));
+    reihe.append(b);
+  }
+  box.append(kopf, reihe);
+  box.hidden = $('bereich-karten').hidden;
+}
+
+let gesichtFall = null;
+
+async function oeffneGesichter(fall) {
+  gesichtFall = { ...fall, aus: new Set(), personen: [] };
+  $('gesicht-titel').textContent = fall.titel;
+  const raster = $('gesicht-auswahl');
+  raster.replaceChildren();
+  for (const g of fall.gesichter) {
+    const b = el('button', 'gesicht');
+    b.type = 'button';
+    b.append(gesichtsbild(g));
+    if (fall.gesichter.length > 1) {
+      b.addEventListener('click', () => {
+        if (gesichtFall.aus.has(g.id)) gesichtFall.aus.delete(g.id); else gesichtFall.aus.add(g.id);
+        b.classList.toggle('aus');
+      });
+    }
+    raster.append(b);
+  }
+  $('gesicht-hinweis').hidden = fall.gesichter.length < 2;
+  $('gesicht-ja').hidden = !fall.vorschlag;
+  if (fall.vorschlag) $('gesicht-ja').textContent = t('Das ist {name}', { name: fall.vorschlag.name });
+  $('gesicht-loesen').hidden = !fall.person;
+  $('form-gesicht').name.value = fall.person ? fall.person.name : '';
+  $('gesicht-meldung').textContent = '';
+  $('gesicht-namen').replaceChildren();
+  $('gesicht-dialog').showModal();
+  try { gesichtFall.personen = (await api('/api/v1/personen')).personen; } catch (_) { /* ohne Vorschläge */ }
+  for (const p of gesichtFall.personen) {
+    if (!(p.name || '').trim()) continue;
+    const o = el('option');
+    o.value = p.name;
+    $('gesicht-namen').append(o);
+  }
+}
+
+async function gesichterFertig(ausfuehren) {
+  const fall = gesichtFall;
+  if (!fall) return;
+  const ids = fall.gesichter.map((g) => g.id).filter((id) => !fall.aus.has(id));
+  if (!ids.length) { $('gesicht-meldung').textContent = t('Kein Gesicht gewählt.'); return; }
+  try {
+    await ausfuehren(ids, fall);
+    $('gesicht-dialog').close();
+    gesichtFall = null;
+    if (fall.fertig) fall.fertig();
+  } catch (x) {
+    $('gesicht-meldung').textContent = x.message;
+  }
+}
+
+$('gesicht-ja').addEventListener('click', () => gesichterFertig((ids, fall) => befehl('gesichterZuordnen', { gesichtIds: ids, personId: fall.vorschlag.id })));
+$('form-gesicht').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = e.target.name.value.trim();
+  if (!name) { $('gesicht-meldung').textContent = t('Bitte einen Namen eingeben.'); return; }
+  gesichterFertig(async (ids, fall) => {
+    // Ein vorhandener Name heisst: diese Person – sonst eine neue.
+    const da = fall.personen.find((p) => (p.name || '').trim().toLowerCase() === name.toLowerCase());
+    let personId = da && da.id;
+    if (!personId) {
+      personId = neueKennung();
+      await befehl('personAnlegen', { personId, name });
+    }
+    await befehl('gesichterZuordnen', { gesichtIds: ids, personId });
+  });
+});
+$('gesicht-beiseite').addEventListener('click', () => gesichterFertig((ids) => befehl('gesichterBeiseitelegen', { gesichtIds: ids, beiseite: true })));
+$('gesicht-loesen').addEventListener('click', () => gesichterFertig(async (ids) => { for (const id of ids) await befehl('zuordnungLoesen', { gesichtId: id }); }));
+$('gesicht-abbrechen').addEventListener('click', () => $('gesicht-dialog').close());
+
+// Die Gesichter eines Fotos in den Angaben: jedes antippbar.
+function gesichterReihe(gesichter) {
+  const box = el('div', 'gesichter-reihe');
+  for (const g of gesichter) {
+    const b = el('button', `angaben-gesicht${g.person ? '' : ' unbekannt'}`);
+    b.type = 'button';
+    b.title = g.person ? g.person.name : t('Wer ist das?');
+    b.append(gesichtsbild(g), el('span', null, g.person ? g.person.name : '?'));
+    b.addEventListener('click', () => oeffneGesichter({
+      titel: g.person ? g.person.name : t('Wer ist das?'),
+      gesichter: [g],
+      person: g.person,
+      fertig: () => zeigeAngaben(),
+    }));
+    box.append(b);
+  }
+  return box;
+}
+
+// Zwei Einträge für dieselbe Person: einer geht im anderen auf.
+let zusammenFall = null;
+async function oeffneZusammenfuehren(person) {
+  const d = await api('/api/v1/personen');
+  const andere = d.personen.filter((p) => p.id !== person.id).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const sel = $('zusammen-andere');
+  sel.replaceChildren();
+  for (const p of andere) {
+    const o = el('option', null, `${p.name || '?'} (${anzahlText(p.anzahl)})`);
+    o.value = p.id;
+    sel.append(o);
+  }
+  zusammenFall = person;
+  $('zusammen-titel').textContent = t('In „{name}“ aufnehmen', { name: person.name });
+  $('zusammen-meldung').textContent = '';
+  $('zusammen-dialog').showModal();
+}
+$('zusammen-abbrechen').addEventListener('click', () => $('zusammen-dialog').close());
+$('form-zusammen').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const person = zusammenFall;
+  const andere = $('zusammen-andere').value;
+  if (!person || !andere) return;
+  const name = $('zusammen-andere').selectedOptions[0]?.textContent || '';
+  if (!confirm(t('„{andere}“ in „{name}“ aufnehmen? Das lässt sich nicht rückgängig machen.', { andere: name, name: person.name }))) return;
+  try {
+    await befehl('personenZusammenfuehren', { behalten: person.id, entfernen: andere });
+    $('zusammen-dialog').close();
+    zeigePerson(person.id);
+  } catch (x) {
+    $('zusammen-meldung').textContent = x.message;
+  }
+});
 
 async function zeigePerson(id) {
   markiereNav('personen');
   zeigeBereich(['raster']);
   const d = await api(`/api/v1/personen/${encodeURIComponent(id)}`);
-  zeigeListe({ aufnahmen: d.aufnahmen }, d.person.name);
+  const kopf = el('div', 'reisekopf');
+  const zusammen = el('button', 'knopf', t('Zusammenführen …'));
+  zusammen.type = 'button';
+  zusammen.addEventListener('click', () => oeffneZusammenfuehren(d.person).catch((x) => meldung(x.message)));
+  kopf.append(zusammen);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.person.name);
 }
 
 function zeigeSuche() {
@@ -1768,7 +1953,7 @@ $('form-album').addEventListener('submit', async (e) => {
     let albumId = gewaehlt;
     let name = knopf ? knopf.dataset.name : neu;
     if (neu) {
-      albumId = crypto.randomUUID();
+      albumId = neueKennung();
       name = neu;
       await befehl('albumAnlegen', { albumId, name, angelegtAm: new Date().toISOString() });
     }
@@ -1985,6 +2170,7 @@ async function zeigeAngaben() {
     teile.push(reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`));
   }
   if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
+  if (d.gesichter && d.gesichter.length) teile.push(reihe('🙂', gesichterReihe(d.gesichter), t('Antippen, um zu benennen oder zu ändern')));
   if (d.schlagwoerter.length) { const box = el('div'); for (const t of d.schlagwoerter) box.append(el('span', 'marke', t.name)); teile.push(reihe('🏷', box)); }
   if (d.alben.length) teile.push(reihe('📚', verweise(d.alben, '#/alben')));
   // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
