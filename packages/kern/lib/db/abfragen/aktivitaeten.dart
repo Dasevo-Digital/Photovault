@@ -86,6 +86,25 @@ extension AktivitaetenAbfragen on AppDatabase {
     return [for (final z in await abfrage.get()) z.readTable(assets)];
   }
 
+  /// Wie viele sichtbare Aufnahmen jede Aktivität hat, nach Kennung – wie
+  /// [reiseAnzahlen], in einer Abfrage für alle.
+  Future<Map<String, int>> aktivitaetAnzahlen() async {
+    final n = aktivitaetAufnahmen.assetId.count();
+    final q =
+        selectOnly(aktivitaetAufnahmen).join([
+            innerJoin(assets, assets.id.equalsExp(aktivitaetAufnahmen.assetId)),
+          ])
+          ..addColumns([aktivitaetAufnahmen.aktivitaetId, n])
+          ..where(
+            assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+          )
+          ..groupBy([aktivitaetAufnahmen.aktivitaetId]);
+    return {
+      for (final z in await q.get())
+        z.read(aktivitaetAufnahmen.aktivitaetId)!: z.read(n)!,
+    };
+  }
+
   /// Nur die erste Aufnahme – für das Vorschaubild in der Liste. Eigene
   /// Abfrage mit `LIMIT 1`, aus demselben Grund wie
   /// [ersteAufnahmeDerReise].

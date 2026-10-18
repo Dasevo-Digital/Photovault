@@ -16,6 +16,7 @@ import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/lebensbaum.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/lebensbaum_vorlage.dart';
+import 'package:kern/services/reiseuebersicht.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
 import 'package:kern/services/zierbaum.dart';
 import 'package:kern/services/rueckblick.dart';
@@ -202,6 +203,7 @@ Handler baueApi({
     ..get('/api/v1/suche', suche.suche)
     ..get('/api/v1/reisen', api.reisen)
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
+    ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/statistik', api.statistik)
     ..get('/api/v1/einstellungen', api.einstellungen)
@@ -517,24 +519,17 @@ class _Api {
   }
 
   /// Die Reisen mit Zeitraum, Anzahl und Titelbild – für den Browser.
+  /// Reisen und Aktivitäten für die Seite „Reisen“ im Browser – dieselbe
+  /// Rechnung wie auf dem Telefon (siehe reiseuebersicht.dart im Kern).
+  /// `sprache` bestimmt die Ländernamen.
   Future<Response> reisen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final liste = await (db.select(
-      db.reisen,
-    )..orderBy([(t) => OrderingTerm.desc(t.von)])).get();
-    final anzahlen = await db.reiseAnzahlen();
+    final sprache = _sprache(anfrage);
     return _json({
-      'reisen': [
-        for (final r in liste)
-          {
-            'id': r.id,
-            'name': r.name,
-            'von': r.von.toIso8601String(),
-            'bis': r.bis.toIso8601String(),
-            'art': r.art,
-            'anzahl': anzahlen[r.id] ?? 0,
-            'titelbild': (await db.ersteAufnahmeDerReise(r.id))?.id,
-          },
+      'reisen': [for (final k in await reisekarten(db)) _reiseJson(k, sprache)],
+      'aktivitaeten': [
+        for (final k in await aktivitaetskarten(db))
+          _aktivitaetJson(k, sprache),
       ],
     });
   }
@@ -543,6 +538,8 @@ class _Api {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final r = await db.reise(id);
     if (r == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final sprache = _sprache(anfrage);
+    final aufnahmen = await db.aufnahmenDerReise(id);
     return _json({
       'reise': {
         'id': r.id,
@@ -550,13 +547,99 @@ class _Api {
         'von': r.von.toIso8601String(),
         'bis': r.bis.toIso8601String(),
         'notiz': r.notiz,
+        'art': r.art,
+        'anzahl': aufnahmen.length,
       },
+      'aktivitaeten': [
+        for (final k in await aktivitaetskarten(db, reiseId: id))
+          _aktivitaetJson(k, sprache),
+      ],
       'aufnahmen': [
-        for (final a in await db.aufnahmenDerReise(id))
-          zeileAlsJson(Rasterzeile.aus(a)),
+        for (final a in aufnahmen) zeileAlsJson(Rasterzeile.aus(a)),
       ],
     });
   }
+
+  /// Eine Aktivität: Angaben, Route aus den verorteten Aufnahmen, Strecke
+  /// darauf und die Aufnahmen selbst.
+  Future<Response> aktivitaet(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final a = await aktivitaetsansicht(db, id);
+    if (a == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final k = a.aktivitaet;
+    final reise = a.reise;
+    return _json({
+      'aktivitaet': {
+        'id': k.id,
+        'name': k.name,
+        'art': k.art,
+        'von': k.von.toIso8601String(),
+        'bis': k.bis.toIso8601String(),
+        'notiz': k.notiz,
+        'reise': reise == null ? null : {'id': reise.id, 'name': reise.name},
+        'anzahl': a.aufnahmen.length,
+        'streckeKm': a.streckeKm,
+        'ort': _ortJson(a.ort, _sprache(anfrage)),
+      },
+      'route': [
+        for (final p in a.route)
+          {
+            'id': p.id,
+            'breite': p.breite,
+            'laenge': p.laenge,
+            'zeit': p.zeit.toIso8601String(),
+          },
+      ],
+      'aufnahmen': [
+        for (final x in a.aufnahmen) zeileAlsJson(Rasterzeile.aus(x)),
+      ],
+    });
+  }
+
+  String _sprache(Request anfrage) =>
+      anfrage.url.queryParameters['sprache'] == 'en' ? 'en' : 'de';
+
+  /// Der Ort als Zeile ohne den Zusatz „weitere Orte“ – den setzt der
+  /// Browser in seiner Sprache, er bekommt nur die Zahl.
+  Map<String, Object?>? _ortJson(Ortsbezug? b, String sprache) {
+    if (b == null) return null;
+    final text = ortszeileText(
+      (
+        ort: b.ort,
+        region: b.region,
+        land: b.land,
+        weitereOrte: 0,
+        aufnahmen: b.aufnahmen,
+      ),
+      sprache,
+      (_) => '',
+    );
+    return text == null ? null : {'text': text, 'weitere': b.weitereOrte};
+  }
+
+  Map<String, Object?> _reiseJson(Reisekarte k, String sprache) => {
+    'id': k.reise.id,
+    'name': k.reise.name,
+    'von': k.reise.von.toIso8601String(),
+    'bis': k.reise.bis.toIso8601String(),
+    'art': k.reise.art,
+    'anzahl': k.anzahl,
+    'titelbild': k.titelbild?.id,
+    'ort': _ortJson(k.ort, sprache),
+  };
+
+  Map<String, Object?> _aktivitaetJson(Aktivitaetskarte k, String sprache) => {
+    'id': k.aktivitaet.id,
+    'name': k.aktivitaet.name,
+    'art': k.aktivitaet.art,
+    'von': k.aktivitaet.von.toIso8601String(),
+    'bis': k.aktivitaet.bis.toIso8601String(),
+    'reiseId': k.aktivitaet.reiseId,
+    'reisename': k.reisename,
+    'anzahl': k.anzahl,
+    'titelbild': k.titelbild?.id,
+    'ort': _ortJson(k.ort, sprache),
+  };
 
   /// Die Aufnahmen mit Ort als Punkte für die Karte im Browser, bei
   /// `?zoom=` zusammengefasst wie auf dem Telefon (siehe [kartengruppen]).

@@ -353,5 +353,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "bibReisen": "Trips",
+  "reisenLeer": "No trips yet.",
+  "aktivitaetenTitel": "Activities",
+  "aktivitaetenLeer": "No activities yet.",
+  "anzahlAufnahmen": "{n, plural, =1{1 item} other{{n} items}}",
+  "gehoertZu": "Part of: {reise}",
+  "ortWeitere": "{n, plural, =1{one more place} other{{n} more places}}",
+  "dauerMinuten": "{m} min",
+  "dauerStunden": "{h} h {m} min",
+  "streckeKm": "{km} km",
+  "keineRoute": "Too few located photos for a route.",
+  "aktArtSpaziergang": "Walk",
+  "aktArtWanderung": "Hike",
+  "aktArtRadtour": "Bike ride",
+  "aktArtAusflug": "Outing",
+  "aktArtBesichtigung": "Sightseeing",
+  "aktArtBootsfahrt": "Boat trip",
+  "aktArtSonstiges": "Other"
 }

@@ -330,3 +330,20 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #lb-leinwand { max-width: 100%; max-height: calc(100vh - 170px); height: auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,.35); cursor: pointer; }
 .einst-sprache .inhalt { display: flex; flex-direction: column; gap: 4px; }
 .einst-sprache select { align-self: flex-start; margin-top: 6px; font: inherit; padding: 4px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+
+/* --- Reisen und Aktivitäten ------------------------------------------------ */
+#karten .abschnitt { grid-column: 1 / -1; }
+#karten h3.abschnitt { margin: 18px 0 0; font-size: 1.05em; }
+#karten p.abschnitt { text-align: left; padding: 4px 0; }
+.albumbild { position: relative; }
+.albumbild .kennzeichen { position: absolute; left: 8px; bottom: 8px; background: rgba(0,0,0,.6); color: #fff; font-size: 0.78em; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+#raster-kopf { padding: 0 12px 8px; }
+.reisekopf .fakten { margin: 0 0 4px; color: var(--leise); }
+.reisekopf .nebenzeile { margin: 2px 0; color: var(--leise); font-size: 0.9em; }
+.reisekopf .nebenzeile a { color: var(--akzent); text-decoration: none; }
+.reisekopf .notiz { margin: 8px 0; white-space: pre-line; }
+.reisekopf h3 { margin: 14px 0 8px; font-size: 1em; }
+.kartenreihe { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.kartenreihe .albumkarte { flex: 0 0 160px; }
+.routenkarte { height: 260px; margin: 10px 0 6px; border-radius: 12px; overflow: hidden; border: 1px solid var(--rand); }
+

@@ -371,7 +371,8 @@ bleibt offen, bis einer kommt.
 
 Unter `/app/` liefert der Server eine Oberfläche für den Browser:
 Anmeldung (mit TOTP), Zeitleiste mit Erinnerungen, Betrachter mit Angaben,
-Suche, Alben, Personen, Karte, Reisen, Stammbaum und Lebensbaum,
+Suche, Alben, Personen, Karte, Reisen mit ihren Aktivitäten (samt Route),
+Stammbaum und Lebensbaum,
 Statistik, Duplikate, Papierkorb, Entwickeln, Mehrfachauswahl, die
 Einstellungen der Bibliothek und – für Verwalter – Speicher, Sicherung,
 Auswertung und Konten. Sie spricht Deutsch und Englisch (nach dem Browser

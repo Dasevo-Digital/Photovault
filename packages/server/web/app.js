@@ -212,6 +212,8 @@ function zeigeListe(neu, titel) {
   $('raster').replaceChildren();
   $('raster-titel').hidden = !titel;
   $('raster-titel').textContent = titel || '';
+  $('raster-kopf').replaceChildren(...(liste.kopf ? [liste.kopf] : []));
+  $('raster-kopf').hidden = !liste.kopf;
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
   if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? t('{n} Aufnahmen', { n: liste.aufnahmen.length }) : t('Keine Aufnahmen.');
@@ -316,12 +318,14 @@ async function zeigePapierkorb() {
   if (d.aufnahmen.length === 0) $('ende').textContent = t('Der Papierkorb ist leer.');
 }
 
-function karte(bildUrl, titel, untertitel, ziel) {
+function karte(bildUrl, titel, untertitel, ziel, { zusatz, kennzeichen } = {}) {
   const a = el('a', 'albumkarte');
   a.href = ziel;
   const bild = el('div', 'albumbild');
   if (bildUrl) { const img = el('img'); img.loading = 'lazy'; img.alt = ''; img.src = bildUrl; bild.append(img); }
+  if (kennzeichen) bild.append(el('span', 'kennzeichen', kennzeichen));
   a.append(bild, el('div', 'titel', titel), el('div', 'leise klein', untertitel));
+  if (zusatz) a.append(el('div', 'leise klein', zusatz));
   return a;
 }
 
@@ -345,23 +349,134 @@ async function zeigeAlbum(id) {
 }
 
 const zeitraum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium' });
+// --- Reisen und Aktivitäten ---------------------------------------------------
+//
+// Dieselbe Gliederung wie auf dem Telefon: oben die Reisen, darunter die
+// Aktivitäten; eine Reise zeigt ihre Aktivitäten über den Aufnahmen, eine
+// Aktivität ihre Route. Gerechnet wird im Kern (reiseuebersicht.dart).
+
+const AKT_ARTEN = {
+  spaziergang: ['Spaziergang', '🚶'],
+  wanderung: ['Wanderung', '🥾'],
+  radtour: ['Radtour', '🚴'],
+  ausflug: ['Ausflug', '🚗'],
+  besichtigung: ['Besichtigung', '🏛'],
+  bootsfahrt: ['Bootsfahrt', '⛵'],
+  sonstiges: ['Sonstiges', '🧭'],
+};
+// Eine selbst eingetragene Art ist ihr eigener Name.
+const artName = (k) => (AKT_ARTEN[k] ? t(AKT_ARTEN[k][0]) : k);
+const artZeichen = (k) => (AKT_ARTEN[k] ? AKT_ARTEN[k][1] : '🧭');
+const uhrzeit = new Intl.DateTimeFormat(GEBIET, { hour: '2-digit', minute: '2-digit' });
+const kilometer = new Intl.NumberFormat(GEBIET, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function ortText(o) {
+  if (!o) return null;
+  if (!o.weitere) return o.text;
+  return `${o.text} · ${o.weitere === 1 ? t('ein weiterer Ort') : t('{n} weitere Orte', { n: o.weitere })}`;
+}
+
+function dauerText(von, bis) {
+  const minuten = Math.max(0, Math.round((new Date(bis) - new Date(von)) / 60000));
+  return minuten < 60 ? t('{m} min', { m: minuten }) : t('{h} h {m} min', { h: Math.floor(minuten / 60), m: minuten % 60 });
+}
+
+function reisekarte(r) {
+  return karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name,
+    `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`,
+    `#/reisen/${encodeURIComponent(r.id)}`, { zusatz: ortText(r.ort) });
+}
+
+function aktivitaetskarte(a, inReise) {
+  const zusatz = [ortText(a.ort), !inReise && a.reisename ? t('Gehört zu: {reise}', { reise: a.reisename }) : null].filter(Boolean).join(' · ');
+  return karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name,
+    `${zeitraum.format(new Date(a.von))} · ${t('{n} Aufnahmen', { n: a.anzahl })}`,
+    `#/aktivitaeten/${encodeURIComponent(a.id)}`, { zusatz, kennzeichen: `${artZeichen(a.art)} ${artName(a.art)}` });
+}
+
 async function zeigeReisen() {
   markiereNav('reisen');
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Reisen');
-  $('karten').replaceChildren();
-  const d = await api('/api/v1/reisen');
-  if (d.reisen.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Reisen.')));
-  for (const r of d.reisen) {
-    $('karten').append(karte(r.titelbild ? miniaturUrl(r.titelbild) : null, r.name, `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`, `#/reisen/${encodeURIComponent(r.id)}`));
-  }
+  const ziel = $('karten');
+  ziel.replaceChildren();
+  const d = await api(`/api/v1/reisen?sprache=${SPRACHE}`);
+  if (d.reisen.length === 0) ziel.append(el('p', 'leise abschnitt', t('Noch keine Reisen.')));
+  for (const r of d.reisen) ziel.append(reisekarte(r));
+  ziel.append(el('h3', 'abschnitt', t('Aktivitäten')));
+  if (d.aktivitaeten.length === 0) ziel.append(el('p', 'leise abschnitt', t('Noch keine Aktivitäten.')));
+  for (const a of d.aktivitaeten) ziel.append(aktivitaetskarte(a, false));
 }
 
 async function zeigeReise(id) {
   markiereNav('reisen');
   zeigeBereich(['raster']);
-  const d = await api(`/api/v1/reisen/${encodeURIComponent(id)}`);
-  zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true }, `${d.reise.name} · ${zeitraum.format(new Date(d.reise.von))} – ${zeitraum.format(new Date(d.reise.bis))}`);
+  const d = await api(`/api/v1/reisen/${encodeURIComponent(id)}?sprache=${SPRACHE}`);
+  const r = d.reise;
+  const kopf = el('div', 'reisekopf');
+  kopf.append(el('p', 'fakten', `${zeitraum.format(new Date(r.von))} – ${zeitraum.format(new Date(r.bis))} · ${t('{n} Aufnahmen', { n: r.anzahl })}`));
+  if (r.notiz) kopf.append(el('p', 'notiz', r.notiz));
+  if (d.aktivitaeten.length) {
+    kopf.append(el('h3', null, t('Aktivitäten')));
+    const reihe = el('div', 'kartenreihe');
+    for (const a of d.aktivitaeten) reihe.append(aktivitaetskarte(a, true));
+    kopf.append(reihe);
+  }
+  zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true, kopf }, r.name);
+}
+
+async function zeigeAktivitaet(id) {
+  markiereNav('reisen');
+  zeigeBereich(['raster']);
+  const d = await api(`/api/v1/aktivitaeten/${encodeURIComponent(id)}?sprache=${SPRACHE}`);
+  const a = d.aktivitaet;
+  const kopf = el('div', 'reisekopf');
+  kopf.append(el('p', 'fakten', [
+    `${artZeichen(a.art)} ${artName(a.art)}`,
+    zeitraum.format(new Date(a.von)),
+    `${uhrzeit.format(new Date(a.von))}–${uhrzeit.format(new Date(a.bis))}`,
+    dauerText(a.von, a.bis),
+    a.streckeKm > 0 ? t('{km} km', { km: kilometer.format(a.streckeKm) }) : null,
+    t('{n} Aufnahmen', { n: a.anzahl }),
+  ].filter(Boolean).join(' · ')));
+  const ort = ortText(a.ort);
+  if (ort) kopf.append(el('p', 'nebenzeile', `📍 ${ort}`));
+  if (a.reise) {
+    const p = el('p', 'nebenzeile');
+    const l = el('a', null, t('Gehört zu: {reise}', { reise: a.reise.name }));
+    l.href = `#/reisen/${encodeURIComponent(a.reise.id)}`;
+    p.append(l);
+    kopf.append(p);
+  }
+  if (a.notiz) kopf.append(el('p', 'notiz', a.notiz));
+  let route = null;
+  if (d.route.length > 1) {
+    route = el('div', 'routenkarte');
+    kopf.append(route);
+  } else if (d.aufnahmen.length) {
+    kopf.append(el('p', 'nebenzeile', t('Zu wenige verortete Aufnahmen für eine Strecke.')));
+  }
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, a.name);
+  if (route) zeichneRoute(route, d.route);
+}
+
+// Die Route: Linie durch die verorteten Aufnahmen in ihrer Zeitfolge, ein
+// Punkt je Aufnahme – ein Tipp darauf öffnet sie.
+function zeichneRoute(box, punkte) {
+  const karte = L.map(box, { scrollWheelZoom: false });
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(karte);
+  const farbe = getComputedStyle(document.documentElement).getPropertyValue('--akzent').trim() || '#0d8a7a';
+  const linie = L.polyline(punkte.map((p) => [p.breite, p.laenge]), { color: farbe, weight: 4, opacity: 0.85 }).addTo(karte);
+  punkte.forEach((p, i) => {
+    const ende = i === 0 || i === punkte.length - 1;
+    L.circleMarker([p.breite, p.laenge], { radius: ende ? 7 : 4, color: '#fff', weight: 2, fillColor: farbe, fillOpacity: 1 })
+      .addTo(karte)
+      .on('click', () => { const n = liste.aufnahmen.findIndex((x) => x.id === p.id); if (n >= 0) oeffne(n); });
+  });
+  karte.fitBounds(linie.getBounds(), { padding: [24, 24], maxZoom: 16 });
 }
 
 const zahl = new Intl.NumberFormat(GEBIET);
@@ -1415,7 +1530,7 @@ $('form-album').addEventListener('submit', async (e) => {
 function neuZeichnen() {
   if (!liste) return;
   const alt = liste;
-  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
+  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten, kopf: alt.kopf }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
 }
 
 // --- Betrachter ------------------------------------------------------------
@@ -1807,6 +1922,7 @@ async function zeigeWeg() {
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
+      case 'aktivitaeten': await zeigeAktivitaet(teile[1]); break;
       case 'statistik': await zeigeStatistik(); break;
       case 'einstellungen': await zeigeEinstellungen(); break;
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;

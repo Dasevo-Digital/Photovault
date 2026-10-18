@@ -254,6 +254,116 @@ void main() {
   );
 
   test(
+    'Aktivitäten: in der Reiseliste, in ihrer Reise, Route und Strecke',
+    () async {
+      final a = await ladeHoch(erikaToken, 'w1.jpg', 10);
+      final b = await ladeHoch(erikaToken, 'w2.jpg', 60);
+      final c = await ladeHoch(erikaToken, 'w3.jpg', 120);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      // Zwei Aufnahmen mit Ort, rund 11 km auseinander, eine ohne.
+      for (final (id, breite, laenge, stunde) in [
+        (a, 47.0, 11.0, 9),
+        (b, 47.1, 11.0, 12),
+      ]) {
+        await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            latitude: Value(breite),
+            longitude: Value(laenge),
+            locationCity: const Value('Innsbruck'),
+            locationState: const Value('Tirol'),
+            locationCountry: const Value('Austria'),
+            fileCreatedAt: Value(DateTime(2026, 7, 3, stunde)),
+          ),
+        );
+      }
+      await db.reiseAnlegen(
+        ReisenCompanion.insert(
+          id: 'alpen',
+          name: 'Alpen',
+          von: DateTime(2026, 7, 1),
+          bis: DateTime(2026, 7, 9),
+          angelegtAm: DateTime(2026, 7, 10),
+        ),
+        [a, b, c],
+      );
+      await db.aktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: 'tour',
+          name: 'Zur Hütte',
+          art: 'wanderung',
+          von: DateTime(2026, 7, 3, 9),
+          bis: DateTime(2026, 7, 3, 12),
+          reiseId: const Value('alpen'),
+          angelegtAm: DateTime(2026, 7, 10),
+        ),
+        [a, b],
+      );
+      await db.aktivitaetAnlegen(
+        AktivitaetenCompanion.insert(
+          id: 'runde',
+          name: 'Abendrunde',
+          art: 'Gassi',
+          von: DateTime(2026, 8, 1, 18),
+          bis: DateTime(2026, 8, 1, 19),
+          angelegtAm: DateTime(2026, 8, 2),
+        ),
+        [c],
+      );
+      final liste = await jsonAus(
+        await frag('GET', '/api/v1/reisen?sprache=de', token: erikaToken),
+      );
+      final reise = (liste['reisen']! as List).cast<Map>().single;
+      expect(reise['ort'], {
+        'text': 'Innsbruck, Tirol, Österreich',
+        'weitere': 0,
+      });
+      final aktivitaeten = (liste['aktivitaeten']! as List).cast<Map>();
+      expect(aktivitaeten.map((x) => x['id']), ['runde', 'tour']);
+      final tour = aktivitaeten.last;
+      expect(tour['reisename'], 'Alpen');
+      expect(tour['anzahl'], 2);
+      expect(tour['art'], 'wanderung');
+      expect(tour['titelbild'], a);
+      expect(aktivitaeten.first['art'], 'Gassi');
+      expect(aktivitaeten.first['ort'], isNull);
+      final englisch = await jsonAus(
+        await frag('GET', '/api/v1/reisen?sprache=en', token: erikaToken),
+      );
+      expect(((englisch['reisen']! as List).single as Map)['ort'], {
+        'text': 'Innsbruck, Tirol, Austria',
+        'weitere': 0,
+      });
+
+      final inReise = await jsonAus(
+        await frag('GET', '/api/v1/reisen/alpen', token: erikaToken),
+      );
+      expect(
+        (inReise['aktivitaeten']! as List).cast<Map>().map((x) => x['id']),
+        ['tour'],
+      );
+      expect((inReise['reise']! as Map)['anzahl'], 3);
+
+      final d = await jsonAus(
+        await frag('GET', '/api/v1/aktivitaeten/tour', token: erikaToken),
+      );
+      final k = d['aktivitaet']! as Map;
+      expect(k['reise'], {'id': 'alpen', 'name': 'Alpen'});
+      expect(k['anzahl'], 2);
+      expect(k['streckeKm'] as double, closeTo(11.1, 0.2));
+      expect((d['route']! as List).cast<Map>().map((x) => x['id']), [a, b]);
+      expect((d['aufnahmen']! as List).cast<Map>().map((x) => x['id']), [a, b]);
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/aktivitaeten/tour',
+          token: maxToken,
+        )).statusCode,
+        404,
+      );
+    },
+  );
+
+  test(
     'Statistik: Kennzahlen wie auf dem Rechner, je Konto getrennt',
     () async {
       final a = await ladeHoch(erikaToken, 's1.jpg', 10);

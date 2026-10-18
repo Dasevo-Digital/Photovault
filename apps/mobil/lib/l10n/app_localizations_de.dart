@@ -765,4 +765,82 @@ class AppTexteDe extends AppTexte {
   String kontoFassungText(String app, String server) {
     return 'App $app · Server $server';
   }
+
+  @override
+  String get bibReisen => 'Reisen';
+
+  @override
+  String get reisenLeer => 'Noch keine Reisen.';
+
+  @override
+  String get aktivitaetenTitel => 'Aktivitäten';
+
+  @override
+  String get aktivitaetenLeer => 'Noch keine Aktivitäten.';
+
+  @override
+  String anzahlAufnahmen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen',
+      one: '1 Aufnahme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gehoertZu(String reise) {
+    return 'Gehört zu: $reise';
+  }
+
+  @override
+  String ortWeitere(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n weitere Orte',
+      one: 'ein weiterer Ort',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dauerMinuten(int m) {
+    return '$m min';
+  }
+
+  @override
+  String dauerStunden(int h, int m) {
+    return '$h h $m min';
+  }
+
+  @override
+  String streckeKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get keineRoute => 'Zu wenige verortete Aufnahmen für eine Strecke.';
+
+  @override
+  String get aktArtSpaziergang => 'Spaziergang';
+
+  @override
+  String get aktArtWanderung => 'Wanderung';
+
+  @override
+  String get aktArtRadtour => 'Radtour';
+
+  @override
+  String get aktArtAusflug => 'Ausflug';
+
+  @override
+  String get aktArtBesichtigung => 'Besichtigung';
+
+  @override
+  String get aktArtBootsfahrt => 'Bootsfahrt';
+
+  @override
+  String get aktArtSonstiges => 'Sonstiges';
 }

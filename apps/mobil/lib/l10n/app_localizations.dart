@@ -1206,6 +1206,114 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'App {app} · Server {server}'**
   String kontoFassungText(String app, String server);
+
+  /// No description provided for @bibReisen.
+  ///
+  /// In de, this message translates to:
+  /// **'Reisen'**
+  String get bibReisen;
+
+  /// No description provided for @reisenLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Reisen.'**
+  String get reisenLeer;
+
+  /// No description provided for @aktivitaetenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktivitäten'**
+  String get aktivitaetenTitel;
+
+  /// No description provided for @aktivitaetenLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Aktivitäten.'**
+  String get aktivitaetenLeer;
+
+  /// No description provided for @anzahlAufnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}'**
+  String anzahlAufnahmen(int n);
+
+  /// No description provided for @gehoertZu.
+  ///
+  /// In de, this message translates to:
+  /// **'Gehört zu: {reise}'**
+  String gehoertZu(String reise);
+
+  /// No description provided for @ortWeitere.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{ein weiterer Ort} other{{n} weitere Orte}}'**
+  String ortWeitere(int n);
+
+  /// No description provided for @dauerMinuten.
+  ///
+  /// In de, this message translates to:
+  /// **'{m} min'**
+  String dauerMinuten(int m);
+
+  /// No description provided for @dauerStunden.
+  ///
+  /// In de, this message translates to:
+  /// **'{h} h {m} min'**
+  String dauerStunden(int h, int m);
+
+  /// No description provided for @streckeKm.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km'**
+  String streckeKm(String km);
+
+  /// No description provided for @keineRoute.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu wenige verortete Aufnahmen für eine Strecke.'**
+  String get keineRoute;
+
+  /// No description provided for @aktArtSpaziergang.
+  ///
+  /// In de, this message translates to:
+  /// **'Spaziergang'**
+  String get aktArtSpaziergang;
+
+  /// No description provided for @aktArtWanderung.
+  ///
+  /// In de, this message translates to:
+  /// **'Wanderung'**
+  String get aktArtWanderung;
+
+  /// No description provided for @aktArtRadtour.
+  ///
+  /// In de, this message translates to:
+  /// **'Radtour'**
+  String get aktArtRadtour;
+
+  /// No description provided for @aktArtAusflug.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausflug'**
+  String get aktArtAusflug;
+
+  /// No description provided for @aktArtBesichtigung.
+  ///
+  /// In de, this message translates to:
+  /// **'Besichtigung'**
+  String get aktArtBesichtigung;
+
+  /// No description provided for @aktArtBootsfahrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bootsfahrt'**
+  String get aktArtBootsfahrt;
+
+  /// No description provided for @aktArtSonstiges.
+  ///
+  /// In de, this message translates to:
+  /// **'Sonstiges'**
+  String get aktArtSonstiges;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -8,10 +8,11 @@ import '../sitzung.dart';
 import 'karte.dart';
 import 'personen.dart';
 import 'raster.dart';
+import 'reisen.dart';
 
 /// Was nicht in die Zeitleiste gehört, gesammelt wie in Immich: oben
-/// Favoriten, Papierkorb, Orte und Personen als Knöpfe, darunter die
-/// Personen mit ihren Gesichtern.
+/// Favoriten, Papierkorb, Orte, Personen und Reisen (samt Aktivitäten) als
+/// Knöpfe, darunter die Personen mit ihren Gesichtern.
 class Bibliothek extends StatelessWidget {
   const Bibliothek({super.key, required this.sitzung});
 
@@ -67,6 +68,12 @@ class Bibliothek extends StatelessWidget {
               text: t.navPersonen,
               onTap: () =>
                   _oeffne(context, t.navPersonen, Personen(sitzung: sitzung)),
+            ),
+            _Knopf(
+              icon: Icons.luggage_outlined,
+              text: t.bibReisen,
+              onTap: () =>
+                  _oeffne(context, t.bibReisen, ReisenSeite(sitzung: sitzung)),
             ),
           ],
         ),

@@ -764,4 +764,82 @@ class AppTexteEn extends AppTexte {
   String kontoFassungText(String app, String server) {
     return 'App $app · server $server';
   }
+
+  @override
+  String get bibReisen => 'Trips';
+
+  @override
+  String get reisenLeer => 'No trips yet.';
+
+  @override
+  String get aktivitaetenTitel => 'Activities';
+
+  @override
+  String get aktivitaetenLeer => 'No activities yet.';
+
+  @override
+  String anzahlAufnahmen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gehoertZu(String reise) {
+    return 'Part of: $reise';
+  }
+
+  @override
+  String ortWeitere(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n more places',
+      one: 'one more place',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dauerMinuten(int m) {
+    return '$m min';
+  }
+
+  @override
+  String dauerStunden(int h, int m) {
+    return '$h h $m min';
+  }
+
+  @override
+  String streckeKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String get keineRoute => 'Too few located photos for a route.';
+
+  @override
+  String get aktArtSpaziergang => 'Walk';
+
+  @override
+  String get aktArtWanderung => 'Hike';
+
+  @override
+  String get aktArtRadtour => 'Bike ride';
+
+  @override
+  String get aktArtAusflug => 'Outing';
+
+  @override
+  String get aktArtBesichtigung => 'Sightseeing';
+
+  @override
+  String get aktArtBootsfahrt => 'Boat trip';
+
+  @override
+  String get aktArtSonstiges => 'Other';
 }

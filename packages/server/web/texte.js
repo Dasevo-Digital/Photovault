@@ -314,6 +314,23 @@ const EN = {
   'Format nicht unterstützt': 'Format not supported',
   'Kein Platz auf dem Server': 'No space left on the server',
   'Der Server konnte die Datei nicht aufnehmen': 'The server could not import the file',
+  // Reisen und Aktivitäten
+  'Aktivitäten': 'Activities',
+  'Noch keine Aktivitäten.': 'No activities yet.',
+  'Gehört zu: {reise}': 'Part of: {reise}',
+  'ein weiterer Ort': 'one more place',
+  '{n} weitere Orte': '{n} more places',
+  '{m} min': '{m} min',
+  '{h} h {m} min': '{h} h {m} min',
+  '{km} km': '{km} km',
+  'Spaziergang': 'Walk',
+  'Wanderung': 'Hike',
+  'Radtour': 'Bike ride',
+  'Ausflug': 'Outing',
+  'Besichtigung': 'Sightseeing',
+  'Bootsfahrt': 'Boat trip',
+  'Sonstiges': 'Other',
+  'Zu wenige verortete Aufnahmen für eine Strecke.': 'Too few located photos for a route.',
 };
 
 function t(deutsch, werte) {

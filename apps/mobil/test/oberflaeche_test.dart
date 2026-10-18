@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart' show FlutterMap;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -29,6 +30,7 @@ import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
+import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
@@ -628,6 +630,103 @@ void main() {
     await tester.pumpAndSettle();
     expect((await db.assetById('p1'))!.isTrashed, isFalse);
     expect((await db.assetById('p2'))!.isTrashed, isTrue);
+  });
+
+  testWidgets('Reisen: oben die Reisen, darunter die Aktivitäten – wie im '
+      'Browser; Aktivität mit Route, Reise mit ihren Aktivitäten', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['r1', 'r2', 'r3', 'r4']);
+    for (final (id, breite, stunde) in [('r1', 47.0, 9), ('r2', 47.1, 12)]) {
+      await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+        AssetsCompanion(
+          latitude: Value(breite),
+          longitude: const Value(11.0),
+          locationCity: const Value('Innsbruck'),
+          locationState: const Value('Tirol'),
+          locationCountry: const Value('Austria'),
+          fileCreatedAt: Value(DateTime(2026, 7, 3, stunde)),
+        ),
+      );
+    }
+    await db.reiseAnlegen(
+      ReisenCompanion.insert(
+        id: 'alpen',
+        name: 'Alpen',
+        von: DateTime(2026, 7, 1),
+        bis: DateTime(2026, 7, 9),
+        angelegtAm: DateTime(2026, 7, 10),
+      ),
+      ['r1', 'r2', 'r3'],
+    );
+    await db.aktivitaetAnlegen(
+      AktivitaetenCompanion.insert(
+        id: 'tour',
+        name: 'Zur Hütte',
+        art: 'wanderung',
+        von: DateTime(2026, 7, 3, 9),
+        bis: DateTime(2026, 7, 3, 12),
+        reiseId: const Value('alpen'),
+        angelegtAm: DateTime(2026, 7, 10),
+      ),
+      ['r1', 'r2'],
+    );
+    await db.aktivitaetAnlegen(
+      AktivitaetenCompanion.insert(
+        id: 'runde',
+        name: 'Abendrunde',
+        art: 'Gassi',
+        von: DateTime(2026, 8, 1, 18),
+        bis: DateTime(2026, 8, 1, 19),
+        angelegtAm: DateTime(2026, 8, 2),
+      ),
+      ['r4'],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: ReisenSeite(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(ReisenSeite)));
+    expect(find.text('Alpen'), findsOneWidget);
+    expect(find.text('Innsbruck, Tirol, Österreich'), findsOneWidget);
+    expect(find.text(t.aktivitaetenTitel), findsOneWidget);
+    expect(find.text('Zur Hütte'), findsOneWidget);
+    expect(
+      find.text('Innsbruck, Tirol, Österreich · Gehört zu: Alpen'),
+      findsOneWidget,
+    );
+    // Eine selbst eingetragene Art ist ihr eigener Name.
+    expect(find.text('Gassi'), findsOneWidget);
+    expect(find.text(t.aktArtWanderung), findsOneWidget);
+    // Oben die Reise, darunter die Aktivitäten.
+    expect(
+      tester.getTopLeft(find.text('Alpen')).dy,
+      lessThan(tester.getTopLeft(find.text(t.aktivitaetenTitel)).dy),
+    );
+
+    await tester.ensureVisible(find.text('Zur Hütte'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Zur Hütte'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Wanderung · 03.07.2026 · 09:00–12:00 · 3 h 0 min · 11,1 km · '
+        '2 Aufnahmen',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.byType(Miniatur), findsNWidgets(2));
+    await tester.tap(find.text('Gehört zu: Alpen'));
+    await tester.pumpAndSettle();
+    expect(find.text(t.aktivitaetenTitel), findsOneWidget);
+    expect(find.textContaining('3 Aufnahmen'), findsOneWidget);
+    expect(find.text('Zur Hütte'), findsOneWidget);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

@@ -429,5 +429,68 @@
         "type": "String"
       }
     }
-  }
+  },
+  "bibReisen": "Reisen",
+  "reisenLeer": "Noch keine Reisen.",
+  "aktivitaetenTitel": "Aktivitäten",
+  "aktivitaetenLeer": "Noch keine Aktivitäten.",
+  "anzahlAufnahmen": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
+  "@anzahlAufnahmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "gehoertZu": "Gehört zu: {reise}",
+  "@gehoertZu": {
+    "placeholders": {
+      "reise": {
+        "type": "String"
+      }
+    }
+  },
+  "ortWeitere": "{n, plural, =1{ein weiterer Ort} other{{n} weitere Orte}}",
+  "@ortWeitere": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dauerMinuten": "{m} min",
+  "@dauerMinuten": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "dauerStunden": "{h} h {m} min",
+  "@dauerStunden": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "streckeKm": "{km} km",
+  "@streckeKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "keineRoute": "Zu wenige verortete Aufnahmen für eine Strecke.",
+  "aktArtSpaziergang": "Spaziergang",
+  "aktArtWanderung": "Wanderung",
+  "aktArtRadtour": "Radtour",
+  "aktArtAusflug": "Ausflug",
+  "aktArtBesichtigung": "Besichtigung",
+  "aktArtBootsfahrt": "Bootsfahrt",
+  "aktArtSonstiges": "Sonstiges"
 }
