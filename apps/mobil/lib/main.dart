@@ -44,6 +44,10 @@ class PhotoVaultMobil extends StatelessWidget {
       ),
       localizationsDelegates: AppTexte.localizationsDelegates,
       supportedLocales: AppTexte.supportedLocales,
+      locale: switch (sitzung.sprache) {
+        final s? => Locale(s),
+        null => null,
+      },
       home: switch (sitzung.zustand) {
         Sitzungszustand.laedt => const Scaffold(
           body: Center(child: CircularProgressIndicator()),

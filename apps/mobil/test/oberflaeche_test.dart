@@ -25,11 +25,13 @@ import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
 import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
+import 'package:kern/services/bibliothekseinstellungen.dart';
 import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
 import 'package:photo_vault_mobil/seiten/duplikate.dart';
+import 'package:photo_vault_mobil/seiten/einstellungen.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -923,6 +925,49 @@ void main() {
     expect((await db.assetById('d1'))!.isTrashed, isTrue);
     expect((await db.assetById('d2'))!.isTrashed, isFalse);
     expect(find.text('d1.jpg'), findsNothing);
+  });
+
+  testWidgets('Einstellungen wie im Browser: Zeilen und Schalter', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['e1']);
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Einstellungen(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Einstellungen)));
+    for (final titel in [
+      t.einstSprache,
+      t.einstPapierkorb,
+      t.einstVorschlaege,
+      t.einstAuswerten,
+      t.einstUebersetzen,
+      t.einstSchuetzen,
+      t.einstSchwelle,
+    ]) {
+      expect(find.text(titel), findsOneWidget, reason: titel);
+    }
+    final vorher = (await bibliothekseinstellungen(db)).auswertenNachImport;
+    final schalter = find.descendant(
+      of: find.ancestor(
+        of: find.text(t.einstAuswerten),
+        matching: find.byType(Row),
+      ),
+      matching: find.byType(Switch),
+    );
+    await tester.tap(schalter.first);
+    await tester.pumpAndSettle();
+    expect((await bibliothekseinstellungen(db)).auswertenNachImport, !vorher);
+    expect(find.text(t.einstGespeichert), findsOneWidget);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

@@ -995,4 +995,99 @@ class AppTexteEn extends AppTexte {
   String duplAlleFrage(int n, int g) {
     return 'Move $n copies from $g groups to the trash? In each group the outlined photo stays.';
   }
+
+  @override
+  String get bibEinstellungen => 'Settings';
+
+  @override
+  String get einstTitel => 'Library settings';
+
+  @override
+  String get einstHinweis =>
+      'These settings are stored in the library and apply to all connected devices.';
+
+  @override
+  String get einstSprache => 'Language of this app';
+
+  @override
+  String get einstSpracheHinweis => 'Applies to this phone only.';
+
+  @override
+  String get einstAutomatisch => 'Automatic';
+
+  @override
+  String get einstGespeichert => 'Saved.';
+
+  @override
+  String get einstNach => 'after';
+
+  @override
+  String get einstTagen => 'days';
+
+  @override
+  String einstAb(String p) {
+    return 'from $p';
+  }
+
+  @override
+  String get einstPapierkorb => 'Empty trash automatically';
+
+  @override
+  String get einstPapierkorbText =>
+      'Permanently deletes items in the trash after the period – irreversibly.';
+
+  @override
+  String get einstVorschlaege => 'Accept confident suggestions automatically';
+
+  @override
+  String get einstVorschlaegeText =>
+      'Detected faces that are very similar to a person are assigned without asking.';
+
+  @override
+  String get einstAuswerten => 'Run AI analysis automatically after import';
+
+  @override
+  String get einstAuswertenText =>
+      'New items are analysed right away: faces, image content, text, keywords.';
+
+  @override
+  String get einstUebersetzen => 'Translate search and keywords';
+
+  @override
+  String get einstUebersetzenText =>
+      'Searches in German and English at once and keeps keywords in both languages.';
+
+  @override
+  String get einstSchuetzen => 'Protect private metadata';
+
+  @override
+  String get einstSchuetzenText =>
+      'Newly locked items also store location, description and text encrypted.';
+
+  @override
+  String get einstSchwelle => 'Face recognition threshold';
+
+  @override
+  String get einstSchwelleText =>
+      'How similar a face must be to be suggested for a person. Higher means more cautious.';
+
+  @override
+  String get verwAuswertungRuht => 'Analysis: nothing pending';
+
+  @override
+  String verwAuswertungLaeuft(
+    String stufe,
+    int nr,
+    int von,
+    int erledigt,
+    int gesamt,
+  ) {
+    return 'Analysis running: $stufe ($nr/$von), $erledigt of $gesamt';
+  }
+
+  @override
+  String get verwAnstossen => 'Start analysis';
+
+  @override
+  String get verwJetztSichern => 'Back up now';
 }

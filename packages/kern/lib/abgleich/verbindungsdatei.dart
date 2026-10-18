@@ -19,6 +19,7 @@ class Verbindungsdatei {
     this.rechenhilfe = false,
     this.zwischenspeicherMb,
     this.rasterspalten,
+    this.sprache,
   });
 
   /// Die Adresse des Servers, z. B. `https://fotos.example.de/`.
@@ -38,10 +39,16 @@ class Verbindungsdatei {
   /// Geste in der Handy-App); `null` heisst Vorgabe.
   final int? rasterspalten;
 
+  /// Die Sprache der Handy-App (`de`, `en`), wie in den Einstellungen
+  /// gewählt; `null` heisst: die des Telefons. Gilt nur für dieses Gerät –
+  /// wie die Sprachwahl im Browser.
+  final String? sprache;
+
   Verbindungsdatei _mit({
     bool? rechenhilfe,
     int? Function()? zwischenspeicherMb,
     int? Function()? rasterspalten,
+    String? Function()? sprache,
   }) => Verbindungsdatei(
     server: server,
     konto: konto,
@@ -52,6 +59,7 @@ class Verbindungsdatei {
         ? this.zwischenspeicherMb
         : zwischenspeicherMb(),
     rasterspalten: rasterspalten == null ? this.rasterspalten : rasterspalten(),
+    sprache: sprache == null ? this.sprache : sprache(),
   );
 
   Verbindungsdatei mitRechenhilfe(bool an) => _mit(rechenhilfe: an);
@@ -60,6 +68,8 @@ class Verbindungsdatei {
       _mit(zwischenspeicherMb: () => mb);
 
   Verbindungsdatei mitRasterspalten(int? n) => _mit(rasterspalten: () => n);
+
+  Verbindungsdatei mitSprache(String? s) => _mit(sprache: () => s);
 
   static File _datei(Directory bibliothek) =>
       File(p.join(bibliothek.path, 'verbindung.json'));
@@ -78,6 +88,7 @@ class Verbindungsdatei {
       rechenhilfe: j['rechenhilfe'] == true,
       zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
       rasterspalten: (j['rasterspalten'] as num?)?.toInt(),
+      sprache: j['sprache'] as String?,
     );
   }
 
@@ -101,6 +112,7 @@ class Verbindungsdatei {
         if (zwischenspeicherMb != null)
           'zwischenspeicherMb': zwischenspeicherMb,
         if (rasterspalten != null) 'rasterspalten': rasterspalten,
+        if (sprache != null) 'sprache': sprache,
       }),
       flush: true,
     );

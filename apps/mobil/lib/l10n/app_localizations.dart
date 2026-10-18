@@ -1566,6 +1566,168 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n} Kopien aus {g} Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.'**
   String duplAlleFrage(int n, int g);
+
+  /// No description provided for @bibEinstellungen.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstellungen'**
+  String get bibEinstellungen;
+
+  /// No description provided for @einstTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstellungen der Bibliothek'**
+  String get einstTitel;
+
+  /// No description provided for @einstHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Einstellungen stehen in der Bibliothek und gelten für alle verbundenen Geräte.'**
+  String get einstHinweis;
+
+  /// No description provided for @einstSprache.
+  ///
+  /// In de, this message translates to:
+  /// **'Sprache dieser App'**
+  String get einstSprache;
+
+  /// No description provided for @einstSpracheHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Gilt nur auf diesem Telefon.'**
+  String get einstSpracheHinweis;
+
+  /// No description provided for @einstAutomatisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch'**
+  String get einstAutomatisch;
+
+  /// No description provided for @einstGespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeichert.'**
+  String get einstGespeichert;
+
+  /// No description provided for @einstNach.
+  ///
+  /// In de, this message translates to:
+  /// **'nach'**
+  String get einstNach;
+
+  /// No description provided for @einstTagen.
+  ///
+  /// In de, this message translates to:
+  /// **'Tagen'**
+  String get einstTagen;
+
+  /// No description provided for @einstAb.
+  ///
+  /// In de, this message translates to:
+  /// **'ab {p}'**
+  String einstAb(String p);
+
+  /// No description provided for @einstPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb automatisch leeren'**
+  String get einstPapierkorb;
+
+  /// No description provided for @einstPapierkorbText.
+  ///
+  /// In de, this message translates to:
+  /// **'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.'**
+  String get einstPapierkorbText;
+
+  /// No description provided for @einstVorschlaege.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichere Vorschläge automatisch übernehmen'**
+  String get einstVorschlaege;
+
+  /// No description provided for @einstVorschlaegeText.
+  ///
+  /// In de, this message translates to:
+  /// **'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.'**
+  String get einstVorschlaegeText;
+
+  /// No description provided for @einstAuswerten.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Auswertung nach dem Import automatisch nachholen'**
+  String get einstAuswerten;
+
+  /// No description provided for @einstAuswertenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.'**
+  String get einstAuswertenText;
+
+  /// No description provided for @einstUebersetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Suche und Schlagwörter übersetzen'**
+  String get einstUebersetzen;
+
+  /// No description provided for @einstUebersetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.'**
+  String get einstUebersetzenText;
+
+  /// No description provided for @einstSchuetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Private Metadaten schützen'**
+  String get einstSchuetzen;
+
+  /// No description provided for @einstSchuetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.'**
+  String get einstSchuetzenText;
+
+  /// No description provided for @einstSchwelle.
+  ///
+  /// In de, this message translates to:
+  /// **'Schwelle der Gesichtserkennung'**
+  String get einstSchwelle;
+
+  /// No description provided for @einstSchwelleText.
+  ///
+  /// In de, this message translates to:
+  /// **'Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.'**
+  String get einstSchwelleText;
+
+  /// No description provided for @verwAuswertungRuht.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswertung: nichts offen'**
+  String get verwAuswertungRuht;
+
+  /// No description provided for @verwAuswertungLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}'**
+  String verwAuswertungLaeuft(
+    String stufe,
+    int nr,
+    int von,
+    int erledigt,
+    int gesamt,
+  );
+
+  /// No description provided for @verwAnstossen.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswertung anstossen'**
+  String get verwAnstossen;
+
+  /// No description provided for @verwJetztSichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt sichern'**
+  String get verwJetztSichern;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

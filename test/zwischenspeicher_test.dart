@@ -78,4 +78,20 @@ void main() {
     expect(gelesen.zwischenspeicherMb, 512);
     expect(gelesen.mitRechenhilfe(true).zwischenspeicherMb, 512);
   });
+
+  test('die Sprache der Handy-App steht in der Verbindungsdatei', () async {
+    final v = Verbindungsdatei(
+      server: Uri.parse('https://fotos.example.de/'),
+      konto: 'anna',
+      geraet: 'Telefon',
+      token: 't',
+      rasterspalten: 3,
+    );
+    await v.mitSprache('en').schreibe(ordner);
+    final gelesen = (await Verbindungsdatei.lies(ordner))!;
+    expect(gelesen.sprache, 'en');
+    expect(gelesen.rasterspalten, 3, reason: 'anderes bleibt');
+    await gelesen.mitSprache(null).schreibe(ordner);
+    expect((await Verbindungsdatei.lies(ordner))!.sprache, isNull);
+  });
 }

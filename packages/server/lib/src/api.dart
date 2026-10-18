@@ -7,6 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
+import 'package:kern/services/bibliothekseinstellungen.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplikatsuche.dart';
@@ -830,19 +831,15 @@ class _Api {
   /// verbundene Gerät gelten – geändert wird über die Befehle.
   Future<Response> einstellungen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final papierkorb = await db.trashSettingsRow();
-    final app = await (db.select(
-      db.appSettings,
-    )..where((t) => t.id.equals(0))).getSingleOrNull();
-    final privat = await db.privacySettingsRow();
+    final e = await bibliothekseinstellungen(db);
     return _json({
-      'papierkorbLeeren': papierkorb?.autoDeleteEnabled ?? false,
-      'papierkorbTage': papierkorb?.autoDeleteAfterDays ?? 30,
-      'gesichtsschwelle': await db.faceSimilarityThresholdWert(),
-      'vorschlaegeAb': await db.vorschlaegeAutomatischAbWert(),
-      'auswertenNachImport': app?.autoAnalyzeAfterImport ?? true,
-      'sucheUebersetzen': await db.uebersetzeSucheUndTags(),
-      'angabenSchuetzen': privat?.protectMetadata ?? true,
+      'papierkorbLeeren': e.papierkorbLeeren,
+      'papierkorbTage': e.papierkorbTage,
+      'gesichtsschwelle': e.gesichtsschwelle,
+      'vorschlaegeAb': e.vorschlaegeAb,
+      'auswertenNachImport': e.auswertenNachImport,
+      'sucheUebersetzen': e.sucheUebersetzen,
+      'angabenSchuetzen': e.angabenSchuetzen,
     });
   }
 

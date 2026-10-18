@@ -136,7 +136,8 @@ class Konto extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (sitzung.abgleich case final a?) _KontenZugang(a.verbindung),
+              if (sitzung.abgleich case final a?)
+                _KontenZugang(sitzung, a.verbindung),
               FutureBuilder<PackageInfo>(
                 future: PackageInfo.fromPlatform(),
                 builder: (context, s) => ListTile(
@@ -167,11 +168,13 @@ class Konto extends StatelessWidget {
   }
 }
 
-/// „Konten verwalten“ – nur für Verwalter; ob man einer ist, fragt die
-/// Zeile einmal beim Server nach.
+/// Was Verwalter am Server tun – wie die Verwaltung im Browser: Konten
+/// verwalten, die Auswertung anstossen, die Sicherung jetzt laufen lassen.
+/// Ob man Verwalter ist, fragt die Zeile einmal beim Server nach.
 class _KontenZugang extends StatefulWidget {
-  const _KontenZugang(this.verbindung);
+  const _KontenZugang(this.sitzung, this.verbindung);
 
+  final Sitzung sitzung;
   final Serververbindung verbindung;
 
   @override
@@ -184,23 +187,88 @@ class _KontenZugangState extends State<_KontenZugang> {
     (_) => false,
   );
 
+  Map<String, Object?>? _auswertung;
+
+  Future<void> _ladeAuswertung() async {
+    try {
+      final a = await widget.verbindung.hole('api/v1/auswertung');
+      if (mounted) setState(() => _auswertung = a);
+    } catch (_) {
+      // Ohne Modelle gibt es keine Auswertung – dann bleibt die Zeile weg.
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _verwalter.then((ja) {
+      if (ja) _ladeAuswertung();
+    });
+  }
+
+  Future<void> _poste(String pfad) async {
+    final bote = ScaffoldMessenger.of(context);
+    try {
+      await widget.verbindung.schicke(pfad, const <String, Object?>{});
+    } catch (x) {
+      bote.showSnackBar(SnackBar(content: Text('$x')));
+    }
+    await _ladeAuswertung();
+  }
+
+  String _auswertungText(AppTexte t) {
+    final a = _auswertung!;
+    final stand = (a['stand'] as Map?)?.cast<String, Object?>();
+    if (a['laeuft'] != true || stand == null) return t.verwAuswertungRuht;
+    int zahl(String k) => (stand[k] as num?)?.toInt() ?? 0;
+    return t.verwAuswertungLaeuft(
+      '${stand['stufe']}',
+      zahl('stufeNummer'),
+      zahl('stufenGesamt'),
+      zahl('erledigt'),
+      zahl('gesamt'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
+    final sicherung = widget.sitzung.serversicherung;
     return FutureBuilder<bool>(
       future: _verwalter,
       builder: (context, s) => s.data != true
           ? const SizedBox.shrink()
-          : ListTile(
-              leading: const Icon(Icons.manage_accounts_outlined),
-              title: Text(t.kontenVerwalten),
-              subtitle: Text(t.kontenVerwaltenHinweis),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => Konten(verwaltung: _verwaltung),
+          : Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.manage_accounts_outlined),
+                  title: Text(t.kontenVerwalten),
+                  subtitle: Text(t.kontenVerwaltenHinweis),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Konten(verwaltung: _verwaltung),
+                    ),
+                  ),
                 ),
-              ),
+                if (_auswertung != null)
+                  ListTile(
+                    leading: const Icon(Icons.auto_awesome_outlined),
+                    title: Text(_auswertungText(t)),
+                    trailing: TextButton(
+                      onPressed: () => _poste('api/v1/auswertung'),
+                      child: Text(t.verwAnstossen),
+                    ),
+                  ),
+                if (sicherung != null &&
+                    sicherung.stufe != 'aus' &&
+                    sicherung.stufe != 'nichtEingerichtet')
+                  ListTile(
+                    leading: const Icon(Icons.backup_table_outlined),
+                    title: Text(t.verwJetztSichern),
+                    onTap: () => _poste('api/v1/sicherung/jetzt'),
+                  ),
+              ],
             ),
     );
   }

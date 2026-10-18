@@ -634,5 +634,57 @@
         "type": "int"
       }
     }
-  }
+  },
+  "bibEinstellungen": "Einstellungen",
+  "einstTitel": "Einstellungen der Bibliothek",
+  "einstHinweis": "Diese Einstellungen stehen in der Bibliothek und gelten für alle verbundenen Geräte.",
+  "einstSprache": "Sprache dieser App",
+  "einstSpracheHinweis": "Gilt nur auf diesem Telefon.",
+  "einstAutomatisch": "Automatisch",
+  "einstGespeichert": "Gespeichert.",
+  "einstNach": "nach",
+  "einstTagen": "Tagen",
+  "einstAb": "ab {p}",
+  "@einstAb": {
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "einstPapierkorb": "Papierkorb automatisch leeren",
+  "einstPapierkorbText": "Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.",
+  "einstVorschlaege": "Sichere Vorschläge automatisch übernehmen",
+  "einstVorschlaegeText": "Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.",
+  "einstAuswerten": "KI-Auswertung nach dem Import automatisch nachholen",
+  "einstAuswertenText": "Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.",
+  "einstUebersetzen": "Suche und Schlagwörter übersetzen",
+  "einstUebersetzenText": "Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.",
+  "einstSchuetzen": "Private Metadaten schützen",
+  "einstSchuetzenText": "Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.",
+  "einstSchwelle": "Schwelle der Gesichtserkennung",
+  "einstSchwelleText": "Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.",
+  "verwAuswertungRuht": "Auswertung: nichts offen",
+  "verwAuswertungLaeuft": "Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}",
+  "@verwAuswertungLaeuft": {
+    "placeholders": {
+      "stufe": {
+        "type": "String"
+      },
+      "nr": {
+        "type": "int"
+      },
+      "von": {
+        "type": "int"
+      },
+      "erledigt": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "verwAnstossen": "Auswertung anstossen",
+  "verwJetztSichern": "Jetzt sichern"
 }

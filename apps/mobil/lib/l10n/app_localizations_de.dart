@@ -996,4 +996,100 @@ class AppTexteDe extends AppTexte {
   String duplAlleFrage(int n, int g) {
     return '$n Kopien aus $g Gruppen in den Papierkorb legen? Je Gruppe bleibt das umrandete Foto.';
   }
+
+  @override
+  String get bibEinstellungen => 'Einstellungen';
+
+  @override
+  String get einstTitel => 'Einstellungen der Bibliothek';
+
+  @override
+  String get einstHinweis =>
+      'Diese Einstellungen stehen in der Bibliothek und gelten für alle verbundenen Geräte.';
+
+  @override
+  String get einstSprache => 'Sprache dieser App';
+
+  @override
+  String get einstSpracheHinweis => 'Gilt nur auf diesem Telefon.';
+
+  @override
+  String get einstAutomatisch => 'Automatisch';
+
+  @override
+  String get einstGespeichert => 'Gespeichert.';
+
+  @override
+  String get einstNach => 'nach';
+
+  @override
+  String get einstTagen => 'Tagen';
+
+  @override
+  String einstAb(String p) {
+    return 'ab $p';
+  }
+
+  @override
+  String get einstPapierkorb => 'Papierkorb automatisch leeren';
+
+  @override
+  String get einstPapierkorbText =>
+      'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.';
+
+  @override
+  String get einstVorschlaege => 'Sichere Vorschläge automatisch übernehmen';
+
+  @override
+  String get einstVorschlaegeText =>
+      'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.';
+
+  @override
+  String get einstAuswerten =>
+      'KI-Auswertung nach dem Import automatisch nachholen';
+
+  @override
+  String get einstAuswertenText =>
+      'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.';
+
+  @override
+  String get einstUebersetzen => 'Suche und Schlagwörter übersetzen';
+
+  @override
+  String get einstUebersetzenText =>
+      'Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.';
+
+  @override
+  String get einstSchuetzen => 'Private Metadaten schützen';
+
+  @override
+  String get einstSchuetzenText =>
+      'Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.';
+
+  @override
+  String get einstSchwelle => 'Schwelle der Gesichtserkennung';
+
+  @override
+  String get einstSchwelleText =>
+      'Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.';
+
+  @override
+  String get verwAuswertungRuht => 'Auswertung: nichts offen';
+
+  @override
+  String verwAuswertungLaeuft(
+    String stufe,
+    int nr,
+    int von,
+    int erledigt,
+    int gesamt,
+  ) {
+    return 'Auswertung läuft: $stufe ($nr/$von), $erledigt von $gesamt';
+  }
+
+  @override
+  String get verwAnstossen => 'Auswertung anstossen';
+
+  @override
+  String get verwJetztSichern => 'Jetzt sichern';
 }

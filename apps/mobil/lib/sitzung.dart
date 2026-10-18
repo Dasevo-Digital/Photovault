@@ -166,6 +166,18 @@ class Sitzung extends ChangeNotifier {
     await verbindung!.schreibe(await _ordner());
   }
 
+  /// Die Sprache der App, wie in den Einstellungen gewählt; `null` heisst:
+  /// die des Telefons.
+  String? get sprache => verbindung?.sprache;
+
+  Future<void> setzeSprache(String? s) async {
+    final v = verbindung;
+    if (v == null || s == sprache) return;
+    verbindung = v.mitSprache(s);
+    await verbindung!.schreibe(await _ordner());
+    notifyListeners();
+  }
+
   /// Welche Fassung der Server ist (`/api/v1/zustand`), für die Kontoseite.
   String? serverfassung;
 
