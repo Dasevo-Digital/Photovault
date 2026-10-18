@@ -75,11 +75,27 @@
   </section>
   <section id="bereich-suche" hidden>
     <form id="form-suche" class="zeile">
-      <input name="text" type="search" placeholder="Wonach suchst du?" autocomplete="off" required>
+      <input name="text" type="search" placeholder="Wonach suchst du?" autocomplete="off">
       <label><input type="radio" name="art" value="inhalt" checked> Bildinhalt</label>
       <label><input type="radio" name="art" value="text"> Text</label>
+      <button type="button" id="filter-knopf" aria-expanded="false" aria-controls="suchfilter">Filter</button>
       <button type="submit">Suchen</button>
     </form>
+    <div id="suchfilter" hidden>
+      <div class="filter-feld filter-personen">
+        <span class="filter-name">Personen</span>
+        <div id="filter-personen"></div>
+      </div>
+      <label class="filter-feld"><span class="filter-name">Land</span><select id="filter-land"><option value="">Alle</option></select></label>
+      <label class="filter-feld"><span class="filter-name">Stadt</span><select id="filter-stadt" disabled><option value="">Alle</option></select></label>
+      <label class="filter-feld"><span class="filter-name">Von</span><input id="filter-von" type="date"></label>
+      <label class="filter-feld"><span class="filter-name">Bis</span><input id="filter-bis" type="date"></label>
+      <label class="filter-feld"><span class="filter-name">Art</span><select id="filter-art"><option value="">Alles</option><option value="bild">Fotos</option><option value="video">Videos</option></select></label>
+      <label class="filter-feld"><span class="filter-name">Kamera</span><select id="filter-kamera"><option value="">Alle</option></select></label>
+      <label class="filter-feld filter-haken"><input id="filter-favoriten" type="checkbox"> Nur Favoriten</label>
+      <button type="button" id="filter-leeren">Zurücksetzen</button>
+    </div>
+    <p id="suche-filterzeile" class="leise klein" hidden></p>
     <p id="suche-hinweis" class="leise"></p>
   </section>
   <section id="bereich-karten" hidden>

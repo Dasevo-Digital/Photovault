@@ -837,5 +837,27 @@
   "personZusammenfuehrenFrage": "„{andere}“ in „{name}“ aufnehmen? Das lässt sich nicht rückgängig machen.",
   "@personZusammenfuehrenFrage": {
     "placeholders": {"andere": {"type": "String"}, "name": {"type": "String"}}
-  }
+  },
+  "sucheFilter": "Filter",
+  "sucheFilterPersonen": "Personen",
+  "sucheFilterOrt": "Ort",
+  "sucheFilterAlleLaender": "Alle Länder",
+  "sucheFilterAlleStaedte": "Alle Städte",
+  "sucheFilterZeitraum": "Zeitraum",
+  "sucheFilterVon": "Von",
+  "sucheFilterBis": "Bis",
+  "sucheFilterArt": "Art",
+  "sucheFilterAlles": "Alles",
+  "sucheFilterFotos": "Fotos",
+  "sucheFilterVideos": "Videos",
+  "sucheFilterKamera": "Kamera",
+  "sucheFilterAlleKameras": "Alle Kameras",
+  "sucheFilterFavoriten": "Nur Favoriten",
+  "sucheFilterZuruecksetzen": "Zurücksetzen",
+  "sucheFilterAnwenden": "Anwenden",
+  "sucheFilterZeile": "Filter: {text}",
+  "@sucheFilterZeile": {
+    "placeholders": {"text": {"type": "String"}}
+  },
+  "sucheTextOderFilter": "Suchtext eingeben oder einen Filter wählen."
 }

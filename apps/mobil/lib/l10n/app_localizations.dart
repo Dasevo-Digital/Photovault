@@ -2262,6 +2262,120 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'„{andere}“ in „{name}“ aufnehmen? Das lässt sich nicht rückgängig machen.'**
   String personZusammenfuehrenFrage(String andere, String name);
+
+  /// No description provided for @sucheFilter.
+  ///
+  /// In de, this message translates to:
+  /// **'Filter'**
+  String get sucheFilter;
+
+  /// No description provided for @sucheFilterPersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Personen'**
+  String get sucheFilterPersonen;
+
+  /// No description provided for @sucheFilterOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get sucheFilterOrt;
+
+  /// No description provided for @sucheFilterAlleLaender.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Länder'**
+  String get sucheFilterAlleLaender;
+
+  /// No description provided for @sucheFilterAlleStaedte.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Städte'**
+  String get sucheFilterAlleStaedte;
+
+  /// No description provided for @sucheFilterZeitraum.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitraum'**
+  String get sucheFilterZeitraum;
+
+  /// No description provided for @sucheFilterVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Von'**
+  String get sucheFilterVon;
+
+  /// No description provided for @sucheFilterBis.
+  ///
+  /// In de, this message translates to:
+  /// **'Bis'**
+  String get sucheFilterBis;
+
+  /// No description provided for @sucheFilterArt.
+  ///
+  /// In de, this message translates to:
+  /// **'Art'**
+  String get sucheFilterArt;
+
+  /// No description provided for @sucheFilterAlles.
+  ///
+  /// In de, this message translates to:
+  /// **'Alles'**
+  String get sucheFilterAlles;
+
+  /// No description provided for @sucheFilterFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos'**
+  String get sucheFilterFotos;
+
+  /// No description provided for @sucheFilterVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos'**
+  String get sucheFilterVideos;
+
+  /// No description provided for @sucheFilterKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Kamera'**
+  String get sucheFilterKamera;
+
+  /// No description provided for @sucheFilterAlleKameras.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Kameras'**
+  String get sucheFilterAlleKameras;
+
+  /// No description provided for @sucheFilterFavoriten.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur Favoriten'**
+  String get sucheFilterFavoriten;
+
+  /// No description provided for @sucheFilterZuruecksetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurücksetzen'**
+  String get sucheFilterZuruecksetzen;
+
+  /// No description provided for @sucheFilterAnwenden.
+  ///
+  /// In de, this message translates to:
+  /// **'Anwenden'**
+  String get sucheFilterAnwenden;
+
+  /// No description provided for @sucheFilterZeile.
+  ///
+  /// In de, this message translates to:
+  /// **'Filter: {text}'**
+  String sucheFilterZeile(String text);
+
+  /// No description provided for @sucheTextOderFilter.
+  ///
+  /// In de, this message translates to:
+  /// **'Suchtext eingeben oder einen Filter wählen.'**
+  String get sucheTextOderFilter;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

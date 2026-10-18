@@ -1390,4 +1390,64 @@ class AppTexteDe extends AppTexte {
   String personZusammenfuehrenFrage(String andere, String name) {
     return '„$andere“ in „$name“ aufnehmen? Das lässt sich nicht rückgängig machen.';
   }
+
+  @override
+  String get sucheFilter => 'Filter';
+
+  @override
+  String get sucheFilterPersonen => 'Personen';
+
+  @override
+  String get sucheFilterOrt => 'Ort';
+
+  @override
+  String get sucheFilterAlleLaender => 'Alle Länder';
+
+  @override
+  String get sucheFilterAlleStaedte => 'Alle Städte';
+
+  @override
+  String get sucheFilterZeitraum => 'Zeitraum';
+
+  @override
+  String get sucheFilterVon => 'Von';
+
+  @override
+  String get sucheFilterBis => 'Bis';
+
+  @override
+  String get sucheFilterArt => 'Art';
+
+  @override
+  String get sucheFilterAlles => 'Alles';
+
+  @override
+  String get sucheFilterFotos => 'Fotos';
+
+  @override
+  String get sucheFilterVideos => 'Videos';
+
+  @override
+  String get sucheFilterKamera => 'Kamera';
+
+  @override
+  String get sucheFilterAlleKameras => 'Alle Kameras';
+
+  @override
+  String get sucheFilterFavoriten => 'Nur Favoriten';
+
+  @override
+  String get sucheFilterZuruecksetzen => 'Zurücksetzen';
+
+  @override
+  String get sucheFilterAnwenden => 'Anwenden';
+
+  @override
+  String sucheFilterZeile(String text) {
+    return 'Filter: $text';
+  }
+
+  @override
+  String get sucheTextOderFilter =>
+      'Suchtext eingeben oder einen Filter wählen.';
 }

@@ -1386,4 +1386,63 @@ class AppTexteEn extends AppTexte {
   String personZusammenfuehrenFrage(String andere, String name) {
     return 'Merge “$andere” into “$name”? This cannot be undone.';
   }
+
+  @override
+  String get sucheFilter => 'Filters';
+
+  @override
+  String get sucheFilterPersonen => 'People';
+
+  @override
+  String get sucheFilterOrt => 'Place';
+
+  @override
+  String get sucheFilterAlleLaender => 'All countries';
+
+  @override
+  String get sucheFilterAlleStaedte => 'All cities';
+
+  @override
+  String get sucheFilterZeitraum => 'Period';
+
+  @override
+  String get sucheFilterVon => 'From';
+
+  @override
+  String get sucheFilterBis => 'To';
+
+  @override
+  String get sucheFilterArt => 'Type';
+
+  @override
+  String get sucheFilterAlles => 'All';
+
+  @override
+  String get sucheFilterFotos => 'Photos';
+
+  @override
+  String get sucheFilterVideos => 'Videos';
+
+  @override
+  String get sucheFilterKamera => 'Camera';
+
+  @override
+  String get sucheFilterAlleKameras => 'All cameras';
+
+  @override
+  String get sucheFilterFavoriten => 'Favorites only';
+
+  @override
+  String get sucheFilterZuruecksetzen => 'Reset';
+
+  @override
+  String get sucheFilterAnwenden => 'Apply';
+
+  @override
+  String sucheFilterZeile(String text) {
+    return 'Filters: $text';
+  }
+
+  @override
+  String get sucheTextOderFilter => 'Enter a search term or choose a filter.';
 }

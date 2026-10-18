@@ -456,3 +456,21 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .angaben-gesicht img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--rand); box-shadow: 0 0 0 2px transparent; }
 .angaben-gesicht.unbekannt img { box-shadow: 0 0 0 2px var(--akzent); }
 .angaben-gesicht span { max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Filter der Suche */
+#form-suche #filter-knopf { background: var(--grund); color: var(--text); border: 1px solid var(--rand); }
+#form-suche #filter-knopf.aktiv { background: color-mix(in srgb, var(--akzent) 16%, var(--grund)); border-color: var(--akzent); color: var(--text); font-weight: 600; }
+#suchfilter { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin: 0 12px 8px; padding: 12px; border: 1px solid var(--rand); border-radius: 14px; background: var(--karte); }
+#suchfilter[hidden] { display: none !important; }
+.filter-feld { display: flex; flex-direction: column; gap: 4px; font-size: .9em; }
+.filter-feld .filter-name { color: var(--leise); font-size: .85em; }
+.filter-feld select, .filter-feld input[type=date] { padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); font: inherit; }
+.filter-personen { flex-basis: 100%; }
+#filter-personen { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-person { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--rand); border-radius: 18px; background: var(--grund); color: var(--text); }
+.filter-person[aria-pressed=true] { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 16%, var(--grund)); }
+.filter-gesicht { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, #8e4ec6 18%, var(--karte)); color: #8e4ec6; font-weight: 700; font-size: .8em; }
+.filter-gesicht img { width: 100%; height: 100%; object-fit: cover; }
+.filter-haken { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 6px; }
+#filter-leeren { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+#suche-filterzeile { margin: 0 14px; text-align: left; padding: 0 0 4px; }

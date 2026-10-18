@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
-import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
-import 'package:kern/services/bildsuche.dart';
-import 'package:kern/services/search_filters.dart';
+import 'package:kern/services/laendernamen.dart';
+import 'package:kern/services/suchlauf.dart';
 import 'package:shelf/shelf.dart';
 
 import 'anmeldung_api.dart';
@@ -46,50 +46,70 @@ class Suchapi {
     return _json({'vektor': vektor, 'text': englisch});
   }
 
-  /// `?text=…&art=inhalt|text` → `{aufnahmen}`: für den Browser, der
-  /// keine Kopie der Bibliothek hat und die Rangfolge nicht selbst rechnen
-  /// kann. `inhalt` sucht nach Bildinhalt (404 ohne Modell), `text` in
-  /// Namen, Beschreibungen, Schlagwörtern, Orten und Personen – derselbe
-  /// Weg wie auf dem Telefon.
+  /// `?text=…&art=inhalt|text` und die Filter aus [Suchfilter]
+  /// (`person`, `land`, `stadt`, `von`, `bis`, `art=bild|video`,
+  /// `favoriten=1`, `kamera`) → `{aufnahmen}`: für den Browser, der keine
+  /// Kopie der Bibliothek hat. `inhalt` sucht nach Bildinhalt (404 ohne
+  /// Modell), `text` in Namen, Beschreibungen, Schlagwörtern, Orten und
+  /// Personen – derselbe Weg wie auf dem Telefon (suchlauf.dart). Ohne
+  /// Text, aber mit Filtern: alles, was sie erfüllt.
   Future<Response> suche(Request anfrage) async {
     final q = anfrage.url.queryParameters;
     final text = (q['text'] ?? '').trim();
-    if (text.isEmpty || text.length > 500) {
+    final filter = Suchfilter.ausParametern(anfrage.url.queryParametersAll);
+    if ((text.isEmpty && filter.leer) || text.length > 500) {
       return _json({'fehler': 'text fehlt'}, status: 400);
     }
     final b = (await bibliotheken.fuer(kontoVon(anfrage).id)).bibliothek;
-    final db = b.db;
-    final List<AssetData> funde;
-    if (q['art'] == 'text') {
-      final ids = await db.textfundstellen(text);
-      funde = ids.isEmpty
-          ? const []
-          : await db.searchAssets(const SearchFilters(), restrictToIds: ids);
-    } else {
+    final art = q['art'] == 'text' ? Suchart.text : Suchart.inhalt;
+    List<double>? vektor;
+    if (text.isNotEmpty && art == Suchart.inhalt) {
       final halter = b.modelle.clipTextHalter;
       if (!halter.installiert) {
         return _json({'fehler': 'kein Modell für die Bildsuche'}, status: 404);
       }
       final englisch = await b.auswertungen.insEnglische(text);
-      final vektor = await halter.mit((clip) => clip.embedText(englisch));
+      vektor = await halter.mit((clip) => clip.embedText(englisch));
       if (vektor == null) {
         return _json({
           'fehler': 'Der Suchtext liess sich nicht einbetten',
         }, status: 500);
       }
-      final erlaubt = (await db.searchAssetIds(const SearchFilters())).toSet();
-      final rangfolge = rangfolgeDerBildsuche(
-        vektor,
-        suchkandidatenAus(
-          await db.allEmbeddings(),
-          await db.alleVideoeinbettungen(),
-        ),
-        erlaubt,
-      );
-      funde = await db.assetsByIds(rangfolge);
     }
+    final funde = await suchlauf(
+      b.db,
+      text: text,
+      art: art,
+      filter: filter,
+      vektor: vektor == null ? null : Float32List.fromList(vektor),
+    );
     return _json({
       'aufnahmen': [for (final a in funde) zeileAlsJson(Rasterzeile.aus(a))],
+    });
+  }
+
+  /// Was sich in den Filtern wählen lässt (siehe [suchauswahl]), Länder
+  /// in der Sprache der Oberfläche (`?sprache=de|en`).
+  Future<Response> auswahl(Request anfrage) async {
+    final b = (await bibliotheken.fuer(kontoVon(anfrage).id)).bibliothek;
+    final sprache = anfrage.url.queryParameters['sprache'] == 'en'
+        ? 'en'
+        : 'de';
+    final w = await suchauswahl(b.db);
+    return _json({
+      'personen': [
+        for (final p in w.personen)
+          {'id': p.id, 'name': p.name, 'bild': p.coverFaceCropPath},
+      ],
+      'orte': [
+        for (final o in w.orte)
+          {
+            'land': o.land,
+            'name': landAnzeige(o.land, sprache),
+            'staedte': o.staedte,
+          },
+      ],
+      'kameras': w.kameras,
     });
   }
 }

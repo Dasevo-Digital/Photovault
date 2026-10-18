@@ -1255,14 +1255,105 @@ function zeigeSuche() {
   $('form-suche').text.focus();
 }
 
+// --- Filter der Suche --------------------------------------------------------
+//
+// Dieselben Filter wie auf dem Telefon (suchlauf.dart im Kern): Personen
+// (alle müssen drauf sein), Land und Stadt, Zeitraum, Art, Kamera, nur
+// Favoriten. Mit Filtern darf das Suchfeld leer bleiben.
+
+const suchfilter = { personen: new Set(), geladen: null };
+
+async function ladeSuchauswahl() {
+  if (suchfilter.geladen) return suchfilter.geladen;
+  const w = await api(`/api/v1/suche/auswahl?sprache=${SPRACHE}`);
+  suchfilter.geladen = w;
+  const personen = $('filter-personen');
+  personen.replaceChildren();
+  for (const p of w.personen) {
+    const b = el('button', 'filter-person');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', 'false');
+    const rund = el('span', 'filter-gesicht');
+    if (p.bild) { const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.src = dateiUrl(p.bild); rund.append(img); } else rund.textContent = p.name.trim().charAt(0).toUpperCase();
+    b.append(rund, el('span', null, p.name));
+    b.addEventListener('click', () => {
+      if (suchfilter.personen.has(p.id)) suchfilter.personen.delete(p.id); else suchfilter.personen.add(p.id);
+      b.setAttribute('aria-pressed', String(suchfilter.personen.has(p.id)));
+      zeigeFilterzeile();
+    });
+    personen.append(b);
+  }
+  if (!w.personen.length) personen.append(el('span', 'leise', t('Noch keine Personen.')));
+  const land = $('filter-land');
+  for (const o of w.orte) { const x = el('option', null, o.name); x.value = o.land; land.append(x); }
+  const kamera = $('filter-kamera');
+  for (const k of w.kameras) { const x = el('option', null, k); x.value = k; kamera.append(x); }
+  return w;
+}
+
+function fuelleStaedte() {
+  const w = suchfilter.geladen;
+  const stadt = $('filter-stadt');
+  stadt.replaceChildren(el('option', null, t('Alle')));
+  stadt.firstChild.value = '';
+  const ort = w && w.orte.find((o) => o.land === $('filter-land').value);
+  stadt.disabled = !ort || !ort.staedte.length;
+  for (const s of ort ? ort.staedte : []) { const x = el('option', null, s); x.value = s; stadt.append(x); }
+}
+
+function filterParameter() {
+  const q = new URLSearchParams();
+  for (const id of suchfilter.personen) q.append('person', id);
+  for (const [name, feld] of [['land', 'filter-land'], ['stadt', 'filter-stadt'], ['von', 'filter-von'], ['bis', 'filter-bis'], ['art', 'filter-art'], ['kamera', 'filter-kamera']]) {
+    if ($(feld).value) q.set(name, $(feld).value);
+  }
+  if ($('filter-favoriten').checked) q.set('favoriten', '1');
+  return q;
+}
+
+// Was gerade gefiltert wird, als eine Zeile unter dem Suchfeld.
+function zeigeFilterzeile() {
+  const w = suchfilter.geladen;
+  const teile = [];
+  if (w) for (const p of w.personen) if (suchfilter.personen.has(p.id)) teile.push(p.name);
+  const land = $('filter-land');
+  if (land.value) teile.push([$('filter-stadt').value, land.selectedOptions[0].textContent].filter(Boolean).join(', '));
+  const von = $('filter-von').value, bis = $('filter-bis').value;
+  if (von || bis) teile.push(`${von || '…'} – ${bis || '…'}`);
+  if ($('filter-art').value) teile.push($('filter-art').selectedOptions[0].textContent);
+  if ($('filter-kamera').value) teile.push($('filter-kamera').value);
+  if ($('filter-favoriten').checked) teile.push(t('Favoriten'));
+  $('suche-filterzeile').textContent = teile.length ? `${t('Filter')}: ${teile.join(' · ')}` : '';
+  $('suche-filterzeile').hidden = !teile.length;
+  $('filter-knopf').classList.toggle('aktiv', teile.length > 0);
+}
+
+$('filter-knopf').addEventListener('click', async () => {
+  const auf = $('suchfilter').hidden;
+  $('suchfilter').hidden = !auf;
+  $('filter-knopf').setAttribute('aria-expanded', String(auf));
+  if (auf) { try { await ladeSuchauswahl(); } catch (x) { $('suche-hinweis').textContent = x.message; } }
+});
+$('filter-land').addEventListener('change', () => { fuelleStaedte(); zeigeFilterzeile(); });
+for (const id of ['filter-stadt', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera', 'filter-favoriten']) $(id).addEventListener('change', zeigeFilterzeile);
+$('filter-leeren').addEventListener('click', () => {
+  suchfilter.personen.clear();
+  for (const b of $('filter-personen').querySelectorAll('[aria-pressed]')) b.setAttribute('aria-pressed', 'false');
+  for (const id of ['filter-land', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera']) $(id).value = '';
+  $('filter-favoriten').checked = false;
+  fuelleStaedte();
+  zeigeFilterzeile();
+});
+
 $('form-suche').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target;
   const text = f.text.value.trim();
-  if (!text) return;
+  const q = filterParameter();
+  if (!text && ![...q.keys()].length) { $('suche-hinweis').textContent = t('Suchtext eingeben oder einen Filter wählen.'); return; }
   $('suche-hinweis').textContent = t('Sucht …');
   try {
-    const q = new URLSearchParams({ text, art: f.art.value });
+    if (text) { q.set('text', text); q.set('art', f.art.value); }
     const d = await api(`/api/v1/suche?${q}`);
     zeigeListe({ aufnahmen: d.aufnahmen, suche: true });
     $('suche-hinweis').textContent = d.aufnahmen.length ? '' : t('Nichts gefunden.');

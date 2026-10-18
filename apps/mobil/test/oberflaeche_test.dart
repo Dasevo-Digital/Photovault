@@ -48,6 +48,7 @@ import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/seiten/stammbaum.dart';
 import 'package:photo_vault_mobil/seiten/statistik.dart';
+import 'package:photo_vault_mobil/seiten/suche.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
@@ -702,6 +703,40 @@ void main() {
     // abbauen, sonst steht er beim Aufräumen noch aus.
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Suche: nur mit Filtern, ohne Suchtext', (tester) async {
+    final (sitzung, db) = await sitzungMit(tester, ['s1', 's2']);
+    await tester.runAsync(
+      () => db.fuehreAus(const FavoritSetzen(['s2'], true)),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Suche(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nur Favoriten'), findsOneWidget);
+    await tester.tap(find.text('Nur Favoriten'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anwenden'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Filter: Favoriten'), findsOneWidget);
+    final raster = tester.widget<AufnahmenRaster>(find.byType(AufnahmenRaster));
+    expect([for (final z in raster.zeilen) z.id], ['s2']);
+    await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
   });
 

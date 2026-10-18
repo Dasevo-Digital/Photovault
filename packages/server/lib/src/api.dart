@@ -206,6 +206,7 @@ Handler baueApi({
     )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/suche/auswahl', suche.auswahl)
     ..get('/api/v1/reisen', api.reisen)
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)

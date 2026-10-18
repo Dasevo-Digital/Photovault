@@ -1170,6 +1170,82 @@ void main() {
     expect((ohne['aufnahmen']! as List).length, 3);
   });
 
+  test('Suche mit Filtern: ohne Text, mit Text, Auswahllisten', () async {
+    final a = await ladeHoch(erikaToken, 'Strand_Rom.jpg', 10);
+    final b = await ladeHoch(erikaToken, 'Strand_Kiel.jpg', 60);
+    final c = await ladeHoch(erikaToken, 'Berg.jpg', 110);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    Future<void> setze(String id, String land, String stadt, DateTime wann) =>
+        (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            locationCountry: Value(land),
+            locationCity: Value(stadt),
+            fileCreatedAt: Value(wann),
+            cameraModel: const Value('iPhone 17 Pro'),
+          ),
+        );
+    await setze(a, 'Italy', 'Rome', DateTime(2024, 5, 3, 12));
+    await setze(b, 'Germany', 'Kiel', DateTime(2025, 7, 1, 12));
+    await setze(c, 'Italy', 'Bolzano', DateTime(2025, 8, 9, 12));
+    await befehl(erikaToken, 'personAnlegen', {
+      'personId': 'anna',
+      'name': 'Anna',
+    });
+    await db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: 'fa',
+            assetId: c,
+            personId: const Value('anna'),
+            boxX: 0.1,
+            boxY: 0.1,
+            boxW: 0.2,
+            boxH: 0.2,
+          ),
+        );
+    await befehl(erikaToken, 'favoritSetzen', {
+      'ids': [b],
+      'favorit': true,
+    });
+    Future<List<Object?>> ids(String q) async => [
+      for (final z
+          in ((await jsonAus(
+                    await frag('GET', '/api/v1/suche?$q', token: erikaToken),
+                  ))['aufnahmen']!
+                  as List)
+              .cast<Map>())
+        z['id'],
+    ];
+
+    // Nur Filter, nach Datum geordnet (jüngste zuerst).
+    expect(await ids('land=Italy'), [c, a]);
+    expect(await ids('land=Italy&stadt=Rome'), [a]);
+    expect(await ids('von=2025-01-01&bis=2025-07-01'), [b]);
+    expect(await ids('person=anna'), [c]);
+    expect(await ids('favoriten=1'), [b]);
+    expect(await ids('kamera=iPhone%2017%20Pro&art=video'), isEmpty);
+    // Text und Filter zusammen.
+    expect(await ids('art=text&text=strand&land=Germany'), [b]);
+    // Ganz ohne beides: 400.
+    expect(
+      (await frag('GET', '/api/v1/suche', token: erikaToken)).statusCode,
+      400,
+    );
+
+    final w = await jsonAus(
+      await frag('GET', '/api/v1/suche/auswahl?sprache=de', token: erikaToken),
+    );
+    expect((w['personen']! as List).cast<Map>().map((p) => p['name']), [
+      'Anna',
+    ]);
+    final orte = (w['orte']! as List).cast<Map>();
+    expect(orte.map((o) => o['land']), ['Germany', 'Italy']);
+    expect(orte.last['name'], 'Italien');
+    expect(orte.last['staedte'], ['Bolzano', 'Rome']);
+    expect(w['kameras'], ['iPhone 17 Pro']);
+  });
+
   test(
     'Suche: nach Text findet den Namen; nach Inhalt ohne Modell 404',
     () async {
