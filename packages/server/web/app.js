@@ -37,6 +37,8 @@ const el = (tag, klasse, text) => {
 const miniaturUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/miniatur`;
 const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
 const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
+const monatJahr = new Intl.DateTimeFormat(GEBIET, { month: 'long', year: 'numeric' });
+const tagKopf = new Intl.DateTimeFormat(GEBIET, { weekday: 'long', day: 'numeric', month: 'long' });
 
 let sitzung = null;   // {name, verwalter, geraet}
 
@@ -128,11 +130,19 @@ $('abmelden').addEventListener('click', abmelden);
 // --- Raster ----------------------------------------------------------------
 //
 // Eine Liste trägt ihre Aufnahmen, ob sie nach Tagen gegliedert wird, und
-// wie sie nachlädt (nur die Zeitleiste). Der Betrachter läuft über die
+// wie sie nachlädt (Zeitleiste, Favoriten). Der Betrachter läuft über die
 // gerade gezeigte Liste.
+//
+// Gegliedert wird wie auf dem Telefon: ein Kopf je Monat, darunter je Tag
+// das Datum mit dem Kreis, der den ganzen Tag wählt.
 
 let liste = null;
 let letzterTag = null;
+let letzterMonat = null;
+
+// Der Tag einer Aufnahme in der Zeit des Browsers – Schlüssel für die
+// Tagesauswahl.
+const tagVon = (a) => { const d = new Date(a.aufgenommen); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 function kachel(a, index) {
   const k = el('button', 'kachel');
@@ -142,40 +152,63 @@ function kachel(a, index) {
   img.loading = 'lazy';
   img.decoding = 'async';
   img.alt = '';
+  img.draggable = false;
   img.src = miniaturUrl(a.id);
   k.append(img);
   if (a.art === 'video') k.append(el('span', 'marke', '▶'));
   if (a.favorit) k.append(el('span', 'herz', '♥'));
   if (a.serie && a.serie.titel && a.serie.groesse > 1) k.append(el('span', 'stapel', `⧉ ${a.serie.groesse}`));
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
-  k.addEventListener('click', () => (auswahlModus ? schalteAuswahl(a.id, k) : oeffne(index)));
-  let halten;
-  k.addEventListener('pointerdown', () => { halten = setTimeout(() => { auswahlModus = true; schalteAuswahl(a.id, k); }, 500); });
-  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) k.addEventListener(ev, () => clearTimeout(halten));
+  k.addEventListener('click', () => {
+    // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.
+    if (zieh.schlucke) { zieh.schlucke = false; return; }
+    if (auswahlModus || auswahl.size) schalteAuswahl(a.id, k); else oeffne(index);
+  });
+  return k;
+}
+
+function tageskopf(a, tag) {
+  const k = el('button', 'tageskopf');
+  k.type = 'button';
+  k.dataset.tag = tag;
+  k.title = t('Ganzen Tag auswählen');
+  k.append(el('span', 'tag', tagKopf.format(new Date(a.aufgenommen))), el('span', 'kreis'));
+  k.addEventListener('click', () => schalteTag(tag));
   return k;
 }
 
 function haengeAn(aufnahmen) {
   const raster = $('raster');
   for (const a of aufnahmen) {
+    const tag = tagVon(a);
     if (liste.nachTagen) {
-      const tag = datum.format(new Date(a.aufgenommen));
+      const d = new Date(a.aufgenommen);
+      const monat = `${d.getFullYear()}-${d.getMonth()}`;
+      if (monat !== letzterMonat) {
+        letzterMonat = monat;
+        letzterTag = null;
+        raster.append(el('h2', 'monat', monatJahr.format(d)));
+      }
       if (tag !== letzterTag) {
         letzterTag = tag;
-        raster.append(el('h2', null, tag));
+        raster.append(tageskopf(a, tag));
       }
     }
+    if (!liste.tage.has(tag)) liste.tage.set(tag, []);
+    liste.tage.get(tag).push(a.id);
     raster.append(kachel(a, liste.aufnahmen.length));
     liste.aufnahmen.push(a);
   }
+  if (liste.nachTagen) zeichneTage();
 }
 
 function zeigeListe(neu, titel) {
-  liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [] };
+  liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map() };
   $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
   letzterTag = null;
+  letzterMonat = null;
   $('raster').replaceChildren();
   $('raster-titel').hidden = !titel;
   $('raster-titel').textContent = titel || '';
@@ -228,6 +261,28 @@ async function zeigeFotos() {
   zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: true, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
+}
+
+// Die Favoriten wie in der Bibliothek des Telefons: nach Tagen gegliedert,
+// seitenweise wie die Zeitleiste.
+const favoriten = {
+  weiter: undefined,
+  async mehr() {
+    const q = new URLSearchParams({ anzahl: '200', favoriten: '1' });
+    if (this.weiter) q.set('nach', this.weiter);
+    const d = await api(`/api/v1/aufnahmen?${q}`);
+    this.weiter = d.weiter;
+    return d;
+  },
+};
+
+async function zeigeFavoriten() {
+  markiereNav('favoriten');
+  zeigeBereich(['raster']);
+  favoriten.weiter = undefined;
+  zeigeListe({ aufnahmen: [], nachTagen: true, favoriten: true, mehr: () => favoriten.mehr() }, t('Favoriten'));
+  await ladeMehr();
+  if (liste.favoriten && liste.aufnahmen.length === 0 && !liste.mehr) $('ende').textContent = t('Noch keine Favoriten.');
 }
 
 // „Vor x Jahren“ über der Zeitleiste – ein Kärtchen je Jahrgang.
@@ -865,23 +920,401 @@ const auswahl = new Set();
 function schalteAuswahl(id, k) {
   if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id);
   k.classList.toggle('gewaehlt', auswahl.has(id));
+  zeichneTage();
+  zeigeAuswahl();
+}
+
+// Der ganze Tag – sind schon alle gewählt, fallen sie wieder heraus.
+function schalteTag(tag) {
+  const ids = liste && liste.tage.get(tag);
+  if (!ids || !ids.length) return;
+  const alle = ids.every((id) => auswahl.has(id));
+  for (const id of ids) { if (alle) auswahl.delete(id); else auswahl.add(id); }
+  zeichneAuswahl();
+}
+
+// Der Kreis am Tageskopf ist voll, wenn der ganze Tag gewählt ist.
+function zeichneTage() {
+  if (!liste) return;
+  for (const h of $('raster').querySelectorAll('.tageskopf')) {
+    const ids = liste.tage.get(h.dataset.tag) || [];
+    const alle = ids.length > 0 && ids.every((id) => auswahl.has(id));
+    h.classList.toggle('alle', alle);
+    h.title = alle ? t('Ganzen Tag abwählen') : t('Ganzen Tag auswählen');
+  }
+}
+
+function zeichneAuswahl() {
+  if (liste) {
+    for (const k of $('raster').querySelectorAll('.kachel')) {
+      const a = liste.aufnahmen[Number(k.dataset.index)];
+      k.classList.toggle('gewaehlt', !!a && auswahl.has(a.id));
+    }
+  }
+  zeichneTage();
   zeigeAuswahl();
 }
 
 function zeigeAuswahl() {
   const n = auswahl.size;
+  const war = !$('auswahlleiste').hidden;
   $('auswahlleiste').hidden = n === 0;
+  if (n > 0 && !war) ladeAlbenstreifen();
   $('auswahl-anzahl').textContent = t('{n} ausgewählt', { n });
   $('auswaehlen').classList.toggle('aktiv', auswahlModus);
   document.body.classList.toggle('mit-leiste', n > 0);
+  document.body.classList.toggle('waehlt', auswahlModus || n > 0);
 }
 
 function auswahlAufheben() {
   auswahl.clear();
   auswahlModus = false;
   for (const k of $('raster').querySelectorAll('.kachel.gewaehlt')) k.classList.remove('gewaehlt');
+  zeichneTage();
   zeigeAuswahl();
 }
+
+// --- Ziehen zum Auswählen --------------------------------------------------
+//
+// Wie auf dem Telefon: langes Drücken wählt eine Aufnahme, und wer danach
+// weiterzieht, nimmt alles bis dorthin mit – oder wählt ab, wenn die erste
+// schon gewählt war. Mit der Maus geht es, solange ausgewählt wird, auch
+// ohne Warten. Am oberen und unteren Rand rollt das Raster weiter.
+
+const zieh = { anker: null, letzter: null, waehlt: true, vorher: null, x: 0, y: 0, art: null, rollen: null, schlucke: false };
+let druck = null;
+let halteUhr = null;
+
+function ziehBeginn(i, art) {
+  const a = liste && liste.aufnahmen[i];
+  clearTimeout(halteUhr);
+  druck = null;
+  if (!a) return;
+  auswahlModus = true;
+  Object.assign(zieh, { anker: i, letzter: i, art, waehlt: !auswahl.has(a.id), vorher: new Set(auswahl), schlucke: true });
+  if (navigator.vibrate) navigator.vibrate(8);
+  wendeAn(i);
+}
+
+function wendeAn(bis) {
+  const von = Math.min(zieh.anker, bis), zu = Math.max(zieh.anker, bis);
+  auswahl.clear();
+  for (const id of zieh.vorher) auswahl.add(id);
+  for (let i = von; i <= zu; i++) {
+    const id = liste.aufnahmen[i].id;
+    if (zieh.waehlt) auswahl.add(id); else auswahl.delete(id);
+  }
+  zeichneAuswahl();
+}
+
+function folge() {
+  const ziel = document.elementFromPoint(zieh.x, zieh.y);
+  const k = ziel && ziel.closest ? ziel.closest('#raster .kachel') : null;
+  if (!k) return;
+  const i = Number(k.dataset.index);
+  if (i === zieh.letzter || !liste.aufnahmen[i]) return;
+  zieh.letzter = i;
+  wendeAn(i);
+}
+
+// -1 oben am Rand, 1 unten, sonst 0.
+function randRichtung() {
+  const oben = $('kopf').getBoundingClientRect().bottom + 56;
+  const leiste = $('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height;
+  const unten = innerHeight - leiste - 56;
+  return zieh.y < oben ? -1 : zieh.y > unten ? 1 : 0;
+}
+
+function pruefeRand() {
+  if (randRichtung() === 0) { clearInterval(zieh.rollen); zieh.rollen = null; return; }
+  if (zieh.rollen) return;
+  zieh.rollen = setInterval(() => {
+    const r = randRichtung();
+    if (r === 0 || zieh.anker === null) { clearInterval(zieh.rollen); zieh.rollen = null; return; }
+    window.scrollBy(0, r * 14);
+    folge();
+  }, 16);
+}
+
+function ziehEnde() {
+  clearTimeout(halteUhr);
+  druck = null;
+  if (zieh.anker === null) return;
+  const art = zieh.art;
+  Object.assign(zieh, { anker: null, letzter: null, art: null });
+  clearInterval(zieh.rollen);
+  zieh.rollen = null;
+  // Der Klick, der dem Loslassen folgt, kommt mit der Maus in derselben
+  // Runde, nach einem Finger etwas später.
+  setTimeout(() => { zieh.schlucke = false; }, art === 'touch' ? 400 : 0);
+}
+
+$('raster').addEventListener('pointerdown', (e) => {
+  const k = e.target.closest('.kachel');
+  if (!k || e.button > 0 || kneif) return;
+  druck = { index: Number(k.dataset.index), x: e.clientX, y: e.clientY, art: e.pointerType };
+  clearTimeout(halteUhr);
+  halteUhr = setTimeout(() => { if (druck) ziehBeginn(druck.index, druck.art); }, 500);
+});
+document.addEventListener('pointermove', (e) => {
+  if (zieh.anker !== null) {
+    if (zieh.art === 'touch') return; // kommt über touchmove
+    zieh.x = e.clientX; zieh.y = e.clientY;
+    folge();
+    pruefeRand();
+    return;
+  }
+  if (!druck || Math.hypot(e.clientX - druck.x, e.clientY - druck.y) < 8) return;
+  if (druck.art === 'mouse' && (auswahlModus || auswahl.size)) {
+    ziehBeginn(druck.index, 'mouse');
+    zieh.x = e.clientX; zieh.y = e.clientY;
+    folge();
+    return;
+  }
+  // Bewegt, bevor die Zeit um war: Das ist Rollen, kein Halten.
+  clearTimeout(halteUhr);
+  druck = null;
+});
+document.addEventListener('pointerup', ziehEnde);
+// Rollt der Browser, bricht er den Zeiger ab – beim Ziehen mit dem Finger
+// nicht, das hält touchmove auf.
+document.addEventListener('pointercancel', () => { if (zieh.anker === null || zieh.art !== 'touch') ziehEnde(); });
+// Mit dem Finger: Solange gezogen wird, darf die Seite nicht rollen.
+document.addEventListener('touchmove', (e) => {
+  if (zieh.anker === null || zieh.art !== 'touch') return;
+  e.preventDefault();
+  zieh.x = e.touches[0].clientX; zieh.y = e.touches[0].clientY;
+  folge();
+  pruefeRand();
+}, { passive: false });
+document.addEventListener('touchend', (e) => { if (e.touches.length === 0) ziehEnde(); });
+// Langes Drücken öffnet sonst das Menü des Bildes.
+$('raster').addEventListener('contextmenu', (e) => { if (e.target.closest('.kachel')) e.preventDefault(); });
+
+// --- Spalten ----------------------------------------------------------------
+//
+// Zwei Finger auseinander: weniger, grössere Kacheln; zusammen: mehr. Am
+// Rechner dasselbe mit Strg und Mausrad oder zwei Fingern auf dem Trackpad.
+// Die Zahl gilt für diesen Browser.
+
+const SPALTEN_MERKER = 'pv-spalten';
+let spalten = (() => { try { const n = Number(localStorage.getItem(SPALTEN_MERKER)); return n >= 2 ? n : null; } catch (_) { return null; } })();
+let kneif = null;
+
+const meisteSpalten = () => Math.max(6, Math.floor($('raster').clientWidth / 80));
+const spaltenJetzt = () => spalten || getComputedStyle($('raster')).gridTemplateColumns.split(' ').filter(Boolean).length;
+
+function setzeSpalten(n, merken) {
+  const r = $('raster');
+  const ziel = Math.min(meisteSpalten(), Math.max(2, Math.round(n)));
+  if (ziel !== spalten) {
+    // Ungefähr dieselbe Stelle im Raster danach.
+    const vorher = document.documentElement.scrollHeight - innerHeight;
+    const anteil = vorher > 0 ? scrollY / vorher : 0;
+    spalten = ziel;
+    r.style.setProperty('--spalten', String(ziel));
+    r.classList.add('feste-spalten');
+    window.scrollTo(0, anteil * (document.documentElement.scrollHeight - innerHeight));
+  }
+  if (merken) { try { localStorage.setItem(SPALTEN_MERKER, String(spalten)); } catch (_) { /* privat */ } }
+}
+if (spalten) { $('raster').style.setProperty('--spalten', String(spalten)); $('raster').classList.add('feste-spalten'); }
+
+const fingerAbstand = (ts) => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+$('raster').addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 2) return;
+  clearTimeout(halteUhr);
+  druck = null;
+  kneif = { abstand: fingerAbstand(e.touches), spalten: spaltenJetzt() };
+}, { passive: true });
+$('raster').addEventListener('touchmove', (e) => {
+  if (!kneif || e.touches.length !== 2) return;
+  e.preventDefault();
+  if (kneif.abstand < 30) return;
+  setzeSpalten(kneif.spalten / (fingerAbstand(e.touches) / kneif.abstand), false);
+}, { passive: false });
+$('raster').addEventListener('touchend', (e) => {
+  if (!kneif || e.touches.length >= 2) return;
+  kneif = null;
+  if (spalten) setzeSpalten(spalten, true);
+});
+let radRest = 0;
+$('raster').addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  // Eine Raste des Mausrads ist eine Spalte; das Trackpad liefert viele
+  // kleine Schritte, die sich erst sammeln.
+  radRest += e.deltaY;
+  if (Math.abs(radRest) < 40) return;
+  const schritt = Math.sign(radRest);
+  radRest = 0;
+  setzeSpalten(spaltenJetzt() + schritt, true);
+}, { passive: false });
+// Safari meldet das Kneifen auf dem Trackpad als eigene Geste.
+let gesteVon = null;
+$('raster').addEventListener('gesturestart', (e) => { e.preventDefault(); if (!kneif) gesteVon = spaltenJetzt(); });
+$('raster').addEventListener('gesturechange', (e) => { e.preventDefault(); if (gesteVon && !kneif) setzeSpalten(gesteVon / e.scale, false); });
+$('raster').addEventListener('gestureend', (e) => { e.preventDefault(); if (gesteVon && spalten) setzeSpalten(spalten, true); gesteVon = null; });
+
+// --- Bildlaufleiste -----------------------------------------------------------
+//
+// Rechts am Rand: erscheint beim Rollen, verschwindet nach einer Pause; wer
+// den Griff zieht, springt durch das Raster und sieht oben den Monat.
+
+const bildlauf = { aus: null, zieht: false };
+
+function bildlaufHoehe() { return document.documentElement.scrollHeight - innerHeight; }
+
+function zeigeBildlauf() {
+  const b = $('bildlauf');
+  const lang = !$('bereich-raster').hidden && $('betrachter').hidden && liste && liste.aufnahmen.length > 0 && bildlaufHoehe() > innerHeight * 2;
+  if (!lang) { b.classList.remove('sichtbar'); return; }
+  b.style.top = `${$('kopf').getBoundingClientRect().bottom + 6}px`;
+  b.style.bottom = `${($('auswahlleiste').hidden ? 0 : $('auswahlleiste').getBoundingClientRect().height) + 12}px`;
+  b.classList.add('sichtbar');
+  setzeGriff();
+  clearTimeout(bildlauf.aus);
+  if (!bildlauf.zieht) bildlauf.aus = setTimeout(() => { if (!bildlauf.zieht) b.classList.remove('sichtbar'); }, 1500);
+}
+
+function setzeGriff() {
+  const b = $('bildlauf'), g = $('bildlauf-griff');
+  const raum = b.clientHeight - g.offsetHeight;
+  const max = bildlaufHoehe();
+  const anteil = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+  g.style.transform = `translateY(${anteil * raum}px)`;
+  $('bildlauf-monat').style.transform = `translateY(${anteil * raum}px)`;
+}
+
+// Der Monat der obersten sichtbaren Kachel.
+function monatOben() {
+  const oben = $('kopf').getBoundingClientRect().bottom;
+  const x = $('raster').getBoundingClientRect().left + 24;
+  for (let y = oben + 8; y < oben + 260; y += 24) {
+    const ziel = document.elementFromPoint(x, y);
+    const k = ziel && ziel.closest ? ziel.closest('#raster .kachel') : null;
+    const a = k && liste.aufnahmen[Number(k.dataset.index)];
+    if (a) return monatJahr.format(new Date(a.aufgenommen));
+  }
+  return null;
+}
+
+function zieheBildlauf(y) {
+  const b = $('bildlauf').getBoundingClientRect(), g = $('bildlauf-griff').offsetHeight;
+  const anteil = Math.min(1, Math.max(0, (y - b.top - g / 2) / (b.height - g)));
+  window.scrollTo(0, anteil * bildlaufHoehe());
+  const m = monatOben();
+  if (m) { $('bildlauf-monat').textContent = m; $('bildlauf-monat').hidden = false; }
+  setzeGriff();
+}
+
+window.addEventListener('scroll', zeigeBildlauf, { passive: true });
+$('bildlauf-griff').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  try { $('bildlauf-griff').setPointerCapture(e.pointerId); } catch (_) { /* ohne geht es auch */ }
+  bildlauf.zieht = true;
+  clearTimeout(bildlauf.aus);
+  $('bildlauf').classList.add('zieht');
+  zieheBildlauf(e.clientY);
+});
+$('bildlauf-griff').addEventListener('pointermove', (e) => { if (bildlauf.zieht) zieheBildlauf(e.clientY); });
+for (const ev of ['pointerup', 'pointercancel']) {
+  $('bildlauf-griff').addEventListener(ev, () => {
+    if (!bildlauf.zieht) return;
+    bildlauf.zieht = false;
+    $('bildlauf').classList.remove('zieht');
+    $('bildlauf-monat').hidden = true;
+    zeigeBildlauf();
+  });
+}
+
+// --- Meldung, Teilen, Albenstreifen -----------------------------------------
+
+let meldungAus = null;
+function meldung(text, bleibt) {
+  const m = $('meldung');
+  clearTimeout(meldungAus);
+  m.textContent = text || '';
+  m.hidden = !text;
+  if (text && !bleibt) meldungAus = setTimeout(() => { m.hidden = true; }, 3500);
+}
+
+// Teilen geht nur, wo der Browser Dateien an andere Apps geben kann – auf
+// dem Telefon und in Safari meist ja, am Rechner oft nicht.
+const teilenMoeglich = (() => {
+  try { return !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.jpg', { type: 'image/jpeg' })] }); } catch (_) { return false; }
+})();
+let geteiltBereit = null;
+
+async function teile(aufnahmen) {
+  const schluessel = aufnahmen.map((a) => a.id).join(',');
+  // Safari lässt Teilen nur direkt nach einem Tipp zu; nach dem Laden ist
+  // der vorbei. Dann liegt alles bereit, und der nächste Tipp teilt.
+  if (geteiltBereit && geteiltBereit.schluessel === schluessel) {
+    const dateien = geteiltBereit.dateien;
+    geteiltBereit = null;
+    meldung('');
+    try { await navigator.share({ files: dateien }); return true; } catch (x) { if (x.name !== 'AbortError') meldung(x.message); return false; }
+  }
+  meldung(t('Lade …'), true);
+  const dateien = [];
+  try {
+    for (const a of aufnahmen) {
+      const r = await fetch(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`, { credentials: 'same-origin' });
+      if (!r.ok) throw new Error(t('Fehler {n}', { n: r.status }));
+      const b = await r.blob();
+      dateien.push(new File([b], a.name || a.id, { type: b.type || 'application/octet-stream', lastModified: Date.parse(a.aufgenommen) || Date.now() }));
+    }
+  } catch (x) { meldung(x.message); return false; }
+  if (!navigator.canShare({ files: dateien })) { meldung(t('Dieses Format kann der Browser nicht teilen.')); return false; }
+  try {
+    await navigator.share({ files: dateien });
+    meldung('');
+    return true;
+  } catch (x) {
+    if (x.name === 'NotAllowedError') { geteiltBereit = { schluessel, dateien }; meldung(t('Bereit – zum Teilen noch einmal tippen.'), true); return false; }
+    meldung(x.name === 'AbortError' ? '' : x.message);
+    return false;
+  }
+}
+
+// In ein Album mit einem Tipp – der Streifen unter den Aktionen, wie auf
+// dem Telefon. Das Feld „Album“ mit der Liste bleibt daneben.
+async function ladeAlbenstreifen() {
+  const feld = $('auswahl-alben-feld'), reihe = $('auswahl-alben');
+  feld.hidden = !!(liste && liste.papierkorb);
+  if (feld.hidden) return;
+  reihe.replaceChildren(albumkachel(null));
+  let d;
+  try { d = await api('/api/v1/alben'); } catch (_) { return; }
+  for (const a of d.alben) reihe.append(albumkachel(a));
+}
+
+function albumkachel(a) {
+  const k = el('button', 'albumkachel');
+  k.type = 'button';
+  const bild = el('span', 'bild', a ? undefined : '+');
+  if (a && a.titelbild) { const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.src = miniaturUrl(a.titelbild); bild.append(img); }
+  k.append(bild, el('span', 'name', a ? a.name : t('Neues Album')));
+  k.addEventListener('click', () => (a ? insAlbum(a.id, a.name) : neuesAlbum()));
+  return k;
+}
+
+async function insAlbum(albumId, name) {
+  const g = gewaehlte();
+  try {
+    await befehl('albumFuellen', { albumId, ids: g.map((x) => x.id) });
+    auswahlAufheben();
+    meldung(t('{n} im Album „{name}“', { n: g.length, name }));
+  } catch (x) { meldung(x.message); }
+}
+
+async function neuesAlbum() {
+  try { await zeigeAlbumDialog(); $('form-album').neu.focus(); } catch (x) { meldung(x.message); }
+}
+
+$('auswahl-teilen').hidden = !teilenMoeglich;
+$('auswahl-teilen').addEventListener('click', async () => { if (await teile(gewaehlte())) auswahlAufheben(); });
 
 $('auswaehlen').addEventListener('click', () => { auswahlModus = !auswahlModus; if (!auswahlModus) auswahlAufheben(); else zeigeAuswahl(); });
 $('auswahl-zu').addEventListener('click', auswahlAufheben);
@@ -894,6 +1327,7 @@ $('auswahl-favorit').addEventListener('click', async () => {
   try {
     await befehl('favoritSetzen', { ids: g.map((a) => a.id), favorit: !alle });
     for (const a of g) a.favorit = !alle;
+    if (liste.favoriten && alle) { const weg = new Set(g.map((a) => a.id)); liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id)); auswahlAufheben(); }
     neuZeichnen();
   } catch (x) { alert(x.message); }
 });
@@ -941,7 +1375,7 @@ $('auswahl-zurueck').addEventListener('click', async () => {
   } catch (x) { alert(x.message); }
 });
 
-$('auswahl-album').addEventListener('click', async () => {
+async function zeigeAlbumDialog() {
   const d = await api('/api/v1/alben');
   const ul = $('album-liste');
   ul.replaceChildren();
@@ -955,7 +1389,8 @@ $('auswahl-album').addEventListener('click', async () => {
   }
   $('form-album').neu.value = '';
   $('album-dialog').showModal();
-});
+}
+$('auswahl-album').addEventListener('click', () => zeigeAlbumDialog().catch((x) => meldung(x.message)));
 $('album-abbrechen').addEventListener('click', () => $('album-dialog').close());
 $('form-album').addEventListener('submit', async (e) => {
   const f = e.target;
@@ -973,14 +1408,14 @@ $('form-album').addEventListener('submit', async (e) => {
     }
     await befehl('albumFuellen', { albumId, ids: g.map((a) => a.id) });
     auswahlAufheben();
-    $('ende').textContent = t('{n} im Album „{name}“', { n: g.length, name });
+    meldung(t('{n} im Album „{name}“', { n: g.length, name }));
   } catch (x) { alert(x.message); }
 });
 
 function neuZeichnen() {
   if (!liste) return;
   const alt = liste;
-  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
+  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
 }
 
 // --- Betrachter ------------------------------------------------------------
@@ -1005,6 +1440,15 @@ function oeffne(i) {
     bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
   }
   $('bearbeiten').hidden = a.art === 'video';
+  const korb = !!liste.papierkorb;
+  $('favorit').hidden = korb;
+  $('weg').hidden = korb;
+  $('holen').hidden = !korb;
+  $('teilen').hidden = !teilenMoeglich;
+  ordneKnoepfe();
+  blickZurueck(false);
+  $('betrachter').classList.remove('still');
+  $('betrachter').style.removeProperty('background');
   $('angaben').textContent = `${datumZeit.format(new Date(a.aufgenommen))} · ${a.name}`;
   $('favorit').textContent = a.favorit ? '♥' : '♡';
   $('laden').href = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
@@ -1114,19 +1558,214 @@ $('bearbeiten').addEventListener('click', () => {
   if (a && a.art !== 'video') location.hash = `#/entwickeln/${encodeURIComponent(a.id)}`;
 });
 
-$('info').addEventListener('click', () => {
-  angabenOffen = !angabenOffen;
+function setzeAngabenOffen(an) {
+  angabenOffen = an;
   $('info').setAttribute('aria-pressed', String(angabenOffen));
   $('betrachter').classList.toggle('mit-angaben', angabenOffen);
   $('angaben-feld').hidden = !angabenOffen;
   zeigeAngaben();
-});
+}
+$('info').addEventListener('click', () => setzeAngabenOffen(!angabenOffen));
 
 function schliesse() {
   $('betrachter').hidden = true;
   $('video').pause();
   offen = -1;
+  zeigeBildlauf();
 }
+
+// Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
+function ordneKnoepfe() {
+  let i = 0;
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'weg', 'holen']) {
+    if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
+  }
+}
+
+$('teilen').addEventListener('click', () => { const a = liste && liste.aufnahmen[offen]; if (a) teile([a]); });
+
+// Aus dem Betrachter in den Papierkorb – und, im Papierkorb, zurück.
+async function nimmAusListe(a, art) {
+  await befehl(art, { ids: [a.id] });
+  liste.aufnahmen = liste.aufnahmen.filter((x) => x.id !== a.id);
+  if (art === 'inDenPapierkorb') zeitleiste.geladen = zeitleiste.geladen.filter((x) => x.id !== a.id);
+  else zeitleiste.leeren();
+  schliesse();
+  neuZeichnen();
+}
+$('weg').addEventListener('click', async () => {
+  const a = liste && liste.aufnahmen[offen];
+  if (!a || !confirm(t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.'))) return;
+  try { await nimmAusListe(a, 'inDenPapierkorb'); } catch (x) { $('angaben').textContent = x.message; }
+});
+$('holen').addEventListener('click', async () => {
+  const a = liste && liste.aufnahmen[offen];
+  if (!a) return;
+  try { await nimmAusListe(a, 'ausDemPapierkorb'); meldung(t('{n} zurückgeholt', { n: 1 })); } catch (x) { $('angaben').textContent = x.message; }
+});
+
+// --- Betrachter: wischen und zoomen ----------------------------------------
+//
+// Wie auf dem Telefon: zur Seite wischen blättert, nach unten wischen
+// schliesst (das Bild folgt dem Finger, dahinter erscheint das Raster),
+// nach oben wischen zeigt die Angaben. Zwei Finger oder ein Doppeltipp
+// zoomen; vergrössert gehört das Ziehen dem Verschieben. Ein Tipp blendet
+// die Knöpfe aus und wieder ein. Am Rechner zoomt das Mausrad.
+
+const figur = document.querySelector('#betrachter figure');
+const blick = { zoom: 1, x: 0, y: 0 };
+const finger = new Map();
+let wisch = null;
+let zwei = null;
+let letzterTipp = 0;
+let tippUhr = null;
+
+const medium = () => ($('video').hidden ? $('bild') : $('video'));
+
+function setzeBlick(gleitend) {
+  const b = $('bild');
+  b.classList.toggle('gleitet', !!gleitend);
+  b.style.transform = blick.zoom === 1 && blick.x === 0 && blick.y === 0 ? '' : `translate(${blick.x}px, ${blick.y}px) scale(${blick.zoom})`;
+}
+
+function blickZurueck(gleitend) {
+  Object.assign(blick, { zoom: 1, x: 0, y: 0 });
+  setzeBlick(gleitend);
+  $('video').style.transform = '';
+}
+
+// Die Mitte des Bildes, ohne Verschiebung.
+function bildMitte() {
+  const b = $('bild'), f = figur.getBoundingClientRect();
+  return { x: f.left + b.offsetLeft + b.offsetWidth / 2, y: f.top + b.offsetTop + b.offsetHeight / 2 };
+}
+
+// Zoomt auf [ziel], und der Punkt unter (px, py) bleibt, wo er ist.
+function zoomeUm(ziel, px, py, gleitend) {
+  const z = Math.min(6, Math.max(1, ziel));
+  const m = bildMitte();
+  const f = z / blick.zoom;
+  blick.x = (px - m.x) - f * ((px - m.x) - blick.x);
+  blick.y = (py - m.y) - f * ((py - m.y) - blick.y);
+  blick.zoom = z;
+  if (z === 1) { blick.x = 0; blick.y = 0; }
+  setzeBlick(gleitend);
+}
+
+function wischZiel(dx, dy) {
+  const m = medium();
+  if (wisch.achse === 'seite') {
+    m.style.transform = `translateX(${dx}px)`;
+  } else if (dy > 0) {
+    const anteil = Math.min(1, dy / 400);
+    m.style.transform = `translate(${dx * 0.3}px, ${dy}px) scale(${1 - anteil * 0.25})`;
+    $('betrachter').style.background = `rgba(0, 0, 0, ${1 - anteil * 0.85})`;
+  } else {
+    m.style.transform = `translateY(${dy * 0.25}px)`;
+  }
+}
+
+function wischEnde(dx, dy, dauer) {
+  const m = medium();
+  const tempoX = dx / Math.max(dauer, 1), tempoY = dy / Math.max(dauer, 1);
+  m.classList.add('gleitet');
+  m.style.transform = '';
+  $('betrachter').style.removeProperty('background');
+  setTimeout(() => m.classList.remove('gleitet'), 200);
+  if (wisch.achse === 'seite') {
+    if (dx < -60 || tempoX < -0.5) oeffne(offen + 1);
+    else if (dx > 60 || tempoX > 0.5) oeffne(offen - 1);
+  } else if (dy > 110 || tempoY > 0.9) {
+    m.classList.remove('gleitet');
+    schliesse();
+  } else if (dy < -50 || tempoY < -0.7) {
+    setzeAngabenOffen(true);
+  }
+}
+
+function tippe(x, y) {
+  const jetzt = Date.now();
+  if (jetzt - letzterTipp < 300 && $('video').hidden) {
+    clearTimeout(tippUhr);
+    letzterTipp = 0;
+    if (blick.zoom > 1) blickZurueck(true); else zoomeUm(2.5, x, y, true);
+    return;
+  }
+  letzterTipp = jetzt;
+  clearTimeout(tippUhr);
+  if ($('video').hidden) tippUhr = setTimeout(() => $('betrachter').classList.toggle('still'), 300);
+}
+
+figur.addEventListener('pointerdown', (e) => {
+  if (e.button > 0) return;
+  // Die Bedienelemente des Videos gehören dem Video.
+  if (e.target === $('video') && e.pointerType !== 'touch') return;
+  finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { figur.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
+  if (finger.size === 2 && $('video').hidden) {
+    const [a, b] = [...finger.values()];
+    zwei = { abstand: Math.hypot(a.x - b.x, a.y - b.y), zoom: blick.zoom, x: blick.x, y: blick.y };
+    wisch = null;
+    return;
+  }
+  if (finger.size === 1) wisch = { x0: e.clientX, y0: e.clientY, bx: blick.x, by: blick.y, zeit: Date.now(), achse: null, art: e.pointerType };
+});
+
+figur.addEventListener('pointermove', (e) => {
+  if (!finger.has(e.pointerId)) return;
+  finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (zwei && finger.size === 2) {
+    const [a, b] = [...finger.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (zwei.abstand < 20) return;
+    Object.assign(blick, { zoom: zwei.zoom, x: zwei.x, y: zwei.y });
+    zoomeUm(zwei.zoom * (d / zwei.abstand), (a.x + b.x) / 2, (a.y + b.y) / 2, false);
+    return;
+  }
+  if (!wisch) return;
+  const dx = e.clientX - wisch.x0, dy = e.clientY - wisch.y0;
+  if (blick.zoom > 1) {
+    blick.x = wisch.bx + dx;
+    blick.y = wisch.by + dy;
+    setzeBlick(false);
+    return;
+  }
+  if (wisch.art === 'mouse') return;
+  if (!wisch.achse) {
+    if (Math.hypot(dx, dy) < 10) return;
+    wisch.achse = Math.abs(dx) > Math.abs(dy) ? 'seite' : 'hoch';
+  }
+  wischZiel(dx, dy);
+});
+
+function fingerWeg(e) {
+  if (!finger.has(e.pointerId)) return;
+  finger.delete(e.pointerId);
+  if (zwei) {
+    if (finger.size < 2) {
+      zwei = null;
+      if (blick.zoom < 1.05) blickZurueck(true);
+      // Der verbliebene Finger verschiebt weiter, ohne zu springen.
+      const rest = [...finger.values()][0];
+      wisch = rest ? { x0: rest.x, y0: rest.y, bx: blick.x, by: blick.y, zeit: Date.now(), achse: 'fertig', art: 'touch' } : null;
+    }
+    return;
+  }
+  if (!wisch || e.type === 'pointercancel') { wisch = null; return; }
+  const dx = e.clientX - wisch.x0, dy = e.clientY - wisch.y0;
+  if (Math.hypot(dx, dy) < 8 && wisch.achse === null) tippe(e.clientX, e.clientY);
+  else if (blick.zoom === 1 && (wisch.achse === 'seite' || wisch.achse === 'hoch')) wischEnde(dx, dy, Date.now() - wisch.zeit);
+  wisch = null;
+}
+figur.addEventListener('pointerup', fingerWeg);
+figur.addEventListener('pointercancel', fingerWeg);
+figur.addEventListener('wheel', (e) => {
+  if (!$('video').hidden) return;
+  e.preventDefault();
+  zoomeUm(blick.zoom * Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY, false);
+}, { passive: false });
+// Doppelklick der Maus: dasselbe wie der Doppeltipp (der kommt schon über tippe).
+$('bild').draggable = false;
 
 $('zu').addEventListener('click', schliesse);
 $('zurueck').addEventListener('click', () => oeffne(offen - 1));
@@ -1185,6 +1824,7 @@ async function zeigeWeg() {
         }
         break;
       case 'papierkorb': await zeigePapierkorb(); break;
+      case 'favoriten': await zeigeFavoriten(); break;
       default: await zeigeFotos();
     }
   } catch (x) {

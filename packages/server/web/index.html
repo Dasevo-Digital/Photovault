@@ -16,6 +16,7 @@
     <a href="#/" data-bereich="fotos">Fotos</a>
     <a href="#/suche" data-bereich="suche">Suche</a>
     <a href="#/alben" data-bereich="alben">Alben</a>
+    <a href="#/favoriten" data-bereich="favoriten">Favoriten</a>
     <a href="#/personen" data-bereich="personen">Personen</a>
     <a href="#/karte" data-bereich="karte">Karte</a>
     <a href="#/reisen" data-bereich="reisen">Reisen</a>
@@ -26,7 +27,10 @@
     <a href="#/einstellungen" data-bereich="einstellungen">Einstellungen</a>
     <a href="#/konto" data-bereich="konto">Konto</a>
   </nav>
-  <button id="auswaehlen" type="button" title="Mehrere auswählen">Auswählen</button>
+  <button id="hochladen" type="button" title="Fotos und Videos hochladen"><span class="lang">Hochladen</span><span class="kurz" aria-hidden="true">⤒</span></button>
+  <input id="hochladen-datei" type="file" multiple hidden
+    accept="image/*,video/*,.heic,.heif,.avif,.psd,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw,.x3f,.3fr,.iiq,.erf,.mef,.mos,.kdc,.dcr,.raw,.mkv,.avi,.m4v">
+  <button id="auswaehlen" type="button" title="Mehrere auswählen"><span class="lang">Auswählen</span><span class="kurz" aria-hidden="true">☑&#xFE0E;</span></button>
 </header>
 
 <main id="anmeldung" class="karte" hidden>
@@ -203,14 +207,40 @@
 </main>
 
 <div id="auswahlleiste" hidden>
-  <button id="auswahl-zu" type="button" aria-label="Auswahl aufheben">×</button>
-  <span id="auswahl-anzahl"></span>
-  <button id="auswahl-favorit" type="button">♥ Favorit</button>
-  <button id="auswahl-album" type="button">Album</button>
-  <button id="auswahl-laden" type="button">Herunterladen</button>
-  <button id="auswahl-papierkorb" type="button">Papierkorb</button>
-  <button id="auswahl-zurueck" type="button" hidden>Zurückholen</button>
+  <div class="griffleiste"></div>
+  <div class="auswahl-kopf">
+    <button id="auswahl-zu" type="button" aria-label="Auswahl aufheben">×</button>
+    <span id="auswahl-anzahl"></span>
+  </div>
+  <div class="auswahl-aktionen">
+    <button id="auswahl-teilen" type="button" hidden><span class="zeichen" aria-hidden="true">⇪</span>Teilen</button>
+    <button id="auswahl-favorit" type="button"><span class="zeichen" aria-hidden="true">♥</span>Favorit</button>
+    <button id="auswahl-album" type="button"><span class="zeichen" aria-hidden="true">▤</span>Album</button>
+    <button id="auswahl-laden" type="button"><span class="zeichen" aria-hidden="true">⤓</span>Herunterladen</button>
+    <button id="auswahl-papierkorb" type="button"><span class="zeichen" aria-hidden="true">🗑&#xFE0E;</span>Papierkorb</button>
+    <button id="auswahl-zurueck" type="button" hidden><span class="zeichen" aria-hidden="true">↺</span>Zurückholen</button>
+  </div>
+  <div id="auswahl-alben-feld">
+    <h3>In ein Album</h3>
+    <div id="auswahl-alben"></div>
+  </div>
 </div>
+
+<div id="bildlauf" aria-hidden="true">
+  <span id="bildlauf-monat" hidden></span>
+  <div id="bildlauf-griff">⇕</div>
+</div>
+
+<div id="hochladen-stand" role="status" hidden>
+  <div class="hl-kopf"><strong>Hochladen</strong><button id="hochladen-zu" type="button" aria-label="Schliessen">×</button></div>
+  <p id="hochladen-text"></p>
+  <progress id="hochladen-balken" max="1" value="0"></progress>
+  <p id="hochladen-ergebnis" class="klein"></p>
+  <ul id="hochladen-fehler" class="klein"></ul>
+  <button id="hochladen-abbrechen" type="button">Abbrechen</button>
+</div>
+<div id="ablage" hidden><p>Dateien hier ablegen zum Hochladen</p></div>
+<div id="meldung" role="status" hidden></div>
 
 <dialog id="album-dialog">
   <form method="dialog" id="form-album">
@@ -233,10 +263,13 @@
     <figcaption id="angaben"></figcaption>
   </figure>
   <button id="vor" type="button" aria-label="Nächste">›</button>
-  <button id="favorit" type="button" aria-label="Favorit">♡</button>
-  <a id="laden" download aria-label="Original herunterladen">⤓</a>
-  <button id="info" type="button" aria-label="Angaben" aria-pressed="false">i</button>
-  <button id="bearbeiten" type="button" aria-label="Entwickeln" title="Entwickeln">✎</button>
+  <button id="favorit" class="oben-links" type="button" aria-label="Favorit">♡</button>
+  <a id="laden" class="oben-links" download aria-label="Original herunterladen">⤓</a>
+  <button id="teilen" class="oben-links" type="button" aria-label="Teilen" title="Teilen" hidden>⇪</button>
+  <button id="info" class="oben-links" type="button" aria-label="Angaben" aria-pressed="false">i</button>
+  <button id="bearbeiten" class="oben-links" type="button" aria-label="Entwickeln" title="Entwickeln">✎</button>
+  <button id="weg" class="oben-links" type="button" aria-label="In den Papierkorb" title="In den Papierkorb">🗑&#xFE0E;</button>
+  <button id="holen" class="oben-links" type="button" aria-label="Zurückholen" title="Zurückholen" hidden>↺</button>
   <aside id="angaben-feld" hidden></aside>
 </div>
 
@@ -245,5 +278,6 @@
 <script src="app.js"></script>
 <script src="entwickeln.js"></script>
 <script src="lebensbaum.js"></script>
+<script src="hochladen.js"></script>
 </body>
 </html>

@@ -293,6 +293,27 @@ const EN = {
   'fehler': 'error',
   'veraltet': 'out of date',
   'ok': 'ok',
+  // Wie die Handy-App: Auswahl, Teilen, Favoriten, Hochladen
+  'Ganzen Tag auswählen': 'Select the whole day',
+  'Ganzen Tag abwählen': 'Deselect the whole day',
+  'Teilen': 'Share',
+  'In ein Album': 'Add to an album',
+  'Dieses Format kann der Browser nicht teilen.': 'The browser cannot share this format.',
+  'Bereit – zum Teilen noch einmal tippen.': 'Ready – tap again to share.',
+  'In den Papierkorb': 'Move to trash',
+  'Noch keine Favoriten.': 'No favorites yet.',
+  'Hochladen': 'Upload',
+  'Fotos und Videos hochladen': 'Upload photos and videos',
+  'Dateien hier ablegen zum Hochladen': 'Drop files here to upload',
+  '{i} von {n}': '{i} of {n}',
+  '{n} neu': '{n} new',
+  '{n} schon da': '{n} already there',
+  '{n} abgelehnt': '{n} rejected',
+  'Abgebrochen': 'Cancelled',
+  'Fertig': 'Done',
+  'Format nicht unterstützt': 'Format not supported',
+  'Kein Platz auf dem Server': 'No space left on the server',
+  'Der Server konnte die Datei nicht aufnehmen': 'The server could not import the file',
 };
 
 function t(deutsch, werte) {

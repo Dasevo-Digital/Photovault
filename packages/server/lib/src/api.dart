@@ -481,14 +481,19 @@ class _Api {
   /// statt über eine Seitenzahl: Kommt oben etwas dazu, verrutscht eine
   /// Seitenzahl, ein Lesezeichen auf die letzte Zeile nicht. Und die
   /// Abfrage bleibt in jeder Tiefe der Bibliothek gleich schnell.
+  ///
+  /// Mit `favoriten=1` nur die Favoriten – für die Bibliothek der
+  /// Weboberfläche, wie auf dem Telefon.
   Future<Response> aufnahmen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final q = anfrage.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
     final nach = _Lesezeichen.lies(q['nach']);
+    final nurFavoriten = q['favoriten'] == '1';
     final zeilen = await db
         .customSelect(
           'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
+          '${nurFavoriten ? ' AND is_favorite = 1' : ''}'
           '${nach == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
           ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
           variables: [

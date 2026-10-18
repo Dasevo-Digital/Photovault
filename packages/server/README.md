@@ -380,6 +380,20 @@ keinen Bauschritt und sprechen dieselbe Schnittstelle wie die Apps;
 Vorlagenbilder und Schriften des Lebensbaums kommen beim Bau aus den
 Assets der App dazu (`web/lebensbaum`, `web/schrift`).
 
+**Bedient wie die Handy-App:** Die Zeitleiste ist nach Monaten und Tagen
+gegliedert; ein Klick auf das Datum wählt den ganzen Tag, langes Drücken
+und Ziehen (mit der Maus im Auswahlmodus auch ohne Warten) wählt einen
+Bereich, am Rand rollt das Raster mit. Zwei Finger bzw. Strg und Mausrad
+ändern die Zahl der Spalten (gemerkt je Browser), rechts erscheint beim
+Rollen eine Bildlaufleiste, die beim Ziehen den Monat zeigt. Das Blatt der
+Auswahl bietet Teilen (wo der Browser Dateien teilen kann), Favorit,
+Album, Herunterladen, Papierkorb und eine Reihe der Alben. Im Betrachter
+blättert Wischen zur Seite, nach unten wischen schliesst, nach oben zeigt
+die Angaben; zwei Finger, Doppeltipp oder Mausrad zoomen. Dazu kommen die
+Favoriten (`GET /api/v1/aufnahmen?favoriten=1`) und das Hochladen: Dateien
+auswählen oder ins Fenster ziehen, es geht derselbe tus-Weg
+(`/api/v1/hochladen`, Stücke zu 8 MB) und derselbe Import wie von der App.
+
 **Entwickeln im Browser** rechnet mit WebGL 2 dieselben Shader wie die App
 unter Linux und Windows; Tonkurve und Farbmischer baut der Server
 (`GET /api/v1/entwickeln/<id>`). Rohformate und HEIC entwickelt der Browser

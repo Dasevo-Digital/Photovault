@@ -685,5 +685,89 @@ void main() {
         expect(svg.statusCode, 415);
       },
     );
+
+    test('Hochladen aus dem Browser: mit X-PV-Web, sonst abgewiesen', () async {
+      final (_, token) = await anmelden();
+      final bild = img.Image(width: 20, height: 16);
+      img.fill(bild, color: img.ColorRgb8(30, 140, 200));
+      final bytes = Uint8List.fromList(img.encodeJpg(bild));
+      final meta = [
+        'filename ${base64.encode(utf8.encode('Käse.jpg'))}',
+        'geaendert ${base64.encode(utf8.encode('1700000000000'))}',
+      ].join(',');
+      final tus = {'tus-resumable': '1.0.0'};
+      final fremd = await frag(
+        'POST',
+        '/api/v1/hochladen',
+        kopf: mitCookie(token!, {
+          ...tus,
+          'upload-length': '${bytes.length}',
+          'upload-metadata': meta,
+        }),
+      );
+      expect(fremd.statusCode, 403);
+      final angelegt = await frag(
+        'POST',
+        '/api/v1/hochladen',
+        kopf: mitCookie(token, {
+          ...tus,
+          'x-pv-web': '1',
+          'upload-length': '${bytes.length}',
+          'upload-metadata': meta,
+        }),
+      );
+      expect(angelegt.statusCode, 201);
+      final ort = angelegt.headers['location']!;
+      final halb = bytes.length ~/ 2;
+      final erstes = await frag(
+        'PATCH',
+        ort,
+        kopf: mitCookie(token, {
+          ...tus,
+          'x-pv-web': '1',
+          'content-type': 'application/offset+octet-stream',
+          'upload-offset': '0',
+        }),
+        inhalt: bytes.sublist(0, halb),
+      );
+      expect(erstes.statusCode, 204);
+      expect(erstes.headers['upload-offset'], '$halb');
+      final fertig = await frag(
+        'PATCH',
+        ort,
+        kopf: mitCookie(token, {
+          ...tus,
+          'x-pv-web': '1',
+          'content-type': 'application/offset+octet-stream',
+          'upload-offset': '$halb',
+        }),
+        inhalt: bytes.sublist(halb),
+      );
+      expect(fertig.headers['pv-ausgang'], 'imported');
+      expect(fertig.headers['pv-aufnahme'], isNotNull);
+      final nochmal = await frag(
+        'POST',
+        '/api/v1/hochladen',
+        kopf: mitCookie(token, {
+          ...tus,
+          'x-pv-web': '1',
+          'upload-length': '${bytes.length}',
+          'upload-metadata': meta,
+        }),
+      );
+      final doppelt = await frag(
+        'PATCH',
+        nochmal.headers['location']!,
+        kopf: mitCookie(token, {
+          ...tus,
+          'x-pv-web': '1',
+          'content-type': 'application/offset+octet-stream',
+          'upload-offset': '0',
+        }),
+        inhalt: bytes,
+      );
+      expect(doppelt.headers['pv-ausgang'], 'duplicateSkipped');
+      expect(doppelt.headers['pv-aufnahme'], fertig.headers['pv-aufnahme']);
+    });
   });
 }

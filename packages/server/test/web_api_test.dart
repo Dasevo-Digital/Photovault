@@ -733,6 +733,51 @@ void main() {
     },
   );
 
+  test('Favoriten: nur, was so markiert ist, seitenweise', () async {
+    final a = await ladeHoch(erikaToken, 'lieblings.jpg', 20);
+    await ladeHoch(erikaToken, 'sonst.jpg', 70);
+    final b = await ladeHoch(erikaToken, 'auch.jpg', 120);
+    expect(
+      (await befehl(erikaToken, 'favoritSetzen', {
+        'ids': [a, b],
+        'favorit': true,
+      })).statusCode,
+      200,
+    );
+    final alle = await jsonAus(
+      await frag('GET', '/api/v1/aufnahmen?favoriten=1', token: erikaToken),
+    );
+    expect(
+      (alle['aufnahmen']! as List).cast<Map>().map((x) => x['id']).toSet(),
+      {a, b},
+    );
+    expect(alle['weiter'], isNull);
+    final erste = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/aufnahmen?favoriten=1&anzahl=1',
+        token: erikaToken,
+      ),
+    );
+    expect((erste['aufnahmen']! as List).length, 1);
+    final zweite = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/aufnahmen?favoriten=1&anzahl=1&nach=${erste['weiter']}',
+        token: erikaToken,
+      ),
+    );
+    final ids = [
+      for (final d in [erste, zweite])
+        ...(d['aufnahmen']! as List).cast<Map>().map((x) => x['id']),
+    ];
+    expect(ids.toSet(), {a, b});
+    final ohne = await jsonAus(
+      await frag('GET', '/api/v1/aufnahmen', token: erikaToken),
+    );
+    expect((ohne['aufnahmen']! as List).length, 3);
+  });
+
   test(
     'Suche: nach Text findet den Namen; nach Inhalt ohne Modell 404',
     () async {
