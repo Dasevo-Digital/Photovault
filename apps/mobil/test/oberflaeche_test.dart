@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' show FlutterMap;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -33,6 +34,7 @@ import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
 import 'package:photo_vault_mobil/seiten/duplikate.dart';
 import 'package:photo_vault_mobil/seiten/einstellungen.dart';
+import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -1109,6 +1111,65 @@ void main() {
     expect(namenszeilen('Donaudampfschifffahrtsgesellschaft'), [
       'Donaudampfschif…',
     ]);
+  });
+
+  testWidgets('Entwickeln wie im Browser: Regler, Vorschau, Speichern', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['e1']);
+    final bild = img.Image(width: 64, height: 48);
+    img.fill(bild, color: img.ColorRgb8(120, 100, 80));
+    await tester.runAsync(() async {
+      final f = sitzung.paths.absolute('originals/e1.jpg');
+      await f.parent.create(recursive: true);
+      await f.writeAsBytes(img.encodeJpg(bild));
+    });
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Entwickeln(sitzung: sitzung, id: 'e1'),
+      ),
+    );
+    // Laden, Dekodieren und Rechnen brauchen echte Zeit.
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump();
+    }
+    final t = AppTexte.of(tester.element(find.byType(Entwickeln)));
+    expect(find.byType(Slider), findsNWidgets(10));
+    expect(find.text(t.entwBelichtung), findsOneWidget);
+    expect(find.text(t.entwAutoWeiss), findsOneWidget);
+    expect(find.byType(RawImage), findsOneWidget);
+    // Belichtung nach rechts ziehen.
+    await tester.drag(find.byType(Slider).first, const Offset(200, 0));
+    for (var i = 0; i < 3; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump();
+    }
+    await tester.tap(find.text(t.entwSpeichern));
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump();
+    }
+    final a = (await db.assetById('e1'))!;
+    expect(a.developedRelativePath, startsWith('developed/e1-'));
+    final e = (await db.developSettingsForAsset('e1'))!;
+    expect(e.exposure, greaterThan(0));
+    expect(e.temperature, isNull, reason: 'automatischer Weissabgleich');
+    final datei = sitzung.paths.absolute(a.developedRelativePath!);
+    expect(await tester.runAsync(datei.exists), isTrue);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

@@ -1890,6 +1890,150 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Stammbaum'**
   String get lbStammbaum;
+
+  /// No description provided for @entwTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Entwickeln'**
+  String get entwTitel;
+
+  /// No description provided for @entwBelichtung.
+  ///
+  /// In de, this message translates to:
+  /// **'Belichtung'**
+  String get entwBelichtung;
+
+  /// No description provided for @entwKontrast.
+  ///
+  /// In de, this message translates to:
+  /// **'Kontrast'**
+  String get entwKontrast;
+
+  /// No description provided for @entwLichter.
+  ///
+  /// In de, this message translates to:
+  /// **'Lichter'**
+  String get entwLichter;
+
+  /// No description provided for @entwSchatten.
+  ///
+  /// In de, this message translates to:
+  /// **'Schatten'**
+  String get entwSchatten;
+
+  /// No description provided for @entwTemperatur.
+  ///
+  /// In de, this message translates to:
+  /// **'Farbtemperatur'**
+  String get entwTemperatur;
+
+  /// No description provided for @entwToenung.
+  ///
+  /// In de, this message translates to:
+  /// **'Tönung'**
+  String get entwToenung;
+
+  /// No description provided for @entwKlarheit.
+  ///
+  /// In de, this message translates to:
+  /// **'Klarheit'**
+  String get entwKlarheit;
+
+  /// No description provided for @entwSchaerfe.
+  ///
+  /// In de, this message translates to:
+  /// **'Schärfe'**
+  String get entwSchaerfe;
+
+  /// No description provided for @entwRauschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Rauschminderung'**
+  String get entwRauschen;
+
+  /// No description provided for @entwVignette.
+  ///
+  /// In de, this message translates to:
+  /// **'Vignettierung'**
+  String get entwVignette;
+
+  /// No description provided for @entwAutoWeiss.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatischer Weissabgleich'**
+  String get entwAutoWeiss;
+
+  /// No description provided for @entwVorher.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorher'**
+  String get entwVorher;
+
+  /// No description provided for @entwZuruecksetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Regler zurücksetzen'**
+  String get entwZuruecksetzen;
+
+  /// No description provided for @entwEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entwicklung entfernen'**
+  String get entwEntfernen;
+
+  /// No description provided for @entwVorschauQuelle.
+  ///
+  /// In de, this message translates to:
+  /// **'Rohformat oder HEIC: Das Telefon rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.'**
+  String get entwVorschauQuelle;
+
+  /// No description provided for @entwVomRechner.
+  ///
+  /// In de, this message translates to:
+  /// **'Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.'**
+  String get entwVomRechner;
+
+  /// No description provided for @entwRechne.
+  ///
+  /// In de, this message translates to:
+  /// **'Rechne in voller Grösse ({b} × {h}) …'**
+  String entwRechne(int b, int h);
+
+  /// No description provided for @entwLaedtHoch.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade hoch …'**
+  String get entwLaedtHoch;
+
+  /// No description provided for @entwGespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeichert.'**
+  String get entwGespeichert;
+
+  /// No description provided for @entwVerwerfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Änderungen verwerfen?'**
+  String get entwVerwerfen;
+
+  /// No description provided for @entwEntfernenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Entwicklung entfernen und das Original zeigen?'**
+  String get entwEntfernenFrage;
+
+  /// No description provided for @entwNichtGeladen.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Bild liess sich nicht laden.'**
+  String get entwNichtGeladen;
+
+  /// No description provided for @entwSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get entwSpeichern;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -1179,4 +1179,81 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get lbStammbaum => 'Stammbaum';
+
+  @override
+  String get entwTitel => 'Entwickeln';
+
+  @override
+  String get entwBelichtung => 'Belichtung';
+
+  @override
+  String get entwKontrast => 'Kontrast';
+
+  @override
+  String get entwLichter => 'Lichter';
+
+  @override
+  String get entwSchatten => 'Schatten';
+
+  @override
+  String get entwTemperatur => 'Farbtemperatur';
+
+  @override
+  String get entwToenung => 'Tönung';
+
+  @override
+  String get entwKlarheit => 'Klarheit';
+
+  @override
+  String get entwSchaerfe => 'Schärfe';
+
+  @override
+  String get entwRauschen => 'Rauschminderung';
+
+  @override
+  String get entwVignette => 'Vignettierung';
+
+  @override
+  String get entwAutoWeiss => 'Automatischer Weissabgleich';
+
+  @override
+  String get entwVorher => 'Vorher';
+
+  @override
+  String get entwZuruecksetzen => 'Regler zurücksetzen';
+
+  @override
+  String get entwEntfernen => 'Entwicklung entfernen';
+
+  @override
+  String get entwVorschauQuelle =>
+      'Rohformat oder HEIC: Das Telefon rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.';
+
+  @override
+  String get entwVomRechner =>
+      'Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.';
+
+  @override
+  String entwRechne(int b, int h) {
+    return 'Rechne in voller Grösse ($b × $h) …';
+  }
+
+  @override
+  String get entwLaedtHoch => 'Lade hoch …';
+
+  @override
+  String get entwGespeichert => 'Gespeichert.';
+
+  @override
+  String get entwVerwerfen => 'Änderungen verwerfen?';
+
+  @override
+  String get entwEntfernenFrage =>
+      'Die Entwicklung entfernen und das Original zeigen?';
+
+  @override
+  String get entwNichtGeladen => 'Das Bild liess sich nicht laden.';
+
+  @override
+  String get entwSpeichern => 'Speichern';
 }

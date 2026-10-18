@@ -62,6 +62,13 @@ flutter:
     - assets/lebensbaum/
     - assets/fonts/OFL-EBGaramond.txt
     - assets/fonts/OFL-GreatVibes.txt
+  # Die Entwickeln-Shader des Rechners (Verweis auf shaders/ im
+  # Wurzelverzeichnis) – dieselbe Rechnung wie unter Linux und Windows.
+  shaders:
+    - shaders/develop_adjustments.frag
+    - shaders/develop_maske.frag
+    - shaders/develop_nachbarn.frag
+    - shaders/develop_weich.frag
   fonts:
     - family: Zierschrift
       fonts:

@@ -1177,4 +1177,80 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get lbStammbaum => 'Family tree';
+
+  @override
+  String get entwTitel => 'Edit';
+
+  @override
+  String get entwBelichtung => 'Exposure';
+
+  @override
+  String get entwKontrast => 'Contrast';
+
+  @override
+  String get entwLichter => 'Highlights';
+
+  @override
+  String get entwSchatten => 'Shadows';
+
+  @override
+  String get entwTemperatur => 'Temperature';
+
+  @override
+  String get entwToenung => 'Tint';
+
+  @override
+  String get entwKlarheit => 'Clarity';
+
+  @override
+  String get entwSchaerfe => 'Sharpness';
+
+  @override
+  String get entwRauschen => 'Noise reduction';
+
+  @override
+  String get entwVignette => 'Vignette';
+
+  @override
+  String get entwAutoWeiss => 'Automatic white balance';
+
+  @override
+  String get entwVorher => 'Before';
+
+  @override
+  String get entwZuruecksetzen => 'Reset sliders';
+
+  @override
+  String get entwEntfernen => 'Remove edits';
+
+  @override
+  String get entwVorschauQuelle =>
+      'RAW or HEIC: the phone works from the preview (at most 2048 pixels). The computer edits at full size.';
+
+  @override
+  String get entwVomRechner =>
+      'Tone curve, color mixer and look from the computer apply and are kept.';
+
+  @override
+  String entwRechne(int b, int h) {
+    return 'Rendering at full size ($b × $h) …';
+  }
+
+  @override
+  String get entwLaedtHoch => 'Uploading …';
+
+  @override
+  String get entwGespeichert => 'Saved.';
+
+  @override
+  String get entwVerwerfen => 'Discard changes?';
+
+  @override
+  String get entwEntfernenFrage => 'Remove the edits and show the original?';
+
+  @override
+  String get entwNichtGeladen => 'The image could not be loaded.';
+
+  @override
+  String get entwSpeichern => 'Save';
 }

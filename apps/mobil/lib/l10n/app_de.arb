@@ -727,5 +727,39 @@
   "lbAlle": "Alle",
   "lbPortraits": "Porträts",
   "lbSpeichern": "Als Bild speichern",
-  "lbStammbaum": "Stammbaum"
+  "lbStammbaum": "Stammbaum",
+  "entwTitel": "Entwickeln",
+  "entwBelichtung": "Belichtung",
+  "entwKontrast": "Kontrast",
+  "entwLichter": "Lichter",
+  "entwSchatten": "Schatten",
+  "entwTemperatur": "Farbtemperatur",
+  "entwToenung": "Tönung",
+  "entwKlarheit": "Klarheit",
+  "entwSchaerfe": "Schärfe",
+  "entwRauschen": "Rauschminderung",
+  "entwVignette": "Vignettierung",
+  "entwAutoWeiss": "Automatischer Weissabgleich",
+  "entwVorher": "Vorher",
+  "entwZuruecksetzen": "Regler zurücksetzen",
+  "entwEntfernen": "Entwicklung entfernen",
+  "entwVorschauQuelle": "Rohformat oder HEIC: Das Telefon rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.",
+  "entwVomRechner": "Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.",
+  "entwRechne": "Rechne in voller Grösse ({b} × {h}) …",
+  "@entwRechne": {
+    "placeholders": {
+      "b": {
+        "type": "int"
+      },
+      "h": {
+        "type": "int"
+      }
+    }
+  },
+  "entwLaedtHoch": "Lade hoch …",
+  "entwGespeichert": "Gespeichert.",
+  "entwVerwerfen": "Änderungen verwerfen?",
+  "entwEntfernenFrage": "Die Entwicklung entfernen und das Original zeigen?",
+  "entwNichtGeladen": "Das Bild liess sich nicht laden.",
+  "entwSpeichern": "Speichern"
 }

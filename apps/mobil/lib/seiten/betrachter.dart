@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
@@ -11,9 +10,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
 import '../bilder.dart';
+import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
+import 'entwickeln.dart';
 
 /// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
 /// das Raster dahinter erscheint, und mit einer Blende statt eines Schubs
@@ -190,8 +191,10 @@ class _BetrachterState extends State<Betrachter> {
                 context,
               ).textTheme.titleMedium?.copyWith(color: Colors.white),
               titleSpacing: 0,
+              // Kurz wie im Browser („12.09.2026“) – rechts stehen fünf
+              // Knöpfe.
               title: Text(
-                DateFormat.yMMMd(
+                datumMittel(
                   Localizations.localeOf(context).toLanguageTag(),
                 ).format(zeile.fileCreatedAt.toLocal()),
               ),
@@ -214,6 +217,17 @@ class _BetrachterState extends State<Betrachter> {
                   icon: const Icon(Icons.info_outline),
                   onPressed: _angaben,
                 ),
+                if (!widget.imPapierkorb && zeile.type != 'VIDEO')
+                  IconButton(
+                    tooltip: t.entwTitel,
+                    icon: const Icon(Icons.tune),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            Entwickeln(sitzung: widget.sitzung, id: zeile.id),
+                      ),
+                    ),
+                  ),
                 if (widget.imPapierkorb)
                   IconButton(
                     tooltip: t.auswahlZurueckholen,
