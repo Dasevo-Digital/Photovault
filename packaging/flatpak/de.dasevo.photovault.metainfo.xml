@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.34.0" date="2026-10-18">
+      <description>
+        <p>Apple ProRAW previews are no longer too dark: linear DNGs now use the full-size JPEG the iPhone embeds. The stored size of HEIC, RAW and PSD photos now comes from the file itself; existing entries are corrected once.</p>
+        <p>The web interface gains the map, trips, statistics, duplicates and bursts, photo details, family tree and tree of life, developing in the browser, library settings and English.</p>
+        <p>Phone: select a day by tapping its date, drag to select, a scrubber, pinch for 2 to 6 columns, swipe to close the viewer, and a library tab.</p>
+      </description>
+    </release>
     <release version="3.33.1" date="2026-10-17">
       <description>
         <p>The server shows its version in the browser and on the phone; the web interface gains memories, the trash with restore, and an administration section (storage, backup, analysis, accounts). The phone map turns dark in dark mode.</p>
