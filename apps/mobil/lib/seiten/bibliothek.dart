@@ -11,6 +11,7 @@ import 'karte.dart';
 import 'personen.dart';
 import 'raster.dart';
 import 'reisen.dart';
+import 'stammbaum.dart';
 import 'statistik.dart';
 
 /// Was nicht in die Zeitleiste gehört, gesammelt wie in Immich: oben
@@ -89,6 +90,12 @@ class Bibliothek extends StatelessWidget {
               text: t.bibDuplikate,
               onTap: () =>
                   _oeffne(context, t.bibDuplikate, Duplikate(sitzung: sitzung)),
+            ),
+            _Knopf(
+              icon: Icons.account_tree_outlined,
+              text: t.bibStammbaum,
+              onTap: () =>
+                  _oeffne(context, t.bibStammbaum, Stammbaum(sitzung: sitzung)),
             ),
             _Knopf(
               icon: Icons.tune,

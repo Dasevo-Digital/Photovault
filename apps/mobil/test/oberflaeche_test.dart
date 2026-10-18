@@ -38,6 +38,7 @@ import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
+import 'package:photo_vault_mobil/seiten/stammbaum.dart';
 import 'package:photo_vault_mobil/seiten/statistik.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
@@ -968,6 +969,86 @@ void main() {
     await tester.pumpAndSettle();
     expect((await bibliothekseinstellungen(db)).auswertenNachImport, !vorher);
     expect(find.text(t.einstGespeichert), findsOneWidget);
+  });
+
+  testWidgets('Stammbaum wie im Browser: Bänder, Karten, Fokus wählbar', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['f1']);
+    Future<void> b(String art, Map<String, Object?> werte) =>
+        db.fuehreAus(Befehl.ausJson({'art': art, 'werte': werte}));
+    for (final (id, name) in [
+      ('oma', 'Oma Erika'),
+      ('opa', 'Opa Hans'),
+      ('kind', 'Kind'),
+    ]) {
+      await b('personAnlegen', {'personId': id, 'name': name});
+    }
+    await b('beziehungHinzufuegen', {
+      'personId': 'kind',
+      'andereId': 'oma',
+      'verwandtschaft': 'elternteil',
+    });
+    await b('beziehungHinzufuegen', {
+      'personId': 'kind',
+      'andereId': 'opa',
+      'verwandtschaft': 'elternteil',
+    });
+    await b('beziehungHinzufuegen', {
+      'personId': 'oma',
+      'andereId': 'opa',
+      'verwandtschaft': 'partner',
+    });
+    await b('lebensdatenSetzen', {
+      'personId': 'oma',
+      'geburt': DateTime(1950, 3, 1).toIso8601String(),
+      'tod': null,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Stammbaum(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Oma Erika'), findsWidgets);
+    expect(find.text('Opa Hans'), findsWidgets);
+    expect(find.text('1950 –'), findsOneWidget);
+    // Die Eltern stehen ein Band über dem Kind.
+    final kind = find.descendant(
+      of: find.byType(InteractiveViewer),
+      matching: find.text('Kind'),
+    );
+    final oma = find.descendant(
+      of: find.byType(InteractiveViewer),
+      matching: find.text('Oma Erika'),
+    );
+    expect(
+      tester.getTopLeft(oma).dy,
+      lessThan(tester.getTopLeft(kind).dy - 150),
+    );
+    // Ein Tipp auf die Oma rückt sie in die Mitte.
+    await tester.tap(oma);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DropdownButton<String>>(find.byType(DropdownButton<String>))
+          .value,
+      'oma',
+    );
+  });
+
+  test('Namen im Stammbaum brechen wie im Browser um', () {
+    expect(namenszeilen('Kurz'), ['Kurz']);
+    expect(namenszeilen('Maria Magdalena Musterfrau'), [
+      'Maria Magdalena',
+      'Musterfrau',
+    ]);
+    expect(namenszeilen('Donaudampfschifffahrtsgesellschaft'), [
+      'Donaudampfschif…',
+    ]);
   });
 
   testWidgets('Erinnerungen: ein Kärtchen je Jahrgang, Tipp öffnet ihn', (

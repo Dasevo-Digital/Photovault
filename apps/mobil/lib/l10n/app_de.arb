@@ -686,5 +686,26 @@
     }
   },
   "verwAnstossen": "Auswertung anstossen",
-  "verwJetztSichern": "Jetzt sichern"
+  "verwJetztSichern": "Jetzt sichern",
+  "bibStammbaum": "Stammbaum",
+  "baumPerson": "Person",
+  "baumLebensbaum": "Lebensbaum",
+  "baumOhneVerwandtschaft": "{name} (ohne Verwandtschaft)",
+  "@baumOhneVerwandtschaft": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "baumKeinePersonen": "Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.",
+  "baumKeineVerwandtschaft": "Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.",
+  "baumVerschwiegen": "{n} Haushalte passen nicht mehr ins Bild.",
+  "@baumVerschwiegen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

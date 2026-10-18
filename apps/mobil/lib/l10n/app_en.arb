@@ -439,5 +439,12 @@
   "verwAuswertungRuht": "Analysis: nothing pending",
   "verwAuswertungLaeuft": "Analysis running: {stufe} ({nr}/{von}), {erledigt} of {gesamt}",
   "verwAnstossen": "Start analysis",
-  "verwJetztSichern": "Back up now"
+  "verwJetztSichern": "Back up now",
+  "bibStammbaum": "Family tree",
+  "baumPerson": "Person",
+  "baumLebensbaum": "Life tree",
+  "baumOhneVerwandtschaft": "{name} (no relatives)",
+  "baumKeinePersonen": "No people yet. Add them on the computer under People and Family tree.",
+  "baumKeineVerwandtschaft": "No relatives are recorded for this person yet – that is done on the computer in the family tree.",
+  "baumVerschwiegen": "{n} households no longer fit in the picture."
 }

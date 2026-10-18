@@ -1728,6 +1728,48 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Jetzt sichern'**
   String get verwJetztSichern;
+
+  /// No description provided for @bibStammbaum.
+  ///
+  /// In de, this message translates to:
+  /// **'Stammbaum'**
+  String get bibStammbaum;
+
+  /// No description provided for @baumPerson.
+  ///
+  /// In de, this message translates to:
+  /// **'Person'**
+  String get baumPerson;
+
+  /// No description provided for @baumLebensbaum.
+  ///
+  /// In de, this message translates to:
+  /// **'Lebensbaum'**
+  String get baumLebensbaum;
+
+  /// No description provided for @baumOhneVerwandtschaft.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} (ohne Verwandtschaft)'**
+  String baumOhneVerwandtschaft(String name);
+
+  /// No description provided for @baumKeinePersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'**
+  String get baumKeinePersonen;
+
+  /// No description provided for @baumKeineVerwandtschaft.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.'**
+  String get baumKeineVerwandtschaft;
+
+  /// No description provided for @baumVerschwiegen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Haushalte passen nicht mehr ins Bild.'**
+  String baumVerschwiegen(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

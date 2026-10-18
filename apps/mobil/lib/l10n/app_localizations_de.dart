@@ -1092,4 +1092,31 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get verwJetztSichern => 'Jetzt sichern';
+
+  @override
+  String get bibStammbaum => 'Stammbaum';
+
+  @override
+  String get baumPerson => 'Person';
+
+  @override
+  String get baumLebensbaum => 'Lebensbaum';
+
+  @override
+  String baumOhneVerwandtschaft(String name) {
+    return '$name (ohne Verwandtschaft)';
+  }
+
+  @override
+  String get baumKeinePersonen =>
+      'Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.';
+
+  @override
+  String get baumKeineVerwandtschaft =>
+      'Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.';
+
+  @override
+  String baumVerschwiegen(int n) {
+    return '$n Haushalte passen nicht mehr ins Bild.';
+  }
 }

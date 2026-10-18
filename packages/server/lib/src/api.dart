@@ -23,6 +23,7 @@ import 'package:kern/services/verwandtschaftsgrad.dart';
 import 'package:kern/services/zierbaum.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/stammbaumansicht.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -772,34 +773,18 @@ class _Api {
   /// mit Verwandtschaft; alle Personen kommen für die Auswahl mit.
   Future<Response> stammbaum(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final personen = db.nachAlterSortiert(await db.select(db.people).get());
-    if (personen.isEmpty) {
+    final s = await stammbaumansicht(
+      db,
+      fokus: anfrage.url.queryParameters['fokus'],
+    );
+    final g = s.geflecht;
+    if (g == null) {
       return _json({'fokus': null, 'personen': [], 'haushalte': []});
     }
-    final netz = Verwandtschaftsnetz([
-      for (final z in await db.alleBeziehungen())
-        if (artAusText(z.art) case final art?)
-          kante(z.personId, z.andereId, art),
-    ]);
-    final nachId = {for (final p in personen) p.id: p};
-    bool verwandt(String id) =>
-        netz.eltern(id).isNotEmpty ||
-        netz.kinder(id).isNotEmpty ||
-        netz.partner(id).isNotEmpty;
-    var fokus = anfrage.url.queryParameters['fokus'];
-    if (fokus == null || !nachId.containsKey(fokus)) {
-      fokus = (await db.stammbaumZuletzt()).person;
-    }
-    if (fokus == null || !nachId.containsKey(fokus)) {
-      fokus = personen
-          .firstWhere((p) => verwandt(p.id), orElse: () => personen.first)
-          .id;
-    }
-    final g = geflechtUm(netz, fokus, [for (final p in personen) p.id]);
     return _json({
-      'fokus': fokus,
+      'fokus': s.fokus,
       'personen': [
-        for (final p in personen)
+        for (final p in s.personen)
           {
             'id': p.id,
             'name': p.name,
@@ -807,7 +792,7 @@ class _Api {
             'tod': p.sterbedatum?.toIso8601String(),
             'bild': p.coverFaceCropPath,
             'geschlecht': p.geschlecht,
-            'verwandt': verwandt(p.id),
+            'verwandt': s.verwandt.contains(p.id),
           },
       ],
       'haushalte': [
