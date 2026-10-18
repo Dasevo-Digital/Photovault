@@ -11,6 +11,7 @@ import '../sitzung.dart';
 import 'eigenes_konto.dart';
 import 'konten.dart';
 import 'sicherung.dart';
+import 'freigaben.dart';
 
 /// Womit das Telefon verbunden ist, wie der Abgleich steht – und abmelden.
 class Konto extends StatelessWidget {
@@ -142,6 +143,7 @@ class Konto extends StatelessWidget {
                   verbindung: a.verbindung,
                   abmelden: () => _abmelden(context),
                 ),
+                GeteilteLinks(verbindung: a.verbindung),
                 _KontenZugang(sitzung, a.verbindung),
               ],
               FutureBuilder<PackageInfo>(

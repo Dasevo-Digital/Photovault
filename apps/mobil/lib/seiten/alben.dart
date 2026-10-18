@@ -6,6 +6,7 @@ import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'raster.dart';
+import 'freigaben.dart';
 
 /// Die Alben der Bibliothek, jedes mit seinem Titelbild.
 class Alben extends StatelessWidget {
@@ -85,7 +86,21 @@ class AlbumSeite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(album.name)),
+    appBar: AppBar(
+      title: Text(album.name),
+      actions: [
+        IconButton(
+          tooltip: AppTexte.of(context).albumAlsLink,
+          icon: const Icon(Icons.link_rounded),
+          onPressed: () => alsLinkTeilen(
+            context,
+            sitzung.abgleich?.verbindung,
+            albumId: album.id,
+            titel: album.name,
+          ),
+        ),
+      ],
+    ),
     body: StreamBuilder<List<AssetData>>(
       stream: sitzung.db.watchAlbumAssets(album.id),
       builder: (context, snap) {

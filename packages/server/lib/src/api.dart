@@ -34,6 +34,7 @@ import 'bibliothek.dart';
 import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'fassung.dart';
+import 'freigabe_api.dart';
 import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'oidc.dart';
@@ -67,11 +68,21 @@ Handler baueApi({
   Speicherwaechter? speicher,
   Serversicherung? sicherung,
   Directory? web,
+  Uri? oeffentlich,
 }) {
   final von = absender ?? Absender();
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
-  final api = _Api(bibliotheken, beschleunigerZustand);
+  final video = Videofassungen();
+  final api = _Api(bibliotheken, beschleunigerZustand, video);
+  final freigabe = Freigabeapi(
+    dienst: konten.freigaben,
+    bibliotheken: bibliotheken,
+    absender: von,
+    video: video,
+    webOrdner: web,
+    oeffentlich: oeffentlich,
+  );
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
@@ -225,6 +236,14 @@ Handler baueApi({
     ..get('/api/v1/personen', api.personen)
     ..get('/api/v1/personen/<id>', api.person)
     ..get('/api/v1/gesichter/ohne-namen', api.gesichterOhneNamen)
+    // Teilen nach aussen (Issue #106): verwalten mit Anmeldung, ansehen ohne.
+    ..post('/api/v1/freigaben', freigabe.anlegen)
+    ..get('/api/v1/freigaben', freigabe.liste)
+    ..delete('/api/v1/freigaben/<id>', freigabe.loeschen)
+    ..get('/teilen/<link>', freigabe.seite)
+    ..get('/api/v1/teilen/<link>', freigabe.inhalt)
+    ..post('/api/v1/teilen/<link>/passwort', freigabe.passwort)
+    ..get('/api/v1/teilen/<link>/<id>/<art>', freigabe.datei)
     ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
     ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
@@ -378,7 +397,7 @@ Handler baueApi({
             'api/v1/web/anmelden/totp',
             'app',
           },
-          offenPraefixe: {'app/'},
+          offenPraefixe: {'app/', 'teilen/', 'api/v1/teilen/'},
         ),
       )
       .addHandler(r.call);
@@ -431,12 +450,13 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.bibliotheken, this._beschleuniger);
+  _Api(this.bibliotheken, this._beschleuniger, this.videofassungen);
 
   final Bibliotheken bibliotheken;
 
-  /// Für Browser, die ein Video nicht abspielen können.
-  final videofassungen = Videofassungen();
+  /// Für Browser, die ein Video nicht abspielen können – dieselben wie für
+  /// geteilte Links.
+  final Videofassungen videofassungen;
   final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);

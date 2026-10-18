@@ -102,6 +102,7 @@ Future<void> main(List<String> argumente) async {
       speicher: speicher,
       sicherung: sicherung,
       web: e.web,
+      oeffentlich: e.oeffentlich,
     ),
     e.adresse,
     e.port,

@@ -11,6 +11,7 @@ import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'freigaben.dart';
 
 /// Das Blatt unter einem Raster, sobald etwas ausgewählt ist (Issue
 /// #128), aufgebaut wie in Immich: oben wie viele, darunter die Aktionen
@@ -233,6 +234,16 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                     icon: Icons.share_outlined,
                     text: t.auswahlTeilen,
                     onPressed: () => _teile(context),
+                  ),
+                  _Aktion(
+                    icon: Icons.link_rounded,
+                    text: t.auswahlLink,
+                    onPressed: () => alsLinkTeilen(
+                      context,
+                      widget.sitzung.abgleich?.verbindung,
+                      ids: [for (final z in zeilen) z.id],
+                      titel: t.linkAnzahl(zeilen.length),
+                    ),
                   ),
                   _Aktion(
                     icon: alleFavorit ? Icons.favorite : Icons.favorite_border,

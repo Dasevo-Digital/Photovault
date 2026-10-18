@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Photo Vault</title>
+<link rel="stylesheet" href="/app/app.css">
+<link rel="icon" href="/app/symbol.png" type="image/png">
+</head>
+<body class="teilen">
+
+<header id="teilen-kopf">
+  <img src="/app/symbol.png" alt="" width="30" height="30">
+  <div>
+    <h1 id="teilen-titel">Photo Vault</h1>
+    <p id="teilen-unterzeile"></p>
+  </div>
+</header>
+
+<main id="teilen-inhalt">
+  <form id="teilen-passwort" class="karte" hidden>
+    <h2>Geschützte Freigabe</h2>
+    <p>Diese Freigabe ist mit einem Passwort geschützt.</p>
+    <label>Passwort <input name="passwort" type="password" autocomplete="current-password" required autofocus></label>
+    <button type="submit">Öffnen</button>
+    <p id="teilen-fehler" class="fehler" role="alert"></p>
+  </form>
+  <p id="teilen-hinweis" class="leise" hidden></p>
+  <div id="teilen-raster"></div>
+</main>
+
+<div id="teilen-betrachter" hidden>
+  <button id="t-zu" type="button" aria-label="Schliessen">×</button>
+  <button id="t-zurueck" type="button" aria-label="Vorige">‹</button>
+  <figure>
+    <img id="t-bild" alt="" hidden>
+    <video id="t-video" controls playsinline hidden></video>
+    <p id="t-hinweis" hidden></p>
+  </figure>
+  <button id="t-vor" type="button" aria-label="Nächste">›</button>
+  <a id="t-laden" download aria-label="Original herunterladen" title="Original herunterladen" hidden>⤓</a>
+</div>
+
+<script src="/app/texte.js"></script>
+<script src="/app/teilen.js"></script>
+</body>
+</html>

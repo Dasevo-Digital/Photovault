@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:sqlite3/sqlite3.dart';
 
 /// Was der Server über seine Nutzer weiss: Konten, angemeldete Geräte,
-/// Wiederherstellungscodes und Verknüpfungen mit einem OIDC-Anbieter.
+/// Wiederherstellungscodes, Verknüpfungen mit einem OIDC-Anbieter und die
+/// Freigaben nach aussen.
 ///
 /// Getrennt von den Bibliotheken (eine je Konto, Schema der App), weil es
 /// keine Bibliothek gibt, zu der diese Daten gehören – und weil eine
@@ -34,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 1;
+  static const schema = 2;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -86,6 +87,33 @@ class Serverdatenbank {
           PRIMARY KEY (aussteller, subjekt)
         );
         PRAGMA user_version = 1;
+        COMMIT;
+      ''');
+    }
+    if (stand < 2) {
+      // Freigaben nach aussen (Issue #106): Der Link selbst steht nur
+      // verschlüsselt da (zum erneuten Anzeigen); gesucht wird über seinen
+      // SHA-256. Eine Kopie von server.sqlite allein öffnet keine Freigabe.
+      db.execute('''
+        BEGIN;
+        CREATE TABLE freigaben (
+          id TEXT PRIMARY KEY,
+          konto TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          pruefwert TEXT NOT NULL UNIQUE,
+          link TEXT NOT NULL,
+          geheimnis TEXT NOT NULL,
+          titel TEXT NOT NULL,
+          album TEXT,
+          aufnahmen TEXT,
+          passwort TEXT,
+          herunterladen INTEGER NOT NULL DEFAULT 0,
+          angelegt INTEGER NOT NULL,
+          ablauf INTEGER,
+          aufrufe INTEGER NOT NULL DEFAULT 0,
+          zuletzt INTEGER
+        );
+        CREATE INDEX freigaben_konto ON freigaben(konto);
+        PRAGMA user_version = 2;
         COMMIT;
       ''');
     }

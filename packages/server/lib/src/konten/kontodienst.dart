@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+
+import '../freigaben.dart';
 import 'package:kern/abgleich/anmeldung.dart' show kontonameGueltig;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
@@ -168,6 +170,15 @@ class Kontodienst {
   final DateTime Function() _uhr;
 
   Database get _db => _sdb.db;
+
+  /// Die Freigaben nach aussen – in derselben Serverdatenbank, mit
+  /// demselben Schlüssel und denselben Passwortprüfwerten.
+  late final freigaben = Freigabedienst(
+    _sdb,
+    _tresor,
+    passwort: passwort,
+    uhr: _uhr,
+  );
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);

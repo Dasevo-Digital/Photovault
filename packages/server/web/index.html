@@ -28,6 +28,7 @@
   <symbol id="i-auswaehlen" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></symbol>
   <symbol id="i-pinnen" viewBox="0 0 24 24"><path d="M9 3.5h6M10 3.5v6L6.5 13.5h11L14 9.5v-6M12 13.5v7"/></symbol>
   <symbol id="i-weiter" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
   <symbol id="i-laden" viewBox="0 0 24 24"><path d="M12 3.5V15M7 10.5l5 5 5-5M4.5 20h15"/></symbol>
   <symbol id="i-teilen" viewBox="0 0 24 24"><path d="M12 14V3.5M8 7.5l4-4 4 4M7.5 10.5H6.5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></symbol>
   <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M4.5 9.5h10a5 5 0 0 1 0 10H8M8.5 5.5l-4 4 4 4"/></symbol>
@@ -222,6 +223,8 @@
         <button type="submit">Anlegen</button>
       </form>
     </div>
+    <h3>Geteilte Links</h3>
+    <ul id="freigaben"></ul>
     <h3>Geräte</h3>
     <ul id="geraete"></ul>
     <h3>Passwort ändern</h3>
@@ -255,6 +258,7 @@
     <button id="auswahl-teilen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-teilen"/></svg>Teilen</button>
     <button id="auswahl-favorit" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-favoriten"/></svg>Favorit</button>
     <button id="auswahl-album" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-alben"/></svg>Album</button>
+    <button id="auswahl-link" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-link"/></svg>Link</button>
     <button id="auswahl-laden" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-laden"/></svg>Herunterladen</button>
     <button id="auswahl-papierkorb" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-papierkorb"/></svg>Papierkorb</button>
     <button id="auswahl-zurueck" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-zurueck"/></svg>Zurückholen</button>
@@ -289,6 +293,39 @@
     <menu>
       <button value="abbrechen" type="button" id="album-abbrechen">Abbrechen</button>
       <button value="ok" type="submit">Hinzufügen</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="link-dialog">
+  <form method="dialog" id="form-link">
+    <h3>Als Link teilen</h3>
+    <div id="link-anlegen">
+      <label>Titel <input name="titel" maxlength="200" autocomplete="off" required></label>
+      <label>Gültig
+        <select name="tage">
+          <option value="1">1 Tag</option>
+          <option value="7" selected>7 Tage</option>
+          <option value="30">30 Tage</option>
+          <option value="365">1 Jahr</option>
+          <option value="">Unbegrenzt</option>
+        </select>
+      </label>
+      <label>Passwort (frei lassen für keins) <input name="passwort" type="password" autocomplete="new-password" minlength="4"></label>
+      <label class="haken"><input name="herunterladen" type="checkbox"> Originale herunterladen erlauben</label>
+      <p class="leise klein">Gezeigt werden Bilder ohne Orts- und Kameraangaben. Originale enthalten sie.</p>
+    </div>
+    <div id="link-fertig" hidden>
+      <p>Wer diesen Link hat, sieht die Aufnahmen:</p>
+      <input id="link-adresse" readonly>
+      <p id="link-heimnetz" class="fehler klein" hidden>Diese Adresse ist nur im Heimnetz erreichbar. Von aussen geht der Link über die öffentliche Adresse des Servers.</p>
+    </div>
+    <p id="link-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="link-abbrechen">Schliessen</button>
+      <button type="button" id="link-kopieren" hidden>Kopieren</button>
+      <button type="button" id="link-teilen" hidden>Teilen</button>
+      <button type="submit" id="link-erstellen">Link erstellen</button>
     </menu>
   </form>
 </dialog>

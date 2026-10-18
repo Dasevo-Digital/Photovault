@@ -859,5 +859,50 @@
   "@sucheFilterZeile": {
     "placeholders": {"text": {"type": "String"}}
   },
-  "sucheTextOderFilter": "Suchtext eingeben oder einen Filter wählen."
+  "sucheTextOderFilter": "Suchtext eingeben oder einen Filter wählen.",
+  "linkTitel": "Als Link teilen",
+  "linkFeldTitel": "Titel",
+  "linkGueltig": "Gültig",
+  "linkTag1": "1 Tag",
+  "linkTage": "{n} Tage",
+  "@linkTage": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "linkJahr1": "1 Jahr",
+  "linkUnbegrenzt": "Unbegrenzt",
+  "linkPasswort": "Passwort (frei lassen für keins)",
+  "linkHerunterladen": "Originale herunterladen erlauben",
+  "linkOhneMetadaten": "Gezeigt werden Bilder ohne Orts- und Kameraangaben. Originale enthalten sie.",
+  "linkErstellen": "Link erstellen",
+  "linkWerHatSieht": "Wer diesen Link hat, sieht die Aufnahmen:",
+  "linkNurHeimnetz": "Diese Adresse ist nur im Heimnetz erreichbar. Von aussen geht der Link über die öffentliche Adresse des Servers.",
+  "linkKopieren": "Kopieren",
+  "linkTeilen": "Teilen",
+  "linkKopiert": "Link kopiert",
+  "linkTitelFehlt": "Bitte einen Titel eingeben.",
+  "linkPasswortKurz": "Das Passwort braucht mindestens 4 Zeichen.",
+  "linkOhneServer": "Ohne Verbindung zum Server gibt es keinen Link.",
+  "linkGeteilte": "Geteilte Links",
+  "linkNochNichts": "Noch nichts geteilt.",
+  "linkAnzahl": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
+  "@linkAnzahl": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "linkAbgelaufen": "abgelaufen",
+  "linkBis": "bis {datum}",
+  "@linkBis": {
+    "placeholders": {"datum": {"type": "String"}}
+  },
+  "linkMitPasswort": "mit Passwort",
+  "linkAufrufe": "{n, plural, =1{1 Aufruf} other{{n} Aufrufe}}",
+  "@linkAufrufe": {
+    "placeholders": {"n": {"type": "int"}}
+  },
+  "linkLoeschen": "Löschen",
+  "linkLoeschenFrage": "Den Link „{titel}“ löschen? Wer ihn hat, sieht danach nichts mehr.",
+  "@linkLoeschenFrage": {
+    "placeholders": {"titel": {"type": "String"}}
+  },
+  "auswahlLink": "Link",
+  "albumAlsLink": "Als Link teilen"
 }

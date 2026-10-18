@@ -26,11 +26,12 @@ dependencies:
   # Die Serverdatenbank (Konten, Geräte) ohne drift: wenige Tabellen,
   # einfache Abfragen, kein Codegenerator.
   sqlite3: ^3.5.1
+  # Bilder für geteilte Links ohne Metadaten neu schreiben (teilbilder.dart).
+  image: ^4.2.0
   uuid: ^4.5.1
 
 dev_dependencies:
   http: ^1.6.0
-  image: ^4.2.0
   lints: ^6.0.0
   test: ^1.25.0
 

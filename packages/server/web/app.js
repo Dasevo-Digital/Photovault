@@ -545,7 +545,119 @@ async function zeigeAlbum(id) {
   markiereNav('alben');
   zeigeBereich(['raster']);
   const d = await api(`/api/v1/alben/${encodeURIComponent(id)}`);
-  zeigeListe({ aufnahmen: d.aufnahmen }, d.album.name);
+  const kopf = el('div', 'reisekopf');
+  const teilen = el('button', 'knopf', t('Als Link teilen …'));
+  teilen.type = 'button';
+  teilen.addEventListener('click', () => oeffneLinkDialog({ album: d.album.id }, d.album.name));
+  kopf.append(teilen);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.album.name);
+}
+
+// --- Als Link teilen (Issue #106) ------------------------------------------
+//
+// Ein Album oder eine Auswahl als Link nach aussen: mit Ablauf, auf Wunsch
+// mit Passwort, Originale nur, wenn erlaubt. Wer den Link öffnet, sieht
+// /teilen/<link> – Bilder ohne Metadaten, sonst nichts.
+
+let linkFall = null;
+
+function oeffneLinkDialog(fall, titel) {
+  linkFall = fall;
+  const f = $('form-link');
+  f.reset();
+  f.titel.value = titel || '';
+  $('link-anlegen').hidden = false;
+  $('link-fertig').hidden = true;
+  $('link-erstellen').hidden = false;
+  $('link-kopieren').hidden = true;
+  $('link-teilen').hidden = true;
+  $('link-meldung').textContent = '';
+  $('link-dialog').showModal();
+}
+
+// Eine Adresse, die von aussen niemand erreicht: im Heimnetz oder lokal.
+function nurImHeimnetz(adresse) {
+  let h = '';
+  try { h = new URL(adresse).hostname; } catch (_) { return false; }
+  return h === 'localhost' || h.endsWith('.local') || h.endsWith('.lan') || /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?fe80:|\[?fd[0-9a-f]{2}:)/i.test(h);
+}
+
+$('form-link').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const titel = f.titel.value.trim();
+  if (!titel) { $('link-meldung').textContent = t('Bitte einen Titel eingeben.'); return; }
+  const koerper = {
+    titel,
+    ...linkFall,
+    ...(f.tage.value ? { tage: Number(f.tage.value) } : {}),
+    ...(f.passwort.value ? { passwort: f.passwort.value } : {}),
+    herunterladen: f.herunterladen.checked,
+  };
+  try {
+    const d = await api('/api/v1/freigaben', { methode: 'POST', json: koerper });
+    $('link-adresse').value = d.link;
+    $('link-heimnetz').hidden = !nurImHeimnetz(d.link);
+    $('link-anlegen').hidden = true;
+    $('link-fertig').hidden = false;
+    $('link-erstellen').hidden = true;
+    $('link-kopieren').hidden = false;
+    $('link-teilen').hidden = !navigator.share;
+    $('link-adresse').select();
+  } catch (x) {
+    $('link-meldung').textContent = x.message;
+  }
+});
+
+async function kopiere(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_) {
+    // Ohne HTTPS gibt es keine Zwischenablage-Schnittstelle.
+    const feld = el('textarea');
+    feld.value = text;
+    document.body.append(feld);
+    feld.select();
+    document.execCommand('copy');
+    feld.remove();
+  }
+  meldung(t('Link kopiert'));
+}
+
+$('link-kopieren').addEventListener('click', () => kopiere($('link-adresse').value));
+$('link-teilen').addEventListener('click', () => navigator.share({ url: $('link-adresse').value, title: $('form-link').titel.value }).catch(() => {}));
+$('link-abbrechen').addEventListener('click', () => $('link-dialog').close());
+
+async function zeigeFreigaben() {
+  const ul = $('freigaben');
+  const d = await api('/api/v1/freigaben');
+  ul.replaceChildren();
+  if (!d.freigaben.length) ul.append(el('li', 'leise', t('Noch nichts geteilt.')));
+  for (const x of d.freigaben) {
+    const li = el('li');
+    const abgelaufen = x.ablauf && new Date(x.ablauf) <= new Date();
+    const teile = [
+      anzahlText(x.anzahl),
+      x.ablauf ? (abgelaufen ? t('abgelaufen') : t('bis {datum}', { datum: datumZeit.format(new Date(x.ablauf)) })) : t('unbegrenzt'),
+      x.passwort ? t('mit Passwort') : null,
+      x.herunterladen ? t('Originale erlaubt') : null,
+      x.aufrufe === 1 ? t('1 Aufruf') : t('{n} Aufrufe', { n: x.aufrufe }),
+    ].filter(Boolean);
+    li.append(el('span', null, `${x.titel} · ${teile.join(' · ')}`));
+    const knoepfe = el('span', 'knoepfe');
+    const kopieren = el('button', null, t('Kopieren'));
+    kopieren.type = 'button';
+    kopieren.addEventListener('click', () => kopiere(x.link));
+    const weg = el('button', null, t('Löschen'));
+    weg.type = 'button';
+    weg.addEventListener('click', async () => {
+      if (!confirm(t('Den Link „{titel}“ löschen? Wer ihn hat, sieht danach nichts mehr.', { titel: x.titel }))) return;
+      try { await api(`/api/v1/freigaben/${encodeURIComponent(x.id)}`, { methode: 'DELETE' }); li.remove(); } catch (y) { alert(y.message); }
+    });
+    knoepfe.append(kopieren, weg);
+    li.append(knoepfe);
+    ul.append(li);
+  }
 }
 
 const zeitraum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium' });
@@ -1373,6 +1485,7 @@ async function zeigeKonto() {
   zeigeFassung($('konto-fassung'));
   $('verwaltung').hidden = !k.verwalter;
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
+  zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
   const g = await api('/api/v1/geraete');
   const ul = $('geraete');
   ul.replaceChildren();
@@ -1968,6 +2081,12 @@ $('auswahl-favorit').addEventListener('click', async () => {
     if (liste.favoriten && alle) { const weg = new Set(g.map((a) => a.id)); liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id)); auswahlAufheben(); }
     neuZeichnen();
   } catch (x) { alert(x.message); }
+});
+
+$('auswahl-link').addEventListener('click', () => {
+  const g = gewaehlte();
+  if (!g.length) return;
+  oeffneLinkDialog({ ids: g.map((a) => a.id) }, g.length === 1 ? t('1 Aufnahme') : t('{n} Aufnahmen', { n: g.length }));
 });
 
 $('auswahl-laden').addEventListener('click', () => {

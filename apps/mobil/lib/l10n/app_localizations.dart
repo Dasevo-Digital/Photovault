@@ -2376,6 +2376,186 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Suchtext eingeben oder einen Filter wählen.'**
   String get sucheTextOderFilter;
+
+  /// No description provided for @linkTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Link teilen'**
+  String get linkTitel;
+
+  /// No description provided for @linkFeldTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Titel'**
+  String get linkFeldTitel;
+
+  /// No description provided for @linkGueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Gültig'**
+  String get linkGueltig;
+
+  /// No description provided for @linkTag1.
+  ///
+  /// In de, this message translates to:
+  /// **'1 Tag'**
+  String get linkTag1;
+
+  /// No description provided for @linkTage.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Tage'**
+  String linkTage(int n);
+
+  /// No description provided for @linkJahr1.
+  ///
+  /// In de, this message translates to:
+  /// **'1 Jahr'**
+  String get linkJahr1;
+
+  /// No description provided for @linkUnbegrenzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbegrenzt'**
+  String get linkUnbegrenzt;
+
+  /// No description provided for @linkPasswort.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort (frei lassen für keins)'**
+  String get linkPasswort;
+
+  /// No description provided for @linkHerunterladen.
+  ///
+  /// In de, this message translates to:
+  /// **'Originale herunterladen erlauben'**
+  String get linkHerunterladen;
+
+  /// No description provided for @linkOhneMetadaten.
+  ///
+  /// In de, this message translates to:
+  /// **'Gezeigt werden Bilder ohne Orts- und Kameraangaben. Originale enthalten sie.'**
+  String get linkOhneMetadaten;
+
+  /// No description provided for @linkErstellen.
+  ///
+  /// In de, this message translates to:
+  /// **'Link erstellen'**
+  String get linkErstellen;
+
+  /// No description provided for @linkWerHatSieht.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer diesen Link hat, sieht die Aufnahmen:'**
+  String get linkWerHatSieht;
+
+  /// No description provided for @linkNurHeimnetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Adresse ist nur im Heimnetz erreichbar. Von aussen geht der Link über die öffentliche Adresse des Servers.'**
+  String get linkNurHeimnetz;
+
+  /// No description provided for @linkKopieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Kopieren'**
+  String get linkKopieren;
+
+  /// No description provided for @linkTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilen'**
+  String get linkTeilen;
+
+  /// No description provided for @linkKopiert.
+  ///
+  /// In de, this message translates to:
+  /// **'Link kopiert'**
+  String get linkKopiert;
+
+  /// No description provided for @linkTitelFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte einen Titel eingeben.'**
+  String get linkTitelFehlt;
+
+  /// No description provided for @linkPasswortKurz.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Passwort braucht mindestens 4 Zeichen.'**
+  String get linkPasswortKurz;
+
+  /// No description provided for @linkOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Verbindung zum Server gibt es keinen Link.'**
+  String get linkOhneServer;
+
+  /// No description provided for @linkGeteilte.
+  ///
+  /// In de, this message translates to:
+  /// **'Geteilte Links'**
+  String get linkGeteilte;
+
+  /// No description provided for @linkNochNichts.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nichts geteilt.'**
+  String get linkNochNichts;
+
+  /// No description provided for @linkAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}'**
+  String linkAnzahl(int n);
+
+  /// No description provided for @linkAbgelaufen.
+  ///
+  /// In de, this message translates to:
+  /// **'abgelaufen'**
+  String get linkAbgelaufen;
+
+  /// No description provided for @linkBis.
+  ///
+  /// In de, this message translates to:
+  /// **'bis {datum}'**
+  String linkBis(String datum);
+
+  /// No description provided for @linkMitPasswort.
+  ///
+  /// In de, this message translates to:
+  /// **'mit Passwort'**
+  String get linkMitPasswort;
+
+  /// No description provided for @linkAufrufe.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufruf} other{{n} Aufrufe}}'**
+  String linkAufrufe(int n);
+
+  /// No description provided for @linkLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Löschen'**
+  String get linkLoeschen;
+
+  /// No description provided for @linkLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Den Link „{titel}“ löschen? Wer ihn hat, sieht danach nichts mehr.'**
+  String linkLoeschenFrage(String titel);
+
+  /// No description provided for @auswahlLink.
+  ///
+  /// In de, this message translates to:
+  /// **'Link'**
+  String get auswahlLink;
+
+  /// No description provided for @albumAlsLink.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Link teilen'**
+  String get albumAlsLink;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

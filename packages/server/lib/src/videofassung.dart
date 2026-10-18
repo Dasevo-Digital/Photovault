@@ -96,6 +96,9 @@ class Videofassungen {
       '-nostdin', '-y', '-loglevel', 'error', //
       '-i', original.path,
       '-map', '0:v:0', '-map', '0:a:0?',
+      // Ohne Metadaten: Der Ort steckt beim iPhone im Kopf des Videos, und
+      // die Fassung geht auch über geteilte Links hinaus.
+      '-map_metadata', '-1',
       '-vf', filter,
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
       '-c:a', 'aac', '-b:a', '128k',

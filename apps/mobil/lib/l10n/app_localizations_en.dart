@@ -1445,4 +1445,119 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sucheTextOderFilter => 'Enter a search term or choose a filter.';
+
+  @override
+  String get linkTitel => 'Share as link';
+
+  @override
+  String get linkFeldTitel => 'Title';
+
+  @override
+  String get linkGueltig => 'Valid';
+
+  @override
+  String get linkTag1 => '1 day';
+
+  @override
+  String linkTage(int n) {
+    return '$n days';
+  }
+
+  @override
+  String get linkJahr1 => '1 year';
+
+  @override
+  String get linkUnbegrenzt => 'Unlimited';
+
+  @override
+  String get linkPasswort => 'Password (leave empty for none)';
+
+  @override
+  String get linkHerunterladen => 'Allow downloading originals';
+
+  @override
+  String get linkOhneMetadaten =>
+      'Images are shown without location and camera details. Originals contain them.';
+
+  @override
+  String get linkErstellen => 'Create link';
+
+  @override
+  String get linkWerHatSieht => 'Anyone with this link can see the photos:';
+
+  @override
+  String get linkNurHeimnetz =>
+      'This address only works in the home network. From outside, the link goes via the server’s public address.';
+
+  @override
+  String get linkKopieren => 'Copy';
+
+  @override
+  String get linkTeilen => 'Share';
+
+  @override
+  String get linkKopiert => 'Link copied';
+
+  @override
+  String get linkTitelFehlt => 'Please enter a title.';
+
+  @override
+  String get linkPasswortKurz => 'The password needs at least 4 characters.';
+
+  @override
+  String get linkOhneServer =>
+      'Without a connection to the server there is no link.';
+
+  @override
+  String get linkGeteilte => 'Shared links';
+
+  @override
+  String get linkNochNichts => 'Nothing shared yet.';
+
+  @override
+  String linkAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get linkAbgelaufen => 'expired';
+
+  @override
+  String linkBis(String datum) {
+    return 'until $datum';
+  }
+
+  @override
+  String get linkMitPasswort => 'with password';
+
+  @override
+  String linkAufrufe(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n views',
+      one: '1 view',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get linkLoeschen => 'Delete';
+
+  @override
+  String linkLoeschenFrage(String titel) {
+    return 'Delete the link “$titel”? Anyone who has it will see nothing afterwards.';
+  }
+
+  @override
+  String get auswahlLink => 'Link';
+
+  @override
+  String get albumAlsLink => 'Share as link';
 }

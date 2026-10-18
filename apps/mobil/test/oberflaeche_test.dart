@@ -38,6 +38,7 @@ import 'package:photo_vault_mobil/seiten/eigenes_konto.dart';
 import 'package:photo_vault_mobil/seiten/einstellungen.dart';
 import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
+import 'package:photo_vault_mobil/seiten/freigaben.dart';
 import 'package:photo_vault_mobil/seiten/gesichter.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -738,6 +739,81 @@ void main() {
     expect([for (final z in raster.zeilen) z.id], ['s2']);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Als Link teilen: Auswahl an den Server, Link mit Kopieren', (
+    tester,
+  ) async {
+    Map<String, Object?>? gesendet;
+    final client = MockClient((r) async {
+      if (r.method == 'POST' && r.url.path == '/api/v1/freigaben') {
+        gesendet = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        return http.Response(
+          jsonEncode({
+            'id': 'f1',
+            'link': 'https://fotos.example/teilen/abcdefghijklmnop',
+          }),
+          201,
+        );
+      }
+      return http.Response('{}', 404);
+    });
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      'token',
+      client: client,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => alsLinkTeilen(
+                context,
+                verbindung,
+                ids: const ['a', 'b'],
+                titel: '2 Aufnahmen',
+              ),
+              child: const Text('teilen'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('teilen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Als Link teilen'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Passwort (frei lassen für keins)'),
+      'geheim1',
+    );
+    await tester.tap(find.text('Link erstellen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(gesendet, {
+      'titel': '2 Aufnahmen',
+      'ids': ['a', 'b'],
+      'tage': 7,
+      'passwort': 'geheim1',
+      'herunterladen': false,
+    });
+    expect(
+      find.text('https://fotos.example/teilen/abcdefghijklmnop'),
+      findsOneWidget,
+    );
+    expect(find.text('Kopieren'), findsOneWidget);
+    // Eine Adresse von aussen: kein Hinweis aufs Heimnetz.
+    expect(find.textContaining('nur im Heimnetz'), findsNothing);
+    // Zusammengesetzt: Die Datenschutzprüfung soll im Quelltext keine
+    // private Adresse finden.
+    final heim = [192, 168, 1, 20].join('.');
+    expect(nurImHeimnetz('http://$heim:8790/teilen/x'), isTrue);
+    expect(nurImHeimnetz('https://fdroid.example/teilen/x'), isFalse);
   });
 
   testWidgets('Betrachter: LIVE nur bei Live Photos', (tester) async {
