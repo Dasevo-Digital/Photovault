@@ -44,6 +44,7 @@ const EN = {
   'Verwalten': 'Manage',
   'Bereiche': 'Sections',
   'Leiste fixieren': 'Pin the sidebar',
+  'Die Karte ließ sich nicht laden.': 'The map could not be loaded.',
   'Fixierung lösen': 'Unpin the sidebar',
   'Karte': 'Map',
   'Reisen': 'Trips',

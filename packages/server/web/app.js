@@ -656,7 +656,35 @@ async function zeigeAktivitaet(id) {
     kopf.append(el('p', 'nebenzeile', t('Zu wenige verortete Aufnahmen für eine Strecke.')));
   }
   zeigeListe({ aufnahmen: d.aufnahmen, kopf }, a.name);
-  if (route) zeichneRoute(route, d.route);
+  if (route) ladeLeaflet().then(() => zeichneRoute(route, d.route)).catch((x) => route.replaceChildren(el('p', 'fehler', x.message)));
+}
+
+// Leaflet erst, wenn eine Karte gebraucht wird: Skript und Stil sind gut
+// 150 KB, die vorher jede Seite lud, auch wenn nie eine Karte kam.
+let leafletLaden = null;
+function ladeLeaflet() {
+  if (typeof L !== 'undefined') return Promise.resolve();
+  if (!leafletLaden) {
+    const geladen = (e) => new Promise((fertig, fehler) => {
+      e.addEventListener('load', fertig, { once: true });
+      e.addEventListener('error', () => fehler(new Error(t('Die Karte ließ sich nicht laden.'))), { once: true });
+    });
+    const stil = document.createElement('link');
+    stil.rel = 'stylesheet';
+    stil.href = 'leaflet/leaflet.css';
+    // Vor app.css, damit die eigenen Regeln weiter gewinnen.
+    document.head.insertBefore(stil, document.querySelector('link[href="app.css"]'));
+    const skript = document.createElement('script');
+    skript.src = 'leaflet/leaflet.js';
+    document.head.append(skript);
+    leafletLaden = Promise.all([geladen(stil), geladen(skript)]).catch((x) => {
+      leafletLaden = null;
+      stil.remove();
+      skript.remove();
+      throw x;
+    });
+  }
+  return leafletLaden;
 }
 
 // Die Route: Linie durch die verorteten Aufnahmen in ihrer Zeitfolge, ein
@@ -1129,6 +1157,7 @@ let karteLauf = 0;
 async function zeigeKarte() {
   markiereNav('karte');
   zeigeBereich(['karte']);
+  await ladeLeaflet();
   if (!leafletKarte) {
     leafletKarte = L.map('karte', { worldCopyJump: true }).setView([51, 10], 5);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {

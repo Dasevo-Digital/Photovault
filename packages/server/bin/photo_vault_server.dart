@@ -69,11 +69,6 @@ Future<void> main(List<String> argumente) async {
       'übernimmt die Rechenhilfe verbundener Rechner',
     );
   }
-  // Jede Bibliothek holt beim Öffnen nach, was offen blieb (Neustart
-  // mitten in der Auswertung, neue Modelle).
-  for (final k in konten.alle()) {
-    await bibliotheken.fuer(k.id);
-  }
   final oidc = e.oidc == null ? null : Oidc(e.oidc!);
   final speicher = Speicherwaechter(
     e.daten,
@@ -117,6 +112,20 @@ Future<void> main(List<String> argumente) async {
         : 'Weboberfläche unter /app/ aus ${e.web!.path}',
   );
   server.autoCompress = true;
+  // Jede Bibliothek holt beim Öffnen nach, was offen blieb (Neustart
+  // mitten in der Auswertung, neue Modelle) – erst, wenn der Server schon
+  // lauscht. Vorher stand er dafür sieben Sekunden taub, und der Proxy
+  // meldete nach jedem Neustart 502. Wer währenddessen eine Bibliothek
+  // braucht, wartet auf dasselbe Öffnen (`fuer` hält es fest).
+  unawaited(() async {
+    for (final k in konten.alle()) {
+      try {
+        await bibliotheken.fuer(k.id);
+      } catch (fehler) {
+        protokoll('Bibliothek von ${k.name} nicht geöffnet: $fehler');
+      }
+    }
+  }());
   protokoll(
     'Photo Vault Server auf http://${e.adresse}:${server.port} – '
     'Daten in ${e.daten.path}',
