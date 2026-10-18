@@ -40,6 +40,14 @@ else
   dir=$worktree
   git worktree add --detach --quiet "$dir" "$commit"
 fi
+# Ab hier findet jeder Schritt das Repo über seinen Ordner. Git gibt einem
+# Hook in einem Worktree GIT_DIR als absoluten Pfad mit
+# (.git/worktrees/<name>), im Haupt-Checkout gar nicht. Erbt Flutter es,
+# liest es seine eigene Fassung per `git describe` aus diesem Repo statt
+# aus dem SDK („Flutter SDK version is 0.8.0“), und `flutter pub get`
+# scheitert. Die übrigen Variablen gehören zum selben Satz.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR \
+  GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX
 cd "$dir"
 
 step() {
