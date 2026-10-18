@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.36.0" date="2026-10-18">
+      <description>
+        <p>The family tree in the browser and on the phone places every child under its own parents, laid out as on the desktop.</p>
+        <p>Browser and phone share the same menu: photos, search, albums and a library grouped into explore and manage. In the browser the sidebar can be collapsed.</p>
+        <p>Faster duplicate search, trip and activity overviews, compressed web responses, and quicker selection in the grid.</p>
+      </description>
+    </release>
     <release version="3.35.0" date="2026-10-18">
       <description>
         <p>The web interface and the phone app now offer the same features: trips with their activities and routes in both; in the browser the day and drag selection, columns, scrubber, swipe gestures, favorites and uploading; on the phone statistics, duplicates, family tree and tree of life, editing, library settings, devices and password, and the full photo details.</p>
