@@ -619,6 +619,48 @@ void main() {
     expect(find.text('auf'), findsOneWidget);
   });
 
+  testWidgets('Betrachter: LIVE nur bei Live Photos', (tester) async {
+    final (sitzung, _) = await sitzungMit(tester, ['b1', 'l1']);
+    final z = _zeile('l1', 0, 0);
+    final live = Rasterzeile(
+      id: z.id,
+      type: z.type,
+      originalFileName: z.originalFileName,
+      relativePath: z.relativePath,
+      thumbnailRelativePath: null,
+      fileCreatedAt: z.fileCreatedAt,
+      durationSeconds: null,
+      isFavorite: false,
+      isStackCover: false,
+      stackId: null,
+      stackSize: null,
+      linkedAssetId: 'v1',
+      rating: 0,
+      colorLabel: null,
+      widthPx: null,
+      heightPx: null,
+      latitude: null,
+      longitude: null,
+      cameraMake: null,
+      isLocked: false,
+    );
+    Future<void> zeige(Rasterzeile zeile) => tester.pumpWidget(
+      MaterialApp(
+        key: ValueKey(zeile.id),
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Betrachter(sitzung: sitzung, zeilen: [zeile], start: 0),
+      ),
+    );
+    await zeige(live);
+    await tester.pumpAndSettle();
+    expect(find.text('LIVE'), findsOneWidget);
+    await zeige(_zeile('b1', 0, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('LIVE'), findsNothing);
+  });
+
   testWidgets('Papierkorb: das Blatt holt zurück statt wegzuwerfen', (
     tester,
   ) async {

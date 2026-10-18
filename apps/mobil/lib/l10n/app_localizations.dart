@@ -325,6 +325,18 @@ abstract class AppTexte {
   /// **'Konnte nicht geladen werden – ist der Server erreichbar?'**
   String get betrachterNichtGeladen;
 
+  /// No description provided for @betrachterWirdUmgewandelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Video wird für dieses Telefon umgewandelt …'**
+  String get betrachterWirdUmgewandelt;
+
+  /// No description provided for @betrachterLiveAbspielen.
+  ///
+  /// In de, this message translates to:
+  /// **'Live Photo abspielen'**
+  String get betrachterLiveAbspielen;
+
   /// No description provided for @betrachterBeschreibungKi.
   ///
   /// In de, this message translates to:

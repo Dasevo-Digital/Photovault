@@ -29,6 +29,7 @@ import 'package:shelf_router/shelf_router.dart';
 import 'abgleich_api.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
+import 'bibliothek.dart';
 import 'bibliotheken.dart';
 import 'dateiantwort.dart';
 import 'fassung.dart';
@@ -41,6 +42,7 @@ import 'sicherung.dart';
 import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
+import 'videofassung.dart';
 import 'web.dart';
 import 'zeilen_json.dart';
 
@@ -429,6 +431,9 @@ class _Api {
   _Api(this.bibliotheken, this._beschleuniger);
 
   final Bibliotheken bibliotheken;
+
+  /// Für Browser, die ein Video nicht abspielen können.
+  final videofassungen = Videofassungen();
   final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
@@ -1220,6 +1225,7 @@ class _Api {
     final b = (await _bereich(anfrage)).bibliothek;
     final a = await b.db.assetById(id);
     if (a == null || a.isLocked) return Response.notFound(null);
+    if (art == 'abspielbar') return _abspielbar(anfrage, b, a);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
       // Was der Betrachter zeigt – wie in den Apps: restauriert,
@@ -1232,6 +1238,10 @@ class _Api {
         a.previewRelativePath ??
             (a.type == 'IMAGE' ? a.relativePath : a.thumbnailRelativePath),
       'original' => a.relativePath,
+      // Was der Betrachter abspielt – wie in den Apps: gekürzt, sonst das
+      // Original.
+      'wiedergabe' =>
+        a.type == 'VIDEO' ? (a.trimmedRelativePath ?? a.relativePath) : null,
       _ => null,
     };
     if (relativ == null) return Response.notFound(null);
@@ -1242,6 +1252,44 @@ class _Api {
       return Response.notFound(null);
     }
     return dateiAntwort(anfrage, datei);
+  }
+
+  /// Ein Video als H.264 (siehe [Videofassungen]): die fertige Fassung
+  /// (mit `?pruefen=1` nur `{"bereit": true}`), sonst `202` mit
+  /// `{"bereit": false}` – dann wird sie gerade erzeugt, und der Browser
+  /// fragt gleich noch einmal. `422`, wenn sie sich nicht erzeugen lässt.
+  Future<Response> _abspielbar(
+    Request anfrage,
+    Bibliothek b,
+    AssetData a,
+  ) async {
+    if (a.type != 'VIDEO') return Response.notFound(null);
+    // Aus dem, was der Betrachter zeigt: gekürzt, sonst das Original. Der
+    // Name sagt, aus welchem – sonst bliebe nach dem Zurücknehmen einer
+    // Kürzung die gekürzte Fassung liegen.
+    final gekuerzt = a.trimmedRelativePath != null;
+    final original = b.pfade.absolute(a.trimmedRelativePath ?? a.relativePath);
+    if (!p.isWithin(b.pfade.root.path, original.path) ||
+        !await original.exists()) {
+      return Response.notFound(null);
+    }
+    final speicher = Directory(p.join(b.ordner.path, 'abspielbar'));
+    final name = gekuerzt ? '${a.id}-gekuerzt' : a.id;
+    final fertig = await videofassungen.bereit(speicher, name, original);
+    // `?pruefen=1` fragt nur nach, ohne die Datei zu holen.
+    if (fertig != null && anfrage.url.queryParameters['pruefen'] != null) {
+      return _json({'bereit': true});
+    }
+    if (fertig != null) return dateiAntwort(anfrage, fertig);
+    if (videofassungen.gescheitert.contains(
+      Videofassungen.ziel(speicher, name).path,
+    )) {
+      return _json({
+        'bereit': false,
+        'fehler': 'nicht umwandelbar',
+      }, status: 422);
+    }
+    return _json({'bereit': false}, status: 202);
   }
 }
 

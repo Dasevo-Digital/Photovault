@@ -52,6 +52,8 @@
   "betrachterPapierkorbText": "Die Aufnahme verschwindet überall – auch am Rechner. Aus dem Papierkorb lässt sie sich am Rechner zurückholen.",
   "betrachterLaedtOriginal": "Das Original wird geladen …",
   "betrachterNichtGeladen": "Konnte nicht geladen werden – ist der Server erreichbar?",
+  "betrachterWirdUmgewandelt": "Das Video wird für dieses Telefon umgewandelt …",
+  "betrachterLiveAbspielen": "Live Photo abspielen",
   "betrachterBeschreibungKi": "Beschreibung der Bilderkennung",
   "kontoTitel": "Konto",
   "kontoKontoGeraet": "Konto {konto} · Gerät {geraet}",

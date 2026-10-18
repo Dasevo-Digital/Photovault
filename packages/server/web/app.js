@@ -1796,10 +1796,16 @@ function oeffne(i) {
   video.pause();
   video.removeAttribute('src');
   video.load();
+  videoLauf++;
+  liveSpielt = false;
+  $('live').classList.remove('aktiv');
+  $('video-hinweis').hidden = true;
+  video.controls = true;
+  video.onended = null;
   if (a.art === 'video') {
     bild.hidden = true;
     video.hidden = false;
-    video.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
+    spieleVideo(a.id);
   } else {
     video.hidden = true;
     bild.hidden = false;
@@ -1811,6 +1817,10 @@ function oeffne(i) {
   $('weg').hidden = korb;
   $('holen').hidden = !korb;
   $('teilen').hidden = !teilenMoeglich;
+  $('live').hidden = !(a.art !== 'video' && a.partner);
+  // Spielt dieser Browser kein HEVC, die Fassung des Bewegungsteils schon
+  // jetzt anstossen – dann ist sie da, wenn man auf LIVE zeigt.
+  if (a.art !== 'video' && a.partner && !kannHevc) fetch(fassungUrl(a.partner, true), { credentials: 'same-origin' }).catch(() => {});
   ordneKnoepfe();
   blickZurueck(false);
   $('betrachter').classList.remove('still');
@@ -1823,6 +1833,104 @@ function oeffne(i) {
   zeigeAngaben();
   if (i >= liste.aufnahmen.length - 20) ladeMehr();
 }
+
+// --- Videos, die der Browser nicht abspielt ---------------------------------
+//
+// Das iPhone filmt in HEVC; Chrome unter Linux, Firefox und manches
+// Chromium spielen das nicht ab – das Video meldet einen Fehler oder bleibt
+// schwarz (Breite 0). Dann holt der Betrachter die H.264-Fassung des
+// Servers. Die entsteht beim ersten Mal; bis dahin steht ein Hinweis da.
+
+// Nur mit vollem Profil ehrlich: Ein blosses „hvc1“ verneint auch ein
+// Browser, der HEVC abspielt. Main 10 für die HDR-Videos des iPhones.
+const kannHevc = (() => {
+  const v = document.createElement('video');
+  return ['hvc1.1.6.L93.B0', 'hvc1.2.4.L123.B0'].every((c) => v.canPlayType(`video/mp4; codecs="${c}"`));
+})();
+let videoLauf = 0;
+const fassungUrl = (id, pruefen) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/abspielbar${pruefen ? '?pruefen=1' : ''}`;
+
+function videoHinweis(text) {
+  $('video-hinweis').textContent = text || '';
+  $('video-hinweis').hidden = !text;
+}
+
+function spieleVideo(id, { live = false } = {}) {
+  const video = $('video');
+  const lauf = videoLauf;
+  const original = `/api/v1/aufnahmen/${encodeURIComponent(id)}/wiedergabe`;
+  let gewechselt = false;
+  const wechsle = () => {
+    if (gewechselt || lauf !== videoLauf) return;
+    gewechselt = true;
+    holeFassung(id, lauf, live);
+  };
+  video.onerror = () => { if (video.getAttribute('src') === original) wechsle(); };
+  video.onloadedmetadata = () => { if (video.getAttribute('src') === original && video.videoWidth === 0) wechsle(); };
+  // Ohne HEVC gleich die Fassung: Ein Bewegungsteil vom iPhone ist immer
+  // HEVC, und ein Fehlversuch kostete hier nur Zeit.
+  if (live && !kannHevc) { wechsle(); return; }
+  video.src = original;
+  if (live) video.play().catch(() => {});
+}
+
+async function holeFassung(id, lauf, live) {
+  const video = $('video');
+  if (!live) videoHinweis(t('Das Video wird für diesen Browser umgewandelt …'));
+  for (let i = 0; i < 900 && lauf === videoLauf; i++) {
+    let r;
+    try { r = await fetch(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { break; }
+    if (r.status === 200) {
+      if (lauf !== videoLauf) return;
+      videoHinweis('');
+      video.src = fassungUrl(id, false);
+      if (live) video.play().catch(() => {});
+      return;
+    }
+    if (r.status !== 202) break;
+    await new Promise((fertig) => setTimeout(fertig, 1000));
+  }
+  if (lauf === videoLauf && !live) videoHinweis(t('Dieses Video lässt sich im Browser nicht abspielen – „Herunterladen“ holt das Original.'));
+}
+
+// Live Photos: Zeigen oder Halten auf LIVE spielt den Bewegungsteil an der
+// Stelle des Bildes, Loslassen zeigt wieder das Foto – wie die
+// Schwebevorschau am Rechner und das Halten auf dem Telefon.
+let liveSpielt = false;
+function liveAn() {
+  const a = liste && liste.aufnahmen[offen];
+  if (!a || !a.partner || liveSpielt) return;
+  liveSpielt = true;
+  const video = $('video');
+  videoLauf++;
+  video.controls = false;
+  video.loop = false;
+  video.onended = liveAus;
+  $('bild').hidden = true;
+  video.hidden = false;
+  $('live').classList.add('aktiv');
+  spieleVideo(a.partner, { live: true });
+}
+function liveAus() {
+  if (!liveSpielt) return;
+  liveSpielt = false;
+  const video = $('video');
+  videoLauf++;
+  video.pause();
+  video.onended = null;
+  video.removeAttribute('src');
+  video.load();
+  video.hidden = true;
+  video.controls = true;
+  $('bild').hidden = false;
+  $('live').classList.remove('aktiv');
+}
+$('live').addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') liveAn(); });
+$('live').addEventListener('pointerleave', liveAus);
+$('live').addEventListener('pointerdown', (e) => { e.preventDefault(); liveAn(); });
+$('live').addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') liveAus(); });
+$('live').addEventListener('pointercancel', liveAus);
+$('live').addEventListener('click', (e) => e.stopPropagation());
 
 // --- Angaben zur Aufnahme --------------------------------------------------
 // Dieselben Zeilen wie die Info-Ansicht des Rechners: Datum, Datei, Kamera,
@@ -1935,6 +2043,8 @@ $('info').addEventListener('click', () => setzeAngabenOffen(!angabenOffen));
 
 function schliesse() {
   $('betrachter').hidden = true;
+  liveAus();
+  videoLauf++;
   $('video').pause();
   offen = -1;
   zeigeBildlauf();
@@ -1943,7 +2053,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'weg', 'holen']) {
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }

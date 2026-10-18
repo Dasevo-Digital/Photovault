@@ -38,6 +38,8 @@
   "betrachterPapierkorbText": "The item disappears everywhere – on the computer too. It can be restored from the trash on the computer.",
   "betrachterLaedtOriginal": "Loading the original …",
   "betrachterNichtGeladen": "Could not be loaded – is the server reachable?",
+  "betrachterWirdUmgewandelt": "Converting the video for this phone …",
+  "betrachterLiveAbspielen": "Play Live Photo",
   "betrachterBeschreibungKi": "Description by image recognition",
   "kontoTitel": "Account",
   "kontoKontoGeraet": "Account {konto} · device {geraet}",

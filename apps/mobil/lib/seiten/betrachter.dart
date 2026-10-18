@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -15,6 +13,7 @@ import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
 import 'entwickeln.dart';
+import 'videospieler.dart';
 
 /// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
 /// das Raster dahinter erscheint, und mit einer Blende statt eines Schubs
@@ -301,7 +300,11 @@ class _BetrachterState extends State<Betrachter> {
 
 /// Ein Foto: zuerst die Miniatur, dann das Bild, das der Desktop zeigt
 /// (restauriert, entwickelt, Vorschau oder Original).
-class _BildSeite extends StatelessWidget {
+///
+/// Ein Live Photo trägt unten links „LIVE“: Halten auf dem Bild (oder ein
+/// Tipp auf die Marke) spielt den Bewegungsteil an seiner Stelle, wie im
+/// Browser und in der Schwebevorschau des Rechners.
+class _BildSeite extends StatefulWidget {
   const _BildSeite({
     required this.sitzung,
     required this.zeile,
@@ -313,21 +316,79 @@ class _BildSeite extends StatelessWidget {
   final Future<AssetData?> Function(String id) lade;
 
   @override
+  State<_BildSeite> createState() => _BildSeiteState();
+}
+
+class _BildSeiteState extends State<_BildSeite> {
+  VideoPlayerController? _live;
+  var _laedt = false;
+  var _lauf = 0;
+
+  Future<void> _liveAn() async {
+    final partner = widget.zeile.linkedAssetId;
+    if (partner == null || _laedt || _live != null) return;
+    final lauf = ++_lauf;
+    setState(() => _laedt = true);
+    try {
+      final a = await widget.lade(partner);
+      if (a == null) return;
+      final c = await videospieler(
+        widget.sitzung,
+        a,
+        abgebrochen: () => !mounted || lauf != _lauf,
+      );
+      if (!mounted || lauf != _lauf) {
+        await c.dispose();
+        return;
+      }
+      c.addListener(() {
+        if (c.value.isCompleted && identical(_live, c)) _liveAus();
+      });
+      await c.play();
+      setState(() => _live = c);
+    } catch (_) {
+      // Ohne Bewegungsteil bleibt das Foto stehen.
+    } finally {
+      if (mounted && lauf == _lauf) setState(() => _laedt = false);
+    }
+  }
+
+  void _liveAus() {
+    _lauf++;
+    final c = _live;
+    _live = null;
+    _laedt = false;
+    if (mounted) setState(() {});
+    c?.dispose();
+  }
+
+  @override
+  void dispose() {
+    _lauf++;
+    _live?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final zeile = widget.zeile;
     final miniatur = zeile.thumbnailRelativePath == null
         ? const SizedBox.shrink()
         : Image(
-            image: BibliotheksBild(sitzung.paths, zeile.thumbnailRelativePath!),
+            image: BibliotheksBild(
+              widget.sitzung.paths,
+              zeile.thumbnailRelativePath!,
+            ),
             fit: BoxFit.contain,
           );
-    return FutureBuilder<AssetData?>(
-      future: lade(zeile.id),
+    final bild = FutureBuilder<AssetData?>(
+      future: widget.lade(zeile.id),
       builder: (context, snap) {
         final a = snap.data;
         if (a == null) return Center(child: miniatur);
         return Image(
           image: ResizeImage(
-            BibliotheksBild(sitzung.paths, displayRelativePath(a)),
+            BibliotheksBild(widget.sitzung.paths, displayRelativePath(a)),
             width: 3000,
             height: 3000,
             policy: ResizeImagePolicy.fit,
@@ -340,6 +401,56 @@ class _BildSeite extends StatelessWidget {
           errorBuilder: (_, _, _) => Center(child: miniatur),
         );
       },
+    );
+    if (zeile.linkedAssetId == null) return bild;
+    final live = _live;
+    final aktiv = live != null || _laedt;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        GestureDetector(
+          onLongPressStart: (_) => _liveAn(),
+          onLongPressEnd: (_) => _liveAus(),
+          child: bild,
+        ),
+        if (live != null)
+          IgnorePointer(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: live.value.aspectRatio,
+                child: VideoPlayer(live),
+              ),
+            ),
+          ),
+        Positioned(
+          left: 16,
+          bottom: 16 + MediaQuery.paddingOf(context).bottom,
+          child: Semantics(
+            button: true,
+            label: AppTexte.of(context).betrachterLiveAbspielen,
+            child: GestureDetector(
+              onTap: aktiv ? _liveAus : _liveAn,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: aktiv ? Colors.white : Colors.black38,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white70, width: 1.5),
+                ),
+                child: Text(
+                  'LIVE',
+                  style: TextStyle(
+                    color: aktiv ? Colors.black : Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.9,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -364,6 +475,7 @@ class _VideoSeite extends StatefulWidget {
 class _VideoSeiteState extends State<_VideoSeite> {
   VideoPlayerController? _spieler;
   var _fehler = false;
+  var _wandelt = false;
 
   @override
   void initState() {
@@ -374,27 +486,22 @@ class _VideoSeiteState extends State<_VideoSeite> {
   Future<void> _starte() async {
     final a = await widget.lade(widget.id);
     if (a == null || !mounted) return;
-    final rel = a.trimmedRelativePath ?? a.relativePath;
-    final hier = widget.sitzung.paths.absolute(rel);
-    final v = widget.sitzung.verbindung!;
-    final spieler = await hier.exists()
-        ? VideoPlayerController.file(File(hier.path))
-        : VideoPlayerController.networkUrl(
-            widget.sitzung.abgleich!.verbindung.adresse(
-              'api/v1/dateien/${rel.split('/').map(Uri.encodeComponent).join('/')}',
-            ),
-            httpHeaders: {'authorization': 'Bearer ${v.token}'},
-          );
     try {
-      await spieler.initialize();
-      await spieler.play();
+      final spieler = await videospieler(
+        widget.sitzung,
+        a,
+        wandelt: () {
+          if (mounted) setState(() => _wandelt = true);
+        },
+        abgebrochen: () => !mounted,
+      );
       if (!mounted) {
         await spieler.dispose();
         return;
       }
+      await spieler.play();
       setState(() => _spieler = spieler);
     } catch (_) {
-      await spieler.dispose();
       if (mounted) setState(() => _fehler = true);
     }
   }
@@ -417,8 +524,22 @@ class _VideoSeiteState extends State<_VideoSeite> {
       );
     }
     if (s == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white54),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: Colors.white54),
+            if (_wandelt)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  AppTexte.of(context).betrachterWirdUmgewandelt,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+          ],
+        ),
       );
     }
     return GestureDetector(

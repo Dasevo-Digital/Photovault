@@ -146,6 +146,13 @@ class AppTexteEn extends AppTexte {
       'Could not be loaded – is the server reachable?';
 
   @override
+  String get betrachterWirdUmgewandelt =>
+      'Converting the video for this phone …';
+
+  @override
+  String get betrachterLiveAbspielen => 'Play Live Photo';
+
+  @override
   String get betrachterBeschreibungKi => 'Description by image recognition';
 
   @override

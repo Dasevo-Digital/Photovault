@@ -107,6 +107,81 @@ void main() {
         inhalt: jsonEncode({'art': art, 'werte': w}),
       );
 
+  test('Videos als H.264: erst 202, dann die abspielbare Fassung', () async {
+    // Ein kurzes Video, wie es ein Browser nicht abspielt (HEVC, wo
+    // ffmpeg es kann, sonst MPEG-4 Part 2 – auch das spielt kein Browser).
+    final quelle = File('${ordner.path}/clip.mov');
+    Future<ProcessResult> baue(String codec) => Process.run('ffmpeg', [
+      '-nostdin', '-y', '-loglevel', 'error', //
+      '-f', 'lavfi', '-i', 'testsrc=size=320x240:rate=10:duration=1',
+      '-c:v', codec, '-pix_fmt', 'yuv420p', quelle.path,
+    ]);
+    if ((await baue('libx265')).exitCode != 0) await baue('mpeg4');
+    final bytes = await quelle.readAsBytes();
+    final tus = {'tus-resumable': '1.0.0'};
+    final angelegt = await frag(
+      'POST',
+      '/api/v1/hochladen',
+      token: erikaToken,
+      kopf: {
+        ...tus,
+        'upload-length': '${bytes.length}',
+        'upload-metadata': 'filename ${base64.encode(utf8.encode('clip.mov'))}',
+      },
+    );
+    final fertig = await frag(
+      'PATCH',
+      angelegt.headers['location']!,
+      token: erikaToken,
+      kopf: {
+        ...tus,
+        'content-type': 'application/offset+octet-stream',
+        'upload-offset': '0',
+      },
+      inhalt: bytes,
+    );
+    expect(fertig.headers['pv-ausgang'], 'imported');
+    final id = fertig.headers['pv-aufnahme']!;
+    final pfad = '/api/v1/aufnahmen/$id/abspielbar';
+
+    final erst = await frag('GET', pfad, token: erikaToken);
+    expect(erst.statusCode, 202);
+    expect((await jsonAus(erst))['bereit'], false);
+    // Ein anderes Konto sieht die Aufnahme nicht.
+    expect((await frag('GET', pfad, token: maxToken)).statusCode, 404);
+
+    Response? da;
+    for (var i = 0; i < 300 && da == null; i++) {
+      final r = await frag('GET', pfad, token: erikaToken);
+      if (r.statusCode == 200) {
+        da = r;
+      } else {
+        expect(r.statusCode, 202);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+    }
+    expect(da, isNotNull, reason: 'nach 30 s keine Fassung');
+    expect(
+      await jsonAus(await frag('GET', '$pfad?pruefen=1', token: erikaToken)),
+      {'bereit': true},
+    );
+    expect(da!.headers['content-type'], 'video/mp4');
+    final mp4 = await da.read().expand((b) => b).toList();
+    final text = latin1.decode(mp4, allowInvalid: true);
+    expect(text.substring(4, 8), 'ftyp');
+    expect(text, contains('avc1'));
+    // Ein Bild hat keine Videofassung.
+    final bild = await ladeHoch(erikaToken, 'bild.jpg', 30);
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/aufnahmen/$bild/abspielbar',
+        token: erikaToken,
+      )).statusCode,
+      404,
+    );
+  }, skip: _hatFfmpeg() ? false : 'ohne ffmpeg');
+
   test(
     'Alben: Liste mit Anzahl und Titelbild, Inhalt, fremde unsichtbar',
     () async {
@@ -1046,4 +1121,12 @@ void main() {
       );
     },
   );
+}
+
+bool _hatFfmpeg() {
+  try {
+    return Process.runSync('ffmpeg', ['-version']).exitCode == 0;
+  } catch (_) {
+    return false;
+  }
 }

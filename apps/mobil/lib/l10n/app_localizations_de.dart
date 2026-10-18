@@ -146,6 +146,13 @@ class AppTexteDe extends AppTexte {
       'Konnte nicht geladen werden – ist der Server erreichbar?';
 
   @override
+  String get betrachterWirdUmgewandelt =>
+      'Das Video wird für dieses Telefon umgewandelt …';
+
+  @override
+  String get betrachterLiveAbspielen => 'Live Photo abspielen';
+
+  @override
   String get betrachterBeschreibungKi => 'Beschreibung der Bilderkennung';
 
   @override
