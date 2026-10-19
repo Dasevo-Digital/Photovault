@@ -14,6 +14,7 @@ import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'gemeinsam.dart';
 import 'sicherung/dienst.dart';
 
 enum Sitzungszustand { laedt, abgemeldet, bereit }
@@ -113,6 +114,8 @@ class Sitzung extends ChangeNotifier {
     a.starte();
     verbindung = v;
     abgleich = a;
+    // Widget und Teilen-Erweiterung sprechen selbst mit dem Server.
+    unawaited(Gemeinsam.setze(v.server, v.token));
     final d = sicherung = Sicherungsdienst(
       ordner: ordner,
       server: v.server,
@@ -279,6 +282,7 @@ class Sitzung extends ChangeNotifier {
     }
     verbindung = null;
     abgleichszustand = null;
+    await Gemeinsam.loesche();
     final ordner = await _ordner();
     if (await ordner.exists()) await ordner.delete(recursive: true);
     _setze(Sitzungszustand.abgemeldet);

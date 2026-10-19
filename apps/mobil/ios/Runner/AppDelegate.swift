@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import WidgetKit
 import workmanager_apple
 
 @main
@@ -21,5 +22,30 @@ import workmanager_apple
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Die Verbindung für Widget und Teilen-Erweiterung (lib/gemeinsam.dart).
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Gemeinsam") {
+      let kanal = FlutterMethodChannel(
+        name: "de.dasevo.photovault/gemeinsam", binaryMessenger: registrar.messenger())
+      kanal.setMethodCallHandler { aufruf, antwort in
+        switch aufruf.method {
+        case "setze":
+          guard let w = aufruf.arguments as? [String: Any],
+            let server = w["server"] as? String, let token = w["token"] as? String
+          else {
+            antwort(FlutterError(code: "werte", message: nil, details: nil))
+            return
+          }
+          let ok = GemeinsameVerbindung.schreibe(GemeinsameVerbindung(server: server, token: token))
+          WidgetCenter.shared.reloadAllTimelines()
+          antwort(ok ? nil : FlutterError(code: "schluesselbund", message: nil, details: nil))
+        case "loesche":
+          GemeinsameVerbindung.schreibe(nil)
+          WidgetCenter.shared.reloadAllTimelines()
+          antwort(nil)
+        default:
+          antwort(FlutterMethodNotImplemented)
+        }
+      }
+    }
   }
 }

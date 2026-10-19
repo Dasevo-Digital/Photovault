@@ -37,6 +37,12 @@
 	<array>
 		<string>de.dasevo.photovault.sicherung</string>
 	</array>
+	<!-- Für den gemeinsamen Schlüsselbund mit Widget und Teilen-Erweiterung
+	     (ios/Gemeinsam/GemeinsameVerbindung.swift). -->
+	<key>AppIdentifierPrefix</key>
+	<string>$(AppIdentifierPrefix)</string>
+	<key>PVAppKennung</key>
+	<string>$(PV_APP_KENNUNG)</string>
 	<key>CFBundleDisplayName</key>
 	<string>$(PV_ANZEIGENAME)</string>
 	<key>CFBundleExecutable</key>

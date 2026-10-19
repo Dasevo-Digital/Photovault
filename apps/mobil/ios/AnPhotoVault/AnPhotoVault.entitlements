@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Die Verbindung zum Server teilen App, Widget und Teilen-Erweiterung
+	     über diese Gruppe (GemeinsameVerbindung.swift) – eine App Group
+	     gibt es mit kostenloser Signierung nicht. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(PV_APP_KENNUNG).gemeinsam</string>
+	</array>
+</dict>
+</plist>

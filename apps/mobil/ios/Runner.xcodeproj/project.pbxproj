@@ -7,19 +7,42 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5E1A0B0C2F0000000000A001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5E1A0B0C2F0000000000A002 /* InfoPlist.strings */; };
+		08F54CC88506EC3AD919E2FA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F621810ABEC024D660589989 /* Foundation.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
+		15E4F13682309FAD24016856 /* Erinnerung.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3FDB82A2B074DF279629A558 /* Erinnerung.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2BDF5B306DB4770D5999E1FC /* GemeinsameVerbindung.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		5E1A0B0C2F0000000000A001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5E1A0B0C2F0000000000A002 /* InfoPlist.strings */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		8E11D4143519A06CC0B5C3B1 /* ErinnerungWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D9575D3C233309B053F87A /* ErinnerungWidget.swift */; };
+		955B46D6CA91F20304F8C1CD /* GemeinsameVerbindung.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */; };
+		958D7C488C092CE2B0047DDA /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C6E3B5AF5BD64E29958380 /* ShareViewController.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		980258857761D5152A65C283 /* AnPhotoVault.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6E6063216F03D1A0230FBFB8 /* AnPhotoVault.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		9F32520EE1A1B4D57000ED80 /* GemeinsameVerbindung.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */; };
+		A8FDBC571B36C61DEF677171 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F621810ABEC024D660589989 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		00FCBC2F75BAC6073ECAB79C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 06658B2EEA35701745CF318C;
+			remoteInfo = AnPhotoVault;
+		};
+		1EED9D5187C1D4458BE27304 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 46D61D055707202963BA4478;
+			remoteInfo = Erinnerung;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -40,31 +63,62 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		EE81AE3C2B480AF90268A57D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				15E4F13682309FAD24016856 /* Erinnerung.appex in Embed Foundation Extensions */,
+				980258857761D5152A65C283 /* AnPhotoVault.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5E1A0B0C2F0000000000A003 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		5E1A0B0C2F0000000000A004 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
+		17C6E3B5AF5BD64E29958380 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		25D9575D3C233309B053F87A /* ErinnerungWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErinnerungWidget.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3FDB82A2B074DF279629A558 /* Erinnerung.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Erinnerung.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E1A0B0C2F0000000000A003 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5E1A0B0C2F0000000000A004 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		68F3889C425B8602F112E015 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		6E6063216F03D1A0230FBFB8 /* AnPhotoVault.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AnPhotoVault.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		8E782905827760BFC9E2E750 /* AnPhotoVault.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = AnPhotoVault.entitlements; sourceTree = "<group>"; };
+		905CA94F7538E4567FB52100 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
+		97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GemeinsameVerbindung.swift; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AAD92512150F6437A338D562 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		ED6BDAEB000764A4A3CBAD87 /* Erinnerung.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Erinnerung.entitlements; sourceTree = "<group>"; };
+		F621810ABEC024D660589989 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		35FF7205813CE659F635096C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08F54CC88506EC3AD919E2FA /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -73,15 +127,51 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9C34A9171551C2BCF889DF16 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A8FDBC571B36C61DEF677171 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0237D112EE7062C841ADB659 /* Erinnerung */ = {
+			isa = PBXGroup;
+			children = (
+				25D9575D3C233309B053F87A /* ErinnerungWidget.swift */,
+				905CA94F7538E4567FB52100 /* Info.plist */,
+				ED6BDAEB000764A4A3CBAD87 /* Erinnerung.entitlements */,
+			);
+			name = Erinnerung;
+			path = Erinnerung;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		6B87E5F379C11A7337E1A843 /* Gemeinsam */ = {
+			isa = PBXGroup;
+			children = (
+				97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */,
+			);
+			name = Gemeinsam;
+			path = Gemeinsam;
+			sourceTree = "<group>";
+		};
+		74C04DCBC0CB1CD3C123400D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F83088C841F979D7C27F4EBB /* iOS */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -103,6 +193,10 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
+				6B87E5F379C11A7337E1A843 /* Gemeinsam */,
+				0237D112EE7062C841ADB659 /* Erinnerung */,
+				74C04DCBC0CB1CD3C123400D /* Frameworks */,
+				F0B4686CE3499F39AF4F5DC6 /* AnPhotoVault */,
 			);
 			sourceTree = "<group>";
 		};
@@ -111,6 +205,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				3FDB82A2B074DF279629A558 /* Erinnerung.appex */,
+				6E6063216F03D1A0230FBFB8 /* AnPhotoVault.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,13 +224,50 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				68F3889C425B8602F112E015 /* Runner.entitlements */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		F0B4686CE3499F39AF4F5DC6 /* AnPhotoVault */ = {
+			isa = PBXGroup;
+			children = (
+				17C6E3B5AF5BD64E29958380 /* ShareViewController.swift */,
+				AAD92512150F6437A338D562 /* Info.plist */,
+				8E782905827760BFC9E2E750 /* AnPhotoVault.entitlements */,
+			);
+			name = AnPhotoVault;
+			path = AnPhotoVault;
+			sourceTree = "<group>";
+		};
+		F83088C841F979D7C27F4EBB /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F621810ABEC024D660589989 /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		06658B2EEA35701745CF318C /* AnPhotoVault */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B4C3D1E725EEA46CEB86870D /* Build configuration list for PBXNativeTarget "AnPhotoVault" */;
+			buildPhases = (
+				9FC3E0B847F8C9917924FB9A /* Sources */,
+				9C34A9171551C2BCF889DF16 /* Frameworks */,
+				91C58E0941E063EE9127B830 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AnPhotoVault;
+			productName = AnPhotoVault;
+			productReference = 6E6063216F03D1A0230FBFB8 /* AnPhotoVault.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -152,6 +285,23 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		46D61D055707202963BA4478 /* Erinnerung */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20D6D3B6318D4FA3AAD4CEF6 /* Build configuration list for PBXNativeTarget "Erinnerung" */;
+			buildPhases = (
+				F6A15C1F9737569667B0EB91 /* Sources */,
+				35FF7205813CE659F635096C /* Frameworks */,
+				F5BB2D9B7940B84EE2DDB7F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Erinnerung;
+			productName = Erinnerung;
+			productReference = 3FDB82A2B074DF279629A558 /* Erinnerung.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -161,11 +311,14 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				EE81AE3C2B480AF90268A57D /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				632A0399133F395E64C69CF6 /* PBXTargetDependency */,
+				96510DBBA8BED43BC2702807 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -206,7 +359,7 @@
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			packageReferences = (
-				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */,
+				781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */,
 			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
@@ -214,12 +367,21 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				46D61D055707202963BA4478 /* Erinnerung */,
+				06658B2EEA35701745CF318C /* AnPhotoVault */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		331C807F294A63A400263BE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		91C58E0941E063EE9127B830 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -235,6 +397,13 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5BB2D9B7940B84EE2DDB7F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,6 +459,25 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				955B46D6CA91F20304F8C1CD /* GemeinsameVerbindung.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9FC3E0B847F8C9917924FB9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				958D7C488C092CE2B0047DDA /* ShareViewController.swift in Sources */,
+				2BDF5B306DB4770D5999E1FC /* GemeinsameVerbindung.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F6A15C1F9737569667B0EB91 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E11D4143519A06CC0B5C3B1 /* ErinnerungWidget.swift in Sources */,
+				9F32520EE1A1B4D57000ED80 /* GemeinsameVerbindung.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,6 +488,18 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		632A0399133F395E64C69CF6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Erinnerung;
+			target = 46D61D055707202963BA4478 /* Erinnerung */;
+			targetProxy = 1EED9D5187C1D4458BE27304 /* PBXContainerItemProxy */;
+		};
+		96510DBBA8BED43BC2702807 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = AnPhotoVault;
+			target = 06658B2EEA35701745CF318C /* AnPhotoVault */;
+			targetProxy = 00FCBC2F75BAC6073ECAB79C /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -332,6 +532,36 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		18243C899631DE85593F7A98 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = Erinnerung/Erinnerung.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Erinnerung/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault";
+				PV_APP_KENNUNG = de.dasevo.photovault;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -391,6 +621,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = GJS9KLYL54;
 				ENABLE_BITCODE = NO;
@@ -400,8 +631,9 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault.test;
-				PV_ANZEIGENAME = "Photo Vault (Test)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -454,6 +686,94 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
 			name = Profile;
+		};
+		63A4AD047C8A6257F6A7EE3B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = Erinnerung/Erinnerung.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Erinnerung/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		66D075F1EA3C39F4BDFCDA24 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = Erinnerung/Erinnerung.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Erinnerung/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
+		83DDB4F589A962E782007D2E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = AnPhotoVault/AnPhotoVault.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AnPhotoVault/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -574,6 +894,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = GJS9KLYL54;
 				ENABLE_BITCODE = NO;
@@ -583,8 +904,9 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault.test;
-				PV_ANZEIGENAME = "Photo Vault (Test)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -598,6 +920,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = GJS9KLYL54;
 				ENABLE_BITCODE = NO;
@@ -607,17 +930,88 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault;
-				PV_ANZEIGENAME = "Photo Vault";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault";
+				PV_APP_KENNUNG = de.dasevo.photovault;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
 		};
+		A1C1748B767823CE8D8D26FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = AnPhotoVault/AnPhotoVault.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AnPhotoVault/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault";
+				PV_APP_KENNUNG = de.dasevo.photovault;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B8A633849D22A97A23AF42DB /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = AnPhotoVault/AnPhotoVault.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = GJS9KLYL54;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AnPhotoVault/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PV_ANZEIGENAME = "Photo Vault (Test)";
+				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		20D6D3B6318D4FA3AAD4CEF6 /* Build configuration list for PBXNativeTarget "Erinnerung" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18243C899631DE85593F7A98 /* Release */,
+				63A4AD047C8A6257F6A7EE3B /* Debug */,
+				66D075F1EA3C39F4BDFCDA24 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -648,10 +1042,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B4C3D1E725EEA46CEB86870D /* Build configuration list for PBXNativeTarget "AnPhotoVault" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1C1748B767823CE8D8D26FD /* Release */,
+				83DDB4F589A962E782007D2E /* Debug */,
+				B8A633849D22A97A23AF42DB /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage" */ = {
+		781AD8BC2B33823900A9FFBB /* XCLocalSwiftPackageReference "FlutterGeneratedPluginSwiftPackage" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage;
 		};
