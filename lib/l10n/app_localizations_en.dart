@@ -33,10 +33,43 @@ class AppTexteEn extends AppTexte {
   String get allgAlleAnzeigen => 'Show all';
 
   @override
-  String get navTimeline => 'Timeline';
+  String get navFotos => 'Photos';
 
   @override
-  String get navErkunden => 'Explore';
+  String get navFavoriten => 'Favorites';
+
+  @override
+  String get navOrte => 'Places';
+
+  @override
+  String get navStatistik => 'Statistics';
+
+  @override
+  String get navRueckblick => 'Memories';
+
+  @override
+  String get navDuplikate => 'Duplicates';
+
+  @override
+  String get navPapierkorb => 'Trash';
+
+  @override
+  String get navBibliothek => 'Library';
+
+  @override
+  String get navGruppeEntdecken => 'Explore';
+
+  @override
+  String get navGruppeVerwalten => 'Manage';
+
+  @override
+  String get navImportieren => 'Import';
+
+  @override
+  String get navLeisteFixieren => 'Pin the sidebar';
+
+  @override
+  String get navLeisteLoesen => 'Unpin the sidebar';
 
   @override
   String get navKalender => 'Calendar';
@@ -45,8 +78,8 @@ class AppTexteEn extends AppTexte {
   String get navReisen => 'Trips';
 
   @override
-  String get kuerzelReisenOhne =>
-      'Trips have no shortcut – all ten digits were taken, and renumbering would have moved every shortcut you already know.';
+  String get kuerzelUebrigeBereiche =>
+      'The digits follow the sidebar from the top: ⌘1 Photos to ⌘9 Family tree, ⌘0 Settings. Everything else via ⌘K.';
 
   @override
   String get navKarte => 'Map';

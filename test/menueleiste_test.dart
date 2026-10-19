@@ -3,12 +3,15 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/albums_screen.dart';
 import 'package:photo_vault/screens/home_shell.dart';
+import 'package:photo_vault/widgets/seitenleiste.dart';
+import 'package:zierbild/bibliothek_eintraege.dart';
 import 'package:photo_vault/screens/timeline_screen.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
@@ -104,7 +107,7 @@ void main() {
     tester,
   ) async {
     await huelle(tester);
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(Seitenleiste), findsOneWidget);
 
     await oeffne(tester, ganzesFenster: false);
 
@@ -114,7 +117,7 @@ void main() {
       reason: 'Die Unterseite ist da.',
     );
     expect(
-      find.byType(NavigationRail),
+      find.byType(Seitenleiste),
       findsOneWidget,
       reason: 'Und die Leiste steht daneben, statt verdeckt zu sein.',
     );
@@ -132,7 +135,7 @@ void main() {
     // unter der Vollbildseite im Baum, aber beiseitegestellt, und danach
     // sucht ein Finder von sich aus nicht.
     expect(
-      find.byType(NavigationRail),
+      find.byType(Seitenleiste),
       findsNothing,
       reason:
           'Wer das ganze Fenster verlangt, bekommt es – der 3D-Flug '
@@ -147,8 +150,8 @@ void main() {
     await huelle(tester);
     await oeffne(tester, ganzesFenster: false);
 
-    // Über das Symbol, nicht über die Beschriftung: Die Leiste zeigt den
-    // Namen nur beim ausgewählten Eintrag (labelType: selected).
+    // Über das Symbol, nicht über die Beschriftung: Zugeklappt zeigt die
+    // Leiste nur die Symbole, die Namen liegen ausserhalb.
     await tester.tap(find.byIcon(Icons.photo_album_outlined));
     await ruhe(tester);
 
@@ -169,7 +172,7 @@ void main() {
 
     // Die Zeitleiste ist der Bereich, in dem wir schon stehen – ihr Symbol
     // ist deshalb das ausgefüllte.
-    await tester.tap(find.byIcon(Icons.photo));
+    await tester.tap(find.byIcon(Icons.photo_library));
     await ruhe(tester);
 
     expect(
@@ -181,7 +184,7 @@ void main() {
     await abbauen(tester);
   });
 
-  testWidgets('schmale Fenster zeigen vier Hauptziele und ein Mehr-Menü', (
+  testWidgets('schmale Fenster zeigen drei Hauptziele und die Bibliothek', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(600, 900);
@@ -189,14 +192,23 @@ void main() {
     addTearDown(tester.view.reset);
     await huelle(tester);
 
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(Seitenleiste), findsNothing);
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations, hasLength(5));
+    expect(
+      bar.destinations,
+      hasLength(4),
+      reason: 'Fotos, Suche, Alben, Bibliothek',
+    );
 
-    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.tap(find.byIcon(Icons.grid_view_outlined));
     await ruhe(tester);
+    // Wie im Browser: die Gruppen mit ihren Farben, dazu die Befehlspalette.
+    final t = AppTexte.of(tester.element(find.byType(HomeShell)));
+    expect(find.text(t.navGruppeEntdecken), findsOneWidget);
+    expect(find.text(t.navGruppeVerwalten), findsOneWidget);
+    expect(find.byType(Farbsymbol), findsNWidgets(13));
     expect(find.byIcon(Icons.build_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
     expect(find.byIcon(Icons.manage_search_outlined), findsOneWidget);
     await abbauen(tester);
   });
@@ -234,6 +246,18 @@ void main() {
     await abbauen(tester);
   });
 
+  testWidgets('⌘3 führt zu den Alben – die Ziffern folgen der Leiste', (
+    tester,
+  ) async {
+    await huelle(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await ruhe(tester);
+    expect(find.byType(AlbumsScreen), findsOneWidget);
+    await abbauen(tester);
+  });
+
   testWidgets('der Wunsch gilt genau einmal', (tester) async {
     await huelle(tester);
     library.zeigeBereich(Hauptbereich.kalender);
@@ -242,7 +266,7 @@ void main() {
 
     // Zurueck auf die Zeitleiste tippen – der verbrauchte Wunsch darf nicht
     // noch einmal greifen und einen wieder wegschieben.
-    await tester.tap(find.byIcon(Icons.photo_outlined));
+    await tester.tap(find.byIcon(Icons.photo_library_outlined));
     await ruhe(tester);
 
     expect(find.byType(TimelineScreen), findsOneWidget);

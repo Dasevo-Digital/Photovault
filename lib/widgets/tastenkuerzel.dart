@@ -27,7 +27,7 @@ class Tastenkuerzeltafel extends StatelessWidget {
           kuerzel: [
             ('⌘1 – ⌘0', t.kuerzelBereicheWechseln),
             ('⌘K / Ctrl+K', t.kuerzelBefehlspalette),
-            ('—', t.kuerzelReisenOhne),
+            ('—', t.kuerzelUebrigeBereiche),
             ('?', t.kuerzelUebersichtOeffnen),
           ],
         ),

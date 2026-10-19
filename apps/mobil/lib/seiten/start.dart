@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kern/services/groessentext.dart';
+import 'package:zierbild/bibliothek_eintraege.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -134,22 +135,22 @@ class _StartState extends State<Start> {
         }),
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.photo_library_outlined),
-            selectedIcon: const Icon(Icons.photo_library),
+            icon: const Icon(Bibliothekssymbole.fotos),
+            selectedIcon: const Icon(Bibliothekssymbole.fotosGewaehlt),
             label: t.navZeitleiste,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Bibliothekssymbole.suche),
             label: t.navSuche,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.photo_album_outlined),
-            selectedIcon: const Icon(Icons.photo_album),
+            icon: const Icon(Bibliothekssymbole.alben),
+            selectedIcon: const Icon(Bibliothekssymbole.albenGewaehlt),
             label: t.navAlben,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.grid_view_outlined),
-            selectedIcon: const Icon(Icons.grid_view_rounded),
+            icon: const Icon(Bibliothekssymbole.bibliothek),
+            selectedIcon: const Icon(Bibliothekssymbole.bibliothekGewaehlt),
             label: t.navBibliothek,
           ),
         ],

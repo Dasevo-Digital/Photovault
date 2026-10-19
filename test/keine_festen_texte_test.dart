@@ -113,7 +113,6 @@ void main() {
     // Bezeichner, die nie jemand liest: Dateiname im Bibliotheksordner,
     // `heroTag` zweier Knöpfe, `ValueKey` dreier Bausteine.
     'vault.key',
-    'import-rail',
     'import-bottom',
     'auto-analyse',
     'tonwertkurve-raster',

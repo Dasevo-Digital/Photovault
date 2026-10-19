@@ -33,10 +33,43 @@ class AppTexteDe extends AppTexte {
   String get allgAlleAnzeigen => 'Alle anzeigen';
 
   @override
-  String get navTimeline => 'Timeline';
+  String get navFotos => 'Fotos';
 
   @override
-  String get navErkunden => 'Erkunden';
+  String get navFavoriten => 'Favoriten';
+
+  @override
+  String get navOrte => 'Orte';
+
+  @override
+  String get navStatistik => 'Statistik';
+
+  @override
+  String get navRueckblick => 'Rückblick';
+
+  @override
+  String get navDuplikate => 'Duplikate';
+
+  @override
+  String get navPapierkorb => 'Papierkorb';
+
+  @override
+  String get navBibliothek => 'Bibliothek';
+
+  @override
+  String get navGruppeEntdecken => 'Entdecken';
+
+  @override
+  String get navGruppeVerwalten => 'Verwalten';
+
+  @override
+  String get navImportieren => 'Importieren';
+
+  @override
+  String get navLeisteFixieren => 'Leiste fixieren';
+
+  @override
+  String get navLeisteLoesen => 'Fixierung lösen';
 
   @override
   String get navKalender => 'Kalender';
@@ -45,8 +78,8 @@ class AppTexteDe extends AppTexte {
   String get navReisen => 'Reisen';
 
   @override
-  String get kuerzelReisenOhne =>
-      'Die Reisen haben kein Kürzel – die zehn Ziffern waren vergeben, und eine Umnummerierung hätte alle eingeübten verschoben.';
+  String get kuerzelUebrigeBereiche =>
+      'Die Ziffern folgen der Leiste von oben: ⌘1 Fotos bis ⌘9 Stammbaum, ⌘0 Einstellungen. Alles Weitere über ⌘K.';
 
   @override
   String get navKarte => 'Karte';

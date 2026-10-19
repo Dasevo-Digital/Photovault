@@ -1,18 +1,26 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/search_filters.dart';
+import 'package:zierbild/bibliothek_eintraege.dart';
+
 import '../l10n/app_localizations.dart';
 import '../services/groessentext.dart';
 import '../utils/dauertext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/arbeitsbereich.dart';
+import '../widgets/seitenleiste.dart';
 import '../widgets/tastenkuerzel.dart';
 import 'albums_screen.dart';
 import 'calendar_screen.dart';
+import 'duplicates_screen.dart';
 import 'explore_screen.dart';
 import 'import_progress_sheet.dart';
+import 'laenderliste_screen.dart';
 import 'map_screen.dart';
 import 'people_screen.dart';
 import '../services/restore_queue_service.dart';
@@ -22,8 +30,10 @@ import 'reisen_screen.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 import 'stammbaum_screen.dart';
+import 'statistics_screen.dart';
 import 'timeline_screen.dart';
 import 'tools_screen.dart';
+import 'trash_screen.dart';
 
 /// Dauerhafter, kleiner Hinweis auf laufende/wartende KI-Restaurierungs-
 /// Aufträge (siehe RestoreQueueService) – bleibt sichtbar, während der
@@ -267,66 +277,36 @@ class _AnalyseBanner extends StatelessWidget {
   }
 }
 
-/// Icon für einen Navigationseintrag mit Hover-"Pop"-Effekt (leichtes
-/// Aufskalieren + Tooltip mit dem Namen) für Maus-Nutzer auf dem Desktop –
-/// relevant, weil bei `labelType: NavigationRailLabelType.selected` nicht
-/// ausgewählte Einträge sonst nur als reines Icon ohne Beschriftung
-/// erscheinen.
-class _HoverNavIcon extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final double size;
-  const _HoverNavIcon({
-    required this.icon,
-    required this.label,
-    this.size = 24,
-  });
-
-  @override
-  State<_HoverNavIcon> createState() => _HoverNavIconState();
-}
-
-class _HoverNavIconState extends State<_HoverNavIcon> {
-  bool _hovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: Tooltip(
-        message: widget.label,
-        waitDuration: const Duration(milliseconds: 300),
-        child: AnimatedScale(
-          scale: _hovering ? 1.25 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          child: Icon(widget.icon, size: widget.size),
-        ),
-      ),
-    );
-  }
-}
-
 /// Die Nummern der Hauptbereiche – dieselbe Reihenfolge wie
-/// [_HomeShellState._destinationLabels], und die ist die eine Quelle der
-/// Wahrheit dafür.
+/// [_HomeShellState._gruppen], und die ist die eine Quelle der Wahrheit
+/// dafür. Gegliedert wie im Browser und auf dem Handy: oben Fotos, Suche,
+/// Alben, darunter „Entdecken“ und „Verwalten“. Rückblick, Kalender und
+/// Werkzeuge gibt es nur hier als eigenen Bereich.
 ///
 /// Sie stehen hier, weil ein Bildschirm tief im Arbeitsbereich über
 /// [LibraryState.zeigeBereich] dorthin schicken können muss und eine nackte
 /// `6` an jener Stelle niemandem sagt, wohin.
 abstract final class Hauptbereich {
   static const zeitleiste = 0;
-  static const erkunden = 1;
-  static const kalender = 2;
-  static const karte = 3;
-  static const reisen = 4;
-  static const suche = 5;
-  static const personen = 6;
-  static const stammbaum = 7;
-  static const alben = 8;
-  static const werkzeuge = 9;
-  static const einstellungen = 10;
+  static const suche = 1;
+  static const alben = 2;
+  static const favoriten = 3;
+  static const personen = 4;
+  static const karte = 5;
+  static const orte = 6;
+  static const reisen = 7;
+  static const stammbaum = 8;
+  static const statistik = 9;
+  static const rueckblick = 10;
+  static const kalender = 11;
+  static const duplikate = 12;
+  static const papierkorb = 13;
+  static const werkzeuge = 14;
+  static const einstellungen = 15;
+
+  /// Die ersten drei stehen am schmalen Fenster unten als Reiter; der
+  /// Rest liegt dort im Blatt „Bibliothek“.
+  static const reiter = 3;
 }
 
 class HomeShell extends StatefulWidget {
@@ -366,106 +346,130 @@ class _HomeShellState extends State<HomeShell> {
   /// wirken, auch wenn man zwischendurch nichts anderes getan hat.
   final ValueNotifier<int> _zeitleisteNachOben = ValueNotifier(0);
 
-  // labelType.selected zeigt den Namen nur beim ausgewählten Eintrag an
-  // (siehe Kommentar unten) – beim Hovern über einen NICHT ausgewählten
-  // Eintrag mit der Maus soll er trotzdem kurz sichtbar werden, kombiniert
-  // mit einem leichten Pop/Scale-Effekt (siehe _HoverNavIcon).
-  //
-  // [iconSize]/[itemPadding] skalieren mit der Fensterhöhe (siehe
-  // [_railScale] in build()) – ohne das stehen die 9 Einträge bei einem
-  // hohen Fenster winzig oben zusammengedrängt, mit viel ungenutztem Platz
-  // darunter bis zum Import-Button.
-  List<NavigationRailDestination> _buildDestinations(
-    AppTexte t,
-    double iconSize,
-    double itemPadding,
-  ) {
-    final labels = _destinationLabels(t);
-    NavigationRailDestination dest(
-      IconData outlined,
-      IconData filled,
-      String label,
-    ) {
-      return NavigationRailDestination(
-        icon: _HoverNavIcon(icon: outlined, label: label, size: iconSize),
-        selectedIcon: _HoverNavIcon(icon: filled, label: label, size: iconSize),
-        label: Text(label),
-        padding: EdgeInsets.symmetric(vertical: itemPadding),
-      );
-    }
+  /// Ob die Seitenleiste offen bleibt – siehe [Seitenleiste]. Gemerkt
+  /// über [Leistenmerker]; bis die Datei gelesen ist, zugeklappt.
+  bool _fixiert = false;
 
-    return [
-      for (var i = 0; i < labels.length; i++)
-        dest(
-          _destinationIconsOutlined[i],
-          _destinationIconsFilled[i],
-          labels[i],
-        ),
-    ];
+  @override
+  void initState() {
+    super.initState();
+    Leistenmerker.lies().then((f) {
+      if (mounted && f != _fixiert) setState(() => _fixiert = f);
+    });
   }
 
-  /// Reihenfolge = Tab-Index = ⌘1…⌘9 (siehe [_handleKeyEvent]) = Reihenfolge
-  /// der [NavigationBar]-Ziele unten – eine einzige Quelle der Wahrheit statt
-  /// dreier parallel gepflegter Listen.
-  ///
-  /// Nicht mehr `const`, seit die Oberfläche übersetzbar ist: Die
-  /// Beschriftungen hängen jetzt an der aktiven Sprache und müssen bei
-  /// jedem Aufbau neu geholt werden – die Reihenfolge bleibt aber genau
-  /// die eine Quelle der Wahrheit, die sie vorher war.
-  static List<String> _destinationLabels(AppTexte t) => [
-    t.navTimeline,
-    t.navErkunden,
-    t.navKalender,
-    t.navKarte,
-    t.navReisen,
-    t.navSuche,
-    t.navPersonen,
-    t.navStammbaum,
-    t.navAlben,
-    t.navWerkzeuge,
-    t.navEinstellungen,
-  ];
-  static const _destinationIconsOutlined = [
-    Icons.photo_outlined,
-    Icons.explore_outlined,
-    Icons.calendar_today_outlined,
-    Icons.map_outlined,
-    Icons.luggage_outlined,
-    Icons.search_outlined,
-    Icons.face_outlined,
-    Icons.account_tree_outlined,
-    Icons.photo_album_outlined,
-    Icons.build_outlined,
-    Icons.settings_outlined,
-  ];
-  static const _destinationIconsFilled = [
-    Icons.photo,
-    Icons.explore,
-    Icons.calendar_today,
-    Icons.map,
-    Icons.luggage,
-    Icons.search,
-    Icons.face,
-    Icons.account_tree,
-    Icons.photo_album,
-    Icons.build,
-    Icons.settings,
+  void _fixieren(bool fixiert) {
+    setState(() => _fixiert = fixiert);
+    Leistenmerker.schreibe(fixiert);
+  }
+
+  /// Alle Ziele in Gruppen – Reihenfolge = Nummer in [Hauptbereich] =
+  /// ⌘1…⌘9 (siehe [_kuerzelZiele]) = Reihenfolge in der Befehlspalette.
+  /// Farben und Symbole teilen sich Rechner, Handy und Browser
+  /// ([Bibliotheksfarben]).
+  static List<Leistengruppe> _gruppen(AppTexte t) => [
+    Leistengruppe(
+      eintraege: [
+        Leisteneintrag(
+          text: t.navFotos,
+          icon: Bibliothekssymbole.fotos,
+          iconGewaehlt: Bibliothekssymbole.fotosGewaehlt,
+        ),
+        Leisteneintrag(text: t.navSuche, icon: Bibliothekssymbole.suche),
+        Leisteneintrag(
+          text: t.navAlben,
+          icon: Bibliothekssymbole.alben,
+          iconGewaehlt: Bibliothekssymbole.albenGewaehlt,
+        ),
+      ],
+    ),
+    Leistengruppe(
+      titel: t.navGruppeEntdecken,
+      eintraege: [
+        Leisteneintrag(
+          text: t.navFavoriten,
+          icon: Bibliothekssymbole.favoriten,
+          farbe: Bibliotheksfarben.favoriten,
+        ),
+        Leisteneintrag(
+          text: t.navPersonen,
+          icon: Bibliothekssymbole.personen,
+          farbe: Bibliotheksfarben.personen,
+        ),
+        Leisteneintrag(
+          text: t.navKarte,
+          icon: Bibliothekssymbole.karte,
+          farbe: Bibliotheksfarben.karte,
+        ),
+        Leisteneintrag(
+          text: t.navOrte,
+          icon: Bibliothekssymbole.orte,
+          farbe: Bibliotheksfarben.orte,
+        ),
+        Leisteneintrag(
+          text: t.navReisen,
+          icon: Bibliothekssymbole.reisen,
+          farbe: Bibliotheksfarben.reisen,
+        ),
+        Leisteneintrag(
+          text: t.navStammbaum,
+          icon: Bibliothekssymbole.stammbaum,
+          farbe: Bibliotheksfarben.stammbaum,
+        ),
+        Leisteneintrag(
+          text: t.navStatistik,
+          icon: Bibliothekssymbole.statistik,
+          farbe: Bibliotheksfarben.statistik,
+        ),
+        Leisteneintrag(
+          text: t.navRueckblick,
+          icon: Bibliothekssymbole.rueckblick,
+          farbe: Bibliotheksfarben.rueckblick,
+        ),
+        Leisteneintrag(
+          text: t.navKalender,
+          icon: Bibliothekssymbole.kalender,
+          farbe: Bibliotheksfarben.kalender,
+        ),
+      ],
+    ),
+    Leistengruppe(
+      titel: t.navGruppeVerwalten,
+      eintraege: [
+        Leisteneintrag(
+          text: t.navDuplikate,
+          icon: Bibliothekssymbole.duplikate,
+          farbe: Bibliotheksfarben.duplikate,
+        ),
+        Leisteneintrag(
+          text: t.navPapierkorb,
+          icon: Bibliothekssymbole.papierkorb,
+          farbe: Bibliotheksfarben.papierkorb,
+        ),
+        Leisteneintrag(
+          text: t.navWerkzeuge,
+          icon: Bibliothekssymbole.werkzeuge,
+          farbe: Bibliotheksfarben.werkzeuge,
+        ),
+        Leisteneintrag(
+          text: t.navEinstellungen,
+          icon: Bibliothekssymbole.einstellungen,
+          farbe: Bibliotheksfarben.einstellungen,
+        ),
+      ],
+    ),
   ];
 
-  /// Auf einer schmalen Fläche passen elf gleichrangige Ziele weder lesbar
-  /// noch als gut treffbare Bedienelemente nebeneinander. Die vier häufigsten
-  /// bleiben direkt erreichbar; alle übrigen stehen in einem echten
-  /// „Mehr“-Menü. Die Zahlen sind weiterhin die Seitenindizes der einen
-  /// Zielliste oben.
-  static const _compactPrimaryIndices = [0, 1, 5, 8];
+  static List<Leisteneintrag> _ziele(AppTexte t) => [
+    for (final g in _gruppen(t)) ...g.eintraege,
+  ];
 
   Future<void> _showCommandPalette() async {
     final t = AppTexte.of(context);
     final ziel = await showSearch<int?>(
       context: context,
       delegate: _CommandPaletteDelegate(
-        labels: _destinationLabels(t),
-        icons: _destinationIconsOutlined,
+        ziele: _ziele(t),
         current: _seite.value,
         hint: t.befehlspaletteHinweis,
         empty: t.befehlspaletteLeer,
@@ -474,38 +478,21 @@ class _HomeShellState extends State<HomeShell> {
     if (ziel != null && mounted) _zielGewaehlt(ziel);
   }
 
-  Future<void> _showCompactMore(AppTexte t) async {
-    final labels = _destinationLabels(t);
-    final weitere = [
-      for (var i = 0; i < labels.length; i++)
-        if (!_compactPrimaryIndices.contains(i)) i,
-    ];
-    final ziel = await showModalBottomSheet<int>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.manage_search_outlined),
-              title: Text(t.befehlspaletteTitel),
-              subtitle: Text(t.befehlspaletteHinweis),
-              onTap: () => Navigator.pop(context, -1),
-            ),
-            const Divider(height: 1),
-            for (final i in weitere)
-              ListTile(
-                leading: Icon(
-                  i == _seite.value
-                      ? _destinationIconsFilled[i]
-                      : _destinationIconsOutlined[i],
-                ),
-                title: Text(labels[i]),
-                selected: i == _seite.value,
-                onTap: () => Navigator.pop(context, i),
-              ),
-          ],
+  /// „Bibliothek“ am schmalen Fenster: was nicht unten als Reiter steht,
+  /// in denselben Gruppen und Farben wie in der Leiste – und darüber die
+  /// Befehlspalette, die dort sonst nur über ⌘K zu finden wäre.
+  Future<void> _zeigeBibliothek(AppTexte t) async {
+    final ziel = await zeigeBibliotheksblatt(
+      context,
+      gruppen: _gruppen(t).skip(1).toList(),
+      ersteNummer: Hauptbereich.reiter,
+      gewaehlt: _seite.value,
+      kopf: Builder(
+        builder: (context) => ListTile(
+          leading: const Icon(Icons.manage_search_outlined),
+          title: Text(t.befehlspaletteTitel),
+          subtitle: Text(t.befehlspaletteHinweis),
+          onTap: () => Navigator.pop(context, -1),
         ),
       ),
     );
@@ -519,14 +506,11 @@ class _HomeShellState extends State<HomeShell> {
   /// Welches Ziel hinter ⌘1 … ⌘0 liegt – als Reihenfolge der **Ziele**,
   /// nicht der Zifferntasten.
   ///
-  /// Der Unterschied wurde wichtig, als die Reisen einen eigenen
-  /// Menüpunkt bekamen. Sie gehören neben die Karte, also mitten in die
-  /// Reihe; hätten die Ziffern weiter an der Position geklebt, wäre
-  /// jedes Kürzel ab ⌘5 auf einen anderen Bildschirm gerutscht. Die
-  /// zehn Ziffern waren bereits vergeben, ein elftes Kürzel gibt es also
-  /// nicht: **Die Reisen bekommen keines** – und das steht in der
-  /// Kürzelübersicht, statt dass man es durch Ausprobieren herausfindet.
-  static const _kuerzelZiele = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10];
+  /// Die Ziffern folgen der Leiste von oben, so wie man sie sieht: ⌘1
+  /// Fotos bis ⌘9 Stammbaum. ⌘0 bleibt bei den Einstellungen, wo es seit
+  /// jeher lag und wo es die meisten Programme haben. Was dazwischen
+  /// liegt, erreicht man über ⌘K – und das steht in der Kürzelübersicht.
+  static const _kuerzelZiele = [0, 1, 2, 3, 4, 5, 6, 7, 8, 15];
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
@@ -542,11 +526,6 @@ class _HomeShellState extends State<HomeShell> {
         LogicalKeyboardKey.digit7,
         LogicalKeyboardKey.digit8,
         LogicalKeyboardKey.digit9,
-        // Das zehnte Ziel liegt auf ⌘0. Es hinten anzuhängen wäre die
-        // Alternative gewesen – dann stünde der Stammbaum aber weit weg
-        // von den Personen, zu denen er gehört. Lieber eine Taste, die
-        // sich aus der Reihe ergibt, als eine Reihenfolge nach dem
-        // Tastenfeld.
         LogicalKeyboardKey.digit0,
       ];
       // Das Nummernfeld trägt eigene Tasten. Wer es benutzt, drückt
@@ -676,205 +655,151 @@ class _HomeShellState extends State<HomeShell> {
       });
     }
 
+    final t = AppTexte.of(context);
+    final l = widget.library;
     final pages = [
       TimelineScreen(
-        library: widget.library,
+        library: l,
         highlightAssetId: pendingHighlight,
         nachObenSignal: _zeitleisteNachOben,
       ),
-      ExploreScreen(library: widget.library),
-      CalendarScreen(library: widget.library),
-      MapScreen(library: widget.library),
-      ReisenScreen(library: widget.library),
-      SearchScreen(library: widget.library),
-      PeopleScreen(library: widget.library),
-      StammbaumScreen(library: widget.library),
-      AlbumsScreen(library: widget.library),
-      ToolsScreen(library: widget.library),
-      SettingsScreen(library: widget.library),
+      SearchScreen(library: l),
+      AlbumsScreen(library: l),
+      // Wie im Browser: die Favoriten als Suche mit gesetztem Filter – man
+      // kann darin weitersuchen.
+      SearchScreen(
+        library: l,
+        startFilter: const SearchFilters(favoritesOnly: true),
+        titel: t.navFavoriten,
+      ),
+      PeopleScreen(library: l),
+      MapScreen(library: l),
+      LaenderlisteScreen(library: l),
+      ReisenScreen(library: l),
+      StammbaumScreen(library: l),
+      StatisticsScreen(library: l),
+      ExploreScreen(library: l),
+      CalendarScreen(library: l),
+      DuplicatesScreen(library: l),
+      TrashScreen(library: l),
+      ToolsScreen(library: l),
+      SettingsScreen(library: l),
     ];
-    return pages[i];
+    // Die Nummer als Schlüssel: Suche und Favoriten sind derselbe
+    // Bildschirm und teilten sich sonst beim Wechsel ihren Zustand.
+    return KeyedSubtree(key: ValueKey(i), child: pages[i]);
   }
 
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.of(context).size.width >= 700;
     final t = AppTexte.of(context);
-    final navLabels = _destinationLabels(t);
+    final ziele = _ziele(t);
 
     return Focus(
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
       child: ValueListenableBuilder<int>(
         valueListenable: _seite,
-        builder: (context, seite, _) => Scaffold(
-          body: Column(
-            children: [
-              _RestoreQueueBanner(
-                library: widget.library,
-                oeffnen: () => _bereich.currentState?.push(
-                  MaterialPageRoute(
-                    builder: (_) => RestoreQueueScreen(library: widget.library),
+        builder: (context, seite, _) {
+          // Der eigentliche Umbau: Die Seite liegt in einem eigenen
+          // Navigator, damit alles, was von ihr aus geöffnet wird,
+          // **neben** der Leiste steht statt über ihr. Wer die ganze Fläche
+          // will, schiebt auf den Navigator des Fensters – siehe
+          // [Arbeitsbereich].
+          final bereich = Arbeitsbereich(
+            seite: _seite,
+            auchBei: widget.library,
+            navigatorSchluessel: _bereich,
+            bauen: _seiteBauen,
+          );
+          final bibliothek = widget.library.aktiveBibliothek;
+          return Scaffold(
+            body: Column(
+              children: [
+                _RestoreQueueBanner(
+                  library: widget.library,
+                  oeffnen: () => _bereich.currentState?.push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          RestoreQueueScreen(library: widget.library),
+                    ),
                   ),
                 ),
-              ),
-              _AnalyseBanner(library: widget.library),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Skaliert Icon-Größe und Abstand zwischen den 9 Einträgen mit der
-                    // verfügbaren Fensterhöhe: bei einem hohen Fenster/Bildschirm
-                    // stünden sie sonst winzig oben gedrängt, mit viel ungenutztem
-                    // Platz darunter bis zum Import-Button. 700px ist die Bezugshöhe,
-                    // ab der die Rail genau wie zuvor (Icon-Größe 24, kein Extra-
-                    // Abstand) aussieht; die Obergrenze verhindert unangemessen große
-                    // Icons auf sehr hohen Bildschirmen.
-                    final railScale = (constraints.maxHeight / 700).clamp(
-                      1.0,
-                      1.8,
-                    );
-                    final railIconSize = 24.0 * railScale;
-                    final railItemPadding = 10.0 * (railScale - 1.0);
-
-                    return Row(
-                      children: [
-                        if (wide)
-                          NavigationRail(
-                            selectedIndex: seite,
-                            onDestinationSelected: _zielGewaehlt,
-                            // "selected" statt "all": bei 9 Einträgen würde die Rail mit
-                            // Label unter jedem Icon bei normaler Fensterhöhe überlaufen.
-                            labelType: NavigationRailLabelType.selected,
-                            leading: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpacing.md,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image(
-                                    image: const AssetImage(
-                                      'assets/icon/app_icon.png',
-                                    ),
-                                    width: 32 * railScale,
-                                    height: 32 * railScale,
-                                  ),
-                                  // Name der geöffneten Bibliothek – erst, wenn es
-                                  // überhaupt mehr als eine gibt. Ohne diesen
-                                  // Hinweis ist nach einem Wechsel nicht
-                                  // erkennbar, worin man gerade arbeitet.
-                                  if (widget.library.aktiveBibliothek !=
-                                      null) ...[
-                                    const SizedBox(height: 4),
-                                    SizedBox(
-                                      width: 72,
-                                      child: Tooltip(
-                                        message: t.geoeffneteBibliothek(
-                                          widget.library.aktiveBibliothek!,
-                                        ),
-                                        child: Text(
-                                          widget.library.aktiveBibliothek!,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            destinations: _buildDestinations(
-                              t,
-                              railIconSize,
-                              railItemPadding,
-                            ),
-                            trailing: Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomCenter,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.lg,
-                                  ),
-                                  child: FloatingActionButton(
-                                    heroTag: 'import-rail',
-                                    tooltip: t.importierenTooltip,
-                                    onPressed: () => showImportSheet(
-                                      context,
-                                      widget.library,
-                                    ),
-                                    child: const Icon(
-                                      Icons.add_photo_alternate_outlined,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                _AnalyseBanner(library: widget.library),
+                Expanded(
+                  child: !wide
+                      ? bereich
+                      : Seitenleiste(
+                          gruppen: _gruppen(t),
+                          gewaehlt: seite,
+                          beiWahl: _zielGewaehlt,
+                          fixiert: _fixiert,
+                          beiFixieren: _fixieren,
+                          marke: const Image(
+                            image: AssetImage('assets/icon/app_icon.png'),
                           ),
-                        if (wide) const VerticalDivider(width: 1),
-                        // Der eigentliche Umbau: Die Seite liegt in einem
-                        // eigenen Navigator, damit alles, was von ihr aus
-                        // geöffnet wird, **neben** der Leiste steht statt
-                        // über ihr. Wer die ganze Fläche will, schiebt auf
-                        // den Navigator des Fensters – siehe [Arbeitsbereich].
-                        Expanded(
-                          child: Arbeitsbereich(
-                            seite: _seite,
-                            auchBei: widget.library,
-                            navigatorSchluessel: _bereich,
-                            bauen: _seiteBauen,
-                          ),
+                          markeText: 'Photo Vault',
+                          // Name der geöffneten Bibliothek – erst, wenn es
+                          // überhaupt mehr als eine gibt. Ohne diesen
+                          // Hinweis ist nach einem Wechsel nicht
+                          // erkennbar, worin man gerade arbeitet.
+                          unterzeile: bibliothek,
+                          unterzeileHinweis: bibliothek == null
+                              ? null
+                              : t.geoeffneteBibliothek(bibliothek),
+                          fuss: [
+                            Leistenknopf(
+                              text: t.navImportieren,
+                              icon: Icons.add_photo_alternate_outlined,
+                              beiTippen: () =>
+                                  showImportSheet(context, widget.library),
+                            ),
+                          ],
+                          fixierenText: t.navLeisteFixieren,
+                          loesenText: t.navLeisteLoesen,
+                          inhalt: bereich,
                         ),
-                      ],
-                    );
-                  },
                 ),
-              ),
-            ],
-          ),
-          bottomNavigationBar: wide
-              ? null
-              : NavigationBar(
-                  selectedIndex: _compactPrimaryIndices.contains(seite)
-                      ? _compactPrimaryIndices.indexOf(seite)
-                      : _compactPrimaryIndices.length,
-                  onDestinationSelected: (index) {
-                    if (index < _compactPrimaryIndices.length) {
-                      _zielGewaehlt(_compactPrimaryIndices[index]);
-                    } else {
-                      _showCompactMore(t);
-                    }
-                  },
-                  destinations: [
-                    for (final i in _compactPrimaryIndices)
+              ],
+            ),
+            bottomNavigationBar: wide
+                ? null
+                : NavigationBar(
+                    selectedIndex: math.min(seite, Hauptbereich.reiter),
+                    onDestinationSelected: (index) {
+                      if (index < Hauptbereich.reiter) {
+                        _zielGewaehlt(index);
+                      } else {
+                        _zeigeBibliothek(t);
+                      }
+                    },
+                    destinations: [
+                      for (final z in ziele.take(Hauptbereich.reiter))
+                        NavigationDestination(
+                          icon: Icon(z.icon),
+                          selectedIcon: Icon(z.iconGewaehlt ?? z.icon),
+                          label: z.text,
+                        ),
                       NavigationDestination(
-                        icon: Icon(_destinationIconsOutlined[i]),
-                        selectedIcon: Icon(_destinationIconsFilled[i]),
-                        label: navLabels[i],
+                        icon: const Icon(Bibliothekssymbole.bibliothek),
+                        selectedIcon: const Icon(
+                          Bibliothekssymbole.bibliothekGewaehlt,
+                        ),
+                        label: t.navBibliothek,
                       ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.more_horiz),
-                      selectedIcon: const Icon(Icons.more),
-                      label: t.allgMehr,
-                    ),
-                  ],
-                ),
-          floatingActionButton: wide
-              ? null
-              : FloatingActionButton(
-                  heroTag: 'import-bottom',
-                  onPressed: () => showImportSheet(context, widget.library),
-                  child: const Icon(Icons.add_photo_alternate_outlined),
-                ),
-        ),
+                    ],
+                  ),
+            floatingActionButton: wide
+                ? null
+                : FloatingActionButton(
+                    heroTag: 'import-bottom',
+                    tooltip: t.importierenTooltip,
+                    onPressed: () => showImportSheet(context, widget.library),
+                    child: const Icon(Icons.add_photo_alternate_outlined),
+                  ),
+          );
+        },
       ),
     );
   }
@@ -882,23 +807,21 @@ class _HomeShellState extends State<HomeShell> {
 
 class _CommandPaletteDelegate extends SearchDelegate<int?> {
   _CommandPaletteDelegate({
-    required this.labels,
-    required this.icons,
+    required this.ziele,
     required this.current,
     required String hint,
     required this.empty,
   }) : super(searchFieldLabel: hint);
 
-  final List<String> labels;
-  final List<IconData> icons;
+  final List<Leisteneintrag> ziele;
   final int current;
   final String empty;
 
   List<int> get _matches {
     final needle = query.trim().toLowerCase();
     return [
-      for (var i = 0; i < labels.length; i++)
-        if (needle.isEmpty || labels[i].toLowerCase().contains(needle)) i,
+      for (var i = 0; i < ziele.length; i++)
+        if (needle.isEmpty || ziele[i].text.toLowerCase().contains(needle)) i,
     ];
   }
 
@@ -929,9 +852,12 @@ class _CommandPaletteDelegate extends SearchDelegate<int?> {
       itemCount: matches.length,
       itemBuilder: (context, index) {
         final i = matches[index];
+        final z = ziele[i];
         return ListTile(
-          leading: Icon(icons[i]),
-          title: Text(labels[i]),
+          leading: z.farbe == null
+              ? Icon(z.icon)
+              : Farbsymbol(icon: z.icon, farbe: z.farbe!, groesse: 32),
+          title: Text(z.text),
           selected: i == current,
           onTap: () => close(context, i),
         );

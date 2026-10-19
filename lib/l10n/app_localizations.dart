@@ -145,17 +145,83 @@ abstract class AppTexte {
   /// **'Alle anzeigen'**
   String get allgAlleAnzeigen;
 
-  /// No description provided for @navTimeline.
+  /// No description provided for @navFotos.
   ///
   /// In de, this message translates to:
-  /// **'Timeline'**
-  String get navTimeline;
+  /// **'Fotos'**
+  String get navFotos;
 
-  /// No description provided for @navErkunden.
+  /// No description provided for @navFavoriten.
   ///
   /// In de, this message translates to:
-  /// **'Erkunden'**
-  String get navErkunden;
+  /// **'Favoriten'**
+  String get navFavoriten;
+
+  /// No description provided for @navOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'Orte'**
+  String get navOrte;
+
+  /// No description provided for @navStatistik.
+  ///
+  /// In de, this message translates to:
+  /// **'Statistik'**
+  String get navStatistik;
+
+  /// No description provided for @navRueckblick.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückblick'**
+  String get navRueckblick;
+
+  /// No description provided for @navDuplikate.
+  ///
+  /// In de, this message translates to:
+  /// **'Duplikate'**
+  String get navDuplikate;
+
+  /// No description provided for @navPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb'**
+  String get navPapierkorb;
+
+  /// No description provided for @navBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek'**
+  String get navBibliothek;
+
+  /// No description provided for @navGruppeEntdecken.
+  ///
+  /// In de, this message translates to:
+  /// **'Entdecken'**
+  String get navGruppeEntdecken;
+
+  /// No description provided for @navGruppeVerwalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwalten'**
+  String get navGruppeVerwalten;
+
+  /// No description provided for @navImportieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Importieren'**
+  String get navImportieren;
+
+  /// No description provided for @navLeisteFixieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Leiste fixieren'**
+  String get navLeisteFixieren;
+
+  /// No description provided for @navLeisteLoesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Fixierung lösen'**
+  String get navLeisteLoesen;
 
   /// No description provided for @navKalender.
   ///
@@ -169,11 +235,11 @@ abstract class AppTexte {
   /// **'Reisen'**
   String get navReisen;
 
-  /// No description provided for @kuerzelReisenOhne.
+  /// No description provided for @kuerzelUebrigeBereiche.
   ///
   /// In de, this message translates to:
-  /// **'Die Reisen haben kein Kürzel – die zehn Ziffern waren vergeben, und eine Umnummerierung hätte alle eingeübten verschoben.'**
-  String get kuerzelReisenOhne;
+  /// **'Die Ziffern folgen der Leiste von oben: ⌘1 Fotos bis ⌘9 Stammbaum, ⌘0 Einstellungen. Alles Weitere über ⌘K.'**
+  String get kuerzelUebrigeBereiche;
 
   /// No description provided for @navKarte.
   ///

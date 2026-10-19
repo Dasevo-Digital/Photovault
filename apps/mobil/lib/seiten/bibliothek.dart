@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:zierbild/bibliothek_eintraege.dart';
 
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
@@ -14,21 +15,6 @@ import 'raster.dart';
 import 'reisen.dart';
 import 'stammbaum.dart';
 import 'statistik.dart';
-
-/// Die Farben der Einträge – dieselben wie im Browser
-/// (packages/server/web/app.js, BIBLIOTHEK), damit beide gleich aussehen.
-abstract final class Bibliotheksfarben {
-  static const favoriten = Color(0xFFE5484D);
-  static const personen = Color(0xFF8E4EC6);
-  static const karte = Color(0xFF30A46C);
-  static const orte = Color(0xFF00A2C7);
-  static const reisen = Color(0xFFF76B15);
-  static const stammbaum = Color(0xFFA18072);
-  static const statistik = Color(0xFF0090FF);
-  static const duplikate = Color(0xFF3E63DD);
-  static const papierkorb = Color(0xFF8B8D98);
-  static const einstellungen = Color(0xFF12A594);
-}
 
 typedef _Eintrag = ({
   IconData icon,
@@ -60,46 +46,46 @@ class Bibliothek extends StatelessWidget {
     final t = AppTexte.of(context);
     final List<_Eintrag> entdecken = [
       (
-        icon: Icons.favorite_border_rounded,
+        icon: Bibliothekssymbole.favoriten,
         text: t.bibFavoriten,
         farbe: Bibliotheksfarben.favoriten,
         onTap: () =>
             _oeffne(context, t.bibFavoriten, Favoriten(sitzung: sitzung)),
       ),
       (
-        icon: Icons.people_outline_rounded,
+        icon: Bibliothekssymbole.personen,
         text: t.navPersonen,
         farbe: Bibliotheksfarben.personen,
         onTap: () =>
             _oeffne(context, t.navPersonen, Personen(sitzung: sitzung)),
       ),
       (
-        icon: Icons.place_outlined,
+        icon: Bibliothekssymbole.karte,
         text: t.navKarte,
         farbe: Bibliotheksfarben.karte,
         onTap: () => _oeffne(context, t.navKarte, Karte(sitzung: sitzung)),
       ),
       (
-        icon: Icons.public_rounded,
+        icon: Bibliothekssymbole.orte,
         text: t.bibOrte,
         farbe: Bibliotheksfarben.orte,
         onTap: () => _oeffne(context, t.bibOrte, Orte(sitzung: sitzung)),
       ),
       (
-        icon: Icons.luggage_outlined,
+        icon: Bibliothekssymbole.reisen,
         text: t.bibReisen,
         farbe: Bibliotheksfarben.reisen,
         onTap: () =>
             _oeffne(context, t.bibReisen, ReisenSeite(sitzung: sitzung)),
       ),
       (
-        icon: Icons.account_tree_outlined,
+        icon: Bibliothekssymbole.stammbaum,
         text: t.bibStammbaum,
         farbe: Bibliotheksfarben.stammbaum,
         onTap: () => Navigator.of(context).push(stammbaumWeg(sitzung)),
       ),
       (
-        icon: Icons.bar_chart_rounded,
+        icon: Bibliothekssymbole.statistik,
         text: t.bibStatistik,
         farbe: Bibliotheksfarben.statistik,
         onTap: () =>
@@ -108,21 +94,21 @@ class Bibliothek extends StatelessWidget {
     ];
     final List<_Eintrag> verwalten = [
       (
-        icon: Icons.filter_none_rounded,
+        icon: Bibliothekssymbole.duplikate,
         text: t.bibDuplikate,
         farbe: Bibliotheksfarben.duplikate,
         onTap: () =>
             _oeffne(context, t.bibDuplikate, Duplikate(sitzung: sitzung)),
       ),
       (
-        icon: Icons.delete_outline_rounded,
+        icon: Bibliothekssymbole.papierkorb,
         text: t.bibPapierkorb,
         farbe: Bibliotheksfarben.papierkorb,
         onTap: () =>
             _oeffne(context, t.bibPapierkorb, Papierkorb(sitzung: sitzung)),
       ),
       (
-        icon: Icons.tune_rounded,
+        icon: Bibliothekssymbole.einstellungen,
         text: t.bibEinstellungen,
         farbe: Bibliotheksfarben.einstellungen,
         onTap: () => _oeffne(
@@ -192,34 +178,6 @@ class _Abschnittskopf extends StatelessWidget {
       ],
     ),
   );
-}
-
-/// Das Symbol eines Eintrags auf einem Feld seiner Farbe.
-class Farbsymbol extends StatelessWidget {
-  const Farbsymbol({
-    super.key,
-    required this.icon,
-    required this.farbe,
-    this.groesse = 40,
-  });
-
-  final IconData icon;
-  final Color farbe;
-  final double groesse;
-
-  @override
-  Widget build(BuildContext context) {
-    final dunkel = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: groesse,
-      height: groesse,
-      decoration: BoxDecoration(
-        color: farbe.withValues(alpha: dunkel ? 0.22 : 0.14),
-        borderRadius: BorderRadius.circular(groesse * 0.3),
-      ),
-      child: Icon(icon, color: farbe, size: groesse * 0.55),
-    );
-  }
 }
 
 /// Ein Eintrag aus „Entdecken“: Kachel mit Rand, Symbol und Name.
