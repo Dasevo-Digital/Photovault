@@ -49,7 +49,8 @@ function zeige() {
   ].filter(Boolean).join(' · ');
   const raster = $('teilen-raster');
   raster.replaceChildren();
-  if (!n) hinweis(t('Hier liegt nichts mehr.'));
+  $('teilen-beitragen').hidden = !d.hochladen;
+  if (!n) hinweis(d.hochladen ? t('Noch leer – lade die ersten Fotos hoch.') : t('Hier liegt nichts mehr.'));
   d.aufnahmen.forEach((a, i) => {
     const k = el('button', 'kachel');
     k.type = 'button';
@@ -59,7 +60,7 @@ function zeige() {
     img.decoding = 'async';
     img.src = datei(a.id, 'miniatur');
     k.append(img);
-    if (a.art === 'video') k.append(el('span', 'marke', '▶'));
+    if (a.art === 'video') k.append(el('span', 'marke', a.dauer != null ? `${videodauer(a.dauer)} ▶` : '▶'));
     k.addEventListener('click', () => oeffne(i));
     raster.append(k);
   });
@@ -82,6 +83,84 @@ $('teilen-passwort').addEventListener('submit', async (e) => {
   $('teilen-fehler').textContent = r.status === 429
     ? t('Zu viele Versuche – bitte später noch einmal.')
     : t('Das Passwort stimmt nicht.');
+});
+
+// „m:ss“, ab einer Stunde „h:mm:ss“.
+function videodauer(sekunden) {
+  const g = Math.round(sekunden);
+  const h = Math.floor(g / 3600), m = Math.floor((g % 3600) / 60), s = String(g % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+// --- Beitragen (Issue #106) -------------------------------------------------
+//
+// Hat der Besitzer es erlaubt, laden Gäste eigene Fotos und Videos hoch.
+// Sie gehen nicht sofort ins Album: Der Server prüft jede Datei
+// abgeschottet, schreibt sie neu, und der Besitzer nimmt sie an.
+
+const VON_MERKER = 'pv-teilen-von';
+try { $('teilen-von').value = localStorage.getItem(VON_MERKER) || ''; } catch (_) { /* privat */ }
+$('teilen-von').addEventListener('change', () => {
+  try { localStorage.setItem(VON_MERKER, $('teilen-von').value.trim()); } catch (_) { /* privat */ }
+});
+
+function schickeDatei(datei, zeile) {
+  return new Promise((fertig) => {
+    const q = new URLSearchParams({ name: datei.name, geaendert: String(datei.lastModified || '') });
+    const von = $('teilen-von').value.trim();
+    if (von) q.set('von', von);
+    const x = new XMLHttpRequest();
+    x.open('POST', `${basis}/beitrag?${q}`);
+    x.setRequestHeader('X-PV-Teilen', '1');
+    x.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) zeile.balken.value = e.loaded / e.total;
+    });
+    x.addEventListener('load', () => {
+      const texte = {
+        202: t('Hochgeladen – erscheint nach der Freigabe'),
+        401: t('Bitte die Seite neu laden.'),
+        413: t('Zu gross'),
+        429: t('Zu viele Dateien – bitte später weiter.'),
+        507: t('Kein Platz mehr auf dem Server.'),
+      };
+      zeile.stand.textContent = texte[x.status] || t('Hat nicht geklappt.');
+      zeile.li.classList.add(x.status === 202 ? 'fertig' : 'fehler');
+      zeile.balken.hidden = true;
+      fertig(x.status);
+    });
+    x.addEventListener('error', () => {
+      zeile.stand.textContent = t('Keine Verbindung zum Server.');
+      zeile.li.classList.add('fehler');
+      zeile.balken.hidden = true;
+      fertig(0);
+    });
+    x.send(datei);
+  });
+}
+
+$('teilen-dateien').addEventListener('change', async (e) => {
+  const dateien = [...e.target.files];
+  e.target.value = '';
+  const zeilen = dateien.map((d) => {
+    const li = el('li');
+    const balken = el('progress');
+    balken.max = 1;
+    balken.value = 0;
+    const stand = el('span', 'leise', t('wartet …'));
+    li.append(el('span', 'name', d.name), balken, stand);
+    $('teilen-uploads').prepend(li);
+    return { li, balken, stand };
+  });
+  // Eine nach der anderen: Am Telefon über Mobilfunk teilen sich sonst
+  // alle dieselbe Leitung, und keine wird fertig.
+  for (let i = 0; i < dateien.length; i++) {
+    zeilen[i].stand.textContent = '';
+    const status = await schickeDatei(dateien[i], zeilen[i]);
+    if (status === 429 || status === 507 || status === 401) {
+      for (const z of zeilen.slice(i + 1)) z.stand.textContent = t('nicht gesendet');
+      break;
+    }
+  }
 });
 
 // --- Betrachter ------------------------------------------------------------

@@ -425,6 +425,36 @@ Hinter einem Reverse Proxy braucht `Secure` die Angabe `PV_PROXY` (nur
 einem vertrauten Proxy glaubt der Server `X-Forwarded-Proto: https`).
 Die Prüfungen dazu stehen in `test/web_test.dart`.
 
+## Teilen per Link
+
+Ein Album oder eine Auswahl lässt sich als Link teilen (Browser und
+Handy-App): mit Ablauf, auf Wunsch mit Passwort, Originale nur mit
+Erlaubnis. Wer den Link öffnet, sieht `/teilen/<link>` – Bilder neu
+gerechnet ohne Metadaten, Videos als H.264 ohne Metadaten, sonst nichts.
+Gesperrte Aufnahmen und der Papierkorb kommen nie mit. Der Link zeigt auf
+`PV_OEFFENTLICH`, sonst auf die Adresse, die der vertraute Proxy meldet.
+
+**Gäste können zu einem Album beitragen**, wenn der Link es erlaubt. Ihre
+Dateien gehen nicht in die Bibliothek, sondern werden zum Beitrag:
+
+1. Der Server schreibt die Datei in `gaeste/<id>/` der Bibliothek, ohne
+   sie zu öffnen (je Datei höchstens 2 GB, je Absender 300 in der Stunde).
+2. Ein eigener Prozess (`photo_vault_server gast-pruefen`) dekodiert sie –
+   ohne Netz und ohne die Umgebung des Servers, mit Frist – und schreibt
+   sie neu: Bilder als JPEG, Videos als H.264. Mit hinüber gehen nur
+   Aufnahmezeit, Ort und Kamera. Das Original des Gastes wird gelöscht.
+3. Der Besitzer sieht die Beiträge unter Konto und nimmt sie an (dann
+   kommen sie in Bibliothek und Album) oder lehnt sie ab.
+
+Ohne Netz läuft der Prüfprozess unter Linux in einem eigenen
+Netz-Namensraum (`unshare -rn`, util-linux), unter macOS in
+`sandbox-exec`. Die systemd-Einheit erlaubt dafür Benutzer- und
+Netz-Namensräume (`RestrictNamespaces=user net`); der Kernel muss
+Benutzer-Namensräume erlauben, in einem LXC-Container auch der Wirt.
+Docker erlaubt `unshare` nur mit zusätzlichen Rechten – dann prüft der
+Server weiter in einem eigenen Prozess, aber mit Netz, und sagt das beim
+Start und unter Konto.
+
 ## Sicherung aufs NAS
 
 Der Server sichert jede Nacht jede Bibliothek nach `PV_SICHERUNG` –

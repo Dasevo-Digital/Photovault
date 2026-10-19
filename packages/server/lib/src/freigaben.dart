@@ -18,6 +18,7 @@ class Freigabe {
     required this.aufnahmen,
     required this.mitPasswort,
     required this.herunterladen,
+    this.hochladen = false,
     required this.angelegt,
     required this.ablauf,
     required this.aufrufe,
@@ -36,6 +37,9 @@ class Freigabe {
   final List<String>? aufnahmen;
   final bool mitPasswort;
   final bool herunterladen;
+
+  /// Ob Gäste zum Album beitragen dürfen (nur bei Alben).
+  final bool hochladen;
   final DateTime angelegt;
   final DateTime? ablauf;
   final int aufrufe;
@@ -90,17 +94,21 @@ class Freigabedienst {
     Duration? gueltig,
     String? passwortKlartext,
     bool herunterladen = false,
+    bool hochladen = false,
   }) async {
     if ((album == null) == (aufnahmen == null)) {
       throw ArgumentError('entweder album oder aufnahmen');
+    }
+    if (hochladen && album == null) {
+      throw ArgumentError('Beiträge nur zu einem Album');
     }
     final id = _zufallstext(9);
     final link = _zufallstext(16);
     final jetzt = _uhr();
     _sdb.db.execute(
       'INSERT INTO freigaben (id, konto, pruefwert, link, geheimnis, titel, '
-      'album, aufnahmen, passwort, herunterladen, angelegt, ablauf) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'album, aufnahmen, passwort, herunterladen, hochladen, angelegt, '
+      'ablauf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         konto,
@@ -114,6 +122,7 @@ class Freigabedienst {
             ? null
             : await passwort.pruefwertFuer(passwortKlartext),
         herunterladen ? 1 : 0,
+        hochladen ? 1 : 0,
         jetzt.millisecondsSinceEpoch,
         gueltig == null ? null : jetzt.add(gueltig).millisecondsSinceEpoch,
       ],
@@ -131,6 +140,7 @@ class Freigabedienst {
         : (jsonDecode(z['aufnahmen']! as String) as List).cast<String>(),
     mitPasswort: z['passwort'] != null,
     herunterladen: z['herunterladen'] == 1,
+    hochladen: z['hochladen'] == 1,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
     ablauf: z['ablauf'] == null
         ? null

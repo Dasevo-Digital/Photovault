@@ -27,6 +27,7 @@ dependencies:
   # einfache Abfragen, kein Codegenerator.
   sqlite3: ^3.5.1
   # Bilder für geteilte Links ohne Metadaten neu schreiben (teilbilder.dart).
+  exif: ^3.3.0
   image: ^4.2.0
   uuid: ^4.5.1
 

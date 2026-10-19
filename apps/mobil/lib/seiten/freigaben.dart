@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -55,6 +57,7 @@ class _LinkBlattState extends State<_LinkBlatt> {
   final _passwort = TextEditingController();
   int? _tage = 7;
   var _herunterladen = false;
+  var _hochladen = false;
   var _laeuft = false;
   String? _link;
   String? _meldung;
@@ -95,6 +98,7 @@ class _LinkBlattState extends State<_LinkBlatt> {
         'tage': ?_tage,
         if (passwort.isNotEmpty) 'passwort': passwort,
         'herunterladen': _herunterladen,
+        if (widget.albumId != null && _hochladen) 'hochladen': true,
       });
       setState(() => _link = '${d['link']}');
     } on Serverfehler catch (f) {
@@ -164,6 +168,19 @@ class _LinkBlattState extends State<_LinkBlatt> {
               t.linkOhneMetadaten,
               style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
             ),
+            // Beiträge von Gästen gehen nur in ein Album.
+            if (widget.albumId != null) ...[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.linkGaesteHochladen),
+                value: _hochladen,
+                onChanged: (w) => setState(() => _hochladen = w),
+              ),
+              Text(
+                t.linkGaesteHinweis,
+                style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+              ),
+            ],
             const SizedBox(height: 12),
             FilledButton(
               onPressed: _laeuft ? null : _erstellen,
@@ -300,10 +317,13 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
       );
       if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
       await _lade();
+      _beitraege.currentState?._lade();
     } catch (f) {
       bote.showSnackBar(SnackBar(content: Text('$f')));
     }
   }
+
+  final _beitraege = GlobalKey<_GastbeitraegeState>();
 
   @override
   Widget build(BuildContext context) {
@@ -345,6 +365,10 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                 else
                   t.linkUnbegrenzt,
                 if (x['passwort'] == true) t.linkMitPasswort,
+                if (x['hochladen'] == true)
+                  (x['beitraege'] as int? ?? 0) > 0
+                      ? t.linkBeitraegeOffen(x['beitraege'] as int)
+                      : t.linkGaesteDuerfen,
                 t.linkAufrufe(x['aufrufe'] as int? ?? 0),
               ].join(' · '),
               style: TextStyle(color: farben.onSurfaceVariant),
@@ -367,6 +391,226 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                 PopupMenuItem(value: 'loeschen', child: Text(t.linkLoeschen)),
               ],
             ),
+          ),
+        Gastbeitraege(
+          key: _beitraege,
+          verbindung: widget.verbindung,
+          geaendert: _lade,
+        ),
+      ],
+    );
+  }
+}
+
+/// Was Gäste über Links hochgeladen haben (Issue #106) – wie im Browser
+/// (web/app.js, zeigeBeitraege): abgeschottet geprüft und neu geschrieben;
+/// ins Album kommt nur, was hier angenommen wird.
+class Gastbeitraege extends StatefulWidget {
+  const Gastbeitraege({
+    super.key,
+    required this.verbindung,
+    required this.geaendert,
+  });
+
+  final Serververbindung verbindung;
+
+  /// Nach jeder Entscheidung – die Zahl offener Beiträge bei den Links
+  /// stimmt dann nicht mehr.
+  final VoidCallback geaendert;
+
+  @override
+  State<Gastbeitraege> createState() => _GastbeitraegeState();
+}
+
+class _GastbeitraegeState extends State<Gastbeitraege> {
+  List<Map<String, Object?>> _liste = const [];
+  var _abgeschottet = true;
+  Timer? _takt;
+  final _vorschauen = <String, Future<Uint8List?>>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _lade();
+  }
+
+  @override
+  void dispose() {
+    _takt?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _lade() async {
+    _takt?.cancel();
+    try {
+      final d = await widget.verbindung.hole('api/v1/beitraege');
+      if (!mounted) return;
+      final liste = [
+        for (final x in (d['beitraege'] as List? ?? const []))
+          (x as Map).cast<String, Object?>(),
+      ];
+      setState(() {
+        _liste = liste;
+        _abgeschottet = d['abgeschottet'] != false;
+      });
+      // Was noch geprüft wird, kommt gleich.
+      if (liste.any((b) => b['zustand'] == 'pruefung')) {
+        _takt = Timer(const Duration(seconds: 3), _lade);
+      }
+    } catch (_) {
+      // Ohne Verbindung bleibt der Abschnitt, wie er ist.
+    }
+  }
+
+  Future<Uint8List?> _vorschau(String id) => _vorschauen[id] ??= widget
+      .verbindung
+      .anfrage('GET', 'api/v1/beitraege/${Uri.encodeComponent(id)}/vorschau')
+      .then((r) => r.statusCode == 200 ? r.bodyBytes : null)
+      .catchError((_) => null);
+
+  Future<void> _entscheide(List<String> ids, {required bool annehmen}) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    try {
+      for (final id in ids) {
+        final pfad = 'api/v1/beitraege/${Uri.encodeComponent(id)}';
+        final r = annehmen
+            ? await widget.verbindung.anfrage('POST', '$pfad/annehmen')
+            : await widget.verbindung.anfrage('DELETE', pfad);
+        if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
+      }
+      if (annehmen) {
+        bote.showSnackBar(
+          SnackBar(content: Text(t.beitraegeAngenommen(ids.length))),
+        );
+      }
+    } catch (f) {
+      bote.showSnackBar(SnackBar(content: Text('$f')));
+    }
+    await _lade();
+    widget.geaendert();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    if (_liste.isEmpty) return const SizedBox.shrink();
+    final bereit = [
+      for (final b in _liste)
+        if (b['zustand'] == 'bereit') '${b['id']}',
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  t.beitraegeTitel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              if (bereit.length > 1)
+                TextButton(
+                  onPressed: () => _entscheide(bereit, annehmen: true),
+                  child: Text(t.beitraegeAlleAnnehmen),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+          child: Text(
+            _abgeschottet ? t.beitraegeAbgeschottet : t.beitraegeMitNetz,
+            style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
+          ),
+        ),
+        for (final b in _liste)
+          ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox.square(
+                dimension: 56,
+                child: b['zustand'] == 'bereit'
+                    ? FutureBuilder<Uint8List?>(
+                        future: _vorschau('${b['id']}'),
+                        builder: (context, snap) {
+                          final bytes = snap.data;
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (bytes == null)
+                                ColoredBox(color: farben.surfaceContainerHigh)
+                              else
+                                Image.memory(bytes, fit: BoxFit.cover),
+                              if (b['art'] == 'video')
+                                const Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Icon(
+                                    Icons.play_circle_fill,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      )
+                    : ColoredBox(
+                        color: farben.surfaceContainerHigh,
+                        child: Icon(
+                          b['zustand'] == 'pruefung'
+                              ? Icons.hourglass_top_rounded
+                              : Icons.block_rounded,
+                          color: farben.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+            ),
+            title: Text(
+              '${b['name']}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              [
+                if (b['von'] case final String von) t.beitraegeVon(von),
+                if ((b['freigabe'] as Map?)?['titel'] case final String titel)
+                  titel,
+                if (b['zustand'] == 'pruefung') t.beitraegeInPruefung,
+                if (b['grund'] case final String grund) grund,
+              ].join(' · '),
+              style: TextStyle(
+                color: b['zustand'] == 'abgewiesen'
+                    ? farben.error
+                    : farben.onSurfaceVariant,
+              ),
+            ),
+            trailing: b['zustand'] == 'pruefung'
+                ? null
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (b['zustand'] == 'bereit')
+                        IconButton.filledTonal(
+                          tooltip: t.beitraegeAnnehmen,
+                          icon: const Icon(Icons.check_rounded),
+                          onPressed: () =>
+                              _entscheide(['${b['id']}'], annehmen: true),
+                        ),
+                      IconButton(
+                        tooltip: b['zustand'] == 'bereit'
+                            ? t.beitraegeAblehnen
+                            : t.beitraegeEntfernen,
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () =>
+                            _entscheide(['${b['id']}'], annehmen: false),
+                      ),
+                    ],
+                  ),
           ),
       ],
     );

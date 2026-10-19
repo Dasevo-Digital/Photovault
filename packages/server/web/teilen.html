@@ -29,6 +29,17 @@
     <p id="teilen-fehler" class="fehler" role="alert"></p>
   </form>
   <p id="teilen-hinweis" class="leise" hidden></p>
+  <section id="teilen-beitragen" hidden>
+    <div class="beitragen-kopf">
+      <div>
+        <h2>Fotos beitragen</h2>
+        <p class="leise klein">Lade eigene Fotos und Videos zu diesem Album hoch. Sie erscheinen hier, sobald sie angenommen wurden.</p>
+      </div>
+      <label class="knopf-datei">Fotos wählen <input type="file" id="teilen-dateien" accept="image/*,video/*" multiple></label>
+    </div>
+    <label class="beitragen-name">Dein Name (freiwillig) <input id="teilen-von" maxlength="80" autocomplete="name"></label>
+    <ul id="teilen-uploads"></ul>
+  </section>
   <div id="teilen-raster"></div>
 </main>
 

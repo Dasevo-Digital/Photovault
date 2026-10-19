@@ -611,6 +611,8 @@ function oeffneLinkDialog(fall, titel) {
   $('link-kopieren').hidden = true;
   $('link-teilen').hidden = true;
   $('link-meldung').textContent = '';
+  // Beiträge von Gästen gehen nur in ein Album.
+  $('link-hochladen').hidden = !fall.album;
   $('link-dialog').showModal();
 }
 
@@ -632,6 +634,7 @@ $('form-link').addEventListener('submit', async (e) => {
     ...(f.tage.value ? { tage: Number(f.tage.value) } : {}),
     ...(f.passwort.value ? { passwort: f.passwort.value } : {}),
     herunterladen: f.herunterladen.checked,
+    ...(linkFall.album && f.hochladen.checked ? { hochladen: true } : {}),
   };
   try {
     const d = await api('/api/v1/freigaben', { methode: 'POST', json: koerper });
@@ -680,6 +683,7 @@ async function zeigeFreigaben() {
       x.ablauf ? (abgelaufen ? t('abgelaufen') : t('bis {datum}', { datum: datumZeit.format(new Date(x.ablauf)) })) : t('unbegrenzt'),
       x.passwort ? t('mit Passwort') : null,
       x.herunterladen ? t('Originale erlaubt') : null,
+      x.hochladen ? (x.beitraege ? (x.beitraege === 1 ? t('1 Beitrag offen') : t('{n} Beiträge offen', { n: x.beitraege })) : t('Gäste dürfen hinzufügen')) : null,
       x.aufrufe === 1 ? t('1 Aufruf') : t('{n} Aufrufe', { n: x.aufrufe }),
     ].filter(Boolean);
     li.append(el('span', null, `${x.titel} · ${teile.join(' · ')}`));
@@ -691,11 +695,98 @@ async function zeigeFreigaben() {
     weg.type = 'button';
     weg.addEventListener('click', async () => {
       if (!confirm(t('Den Link „{titel}“ löschen? Wer ihn hat, sieht danach nichts mehr.', { titel: x.titel }))) return;
-      try { await api(`/api/v1/freigaben/${encodeURIComponent(x.id)}`, { methode: 'DELETE' }); li.remove(); } catch (y) { alert(y.message); }
+      try { await api(`/api/v1/freigaben/${encodeURIComponent(x.id)}`, { methode: 'DELETE' }); li.remove(); zeigeBeitraege().catch(() => {}); } catch (y) { alert(y.message); }
     });
     knoepfe.append(kopieren, weg);
     li.append(knoepfe);
     ul.append(li);
+  }
+}
+
+// --- Beiträge von Gästen (Issue #106) ---------------------------------------
+//
+// Was Gäste über einen Link hochgeladen haben: abgeschottet geprüft und
+// neu geschrieben (gastpruefung.dart). Ins Album kommt nur, was hier
+// angenommen wird; Abgelehntes verschwindet samt Datei.
+
+let beitraegeTakt = null;
+
+const groesseText = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} kB`);
+
+async function nimmAn(ids) {
+  for (const id of ids) {
+    await api(`/api/v1/beitraege/${encodeURIComponent(id)}/annehmen`, { methode: 'POST' });
+  }
+}
+
+async function zeigeBeitraege() {
+  clearTimeout(beitraegeTakt);
+  const d = await api('/api/v1/beitraege');
+  const box = $('beitraege');
+  box.replaceChildren();
+  $('beitraege-bereich').hidden = !d.beitraege.length;
+  $('beitraege-hinweis').textContent = d.abgeschottet
+    ? t('Jede Datei wurde in einem eigenen Prozess ohne Netz geprüft und neu geschrieben – mit Aufnahmezeit, Ort und Kamera, sonst nichts.')
+    : t('Jede Datei wurde in einem eigenen Prozess geprüft und neu geschrieben. Eine Netzsperre erlaubt dieses System nicht.');
+  const bereit = d.beitraege.filter((b) => b.zustand === 'bereit');
+  $('beitraege-alle').hidden = bereit.length < 2;
+  $('beitraege-alle').onclick = async () => {
+    try { await nimmAn(bereit.map((b) => b.id)); meldung(t('{n} Beiträge angenommen', { n: bereit.length })); } catch (x) { meldung(x.message); }
+    zeigeBeitraege().catch(() => {});
+    zeigeFreigaben().catch(() => {});
+  };
+  for (const b of d.beitraege) {
+    const k = el('div', `beitrag ${b.zustand}`);
+    const bild = el('div', 'beitrag-bild');
+    if (b.zustand === 'bereit') {
+      const img = el('img');
+      img.alt = '';
+      img.loading = 'lazy';
+      img.src = `/api/v1/beitraege/${encodeURIComponent(b.id)}/vorschau`;
+      bild.append(img);
+      if (b.art === 'video') {
+        const v = el('span', 'unten-rechts');
+        if (b.dauer != null) v.append(el('span', 'dauer', videodauer(b.dauer)));
+        v.append(kachelzeichen('abspielen'));
+        bild.append(v);
+      }
+    } else {
+      bild.append(el('span', 'leise', b.zustand === 'pruefung' ? t('wird geprüft …') : t('abgewiesen')));
+    }
+    const text = el('div', 'beitrag-text');
+    text.append(el('strong', null, b.name));
+    text.append(el('span', 'leise', [
+      b.von ? t('von {name}', { name: b.von }) : null,
+      b.freigabe.titel,
+      groesseText(b.groesse),
+    ].filter(Boolean).join(' · ')));
+    if (b.grund) text.append(el('span', 'fehler', b.grund));
+    const knoepfe = el('span', 'knoepfe');
+    if (b.zustand === 'bereit') {
+      const ja = el('button', 'primaer', t('Annehmen'));
+      ja.type = 'button';
+      ja.addEventListener('click', async () => {
+        ja.disabled = true;
+        try { await nimmAn([b.id]); k.remove(); } catch (x) { meldung(x.message); ja.disabled = false; }
+        zeigeFreigaben().catch(() => {});
+      });
+      knoepfe.append(ja);
+    }
+    if (b.zustand !== 'pruefung') {
+      const nein = el('button', null, b.zustand === 'bereit' ? t('Ablehnen') : t('Entfernen'));
+      nein.type = 'button';
+      nein.addEventListener('click', async () => {
+        try { await api(`/api/v1/beitraege/${encodeURIComponent(b.id)}`, { methode: 'DELETE' }); k.remove(); } catch (x) { meldung(x.message); }
+        zeigeFreigaben().catch(() => {});
+      });
+      knoepfe.append(nein);
+    }
+    k.append(bild, text, knoepfe);
+    box.append(k);
+  }
+  // Was noch geprüft wird, kommt gleich – solange die Seite offen ist.
+  if (d.beitraege.some((b) => b.zustand === 'pruefung') && !$('beitraege-bereich').closest('[hidden]')) {
+    beitraegeTakt = setTimeout(() => zeigeBeitraege().catch(() => {}), 3000);
   }
 }
 
@@ -1626,6 +1717,7 @@ async function zeigeKonto() {
   $('verwaltung').hidden = !k.verwalter;
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
+  zeigeBeitraege().catch(() => {});
   const g = await api('/api/v1/geraete');
   const ul = $('geraete');
   ul.replaceChildren();

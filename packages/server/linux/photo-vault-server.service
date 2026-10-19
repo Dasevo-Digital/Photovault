@@ -33,7 +33,9 @@ ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 RestrictSUIDSGID=yes
-RestrictNamespaces=yes
+# Nur Benutzer- und Netz-Namensräume: Darin läuft der Prüfprozess für
+# Dateien von Gästen ohne Netz (unshare -rn). Alle anderen bleiben gesperrt.
+RestrictNamespaces=user net
 LockPersonality=yes
 SystemCallArchitectures=native
 

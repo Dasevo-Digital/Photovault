@@ -231,6 +231,14 @@
     </div>
     <h3>Geteilte Links</h3>
     <ul id="freigaben"></ul>
+    <section id="beitraege-bereich" hidden>
+      <div class="bib-kopf">
+        <h3>Beiträge von Gästen</h3>
+        <button type="button" id="beitraege-alle" class="knopf" hidden>Alle annehmen</button>
+      </div>
+      <p id="beitraege-hinweis" class="leise klein"></p>
+      <div id="beitraege"></div>
+    </section>
     <h3>Geräte</h3>
     <ul id="geraete"></ul>
     <h3>Passwort ändern</h3>
@@ -320,6 +328,10 @@
       <label>Passwort (frei lassen für keins) <input name="passwort" type="password" autocomplete="new-password" minlength="4"></label>
       <label class="haken"><input name="herunterladen" type="checkbox"> Originale herunterladen erlauben</label>
       <p class="leise klein">Gezeigt werden Bilder ohne Orts- und Kameraangaben. Originale enthalten sie.</p>
+      <div id="link-hochladen">
+        <label class="haken"><input name="hochladen" type="checkbox"> Gäste dürfen Fotos und Videos hinzufügen</label>
+        <p class="leise klein">Jede Datei wird abgeschottet geprüft und neu geschrieben. Ins Album kommt sie erst, wenn du sie annimmst.</p>
+      </div>
     </div>
     <div id="link-fertig" hidden>
       <p>Wer diesen Link hat, sieht die Aufnahmen:</p>

@@ -863,6 +863,155 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Album als Link: Gäste dürfen beitragen, Besitzer nimmt an', (
+    tester,
+  ) async {
+    Map<String, Object?>? gesendet;
+    final angenommen = <String>[];
+    final client = MockClient((r) async {
+      if (r.method == 'POST' && r.url.path == '/api/v1/freigaben') {
+        gesendet = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        return http.Response(
+          jsonEncode({'id': 'f1', 'link': 'https://fotos.example/teilen/x'}),
+          201,
+        );
+      }
+      if (r.url.path == '/api/v1/beitraege') {
+        return http.Response(
+          jsonEncode({
+            'abgeschottet': true,
+            'beitraege': [
+              {
+                'id': 'b1',
+                'freigabe': {'id': 'f1', 'titel': 'Gartenfest'},
+                'name': 'IMG_4711.jpg',
+                'von': 'Tante Inge',
+                'groesse': 1000,
+                'zustand': 'bereit',
+                'art': 'bild',
+              },
+              {
+                'id': 'b2',
+                'freigabe': {'id': 'f1', 'titel': 'Gartenfest'},
+                'name': 'boese.jpg',
+                'groesse': 9,
+                'zustand': 'abgewiesen',
+                'grund': 'Dateiformat nicht unterstützt',
+              },
+            ],
+          }),
+          200,
+          // Sonst kodiert http.Response als Latin-1, und die Umlaute
+          // kämen beim UTF-8-Lesen nicht an.
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      if (r.method == 'POST' && r.url.path.endsWith('/annehmen')) {
+        angenommen.add(r.url.pathSegments[3]);
+        return http.Response('{"aufnahme":"a1"}', 200);
+      }
+      if (r.url.path == '/api/v1/freigaben') {
+        return http.Response('{"freigaben":[]}', 200);
+      }
+      return http.Response('', 404, headers: {'content-type': 'image/jpeg'});
+    });
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      'token',
+      client: client,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Column(
+              children: [
+                TextButton(
+                  onPressed: () => alsLinkTeilen(
+                    context,
+                    verbindung,
+                    albumId: 'feier',
+                    titel: 'Gartenfest',
+                  ),
+                  child: const Text('album'),
+                ),
+                TextButton(
+                  onPressed: () => alsLinkTeilen(
+                    context,
+                    verbindung,
+                    ids: const ['a'],
+                    titel: 'Auswahl',
+                  ),
+                  child: const Text('auswahl'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    // Eine Auswahl kennt keine Beiträge.
+    await tester.tap(find.text('auswahl'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gäste dürfen Fotos und Videos hinzufügen'), findsNothing);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('album'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gäste dürfen Fotos und Videos hinzufügen'));
+    await tester.pump();
+    await tester.tap(find.text('Link erstellen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(gesendet?['album'], 'feier');
+    expect(gesendet?['hochladen'], isTrue);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: GeteilteLinks(verbindung: verbindung),
+          ),
+        ),
+      ),
+    );
+    // Erst die Links, dann die Beiträge – beides echte Anfragen.
+    for (
+      var i = 0;
+      i < 20 && find.text('Beiträge von Gästen').evaluate().isEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Beiträge von Gästen'), findsOneWidget);
+    expect(find.text('IMG_4711.jpg'), findsOneWidget);
+    expect(find.textContaining('Tante Inge'), findsOneWidget);
+    expect(
+      find.textContaining('Dateiformat nicht unterstützt'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('Annehmen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(angenommen, ['b1']);
+  });
+
   testWidgets('Als Link teilen: Auswahl an den Server, Link mit Kopieren', (
     tester,
   ) async {

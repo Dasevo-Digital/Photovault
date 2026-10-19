@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 
 import '../freigaben.dart';
+import '../gastbeitraege.dart';
 import 'package:kern/abgleich/anmeldung.dart' show kontonameGueltig;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
@@ -179,6 +180,9 @@ class Kontodienst {
     passwort: passwort,
     uhr: _uhr,
   );
+
+  /// Was Gäste über Links hochgeladen haben (Issue #106).
+  late final beitraege = Gastbeitraege(_sdb, uhr: _uhr);
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);

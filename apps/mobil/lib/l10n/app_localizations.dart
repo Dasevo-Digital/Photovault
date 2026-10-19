@@ -2287,6 +2287,90 @@ abstract class AppTexte {
   /// **'{n, plural, =0{Nichts übernommen – die Rückmeldung ist trotzdem gespeichert.} =1{Ein Foto hinzugefügt.} other{{n} Fotos hinzugefügt.}}'**
   String gesichterUebernommen(int n);
 
+  /// No description provided for @linkGaesteHochladen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gäste dürfen Fotos und Videos hinzufügen'**
+  String get linkGaesteHochladen;
+
+  /// No description provided for @linkGaesteHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Jede Datei wird abgeschottet geprüft und neu geschrieben. Ins Album kommt sie erst, wenn du sie annimmst.'**
+  String get linkGaesteHinweis;
+
+  /// No description provided for @linkGaesteDuerfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gäste dürfen hinzufügen'**
+  String get linkGaesteDuerfen;
+
+  /// No description provided for @linkBeitraegeOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Beitrag offen} other{{n} Beiträge offen}}'**
+  String linkBeitraegeOffen(int n);
+
+  /// No description provided for @beitraegeTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Beiträge von Gästen'**
+  String get beitraegeTitel;
+
+  /// No description provided for @beitraegeAlleAnnehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle annehmen'**
+  String get beitraegeAlleAnnehmen;
+
+  /// No description provided for @beitraegeAbgeschottet.
+  ///
+  /// In de, this message translates to:
+  /// **'Jede Datei wurde in einem eigenen Prozess ohne Netz geprüft und neu geschrieben – mit Aufnahmezeit, Ort und Kamera, sonst nichts.'**
+  String get beitraegeAbgeschottet;
+
+  /// No description provided for @beitraegeMitNetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Jede Datei wurde in einem eigenen Prozess geprüft und neu geschrieben. Eine Netzsperre erlaubt dieses System nicht.'**
+  String get beitraegeMitNetz;
+
+  /// No description provided for @beitraegeVon.
+  ///
+  /// In de, this message translates to:
+  /// **'von {name}'**
+  String beitraegeVon(String name);
+
+  /// No description provided for @beitraegeInPruefung.
+  ///
+  /// In de, this message translates to:
+  /// **'wird geprüft …'**
+  String get beitraegeInPruefung;
+
+  /// No description provided for @beitraegeAnnehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Annehmen'**
+  String get beitraegeAnnehmen;
+
+  /// No description provided for @beitraegeAblehnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablehnen'**
+  String get beitraegeAblehnen;
+
+  /// No description provided for @beitraegeEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get beitraegeEntfernen;
+
+  /// No description provided for @beitraegeAngenommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Beitrag angenommen} other{{n} Beiträge angenommen}}'**
+  String beitraegeAngenommen(int n);
+
   /// No description provided for @personZusammenfuehren.
   ///
   /// In de, this message translates to:

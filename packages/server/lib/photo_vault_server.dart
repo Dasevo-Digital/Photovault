@@ -10,6 +10,7 @@ export 'src/beschleuniger.dart' show Beschleuniger;
 export 'src/bibliothek.dart' show Bibliothek;
 export 'src/bibliotheken.dart' show Bibliotheken, Kontobereich;
 export 'src/einstellungen.dart' show Einstellungen;
+export 'src/gastpruefung.dart' show Abschottung, Gastpruefung, gastPruefen;
 export 'src/sicherung.dart' show Serversicherung, Sicherungsstufe;
 export 'src/speicher.dart'
     show Speicherstand, Speicherstufe, Speicherwaechter, speicherAusDf;

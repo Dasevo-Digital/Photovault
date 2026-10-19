@@ -1422,6 +1422,69 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get linkGaesteHochladen => 'Gäste dürfen Fotos und Videos hinzufügen';
+
+  @override
+  String get linkGaesteHinweis =>
+      'Jede Datei wird abgeschottet geprüft und neu geschrieben. Ins Album kommt sie erst, wenn du sie annimmst.';
+
+  @override
+  String get linkGaesteDuerfen => 'Gäste dürfen hinzufügen';
+
+  @override
+  String linkBeitraegeOffen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Beiträge offen',
+      one: '1 Beitrag offen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get beitraegeTitel => 'Beiträge von Gästen';
+
+  @override
+  String get beitraegeAlleAnnehmen => 'Alle annehmen';
+
+  @override
+  String get beitraegeAbgeschottet =>
+      'Jede Datei wurde in einem eigenen Prozess ohne Netz geprüft und neu geschrieben – mit Aufnahmezeit, Ort und Kamera, sonst nichts.';
+
+  @override
+  String get beitraegeMitNetz =>
+      'Jede Datei wurde in einem eigenen Prozess geprüft und neu geschrieben. Eine Netzsperre erlaubt dieses System nicht.';
+
+  @override
+  String beitraegeVon(String name) {
+    return 'von $name';
+  }
+
+  @override
+  String get beitraegeInPruefung => 'wird geprüft …';
+
+  @override
+  String get beitraegeAnnehmen => 'Annehmen';
+
+  @override
+  String get beitraegeAblehnen => 'Ablehnen';
+
+  @override
+  String get beitraegeEntfernen => 'Entfernen';
+
+  @override
+  String beitraegeAngenommen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Beiträge angenommen',
+      one: 'Beitrag angenommen',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personZusammenfuehren => 'Zusammenführen';
 
   @override

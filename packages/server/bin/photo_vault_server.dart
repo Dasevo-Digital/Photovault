@@ -13,6 +13,11 @@ import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 Future<void> main(List<String> argumente) async {
+  // Der abgeschottete Prüfprozess für Dateien von Gästen – ohne die
+  // Einstellungen des Servers, die er nicht braucht und nicht sehen soll.
+  if (argumente.isNotEmpty && argumente.first == 'gast-pruefen') {
+    exit(await gastPruefen(argumente.sublist(1)));
+  }
   if (argumente.contains('--lebenszeichen')) {
     exit(await _lebenszeichen(Einstellungen.ausUmgebung()));
   }
@@ -92,6 +97,19 @@ Future<void> main(List<String> argumente) async {
     );
   }
 
+  // Dateien von Gästen: in einem eigenen Prozess, wenn möglich ohne Netz.
+  final gastpruefung = Gastpruefung();
+  unawaited(
+    gastpruefung.abschottung.then(
+      (a) => protokoll(
+        a.ohneNetz
+            ? 'Dateien von Gästen: geprüft in einem eigenen Prozess ohne Netz'
+            : 'Dateien von Gästen: geprüft in einem eigenen Prozess, aber MIT '
+                  'Netz – das System erlaubt keinen eigenen Netz-Namensraum '
+                  '(unshare -rn)',
+      ),
+    ),
+  );
   final server = await shelf_io.serve(
     baueApi(
       konten: konten,
@@ -103,6 +121,7 @@ Future<void> main(List<String> argumente) async {
       sicherung: sicherung,
       web: e.web,
       oeffentlich: e.oeffentlich,
+      gastpruefung: gastpruefung,
     ),
     e.adresse,
     e.port,

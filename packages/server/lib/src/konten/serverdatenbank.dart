@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 2;
+  static const schema = 3;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -114,6 +114,31 @@ class Serverdatenbank {
         );
         CREATE INDEX freigaben_konto ON freigaben(konto);
         PRAGMA user_version = 2;
+        COMMIT;
+      ''');
+    }
+    if (stand < 3) {
+      // Gäste laden über einen Link hoch (Issue #106). Was sie schicken,
+      // ist erst ein Beitrag: geprüft in einem eigenen Prozess, gezeigt
+      // dem Besitzer, und erst nach seinem Ja in der Bibliothek.
+      db.execute('''
+        BEGIN;
+        ALTER TABLE freigaben ADD COLUMN hochladen INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE gastbeitraege (
+          id TEXT PRIMARY KEY,
+          freigabe TEXT NOT NULL REFERENCES freigaben(id) ON DELETE CASCADE,
+          konto TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          von TEXT,
+          groesse INTEGER NOT NULL,
+          absender TEXT,
+          zustand TEXT NOT NULL,
+          befund TEXT,
+          angelegt INTEGER NOT NULL
+        );
+        CREATE INDEX gastbeitraege_konto ON gastbeitraege(konto);
+        CREATE INDEX gastbeitraege_freigabe ON gastbeitraege(freigabe);
+        PRAGMA user_version = 3;
         COMMIT;
       ''');
     }

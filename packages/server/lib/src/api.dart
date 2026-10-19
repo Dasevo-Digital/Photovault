@@ -37,6 +37,7 @@ import 'fassung.dart';
 import 'freigabe_api.dart';
 import 'konten/kontodienst.dart';
 import 'konten_api.dart';
+import 'gastpruefung.dart';
 import 'oidc.dart';
 import 'packen.dart';
 import 'rechnen.dart';
@@ -69,6 +70,7 @@ Handler baueApi({
   Serversicherung? sicherung,
   Directory? web,
   Uri? oeffentlich,
+  Gastpruefung? gastpruefung,
 }) {
   final von = absender ?? Absender();
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
@@ -82,6 +84,9 @@ Handler baueApi({
     video: video,
     webOrdner: web,
     oeffentlich: oeffentlich,
+    beitraege: konten.beitraege,
+    pruefung: gastpruefung,
+    speicher: speicher,
   );
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
@@ -244,6 +249,16 @@ Handler baueApi({
     ..get('/teilen/<link>', freigabe.seite)
     ..get('/api/v1/teilen/<link>', freigabe.inhalt)
     ..post('/api/v1/teilen/<link>/passwort', freigabe.passwort)
+    ..post('/api/v1/teilen/<link>/beitrag', freigabe.beitrag)
+    ..get('/api/v1/beitraege', freigabe.beitragsliste)
+    ..get('/api/v1/beitraege/<id>/vorschau', freigabe.beitragVorschau)
+    ..post(
+      '/api/v1/beitraege/<id>/annehmen',
+      (Request r, String id) => speicher?.voll ?? false
+          ? _speicherVoll()
+          : freigabe.beitragAnnehmen(r, id),
+    )
+    ..delete('/api/v1/beitraege/<id>', freigabe.beitragAblehnen)
     ..get('/api/v1/teilen/<link>/<id>/<art>', freigabe.datei)
     ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
