@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.39.0" date="2026-10-19">
+      <description>
+        <p>The desktop sidebar now matches the browser and the phone: Photos, Search and Albums on top, then the groups Explore and Manage with the same colors. It shows icons only, opens on hover and can be pinned open. Ctrl+1 to Ctrl+9 follow the sidebar from the top.</p>
+      </description>
+    </release>
     <release version="3.38.0" date="2026-10-19">
       <description>
         <p>Recorded tracks now show in the browser and on the phone with elevation profile and the 3D flight from the desktop: map, aerial imagery, trails, contour lines, peaks and huts, four times of day, photos along the way and video export.</p>
