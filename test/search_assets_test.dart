@@ -640,4 +640,60 @@ void main() {
       expect(await db.textfundstellen('  '), isEmpty);
     },
   );
+
+  test('Textfundstellen: auch Schlagwort, Ort und Person – jedes Wort, '
+      'egal wo; ohne Akzente; das Land auch auf Deutsch (#113)', () async {
+    final anna = await importPhoto('a1.jpg');
+    final rom = await importPhoto('a2.jpg');
+    final wien = await importPhoto('a3.jpg');
+    await db
+        .into(db.people)
+        .insert(PeopleCompanion.insert(id: 'p1', name: 'Anna Müller'));
+    for (final (id, asset) in [('f1', anna), ('f2', rom)]) {
+      await db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: id,
+              assetId: asset.id,
+              personId: const Value('p1'),
+              boxX: 0,
+              boxY: 0,
+              boxW: 1,
+              boxH: 1,
+            ),
+          );
+    }
+    await db
+        .into(db.tags)
+        .insert(TagsCompanion.insert(id: 't1', name: 'Sonnenuntergang'));
+    await db
+        .into(db.assetTags)
+        .insert(AssetTagsCompanion.insert(assetId: wien.id, tagId: 't1'));
+    for (final (asset, stadt, land) in [
+      (rom, 'Rom', 'Italy'),
+      (wien, 'Wien', 'Austria'),
+    ]) {
+      await (db.update(db.assets)..where((t) => t.id.equals(asset.id))).write(
+        AssetsCompanion(
+          locationCity: Value(stadt),
+          locationCountry: Value(land),
+        ),
+      );
+    }
+
+    Future<Set<String>> finde(String text) async =>
+        (await db.textfundstellen(text)).toSet();
+
+    expect(await finde('anna'), {anna.id, rom.id}, reason: 'Person');
+    expect(await finde('mueller'), isEmpty, reason: 'ue ist nicht ü');
+    expect(await finde('muller'), {anna.id, rom.id}, reason: 'ohne Akzent');
+    expect(await finde('sonnen'), {wien.id}, reason: 'Schlagwort');
+    expect(await finde('rom'), {rom.id}, reason: 'Stadt');
+    expect(await finde('italien'), {rom.id}, reason: 'Land auf Deutsch');
+    expect(await finde('austria'), {wien.id}, reason: 'Land wie gespeichert');
+    expect(await finde('österreich'), {wien.id});
+    expect(await finde('Anna Rom'), {rom.id}, reason: 'jedes Wort');
+    expect(await finde('anna wien'), isEmpty);
+  });
 }

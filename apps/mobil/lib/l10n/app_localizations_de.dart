@@ -107,7 +107,8 @@ class AppTexteDe extends AppTexte {
   String get sucheHinweisInhalt => 'z. B. Strand bei Sonnenuntergang';
 
   @override
-  String get sucheHinweisText => 'Dateiname, Beschreibung, erkannter Text …';
+  String get sucheHinweisText =>
+      'Schlagwort, Ort, Person, Beschreibung, Dateiname …';
 
   @override
   String get sucheKeinModell =>

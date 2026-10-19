@@ -319,24 +319,185 @@ extension VokabularAbfragen on AppDatabase {
           .map((match) => '"${match.group(0)!.replaceAll('"', '""')}"*')
           .toList();
 
-  /// Die Aufnahmen, in deren Texten – Dateiname, Beschreibung, erkannter
-  /// Text, Bildbeschreibung, Transkript – jeder Begriff aus [text] als
-  /// Wortanfang vorkommt, in irgendeinem davon.
+  /// Die Aufnahmen, zu denen jedes Wort aus [text] passt – als
+  /// Wortanfang, ohne Rücksicht auf Gross- und Kleinschreibung und Akzente.
   ///
-  /// Für eine Suche mit einem einzigen Feld (das Telefon). Die Suche am
-  /// Desktop fragt je Textart, siehe [SearchTextMode]; deren Vorgabe
-  /// `context` ist die Bildsuche und filtert gar nicht nach dem Text.
-  /// Sichtbar oder nicht, entscheidet danach [searchAssets] mit
+  /// Für eine Suche mit einem einzigen Feld (Handy und Browser). Ein Wort
+  /// darf überall stehen: in den Texten des Volltextindex (Dateiname,
+  /// Beschreibung, erkannter Text, Bildbeschreibung, Transkript), in einem
+  /// **Schlagwort**, im **Ort** (Stadt, Region, Land – das Land auch auf
+  /// Deutsch) oder im Namen einer **Person** auf dem Bild (Issue #113).
+  /// „Anna Rom“ findet so die Fotos von Anna in Rom, ohne dass jemand
+  /// wissen muss, was davon Person und was Ort ist.
+  ///
+  /// Am Rechner fragt die Suche je Textart, siehe [SearchTextMode]; deren
+  /// Vorgabe `context` ist die Bildsuche und filtert gar nicht nach dem
+  /// Text. Sichtbar oder nicht, entscheidet danach [searchAssets] mit
   /// `restrictToIds`.
   Future<List<String>> textfundstellen(String text) async {
-    final terms = _ftsBegriffe(text);
-    if (terms.isEmpty) return const [];
-    final rows = await customSelect(
-      'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts MATCH ?',
-      variables: [Variable<String>(terms.join(' AND '))],
+    final woerter = [
+      for (final m in RegExp(r'[\p{L}\p{N}_]+', unicode: true).allMatches(text))
+        m.group(0)!,
+    ];
+    if (woerter.isEmpty) return const [];
+
+    // Die Namen, in denen ein Wort stehen kann, einmal geholt: Schlagwörter
+    // und Personen sind Hunderte, Orte ebenso – das Vergleichen in Dart ist
+    // billiger als je Wort eine Abfrage mit LIKE, und es kann, was LIKE in
+    // SQLite nicht kann: „ö“ wie „o“ behandeln.
+    final schlagwoerter = await customSelect('SELECT id, name FROM tags').get();
+    final personen = await customSelect(
+      "SELECT id, name FROM people WHERE name <> ''",
     ).get();
-    return [for (final row in rows) row.read<String>('asset_id')];
+    final orte = await customSelect(
+      'SELECT DISTINCT location_city AS stadt, location_state AS region, '
+      'location_country AS land FROM assets '
+      'WHERE location_city IS NOT NULL OR location_state IS NOT NULL '
+      'OR location_country IS NOT NULL',
+    ).get();
+
+    Set<String>? treffer;
+    for (final wort in woerter) {
+      final w = _suchform(wort);
+      bool passt(String? name) =>
+          name != null && _suchwoerter(name).any((n) => n.startsWith(w));
+
+      final ids = <String>{};
+      for (final r in await customSelect(
+        'SELECT asset_id FROM asset_search_fts WHERE asset_search_fts MATCH ?',
+        variables: [Variable<String>(_ftsBegriffe(wort).join(' AND '))],
+      ).get()) {
+        ids.add(r.read<String>('asset_id'));
+      }
+      await _kennungenZu(
+        ids,
+        'SELECT asset_id FROM asset_tags WHERE tag_id IN',
+        [
+          for (final t in schlagwoerter)
+            if (passt(t.read<String>('name'))) t.read<String>('id'),
+        ],
+      );
+      await _kennungenZu(ids, 'SELECT asset_id FROM faces WHERE person_id IN', [
+        for (final p in personen)
+          if (passt(p.read<String>('name'))) p.read<String>('id'),
+      ]);
+      final staedte = <String>{}, regionen = <String>{}, laender = <String>{};
+      for (final o in orte) {
+        final stadt = o.readNullable<String>('stadt');
+        final region = o.readNullable<String>('region');
+        final land = o.readNullable<String>('land');
+        if (passt(stadt)) staedte.add(stadt!);
+        if (passt(region)) regionen.add(region!);
+        if (passt(land) || passt(landAnzeige(land, 'de'))) laender.add(land!);
+      }
+      await _kennungenZu(
+        ids,
+        'SELECT id AS asset_id FROM assets WHERE location_city IN',
+        staedte.toList(),
+      );
+      await _kennungenZu(
+        ids,
+        'SELECT id AS asset_id FROM assets WHERE location_state IN',
+        regionen.toList(),
+      );
+      await _kennungenZu(
+        ids,
+        'SELECT id AS asset_id FROM assets WHERE location_country IN',
+        laender.toList(),
+      );
+
+      treffer = treffer == null ? ids : treffer.intersection(ids);
+      if (treffer.isEmpty) return const [];
+    }
+    return treffer!.toList();
   }
+
+  /// Fügt die `asset_id`s aus [anfrage] `(…)` mit [werte] in [ziel] ein –
+  /// in Stücken, weil SQLite nicht beliebig viele Platzhalter nimmt.
+  Future<void> _kennungenZu(
+    Set<String> ziel,
+    String anfrage,
+    List<String> werte,
+  ) async {
+    for (var i = 0; i < werte.length; i += 500) {
+      final stueck = werte.sublist(i, math.min(i + 500, werte.length));
+      final rows = await customSelect(
+        '$anfrage (${List.filled(stueck.length, '?').join(', ')})',
+        variables: [for (final w in stueck) Variable<String>(w)],
+      ).get();
+      for (final r in rows) {
+        ziel.add(r.read<String>('asset_id'));
+      }
+    }
+  }
+
+  /// Ein Wort so, wie die Suche es vergleicht: klein und ohne Akzente –
+  /// wie der Volltextindex (`remove_diacritics 2`).
+  static String _suchform(String wort) {
+    final klein = wort.toLowerCase();
+    final aus = StringBuffer();
+    for (final z in klein.runes) {
+      final c = String.fromCharCode(z);
+      aus.write(_ohneAkzent[c] ?? c);
+    }
+    return aus.toString();
+  }
+
+  /// Die Wörter eines Namens in Suchform.
+  static Iterable<String> _suchwoerter(String name) => RegExp(
+    r'[\p{L}\p{N}_]+',
+    unicode: true,
+  ).allMatches(name).map((m) => _suchform(m.group(0)!));
+
+  static const _ohneAkzent = {
+    'à': 'a',
+    'á': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'å': 'a',
+    'ā': 'a',
+    'ç': 'c',
+    'ć': 'c',
+    'č': 'c',
+    'è': 'e',
+    'é': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'ē': 'e',
+    'ė': 'e',
+    'ę': 'e',
+    'ì': 'i',
+    'í': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ī': 'i',
+    'ñ': 'n',
+    'ń': 'n',
+    'ň': 'n',
+    'ò': 'o',
+    'ó': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ö': 'o',
+    'ø': 'o',
+    'ō': 'o',
+    'ù': 'u',
+    'ú': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ū': 'u',
+    'ů': 'u',
+    'ý': 'y',
+    'ÿ': 'y',
+    'š': 's',
+    'ś': 's',
+    'ž': 'z',
+    'ź': 'z',
+    'ż': 'z',
+    'ł': 'l',
+    'ř': 'r',
+  };
 
   List<String>? _intersectIds(List<String>? requested, List<String>? fts) {
     if (fts == null) return requested;

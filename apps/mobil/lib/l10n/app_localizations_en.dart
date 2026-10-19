@@ -107,7 +107,7 @@ class AppTexteEn extends AppTexte {
   String get sucheHinweisInhalt => 'e.g. beach at sunset';
 
   @override
-  String get sucheHinweisText => 'File name, description, recognised text …';
+  String get sucheHinweisText => 'Tag, place, person, description, file name …';
 
   @override
   String get sucheKeinModell =>

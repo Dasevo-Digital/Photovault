@@ -40,7 +40,7 @@
   "sucheInhalt": "Bildinhalt",
   "sucheText": "Text",
   "sucheHinweisInhalt": "z. B. Strand bei Sonnenuntergang",
-  "sucheHinweisText": "Dateiname, Beschreibung, erkannter Text …",
+  "sucheHinweisText": "Schlagwort, Ort, Person, Beschreibung, Dateiname …",
   "sucheKeinModell": "Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.",
   "sucheFehler": "Die Suche hat nicht geklappt.",
   "sucheNichts": "Nichts gefunden.",

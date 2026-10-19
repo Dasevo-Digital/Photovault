@@ -256,7 +256,7 @@ abstract class AppTexte {
   /// No description provided for @sucheHinweisText.
   ///
   /// In de, this message translates to:
-  /// **'Dateiname, Beschreibung, erkannter Text …'**
+  /// **'Schlagwort, Ort, Person, Beschreibung, Dateiname …'**
   String get sucheHinweisText;
 
   /// No description provided for @sucheKeinModell.

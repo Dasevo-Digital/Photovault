@@ -15,8 +15,8 @@ import 'raster.dart';
 enum _Art { inhalt, text }
 
 /// Suchen – nach Bildinhalt („Strand bei Sonnenuntergang“) oder nach Text
-/// (Dateiname, Beschreibung, erkannter Text, Bildbeschreibung, Transkript;
-/// siehe `textfundstellen` im Kern).
+/// (Schlagwort, Ort, Person, Beschreibung, Dateiname, erkannter Text,
+/// Bildbeschreibung, Transkript; siehe `textfundstellen` im Kern).
 ///
 /// Nach Inhalt bettet der Server den Suchtext ein (das Modell dafür gehört
 /// nicht aufs Telefon); die Rangfolge rechnet das Telefon mit den

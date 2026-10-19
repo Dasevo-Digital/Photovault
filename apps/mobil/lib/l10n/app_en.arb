@@ -26,7 +26,7 @@
   "sucheInhalt": "Content",
   "sucheText": "Text",
   "sucheHinweisInhalt": "e.g. beach at sunset",
-  "sucheHinweisText": "File name, description, recognised text …",
+  "sucheHinweisText": "Tag, place, person, description, file name …",
   "sucheKeinModell": "The server cannot search by content (no model). Showing the text search instead.",
   "sucheFehler": "The search did not work.",
   "sucheNichts": "Nothing found.",
