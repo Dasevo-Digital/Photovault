@@ -86,6 +86,7 @@ const BIBLIOTHEK = [
       { bereich: 'favoriten', weg: '#/favoriten', text: 'Favoriten', symbol: 'favoriten', farbe: '#e5484d' },
       { bereich: 'personen', weg: '#/personen', text: 'Personen', symbol: 'personen', farbe: '#8e4ec6' },
       { bereich: 'karte', weg: '#/karte', text: 'Karte', symbol: 'karte', farbe: '#30a46c' },
+      { bereich: 'orte', weg: '#/orte', text: 'Orte', symbol: 'orte', farbe: '#00a2c7' },
       { bereich: 'reisen', weg: '#/reisen', text: 'Reisen', symbol: 'reisen', farbe: '#f76b15' },
       { bereich: 'stammbaum', weg: '#/stammbaum', text: 'Stammbaum', symbol: 'stammbaum', farbe: '#a18072' },
       { bereich: 'statistik', weg: '#/statistik', text: 'Statistik', symbol: 'statistik', farbe: '#0090ff' },
@@ -582,6 +583,52 @@ async function zeigeAlben() {
   for (const a of d.alben) {
     $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`));
   }
+}
+
+// --- Orte (Issue #173) --------------------------------------------------------
+//
+// Wie „Orte“ in Immich und auf dem Telefon: die Länder als Karten mit
+// Titelbild, darin die Städte; gerechnet im Kern (ortsuebersicht.dart).
+
+let orteListe = null;
+
+async function zeigeOrte() {
+  markiereNav('orte');
+  zeigeBereich(['karten']);
+  $('karten-titel').textContent = t('Orte');
+  $('karten').replaceChildren();
+  const d = await api(`/api/v1/laender?sprache=${SPRACHE}`);
+  orteListe = d.laender;
+  if (!d.laender.length) $('karten').append(el('p', 'leise', t('Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.')));
+  for (const l of d.laender) {
+    const n = l.staedte.length;
+    $('karten').append(karte(l.miniatur ? miniaturUrl(l.titelbild) : null, l.name, anzahlText(l.anzahl), `#/orte/${encodeURIComponent(l.land)}`, {
+      zusatz: n ? (n === 1 ? l.staedte[0].stadt : t('{n} Orte', { n })) : null,
+    }));
+  }
+}
+
+async function zeigeOrt(land, stadt) {
+  markiereNav('orte');
+  zeigeBereich(['raster']);
+  const q = new URLSearchParams({ land });
+  if (stadt) q.set('stadt', stadt);
+  const [d, uebersicht] = await Promise.all([
+    api(`/api/v1/laender/aufnahmen?${q}`),
+    orteListe ? Promise.resolve({ laender: orteListe }) : api(`/api/v1/laender?sprache=${SPRACHE}`),
+  ]);
+  orteListe = uebersicht.laender;
+  const l = orteListe.find((x) => x.land === land);
+  const name = l ? l.name : land;
+  let kopf;
+  if (!stadt && l && l.staedte.length > 1) {
+    // Die Städte des Landes als Reihe über den Aufnahmen.
+    kopf = el('div', 'ortsreihe');
+    for (const s of l.staedte) {
+      kopf.append(karte(s.miniatur ? miniaturUrl(s.titelbild) : null, s.stadt, anzahlText(s.anzahl), `#/orte/${encodeURIComponent(land)}/${encodeURIComponent(s.stadt)}`));
+    }
+  }
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, stadt ? `${stadt} · ${name}` : name);
 }
 
 async function zeigeAlbum(id) {
@@ -3282,6 +3329,7 @@ async function zeigeWeg() {
         break;
       case 'papierkorb': await zeigePapierkorb(); break;
       case 'favoriten': await zeigeFavoriten(); break;
+      case 'orte': await (teile[1] ? zeigeOrt(teile[1], teile[2]) : zeigeOrte()); break;
       case 'bibliothek': await zeigeBibliothek(); break;
       default: await zeigeFotos();
     }

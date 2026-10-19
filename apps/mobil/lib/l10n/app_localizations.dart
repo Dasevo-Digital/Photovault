@@ -2425,6 +2425,30 @@ abstract class AppTexte {
   /// **'Mehr'**
   String get betrachterMehr;
 
+  /// No description provided for @bibOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'Orte'**
+  String get bibOrte;
+
+  /// No description provided for @orteLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.'**
+  String get orteLeer;
+
+  /// No description provided for @orteAnzahlOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Orte'**
+  String orteAnzahlOrte(int n);
+
+  /// No description provided for @orteAufnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}'**
+  String orteAufnahmen(int n);
+
   /// No description provided for @personZusammenfuehren.
   ///
   /// In de, this message translates to:

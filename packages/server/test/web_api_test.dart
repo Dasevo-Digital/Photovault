@@ -395,6 +395,67 @@ void main() {
     },
   );
 
+  test('Orte: Länder mit Städten, Anzahl und Titelbild', () async {
+    final a = await ladeHoch(erikaToken, 'rom1.jpg', 10);
+    final b = await ladeHoch(erikaToken, 'rom2.jpg', 40);
+    final c = await ladeHoch(erikaToken, 'mailand.jpg', 80);
+    final d = await ladeHoch(erikaToken, 'wien.jpg', 120);
+    await ladeHoch(erikaToken, 'ohne.jpg', 160);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    Future<void> ort(String id, String land, String stadt) =>
+        (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            locationCountry: Value(land),
+            locationCity: Value(stadt),
+          ),
+        );
+    await ort(a, 'Italy', 'Rome');
+    await ort(b, 'Italy', 'Rome');
+    await ort(c, 'Italy', 'Milan');
+    await ort(d, 'Austria', 'Vienna');
+    // Ein Favorit wird Titelbild, auch wenn er nicht der jüngste ist.
+    await befehl(erikaToken, 'favoritSetzen', {
+      'ids': [a],
+      'favorit': true,
+    });
+    final o = await jsonAus(
+      await frag('GET', '/api/v1/laender?sprache=de', token: erikaToken),
+    );
+    final laender = (o['laender']! as List).cast<Map>();
+    expect([for (final l in laender) l['land']], ['Italy', 'Austria']);
+    final italien = laender.first;
+    expect(italien['name'], 'Italien');
+    expect(italien['anzahl'], 3);
+    expect(italien['titelbild'], a);
+    final staedte = (italien['staedte'] as List).cast<Map>();
+    expect([for (final s in staedte) s['stadt']], ['Rome', 'Milan']);
+    expect(staedte.first['anzahl'], 2);
+    final rom = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/laender/aufnahmen?land=Italy&stadt=Rome',
+        token: erikaToken,
+      ),
+    );
+    expect(
+      {for (final x in (rom['aufnahmen']! as List).cast<Map>()) x['id']},
+      {a, b},
+    );
+    final ganz = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/laender/aufnahmen?land=Italy',
+        token: erikaToken,
+      ),
+    );
+    expect((ganz['aufnahmen']! as List).length, 3);
+    // Ein anderes Konto hat keine Orte.
+    final fremd = await jsonAus(
+      await frag('GET', '/api/v1/laender', token: maxToken),
+    );
+    expect(fremd['laender'], isEmpty);
+  });
+
   test(
     'Alben: Liste mit Anzahl und Titelbild, Inhalt, fremde unsichtbar',
     () async {

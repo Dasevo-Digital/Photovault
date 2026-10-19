@@ -8,6 +8,7 @@ import '../sitzung.dart';
 import 'duplikate.dart';
 import 'einstellungen.dart';
 import 'karte.dart';
+import 'orte.dart';
 import 'personen.dart';
 import 'raster.dart';
 import 'reisen.dart';
@@ -20,6 +21,7 @@ abstract final class Bibliotheksfarben {
   static const favoriten = Color(0xFFE5484D);
   static const personen = Color(0xFF8E4EC6);
   static const karte = Color(0xFF30A46C);
+  static const orte = Color(0xFF00A2C7);
   static const reisen = Color(0xFFF76B15);
   static const stammbaum = Color(0xFFA18072);
   static const statistik = Color(0xFF0090FF);
@@ -76,6 +78,12 @@ class Bibliothek extends StatelessWidget {
         text: t.navKarte,
         farbe: Bibliotheksfarben.karte,
         onTap: () => _oeffne(context, t.navKarte, Karte(sitzung: sitzung)),
+      ),
+      (
+        icon: Icons.public_rounded,
+        text: t.bibOrte,
+        farbe: Bibliotheksfarben.orte,
+        onTap: () => _oeffne(context, t.bibOrte, Orte(sitzung: sitzung)),
       ),
       (
         icon: Icons.luggage_outlined,

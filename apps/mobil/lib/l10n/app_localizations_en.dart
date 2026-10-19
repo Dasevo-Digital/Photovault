@@ -1509,6 +1509,29 @@ class AppTexteEn extends AppTexte {
   String get betrachterMehr => 'More';
 
   @override
+  String get bibOrte => 'Places';
+
+  @override
+  String get orteLeer =>
+      'No places yet. They appear once photos carry a location and the place data is set up.';
+
+  @override
+  String orteAnzahlOrte(int n) {
+    return '$n places';
+  }
+
+  @override
+  String orteAufnahmen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personZusammenfuehren => 'Merge';
 
   @override

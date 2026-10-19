@@ -48,6 +48,7 @@ import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/seiten/diashow.dart';
+import 'package:photo_vault_mobil/seiten/orte.dart';
 import 'package:photo_vault_mobil/seiten/stammbaum.dart';
 import 'package:photo_vault_mobil/seiten/statistik.dart';
 import 'package:photo_vault_mobil/seiten/suche.dart';
@@ -672,6 +673,63 @@ void main() {
     await tester.tap(find.byTooltip('Diashow beenden'));
     await tester.pumpAndSettle();
     expect(zurueck, 3);
+  });
+
+  testWidgets('Orte: Länder mit Städten, ein Tipp zeigt die Aufnahmen', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['o1', 'o2', 'o3', 'o4']);
+    await tester.runAsync(() async {
+      for (final (id, land, stadt) in [
+        ('o1', 'Italy', 'Rome'),
+        ('o2', 'Italy', 'Rome'),
+        ('o3', 'Italy', 'Milan'),
+        ('o4', 'Austria', 'Vienna'),
+      ]) {
+        await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            locationCountry: Value(land),
+            locationCity: Value(stadt),
+          ),
+        );
+      }
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Orte(sitzung: sitzung)),
+      ),
+    );
+    for (var i = 0; i < 20 && find.text('Italien').evaluate().isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Italien'), findsOneWidget);
+    expect(find.text('Österreich'), findsOneWidget);
+    expect(find.text('3 Aufnahmen'), findsOneWidget);
+    expect(find.text('2 Orte'), findsOneWidget);
+    expect(find.text('Vienna'), findsOneWidget);
+    await tester.tap(find.text('Italien'));
+    for (var i = 0; i < 20 && find.text('Rome').evaluate().isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    // Oben die Städte, die grösste zuerst.
+    expect(find.text('Rome'), findsOneWidget);
+    expect(find.text('Milan'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Rome')).dx,
+      lessThan(tester.getTopLeft(find.text('Milan')).dx),
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
   });
 
   testWidgets('Betrachter: nach unten wischen schliesst ihn', (tester) async {

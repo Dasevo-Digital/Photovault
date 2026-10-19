@@ -16,6 +16,7 @@ import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/gesichtsuebersicht.dart' as gesichtsuebersicht;
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'package:kern/services/ortsuebersicht.dart';
 import 'package:kern/services/lebensbaumansicht.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/reiseuebersicht.dart';
@@ -227,6 +228,8 @@ Handler baueApi({
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)
     ..get('/api/v1/orte', api.orte)
+    ..get('/api/v1/laender', api.laender)
+    ..get('/api/v1/laender/aufnahmen', api.amOrt)
     ..get('/api/v1/statistik', api.statistik)
     ..get('/api/v1/einstellungen', api.einstellungen)
     ..get('/api/v1/entwickeln/<id>', api.entwickeln)
@@ -1072,6 +1075,57 @@ class _Api {
               },
           },
       },
+    });
+  }
+
+  /// Die Orte der Bibliothek: Länder mit ihren Städten, je mit Anzahl und
+  /// Titelbild (ortsuebersicht.dart) – Namen in der Sprache `?sprache=`.
+  Future<Response> laender(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final sprache = anfrage.url.queryParameters['sprache'] == 'en'
+        ? 'en'
+        : 'de';
+    Map<String, Object?> ort(Ort o) => {
+      'anzahl': o.anzahl,
+      'titelbild': o.titelbild,
+      'miniatur': o.miniatur != null,
+    };
+    return _json({
+      'laender': [
+        for (final l in await ortsuebersicht(db))
+          {
+            'land': l.land.land,
+            'name': landAnzeige(l.land.land, sprache),
+            ...ort(l.land),
+            'staedte': [
+              for (final s in l.staedte) {'stadt': s.stadt, ...ort(s)},
+            ],
+          },
+      ],
+    });
+  }
+
+  /// Die Aufnahmen eines Landes (`?land=`) oder einer Stadt darin
+  /// (`&stadt=`).
+  Future<Response> amOrt(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final q = anfrage.url.queryParameters;
+    final land = q['land'];
+    if (land == null || land.isEmpty) {
+      return _json({'fehler': 'land fehlt'}, status: 400);
+    }
+    final stadt = q['stadt'];
+    return _json({
+      'land': land,
+      'stadt': stadt,
+      'aufnahmen': [
+        for (final r in await aufnahmenAmOrt(
+          db,
+          land: land,
+          stadt: stadt == null || stadt.isEmpty ? null : stadt,
+        ))
+          zeileAlsJson(r),
+      ],
     });
   }
 

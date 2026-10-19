@@ -1513,6 +1513,29 @@ class AppTexteDe extends AppTexte {
   String get betrachterMehr => 'Mehr';
 
   @override
+  String get bibOrte => 'Orte';
+
+  @override
+  String get orteLeer =>
+      'Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.';
+
+  @override
+  String orteAnzahlOrte(int n) {
+    return '$n Orte';
+  }
+
+  @override
+  String orteAufnahmen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen',
+      one: '1 Aufnahme',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personZusammenfuehren => 'Zusammenführen';
 
   @override
