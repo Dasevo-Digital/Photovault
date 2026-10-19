@@ -398,7 +398,6 @@ for (const [id, name] of [['lb-stil', 'stil'], ['lb-richtung', 'richtung'], ['lb
 $('lb-person').addEventListener('change', () => { location.hash = `#/lebensbaum/${encodeURIComponent($('lb-person').value)}`; });
 $('lb-portraits').addEventListener('change', lbMale);
 $('lb-zum-stammbaum').addEventListener('click', () => { location.hash = `#/stammbaum/${encodeURIComponent((lb && lb.d && lb.d.fokus) || '')}`; });
-$('baum-zum-lebensbaum').addEventListener('click', () => { location.hash = `#/lebensbaum/${encodeURIComponent($('baum-person').value || '')}`; });
 $('lb-laden').addEventListener('click', () => {
   $('lb-leinwand').toBlob((blob) => {
     if (!blob) return;

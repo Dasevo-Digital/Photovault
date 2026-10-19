@@ -905,6 +905,26 @@ async function zeigeAktivitaet(id) {
 // Leaflet erst, wenn eine Karte gebraucht wird: Skript und Stil sind gut
 // 150 KB, die vorher jede Seite lud, auch wenn nie eine Karte kam.
 let leafletLaden = null;
+// Was nur ein Bereich braucht, kommt erst mit ihm: Entwickeln (WebGL)
+// und der Lebensbaum sind zusammen 43 KB, die beim Start niemand braucht.
+const skripte = new Map();
+function ladeSkript(name) {
+  if (!skripte.has(name)) {
+    skripte.set(name, new Promise((fertig, fehler) => {
+      const s = document.createElement('script');
+      s.src = name;
+      s.addEventListener('load', fertig, { once: true });
+      s.addEventListener('error', () => {
+        skripte.delete(name);
+        s.remove();
+        fehler(new Error(t('Keine Verbindung zum Server.')));
+      }, { once: true });
+      document.body.append(s);
+    }));
+  }
+  return skripte.get(name);
+}
+
 function ladeLeaflet() {
   if (typeof L !== 'undefined') return Promise.resolve();
   if (!leafletLaden) {
@@ -1134,6 +1154,8 @@ const lebensjahre = (p) => (p.geburt || p.tod ? `${jahr(p.geburt) || '?'} – ${
 let baumZoomWert = 1;
 $('baum-zoom').addEventListener('input', () => { baumZoomWert = Number($('baum-zoom').value); const svg = $('baum-flaeche').querySelector('svg'); if (svg) { svg.setAttribute('width', svg.dataset.breite * baumZoomWert); svg.setAttribute('height', svg.dataset.hoehe * baumZoomWert); } });
 $('baum-person').addEventListener('change', () => { location.hash = `#/stammbaum/${encodeURIComponent($('baum-person').value)}`; });
+
+$('baum-zum-lebensbaum').addEventListener('click', () => { location.hash = `#/lebensbaum/${encodeURIComponent($('baum-person').value || '')}`; });
 
 async function zeigeStammbaum(fokus) {
   markiereNav('stammbaum');
@@ -2915,10 +2937,10 @@ async function zeigeWeg() {
       case 'statistik': await zeigeStatistik(); break;
       case 'einstellungen': await zeigeEinstellungen(); break;
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
-      case 'lebensbaum': await zeigeLebensbaum(teile[1]); break;
+      case 'lebensbaum': await ladeSkript('lebensbaum.js'); await zeigeLebensbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
-      case 'entwickeln': await zeigeEntwickeln(teile[1]); break;
+      case 'entwickeln': await ladeSkript('entwickeln.js'); await zeigeEntwickeln(teile[1]); break;
       case 'karte':
         if (teile[1] === 'gruppe' && karteGruppe) {
           markiereNav('karte');
