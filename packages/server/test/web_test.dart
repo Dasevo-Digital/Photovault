@@ -46,6 +46,32 @@ List<int> _ausBase32(String s) {
 String _ip(List<int> teile) => teile.join('.');
 
 void main() {
+  test('installierbar: Manifest mit Symbolen, die es gibt', () {
+    // Die echte Oberfläche, nicht die des Prüfstands.
+    final web = Directory('web');
+    final index = File('${web.path}/index.html').readAsStringSync();
+    expect(index, contains('rel="manifest" href="manifest.webmanifest"'));
+    expect(
+      index,
+      contains('rel="apple-touch-icon" href="apple-touch-icon.png"'),
+    );
+    expect(File('${web.path}/apple-touch-icon.png').existsSync(), isTrue);
+    final m =
+        jsonDecode(File('${web.path}/manifest.webmanifest').readAsStringSync())
+            as Map;
+    expect(m['display'], 'standalone');
+    expect(m['start_url'], startsWith(m['scope'] as String));
+    final symbole = (m['icons'] as List).cast<Map>();
+    expect(symbole.map((s) => s['purpose']), containsAll(['any', 'maskable']));
+    for (final s in symbole) {
+      final datei = File('${web.path}/${s['src']}');
+      expect(datei.existsSync(), isTrue, reason: '${s['src']}');
+      // PNG: Breite und Höhe stehen ab Byte 16 im IHDR.
+      final b = datei.readAsBytesSync();
+      final breite = (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19];
+      expect('${breite}x$breite', s['sizes']);
+    }
+  });
   final proxy = _ip([10, 0, 0, 5]);
   final proxyNetz = '${_ip([10, 0, 0, 0])}/8';
   const fremd = '203.0.113.9';

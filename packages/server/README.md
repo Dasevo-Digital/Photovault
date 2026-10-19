@@ -395,6 +395,11 @@ Favoriten (`GET /api/v1/aufnahmen?favoriten=1`) und das Hochladen: Dateien
 auswählen oder ins Fenster ziehen, es geht derselbe tus-Weg
 (`/api/v1/hochladen`, Stücke zu 8 MB) und derselbe Import wie von der App.
 
+**Als App installieren:** Safari („Zum Home-Bildschirm“), Chrome und Edge
+(„Installieren“) legen die Oberfläche mit eigenem Symbol an und öffnen sie
+ohne Adressleiste (`web/manifest.webmanifest`). Einen Service Worker gibt
+es nicht: Ohne Server zeigt die Oberfläche ohnehin nichts.
+
 **Entwickeln im Browser** rechnet mit WebGL 2 dieselben Shader wie die App
 unter Linux und Windows; Tonkurve und Farbmischer baut der Server
 (`GET /api/v1/entwickeln/<id>`). Rohformate und HEIC entwickelt der Browser
