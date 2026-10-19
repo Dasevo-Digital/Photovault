@@ -433,15 +433,10 @@ extension VokabularAbfragen on AppDatabase {
 
   /// Ein Wort so, wie die Suche es vergleicht: klein und ohne Akzente –
   /// wie der Volltextindex (`remove_diacritics 2`).
-  static String _suchform(String wort) {
-    final klein = wort.toLowerCase();
-    final aus = StringBuffer();
-    for (final z in klein.runes) {
-      final c = String.fromCharCode(z);
-      aus.write(_ohneAkzent[c] ?? c);
-    }
-    return aus.toString();
-  }
+  static String _suchform(String wort) => [
+    for (final z in wort.toLowerCase().runes)
+      _ohneAkzent[String.fromCharCode(z)] ?? String.fromCharCode(z),
+  ].join();
 
   /// Die Wörter eines Namens in Suchform.
   static Iterable<String> _suchwoerter(String name) => RegExp(
