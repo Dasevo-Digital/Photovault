@@ -39,6 +39,7 @@ library;
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import '../db/database.dart';
 import 'netzkennung.dart';
 
 /// Wofür ein Punkt steht.
@@ -249,4 +250,67 @@ Future<List<Wanderobjekt>?> holeWanderobjekte({
     // Zugabe, und ohne sie ist der Überflug vollständig.
     return null;
   }
+}
+
+/// Gipfel, Hütten und Quellen zum Ausschnitt – aus der Bibliothek, sonst
+/// von Overpass, und dann für das nächste Mal gemerkt
+/// (`AppDatabase.wanderpunkteFuer`).
+///
+/// **Die Bibliothek zuerst**, und das ist keine Bequemlichkeit: Overpass
+/// wird ehrenamtlich betrieben und drosselt bei zu vielen Anfragen. Eine
+/// Tour, die schon einmal angesehen wurde, fragt niemanden mehr – auch
+/// nicht nach einem Neustart und auch nicht ohne Netz. Rechner und Server
+/// nehmen denselben Weg; Browser und Handy fragen den Server.
+Future<List<Wanderobjekt>> wanderobjekteAusBibliothek(
+  AppDatabase db, {
+  required double sued,
+  required double west,
+  required double nord,
+  required double ost,
+  http.Client? netz,
+}) async {
+  final zeilen = await db.wanderpunkteFuer(
+    sued: sued,
+    west: west,
+    nord: nord,
+    ost: ost,
+    holen: () async {
+      final klient = netz ?? http.Client();
+      try {
+        final frisch = await holeWanderobjekte(
+          sued: sued,
+          west: west,
+          nord: nord,
+          ost: ost,
+          netz: klient,
+        );
+        if (frisch == null) return null;
+        return [
+          for (final o in frisch)
+            (
+              osmId: o.osmId,
+              artNr: o.art.index,
+              breite: o.breite,
+              laenge: o.laenge,
+              name: o.name,
+              hoehe: o.hoehe,
+            ),
+        ];
+      } finally {
+        if (netz == null) klient.close();
+      }
+    },
+  );
+  return [
+    for (final z in zeilen)
+      if (z.artNr >= 0 && z.artNr < Wanderart.values.length)
+        Wanderobjekt(
+          osmId: z.osmId,
+          art: Wanderart.values[z.artNr],
+          breite: z.breite,
+          laenge: z.laenge,
+          name: z.name,
+          hoehe: z.hoehe,
+        ),
+  ];
 }

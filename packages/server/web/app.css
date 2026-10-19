@@ -453,7 +453,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .reisekopf h3 { margin: 14px 0 8px; font-size: 1em; }
 .kartenreihe { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
 .kartenreihe .albumkarte { flex: 0 0 160px; }
-.routenkarte { height: 260px; margin: 10px 0 6px; border-radius: 12px; overflow: hidden; border: 1px solid var(--rand); }
+.routenkarte { height: 260px; margin: 10px 0 6px; border-radius: 12px; overflow: hidden; border: 1px solid var(--rand); isolation: isolate; }
 
 
 /* Gesichter benennen: Gruppen ohne Namen, der Dialog, die Angaben. */
@@ -580,3 +580,84 @@ body.teilen { min-height: 100vh; }
 /* Die Städte eines Landes über seinen Aufnahmen (Issue #173). */
 .ortsreihe { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: thin; }
 .ortsreihe .albumkarte { flex: 0 0 132px; }
+
+/* --- Spur, Höhenprofil und Landschaft (Issue #181) --------------------------
+   Die aufgezeichnete Spur unter der Karte einer Aktivität, und die
+   Landschaft mit dem Flug darüber (gelaende.js). */
+:root { --spur: #c2410c; }
+@media (prefers-color-scheme: dark) { :root { --spur: #fb923c; } }
+.spur { margin: 10px 0 4px; }
+.spurkopf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.spurkopf h3 { flex: 1; margin: 6px 0; font-size: 1em; }
+.spur .knopf-flach, .landschaft .knopf-flach, .landschaft .knopf, .l-videodialog .knopf, .l-videodialog .knopf-flach { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-weight: 560; white-space: nowrap; }
+.spur .knopf-flach:hover, .landschaft .knopf-flach:hover { border-color: color-mix(in srgb, var(--akzent) 55%, var(--rand)); }
+.spur .knopf-flach:disabled { opacity: .6; cursor: progress; }
+.landschaft .knopf, .l-videodialog .knopf { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.spur .leise { text-align: left; padding: 0; margin: 4px 0; }
+.hoehenprofil { position: relative; margin-top: 4px; }
+.hoehenprofil svg, .l-profil svg { display: block; width: 100%; height: 140px; touch-action: pan-y; cursor: crosshair; }
+.hoehenprofil .flaeche { fill: color-mix(in srgb, var(--akzent) 18%, transparent); }
+.hoehenprofil .linie, .l-profil .linie { fill: none; stroke: var(--akzent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.hoehenprofil .strich, .l-profil .strich { stroke: var(--fehler); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.hoehenprofil .achse { display: flex; justify-content: space-between; font-size: .8em; color: var(--leise); }
+.hoehenprofil .marke { position: absolute; top: 2px; right: 4px; padding: 2px 8px; border-radius: 8px; background: var(--karte); border: 1px solid var(--rand); font-size: .85em; }
+
+body.landschaft-offen { overflow: hidden; }
+.landschaft { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; background: var(--grund); }
+.l-kopf { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--rand); flex-wrap: wrap; }
+.l-titel { flex: 1; min-width: 10em; }
+.l-titel h2 { margin: 0; font-size: 1.1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.l-titel .leise { text-align: left; padding: 0; margin: 0; }
+.l-zu { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-size: 22px; line-height: 1; padding: 0; }
+.l-flaeche { position: relative; flex: 1; min-height: 0; }
+.l-karte { position: absolute; inset: 0; z-index: 0; }
+.l-laden { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--leise); }
+.l-flugbild { position: absolute; z-index: 2; top: 12px; right: 56px; margin: 0; padding: 6px 6px 4px; border-radius: 10px; background: color-mix(in srgb, var(--karte) 92%, transparent); box-shadow: 0 6px 20px rgba(0,0,0,.25); transition: opacity .25s; pointer-events: none; }
+.l-flugbild img { display: block; width: min(240px, 38vw); aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.l-flugbild figcaption { text-align: center; font-size: 11px; padding-top: 3px; }
+.l-abspann { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 18px 28px; border-radius: 12px; background: color-mix(in srgb, var(--karte) 88%, transparent); box-shadow: 0 6px 24px rgba(0,0,0,.33); text-align: center; pointer-events: none; }
+.l-gross { font-size: 34px; font-weight: 650; }
+.l-zahlen { display: flex; gap: 28px; justify-content: center; margin-top: 6px; }
+.l-zahlen div { display: flex; flex-direction: column; }
+.l-zahlen b { font-size: 20px; }
+.l-zahlen .leise, .l-wert .leise { padding: 0; text-align: inherit; }
+.l-fuss { position: absolute; z-index: 2; left: 8px; right: 8px; bottom: 4px; margin: 0; font-size: 11px; color: #fff; text-shadow: 0 0 3px rgba(0,0,0,.8); pointer-events: none; text-align: right; }
+.l-leiste { padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rand); display: flex; flex-direction: column; gap: 6px; }
+.l-reihe { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.l-reihe input[type=range] { flex: 1; min-width: 120px; accent-color: var(--akzent); }
+.l-km { font-variant-numeric: tabular-nums; min-width: 5.5em; text-align: right; }
+.l-werte { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; min-height: 1.4em; }
+.l-wert { display: inline-flex; gap: 6px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.l-wert .l-auf { color: var(--fehler); }
+.l-wert .l-ab { color: var(--akzent); }
+.l-profil svg { height: 48px; cursor: default; }
+.l-profil .flaeche { fill: color-mix(in srgb, var(--akzent) 10%, transparent); }
+.l-profil .flaeche-voll { fill: color-mix(in srgb, var(--akzent) 26%, transparent); }
+.l-profil .linie-blass { fill: none; stroke: color-mix(in srgb, var(--akzent) 45%, transparent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.l-ausgabe { display: flex; align-items: center; gap: 10px; }
+.l-ausgabe progress { flex: 1; accent-color: var(--akzent); }
+.l-menue { position: absolute; z-index: 4; min-width: 15em; padding: 6px; border-radius: 12px; background: var(--karte); border: 1px solid var(--rand); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.l-menue hr { border: 0; border-top: 1px solid var(--rand); margin: 4px 0; }
+.l-punkt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); text-align: left; }
+.l-punkt:hover { background: color-mix(in srgb, var(--akzent) 12%, transparent); }
+.l-haken { width: 1em; color: var(--akzent); }
+.l-fotomarke { padding: 2px; border: 2px solid #fff; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); cursor: pointer; }
+.l-fotomarke img { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
+.l-schild { display: flex; align-items: flex-end; gap: 3px; pointer-events: none; }
+.l-zeichen { font-size: 14px; line-height: 1; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+.l-name { padding: 2px 5px; border: 1px solid; border-radius: 4px; background: rgba(255,255,255,.86); color: #222; font-size: 12px; white-space: nowrap; transform: translateY(-8px); }
+.l-videokarte { position: fixed; left: -100000px; top: 0; }
+.l-videodialog { max-width: 30em; width: calc(100vw - 32px); }
+.l-videodialog .klein { margin: 12px 0 4px; }
+.l-segmente { display: flex; gap: 6px; flex-wrap: wrap; }
+.l-dauer { display: flex; align-items: center; gap: 10px; }
+.l-dauer input { flex: 1; accent-color: var(--akzent); }
+.dialog-knoepfe { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+@media (max-width: 600px) {
+  /* Schmal: Titel und Schliessen oben, die beiden Menüs darunter. */
+  .l-titel { flex: 1 1 calc(100% - 52px); }
+  .l-zu { order: 1; }
+  .l-kopf .knopf-flach { order: 2; padding: 0 10px; font-size: .9em; }
+  .l-flugbild { right: 8px; top: 56px; }
+  .l-flugbild img { width: 34vw; }
+}

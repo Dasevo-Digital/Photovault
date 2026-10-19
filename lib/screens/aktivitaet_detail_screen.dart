@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -11,7 +10,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
-import '../services/wanderobjekte.dart';
+import 'package:kern/services/wanderobjekte.dart';
 import 'package:kern/services/aktivitaeten.dart';
 import '../services/gpx.dart';
 import '../services/meldungsdienst.dart';
@@ -306,64 +305,19 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
   }
 
   /// Gipfel, Hütten und Quellen zum Ausschnitt – aus der Bibliothek,
-  /// sonst von Overpass.
-  ///
-  /// **Die Bibliothek zuerst**, und das ist keine Bequemlichkeit:
-  /// Overpass wird ehrenamtlich betrieben und drosselt bei zu vielen
-  /// Anfragen. Eine Tour, die schon einmal angesehen wurde, fragt
-  /// niemanden mehr – auch nicht nach einem Neustart und auch nicht ohne
-  /// Netz.
+  /// sonst von Overpass (siehe `wanderobjekteAusBibliothek`).
   Future<List<Wanderobjekt>> _wanderobjekte({
     required double sued,
     required double west,
     required double nord,
     required double ost,
-  }) async {
-    final zeilen = await widget.library.db.wanderpunkteFuer(
-      sued: sued,
-      west: west,
-      nord: nord,
-      ost: ost,
-      holen: () async {
-        final klient = http.Client();
-        try {
-          final frisch = await holeWanderobjekte(
-            sued: sued,
-            west: west,
-            nord: nord,
-            ost: ost,
-            netz: klient,
-          );
-          if (frisch == null) return null;
-          return [
-            for (final o in frisch)
-              (
-                osmId: o.osmId,
-                artNr: o.art.index,
-                breite: o.breite,
-                laenge: o.laenge,
-                name: o.name,
-                hoehe: o.hoehe,
-              ),
-          ];
-        } finally {
-          klient.close();
-        }
-      },
-    );
-    return [
-      for (final z in zeilen)
-        if (z.artNr >= 0 && z.artNr < Wanderart.values.length)
-          Wanderobjekt(
-            osmId: z.osmId,
-            art: Wanderart.values[z.artNr],
-            breite: z.breite,
-            laenge: z.laenge,
-            name: z.name,
-            hoehe: z.hoehe,
-          ),
-    ];
-  }
+  }) => wanderobjekteAusBibliothek(
+    widget.library.db,
+    sued: sued,
+    west: west,
+    nord: nord,
+    ost: ost,
+  );
 
   Future<void> _spurEntfernen() async {
     final spur = _spur;

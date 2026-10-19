@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
@@ -23,6 +25,9 @@ void main() {
   late Handler api;
   late String erikaToken;
   late String maxToken;
+  // Overpass für die Wanderobjekte – gezählt, damit der Test sieht, dass
+  // ein Ausschnitt nur einmal gefragt wird.
+  var overpassFragen = 0;
 
   setUp(() async {
     ordner = await Directory.systemTemp.createTemp('pv_web_api_');
@@ -38,7 +43,34 @@ void main() {
       eingang: Directory('${ordner.path}/eingang'),
       ruhe: const Duration(hours: 1),
     );
-    api = baueApi(konten: konten, bibliotheken: bibliotheken);
+    overpassFragen = 0;
+    api = baueApi(
+      konten: konten,
+      bibliotheken: bibliotheken,
+      netz: MockClient((r) async {
+        overpassFragen++;
+        return http.Response(
+          jsonEncode({
+            'elements': [
+              {
+                'id': 7,
+                'lat': 51.80,
+                'lon': 10.61,
+                'tags': {'natural': 'peak', 'name': 'Ilsestein', 'ele': '473'},
+              },
+              {
+                'id': 8,
+                'lat': 51.81,
+                'lon': 10.62,
+                'tags': {'amenity': 'bench'},
+              },
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
     erika = await konten.legeAn('erika', 'ein langes passwort');
     max = await konten.legeAn('max', 'noch ein passwort');
     erikaToken = konten.meldeAn(erika.id, 'Rechner', 'x').token;
@@ -601,6 +633,43 @@ void main() {
       );
     },
   );
+
+  test('Wanderobjekte: einmal von Overpass, danach aus der Bibliothek; '
+      'nur ein vernünftiger Ausschnitt', () async {
+    const kasten = 'sued=51.7&west=10.5&nord=51.9&ost=10.7';
+    for (var i = 0; i < 2; i++) {
+      final r = await frag(
+        'GET',
+        '/api/v1/wanderobjekte?$kasten',
+        token: erikaToken,
+      );
+      expect(r.statusCode, 200);
+      expect((await jsonAus(r))['punkte'], [
+        {
+          'art': 'gipfel',
+          'breite': 51.8,
+          'laenge': 10.61,
+          'name': 'Ilsestein',
+          'hoehe': 473.0,
+        },
+      ]);
+    }
+    expect(overpassFragen, 1);
+    for (final falsch in [
+      'sued=51&west=10&nord=54&ost=11',
+      'sued=51.9&west=10.5&nord=51.7&ost=10.7',
+      'sued=x&west=10.5&nord=51.9&ost=10.7',
+    ]) {
+      final r = await frag(
+        'GET',
+        '/api/v1/wanderobjekte?$falsch',
+        token: erikaToken,
+      );
+      expect(r.statusCode, 400, reason: falsch);
+    }
+    final ohne = await frag('GET', '/api/v1/wanderobjekte?$kasten');
+    expect(ohne.statusCode, 401);
+  });
 
   test(
     'Aktivitäten: in der Reiseliste, in ihrer Reise, Route und Strecke',

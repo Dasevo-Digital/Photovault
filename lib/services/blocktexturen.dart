@@ -39,7 +39,7 @@ import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'gelaendetextur.dart';
 import 'hoehenlinien.dart';
-import 'netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 
 /// Was ein Block braucht – vom Maler her gesehen.
 typedef Blockwunsch = ({Texturblock block, int stufe, double entfernung});

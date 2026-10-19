@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 import 'gelaende_laden.dart';
 import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
-import 'netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 
 /// Luftbildkacheln für den Globus (#9).
 ///

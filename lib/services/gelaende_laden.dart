@@ -23,7 +23,7 @@ import '../widgets/mini_location_map.dart'
 import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';
 import 'hoehenlinien.dart';
-import 'netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 
 /// Wie lange auf eine einzelne Kachel gewartet wird.
 ///

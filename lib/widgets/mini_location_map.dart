@@ -13,7 +13,7 @@ import 'package:latlong2/latlong.dart' as ll;
 
 import 'package:kern/services/kartenstil.dart';
 import '../services/kachelmitschnitt.dart';
-import '../services/netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 import '../theme/app_spacing.dart';
 import 'wisch_zoom.dart';
 

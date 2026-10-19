@@ -945,15 +945,135 @@ async function zeigeAktivitaet(id) {
     kopf.append(p);
   }
   if (a.notiz) kopf.append(el('p', 'notiz', a.notiz));
+  // Die aufgezeichnete Spur: Was das Gerät gemessen hat, ist der Weg; die
+  // Fotos ergeben nur eine Vermutung über ihn.
+  const spuren = (d.spuren || []).filter((s) => s.punkte.length > 1);
   let route = null;
-  if (d.route.length > 1) {
+  if (d.route.length > 1 || spuren.length) {
     route = el('div', 'routenkarte');
     kopf.append(route);
   } else if (d.aufnahmen.length) {
     kopf.append(el('p', 'nebenzeile', t('Zu wenige verortete Aufnahmen für eine Strecke.')));
   }
+  const stelle = { zeige: () => {} };
+  for (const s of spuren) kopf.append(spurabschnitt(s, (p) => stelle.zeige(p), a, d.aufnahmen));
   zeigeListe({ aufnahmen: d.aufnahmen, kopf }, a.name);
-  if (route) ladeLeaflet().then(() => zeichneRoute(route, d.route)).catch((x) => route.replaceChildren(el('p', 'fehler', x.message)));
+  if (route) {
+    ladeLeaflet()
+      .then(() => { stelle.zeige = zeichneRoute(route, d.route, spuren); })
+      .catch((x) => route.replaceChildren(el('p', 'fehler', x.message)));
+  }
+}
+
+// Kennzahlen und Höhenprofil einer Spur, wie am Rechner. Fährt man über
+// das Profil, zeigt [zeige] die Stelle auf der Karte (null = weg).
+function spurabschnitt(s, zeige, aktivitaet, aufnahmen) {
+  const box = el('section', 'spur');
+  const kopf = el('div', 'spurkopf');
+  kopf.append(el('h3', null, t('Aufgezeichnete Spur')));
+  const flug = el('button', 'knopf-flach', `⛰ ${t('Gelände ansehen')}`);
+  flug.type = 'button';
+  flug.addEventListener('click', () => {
+    flug.disabled = true;
+    ladeSkript('gelaende.js')
+      .then(() => oeffneLandschaft(s, aktivitaet, aufnahmen))
+      .catch((x) => meldung(x.message))
+      .finally(() => { flug.disabled = false; });
+  });
+  kopf.append(flug);
+  box.append(kopf);
+  const km = kilometer.format(s.laengeKm);
+  box.append(el('p', 'nebenzeile', [
+    s.aufstieg == null
+      ? t('{km} km · keine Höhenangaben', { km })
+      : t('{km} km · ▲ {auf} m · ▼ {ab} m', { km, auf: zahl.format(Math.round(s.aufstieg)), ab: zahl.format(Math.round(s.abstieg || 0)) }),
+    t('{anzahl} Punkte', { anzahl: zahl.format(s.punkte.length) }),
+  ].join(' · ')));
+  const profil = profilpunkte(s.punkte);
+  if (profil.length > 1) {
+    box.append(el('p', 'leise klein', t('Höhenprofil')));
+    box.append(hoehenprofil(profil, (i) => zeige(i == null ? null : s.punkte[profil[i].index])));
+  } else {
+    box.append(el('p', 'leise klein', t('Diese Datei führt keine Höhen – ohne sie gibt es kein Profil.')));
+  }
+  return box;
+}
+
+// Entfernung zweier Punkte in Kilometern (Haversine, wie im Kern).
+function abstandKm(a, b) {
+  const r = Math.PI / 180;
+  const db = (b[0] - a[0]) * r, dl = (b[1] - a[1]) * r;
+  const h = Math.sin(db / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dl / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Die Punkte des Profils: Strecke bis hierher und Höhe – Punkte ohne Höhe
+// fallen heraus, nachdem ihre Strecke gezählt wurde. Die Waagerechte ist
+// die Strecke, nicht die Zeit: Über der Zeit würde jede Rast eine Ebene.
+function profilpunkte(punkte) {
+  const aus = [];
+  let km = 0;
+  punkte.forEach((p, i) => {
+    if (i > 0) km += abstandKm(punkte[i - 1], p);
+    if (p[2] != null) aus.push({ km, hoehe: p[2], index: i });
+  });
+  return aus;
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+function svg(tag, werte) {
+  const e = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(werte || {})) e.setAttribute(k, v);
+  return e;
+}
+
+// Das Höhenprofil als SVG, mit einer Marke unter dem Zeiger.
+function hoehenprofil(punkte, beiStelle) {
+  const B = 600, H = 140, oben = 8, unten = 18;
+  const gesamt = punkte[punkte.length - 1].km || 1;
+  const hoehen = punkte.map((p) => p.hoehe);
+  const tief = Math.min(...hoehen), hoch = Math.max(...hoehen);
+  const spanne = Math.max(hoch - tief, 10);
+  const x = (km) => (km / gesamt) * B;
+  const y = (h) => oben + (1 - (h - tief) / spanne) * (H - oben - unten);
+  const box = el('div', 'hoehenprofil');
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', t('Höhenprofil über {km} km, von {tief} bis {hoch} Meter, {auf} Meter Aufstieg.', {
+    km: kilometer.format(gesamt), tief: zahl.format(Math.round(tief)), hoch: zahl.format(Math.round(hoch)),
+    auf: zahl.format(Math.round(punkte.reduce((s, p, i) => s + (i && p.hoehe > punkte[i - 1].hoehe ? p.hoehe - punkte[i - 1].hoehe : 0), 0))),
+  }));
+  const bild = svg('svg', { viewBox: `0 0 ${B} ${H}`, preserveAspectRatio: 'none' });
+  const linie = punkte.map((p) => `${x(p.km).toFixed(1)},${y(p.hoehe).toFixed(1)}`).join(' ');
+  bild.append(
+    svg('polygon', { class: 'flaeche', points: `0,${H - unten} ${linie} ${B},${H - unten}` }),
+    svg('polyline', { class: 'linie', points: linie }),
+  );
+  const strich = svg('line', { class: 'strich', y1: oben, y2: H - unten, visibility: 'hidden' });
+  bild.append(strich);
+  const achse = el('div', 'achse');
+  achse.append(el('span', null, `${zahl.format(Math.round(tief))} m`), el('span', null, t('{km}\u00a0km', { km: kilometer.format(gesamt) })), el('span', null, `${zahl.format(Math.round(hoch))} m`));
+  const marke = el('div', 'marke');
+  marke.hidden = true;
+  box.append(bild, marke, achse);
+  const zeigeBei = (clientX) => {
+    const r = bild.getBoundingClientRect();
+    const gesucht = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * gesamt;
+    let bester = 0;
+    for (let i = 1; i < punkte.length; i++) if (Math.abs(punkte[i].km - gesucht) < Math.abs(punkte[bester].km - gesucht)) bester = i;
+    const p = punkte[bester];
+    strich.setAttribute('x1', x(p.km));
+    strich.setAttribute('x2', x(p.km));
+    strich.setAttribute('visibility', 'visible');
+    marke.textContent = t('{km} km · {hoehe} m', { km: kilometer.format(p.km), hoehe: zahl.format(Math.round(p.hoehe)) });
+    marke.hidden = false;
+    beiStelle(bester);
+  };
+  const weg = () => { strich.setAttribute('visibility', 'hidden'); marke.hidden = true; beiStelle(null); };
+  bild.addEventListener('pointermove', (e) => zeigeBei(e.clientX));
+  bild.addEventListener('pointerdown', (e) => zeigeBei(e.clientX));
+  bild.addEventListener('pointerleave', weg);
+  bild.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') weg(); });
+  return box;
 }
 
 // Leaflet erst, wenn eine Karte gebraucht wird: Skript und Stil sind gut
@@ -1018,19 +1138,38 @@ function osmKacheln() {
 }
 
 // Die Route: Linie durch die verorteten Aufnahmen in ihrer Zeitfolge, ein
-// Punkt je Aufnahme – ein Tipp darauf öffnet sie.
-function zeichneRoute(box, punkte) {
+// Punkt je Aufnahme – ein Tipp darauf öffnet sie. Darunter die
+// aufgezeichneten Spuren in der zweiten Farbe. Gibt zurück, wie eine Stelle
+// der Spur markiert wird (aus dem Höhenprofil; null nimmt sie weg).
+function zeichneRoute(box, punkte, spuren = []) {
   const karte = L.map(box, { scrollWheelZoom: false });
   osmKacheln().addTo(karte);
-  const farbe = getComputedStyle(document.documentElement).getPropertyValue('--akzent').trim() || '#0d8a7a';
-  const linie = L.polyline(punkte.map((p) => [p.breite, p.laenge]), { color: farbe, weight: 4, opacity: 0.85 }).addTo(karte);
+  const stil = getComputedStyle(document.documentElement);
+  const farbe = stil.getPropertyValue('--akzent').trim() || '#0d8a7a';
+  const spurfarbe = stil.getPropertyValue('--spur').trim() || '#c2410c';
+  const grenzen = L.latLngBounds([]);
+  for (const s of spuren) {
+    const l = L.polyline(s.punkte.map((p) => [p[0], p[1]]), { color: spurfarbe, weight: 4, opacity: 0.9 }).addTo(karte);
+    grenzen.extend(l.getBounds());
+  }
+  if (punkte.length > 1) {
+    const linie = L.polyline(punkte.map((p) => [p.breite, p.laenge]), { color: farbe, weight: spuren.length ? 3 : 4, opacity: 0.85 }).addTo(karte);
+    grenzen.extend(linie.getBounds());
+  }
   punkte.forEach((p, i) => {
     const ende = i === 0 || i === punkte.length - 1;
     L.circleMarker([p.breite, p.laenge], { radius: ende ? 7 : 4, color: '#fff', weight: 2, fillColor: farbe, fillOpacity: 1 })
       .addTo(karte)
       .on('click', () => { const n = liste.aufnahmen.findIndex((x) => x.id === p.id); if (n >= 0) oeffne(n); });
   });
-  karte.fitBounds(linie.getBounds(), { padding: [24, 24], maxZoom: 16 });
+  if (grenzen.isValid()) karte.fitBounds(grenzen, { padding: [24, 24], maxZoom: 16 });
+  const fehlerfarbe = stil.getPropertyValue('--fehler').trim() || '#b3261e';
+  let stelle = null;
+  return (p) => {
+    if (!p) { if (stelle) { stelle.remove(); stelle = null; } return; }
+    if (!stelle) stelle = L.circleMarker([p[0], p[1]], { radius: 7, color: '#fff', weight: 2, fillColor: fehlerfarbe, fillOpacity: 1, interactive: false }).addTo(karte);
+    else stelle.setLatLng([p[0], p[1]]);
+  };
 }
 
 const zahl = new Intl.NumberFormat(GEBIET);
@@ -3216,6 +3355,10 @@ const KUERZEL = [
     ['← / →', 'Vorheriges / nächstes Foto'],
     ['Esc', 'Beenden'],
   ]],
+  ['Gelände', [
+    ['Leertaste', 'Flug starten / anhalten'],
+    ['Esc', 'Schliessen'],
+  ]],
 ];
 
 function zeigeKuerzel() {
@@ -3234,6 +3377,8 @@ $('kuerzel-zu').addEventListener('click', () => $('kuerzel-dialog').close());
 $('einst-kuerzel').addEventListener('click', zeigeKuerzel);
 
 document.addEventListener('keydown', async (e) => {
+  // Die Landschaft hat ihre eigenen Tasten (gelaende.js).
+  if (document.body.classList.contains('landschaft-offen')) return;
   // Nicht beim Schreiben und nicht über einem offenen Dialog.
   const ziel = e.target;
   if (ziel instanceof HTMLElement && (ziel.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ziel.tagName))) return;

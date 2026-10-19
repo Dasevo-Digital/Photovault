@@ -6,7 +6,7 @@
 // Eine erfundene Antwort prüfte nur, dass mein Zerleger meinen eigenen
 // Erwartungen entspricht.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/wanderobjekte.dart';
+import 'package:kern/services/wanderobjekte.dart';
 
 /// Ein Ausschnitt aus der echten Antwort – mit allem, was Schwierigkeiten
 /// macht: eine Höhe mit Komma, eine ohne, ein Punkt mit zwei Merkmalen,

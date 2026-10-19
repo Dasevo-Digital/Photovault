@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:http/http.dart' as http;
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
@@ -21,6 +22,7 @@ import 'package:kern/services/lebensbaumansicht.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/reiseuebersicht.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
+import 'package:kern/services/wanderobjekte.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
@@ -72,12 +74,13 @@ Handler baueApi({
   Directory? web,
   Uri? oeffentlich,
   Gastpruefung? gastpruefung,
+  http.Client? netz,
 }) {
   final von = absender ?? Absender();
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final video = Videofassungen();
-  final api = _Api(bibliotheken, beschleunigerZustand, video);
+  final api = _Api(bibliotheken, beschleunigerZustand, video, netz);
   final freigabe = Freigabeapi(
     dienst: konten.freigaben,
     bibliotheken: bibliotheken,
@@ -172,6 +175,18 @@ Handler baueApi({
           Response.notFound('nicht da'),
     )
     ..get(
+      '/app/maplibre/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'maplibre') ??
+          Response.notFound('nicht da'),
+    )
+    ..get(
+      '/app/mp4muxer/<name>',
+      (Request r, String name) =>
+          oberflaeche?.datei(r, name, ordnerName: 'mp4muxer') ??
+          Response.notFound('nicht da'),
+    )
+    ..get(
       '/app/schrift/<name>',
       (Request r, String name) =>
           oberflaeche?.datei(r, name, ordnerName: 'schrift') ??
@@ -228,6 +243,7 @@ Handler baueApi({
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)
     ..get('/api/v1/spuren', api.spurkennungen)
+    ..get('/api/v1/wanderobjekte', api.wanderobjekte)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/laender', api.laender)
     ..get('/api/v1/laender/aufnahmen', api.amOrt)
@@ -470,7 +486,10 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.bibliotheken, this._beschleuniger, this.videofassungen);
+  _Api(this.bibliotheken, this._beschleuniger, this.videofassungen, this._netz);
+
+  /// Für Overpass – nur in Tests gesetzt, sonst ein eigener je Abruf.
+  final http.Client? _netz;
 
   final Bibliotheken bibliotheken;
 
@@ -668,6 +687,54 @@ class _Api {
     final db = (await _bereich(anfrage)).bibliothek.db;
     return _json({
       'kennungen': [for (final s in await db.alleSpuren()) s.id],
+    });
+  }
+
+  /// Gipfel, Hütten und Quellen in einem Ausschnitt – für die Landschaft
+  /// in Browser und Handy. Wie am Rechner zuerst aus der Bibliothek, sonst
+  /// von Overpass, und dann gemerkt (`wanderobjekteAusBibliothek`).
+  ///
+  /// Höchstens zwei Grad je Richtung: Mehr fasst keine Tour, und eine
+  /// grössere Frage ginge an einen ehrenamtlichen Dienst.
+  Future<Response> wanderobjekte(Request anfrage) async {
+    final q = anfrage.url.queryParameters;
+    double? zahl(String n) => double.tryParse(q[n] ?? '');
+    final sued = zahl('sued'), west = zahl('west');
+    final nord = zahl('nord'), ost = zahl('ost');
+    if (sued == null ||
+        west == null ||
+        nord == null ||
+        ost == null ||
+        sued < -90 ||
+        nord > 90 ||
+        west < -180 ||
+        ost > 180 ||
+        nord <= sued ||
+        ost <= west ||
+        nord - sued > 2 ||
+        ost - west > 2) {
+      return Response(400);
+    }
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final punkte = await wanderobjekteAusBibliothek(
+      db,
+      sued: sued,
+      west: west,
+      nord: nord,
+      ost: ost,
+      netz: _netz,
+    );
+    return _json({
+      'punkte': [
+        for (final p in punkte)
+          {
+            'art': p.art.name,
+            'breite': p.breite,
+            'laenge': p.laenge,
+            'name': ?p.name,
+            'hoehe': ?p.hoehe,
+          },
+      ],
     });
   }
 

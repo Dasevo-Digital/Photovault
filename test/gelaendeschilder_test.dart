@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/gelaendekacheln.dart';
 import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/services/wanderobjekte.dart';
+import 'package:kern/services/wanderobjekte.dart';
 import 'package:photo_vault/widgets/gelaendeschilder.dart';
 
 void main() {

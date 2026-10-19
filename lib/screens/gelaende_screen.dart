@@ -18,7 +18,7 @@ import '../services/gelaendekacheln.dart';
 import '../services/gelaendesicht.dart';
 import '../services/lichtstimmung.dart';
 import '../theme/app_spacing.dart';
-import '../services/wanderobjekte.dart';
+import 'package:kern/services/wanderobjekte.dart';
 import '../widgets/gelaende.dart';
 import '../widgets/gelaendeschilder.dart';
 import '../widgets/mini_location_map.dart' show eigeneKarte;

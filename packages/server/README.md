@@ -410,6 +410,21 @@ unter Linux und Windows; Tonkurve und Farbmischer baut der Server
 (`GET /api/v1/entwickeln/<id>`). Rohformate und HEIC entwickelt der Browser
 aus der Vorschau.
 
+**Spur und Landschaft** wie am Rechner: Eine Aktivität mit GPX-Spur zeigt
+die Spur auf der Karte, Kennzahlen und ein Höhenprofil, und „Gelände
+ansehen“ öffnet sie in 3D (`web/gelaende.js` mit MapLibre GL JS 6.11.2 und
+mp4-muxer 5.2.2, beide mitgeliefert und erst dann geladen): Wanderkarte,
+Strassenkarte oder Luftbild, Wanderwege, Ortsnamen, selbst gerechnete
+Höhenlinien, Gipfel/Hütten/Quellen, vier Tageszeiten, der Flug mit Einflug,
+Messwerten, Fotos an ihrer Stelle und Abspann, und der Flug als MP4
+(WebCodecs; Chrome, Edge, Safari ab 16.4, Firefox ab 130). Dafür holt der
+**Browser** Kacheln direkt bei denselben Diensten wie die App am Rechner –
+Höhen von AWS (Tilezen), Luftbild und Beschriftung von Esri, Karten von
+OpenTopoMap und OpenStreetMap, Wanderwege von Waymarked Trails; die CSP
+lässt genau diese zu. Gipfel, Hütten und Quellen fragt dagegen der
+**Server** bei Overpass (`GET /api/v1/wanderobjekte`) und merkt sie sich in
+der Bibliothek, wie der Rechner.
+
 **Die Sitzung ist ein Gerät.** Der Browser bekommt ein Token wie die App,
 aber in einem Cookie, das nur der Server liest (`HttpOnly`,
 `SameSite=Strict`, über HTTPS `Secure`). In der Geräteliste steht es als

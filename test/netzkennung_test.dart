@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
 
 import 'hilfen/quelltext.dart';

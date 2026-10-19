@@ -42,24 +42,36 @@ class Webapi {
   final Directory ordner;
 
   /// Was die Seite laden und tun darf – und sonst nichts.
+  ///
+  /// `connect-src` nennt die Kachelquellen der Landschaft (gelaende.js):
+  /// MapLibre holt Höhen und Karten per `fetch`, nicht als Bild. Es sind
+  /// dieselben Dienste, die der Rechner für seinen Überflug fragt. Den
+  /// Worker lädt MapLibre aus `maplibre/` (`worker-src` fällt auf
+  /// `script-src 'self'` zurück) – kein `blob:` nötig.
   static const csp =
       "default-src 'none'; script-src 'self'; style-src 'self'; "
       "img-src 'self' blob: data: https://tile.openstreetmap.org; "
-      "media-src 'self' blob:; connect-src 'self'; "
+      "media-src 'self' blob:; connect-src 'self' $_landschaft; "
       "font-src 'self'; manifest-src 'self'; base-uri 'none'; "
       "form-action 'none'; frame-ancestors 'none'";
+
+  static const _landschaft =
+      'https://s3.amazonaws.com https://server.arcgisonline.com '
+      'https://tile.opentopomap.org https://tile.openstreetmap.org '
+      'https://tile.waymarkedtrails.org';
 
   // Ein schlichter Name: Buchstaben, Ziffern, Strich, eine Endung aus der
   // Liste. Kein Pfadtrenner, kein zweiter Punkt – damit ist `..` von
   // vornherein draussen.
   static final _name = RegExp(
-    r'^[a-z0-9][a-z0-9_-]*\.(html|css|js|svg|png|jpg|ico|webmanifest|woff2|ttf)$',
+    r'^[a-z0-9][a-z0-9_-]*\.(html|css|js|mjs|svg|png|jpg|ico|webmanifest|woff2|ttf)$',
   );
 
   static const _typen = {
     'html': 'text/html; charset=utf-8',
     'css': 'text/css; charset=utf-8',
     'js': 'text/javascript; charset=utf-8',
+    'mjs': 'text/javascript; charset=utf-8',
     'svg': 'image/svg+xml',
     'png': 'image/png',
     'jpg': 'image/jpeg',
@@ -77,6 +89,8 @@ class Webapi {
     'leaflet',
     'leaflet/images',
     'lebensbaum',
+    'maplibre',
+    'mp4muxer',
     'schrift',
   };
 

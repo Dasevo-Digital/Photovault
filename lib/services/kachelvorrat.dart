@@ -5,7 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart';
 
 import '../widgets/mini_location_map.dart';
-import 'netzkennung.dart';
+import 'package:kern/services/netzkennung.dart';
 
 /// Ein rechteckiger Kartenausschnitt in Grad.
 typedef Gebiet = ({double sued, double west, double nord, double ost});

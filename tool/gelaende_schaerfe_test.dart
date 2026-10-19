@@ -31,7 +31,7 @@ import 'package:photo_vault/services/gelaende_laden.dart';
 import 'package:photo_vault/services/gelaendekacheln.dart';
 import 'package:photo_vault/services/gelaendesicht.dart';
 import 'package:photo_vault/services/gelaendetextur.dart';
-import 'package:photo_vault/services/wanderobjekte.dart';
+import 'package:kern/services/wanderobjekte.dart';
 import 'package:photo_vault/widgets/gelaende.dart';
 import 'package:photo_vault/widgets/gelaendeschilder.dart';
 import 'package:kern/services/gelaendeebenen.dart';
