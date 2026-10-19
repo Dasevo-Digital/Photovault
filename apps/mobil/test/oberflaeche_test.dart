@@ -47,6 +47,7 @@ import 'package:photo_vault_mobil/seiten/personen.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
+import 'package:photo_vault_mobil/seiten/diashow.dart';
 import 'package:photo_vault_mobil/seiten/stammbaum.dart';
 import 'package:photo_vault_mobil/seiten/statistik.dart';
 import 'package:photo_vault_mobil/seiten/suche.dart';
@@ -583,6 +584,95 @@ void main() {
       db,
     );
   }
+
+  testWidgets('Diashow: blättert von selbst, Videos bleiben draussen', (
+    tester,
+  ) async {
+    final (sitzung, _) = await sitzungMit(tester, ['d1', 'd2', 'd3']);
+    final video = Rasterzeile(
+      id: 'v',
+      type: 'VIDEO',
+      originalFileName: 'v.mov',
+      relativePath: 'originals/v.mov',
+      thumbnailRelativePath: null,
+      fileCreatedAt: DateTime(2025),
+      durationSeconds: 3,
+      isFavorite: false,
+      isStackCover: false,
+      stackId: null,
+      stackSize: null,
+      linkedAssetId: null,
+      rating: 0,
+      colorLabel: null,
+      widthPx: null,
+      heightPx: null,
+      latitude: null,
+      longitude: null,
+      cameraMake: null,
+      isLocked: false,
+    );
+    final zeilen = [
+      _zeile('d1', 0, 0),
+      video,
+      _zeile('d2', 0, 0),
+      _zeile('d3', 0, 0),
+    ];
+    int? zurueck = -2;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async => zurueck = await zeigeDiashow(
+                  context,
+                  sitzung,
+                  zeilen,
+                  ab: 1,
+                ),
+                child: const Text('los'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('los'));
+    // Laden (echte Ein-/Ausgabe, die Dateien fehlen) und zeigen.
+    Future<void> warte(String stand) async {
+      for (var i = 0; i < 40 && find.text(stand).evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    // Ab dem Video: die Show beginnt beim nächsten Foto, d2 – das zweite
+    // von drei Fotos.
+    await warte('2 / 3');
+    expect(find.text('2 / 3'), findsOneWidget);
+    // Nach vier Sekunden kommt das nächste.
+    await tester.pump(diashowTakt);
+    await warte('3 / 3');
+    expect(find.text('3 / 3'), findsOneWidget);
+    // Anhalten: Es bleibt stehen.
+    await tester.tap(find.byType(GestureDetector).first);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('Anhalten'));
+    await tester.pump(diashowTakt * 2);
+    expect(find.text('3 / 3'), findsOneWidget);
+    // Beenden gibt zurück, wo sie stand – d3 in den Zeilen samt Video.
+    // Die Knöpfe sind inzwischen wieder ausgeblendet; ein Tipp holt sie.
+    await tester.tap(find.byType(GestureDetector).first);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('Diashow beenden'));
+    await tester.pumpAndSettle();
+    expect(zurueck, 3);
+  });
 
   testWidgets('Betrachter: nach unten wischen schliesst ihn', (tester) async {
     final (sitzung, _) = await sitzungMit(tester, ['b1']);

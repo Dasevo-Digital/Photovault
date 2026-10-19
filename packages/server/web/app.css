@@ -559,3 +559,20 @@ body.teilen { min-height: 100vh; }
 .beitrag button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
 .beitrag.abgewiesen { opacity: .75; }
 @media (max-width: 560px) { .beitrag { flex-wrap: wrap; } .beitrag .knoepfe { width: 100%; justify-content: flex-end; } }
+
+/* Diashow (Issue #170): zwei Bilder übereinander, Überblendung und ein
+   langsamer Zoom wie in der Diashow des Rechners. */
+#diashow { position: fixed; inset: 0; z-index: 30; background: #000; overflow: hidden; cursor: none; }
+#diashow.mit-leiste { cursor: default; }
+#diashow .dia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .8s ease-in-out; will-change: opacity, transform; }
+#diashow .dia.sichtbar { opacity: 1; }
+#diashow .dia.sichtbar.links { animation: dia-zoom-links 5s ease-out forwards; }
+#diashow .dia.sichtbar.rechts { animation: dia-zoom-rechts 5s ease-out forwards; }
+@keyframes dia-zoom-links { from { transform: scale(1); } to { transform: scale(1.06) translate(-1%, -1%); } }
+@keyframes dia-zoom-rechts { from { transform: scale(1); } to { transform: scale(1.06) translate(1%, 1%); } }
+@media (prefers-reduced-motion: reduce) { #diashow .dia.sichtbar.links, #diashow .dia.sichtbar.rechts { animation: none; } }
+#dia-leiste { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; opacity: 0; transition: opacity .25s; pointer-events: none; }
+#diashow.mit-leiste #dia-leiste { opacity: 1; pointer-events: auto; }
+#dia-leiste button { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: #fff; font-size: 20px; cursor: pointer; }
+#dia-leiste button:hover { background: rgba(255,255,255,.15); }
+#dia-stand { min-width: 4.5em; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums; }

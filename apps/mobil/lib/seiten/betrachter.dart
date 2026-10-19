@@ -12,6 +12,7 @@ import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
+import 'diashow.dart';
 import 'entwickeln.dart';
 import 'videospieler.dart';
 
@@ -216,17 +217,51 @@ class _BetrachterState extends State<Betrachter> {
                   icon: const Icon(Icons.info_outline),
                   onPressed: _angaben,
                 ),
-                if (!widget.imPapierkorb && zeile.type != 'VIDEO')
-                  IconButton(
-                    tooltip: t.entwTitel,
-                    icon: const Icon(Icons.tune),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            Entwickeln(sitzung: widget.sitzung, id: zeile.id),
+                // Weniger Häufiges im Menü – oben ist kein Platz mehr,
+                // ohne das Datum abzuschneiden (wie Immich).
+                PopupMenuButton<String>(
+                  tooltip: t.betrachterMehr,
+                  onSelected: (w) async {
+                    switch (w) {
+                      case 'entwickeln':
+                        await Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => Entwickeln(
+                              sitzung: widget.sitzung,
+                              id: zeile.id,
+                            ),
+                          ),
+                        );
+                      case 'diashow':
+                        final i = await zeigeDiashow(
+                          context,
+                          widget.sitzung,
+                          widget.zeilen,
+                          ab: _index,
+                        );
+                        if (i != null && i >= 0 && mounted) {
+                          _seiten.jumpToPage(i);
+                        }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'diashow',
+                      child: ListTile(
+                        leading: const Icon(Icons.slideshow_outlined),
+                        title: Text(t.diashowAbHier),
                       ),
                     ),
-                  ),
+                    if (!widget.imPapierkorb && zeile.type != 'VIDEO')
+                      PopupMenuItem(
+                        value: 'entwickeln',
+                        child: ListTile(
+                          leading: const Icon(Icons.tune),
+                          title: Text(t.entwTitel),
+                        ),
+                      ),
+                  ],
+                ),
                 if (widget.imPapierkorb)
                   IconButton(
                     tooltip: t.auswahlZurueckholen,

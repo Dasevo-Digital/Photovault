@@ -11,6 +11,7 @@ import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'diashow.dart';
 import 'freigaben.dart';
 
 /// Das Blatt unter einem Raster, sobald etwas ausgewählt ist (Issue
@@ -228,12 +229,18 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                 ],
               ),
             if (!papierkorb) ...[
-              Row(
+              _Aktionsreihe(
                 children: [
                   _Aktion(
                     icon: Icons.share_outlined,
                     text: t.auswahlTeilen,
                     onPressed: () => _teile(context),
+                  ),
+                  _Aktion(
+                    icon: Icons.slideshow_outlined,
+                    text: t.diashow,
+                    onPressed: () =>
+                        zeigeDiashow(context, widget.sitzung, zeilen),
                   ),
                   _Aktion(
                     icon: Icons.link_rounded,
@@ -359,6 +366,33 @@ class _Albumkachel extends StatelessWidget {
 
 /// Ein Knopf der Leiste: Symbol über kurzem Text, gleich breit wie die
 /// anderen.
+/// Die Aktionen nebeneinander; passen sie nicht in die Breite, lässt sich
+/// die Reihe zur Seite schieben, statt die Beschriftungen abzuschneiden.
+class _Aktionsreihe extends StatelessWidget {
+  const _Aktionsreihe({required this.children});
+
+  final List<_Aktion> children;
+
+  static const _mindestens = 72.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, c) {
+      final passt = c.maxWidth / children.length >= _mindestens;
+      if (passt) return Row(children: children);
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final a in children)
+              SizedBox(width: _mindestens, child: a.inhalt(context)),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 class _Aktion extends StatelessWidget {
   const _Aktion({
     required this.icon,
@@ -370,28 +404,28 @@ class _Aktion extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
 
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: InkWell(
-      onTap: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon),
-            const SizedBox(height: 2),
-            Text(
-              text,
-              style: Theme.of(context).textTheme.labelSmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
+  Widget inhalt(BuildContext context) => InkWell(
+    onTap: onPressed,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon),
+          const SizedBox(height: 2),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.labelSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     ),
   );
+
+  @override
+  Widget build(BuildContext context) => Expanded(child: inhalt(context));
 }
 
 /// Fragt nach dem Namen eines neuen Albums. Der Controller gehört dem

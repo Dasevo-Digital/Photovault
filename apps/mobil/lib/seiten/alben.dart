@@ -6,6 +6,7 @@ import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'raster.dart';
+import 'diashow.dart';
 import 'freigaben.dart';
 
 /// Die Alben der Bibliothek, jedes mit seinem Titelbild.
@@ -89,6 +90,18 @@ class AlbumSeite extends StatelessWidget {
     appBar: AppBar(
       title: Text(album.name),
       actions: [
+        IconButton(
+          tooltip: AppTexte.of(context).diashow,
+          icon: const Icon(Icons.slideshow_outlined),
+          onPressed: () async {
+            final a = await sitzung.db.watchAlbumAssets(album.id).first;
+            if (!context.mounted) return;
+            await zeigeDiashow(context, sitzung, [
+              for (final x in a)
+                if (!x.isLocked && !x.isTrashed) Rasterzeile.aus(x),
+            ]);
+          },
+        ),
         IconButton(
           tooltip: AppTexte.of(context).albumAlsLink,
           icon: const Icon(Icons.link_rounded),

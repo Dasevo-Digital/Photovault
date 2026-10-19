@@ -2371,6 +2371,60 @@ abstract class AppTexte {
   /// **'{n, plural, =1{Beitrag angenommen} other{{n} Beiträge angenommen}}'**
   String beitraegeAngenommen(int n);
 
+  /// No description provided for @diashow.
+  ///
+  /// In de, this message translates to:
+  /// **'Diashow'**
+  String get diashow;
+
+  /// No description provided for @diashowAbHier.
+  ///
+  /// In de, this message translates to:
+  /// **'Diashow ab hier'**
+  String get diashowAbHier;
+
+  /// No description provided for @diashowKeineFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier sind keine Fotos für eine Diashow – Videos bleiben draussen.'**
+  String get diashowKeineFotos;
+
+  /// No description provided for @diashowVorige.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorige'**
+  String get diashowVorige;
+
+  /// No description provided for @diashowNaechste.
+  ///
+  /// In de, this message translates to:
+  /// **'Nächste'**
+  String get diashowNaechste;
+
+  /// No description provided for @diashowAnhalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Anhalten'**
+  String get diashowAnhalten;
+
+  /// No description provided for @diashowWeiter.
+  ///
+  /// In de, this message translates to:
+  /// **'Weiter'**
+  String get diashowWeiter;
+
+  /// No description provided for @diashowBeenden.
+  ///
+  /// In de, this message translates to:
+  /// **'Diashow beenden'**
+  String get diashowBeenden;
+
+  /// No description provided for @betrachterMehr.
+  ///
+  /// In de, this message translates to:
+  /// **'Mehr'**
+  String get betrachterMehr;
+
   /// No description provided for @personZusammenfuehren.
   ///
   /// In de, this message translates to:

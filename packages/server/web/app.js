@@ -592,7 +592,10 @@ async function zeigeAlbum(id) {
   const teilen = el('button', 'knopf', t('Als Link teilen …'));
   teilen.type = 'button';
   teilen.addEventListener('click', () => oeffneLinkDialog({ album: d.album.id }, d.album.name));
-  kopf.append(teilen);
+  const diashow = el('button', 'knopf', t('Diashow'));
+  diashow.type = 'button';
+  diashow.addEventListener('click', () => starteDiashow(liste.aufnahmen, 0));
+  kopf.append(diashow, teilen);
   zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.album.name);
 }
 
@@ -2707,7 +2710,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'weg', 'holen', 'live']) {
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }
@@ -2911,6 +2914,117 @@ $('favorit').addEventListener('click', async () => {
   } catch (x) { $('angaben').textContent = x.message; }
 });
 
+// --- Diashow (Issue #170) -----------------------------------------------------
+//
+// Wie am Rechner: Fotos nacheinander, vier Sekunden je Bild, mit
+// Überblendung und einem langsamen Zoom; Videos bleiben draussen. Zwei
+// Bilder liegen übereinander – das neue wird erst gezeigt, wenn es
+// dekodiert ist, sonst blitzte zwischen zwei Fotos Schwarz auf.
+
+const DIA_TAKT = 4000;
+const dia = { fotos: [], i: 0, laeuft: true, takt: null, oben: 0, lauf: 0, wachbleiben: null, ausBetrachter: false };
+
+function starteDiashow(aufnahmen, ab = 0) {
+  const start = aufnahmen[ab];
+  dia.fotos = aufnahmen.filter((a) => a.art !== 'video');
+  if (!dia.fotos.length) { meldung(t('Hier sind keine Fotos für eine Diashow – Videos bleiben draussen.')); return; }
+  const i = start ? dia.fotos.indexOf(start) : -1;
+  dia.i = i >= 0 ? i : Math.max(0, dia.fotos.findIndex((a) => aufnahmen.indexOf(a) >= ab));
+  dia.laeuft = true;
+  dia.ausBetrachter = offen >= 0;
+  for (const b of $('diashow').querySelectorAll('.dia')) { b.classList.remove('sichtbar'); b.removeAttribute('src'); }
+  $('diashow').hidden = false;
+  $('dia-pause').textContent = '❚❚';
+  // Vollbild und wach bleiben, wo der Browser es erlaubt.
+  $('diashow').requestFullscreen?.().catch(() => {});
+  navigator.wakeLock?.request('screen').then((w) => { dia.wachbleiben = w; }).catch(() => {});
+  zeigeDia(dia.i);
+}
+
+function diaUrl(a) { return `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`; }
+
+// Geladen und möglichst dekodiert. decode() hängt in manchen Lagen (etwa
+// wenn die Seite im Hintergrund nicht zeichnet) – deshalb mit Frist.
+async function diaGeladen(img) {
+  if (!img.complete) {
+    await new Promise((fertig) => {
+      img.addEventListener('load', fertig, { once: true });
+      img.addEventListener('error', fertig, { once: true });
+    });
+  }
+  await Promise.race([img.decode().catch(() => {}), new Promise((fertig) => setTimeout(fertig, 400))]);
+}
+
+async function zeigeDia(i) {
+  clearTimeout(dia.takt);
+  const n = dia.fotos.length;
+  dia.i = ((i % n) + n) % n;
+  const meinLauf = ++dia.lauf;
+  const a = dia.fotos[dia.i];
+  const bilder = $('diashow').querySelectorAll('.dia');
+  const neu = bilder[1 - dia.oben], alt = bilder[dia.oben];
+  neu.src = diaUrl(a);
+  await diaGeladen(neu);
+  if (meinLauf !== dia.lauf || $('diashow').hidden) return;
+  // Der Zoom beginnt bei jedem Bild neu, abwechselnd in eine andere Ecke.
+  neu.classList.remove('sichtbar', 'links', 'rechts');
+  void neu.offsetWidth;
+  neu.classList.add('sichtbar', dia.i % 2 ? 'links' : 'rechts');
+  alt.classList.remove('sichtbar');
+  dia.oben = 1 - dia.oben;
+  $('dia-stand').textContent = `${dia.i + 1} / ${n}`;
+  // Das nächste schon laden.
+  const weiter = dia.fotos[(dia.i + 1) % n];
+  if (weiter) { const v = new Image(); v.src = diaUrl(weiter); }
+  if (dia.laeuft) dia.takt = setTimeout(() => zeigeDia(dia.i + 1), DIA_TAKT);
+}
+
+function diaPause(an = !dia.laeuft) {
+  dia.laeuft = an;
+  $('dia-pause').textContent = an ? '❚❚' : '▶';
+  $('dia-pause').setAttribute('aria-label', an ? t('Anhalten') : t('Weiter'));
+  clearTimeout(dia.takt);
+  if (an) dia.takt = setTimeout(() => zeigeDia(dia.i + 1), DIA_TAKT);
+}
+
+function beendeDiashow() {
+  clearTimeout(dia.takt);
+  dia.lauf++;
+  $('diashow').hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  dia.wachbleiben?.release().catch(() => {});
+  dia.wachbleiben = null;
+  // Kam sie aus dem Betrachter, steht er danach beim zuletzt gezeigten Foto.
+  const a = dia.fotos[dia.i];
+  if (dia.ausBetrachter && liste && a) {
+    const j = liste.aufnahmen.indexOf(a);
+    if (j >= 0) oeffne(j);
+  }
+}
+
+$('dia-zu').addEventListener('click', beendeDiashow);
+$('dia-pause').addEventListener('click', () => diaPause());
+$('dia-vor').addEventListener('click', () => zeigeDia(dia.i + 1));
+$('dia-zurueck').addEventListener('click', () => zeigeDia(dia.i - 1));
+// Die Leiste verschwindet, solange niemand die Maus bewegt.
+let diaRuhe = null;
+$('diashow').addEventListener('pointermove', () => {
+  $('diashow').classList.add('mit-leiste');
+  clearTimeout(diaRuhe);
+  diaRuhe = setTimeout(() => $('diashow').classList.remove('mit-leiste'), 2500);
+});
+$('diashow').addEventListener('click', (e) => {
+  if (e.target.closest('#dia-leiste')) return;
+  $('diashow').classList.toggle('mit-leiste');
+});
+document.addEventListener('fullscreenchange', () => {
+  // Wer das Vollbild mit Esc verlässt, will meist ganz hinaus.
+  if (!document.fullscreenElement && !$('diashow').hidden && dia.verliess) beendeDiashow();
+  dia.verliess = !!document.fullscreenElement;
+});
+$('diashow-knopf').addEventListener('click', () => { if (liste && offen >= 0) starteDiashow(liste.aufnahmen, offen); });
+$('auswahl-diashow').addEventListener('click', () => { const g = gewaehlte(); if (g.length) { starteDiashow(g, 0); } });
+
 // --- Tastenkürzel (Issue #169) ------------------------------------------------
 //
 // Dieselben Tasten wie am Rechner (tastenkuerzel.dart): Im Raster wandert
@@ -3043,6 +3157,11 @@ const KUERZEL = [
     ['I', 'Angaben ein- und ausblenden'],
     ['Esc', 'Schliessen'],
   ]],
+  ['Diashow', [
+    ['Leertaste', 'Anhalten / weiter'],
+    ['← / →', 'Vorheriges / nächstes Foto'],
+    ['Esc', 'Beenden'],
+  ]],
 ];
 
 function zeigeKuerzel() {
@@ -3069,6 +3188,13 @@ document.addEventListener('keydown', async (e) => {
   if (e.altKey) return;
   const taste = e.key;
   try {
+    if (!$('diashow').hidden) {
+      if (taste === 'Escape') beendeDiashow();
+      else if (taste === ' ') { e.preventDefault(); diaPause(); }
+      else if (taste === 'ArrowRight') zeigeDia(dia.i + 1);
+      else if (taste === 'ArrowLeft') zeigeDia(dia.i - 1);
+      return;
+    }
     if (offen >= 0) {
       if (strg) return;
       const a = liste.aufnahmen[offen];

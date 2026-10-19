@@ -1481,6 +1481,34 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get diashow => 'Slideshow';
+
+  @override
+  String get diashowAbHier => 'Slideshow from here';
+
+  @override
+  String get diashowKeineFotos =>
+      'There are no photos for a slideshow here – videos are left out.';
+
+  @override
+  String get diashowVorige => 'Previous';
+
+  @override
+  String get diashowNaechste => 'Next';
+
+  @override
+  String get diashowAnhalten => 'Pause';
+
+  @override
+  String get diashowWeiter => 'Continue';
+
+  @override
+  String get diashowBeenden => 'End slideshow';
+
+  @override
+  String get betrachterMehr => 'More';
+
+  @override
   String get personZusammenfuehren => 'Merge';
 
   @override

@@ -1485,6 +1485,34 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get diashow => 'Diashow';
+
+  @override
+  String get diashowAbHier => 'Diashow ab hier';
+
+  @override
+  String get diashowKeineFotos =>
+      'Hier sind keine Fotos für eine Diashow – Videos bleiben draussen.';
+
+  @override
+  String get diashowVorige => 'Vorige';
+
+  @override
+  String get diashowNaechste => 'Nächste';
+
+  @override
+  String get diashowAnhalten => 'Anhalten';
+
+  @override
+  String get diashowWeiter => 'Weiter';
+
+  @override
+  String get diashowBeenden => 'Diashow beenden';
+
+  @override
+  String get betrachterMehr => 'Mehr';
+
+  @override
   String get personZusammenfuehren => 'Zusammenführen';
 
   @override
