@@ -14,10 +14,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
 import 'package:kern/services/wanderobjekte.dart';
-import 'package:photo_vault/widgets/gelaendeschilder.dart';
+import 'package:gelaende/gelaendeschilder.dart';
 
 void main() {
   group('Die Sichtpruefung', () {

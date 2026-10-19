@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendetextur.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendetextur.dart';
 
 /// Der Ausschnitt der echten Wanderung durch das Ilsetal, an der auch
 /// die Zahlen in der Beschreibung gemessen sind.

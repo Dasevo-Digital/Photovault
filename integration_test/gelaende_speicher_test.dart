@@ -19,7 +19,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
-import 'package:photo_vault/services/gelaende_laden.dart';
+import 'package:gelaende/gelaende_laden.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
 
 /// Zählt mit, wie oft wirklich ein Server gefragt wird.

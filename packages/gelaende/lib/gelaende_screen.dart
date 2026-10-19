@@ -8,20 +8,19 @@ import 'package:flutter_map/flutter_map.dart'
     show DisabledMapCachingProvider, MapCachingProvider;
 import 'package:http/http.dart' as http;
 
-import '../l10n/app_localizations.dart';
-import '../services/platform/speicherort.dart';
-import '../services/gelaende_laden.dart';
-import '../services/flugvideo.dart';
+import 'texte.dart';
+import 'gelaende_laden.dart';
+import 'flugvideo.dart';
 import 'package:kern/services/gelaendeebenen.dart';
-import '../services/gelaendeflug.dart';
-import '../services/gelaendekacheln.dart';
-import '../services/gelaendesicht.dart';
-import '../services/lichtstimmung.dart';
-import '../theme/app_spacing.dart';
+import 'gelaendeflug.dart';
+import 'gelaendekacheln.dart';
+import 'gelaendesicht.dart';
+import 'lichtstimmung.dart';
+import 'abstaende.dart';
 import 'package:kern/services/wanderobjekte.dart';
-import '../widgets/gelaende.dart';
-import '../widgets/gelaendeschilder.dart';
-import '../widgets/mini_location_map.dart' show eigeneKarte;
+import 'gelaende.dart';
+import 'gelaendeschilder.dart';
+import 'package:kern/services/kartenstil.dart' show eigeneKarte;
 
 /// Ein Foto der Aktivität, so wie der Geländebildschirm es braucht.
 ///
@@ -98,6 +97,25 @@ class GelaendeScreen extends StatefulWidget {
   /// der Aufrufer sie merken kann.
   final ValueChanged<Tageszeit>? beimStimmungswechsel;
 
+  /// Wer das Video schreibt (siehe `flugvideo.dart`) – `null` heisst: kein
+  /// Knopf dafür.
+  final Videoschreiber? videoschreiber;
+
+  /// Wohin das Video geht: am Rechner ein Speichern-Dialog, am Handy eine
+  /// Datei, die danach in die Fotos wandert. Bekommt den Titel des
+  /// Dialogs und einen Dateinamen; `null` heisst abgebrochen.
+  final Future<File?> Function(String titel, String dateiname)? videoZiel;
+
+  /// Nach einem fertigen Video – sonst meldet die Ansicht den Dateinamen.
+  final Future<void> Function(File ziel)? beiVideoFertig;
+
+  /// Was auf dem Knopf steht, der die Ausgabe beginnt – am Rechner
+  /// „Speichern unter …“, am Handy, wo danach geteilt wird, etwas anderes.
+  final String? videoWeiter;
+
+  /// Wie die Landschaft etwas meldet – sonst als Hinweis am unteren Rand.
+  final Gelaendemeldung? melde;
+
   const GelaendeScreen({
     super.key,
     required this.spur,
@@ -109,6 +127,11 @@ class GelaendeScreen extends StatefulWidget {
     this.beimKartenwechsel,
     this.wanderobjekte,
     this.fotos = const [],
+    this.videoschreiber,
+    this.videoZiel,
+    this.beiVideoFertig,
+    this.videoWeiter,
+    this.melde,
   });
 
   @override
@@ -513,10 +536,11 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// Nachricht darf klein sein, und wie lange jemand zusehen mag,
   /// entscheidet nicht die Länge der Wanderung.
   Future<Videoauftrag?> _videoAuftrag(Duration vorgabe) async {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final wahl = await showDialog<({int breite, int hoehe, int sekunden})>(
       context: context,
-      builder: (_) => _VideoDialog(vorgabe: vorgabe),
+      builder: (_) =>
+          _VideoDialog(vorgabe: vorgabe, weiter: widget.videoWeiter),
     );
     if (wahl == null || !mounted) return null;
 
@@ -524,16 +548,13 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         .replaceAll(RegExp(r'[^\w\s-]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), '_');
-    // Manche Dateiwähler geben die Endung nicht mit; ohne sie schreibt
-    // ffmpeg nichts, weil es das Format am Namen erkennt.
-    final pfad = await waehleSpeicherort(
-      dialogTitel: t.flugVideo,
-      dateiname: '${sauber.isEmpty ? 'ueberflug' : sauber}.mp4',
-      mitEndung: (pfad) => mitDateiendung(pfad, 'mp4'),
+    final ziel = await widget.videoZiel?.call(
+      t.flugVideo,
+      '${sauber.isEmpty ? 'ueberflug' : sauber}.mp4',
     );
-    if (pfad == null) return null;
+    if (ziel == null) return null;
     return (
-      ziel: File(pfad),
+      ziel: ziel,
       breite: wahl.breite,
       hoehe: wahl.hoehe,
       dauer: Duration(seconds: wahl.sekunden),
@@ -655,7 +676,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final farben = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -807,7 +828,10 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
               schilder: _schilder,
               fotos: _flugfotos,
               namensnennung: '${t.gelaendeNamensnennung} · ${_auflage.nennung}',
-              beimVideoZiel: _videoAuftrag,
+              beimVideoZiel: widget.videoZiel == null ? null : _videoAuftrag,
+              videoschreiber: widget.videoschreiber,
+              beiVideoFertig: widget.beiVideoFertig,
+              melde: widget.melde,
               netzKlient: widget.netz,
               stimmung: stimmungFuer(_stimmung),
               fussnoten: [
@@ -885,7 +909,10 @@ class _Kartenwahl {
 /// Höhenprofil. Und die Frage stellt sich genau einmal – beim Ausgeben –,
 /// nicht während man fliegt.
 class _VideoDialog extends StatefulWidget {
-  const _VideoDialog({required this.vorgabe});
+  const _VideoDialog({required this.vorgabe, this.weiter});
+
+  /// Was auf dem Knopf zum Ausgeben steht – sonst „Speichern unter …“.
+  final String? weiter;
 
   /// Wie lange der Flug am Bildschirm dauert. Das ist die Vorgabe, weil
   /// es die Länge ist, die man gerade gesehen hat.
@@ -919,7 +946,8 @@ class _VideoDialogState extends State<_VideoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
+    final schmal = MediaQuery.sizeOf(context).width < 500;
     final (breite, hoehe) = _groessen[_grad];
     final bilder = (_sekunden * videoBilderJeSekunde).round();
     return AlertDialog(
@@ -940,7 +968,14 @@ class _VideoDialogState extends State<_VideoDialog> {
                 for (var i = 0; i < _groessen.length; i++)
                   ButtonSegment(
                     value: i,
-                    label: Text('${_groessen[i].$1}×${_groessen[i].$2}'),
+                    // Schmal nur die Zeilenzahl: „1280×720“ bricht in
+                    // einem Handy-Dialog mitten in der Zahl um. Die ganze
+                    // Grösse steht darunter ohnehin.
+                    label: Text(
+                      schmal
+                          ? '${_groessen[i].$2}p'
+                          : '${_groessen[i].$1}×${_groessen[i].$2}',
+                    ),
                   ),
               ],
               selected: {_grad},
@@ -992,7 +1027,7 @@ class _VideoDialogState extends State<_VideoDialog> {
           onPressed: () => Navigator.of(
             context,
           ).pop((breite: breite, hoehe: hoehe, sekunden: _sekunden.round())),
-          child: Text(t.flugVideoWeiter),
+          child: Text(widget.weiter ?? t.flugVideoWeiter),
         ),
       ],
     );

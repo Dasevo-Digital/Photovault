@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:gelaende/gesten.dart';
 import 'package:latlong2/latlong.dart' as ll;
+
+export 'package:gelaende/gesten.dart';
 
 /// Wieviel Zoom eine Wischstrecke von einem Punkt ergibt.
 ///
@@ -11,13 +14,6 @@ import 'package:latlong2/latlong.dart' as ll;
 /// Punkte – eine bis zwei Stufen also, und das entspricht dem, was man
 /// von Karten gewohnt ist.
 const double wischZoomFaktor = 0.01;
-
-/// Ab welcher Abweichung von 1 eine Geste als Kneifen gilt.
-///
-/// Ein echtes Trackpad schickt beim Zweifinger-Kneifen dieselbe Art
-/// Ereignis wie beim Wischen, nur mit einem Skalenwert. Das kann
-/// flutter_map bereits – dort darf nicht dazwischengefunkt werden.
-const double wischKneifSchwelle = 0.01;
 
 /// Der neue Zoom für eine Wischgeste.
 ///
@@ -34,9 +30,6 @@ double wischZoomStufe({
   final neu = startZoom - wischWegY * wischZoomFaktor;
   return neu.clamp(kleinsterZoom ?? 0.0, groesserZoom ?? double.infinity);
 }
-
-/// Ob diese Geste ein Wischen ist und kein Kneifen.
-bool istWischen(double skala) => (skala - 1).abs() <= wischKneifSchwelle;
 
 /// Legt Wisch-Zoom über eine Karte.
 ///

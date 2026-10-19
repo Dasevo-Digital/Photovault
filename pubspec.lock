@@ -453,6 +453,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  gelaende:
+    dependency: "direct main"
+    description:
+      path: "packages/gelaende"
+      relative: true
+    source: path
+    version: "0.0.0"
   glob:
     dependency: transitive
     description:

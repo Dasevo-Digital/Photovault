@@ -26,12 +26,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/gelaendeflug.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
+import 'package:gelaende/gelaendeflug.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
 import 'package:kern/services/platform/desktop_image_tools.dart';
+import 'package:photo_vault/services/flugvideo.dart' show RechnerVideoschreiber;
 import 'package:photo_vault/services/platform/nativer_videoschreiber.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaende.dart';
 
 const int _breite = 400;
 const int _hoehe = 300;
@@ -386,6 +387,7 @@ exit 0
                   hoehe: _hoehe,
                   dauer: const Duration(milliseconds: 700),
                 ),
+                videoschreiber: const RechnerVideoschreiber(),
               ),
             ),
           ),

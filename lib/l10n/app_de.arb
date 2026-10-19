@@ -3502,10 +3502,6 @@
   "einstSchwebeVorschauTitel": "Videos beim Schweben abspielen",
   "einstSchwebeVorschauText": "Bleibt die Maus einen Augenblick über einem Video oder einem Live Photo stehen, läuft es in der Kachel an – ohne Ton und in Dauerschleife, bis der Zeiger weiterwandert. Es läuft immer nur eines. Gesperrte Aufnahmen bleiben still: Sie abzuspielen hiesse, sie nebenbei zu entschlüsseln. Ausgeschaltet bleiben die Kacheln Standbilder.",
   "gelaendeStimmung": "Tageszeit",
-  "stimmungMorgen": "Morgen",
-  "stimmungMittag": "Mittag",
-  "stimmungAbend": "Abend",
-  "stimmungBlaueStunde": "Blaue Stunde",
   "einstKarteScharfTitel": "Karte in doppelter Auflösung",
   "einstKarteScharfText": "Auf einem Bildschirm mit doppelter Punktdichte holt die Karte vier Kacheln der nächsttieferen Stufe und setzt sie an die Stelle einer: viermal so viele Bildpunkte, Hausnummern und Ladennamen werden lesbar. Der Preis sind rund zweieinhalbmal so viele Kacheln je Bildschirm – auf einer langsameren Maschine ruckelt das Zoomen dadurch spürbar. Ausgeschaltet zeichnet die Karte wie zuvor.",
   "routeVergroessern": "Karte vergrössern",
@@ -4434,29 +4430,8 @@
       }
     }
   },
-  "spurStelle": "{km} km · {hoehe} m",
-  "@spurStelle": {
-    "placeholders": {
-      "km": {
-        "type": "String"
-      },
-      "hoehe": {
-        "type": "int"
-      }
-    }
-  },
   "spurSchonDa": "Diese Aktivität hat schon eine Spur.",
-  "flugStarten": "Flug starten",
-  "flugAnhalten": "Anhalten",
-  "flugWeiter": "Weiter",
-  "flugNochmal": "Noch einmal",
-  "flugBeenden": "Zur Übersicht",
-  "flugFortschritt": "Stelle auf der Spur",
-  "flugHoehe": "Höhe",
-  "flugTempo": "Tempo",
-  "flugSteigung": "Steigung",
   "flugVideo": "Als Video ausgeben",
-  "flugVideoAbbrechen": "Ausgabe abbrechen",
   "flugVideoFertig": "Video gespeichert: {datei}",
   "@flugVideoFertig": {
     "placeholders": {
@@ -4467,46 +4442,6 @@
   },
   "flugVideoAbgebrochen": "Ausgabe abgebrochen",
   "flugVideoKeinWerkzeug": "Für die Videoausgabe fehlt der Videoschreiber. Unter macOS gehört er zum System, unter Linux und Windows liegt er im Paket – erscheint diese Meldung, ist die Installation unvollständig.",
-  "flugVideoLaeuft": "Video wird geschrieben – {prozent} %",
-  "@flugVideoLaeuft": {
-    "placeholders": {
-      "prozent": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoLaeuftMitRest": "Video wird geschrieben – {prozent} %, noch etwa {rest}",
-  "@flugVideoLaeuftMitRest": {
-    "placeholders": {
-      "prozent": {
-        "type": "int"
-      },
-      "rest": {
-        "type": "String"
-      }
-    }
-  },
-  "flugVideoEinstellungen": "Video ausgeben",
-  "flugVideoAufloesung": "Auflösung",
-  "flugVideoDauer": "Dauer",
-  "flugVideoDauerWert": "{sekunden} Sekunden",
-  "@flugVideoDauerWert": {
-    "placeholders": {
-      "sekunden": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoBilder": "{bilder} Bilder",
-  "@flugVideoBilder": {
-    "placeholders": {
-      "bilder": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoWeiter": "Speichern unter …",
-  "flugVideoWaehrenddessen": "Die Bilder entstehen abseits des Bildschirms – der Flug wird dafür nicht abgespielt. Diese Ansicht muss so lange offen bleiben.",
   "flugVideoFehler": "Die Videoausgabe ist fehlgeschlagen: {grund}",
   "@flugVideoFehler": {
     "placeholders": {
@@ -4515,62 +4450,8 @@
       }
     }
   },
-  "flugAufstieg": "Aufstieg",
-  "flugUnterwegs": "unterwegs",
-  "flugOhneZeit": "Die Spur trägt keine Zeitstempel – ohne sie gibt es kein Tempo.",
-  "flugProfilBeschreibung": "Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.",
-  "flugMeterProfil": "{meter} m",
-  "@flugMeterProfil": {
-    "placeholders": {
-      "meter": {
-        "type": "int"
-      }
-    }
-  },
-  "flugKmH": "{wert} km/h",
-  "@flugKmH": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "flugProzent": "{wert} %",
-  "@flugProzent": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "flugKm": "{wert} km",
-  "@flugKm": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "gelaendeTitel": "Gelände",
   "gelaendeOeffnen": "Gelände ansehen",
-  "gelaendeLaedt": "Holt Geländehöhen …",
-  "gelaendeNichts": "Für diesen Ausschnitt kamen keine Geländehöhen an. Die Kacheln liegen im Netz; ohne Verbindung gibt es keine Landschaft.",
-  "gelaendeBedienung": "Ziehen dreht und kippt · Rollen zoomt",
-  "gelaendeUeberhoeht": "Höhe {faktor}-fach überhöht",
-  "@gelaendeUeberhoeht": {
-    "placeholders": {
-      "faktor": {
-        "type": "String"
-      }
-    }
-  },
-  "gelaendeNamensnennung": "Höhen: Tilezen / AWS Open Data",
   "karteLuftbild": "Luftbild",
-  "gelaendeEbeneWege": "Wanderwege",
-  "gelaendeEbeneBeschriftung": "Strassen und Ortsnamen",
-  "gelaendeEbeneHoehenlinien": "Höhenlinien",
-  "gelaendeEbeneWanderobjekte": "Gipfel, Hütten, Quellen",
-  "gelaendeErneut": "Noch einmal versuchen",
   "einstKiTagsZurueck": "KI-Schlagwörter zurücknehmen",
   "einstKiTagsZurueckText": "Wird gezählt …",
   "einstKiTagsZurueckAnzahl": "{anzahl} von der Bilderkennung vergeben – von Hand vergebene bleiben",

@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/blockvorrat.dart';
-import 'package:photo_vault/services/gelaendetextur.dart';
+import 'package:gelaende/blockvorrat.dart';
+import 'package:gelaende/gelaendetextur.dart';
 
 Texturblock _b(int spalte) =>
     Texturblock(spalte: spalte, zeile: 0, grundstufe: 16);

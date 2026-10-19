@@ -64,7 +64,11 @@ void main() {
             pfad,
       ];
       expect(stellen, hasLength(1), reason: 'gefunden in: $stellen');
-      expect(stellen.single, endsWith('mini_location_map.dart'));
+      // Im Paket, das Rechner und Handy für Karte und Landschaft teilen.
+      expect(
+        stellen.single,
+        endsWith('packages/gelaende/lib/kachelspeicher.dart'),
+      );
     });
 
     test('der Kachelanbieter wird an genau EINER Stelle gebaut', () {

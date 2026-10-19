@@ -1,0 +1,164 @@
+{
+  "@@locale": "en",
+  "allgAbbrechen": "Cancel",
+  "flugAnhalten": "Pause",
+  "flugAufstieg": "Ascent",
+  "flugBeenden": "Back to overview",
+  "flugFortschritt": "Position along the track",
+  "flugHoehe": "Elevation",
+  "flugKm": "{wert} km",
+  "@flugKm": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugKmH": "{wert} km/h",
+  "@flugKmH": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugMeterProfil": "{meter} m",
+  "@flugMeterProfil": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugNochmal": "Again",
+  "flugOhneZeit": "The track carries no timestamps – without them there is no speed.",
+  "flugProzent": "{wert} %",
+  "@flugProzent": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugStarten": "Start flight",
+  "flugSteigung": "Gradient",
+  "flugTempo": "Speed",
+  "flugUnterwegs": "elapsed",
+  "flugVideo": "Export as video",
+  "flugVideoAbbrechen": "Cancel export",
+  "flugVideoAbgebrochen": "Export cancelled",
+  "flugVideoAufloesung": "Resolution",
+  "flugVideoBilder": "{bilder} frames",
+  "@flugVideoBilder": {
+    "placeholders": {
+      "bilder": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoDauer": "Length",
+  "flugVideoDauerWert": "{sekunden} seconds",
+  "@flugVideoDauerWert": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoEinstellungen": "Export video",
+  "flugVideoFehler": "Video export failed: {grund}",
+  "@flugVideoFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoFertig": "Video saved: {datei}",
+  "@flugVideoFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoKeinWerkzeug": "Video export is unavailable – the video encoder is missing. macOS provides it, Linux and Windows ship it in the package; if you see this, the installation is incomplete.",
+  "flugVideoLaeuft": "Writing video – {prozent} %",
+  "@flugVideoLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoLaeuftMitRest": "Writing video – {prozent} %, about {rest} left",
+  "@flugVideoLaeuftMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoWaehrenddessen": "The frames are rendered off screen – the flight is not played for it. This view has to stay open until it is done.",
+  "flugVideoWeiter": "Save as …",
+  "flugWeiter": "Continue",
+  "gelaendeBedienung": "Drag to rotate and tilt · scroll to zoom",
+  "gelaendeEbeneBeschriftung": "Roads and place names",
+  "gelaendeEbeneHoehenlinien": "Contour lines",
+  "gelaendeEbeneWanderobjekte": "Peaks, huts, springs",
+  "gelaendeEbeneWege": "Hiking routes",
+  "gelaendeErneut": "Try again",
+  "gelaendeKarte": "Map on the landscape",
+  "gelaendeLaedt": "Fetching elevations …",
+  "gelaendeNamensnennung": "Elevation: Tilezen / AWS Open Data",
+  "gelaendeNichts": "No elevation data arrived for this area. The tiles live on the network; without a connection there is no landscape.",
+  "gelaendeStimmung": "Time of day",
+  "gelaendeTitel": "Terrain",
+  "gelaendeUeberhoeht": "Elevation exaggerated {faktor}×",
+  "@gelaendeUeberhoeht": {
+    "placeholders": {
+      "faktor": {
+        "type": "String"
+      }
+    }
+  },
+  "karteDunkel": "Dark",
+  "karteHell": "Light",
+  "karteLuftbild": "Aerial imagery",
+  "karteTopografie": "Topographic",
+  "restaurDauerMinuten": "{anzahl, plural, =1{one minute} other{{anzahl} minutes}}",
+  "@restaurDauerMinuten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurDauerSekunden": "{anzahl, plural, =1{one second} other{{anzahl} seconds}}",
+  "@restaurDauerSekunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "spurStelle": "{km} km · {hoehe} m",
+  "@spurStelle": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "hoehe": {
+        "type": "int"
+      }
+    }
+  },
+  "stimmungAbend": "Evening",
+  "stimmungBlaueStunde": "Blue hour",
+  "stimmungMittag": "Midday",
+  "stimmungMorgen": "Morning",
+  "flugProfilBeschreibung": "Elevation profile of the track with the point the flight has reached."
+}

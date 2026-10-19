@@ -1733,4 +1733,40 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get albumAlsLink => 'Als Link teilen';
+
+  @override
+  String get spurTitel => 'Aufgezeichnete Spur';
+
+  @override
+  String spurKennzahlen(String km, int auf, int ab) {
+    return '$km km · ▲ $auf m · ▼ $ab m';
+  }
+
+  @override
+  String spurKennzahlenOhneHoehe(String km) {
+    return '$km km · keine Höhenangaben';
+  }
+
+  @override
+  String spurPunkte(int anzahl) {
+    return '$anzahl Punkte';
+  }
+
+  @override
+  String get spurHoehenprofil => 'Höhenprofil';
+
+  @override
+  String get spurOhneHoehen =>
+      'Diese Datei führt keine Höhen – ohne sie gibt es kein Profil.';
+
+  @override
+  String spurProfilBeschreibung(String km, int tief, int hoch, int auf) {
+    return 'Höhenprofil über $km km, von $tief bis $hoch Meter, $auf Meter Aufstieg.';
+  }
+
+  @override
+  String get gelaendeOeffnen => 'Gelände ansehen';
+
+  @override
+  String get gelaendeVideoErstellen => 'Video erstellen';
 }

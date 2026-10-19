@@ -6,8 +6,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:photo_vault/services/gelaende_laden.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
+import 'package:gelaende/gelaende_laden.dart';
+import 'package:gelaende/gelaendekacheln.dart';
 
 /// Wie die Landschaft an ihre Kacheln kommt.
 ///

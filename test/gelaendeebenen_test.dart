@@ -7,7 +7,7 @@
 // Das zweite ist eine Lizenzauflage.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/services/gelaendeebenen.dart';
-import 'package:photo_vault/services/gelaendetextur.dart';
+import 'package:gelaende/gelaendetextur.dart';
 
 void main() {
   test('jede Ebene traegt die drei Platzhalter', () {

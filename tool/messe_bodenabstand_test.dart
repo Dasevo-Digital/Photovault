@@ -25,8 +25,8 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendeflug.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
+import 'package:gelaende/gelaendeflug.dart';
+import 'package:gelaende/gelaendesicht.dart';
 
 void main() {
   test('wie oft die Kamera unter dem Boden steht', () {

@@ -7,9 +7,9 @@ import 'package:flutter_earth_globe/flutter_earth_globe_controller.dart';
 import 'package:flutter_map/flutter_map.dart' show MapCachingProvider;
 import 'package:http/http.dart' as http;
 
-import 'gelaende_laden.dart';
+import 'package:gelaende/gelaende_laden.dart';
 import 'package:kern/services/gelaendeebenen.dart';
-import 'gelaendekacheln.dart';
+import 'package:gelaende/gelaendekacheln.dart';
 import 'package:kern/services/netzkennung.dart';
 
 /// Luftbildkacheln für den Globus (#9).

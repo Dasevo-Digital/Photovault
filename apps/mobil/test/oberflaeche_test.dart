@@ -5,7 +5,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart' show FlutterMap;
+import 'package:flutter/services.dart' show MethodChannel;
+import 'package:gelaende/flugvideo.dart' show Videoausgang;
+import 'package:gelaende/hoehenprofil.dart';
+import 'package:flutter_map/flutter_map.dart' show FlutterMap, MarkerLayer;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
@@ -45,6 +48,7 @@ import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/lebensbaum.dart';
 import 'package:photo_vault_mobil/seiten/personen.dart';
 import 'package:photo_vault_mobil/seiten/raster.dart';
+import 'package:photo_vault_mobil/seiten/landschaft.dart';
 import 'package:photo_vault_mobil/seiten/reisen.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
 import 'package:photo_vault_mobil/seiten/diashow.dart';
@@ -1476,6 +1480,121 @@ void main() {
     expect(find.text(t.aktivitaetenTitel), findsOneWidget);
     expect(find.textContaining('3 Aufnahmen'), findsOneWidget);
     expect(find.text('Zur Hütte'), findsOneWidget);
+  });
+
+  testWidgets('Aktivität mit Spur: Linie, Kennzahlen, Höhenprofil und der '
+      'Weg ins Gelände – wie am Rechner', (tester) async {
+    final (sitzung, db) = await sitzungMit(tester, ['s1']);
+    await db.aktivitaetAnlegen(
+      AktivitaetenCompanion.insert(
+        id: 'runde',
+        name: 'Ilsetal',
+        art: 'wanderung',
+        von: DateTime(2026, 8, 30, 9),
+        bis: DateTime(2026, 8, 30, 14),
+        angelegtAm: DateTime(2026, 9, 1),
+      ),
+      ['s1'],
+    );
+    await db.fuehreAus(
+      SpurAnlegen(
+        id: 'spur',
+        name: 'Ilsetal.gpx',
+        quelle: 'Ilsetal.gpx',
+        aktivitaetId: 'runde',
+        laengeKm: 3.2,
+        aufstieg: 180,
+        abstieg: 175,
+        angelegtAm: DateTime(2026, 9, 1),
+        punkte: [
+          for (var i = 0; i < 20; i++)
+            (
+              breite: 51.83 + i * 0.001,
+              laenge: 10.64 + i * 0.0012,
+              hoehe: 300.0 + (i < 10 ? i : 20 - i) * 18,
+              zeit: DateTime.utc(2026, 8, 30, 7, i * 3),
+            ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: AktivitaetSeite(sitzung: sitzung, aktivitaetId: 'runde'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(AktivitaetSeite)));
+    // Die Strecke kommt aus der Spur, nicht aus den Fotos.
+    expect(find.textContaining('3,2\u00a0km'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text(t.spurTitel), findsOneWidget);
+    expect(find.text('3,2 km · ▲ 180 m · ▼ 175 m · 20 Punkte'), findsOneWidget);
+    expect(find.byType(Hoehenprofil), findsOneWidget);
+    expect(find.text(t.gelaendeOeffnen), findsOneWidget);
+    // Fährt man über das Profil, steht die Stelle auf der Karte.
+    await tester.ensureVisible(find.byType(Hoehenprofil));
+    final profil = tester.getCenter(find.byType(Hoehenprofil));
+    final zeiger = await tester.startGesture(profil);
+    await tester.pump();
+    // Waagerecht ziehen – über die Schwelle hinaus, ab der es ein Ziehen
+    // ist und kein Tippen.
+    await zeiger.moveBy(const Offset(40, 0));
+    await tester.pump();
+    await zeiger.moveBy(const Offset(10, 0));
+    await tester.pump();
+    // Die Marke über dem Profil nennt Strecke und Höhe der Stelle.
+    final stelle = find.textContaining(RegExp(r'^\d+,\d km · \d+ m$'));
+    expect(stelle, findsOneWidget);
+    expect(find.byType(MarkerLayer), findsWidgets);
+    await zeiger.up();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Flugvideo am iPhone: Start, Bild für Bild, Abschluss über '
+      'den Kanal', (tester) async {
+    final aufrufe = <String>[];
+    final groessen = <int>[];
+    const kanal = MethodChannel('de.dasevo.photovault/flugvideo');
+    final bote = tester.binding.defaultBinaryMessenger;
+    bote.setMockMethodCallHandler(kanal, (aufruf) async {
+      aufrufe.add(aufruf.method);
+      if (aufruf.method == 'videoStart') {
+        final w = (aufruf.arguments as Map).cast<String, Object?>();
+        groessen.addAll([w['breite']! as int, w['hoehe']! as int]);
+      }
+      if (aufruf.method == 'videoBild') {
+        final rgba = (aufruf.arguments as Map)['rgba'] as Uint8List;
+        expect(rgba.length, 6 * 4 * 4, reason: 'RGBA, gerade Kanten');
+      }
+      return null;
+    });
+    addTearDown(() => bote.setMockMethodCallHandler(kanal, null));
+    final ergebnis = await tester.runAsync(
+      () => const HandyVideoschreiber().schreibe(
+        ziel: File('${Directory.systemTemp.path}/flug.mp4'),
+        breite: 7,
+        hoehe: 4,
+        dauer: const Duration(milliseconds: 100),
+        maleBild: (leinwand, flaeche, t) => leinwand.drawRect(
+          Offset.zero & flaeche,
+          Paint()..color = const Color(0xFF3B6EA8),
+        ),
+      ),
+    );
+    expect(ergebnis!.ausgang, Videoausgang.fertig);
+    expect(groessen, [6, 4]);
+    expect(aufrufe, [
+      'videoStart',
+      'videoBild',
+      'videoBild',
+      'videoBild',
+      'videoFertig',
+    ]);
   });
 
   testWidgets('Angaben wie im Browser: Zeilen, Beschreibung, Bewertung', (

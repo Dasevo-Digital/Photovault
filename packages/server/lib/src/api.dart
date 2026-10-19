@@ -728,6 +728,7 @@ class _Api {
       'punkte': [
         for (final p in punkte)
           {
+            'osmId': p.osmId,
             'art': p.art.name,
             'breite': p.breite,
             'laenge': p.laenge,

@@ -23,20 +23,19 @@ import 'package:flutter_map/flutter_map.dart' show DisabledMapCachingProvider;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import '../l10n/app_localizations.dart';
-import 'wisch_zoom.dart' show istWischen;
-import '../utils/dauertext.dart';
-import '../services/gelaendeflug.dart';
-import '../theme/app_spacing.dart';
+import 'texte.dart';
+import 'gesten.dart' show istWischen;
 
-import '../services/gelaendekacheln.dart';
-import '../services/blocktexturen.dart';
-import '../services/gelaendetextur.dart';
-import '../services/gelaendesicht.dart';
-import '../services/lichtstimmung.dart';
-import '../services/flugvideo.dart';
+import 'gelaendeflug.dart';
+import 'abstaende.dart';
+
+import 'gelaendekacheln.dart';
+import 'blocktexturen.dart';
+import 'gelaendetextur.dart';
+import 'gelaendesicht.dart';
+import 'lichtstimmung.dart';
+import 'flugvideo.dart';
 import 'package:kern/services/gelaendeebenen.dart';
-import '../services/meldungsdienst.dart';
 import 'gelaendeschilder.dart';
 
 part 'gelaende_netz.dart';
@@ -162,6 +161,17 @@ class Gelaendeansicht extends StatefulWidget {
   /// Widget, das eine Landschaft zeichnet.
   final Future<Videoauftrag?> Function(Duration vorgabe)? beimVideoZiel;
 
+  /// Wer das Video schreibt – die App weiss, womit es auf ihrer Plattform
+  /// geht. `null` heisst: kein Knopf dafür.
+  final Videoschreiber? videoschreiber;
+
+  /// Wird nach einem fertigen Video gerufen. Ohne diesen Rückruf meldet
+  /// die Ansicht selbst, wo die Datei liegt.
+  final Future<void> Function(File ziel)? beiVideoFertig;
+
+  /// Wie die Ansicht etwas meldet – sonst als Hinweis am unteren Rand.
+  final Gelaendemeldung? melde;
+
   /// Die Fotos der Aktivität, mit ihrer Stelle auf der Spur.
   ///
   /// **Das ist der Punkt, an dem sich eine Fotoverwaltung von einem
@@ -189,6 +199,9 @@ class Gelaendeansicht extends StatefulWidget {
     this.fotos = const [],
     this.namensnennung,
     this.beimVideoZiel,
+    this.videoschreiber,
+    this.beiVideoFertig,
+    this.melde,
     this.netzKlient,
   });
 
@@ -428,18 +441,27 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   }
 
   /// Schreibt den Flug als Video – oder bricht einen laufenden ab.
+  void _melde(String text, {bool warnung = false}) {
+    final eigen = widget.melde;
+    if (eigen != null) return eigen(text, warnung: warnung);
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(text)));
+  }
+
   Future<void> _videoAusgeben() async {
     if (_videoLaeuft) {
       setState(() => _videoAbbruch = true);
       return;
     }
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     // **Nicht mehr „gibt es ffmpeg".** Unter macOS schreibt AVFoundation
     // das Video, unter Linux und Windows das mitgelieferte ffmpeg – die
     // Frage lautet also, ob hier irgendein Weg offen ist.
-    if (!await videoausgabeMoeglich()) {
+    final schreiber = widget.videoschreiber;
+    if (schreiber == null || !await schreiber.moeglich()) {
       if (!mounted) return;
-      melde.warnung(t.flugVideoKeinWerkzeug);
+      _melde(t.flugVideoKeinWerkzeug, warnung: true);
       return;
     }
     if (!mounted) return;
@@ -472,7 +494,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       _videoBreiteste = _breitesteMesswerte();
     });
     try {
-      final ergebnis = await schreibeFlugvideo(
+      final ergebnis = await schreiber.schreibe(
         ziel: ziel,
         breite: auftrag.breite,
         hoehe: auftrag.hoehe,
@@ -495,13 +517,18 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       if (!mounted) return;
       switch (ergebnis.ausgang) {
         case Videoausgang.fertig:
-          melde.hinweis(t.flugVideoFertig(ziel.uri.pathSegments.last));
+          final fertig = widget.beiVideoFertig;
+          if (fertig != null) {
+            await fertig(ziel);
+          } else {
+            _melde(t.flugVideoFertig(ziel.uri.pathSegments.last));
+          }
         case Videoausgang.abgebrochen:
-          melde.hinweis(t.flugVideoAbgebrochen);
+          _melde(t.flugVideoAbgebrochen);
         case Videoausgang.keinWerkzeug:
-          melde.warnung(t.flugVideoKeinWerkzeug);
+          _melde(t.flugVideoKeinWerkzeug, warnung: true);
         case Videoausgang.fehler:
-          melde.warnung(t.flugVideoFehler(ergebnis.meldung ?? '?'));
+          _melde(t.flugVideoFehler(ergebnis.meldung ?? '?'), warnung: true);
       }
     } finally {
       for (final b in fotos.values) {
@@ -697,7 +724,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   List<Flugmesswert> _videomesswerte(Flugstand stand) {
     final breiteste = _videoBreiteste;
     if (breiteste == null) return const [];
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final eine = NumberFormat.decimalPatternDigits(
       locale: Localizations.localeOf(context).toString(),
       decimalDigits: 1,
@@ -741,7 +768,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// Nachkommastelle, und gerechnet wird das **einmal** vor dem Lauf
   /// statt neunhundertmal darin.
   ({String hoehe, String tempo, String steigung}) _breitesteMesswerte() {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final eine = NumberFormat.decimalPatternDigits(
       locale: Localizations.localeOf(context).toString(),
       decimalDigits: 1,
@@ -767,7 +794,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   }
 
   List<String> _abspannzeilen() {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final zahl = NumberFormat(
       '#,##0.0',
       Localizations.localeOf(context).toLanguageTag(),
@@ -1123,7 +1150,9 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                       beimSchalten: _flugSchalten,
                       beimBeenden: _flugBeenden,
                       beimSpulen: _spulen,
-                      beimAusgeben: widget.beimVideoZiel == null
+                      beimAusgeben:
+                          widget.beimVideoZiel == null ||
+                              widget.videoschreiber == null
                           ? null
                           : _videoAusgeben,
                       gibtAus: _videoLaeuft,

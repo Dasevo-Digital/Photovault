@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/services/gpx.dart';
-import 'package:photo_vault/widgets/hoehenprofil.dart';
+import 'package:gelaende/hoehenprofil.dart';
 
 /// Das Höhenprofil.
 ///

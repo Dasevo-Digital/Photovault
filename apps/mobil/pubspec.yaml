@@ -21,6 +21,9 @@ dependencies:
     path: ../../packages/kern
   zierbild:
     path: ../../packages/zierbild
+  # Die Landschaft unter einer Spur und der Flug darüber – wie am Rechner.
+  gelaende:
+    path: ../../packages/gelaende
   drift: ^2.20.0
   flutter_map: ^8.3.1
   http: ^1.6.0

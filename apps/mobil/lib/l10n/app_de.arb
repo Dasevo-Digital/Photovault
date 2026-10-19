@@ -950,5 +950,18 @@
     "placeholders": {"titel": {"type": "String"}}
   },
   "auswahlLink": "Link",
-  "albumAlsLink": "Als Link teilen"
+  "albumAlsLink": "Als Link teilen",
+  "spurTitel": "Aufgezeichnete Spur",
+  "spurKennzahlen": "{km} km · ▲ {auf} m · ▼ {ab} m",
+  "@spurKennzahlen": {"placeholders": {"km": {"type": "String"}, "auf": {"type": "int"}, "ab": {"type": "int"}}},
+  "spurKennzahlenOhneHoehe": "{km} km · keine Höhenangaben",
+  "@spurKennzahlenOhneHoehe": {"placeholders": {"km": {"type": "String"}}},
+  "spurPunkte": "{anzahl} Punkte",
+  "@spurPunkte": {"placeholders": {"anzahl": {"type": "int"}}},
+  "spurHoehenprofil": "Höhenprofil",
+  "spurOhneHoehen": "Diese Datei führt keine Höhen – ohne sie gibt es kein Profil.",
+  "spurProfilBeschreibung": "Höhenprofil über {km} km, von {tief} bis {hoch} Meter, {auf} Meter Aufstieg.",
+  "@spurProfilBeschreibung": {"placeholders": {"km": {"type": "String"}, "tief": {"type": "int"}, "hoch": {"type": "int"}, "auf": {"type": "int"}}},
+  "gelaendeOeffnen": "Gelände ansehen",
+  "gelaendeVideoErstellen": "Video erstellen"
 }

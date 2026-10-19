@@ -1,0 +1,8 @@
+# Die Texte der Landschaft (flutter gen-l10n) – wie bei den Apps ist
+# Deutsch die Vorlage und Englisch die Übersetzung davon.
+arb-dir: lib/l10n
+template-arb-file: gelaende_de.arb
+output-localization-file: gelaende_texte.dart
+output-class: GelaendeTexte
+untranslated-messages-file: build/fehlende_uebersetzungen.txt
+nullable-getter: false

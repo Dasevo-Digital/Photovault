@@ -14,9 +14,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/gelaendeflug.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaendeflug.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/gelaende.dart';
 
 void main() {
   testWidgets('Neubau der Leiste im Flug', (tester) async {

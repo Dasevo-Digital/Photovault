@@ -1728,4 +1728,40 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get albumAlsLink => 'Share as link';
+
+  @override
+  String get spurTitel => 'Recorded track';
+
+  @override
+  String spurKennzahlen(String km, int auf, int ab) {
+    return '$km km · ▲ $auf m · ▼ $ab m';
+  }
+
+  @override
+  String spurKennzahlenOhneHoehe(String km) {
+    return '$km km · no elevation data';
+  }
+
+  @override
+  String spurPunkte(int anzahl) {
+    return '$anzahl points';
+  }
+
+  @override
+  String get spurHoehenprofil => 'Elevation profile';
+
+  @override
+  String get spurOhneHoehen =>
+      'This file carries no elevations – without them there is no profile.';
+
+  @override
+  String spurProfilBeschreibung(String km, int tief, int hoch, int auf) {
+    return 'Elevation profile over $km km, from $tief to $hoch metres, $auf metres of ascent.';
+  }
+
+  @override
+  String get gelaendeOeffnen => 'Show terrain';
+
+  @override
+  String get gelaendeVideoErstellen => 'Create video';
 }

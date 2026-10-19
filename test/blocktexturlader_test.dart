@@ -15,8 +15,8 @@ import 'package:flutter_map/flutter_map.dart' show DisabledMapCachingProvider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:photo_vault/services/blocktexturen.dart';
-import 'package:photo_vault/services/gelaendetextur.dart';
+import 'package:gelaende/blocktexturen.dart';
+import 'package:gelaende/gelaendetextur.dart';
 import 'package:kern/services/gelaendeebenen.dart';
 
 /// Eine einfarbige Kachel als PNG – Inhalt egal, Grösse nicht.

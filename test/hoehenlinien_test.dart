@@ -8,8 +8,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/hoehenlinien.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/hoehenlinien.dart';
 
 const _sued = 51.83;
 const _nord = 51.84;

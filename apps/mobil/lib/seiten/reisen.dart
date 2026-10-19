@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:gelaende/hoehenprofil.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/profilpunkte.dart';
 import 'package:kern/services/reiseuebersicht.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -12,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'betrachter.dart';
 import 'karte.dart';
+import 'landschaft.dart';
 import 'raster.dart';
 
 /// Reisen und Aktivitäten – dieselbe Gliederung wie im Browser (web/app.js,
@@ -296,6 +299,10 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
     widget.aktivitaetId,
   );
 
+  /// Die Stelle der Spur, auf die das Höhenprofil gerade zeigt – für die
+  /// Marke auf der Karte.
+  ({double breite, double laenge})? _stelle;
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
@@ -315,6 +322,12 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
         final zeilen = [for (final x in a.aufnahmen) Rasterzeile.aus(x)];
         final ort = ortszeileText(a.ort, sprache, t.ortWeitere);
         final reise = a.reise;
+        // Die aufgezeichnete Spur: Was das Gerät gemessen hat, ist der Weg;
+        // die Fotos ergeben nur eine Vermutung über ihn.
+        final spuren = [
+          for (final s in a.spuren)
+            if (s.punkte.length > 1) s,
+        ];
         final fakten = [
           nameFuerArt(t, k.art),
           datumMittel(sprache).format(k.von.toLocal()),
@@ -380,11 +393,19 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(k.notiz!),
                   ),
-                if (a.route.length > 1)
+                if (a.route.length > 1 || spuren.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: _Routenkarte(
                       route: a.route,
+                      spuren: [
+                        for (final s in spuren)
+                          [
+                            for (final p in s.punkte)
+                              LatLng(p.breite, p.laenge),
+                          ],
+                      ],
+                      stelle: _stelle,
                       oeffne: (id) {
                         final i = zeilen.indexWhere((z) => z.id == id);
                         if (i < 0) return;
@@ -405,6 +426,19 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(t.keineRoute, style: leise),
                   ),
+                for (final s in spuren)
+                  _Spurabschnitt(
+                    spur: s.spur,
+                    punkte: s.punkte,
+                    beiStelle: (p) => setState(() => _stelle = p),
+                    beimGelaende: () => oeffneLandschaft(
+                      context,
+                      sitzung: widget.sitzung,
+                      titel: k.name,
+                      punkte: s.punkte,
+                      aufnahmen: a.aufnahmen,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -417,15 +451,28 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
 /// Die Route: Linie durch die verorteten Aufnahmen in ihrer Zeitfolge, ein
 /// Punkt je Aufnahme – ein Tipp darauf öffnet sie.
 class _Routenkarte extends StatelessWidget {
-  const _Routenkarte({required this.route, required this.oeffne});
+  const _Routenkarte({
+    required this.route,
+    required this.oeffne,
+    this.spuren = const [],
+    this.stelle,
+  });
 
   final List<Routenpunkt> route;
   final void Function(String id) oeffne;
 
+  /// Die aufgezeichneten Spuren – in der zweiten Farbe, unter der Route.
+  final List<List<LatLng>> spuren;
+
+  /// Wohin das Höhenprofil gerade zeigt.
+  final ({double breite, double laenge})? stelle;
+
   @override
   Widget build(BuildContext context) {
-    final farbe = Theme.of(context).colorScheme.primary;
+    final farben = Theme.of(context).colorScheme;
+    final farbe = farben.primary;
     final punkte = [for (final p in route) LatLng(p.breite, p.laenge)];
+    final stelle = this.stelle;
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
@@ -433,7 +480,7 @@ class _Routenkarte extends StatelessWidget {
         child: FlutterMap(
           options: MapOptions(
             initialCameraFit: CameraFit.coordinates(
-              coordinates: punkte,
+              coordinates: [...punkte, for (final s in spuren) ...s],
               padding: const EdgeInsets.all(28),
               maxZoom: 16,
             ),
@@ -445,11 +492,14 @@ class _Routenkarte extends StatelessWidget {
             kartenkacheln(context),
             PolylineLayer(
               polylines: [
-                Polyline(
-                  points: punkte,
-                  color: farbe.withValues(alpha: 0.85),
-                  strokeWidth: 4,
-                ),
+                for (final s in spuren)
+                  Polyline(points: s, color: farben.tertiary, strokeWidth: 4),
+                if (punkte.length > 1)
+                  Polyline(
+                    points: punkte,
+                    color: farbe.withValues(alpha: 0.85),
+                    strokeWidth: spuren.isEmpty ? 4 : 3,
+                  ),
               ],
             ),
             MarkerLayer(
@@ -476,6 +526,23 @@ class _Routenkarte extends StatelessWidget {
                   ),
               ],
             ),
+            if (stelle != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(stelle.breite, stelle.laenge),
+                    width: 18,
+                    height: 18,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: farben.error,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             // Klein, als Knopf zum Aufklappen: Die Zeile der grossen Karte
             // deckte auf 260 Punkten ein Fünftel der Route zu.
             const RichAttributionWidget(
@@ -486,6 +553,99 @@ class _Routenkarte extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Kennzahlen und Höhenprofil einer Spur, wie am Rechner, und der Weg in
+/// die Landschaft.
+class _Spurabschnitt extends StatelessWidget {
+  const _Spurabschnitt({
+    required this.spur,
+    required this.punkte,
+    required this.beiStelle,
+    required this.beimGelaende,
+  });
+
+  final SpurenData spur;
+  final List<SpurpunkteData> punkte;
+  final void Function(({double breite, double laenge})? stelle) beiStelle;
+  final VoidCallback beimGelaende;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    final sprache = Localizations.localeOf(context).toLanguageTag();
+    final zahl = NumberFormat.decimalPatternDigits(
+      locale: sprache,
+      decimalDigits: 1,
+    );
+    final leise = TextStyle(color: farben.onSurfaceVariant, fontSize: 13);
+    final profil = profilpunkte([
+      for (final p in punkte)
+        (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe),
+    ]);
+    final hoehen = [for (final p in profil) p.hoehe];
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  t.spurTitel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: beimGelaende,
+                icon: const Icon(Icons.landscape_outlined),
+                label: Text(t.gelaendeOeffnen),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            [
+              spur.aufstieg == null
+                  ? t.spurKennzahlenOhneHoehe(zahl.format(spur.laengeKm))
+                  : t.spurKennzahlen(
+                      zahl.format(spur.laengeKm),
+                      spur.aufstieg!.round(),
+                      (spur.abstieg ?? 0).round(),
+                    ),
+              t.spurPunkte(punkte.length),
+            ].join(' · '),
+            style: leise,
+          ),
+          if (profil.length > 1) ...[
+            const SizedBox(height: 8),
+            Text(t.spurHoehenprofil, style: leise),
+            const SizedBox(height: 4),
+            Hoehenprofil(
+              punkte: profil,
+              beschreibung: t.spurProfilBeschreibung(
+                zahl.format(profil.last.km),
+                hoehen.reduce((a, b) => a < b ? a : b).round(),
+                hoehen.reduce((a, b) => a > b ? a : b).round(),
+                (spur.aufstieg ?? 0).round(),
+              ),
+              beiStelle: (i) {
+                if (i == null || i >= profil.length) return beiStelle(null);
+                final p = punkte[profil[i].index];
+                beiStelle((breite: p.breite, laenge: p.laenge));
+              },
+            ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(t.spurOhneHoehen, style: leise),
+            ),
+        ],
       ),
     );
   }

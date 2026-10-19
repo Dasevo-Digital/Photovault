@@ -58,7 +58,7 @@ class Flugleiste extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final farben = Theme.of(context).colorScheme;
     final sprache = Localizations.localeOf(context).toString();
     final eine = NumberFormat.decimalPatternDigits(
@@ -192,7 +192,7 @@ class _Messwerte extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final farben = Theme.of(context).colorScheme;
     final sprache = Localizations.localeOf(context).toString();
     final eine = NumberFormat.decimalPatternDigits(
@@ -307,7 +307,7 @@ class _Flugprofil extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: AppTexte.of(context).flugProfilBeschreibung,
+      label: gelaendeTexte(context).flugProfilBeschreibung,
       child: LayoutBuilder(
         builder: (context, platz) {
           void spulen(double x) =>
@@ -435,12 +435,18 @@ class _Flugbild extends StatelessWidget {
   /// Wie gross das Bild höchstens wird.
   ///
   /// Zweihundertvierzig Punkte. Grösser verdeckt es die Landschaft, um
-  /// die es geht; kleiner erkennt man nicht, was darauf ist.
-  static const double kante = 240;
+  /// die es geht; kleiner erkennt man nicht, was darauf ist. Am Handy
+  /// höchstens zwei Fünftel der Breite – 240 Punkte waren dort mehr als
+  /// die halbe Landschaft.
+  static const double groessteKante = 240;
 
   @override
   Widget build(BuildContext context) {
     final f = foto;
+    final kante = math.min(
+      groessteKante,
+      MediaQuery.sizeOf(context).width * 0.4,
+    );
     // **`AnimatedOpacity` und kein `if`.** Ohne die Animation springt das
     // Bild beim Wechsel von einem zum nächsten hart um; das Auf- und
     // Abblenden über die Strecke (siehe `_fotoDeckkraft`) allein reicht
@@ -454,7 +460,7 @@ class _Flugbild extends StatelessWidget {
       // Breite ist dort unbegrenzt, und eine `Column` mit `stretch`
       // darin bricht beim Vermessen ab.
       child: f == null
-          ? const SizedBox(width: kante + 8, height: 1)
+          ? SizedBox(width: kante + 8, height: 1)
           : SizedBox(
               width: kante + 8,
               child: DecoratedBox(
@@ -478,7 +484,7 @@ class _Flugbild extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(
+                          constraints: BoxConstraints(
                             maxWidth: kante,
                             maxHeight: kante,
                           ),
@@ -490,7 +496,7 @@ class _Flugbild extends StatelessWidget {
                             // Ein Bild, das nicht kommt, darf keinen roten
                             // Kasten in die Landschaft setzen.
                             errorBuilder: (_, _, _) =>
-                                const SizedBox(width: kante, height: 1),
+                                SizedBox(width: kante, height: 1),
                           ),
                         ),
                       ),
@@ -533,7 +539,7 @@ class _Abspann extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final farben = Theme.of(context).colorScheme;
     // **`format` will eine Zahl, keinen Text.** Der erste Anlauf reichte
     // `toStringAsFixed(1)` hinein; das wirft erst zur Laufzeit und nur

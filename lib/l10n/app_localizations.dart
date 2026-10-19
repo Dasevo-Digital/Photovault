@@ -9055,30 +9055,6 @@ abstract class AppTexte {
   /// **'Tageszeit'**
   String get gelaendeStimmung;
 
-  /// No description provided for @stimmungMorgen.
-  ///
-  /// In de, this message translates to:
-  /// **'Morgen'**
-  String get stimmungMorgen;
-
-  /// No description provided for @stimmungMittag.
-  ///
-  /// In de, this message translates to:
-  /// **'Mittag'**
-  String get stimmungMittag;
-
-  /// No description provided for @stimmungAbend.
-  ///
-  /// In de, this message translates to:
-  /// **'Abend'**
-  String get stimmungAbend;
-
-  /// No description provided for @stimmungBlaueStunde.
-  ///
-  /// In de, this message translates to:
-  /// **'Blaue Stunde'**
-  String get stimmungBlaueStunde;
-
   /// No description provided for @einstKarteScharfTitel.
   ///
   /// In de, this message translates to:
@@ -10999,83 +10975,17 @@ abstract class AppTexte {
   /// **'Höhenprofil über {km} km, von {tief} bis {hoch} Meter, {auf} Meter Aufstieg.'**
   String spurProfilBeschreibung(String km, int tief, int hoch, int auf);
 
-  /// No description provided for @spurStelle.
-  ///
-  /// In de, this message translates to:
-  /// **'{km} km · {hoehe} m'**
-  String spurStelle(String km, int hoehe);
-
   /// No description provided for @spurSchonDa.
   ///
   /// In de, this message translates to:
   /// **'Diese Aktivität hat schon eine Spur.'**
   String get spurSchonDa;
 
-  /// No description provided for @flugStarten.
-  ///
-  /// In de, this message translates to:
-  /// **'Flug starten'**
-  String get flugStarten;
-
-  /// No description provided for @flugAnhalten.
-  ///
-  /// In de, this message translates to:
-  /// **'Anhalten'**
-  String get flugAnhalten;
-
-  /// No description provided for @flugWeiter.
-  ///
-  /// In de, this message translates to:
-  /// **'Weiter'**
-  String get flugWeiter;
-
-  /// No description provided for @flugNochmal.
-  ///
-  /// In de, this message translates to:
-  /// **'Noch einmal'**
-  String get flugNochmal;
-
-  /// No description provided for @flugBeenden.
-  ///
-  /// In de, this message translates to:
-  /// **'Zur Übersicht'**
-  String get flugBeenden;
-
-  /// No description provided for @flugFortschritt.
-  ///
-  /// In de, this message translates to:
-  /// **'Stelle auf der Spur'**
-  String get flugFortschritt;
-
-  /// No description provided for @flugHoehe.
-  ///
-  /// In de, this message translates to:
-  /// **'Höhe'**
-  String get flugHoehe;
-
-  /// No description provided for @flugTempo.
-  ///
-  /// In de, this message translates to:
-  /// **'Tempo'**
-  String get flugTempo;
-
-  /// No description provided for @flugSteigung.
-  ///
-  /// In de, this message translates to:
-  /// **'Steigung'**
-  String get flugSteigung;
-
   /// No description provided for @flugVideo.
   ///
   /// In de, this message translates to:
   /// **'Als Video ausgeben'**
   String get flugVideo;
-
-  /// No description provided for @flugVideoAbbrechen.
-  ///
-  /// In de, this message translates to:
-  /// **'Ausgabe abbrechen'**
-  String get flugVideoAbbrechen;
 
   /// No description provided for @flugVideoFertig.
   ///
@@ -11095,119 +11005,11 @@ abstract class AppTexte {
   /// **'Für die Videoausgabe fehlt der Videoschreiber. Unter macOS gehört er zum System, unter Linux und Windows liegt er im Paket – erscheint diese Meldung, ist die Installation unvollständig.'**
   String get flugVideoKeinWerkzeug;
 
-  /// No description provided for @flugVideoLaeuft.
-  ///
-  /// In de, this message translates to:
-  /// **'Video wird geschrieben – {prozent} %'**
-  String flugVideoLaeuft(int prozent);
-
-  /// No description provided for @flugVideoLaeuftMitRest.
-  ///
-  /// In de, this message translates to:
-  /// **'Video wird geschrieben – {prozent} %, noch etwa {rest}'**
-  String flugVideoLaeuftMitRest(int prozent, String rest);
-
-  /// No description provided for @flugVideoEinstellungen.
-  ///
-  /// In de, this message translates to:
-  /// **'Video ausgeben'**
-  String get flugVideoEinstellungen;
-
-  /// No description provided for @flugVideoAufloesung.
-  ///
-  /// In de, this message translates to:
-  /// **'Auflösung'**
-  String get flugVideoAufloesung;
-
-  /// No description provided for @flugVideoDauer.
-  ///
-  /// In de, this message translates to:
-  /// **'Dauer'**
-  String get flugVideoDauer;
-
-  /// No description provided for @flugVideoDauerWert.
-  ///
-  /// In de, this message translates to:
-  /// **'{sekunden} Sekunden'**
-  String flugVideoDauerWert(int sekunden);
-
-  /// No description provided for @flugVideoBilder.
-  ///
-  /// In de, this message translates to:
-  /// **'{bilder} Bilder'**
-  String flugVideoBilder(int bilder);
-
-  /// No description provided for @flugVideoWeiter.
-  ///
-  /// In de, this message translates to:
-  /// **'Speichern unter …'**
-  String get flugVideoWeiter;
-
-  /// No description provided for @flugVideoWaehrenddessen.
-  ///
-  /// In de, this message translates to:
-  /// **'Die Bilder entstehen abseits des Bildschirms – der Flug wird dafür nicht abgespielt. Diese Ansicht muss so lange offen bleiben.'**
-  String get flugVideoWaehrenddessen;
-
   /// No description provided for @flugVideoFehler.
   ///
   /// In de, this message translates to:
   /// **'Die Videoausgabe ist fehlgeschlagen: {grund}'**
   String flugVideoFehler(String grund);
-
-  /// No description provided for @flugAufstieg.
-  ///
-  /// In de, this message translates to:
-  /// **'Aufstieg'**
-  String get flugAufstieg;
-
-  /// No description provided for @flugUnterwegs.
-  ///
-  /// In de, this message translates to:
-  /// **'unterwegs'**
-  String get flugUnterwegs;
-
-  /// No description provided for @flugOhneZeit.
-  ///
-  /// In de, this message translates to:
-  /// **'Die Spur trägt keine Zeitstempel – ohne sie gibt es kein Tempo.'**
-  String get flugOhneZeit;
-
-  /// No description provided for @flugProfilBeschreibung.
-  ///
-  /// In de, this message translates to:
-  /// **'Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.'**
-  String get flugProfilBeschreibung;
-
-  /// No description provided for @flugMeterProfil.
-  ///
-  /// In de, this message translates to:
-  /// **'{meter} m'**
-  String flugMeterProfil(int meter);
-
-  /// No description provided for @flugKmH.
-  ///
-  /// In de, this message translates to:
-  /// **'{wert} km/h'**
-  String flugKmH(String wert);
-
-  /// No description provided for @flugProzent.
-  ///
-  /// In de, this message translates to:
-  /// **'{wert} %'**
-  String flugProzent(String wert);
-
-  /// No description provided for @flugKm.
-  ///
-  /// In de, this message translates to:
-  /// **'{wert} km'**
-  String flugKm(String wert);
-
-  /// No description provided for @gelaendeTitel.
-  ///
-  /// In de, this message translates to:
-  /// **'Gelände'**
-  String get gelaendeTitel;
 
   /// No description provided for @gelaendeOeffnen.
   ///
@@ -11215,71 +11017,11 @@ abstract class AppTexte {
   /// **'Gelände ansehen'**
   String get gelaendeOeffnen;
 
-  /// No description provided for @gelaendeLaedt.
-  ///
-  /// In de, this message translates to:
-  /// **'Holt Geländehöhen …'**
-  String get gelaendeLaedt;
-
-  /// No description provided for @gelaendeNichts.
-  ///
-  /// In de, this message translates to:
-  /// **'Für diesen Ausschnitt kamen keine Geländehöhen an. Die Kacheln liegen im Netz; ohne Verbindung gibt es keine Landschaft.'**
-  String get gelaendeNichts;
-
-  /// No description provided for @gelaendeBedienung.
-  ///
-  /// In de, this message translates to:
-  /// **'Ziehen dreht und kippt · Rollen zoomt'**
-  String get gelaendeBedienung;
-
-  /// No description provided for @gelaendeUeberhoeht.
-  ///
-  /// In de, this message translates to:
-  /// **'Höhe {faktor}-fach überhöht'**
-  String gelaendeUeberhoeht(String faktor);
-
-  /// No description provided for @gelaendeNamensnennung.
-  ///
-  /// In de, this message translates to:
-  /// **'Höhen: Tilezen / AWS Open Data'**
-  String get gelaendeNamensnennung;
-
   /// No description provided for @karteLuftbild.
   ///
   /// In de, this message translates to:
   /// **'Luftbild'**
   String get karteLuftbild;
-
-  /// No description provided for @gelaendeEbeneWege.
-  ///
-  /// In de, this message translates to:
-  /// **'Wanderwege'**
-  String get gelaendeEbeneWege;
-
-  /// No description provided for @gelaendeEbeneBeschriftung.
-  ///
-  /// In de, this message translates to:
-  /// **'Strassen und Ortsnamen'**
-  String get gelaendeEbeneBeschriftung;
-
-  /// No description provided for @gelaendeEbeneHoehenlinien.
-  ///
-  /// In de, this message translates to:
-  /// **'Höhenlinien'**
-  String get gelaendeEbeneHoehenlinien;
-
-  /// No description provided for @gelaendeEbeneWanderobjekte.
-  ///
-  /// In de, this message translates to:
-  /// **'Gipfel, Hütten, Quellen'**
-  String get gelaendeEbeneWanderobjekte;
-
-  /// No description provided for @gelaendeErneut.
-  ///
-  /// In de, this message translates to:
-  /// **'Noch einmal versuchen'**
-  String get gelaendeErneut;
 
   /// No description provided for @einstKiTagsZurueck.
   ///

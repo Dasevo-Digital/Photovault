@@ -1,0 +1,167 @@
+{
+  "@@locale": "de",
+  "allgAbbrechen": "Abbrechen",
+  "@allgAbbrechen": {
+    "description": "Verwirft einen Dialog, ohne etwas zu ändern."
+  },
+  "flugAnhalten": "Anhalten",
+  "flugAufstieg": "Aufstieg",
+  "flugBeenden": "Zur Übersicht",
+  "flugFortschritt": "Stelle auf der Spur",
+  "flugHoehe": "Höhe",
+  "flugKm": "{wert} km",
+  "@flugKm": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugKmH": "{wert} km/h",
+  "@flugKmH": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugMeterProfil": "{meter} m",
+  "@flugMeterProfil": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugNochmal": "Noch einmal",
+  "flugOhneZeit": "Die Spur trägt keine Zeitstempel – ohne sie gibt es kein Tempo.",
+  "flugProzent": "{wert} %",
+  "@flugProzent": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "flugStarten": "Flug starten",
+  "flugSteigung": "Steigung",
+  "flugTempo": "Tempo",
+  "flugUnterwegs": "unterwegs",
+  "flugVideo": "Als Video ausgeben",
+  "flugVideoAbbrechen": "Ausgabe abbrechen",
+  "flugVideoAbgebrochen": "Ausgabe abgebrochen",
+  "flugVideoAufloesung": "Auflösung",
+  "flugVideoBilder": "{bilder} Bilder",
+  "@flugVideoBilder": {
+    "placeholders": {
+      "bilder": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoDauer": "Dauer",
+  "flugVideoDauerWert": "{sekunden} Sekunden",
+  "@flugVideoDauerWert": {
+    "placeholders": {
+      "sekunden": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoEinstellungen": "Video ausgeben",
+  "flugVideoFehler": "Die Videoausgabe ist fehlgeschlagen: {grund}",
+  "@flugVideoFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoFertig": "Video gespeichert: {datei}",
+  "@flugVideoFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoKeinWerkzeug": "Für die Videoausgabe fehlt der Videoschreiber. Unter macOS gehört er zum System, unter Linux und Windows liegt er im Paket – erscheint diese Meldung, ist die Installation unvollständig.",
+  "flugVideoLaeuft": "Video wird geschrieben – {prozent} %",
+  "@flugVideoLaeuft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoLaeuftMitRest": "Video wird geschrieben – {prozent} %, noch etwa {rest}",
+  "@flugVideoLaeuftMitRest": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "String"
+      }
+    }
+  },
+  "flugVideoWaehrenddessen": "Die Bilder entstehen abseits des Bildschirms – der Flug wird dafür nicht abgespielt. Diese Ansicht muss so lange offen bleiben.",
+  "flugVideoWeiter": "Speichern unter …",
+  "flugWeiter": "Weiter",
+  "gelaendeBedienung": "Ziehen dreht und kippt · Rollen zoomt",
+  "gelaendeEbeneBeschriftung": "Strassen und Ortsnamen",
+  "gelaendeEbeneHoehenlinien": "Höhenlinien",
+  "gelaendeEbeneWanderobjekte": "Gipfel, Hütten, Quellen",
+  "gelaendeEbeneWege": "Wanderwege",
+  "gelaendeErneut": "Noch einmal versuchen",
+  "gelaendeKarte": "Karte auf der Landschaft",
+  "gelaendeLaedt": "Holt Geländehöhen …",
+  "gelaendeNamensnennung": "Höhen: Tilezen / AWS Open Data",
+  "gelaendeNichts": "Für diesen Ausschnitt kamen keine Geländehöhen an. Die Kacheln liegen im Netz; ohne Verbindung gibt es keine Landschaft.",
+  "gelaendeStimmung": "Tageszeit",
+  "gelaendeTitel": "Gelände",
+  "gelaendeUeberhoeht": "Höhe {faktor}-fach überhöht",
+  "@gelaendeUeberhoeht": {
+    "placeholders": {
+      "faktor": {
+        "type": "String"
+      }
+    }
+  },
+  "karteDunkel": "Dunkel",
+  "karteHell": "Hell",
+  "karteLuftbild": "Luftbild",
+  "karteTopografie": "Topografie",
+  "restaurDauerMinuten": "{anzahl, plural, =1{eine Minute} other{{anzahl} Minuten}}",
+  "@restaurDauerMinuten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurDauerSekunden": "{anzahl, plural, =1{eine Sekunde} other{{anzahl} Sekunden}}",
+  "@restaurDauerSekunden": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "spurStelle": "{km} km · {hoehe} m",
+  "@spurStelle": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      },
+      "hoehe": {
+        "type": "int"
+      }
+    }
+  },
+  "stimmungAbend": "Abend",
+  "stimmungBlaueStunde": "Blaue Stunde",
+  "stimmungMittag": "Mittag",
+  "stimmungMorgen": "Morgen",
+  "flugProfilBeschreibung": "Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht."
+}

@@ -48,31 +48,9 @@ import 'package:flutter/services.dart';
 import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'platform/nativer_videoschreiber.dart';
 
-/// Wie ein Lauf ausgegangen ist.
-enum Videoausgang {
-  fertig,
+import 'package:gelaende/flugvideo.dart';
 
-  /// Weder der native Schreiber noch ffmpeg – dann geht es hier nicht.
-  keinWerkzeug,
-
-  /// Der Aufrufer hat abgebrochen.
-  abgebrochen,
-
-  /// Der Kodierer hat sich beschwert. Was er gesagt hat, steht in
-  /// [Videoergebnis.meldung].
-  fehler,
-}
-
-typedef Videoergebnis = ({Videoausgang ausgang, String? meldung});
-
-/// Wie viele Bilder je Sekunde.
-///
-/// **Dreissig und nicht sechzig.** Ein Überflug ist eine gleichmässige
-/// Bewegung ohne schnelle Wechsel; sechzig Bilder verdoppeln Rechenzeit
-/// und Dateigrösse und sind daneben nicht zu unterscheiden. Fünfundzwanzig
-/// wären europäisches Fernsehen, dreissig ist das, was Telefone
-/// aufnehmen und was jede Plattform ohne Umrechnung annimmt.
-const int videoBilderJeSekunde = 30;
+export 'package:gelaende/flugvideo.dart';
 
 /// Wo ffmpeg liegt – oder `null`. Unter macOS immer `null`, siehe oben.
 Future<String?> ffmpegPfad() => DesktopImageTools.aufruf('ffmpeg');
@@ -150,20 +128,7 @@ Future<Set<String>?> _kodiererVon(String ffmpeg) =>
 Future<bool> videoausgabeMoeglich() async =>
     await NativerVideoschreiber.verfuegbar() || await ffmpegPfad() != null;
 
-/// Ein Ziel, in das Bilder wandern – nativ oder über ffmpeg.
-abstract class _Videoziel {
-  /// Hängt ein Bild an. Wirft, wenn es nicht ankommt.
-  Future<void> bild(Uint8List rgba);
-
-  /// Schliesst ab. `null` heisst gut, sonst steht dort der Grund.
-  Future<String?> beende();
-
-  /// Bricht ab und lässt **keine** halbe Datei zurück: Die sieht aus wie
-  /// eine fertige und lässt sich nicht abspielen.
-  Future<void> verwirf();
-}
-
-class _NativesZiel implements _Videoziel {
+class _NativesZiel implements Videoziel {
   @override
   Future<void> bild(Uint8List rgba) => NativerVideoschreiber.bild(rgba);
 
@@ -181,7 +146,7 @@ class _NativesZiel implements _Videoziel {
   Future<void> verwirf() => NativerVideoschreiber.verwirf();
 }
 
-class _FfmpegZiel implements _Videoziel {
+class _FfmpegZiel implements Videoziel {
   _FfmpegZiel(this._prozess, this._ziel) {
     // **Die Fehlerausgabe muss mitgelesen werden, auch wenn sie niemanden
     // interessiert.** Ein Prozess, dessen `stderr` niemand leert, bleibt
@@ -278,7 +243,7 @@ Future<Videoergebnis> schreibeFlugvideo({
   final ueberNativ =
       nativ ?? (ffmpeg == null && await NativerVideoschreiber.verfuegbar());
 
-  final _Videoziel ausgabe;
+  final Videoziel ausgabe;
   if (ueberNativ) {
     try {
       await NativerVideoschreiber.beginne(
@@ -331,48 +296,46 @@ Future<Videoergebnis> schreibeFlugvideo({
     ausgabe = _FfmpegZiel(prozess, ziel);
   }
 
-  try {
-    for (var i = 0; i < bilder; i++) {
-      if (abbruch?.call() ?? false) {
-        await ausgabe.verwirf();
-        return (ausgang: Videoausgang.abgebrochen, meldung: null);
-      }
-      final t = bilder == 1 ? 0.0 : i / (bilder - 1);
-      // **Vor dem Malen, nicht danach.** Was hier nachgeladen wird,
-      // gehört in genau dieses Bild; ein Video hat kein „ein Bild
-      // später".
-      await vorBild?.call(t);
-      final sammler = ui.PictureRecorder();
-      maleBild(ui.Canvas(sammler), ui.Size(b.toDouble(), h.toDouble()), t);
-      final aufnahme = sammler.endRecording();
-      ui.Image bild;
-      try {
-        bild = await aufnahme.toImage(b, h);
-      } finally {
-        aufnahme.dispose();
-      }
-      try {
-        final roh = await bild.toByteData(format: ui.ImageByteFormat.rawRgba);
-        if (roh == null) continue;
-        await ausgabe.bild(roh.buffer.asUint8List());
-      } finally {
-        bild.dispose();
-      }
-      fortschritt?.call((i + 1) / bilder);
-    }
-  } catch (e) {
-    await ausgabe.verwirf();
-    return (
-      ausgang: Videoausgang.fehler,
-      meldung: e is PlatformException ? (e.message ?? '$e') : '$e',
-    );
-  }
+  return schreibeBilderfolge(
+    ausgabe: ausgabe,
+    breite: b,
+    hoehe: h,
+    bilder: bilder,
+    maleBild: maleBild,
+    vorBild: vorBild,
+    fortschritt: fortschritt,
+    abbruch: abbruch,
+  );
+}
 
-  final grund = await ausgabe.beende();
-  if (grund != null) {
-    return (ausgang: Videoausgang.fehler, meldung: grund);
-  }
-  return (ausgang: Videoausgang.fertig, meldung: null);
+/// Die Videoausgabe des Rechners für die Landschaft.
+class RechnerVideoschreiber implements Videoschreiber {
+  const RechnerVideoschreiber();
+
+  @override
+  Future<bool> moeglich() => videoausgabeMoeglich();
+
+  @override
+  Future<Videoergebnis> schreibe({
+    required File ziel,
+    required int breite,
+    required int hoehe,
+    required Duration dauer,
+    required void Function(ui.Canvas leinwand, ui.Size flaeche, double t)
+    maleBild,
+    Future<void> Function(double t)? vorBild,
+    void Function(double anteil)? fortschritt,
+    bool Function()? abbruch,
+  }) => schreibeFlugvideo(
+    ziel: ziel,
+    breite: breite,
+    hoehe: hoehe,
+    dauer: dauer,
+    maleBild: maleBild,
+    vorBild: vorBild,
+    fortschritt: fortschritt,
+    abbruch: abbruch,
+  );
 }
 
 String _letzteZeilen(String text, int wieviele) {

@@ -5,7 +5,7 @@ import 'dart:io';
 ///
 /// Prüfungen, die den Quelltext lesen, gehen über beide. Seit Datenbank
 /// und Dienste im Kern liegen, sähe ein Blick nur in `lib/` die Hälfte.
-const quellordner = ['lib', 'packages/kern/lib'];
+const quellordner = ['lib', 'packages/kern/lib', 'packages/gelaende/lib'];
 
 /// Jede Dart-Datei in [quellordner].
 List<File> dartQuellen() => [

@@ -646,6 +646,7 @@ void main() {
       expect(r.statusCode, 200);
       expect((await jsonAus(r))['punkte'], [
         {
+          'osmId': 7,
           'art': 'gipfel',
           'breite': 51.8,
           'laenge': 10.61,

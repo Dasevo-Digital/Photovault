@@ -39,6 +39,7 @@ ios/**/xcshareddata/swiftpm/
 .pub-cache/
 .pub/
 /build/
+packages/*/build/
 /coverage/
 
 # Symbolication related

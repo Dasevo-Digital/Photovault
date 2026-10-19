@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gelaende/texte.dart' show GelaendeTexte;
 import 'package:zierbild/zierschrift.dart';
 import 'package:kern/protokoll.dart';
 import 'package:workmanager/workmanager.dart';
@@ -45,7 +46,10 @@ class PhotoVaultMobil extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      localizationsDelegates: AppTexte.localizationsDelegates,
+      localizationsDelegates: const [
+        ...AppTexte.localizationsDelegates,
+        GelaendeTexte.delegate,
+      ],
       supportedLocales: AppTexte.supportedLocales,
       locale: switch (sitzung.sprache) {
         final s? => Locale(s),

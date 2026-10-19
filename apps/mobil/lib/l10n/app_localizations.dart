@@ -2778,6 +2778,60 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Als Link teilen'**
   String get albumAlsLink;
+
+  /// No description provided for @spurTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufgezeichnete Spur'**
+  String get spurTitel;
+
+  /// No description provided for @spurKennzahlen.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km · ▲ {auf} m · ▼ {ab} m'**
+  String spurKennzahlen(String km, int auf, int ab);
+
+  /// No description provided for @spurKennzahlenOhneHoehe.
+  ///
+  /// In de, this message translates to:
+  /// **'{km} km · keine Höhenangaben'**
+  String spurKennzahlenOhneHoehe(String km);
+
+  /// No description provided for @spurPunkte.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Punkte'**
+  String spurPunkte(int anzahl);
+
+  /// No description provided for @spurHoehenprofil.
+  ///
+  /// In de, this message translates to:
+  /// **'Höhenprofil'**
+  String get spurHoehenprofil;
+
+  /// No description provided for @spurOhneHoehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Datei führt keine Höhen – ohne sie gibt es kein Profil.'**
+  String get spurOhneHoehen;
+
+  /// No description provided for @spurProfilBeschreibung.
+  ///
+  /// In de, this message translates to:
+  /// **'Höhenprofil über {km} km, von {tief} bis {hoch} Meter, {auf} Meter Aufstieg.'**
+  String spurProfilBeschreibung(String km, int tief, int hoch, int auf);
+
+  /// No description provided for @gelaendeOeffnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gelände ansehen'**
+  String get gelaendeOeffnen;
+
+  /// No description provided for @gelaendeVideoErstellen.
+  ///
+  /// In de, this message translates to:
+  /// **'Video erstellen'**
+  String get gelaendeVideoErstellen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

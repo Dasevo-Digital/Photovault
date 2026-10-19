@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gelaende/texte.dart' show GelaendeTexte;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:kern/db/database.dart';
@@ -202,6 +203,7 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 supportedLocales: AppTexte.supportedLocales,
                 localizationsDelegates: const [
                   AppTexte.delegate,
+                  GelaendeTexte.delegate,
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,

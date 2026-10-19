@@ -147,6 +147,9 @@ typedef Flugfoto = ({
 /// entscheidet nicht die Länge der Wanderung.
 typedef Videoauftrag = ({File ziel, int breite, int hoehe, Duration dauer});
 
+/// Wie die Landschaft etwas meldet – die App weiss, wie sie es zeigt.
+typedef Gelaendemeldung = void Function(String text, {bool warnung});
+
 /// Die fertig gerechneten Dreiecke – einmal je Gitter, nicht je Bild.
 ///
 /// Getrennt vom Zeichnen, weil sich beim Drehen nur die Kamera ändert

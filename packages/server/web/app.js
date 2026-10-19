@@ -987,7 +987,7 @@ function spurabschnitt(s, zeige, aktivitaet, aufnahmen) {
     s.aufstieg == null
       ? t('{km} km · keine Höhenangaben', { km })
       : t('{km} km · ▲ {auf} m · ▼ {ab} m', { km, auf: zahl.format(Math.round(s.aufstieg)), ab: zahl.format(Math.round(s.abstieg || 0)) }),
-    t('{anzahl} Punkte', { anzahl: zahl.format(s.punkte.length) }),
+    t('{anzahl} Punkte', { anzahl: String(s.punkte.length) }),
   ].join(' · ')));
   const profil = profilpunkte(s.punkte);
   if (profil.length > 1) {

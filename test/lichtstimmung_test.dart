@@ -7,8 +7,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/services/lichtstimmung.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/lichtstimmung.dart';
 
 /// Die Schattierung, wie sie vor den Tageszeiten gerechnet wurde –
 /// abgeschrieben aus dem Stand von 3.3.1.

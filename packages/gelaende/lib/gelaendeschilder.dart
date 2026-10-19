@@ -25,8 +25,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../services/gelaendesicht.dart';
-import '../services/lichtstimmung.dart';
+import 'gelaendesicht.dart';
+import 'lichtstimmung.dart';
 import 'package:kern/services/wanderobjekte.dart';
 
 /// Ein Schild, fertig zum Zeichnen.

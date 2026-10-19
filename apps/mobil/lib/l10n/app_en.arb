@@ -614,5 +614,18 @@
   "linkLoeschen": "Delete",
   "linkLoeschenFrage": "Delete the link “{titel}”? Anyone who has it will see nothing afterwards.",
   "auswahlLink": "Link",
-  "albumAlsLink": "Share as link"
+  "albumAlsLink": "Share as link",
+  "spurTitel": "Recorded track",
+  "spurKennzahlen": "{km} km · ▲ {auf} m · ▼ {ab} m",
+  "@spurKennzahlen": {"placeholders": {"km": {"type": "String"}, "auf": {"type": "int"}, "ab": {"type": "int"}}},
+  "spurKennzahlenOhneHoehe": "{km} km · no elevation data",
+  "@spurKennzahlenOhneHoehe": {"placeholders": {"km": {"type": "String"}}},
+  "spurPunkte": "{anzahl} points",
+  "@spurPunkte": {"placeholders": {"anzahl": {"type": "int"}}},
+  "spurHoehenprofil": "Elevation profile",
+  "spurOhneHoehen": "This file carries no elevations – without them there is no profile.",
+  "spurProfilBeschreibung": "Elevation profile over {km} km, from {tief} to {hoch} metres, {auf} metres of ascent.",
+  "@spurProfilBeschreibung": {"placeholders": {"km": {"type": "String"}, "tief": {"type": "int"}, "hoch": {"type": "int"}, "auf": {"type": "int"}}},
+  "gelaendeOeffnen": "Show terrain",
+  "gelaendeVideoErstellen": "Create video"
 }

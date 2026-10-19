@@ -28,12 +28,12 @@ import 'package:flutter_map/flutter_map.dart' show DisabledMapCachingProvider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/gelaende_laden.dart';
-import 'package:photo_vault/services/gelaendeflug.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/services/lichtstimmung.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaende_laden.dart';
+import 'package:gelaende/gelaendeflug.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/lichtstimmung.dart';
+import 'package:gelaende/gelaende.dart';
 
 /// Zwei Landschaften, und beide werden gebraucht.
 ///

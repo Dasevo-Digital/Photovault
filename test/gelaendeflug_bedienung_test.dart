@@ -3,11 +3,12 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gelaende/texte.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
-import 'package:photo_vault/services/gelaendeflug.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaendeflug.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/gelaende.dart';
 
 /// **Die Bedienung des Fluges.**
 ///
@@ -75,8 +76,8 @@ void main() {
     );
   }
 
-  AppTexte texte(WidgetTester tester) =>
-      AppTexte.of(tester.element(find.byType(Gelaendeansicht)));
+  GelaendeTexte texte(WidgetTester tester) =>
+      gelaendeTexte(tester.element(find.byType(Gelaendeansicht)));
 
   testWidgets('ohne Spur gibt es keine Flugleiste', (tester) async {
     await tester.pumpWidget(bildschirm(mitSpur: false));

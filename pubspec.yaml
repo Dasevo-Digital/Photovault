@@ -75,6 +75,10 @@ dependencies:
     path: packages/kern
   zierbild:
     path: packages/zierbild
+  # Die Landschaft unter einer Spur und der Flug darüber – mit der
+  # Handy-App geteilt.
+  gelaende:
+    path: packages/gelaende
 
   # HTTP-Downloads der offenen Modelldateien (mit Fortschrittsanzeige)
   dio: ^5.7.0

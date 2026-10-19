@@ -5758,18 +5758,6 @@ class AppTexteDe extends AppTexte {
   String get gelaendeStimmung => 'Tageszeit';
 
   @override
-  String get stimmungMorgen => 'Morgen';
-
-  @override
-  String get stimmungMittag => 'Mittag';
-
-  @override
-  String get stimmungAbend => 'Abend';
-
-  @override
-  String get stimmungBlaueStunde => 'Blaue Stunde';
-
-  @override
   String get einstKarteScharfTitel => 'Karte in doppelter Auflösung';
 
   @override
@@ -7096,45 +7084,10 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
-  String spurStelle(String km, int hoehe) {
-    return '$km km · $hoehe m';
-  }
-
-  @override
   String get spurSchonDa => 'Diese Aktivität hat schon eine Spur.';
 
   @override
-  String get flugStarten => 'Flug starten';
-
-  @override
-  String get flugAnhalten => 'Anhalten';
-
-  @override
-  String get flugWeiter => 'Weiter';
-
-  @override
-  String get flugNochmal => 'Noch einmal';
-
-  @override
-  String get flugBeenden => 'Zur Übersicht';
-
-  @override
-  String get flugFortschritt => 'Stelle auf der Spur';
-
-  @override
-  String get flugHoehe => 'Höhe';
-
-  @override
-  String get flugTempo => 'Tempo';
-
-  @override
-  String get flugSteigung => 'Steigung';
-
-  @override
   String get flugVideo => 'Als Video ausgeben';
-
-  @override
-  String get flugVideoAbbrechen => 'Ausgabe abbrechen';
 
   @override
   String flugVideoFertig(String datei) {
@@ -7149,121 +7102,15 @@ class AppTexteDe extends AppTexte {
       'Für die Videoausgabe fehlt der Videoschreiber. Unter macOS gehört er zum System, unter Linux und Windows liegt er im Paket – erscheint diese Meldung, ist die Installation unvollständig.';
 
   @override
-  String flugVideoLaeuft(int prozent) {
-    return 'Video wird geschrieben – $prozent %';
-  }
-
-  @override
-  String flugVideoLaeuftMitRest(int prozent, String rest) {
-    return 'Video wird geschrieben – $prozent %, noch etwa $rest';
-  }
-
-  @override
-  String get flugVideoEinstellungen => 'Video ausgeben';
-
-  @override
-  String get flugVideoAufloesung => 'Auflösung';
-
-  @override
-  String get flugVideoDauer => 'Dauer';
-
-  @override
-  String flugVideoDauerWert(int sekunden) {
-    return '$sekunden Sekunden';
-  }
-
-  @override
-  String flugVideoBilder(int bilder) {
-    return '$bilder Bilder';
-  }
-
-  @override
-  String get flugVideoWeiter => 'Speichern unter …';
-
-  @override
-  String get flugVideoWaehrenddessen =>
-      'Die Bilder entstehen abseits des Bildschirms – der Flug wird dafür nicht abgespielt. Diese Ansicht muss so lange offen bleiben.';
-
-  @override
   String flugVideoFehler(String grund) {
     return 'Die Videoausgabe ist fehlgeschlagen: $grund';
   }
 
   @override
-  String get flugAufstieg => 'Aufstieg';
-
-  @override
-  String get flugUnterwegs => 'unterwegs';
-
-  @override
-  String get flugOhneZeit =>
-      'Die Spur trägt keine Zeitstempel – ohne sie gibt es kein Tempo.';
-
-  @override
-  String get flugProfilBeschreibung =>
-      'Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.';
-
-  @override
-  String flugMeterProfil(int meter) {
-    return '$meter m';
-  }
-
-  @override
-  String flugKmH(String wert) {
-    return '$wert km/h';
-  }
-
-  @override
-  String flugProzent(String wert) {
-    return '$wert %';
-  }
-
-  @override
-  String flugKm(String wert) {
-    return '$wert km';
-  }
-
-  @override
-  String get gelaendeTitel => 'Gelände';
-
-  @override
   String get gelaendeOeffnen => 'Gelände ansehen';
 
   @override
-  String get gelaendeLaedt => 'Holt Geländehöhen …';
-
-  @override
-  String get gelaendeNichts =>
-      'Für diesen Ausschnitt kamen keine Geländehöhen an. Die Kacheln liegen im Netz; ohne Verbindung gibt es keine Landschaft.';
-
-  @override
-  String get gelaendeBedienung => 'Ziehen dreht und kippt · Rollen zoomt';
-
-  @override
-  String gelaendeUeberhoeht(String faktor) {
-    return 'Höhe $faktor-fach überhöht';
-  }
-
-  @override
-  String get gelaendeNamensnennung => 'Höhen: Tilezen / AWS Open Data';
-
-  @override
   String get karteLuftbild => 'Luftbild';
-
-  @override
-  String get gelaendeEbeneWege => 'Wanderwege';
-
-  @override
-  String get gelaendeEbeneBeschriftung => 'Strassen und Ortsnamen';
-
-  @override
-  String get gelaendeEbeneHoehenlinien => 'Höhenlinien';
-
-  @override
-  String get gelaendeEbeneWanderobjekte => 'Gipfel, Hütten, Quellen';
-
-  @override
-  String get gelaendeErneut => 'Noch einmal versuchen';
 
   @override
   String get einstKiTagsZurueck => 'KI-Schlagwörter zurücknehmen';

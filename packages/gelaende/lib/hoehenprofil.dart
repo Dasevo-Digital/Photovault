@@ -13,9 +13,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../l10n/app_localizations.dart';
-import '../services/gpx.dart' show Profilpunkt;
-import '../theme/app_spacing.dart';
+import 'texte.dart';
+import 'package:kern/services/profilpunkte.dart' show Profilpunkt;
+import 'abstaende.dart';
 
 /// Zeichnet das Profil und meldet, wohin gezeigt wird.
 class Hoehenprofil extends StatefulWidget {
@@ -83,7 +83,7 @@ class _HoehenprofilState extends State<Hoehenprofil> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = gelaendeTexte(context);
     final locale = Localizations.localeOf(context);
     final farben = Theme.of(context).colorScheme;
     if (widget.punkte.isEmpty) return const SizedBox.shrink();

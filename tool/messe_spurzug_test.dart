@@ -13,9 +13,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/gelaende.dart';
 
 Hoehengitter _gitter(int n) {
   final h = Float32List(n * n);

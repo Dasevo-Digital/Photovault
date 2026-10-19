@@ -12,20 +12,22 @@ import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import 'package:kern/services/wanderobjekte.dart';
 import 'package:kern/services/aktivitaeten.dart';
+import '../services/flugvideo.dart' show RechnerVideoschreiber;
 import '../services/gpx.dart';
 import '../services/meldungsdienst.dart';
+import '../services/platform/speicherort.dart';
 import '../services/reiseroute.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/zuordnung_auswahlleiste.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
 import '../widgets/asset_thumbnail_tile.dart';
-import '../widgets/hoehenprofil.dart';
+import 'package:gelaende/hoehenprofil.dart';
 import '../widgets/namens_dialog.dart';
 import '../widgets/routenkarte.dart';
 import 'asset_viewer_screen.dart';
 import 'aufnahmen_waehlen_screen.dart';
-import 'gelaende_screen.dart';
+import 'package:gelaende/gelaende_screen.dart';
 
 /// Eine einzelne Aktivität.
 ///
@@ -257,6 +259,10 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
           beimKartenwechsel: widget.library.db.setzeGelaendeKarte,
           wanderobjekte: _wanderobjekte,
           fotos: _flugfotos(),
+          videoschreiber: const RechnerVideoschreiber(),
+          videoZiel: _videoZiel,
+          melde: (text, {warnung = false}) =>
+              warnung ? melde.warnung(text) : melde.hinweis(text),
           spur: [
             for (final p in _spurpunkte)
               (
@@ -269,6 +275,19 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Wohin das Video des Ueberfluges geht – der Speichern-Dialog.
+  ///
+  /// Manche Dateiwähler geben die Endung nicht mit; ohne sie schreibt
+  /// ffmpeg nichts, weil es das Format am Namen erkennt.
+  Future<File?> _videoZiel(String titel, String dateiname) async {
+    final pfad = await waehleSpeicherort(
+      dialogTitel: titel,
+      dateiname: dateiname,
+      mitEndung: (pfad) => mitDateiendung(pfad, 'mp4'),
+    );
+    return pfad == null ? null : File(pfad);
   }
 
   /// Die verorteten Fotos der Aktivität – für den Ueberflug.

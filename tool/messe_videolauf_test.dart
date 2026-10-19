@@ -28,11 +28,11 @@ import 'package:flutter_map/flutter_map.dart' show DisabledMapCachingProvider;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:photo_vault/services/blocktexturen.dart';
+import 'package:gelaende/blocktexturen.dart';
 import 'package:kern/services/gelaendeebenen.dart';
-import 'package:photo_vault/services/gelaendekacheln.dart';
-import 'package:photo_vault/services/gelaendesicht.dart';
-import 'package:photo_vault/widgets/gelaende.dart';
+import 'package:gelaende/gelaendekacheln.dart';
+import 'package:gelaende/gelaendesicht.dart';
+import 'package:gelaende/gelaende.dart';
 
 Future<Uint8List> _kachel() async {
   const kante = 256;

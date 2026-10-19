@@ -2501,10 +2501,6 @@
   "einstSchwebeVorschauTitel": "Play videos on hover",
   "einstSchwebeVorschauText": "When the mouse rests on a video or a live photo for a moment, it starts playing right in the tile - muted and looping, until the pointer moves on. Only ever one at a time. Locked items stay still: playing them would mean decrypting them in passing. Switched off, the tiles remain stills.",
   "gelaendeStimmung": "Time of day",
-  "stimmungMorgen": "Morning",
-  "stimmungMittag": "Midday",
-  "stimmungAbend": "Evening",
-  "stimmungBlaueStunde": "Blue hour",
   "einstKarteScharfTitel": "Map at double resolution",
   "einstKarteScharfText": "On a display with double pixel density the map fetches four tiles of the next deeper level and places them where one would go: four times the pixels, house numbers and shop names become legible. The price is about two and a half times as many tiles per screen - on a slower machine zooming stutters noticeably. Switched off, the map draws as it did before.",
   "routeVergroessern": "Enlarge the map",
@@ -3347,29 +3343,8 @@
       }
     }
   },
-  "spurStelle": "{km} km · {hoehe} m",
-  "@spurStelle": {
-    "placeholders": {
-      "km": {
-        "type": "String"
-      },
-      "hoehe": {
-        "type": "int"
-      }
-    }
-  },
   "spurSchonDa": "This activity already has a track.",
-  "flugStarten": "Start flight",
-  "flugAnhalten": "Pause",
-  "flugWeiter": "Continue",
-  "flugNochmal": "Again",
-  "flugBeenden": "Back to overview",
-  "flugFortschritt": "Position along the track",
-  "flugHoehe": "Elevation",
-  "flugTempo": "Speed",
-  "flugSteigung": "Gradient",
   "flugVideo": "Export as video",
-  "flugVideoAbbrechen": "Cancel export",
   "flugVideoFertig": "Video saved: {datei}",
   "@flugVideoFertig": {
     "placeholders": {
@@ -3380,46 +3355,6 @@
   },
   "flugVideoAbgebrochen": "Export cancelled",
   "flugVideoKeinWerkzeug": "Video export is unavailable – the video encoder is missing. macOS provides it, Linux and Windows ship it in the package; if you see this, the installation is incomplete.",
-  "flugVideoLaeuft": "Writing video – {prozent} %",
-  "@flugVideoLaeuft": {
-    "placeholders": {
-      "prozent": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoLaeuftMitRest": "Writing video – {prozent} %, about {rest} left",
-  "@flugVideoLaeuftMitRest": {
-    "placeholders": {
-      "prozent": {
-        "type": "int"
-      },
-      "rest": {
-        "type": "String"
-      }
-    }
-  },
-  "flugVideoEinstellungen": "Export video",
-  "flugVideoAufloesung": "Resolution",
-  "flugVideoDauer": "Length",
-  "flugVideoDauerWert": "{sekunden} seconds",
-  "@flugVideoDauerWert": {
-    "placeholders": {
-      "sekunden": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoBilder": "{bilder} frames",
-  "@flugVideoBilder": {
-    "placeholders": {
-      "bilder": {
-        "type": "int"
-      }
-    }
-  },
-  "flugVideoWeiter": "Save as …",
-  "flugVideoWaehrenddessen": "The frames are rendered off screen – the flight is not played for it. This view has to stay open until it is done.",
   "flugVideoFehler": "Video export failed: {grund}",
   "@flugVideoFehler": {
     "placeholders": {
@@ -3428,62 +3363,8 @@
       }
     }
   },
-  "flugAufstieg": "Ascent",
-  "flugUnterwegs": "elapsed",
-  "flugOhneZeit": "The track carries no timestamps – without them there is no speed.",
-  "flugProfilBeschreibung": "Elevation profile of the track with the point the flight has reached.",
-  "flugMeterProfil": "{meter} m",
-  "@flugMeterProfil": {
-    "placeholders": {
-      "meter": {
-        "type": "int"
-      }
-    }
-  },
-  "flugKmH": "{wert} km/h",
-  "@flugKmH": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "flugProzent": "{wert} %",
-  "@flugProzent": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "flugKm": "{wert} km",
-  "@flugKm": {
-    "placeholders": {
-      "wert": {
-        "type": "String"
-      }
-    }
-  },
-  "gelaendeTitel": "Terrain",
   "gelaendeOeffnen": "Show terrain",
-  "gelaendeLaedt": "Fetching elevations …",
-  "gelaendeNichts": "No elevation data arrived for this area. The tiles live on the network; without a connection there is no landscape.",
-  "gelaendeBedienung": "Drag to rotate and tilt · scroll to zoom",
-  "gelaendeUeberhoeht": "Elevation exaggerated {faktor}×",
-  "@gelaendeUeberhoeht": {
-    "placeholders": {
-      "faktor": {
-        "type": "String"
-      }
-    }
-  },
-  "gelaendeNamensnennung": "Elevation: Tilezen / AWS Open Data",
   "karteLuftbild": "Aerial imagery",
-  "gelaendeEbeneWege": "Hiking routes",
-  "gelaendeEbeneBeschriftung": "Roads and place names",
-  "gelaendeEbeneHoehenlinien": "Contour lines",
-  "gelaendeEbeneWanderobjekte": "Peaks, huts, springs",
-  "gelaendeErneut": "Try again",
   "einstKiTagsZurueck": "Take back AI tags",
   "einstKiTagsZurueckText": "Counting …",
   "einstKiTagsZurueckAnzahl": "{anzahl} assigned by image recognition – hand-made ones stay",

@@ -16,7 +16,7 @@ import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/meldungsfenster.dart';
-import 'package:photo_vault/widgets/hoehenprofil.dart';
+import 'package:gelaende/hoehenprofil.dart';
 import 'package:photo_vault/widgets/routenkarte.dart';
 import 'package:photo_vault/widgets/asset_thumbnail_tile.dart';
 import 'package:photo_vault/widgets/zuordnung_auswahlleiste.dart';

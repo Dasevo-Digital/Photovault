@@ -18,7 +18,7 @@ import 'package:flutter_map/flutter_map.dart'
     show CachedMapTile, CachedMapTileMetadata, MapCachingProvider;
 import 'package:http/http.dart' as http;
 
-import '../widgets/mini_location_map.dart'
+import 'kachelspeicher.dart'
     show kachelNochmalVersuchen, kartenKachelFrische, kartenKachelspeicher;
 import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendekacheln.dart';

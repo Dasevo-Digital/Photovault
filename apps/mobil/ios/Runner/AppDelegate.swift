@@ -22,6 +22,10 @@ import workmanager_apple
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Das Video des Überfluges (lib/seiten/landschaft.dart).
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Flugvideo") {
+      Flugvideokanal.richteEin(registrar)
+    }
     // Die Verbindung für Widget und Teilen-Erweiterung (lib/gemeinsam.dart).
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Gemeinsam") {
       let kanal = FlutterMethodChannel(
