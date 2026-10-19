@@ -19,5 +19,7 @@ Map<String, Object?> zeileAlsJson(Rasterzeile r) => {
   if (r.stackId != null)
     'serie': {'id': r.stackId, 'titel': r.isStackCover, 'groesse': r.stackSize},
   if (r.linkedAssetId != null) 'partner': r.linkedAssetId,
+  // Das Kürzel oben rechts auf der Kachel, wie am Rechner.
+  if (r.kuerzel.isNotEmpty) 'format': r.kuerzel,
   'miniatur': r.thumbnailRelativePath != null,
 };

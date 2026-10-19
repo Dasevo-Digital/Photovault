@@ -337,6 +337,47 @@ let letzterMonat = null;
 // Tagesauswahl.
 const tagVon = (a) => { const d = new Date(a.aufgenommen); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
+// Ein gefülltes Zeichen für eine Kachel (Symbole m-… in index.html).
+function kachelzeichen(name, klasse = '') {
+  const s = symbol(name);
+  s.setAttribute('class', `zeichen ${klasse}`.trim());
+  s.firstChild.setAttribute('href', `#m-${name}`);
+  return s;
+}
+
+// „m:ss“, ab einer Stunde „h:mm:ss“ – wie am Rechner.
+function videodauer(sekunden) {
+  const g = Math.round(sekunden);
+  const h = Math.floor(g / 3600), m = Math.floor((g % 3600) / 60), s = String(g % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+// Die Marken einer Kachel, dieselben wie am Rechner
+// (asset_thumbnail_tile.dart) und auf dem Telefon (bilder.dart,
+// Miniatur): Favorit oben links, Ort unten links, Videolänge oder Live
+// unten rechts, Serie oder Dateiformat oben rechts.
+function marken(k, a) {
+  if (a.favorit) k.append(kachelzeichen('herz', 'herz'));
+  if (a.ort) k.append(kachelzeichen('ort', 'ort'));
+  if (a.art === 'video') {
+    const v = el('span', 'unten-rechts');
+    if (a.dauer != null) v.append(el('span', 'dauer', videodauer(a.dauer)));
+    v.append(kachelzeichen('abspielen'));
+    k.append(v);
+  } else if (a.partner) {
+    const v = el('span', 'unten-rechts');
+    v.append(kachelzeichen('live'));
+    k.append(v);
+  }
+  if (a.serie && a.serie.titel && a.serie.groesse > 1) {
+    const s = el('span', 'schild');
+    s.append(kachelzeichen('serie'), document.createTextNode(String(a.serie.groesse)));
+    k.append(s);
+  } else if (a.format) {
+    k.append(el('span', 'schild', a.format));
+  }
+}
+
 function kachel(a, index) {
   const k = el('button', 'kachel');
   k.type = 'button';
@@ -348,9 +389,7 @@ function kachel(a, index) {
   img.draggable = false;
   img.src = miniaturUrl(a.id);
   k.append(img);
-  if (a.art === 'video') k.append(el('span', 'marke', '▶'));
-  if (a.favorit) k.append(el('span', 'herz', '♥'));
-  if (a.serie && a.serie.titel && a.serie.groesse > 1) k.append(el('span', 'stapel', `⧉ ${a.serie.groesse}`));
+  marken(k, a);
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
   k.addEventListener('click', () => {
     // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.

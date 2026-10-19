@@ -858,6 +858,77 @@ void main() {
     expect(find.text('LIVE'), findsNothing);
   });
 
+  testWidgets('Kacheln tragen die Marken wie am Rechner', (tester) async {
+    Rasterzeile mit(
+      String id, {
+      String type = 'IMAGE',
+      String datei = 'x.jpg',
+      double? dauer,
+      bool favorit = false,
+      String? partner,
+      double? breite,
+      int? serie,
+    }) => Rasterzeile(
+      id: id,
+      type: type,
+      originalFileName: datei,
+      relativePath: 'originals/$datei',
+      thumbnailRelativePath: null,
+      fileCreatedAt: DateTime(2025),
+      durationSeconds: dauer,
+      isFavorite: favorit,
+      isStackCover: serie != null,
+      stackId: serie == null ? null : 's',
+      stackSize: serie,
+      linkedAssetId: partner,
+      rating: 0,
+      colorLabel: null,
+      widthPx: null,
+      heightPx: null,
+      latitude: breite,
+      longitude: breite,
+      cameraMake: null,
+      isLocked: false,
+    );
+    final paths = (await tester.runAsync(
+      () => StoragePaths.forTesting(Directory.systemTemp.createTempSync()),
+    ))!;
+    Future<void> zeige(Rasterzeile z, {double kante = 120}) =>
+        tester.pumpWidget(
+          MaterialApp(
+            home: Center(
+              child: SizedBox.square(
+                dimension: kante,
+                child: Miniatur(paths: paths, relativ: null, zeile: z),
+              ),
+            ),
+          ),
+        );
+
+    await zeige(mit('v', type: 'VIDEO', datei: 'v.mov', dauer: 24.4));
+    expect(find.text('0:24'), findsOneWidget);
+    expect(find.byIcon(Icons.play_circle_fill), findsOneWidget);
+    expect(find.text('MOV'), findsNothing);
+
+    await zeige(mit('l', partner: 'v', favorit: true, breite: 52));
+    expect(find.byIcon(Icons.motion_photos_on), findsOneWidget);
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byIcon(Icons.location_on), findsOneWidget);
+    expect(find.text('JPG'), findsOneWidget);
+
+    await zeige(mit('s', datei: 's.heic', serie: 5));
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text('HEIC'), findsNothing);
+
+    await zeige(mit('h', type: 'VIDEO', dauer: 3725));
+    expect(find.text('1:02:05'), findsOneWidget);
+
+    // Kleine Kacheln: nur das Nötigste.
+    await zeige(mit('k', datei: 'k.dng', breite: 52), kante: 60);
+    expect(find.text('DNG'), findsNothing);
+    expect(find.byIcon(Icons.location_on), findsNothing);
+  });
+
   testWidgets('Papierkorb: das Blatt holt zurück statt wegzuwerfen', (
     tester,
   ) async {

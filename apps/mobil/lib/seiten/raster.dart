@@ -573,9 +573,9 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             paths: widget.sitzung.paths,
             relativ: z.thumbnailRelativePath,
             bild: l?.bild,
-            video: z.type == 'VIDEO',
-            favorit: z.isFavorite,
-            serie: z.isStackCover ? (z.stackSize ?? 0) : 0,
+            zeile: z,
+            format: l == null,
+            herz: !_waehlt,
           ),
           builder: (context, bild) {
             final gewaehlt = _auswahl.contains(z.id);

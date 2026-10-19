@@ -1144,6 +1144,11 @@ void main() {
       {a, b},
     );
     expect(alle['weiter'], isNull);
+    // Die Kachel trägt Herz und Format wie am Rechner.
+    for (final x in (alle['aufnahmen']! as List).cast<Map>()) {
+      expect(x['favorit'], isTrue);
+      expect(x['format'], 'JPG');
+    }
     final erste = await jsonAus(
       await frag(
         'GET',
