@@ -4,6 +4,14 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<!-- Die Sprachen der App. Ohne diese Liste zeigt macOS seine eigenen
+	     Dialoge (Öffnen, Sichern, Drucken) in der Entwicklungssprache,
+	     auch wenn die App selbst deutsch spricht – wie unter iOS. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>en</string>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconFile</key>
