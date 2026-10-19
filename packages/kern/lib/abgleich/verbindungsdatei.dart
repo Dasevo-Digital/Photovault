@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show Random;
 
 import 'package:path/path.dart' as p;
 
@@ -7,10 +8,29 @@ import 'package:path/path.dart' as p;
 /// `library.sqlite`. Gibt es die Datei, ist die Bibliothek die Kopie einer
 /// Bibliothek auf dem Server.
 ///
-/// Das Token steht mit darin, nur für den Besitzer lesbar. Wer es hat, kann
-/// sich als dieses Gerät anmelden, bis es abgemeldet wird (auf einem
-/// anderen Gerät oder auf dem Server mit `konto abmelden`).
+/// Das Token steht mit darin, nur für den Besitzer lesbar – es sei denn,
+/// die App hat eine [Tokenablage] eingetragen (Issue #111). Dann steht in
+/// der Datei nur noch eine Kennung, und das Token liegt dort. Der Grund:
+/// Am Rechner liegt die Bibliothek oft auf einer externen Platte, und wer
+/// die an einen anderen Rechner steckt, hätte sonst das Token mit. Wer es
+/// hat, kann sich als dieses Gerät anmelden, bis es abgemeldet wird (auf
+/// einem anderen Gerät oder auf dem Server mit `konto abmelden`).
+/// Wo das Token liegt, wenn nicht in der Datei: am Rechner im eigenen
+/// Datenordner der App, später vielleicht im Schlüsselbund.
+abstract interface class Tokenablage {
+  Future<String?> lies(String kennung);
+
+  /// `false`, wenn es nicht ging – dann bleibt das Token in der Datei.
+  Future<bool> schreibe(String kennung, String token);
+
+  Future<void> loesche(String kennung);
+}
+
 class Verbindungsdatei {
+  /// Die Ablage dieser App – einmal beim Start gesetzt, sonst steht das
+  /// Token in der Datei (Handy: deren Ordner ist ohnehin nur der App).
+  static Tokenablage? tokenablage;
+
   const Verbindungsdatei({
     required this.server,
     required this.konto,
@@ -20,7 +40,12 @@ class Verbindungsdatei {
     this.zwischenspeicherMb,
     this.rasterspalten,
     this.sprache,
+    this.tokenkennung,
   });
+
+  /// Unter welcher Kennung das Token in der [tokenablage] liegt – `null`,
+  /// solange es in der Datei steht.
+  final String? tokenkennung;
 
   /// Die Adresse des Servers, z. B. `https://fotos.example.de/`.
   final Uri server;
@@ -60,6 +85,7 @@ class Verbindungsdatei {
         : zwischenspeicherMb(),
     rasterspalten: rasterspalten == null ? this.rasterspalten : rasterspalten(),
     sprache: sprache == null ? this.sprache : sprache(),
+    tokenkennung: tokenkennung,
   );
 
   Verbindungsdatei mitRechenhilfe(bool an) => _mit(rechenhilfe: an);
@@ -80,20 +106,47 @@ class Verbindungsdatei {
     final f = _datei(bibliothek);
     if (!await f.exists()) return null;
     final j = jsonDecode(await f.readAsString()) as Map;
-    return Verbindungsdatei(
+    final kennung = j['tokenkennung'] as String?;
+    final ablage = tokenablage;
+    // Liegt das Token in der Ablage und fehlt es dort (anderer Rechner,
+    // gelöschter Datenordner), bleibt es leer: Der Server antwortet dann
+    // mit 401, und die App fragt nach einer neuen Anmeldung – statt die
+    // Kopie für eine eigenständige Bibliothek zu halten.
+    final token = kennung == null
+        ? j['token'] as String? ?? ''
+        : await ablage?.lies(kennung) ?? '';
+    final v = Verbindungsdatei(
       server: Uri.parse(j['server'] as String),
       konto: j['konto'] as String,
       geraet: j['geraet'] as String,
-      token: j['token'] as String,
+      token: token,
       rechenhilfe: j['rechenhilfe'] == true,
       zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
       rasterspalten: (j['rasterspalten'] as num?)?.toInt(),
       sprache: j['sprache'] as String?,
+      tokenkennung: kennung,
     );
+    // Eine Datei von früher, mit dem Token darin: Es zieht in die Ablage.
+    if (kennung == null && ablage != null && token.isNotEmpty) {
+      return v.schreibe(bibliothek);
+    }
+    return v;
   }
 
-  Future<void> schreibe(Directory bibliothek) async {
+  /// Schreibt die Datei – das Token in die [tokenablage], wenn es eine
+  /// gibt und sie es nimmt. Gibt zurück, was jetzt gilt (mit der Kennung,
+  /// unter der das Token liegt).
+  Future<Verbindungsdatei> schreibe(Directory bibliothek) async {
     final f = _datei(bibliothek);
+    final ablage = tokenablage;
+    var kennung = tokenkennung;
+    if (ablage != null && token.isNotEmpty) {
+      // Eine neue Anmeldung ersetzt das alte Token unter derselben Kennung,
+      // statt es verwaist in der Ablage zu lassen.
+      kennung ??= await _kennungIn(f);
+      final neu = kennung ?? _neueKennung();
+      kennung = await ablage.schreibe(neu, token) ? neu : null;
+    }
     await f.parent.create(recursive: true);
     final teil = File('${f.path}.neu');
     await teil.create();
@@ -107,7 +160,11 @@ class Verbindungsdatei {
         'server': '$server',
         'konto': konto,
         'geraet': geraet,
-        'token': token,
+        // Leer, wenn es in der Ablage liegt: Eine ältere Fassung der App
+        // liest so ein leeres Token, bekommt 401 und fragt nach einer
+        // Anmeldung, statt am fehlenden Feld abzubrechen.
+        'token': kennung == null ? token : '',
+        'tokenkennung': ?kennung,
         if (rechenhilfe) 'rechenhilfe': true,
         if (zwischenspeicherMb != null)
           'zwischenspeicherMb': zwischenspeicherMb,
@@ -117,10 +174,47 @@ class Verbindungsdatei {
       flush: true,
     );
     await teil.rename(f.path);
+    return Verbindungsdatei(
+      server: server,
+      konto: konto,
+      geraet: geraet,
+      token: token,
+      rechenhilfe: rechenhilfe,
+      zwischenspeicherMb: zwischenspeicherMb,
+      rasterspalten: rasterspalten,
+      sprache: sprache,
+      tokenkennung: kennung,
+    );
+  }
+
+  static Future<String?> _kennungIn(File f) async {
+    try {
+      if (!await f.exists()) return null;
+      final k = (jsonDecode(await f.readAsString()) as Map)['tokenkennung'];
+      return k is String ? k : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String _neueKennung() {
+    final r = Random.secure();
+    return [
+      for (var i = 0; i < 16; i++)
+        r.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ].join();
   }
 
   static Future<void> loesche(Directory bibliothek) async {
     final f = _datei(bibliothek);
-    if (await f.exists()) await f.delete();
+    if (!await f.exists()) return;
+    try {
+      final kennung =
+          (jsonDecode(await f.readAsString()) as Map)['tokenkennung'];
+      if (kennung is String) await tokenablage?.loesche(kennung);
+    } catch (_) {
+      // Eine kaputte Datei geht trotzdem weg.
+    }
+    await f.delete();
   }
 }

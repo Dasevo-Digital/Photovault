@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:gelaende/texte.dart' show GelaendeTexte;
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -16,6 +17,7 @@ import 'screens/bibliothek_belegt_screen.dart';
 import 'screens/bibliothek_unerreichbar_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/initialisierungsfehler_screen.dart';
+import 'services/tokenablage.dart';
 import 'services/bilddekodierung.dart';
 import 'services/beenden_waechter.dart';
 import 'services/native_image_converter.dart' show AppBildwerkzeuge;
@@ -64,6 +66,14 @@ Future<void> main() async {
   // Was in einer verbundenen Bibliothek noch nicht geht, meldet sich als
   // Hinweis statt als Fehler (siehe serversperre.dart).
   richteServersperreEin();
+  // Das Server-Token im Datenordner der App und nicht neben der Bibliothek
+  // (siehe services/tokenablage.dart) – bevor die erste Verbindung gelesen
+  // wird.
+  // Geht das nicht (Datenordner nicht bestimmbar), bleibt es in der Datei –
+  // den Fehler meldet der Start der Bibliothek gleich selbst.
+  try {
+    Verbindungsdatei.tokenablage = await AppTokenablage.imDatenordner();
+  } catch (_) {}
   runApp(const PhotoVaultApp());
 }
 
