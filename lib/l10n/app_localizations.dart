@@ -14520,6 +14520,150 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'ab {wert}'**
   String werkzAutoVorschlaegeAb(String wert);
+
+  /// No description provided for @serverEigenesKonto.
+  ///
+  /// In de, this message translates to:
+  /// **'Mein Konto …'**
+  String get serverEigenesKonto;
+
+  /// No description provided for @serverEigenesKontoTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Mein Konto auf dem Server'**
+  String get serverEigenesKontoTitel;
+
+  /// No description provided for @serverGeraeteTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Geräte'**
+  String get serverGeraeteTitel;
+
+  /// No description provided for @serverDiesesGeraet.
+  ///
+  /// In de, this message translates to:
+  /// **'dieser Rechner'**
+  String get serverDiesesGeraet;
+
+  /// No description provided for @serverGeraetZuletzt.
+  ///
+  /// In de, this message translates to:
+  /// **'zuletzt {zeit}'**
+  String serverGeraetZuletzt(String zeit);
+
+  /// No description provided for @serverGeraetAbmelden.
+  ///
+  /// In de, this message translates to:
+  /// **'Abmelden'**
+  String get serverGeraetAbmelden;
+
+  /// No description provided for @serverGeraetAbmeldenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ abmelden? Das Gerät muss sich danach neu anmelden.'**
+  String serverGeraetAbmeldenFrage(String name);
+
+  /// No description provided for @serverPasswortAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Passwort ändern'**
+  String get serverPasswortAendern;
+
+  /// No description provided for @serverPasswortAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bisheriges Passwort'**
+  String get serverPasswortAlt;
+
+  /// No description provided for @serverPasswortNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neues Passwort'**
+  String get serverPasswortNeu;
+
+  /// No description provided for @serverTotpCode.
+  ///
+  /// In de, this message translates to:
+  /// **'Code aus der Authenticator-App'**
+  String get serverTotpCode;
+
+  /// No description provided for @serverAndereAbmelden.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle anderen Geräte abmelden'**
+  String get serverAndereAbmelden;
+
+  /// No description provided for @serverPasswortGeaendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Passwort ist geändert.'**
+  String get serverPasswortGeaendert;
+
+  /// No description provided for @serverAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Ändern'**
+  String get serverAendern;
+
+  /// No description provided for @serverOidcTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Anmeldung über den Anbieter'**
+  String get serverOidcTitel;
+
+  /// No description provided for @serverOidcVerknuepft.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpft mit {anbieter}'**
+  String serverOidcVerknuepft(String anbieter);
+
+  /// No description provided for @serverOidcNicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.'**
+  String get serverOidcNicht;
+
+  /// No description provided for @serverOidcVerknuepfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpfen …'**
+  String get serverOidcVerknuepfen;
+
+  /// No description provided for @serverOidcLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Browser beim Anbieter anmelden – Photo Vault wartet …'**
+  String get serverOidcLaeuft;
+
+  /// No description provided for @serverOidcFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.'**
+  String get serverOidcFertig;
+
+  /// No description provided for @serverOidcAbgelehnt.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – im Browser abgebrochen oder abgelehnt.'**
+  String get serverOidcAbgelehnt;
+
+  /// No description provided for @serverOidcZeitUm.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – aus dem Browser kam keine Antwort.'**
+  String get serverOidcZeitUm;
+
+  /// No description provided for @serverOidcVergeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.'**
+  String get serverOidcVergeben;
+
+  /// No description provided for @serverOidcSeite.
+  ///
+  /// In de, this message translates to:
+  /// **'Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren.'**
+  String get serverOidcSeite;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

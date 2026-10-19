@@ -6066,5 +6066,32 @@
         "type": "String"
       }
     }
-  }
+  },
+  "serverEigenesKonto": "Mein Konto …",
+  "serverEigenesKontoTitel": "Mein Konto auf dem Server",
+  "serverGeraeteTitel": "Geräte",
+  "serverDiesesGeraet": "dieser Rechner",
+  "serverGeraetZuletzt": "zuletzt {zeit}",
+  "@serverGeraetZuletzt": {"placeholders": {"zeit": {"type": "String"}}},
+  "serverGeraetAbmelden": "Abmelden",
+  "serverGeraetAbmeldenFrage": "„{name}“ abmelden? Das Gerät muss sich danach neu anmelden.",
+  "@serverGeraetAbmeldenFrage": {"placeholders": {"name": {"type": "String"}}},
+  "serverPasswortAendern": "Passwort ändern",
+  "serverPasswortAlt": "Bisheriges Passwort",
+  "serverPasswortNeu": "Neues Passwort",
+  "serverTotpCode": "Code aus der Authenticator-App",
+  "serverAndereAbmelden": "Alle anderen Geräte abmelden",
+  "serverPasswortGeaendert": "Das Passwort ist geändert.",
+  "serverAendern": "Ändern",
+  "serverOidcTitel": "Anmeldung über den Anbieter",
+  "serverOidcVerknuepft": "Verknüpft mit {anbieter}",
+  "@serverOidcVerknuepft": {"placeholders": {"anbieter": {"type": "String"}}},
+  "serverOidcNicht": "Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.",
+  "serverOidcVerknuepfen": "Verknüpfen …",
+  "serverOidcLaeuft": "Im Browser beim Anbieter anmelden – Photo Vault wartet …",
+  "serverOidcFertig": "Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.",
+  "serverOidcAbgelehnt": "Nicht verknüpft – im Browser abgebrochen oder abgelehnt.",
+  "serverOidcZeitUm": "Nicht verknüpft – aus dem Browser kam keine Antwort.",
+  "serverOidcVergeben": "Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.",
+  "serverOidcSeite": "Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren."
 }

@@ -9440,4 +9440,89 @@ class AppTexteEn extends AppTexte {
   String werkzAutoVorschlaegeAb(String wert) {
     return 'from $wert';
   }
+
+  @override
+  String get serverEigenesKonto => 'My account …';
+
+  @override
+  String get serverEigenesKontoTitel => 'My account on the server';
+
+  @override
+  String get serverGeraeteTitel => 'Devices';
+
+  @override
+  String get serverDiesesGeraet => 'this computer';
+
+  @override
+  String serverGeraetZuletzt(String zeit) {
+    return 'last seen $zeit';
+  }
+
+  @override
+  String get serverGeraetAbmelden => 'Sign out';
+
+  @override
+  String serverGeraetAbmeldenFrage(String name) {
+    return 'Sign out “$name”? The device will have to sign in again.';
+  }
+
+  @override
+  String get serverPasswortAendern => 'Change password';
+
+  @override
+  String get serverPasswortAlt => 'Current password';
+
+  @override
+  String get serverPasswortNeu => 'New password';
+
+  @override
+  String get serverTotpCode => 'Code from the authenticator app';
+
+  @override
+  String get serverAndereAbmelden => 'Sign out all other devices';
+
+  @override
+  String get serverPasswortGeaendert => 'The password has been changed.';
+
+  @override
+  String get serverAendern => 'Change';
+
+  @override
+  String get serverOidcTitel => 'Sign-in through the provider';
+
+  @override
+  String serverOidcVerknuepft(String anbieter) {
+    return 'Linked with $anbieter';
+  }
+
+  @override
+  String get serverOidcNicht =>
+      'Not linked – signing in then works with the password only.';
+
+  @override
+  String get serverOidcVerknuepfen => 'Link …';
+
+  @override
+  String get serverOidcLaeuft =>
+      'Sign in with the provider in the browser – Photo Vault is waiting …';
+
+  @override
+  String get serverOidcFertig =>
+      'Linked. From now on you can also sign in through the provider.';
+
+  @override
+  String get serverOidcAbgelehnt =>
+      'Not linked – cancelled or declined in the browser.';
+
+  @override
+  String get serverOidcZeitUm =>
+      'Not linked – no answer came back from the browser.';
+
+  @override
+  String get serverOidcVergeben =>
+      'This provider account already belongs to another account.';
+
+  @override
+  String get serverOidcSeite =>
+      'Done – you can close this window and return to Photo Vault.';
 }

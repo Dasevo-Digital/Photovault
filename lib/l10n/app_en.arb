@@ -4712,5 +4712,29 @@
         "type": "String"
       }
     }
-  }
+  },
+  "serverEigenesKonto": "My account …",
+  "serverEigenesKontoTitel": "My account on the server",
+  "serverGeraeteTitel": "Devices",
+  "serverDiesesGeraet": "this computer",
+  "serverGeraetZuletzt": "last seen {zeit}",
+  "serverGeraetAbmelden": "Sign out",
+  "serverGeraetAbmeldenFrage": "Sign out “{name}”? The device will have to sign in again.",
+  "serverPasswortAendern": "Change password",
+  "serverPasswortAlt": "Current password",
+  "serverPasswortNeu": "New password",
+  "serverTotpCode": "Code from the authenticator app",
+  "serverAndereAbmelden": "Sign out all other devices",
+  "serverPasswortGeaendert": "The password has been changed.",
+  "serverAendern": "Change",
+  "serverOidcTitel": "Sign-in through the provider",
+  "serverOidcVerknuepft": "Linked with {anbieter}",
+  "serverOidcNicht": "Not linked – signing in then works with the password only.",
+  "serverOidcVerknuepfen": "Link …",
+  "serverOidcLaeuft": "Sign in with the provider in the browser – Photo Vault is waiting …",
+  "serverOidcFertig": "Linked. From now on you can also sign in through the provider.",
+  "serverOidcAbgelehnt": "Not linked – cancelled or declined in the browser.",
+  "serverOidcZeitUm": "Not linked – no answer came back from the browser.",
+  "serverOidcVergeben": "This provider account already belongs to another account.",
+  "serverOidcSeite": "Done – you can close this window and return to Photo Vault."
 }

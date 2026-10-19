@@ -9493,4 +9493,89 @@ class AppTexteDe extends AppTexte {
   String werkzAutoVorschlaegeAb(String wert) {
     return 'ab $wert';
   }
+
+  @override
+  String get serverEigenesKonto => 'Mein Konto …';
+
+  @override
+  String get serverEigenesKontoTitel => 'Mein Konto auf dem Server';
+
+  @override
+  String get serverGeraeteTitel => 'Geräte';
+
+  @override
+  String get serverDiesesGeraet => 'dieser Rechner';
+
+  @override
+  String serverGeraetZuletzt(String zeit) {
+    return 'zuletzt $zeit';
+  }
+
+  @override
+  String get serverGeraetAbmelden => 'Abmelden';
+
+  @override
+  String serverGeraetAbmeldenFrage(String name) {
+    return '„$name“ abmelden? Das Gerät muss sich danach neu anmelden.';
+  }
+
+  @override
+  String get serverPasswortAendern => 'Passwort ändern';
+
+  @override
+  String get serverPasswortAlt => 'Bisheriges Passwort';
+
+  @override
+  String get serverPasswortNeu => 'Neues Passwort';
+
+  @override
+  String get serverTotpCode => 'Code aus der Authenticator-App';
+
+  @override
+  String get serverAndereAbmelden => 'Alle anderen Geräte abmelden';
+
+  @override
+  String get serverPasswortGeaendert => 'Das Passwort ist geändert.';
+
+  @override
+  String get serverAendern => 'Ändern';
+
+  @override
+  String get serverOidcTitel => 'Anmeldung über den Anbieter';
+
+  @override
+  String serverOidcVerknuepft(String anbieter) {
+    return 'Verknüpft mit $anbieter';
+  }
+
+  @override
+  String get serverOidcNicht =>
+      'Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.';
+
+  @override
+  String get serverOidcVerknuepfen => 'Verknüpfen …';
+
+  @override
+  String get serverOidcLaeuft =>
+      'Im Browser beim Anbieter anmelden – Photo Vault wartet …';
+
+  @override
+  String get serverOidcFertig =>
+      'Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.';
+
+  @override
+  String get serverOidcAbgelehnt =>
+      'Nicht verknüpft – im Browser abgebrochen oder abgelehnt.';
+
+  @override
+  String get serverOidcZeitUm =>
+      'Nicht verknüpft – aus dem Browser kam keine Antwort.';
+
+  @override
+  String get serverOidcVergeben =>
+      'Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.';
+
+  @override
+  String get serverOidcSeite =>
+      'Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren.';
 }

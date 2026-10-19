@@ -11,6 +11,7 @@ import '../../services/groessentext.dart';
 import '../../services/library_location.dart';
 import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
+import '../server_eigenes_konto_screen.dart';
 import '../server_konten_screen.dart';
 import '../server_verbinden_screen.dart';
 import 'einstellungsstand.dart';
@@ -98,7 +99,22 @@ class ServerGruppe extends StatelessWidget {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
-        if (library.abgleich case final a?) _KontenZugang(a.verbindung),
+        if (library.abgleich case final a?) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.account_circle_outlined),
+              label: Text(t.serverEigenesKonto),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      ServerEigenesKontoScreen(verbindung: a.verbindung),
+                ),
+              ),
+            ),
+          ),
+          _KontenZugang(a.verbindung),
+        ],
         if (library.serversicherung != null) ...[
           const Divider(height: AppSpacing.xl),
           ServerSicherungAbschnitt(library),

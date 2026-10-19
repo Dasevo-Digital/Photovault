@@ -10,6 +10,11 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Für die Verknüpfung mit der Anmeldung beim Anbieter (OIDC): Der
+	     Browser kehrt über einen Port nur auf diesem Rechner (127.0.0.1)
+	     zur App zurück, siehe kern/abgleich/oidc_verknuepfung.dart. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
 	<!-- Nur für den Umzug von der früheren Kennung (bis 3.19): Der
 	     erste Start unter der neuen Kennung holt die Daten aus dem alten
 	     Container. Vor einer Store-Fassung entfernen; siehe

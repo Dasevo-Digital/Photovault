@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:kern/abgleich/oidc_verknuepfung.dart';
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
@@ -213,6 +215,44 @@ void main() {
     );
     expect(await jsonAus(r), {'verknuepft': true});
   }
+
+  test(
+    'die App verknüpft über einen Rückweg auf diesem Rechner (#110)',
+    () async {
+      final http = await shelf_io.serve(api, '127.0.0.1', 0);
+      addTearDown(() => http.close(force: true));
+      final v = Serververbindung(
+        Uri.parse('http://127.0.0.1:${http.port}/'),
+        tokenErika,
+      );
+      addTearDown(v.schliesse);
+      Future<String>? browser;
+      final ausgang = await OidcVerknuepfung(v).verknuepfe(
+        antwort: 'Verknüpft – zurück zur App.',
+        oeffne: (adresse) async {
+          // Der Browser: beim Anbieter angemeldet, zurück zum Server und von
+          // dort weiter zur App – ohne darauf zu warten, wie ein Browser.
+          browser = () async {
+            final zurApp = await zurueck(adresse, 'nutzer-42');
+            expect(zurApp.host, '127.0.0.1');
+            final c = HttpClient();
+            try {
+              final r = await (await c.getUrl(zurApp)).close();
+              return await r.transform(utf8.decoder).join();
+            } finally {
+              c.close();
+            }
+          }();
+        },
+      );
+      expect(ausgang, Oidcausgang.verknuepft);
+      expect(await browser, contains('Verknüpft – zurück zur App.'));
+      final konto = await jsonAus(
+        await frag('GET', '/api/v1/konto', token: tokenErika),
+      );
+      expect(konto['oidc'], [anbieter.aussteller]);
+    },
+  );
 
   test('verknüpfen, dann über den Anbieter anmelden', () async {
     await verknuepfe('nutzer-17');
