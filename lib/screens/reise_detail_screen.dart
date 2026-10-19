@@ -514,31 +514,23 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
     final zahlen = spurkennzahlen(punkte);
     final id = const Uuid().v4();
     final name = pfad.split(Platform.pathSeparator).last;
-    await widget.library.db.spurAnlegen(
-      SpurenCompanion.insert(
+    // Als Befehl: Im verbundenen Betrieb geht die Spur so zum Server –
+    // und mit ihm zu Browser und Handy (siehe SpurAnlegen).
+    await widget.library.db.fuehreAus(
+      SpurAnlegen(
         id: id,
         name: name,
-        quelle: pfad,
-        reiseId: Value(_reise.id),
-        von: Value(zahlen.von),
-        bis: Value(zahlen.bis),
-        punktzahl: zahlen.punktzahl,
+        quelle: name,
+        reiseId: _reise.id,
         laengeKm: zahlen.laengeKm,
-        aufstieg: Value(zahlen.aufstieg),
-        abstieg: Value(zahlen.abstieg),
+        aufstieg: zahlen.aufstieg,
+        abstieg: zahlen.abstieg,
         angelegtAm: DateTime.now(),
+        punkte: [
+          for (final p in punkte)
+            (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe, zeit: p.zeit),
+        ],
       ),
-      [
-        for (final (i, p) in punkte.indexed)
-          SpurpunkteCompanion.insert(
-            spurId: id,
-            nummer: i,
-            breite: p.breite,
-            laenge: p.laenge,
-            hoehe: Value(p.hoehe),
-            zeit: Value(p.zeit),
-          ),
-      ],
     );
     if (!mounted) return;
     melde.erfolg(

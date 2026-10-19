@@ -701,6 +701,7 @@ void main() {
       expect(k['streckeKm'] as double, closeTo(11.1, 0.2));
       expect((d['route']! as List).cast<Map>().map((x) => x['id']), [a, b]);
       expect((d['aufnahmen']! as List).cast<Map>().map((x) => x['id']), [a, b]);
+      expect(d['spuren'], isEmpty);
       expect(
         (await frag(
           'GET',
@@ -708,6 +709,77 @@ void main() {
           token: maxToken,
         )).statusCode,
         404,
+      );
+
+      // Eine Spur kommt als Befehl – wie vom Rechner – und ersetzt die
+      // Strecke zwischen den Fotos.
+      final spur = SpurAnlegen(
+        id: 'gpx1',
+        name: 'Ilsetal.gpx',
+        quelle: '/srv/ablage/wandern/Ilsetal.gpx',
+        aktivitaetId: 'tour',
+        laengeKm: 3.1,
+        aufstieg: 240,
+        abstieg: 238,
+        angelegtAm: DateTime.utc(2026, 8, 30, 14),
+        punkte: [
+          (
+            breite: 51.83,
+            laenge: 10.68,
+            hoehe: 250.0,
+            zeit: DateTime.utc(2026, 8, 30, 8),
+          ),
+          (
+            breite: 51.82,
+            laenge: 10.66,
+            hoehe: 410.0,
+            zeit: DateTime.utc(2026, 8, 30, 9),
+          ),
+          (breite: 51.81, laenge: 10.65, hoehe: null, zeit: null),
+        ],
+      );
+      for (var i = 0; i < 2; i++) {
+        // Zweimal: Nachgereicht wird auch, was schon da ist.
+        expect(
+          (await befehl(erikaToken, spur.art, spur.werte)).statusCode,
+          200,
+        );
+      }
+      final mit = await jsonAus(
+        await frag('GET', '/api/v1/aktivitaeten/tour', token: erikaToken),
+      );
+      expect((mit['aktivitaet']! as Map)['streckeKm'], 3.1);
+      final spuren = (mit['spuren']! as List).cast<Map>();
+      expect(spuren, hasLength(1));
+      expect(spuren.single['name'], 'Ilsetal.gpx');
+      expect(spuren.single['punkte'], [
+        [
+          51.83,
+          10.68,
+          250.0,
+          DateTime.utc(2026, 8, 30, 8).millisecondsSinceEpoch,
+        ],
+        [
+          51.82,
+          10.66,
+          410.0,
+          DateTime.utc(2026, 8, 30, 9).millisecondsSinceEpoch,
+        ],
+        [51.81, 10.65, null, null],
+      ]);
+      final gespeichert = (await db.alleSpuren()).single;
+      // Nur der Dateiname, nicht der Pfad des Rechners.
+      expect(gespeichert.quelle, 'Ilsetal.gpx');
+      expect(gespeichert.punktzahl, 3);
+      expect(
+        await jsonAus(await frag('GET', '/api/v1/spuren', token: erikaToken)),
+        {
+          'kennungen': ['gpx1'],
+        },
+      );
+      expect(
+        await jsonAus(await frag('GET', '/api/v1/spuren', token: maxToken)),
+        {'kennungen': <String>[]},
       );
     },
   );

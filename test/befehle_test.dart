@@ -155,6 +155,24 @@ void main() {
       const AktivitaetLoeschen('ak1'),
       const AufnahmenDerAktivitaetSetzen('ak1', {'a2'}),
       const AktivitaetsvorschlagVerwerfen('ak|2025-07-05'),
+      SpurAnlegen(
+        id: 's2',
+        name: 'Runde',
+        quelle: 'runde.gpx',
+        aktivitaetId: 'k1',
+        laengeKm: 3.1,
+        aufstieg: 120,
+        angelegtAm: DateTime.utc(2026, 8, 2),
+        punkte: [
+          (
+            breite: 51.8,
+            laenge: 10.6,
+            hoehe: 300,
+            zeit: DateTime.utc(2026, 8, 1),
+          ),
+          (breite: 51.9, laenge: 10.7, hoehe: null, zeit: null),
+        ],
+      ),
       const SpurLoeschen('s1'),
       ExportvorgabeSpeichern(
         ExportPresetsCompanion.insert(
@@ -313,6 +331,7 @@ void main() {
       AktivitaetLoeschen() => 'aktivitaetLoeschen',
       AufnahmenDerAktivitaetSetzen() => 'aufnahmenDerAktivitaetSetzen',
       AktivitaetsvorschlagVerwerfen() => 'aktivitaetsvorschlagVerwerfen',
+      SpurAnlegen() => 'spurAnlegen',
       SpurLoeschen() => 'spurLoeschen',
       ExportvorgabeSpeichern() => 'exportvorgabeSpeichern',
       ExportvorgabeLoeschen() => 'exportvorgabeLoeschen',
@@ -926,7 +945,8 @@ const _einordnung = <String, _Art>{
   'verwirfAktivitaetsvorschlag': _Art.befehl,
   // Bringt die Punkte einer GPX-Datei mit – zehntausend Zeilen sind
   // kein Befehl, sondern eine Datei.
-  'spurAnlegen': _Art.datei,
+  'spurAnlegen': _Art.nutzer,
+  'spurUebernehmen': _Art.befehl,
   'spurAendern': _Art.nutzer,
   'spurLoeschen': _Art.befehl,
   // Bearbeiten: Einstellungen sind Befehle, das gerechnete Bild eine Datei

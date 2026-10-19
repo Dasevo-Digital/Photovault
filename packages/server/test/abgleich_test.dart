@@ -11,6 +11,7 @@ import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
+import 'package:kern/abgleich/spuren_nachreichen.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -241,6 +242,60 @@ void main() {
       expect(await ausstehend(db), 0);
     },
   );
+
+  test('Spuren, die nur in der Kopie liegen, reicht der Rechner nach – '
+      'einmal', () async {
+    final s = await serverDb();
+    final p = [
+      (
+        breite: 51.80,
+        laenge: 10.60,
+        hoehe: 300.0,
+        zeit: DateTime.utc(2026, 8, 1, 9),
+      ),
+      (
+        breite: 51.81,
+        laenge: 10.62,
+        hoehe: 410.0,
+        zeit: DateTime.utc(2026, 8, 1, 10),
+      ),
+    ];
+    SpurAnlegen spur(String id) => SpurAnlegen(
+      id: id,
+      name: '$id.gpx',
+      quelle: '$id.gpx',
+      laengeKm: 2.4,
+      aufstieg: 110,
+      abstieg: 0,
+      angelegtAm: DateTime.utc(2026, 8, 2),
+      punkte: p,
+    );
+    await s.fuehreAus(spur('dort'));
+
+    // Ein Rechner, der die Spur angelegt hat, während sein Abgleich nicht
+    // lief: Sie liegt nur bei ihm.
+    final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+    final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+    final datei = File('${ordner.path}/Rechner/library.sqlite');
+    await Abgleich.holeAbzug(v, datei);
+    final db = AppDatabase(NativeDatabase(datei));
+    await db.fuehreAus(spur('hier'));
+    final a = Abgleich(db, v);
+    await a.richteEin();
+    geraete.add((db, a));
+
+    expect(await spurenNachreichen(db, v), 1, reason: '„dort“ kennt er');
+    await a.sende();
+    final aufDemServer = {for (final x in await s.alleSpuren()) x.id: x};
+    expect(aufDemServer.keys, unorderedEquals(['dort', 'hier']));
+    expect(aufDemServer['hier']!.punktzahl, 2);
+    expect((await s.punkteDerSpur('hier')).map((x) => x.hoehe), [300, 410]);
+
+    await a.empfange();
+    expect(await spurenNachreichen(db, v), 0);
+    expect(await ausstehend(db), 0);
+    expect((await db.punkteDerSpur('hier')).length, 2, reason: 'unverändert');
+  });
 
   test('an der Kopie vorbei lässt sich nichts schreiben', () async {
     await aufnahme(await serverDb(), 'a1');

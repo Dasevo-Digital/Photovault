@@ -41,6 +41,19 @@ extension SpurenAbfragen on AppDatabase {
     await batch((b) => b.insertAll(spurpunkte, punkte));
   });
 
+  /// Legt eine Spur an oder ersetzt sie samt Punkten, wenn es sie unter
+  /// dieser Kennung schon gibt (siehe `SpurAnlegen`).
+  Future<void> spurUebernehmen(
+    SpurenCompanion spur,
+    List<SpurpunkteCompanion> punkte,
+  ) => transaction(() async {
+    final id = spur.id.value;
+    await (delete(spurpunkte)..where((t) => t.spurId.equals(id))).go();
+    await (delete(spuren)..where((t) => t.id.equals(id))).go();
+    await into(spuren).insert(spur);
+    await batch((b) => b.insertAll(spurpunkte, punkte));
+  });
+
   Future<void> spurLoeschen(String id) => transaction(() async {
     await (delete(spurpunkte)..where((t) => t.spurId.equals(id))).go();
     await (delete(spuren)..where((t) => t.id.equals(id))).go();

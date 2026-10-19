@@ -303,6 +303,161 @@ final class AktivitaetsvorschlagVerwerfen extends Befehl<void> {
       db.verwirfAktivitaetsvorschlag(schluessel);
 }
 
+/// Ein Punkt einer Spur, wie [SpurAnlegen] ihn trägt.
+typedef SpurpunktWerte = ({
+  double breite,
+  double laenge,
+  double? hoehe,
+  DateTime? zeit,
+});
+
+/// Eine GPX-Spur samt Punkten anlegen.
+///
+/// **Als Befehl, damit sie beim Server ankommt.** Bis 3.37 schrieb der
+/// Rechner die Spur direkt in seine Datenbank. Im verbundenen Betrieb
+/// blieb sie damit bei ihm: Der Server – und mit ihm Browser und Handy –
+/// kannte nur die Fotos der Wanderung, keine Spur und keinen 3D-Flug.
+///
+/// **Wiederholbar.** Steht die Spur schon da (vorweggenommen, oder
+/// nachgereicht von einem Rechner, der sie längst hat), wird sie ersetzt
+/// statt doppelt angelegt.
+///
+/// Die Punkte gehen kompakt als `[breite, länge, höhe, zeit]` hinüber –
+/// eine Aufzeichnung hat schnell zehntausend davon. [quelle] ist nur der
+/// Dateiname: Wo die Datei auf dem Rechner lag, geht den Server nichts an.
+final class SpurAnlegen extends Befehl<void> {
+  const SpurAnlegen({
+    required this.id,
+    required this.name,
+    required this.quelle,
+    this.aktivitaetId,
+    this.reiseId,
+    required this.laengeKm,
+    this.aufstieg,
+    this.abstieg,
+    required this.angelegtAm,
+    required this.punkte,
+  });
+
+  /// Aus einer vorhandenen Spur – zum Nachreichen.
+  factory SpurAnlegen.ausSpur(SpurenData s, List<SpurpunkteData> punkte) =>
+      SpurAnlegen(
+        id: s.id,
+        name: s.name,
+        quelle: _dateiname(s.quelle),
+        aktivitaetId: s.aktivitaetId,
+        reiseId: s.reiseId,
+        laengeKm: s.laengeKm,
+        aufstieg: s.aufstieg,
+        abstieg: s.abstieg,
+        angelegtAm: s.angelegtAm,
+        punkte: [
+          for (final p in punkte)
+            (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe, zeit: p.zeit),
+        ],
+      );
+
+  static SpurAnlegen aus(Map<String, Object?> w) {
+    double? zahl(Object? x) => x == null ? null : (x as num).toDouble();
+    return SpurAnlegen(
+      id: w['id']! as String,
+      name: w['name']! as String,
+      quelle: _dateiname(w['quelle']! as String),
+      aktivitaetId: w['aktivitaetId'] as String?,
+      reiseId: w['reiseId'] as String?,
+      laengeKm: zahl(w['laengeKm'])!,
+      aufstieg: zahl(w['aufstieg']),
+      abstieg: zahl(w['abstieg']),
+      angelegtAm: DateTime.parse(w['angelegtAm']! as String),
+      punkte: [
+        for (final p in (w['punkte']! as List).cast<List>())
+          (
+            breite: (p[0] as num).toDouble(),
+            laenge: (p[1] as num).toDouble(),
+            hoehe: zahl(p[2]),
+            zeit: p.length > 3 && p[3] != null
+                ? DateTime.fromMillisecondsSinceEpoch(
+                    (p[3] as num).toInt(),
+                    isUtc: true,
+                  )
+                : null,
+          ),
+      ],
+    );
+  }
+
+  static String _dateiname(String pfad) => pfad.split(RegExp(r'[\\/]')).last;
+
+  final String id;
+  final String name;
+  final String quelle;
+  final String? aktivitaetId;
+  final String? reiseId;
+  final double laengeKm;
+  final double? aufstieg;
+  final double? abstieg;
+  final DateTime angelegtAm;
+  final List<SpurpunktWerte> punkte;
+
+  @override
+  String get art => 'spurAnlegen';
+
+  @override
+  Map<String, Object?> get werte => {
+    'id': id,
+    'name': name,
+    'quelle': quelle,
+    'aktivitaetId': ?aktivitaetId,
+    'reiseId': ?reiseId,
+    'laengeKm': laengeKm,
+    'aufstieg': ?aufstieg,
+    'abstieg': ?abstieg,
+    'angelegtAm': angelegtAm.toUtc().toIso8601String(),
+    'punkte': [
+      for (final p in punkte)
+        [p.breite, p.laenge, p.hoehe, p.zeit?.millisecondsSinceEpoch],
+    ],
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) {
+    DateTime? erste, letzte;
+    for (final p in punkte) {
+      final z = p.zeit;
+      if (z == null) continue;
+      if (erste == null || z.isBefore(erste)) erste = z;
+      if (letzte == null || z.isAfter(letzte)) letzte = z;
+    }
+    return db.spurUebernehmen(
+      SpurenCompanion.insert(
+        id: id,
+        name: name,
+        quelle: quelle,
+        aktivitaetId: Value(aktivitaetId),
+        reiseId: Value(reiseId),
+        von: Value(erste),
+        bis: Value(letzte),
+        punktzahl: punkte.length,
+        laengeKm: laengeKm,
+        aufstieg: Value(aufstieg),
+        abstieg: Value(abstieg),
+        angelegtAm: angelegtAm,
+      ),
+      [
+        for (final (i, p) in punkte.indexed)
+          SpurpunkteCompanion.insert(
+            spurId: id,
+            nummer: i,
+            breite: p.breite,
+            laenge: p.laenge,
+            hoehe: Value(p.hoehe),
+            zeit: Value(p.zeit),
+          ),
+      ],
+    );
+  }
+}
+
 /// Eine GPX-Spur samt Punkten löschen.
 final class SpurLoeschen extends Befehl<void> {
   const SpurLoeschen(this.spurId);

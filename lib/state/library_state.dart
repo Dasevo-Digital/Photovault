@@ -53,6 +53,7 @@ import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
+import 'package:kern/abgleich/spuren_nachreichen.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
@@ -999,6 +1000,8 @@ class LibraryState extends ChangeNotifier {
   /// Richtet den Abgleich ein: Befehle laufen ab jetzt über die
   /// Warteschlange zum Server, fehlende Dateien kommen bei Bedarf, und im
   /// Hintergrund füllt sich der Vorrat an Miniaturen.
+  var _spurenGeprueft = false;
+
   Future<void> _verbinde() async {
     final v = verbindung!;
     final s = Serververbindung(v.server, v.token);
@@ -1011,6 +1014,18 @@ class LibraryState extends ChangeNotifier {
       _abgleichszustand = z;
       if (z.erreichbar && !z.schemaAnders) {
         unawaited(_vorrat?.fuelle().catchError((_) => 0));
+        // Einmal je Start: Spuren, die bis 3.37 nur hier angelegt wurden,
+        // dem Server nachreichen (siehe spurenNachreichen).
+        if (!_spurenGeprueft) {
+          _spurenGeprueft = true;
+          unawaited(
+            spurenNachreichen(db, s).catchError((Object e) {
+              _spurenGeprueft = false;
+              debugPrint('Spuren nachreichen: $e');
+              return 0;
+            }),
+          );
+        }
       }
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||

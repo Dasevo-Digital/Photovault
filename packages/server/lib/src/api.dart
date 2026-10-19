@@ -227,6 +227,7 @@ Handler baueApi({
     ..get('/api/v1/reisen', api.reisen)
     ..get('/api/v1/reisen/<id>', api.reiseAufnahmen)
     ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)
+    ..get('/api/v1/spuren', api.spurkennungen)
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/laender', api.laender)
     ..get('/api/v1/laender/aufnahmen', api.amOrt)
@@ -640,9 +641,33 @@ class _Api {
             'zeit': p.zeit.toIso8601String(),
           },
       ],
+      // Kompakt wie im Befehl: [breite, länge, höhe, zeit in ms].
+      'spuren': [
+        for (final x in a.spuren)
+          {
+            'id': x.spur.id,
+            'name': x.spur.name,
+            'laengeKm': x.spur.laengeKm,
+            'aufstieg': ?x.spur.aufstieg,
+            'abstieg': ?x.spur.abstieg,
+            'punkte': [
+              for (final p in x.punkte)
+                [p.breite, p.laenge, p.hoehe, p.zeit?.millisecondsSinceEpoch],
+            ],
+          },
+      ],
       'aufnahmen': [
         for (final x in a.aufnahmen) zeileAlsJson(Rasterzeile.aus(x)),
       ],
+    });
+  }
+
+  /// Welche Spuren der Server kennt – ein verbundener Rechner reicht nach,
+  /// was hier fehlt (spuren_nachreichen.dart).
+  Future<Response> spurkennungen(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    return _json({
+      'kennungen': [for (final s in await db.alleSpuren()) s.id],
     });
   }
 

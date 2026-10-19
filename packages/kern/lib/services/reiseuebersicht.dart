@@ -43,6 +43,13 @@ typedef Aktivitaetsansicht = ({
   ReisenData? reise,
   List<AssetData> aufnahmen,
   List<Routenpunkt> route,
+
+  /// Die aufgezeichneten Spuren (GPX) – mit ihnen zeichnen Browser und
+  /// Handy die Strecke und fliegen sie in 3D ab wie der Rechner.
+  List<({SpurenData spur, List<SpurpunkteData> punkte})> spuren,
+
+  /// Die Länge der Spuren, wenn es welche gibt – sonst die Strecke
+  /// zwischen den Fotos.
   double streckeKm,
   Ortsbezug? ort,
 });
@@ -113,14 +120,22 @@ Future<Aktivitaetsansicht?> aktivitaetsansicht(
           (id: a.id, breite: breite, laenge: laenge, zeit: a.fileCreatedAt),
   ];
   final reiseId = k.reiseId;
+  final spuren = [
+    for (final s in await db.spurenDerAktivitaet(id))
+      (spur: s, punkte: await db.punkteDerSpur(s.id)),
+  ];
   return (
     aktivitaet: k,
     reise: reiseId == null ? null : await db.reise(reiseId),
     aufnahmen: aufnahmen,
     route: route,
-    streckeKm: strecke([
-      for (final p in route) (breite: p.breite, laenge: p.laenge, zeit: p.zeit),
-    ]),
+    spuren: spuren,
+    streckeKm: spuren.isNotEmpty
+        ? spuren.fold(0.0, (n, s) => n + s.spur.laengeKm)
+        : strecke([
+            for (final p in route)
+              (breite: p.breite, laenge: p.laenge, zeit: p.zeit),
+          ]),
     ort: (await db.ortsbezugJeAktivitaet())[id],
   );
 }

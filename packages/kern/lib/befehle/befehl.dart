@@ -137,6 +137,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'aktivitaetLoeschen': AktivitaetLoeschen.aus,
   'aufnahmenDerAktivitaetSetzen': AufnahmenDerAktivitaetSetzen.aus,
   'aktivitaetsvorschlagVerwerfen': AktivitaetsvorschlagVerwerfen.aus,
+  'spurAnlegen': SpurAnlegen.aus,
   'spurLoeschen': SpurLoeschen.aus,
   'exportvorgabeSpeichern': ExportvorgabeSpeichern.aus,
   'exportvorgabeLoeschen': ExportvorgabeLoeschen.aus,
