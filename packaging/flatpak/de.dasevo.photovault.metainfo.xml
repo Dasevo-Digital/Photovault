@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.38.0" date="2026-10-19">
+      <description>
+        <p>Recorded tracks now show in the browser and on the phone with elevation profile and the 3D flight from the desktop: map, aerial imagery, trails, contour lines, peaks and huts, four times of day, photos along the way and video export.</p>
+        <p>Text search in browser and phone also finds tags, places and people. On the desktop the own server account can be managed, and the server token no longer sits next to the library.</p>
+      </description>
+    </release>
     <release version="3.37.0" date="2026-10-19">
       <description>
         <p>Albums and selections can be shared as links; album links can let guests contribute photos, which are decoded in an isolated process without network access and rewritten before the owner accepts them.</p>
