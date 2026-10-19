@@ -503,6 +503,8 @@
   "einstBauZeile": "Build {bau} · {system} {systemversion}",
   "einstLizenzen": "Licences",
   "einstLizenzenText": "The licences of the bundled fonts and of every library in use.",
+  "einstUnterstuetzen": "Support Photo Vault",
+  "einstUnterstuetzenText": "Photo Vault is free and has no ads. If you would like to support the work on it, you can buy a coffee on Ko-fi.",
   "einstNachAktualisierungSuchen": "Check for updates",
   "modellYunetTitel": "Face detection – YuNet",
   "modellYunetText": "Finds faces (bounding boxes) in photos. A lightweight CNN, part of the OpenCV Zoo.",

@@ -769,6 +769,13 @@ class AppTexteDe extends AppTexte {
   String get kontoFassung => 'Fassung';
 
   @override
+  String get kontoUnterstuetzen => 'Photo Vault unterstützen';
+
+  @override
+  String get kontoUnterstuetzenText =>
+      'Kostenlos und ohne Werbung – wer mag, spendiert auf Ko-fi einen Kaffee.';
+
+  @override
   String kontoFassungText(String app, String server) {
     return 'App $app · Server $server';
   }

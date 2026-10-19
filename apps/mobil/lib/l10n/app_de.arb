@@ -421,6 +421,8 @@
     }
   },
   "kontoFassung": "Fassung",
+  "kontoUnterstuetzen": "Photo Vault unterstützen",
+  "kontoUnterstuetzenText": "Kostenlos und ohne Werbung – wer mag, spendiert auf Ko-fi einen Kaffee.",
   "kontoFassungText": "App {app} · Server {server}",
   "@kontoFassungText": {
     "placeholders": {

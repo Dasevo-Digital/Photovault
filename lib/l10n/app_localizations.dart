@@ -2393,6 +2393,18 @@ abstract class AppTexte {
   /// **'Die Lizenzen der mitgelieferten Schriften und aller verwendeten Bibliotheken.'**
   String get einstLizenzenText;
 
+  /// No description provided for @einstUnterstuetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault unterstützen'**
+  String get einstUnterstuetzen;
+
+  /// No description provided for @einstUnterstuetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault ist kostenlos und ohne Werbung. Wer die Arbeit daran unterstützen möchte, kann auf Ko-fi einen Kaffee spendieren.'**
+  String get einstUnterstuetzenText;
+
   /// No description provided for @einstNachAktualisierungSuchen.
   ///
   /// In de, this message translates to:

@@ -3,11 +3,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:kern/unterstuetzen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/aktualisierungspruefung.dart';
 import '../../services/modelltexte.dart';
+import '../../services/platform/webseite_oeffnen.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import 'einstellungsstand.dart';
@@ -170,6 +172,13 @@ class UeberGruppe extends StatelessWidget {
                     applicationName: 'Photo Vault',
                     applicationVersion: version,
                   ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.coffee_outlined),
+                  title: Text(AppTexte.of(context).einstUnterstuetzen),
+                  subtitle: Text(AppTexte.of(context).einstUnterstuetzenText),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => oeffneWebseite(unterstuetzenAdresse),
                 ),
               ],
             );

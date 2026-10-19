@@ -345,6 +345,8 @@
     }
   },
   "kontoFassung": "Version",
+  "kontoUnterstuetzen": "Support Photo Vault",
+  "kontoUnterstuetzenText": "Free and without ads – if you like, buy a coffee on Ko-fi.",
   "kontoFassungText": "App {app} · server {server}",
   "@kontoFassungText": {
     "placeholders": {

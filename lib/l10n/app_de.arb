@@ -783,6 +783,8 @@
   },
   "einstLizenzen": "Lizenzen",
   "einstLizenzenText": "Die Lizenzen der mitgelieferten Schriften und aller verwendeten Bibliotheken.",
+  "einstUnterstuetzen": "Photo Vault unterstützen",
+  "einstUnterstuetzenText": "Photo Vault ist kostenlos und ohne Werbung. Wer die Arbeit daran unterstützen möchte, kann auf Ko-fi einen Kaffee spendieren.",
   "einstNachAktualisierungSuchen": "Nach Aktualisierung suchen",
   "modellYunetTitel": "Gesichtserkennung – YuNet",
   "modellYunetText": "Erkennt Gesichter (Bounding Boxes) in Fotos. Leichtgewichtiges CNN, Teil von OpenCV Zoo.",

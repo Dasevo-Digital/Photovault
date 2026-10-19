@@ -4,7 +4,9 @@ import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/services/groessentext.dart';
+import 'package:kern/unterstuetzen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -160,6 +162,16 @@ class Konto extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.coffee_outlined),
+                title: Text(t.kontoUnterstuetzen),
+                subtitle: Text(t.kontoUnterstuetzenText),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () => launchUrl(
+                  Uri.parse(unterstuetzenAdresse),
+                  mode: LaunchMode.externalApplication,
+                ).then((_) {}, onError: (_) {}),
               ),
               const Divider(),
               ListTile(

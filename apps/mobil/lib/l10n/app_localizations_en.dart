@@ -768,6 +768,13 @@ class AppTexteEn extends AppTexte {
   String get kontoFassung => 'Version';
 
   @override
+  String get kontoUnterstuetzen => 'Support Photo Vault';
+
+  @override
+  String get kontoUnterstuetzenText =>
+      'Free and without ads – if you like, buy a coffee on Ko-fi.';
+
+  @override
   String kontoFassungText(String app, String server) {
     return 'App $app · server $server';
   }

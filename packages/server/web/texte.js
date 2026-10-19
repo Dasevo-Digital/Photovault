@@ -107,6 +107,8 @@ const EN = {
   'Bitte einen Namen eingeben.': 'Please enter a name.',
   'Antippen, um zu benennen oder zu ändern': 'Tap to name or change',
   'Zusammenführen …': 'Merge …',
+  '☕ Photo Vault unterstützen': '☕ Support Photo Vault',
+  'Kostenlos und ohne Werbung – wer mag, spendiert auf Ko-fi einen Kaffee.': 'Free and without ads – if you like, buy a coffee on Ko-fi.',
   'Orte': 'Places',
   'Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.': 'No places yet. They appear once photos carry a location and the place data is set up.',
   '{n} Orte': '{n} places',

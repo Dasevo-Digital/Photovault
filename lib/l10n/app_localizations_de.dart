@@ -1428,6 +1428,13 @@ class AppTexteDe extends AppTexte {
       'Die Lizenzen der mitgelieferten Schriften und aller verwendeten Bibliotheken.';
 
   @override
+  String get einstUnterstuetzen => 'Photo Vault unterstützen';
+
+  @override
+  String get einstUnterstuetzenText =>
+      'Photo Vault ist kostenlos und ohne Werbung. Wer die Arbeit daran unterstützen möchte, kann auf Ko-fi einen Kaffee spendieren.';
+
+  @override
   String get einstNachAktualisierungSuchen => 'Nach Aktualisierung suchen';
 
   @override

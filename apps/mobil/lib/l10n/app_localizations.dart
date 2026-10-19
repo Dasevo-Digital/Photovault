@@ -1213,6 +1213,18 @@ abstract class AppTexte {
   /// **'Fassung'**
   String get kontoFassung;
 
+  /// No description provided for @kontoUnterstuetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault unterstützen'**
+  String get kontoUnterstuetzen;
+
+  /// No description provided for @kontoUnterstuetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Kostenlos und ohne Werbung – wer mag, spendiert auf Ko-fi einen Kaffee.'**
+  String get kontoUnterstuetzenText;
+
   /// No description provided for @kontoFassungText.
   ///
   /// In de, this message translates to:

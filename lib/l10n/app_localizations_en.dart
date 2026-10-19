@@ -1414,6 +1414,13 @@ class AppTexteEn extends AppTexte {
       'The licences of the bundled fonts and of every library in use.';
 
   @override
+  String get einstUnterstuetzen => 'Support Photo Vault';
+
+  @override
+  String get einstUnterstuetzenText =>
+      'Photo Vault is free and has no ads. If you would like to support the work on it, you can buy a coffee on Ko-fi.';
+
+  @override
   String get einstNachAktualisierungSuchen => 'Check for updates';
 
   @override
