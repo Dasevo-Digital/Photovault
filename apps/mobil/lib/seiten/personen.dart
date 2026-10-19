@@ -97,6 +97,30 @@ class PersonSeite extends StatelessWidget {
       title: Text(person.name),
       actions: [
         IconButton(
+          tooltip: AppTexte.of(context).gesichterWeitereFinden,
+          icon: const Icon(Icons.person_search_outlined),
+          onPressed: () async {
+            final bote = ScaffoldMessenger.of(context);
+            final t = AppTexte.of(context);
+            final n = await Navigator.of(context).push<int>(
+              MaterialPageRoute(
+                builder: (_) => WeitereFotos(sitzung: sitzung, person: person),
+              ),
+            );
+            if (n == null || !context.mounted) return;
+            bote.showSnackBar(
+              SnackBar(content: Text(t.gesichterUebernommen(n))),
+            );
+            if (n > 0) {
+              await Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => PersonSeite(sitzung: sitzung, person: person),
+                ),
+              );
+            }
+          },
+        ),
+        IconButton(
           tooltip: AppTexte.of(context).personZusammenfuehren,
           icon: const Icon(Icons.merge_type_rounded),
           onPressed: () async {

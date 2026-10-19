@@ -1375,6 +1375,53 @@ class AppTexteDe extends AppTexte {
   String get gesichterAntippen => 'Antippen, um zu benennen oder zu ändern';
 
   @override
+  String get gesichterWeitereFinden => 'Weitere Fotos finden';
+
+  @override
+  String gesichterVorschlaegeFuer(String name) {
+    return 'Vorschläge für $name';
+  }
+
+  @override
+  String get gesichterVorschlagHinweis =>
+      'Alles ist ausgewählt. Nimm heraus, was nicht stimmt – auch das lernt die Erkennung: Eine Ablehnung schiebt die Schwelle für diese Person nach oben.';
+
+  @override
+  String get gesichterAlleWaehlen => 'Alle wählen';
+
+  @override
+  String get gesichterKeineWaehlen => 'Keine wählen';
+
+  @override
+  String gesichterZuordnenAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Gesichter zuordnen',
+      one: 'Ein Gesicht zuordnen',
+      zero: 'Nichts ausgewählt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterNichtsGefunden(String schwelle) {
+    return 'Kein unbenanntes Gesicht liegt über der Schwelle $schwelle dieser Person.';
+  }
+
+  @override
+  String gesichterUebernommen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Fotos hinzugefügt.',
+      one: 'Ein Foto hinzugefügt.',
+      zero: 'Nichts übernommen – die Rückmeldung ist trotzdem gespeichert.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personZusammenfuehren => 'Zusammenführen';
 
   @override

@@ -1255,6 +1255,8 @@ async function zeigeOhneNamen() {
       titel: t('{n} ähnliche Gesichter', { n: g.gesichter.length }),
       gesichter: g.gesichter,
       vorschlag: g.vorschlag,
+      aehnlichkeit: g.aehnlichkeit,
+      schwelle: d.schwelle,
       fertig: () => zeigePersonen(),
     }));
     reihe.append(b);
@@ -1314,7 +1316,24 @@ async function gesichterFertig(ausfuehren) {
   }
 }
 
-$('gesicht-ja').addEventListener('click', () => gesichterFertig((ids, fall) => befehl('gesichterZuordnen', { gesichtIds: ids, personId: fall.vorschlag.id })));
+// Hatte die Gruppe einen Vorschlag, ist die Wahl ein Urteil darüber:
+// dieselbe Person bestätigt ihn, eine andere lehnt ihn ab. Daraus lernt
+// die Schwelle dieser Person – ein Eintrag für die ganze Gruppe, wie am
+// Rechner (gesichtsuebersicht.dart, gruppeEntschieden). Beiseitelegen
+// sagt darüber nichts.
+async function merkeGruppe(fall, ids, personId) {
+  if (!fall.vorschlag || fall.aehnlichkeit == null || fall.schwelle == null) return;
+  await befehl('gesichtsEntscheidungenMerken', {
+    personId: fall.vorschlag.id,
+    entscheidungen: [{ faceId: ids[0], accepted: personId === fall.vorschlag.id, similarity: fall.aehnlichkeit }],
+    allgemeineSchwelle: fall.schwelle,
+  });
+}
+
+$('gesicht-ja').addEventListener('click', () => gesichterFertig(async (ids, fall) => {
+  await befehl('gesichterZuordnen', { gesichtIds: ids, personId: fall.vorschlag.id });
+  await merkeGruppe(fall, ids, fall.vorschlag.id);
+}));
 $('form-gesicht').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = e.target.name.value.trim();
@@ -1328,6 +1347,7 @@ $('form-gesicht').addEventListener('submit', (e) => {
       await befehl('personAnlegen', { personId, name });
     }
     await befehl('gesichterZuordnen', { gesichtIds: ids, personId });
+    await merkeGruppe(fall, ids, personId);
   });
 });
 $('gesicht-beiseite').addEventListener('click', () => gesichterFertig((ids) => befehl('gesichterBeiseitelegen', { gesichtIds: ids, beiseite: true })));
@@ -1387,15 +1407,96 @@ $('form-zusammen').addEventListener('submit', async (e) => {
   }
 });
 
+// --- Weitere Fotos einer Person ----------------------------------------------
+//
+// Wie „Vorschläge suchen“ am Rechner: unbenannte Gesichter, die der Person
+// ähnlich genug sind, alle schon gewählt. Was man herausnimmt, gilt als
+// Ablehnung – die Schwelle der Person steigt, und derselbe Fehlvorschlag
+// kommt nicht wieder.
+
+let vorschlagFall = null;
+
+function vorschlagKnopf() {
+  const f = vorschlagFall;
+  const n = f.vorschlaege.filter((v) => f.gewaehlt.has(v.id)).length;
+  $('vorschlag-ok').textContent = n === 0 ? t('Nichts ausgewählt') : n === 1 ? t('Ein Gesicht zuordnen') : t('{n} Gesichter zuordnen', { n });
+  $('vorschlag-alle').textContent = n === f.vorschlaege.length ? t('Keine wählen') : t('Alle wählen');
+}
+
+async function oeffneVorschlaege(person) {
+  const d = await api(`/api/v1/personen/${encodeURIComponent(person.id)}/vorschlaege`);
+  if (!d.vorschlaege.length) {
+    meldung(t('Kein unbenanntes Gesicht liegt über der Schwelle {schwelle} dieser Person.', { schwelle: d.schwelle.toFixed(2) }));
+    return;
+  }
+  vorschlagFall = { person, ...d, gewaehlt: new Set(d.vorschlaege.map((v) => v.id)) };
+  $('vorschlag-titel').textContent = t('Vorschläge für {name}', { name: person.name });
+  const raster = $('vorschlag-auswahl');
+  raster.replaceChildren();
+  for (const v of d.vorschlaege) {
+    const b = el('button', 'gesicht');
+    b.type = 'button';
+    b.title = `${Math.round(v.aehnlichkeit * 100)} %`;
+    b.dataset.id = v.id;
+    b.append(gesichtsbild(v));
+    b.addEventListener('click', () => {
+      if (vorschlagFall.gewaehlt.has(v.id)) vorschlagFall.gewaehlt.delete(v.id); else vorschlagFall.gewaehlt.add(v.id);
+      b.classList.toggle('aus', !vorschlagFall.gewaehlt.has(v.id));
+      vorschlagKnopf();
+    });
+    raster.append(b);
+  }
+  $('vorschlag-meldung').textContent = '';
+  vorschlagKnopf();
+  $('vorschlag-dialog').showModal();
+}
+
+$('vorschlag-alle').addEventListener('click', () => {
+  const f = vorschlagFall;
+  if (!f) return;
+  const alle = f.gewaehlt.size === f.vorschlaege.length;
+  f.gewaehlt = alle ? new Set() : new Set(f.vorschlaege.map((v) => v.id));
+  for (const b of $('vorschlag-auswahl').children) b.classList.toggle('aus', !f.gewaehlt.has(b.dataset.id));
+  vorschlagKnopf();
+});
+$('vorschlag-abbrechen').addEventListener('click', () => $('vorschlag-dialog').close());
+$('form-vorschlag').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = vorschlagFall;
+  if (!f) return;
+  // Dieselben drei Schritte wie am Rechner (gesichtsuebersicht.dart,
+  // vorschlaegeEntschieden): zuordnen, den Rest verwerfen, beides merken.
+  const ja = f.vorschlaege.filter((v) => f.gewaehlt.has(v.id)).map((v) => v.id);
+  const nein = f.vorschlaege.filter((v) => !f.gewaehlt.has(v.id)).map((v) => v.id);
+  try {
+    if (ja.length) await befehl('gesichterZuordnen', { gesichtIds: ja, personId: f.person.id });
+    if (nein.length) await befehl('vorschlaegeVerwerfen', { gesichtIds: nein });
+    await befehl('gesichtsEntscheidungenMerken', {
+      personId: f.person.id,
+      entscheidungen: f.vorschlaege.map((v) => ({ faceId: v.id, accepted: f.gewaehlt.has(v.id), similarity: v.aehnlichkeit })),
+      allgemeineSchwelle: f.allgemein,
+    });
+    $('vorschlag-dialog').close();
+    vorschlagFall = null;
+    meldung(ja.length === 0 ? t('Nichts übernommen – die Rückmeldung ist trotzdem gespeichert.') : ja.length === 1 ? t('Ein Foto hinzugefügt.') : t('{n} Fotos hinzugefügt.', { n: ja.length }));
+    zeigePerson(f.person.id);
+  } catch (x) {
+    $('vorschlag-meldung').textContent = x.message;
+  }
+});
+
 async function zeigePerson(id) {
   markiereNav('personen');
   zeigeBereich(['raster']);
   const d = await api(`/api/v1/personen/${encodeURIComponent(id)}`);
   const kopf = el('div', 'reisekopf');
+  const weitere = el('button', 'knopf', t('Weitere Fotos finden'));
+  weitere.type = 'button';
+  weitere.addEventListener('click', () => oeffneVorschlaege(d.person).catch((x) => meldung(x.message)));
   const zusammen = el('button', 'knopf', t('Zusammenführen …'));
   zusammen.type = 'button';
   zusammen.addEventListener('click', () => oeffneZusammenfuehren(d.person).catch((x) => meldung(x.message)));
-  kopf.append(zusammen);
+  kopf.append(weitere, zusammen);
   zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.person.name);
 }
 

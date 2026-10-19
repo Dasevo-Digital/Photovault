@@ -7,6 +7,7 @@ import '../db/database.dart';
 import 'embedding_codec.dart';
 import 'face_clustering_service.dart';
 import 'face_engine_service.dart';
+import 'face_suggestions.dart';
 
 /// Gesichter ohne Namen und die Gesichter einer Aufnahme – für Browser
 /// (über den Server) und Telefon dieselbe Rechnung wie am Rechner
@@ -24,6 +25,10 @@ typedef Gesichtsgruppe = ({
 typedef GesichterOhneNamen = ({
   /// Nach Grösse, die grösste zuerst.
   List<Gesichtsgruppe> gruppen,
+
+  /// Die allgemeine Schwelle – wer eine Entscheidung über einen Vorschlag
+  /// festhält (GesichtsEntscheidungenMerken), schickt sie mit.
+  double schwelle,
 
   /// Wie viele der angesehenen Gesichter keinem anderen ähneln.
   int einzeln,
@@ -118,6 +123,7 @@ Future<GesichterOhneNamen> gesichterOhneNamen(
   gruppen.sort((a, b) => b.gesichter.length.compareTo(a.gesichter.length));
   return (
     gruppen: gruppen,
+    schwelle: schwelle,
     einzeln: gesichter.length - inGruppen,
     angesehen: gesichter.length,
     gesamt: gesamt,
@@ -148,4 +154,130 @@ Future<List<GesichtAufAufnahme>> gesichterDerAufnahme(
     for (final f in gesichter)
       (gesicht: f, person: f.personId == null ? null : personen[f.personId]),
   ];
+}
+
+/// Weitere Fotos einer Person: unbenannte Gesichter, die ihr ähnlich genug
+/// sind – wie „Vorschläge suchen“ am Rechner (person_detail_screen.dart),
+/// zusammen mit dem, was die Wiedererkennung schon für sie vorgemerkt hat
+/// (vorschlaege_screen.dart).
+typedef WeitereFotosDaten = ({
+  /// Absteigend nach Ähnlichkeit, das Sicherste zuerst.
+  List<({FaceData gesicht, double aehnlichkeit})> vorschlaege,
+
+  /// Die Schwelle dieser Person – ihre gelernte, sonst die allgemeine.
+  double schwelle,
+
+  /// Die allgemeine, für GesichtsEntscheidungenMerken.
+  double allgemein,
+});
+
+Future<WeitereFotosDaten?> weitereFotosVon(
+  AppDatabase db,
+  String personId,
+) async {
+  final person = await (db.select(
+    db.people,
+  )..where((t) => t.id.equals(personId))).getSingleOrNull();
+  if (person == null) return null;
+  final allgemein = await db.faceSimilarityThresholdWert();
+  final schwelle = person.similarityThreshold ?? allgemein;
+  final bekannt = [
+    for (final f in await db.facesForPerson(personId))
+      if (f.embedding != null) floatsFromEmbeddingBlob(f.embedding!),
+  ];
+  final offen = await db.allUnassignedFaces();
+  final kandidaten = {
+    for (final f in offen)
+      if (f.embedding != null) f.id: floatsFromEmbeddingBlob(f.embedding!),
+  };
+  final gerechnet = bekannt.isEmpty || kandidaten.isEmpty
+      ? const <Gesichtsvorschlag>[]
+      : await _vorschlaegeImIsolat(
+          VorschlagsEingabe(
+            bekannt: bekannt,
+            kandidaten: kandidaten,
+            schwelle: schwelle,
+          ),
+        );
+  // Was die Wiedererkennung vorgemerkt hat, kommt dazu – mit dem
+  // höheren der beiden Werte, falls beide dasselbe Gesicht nennen.
+  final nachId = {for (final f in offen) f.id: f};
+  final werte = <String, double>{
+    for (final v in gerechnet) v.faceId: v.aehnlichkeit,
+  };
+  for (final v in await db.vorschlaegeFuerPerson(personId)) {
+    nachId[v.gesicht.id] ??= v.gesicht;
+    final da = werte[v.gesicht.id];
+    if (da == null || v.aehnlichkeit > da) werte[v.gesicht.id] = v.aehnlichkeit;
+  }
+  final liste = [
+    for (final e in werte.entries)
+      if (nachId[e.key] case final f?) (gesicht: f, aehnlichkeit: e.value),
+  ]..sort((a, b) => b.aehnlichkeit.compareTo(a.aehnlichkeit));
+  return (
+    vorschlaege: liste.length > 60 ? liste.sublist(0, 60) : liste,
+    schwelle: schwelle,
+    allgemein: allgemein,
+  );
+}
+
+/// Auf oberster Ebene: Ein Abschluss innerhalb von [weitereFotosVon]
+/// nähme dessen ganzen Kontext mit ins Isolat (siehe teilbilder.dart).
+Future<List<Gesichtsvorschlag>> _vorschlaegeImIsolat(VorschlagsEingabe e) =>
+    Isolate.run(() => vorschlaegeFuerPerson(e));
+
+/// Hält fest, wie über Vorschläge für eine Person entschieden wurde:
+/// zugeordnet, was angenommen ist, den Vorschlag weg von dem, was nicht
+/// stimmt, und beides als Rückmeldung für ihre Schwelle – wie
+/// PersonSuggestionsScreen am Rechner.
+List<Befehl<Object?>> vorschlaegeEntschieden({
+  required String personId,
+  required List<({String faceId, double aehnlichkeit})> vorschlaege,
+  required Set<String> angenommen,
+  required double allgemein,
+}) => [
+  if (vorschlaege.any((v) => angenommen.contains(v.faceId)))
+    GesichterZuordnen([
+      for (final v in vorschlaege)
+        if (angenommen.contains(v.faceId)) v.faceId,
+    ], personId),
+  if (vorschlaege.any((v) => !angenommen.contains(v.faceId)))
+    VorschlaegeVerwerfen([
+      for (final v in vorschlaege)
+        if (!angenommen.contains(v.faceId)) v.faceId,
+    ]),
+  if (vorschlaege.isNotEmpty)
+    GesichtsEntscheidungenMerken(personId, [
+      for (final v in vorschlaege)
+        (
+          faceId: v.faceId,
+          accepted: angenommen.contains(v.faceId),
+          similarity: v.aehnlichkeit,
+        ),
+    ], allgemeineSchwelle: allgemein),
+];
+
+/// Die Rückmeldung, wenn eine Gruppe mit Vorschlag benannt wurde: ein
+/// Eintrag für die ganze Gruppe, nicht je Gesicht – die Ähnlichkeit wurde
+/// zwischen ihrem Mittelpunkt und der Person gemessen (siehe
+/// face_cluster_review_screen.dart). Beiseitelegen ist keine Aussage über
+/// die Schwelle und hält nichts fest.
+GesichtsEntscheidungenMerken? gruppeEntschieden({
+  required Gesichtsgruppe gruppe,
+  required List<String> zugeordnet,
+  required String personId,
+  required double allgemein,
+}) {
+  final vorschlag = gruppe.vorschlag;
+  final aehnlichkeit = gruppe.aehnlichkeit;
+  if (vorschlag == null || aehnlichkeit == null || zugeordnet.isEmpty) {
+    return null;
+  }
+  return GesichtsEntscheidungenMerken(vorschlag.id, [
+    (
+      faceId: zugeordnet.first,
+      accepted: personId == vorschlag.id,
+      similarity: aehnlichkeit,
+    ),
+  ], allgemeineSchwelle: allgemein);
 }

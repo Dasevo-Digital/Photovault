@@ -12,7 +12,7 @@ import '../widgets/pin_dialogs.dart';
 import 'package:flutter/foundation.dart' show compute;
 
 import 'package:kern/services/embedding_codec.dart';
-import '../services/face_suggestions.dart';
+import 'package:kern/services/face_suggestions.dart';
 import 'asset_viewer_screen.dart';
 import 'face_review_screen.dart';
 import 'person_suggestions_screen.dart';

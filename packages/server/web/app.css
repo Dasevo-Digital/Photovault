@@ -460,10 +460,12 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .gesichtsgruppe .wer { font-weight: 650; }
 .gesichtsgruppe .leise { font-size: .8em; color: var(--leise); text-align: left; padding: 0; }
 #gesicht-dialog { max-width: 30em; width: calc(100vw - 32px); }
-#gesicht-auswahl { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: 40vh; overflow: auto; }
-#gesicht-auswahl .gesicht { padding: 0; border: 0; border-radius: 50%; overflow: hidden; aspect-ratio: 1; background: var(--rand); position: relative; }
-#gesicht-auswahl .gesicht img { width: 100%; height: 100%; object-fit: cover; display: block; }
-#gesicht-auswahl .gesicht.aus img { opacity: .25; filter: grayscale(1); }
+#gesicht-auswahl, #vorschlag-auswahl { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: 40vh; overflow: auto; }
+#vorschlag-auswahl { max-height: 55vh; margin: 8px 0; }
+:is(#gesicht-auswahl, #vorschlag-auswahl) .gesicht { padding: 0; border: 0; border-radius: 50%; overflow: hidden; aspect-ratio: 1; background: var(--rand); position: relative; }
+:is(#gesicht-auswahl, #vorschlag-auswahl) .gesicht img { width: 100%; height: 100%; object-fit: cover; display: block; }
+:is(#gesicht-auswahl, #vorschlag-auswahl) .gesicht.aus img { opacity: .25; filter: grayscale(1); }
+#vorschlag-dialog { width: min(560px, calc(100vw - 32px)); }
 #gesicht-ja { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--akzent); color: #fff; font-weight: 600; }
 #zusammen-dialog select { width: 100%; padding: 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 .gesichter-reihe { display: flex; flex-wrap: wrap; gap: 10px; }

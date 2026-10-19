@@ -8,7 +8,7 @@ library;
 
 import 'dart:typed_data';
 
-import 'package:kern/services/face_engine_service.dart';
+import 'face_engine_service.dart';
 
 /// Ein Vorschlag: dieses Gesicht könnte zu der Person gehören.
 class Gesichtsvorschlag {

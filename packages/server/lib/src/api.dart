@@ -235,6 +235,7 @@ Handler baueApi({
     ..get('/api/v1/alben/<id>', api.album)
     ..get('/api/v1/personen', api.personen)
     ..get('/api/v1/personen/<id>', api.person)
+    ..get('/api/v1/personen/<id>/vorschlaege', api.personVorschlaege)
     ..get('/api/v1/gesichter/ohne-namen', api.gesichterOhneNamen)
     // Teilen nach aussen (Issue #106): verwalten mit Anmeldung, ansehen ohne.
     ..post('/api/v1/freigaben', freigabe.anlegen)
@@ -1220,9 +1221,31 @@ class _Api {
             'aehnlichkeit': g.aehnlichkeit,
           },
       ],
+      'schwelle': o.schwelle,
       'einzeln': o.einzeln,
       'angesehen': o.angesehen,
       'gesamt': o.gesamt,
+    });
+  }
+
+  /// Weitere Fotos einer Person zum Bestätigen – wie „Vorschläge suchen“
+  /// am Rechner (gesichtsuebersicht.dart, weitereFotosVon).
+  Future<Response> personVorschlaege(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final w = await gesichtsuebersicht.weitereFotosVon(db, id);
+    if (w == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'schwelle': w.schwelle,
+      'allgemein': w.allgemein,
+      'vorschlaege': [
+        for (final v in w.vorschlaege)
+          {
+            'id': v.gesicht.id,
+            'ausschnitt': v.gesicht.cropRelativePath,
+            'aufnahme': v.gesicht.assetId,
+            'aehnlichkeit': v.aehnlichkeit,
+          },
+      ],
     });
   }
 

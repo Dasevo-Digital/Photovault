@@ -689,6 +689,14 @@ void main() {
           (db.select(db.faces)..where((t) => t.personId.equals('anna'))).get(),
     );
     expect({for (final f in zugeordnet!) f.id}, {'fa', 'f1', 'f2'});
+    // Die Bestätigung ist eine Rückmeldung für Annas Schwelle – ein
+    // Eintrag für die ganze Gruppe.
+    final gemerkt = await tester.runAsync(
+      () => db.select(db.faceMatchFeedback).get(),
+    );
+    expect(gemerkt, hasLength(1));
+    expect(gemerkt!.single.personId, 'anna');
+    expect(gemerkt.single.accepted, isTrue);
     for (
       var i = 0;
       i < 20 && find.text('Ohne Namen').evaluate().isNotEmpty;
@@ -705,6 +713,120 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Weitere Fotos finden: abwählen lehnt ab und lernt', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['w1', 'w2']);
+    var richtung = 2;
+    Uint8List vektor(double aehnlichkeit) {
+      final v = Float32List(128);
+      v[1] = aehnlichkeit;
+      v[richtung++] = math.sqrt(1 - aehnlichkeit * aehnlichkeit);
+      return Uint8List.view(v.buffer);
+    }
+
+    await tester.runAsync(() async {
+      await db.fuehreAus(const PersonAnlegen('anna', 'Anna'));
+      for (final (id, person, s) in [
+        ('fa', 'anna', 1.0),
+        ('h1', null, 0.9),
+        ('h2', null, 0.8),
+        ('h3', null, 0.6),
+        ('h4', null, 0.45),
+      ]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: 'w1',
+                personId: Value(person),
+                boxX: 0.1,
+                boxY: 0.1,
+                boxW: 0.2,
+                boxH: 0.2,
+                embedding: Value(vektor(s)),
+              ),
+            );
+      }
+    });
+    final anna = (await tester.runAsync(
+      () =>
+          (db.select(db.people)..where((t) => t.id.equals('anna'))).getSingle(),
+    ))!;
+    int? ergebnis;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () async =>
+                    ergebnis = await Navigator.of(context).push<int>(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            WeitereFotos(sitzung: sitzung, person: anna),
+                      ),
+                    ),
+                child: const Text('los'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('los'));
+    for (
+      var i = 0;
+      i < 30 && find.text('4 Gesichter zuordnen').evaluate().isEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    expect(find.text('Vorschläge für Anna'), findsOneWidget);
+    expect(find.text('4 Gesichter zuordnen'), findsOneWidget);
+    // Das unsicherste (zuletzt) herausnehmen.
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == '45 %',
+      ),
+    );
+    await tester.pump();
+    expect(find.text('3 Gesichter zuordnen'), findsOneWidget);
+    await tester.tap(find.text('3 Gesichter zuordnen'));
+    for (var i = 0; i < 30 && ergebnis == null; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump();
+    }
+    expect(ergebnis, 3);
+    final (faces, person) = (await tester.runAsync(
+      () async => (
+        await db.select(db.faces).get(),
+        await (db.select(
+          db.people,
+        )..where((t) => t.id.equals('anna'))).getSingle(),
+      ),
+    ))!;
+    expect(
+      {
+        for (final f in faces)
+          if (f.personId == 'anna') f.id,
+      },
+      {'fa', 'h1', 'h2', 'h3'},
+    );
+    // Abgelehnt: kein Vorschlag mehr, und die Schwelle liegt darüber.
+    expect(person.similarityThreshold, greaterThan(0.45));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Suche: nur mit Filtern, ohne Suchtext', (tester) async {

@@ -20,6 +20,7 @@ Future<bool> benenneGesichter(
   required String titel,
   required List<FaceData> gesichter,
   PersonData? vorschlag,
+  double? aehnlichkeit,
   PersonData? person,
 }) async =>
     await showModalBottomSheet<bool>(
@@ -35,6 +36,7 @@ Future<bool> benenneGesichter(
           titel: titel,
           gesichter: gesichter,
           vorschlag: vorschlag,
+          aehnlichkeit: aehnlichkeit,
           person: person,
         ),
       ),
@@ -47,6 +49,7 @@ class _Benennen extends StatefulWidget {
     required this.titel,
     required this.gesichter,
     this.vorschlag,
+    this.aehnlichkeit,
     this.person,
   });
 
@@ -54,6 +57,10 @@ class _Benennen extends StatefulWidget {
   final String titel;
   final List<FaceData> gesichter;
   final PersonData? vorschlag;
+
+  /// Wie ähnlich die Gruppe dem Vorschlag ist – mit ihr lernt die
+  /// Schwelle aus der Entscheidung.
+  final double? aehnlichkeit;
   final PersonData? person;
 
   @override
@@ -140,7 +147,29 @@ class _BenennenState extends State<_Benennen> {
         await _db.fuehreAus(PersonAnlegen(personId, name));
       }
       await _db.fuehreAus(GesichterZuordnen(ids, personId));
+      await _merke(ids, personId);
     });
+  }
+
+  /// Hatte die Gruppe einen Vorschlag, ist die Wahl ein Urteil darüber:
+  /// dieselbe Person bestätigt ihn, eine andere lehnt ihn ab. Daraus lernt
+  /// die Schwelle der Person – wie am Rechner und im Browser
+  /// (gruppeEntschieden im Kern). Beiseitelegen sagt darüber nichts.
+  Future<void> _merke(List<String> ids, String personId) async {
+    final vorschlag = widget.vorschlag;
+    final aehnlichkeit = widget.aehnlichkeit;
+    if (vorschlag == null || aehnlichkeit == null) return;
+    final b = gruppeEntschieden(
+      gruppe: (
+        gesichter: widget.gesichter,
+        vorschlag: vorschlag,
+        aehnlichkeit: aehnlichkeit,
+      ),
+      zugeordnet: ids,
+      personId: personId,
+      allgemein: await _db.faceSimilarityThresholdWert(),
+    );
+    if (b != null) await _db.fuehreAus(b);
   }
 
   @override
@@ -206,10 +235,12 @@ class _BenennenState extends State<_Benennen> {
               FilledButton(
                 onPressed: _laeuft
                     ? null
-                    : () => _fertig(
-                        (ids) =>
-                            _db.fuehreAus(GesichterZuordnen(ids, vorschlag.id)),
-                      ),
+                    : () => _fertig((ids) async {
+                        await _db.fuehreAus(
+                          GesichterZuordnen(ids, vorschlag.id),
+                        );
+                        await _merke(ids, vorschlag.id);
+                      }),
                 child: Text(t.gesichterDasIst(vorschlag.name)),
               ),
             ],
@@ -363,6 +394,7 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
                           titel: t.gesichterAehnliche(g.gesichter.length),
                           gesichter: g.gesichter,
                           vorschlag: vorschlag,
+                          aehnlichkeit: g.aehnlichkeit,
                         );
                         if (geaendert) _neu();
                       },
@@ -637,4 +669,161 @@ Future<bool> zusammenfuehren(
     PersonenZusammenfuehren(behalten: person.id, entfernen: wahl.id),
   );
   return true;
+}
+
+/// Weitere Fotos einer Person – wie „Vorschläge suchen“ am Rechner und
+/// „Weitere Fotos finden“ im Browser: unbenannte Gesichter, die ihr
+/// ähnlich genug sind, alle schon gewählt. Was man herausnimmt, gilt als
+/// Ablehnung und hebt ihre Schwelle.
+///
+/// Gibt zurück, wie viele zugeordnet wurden – `null` bei Abbruch.
+class WeitereFotos extends StatefulWidget {
+  const WeitereFotos({super.key, required this.sitzung, required this.person});
+
+  final Sitzung sitzung;
+  final PersonData person;
+
+  @override
+  State<WeitereFotos> createState() => _WeitereFotosState();
+}
+
+class _WeitereFotosState extends State<WeitereFotos> {
+  late final Future<WeitereFotosDaten?> _daten = weitereFotosVon(
+    widget.sitzung.db,
+    widget.person.id,
+  );
+  Set<String>? _gewaehlt;
+  var _laeuft = false;
+
+  Future<void> _uebernehmen(WeitereFotosDaten d, Set<String> gewaehlt) async {
+    setState(() => _laeuft = true);
+    try {
+      for (final b in vorschlaegeEntschieden(
+        personId: widget.person.id,
+        vorschlaege: [
+          for (final v in d.vorschlaege)
+            (faceId: v.gesicht.id, aehnlichkeit: v.aehnlichkeit),
+        ],
+        angenommen: gewaehlt,
+        allgemein: d.allgemein,
+      )) {
+        await widget.sitzung.db.fuehreAus(b);
+      }
+      if (mounted) Navigator.pop(context, gewaehlt.length);
+    } catch (x) {
+      if (!mounted) return;
+      setState(() => _laeuft = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$x')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    return FutureBuilder<WeitereFotosDaten?>(
+      future: _daten,
+      builder: (context, snap) {
+        final d = snap.data;
+        final gewaehlt = _gewaehlt ??= d == null
+            ? null
+            : {for (final v in d.vorschlaege) v.gesicht.id};
+        final alle =
+            d != null &&
+            gewaehlt != null &&
+            gewaehlt.length == d.vorschlaege.length;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(t.gesichterVorschlaegeFuer(widget.person.name)),
+            actions: [
+              if (d != null && d.vorschlaege.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(
+                    () => _gewaehlt = alle
+                        ? {}
+                        : {for (final v in d.vorschlaege) v.gesicht.id},
+                  ),
+                  child: Text(
+                    alle ? t.gesichterKeineWaehlen : t.gesichterAlleWaehlen,
+                  ),
+                ),
+            ],
+          ),
+          body: switch ((snap.connectionState, d)) {
+            (ConnectionState.done, null) => const SizedBox.shrink(),
+            (_, null) => const Center(child: CircularProgressIndicator()),
+            (_, final d?) when d.vorschlaege.isEmpty => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  t.gesichterNichtsGefunden(d.schwelle.toStringAsFixed(2)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            (_, final d?) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Text(
+                    t.gesichterVorschlagHinweis,
+                    style: TextStyle(color: farben.onSurfaceVariant),
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 88,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                        ),
+                    itemCount: d.vorschlaege.length,
+                    itemBuilder: (context, i) {
+                      final v = d.vorschlaege[i];
+                      final an = gewaehlt!.contains(v.gesicht.id);
+                      return Semantics(
+                        selected: an,
+                        button: true,
+                        label: '${(v.aehnlichkeit * 100).round()} %',
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            if (!gewaehlt.remove(v.gesicht.id)) {
+                              gewaehlt.add(v.gesicht.id);
+                            }
+                          }),
+                          child: Opacity(
+                            opacity: an ? 1 : 0.25,
+                            child: Personenbild(
+                              paths: widget.sitzung.paths,
+                              name: '?',
+                              relativ: v.gesicht.cropRelativePath,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: FilledButton(
+                      onPressed: _laeuft
+                          ? null
+                          : () => _uebernehmen(d, gewaehlt!),
+                      child: Text(t.gesichterZuordnenAnzahl(gewaehlt!.length)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          },
+        );
+      },
+    );
+  }
 }

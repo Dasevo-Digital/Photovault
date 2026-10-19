@@ -1371,6 +1371,53 @@ class AppTexteEn extends AppTexte {
   String get gesichterAntippen => 'Tap to name or change';
 
   @override
+  String get gesichterWeitereFinden => 'Find more photos';
+
+  @override
+  String gesichterVorschlaegeFuer(String name) {
+    return 'Suggestions for $name';
+  }
+
+  @override
+  String get gesichterVorschlagHinweis =>
+      'Everything is selected. Deselect what is wrong – recognition learns from that too: a rejection raises the threshold for this person.';
+
+  @override
+  String get gesichterAlleWaehlen => 'Select all';
+
+  @override
+  String get gesichterKeineWaehlen => 'Select none';
+
+  @override
+  String gesichterZuordnenAnzahl(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Assign $n faces',
+      one: 'Assign one face',
+      zero: 'Nothing selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterNichtsGefunden(String schwelle) {
+    return 'No unnamed face is above this person’s threshold of $schwelle.';
+  }
+
+  @override
+  String gesichterUebernommen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n photos added.',
+      one: 'One photo added.',
+      zero: 'Nothing added – the feedback was saved anyway.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personZusammenfuehren => 'Merge';
 
   @override

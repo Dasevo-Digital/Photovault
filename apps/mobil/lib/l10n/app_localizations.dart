@@ -2239,6 +2239,54 @@ abstract class AppTexte {
   /// **'Antippen, um zu benennen oder zu ändern'**
   String get gesichterAntippen;
 
+  /// No description provided for @gesichterWeitereFinden.
+  ///
+  /// In de, this message translates to:
+  /// **'Weitere Fotos finden'**
+  String get gesichterWeitereFinden;
+
+  /// No description provided for @gesichterVorschlaegeFuer.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschläge für {name}'**
+  String gesichterVorschlaegeFuer(String name);
+
+  /// No description provided for @gesichterVorschlagHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Alles ist ausgewählt. Nimm heraus, was nicht stimmt – auch das lernt die Erkennung: Eine Ablehnung schiebt die Schwelle für diese Person nach oben.'**
+  String get gesichterVorschlagHinweis;
+
+  /// No description provided for @gesichterAlleWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle wählen'**
+  String get gesichterAlleWaehlen;
+
+  /// No description provided for @gesichterKeineWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine wählen'**
+  String get gesichterKeineWaehlen;
+
+  /// No description provided for @gesichterZuordnenAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Nichts ausgewählt} =1{Ein Gesicht zuordnen} other{{n} Gesichter zuordnen}}'**
+  String gesichterZuordnenAnzahl(int n);
+
+  /// No description provided for @gesichterNichtsGefunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein unbenanntes Gesicht liegt über der Schwelle {schwelle} dieser Person.'**
+  String gesichterNichtsGefunden(String schwelle);
+
+  /// No description provided for @gesichterUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Nichts übernommen – die Rückmeldung ist trotzdem gespeichert.} =1{Ein Foto hinzugefügt.} other{{n} Fotos hinzugefügt.}}'**
+  String gesichterUebernommen(int n);
+
   /// No description provided for @personZusammenfuehren.
   ///
   /// In de, this message translates to:

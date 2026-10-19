@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/face_suggestions.dart';
+import 'package:kern/services/face_suggestions.dart';
 
 /// Vorschläge für eine bereits benannte Person.
 ///

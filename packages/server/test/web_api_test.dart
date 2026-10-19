@@ -243,6 +243,7 @@ void main() {
       expect((gruppen.single['vorschlag'] as Map)['name'], 'Anna');
       expect(o['einzeln'], 1);
       expect(o['gesamt'], 3);
+      expect(o['schwelle'], isA<double>());
       // Ein anderes Konto sieht nichts davon.
       final fremd = await jsonAus(
         await frag('GET', '/api/v1/gesichter/ohne-namen', token: maxToken),
@@ -278,6 +279,119 @@ void main() {
             as Map)['name'],
         'Anna',
       );
+    },
+  );
+
+  test(
+    'Weitere Fotos einer Person: Vorschläge, Ablehnung hebt die Schwelle',
+    () async {
+      final a = await ladeHoch(erikaToken, 'feier.jpg', 40);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      // Ein Gesicht mit genau dieser Ähnlichkeit zu Anna (0, 1, 0, …) –
+      // der Rest in einer eigenen Richtung je Gesicht, damit sich die
+      // Kandidaten untereinander kaum ähneln.
+      var richtung = 2;
+      Uint8List vektor(double aehnlichkeit) {
+        final v = Float32List(128);
+        v[1] = aehnlichkeit;
+        v[richtung++] = math.sqrt(1 - aehnlichkeit * aehnlichkeit);
+        return Uint8List.view(v.buffer);
+      }
+
+      await befehl(erikaToken, 'personAnlegen', {
+        'personId': 'anna',
+        'name': 'Anna',
+      });
+      Future<void> gesicht(String id, String? person, double s) => db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: id,
+              assetId: a,
+              personId: Value(person),
+              boxX: 0.1,
+              boxY: 0.1,
+              boxW: 0.2,
+              boxH: 0.2,
+              cropRelativePath: Value('faces/$id.jpg'),
+              embedding: Value(vektor(s)),
+            ),
+          );
+      await gesicht('f-anna', 'anna', 1);
+      for (final (id, s) in [
+        ('g1', 0.9),
+        ('g2', 0.8),
+        ('g3', 0.6),
+        ('g4', 0.45),
+        ('g5', 0.2),
+      ]) {
+        await gesicht(id, null, s);
+      }
+      Future<Map<String, Object?>> vorschlaege() async => jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/personen/anna/vorschlaege',
+          token: erikaToken,
+        ),
+      );
+      final v = await vorschlaege();
+      final allgemein = v['allgemein']! as double;
+      expect(v['schwelle'], allgemein);
+      final liste = (v['vorschlaege']! as List).cast<Map>();
+      expect([for (final x in liste) x['id']], ['g1', 'g2', 'g3', 'g4']);
+      expect(liste.first['ausschnitt'], 'faces/g1.jpg');
+      expect(liste.first['aufnahme'], a);
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/personen/anna/vorschlaege',
+          token: maxToken,
+        )).statusCode,
+        404,
+      );
+
+      // Wie im Browser: drei angenommen, eines abgelehnt.
+      for (final (art, werte) in [
+        (
+          'gesichterZuordnen',
+          {
+            'gesichtIds': ['g1', 'g2', 'g3'],
+            'personId': 'anna',
+          },
+        ),
+        (
+          'vorschlaegeVerwerfen',
+          {
+            'gesichtIds': ['g4'],
+          },
+        ),
+        (
+          'gesichtsEntscheidungenMerken',
+          {
+            'personId': 'anna',
+            'entscheidungen': [
+              for (final x in liste)
+                {
+                  'faceId': x['id'],
+                  'accepted': x['id'] != 'g4',
+                  'similarity': x['aehnlichkeit'],
+                },
+            ],
+            'allgemeineSchwelle': allgemein,
+          },
+        ),
+      ]) {
+        expect((await befehl(erikaToken, art, werte)).statusCode, 200);
+      }
+      // Die Schwelle liegt jetzt zwischen der schwächsten Bestätigung und
+      // der stärksten Ablehnung – g4 kommt nicht wieder.
+      final nachher = await vorschlaege();
+      expect(nachher['schwelle'] as double, greaterThan(0.45));
+      expect(nachher['vorschlaege'], isEmpty);
+      final anna = await (db.select(
+        db.people,
+      )..where((t) => t.id.equals('anna'))).getSingle();
+      expect(anna.similarityThreshold, nachher['schwelle']);
     },
   );
 
