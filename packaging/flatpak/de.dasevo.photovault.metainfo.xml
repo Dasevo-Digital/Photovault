@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.37.0" date="2026-10-19">
+      <description>
+        <p>Albums and selections can be shared as links; album links can let guests contribute photos, which are decoded in an isolated process without network access and rewritten before the owner accepts them.</p>
+        <p>iPhone videos play everywhere, faces can be named in the browser and on the phone with recognition learning from the decisions, plus search filters, slideshow and a places overview.</p>
+        <p>Tidying the library now files photos taken before 1970 correctly.</p>
+      </description>
+    </release>
     <release version="3.36.0" date="2026-10-18">
       <description>
         <p>The family tree in the browser and on the phone places every child under its own parents, laid out as on the desktop.</p>
