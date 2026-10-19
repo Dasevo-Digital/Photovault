@@ -145,6 +145,13 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 .kachel .unten-rechts .zeichen { width: 19px; height: 19px; }
 .kachel .schild { position: absolute; right: 5px; top: 5px; display: flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .02em; line-height: 15px; pointer-events: none; z-index: 1; }
 .kachel .schild .zeichen { width: 11px; height: 11px; filter: none; }
+/* Der Rahmen der Tastatur – wie am Rechner. */
+#raster .kachel.rahmen { outline: 3px solid var(--akzent); outline-offset: -3px; z-index: 1; }
+#kuerzel-dialog { max-width: 34em; width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; }
+#kuerzel-dialog h4 { margin: 14px 0 6px; font-size: .9em; color: var(--leise); }
+#kuerzel-dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; }
+#kuerzel-dialog dt { font-family: ui-monospace, monospace; font-size: .85em; white-space: nowrap; padding: 1px 6px; border: 1px solid var(--rand); border-radius: 5px; background: var(--grund); justify-self: start; }
+#kuerzel-dialog dd { margin: 0; }
 /* Im Auswahlmodus steht oben links der Kreis. */
 body.waehlt #raster .kachel > .herz { display: none; }
 /* Auf kleinen Kacheln nur das Nötigste: kein Format, keine Länge. */

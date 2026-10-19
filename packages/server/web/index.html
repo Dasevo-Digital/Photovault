@@ -165,6 +165,8 @@
         <option value="de">Deutsch</option>
         <option value="en">English</option>
       </select></span></label>
+    <div class="einst"><span></span><span class="inhalt"><span class="titel">Tastaturkürzel</span><span class="text">Auch überall mit „?“.</span>
+      <button type="button" id="einst-kuerzel" class="knopf">Anzeigen</button></span></div>
     <div id="einst-liste"></div>
     <p id="einst-meldung" class="leise"></p>
   </section>
@@ -388,6 +390,12 @@
       <button type="submit" id="vorschlag-ok" class="primaer"></button>
     </menu>
   </form>
+</dialog>
+
+<dialog id="kuerzel-dialog">
+  <h3>Tastaturkürzel</h3>
+  <div id="kuerzel-liste"></div>
+  <menu><button type="button" id="kuerzel-zu">Schliessen</button></menu>
 </dialog>
 
 <dialog id="zusammen-dialog">

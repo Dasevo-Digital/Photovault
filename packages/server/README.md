@@ -395,6 +395,11 @@ Favoriten (`GET /api/v1/aufnahmen?favoriten=1`) und das Hochladen: Dateien
 auswählen oder ins Fenster ziehen, es geht derselbe tus-Weg
 (`/api/v1/hochladen`, Stücke zu 8 MB) und derselbe Import wie von der App.
 
+**Tastenkürzel** wie am Rechner: Pfeiltasten bewegen einen Rahmen durchs
+Raster (mit Umschalt wächst die Auswahl), ⏎ öffnet, F setzt Favoriten,
+0–5 Sterne, 6–9 Farbmarken, Entf legt in den Papierkorb; im Betrachter
+dazu Leertaste und I für die Angaben. „?“ zeigt die Übersicht.
+
 **Als App installieren:** Safari („Zum Home-Bildschirm“), Chrome und Edge
 („Installieren“) legen die Oberfläche mit eigenem Symbol an und öffnen sie
 ohne Adressleiste (`web/manifest.webmanifest`). Einen Service Worker gibt

@@ -391,9 +391,13 @@ function kachel(a, index) {
   k.append(img);
   marken(k, a);
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
-  k.addEventListener('click', () => {
+  k.addEventListener('click', (e) => {
     // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.
     if (zieh.schlucke) { zieh.schlucke = false; return; }
+    // Wie am Rechner: Umschalt nimmt alles bis hierher dazu, Strg/⌘ eine.
+    if (e.shiftKey && rahmen >= 0) { waehleBereich(rahmen, index); setzeRahmen(index, false); return; }
+    if (e.metaKey || e.ctrlKey) { schalteAuswahl(a.id, k); setzeRahmen(index, false); return; }
+    setzeRahmen(index, false);
     if (auswahlModus || auswahl.size) schalteAuswahl(a.id, k); else oeffne(index);
   });
   return k;
@@ -2903,20 +2907,220 @@ $('favorit').addEventListener('click', async () => {
     await befehl('favoritSetzen', { ids: [a.id], favorit: !a.favorit });
     a.favorit = !a.favorit;
     $('favorit').textContent = a.favorit ? '♥' : '♡';
-    const k = $('raster').querySelector(`.kachel[data-index="${offen}"]`);
-    if (k) {
-      let h = k.querySelector('.herz');
-      if (a.favorit && !h) k.append(el('span', 'herz', '♥'));
-      if (!a.favorit && h) h.remove();
-    }
+    erneuereMarken(offen);
   } catch (x) { $('angaben').textContent = x.message; }
 });
 
-document.addEventListener('keydown', (e) => {
-  if (offen < 0) return;
-  if (e.key === 'Escape') schliesse();
-  else if (e.key === 'ArrowLeft') oeffne(offen - 1);
-  else if (e.key === 'ArrowRight') oeffne(offen + 1);
+// --- Tastenkürzel (Issue #169) ------------------------------------------------
+//
+// Dieselben Tasten wie am Rechner (tastenkuerzel.dart): Im Raster wandert
+// ein Rahmen mit den Pfeiltasten, Umschalt zieht die Auswahl mit, ⏎
+// öffnet. F, 0–5 (Sterne), 6–9 (Farbe) und Entf wirken auf die Auswahl –
+// gibt es keine, auf die Kachel im Rahmen. Im Betrachter dasselbe für das
+// gezeigte Foto, dazu I für die Angaben und die Leertaste fürs nächste.
+
+let rahmen = -1;
+let rahmenAnker = -1;
+
+const FARBTASTEN = { 6: 'red', 7: 'yellow', 8: 'green', 9: 'blue' };
+
+function setzeRahmen(i, sichtbar = true) {
+  if (!liste || !liste.kacheln || !liste.kacheln.length) { rahmen = -1; return; }
+  const alt = liste.kacheln[rahmen];
+  if (alt) alt.classList.remove('rahmen');
+  rahmen = Math.max(0, Math.min(liste.kacheln.length - 1, i));
+  if (!sichtbar) return;
+  const k = liste.kacheln[rahmen];
+  k.classList.add('rahmen');
+  k.scrollIntoView({ block: 'nearest' });
+}
+
+function waehleBereich(von, bis) {
+  const [a0, a1] = von < bis ? [von, bis] : [bis, von];
+  for (let i = a0; i <= a1; i++) auswahl.add(liste.aufnahmen[i].id);
+  zeichneAuswahl(a0, a1);
+}
+
+// Die Kachel eine Reihe höher oder tiefer, möglichst an derselben Stelle –
+// die Reihen sind wegen der Tagesköpfe nicht gleich lang.
+function reiheWeiter(i, richtung) {
+  const k = liste.kacheln;
+  const hier = k[i];
+  let j = i;
+  while (j >= 0 && j < k.length && k[j].offsetTop === hier.offsetTop) j += richtung;
+  if (j < 0 || j >= k.length) return i;
+  const oben = k[j].offsetTop;
+  let bester = j;
+  for (let m = j; m >= 0 && m < k.length && k[m].offsetTop === oben; m += richtung) {
+    if (Math.abs(k[m].offsetLeft - hier.offsetLeft) < Math.abs(k[bester].offsetLeft - hier.offsetLeft)) bester = m;
+  }
+  return bester;
+}
+
+// Worauf eine Taste wirkt: die Auswahl, sonst die Kachel im Rahmen.
+function tastenziele() {
+  if (!liste) return [];
+  if (auswahl.size) return gewaehlte();
+  const a = liste.aufnahmen[rahmen];
+  return a && rahmen >= 0 && liste.kacheln[rahmen]?.classList.contains('rahmen') ? [a] : [];
+}
+
+function erneuereMarken(i) {
+  const k = liste && liste.kacheln && liste.kacheln[i];
+  if (!k) return;
+  k.querySelectorAll(':scope > .zeichen, :scope > .schild, :scope > .unten-rechts').forEach((x) => x.remove());
+  marken(k, liste.aufnahmen[i]);
+}
+
+function erneuereMarkenVon(ziele) {
+  const ids = new Set(ziele.map((a) => a.id));
+  liste.aufnahmen.forEach((a, i) => { if (ids.has(a.id)) erneuereMarken(i); });
+}
+
+async function setzeFavorit(ziele) {
+  if (!ziele.length) return;
+  const alle = ziele.every((a) => a.favorit);
+  await befehl('favoritSetzen', { ids: ziele.map((a) => a.id), favorit: !alle });
+  for (const a of ziele) a.favorit = !alle;
+  erneuereMarkenVon(ziele);
+  if (offen >= 0) $('favorit').textContent = liste.aufnahmen[offen].favorit ? '♥' : '♡';
+  meldung(alle ? t('Kein Favorit mehr') : t('Favorit'));
+}
+
+async function setzeSterne(ziele, n) {
+  if (!ziele.length) return;
+  await befehl('bewertungSetzen', { ids: ziele.map((a) => a.id), bewertung: n });
+  for (const a of ziele) a.bewertung = n || undefined;
+  meldung(n ? '★'.repeat(n) : t('Ohne Sterne'));
+  if (offen >= 0 && angabenOffen) zeigeAngaben();
+}
+
+async function setzeFarbe(ziele, farbe) {
+  if (!ziele.length) return;
+  // Dieselbe Farbe noch einmal nimmt sie weg – wie am Rechner.
+  const neu = ziele[0].farbe === farbe ? null : farbe;
+  await befehl('farbmarkeSetzen', { ids: ziele.map((a) => a.id), farbe: neu });
+  for (const a of ziele) a.farbe = neu || undefined;
+  meldung(neu ? t('Farbmarke gesetzt') : t('Farbmarke entfernt'));
+}
+
+async function inDenKorb(ziele) {
+  if (!ziele.length) return;
+  if (!confirm(ziele.length === 1 ? t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.') : t('{n} Aufnahmen in den Papierkorb legen? Sie verschwinden überall – zurückholen geht am Rechner und hier im Papierkorb.', { n: ziele.length }))) return;
+  await befehl('inDenPapierkorb', { ids: ziele.map((a) => a.id) });
+  const weg = new Set(ziele.map((a) => a.id));
+  liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id));
+  zeitleiste.geladen = zeitleiste.geladen.filter((a) => !weg.has(a.id));
+  if (offen >= 0) schliesse();
+  auswahlAufheben();
+  neuZeichnen();
+}
+
+const KUERZEL = [
+  ['Überall', [
+    ['?', 'Diese Übersicht'],
+    ['/', 'Suchen'],
+  ]],
+  ['Raster', [
+    ['← ↑ ↓ →', 'Den Rahmen durchs Raster bewegen'],
+    ['Umschalt + Pfeil', 'Die Auswahl mitziehen'],
+    ['Umschalt-Klick', 'Alles bis hierher dazunehmen'],
+    ['Strg-/⌘-Klick', 'Eine einzelne Kachel umschalten'],
+    ['Leertaste', 'Kachel im Rahmen wählen'],
+    ['Strg/⌘ + A', 'Alle wählen'],
+    ['⏎', 'Foto öffnen'],
+    ['Esc', 'Auswahl leeren'],
+  ]],
+  ['Raster und Betrachter', [
+    ['F', 'Favorit umschalten'],
+    ['0 – 5', 'Sternebewertung setzen'],
+    ['6 – 9', 'Farbmarke setzen (rot, gelb, grün, blau)'],
+    ['Entf / ⌫', 'In den Papierkorb (mit Rückfrage)'],
+  ]],
+  ['Betrachter', [
+    ['← / →', 'Vorheriges / nächstes Foto'],
+    ['Leertaste', 'Nächstes Foto'],
+    ['I', 'Angaben ein- und ausblenden'],
+    ['Esc', 'Schliessen'],
+  ]],
+];
+
+function zeigeKuerzel() {
+  const box = $('kuerzel-liste');
+  box.replaceChildren();
+  for (const [titel, zeilen] of KUERZEL) {
+    box.append(el('h4', null, t(titel)));
+    const dl = el('dl');
+    for (const [taste, was] of zeilen) dl.append(el('dt', null, t(taste)), el('dd', null, t(was)));
+    box.append(dl);
+  }
+  box.append(el('p', 'leise klein', t('Die Tasten wirken auf die Auswahl. Gibt es keine, wirken sie auf die Kachel, auf der der Rahmen steht.')));
+  $('kuerzel-dialog').showModal();
+}
+$('kuerzel-zu').addEventListener('click', () => $('kuerzel-dialog').close());
+$('einst-kuerzel').addEventListener('click', zeigeKuerzel);
+
+document.addEventListener('keydown', async (e) => {
+  // Nicht beim Schreiben und nicht über einem offenen Dialog.
+  const ziel = e.target;
+  if (ziel instanceof HTMLElement && (ziel.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(ziel.tagName))) return;
+  if (document.querySelector('dialog[open]')) return;
+  const strg = e.metaKey || e.ctrlKey;
+  if (e.altKey) return;
+  const taste = e.key;
+  try {
+    if (offen >= 0) {
+      if (strg) return;
+      const a = liste.aufnahmen[offen];
+      if (taste === 'Escape') schliesse();
+      else if (taste === 'ArrowLeft') oeffne(offen - 1);
+      else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); oeffne(offen + 1); }
+      else if (taste === 'f' || taste === 'F') await setzeFavorit([a]);
+      else if (taste === 'i' || taste === 'I') setzeAngabenOffen(!angabenOffen);
+      else if (/^[0-5]$/.test(taste)) await setzeSterne([a], Number(taste));
+      else if (FARBTASTEN[taste]) await setzeFarbe([a], FARBTASTEN[taste]);
+      else if ((taste === 'Delete' || taste === 'Backspace') && !liste.papierkorb) await inDenKorb([a]);
+      return;
+    }
+    if (taste === '?') { e.preventDefault(); zeigeKuerzel(); return; }
+    if (taste === '/' && !strg) { e.preventDefault(); location.hash = '#/suche'; return; }
+    if ($('bereich-raster').hidden || !liste || !liste.kacheln || !liste.kacheln.length) return;
+    if (strg && (taste === 'a' || taste === 'A')) {
+      e.preventDefault();
+      for (const x of liste.aufnahmen) auswahl.add(x.id);
+      zeichneAuswahl();
+      return;
+    }
+    if (strg) return;
+    const pfeil = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: 'oben', ArrowDown: 'unten' }[taste];
+    if (pfeil !== undefined) {
+      e.preventDefault();
+      const ohneRahmen = rahmen < 0 || !liste.kacheln[rahmen]?.classList.contains('rahmen');
+      if (ohneRahmen) {
+        // Der erste Druck setzt den Rahmen auf die erste sichtbare Kachel.
+        const sichtbar = liste.kacheln.findIndex((k) => k.getBoundingClientRect().bottom > 60);
+        setzeRahmen(Math.max(0, sichtbar));
+        rahmenAnker = rahmen;
+        return;
+      }
+      const von = rahmen;
+      const neu = pfeil === 'oben' ? reiheWeiter(von, -1) : pfeil === 'unten' ? reiheWeiter(von, 1) : von + pfeil;
+      if (!e.shiftKey) rahmenAnker = neu;
+      else if (!auswahl.size) { rahmenAnker = von; }
+      setzeRahmen(neu);
+      if (e.shiftKey) waehleBereich(rahmenAnker, rahmen);
+      return;
+    }
+    const ziele = tastenziele();
+    if (taste === 'Enter' && rahmen >= 0) oeffne(rahmen);
+    else if (taste === ' ' && rahmen >= 0 && liste.kacheln[rahmen].classList.contains('rahmen')) { e.preventDefault(); schalteAuswahl(liste.aufnahmen[rahmen].id, liste.kacheln[rahmen]); }
+    // Erst die Auswahl, beim zweiten Mal der Rahmen.
+    else if (taste === 'Escape') { if (auswahl.size || auswahlModus) auswahlAufheben(); else setzeRahmen(rahmen, false); }
+    else if (taste === 'f' || taste === 'F') await setzeFavorit(ziele);
+    else if (/^[0-5]$/.test(taste)) await setzeSterne(ziele, Number(taste));
+    else if (FARBTASTEN[taste]) await setzeFarbe(ziele, FARBTASTEN[taste]);
+    else if ((taste === 'Delete' || taste === 'Backspace') && !liste.papierkorb) { e.preventDefault(); await inDenKorb(ziele); }
+  } catch (x) { meldung(x.message); }
 });
 
 // --- Wege ------------------------------------------------------------------
