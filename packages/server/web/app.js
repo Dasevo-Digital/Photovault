@@ -1004,14 +1004,24 @@ function ladeLeaflet() {
   return leafletLaden;
 }
 
+// Die Kacheln von OpenStreetMap. Der Server schickt jeder Seite
+// `Referrer-Policy: no-referrer` mit; ohne Referer sperren die
+// OSM-Server Browser aber („Access blocked“, osm.wiki/Blocked). Für die
+// Kacheln geht deshalb nur der Ursprung mit (https://<server>/), kein
+// Pfad – welche Reise oder Person gerade offen ist, erfährt OSM nicht.
+function osmKacheln() {
+  return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    referrerPolicy: 'strict-origin-when-cross-origin',
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  });
+}
+
 // Die Route: Linie durch die verorteten Aufnahmen in ihrer Zeitfolge, ein
 // Punkt je Aufnahme – ein Tipp darauf öffnet sie.
 function zeichneRoute(box, punkte) {
   const karte = L.map(box, { scrollWheelZoom: false });
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(karte);
+  osmKacheln().addTo(karte);
   const farbe = getComputedStyle(document.documentElement).getPropertyValue('--akzent').trim() || '#0d8a7a';
   const linie = L.polyline(punkte.map((p) => [p.breite, p.laenge]), { color: farbe, weight: 4, opacity: 0.85 }).addTo(karte);
   punkte.forEach((p, i) => {
@@ -1857,10 +1867,7 @@ async function zeigeKarte() {
   await ladeLeaflet();
   if (!leafletKarte) {
     leafletKarte = L.map('karte', { worldCopyJump: true }).setView([51, 10], 5);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(leafletKarte);
+    osmKacheln().addTo(leafletKarte);
     karteMarker = L.layerGroup().addTo(leafletKarte);
     leafletKarte.on('moveend', () => ladeOrte());
     await ladeOrte(true);
