@@ -2101,4 +2101,43 @@ class AppTexteEn extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get ansichtReihenfolge => 'Order';
+
+  @override
+  String get sortAufnahmeNeu => 'Date taken, newest first';
+
+  @override
+  String get sortAufnahmeAlt => 'Date taken, oldest first';
+
+  @override
+  String get sortImportNeu => 'Recently added';
+
+  @override
+  String get sortName => 'File name, A–Z';
+
+  @override
+  String get sortBewertung => 'Rating, best first';
+
+  @override
+  String get sortGroesse => 'File size, largest first';
+
+  @override
+  String get ansichtNurMonate => 'Group by month only';
+
+  @override
+  String get ansichtNachTagen => 'Group by day';
+
+  @override
+  String get ansichtReihen => 'Justified rows – every photo in its own format';
+
+  @override
+  String get ansichtQuadrate => 'Square grid';
+
+  @override
+  String get ansichtKleiner => 'Smaller tiles – more months at once';
+
+  @override
+  String get ansichtGroesser => 'Larger tiles';
 }

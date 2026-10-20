@@ -393,6 +393,7 @@ function kachel(a, index) {
   img.draggable = false;
   img.src = miniaturUrl(a.id);
   k.append(img);
+  k.style.setProperty('--v', seitenverhaeltnis(a).toFixed(4));
   marken(k, a);
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
   if (schwebeVideoId(a)) {
@@ -507,6 +508,13 @@ function haengeAn(aufnahmen) {
   // Erst sammeln, dann auf einmal einhängen: 200 einzelne Einfügungen in
   // die lebende Seite waren 200 Gelegenheiten, das Layout zu verwerfen.
   const raster = document.createDocumentFragment();
+  // Vor jeder Überschrift ein Füller: In bündigen Reihen bleibt so die
+  // letzte Reihe einer Gruppe ungestreckt.
+  const kopfDazu = (kopf) => {
+    if (liste.kacheln.length) raster.append(el('span', 'fueller'));
+    raster.append(kopf);
+  };
+  const mitTagen = ansicht.tage;
   for (const a of aufnahmen) {
     const tag = tagVon(a);
     if (liste.nachTagen) {
@@ -515,13 +523,13 @@ function haengeAn(aufnahmen) {
       if (monat !== letzterMonat) {
         letzterMonat = monat;
         letzterTag = null;
-        raster.append(el('h2', 'monat', monatJahr.format(d)));
+        kopfDazu(el('h2', 'monat', monatJahr.format(d)));
       }
-      if (tag !== letzterTag) {
+      if (mitTagen && tag !== letzterTag) {
         letzterTag = tag;
         const kopf = tageskopf(a, tag);
         liste.koepfe.set(tag, kopf);
-        raster.append(kopf);
+        kopfDazu(kopf);
       }
     }
     if (!liste.tage.has(tag)) liste.tage.set(tag, []);
@@ -548,6 +556,8 @@ function zeigeListe(neu, titel) {
   $('raster-titel').textContent = titel || '';
   $('raster-kopf').replaceChildren(...(liste.kopf ? [liste.kopf] : []));
   $('raster-kopf').hidden = !liste.kopf;
+  $('ansichtsleiste').hidden = !liste.zeitleiste;
+  legeForm();
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
   if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Keine Aufnahmen.');
@@ -573,6 +583,38 @@ async function ladeMehr() {
 const waechter = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) ladeMehr(); });
 waechter.observe($('ende'));
 
+// --- Ansicht der Zeitleiste (#194) ------------------------------------------
+//
+// Wie die Leiste über der Zeitleiste am Rechner: die Reihenfolge, nach
+// Tagen oder nur nach Monaten gegliedert, quadratische Kacheln oder
+// bündige Reihen – jedes Foto in seinem Format – und grösser oder kleiner.
+// Gemerkt wird das je Browser.
+
+const ANSICHT_MERKER = 'pv-ansicht';
+const SORTIERUNGEN = ['aufnahmeNeu', 'aufnahmeAlt', 'importNeu', 'name', 'bewertung', 'groesse'];
+const ansicht = (() => {
+  const v = { sortierung: 'aufnahmeNeu', tage: true, form: 'quadrate' };
+  try { Object.assign(v, JSON.parse(localStorage.getItem(ANSICHT_MERKER) || '{}')); } catch (_) { /* privat */ }
+  if (!SORTIERUNGEN.includes(v.sortierung)) v.sortierung = 'aufnahmeNeu';
+  if (v.form !== 'reihen') v.form = 'quadrate';
+  v.tage = v.tage !== false;
+  return v;
+})();
+function merkeAnsicht() {
+  try { localStorage.setItem(ANSICHT_MERKER, JSON.stringify(ansicht)); } catch (_) { /* privat */ }
+}
+// Nur nach dem Aufnahmedatum geordnet gibt es Monate und Tage: Eine
+// Überschrift „März 2019“ über Fotos, die nach Grösse sortiert sind, wäre
+// falsch (wie am Rechner).
+const nachDatum = () => ansicht.sortierung === 'aufnahmeNeu' || ansicht.sortierung === 'aufnahmeAlt';
+
+// Das Format einer Aufnahme für die bündigen Reihen; ohne Angabe ein
+// Kleinbildformat, das in keiner Richtung auffällt.
+function seitenverhaeltnis(a) {
+  const v = a.breite > 0 && a.hoehe > 0 ? a.breite / a.hoehe : 1.5;
+  return Number.isFinite(v) && v > 0 ? v : 1.5;
+}
+
 // Die Zeitleiste merkt sich ihr Lesezeichen, damit ein Wechsel in ein
 // Album nicht alles neu lädt.
 const zeitleiste = {
@@ -582,6 +624,7 @@ const zeitleiste = {
   async mehr() {
     const q = new URLSearchParams({ anzahl: '200' });
     if (this.weiter) q.set('nach', this.weiter);
+    if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
     const d = await api(`/api/v1/aufnahmen?${q}`);
     this.weiter = d.weiter;
     this.geladen.push(...d.aufnahmen);
@@ -594,7 +637,7 @@ const zeitleiste = {
 async function zeigeFotos() {
   markiereNav('fotos');
   zeigeBereich(['raster']);
-  zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: true, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
+  zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
 }
@@ -2631,7 +2674,67 @@ let spalten = (() => { try { const n = Number(localStorage.getItem(SPALTEN_MERKE
 let kneif = null;
 
 const meisteSpalten = () => Math.max(6, Math.floor($('raster').clientWidth / 80));
-const spaltenJetzt = () => spalten || getComputedStyle($('raster')).gridTemplateColumns.split(' ').filter(Boolean).length;
+// Ohne feste Wahl so viele, wie das Raster von selbst legt (mindestens
+// 140 Punkte je Kachel); in bündigen Reihen gibt es keine Spalten, dort
+// ist es dieselbe Rechnung.
+const spaltenJetzt = () => spalten || (ansicht.form === 'reihen'
+  ? Math.max(2, Math.floor(($('raster').clientWidth - 2) / 142))
+  : getComputedStyle($('raster')).gridTemplateColumns.split(' ').filter(Boolean).length);
+
+// Die Reihenhöhe der bündigen Reihen: so hoch, wie eine quadratische
+// Kachel breit wäre – Grösser und Kleiner wirken in beiden Formen gleich.
+function legeForm() {
+  const r = $('raster');
+  const reihen = ansicht.form === 'reihen';
+  r.classList.toggle('reihen', reihen);
+  if (reihen) {
+    const n = spaltenJetzt();
+    const breite = r.clientWidth - 4;
+    if (breite > 0) r.style.setProperty('--hoehe', `${Math.max(60, Math.round((breite - 2 * (n - 1)) / n))}px`);
+  }
+  zeigeAnsichtsleiste();
+}
+window.addEventListener('resize', () => { if (ansicht.form === 'reihen') legeForm(); });
+
+function zeigeAnsichtsleiste() {
+  if ($('ansichtsleiste').hidden) return;
+  $('ansicht-sortierung').value = ansicht.sortierung;
+  const tage = $('ansicht-tage');
+  tage.hidden = !nachDatum();
+  tage.setAttribute('aria-pressed', String(ansicht.tage));
+  const tageText = ansicht.tage ? t('Nur nach Monaten gliedern') : t('Nach Tagen gliedern');
+  tage.title = tageText;
+  tage.setAttribute('aria-label', tageText);
+  const form = $('ansicht-form');
+  const formText = ansicht.form === 'reihen' ? t('Quadratisches Raster') : t('Bündige Reihen – jedes Foto in seinem Format');
+  form.title = formText;
+  form.setAttribute('aria-label', formText);
+  form.querySelector('use').setAttribute('href', ansicht.form === 'reihen' ? '#i-quadrate' : '#i-reihen');
+  const n = spaltenJetzt();
+  $('ansicht-groesser').disabled = n <= 2;
+  $('ansicht-kleiner').disabled = n >= meisteSpalten();
+}
+
+$('ansicht-sortierung').addEventListener('change', (e) => {
+  ansicht.sortierung = SORTIERUNGEN.includes(e.target.value) ? e.target.value : 'aufnahmeNeu';
+  merkeAnsicht();
+  zeitleiste.leeren();
+  window.scrollTo(0, 0);
+  zeigeFotos();
+});
+$('ansicht-tage').addEventListener('click', () => {
+  ansicht.tage = !ansicht.tage;
+  merkeAnsicht();
+  zeigeFotos();
+});
+$('ansicht-form').addEventListener('click', () => {
+  ansicht.form = ansicht.form === 'reihen' ? 'quadrate' : 'reihen';
+  merkeAnsicht();
+  legeForm();
+});
+// Kleiner heisst mehr Fotos nebeneinander und damit mehr Monate auf einmal.
+$('ansicht-kleiner').addEventListener('click', () => setzeSpalten(spaltenJetzt() + 1, true));
+$('ansicht-groesser').addEventListener('click', () => setzeSpalten(spaltenJetzt() - 1, true));
 
 function setzeSpalten(n, merken) {
   const r = $('raster');
@@ -2646,6 +2749,7 @@ function setzeSpalten(n, merken) {
     window.scrollTo(0, anteil * (document.documentElement.scrollHeight - innerHeight));
   }
   if (merken) { try { localStorage.setItem(SPALTEN_MERKER, String(spalten)); } catch (_) { /* privat */ } }
+  legeForm();
 }
 if (spalten) { $('raster').style.setProperty('--spalten', String(spalten)); $('raster').classList.add('feste-spalten'); }
 

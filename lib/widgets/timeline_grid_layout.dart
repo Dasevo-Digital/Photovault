@@ -1,9 +1,14 @@
 import 'package:kern/db/rasterzeile.dart';
-import '../services/bildreihen.dart';
+import 'package:kern/services/bildreihen.dart';
 import 'package:kern/services/rasterstufen.dart';
 
-export '../services/bildreihen.dart'
-    show Bildreihe, Bildplatz, reihenGesamthoehe, seitenverhaeltnisVorgabe;
+export 'package:kern/services/bildreihen.dart'
+    show
+        Bildreihe,
+        Bildplatz,
+        reihenGesamthoehe,
+        seitenverhaeltnisVon,
+        seitenverhaeltnisVorgabe;
 export 'package:kern/services/rasterstufen.dart';
 
 /// Geschätzte Maße des von [MonthGroupedAssetGrid] erzeugten Scroll-Inhalts
@@ -60,21 +65,6 @@ double timelineRowHeightForWidth(
   final usable = availableWidth - timelineGridSpacing * (columns - 1);
   final tileExtent = usable / columns;
   return tileExtent + timelineGridSpacing;
-}
-
-/// Das Seitenverhältnis (Breite ÷ Höhe) einer Aufnahme.
-///
-/// Die Masse liegen in der Datenbank und sind bereits nach der
-/// EXIF-Ausrichtung gedreht – an der echten Bibliothek gegengeprüft: 27 %
-/// Hochformat, was ohne Drehung nicht herauskäme. Fehlen sie (2 von 8098),
-/// gilt das Kleinbildformat.
-double seitenverhaeltnisVon(Rasterzeile a) {
-  final b = a.widthPx;
-  final h = a.heightPx;
-  if (b == null || h == null || b <= 0 || h <= 0) {
-    return seitenverhaeltnisVorgabe;
-  }
-  return b / h;
 }
 
 /// Die bündigen Reihen einer Monatsgruppe.

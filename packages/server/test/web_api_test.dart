@@ -1649,6 +1649,47 @@ void main() {
     },
   );
 
+  test('Zeitleiste in anderer Reihenfolge, seitenweise (#194)', () async {
+    final a = await ladeHoch(erikaToken, 'c-mitte.jpg', 30);
+    final b = await ladeHoch(erikaToken, 'a-alt.jpg', 60);
+    final c = await ladeHoch(erikaToken, 'B-neu.jpg', 90);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    for (final (id, tag, sterne) in [(a, 2, 1), (b, 1, 5), (c, 3, 0)]) {
+      await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+        AssetsCompanion(
+          fileCreatedAt: Value(DateTime(2025, 5, tag, 12, 34)),
+          rating: Value(sterne),
+        ),
+      );
+    }
+    Future<List<String>> alle(String sortierung) async {
+      final ids = <String>[];
+      String? nach;
+      for (var i = 0; i < 10; i++) {
+        final d = await jsonAus(
+          await frag(
+            'GET',
+            '/api/v1/aufnahmen?anzahl=1&sortierung=$sortierung'
+                '${nach == null ? '' : '&nach=$nach'}',
+            token: erikaToken,
+          ),
+        );
+        ids.addAll([
+          for (final x in d['aufnahmen']! as List) (x as Map)['id'] as String,
+        ]);
+        nach = d['weiter'] as String?;
+        if (nach == null) break;
+      }
+      return ids;
+    }
+
+    expect(await alle('aufnahmeNeu'), [c, a, b]);
+    expect(await alle('aufnahmeAlt'), [b, a, c]);
+    expect(await alle('name'), [b, c, a], reason: 'ohne Gross/klein');
+    expect(await alle('bewertung'), [b, a, c]);
+    expect(await alle('unbekannt'), [c, a, b], reason: 'die Vorgabe');
+  });
+
   test('Rückblick und Kalender wie am Rechner (#185)', () async {
     final a = await ladeHoch(erikaToken, 'a.jpg', 30);
     final b = await ladeHoch(erikaToken, 'b.jpg', 60);

@@ -2111,4 +2111,43 @@ class AppTexteDe extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get ansichtReihenfolge => 'Reihenfolge';
+
+  @override
+  String get sortAufnahmeNeu => 'Aufnahmedatum, neueste zuerst';
+
+  @override
+  String get sortAufnahmeAlt => 'Aufnahmedatum, älteste zuerst';
+
+  @override
+  String get sortImportNeu => 'Zuletzt hinzugefügt';
+
+  @override
+  String get sortName => 'Dateiname, A–Z';
+
+  @override
+  String get sortBewertung => 'Bewertung, beste zuerst';
+
+  @override
+  String get sortGroesse => 'Dateigrösse, grösste zuerst';
+
+  @override
+  String get ansichtNurMonate => 'Nur nach Monaten gliedern';
+
+  @override
+  String get ansichtNachTagen => 'Nach Tagen gliedern';
+
+  @override
+  String get ansichtReihen => 'Bündige Reihen – jedes Foto in seinem Format';
+
+  @override
+  String get ansichtQuadrate => 'Quadratisches Raster';
+
+  @override
+  String get ansichtKleiner => 'Kleinere Kacheln – mehr Monate auf einmal';
+
+  @override
+  String get ansichtGroesser => 'Grössere Kacheln';
 }

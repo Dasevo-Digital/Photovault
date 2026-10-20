@@ -708,5 +708,18 @@
   "betrachterUnbenannteLoeschen": "{anzahl, plural, =0{No unnamed detections} =1{Delete unnamed detection} other{Delete {anzahl} unnamed detections}}",
   "@betrachterUnbenannteLoeschen": {"placeholders": {"anzahl": {"type": "int"}}},
   "betrachterUnbenannteLoeschenFrage": "{anzahl, plural, =1{Delete the unnamed detection on this photo? Named faces remain.} other{Delete the {anzahl} unnamed detections on this photo? Named faces remain.}}",
-  "@betrachterUnbenannteLoeschenFrage": {"placeholders": {"anzahl": {"type": "int"}}}
+  "@betrachterUnbenannteLoeschenFrage": {"placeholders": {"anzahl": {"type": "int"}}},
+  "ansichtReihenfolge": "Order",
+  "sortAufnahmeNeu": "Date taken, newest first",
+  "sortAufnahmeAlt": "Date taken, oldest first",
+  "sortImportNeu": "Recently added",
+  "sortName": "File name, A–Z",
+  "sortBewertung": "Rating, best first",
+  "sortGroesse": "File size, largest first",
+  "ansichtNurMonate": "Group by month only",
+  "ansichtNachTagen": "Group by day",
+  "ansichtReihen": "Justified rows – every photo in its own format",
+  "ansichtQuadrate": "Square grid",
+  "ansichtKleiner": "Smaller tiles – more months at once",
+  "ansichtGroesser": "Larger tiles"
 }

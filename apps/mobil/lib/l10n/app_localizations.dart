@@ -3264,6 +3264,84 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}'**
   String betrachterUnbenannteLoeschenFrage(int anzahl);
+
+  /// No description provided for @ansichtReihenfolge.
+  ///
+  /// In de, this message translates to:
+  /// **'Reihenfolge'**
+  String get ansichtReihenfolge;
+
+  /// No description provided for @sortAufnahmeNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmedatum, neueste zuerst'**
+  String get sortAufnahmeNeu;
+
+  /// No description provided for @sortAufnahmeAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmedatum, älteste zuerst'**
+  String get sortAufnahmeAlt;
+
+  /// No description provided for @sortImportNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt hinzugefügt'**
+  String get sortImportNeu;
+
+  /// No description provided for @sortName.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiname, A–Z'**
+  String get sortName;
+
+  /// No description provided for @sortBewertung.
+  ///
+  /// In de, this message translates to:
+  /// **'Bewertung, beste zuerst'**
+  String get sortBewertung;
+
+  /// No description provided for @sortGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateigrösse, grösste zuerst'**
+  String get sortGroesse;
+
+  /// No description provided for @ansichtNurMonate.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur nach Monaten gliedern'**
+  String get ansichtNurMonate;
+
+  /// No description provided for @ansichtNachTagen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Tagen gliedern'**
+  String get ansichtNachTagen;
+
+  /// No description provided for @ansichtReihen.
+  ///
+  /// In de, this message translates to:
+  /// **'Bündige Reihen – jedes Foto in seinem Format'**
+  String get ansichtReihen;
+
+  /// No description provided for @ansichtQuadrate.
+  ///
+  /// In de, this message translates to:
+  /// **'Quadratisches Raster'**
+  String get ansichtQuadrate;
+
+  /// No description provided for @ansichtKleiner.
+  ///
+  /// In de, this message translates to:
+  /// **'Kleinere Kacheln – mehr Monate auf einmal'**
+  String get ansichtKleiner;
+
+  /// No description provided for @ansichtGroesser.
+  ///
+  /// In de, this message translates to:
+  /// **'Grössere Kacheln'**
+  String get ansichtGroesser;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

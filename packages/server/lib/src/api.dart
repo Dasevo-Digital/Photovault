@@ -25,6 +25,7 @@ import 'package:kern/services/reiseuebersicht.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
 import 'package:kern/services/wanderobjekte.dart';
 import 'package:kern/services/rueckblick.dart';
+import 'package:kern/services/sortierung.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
 import 'package:path/path.dart' as p;
@@ -574,8 +575,32 @@ class _Api {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final q = anfrage.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
-    final nach = _Lesezeichen.lies(q['nach']);
     final nurFavoriten = q['favoriten'] == '1';
+    // Andere Reihenfolgen wie am Rechner (#194). Die Vorgabe blättert wie
+    // bisher über ein Lesezeichen aus Zeit und Kennung; die übrigen über
+    // die Stelle – für sie gibt es keinen Schlüssel, der überall passt.
+    final sortierung = Rastersortierung.values
+        .where((s) => s.name == q['sortierung'])
+        .firstOrNull;
+    if (sortierung != null && sortierung != rastersortierungVorgabe) {
+      final ab = int.tryParse((q['nach'] ?? '').replaceFirst('o:', '')) ?? 0;
+      final zeilen = await db
+          .customSelect(
+            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
+            '${nurFavoriten ? ' AND is_favorite = 1' : ''}'
+            ' ORDER BY ${sortierungSql(sortierung)}, id DESC LIMIT ? OFFSET ?',
+            variables: [Variable<int>(anzahl), Variable<int>(ab)],
+            readsFrom: {db.assets},
+          )
+          .get();
+      return _json({
+        'aufnahmen': [
+          for (final z in zeilen) zeileAlsJson(Rasterzeile.ausZeile(z)),
+        ],
+        'weiter': zeilen.length < anzahl ? null : 'o:${ab + zeilen.length}',
+      });
+    }
+    final nach = _Lesezeichen.lies(q['nach']);
     final zeilen = await db
         .customSelect(
           'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'

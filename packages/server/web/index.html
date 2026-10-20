@@ -54,6 +54,12 @@
   <symbol id="m-serie" viewBox="0 0 24 24"><path d="M8 3h11a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v11h11V5zM3 8v11a2 2 0 0 0 2 2h11v-2H5V8z" fill-rule="evenodd"/></symbol>
   <symbol id="i-diashow" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M10 9.2v5.6l4.6-2.8z"/></symbol>
   <symbol id="i-zurueck" viewBox="0 0 24 24"><path d="M4.5 9.5h10a5 5 0 0 1 0 10H8M8.5 5.5l-4 4 4 4"/></symbol>
+  <!-- Die Ansichtsleiste über der Zeitleiste (#194). -->
+  <symbol id="i-quadrate" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-reihen" viewBox="0 0 24 24"><rect x="3.5" y="5" width="10" height="6" rx="1"/><rect x="15.5" y="5" width="5" height="6" rx="1"/><rect x="3.5" y="13" width="5" height="6" rx="1"/><rect x="10.5" y="13" width="10" height="6" rx="1"/></symbol>
+  <symbol id="i-tage" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 14.5h9"/></symbol>
+  <symbol id="i-kleiner" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6"/></symbol>
+  <symbol id="i-groesser" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6M10.5 7.5v6"/></symbol>
 </svg>
 
 <header id="kopf" hidden>
@@ -281,6 +287,20 @@
     <div id="erinnerungen" hidden><h2>Erinnerungen</h2><div id="erinnerungen-karten"></div></div>
     <h2 id="raster-titel" hidden></h2>
     <div id="raster-kopf" hidden></div>
+    <div id="ansichtsleiste" hidden>
+      <select id="ansicht-sortierung" aria-label="Reihenfolge" title="Reihenfolge">
+        <option value="aufnahmeNeu">Aufnahmedatum, neueste zuerst</option>
+        <option value="aufnahmeAlt">Aufnahmedatum, älteste zuerst</option>
+        <option value="importNeu">Zuletzt hinzugefügt</option>
+        <option value="name">Dateiname, A–Z</option>
+        <option value="bewertung">Bewertung, beste zuerst</option>
+        <option value="groesse">Dateigrösse, grösste zuerst</option>
+      </select>
+      <button id="ansicht-tage" type="button" aria-pressed="true"><svg class="symbol" aria-hidden="true"><use href="#i-tage"/></svg></button>
+      <button id="ansicht-form" type="button"><svg class="symbol" aria-hidden="true"><use href="#i-reihen"/></svg></button>
+      <button id="ansicht-kleiner" type="button" aria-label="Kleinere Kacheln – mehr Monate auf einmal" title="Kleinere Kacheln – mehr Monate auf einmal"><svg class="symbol" aria-hidden="true"><use href="#i-kleiner"/></svg></button>
+      <button id="ansicht-groesser" type="button" aria-label="Grössere Kacheln" title="Grössere Kacheln"><svg class="symbol" aria-hidden="true"><use href="#i-groesser"/></svg></button>
+    </div>
     <div id="raster"></div>
     <p id="ende" class="leise"></p>
   </section>

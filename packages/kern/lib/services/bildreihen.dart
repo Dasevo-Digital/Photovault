@@ -15,6 +15,8 @@
 /// Reihenfolge: Hier wird links nach rechts und oben nach unten gelesen.
 library;
 
+import '../db/rasterzeile.dart';
+
 /// Das Seitenverhältnis (Breite ÷ Höhe), das gilt, wenn die Datenbank
 /// keines kennt.
 ///
@@ -22,6 +24,21 @@ library;
 /// Ein Kleinbildformat ist die harmloseste Annahme: Es ist weder besonders
 /// schmal noch besonders breit, fällt also in keiner Richtung auf.
 const double seitenverhaeltnisVorgabe = 3 / 2;
+
+/// Das Seitenverhältnis (Breite ÷ Höhe) einer Aufnahme.
+///
+/// Die Masse liegen in der Datenbank und sind bereits nach der
+/// EXIF-Ausrichtung gedreht – an der echten Bibliothek gegengeprüft: 27 %
+/// Hochformat, was ohne Drehung nicht herauskäme. Fehlen sie (2 von 8098),
+/// gilt das Kleinbildformat.
+double seitenverhaeltnisVon(Rasterzeile a) {
+  final b = a.widthPx;
+  final h = a.heightPx;
+  if (b == null || h == null || b <= 0 || h <= 0) {
+    return seitenverhaeltnisVorgabe;
+  }
+  return b / h;
+}
 
 /// Ein Platz in einer Reihe: welches Element, und wie breit es dort ist.
 typedef Bildplatz = ({int index, double breite});

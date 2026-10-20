@@ -146,6 +146,25 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 .kachel .schild { position: absolute; right: 5px; top: 5px; display: flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .02em; line-height: 15px; pointer-events: none; z-index: 1; }
 .kachel .schild .zeichen { width: 11px; height: 11px; filter: none; }
 /* Der Rahmen der Tastatur – wie am Rechner. */
+/* Die Ansichtsleiste (#194) und die bündigen Reihen: Jede Kachel wächst
+   im Verhältnis ihres Formats, so werden alle einer Reihe gleich hoch;
+   ein Füller am Ende jeder Gruppe lässt deren letzte Reihe ungestreckt. */
+#ansichtsleiste { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin: 2px 8px 6px; }
+#ansichtsleiste[hidden] { display: none; }
+#ansichtsleiste select { margin-right: auto; max-width: 60vw; padding: 5px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); font: inherit; font-size: .9em; }
+#ansichtsleiste button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: none; color: var(--text); }
+#ansichtsleiste button:hover:not(:disabled) { background: var(--karte); }
+#ansichtsleiste button[aria-pressed="true"] { background: var(--karte); border-color: var(--rand); }
+#ansichtsleiste button:disabled { opacity: .35; }
+#ansichtsleiste button[hidden] { display: none; }
+#ansichtsleiste .symbol { width: 20px; height: 20px; }
+#raster .fueller { display: none; }
+#raster.reihen { display: flex; flex-wrap: wrap; align-items: flex-start; }
+#raster.reihen > :is(h2, .tageskopf) { flex: 0 0 100%; }
+#raster.reihen .kachel { flex: var(--v, 1.5) 1 calc(var(--v, 1.5) * var(--hoehe, 140px)); aspect-ratio: var(--v, 1.5); contain-intrinsic-size: auto var(--hoehe, 140px); }
+#raster.reihen .fueller { display: block; flex: 1000000 1 0; height: 0; }
+#raster.reihen::after { content: ''; flex: 1000000 1 0; }
+
 /* Vorschau beim Darüberfahren (#193): über dem Standbild, sichtbar erst
    mit dem ersten Bild. */
 #raster .kachel video.schwebe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0; transition: opacity .12s ease-out; }

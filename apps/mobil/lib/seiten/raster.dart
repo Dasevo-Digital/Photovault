@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/bildreihen.dart';
+import 'package:kern/services/rasterstufen.dart';
 
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
@@ -67,6 +69,27 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   /// Die Zahl gilt für dieses Gerät und bleibt (siehe Sitzung).
   late var _spalten = widget.sitzung.rasterspalten;
   static const _wenigsteSpalten = 2, _meisteSpalten = 6;
+
+  // Form und Gliederung wie in der Ansichtsleiste gewählt (Issue #194) –
+  // für jedes Raster dieses Geräts, wie im Browser.
+  late var _reihen = widget.sitzung.form == Zeitleistenform.reihen;
+  late var _nurMonate = widget.sitzung.nurMonate;
+
+  void _sitzungGeaendert() {
+    final s = widget.sitzung;
+    final reihen = s.form == Zeitleistenform.reihen;
+    if (reihen != _reihen || s.nurMonate != _nurMonate) {
+      setState(() {
+        _reihen = reihen;
+        _nurMonate = s.nurMonate;
+      });
+    }
+    // Die Knöpfe der Leiste; während zwei Finger ziehen, gilt das Ziehen.
+    if (s.rasterspalten != _spalten && _kneifer.length < 2) {
+      _setzeSpalten(s.rasterspalten);
+    }
+  }
+
   final _kneifer = <int, Offset>{};
   double? _startAbstand;
   var _startSpalten = Sitzung.spaltenVorgabe;
@@ -100,12 +123,24 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   List<_Tag> _tageCache = const [];
   List<Rasterzeile>? _tageFuer;
   var _tageLaenge = -1;
+  bool? _tageJeMonat;
 
   List<_Tag> _tageVon(List<Rasterzeile> zeilen) {
-    if (!identical(zeilen, _tageFuer) || zeilen.length != _tageLaenge) {
-      _tageCache = _tage(zeilen);
+    // Ohne Gliederung (bündige Reihen ausserhalb der Zeitleiste) ist die
+    // ganze Liste eine Gruppe.
+    final jeMonat = widget.nachTagen ? _nurMonate : null;
+    if (!identical(zeilen, _tageFuer) ||
+        zeilen.length != _tageLaenge ||
+        jeMonat != _tageJeMonat) {
+      _tageCache = jeMonat == null
+          ? [
+              if (zeilen.isNotEmpty)
+                (tag: DateTime(0), von: 0, bis: zeilen.length),
+            ]
+          : _tage(zeilen, jeMonat: jeMonat);
       _tageFuer = zeilen;
       _tageLaenge = zeilen.length;
+      _tageJeMonat = jeMonat;
     }
     return _tageCache;
   }
@@ -114,29 +149,60 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   /// Kachelreihen –, neu nur für neue Tage oder eine andere Spaltenzahl.
   List<_Eintrag> _eintraege = const [];
   List<_Tag>? _eintraegeFuer;
-  var _eintraegeSpalten = 0;
+  Object? _eintraegeSchluessel;
 
-  List<_Eintrag> _eintraegeVon(List<_Tag> tage) {
-    if (!identical(tage, _eintraegeFuer) || _spalten != _eintraegeSpalten) {
+  /// [breite] zählt nur bei bündigen Reihen: Dort hängt die Aufteilung an
+  /// ihr, bei Quadraten nur die Höhe.
+  List<_Eintrag> _eintraegeVon(List<_Tag> tage, double breite) {
+    final schluessel = (
+      _spalten,
+      _reihen,
+      _nurMonate,
+      widget.nachTagen,
+      _reihen ? breite : 0.0,
+    );
+    if (!identical(tage, _eintraegeFuer) ||
+        schluessel != _eintraegeSchluessel) {
       final liste = <_Eintrag>[];
       DateTime? monat;
+      // Die Reihenhöhe: so hoch, wie eine quadratische Kachel breit wäre –
+      // Grösser und Kleiner wirken in beiden Formen gleich (wie am Rechner).
+      final zielhoehe = (breite - 2 * (_spalten - 1)) / _spalten;
       for (var t = 0; t < tage.length; t++) {
         final (:tag, :von, :bis) = tage[t];
-        // Ein Monatskopf über dem ersten Tag jedes Monats, wie in Immich –
-        // die Tage darunter brauchen dann kein Jahr mehr.
-        final dieserMonat = DateTime(tag.year, tag.month);
-        if (dieserMonat != monat) {
-          monat = dieserMonat;
-          liste.add((art: _Art.monat, tag: t, von: von));
+        if (widget.nachTagen) {
+          // Ein Monatskopf über dem ersten Tag jedes Monats, wie in Immich –
+          // die Tage darunter brauchen dann kein Jahr mehr.
+          final dieserMonat = DateTime(tag.year, tag.month);
+          if (dieserMonat != monat) {
+            monat = dieserMonat;
+            liste.add((art: _Art.monat, tag: t, von: von, reihe: null));
+          }
+          if (!_nurMonate) {
+            liste.add((art: _Art.tag, tag: t, von: von, reihe: null));
+          }
         }
-        liste.add((art: _Art.tag, tag: t, von: von));
-        for (var i = von; i < bis; i += _spalten) {
-          liste.add((art: _Art.reihe, tag: t, von: i));
+        if (_reihen) {
+          for (final r in bildreihen(
+            seitenverhaeltnisse: [
+              for (var i = von; i < bis; i++)
+                seitenverhaeltnisVon(widget.zeilen[i]),
+            ],
+            breite: breite,
+            zielhoehe: zielhoehe,
+            abstand: 2,
+          )) {
+            liste.add((art: _Art.reihe, tag: t, von: von, reihe: r));
+          }
+        } else {
+          for (var i = von; i < bis; i += _spalten) {
+            liste.add((art: _Art.reihe, tag: t, von: i, reihe: null));
+          }
         }
       }
       _eintraege = liste;
       _eintraegeFuer = tage;
-      _eintraegeSpalten = _spalten;
+      _eintraegeSchluessel = schluessel;
     }
     return _eintraege;
   }
@@ -169,10 +235,12 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   void initState() {
     super.initState();
     _scroll.addListener(_gerollt);
+    widget.sitzung.addListener(_sitzungGeaendert);
   }
 
   @override
   void dispose() {
+    widget.sitzung.removeListener(_sitzungGeaendert);
     _rollen?.cancel();
     _leisteAus?.cancel();
     _scroll.dispose();
@@ -700,6 +768,21 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     ),
   );
 
+  /// Eine bündige Reihe: jedes Foto in seinem Format, alle gleich hoch.
+  /// [basis] ist der erste Index der Gruppe; die Plätze zählen ab ihm.
+  Widget _buendig(int basis, Bildreihe r, bool letzte) => Padding(
+    padding: EdgeInsets.only(bottom: letzte ? 0 : 2),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (k, p) in r.plaetze.indexed) ...[
+          if (k > 0) const SizedBox(width: 2),
+          SizedBox(width: p.breite, child: _kachel(basis + p.index)),
+        ],
+      ],
+    ),
+  );
+
   SliverGrid _gitter(int von, int bis) => SliverGrid(
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: _spalten,
@@ -713,12 +796,15 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, c) => _baue(context, c.maxWidth));
+
+  Widget _baue(BuildContext context, double breite) {
     final zeilen = widget.zeilen;
     final slivers = <Widget>[
       if (widget.kopf != null) SliverToBoxAdapter(child: widget.kopf),
     ];
-    if (!widget.nachTagen) {
+    if (!widget.nachTagen && !_reihen) {
       slivers.add(_gitter(0, zeilen.length));
     } else {
       // **Eine einzige Liste, gebaut wird nur, was zu sehen ist.** Vorher
@@ -751,9 +837,15 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
       final double tagHoehe =
           18 + math.max(22.0, zeilenhoehe(themen.titleSmall));
       final tage = _tageVon(zeilen);
-      final eintraege = _eintraegeVon(tage);
+      final eintraege = _eintraegeVon(tage, breite);
       final spalten = _spalten;
-      bool letzteReihe(_Eintrag e) => e.von + spalten >= tage[e.tag].bis;
+      bool letzteReihe(_Eintrag e) {
+        final r = e.reihe;
+        return r == null
+            ? e.von + spalten >= tage[e.tag].bis
+            : e.von + r.letzterIndex >= tage[e.tag].bis - 1;
+      }
+
       slivers.add(
         SliverVariedExtentList.builder(
           itemCount: eintraege.length,
@@ -764,7 +856,8 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
               _Art.monat => monatHoehe,
               _Art.tag => tagHoehe,
               _Art.reihe =>
-                (masse.crossAxisExtent - 2 * (spalten - 1)) / spalten +
+                (e.reihe?.hoehe ??
+                        (masse.crossAxisExtent - 2 * (spalten - 1)) / spalten) +
                     (letzteReihe(e) ? 0.0 : 2.0),
             };
           },
@@ -777,7 +870,10 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                 child: Text(monatFormat.format(tag), style: monatStil),
               ),
               _Art.tag => _tageskopf(tagFormat.format(tag), von, bis),
-              _Art.reihe => _reihe(e.von, bis, letzteReihe(e)),
+              _Art.reihe =>
+                e.reihe == null
+                    ? _reihe(e.von, bis, letzteReihe(e))
+                    : _buendig(e.von, e.reihe!, letzteReihe(e)),
             };
           },
         ),
@@ -837,17 +933,22 @@ enum _Art { monat, tag, reihe }
 
 /// Eine Zeile der Liste nach Tagen: zum Tag Nummer [tag] in den Tagen, bei
 /// einer Reihe ab der Aufnahme [von].
-typedef _Eintrag = ({_Art art, int tag, int von});
+typedef _Eintrag = ({_Art art, int tag, int von, Bildreihe? reihe});
 
 /// Die Tage der nach Zeit geordneten [zeilen], in der Ortszeit des Geräts.
-List<_Tag> _tage(List<Rasterzeile> zeilen) {
+List<_Tag> _tage(List<Rasterzeile> zeilen, {bool jeMonat = false}) {
+  // Nur nach Monaten (Issue #194): eine Gruppe je Monat statt je Tag.
+  DateTime gruppe(Rasterzeile z) {
+    final d = z.fileCreatedAt.toLocal();
+    return jeMonat ? DateTime(d.year, d.month) : DateUtils.dateOnly(d);
+  }
+
   final tage = <_Tag>[];
   var von = 0;
   while (von < zeilen.length) {
-    final tag = DateUtils.dateOnly(zeilen[von].fileCreatedAt.toLocal());
+    final tag = gruppe(zeilen[von]);
     var bis = von + 1;
-    while (bis < zeilen.length &&
-        DateUtils.dateOnly(zeilen[bis].fileCreatedAt.toLocal()) == tag) {
+    while (bis < zeilen.length && gruppe(zeilen[bis]) == tag) {
       bis++;
     }
     tage.add((tag: tag, von: von, bis: bis));

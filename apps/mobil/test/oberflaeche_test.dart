@@ -63,6 +63,8 @@ import 'package:photo_vault_mobil/seiten/suche.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
+import 'package:photo_vault_mobil/seiten/zeitleiste.dart';
+import 'package:kern/services/sortierung.dart';
 
 Rasterzeile _zeile(String id, double breite, double laenge) => Rasterzeile(
   id: id,
@@ -442,6 +444,111 @@ void main() {
       isLocked: false,
     );
   }
+
+  testWidgets('Zeitleiste: Ansichtsleiste wie am Rechner (#194)', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_ansicht_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    // Zwei Tage im Juni, ein breites und ein hohes Foto am selben Tag.
+    for (final (id, tag, b, h) in [
+      ('c_breit', 2, 2000, 1000),
+      ('a_hoch', 2, 1000, 2000),
+      ('b_alt', 1, 1500, 1000),
+    ]) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025, 6, tag, 12),
+          importedAt: DateTime(2026),
+          widthPx: Value(b),
+          heightPx: Value(h),
+        ),
+      );
+    }
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Zeitleiste(sitzung: sitzung)),
+      ),
+    );
+    Future<void> ruhe() async {
+      for (var i = 0; i < 3; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 120)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    await ruhe();
+    final tag2 = DateFormat.MMMMEEEEd('de').format(DateTime(2025, 6, 2));
+    final juni = DateFormat.yMMMM('de').format(DateTime(2025, 6));
+    expect(find.text(tag2), findsOneWidget);
+    expect(find.byType(Miniatur), findsNWidgets(3));
+
+    // Nur nach Monaten: die Tage fallen weg, der Monat bleibt.
+    await tester.tap(find.byTooltip('Nur nach Monaten gliedern'));
+    await ruhe();
+    expect(find.text(tag2), findsNothing);
+    expect(find.text(juni), findsOneWidget);
+    expect(sitzung.nurMonate, isTrue);
+
+    // Bündige Reihen: das breite Foto ist viermal so breit wie das hohe.
+    Size masse(String id) => tester.getSize(
+      find.byWidgetPredicate((w) => w is Miniatur && w.zeile?.id == id),
+    );
+    expect(masse('c_breit').width, closeTo(masse('a_hoch').width, 0.5));
+    await tester.tap(
+      find.byTooltip('Bündige Reihen – jedes Foto in seinem Format'),
+    );
+    await ruhe();
+    expect(masse('c_breit').width / masse('a_hoch').width, closeTo(4, 0.05));
+    expect(masse('c_breit').height, closeTo(masse('a_hoch').height, 0.5));
+
+    // Grösser: eine Spalte weniger.
+    final vorher = sitzung.rasterspalten;
+    await tester.tap(find.byTooltip('Grössere Kacheln'));
+    await ruhe();
+    expect(sitzung.rasterspalten, vorher - 1);
+
+    // Nach Dateiname: ohne Monat, a vor b vor c.
+    await tester.tap(find.text('Aufnahmedatum, neueste zuerst'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dateiname, A–Z').last);
+    await ruhe();
+    expect(sitzung.sortierung, Rastersortierung.name);
+    expect(find.text(juni), findsNothing);
+    final links = [
+      for (final id in ['a_hoch', 'b_alt', 'c_breit'])
+        tester.getTopLeft(
+          find.byWidgetPredicate((w) => w is Miniatur && w.zeile?.id == id),
+        ),
+    ];
+    expect(
+      links[0].dy < links[2].dy ||
+          (links[0].dy == links[2].dy && links[0].dx < links[1].dx),
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
 
   testWidgets('Tipp auf das Datum wählt den ganzen Tag, ein zweiter hebt auf', (
     tester,

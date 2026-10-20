@@ -10,6 +10,8 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/abgleich/zwischenspeicher.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/rasterstufen.dart';
+import 'package:kern/services/sortierung.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -158,14 +160,61 @@ class Sitzung extends ChangeNotifier {
     await pflegeZwischenspeicher();
   }
 
-  /// Spalten des Rasters, mit zwei Fingern einstellbar (2 bis 6).
+  /// Spalten des Rasters, mit zwei Fingern oder den Knöpfen der
+  /// Ansichtsleiste einstellbar (2 bis 6).
   static const spaltenVorgabe = 4;
-  int get rasterspalten => verbindung?.rasterspalten ?? spaltenVorgabe;
+  int get rasterspalten =>
+      verbindung?.rasterspalten ?? _spaltenHier ?? spaltenVorgabe;
+
+  // Ohne Verbindungsdatei (in Tests) gilt die Wahl bis zum Ende.
+  int? _spaltenHier;
+  int? _sortierungHier;
+  int? _formHier;
+  bool _nurMonateHier = false;
 
   Future<void> setzeRasterspalten(int n) async {
+    if (n == rasterspalten) return;
     final v = verbindung;
-    if (v == null || n == rasterspalten) return;
+    if (v == null) {
+      _spaltenHier = n;
+      notifyListeners();
+      return;
+    }
     verbindung = v.mitRasterspalten(n);
+    notifyListeners();
+    await verbindung!.schreibe(await _ordner());
+  }
+
+  /// Die Ansicht der Zeitleiste (Issue #194), wie am Rechner und im
+  /// Browser: Reihenfolge, Form und ob nur nach Monaten gegliedert wird.
+  /// Gilt für dieses Gerät.
+  Rastersortierung get sortierung => rastersortierung(
+    verbindung?.sortierung ?? _sortierungHier ?? rastersortierungVorgabe.index,
+  );
+  Zeitleistenform get form => zeitleisteForm(
+    verbindung?.form ?? _formHier ?? zeitleisteFormVorgabe.index,
+  );
+  bool get nurMonate => verbindung?.nurMonate ?? _nurMonateHier;
+
+  Future<void> setzeAnsicht({
+    Rastersortierung? sortierung,
+    Zeitleistenform? form,
+    bool? nurMonate,
+  }) async {
+    final v = verbindung;
+    if (v == null) {
+      _sortierungHier = sortierung?.index ?? _sortierungHier;
+      _formHier = form?.index ?? _formHier;
+      _nurMonateHier = nurMonate ?? _nurMonateHier;
+      notifyListeners();
+      return;
+    }
+    verbindung = v.mitAnsicht(
+      sortierung: sortierung?.index,
+      form: form?.index,
+      nurMonate: nurMonate,
+    );
+    notifyListeners();
     await verbindung!.schreibe(await _ordner());
   }
 

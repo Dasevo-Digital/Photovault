@@ -4,7 +4,7 @@
 // ist; eine Reihenfolge, die springt; ein letztes Foto, das über den
 // halben Bildschirm gezogen wird.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/bildreihen.dart';
+import 'package:kern/services/bildreihen.dart';
 
 /// Die Breite, die eine Reihe tatsächlich belegt – samt Abständen.
 double _belegteBreite(Bildreihe r, double abstand) {

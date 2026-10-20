@@ -1057,5 +1057,18 @@
   "betrachterUnbenannteLoeschen": "{anzahl, plural, =0{Keine unbenannten Erkennungen} =1{Unbenannte Erkennung löschen} other{{anzahl} unbenannte Erkennungen löschen}}",
   "@betrachterUnbenannteLoeschen": {"placeholders": {"anzahl": {"type": "int"}}},
   "betrachterUnbenannteLoeschenFrage": "{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}",
-  "@betrachterUnbenannteLoeschenFrage": {"placeholders": {"anzahl": {"type": "int"}}}
+  "@betrachterUnbenannteLoeschenFrage": {"placeholders": {"anzahl": {"type": "int"}}},
+  "ansichtReihenfolge": "Reihenfolge",
+  "sortAufnahmeNeu": "Aufnahmedatum, neueste zuerst",
+  "sortAufnahmeAlt": "Aufnahmedatum, älteste zuerst",
+  "sortImportNeu": "Zuletzt hinzugefügt",
+  "sortName": "Dateiname, A–Z",
+  "sortBewertung": "Bewertung, beste zuerst",
+  "sortGroesse": "Dateigrösse, grösste zuerst",
+  "ansichtNurMonate": "Nur nach Monaten gliedern",
+  "ansichtNachTagen": "Nach Tagen gliedern",
+  "ansichtReihen": "Bündige Reihen – jedes Foto in seinem Format",
+  "ansichtQuadrate": "Quadratisches Raster",
+  "ansichtKleiner": "Kleinere Kacheln – mehr Monate auf einmal",
+  "ansichtGroesser": "Grössere Kacheln"
 }

@@ -39,6 +39,9 @@ class Verbindungsdatei {
     this.rechenhilfe = false,
     this.zwischenspeicherMb,
     this.rasterspalten,
+    this.sortierung,
+    this.form,
+    this.nurMonate = false,
     this.sprache,
     this.tokenkennung,
   });
@@ -64,6 +67,14 @@ class Verbindungsdatei {
   /// Geste in der Handy-App); `null` heisst Vorgabe.
   final int? rasterspalten;
 
+  /// Die Ansicht der Zeitleiste auf diesem Gerät (Issue #194), wie am
+  /// Rechner: die Reihenfolge (Index in `Rastersortierung`), die Form
+  /// (Index in `Zeitleistenform`) und ob nur nach Monaten gegliedert wird.
+  /// `null` heisst Vorgabe.
+  final int? sortierung;
+  final int? form;
+  final bool nurMonate;
+
   /// Die Sprache der Handy-App (`de`, `en`), wie in den Einstellungen
   /// gewählt; `null` heisst: die des Telefons. Gilt nur für dieses Gerät –
   /// wie die Sprachwahl im Browser.
@@ -73,6 +84,9 @@ class Verbindungsdatei {
     bool? rechenhilfe,
     int? Function()? zwischenspeicherMb,
     int? Function()? rasterspalten,
+    int? Function()? sortierung,
+    int? Function()? form,
+    bool? nurMonate,
     String? Function()? sprache,
   }) => Verbindungsdatei(
     server: server,
@@ -84,6 +98,9 @@ class Verbindungsdatei {
         ? this.zwischenspeicherMb
         : zwischenspeicherMb(),
     rasterspalten: rasterspalten == null ? this.rasterspalten : rasterspalten(),
+    sortierung: sortierung == null ? this.sortierung : sortierung(),
+    form: form == null ? this.form : form(),
+    nurMonate: nurMonate ?? this.nurMonate,
     sprache: sprache == null ? this.sprache : sprache(),
     tokenkennung: tokenkennung,
   );
@@ -94,6 +111,13 @@ class Verbindungsdatei {
       _mit(zwischenspeicherMb: () => mb);
 
   Verbindungsdatei mitRasterspalten(int? n) => _mit(rasterspalten: () => n);
+
+  Verbindungsdatei mitAnsicht({int? sortierung, int? form, bool? nurMonate}) =>
+      _mit(
+        sortierung: sortierung == null ? null : () => sortierung,
+        form: form == null ? null : () => form,
+        nurMonate: nurMonate,
+      );
 
   Verbindungsdatei mitSprache(String? s) => _mit(sprache: () => s);
 
@@ -123,6 +147,9 @@ class Verbindungsdatei {
       rechenhilfe: j['rechenhilfe'] == true,
       zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
       rasterspalten: (j['rasterspalten'] as num?)?.toInt(),
+      sortierung: (j['sortierung'] as num?)?.toInt(),
+      form: (j['form'] as num?)?.toInt(),
+      nurMonate: j['nurMonate'] == true,
       sprache: j['sprache'] as String?,
       tokenkennung: kennung,
     );
@@ -169,6 +196,9 @@ class Verbindungsdatei {
         if (zwischenspeicherMb != null)
           'zwischenspeicherMb': zwischenspeicherMb,
         if (rasterspalten != null) 'rasterspalten': rasterspalten,
+        if (sortierung != null) 'sortierung': sortierung,
+        if (form != null) 'form': form,
+        if (nurMonate) 'nurMonate': true,
         if (sprache != null) 'sprache': sprache,
       }),
       flush: true,
@@ -182,6 +212,9 @@ class Verbindungsdatei {
       rechenhilfe: rechenhilfe,
       zwischenspeicherMb: zwischenspeicherMb,
       rasterspalten: rasterspalten,
+      sortierung: sortierung,
+      form: form,
+      nurMonate: nurMonate,
       sprache: sprache,
       tokenkennung: kennung,
     );

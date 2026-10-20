@@ -4,7 +4,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/bildreihen.dart';
+import 'package:kern/services/bildreihen.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
