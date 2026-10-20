@@ -9143,6 +9143,9 @@ class AppTexteDe extends AppTexte {
   String get serverAbgeglichen => 'Abgeglichen';
 
   @override
+  String get serverVerbindet => 'Verbindet …';
+
+  @override
   String serverOffline(int n) {
     return 'Server nicht erreichbar – $n Änderungen warten';
   }

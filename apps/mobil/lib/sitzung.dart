@@ -109,6 +109,7 @@ class Sitzung extends ChangeNotifier {
       abgleichszustand = z;
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||
+          vorher.ungeklaert != z.ungeklaert ||
           vorher.ausstehend != z.ausstehend ||
           vorher.abgemeldet != z.abgemeldet ||
           vorher.serverSchema != z.serverSchema) {

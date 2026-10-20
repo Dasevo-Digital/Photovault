@@ -56,6 +56,8 @@ class ServerGruppe extends StatelessWidget {
         ? (z.appZuAlt ? t.serverAppZuAlt : t.serverZuAlt)
         : z.abgemeldet
         ? t.serverAbgemeldet
+        : z.ungeklaert
+        ? t.serverVerbindet
         : !z.erreichbar
         ? t.serverOffline(z.ausstehend)
         : z.ausstehend > 0

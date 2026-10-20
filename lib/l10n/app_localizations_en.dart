@@ -9093,6 +9093,9 @@ class AppTexteEn extends AppTexte {
   String get serverAbgeglichen => 'In sync';
 
   @override
+  String get serverVerbindet => 'Connecting …';
+
+  @override
   String serverOffline(int n) {
     return 'Server unreachable – $n changes waiting';
   }

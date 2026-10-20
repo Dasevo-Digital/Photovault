@@ -21,10 +21,18 @@ class Abgleichszustand {
     this.abgemeldet = false,
     this.serverSchema,
     this.hierSchema,
+    this.ungeklaert = false,
   });
 
   /// Ob der Server zuletzt geantwortet hat.
   final bool erreichbar;
+
+  /// Noch nicht gefragt: Gleich nach dem Start ist der Server weder
+  /// erreichbar noch nicht erreichbar. Vorher stand hier „nicht
+  /// erreichbar“, und jede App zeigte das bei jedem Start ein paar
+  /// Sekunden lang – bis die erste Runde samt allen neuen Änderungen
+  /// durch war.
+  final bool ungeklaert;
 
   /// Befehle, die der Server noch nicht bestätigt hat.
   final int ausstehend;
@@ -87,6 +95,7 @@ class Abgleich {
   Abgleichszustand _letzter = const Abgleichszustand(
     erreichbar: false,
     ausstehend: 0,
+    ungeklaert: true,
   );
 
   /// Wie es steht; der letzte Stand in [zustandJetzt].
@@ -102,6 +111,31 @@ class Abgleich {
   /// hinge das Beenden bis zu 25 s an ihr.
   final _halt = Completer<void>();
   final _abgelehnt = <String>[];
+
+  /// Tritt mit [jetzt] ein und bricht die wartende Abfrage ab.
+  var _neuAnfangen = Completer<void>();
+
+  /// Ob [jetzt] die Abfrage abgebrochen hat – dann ist das kein Aussetzer.
+  var _selbstAbgebrochen = false;
+
+  /// Wie lange nach einem Aussetzer gewartet wird; verdoppelt sich bis 60 s.
+  var _pause = const Duration(seconds: 2);
+
+  /// Gleich noch einmal fragen – etwa wenn die App aus dem Hintergrund
+  /// zurückkommt.
+  ///
+  /// Im Hintergrund reisst auf dem Telefon die wartende Abfrage ab, ohne
+  /// dass jemand es merkt. Zurück in der App wartete die Schleife dann
+  /// erst ab, bis die Anfrage nach bis zu 55 s aufgab, oder sie schlief
+  /// nach einem Aussetzer ihre Pause aus (bis 60 s) – und so lange stand
+  /// „Server nicht erreichbar“ da, obwohl er längst wieder antwortete.
+  void jetzt() {
+    if (!_laeuft) return;
+    _pause = const Duration(seconds: 2);
+    _selbstAbgebrochen = true;
+    if (!_neuAnfangen.isCompleted) _neuAnfangen.complete();
+    if (_wecker case final w? when !w.isCompleted) w.complete();
+  }
 
   /// Lädt die Bibliothek vom Server nach [ziel] und bereitet sie als Kopie
   /// vor. Gibt den Stand zurück, ab dem sie dem Server folgt.
@@ -176,7 +210,7 @@ class Abgleich {
       'bestaetigt INTEGER, ok INTEGER, fehler TEXT)',
     );
     db.umleitung = vorwegnehmen;
-    await _melde(erreichbar: false);
+    await _melde();
   }
 
   /// Gleicht im Hintergrund ab, bis [beende].
@@ -289,8 +323,12 @@ class Abgleich {
           'warten': '${w.inSeconds}',
         },
         zeitlimit: w + const Duration(seconds: 30),
-        abbruch: w == Duration.zero ? null : _halt.future,
+        abbruch: w == Duration.zero
+            ? null
+            : Future.any([_halt.future, _neuAnfangen.future]),
       );
+      // Nach einem Aussetzer: erreichbar, sobald er wieder antwortet.
+      if (!_letzter.erreichbar) await _melde(erreichbar: true);
       final zeilen = [
         for (final z in (a['zeilen']! as List).cast<Map>())
           Zeilenstand.ausJson(z.cast<String, Object?>()),
@@ -441,13 +479,15 @@ class Abgleich {
   // --- Schleife ----------------------------------------------------------
 
   Future<void> _laufe() async {
-    var pause = const Duration(seconds: 2);
     // Die erste Runde wartet nicht: Gibt es nichts Neues, kehrte die lange
     // Abfrage erst nach 25 s zurück – so lange stünde „verbindet …“ da,
     // obwohl der Server längst antwortet.
     var warten = Duration.zero;
     var geprueft = false;
     while (_laeuft) {
+      // Ein [jetzt] aus der letzten Runde gilt als erledigt – sonst bräche
+      // die nächste wartende Abfrage gleich wieder ab.
+      if (_neuAnfangen.isCompleted) _neuAnfangen = Completer<void>();
       try {
         if (!geprueft) {
           // Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten es
@@ -460,18 +500,27 @@ class Abgleich {
             return;
           }
           geprueft = true;
+          // Der Server hat geantwortet – das gilt ab jetzt, nicht erst,
+          // wenn alles Neue geholt und eingespielt ist.
+          await _melde(erreichbar: true);
         }
         await sende();
         await empfange(warten: warten);
         warten = const Duration(seconds: 25);
-        pause = const Duration(seconds: 2);
+        _pause = const Duration(seconds: 2);
+        _selbstAbgebrochen = false;
         await _melde(erreichbar: true);
       } on KeineVerbindung {
         if (!_laeuft) return;
         warten = Duration.zero;
+        // Selbst abgebrochen ([jetzt]): kein Aussetzer – gleich weiter.
+        if (_selbstAbgebrochen) {
+          _selbstAbgebrochen = false;
+          continue;
+        }
         await _melde(erreichbar: false);
-        await _schlafe(pause);
-        pause = Duration(seconds: min(pause.inSeconds * 2, 60));
+        await _schlafe(_pause);
+        _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
       } on Serverfehler catch (f) {
         if (f.abgemeldet) {
           await _melde(erreichbar: true, abgemeldet: true);
@@ -481,8 +530,8 @@ class Abgleich {
         if (!_laeuft) return;
         warten = Duration.zero;
         meldung.protokoll('Abgleich: $f');
-        await _schlafe(pause);
-        pause = Duration(seconds: min(pause.inSeconds * 2, 60));
+        await _schlafe(_pause);
+        _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
       }
     }
   }
@@ -513,6 +562,7 @@ class Abgleich {
       abgemeldet: abgemeldet,
       serverSchema: serverSchema,
       hierSchema: serverSchema == null ? null : db.schemaVersion,
+      ungeklaert: erreichbar == null && _letzter.ungeklaert,
     );
     _zustand.add(_letzter);
   }

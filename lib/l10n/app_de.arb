@@ -5819,6 +5819,7 @@
     }
   },
   "serverAbgeglichen": "Abgeglichen",
+  "serverVerbindet": "Verbindet …",
   "serverOffline": "Server nicht erreichbar – {n} Änderungen warten",
   "@serverOffline": {
     "placeholders": {

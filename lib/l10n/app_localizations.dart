@@ -13993,6 +13993,12 @@ abstract class AppTexte {
   /// **'Abgeglichen'**
   String get serverAbgeglichen;
 
+  /// No description provided for @serverVerbindet.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindet …'**
+  String get serverVerbindet;
+
   /// No description provided for @serverOffline.
   ///
   /// In de, this message translates to:

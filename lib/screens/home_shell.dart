@@ -200,7 +200,7 @@ class _AnalyseBanner extends StatelessWidget {
         ? (z.appZuAlt ? t.serverAppZuAlt : t.serverZuAlt)
         : z.abgemeldet
         ? t.serverAbgemeldet
-        : !z.erreichbar
+        : !z.erreichbar && !z.ungeklaert
         ? t.serverOffline(z.ausstehend)
         : null;
     final sp = library.verbunden ? library.serverspeicher : null;
@@ -346,6 +346,13 @@ class _HomeShellState extends State<HomeShell> {
   /// wirken, auch wenn man zwischendurch nichts anderes getan hat.
   final ValueNotifier<int> _zeitleisteNachOben = ValueNotifier(0);
 
+  /// Wieder im Vordergrund (etwa nach dem Ruhezustand): verbunden gleich
+  /// beim Server nachfragen, statt die abgerissene wartende Abfrage
+  /// auslaufen zu lassen – wie die Handy-App.
+  late final AppLifecycleListener _lebenslauf = AppLifecycleListener(
+    onResume: () => widget.library.abgleich?.jetzt(),
+  );
+
   /// Ob die Seitenleiste offen bleibt – siehe [Seitenleiste]. Gemerkt
   /// über [Leistenmerker]; bis die Datei gelesen ist, zugeklappt.
   bool _fixiert = false;
@@ -353,6 +360,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
+    _lebenslauf;
     Leistenmerker.lies().then((f) {
       if (mounted && f != _fixiert) setState(() => _fixiert = f);
     });
@@ -595,6 +603,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void dispose() {
     _tresor.schweige();
+    _lebenslauf.dispose();
     _seite.dispose();
     _zeitleisteNachOben.dispose();
     super.dispose();

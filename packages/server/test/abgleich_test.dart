@@ -175,6 +175,54 @@ void main() {
     expect(await ausstehend(db), 0);
   });
 
+  test('beim Start nicht „nicht erreichbar“, nach dem Hintergrund gleich '
+      'wieder da', () async {
+    final (_, a) = await geraet('Telefon');
+    // Noch nicht gefragt: weder erreichbar noch nicht erreichbar.
+    expect(a.zustandJetzt.ungeklaert, isTrue);
+    final zustaende = <Abgleichszustand>[];
+    a.zustand.listen(zustaende.add);
+    Future<void> bis(bool Function() ok) async {
+      for (var i = 0; i < 100 && !ok(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    }
+
+    a.starte();
+    await bis(() => a.zustandJetzt.erreichbar);
+    expect(a.zustandJetzt.erreichbar, isTrue);
+    expect(a.zustandJetzt.ungeklaert, isFalse);
+    expect(
+      zustaende.where((z) => !z.erreichbar && !z.ungeklaert),
+      isEmpty,
+      reason: 'kein „nicht erreichbar“ beim Start',
+    );
+
+    // Jetzt wartet die lange Abfrage. Zurück aus dem Hintergrund bricht
+    // jetzt() sie ab – ohne einen Aussetzer zu melden.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    a.jetzt();
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    expect(zustaende.where((z) => !z.erreichbar && !z.ungeklaert), isEmpty);
+
+    // Ein echter Aussetzer wird gemeldet; danach fragt jetzt() sofort neu,
+    // statt die (wachsende) Pause abzuwarten.
+    await server.close(force: true);
+    a.jetzt();
+    await bis(() => !a.zustandJetzt.erreichbar);
+    expect(a.zustandJetzt.erreichbar, isFalse);
+    await Future<void>.delayed(const Duration(milliseconds: 2500));
+    await starteServer();
+    final los = DateTime.now();
+    a.jetzt();
+    await bis(() => a.zustandJetzt.erreichbar);
+    expect(a.zustandJetzt.erreichbar, isTrue);
+    expect(
+      DateTime.now().difference(los),
+      lessThan(const Duration(seconds: 1)),
+    );
+  });
+
   test('was der Server ablehnt, nimmt das Angleichen zurück', () async {
     final (dbA, a) = await geraet('Rechner');
     final (dbB, b) = await geraet('Telefon');

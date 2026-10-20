@@ -4465,6 +4465,7 @@
     }
   },
   "serverAbgeglichen": "In sync",
+  "serverVerbindet": "Connecting …",
   "serverOffline": "Server unreachable – {n} changes waiting",
   "@serverOffline": {
     "placeholders": {
