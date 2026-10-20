@@ -54,7 +54,12 @@ class AufnahmenRaster extends StatefulWidget {
     this.lokal = const {},
     this.papierkorb = false,
     this.liste,
+    this.nachOben,
   });
+
+  /// Meldet sich, wenn das Raster an den Anfang zurück soll (ein Tipp auf
+  /// „Fotos“) – sanft, wie am Rechner.
+  final Listenable? nachOben;
 
   /// Statt Kacheln eine Liste (Issue #195) – wie am Rechner und im
   /// Browser. Auswahl, Ziehen und Betrachter bleiben dieselben.
@@ -259,11 +264,22 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     super.initState();
     _scroll.addListener(_gerollt);
     widget.sitzung.addListener(_sitzungGeaendert);
+    widget.nachOben?.addListener(_nachOben);
+  }
+
+  void _nachOben() {
+    if (!mounted || !_scroll.hasClients || _scroll.offset <= 0) return;
+    _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   void dispose() {
     widget.sitzung.removeListener(_sitzungGeaendert);
+    widget.nachOben?.removeListener(_nachOben);
     _rollen?.cancel();
     _leisteAus?.cancel();
     _scroll.dispose();
@@ -471,6 +487,10 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   @override
   void didUpdateWidget(AufnahmenRaster alt) {
     super.didUpdateWidget(alt);
+    if (alt.nachOben != widget.nachOben) {
+      alt.nachOben?.removeListener(_nachOben);
+      widget.nachOben?.addListener(_nachOben);
+    }
     // Was aus der Liste verschwand (Papierkorb, anderer Filter), ist auch
     // nicht mehr ausgewählt.
     final da = {for (final z in widget.zeilen) z.id};

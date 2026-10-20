@@ -16,9 +16,12 @@ import 'raster.dart';
 /// dazwischen die, die nur auf dem Telefon liegen (Issue #127). Darüber
 /// die Ansichtsleiste (Issue #194): andere Reihenfolgen, Form, Grösse.
 class Zeitleiste extends StatefulWidget {
-  const Zeitleiste({super.key, required this.sitzung});
+  const Zeitleiste({super.key, required this.sitzung, this.nachOben});
 
   final Sitzung sitzung;
+
+  /// Zählt hoch, wenn die Zeitleiste zu den neuesten zurück soll.
+  final Listenable? nachOben;
 
   @override
   State<Zeitleiste> createState() => _ZeitleisteState();
@@ -174,6 +177,7 @@ class _ZeitleisteState extends State<Zeitleiste> {
                     zeilen: zeilen,
                     lokal: gemischt.lokal,
                     nachTagen: nachDatum,
+                    nachOben: widget.nachOben,
                     liste: _alsListe
                         ? Listenansicht(
                             angaben: _angaben,

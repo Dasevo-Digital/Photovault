@@ -40,9 +40,16 @@ class _StartState extends State<Start> {
     _lebenslauf;
   }
 
+  /// Ein Tipp auf „Fotos“ fährt die Zeitleiste zu den neuesten Aufnahmen
+  /// zurück – auch wenn sie schon offen ist, wie am Rechner und im
+  /// Browser. Ein Zähler statt eines Schalters: Zweimal tippen muss
+  /// zweimal wirken.
+  final _zeitleisteNachOben = ValueNotifier(0);
+
   @override
   void dispose() {
     _lebenslauf.dispose();
+    _zeitleisteNachOben.dispose();
     super.dispose();
   }
 
@@ -52,7 +59,7 @@ class _StartState extends State<Start> {
     final s = widget.sitzung;
     final titel = [t.navZeitleiste, t.navSuche, t.navAlben, t.navBibliothek];
     Widget seite(int i) => switch (i) {
-      0 => Zeitleiste(sitzung: s),
+      0 => Zeitleiste(sitzung: s, nachOben: _zeitleisteNachOben),
       1 => Suche(sitzung: s),
       2 => Alben(sitzung: s),
       _ => Bibliothek(sitzung: s),
@@ -84,7 +91,7 @@ class _StartState extends State<Start> {
                   ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)
                   : z.abgemeldet
                   ? t.abgemeldetHinweis
-                  : !z.erreichbar
+                  : !z.erreichbar && !z.ungeklaert
                   ? t.offline(z.ausstehend)
                   : null;
               final speicher = sp == null
@@ -129,10 +136,13 @@ class _StartState extends State<Start> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _bereich,
-        onDestinationSelected: (i) => setState(() {
-          _bereich = i;
-          _gebaut.add(i);
-        }),
+        onDestinationSelected: (i) {
+          if (i == 0) _zeitleisteNachOben.value++;
+          setState(() {
+            _bereich = i;
+            _gebaut.add(i);
+          });
+        },
         destinations: [
           NavigationDestination(
             icon: const Icon(Bibliothekssymbole.fotos),

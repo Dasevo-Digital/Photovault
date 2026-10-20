@@ -446,6 +446,47 @@ void main() {
     );
   }
 
+  testWidgets('Ein Tipp auf „Fotos“ fährt das Raster nach oben', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_nachoben_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    final nachOben = ValueNotifier(0);
+    addTearDown(nachOben.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: AufnahmenRaster(
+            sitzung: sitzung,
+            zeilen: [for (var i = 0; i < 200; i++) _zeile('n$i', 0, 0)],
+            nachOben: nachOben,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final scroll = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    scroll.jumpTo(2000);
+    await tester.pumpAndSettle();
+    expect(scroll.pixels, 2000);
+    nachOben.value++;
+    await tester.pumpAndSettle();
+    expect(scroll.pixels, 0);
+  });
+
   testWidgets('Zeitleiste: Ansichtsleiste wie am Rechner (#194)', (
     tester,
   ) async {

@@ -136,10 +136,12 @@ function baueNavigation() {
     a.setAttribute('aria-label', t(e.text));
     a.append(el('span', 'nav-symbol'), el('span', 'nav-text', t(e.text)));
     a.firstChild.append(symbol(e.symbol));
+    if (e.bereich === 'fotos') a.addEventListener('click', fotosNachOben);
     haupt.append(a);
   }
   const marke = el('a', 'nav-marke');
   marke.href = '#/';
+  marke.addEventListener('click', fotosNachOben);
   const bild = el('img');
   bild.src = 'symbol.png';
   bild.alt = '';
@@ -803,10 +805,24 @@ const zeitleiste = {
 
 // --- Bereiche --------------------------------------------------------------
 
+// Wie am Rechner: „Fotos“ fährt zu den neuesten Aufnahmen zurück – auch
+// wenn die Zeitleiste schon offen ist und weit unten steht. Dann ändert
+// sich die Adresse nicht, und ohne das hier geschähe gar nichts.
+let fotosNachObenGewuenscht = false;
+function fotosNachOben() {
+  const schonDa = (location.hash || '#/') === '#/' && liste && liste.zeitleiste && !$('bereich-raster').hidden;
+  if (schonDa) window.scrollTo({ top: 0, behavior: 'smooth' });
+  else fotosNachObenGewuenscht = true;
+}
+
 async function zeigeFotos() {
   markiereNav('fotos');
   zeigeBereich(['raster']);
   zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, alsListe: ansicht.liste, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
+  if (fotosNachObenGewuenscht) {
+    fotosNachObenGewuenscht = false;
+    window.scrollTo(0, 0);
+  }
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
 }
