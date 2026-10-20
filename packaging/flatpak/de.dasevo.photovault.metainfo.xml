@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.41.0" date="2026-10-20">
+      <description>
+        <p>The photo viewer in the browser and on the phone can show detected faces as frames and lets you draw a face by hand; the server crops and embeds it. Drawing a face on a connected desktop no longer fails silently.</p>
+      </description>
+    </release>
     <release version="3.40.0" date="2026-10-20">
       <description>
         <p>Fixes content search on a connected desktop missing photos whose embeddings came from the server, and similar photos, duplicates and series showing items another device had moved to the trash.</p>
