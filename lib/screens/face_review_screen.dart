@@ -37,11 +37,16 @@ class FaceReviewScreen extends StatefulWidget {
   final LibraryState library;
   final List<AssetData> assets;
   final int startIndex;
+
+  /// Das Gesicht, von dem man herkam – es wird hervorgehoben.
+  final String? hervorgehobenesGesicht;
+
   const FaceReviewScreen({
     super.key,
     required this.library,
     required this.assets,
     this.startIndex = 0,
+    this.hervorgehobenesGesicht,
   }) : assert(assets.length > 0);
 
   @override
@@ -874,6 +879,8 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
                               flaeche: Size(w, h),
                               beiTipp: () => _tapFace(face),
                               beiMenue: (stelle) => _kontextmenue(stelle, face),
+                              hervorgehoben:
+                                  face.id == widget.hervorgehobenesGesicht,
                             ),
                         if (_addMode &&
                             _dragStart != null &&

@@ -1545,6 +1545,61 @@ function neueKennung() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
+// Ein Gesicht zum Auswählen, mit einem Knopf in der Ecke, der es im
+// ganzen Foto zeigt (#189): Der kleine Ausschnitt sagt oft nicht, wer das
+// ist – das Foto drumherum schon.
+function gesichtszelle(g, beiTipp) {
+  const zelle = el('span', 'gesicht-zelle');
+  const b = el('button', 'gesicht');
+  b.type = 'button';
+  b.dataset.id = g.id;
+  b.append(gesichtsbild(g));
+  if (beiTipp) b.addEventListener('click', () => beiTipp(b));
+  zelle.append(b);
+  if (g.aufnahme) {
+    const foto = el('button', 'im-foto');
+    foto.type = 'button';
+    foto.title = t('Im Foto zeigen');
+    foto.setAttribute('aria-label', t('Im Foto zeigen'));
+    foto.append(symbol('imfoto'));
+    foto.addEventListener('click', (e) => { e.stopPropagation(); zeigeImFoto(g).catch((x) => meldung(x.message)); });
+    zelle.append(foto);
+  }
+  return zelle;
+}
+
+// Das Foto zu einem Gesicht, mit allen Gesichtern darauf; das gewählte
+// hervorgehoben, die übrigen abgeblendet.
+async function zeigeImFoto(g) {
+  const fig = $('imfoto-bild');
+  const img = el('img');
+  img.alt = '';
+  img.src = `/api/v1/aufnahmen/${encodeURIComponent(g.aufnahme)}/vorschau`;
+  fig.replaceChildren(img);
+  $('imfoto-text').textContent = '';
+  $('imfoto-dialog').showModal();
+  let d = null;
+  try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(g.aufnahme)}/angaben?sprache=${SPRACHE}`); } catch (_) { /* nur das eine Gesicht */ }
+  if (fig.firstChild !== img) return; // inzwischen ein anderes
+  const gesichter = d && d.gesichter && d.gesichter.length ? d.gesichter : [g];
+  for (const f of gesichter) {
+    if (!f.kasten) continue;
+    const [x, y, w, h] = f.kasten;
+    const r = el('span', `imfoto-rahmen${f.person ? ' benannt' : ''}${f.id === g.id ? ' gewaehlt' : ''}`);
+    r.style.left = `${x * 100}%`;
+    r.style.top = `${y * 100}%`;
+    r.style.width = `${w * 100}%`;
+    r.style.height = `${h * 100}%`;
+    if (f.person && f.id !== g.id) r.append(el('span', 'name', f.person.name));
+    fig.append(r);
+  }
+  if (d) {
+    const ort = d.ort ? [d.ort.stadt, land(d.ort.land)].filter(Boolean).join(', ') : '';
+    $('imfoto-text').textContent = [datumZeit.format(new Date(d.aufgenommen)), ort, d.name].filter(Boolean).join(' · ');
+  }
+}
+$('imfoto-zu').addEventListener('click', () => $('imfoto-dialog').close());
+
 function gesichtsbild(g) {
   const img = el('img');
   img.alt = '';
@@ -1589,16 +1644,10 @@ async function oeffneGesichter(fall) {
   const raster = $('gesicht-auswahl');
   raster.replaceChildren();
   for (const g of fall.gesichter) {
-    const b = el('button', 'gesicht');
-    b.type = 'button';
-    b.append(gesichtsbild(g));
-    if (fall.gesichter.length > 1) {
-      b.addEventListener('click', () => {
-        if (gesichtFall.aus.has(g.id)) gesichtFall.aus.delete(g.id); else gesichtFall.aus.add(g.id);
-        b.classList.toggle('aus');
-      });
-    }
-    raster.append(b);
+    raster.append(gesichtszelle(g, fall.gesichter.length > 1 ? (b) => {
+      if (gesichtFall.aus.has(g.id)) gesichtFall.aus.delete(g.id); else gesichtFall.aus.add(g.id);
+      b.classList.toggle('aus');
+    } : null));
   }
   $('gesicht-hinweis').hidden = fall.gesichter.length < 2;
   $('gesicht-ja').hidden = !fall.vorschlag;
@@ -1750,17 +1799,13 @@ async function oeffneVorschlaege(person) {
   const raster = $('vorschlag-auswahl');
   raster.replaceChildren();
   for (const v of d.vorschlaege) {
-    const b = el('button', 'gesicht');
-    b.type = 'button';
-    b.title = `${Math.round(v.aehnlichkeit * 100)} %`;
-    b.dataset.id = v.id;
-    b.append(gesichtsbild(v));
-    b.addEventListener('click', () => {
+    const zelle = gesichtszelle(v, (b) => {
       if (vorschlagFall.gewaehlt.has(v.id)) vorschlagFall.gewaehlt.delete(v.id); else vorschlagFall.gewaehlt.add(v.id);
       b.classList.toggle('aus', !vorschlagFall.gewaehlt.has(v.id));
       vorschlagKnopf();
     });
-    raster.append(b);
+    zelle.firstChild.title = `${Math.round(v.aehnlichkeit * 100)} %`;
+    raster.append(zelle);
   }
   $('vorschlag-meldung').textContent = '';
   vorschlagKnopf();
@@ -1772,7 +1817,7 @@ $('vorschlag-alle').addEventListener('click', () => {
   if (!f) return;
   const alle = f.gewaehlt.size === f.vorschlaege.length;
   f.gewaehlt = alle ? new Set() : new Set(f.vorschlaege.map((v) => v.id));
-  for (const b of $('vorschlag-auswahl').children) b.classList.toggle('aus', !f.gewaehlt.has(b.dataset.id));
+  for (const b of $('vorschlag-auswahl').querySelectorAll('.gesicht')) b.classList.toggle('aus', !f.gewaehlt.has(b.dataset.id));
   vorschlagKnopf();
 });
 $('vorschlag-abbrechen').addEventListener('click', () => $('vorschlag-dialog').close());

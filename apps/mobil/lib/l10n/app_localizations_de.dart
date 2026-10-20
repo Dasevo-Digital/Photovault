@@ -1356,7 +1356,13 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get gesichterHinweis =>
-      'Antippen nimmt ein Gesicht heraus, das nicht dazugehört.';
+      'Antippen nimmt ein Gesicht heraus, das nicht dazugehört. Das Zeichen in der Ecke zeigt es im ganzen Foto.';
+
+  @override
+  String get gesichtImFoto => 'Im Foto zeigen';
+
+  @override
+  String get gesichtFotoFehlt => 'Das Foto ist gerade nicht zu laden.';
 
   @override
   String get gesichterName => 'Name';

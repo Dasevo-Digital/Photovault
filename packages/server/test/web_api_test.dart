@@ -273,6 +273,12 @@ void main() {
           g['id'],
       ], unorderedEquals(['f1', 'f2']));
       expect((gruppen.single['vorschlag'] as Map)['name'], 'Anna');
+      // Für „Im Foto zeigen“ (#189): das Foto und wo das Gesicht darin sitzt.
+      final f1 = (gruppen.single['gesichter'] as List).cast<Map>().firstWhere(
+        (g) => g['id'] == 'f1',
+      );
+      expect(f1['aufnahme'], a);
+      expect(f1['kasten'], [0.6, 0.1, 0.2, 0.2]);
       expect(o['einzeln'], 1);
       expect(o['gesamt'], 3);
       expect(o['schwelle'], isA<double>());
@@ -290,6 +296,7 @@ void main() {
       expect([for (final x in g) x['id']], ['f3', 'f1']);
       expect(g.first['person'], isNull);
       expect(g.first['ausschnitt'], 'faces/f3.jpg');
+      expect(g.first['kasten'], [0.2, 0.1, 0.2, 0.2]);
 
       // Benennen geht über die Befehle – danach ist die Gruppe weg.
       expect(
@@ -373,6 +380,7 @@ void main() {
       expect([for (final x in liste) x['id']], ['g1', 'g2', 'g3', 'g4']);
       expect(liste.first['ausschnitt'], 'faces/g1.jpg');
       expect(liste.first['aufnahme'], a);
+      expect(liste.first['kasten'], hasLength(4));
       expect(
         (await frag(
           'GET',

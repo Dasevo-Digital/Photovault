@@ -450,4 +450,45 @@ void main() {
     );
     expect(name.width, greaterThan(20), reason: 'nicht auf ein „A…“ gekürzt');
   });
+
+  testWidgets('das Gesicht, von dem man kommt, ist orange (#189)', (
+    tester,
+  ) async {
+    await foto();
+    await gesicht('g1');
+    final g = (await db.facesForAsset('f1')).single;
+    Future<Border> rand(bool hervorgehoben) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Stack(
+            children: [
+              Gesichtsrahmen(
+                gesicht: g,
+                personName: null,
+                flaeche: const Size(400, 300),
+                hervorgehoben: hervorgehoben,
+              ),
+            ],
+          ),
+        ),
+      );
+      final kasten = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(Gesichtsrahmen),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      return (kasten.decoration! as BoxDecoration).border! as Border;
+    }
+
+    final normal = await rand(false);
+    expect(normal.top.color, Gesichtsrahmen.farbeFuer(g));
+    final orange = await rand(true);
+    expect(orange.top.color, Gesichtsrahmen.hervorhebung);
+    expect(orange.top.width, greaterThan(normal.top.width));
+  });
 }

@@ -1351,7 +1351,13 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get gesichterHinweis =>
-      'Tap a face to leave it out if it does not belong.';
+      'Tap a face to leave it out if it does not belong. The badge in the corner shows it in the whole photo.';
+
+  @override
+  String get gesichtImFoto => 'Show in photo';
+
+  @override
+  String get gesichtFotoFehlt => 'The photo cannot be loaded right now.';
 
   @override
   String get gesichterName => 'Name';

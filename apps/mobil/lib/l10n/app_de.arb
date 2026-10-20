@@ -821,7 +821,9 @@
   "@gesichterDasIst": {
     "placeholders": {"name": {"type": "String"}}
   },
-  "gesichterHinweis": "Antippen nimmt ein Gesicht heraus, das nicht dazugehört.",
+  "gesichterHinweis": "Antippen nimmt ein Gesicht heraus, das nicht dazugehört. Das Zeichen in der Ecke zeigt es im ganzen Foto.",
+  "gesichtImFoto": "Im Foto zeigen",
+  "gesichtFotoFehlt": "Das Foto ist gerade nicht zu laden.",
   "gesichterName": "Name",
   "gesichterNamePlatzhalter": "Neue oder vorhandene Person",
   "gesichterNameFehlt": "Bitte einen Namen eingeben.",

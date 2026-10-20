@@ -1,3 +1,4 @@
+import 'package:kern/db/database.dart' show FaceData;
 import 'package:kern/db/rasterzeile.dart';
 
 /// Eine Zeile des Rasters, wie die Schnittstelle sie ausgibt – für die
@@ -23,3 +24,8 @@ Map<String, Object?> zeileAlsJson(Rasterzeile r) => {
   if (r.kuerzel.isNotEmpty) 'format': r.kuerzel,
   'miniatur': r.thumbnailRelativePath != null,
 };
+
+/// Wo ein Gesicht im Foto sitzt: links, oben, Breite, Höhe – als Anteile
+/// des Bildes (0..1), wie in der Datenbank. Gilt für Vorschau und Original
+/// gleichermassen.
+List<double> gesichtskasten(FaceData f) => [f.boxX, f.boxY, f.boxW, f.boxH];

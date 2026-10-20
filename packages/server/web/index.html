@@ -42,6 +42,7 @@
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
   <symbol id="i-laden" viewBox="0 0 24 24"><path d="M12 3.5V15M7 10.5l5 5 5-5M4.5 20h15"/></symbol>
   <symbol id="i-teilen" viewBox="0 0 24 24"><path d="M12 14V3.5M8 7.5l4-4 4 4M7.5 10.5H6.5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></symbol>
+  <symbol id="i-imfoto" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M9 9h6v6H9z"/></symbol>
   <!-- Die Marken auf den Kacheln: gefüllt, damit sie auf jedem Bild stehen. -->
   <symbol id="m-ort" viewBox="0 0 24 24"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zm0-9.3a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4z" fill-rule="evenodd"/></symbol>
   <symbol id="m-abspielen" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM9.8 7.6l6.6 4.4-6.6 4.4z" fill-rule="evenodd"/></symbol>
@@ -369,7 +370,7 @@
   <form method="dialog" id="form-gesicht">
     <h3 id="gesicht-titel"></h3>
     <div id="gesicht-auswahl"></div>
-    <p id="gesicht-hinweis" class="leise klein" hidden>Antippen nimmt ein Gesicht heraus, das nicht dazugehört.</p>
+    <p id="gesicht-hinweis" class="leise klein" hidden>Antippen nimmt ein Gesicht heraus, das nicht dazugehört. Das Zeichen in der Ecke zeigt es im ganzen Foto.</p>
     <button type="button" id="gesicht-ja" class="breit primaer" hidden></button>
     <label>Name <input name="name" list="gesicht-namen" autocomplete="off" placeholder="Neue oder vorhandene Person"></label>
     <datalist id="gesicht-namen"></datalist>
@@ -381,6 +382,13 @@
       <button type="submit">Benennen</button>
     </menu>
   </form>
+</dialog>
+
+<!-- Ein Gesicht im ganzen Foto, wenn der Ausschnitt nicht genügt (#189). -->
+<dialog id="imfoto-dialog">
+  <figure id="imfoto-bild"></figure>
+  <p id="imfoto-text" class="leise klein"></p>
+  <menu><button type="button" id="imfoto-zu">Schliessen</button></menu>
 </dialog>
 
 <dialog id="vorschlag-dialog">

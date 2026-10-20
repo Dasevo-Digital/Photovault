@@ -7,6 +7,7 @@ import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'gesicht_im_foto.dart';
 
 /// Gesichter benennen – wie im Browser (web/app.js, oeffneGesichter) und
 /// am Rechner: einer vorhandenen Person zuordnen oder eine neue anlegen,
@@ -203,15 +204,33 @@ class _BenennenState extends State<_Benennen> {
                                 if (!_aus.remove(g.id)) _aus.add(g.id);
                               })
                             : null,
-                        child: Opacity(
-                          opacity: _aus.contains(g.id) ? 0.25 : 1,
-                          child: SizedBox.square(
-                            dimension: 64,
-                            child: Personenbild(
-                              paths: widget.sitzung.paths,
-                              name: '?',
-                              relativ: g.cropRelativePath,
-                            ),
+                        child: SizedBox.square(
+                          dimension: 64,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned.fill(
+                                child: Opacity(
+                                  opacity: _aus.contains(g.id) ? 0.25 : 1,
+                                  child: Personenbild(
+                                    paths: widget.sitzung.paths,
+                                    name: '?',
+                                    relativ: g.cropRelativePath,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: -6,
+                                bottom: -6,
+                                child: ImFotoKnopf(
+                                  beiTipp: () => zeigeGesichtImFoto(
+                                    context,
+                                    widget.sitzung,
+                                    g,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -794,13 +813,31 @@ class _WeitereFotosState extends State<WeitereFotos> {
                               gewaehlt.add(v.gesicht.id);
                             }
                           }),
-                          child: Opacity(
-                            opacity: an ? 1 : 0.25,
-                            child: Personenbild(
-                              paths: widget.sitzung.paths,
-                              name: '?',
-                              relativ: v.gesicht.cropRelativePath,
-                            ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned.fill(
+                                child: Opacity(
+                                  opacity: an ? 1 : 0.25,
+                                  child: Personenbild(
+                                    paths: widget.sitzung.paths,
+                                    name: '?',
+                                    relativ: v.gesicht.cropRelativePath,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: -6,
+                                bottom: -6,
+                                child: ImFotoKnopf(
+                                  beiTipp: () => zeigeGesichtImFoto(
+                                    context,
+                                    widget.sitzung,
+                                    v.gesicht,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );

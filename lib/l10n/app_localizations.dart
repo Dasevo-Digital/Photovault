@@ -6745,6 +6745,12 @@ abstract class AppTexte {
   /// **'Unbenannt'**
   String get gesichtUnbenannt;
 
+  /// No description provided for @gesichtImFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Foto zeigen'**
+  String get gesichtImFoto;
+
   /// No description provided for @bearbZuschneiden.
   ///
   /// In de, this message translates to:

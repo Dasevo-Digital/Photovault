@@ -859,6 +859,7 @@ class _PeopleScreenState extends State<PeopleScreen>
           library: widget.library,
           assets: assets,
           startIndex: start < 0 ? 0 : start,
+          hervorgehobenesGesicht: face.id,
         ),
       ),
     );
@@ -1284,6 +1285,11 @@ class _UnassignedFacesGrid extends StatelessWidget {
                     onTap: () => onToggle(face.id),
                     onDoubleTap: () => onOpenPhoto(face),
                   ),
+                  Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: _ImFotoKnopf(beiTipp: () => onOpenPhoto(face)),
+                  ),
                   if (isAuto)
                     const Positioned(
                       right: 2,
@@ -1454,16 +1460,26 @@ class _IgnorierteGesichter extends StatelessWidget {
             itemBuilder: (context, index) {
               final face = faces[index];
               if (face.cropRelativePath == null) return const SizedBox.shrink();
-              return Opacity(
-                // Abgeblendet: Diese Gesichter zählen gerade nicht mit, und
-                // das soll man sehen, ohne die Beschriftung zu lesen.
-                opacity: selected.contains(face.id) ? 1.0 : 0.55,
-                child: LocalImageTile(
-                  file: paths.absolute(face.cropRelativePath!),
-                  selected: selected.contains(face.id),
-                  onTap: () => onToggle(face.id),
-                  onDoubleTap: () => onOpenPhoto(face),
-                ),
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  Opacity(
+                    // Abgeblendet: Diese Gesichter zählen gerade nicht mit,
+                    // und das soll man sehen, ohne die Beschriftung zu lesen.
+                    opacity: selected.contains(face.id) ? 1.0 : 0.55,
+                    child: LocalImageTile(
+                      file: paths.absolute(face.cropRelativePath!),
+                      selected: selected.contains(face.id),
+                      onTap: () => onToggle(face.id),
+                      onDoubleTap: () => onOpenPhoto(face),
+                    ),
+                  ),
+                  Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: _ImFotoKnopf(beiTipp: () => onOpenPhoto(face)),
+                  ),
+                ],
               );
             },
           ),
@@ -1503,4 +1519,37 @@ class _ClusterStand {
   final _Phase phase;
   final double? anteil;
   const _ClusterStand(this.phase, this.anteil);
+}
+
+/// Der Knopf in der Ecke eines Gesichts: zeigt es im ganzen Foto (Issue
+/// #189) – wie in Browser und Handy. Den Doppelklick gibt es weiter; ihn
+/// findet man nur nicht.
+class _ImFotoKnopf extends StatelessWidget {
+  const _ImFotoKnopf({required this.beiTipp});
+
+  final VoidCallback beiTipp;
+
+  @override
+  Widget build(BuildContext context) {
+    final farben = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: AppTexte.of(context).gesichtImFoto,
+      child: Material(
+        color: farben.inverseSurface,
+        shape: CircleBorder(side: BorderSide(color: farben.surface, width: 2)),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: beiTipp,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              Icons.center_focus_strong_outlined,
+              size: 15,
+              color: farben.onInverseSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

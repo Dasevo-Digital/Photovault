@@ -2200,8 +2200,20 @@ abstract class AppTexte {
   /// No description provided for @gesichterHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Antippen nimmt ein Gesicht heraus, das nicht dazugehört.'**
+  /// **'Antippen nimmt ein Gesicht heraus, das nicht dazugehört. Das Zeichen in der Ecke zeigt es im ganzen Foto.'**
   String get gesichterHinweis;
+
+  /// No description provided for @gesichtImFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Foto zeigen'**
+  String get gesichtImFoto;
+
+  /// No description provided for @gesichtFotoFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Foto ist gerade nicht zu laden.'**
+  String get gesichtFotoFehlt;
 
   /// No description provided for @gesichterName.
   ///

@@ -37,6 +37,10 @@ class Gesichtsrahmen extends StatelessWidget {
   final VoidCallback? beiTipp;
   final void Function(Offset stelle)? beiMenue;
 
+  /// Das Gesicht, nach dem gefragt war – etwa „Im Foto zeigen“ in den
+  /// Personen (Issue #189): orange und kräftiger, wie in Browser und Handy.
+  final bool hervorgehoben;
+
   /// Wie viele Bildschirmpunkte ein Punkt von [flaeche] gerade misst.
   ///
   /// **Warum das gebraucht wird** (Issue #16). In der Vollansicht ist
@@ -56,7 +60,11 @@ class Gesichtsrahmen extends StatelessWidget {
     this.beiTipp,
     this.beiMenue,
     this.massstab = 1,
+    this.hervorgehoben = false,
   });
+
+  /// Die Farbe des hervorgehobenen Gesichts (Orange der Reisen).
+  static const hervorhebung = Color(0xFFF76B15);
 
   /// Wie weit der Finger zwischen Aufsetzen und Abheben wandern darf,
   /// damit es noch als Tipp gilt. Liegt seit dem Textrahmen bei
@@ -99,7 +107,10 @@ class Gesichtsrahmen extends StatelessWidget {
               button: beiTipp != null,
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: farbeFuer(gesicht), width: 2 / m),
+                  border: Border.all(
+                    color: hervorgehoben ? hervorhebung : farbeFuer(gesicht),
+                    width: (hervorgehoben ? 3 : 2) / m,
+                  ),
                 ),
                 alignment: Alignment.bottomLeft,
                 // Der Name darf breiter sein als das Gesicht: In einer

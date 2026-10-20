@@ -892,6 +892,7 @@ class _Api {
           {
             'id': gesicht.id,
             'ausschnitt': gesicht.cropRelativePath,
+            'kasten': gesichtskasten(gesicht),
             'person': person == null
                 ? null
                 : {'id': person.id, 'name': person.name},
@@ -1367,6 +1368,10 @@ class _Api {
     Map<String, Object?> gesicht(FaceData f) => {
       'id': f.id,
       'ausschnitt': f.cropRelativePath,
+      // Für „Im Foto zeigen“ (Issue #189): der Ausschnitt allein sagt oft
+      // nicht genug.
+      'aufnahme': f.assetId,
+      'kasten': gesichtskasten(f),
     };
     return _json({
       'gruppen': [
@@ -1405,6 +1410,7 @@ class _Api {
             'id': v.gesicht.id,
             'ausschnitt': v.gesicht.cropRelativePath,
             'aufnahme': v.gesicht.assetId,
+            'kasten': gesichtskasten(v.gesicht),
             'aehnlichkeit': v.aehnlichkeit,
           },
       ],

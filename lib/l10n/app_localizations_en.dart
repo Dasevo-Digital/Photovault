@@ -4036,6 +4036,9 @@ class AppTexteEn extends AppTexte {
   String get gesichtUnbenannt => 'Unnamed';
 
   @override
+  String get gesichtImFoto => 'Show in photo';
+
+  @override
   String get bearbZuschneiden => 'Crop';
 
   @override

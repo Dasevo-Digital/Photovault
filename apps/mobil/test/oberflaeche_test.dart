@@ -43,6 +43,7 @@ import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/freigaben.dart';
 import 'package:photo_vault_mobil/seiten/gesichter.dart';
+import 'package:photo_vault_mobil/seiten/gesicht_im_foto.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/lebensbaum.dart';
@@ -831,6 +832,18 @@ void main() {
     await tester.tap(find.text('Anna?'));
     await tester.pumpAndSettle();
     expect(find.text('2 ähnliche Gesichter'), findsOneWidget);
+    // Das Zeichen in der Ecke zeigt ein Gesicht im ganzen Foto (#189) –
+    // und nimmt es dabei nicht heraus. Abgezählte Bilder statt
+    // pumpAndSettle: Bis das Foto geladen ist, dreht ein Ladekreis.
+    expect(find.byType(ImFotoKnopf), findsNWidgets(2));
+    await tester.tap(find.byType(ImFotoKnopf).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(GesichtImFoto), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GesichtImFoto))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(GesichtImFoto), findsNothing);
     await tester.tap(find.text('Das ist Anna'));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 300)),

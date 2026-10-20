@@ -4066,6 +4066,9 @@ class AppTexteDe extends AppTexte {
   String get gesichtUnbenannt => 'Unbenannt';
 
   @override
+  String get gesichtImFoto => 'Im Foto zeigen';
+
+  @override
   String get bearbZuschneiden => 'Zuschneiden';
 
   @override

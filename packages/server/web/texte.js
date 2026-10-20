@@ -101,6 +101,8 @@ const EN = {
   '{n} Gesichter': '{n} faces',
   '{name}?': '{name}?',
   'Wer ist das?': 'Who is this?',
+  'Im Foto zeigen': 'Show in photo',
+  'Antippen nimmt ein Gesicht heraus, das nicht dazugehört. Das Zeichen in der Ecke zeigt es im ganzen Foto.': 'Tap to leave out a face that does not belong. The badge in the corner shows it in the whole photo.',
   '{n} ähnliche Gesichter': '{n} similar faces',
   'Das ist {name}': 'This is {name}',
   'Kein Gesicht gewählt.': 'No face selected.',
