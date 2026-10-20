@@ -1450,6 +1450,78 @@ void main() {
     },
   );
 
+  test(
+    'Gesicht von Hand: der Server schneidet aus und legt an (#190)',
+    () async {
+      final a = await ladeHoch(erikaToken, 'gruppe.jpg', 60);
+      Future<Response> lege(Object werte, {String? token}) => frag(
+        'POST',
+        '/api/v1/aufnahmen/$a/gesichter',
+        token: token ?? erikaToken,
+        kopf: {'content-type': 'application/json'},
+        inhalt: jsonEncode(werte),
+      );
+      final r = await lege({
+        'kasten': [0.1, 0.2, 0.5, 0.6],
+      });
+      expect(r.statusCode, 201);
+      final g = (await jsonAus(r))['gesicht']! as Map;
+      expect(g['aufnahme'], a);
+      expect(g['person'], isNull);
+      expect((g['kasten'] as List)[0], closeTo(0.1, 1e-9));
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      final f = (await db.facesForAsset(a)).single;
+      expect(f.id, g['id']);
+      expect(f.cropRelativePath, isNotNull);
+      // Die Angaben zeigen es mit Rahmen.
+      final angaben = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+      );
+      expect(((angaben['gesichter']! as List).single as Map)['id'], f.id);
+
+      // Gleich zugeordnet: Die Person bekommt den Ausschnitt als Bild.
+      await befehl(erikaToken, 'personAnlegen', {
+        'personId': 'p1',
+        'name': 'Ida',
+      });
+      final mit = await lege({
+        'kasten': [0.5, 0.1, 0.3, 0.3],
+        'personId': 'p1',
+      });
+      expect(mit.statusCode, 201);
+      expect(((await jsonAus(mit))['gesicht']! as Map)['person'], {
+        'id': 'p1',
+        'name': 'Ida',
+      });
+      final ida = await (db.select(
+        db.people,
+      )..where((t) => t.id.equals('p1'))).getSingle();
+      expect(ida.coverFaceCropPath, isNotNull);
+
+      expect(
+        (await lege({
+          'kasten': [0.1, 0.1, 0.005, 0.2],
+        })).statusCode,
+        400,
+        reason: 'zu klein',
+      );
+      expect(
+        (await lege({
+          'kasten': [0.1, 0.1, 0.2, 0.2],
+          'personId': 'gibtsnicht',
+        })).statusCode,
+        400,
+      );
+      expect(
+        (await lege({
+          'kasten': [0.1, 0.1, 0.2, 0.2],
+        }, token: maxToken)).statusCode,
+        404,
+        reason: 'fremde Aufnahme',
+      );
+    },
+  );
+
   test('Rückblick und Kalender wie am Rechner (#185)', () async {
     final a = await ladeHoch(erikaToken, 'a.jpg', 30);
     final b = await ladeHoch(erikaToken, 'b.jpg', 60);

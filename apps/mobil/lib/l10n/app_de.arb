@@ -1019,5 +1019,11 @@
   "albenMerken": "Merken",
   "albenLoeschen": "Album löschen",
   "albenIntelligentLoeschen": "„{name}“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.",
-  "@albenIntelligentLoeschen": {"placeholders": {"name": {"type": "String"}}}
+  "@albenIntelligentLoeschen": {"placeholders": {"name": {"type": "String"}}},
+  "betrachterGesichterZeigen": "Gesichter zeigen",
+  "betrachterGesichterAus": "Gesichter ausblenden",
+  "betrachterGesichtAufziehen": "Gesicht aufziehen",
+  "betrachterAufziehenHinweis": "Einen Rahmen um das Gesicht ziehen.",
+  "betrachterRahmenZuKlein": "Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.",
+  "betrachterGesichtFehler": "Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?"
 }

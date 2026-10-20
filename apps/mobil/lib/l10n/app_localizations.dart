@@ -3090,6 +3090,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'„{name}“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.'**
   String albenIntelligentLoeschen(String name);
+
+  /// No description provided for @betrachterGesichterZeigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesichter zeigen'**
+  String get betrachterGesichterZeigen;
+
+  /// No description provided for @betrachterGesichterAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesichter ausblenden'**
+  String get betrachterGesichterAus;
+
+  /// No description provided for @betrachterGesichtAufziehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesicht aufziehen'**
+  String get betrachterGesichtAufziehen;
+
+  /// No description provided for @betrachterAufziehenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Einen Rahmen um das Gesicht ziehen.'**
+  String get betrachterAufziehenHinweis;
+
+  /// No description provided for @betrachterRahmenZuKlein.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.'**
+  String get betrachterRahmenZuKlein;
+
+  /// No description provided for @betrachterGesichtFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?'**
+  String get betrachterGesichtFehler;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

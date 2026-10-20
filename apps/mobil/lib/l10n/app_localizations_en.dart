@@ -1940,4 +1940,24 @@ class AppTexteEn extends AppTexte {
   String albenIntelligentLoeschen(String name) {
     return 'Delete “$name”? The photos stay; only the saved search goes.';
   }
+
+  @override
+  String get betrachterGesichterZeigen => 'Show faces';
+
+  @override
+  String get betrachterGesichterAus => 'Hide faces';
+
+  @override
+  String get betrachterGesichtAufziehen => 'Draw a face';
+
+  @override
+  String get betrachterAufziehenHinweis => 'Drag a frame around the face.';
+
+  @override
+  String get betrachterRahmenZuKlein =>
+      'The frame is too small – please drag around the whole face.';
+
+  @override
+  String get betrachterGesichtFehler =>
+      'The face could not be added – is the server reachable?';
 }

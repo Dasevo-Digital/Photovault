@@ -45,6 +45,7 @@ import 'package:photo_vault_mobil/seiten/freigaben.dart';
 import 'package:photo_vault_mobil/seiten/gesichter.dart';
 import 'package:photo_vault_mobil/seiten/alben.dart';
 import 'package:photo_vault_mobil/seiten/gesicht_im_foto.dart';
+import 'package:photo_vault_mobil/seiten/gesichtsebene.dart';
 import 'package:photo_vault_mobil/seiten/rueckblick.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
@@ -823,6 +824,92 @@ void main() {
     );
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Betrachter: Gesichtsrahmen zeigen, antippen, aufziehen (#190)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['g1']);
+    await tester.runAsync(() async {
+      await db.fuehreAus(const PersonAnlegen('ina', 'Ina'));
+      for (final (id, x, person) in [('fa', 0.1, 'ina'), ('fb', 0.6, null)]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: 'g1',
+                personId: Value(person),
+                boxX: x,
+                boxY: 0.2,
+                boxW: 0.25,
+                boxH: 0.3,
+              ),
+            );
+      }
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Betrachter(
+          sitzung: sitzung,
+          zeilen: [_zeile('g1', 0, 0)],
+          start: 0,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Future<void> ruhe() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.byType(Gesichtsebene), findsNothing);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gesichter zeigen'));
+    await ruhe();
+    expect(find.byType(Gesichtsebene), findsOneWidget);
+    expect(find.text('Ina'), findsOneWidget, reason: 'benannt mit Namen');
+
+    // Ein Tipp auf den Rahmen öffnet „Benennen“.
+    // Ohne Masse gilt 4:3 – und das Testfenster ist 4:3, die Ebene also
+    // genau das Bild.
+    final rahmen = tester.getRect(find.byType(Gesichtsebene));
+    await tester.tapAt(
+      Offset(
+        rahmen.left + rahmen.width * 0.7,
+        rahmen.top + rahmen.height * 0.35,
+      ),
+    );
+    // PhotoView wartet, ob ein zweiter Tipp folgt (Doppeltipp zoomt).
+    await tester.pump(const Duration(milliseconds: 400));
+    await ruhe();
+    expect(find.text('Wer ist das?'), findsWidgets);
+    Navigator.of(tester.element(find.text('Wer ist das?').first)).pop();
+    await ruhe();
+
+    // Aufziehen: ein Wisch, der zu klein ist, wird abgelehnt.
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gesicht aufziehen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Einen Rahmen um das Gesicht ziehen.'), findsOneWidget);
+    // Flach: drei Punkte hoch sind weniger als ein Prozent des Bildes.
+    final mitte = rahmen.center;
+    await tester.dragFrom(mitte, const Offset(60, 3));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('zu klein'), findsOneWidget);
+    // Ein richtiger Rahmen geht an den Server – den gibt es hier nicht.
+    await tester.dragFrom(mitte, const Offset(80, 90));
+    await ruhe();
+    expect(find.textContaining('nicht anlegen'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
   });
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
+import 'package:kern/services/gesichtsuebersicht.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +15,8 @@ import '../sitzung.dart';
 import 'angaben.dart';
 import 'diashow.dart';
 import 'entwickeln.dart';
+import 'gesichter.dart';
+import 'gesichtsebene.dart';
 import 'videospieler.dart';
 
 /// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
@@ -68,6 +71,13 @@ class _BetrachterState extends State<Betrachter> {
   var _zug = 0.0;
   var _zieht = false;
   var _gezoomt = false;
+
+  // Gesichtsrahmen über dem Foto (Issue #190): eingeblendet bleiben sie
+  // beim Blättern; beim Aufziehen gehört der Finger dem Rahmen, nicht dem
+  // Zoomen und Blättern. [_gesichtsstand] lädt sie nach einer Änderung neu.
+  var _gesichter = false;
+  var _aufziehen = false;
+  var _gesichtsstand = 0;
 
   AppDatabase get _db => widget.sitzung.db;
 
@@ -148,6 +158,52 @@ class _BetrachterState extends State<Betrachter> {
   }
 
   Future<void> _angaben() => zeigeAngaben(context, widget.sitzung, _aktuell);
+
+  Future<void> _gesichtGetippt(GesichtAufAufnahme g) async {
+    final t = AppTexte.of(context);
+    await benenneGesichter(
+      context,
+      widget.sitzung,
+      titel: g.person?.name ?? t.gesichterWerIstDas,
+      gesichter: [g.gesicht],
+      person: g.person,
+    );
+    if (mounted) setState(() => _gesichtsstand++);
+  }
+
+  Future<void> _rahmenGezogen(Rect kasten) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    // Eine stehende Meldung gleich ersetzen, nicht dahinter einreihen.
+    bote.hideCurrentSnackBar();
+    if (kasten.width < 0.01 || kasten.height < 0.01) {
+      bote.showSnackBar(SnackBar(content: Text(t.betrachterRahmenZuKlein)));
+      return;
+    }
+    setState(() => _aufziehen = false);
+    FaceData? neu;
+    try {
+      neu = await gesichtAmServerAnlegen(widget.sitzung, _aktuell, kasten);
+    } catch (_) {
+      neu = null;
+    }
+    if (!mounted) return;
+    setState(() => _gesichtsstand++);
+    if (neu == null) {
+      bote
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(t.betrachterGesichtFehler)));
+      return;
+    }
+    // Gleich benennen – wie am Rechner, wo die Person zuerst gefragt wird.
+    await benenneGesichter(
+      context,
+      widget.sitzung,
+      titel: t.gesichterWerIstDas,
+      gesichter: [neu],
+    );
+    if (mounted) setState(() => _gesichtsstand++);
+  }
 
   void _zugWeiter(DragUpdateDetails d) => setState(() {
     _zieht = true;
@@ -232,6 +288,17 @@ class _BetrachterState extends State<Betrachter> {
                             ),
                           ),
                         );
+                      case 'gesichter':
+                        setState(() {
+                          _gesichter = !_gesichter;
+                          if (!_gesichter) _aufziehen = false;
+                        });
+                      case 'aufziehen':
+                        setState(() {
+                          _gesichter = true;
+                          _aufziehen = true;
+                          _leiste = true;
+                        });
                       case 'diashow':
                         final i = await zeigeDiashow(
                           context,
@@ -252,6 +319,31 @@ class _BetrachterState extends State<Betrachter> {
                         title: Text(t.diashowAbHier),
                       ),
                     ),
+                    if (zeile.type != 'VIDEO') ...[
+                      PopupMenuItem(
+                        value: 'gesichter',
+                        child: ListTile(
+                          leading: Icon(
+                            _gesichter
+                                ? Icons.face_retouching_off_outlined
+                                : Icons.face_outlined,
+                          ),
+                          title: Text(
+                            _gesichter
+                                ? t.betrachterGesichterAus
+                                : t.betrachterGesichterZeigen,
+                          ),
+                        ),
+                      ),
+                      if (!widget.imPapierkorb)
+                        PopupMenuItem(
+                          value: 'aufziehen',
+                          child: ListTile(
+                            leading: const Icon(Icons.crop_free_rounded),
+                            title: Text(t.betrachterGesichtAufziehen),
+                          ),
+                        ),
+                    ],
                     if (!widget.imPapierkorb && zeile.type != 'VIDEO')
                       PopupMenuItem(
                         value: 'entwickeln',
@@ -277,10 +369,35 @@ class _BetrachterState extends State<Betrachter> {
               ],
             )
           : null,
+      bottomNavigationBar: _aufziehen
+          ? Material(
+              color: Colors.black87,
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t.betrachterAufziehenHinweis,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() => _aufziehen = false),
+                        child: Text(t.abbrechen),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: GestureDetector(
-        onTap: () => setState(() => _leiste = !_leiste),
-        onVerticalDragUpdate: _gezoomt ? null : _zugWeiter,
-        onVerticalDragEnd: _gezoomt ? null : _zugEnde,
+        onTap: _aufziehen ? null : () => setState(() => _leiste = !_leiste),
+        onVerticalDragUpdate: _gezoomt || _aufziehen ? null : _zugWeiter,
+        onVerticalDragEnd: _gezoomt || _aufziehen ? null : _zugEnde,
         child: AnimatedContainer(
           duration: _zieht ? Duration.zero : const Duration(milliseconds: 180),
           curve: Curves.easeOut,
@@ -290,6 +407,9 @@ class _BetrachterState extends State<Betrachter> {
             ..scaleByDouble(1 - anteil * 0.3, 1 - anteil * 0.3, 1, 1),
           child: PhotoViewGallery.builder(
             pageController: _seiten,
+            scrollPhysics: _aufziehen
+                ? const NeverScrollableScrollPhysics()
+                : null,
             itemCount: widget.zeilen.length,
             backgroundDecoration: const BoxDecoration(
               color: Colors.transparent,
@@ -319,10 +439,21 @@ class _BetrachterState extends State<Betrachter> {
               return PhotoViewGalleryPageOptions.customChild(
                 minScale: PhotoViewComputedScale.contained,
                 maxScale: PhotoViewComputedScale.covered * 4,
+                disableGestures: _aufziehen,
                 child: _BildSeite(
                   sitzung: widget.sitzung,
                   zeile: z,
                   lade: _lade,
+                  ebene: _gesichter
+                      ? Gesichtsebene(
+                          sitzung: widget.sitzung,
+                          zeile: z,
+                          stand: _gesichtsstand,
+                          aufziehen: _aufziehen && i == _index,
+                          beiTipp: _gesichtGetippt,
+                          beiRahmen: _rahmenGezogen,
+                        )
+                      : null,
                 ),
               );
             },
@@ -344,11 +475,15 @@ class _BildSeite extends StatefulWidget {
     required this.sitzung,
     required this.zeile,
     required this.lade,
+    this.ebene,
   });
 
   final Sitzung sitzung;
   final Rasterzeile zeile;
   final Future<AssetData?> Function(String id) lade;
+
+  /// Über dem Bild, mit ihm gezoomt – die Gesichtsrahmen (Issue #190).
+  final Widget? ebene;
 
   @override
   State<_BildSeite> createState() => _BildSeiteState();
@@ -437,7 +572,12 @@ class _BildSeiteState extends State<_BildSeite> {
         );
       },
     );
-    if (zeile.linkedAssetId == null) return bild;
+    final ebene = widget.ebene;
+    if (zeile.linkedAssetId == null) {
+      return ebene == null
+          ? bild
+          : Stack(fit: StackFit.expand, children: [bild, ebene]);
+    }
     final live = _live;
     final aktiv = live != null || _laedt;
     return Stack(
@@ -457,6 +597,7 @@ class _BildSeiteState extends State<_BildSeite> {
               ),
             ),
           ),
+        ?ebene,
         Positioned(
           left: 16,
           bottom: 16 + MediaQuery.paddingOf(context).bottom,

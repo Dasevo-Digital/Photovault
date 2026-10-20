@@ -670,5 +670,11 @@
   "albenName": "Name",
   "albenMerken": "Save",
   "albenLoeschen": "Delete album",
-  "albenIntelligentLoeschen": "Delete “{name}”? The photos stay; only the saved search goes."
+  "albenIntelligentLoeschen": "Delete “{name}”? The photos stay; only the saved search goes.",
+  "betrachterGesichterZeigen": "Show faces",
+  "betrachterGesichterAus": "Hide faces",
+  "betrachterGesichtAufziehen": "Draw a face",
+  "betrachterAufziehenHinweis": "Drag a frame around the face.",
+  "betrachterRahmenZuKlein": "The frame is too small – please drag around the whole face.",
+  "betrachterGesichtFehler": "The face could not be added – is the server reachable?"
 }

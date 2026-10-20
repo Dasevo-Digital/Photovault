@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
+import 'package:kern/auswertung/gesicht_von_hand.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
@@ -225,6 +226,7 @@ Handler baueApi({
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/angaben', api.angaben)
+    ..post('/api/v1/aufnahmen/<id>/gesichter', api.gesichtAnlegen)
     ..get('/api/v1/aufnahmen/<id>/<art>', api.datei)
     ..get('/api/v1/serien/<id>', api.serie)
     ..post('/api/v1/pruefsummen', api.pruefsummen)
@@ -1368,6 +1370,63 @@ class _Api {
           },
       ],
     });
+  }
+
+  /// Ein von Hand aufgezogenes Gesicht (Issue #190): `{kasten: [x, y, b, h],
+  /// personId?}`, der Kasten in Anteilen des Bildes. Der Server schneidet
+  /// es aus dem Original aus und bettet es ein; über den Abgleich kommt es
+  /// zu allen Geräten – deren Kopien dürfen das nicht selbst.
+  Future<Response> gesichtAnlegen(Request anfrage, String id) async {
+    final b = (await _bereich(anfrage)).bibliothek;
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final kasten = k is Map ? k['kasten'] : null;
+    if (kasten is! List ||
+        kasten.length != 4 ||
+        kasten.any((w) => w is! num || w < 0 || w > 1)) {
+      return _json({'fehler': 'kasten fehlt'}, status: 400);
+    }
+    final [x, y, breite, hoehe] = [
+      for (final w in kasten) (w as num).toDouble(),
+    ];
+    if (!gesichtsrahmenGrossGenug(breite, hoehe)) {
+      return _json({'fehler': 'Rahmen zu klein'}, status: 400);
+    }
+    final personId = k is Map && k['personId'] is String
+        ? k['personId'] as String
+        : null;
+    final person = personId == null
+        ? null
+        : await (b.db.select(
+            b.db.people,
+          )..where((t) => t.id.equals(personId))).getSingleOrNull();
+    if (personId != null && person == null) {
+      return _json({'fehler': 'Person unbekannt'}, status: 400);
+    }
+    final f = await b.auswertungen.gesichtVonHandAnlegen(
+      assetId: id,
+      x: x,
+      y: y,
+      breite: breite,
+      hoehe: hoehe,
+      personId: personId,
+    );
+    if (f == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    return _json({
+      'gesicht': {
+        'id': f.id,
+        'ausschnitt': f.cropRelativePath,
+        'aufnahme': f.assetId,
+        'kasten': gesichtskasten(f),
+        'person': person == null
+            ? null
+            : {'id': person.id, 'name': person.name},
+      },
+    }, status: 201);
   }
 
   /// Ähnliche Gesichter ohne Namen, zum Benennen – dieselbe Rechnung wie

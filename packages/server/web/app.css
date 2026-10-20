@@ -164,7 +164,20 @@ body.waehlt #raster .kachel > .herz { display: none; }
 #betrachter { position: fixed; inset: 0; background: #000; z-index: 10; display: flex; align-items: center; justify-content: center; }
 #betrachter figure { margin: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #betrachter img, #betrachter video { max-width: 100vw; max-height: calc(100vh - 40px); object-fit: contain; }
-#betrachter figure { touch-action: none; }
+#betrachter figure { touch-action: none; position: relative; }
+/* Gesichtsrahmen im Betrachter (#190) – Farben wie am Rechner: benannt
+   grün, unbenannt orange, beiseitegelegt grau. Die Fläche liegt genau über
+   dem Bild und macht dessen Zoom und Verschiebung mit. */
+#rahmenflaeche { position: absolute; pointer-events: none; transform-origin: 50% 50%; }
+#rahmenflaeche.gleitet { transition: transform .18s ease-out; }
+#rahmenflaeche.ziehen { pointer-events: auto; cursor: crosshair; }
+#rahmenflaeche .rahmen { position: absolute; box-sizing: border-box; border: 2px solid #ffab40; border-radius: 3px; pointer-events: auto; cursor: pointer; background: none; padding: 0; }
+#rahmenflaeche.ziehen .rahmen { pointer-events: none; }
+#rahmenflaeche .rahmen.benannt { border-color: #69f0ae; }
+#rahmenflaeche .rahmen.beiseite { border-color: #9e9e9e; border-style: dashed; }
+#rahmenflaeche .rahmen .name { position: absolute; left: -2px; top: 100%; margin-top: 2px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,.78); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
+#rahmenflaeche .neu { position: absolute; box-sizing: border-box; border: 2px dashed #18ffff; background: rgba(24,255,255,.12); pointer-events: none; }
+#gesichter-knopf[aria-pressed="true"], #aufziehen-knopf[aria-pressed="true"] { background: #fff; color: #000; }
 #video-hinweis { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; max-width: min(28em, 80vw); padding: 12px 16px; border-radius: 12px; background: rgba(0,0,0,.72); color: #fff; text-align: center; pointer-events: none; }
 #live { width: auto !important; height: 28px !important; line-height: 25px !important; margin-top: 8px; padding: 0 9px; border: 1.5px solid rgba(255,255,255,.85) !important; border-radius: 14px !important; font-size: 11px !important; font-weight: 700; letter-spacing: .08em; }
 #live.aktiv { background: #fff; color: #000; }

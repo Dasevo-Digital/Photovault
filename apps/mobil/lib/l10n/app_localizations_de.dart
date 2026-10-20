@@ -1946,4 +1946,25 @@ class AppTexteDe extends AppTexte {
   String albenIntelligentLoeschen(String name) {
     return '„$name“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.';
   }
+
+  @override
+  String get betrachterGesichterZeigen => 'Gesichter zeigen';
+
+  @override
+  String get betrachterGesichterAus => 'Gesichter ausblenden';
+
+  @override
+  String get betrachterGesichtAufziehen => 'Gesicht aufziehen';
+
+  @override
+  String get betrachterAufziehenHinweis =>
+      'Einen Rahmen um das Gesicht ziehen.';
+
+  @override
+  String get betrachterRahmenZuKlein =>
+      'Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.';
+
+  @override
+  String get betrachterGesichtFehler =>
+      'Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?';
 }

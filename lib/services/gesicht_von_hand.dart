@@ -40,6 +40,34 @@ Future<String?> gesichtVonHandAnlegen({
   required String personId,
   void Function(Object fehler)? beiEinbettungsfehler,
 }) async {
+  // **Verbunden legt der Server an** (Issue #190). Die Kopie darf nicht
+  // selbst schreiben – `insertFace` brach am Schutz `pv_nur_ueber_server`
+  // wortlos ab. Der Server hat Original und Modell und schickt das Gesicht
+  // über den Abgleich zurück.
+  final abgleich = library.abgleich;
+  if (library.verbunden && abgleich != null) {
+    // Erst die offenen Befehle: Eine eben angelegte Person muss beim Server
+    // sein, bevor ihr ein Gesicht zugeordnet wird.
+    await abgleich.sende();
+    final antwort = await abgleich.verbindung.schicke(
+      'api/v1/aufnahmen/${Uri.encodeComponent(assetId)}/gesichter',
+      {
+        'kasten': [kasten.left, kasten.top, kasten.width, kasten.height],
+        'personId': personId,
+      },
+    );
+    final id = (antwort['gesicht']! as Map)['id']! as String;
+    // Bis die Zeile über den Abgleich da ist – sonst zeigte die Ansicht
+    // gleich danach den neuen Rahmen noch nicht.
+    for (var i = 0; i < 50; i++) {
+      if ((await library.db.facesForAsset(assetId)).any((f) => f.id == id)) {
+        break;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+    return id;
+  }
+
   // `decodeImage` liefert bei einer beschädigten Datei nicht immer `null`,
   // sondern wirft auch – gemessen an vier zufälligen Bytes. Beides heisst
   // hier dasselbe: kein Bild, kein Gesicht.

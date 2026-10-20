@@ -2780,6 +2780,10 @@ function oeffne(i) {
     bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
   }
   $('bearbeiten').hidden = a.art === 'video';
+  $('gesichter-knopf').hidden = a.art === 'video';
+  setzeAufziehen(false);
+  $('aufziehen-knopf').hidden = a.art === 'video' || !gesichterAn;
+  zeigeRahmen();
   const korb = !!liste.papierkorb;
   $('favorit').hidden = korb;
   $('weg').hidden = korb;
@@ -2801,6 +2805,137 @@ function oeffne(i) {
   zeigeAngaben();
   if (i >= liste.aufnahmen.length - 20) ladeMehr();
 }
+
+// --- Gesichter im Betrachter (#190) -------------------------------------------
+//
+// Wie am Rechner: Die erkannten Gesichter als Rahmen über dem Foto, jeder
+// antippbar zum Benennen; und ein Gesicht, das die Erkennung übersehen hat,
+// von Hand aufziehen. Angelegt wird es am Server – er hat das Original und
+// das Modell; zurück kommt es wie jede Änderung.
+
+let gesichterAn = false;
+let aufziehen = false;
+const rahmenflaeche = $('rahmenflaeche');
+
+// Legt die Fläche genau über das gezeigte Bild.
+function legeRahmenflaeche() {
+  const b = $('bild');
+  if (!gesichterAn || b.hidden || !b.naturalWidth) { rahmenflaeche.hidden = true; return; }
+  rahmenflaeche.style.left = `${b.offsetLeft}px`;
+  rahmenflaeche.style.top = `${b.offsetTop}px`;
+  rahmenflaeche.style.width = `${b.offsetWidth}px`;
+  rahmenflaeche.style.height = `${b.offsetHeight}px`;
+  rahmenflaeche.style.transform = b.style.transform;
+  rahmenflaeche.hidden = false;
+}
+$('bild').addEventListener('load', legeRahmenflaeche);
+window.addEventListener('resize', legeRahmenflaeche);
+// Zoom, Verschiebung und Wischen setzen die Verwandlung des Bildes – die
+// Fläche übernimmt sie, wo immer sie gesetzt wird.
+new MutationObserver(() => {
+  rahmenflaeche.style.transform = $('bild').style.transform;
+  rahmenflaeche.classList.toggle('gleitet', $('bild').classList.contains('gleitet'));
+}).observe($('bild'), { attributes: true, attributeFilter: ['style', 'class'] });
+
+async function zeigeRahmen() {
+  rahmenflaeche.querySelectorAll('.rahmen').forEach((r) => r.remove());
+  const a = liste && liste.aufnahmen[offen];
+  if (!gesichterAn || !a || a.art === 'video') { legeRahmenflaeche(); return; }
+  let d;
+  try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (_) { return; }
+  if (!liste || liste.aufnahmen[offen] !== a) return;
+  for (const g of d.gesichter || []) {
+    if (!g.kasten) continue;
+    const [x, y, w, h] = g.kasten;
+    const r = el('button', `rahmen${g.person ? ' benannt' : ''}${g.beiseite ? ' beiseite' : ''}`);
+    r.type = 'button';
+    r.style.left = `${x * 100}%`;
+    r.style.top = `${y * 100}%`;
+    r.style.width = `${w * 100}%`;
+    r.style.height = `${h * 100}%`;
+    const name = g.beiseite ? t('Beiseitegelegt') : g.person ? g.person.name : t('Wer ist das?');
+    r.title = name;
+    r.append(el('span', 'name', name));
+    // Der Rahmen gehört nicht zum Wischen und Zoomen des Bildes.
+    r.addEventListener('pointerdown', (e) => e.stopPropagation());
+    r.addEventListener('click', (e) => {
+      e.stopPropagation();
+      oeffneGesichter({
+        titel: g.person ? g.person.name : t('Wer ist das?'),
+        gesichter: [{ ...g, aufnahme: undefined }],
+        person: g.person,
+        fertig: () => { zeigeRahmen(); if (angabenOffen) zeigeAngaben(); },
+      });
+    });
+    rahmenflaeche.append(r);
+  }
+  legeRahmenflaeche();
+  if (!d.gesichter || !d.gesichter.length) meldung(t('Auf diesem Foto ist kein Gesicht erkannt. Mit ⬚ lässt sich eines aufziehen.'));
+}
+
+function setzeAufziehen(an) {
+  aufziehen = an;
+  $('aufziehen-knopf').setAttribute('aria-pressed', String(an));
+  rahmenflaeche.classList.toggle('ziehen', an);
+}
+
+$('gesichter-knopf').addEventListener('click', () => {
+  gesichterAn = !gesichterAn;
+  $('gesichter-knopf').setAttribute('aria-pressed', String(gesichterAn));
+  $('aufziehen-knopf').hidden = !gesichterAn;
+  if (!gesichterAn) setzeAufziehen(false);
+  ordneKnoepfe();
+  zeigeRahmen();
+});
+$('aufziehen-knopf').addEventListener('click', () => {
+  setzeAufziehen(!aufziehen);
+  if (aufziehen) meldung(t('Einen Rahmen um das Gesicht ziehen.'));
+});
+
+let zug = null;
+rahmenflaeche.addEventListener('pointerdown', (e) => {
+  if (!aufziehen || e.button > 0) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const r = rahmenflaeche.getBoundingClientRect();
+  const neu = el('div', 'neu');
+  rahmenflaeche.append(neu);
+  zug = { r, x0: (e.clientX - r.left) / r.width, y0: (e.clientY - r.top) / r.height, neu, x1: 0, y1: 0 };
+  try { rahmenflaeche.setPointerCapture(e.pointerId); } catch (_) { /* egal */ }
+});
+rahmenflaeche.addEventListener('pointermove', (e) => {
+  if (!zug) return;
+  e.stopPropagation();
+  const k = (v) => Math.min(1, Math.max(0, v));
+  zug.x1 = k((e.clientX - zug.r.left) / zug.r.width);
+  zug.y1 = k((e.clientY - zug.r.top) / zug.r.height);
+  const x = Math.min(zug.x0, zug.x1), y = Math.min(zug.y0, zug.y1);
+  Object.assign(zug.neu.style, { left: `${x * 100}%`, top: `${y * 100}%`, width: `${Math.abs(zug.x1 - zug.x0) * 100}%`, height: `${Math.abs(zug.y1 - zug.y0) * 100}%` });
+});
+async function zugEnde(e) {
+  if (!zug) return;
+  e.stopPropagation();
+  const z = zug;
+  zug = null;
+  z.neu.remove();
+  const kasten = [Math.min(z.x0, z.x1), Math.min(z.y0, z.y1), Math.abs(z.x1 - z.x0), Math.abs(z.y1 - z.y0)];
+  if (kasten[2] < 0.01 || kasten[3] < 0.01) { meldung(t('Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.')); return; }
+  const a = liste && liste.aufnahmen[offen];
+  if (!a) return;
+  setzeAufziehen(false);
+  try {
+    const d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/gesichter`, { methode: 'POST', json: { kasten } });
+    await zeigeRahmen();
+    // Gleich benennen – wie am Rechner, wo die Person zuerst gefragt wird.
+    oeffneGesichter({
+      titel: t('Wer ist das?'),
+      gesichter: [d.gesicht],
+      fertig: () => { zeigeRahmen(); if (angabenOffen) zeigeAngaben(); },
+    });
+  } catch (x) { meldung(x.message); }
+}
+rahmenflaeche.addEventListener('pointerup', zugEnde);
+rahmenflaeche.addEventListener('pointercancel', (e) => { if (zug) { zug.neu.remove(); zug = null; } e.stopPropagation(); });
 
 // --- Videos, die der Browser nicht abspielt ---------------------------------
 //
@@ -3022,7 +3157,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }
