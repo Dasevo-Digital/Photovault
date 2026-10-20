@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.44.0" date="2026-10-20">
+      <description>
+        <p>The browser and the phone get the timeline views of the desktop: a view bar with six sort orders, grouping by day or month, square tiles or justified rows and larger or smaller tiles; a list with selectable columns grouped by month, day or camera; a shortcut to the years; and comparing two selected photos with linked zoom. In the browser, videos and Live Photos play muted when the mouse rests on them.</p>
+      </description>
+    </release>
     <release version="3.43.0" date="2026-10-20">
       <description>
         <p>All unnamed faces can now be ignored or deleted at once in the browser and on the phone, and ignored faces can be restored from a new "Ignored" view. The unnamed faces of a single photo can be ignored or deleted from the viewer, including on the desktop. Deleting all unnamed detections on a connected desktop no longer fails.</p>
