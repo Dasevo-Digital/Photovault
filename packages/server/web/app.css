@@ -177,7 +177,7 @@ body.waehlt #raster .kachel > .herz { display: none; }
 #rahmenflaeche .rahmen.beiseite { border-color: #9e9e9e; border-style: dashed; }
 #rahmenflaeche .rahmen .name { position: absolute; left: -2px; top: 100%; margin-top: 2px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,.78); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
 #rahmenflaeche .neu { position: absolute; box-sizing: border-box; border: 2px dashed #18ffff; background: rgba(24,255,255,.12); pointer-events: none; }
-#gesichter-knopf[aria-pressed="true"], #aufziehen-knopf[aria-pressed="true"] { background: #fff; color: #000; }
+#gesichter-knopf[aria-pressed="true"], #aufziehen-knopf[aria-pressed="true"], #ausnehmen-knopf[aria-pressed="true"] { background: #fff; color: #000; }
 #video-hinweis { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; max-width: min(28em, 80vw); padding: 12px 16px; border-radius: 12px; background: rgba(0,0,0,.72); color: #fff; text-align: center; pointer-events: none; }
 #live { width: auto !important; height: 28px !important; line-height: 25px !important; margin-top: 8px; padding: 0 9px; border: 1.5px solid rgba(255,255,255,.85) !important; border-radius: 14px !important; font-size: 11px !important; font-weight: 700; letter-spacing: .08em; }
 #live.aktiv { background: #fff; color: #000; }
@@ -480,6 +480,10 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .gesichtsgruppe .wer { font-weight: 650; }
 .gesichtsgruppe .leise { font-size: .8em; color: var(--leise); text-align: left; padding: 0; }
 #gesicht-dialog { max-width: 30em; width: calc(100vw - 32px); }
+#gesicht-dialog menu { flex-wrap: wrap; }
+#gesicht-dialog menu button { white-space: nowrap; }
+/* Löschen steht abseits und in Rot: Es nimmt den Rahmen aus dem Foto. */
+#gesicht-loeschen { margin-right: auto; order: -1; color: var(--fehler); }
 #gesicht-auswahl, #vorschlag-auswahl { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: 40vh; overflow: auto; }
 #vorschlag-auswahl { max-height: 55vh; margin: 8px 0; }
 :is(#gesicht-auswahl, #vorschlag-auswahl) .gesicht { padding: 0; border: 0; border-radius: 50%; overflow: hidden; aspect-ratio: 1; background: var(--rand); position: relative; }

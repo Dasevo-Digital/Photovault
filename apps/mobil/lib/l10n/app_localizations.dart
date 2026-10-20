@@ -3126,6 +3126,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?'**
   String get betrachterGesichtFehler;
+
+  /// No description provided for @betrachterNichtMehrDurchsuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr nach Gesichtern durchsuchen'**
+  String get betrachterNichtMehrDurchsuchen;
+
+  /// No description provided for @betrachterWiederDurchsuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'Wieder nach Gesichtern durchsuchen'**
+  String get betrachterWiederDurchsuchen;
+
+  /// No description provided for @betrachterNichtMehrDurchsuchtHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.'**
+  String get betrachterNichtMehrDurchsuchtHinweis;
+
+  /// No description provided for @betrachterWiederDurchsuchtHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Foto wird wieder mitdurchsucht.'**
+  String get betrachterWiederDurchsuchtHinweis;
+
+  /// No description provided for @gesichterRahmenLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Rahmen löschen'**
+  String get gesichterRahmenLoeschen;
+
+  /// No description provided for @gesichterRahmenLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Diesen Rahmen löschen? Die Erkennung verschwindet überall.'**
+  String get gesichterRahmenLoeschenFrage;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

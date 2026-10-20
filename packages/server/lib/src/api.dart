@@ -874,6 +874,9 @@ class _Api {
       'transkript': a.transkript,
       'datumGeschaetzt': a.datumGeschaetzt,
       'bearbeitet': angaben.bearbeitet,
+      // Von der Gesichtssuche ausgenommen (#191) – für den Schalter im
+      // Betrachter.
+      'gesichtssucheAus': a.faceScanExcluded,
       'kamera': {
         'hersteller': a.cameraMake,
         'modell': a.cameraModel,

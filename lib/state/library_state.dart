@@ -3067,9 +3067,11 @@ class LibraryState extends ChangeNotifier {
   }
 
   /// Löscht eine einzelne Erkennung samt ihrem Ausschnitt auf der Platte.
+  /// Über den Befehl, damit es auch verbunden geht (Issue #191) – vorher
+  /// brach es dort am Schutz `pv_nur_ueber_server` ab. Der Ausschnitt hier
+  /// geht mit; den beim Server räumt der Server weg.
   Future<void> loescheGesicht(String faceId) async {
-    _nurOhneServer();
-    final pfad = await db.loescheGesicht(faceId);
+    final pfad = await db.fuehreAus(GesichtLoeschen(faceId));
     if (pfad != null) await paths.deletePermanently(pfad);
   }
 

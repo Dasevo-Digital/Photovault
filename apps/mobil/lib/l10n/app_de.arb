@@ -1025,5 +1025,11 @@
   "betrachterGesichtAufziehen": "Gesicht aufziehen",
   "betrachterAufziehenHinweis": "Einen Rahmen um das Gesicht ziehen.",
   "betrachterRahmenZuKlein": "Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.",
-  "betrachterGesichtFehler": "Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?"
+  "betrachterGesichtFehler": "Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?",
+  "betrachterNichtMehrDurchsuchen": "Nicht mehr nach Gesichtern durchsuchen",
+  "betrachterWiederDurchsuchen": "Wieder nach Gesichtern durchsuchen",
+  "betrachterNichtMehrDurchsuchtHinweis": "Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.",
+  "betrachterWiederDurchsuchtHinweis": "Dieses Foto wird wieder mitdurchsucht.",
+  "gesichterRahmenLoeschen": "Rahmen löschen",
+  "gesichterRahmenLoeschenFrage": "Diesen Rahmen löschen? Die Erkennung verschwindet überall."
 }

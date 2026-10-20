@@ -891,8 +891,28 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await ruhe();
     expect(find.text('Wer ist das?'), findsWidgets);
-    Navigator.of(tester.element(find.text('Wer ist das?').first)).pop();
+    // Dort ist kein Gesicht: den Rahmen löschen (#191) – nach Rückfrage.
+    await tester.tap(find.text('Rahmen löschen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Rahmen löschen'));
     await ruhe();
+    final uebrig = await tester.runAsync(() => db.facesForAsset('g1'));
+    expect(uebrig!.map((f) => f.id), ['fa']);
+
+    // Das Foto nicht mehr nach Gesichtern durchsuchen – und zurück.
+    Future<bool> ausgenommen() async =>
+        (await tester.runAsync(() => db.assetById('g1')))!.faceScanExcluded;
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nicht mehr nach Gesichtern durchsuchen'));
+    await ruhe();
+    expect(await ausgenommen(), isTrue);
+    expect(find.textContaining('übersprungen'), findsOneWidget);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wieder nach Gesichtern durchsuchen'));
+    await ruhe();
+    expect(await ausgenommen(), isFalse);
 
     // Aufziehen: ein Wisch, der zu klein ist, wird abgelehnt.
     await tester.tap(find.byTooltip('Mehr'));

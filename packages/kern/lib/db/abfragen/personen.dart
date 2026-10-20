@@ -131,15 +131,40 @@ extension PersonenAbfragen on AppDatabase {
   /// Für den offensichtlichen Fehlgriff der Erkennung, den man direkt im
   /// Foto sieht. Wie jedes Löschen ist auch das nicht dauerhaft – der
   /// nächste Scan findet die Stelle wieder. Wer sie loswerden will, legt
-  /// sie beiseite (siehe [Faces.isIgnored]).
-  Future<String?> loescheGesicht(String faceId) async {
+  /// sie beiseite (siehe [Faces.isIgnored]) oder nimmt das Foto von der
+  /// Gesichtssuche aus (siehe [Assets.faceScanExcluded]).
+  Future<String?> loescheGesicht(String faceId) => transaction(() async {
     final vorher = await (select(
       faces,
     )..where((t) => t.id.equals(faceId))).getSingleOrNull();
     if (vorher == null) return null;
     await (delete(faces)..where((t) => t.id.equals(faceId))).go();
-    return vorher.cropRelativePath;
-  }
+    final pfad = vorher.cropRelativePath;
+    // Ein Profilbild aus diesem Ausschnitt zeigte danach ins Leere: Ein
+    // anderes Gesicht der Person übernimmt, sonst keins. Fest geordnet,
+    // damit jedes Gerät, das den Befehl anwendet, dasselbe wählt.
+    if (pfad != null) {
+      final betroffen = await (select(
+        people,
+      )..where((t) => t.coverFaceCropPath.equals(pfad))).get();
+      for (final p in betroffen) {
+        final ersatz =
+            await (select(faces)
+                  ..where(
+                    (t) =>
+                        t.personId.equals(p.id) &
+                        t.cropRelativePath.isNotNull(),
+                  )
+                  ..orderBy([(t) => OrderingTerm.asc(t.id)])
+                  ..limit(1))
+                .getSingleOrNull();
+        await (update(people)..where((t) => t.id.equals(p.id))).write(
+          PeopleCompanion(coverFaceCropPath: Value(ersatz?.cropRelativePath)),
+        );
+      }
+    }
+    return pfad;
+  });
 
   /// Nimmt einem Gesicht seine Person, ohne es zu löschen – es landet
   /// wieder unter „Unbenannte Gesichter".

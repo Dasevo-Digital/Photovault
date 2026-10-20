@@ -1967,4 +1967,27 @@ class AppTexteDe extends AppTexte {
   @override
   String get betrachterGesichtFehler =>
       'Das Gesicht liess sich nicht anlegen – ist der Server erreichbar?';
+
+  @override
+  String get betrachterNichtMehrDurchsuchen =>
+      'Nicht mehr nach Gesichtern durchsuchen';
+
+  @override
+  String get betrachterWiederDurchsuchen =>
+      'Wieder nach Gesichtern durchsuchen';
+
+  @override
+  String get betrachterNichtMehrDurchsuchtHinweis =>
+      'Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.';
+
+  @override
+  String get betrachterWiederDurchsuchtHinweis =>
+      'Dieses Foto wird wieder mitdurchsucht.';
+
+  @override
+  String get gesichterRahmenLoeschen => 'Rahmen löschen';
+
+  @override
+  String get gesichterRahmenLoeschenFrage =>
+      'Diesen Rahmen löschen? Die Erkennung verschwindet überall.';
 }

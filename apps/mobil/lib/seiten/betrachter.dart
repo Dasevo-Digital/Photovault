@@ -159,6 +159,34 @@ class _BetrachterState extends State<Betrachter> {
 
   Future<void> _angaben() => zeigeAngaben(context, widget.sitzung, _aktuell);
 
+  /// Ein Foto, auf dem jeder Durchlauf neue „Gesichter" findet – eine
+  /// Gemäldewand, ein Plakat –, von der Suche ausnehmen oder zurückholen
+  /// (wie am Rechner und im Browser). Was schon erkannt ist, bleibt; die
+  /// Ausnahme gilt dem Suchen.
+  Future<void> _gesichtssucheUmschalten() async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final a = await _lade(_aktuell);
+    if (a == null) return;
+    final aus = !a.faceScanExcluded;
+    await _db.fuehreAus(GesichtssucheAusnehmen(a.id, aus));
+    _daten.remove(a.id);
+    await _lade(a.id);
+    if (!mounted) return;
+    setState(() {});
+    bote
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            aus
+                ? t.betrachterNichtMehrDurchsuchtHinweis
+                : t.betrachterWiederDurchsuchtHinweis,
+          ),
+        ),
+      );
+  }
+
   Future<void> _gesichtGetippt(GesichtAufAufnahme g) async {
     final t = AppTexte.of(context);
     await benenneGesichter(
@@ -299,6 +327,8 @@ class _BetrachterState extends State<Betrachter> {
                           _aufziehen = true;
                           _leiste = true;
                         });
+                      case 'ausnehmen':
+                        await _gesichtssucheUmschalten();
                       case 'diashow':
                         final i = await zeigeDiashow(
                           context,
@@ -341,6 +371,24 @@ class _BetrachterState extends State<Betrachter> {
                           child: ListTile(
                             leading: const Icon(Icons.crop_free_rounded),
                             title: Text(t.betrachterGesichtAufziehen),
+                          ),
+                        ),
+                      // Wie im Browser nur bei eingeblendeten Rahmen: Dort
+                      // sieht man, was die Erkennung gefunden hat.
+                      if (_gesichter && !widget.imPapierkorb)
+                        PopupMenuItem(
+                          value: 'ausnehmen',
+                          child: ListTile(
+                            leading: Icon(
+                              (_daten[zeile.id]?.faceScanExcluded ?? false)
+                                  ? Icons.person_search_outlined
+                                  : Icons.search_off_outlined,
+                            ),
+                            title: Text(
+                              (_daten[zeile.id]?.faceScanExcluded ?? false)
+                                  ? t.betrachterWiederDurchsuchen
+                                  : t.betrachterNichtMehrDurchsuchen,
+                            ),
                           ),
                         ),
                     ],

@@ -32,6 +32,14 @@ class Bibliothek {
     this.protokoll,
     Vergabe? vergabe,
   ) {
+    // Gelöschte Erkennungen: Die Zeile nimmt der Befehl, den Ausschnitt
+    // räumt der Server hier auf – Geräte schicken nur den Befehl (#191).
+    db.befehlsbeobachter.add((befehl) {
+      if (befehl is GesichtLoeschen) {
+        final datei = pfade.absolute(pfade.faceRelativePath(befehl.gesichtId));
+        datei.delete().catchError((Object _) => datei);
+      }
+    });
     final modellstand = ModelProcessingState(pfade.modelProcessingStateFile);
     auswertungen = Auswertungen(
       db: db,

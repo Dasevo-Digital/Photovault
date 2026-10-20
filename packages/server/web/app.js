@@ -1692,6 +1692,9 @@ async function oeffneGesichter(fall) {
   $('gesicht-ja').hidden = !fall.vorschlag;
   if (fall.vorschlag) $('gesicht-ja').textContent = t('Das ist {name}', { name: fall.vorschlag.name });
   $('gesicht-loesen').hidden = !fall.person;
+  // Löschen nur einzeln: Es nimmt den Rahmen aus dem Foto, und das will
+  // man sehen, bevor man es tut.
+  $('gesicht-loeschen').hidden = fall.gesichter.length !== 1;
   $('form-gesicht').name.value = fall.person ? fall.person.name : '';
   $('gesicht-meldung').textContent = '';
   $('gesicht-namen').replaceChildren();
@@ -1756,6 +1759,10 @@ $('form-gesicht').addEventListener('submit', (e) => {
 });
 $('gesicht-beiseite').addEventListener('click', () => gesichterFertig((ids) => befehl('gesichterBeiseitelegen', { gesichtIds: ids, beiseite: true })));
 $('gesicht-loesen').addEventListener('click', () => gesichterFertig(async (ids) => { for (const id of ids) await befehl('zuordnungLoesen', { gesichtId: id }); }));
+$('gesicht-loeschen').addEventListener('click', () => {
+  if (!confirm(t('Diesen Rahmen löschen? Die Erkennung verschwindet überall.'))) return;
+  gesichterFertig(async (ids) => { for (const id of ids) await befehl('gesichtLoeschen', { gesichtId: id }); });
+});
 $('gesicht-abbrechen').addEventListener('click', () => $('gesicht-dialog').close());
 
 // Die Gesichter eines Fotos in den Angaben: jedes antippbar.
@@ -2783,6 +2790,7 @@ function oeffne(i) {
   $('gesichter-knopf').hidden = a.art === 'video';
   setzeAufziehen(false);
   $('aufziehen-knopf').hidden = a.art === 'video' || !gesichterAn;
+  $('ausnehmen-knopf').hidden = a.art === 'video' || !gesichterAn;
   zeigeRahmen();
   const korb = !!liste.papierkorb;
   $('favorit').hidden = korb;
@@ -2844,6 +2852,7 @@ async function zeigeRahmen() {
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (_) { return; }
   if (!liste || liste.aufnahmen[offen] !== a) return;
+  setzeAusnehmen(!!d.gesichtssucheAus);
   for (const g of d.gesichter || []) {
     if (!g.kasten) continue;
     const [x, y, w, h] = g.kasten;
@@ -2879,10 +2888,35 @@ function setzeAufziehen(an) {
   rahmenflaeche.classList.toggle('ziehen', an);
 }
 
+// Ein Foto, auf dem jeder Durchlauf neue „Gesichter“ findet – eine
+// Gemäldewand, ein Plakat –, nimmt man von der Suche aus. Was schon
+// erkannt ist, bleibt; die Ausnahme gilt dem Suchen (wie am Rechner).
+function setzeAusnehmen(aus) {
+  const k = $('ausnehmen-knopf');
+  const titel = aus ? t('Wieder nach Gesichtern durchsuchen') : t('Nicht mehr nach Gesichtern durchsuchen');
+  k.setAttribute('aria-pressed', String(aus));
+  k.title = titel;
+  k.setAttribute('aria-label', titel);
+}
+
+$('ausnehmen-knopf').addEventListener('click', async () => {
+  const a = liste && liste.aufnahmen[offen];
+  if (!a) return;
+  const aus = $('ausnehmen-knopf').getAttribute('aria-pressed') !== 'true';
+  try {
+    await befehl('gesichtssucheAusnehmen', { id: a.id, ausgenommen: aus });
+    setzeAusnehmen(aus);
+    meldung(aus ? t('Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.') : t('Dieses Foto wird wieder mitdurchsucht.'));
+  } catch (x) {
+    meldung(x.message);
+  }
+});
+
 $('gesichter-knopf').addEventListener('click', () => {
   gesichterAn = !gesichterAn;
   $('gesichter-knopf').setAttribute('aria-pressed', String(gesichterAn));
   $('aufziehen-knopf').hidden = !gesichterAn;
+  $('ausnehmen-knopf').hidden = !gesichterAn;
   if (!gesichterAn) setzeAufziehen(false);
   ordneKnoepfe();
   zeigeRahmen();
@@ -3157,7 +3191,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'ausnehmen-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }

@@ -1519,6 +1519,52 @@ void main() {
         404,
         reason: 'fremde Aufnahme',
       );
+
+      // Löschen (#191): über den Befehl; den Ausschnitt räumt der Server
+      // weg.
+      final pfade = (await bibliotheken.fuer(erika.id)).bibliothek.pfade;
+      final ausschnitt = pfade.absolute(f.cropRelativePath!);
+      expect(ausschnitt.existsSync(), isTrue);
+      expect(
+        (await befehl(erikaToken, 'gesichtLoeschen', {
+          'gesichtId': f.id,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await db.facesForAsset(a)).map((x) => x.id),
+        isNot(contains(f.id)),
+      );
+      for (var i = 0; i < 20 && ausschnitt.existsSync(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(ausschnitt.existsSync(), isFalse);
+
+      // Von der Gesichtssuche ausnehmen – die Angaben sagen es.
+      expect(
+        (await befehl(erikaToken, 'gesichtssucheAusnehmen', {
+          'id': a,
+          'ausgenommen': true,
+        })).statusCode,
+        200,
+      );
+      expect(
+        (await jsonAus(
+          await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+        ))['gesichtssucheAus'],
+        isTrue,
+      );
+
+      // Das Gesicht hinter Idas Profilbild löschen: Das Bild zeigte sonst
+      // ins Leere – sie hat kein anderes, also keins.
+      final idas = (await db.facesForAsset(
+        a,
+      )).where((x) => x.personId == 'p1').single;
+      await befehl(erikaToken, 'gesichtLoeschen', {'gesichtId': idas.id});
+      final idaDanach = await (db.select(
+        db.people,
+      )..where((t) => t.id.equals('p1'))).getSingle();
+      expect(idaDanach.coverFaceCropPath, isNull);
     },
   );
 

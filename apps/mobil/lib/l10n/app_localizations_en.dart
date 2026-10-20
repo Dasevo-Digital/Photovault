@@ -1960,4 +1960,25 @@ class AppTexteEn extends AppTexte {
   @override
   String get betrachterGesichtFehler =>
       'The face could not be added – is the server reachable?';
+
+  @override
+  String get betrachterNichtMehrDurchsuchen => 'Stop scanning for faces';
+
+  @override
+  String get betrachterWiederDurchsuchen => 'Scan for faces again';
+
+  @override
+  String get betrachterNichtMehrDurchsuchtHinweis =>
+      'This photo will be skipped when scanning again. Faces already found remain.';
+
+  @override
+  String get betrachterWiederDurchsuchtHinweis =>
+      'This photo will be scanned again.';
+
+  @override
+  String get gesichterRahmenLoeschen => 'Delete frame';
+
+  @override
+  String get gesichterRahmenLoeschenFrage =>
+      'Delete this frame? The detection disappears everywhere.';
 }

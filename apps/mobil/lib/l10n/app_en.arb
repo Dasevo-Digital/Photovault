@@ -676,5 +676,11 @@
   "betrachterGesichtAufziehen": "Draw a face",
   "betrachterAufziehenHinweis": "Drag a frame around the face.",
   "betrachterRahmenZuKlein": "The frame is too small – please drag around the whole face.",
-  "betrachterGesichtFehler": "The face could not be added – is the server reachable?"
+  "betrachterGesichtFehler": "The face could not be added – is the server reachable?",
+  "betrachterNichtMehrDurchsuchen": "Stop scanning for faces",
+  "betrachterWiederDurchsuchen": "Scan for faces again",
+  "betrachterNichtMehrDurchsuchtHinweis": "This photo will be skipped when scanning again. Faces already found remain.",
+  "betrachterWiederDurchsuchtHinweis": "This photo will be scanned again.",
+  "gesichterRahmenLoeschen": "Delete frame",
+  "gesichterRahmenLoeschenFrage": "Delete this frame? The detection disappears everywhere."
 }

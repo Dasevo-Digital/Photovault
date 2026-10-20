@@ -130,6 +130,34 @@ class _BenennenState extends State<_Benennen> {
     }
   }
 
+  /// Den Rahmen ganz entfernen – für die Stelle, an der kein Gesicht ist.
+  /// Nur einzeln: Man soll sehen, was man löscht.
+  Future<void> _loeschen() async {
+    final t = AppTexte.of(context);
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(t.gesichterRahmenLoeschenFrage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.abbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.gesichterRahmenLoeschen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    await _fertig((ids) async {
+      for (final id in ids) {
+        await _db.fuehreAus(GesichtLoeschen(id));
+      }
+    });
+  }
+
   Future<void> _benennen() async {
     final t = AppTexte.of(context);
     final name = _name.text.trim();
@@ -302,6 +330,12 @@ class _BenennenState extends State<_Benennen> {
               spacing: 8,
               runSpacing: 4,
               children: [
+                if (widget.gesichter.length == 1)
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: farben.error),
+                    onPressed: _laeuft ? null : _loeschen,
+                    child: Text(t.gesichterRahmenLoeschen),
+                  ),
                 if (widget.person != null)
                   TextButton(
                     onPressed: _laeuft

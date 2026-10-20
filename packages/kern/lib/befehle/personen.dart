@@ -150,6 +150,30 @@ final class ZuordnungLoesen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.loeseZuordnung(gesichtId);
 }
 
+/// Eine Erkennung löschen – der Rahmen war kein Gesicht (Issue #191).
+///
+/// Anders als [GesichterBeiseitelegen] verschwindet sie ganz. Ein Befehl,
+/// damit es auch am verbundenen Rechner, im Browser und auf dem Handy geht
+/// – deren Kopien dürfen nicht selbst löschen. Gibt den Pfad des
+/// Ausschnitts zurück; die Datei räumt der auf, der die Bibliothek hält.
+final class GesichtLoeschen extends Befehl<String?> {
+  const GesichtLoeschen(this.gesichtId);
+
+  static GesichtLoeschen aus(Map<String, Object?> w) =>
+      GesichtLoeschen(w['gesichtId']! as String);
+
+  final String gesichtId;
+
+  @override
+  String get art => 'gesichtLoeschen';
+
+  @override
+  Map<String, Object?> get werte => {'gesichtId': gesichtId};
+
+  @override
+  Future<String?> anwenden(AppDatabase db) => db.loescheGesicht(gesichtId);
+}
+
 /// Das Rückgängig einer Zuordnung: jedes Gesicht zurück in seinen Stand,
 /// die Rückmeldungen seit [rueckmeldungenSeit] weg, eine eigens angelegte
 /// Person wieder weg.
