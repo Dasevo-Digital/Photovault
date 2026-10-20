@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.40.0" date="2026-10-20">
+      <description>
+        <p>Fixes content search on a connected desktop missing photos whose embeddings came from the server, and similar photos, duplicates and series showing items another device had moved to the trash.</p>
+        <p>A face can now be shown in the whole photo. Browser and phone gain Memories, Calendar and smart albums; the new search mode “Everywhere” is also on the desktop. Search results in the browser load page by page.</p>
+      </description>
+    </release>
     <release version="3.39.0" date="2026-10-19">
       <description>
         <p>The desktop sidebar now matches the browser and the phone: Photos, Search and Albums on top, then the groups Explore and Manage with the same colors. It shows icons only, opens on hover and can be pinned open. Ctrl+1 to Ctrl+9 follow the sidebar from the top.</p>
