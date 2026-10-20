@@ -110,6 +110,7 @@ const EN = {
   'Einen Rahmen um das Gesicht ziehen.': 'Drag a frame around the face.',
   'Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.': 'The frame is too small – please drag around the whole face.',
   'Rahmen löschen': 'Delete frame',
+  'Jahre': 'Years',
   'Foto': 'Photo',
   'Video': 'Video',
   'geschätzt': 'estimated',

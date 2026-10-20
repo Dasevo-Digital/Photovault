@@ -528,7 +528,7 @@ void main() {
     expect(sitzung.rasterspalten, vorher - 1);
 
     // Nach Dateiname: ohne Monat, a vor b vor c.
-    await tester.tap(find.text('Aufnahmedatum, neueste zuerst'));
+    await tester.tap(find.byTooltip('Reihenfolge'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Dateiname, A–Z').last);
     await ruhe();
@@ -545,6 +545,12 @@ void main() {
           (links[0].dy == links[2].dy && links[0].dx < links[1].dx),
       isTrue,
     );
+
+    // Die Jahre auf einen Blick (#196): der Kalender mit 2025.
+    await tester.tap(find.byTooltip('Jahre'));
+    await ruhe();
+    expect(find.text('Jahre'), findsOneWidget);
+    expect(find.text('2025'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump(const Duration(milliseconds: 10));

@@ -3480,6 +3480,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Video'**
   String get listeVideo;
+
+  /// No description provided for @ansichtJahre.
+  ///
+  /// In de, this message translates to:
+  /// **'Jahre'**
+  String get ansichtJahre;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

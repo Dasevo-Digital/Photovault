@@ -2911,6 +2911,9 @@ function wechsleAnsicht(alsListe) {
   window.scrollTo(0, 0);
   zeigeFotos();
 }
+// Die Jahre auf einen Blick (#196) – wie am Rechner; der Kalender zeigt
+// sie samt Titelbild, ein Tipp führt zu den Monaten.
+$('ansicht-jahre').addEventListener('click', () => { location.hash = '#/kalender'; });
 $('ansicht-raster').addEventListener('click', () => wechsleAnsicht(false));
 $('ansicht-liste').addEventListener('click', () => wechsleAnsicht(true));
 $('ansicht-gliederung').addEventListener('change', (e) => {

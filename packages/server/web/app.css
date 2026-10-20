@@ -158,6 +158,7 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 #ansichtsleiste button:disabled { opacity: .35; }
 #ansichtsleiste button[hidden] { display: none; }
 #ansichtsleiste .symbol { width: 20px; height: 20px; }
+#ansichtsleiste #ansicht-jahre { margin-right: 4px; }
 #ansichtsleiste .ansicht-art { display: inline-flex; flex: none; margin-right: 6px; border: 1px solid var(--rand); border-radius: 9px; padding: 1px; }
 #ansichtsleiste .ansicht-art button { width: 32px; height: 28px; }
 #ansichtsleiste #ansicht-sortierung { flex: 0 1 auto; margin-right: auto; }

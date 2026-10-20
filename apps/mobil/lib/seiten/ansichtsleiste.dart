@@ -6,6 +6,7 @@ import 'package:kern/services/sortierung.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'rueckblick.dart';
 
 /// Die Leiste über der Zeitleiste (Issues #194, #195) – wie am Rechner und
 /// im Browser: Raster oder Liste, die Reihenfolge, und je nach Ansicht
@@ -101,6 +102,21 @@ class Ansichtsleiste extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
         child: Row(
           children: [
+            // Die Jahre auf einen Blick (Issue #196), wie am Rechner: der
+            // Kalender, ein Tipp führt zu den Monaten.
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: t.ansichtJahre,
+              icon: const Icon(Icons.calendar_view_month_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: Text(t.ansichtJahre)),
+                    body: Kalender(sitzung: s),
+                  ),
+                ),
+              ),
+            ),
             SegmentedButton<bool>(
               style: const ButtonStyle(
                 visualDensity: VisualDensity.compact,
@@ -122,27 +138,23 @@ class Ansichtsleiste extends StatelessWidget {
               selected: {liste},
               onSelectionChanged: (w) => s.setzeAnsicht(alsListe: w.first),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Rastersortierung>(
-                  isExpanded: true,
-                  isDense: true,
-                  value: s.sortierung,
-                  hint: Text(t.ansichtReihenfolge),
-                  items: [
-                    for (final x in Rastersortierung.values)
-                      DropdownMenuItem(
-                        value: x,
-                        child: Text(
-                          sortierungText(t, x),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: (x) => s.setzeAnsicht(sortierung: x),
-                ),
-              ),
+            const Spacer(),
+            // Als Menü und nicht als Auswahlliste: Neben den Knöpfen wäre für
+            // den Namen der Reihenfolge auf dem Telefon kaum Platz.
+            PopupMenuButton<Rastersortierung>(
+              tooltip: t.ansichtReihenfolge,
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.sort),
+              initialValue: s.sortierung,
+              onSelected: (x) => s.setzeAnsicht(sortierung: x),
+              itemBuilder: (context) => [
+                for (final x in Rastersortierung.values)
+                  CheckedPopupMenuItem(
+                    value: x,
+                    checked: x == s.sortierung,
+                    child: Text(sortierungText(t, x)),
+                  ),
+              ],
             ),
             if (liste) ...[
               // Gliedern lässt sich nur, was nach dem Datum geordnet ist.

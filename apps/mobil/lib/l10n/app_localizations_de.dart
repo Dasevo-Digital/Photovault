@@ -2219,4 +2219,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get listeVideo => 'Video';
+
+  @override
+  String get ansichtJahre => 'Jahre';
 }
