@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.43.0" date="2026-10-20">
+      <description>
+        <p>All unnamed faces can now be ignored or deleted at once in the browser and on the phone, and ignored faces can be restored from a new "Ignored" view. The unnamed faces of a single photo can be ignored or deleted from the viewer, including on the desktop. Deleting all unnamed detections on a connected desktop no longer fails.</p>
+      </description>
+    </release>
     <release version="3.42.0" date="2026-10-20">
       <description>
         <p>Face frames can now be deleted in the browser and on the phone, and a photo can be excluded from or returned to face scanning. Deleting a face on a connected desktop no longer fails; if the deleted face was a person's cover image, another face of that person takes its place.</p>
