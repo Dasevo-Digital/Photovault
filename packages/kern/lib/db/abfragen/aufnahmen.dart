@@ -508,6 +508,15 @@ extension AufnahmenAbfragen on AppDatabase {
     );
   }
 
+  /// [watchAssetCountsByMonth] als einmalige Abfrage – für den Kalender
+  /// in Browser und Telefon (rueckblickseite.dart).
+  Future<Map<int, int>> assetCountsByMonth(int jahr) =>
+      watchAssetCountsByMonth(jahr).first;
+
+  /// [watchTimelineForMonth] als einmalige Abfrage.
+  Future<List<AssetData>> aufnahmenImMonat(int jahr, int monat) =>
+      watchTimelineForMonth(jahr, monat).first;
+
   /// Alle Aufnahmen eines Monats, neueste zuerst – wie
   /// [watchTimelineForYear], nur enger.
   Stream<List<AssetData>> watchTimelineForMonth(int jahr, int monat) {

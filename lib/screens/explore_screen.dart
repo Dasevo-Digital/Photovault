@@ -36,6 +36,7 @@ import '../widgets/stromhalter.dart';
 import 'package:kern/services/laendernamen.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
 import '../widgets/bibliotheksbild.dart';
+import 'package:kern/services/rueckblickseite.dart';
 
 /// Wie viele Kacheln ein Streifen höchstens zeigt.
 ///

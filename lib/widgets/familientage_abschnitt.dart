@@ -4,9 +4,8 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/asset_viewer_screen.dart';
-import '../services/familientage.dart';
-import '../services/lebenslauf.dart';
-import 'package:kern/services/stammbaum.dart';
+import 'package:kern/services/familientage.dart';
+import 'package:kern/services/rueckblickseite.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'asset_thumbnail_tile.dart';
@@ -36,82 +35,15 @@ class FamilientageAbschnitt extends StatefulWidget {
   State<FamilientageAbschnitt> createState() => _FamilientageAbschnittState();
 }
 
-typedef _Eintrag = ({
-  Familientag tag,
-  List<String> namen,
-  List<AssetData> fotos,
-});
+typedef _Eintrag = FamilientagMitFotos;
 
 class _FamilientageAbschnittState extends State<FamilientageAbschnitt> {
-  late final Future<List<_Eintrag>> _eintraege = _laden();
-
-  Future<List<_Eintrag>> _laden() async {
-    final db = widget.library.db;
-    final personen = await db.allePersonen();
-    if (personen.isEmpty) return const [];
-    final nachId = {for (final p in personen) p.id: p};
-    final netz = Verwandtschaftsnetz([
-      for (final z in await db.alleBeziehungen())
-        if (artAusText(z.art) case final art?)
-          kante(z.personId, z.andereId, art),
-    ]);
-    final hochzeiten = <Hochzeit>[
-      for (final e in await db.alleEreignisse())
-        if (e.datum case final datum?)
-          if (ereignisartAusText(e.art) == Ereignisart.hochzeit)
-            (
-              datum: datum,
-              personId: e.personId,
-              // Bei mehreren Partnern bleibt offen, wen die Hochzeit
-              // betraf; dann steht nur die eingetragene Person da.
-              partnerId: netz.partner(e.personId).length == 1
-                  ? netz.partner(e.personId).single
-                  : null,
-            ),
-    ];
-    final tage = familientage(
-      personen: [
-        for (final p in personen)
-          (id: p.id, geburtsdatum: p.geburtsdatum, sterbedatum: p.sterbedatum),
-      ],
-      hochzeiten: hochzeiten,
-      heute: widget.heute ?? DateTime.now(),
-    ).take(_hoechstensTage);
-
-    final ergebnis = <_Eintrag>[];
-    for (final tag in tage) {
-      final ids = tag.personen.where(nachId.containsKey).toList();
-      if (ids.isEmpty) continue;
-      ergebnis.add((
-        tag: tag,
-        namen: [for (final id in ids) nachId[id]!.name],
-        fotos: await _fotos(db, ids),
-      ));
-    }
-    return ergebnis;
-  }
-
-  /// Bei einem Paar zuerst die Fotos, auf denen beide sind – sonst die
-  /// von jedem.
-  Future<List<AssetData>> _fotos(AppDatabase db, List<String> ids) async {
-    if (ids.length == 1) {
-      return (await db.assetsFuerPersonen(ids)).take(_hoechstensFotos).toList();
-    }
-    final je = [
-      for (final id in ids) await db.assetsFuerPersonen([id]),
-    ];
-    final beiAllen = je.skip(1).fold({
-      for (final a in je.first) a.id,
-    }, (s, liste) => s.intersection({for (final a in liste) a.id}));
-    final alle = await db.assetsFuerPersonen(ids);
-    final gemeinsam = [
-      for (final a in alle)
-        if (beiAllen.contains(a.id)) a,
-    ];
-    return (gemeinsam.isNotEmpty ? gemeinsam : alle)
-        .take(_hoechstensFotos)
-        .toList();
-  }
+  late final Future<List<_Eintrag>> _eintraege = familientageMitFotos(
+    widget.library.db,
+    heute: widget.heute ?? DateTime.now(),
+    hoechstensTage: _hoechstensTage,
+    hoechstensFotos: _hoechstensFotos,
+  );
 
   String _wann(AppTexte t, int inTagen) => switch (inTagen) {
     0 => t.familientagHeute,

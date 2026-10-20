@@ -4,7 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/jahresrueckblick.dart';
+import 'package:kern/services/jahresrueckblick.dart';
+import 'package:kern/services/rueckblickseite.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -15,17 +16,7 @@ import 'asset_viewer_screen.dart';
 import 'person_detail_screen.dart';
 import 'reise_detail_screen.dart';
 
-/// Das Jahr, das „Entdecken" anbietet: bis Februar das vergangene, danach
-/// das laufende – im Januar ist vom neuen Jahr noch nichts zu sehen.
-int jahresrueckblickJahr(DateTime heute) =>
-    heute.month <= 2 ? heute.year - 1 : heute.year;
-
-typedef _Inhalt = ({
-  Jahreszahlen zahlen,
-  List<AssetData> auswahl,
-  List<({PersonData person, int anzahl})> personen,
-  List<ReisenData> reisen,
-});
+typedef _Inhalt = Jahresinhalt;
 
 /// **Ein Jahr in Zahlen und Bildern** – siehe [jahresauswahl].
 class JahresrueckblickScreen extends StatefulWidget {
@@ -51,35 +42,7 @@ class _JahresrueckblickScreenState extends State<JahresrueckblickScreen> {
     _inhalt = _laden(jahr);
   });
 
-  Future<_Inhalt> _laden(int jahr) async {
-    final db = widget.library.db;
-    final von = DateTime(jahr), bis = DateTime(jahr, 12, 31);
-    final aufnahmen = await db.aufnahmenImZeitraum(von, bis);
-    final daten = [
-      for (final a in aufnahmen)
-        (
-          id: a.id,
-          wann: a.fileCreatedAt,
-          video: a.type == 'VIDEO',
-          favorit: a.isFavorite,
-          bewertung: a.rating,
-          schaerfe: a.sharpnessScore,
-          land: a.locationCountry,
-          ort: a.locationCity,
-          datumGeraten: a.datumGeschaetzt,
-        ),
-    ];
-    final nachId = {for (final a in aufnahmen) a.id: a};
-    return (
-      zahlen: jahreszahlen(daten),
-      auswahl: [for (final id in jahresauswahl(daten)) nachId[id]!],
-      personen: await db.personenImZeitraum(von, bis),
-      reisen: [
-        for (final r in await db.alleReisen())
-          if (r.von.year <= jahr && r.bis.year >= jahr) r,
-      ]..sort((a, b) => a.von.compareTo(b.von)),
-    );
-  }
+  Future<_Inhalt> _laden(int jahr) => jahresinhalt(widget.library.db, jahr);
 
   @override
   Widget build(BuildContext context) {

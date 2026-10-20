@@ -1770,4 +1770,145 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get gelaendeVideoErstellen => 'Create video';
+
+  @override
+  String get bibRueckblick => 'Memories';
+
+  @override
+  String get bibKalender => 'Calendar';
+
+  @override
+  String get rbFamilientage => 'Family days';
+
+  @override
+  String rbHeute(String satz) {
+    return 'Today: $satz';
+  }
+
+  @override
+  String rbMorgen(String satz) {
+    return 'Tomorrow: $satz';
+  }
+
+  @override
+  String rbInTagen(int n, String satz) {
+    return 'In $n days: $satz';
+  }
+
+  @override
+  String rbGeburtstag(String name, int jahre) {
+    return '$name turns $jahre';
+  }
+
+  @override
+  String rbGeburtstagVerstorben(String name, int jahre) {
+    return '$name would have turned $jahre';
+  }
+
+  @override
+  String rbTodestag(String name, int jahre) {
+    String _temp0 = intl.Intl.pluralLogic(
+      jahre,
+      locale: localeName,
+      other: '$name died $jahre years ago',
+      one: '$name died a year ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String rbHochzeitstag(String name, int jahre) {
+    return '$jahre years since $name married';
+  }
+
+  @override
+  String rbJahr(Object jahr) {
+    return 'Your year $jahr';
+  }
+
+  @override
+  String get rbJahrUntertitel =>
+      'In numbers and pictures – with people, trips and the best photos';
+
+  @override
+  String get rbGemerkt => 'Kept';
+
+  @override
+  String get rbVergessen => 'Stop keeping';
+
+  @override
+  String get rbMerken => 'Keep';
+
+  @override
+  String get rbLetzteTage => 'The last two weeks';
+
+  @override
+  String get rbKeine =>
+      'None of the last fourteen days has photos from earlier years.';
+
+  @override
+  String rbTagVorJahren(String datum, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n years ago',
+      one: 'one year ago',
+    );
+    return '$datum · $_temp0';
+  }
+
+  @override
+  String get rbSchoensteReisen => 'The best trips';
+
+  @override
+  String rbReise(Object jahr, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n favourites',
+      one: '1 favourite',
+    );
+    return '$jahr · $_temp0';
+  }
+
+  @override
+  String get jrVorjahr => 'Previous year';
+
+  @override
+  String get jrFolgejahr => 'Next year';
+
+  @override
+  String jrLeer(Object jahr) {
+    return 'There are no items from $jahr.';
+  }
+
+  @override
+  String get jrFotos => 'Photos';
+
+  @override
+  String get jrVideos => 'Videos';
+
+  @override
+  String get jrTage => 'Days with photos';
+
+  @override
+  String get jrLaender => 'Countries';
+
+  @override
+  String get jrOrte => 'Places';
+
+  @override
+  String get jrStaerksterMonat => 'busiest month';
+
+  @override
+  String get jrAuswahl => 'The best photos';
+
+  @override
+  String get jrPersonen => 'Seen most often';
+
+  @override
+  String get jrReisen => 'Trips';
+
+  @override
+  String get kalLeer => 'No photos or videos yet.';
 }

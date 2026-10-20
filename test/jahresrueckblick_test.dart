@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/jahresrueckblick.dart';
+import 'package:kern/services/jahresrueckblick.dart';
 
 void main() {
   Jahresaufnahme aufnahme(

@@ -50,6 +50,7 @@ import 'suche_api.dart';
 import 'umzug.dart';
 import 'videofassung.dart';
 import 'web.dart';
+import 'rueckblick_api.dart';
 import 'zeilen_json.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
@@ -95,6 +96,7 @@ Handler baueApi({
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
+  final rueckblick = Rueckblickapi(bibliotheken);
   final rechnen = Rechenapi(bibliotheken);
   final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
@@ -255,6 +257,11 @@ Handler baueApi({
     ..get('/api/v1/duplikate', api.duplikate)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
+    ..get('/api/v1/rueckblick', rueckblick.rueckblick)
+    ..get('/api/v1/jahresrueckblick/<jahr>', rueckblick.jahresrueckblick)
+    ..get('/api/v1/kalender', rueckblick.jahre)
+    ..get('/api/v1/kalender/<jahr>', rueckblick.monate)
+    ..get('/api/v1/kalender/<jahr>/<monat>', rueckblick.monat)
     ..get('/api/v1/papierkorb', api.papierkorb)
     ..get('/api/v1/alben', api.alben)
     ..get('/api/v1/alben/<id>', api.album)

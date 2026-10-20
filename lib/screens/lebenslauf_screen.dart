@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../services/lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/mini_location_map.dart';

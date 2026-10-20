@@ -13,6 +13,7 @@ import 'orte.dart';
 import 'personen.dart';
 import 'raster.dart';
 import 'reisen.dart';
+import 'rueckblick.dart';
 import 'stammbaum.dart';
 import 'statistik.dart';
 
@@ -90,6 +91,21 @@ class Bibliothek extends StatelessWidget {
         farbe: Bibliotheksfarben.statistik,
         onTap: () =>
             _oeffne(context, t.bibStatistik, Statistik(sitzung: sitzung)),
+      ),
+      // Wie am Rechner und im Browser (#185).
+      (
+        icon: Bibliothekssymbole.rueckblick,
+        text: t.bibRueckblick,
+        farbe: Bibliotheksfarben.rueckblick,
+        onTap: () =>
+            _oeffne(context, t.bibRueckblick, Rueckblick(sitzung: sitzung)),
+      ),
+      (
+        icon: Bibliothekssymbole.kalender,
+        text: t.bibKalender,
+        farbe: Bibliotheksfarben.kalender,
+        onTap: () =>
+            _oeffne(context, t.bibKalender, Kalender(sitzung: sitzung)),
       ),
     ];
     final List<_Eintrag> verwalten = [

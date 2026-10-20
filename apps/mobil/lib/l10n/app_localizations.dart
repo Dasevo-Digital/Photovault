@@ -2844,6 +2844,204 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Video erstellen'**
   String get gelaendeVideoErstellen;
+
+  /// No description provided for @bibRueckblick.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückblick'**
+  String get bibRueckblick;
+
+  /// No description provided for @bibKalender.
+  ///
+  /// In de, this message translates to:
+  /// **'Kalender'**
+  String get bibKalender;
+
+  /// No description provided for @rbFamilientage.
+  ///
+  /// In de, this message translates to:
+  /// **'Familientage'**
+  String get rbFamilientage;
+
+  /// No description provided for @rbHeute.
+  ///
+  /// In de, this message translates to:
+  /// **'Heute: {satz}'**
+  String rbHeute(String satz);
+
+  /// No description provided for @rbMorgen.
+  ///
+  /// In de, this message translates to:
+  /// **'Morgen: {satz}'**
+  String rbMorgen(String satz);
+
+  /// No description provided for @rbInTagen.
+  ///
+  /// In de, this message translates to:
+  /// **'In {n} Tagen: {satz}'**
+  String rbInTagen(int n, String satz);
+
+  /// No description provided for @rbGeburtstag.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} wird {jahre}'**
+  String rbGeburtstag(String name, int jahre);
+
+  /// No description provided for @rbGeburtstagVerstorben.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} wäre {jahre} geworden'**
+  String rbGeburtstagVerstorben(String name, int jahre);
+
+  /// No description provided for @rbTodestag.
+  ///
+  /// In de, this message translates to:
+  /// **'{jahre, plural, =1{{name} starb vor einem Jahr} other{{name} starb vor {jahre} Jahren}}'**
+  String rbTodestag(String name, int jahre);
+
+  /// No description provided for @rbHochzeitstag.
+  ///
+  /// In de, this message translates to:
+  /// **'{jahre}. Hochzeitstag von {name}'**
+  String rbHochzeitstag(String name, int jahre);
+
+  /// No description provided for @rbJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Dein Jahr {jahr}'**
+  String rbJahr(Object jahr);
+
+  /// No description provided for @rbJahrUntertitel.
+  ///
+  /// In de, this message translates to:
+  /// **'In Zahlen und Bildern – mit Personen, Reisen und den besten Fotos'**
+  String get rbJahrUntertitel;
+
+  /// No description provided for @rbGemerkt.
+  ///
+  /// In de, this message translates to:
+  /// **'Gemerkt'**
+  String get rbGemerkt;
+
+  /// No description provided for @rbVergessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr merken'**
+  String get rbVergessen;
+
+  /// No description provided for @rbMerken.
+  ///
+  /// In de, this message translates to:
+  /// **'Merken'**
+  String get rbMerken;
+
+  /// No description provided for @rbLetzteTage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die letzten zwei Wochen'**
+  String get rbLetzteTage;
+
+  /// No description provided for @rbKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'An keinem der letzten vierzehn Tage gibt es Fotos aus früheren Jahren.'**
+  String get rbKeine;
+
+  /// No description provided for @rbTagVorJahren.
+  ///
+  /// In de, this message translates to:
+  /// **'{datum} · {n, plural, =1{vor einem Jahr} other{vor {n} Jahren}}'**
+  String rbTagVorJahren(String datum, int n);
+
+  /// No description provided for @rbSchoensteReisen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die schönsten Reisen'**
+  String get rbSchoensteReisen;
+
+  /// No description provided for @rbReise.
+  ///
+  /// In de, this message translates to:
+  /// **'{jahr} · {n, plural, =1{1 Lieblingsfoto} other{{n} Lieblingsfotos}}'**
+  String rbReise(Object jahr, int n);
+
+  /// No description provided for @jrVorjahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorjahr'**
+  String get jrVorjahr;
+
+  /// No description provided for @jrFolgejahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Folgejahr'**
+  String get jrFolgejahr;
+
+  /// No description provided for @jrLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus {jahr} gibt es keine Aufnahmen.'**
+  String jrLeer(Object jahr);
+
+  /// No description provided for @jrFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos'**
+  String get jrFotos;
+
+  /// No description provided for @jrVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos'**
+  String get jrVideos;
+
+  /// No description provided for @jrTage.
+  ///
+  /// In de, this message translates to:
+  /// **'Tage mit Fotos'**
+  String get jrTage;
+
+  /// No description provided for @jrLaender.
+  ///
+  /// In de, this message translates to:
+  /// **'Länder'**
+  String get jrLaender;
+
+  /// No description provided for @jrOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'Orte'**
+  String get jrOrte;
+
+  /// No description provided for @jrStaerksterMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'stärkster Monat'**
+  String get jrStaerksterMonat;
+
+  /// No description provided for @jrAuswahl.
+  ///
+  /// In de, this message translates to:
+  /// **'Die besten Fotos'**
+  String get jrAuswahl;
+
+  /// No description provided for @jrPersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Am häufigsten dabei'**
+  String get jrPersonen;
+
+  /// No description provided for @jrReisen.
+  ///
+  /// In de, this message translates to:
+  /// **'Reisen'**
+  String get jrReisen;
+
+  /// No description provided for @kalLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Fotos oder Videos.'**
+  String get kalLeer;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

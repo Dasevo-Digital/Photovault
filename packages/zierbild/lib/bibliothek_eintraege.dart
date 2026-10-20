@@ -20,9 +20,10 @@ abstract final class Bibliotheksfarben {
   static const papierkorb = Color(0xFF8B8D98);
   static const einstellungen = Color(0xFF12A594);
 
-  // Was es nur am Rechner als eigenen Bereich gibt.
   static const rueckblick = Color(0xFFD6409F);
   static const kalender = Color(0xFF6E56CF);
+
+  // Was es nur am Rechner als eigenen Bereich gibt.
   static const werkzeuge = Color(0xFF978365);
 }
 

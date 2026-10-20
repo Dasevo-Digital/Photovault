@@ -486,6 +486,28 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .imfoto-rahmen.gewaehlt { border: 3px solid #f76b15; box-shadow: 0 0 0 1px rgba(0,0,0,.4); z-index: 1; }
 .imfoto-rahmen .name { position: absolute; left: -2px; top: 100%; margin-top: 3px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: .75em; white-space: nowrap; }
 #imfoto-text { margin: 8px 4px 0; }
+/* Rückblick, Jahresrückblick, Kalender (#185) */
+#rueckblick-inhalt { padding: 0 16px 32px; max-width: 1100px; }
+.rb-abschnitt { margin-top: 22px; }
+.rb-abschnitt h3 { margin: 0 0 10px; }
+.rb-liste { display: flex; flex-direction: column; gap: 14px; }
+.rb-kopf { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-weight: 600; }
+.rb-knopf { display: inline-flex; align-items: center; justify-content: center; padding: 5px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); font: inherit; font-size: .85em; font-weight: 500; cursor: pointer; }
+.rb-knopf:hover { border-color: var(--akzent); }
+.rb-streifen { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.rb-bild { flex: none; width: 112px; height: 112px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--rand); cursor: pointer; }
+.rb-bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rb-auswahl { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.rb-auswahl .rb-bild { width: auto; height: auto; aspect-ratio: 1; }
+.rb-karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.rb-jahr { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 16px 18px; border-radius: 14px; text-decoration: none; color: #fff; background: linear-gradient(135deg, #d6409f, #6e56cf); }
+.rb-jahr strong { font-size: 1.25em; }
+.rb-jahr .leise { color: rgba(255,255,255,.85); text-align: left; padding: 0; }
+.rb-jahrkopf { display: flex; align-items: center; gap: 12px; margin: 16px 0 12px; }
+.rb-jahrkopf h3 { margin: 0; flex: 1; text-align: center; font-size: 1.3em; }
+.rb-jahrkopf .rb-knopf { text-decoration: none; min-width: 40px; font-size: 1.2em; }
+.rb-jahrkopf .rb-knopf.aus { pointer-events: none; opacity: .35; }
+.rb-jahrkarte { grid-column: 1 / -1; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, #d6409f 12%, transparent); }
 #vorschlag-dialog { width: min(560px, calc(100vw - 32px)); }
 #gesicht-ja { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--akzent); color: #fff; font-weight: 600; }
 #zusammen-dialog select { width: 100%; padding: 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }

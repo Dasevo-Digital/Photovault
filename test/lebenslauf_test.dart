@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 
 /// Die Reihenfolge des Lebenslaufs.
 ///

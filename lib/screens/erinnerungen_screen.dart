@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import 'package:kern/services/rueckblick.dart';
+import 'package:kern/services/rueckblickseite.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -12,37 +12,6 @@ import '../widgets/diashow_export.dart';
 import '../widgets/fotobuch_export.dart';
 import 'asset_viewer_screen.dart';
 import 'reise_detail_screen.dart';
-
-/// Wie weit die Seite zurückblickt: heute und die dreizehn Tage davor.
-const erinnerungsTage = 14;
-
-/// Eine Erinnerung: was an [tag] vor [jahreHer] Jahren entstanden ist.
-typedef Erinnerung = ({DateTime tag, int jahreHer, List<AssetData> dinge});
-
-/// Die Kennung, unter der eine Erinnerung gemerkt wird – der Tag, an dem
-/// sie spielt. Zweimal dieselbe zu merken, überschreibt also nur.
-String erinnerungsKennung(DateTime tag, int jahreHer) {
-  final d = DateTime(tag.year - jahreHer, tag.month, tag.day);
-  String zwei(int n) => n.toString().padLeft(2, '0');
-  return '${d.year}-${zwei(d.month)}-${zwei(d.day)}';
-}
-
-/// Die Erinnerungen der letzten [erinnerungsTage] Tage, neueste zuerst
-/// und je Tag die jüngsten Jahre zuerst.
-List<Erinnerung> erinnerungenDerLetztenTage(
-  Map<DateTime, List<AssetData>> jeTag,
-) {
-  final tage = jeTag.keys.toList()..sort((a, b) => b.compareTo(a));
-  return [
-    for (final tag in tage)
-      for (final g in nachJahrenGebuendelt(
-        jeTag[tag]!,
-        (a) => a.fileCreatedAt,
-        tag,
-      ))
-        (tag: tag, jahreHer: g.jahreHer, dinge: g.dinge),
-  ];
-}
 
 /// **Erinnerungen** – mehr als der eine Tag, den „Entdecken“ zeigt.
 ///
@@ -60,32 +29,13 @@ class ErinnerungenScreen extends StatefulWidget {
   State<ErinnerungenScreen> createState() => _ErinnerungenScreenState();
 }
 
-typedef _Stand = ({
-  List<({GemerkteErinnerungenData e, List<AssetData> dinge})> gemerkt,
-  List<Erinnerung> letzte,
-  List<({ReisenData reise, int lieblinge})> reisen,
-});
+typedef _Stand = Erinnerungsstand;
 
 class _ErinnerungenScreenState extends State<ErinnerungenScreen> {
   final _heute = DateUtils.dateOnly(DateTime.now());
   late Future<_Stand> _stand = _laden();
 
-  Future<_Stand> _laden() async {
-    final db = widget.library.db;
-    final gemerkt = [
-      for (final e in await db.alleGemerktenErinnerungen())
-        (e: e, dinge: await db.aufnahmenDerErinnerung(e)),
-    ];
-    final jeTag = await db.assetsAnTagen([
-      for (var i = 0; i < erinnerungsTage; i++)
-        _heute.subtract(Duration(days: i)),
-    ]);
-    return (
-      gemerkt: gemerkt,
-      letzte: erinnerungenDerLetztenTage(jeTag),
-      reisen: await db.schoensteReisen(),
-    );
-  }
+  Future<_Stand> _laden() => erinnerungsstand(widget.library.db, heute: _heute);
 
   void _neuLaden() => setState(() {
     _stand = _laden();

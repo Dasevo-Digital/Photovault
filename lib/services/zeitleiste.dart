@@ -12,7 +12,7 @@
 /// dem fertigen Bild ist es das nicht.
 library;
 
-import 'lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 
 /// Ein datiertes Ereignis auf einer Zeile.
 typedef Zeitmarke = ({DateTime datum, Ereignisart art});

@@ -1450,6 +1450,116 @@ void main() {
     },
   );
 
+  test('Rückblick und Kalender wie am Rechner (#185)', () async {
+    final a = await ladeHoch(erikaToken, 'a.jpg', 30);
+    final b = await ladeHoch(erikaToken, 'b.jpg', 60);
+    final c = await ladeHoch(erikaToken, 'c.jpg', 90);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    Future<void> datum(String id, DateTime d) =>
+        (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            fileCreatedAt: Value(d),
+            datumGeschaetzt: const Value(false),
+          ),
+        );
+    await datum(a, DateTime(2024, 10, 20, 12, 34)); // heute vor zwei Jahren
+    await datum(b, DateTime(2024, 3, 5, 12, 34));
+    await datum(c, DateTime(2025, 7, 1, 12, 34));
+    await db
+        .into(db.people)
+        .insert(
+          PeopleCompanion.insert(
+            id: 'oma',
+            name: 'Oma',
+            geburtsdatum: Value(DateTime(1950, 10, 22)),
+          ),
+        );
+    await db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: 'fo',
+            assetId: c,
+            personId: const Value('oma'),
+            boxX: 0.1,
+            boxY: 0.1,
+            boxW: 0.2,
+            boxH: 0.2,
+          ),
+        );
+
+    final r = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/rueckblick?heute=2026-10-20',
+        token: erikaToken,
+      ),
+    );
+    expect(r['jahr'], 2026);
+    final tag = (r['familientage']! as List).cast<Map>().single;
+    expect(tag['art'], 'geburtstag');
+    expect(tag['jahre'], 76);
+    expect(tag['inTagen'], 2);
+    expect(tag['namen'], ['Oma']);
+    expect(
+      [for (final x in (tag['aufnahmen'] as List).cast<Map>()) x['id']],
+      [c],
+    );
+    final letzte = (r['letzte']! as List).cast<Map>();
+    expect(letzte.first['kennung'], '2024-10-20');
+    expect(letzte.first['jahreHer'], 2);
+    expect((letzte.first['aufnahmen'] as List).cast<Map>().single['id'], a);
+
+    final k = await jsonAus(
+      await frag('GET', '/api/v1/kalender', token: erikaToken),
+    );
+    expect(
+      [for (final j in (k['jahre']! as List).cast<Map>()) j['nummer']],
+      [2025, 2024],
+    );
+    final m = await jsonAus(
+      await frag('GET', '/api/v1/kalender/2024', token: erikaToken),
+    );
+    expect(
+      [
+        for (final x in (m['monate']! as List).cast<Map>())
+          [x['nummer'], x['anzahl']],
+      ],
+      [
+        [3, 1],
+        [10, 1],
+      ],
+    );
+    expect(((m['monate']! as List).first as Map)['titelbild'], isA<Map>());
+    final okt = await jsonAus(
+      await frag('GET', '/api/v1/kalender/2024/10', token: erikaToken),
+    );
+    expect((okt['aufnahmen']! as List).cast<Map>().single['id'], a);
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/kalender/2024/13',
+        token: erikaToken,
+      )).statusCode,
+      400,
+    );
+
+    final j = await jsonAus(
+      await frag('GET', '/api/v1/jahresrueckblick/2024', token: erikaToken),
+    );
+    expect(j['fotos'], 2);
+    expect((j['jeMonat']! as List)[2], 1);
+    expect((j['jeMonat']! as List)[9], 1);
+
+    // Ein anderes Konto sieht nichts davon.
+    expect(
+      (await jsonAus(
+        await frag('GET', '/api/v1/kalender', token: maxToken),
+      ))['jahre'],
+      isEmpty,
+    );
+  });
+
   test('Favoriten: nur, was so markiert ist, seitenweise', () async {
     final a = await ladeHoch(erikaToken, 'lieblings.jpg', 20);
     await ladeHoch(erikaToken, 'sonst.jpg', 70);

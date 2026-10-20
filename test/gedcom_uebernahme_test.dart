@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/gedcom_import.dart';
-import 'package:photo_vault/services/lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 import 'package:kern/services/stammbaum.dart';
 
 /// Der Weg von der eingelesenen Datei in die Datenbank.

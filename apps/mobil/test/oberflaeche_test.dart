@@ -44,6 +44,7 @@ import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/freigaben.dart';
 import 'package:photo_vault_mobil/seiten/gesichter.dart';
 import 'package:photo_vault_mobil/seiten/gesicht_im_foto.dart';
+import 'package:photo_vault_mobil/seiten/rueckblick.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
 import 'package:photo_vault_mobil/seiten/konto.dart';
 import 'package:photo_vault_mobil/seiten/lebensbaum.dart';
@@ -590,6 +591,93 @@ void main() {
       db,
     );
   }
+
+  testWidgets('Rückblick und Kalender wie am Rechner (#185)', (tester) async {
+    final (sitzung, db) = await sitzungMit(tester, ['r1', 'r2', 'r3']);
+    await tester.runAsync(() async {
+      for (final (id, wann) in [
+        ('r1', DateTime(2024, 10, 20, 14, 37)),
+        ('r2', DateTime(2024, 3, 5, 9, 12)),
+        ('r3', DateTime(2025, 7, 1, 18, 3)),
+      ]) {
+        await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(fileCreatedAt: Value(wann)),
+        );
+      }
+      await db
+          .into(db.people)
+          .insert(
+            PeopleCompanion.insert(
+              id: 'oma',
+              name: 'Oma',
+              geburtsdatum: Value(DateTime(1950, 10, 22)),
+            ),
+          );
+      await db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: 'fo',
+              assetId: 'r3',
+              personId: const Value('oma'),
+              boxX: 0.1,
+              boxY: 0.1,
+              boxW: 0.2,
+              boxH: 0.2,
+            ),
+          );
+    });
+    Future<void> warte(Finder f) async {
+      for (var i = 0; i < 30 && f.evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Rueckblick(sitzung: sitzung, heute: DateTime(2026, 10, 20)),
+        ),
+      ),
+    );
+    await warte(find.text('In 2 Tagen: Oma wird 76'));
+    expect(find.text('In 2 Tagen: Oma wird 76'), findsOneWidget);
+    expect(find.text('Dein Jahr 2026'), findsOneWidget);
+    final eintrag = find.text('20. Oktober 2024 · vor 2 Jahren');
+    await warte(eintrag);
+    expect(eintrag, findsOneWidget);
+    await tester.tap(find.text('Merken'));
+    await warte(find.text('Gemerkt'));
+    expect(find.text('Gemerkt'), findsOneWidget);
+    expect(find.text('Merken'), findsNothing);
+    final gemerkt = await tester.runAsync(() => db.alleGemerktenErinnerungen());
+    expect(gemerkt!.single.id, '2024-10-20');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Kalender(sitzung: sitzung)),
+      ),
+    );
+    await warte(find.text('2025'));
+    expect(find.text('2025'), findsOneWidget);
+    expect(find.text('2024'), findsOneWidget);
+    await tester.tap(find.text('2024'));
+    await warte(find.text('Oktober'));
+    expect(find.text('März'), findsOneWidget);
+    expect(find.text('Oktober'), findsOneWidget);
+    expect(find.text('Dein Jahr 2024'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
 
   testWidgets('Diashow: blättert von selbst, Videos bleiben draussen', (
     tester,

@@ -13,7 +13,7 @@ import '../widgets/zoomsteuerung.dart';
 import '../widgets/mini_location_map.dart';
 import '../widgets/wisch_zoom.dart';
 import '../widgets/pin_dialogs.dart';
-import '../services/lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 import 'asset_viewer_screen.dart';
 import 'lebenslauf_screen.dart';
 

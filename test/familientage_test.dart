@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:photo_vault/services/familientage.dart';
+import 'package:kern/services/familientage.dart';
 
 /// Familientage: was der Stammbaum über heute weiss.
 void main() {

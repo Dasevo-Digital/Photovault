@@ -19,7 +19,7 @@ library;
 
 import 'dart:convert';
 
-import 'lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
 

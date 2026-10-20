@@ -26,7 +26,7 @@ import '../services/gedcom_import.dart';
 import 'package:kern/services/lebensbaum.dart';
 import 'package:kern/services/lebensbaum_bild.dart';
 import 'package:kern/services/lebensbaum_vorlage.dart';
-import '../services/lebenslauf.dart';
+import 'package:kern/services/lebenslauf.dart';
 import '../services/zeitleiste.dart';
 import '../services/tafel_pdf.dart';
 import '../services/sanduhr.dart';

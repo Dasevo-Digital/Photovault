@@ -4,8 +4,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/screens/erinnerungen_screen.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite;
+import 'package:kern/services/rueckblickseite.dart';
 
 /// Die Erinnerungsseite: zwei Wochen zurück, Gemerktes, schönste Reisen.
 void main() {

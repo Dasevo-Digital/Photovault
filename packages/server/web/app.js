@@ -90,6 +90,9 @@ const BIBLIOTHEK = [
       { bereich: 'reisen', weg: '#/reisen', text: 'Reisen', symbol: 'reisen', farbe: '#f76b15' },
       { bereich: 'stammbaum', weg: '#/stammbaum', text: 'Stammbaum', symbol: 'stammbaum', farbe: '#a18072' },
       { bereich: 'statistik', weg: '#/statistik', text: 'Statistik', symbol: 'statistik', farbe: '#0090ff' },
+      // Wie am Rechner (#185): dieselben Farben wie dort.
+      { bereich: 'rueckblick', weg: '#/rueckblick', text: 'Rückblick', symbol: 'rueckblick', farbe: '#d6409f' },
+      { bereich: 'kalender', weg: '#/kalender', text: 'Kalender', symbol: 'kalender', farbe: '#6e56cf' },
     ],
   },
   {
@@ -3509,6 +3512,9 @@ async function zeigeWeg() {
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'aktivitaeten': await zeigeAktivitaet(teile[1]); break;
       case 'statistik': await zeigeStatistik(); break;
+      case 'rueckblick': await ladeSkript('rueckblick.js'); await zeigeRueckblick(); break;
+      case 'jahresrueckblick': await ladeSkript('rueckblick.js'); await zeigeJahresrueckblick(teile[1]); break;
+      case 'kalender': await ladeSkript('rueckblick.js'); await zeigeKalender(teile[1], teile[2]); break;
       case 'einstellungen': await zeigeEinstellungen(); break;
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
       case 'lebensbaum': await ladeSkript('lebensbaum.js'); await zeigeLebensbaum(teile[1]); break;

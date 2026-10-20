@@ -312,7 +312,10 @@ class _ZwischenspeicherzeileState extends State<_Zwischenspeicherzeile> {
   static const _stufenMb = [512, 1024, 2048, 5120, 0];
 
   void _neuMessen() =>
-      setState(() => _groesse = widget.sitzung.zwischenspeicher.groesse());
+      // Mit Block: Ein Pfeil gäbe die Zukunft an setState zurück.
+      setState(() {
+        _groesse = widget.sitzung.zwischenspeicher.groesse();
+      });
 
   Future<void> _leeren() async {
     await widget.sitzung.zwischenspeicher.leere();
