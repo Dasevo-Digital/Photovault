@@ -90,15 +90,26 @@ def marken():
     return lauf(['git', 'tag', '-l', 'v*', '--sort=v:refname'], ausgabe=True).split()
 
 
-def vorige_marke(fassung):
-    liste = marken()
-    eigene = f'v{fassung}'
-    davor = [m for m in liste if m != eigene]
-    if eigene in liste:
-        davor = liste[:liste.index(eigene)]
-    if not davor:
-        sys.exit('Keine frühere Marke gefunden.')
-    return davor[-1]
+def marke_dort(ssh, befehl):
+    """Die neueste Marke, die das Repo auf einem Testrechner schon hat.
+
+    Das Bündel muss bei ihr ansetzen und nicht bei der vorigen Fassung:
+    Hat ein Rechner ein paar Fassungen ausgelassen (3.41 bis 3.44 nur auf
+    Mac und Server), fehlten ihm sonst die Commits dazwischen, und das
+    Holen brach ab. `None`, wenn er keine kennt – dann das ganze Bündel.
+    """
+    dort = set(lauf(['ssh', ssh, befehl], ausgabe=True, pruefen=False).split())
+    gemeinsam = [m for m in marken() if m in dort]
+    return gemeinsam[-1] if gemeinsam else None
+
+
+def buendel(a, name, marke, basis):
+    """Ein Bündel mit main und der Marke, ab [basis] (sonst alles)."""
+    datei = a / f'pv-{name}.bundle'
+    # Kennt der Rechner die Marke schon, wäre das Bündel womöglich leer.
+    ausser = [f'^{basis}'] if basis and basis != marke else []
+    lauf(['git', 'bundle', 'create', str(datei), 'main', marke, *ausser])
+    return datei
 
 
 def upload_ordner(z, fassung):
@@ -204,17 +215,22 @@ def bauen(args):
     fassung = args.fassung
     nur = set(args.nur or ['linux', 'windows', 'mac', 'server'])
     marke = f'v{fassung}'
-    if lauf(['git', 'describe', '--exact-match', 'HEAD'], ausgabe=True, pruefen=False).strip() != marke:
-        sys.exit(f'HEAD steht nicht auf {marke} – erst vorbereiten.')
+    # Mac und Server bauen aus diesem Verzeichnis, Linux und Windows holen
+    # sich die Marke selbst.
+    if {'mac', 'server'} & nur:
+        if lauf(['git', 'describe', '--exact-match', 'HEAD'], ausgabe=True, pruefen=False).strip() != marke:
+            sys.exit(f'HEAD steht nicht auf {marke} – erst vorbereiten.')
+    elif not lauf(['git', 'tag', '-l', marke], ausgabe=True).strip():
+        sys.exit(f'Die Marke {marke} gibt es nicht – erst vorbereiten.')
     a = arbeitsordner(fassung)
     u = upload_ordner(z, fassung)
-    buendel = a / 'pv.bundle'
-    lauf(['git', 'bundle', 'create', str(buendel), 'main', marke, f'^{vorige_marke(fassung)}'])
 
     # Linux und Windows laufen im Hintergrund, während hier macOS baut.
     windows = None
     if 'linux' in nur:
-        lauf(['scp', '-q', str(buendel), f'{z["linux_ssh"]}:/tmp/pv.bundle'])
+        repo = z.get('linux_repo', '~/photo_vault')
+        b = buendel(a, 'linux', marke, marke_dort(z['linux_ssh'], f"git -C {repo} tag -l 'v*'"))
+        lauf(['scp', '-q', str(b), f'{z["linux_ssh"]}:/tmp/pv.bundle'])
         linux = (f'cd {z.get("linux_repo", "~/photo_vault")} && git fetch -q /tmp/pv.bundle '
                  f'refs/heads/main:refs/remotes/bundle/main refs/tags/{marke}:refs/tags/{marke} && '
                  f'git reset -q --hard {marke} && git clean -fdq lib test tool assets docs packages apps && '
@@ -225,7 +241,9 @@ def bauen(args):
     if 'windows' in nur:
         ps1 = a / 'windows_bau.ps1'
         ps1.write_text(WINDOWS_BAU.format(flutter=z.get('windows_flutter', r'C:\src\flutter\bin'), marke=marke))
-        lauf(['scp', '-q', str(buendel), f'{z["windows_ssh"]}:C:/Windows/Temp/pv.bundle'])
+        basis = marke_dort(z['windows_ssh'], 'powershell -NoProfile -Command "git -C (Join-Path $env:USERPROFILE \'photo_vault\') tag -l \'v*\'"')
+        b = buendel(a, 'windows', marke, basis)
+        lauf(['scp', '-q', str(b), f'{z["windows_ssh"]}:C:/Windows/Temp/pv.bundle'])
         lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:pv_windows_bau.ps1'])
         windows_log = open(a / 'windows_bau.log', 'w')
         windows = subprocess.Popen(['ssh', z['windows_ssh'], 'powershell -NoProfile -ExecutionPolicy Bypass -File pv_windows_bau.ps1'],
