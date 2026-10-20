@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.44.1" date="2026-10-20">
+      <description>
+        <p>Fixes the duplicate search in the browser, which stopped with “t is not a function” as soon as it found a group.</p>
+      </description>
+    </release>
     <release version="3.44.0" date="2026-10-20">
       <description>
         <p>The browser and the phone get the timeline views of the desktop: a view bar with six sort orders, grouping by day or month, square tiles or justified rows and larger or smaller tiles; a list with selectable columns grouped by month, day or camera; a shortcut to the years; and comparing two selected photos with linked zoom. In the browser, videos and Live Photos play muted when the mouse rests on them.</p>
