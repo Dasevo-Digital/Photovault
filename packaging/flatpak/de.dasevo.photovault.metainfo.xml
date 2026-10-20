@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.42.0" date="2026-10-20">
+      <description>
+        <p>Face frames can now be deleted in the browser and on the phone, and a photo can be excluded from or returned to face scanning. Deleting a face on a connected desktop no longer fails; if the deleted face was a person's cover image, another face of that person takes its place.</p>
+      </description>
+    </release>
     <release version="3.41.0" date="2026-10-20">
       <description>
         <p>The photo viewer in the browser and on the phone can show detected faces as frames and lets you draw a face by hand; the server crops and embeds it. Drawing a face on a connected desktop no longer fails silently.</p>
