@@ -3,7 +3,7 @@
 liefen (Issue #188), in der Reihenfolge, in der sie laufen müssen:
 
     python3 tool/release.py vorbereiten 3.40.0 --metainfo text.xml
-    python3 tool/release.py bauen 3.40.0
+    python3 tool/release.py bauen 3.40.0               # oder --nur mac server
     python3 tool/release.py entwurf 3.40.0
     python3 tool/release.py einspielen 3.40.0 --linux --windows --mac
     python3 tool/release.py einspielen 3.40.0 --server      # fragt nach
@@ -202,6 +202,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tool\windows_bauen.ps1 -Prue
 def bauen(args):
     z = ziele()
     fassung = args.fassung
+    nur = set(args.nur or ['linux', 'windows', 'mac', 'server'])
     marke = f'v{fassung}'
     if lauf(['git', 'describe', '--exact-match', 'HEAD'], ausgabe=True, pruefen=False).strip() != marke:
         sys.exit(f'HEAD steht nicht auf {marke} – erst vorbereiten.')
@@ -211,66 +212,70 @@ def bauen(args):
     lauf(['git', 'bundle', 'create', str(buendel), 'main', marke, f'^{vorige_marke(fassung)}'])
 
     # Linux und Windows laufen im Hintergrund, während hier macOS baut.
-    lauf(['scp', '-q', str(buendel), f'{z["linux_ssh"]}:/tmp/pv.bundle'])
-    linux = (f'cd {z.get("linux_repo", "~/photo_vault")} && git fetch -q /tmp/pv.bundle '
-             f'refs/heads/main:refs/remotes/bundle/main refs/tags/{marke}:refs/tags/{marke} && '
-             f'git reset -q --hard {marke} && git clean -fdq lib test tool assets docs packages apps && '
-             f'export PATH=$HOME/flutter/bin:$HOME/snap/flutter/common/flutter/bin:$PATH && '
-             f'(nohup bash tool/flatpak_bauen.sh --pruefen --buendel > ~/pv_bau_{fassung}.log 2>&1 &)')
-    lauf(['ssh', z['linux_ssh'], linux])
+    windows = None
+    if 'linux' in nur:
+        lauf(['scp', '-q', str(buendel), f'{z["linux_ssh"]}:/tmp/pv.bundle'])
+        linux = (f'cd {z.get("linux_repo", "~/photo_vault")} && git fetch -q /tmp/pv.bundle '
+                 f'refs/heads/main:refs/remotes/bundle/main refs/tags/{marke}:refs/tags/{marke} && '
+                 f'git reset -q --hard {marke} && git clean -fdq lib test tool assets docs packages apps && '
+                 f'export PATH=$HOME/flutter/bin:$HOME/snap/flutter/common/flutter/bin:$PATH && '
+                 f'(nohup bash tool/flatpak_bauen.sh --pruefen --buendel > ~/pv_bau_{fassung}.log 2>&1 &)')
+        lauf(['ssh', z['linux_ssh'], linux])
 
-    ps1 = a / 'windows_bau.ps1'
-    ps1.write_text(WINDOWS_BAU.format(flutter=z.get('windows_flutter', r'C:\src\flutter\bin'), marke=marke))
-    lauf(['scp', '-q', str(buendel), f'{z["windows_ssh"]}:C:/Windows/Temp/pv.bundle'])
-    lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:pv_windows_bau.ps1'])
-    windows_log = open(a / 'windows_bau.log', 'w')
-    windows = subprocess.Popen(['ssh', z['windows_ssh'], 'powershell -NoProfile -ExecutionPolicy Bypass -File pv_windows_bau.ps1'],
-                               stdout=windows_log, stderr=subprocess.STDOUT)
+    if 'windows' in nur:
+        ps1 = a / 'windows_bau.ps1'
+        ps1.write_text(WINDOWS_BAU.format(flutter=z.get('windows_flutter', r'C:\src\flutter\bin'), marke=marke))
+        lauf(['scp', '-q', str(buendel), f'{z["windows_ssh"]}:C:/Windows/Temp/pv.bundle'])
+        lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:pv_windows_bau.ps1'])
+        windows_log = open(a / 'windows_bau.log', 'w')
+        windows = subprocess.Popen(['ssh', z['windows_ssh'], 'powershell -NoProfile -ExecutionPolicy Bypass -File pv_windows_bau.ps1'],
+                                   stdout=windows_log, stderr=subprocess.STDOUT)
 
-    # macOS
-    lauf(['flutter', 'build', 'macos', '--release'])
-    app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
-    fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
-    if fassung_app != fassung:
-        sys.exit(f'Die App meldet {fassung_app}, nicht {fassung}.')
-    lauf(['rm', '-rf', str(u / 'Photo Vault.app')])
-    lauf(['ditto', str(app), str(u / 'Photo Vault.app')])
-    lauf(['rm', '-f', str(u / f'PhotoVault-{fassung}-macos.zip')])
-    lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', f'PhotoVault-{fassung}-macos.zip'], cwd=u)
-    # Die Bündel unter build/ fänden Spotlight und Launchpad – und öffneten
-    # womöglich die echte Bibliothek. Vorher prüfen, dass keins läuft.
-    if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
-        print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
-    else:
-        lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
+    if 'mac' in nur:
+        lauf(['flutter', 'build', 'macos', '--release'])
+        app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
+        fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
+        if fassung_app != fassung:
+            sys.exit(f'Die App meldet {fassung_app}, nicht {fassung}.')
+        lauf(['rm', '-rf', str(u / 'Photo Vault.app')])
+        lauf(['ditto', str(app), str(u / 'Photo Vault.app')])
+        lauf(['rm', '-f', str(u / f'PhotoVault-{fassung}-macos.zip')])
+        lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', f'PhotoVault-{fassung}-macos.zip'], cwd=u)
+        # Die Bündel unter build/ fänden Spotlight und Launchpad – und
+        # öffneten womöglich die echte Bibliothek. Vorher prüfen, dass
+        # keins läuft.
+        if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
+            print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
+        else:
+            lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
 
-    # Server-Pakete
-    commit = lauf(['git', 'rev-parse', '--short', 'HEAD'], ausgabe=True).strip()
-    for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
-        lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
-              '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
-              '--output', f'type=local,dest={a / ziel}', '.'])
-    for arch in ['amd64', 'arm64']:
-        lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
-              str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])
+    if 'server' in nur:
+        commit = lauf(['git', 'rev-parse', '--short', 'HEAD'], ausgabe=True).strip()
+        for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
+            lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
+                  '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
+                  '--output', f'type=local,dest={a / ziel}', '.'])
+        for arch in ['amd64', 'arm64']:
+            lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
+                  str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])
 
-    # Windows abholen
-    if windows.wait() != 0 or 'BAU-ENDE 0' not in (a / 'windows_bau.log').read_text(errors='replace'):
-        sys.exit(f'Windows-Bau gescheitert – siehe {a / "windows_bau.log"}.')
-    lauf(['scp', '-q', f'{z["windows_ssh"]}:Desktop/PhotoVault-{fassung}-windows-x64.zip', str(u)])
+    if windows is not None:
+        if windows.wait() != 0 or 'BAU-ENDE 0' not in (a / 'windows_bau.log').read_text(errors='replace'):
+            sys.exit(f'Windows-Bau gescheitert – siehe {a / "windows_bau.log"}.')
+        lauf(['scp', '-q', f'{z["windows_ssh"]}:Desktop/PhotoVault-{fassung}-windows-x64.zip', str(u)])
 
-    # Linux abwarten und abholen
-    flatpak = f'Desktop/PhotoVault-{fassung}-x86_64.flatpak'
-    for _ in range(180):
-        r = subprocess.run(['ssh', '-o', 'BatchMode=yes', z['linux_ssh'], 'pgrep -f flatpak_bauen.sh >/dev/null && echo laeuft || echo fertig'],
-                           text=True, capture_output=True)
-        if 'fertig' in r.stdout:
-            break
-        time.sleep(20)
-    log = lauf(['ssh', z['linux_ssh'], f'grep -E "✗|FEHLER" ~/pv_bau_{fassung}.log | head -5; test -f ~/{flatpak} && echo DA'], ausgabe=True, pruefen=False)
-    if 'DA' not in log:
-        sys.exit(f'Flatpak fehlt:\n{log}')
-    lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
+    if 'linux' in nur:
+        flatpak = f'Desktop/PhotoVault-{fassung}-x86_64.flatpak'
+        for _ in range(180):
+            r = subprocess.run(['ssh', '-o', 'BatchMode=yes', z['linux_ssh'], 'pgrep -f flatpak_bauen.sh >/dev/null && echo laeuft || echo fertig'],
+                               text=True, capture_output=True)
+            if 'fertig' in r.stdout:
+                break
+            time.sleep(20)
+        log = lauf(['ssh', z['linux_ssh'], f'grep -E "✗|FEHLER" ~/pv_bau_{fassung}.log | head -5; test -f ~/{flatpak} && echo DA'], ausgabe=True, pruefen=False)
+        if 'DA' not in log:
+            sys.exit(f'Flatpak fehlt:\n{log}')
+        lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
 
     summen(u, fassung)
 
@@ -278,6 +283,8 @@ def bauen(args):
 def summen(u, fassung):
     zeilen = []
     for name in dateien(fassung):
+        if not (u / name).exists():
+            continue
         h = hashlib.sha256()
         with open(u / name, 'rb') as f:
             for stueck in iter(lambda: f.read(1 << 20), b''):
@@ -439,7 +446,11 @@ def main():
     v = sub.add_parser('vorbereiten')
     v.add_argument('fassung')
     v.add_argument('--metainfo', required=True, help='Datei mit den <p>-Absätzen für die Flatpak-Metainfo (englisch)')
-    for name in ['bauen', 'entwurf', 'veroeffentlichen']:
+    b = sub.add_parser('bauen')
+    b.add_argument('fassung')
+    b.add_argument('--nur', nargs='+', choices=['linux', 'windows', 'mac', 'server'],
+                   help='nur diese Plattformen bauen (sonst alle)')
+    for name in ['entwurf', 'veroeffentlichen']:
         sub.add_parser(name).add_argument('fassung')
     e = sub.add_parser('einspielen')
     e.add_argument('fassung')
