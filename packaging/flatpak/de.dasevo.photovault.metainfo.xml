@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.45.0" date="2026-10-20">
+      <description>
+        <p>A connected desktop no longer shows “server unreachable” for a few seconds at start or after waking up; it asks the server again right away. In the browser, clicking Photos scrolls the timeline back to the newest photos.</p>
+      </description>
+    </release>
     <release version="3.44.1" date="2026-10-20">
       <description>
         <p>Fixes the duplicate search in the browser, which stopped with “t is not a function” as soon as it found a group.</p>
