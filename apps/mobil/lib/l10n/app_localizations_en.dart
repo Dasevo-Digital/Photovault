@@ -2212,4 +2212,25 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get ansichtJahre => 'Years';
+
+  @override
+  String get auswahlVergleichen => 'Compare';
+
+  @override
+  String get vergleichTitel => 'Compare two photos';
+
+  @override
+  String get vergleichNebeneinander => 'Side by side';
+
+  @override
+  String get vergleichUebereinander => 'Stacked';
+
+  @override
+  String get vergleichKoppeln => 'Link views';
+
+  @override
+  String get vergleichEntkoppeln => 'Unlink views';
+
+  @override
+  String get vergleichZuruecksetzen => 'Reset zoom';
 }

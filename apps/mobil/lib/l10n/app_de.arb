@@ -1094,5 +1094,12 @@
   "listeGeschaetzt": "geschätzt",
   "listeFoto": "Foto",
   "listeVideo": "Video",
-  "ansichtJahre": "Jahre"
+  "ansichtJahre": "Jahre",
+  "auswahlVergleichen": "Vergleichen",
+  "vergleichTitel": "Zwei Fotos vergleichen",
+  "vergleichNebeneinander": "Nebeneinander",
+  "vergleichUebereinander": "Übereinander",
+  "vergleichKoppeln": "Ansichten koppeln",
+  "vergleichEntkoppeln": "Ansichten entkoppeln",
+  "vergleichZuruecksetzen": "Zoom zurücksetzen"
 }

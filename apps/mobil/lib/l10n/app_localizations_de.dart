@@ -2222,4 +2222,25 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get ansichtJahre => 'Jahre';
+
+  @override
+  String get auswahlVergleichen => 'Vergleichen';
+
+  @override
+  String get vergleichTitel => 'Zwei Fotos vergleichen';
+
+  @override
+  String get vergleichNebeneinander => 'Nebeneinander';
+
+  @override
+  String get vergleichUebereinander => 'Übereinander';
+
+  @override
+  String get vergleichKoppeln => 'Ansichten koppeln';
+
+  @override
+  String get vergleichEntkoppeln => 'Ansichten entkoppeln';
+
+  @override
+  String get vergleichZuruecksetzen => 'Zoom zurücksetzen';
 }

@@ -3486,6 +3486,48 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Jahre'**
   String get ansichtJahre;
+
+  /// No description provided for @auswahlVergleichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vergleichen'**
+  String get auswahlVergleichen;
+
+  /// No description provided for @vergleichTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zwei Fotos vergleichen'**
+  String get vergleichTitel;
+
+  /// No description provided for @vergleichNebeneinander.
+  ///
+  /// In de, this message translates to:
+  /// **'Nebeneinander'**
+  String get vergleichNebeneinander;
+
+  /// No description provided for @vergleichUebereinander.
+  ///
+  /// In de, this message translates to:
+  /// **'Übereinander'**
+  String get vergleichUebereinander;
+
+  /// No description provided for @vergleichKoppeln.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansichten koppeln'**
+  String get vergleichKoppeln;
+
+  /// No description provided for @vergleichEntkoppeln.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansichten entkoppeln'**
+  String get vergleichEntkoppeln;
+
+  /// No description provided for @vergleichZuruecksetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zoom zurücksetzen'**
+  String get vergleichZuruecksetzen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

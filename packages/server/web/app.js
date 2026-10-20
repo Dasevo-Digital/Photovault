@@ -2692,6 +2692,8 @@ function zeichneAuswahl(von, bis) {
 
 function zeigeAuswahl() {
   const n = auswahl.size;
+  // Vergleichen gibt es für genau zwei – wie am Rechner.
+  $('auswahl-vergleichen').hidden = n !== 2;
   const war = !$('auswahlleiste').hidden;
   $('auswahlleiste').hidden = n === 0;
   if (n > 0 && !war) ladeAlbenstreifen();
@@ -3195,6 +3197,127 @@ $('auswaehlen').addEventListener('click', () => { auswahlModus = !auswahlModus; 
 $('auswahl-zu').addEventListener('click', auswahlAufheben);
 
 const gewaehlte = () => liste.aufnahmen.filter((a) => auswahl.has(a.id));
+
+// --- Zwei Fotos vergleichen (#197) --------------------------------------------
+//
+// Wie am Rechner: zwei frei gewählte Fotos nebeneinander oder
+// übereinander, mit gekoppeltem Zoom – zoomt oder schiebt man das eine,
+// folgt das andere genau. Entkoppelt hat jedes seinen eigenen Ausschnitt.
+// Mausrad oder zwei Finger zoomen, Ziehen verschiebt, ein Doppelklick
+// setzt zurück.
+
+const vergleich = { gekoppelt: true, uebereinander: false, sicht: [{ z: 1, x: 0, y: 0 }, { z: 1, x: 0, y: 0 }], finger: [new Map(), new Map()] };
+const vergleichFelder = [...document.querySelectorAll('#vergleich .vergleich-feld')];
+const vergleichSicht = (i) => vergleich.sicht[vergleich.gekoppelt ? 0 : i];
+
+function vergleichZeichne() {
+  vergleichFelder.forEach((f, i) => {
+    const s = vergleichSicht(i);
+    f.querySelector('img').style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.z})`;
+  });
+  $('vergleich').classList.toggle('uebereinander', vergleich.uebereinander);
+  $('vergleich-lage').textContent = vergleich.uebereinander ? t('Nebeneinander') : t('Übereinander');
+  $('vergleich-koppeln').textContent = vergleich.gekoppelt ? t('Ansichten entkoppeln') : t('Ansichten koppeln');
+}
+
+// Nie über den Rand hinaus: Vergrössert lässt sich höchstens so weit
+// schieben, wie das Bild über sein Feld hinausragt.
+function vergleichGrenze(s, feld) {
+  s.z = Math.min(8, Math.max(1, s.z));
+  const r = feld.getBoundingClientRect();
+  const mx = (r.width * (s.z - 1)) / 2, my = (r.height * (s.z - 1)) / 2;
+  s.x = Math.min(mx, Math.max(-mx, s.x));
+  s.y = Math.min(my, Math.max(-my, s.y));
+}
+
+// Um den Punkt (px, py) – Bildschirmkoordinaten – zoomen, sodass er an
+// seiner Stelle bleibt.
+function vergleichZoome(i, faktor, px, py) {
+  const feld = vergleichFelder[i].querySelector('.vergleich-bild');
+  const r = feld.getBoundingClientRect();
+  const s = vergleichSicht(i);
+  const z = Math.min(8, Math.max(1, s.z * faktor));
+  const k = z / s.z;
+  const cx = px - r.left - r.width / 2, cy = py - r.top - r.height / 2;
+  s.x = cx - (cx - s.x) * k;
+  s.y = cy - (cy - s.y) * k;
+  s.z = z;
+  vergleichGrenze(s, feld);
+  vergleichZeichne();
+}
+
+function vergleichZurueck() {
+  vergleich.sicht = [{ z: 1, x: 0, y: 0 }, { z: 1, x: 0, y: 0 }];
+  vergleichZeichne();
+}
+
+function oeffneVergleich(paar) {
+  if (paar.length !== 2) return;
+  // Hochformatiger Bildschirm: übereinander, sonst blieben zwei schmale
+  // Streifen.
+  vergleich.uebereinander = innerHeight > innerWidth;
+  vergleich.gekoppelt = true;
+  paar.forEach((a, i) => {
+    const f = vergleichFelder[i];
+    f.querySelector('img').src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
+    f.querySelector('figcaption').textContent = a.name || '';
+  });
+  vergleichZurueck();
+  $('vergleich').hidden = false;
+}
+
+function schliesseVergleich() {
+  $('vergleich').hidden = true;
+  for (const f of vergleichFelder) f.querySelector('img').removeAttribute('src');
+}
+
+vergleichFelder.forEach((f, i) => {
+  const feld = f.querySelector('.vergleich-bild');
+  feld.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    vergleichZoome(i, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)), e.clientX, e.clientY);
+  }, { passive: false });
+  feld.addEventListener('dblclick', vergleichZurueck);
+  const finger = vergleich.finger[i];
+  let zug = null;
+  feld.addEventListener('pointerdown', (e) => {
+    try { feld.setPointerCapture(e.pointerId); } catch (_) { /* schon weg */ }
+    finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    zug = finger.size === 2 ? { abstand: null } : { x: e.clientX, y: e.clientY };
+  });
+  feld.addEventListener('pointermove', (e) => {
+    if (!finger.has(e.pointerId)) return;
+    finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const s = vergleichSicht(i);
+    if (finger.size === 2) {
+      const [a, b] = [...finger.values()];
+      const abstand = Math.hypot(a.x - b.x, a.y - b.y);
+      if (zug && zug.abstand) vergleichZoome(i, abstand / zug.abstand, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      zug = { abstand };
+      return;
+    }
+    if (!zug || zug.x === undefined) return;
+    s.x += e.clientX - zug.x;
+    s.y += e.clientY - zug.y;
+    zug = { x: e.clientX, y: e.clientY };
+    vergleichGrenze(s, feld);
+    vergleichZeichne();
+  });
+  const los = (e) => { finger.delete(e.pointerId); zug = null; };
+  feld.addEventListener('pointerup', los);
+  feld.addEventListener('pointercancel', los);
+});
+
+$('vergleich-lage').addEventListener('click', () => { vergleich.uebereinander = !vergleich.uebereinander; vergleichZurueck(); });
+$('vergleich-koppeln').addEventListener('click', () => {
+  vergleich.gekoppelt = !vergleich.gekoppelt;
+  // Entkoppelt beginnt die zweite Seite dort, wo beide gerade stehen.
+  if (!vergleich.gekoppelt) vergleich.sicht[1] = { ...vergleich.sicht[0] };
+  vergleichZeichne();
+});
+$('vergleich-zurueck').addEventListener('click', vergleichZurueck);
+$('vergleich-zu').addEventListener('click', schliesseVergleich);
+$('auswahl-vergleichen').addEventListener('click', () => oeffneVergleich(gewaehlte()));
 
 $('auswahl-favorit').addEventListener('click', async () => {
   const g = gewaehlte();
@@ -4249,6 +4372,11 @@ document.addEventListener('keydown', async (e) => {
   if (e.altKey) return;
   const taste = e.key;
   try {
+    if (!$('vergleich').hidden) {
+      if (taste === 'Escape') schliesseVergleich();
+      else if (taste === '0') vergleichZurueck();
+      return;
+    }
     if (!$('diashow').hidden) {
       if (taste === 'Escape') beendeDiashow();
       else if (taste === ' ') { e.preventDefault(); diaPause(); }

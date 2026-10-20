@@ -61,6 +61,7 @@
   <symbol id="i-kleiner" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6"/></symbol>
   <symbol id="i-liste" viewBox="0 0 24 24"><rect x="3.5" y="5" width="4" height="3.5" rx=".8"/><rect x="3.5" y="10.25" width="4" height="3.5" rx=".8"/><rect x="3.5" y="15.5" width="4" height="3.5" rx=".8"/><path d="M10 6.75h10.5M10 12h10.5M10 17.25h10.5"/></symbol>
   <symbol id="i-spalten" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15M14.5 4.5v15"/></symbol>
+  <symbol id="i-vergleich" viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></symbol>
   <symbol id="i-groesser" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6M10.5 7.5v6"/></symbol>
 </svg>
 
@@ -331,6 +332,7 @@
     <button id="auswahl-favorit" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-favoriten"/></svg>Favorit</button>
     <button id="auswahl-album" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-alben"/></svg>Album</button>
     <button id="auswahl-link" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-link"/></svg>Link</button>
+    <button id="auswahl-vergleichen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-vergleich"/></svg>Vergleichen</button>
     <button id="auswahl-diashow" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-diashow"/></svg>Diashow</button>
     <button id="auswahl-laden" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-laden"/></svg>Herunterladen</button>
     <button id="auswahl-papierkorb" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-papierkorb"/></svg>Papierkorb</button>
@@ -441,6 +443,21 @@
 </dialog>
 
 <!-- Ein Gesicht im ganzen Foto, wenn der Ausschnitt nicht genügt (#189). -->
+<!-- Zwei Fotos vergleichen (#197), wie am Rechner. -->
+<div id="vergleich" hidden>
+  <div class="vergleich-leiste">
+    <h3>Zwei Fotos vergleichen</h3>
+    <button id="vergleich-lage" type="button"></button>
+    <button id="vergleich-koppeln" type="button"></button>
+    <button id="vergleich-zurueck" type="button">Zoom zurücksetzen</button>
+    <button id="vergleich-zu" type="button" aria-label="Schliessen" title="Schliessen">×</button>
+  </div>
+  <div class="vergleich-flaeche">
+    <figure class="vergleich-feld"><div class="vergleich-bild"><img alt="" draggable="false"></div><figcaption></figcaption></figure>
+    <figure class="vergleich-feld"><div class="vergleich-bild"><img alt="" draggable="false"></div><figcaption></figcaption></figure>
+  </div>
+</div>
+
 <!-- Welche Spalten die Liste zeigt (#195). -->
 <dialog id="spalten-dialog">
   <h3>Spalten</h3>

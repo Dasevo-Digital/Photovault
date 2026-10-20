@@ -12,6 +12,7 @@ import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'diashow.dart';
+import 'vergleich.dart';
 import 'freigaben.dart';
 
 /// Das Blatt unter einem Raster, sobald etwas ausgewählt ist (Issue
@@ -236,6 +237,21 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                     text: t.auswahlTeilen,
                     onPressed: () => _teile(context),
                   ),
+                  // Vergleichen für genau zwei – wie am Rechner (Issue #197).
+                  if (zeilen.length == 2)
+                    _Aktion(
+                      icon: Icons.compare_outlined,
+                      text: t.auswahlVergleichen,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => Vergleich(
+                            sitzung: widget.sitzung,
+                            links: zeilen[0],
+                            rechts: zeilen[1],
+                          ),
+                        ),
+                      ),
+                    ),
                   _Aktion(
                     icon: Icons.slideshow_outlined,
                     text: t.diashow,

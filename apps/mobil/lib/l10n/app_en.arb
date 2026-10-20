@@ -745,5 +745,12 @@
   "listeGeschaetzt": "estimated",
   "listeFoto": "Photo",
   "listeVideo": "Video",
-  "ansichtJahre": "Years"
+  "ansichtJahre": "Years",
+  "auswahlVergleichen": "Compare",
+  "vergleichTitel": "Compare two photos",
+  "vergleichNebeneinander": "Side by side",
+  "vergleichUebereinander": "Stacked",
+  "vergleichKoppeln": "Link views",
+  "vergleichEntkoppeln": "Unlink views",
+  "vergleichZuruecksetzen": "Reset zoom"
 }

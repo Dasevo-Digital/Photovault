@@ -65,6 +65,7 @@ import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
 import 'package:photo_vault_mobil/seiten/zeitleiste.dart';
 import 'package:kern/services/sortierung.dart';
+import 'package:photo_vault_mobil/seiten/vergleich.dart';
 
 Rasterzeile _zeile(String id, double breite, double laenge) => Rasterzeile(
   id: id,
@@ -798,6 +799,44 @@ void main() {
       db,
     );
   }
+
+  testWidgets('Zwei Fotos vergleichen: gekoppelt, entkoppelt (#197)', (
+    tester,
+  ) async {
+    final (sitzung, _) = await sitzungMit(tester, ['v1', 'v2']);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Vergleich(
+          sitzung: sitzung,
+          links: _zeile('v1', 0, 0),
+          rechts: _zeile('v2', 0, 0),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('v1.jpg'), findsOneWidget);
+    expect(find.text('v2.jpg'), findsOneWidget);
+    TransformationController? regler(int i) => tester
+        .widgetList<InteractiveViewer>(find.byType(InteractiveViewer))
+        .elementAt(i)
+        .transformationController;
+    // Gekoppelt teilen sich beide Seiten denselben Regler.
+    expect(identical(regler(0), regler(1)), isTrue);
+    regler(0)!.value = Matrix4.diagonal3Values(2, 2, 1);
+    await tester.tap(find.byTooltip('Ansichten entkoppeln'));
+    await tester.pumpAndSettle();
+    expect(identical(regler(0), regler(1)), isFalse);
+    // Die zweite Seite beginnt dort, wo beide standen.
+    expect(regler(1)!.value.getMaxScaleOnAxis(), closeTo(2, 1e-9));
+    await tester.tap(find.byTooltip('Zoom zurücksetzen'));
+    await tester.pumpAndSettle();
+    expect(regler(0)!.value.getMaxScaleOnAxis(), closeTo(1, 1e-9));
+    expect(find.byTooltip('Ansichten koppeln'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('Rückblick und Kalender wie am Rechner (#185)', (tester) async {
     final (sitzung, db) = await sitzungMit(tester, ['r1', 'r2', 'r3']);
