@@ -102,6 +102,7 @@ const EN = {
   '{name}?': '{name}?',
   'Wer ist das?': 'Who is this?',
   'Im Foto zeigen': 'Show in photo',
+  '{n} Treffer': '{n} results',
   'Intelligente Alben': 'Smart albums',
   'Sucht nach Bildinhalt': 'Searches image content',
   'Gemerkte Suche': 'Saved search',

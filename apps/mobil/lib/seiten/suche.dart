@@ -69,14 +69,18 @@ class _SucheState extends State<Suche> {
       final vektor = inhalt ? await widget.sitzung.textvektor(text) : null;
       if (inhalt && vektor == null) _hinweis = t.sucheKeinModell;
       // Ohne Modell nach Inhalt: wie bisher im Text suchen.
-      final funde = await suchlauf(
-        _db,
-        text: text,
-        art: vektor != null ? Suchart.inhalt : Suchart.text,
-        filter: _filter,
-        vektor: vektor,
+      // Kennungen und schlanke Zeilen statt voller (#186): Das Raster
+      // braucht nur, was eine Kachel zeigt – an 36.000 Treffern 196 statt
+      // 470 ms.
+      _treffer = await _db.rasterzeilenFuer(
+        await suchlaufKennungen(
+          _db,
+          text: text,
+          art: vektor != null ? Suchart.inhalt : Suchart.text,
+          filter: _filter,
+          vektor: vektor,
+        ),
       );
-      _treffer = [for (final a in funde) Rasterzeile.aus(a)];
     } catch (_) {
       _hinweis = t.sucheFehler;
     } finally {

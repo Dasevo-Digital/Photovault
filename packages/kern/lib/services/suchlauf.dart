@@ -106,16 +106,39 @@ Future<List<AssetData>> suchlauf(
   Suchart art = Suchart.text,
   Suchfilter filter = const Suchfilter(),
   Float32List? vektor,
+}) async => db.assetsByIds(
+  await suchlaufKennungen(
+    db,
+    text: text,
+    art: art,
+    filter: filter,
+    vektor: vektor,
+  ),
+);
+
+/// [suchlauf], aber nur die Kennungen in ihrer Reihenfolge – nach Datum
+/// oder, bei der Inhaltssuche, nach Ähnlichkeit. Damit laden Browser und
+/// Handy die Zeilen seitenweise statt alle auf einmal (Issue #186): An
+/// 45.000 künstlichen Aufnahmen brauchte ein häufiges Wort mit allen
+/// 36.000 vollen Zeilen 390 ms.
+Future<List<String>> suchlaufKennungen(
+  AppDatabase db, {
+  String text = '',
+  Suchart art = Suchart.text,
+  Suchfilter filter = const Suchfilter(),
+  Float32List? vektor,
 }) async {
   final f = filter.alsFilter;
-  if (text.trim().isEmpty) return db.searchAssets(f);
+  if (text.trim().isEmpty) return db.searchAssetIdsNachDatum(f);
   if (art == Suchart.text) {
     final ids = await db.textfundstellen(text.trim());
-    return ids.isEmpty ? const [] : db.searchAssets(f, restrictToIds: ids);
+    return ids.isEmpty
+        ? const []
+        : db.searchAssetIdsNachDatum(f, restrictToIds: ids);
   }
   if (vektor == null) return const [];
   final erlaubt = (await db.searchAssetIds(f)).toSet();
-  final rangfolge = rangfolgeDerBildsuche(
+  return rangfolgeDerBildsuche(
     vektor,
     suchkandidatenAus(
       await db.einbettungenImSpeicher(),
@@ -123,8 +146,6 @@ Future<List<AssetData>> suchlauf(
     ),
     erlaubt,
   );
-  // `assetsByIds` behält die Reihenfolge – die nach Ähnlichkeit.
-  return db.assetsByIds(rangfolge);
 }
 
 /// Was sich in den Filtern wählen lässt: die benannten Personen, die

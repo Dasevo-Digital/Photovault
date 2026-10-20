@@ -1740,6 +1740,15 @@ void main() {
 
     // Nur Filter, nach Datum geordnet (jüngste zuerst).
     expect(await ids('land=Italy'), [c, a]);
+    // Seitenweise (#186): alle Kennungen, Zeilen nur für die erste Seite.
+    final seite = await jsonAus(
+      await frag('GET', '/api/v1/suche?land=Italy&anzahl=1', token: erikaToken),
+    );
+    expect(seite['kennungen'], [c, a]);
+    expect(
+      [for (final z in (seite['aufnahmen']! as List).cast<Map>()) z['id']],
+      [c],
+    );
     expect(await ids('land=Italy&stadt=Rome'), [a]);
     expect(await ids('von=2025-01-01&bis=2025-07-01'), [b]);
     expect(await ids('person=anna'), [c]);

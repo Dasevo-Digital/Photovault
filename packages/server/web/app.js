@@ -2029,8 +2029,19 @@ $('form-suche').addEventListener('submit', async (e) => {
   try {
     if (text) { q.set('text', text); q.set('art', f.art.value); }
     const d = await api(`/api/v1/suche?${q}`);
-    zeigeListe({ aufnahmen: d.aufnahmen, suche: true });
-    $('suche-hinweis').textContent = d.aufnahmen.length ? '' : t('Nichts gefunden.');
+    // Seitenweise (#186): Der Server schickt alle Kennungen, die Zeilen nur
+    // für die erste Seite; den Rest holt das Raster beim Blättern.
+    const ids = d.kennungen || d.aufnahmen.map((a) => a.id);
+    let pos = d.aufnahmen.length;
+    const mehr = async () => {
+      const stueck = ids.slice(pos, pos + 300);
+      pos += stueck.length;
+      const s = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: stueck } });
+      return { aufnahmen: s.aufnahmen, weiter: pos < ids.length ? 'mehr' : null };
+    };
+    zeigeListe({ aufnahmen: d.aufnahmen, suche: true, mehr: pos < ids.length ? mehr : null });
+    if (pos < ids.length) $('ende').textContent = t('{n} Treffer', { n: zahl.format(ids.length) });
+    $('suche-hinweis').textContent = ids.length ? '' : t('Nichts gefunden.');
     letzteSuche = { q: q.toString(), text };
     $('suche-merken').hidden = false;
   } catch (x) {

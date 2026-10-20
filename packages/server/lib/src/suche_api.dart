@@ -78,15 +78,24 @@ class Suchapi {
         }, status: 500);
       }
     }
-    final funde = await suchlauf(
+    // Erst alle Kennungen, die Zeilen nur für die erste Seite (Issue #186):
+    // Die übrigen holt der Browser beim Blättern über /aufnahmen/liste. An
+    // 45.000 künstlichen Aufnahmen kostete ein häufiges Wort so 84 statt
+    // 470 ms, und die Antwort trägt Kennungen statt 36.000 Zeilen.
+    final ids = await suchlaufKennungen(
       b.db,
       text: text,
       art: art,
       filter: filter,
       vektor: vektor == null ? null : Float32List.fromList(vektor),
     );
+    final seite = (int.tryParse(q['anzahl'] ?? '') ?? 200).clamp(1, 1000);
     return _json({
-      'aufnahmen': [for (final a in funde) zeileAlsJson(Rasterzeile.aus(a))],
+      'kennungen': ids,
+      'aufnahmen': [
+        for (final r in await b.db.rasterzeilenFuer(ids.take(seite).toList()))
+          zeileAlsJson(r),
+      ],
     });
   }
 

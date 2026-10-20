@@ -591,6 +591,50 @@ extension VokabularAbfragen on AppDatabase {
     return [for (final z in await query.get()) z.read(assets.id)!];
   }
 
+  /// Wie [searchAssetIds], aber nach Aufnahmezeit geordnet, die neueste
+  /// zuerst – wie [searchAssets]. Für die Suche in Browser und Handy, die
+  /// erst die Kennungen holen und die Zeilen dann seitenweise (#186).
+  Future<List<String>> searchAssetIdsNachDatum(
+    SearchFilters filters, {
+    List<String>? restrictToIds,
+  }) async {
+    final fts = await _ftsAssetIds(filters);
+    final effectiveIds = _intersectIds(restrictToIds, fts);
+    final query = selectOnly(assets)..addColumns([assets.id]);
+    for (final b in _suchbedingungen(
+      filters,
+      effectiveIds,
+      textAlreadyFiltered: fts != null,
+    )) {
+      query.where(b);
+    }
+    query.orderBy([
+      OrderingTerm.desc(assets.fileCreatedAt),
+      OrderingTerm.desc(assets.id),
+    ]);
+    return [for (final z in await query.get()) z.read(assets.id)!];
+  }
+
+  /// Schlanke Zeilen für die Kachelwand zu [ids], in deren Reihenfolge –
+  /// statt der vollen Zeilen von [assetsByIds] (56 Spalten), die das
+  /// Raster nicht braucht.
+  Future<List<Rasterzeile>> rasterzeilenFuer(List<String> ids) async {
+    final nachId = <String, Rasterzeile>{};
+    for (var i = 0; i < ids.length; i += 5000) {
+      final stueck = ids.sublist(i, math.min(i + 5000, ids.length));
+      for (final z in await customSelect(
+        'SELECT $rasterSpalten FROM assets WHERE id IN '
+        '(${List.filled(stueck.length, '?').join(', ')})',
+        variables: [for (final id in stueck) Variable<String>(id)],
+        readsFrom: {assets},
+      ).get()) {
+        final r = Rasterzeile.ausZeile(z);
+        nachId[r.id] = r;
+      }
+    }
+    return [for (final id in ids) ?nachId[id]];
+  }
+
   /// Alle in der Bibliothek tatsächlich vorkommenden, nicht-leeren Werte
   /// einer Text-Spalte – für die Dropdowns im Suchoptionen-Panel (Kamera-
   /// Marke/-Modell/Objektiv), damit dort nur Werte auswählbar sind, die auch
