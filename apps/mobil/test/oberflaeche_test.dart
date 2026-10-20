@@ -1791,6 +1791,10 @@ void main() {
     expect((await db.assetById('d1'))!.isTrashed, isTrue);
     expect((await db.assetById('d2'))!.isTrashed, isFalse);
     expect(find.text('d1.jpg'), findsNothing);
+    // Die Suche hat den Vorrat der Einbettungen geladen; dessen Uhr (drei
+    // Minuten Ruhe) liefe sonst über das Testende hinaus. Im Betrieb hält
+    // `close` sie an – das kommt hier erst nach der Prüfung.
+    db.einbettungsvorratLeeren();
   });
 
   testWidgets('Einstellungen wie im Browser: Zeilen und Schalter', (
