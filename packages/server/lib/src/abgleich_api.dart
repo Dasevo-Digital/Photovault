@@ -296,5 +296,6 @@ Object? ergebnisAlsJson(Object? e) => switch (e) {
   null || bool() || num() || String() => e,
   DateTime() => e.toIso8601String(),
   Enum() => e.name,
+  List() => [for (final x in e) ergebnisAlsJson(x)],
   _ => e.toString(),
 };

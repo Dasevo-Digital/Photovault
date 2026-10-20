@@ -1651,9 +1651,18 @@ async function zeigeOhneNamen() {
   const box = $('ohne-namen');
   const d = await api('/api/v1/gesichter/ohne-namen');
   box.replaceChildren();
-  if (!d.gruppen.length) { box.hidden = true; return; }
+  // Auch wenn nichts mehr offen ist, solange es Ignorierte gibt: Über das
+  // Menü holt man sie zurück.
+  if (!d.gruppen.length && !d.ignoriert) { box.hidden = true; return; }
   const kopf = el('div', 'bib-kopf');
-  kopf.append(el('h3', null, t('Ohne Namen')), el('span', 'leise', t('{n} Gesichter', { n: d.gesamt })));
+  const rechts = el('span', 'rechts');
+  const menue = el('button', 'kopf-menue', '⋯');
+  menue.type = 'button';
+  menue.title = t('Mehr');
+  menue.setAttribute('aria-label', t('Mehr'));
+  menue.addEventListener('click', () => ohneNamenMenue(d));
+  rechts.append(el('span', 'leise', t('{n} Gesichter', { n: d.gesamt })), menue);
+  kopf.append(el('h3', null, t('Ohne Namen')), rechts);
   const reihe = el('div', 'gesichtsgruppen');
   for (const g of d.gruppen.slice(0, 60)) {
     const b = el('button', 'gesichtsgruppe');
@@ -1673,6 +1682,120 @@ async function zeigeOhneNamen() {
   }
   box.append(kopf, reihe);
   box.hidden = $('bereich-karten').hidden;
+}
+
+// Eine kleine Auswahl wie die Menüs am Rechner: je Eintrag ein Knopf mit
+// einer Zeile darunter, die sagt, was er tut.
+function waehle(titel, eintraege) {
+  $('wahl-titel').textContent = titel;
+  const liste = $('wahl-liste');
+  liste.replaceChildren();
+  for (const e of eintraege) {
+    const b = el('button', `wahl${e.gefahr ? ' gefahr' : ''}`);
+    b.type = 'button';
+    b.disabled = e.an === false;
+    b.append(el('span', null, e.text));
+    if (e.hinweis) b.append(el('span', 'leise klein', e.hinweis));
+    b.addEventListener('click', () => {
+      $('wahl-dialog').close();
+      Promise.resolve(e.aktion()).catch((x) => meldung(x.message));
+    });
+    liste.append(b);
+  }
+  $('wahl-dialog').showModal();
+}
+$('wahl-zu').addEventListener('click', () => $('wahl-dialog').close());
+
+// Alle unbenannten auf einmal – wie das Menü über „Ohne Namen“ am
+// Rechner (#192). Die Kennungen sucht der Server heraus.
+async function alleUnbenannten(aktion) {
+  return (await api('/api/v1/gesichter/unbenannte', { methode: 'POST', json: { aktion } })).anzahl;
+}
+
+function ohneNamenMenue(d) {
+  waehle(t('Ohne Namen'), [
+    {
+      text: t('Alle unbenannten Gesichter ignorieren'),
+      hinweis: d.gesamt === 1 ? t('Ein Gesicht wandert nach „Ignoriert“') : d.gesamt ? t('{n} Gesichter wandern nach „Ignoriert“', { n: d.gesamt }) : t('Nichts mehr offen'),
+      an: d.gesamt > 0,
+      aktion: async () => {
+        const n = await alleUnbenannten('ignorieren');
+        meldung(n === 1 ? t('Ein Gesicht ignoriert. Unter „Ignoriert“ holst du einzelne zurück.') : t('{n} Gesichter ignoriert. Unter „Ignoriert“ holst du einzelne zurück.', { n }));
+        zeigePersonen();
+      },
+    },
+    {
+      text: t('Alle unbenannten Erkennungen löschen'),
+      hinweis: t('Gibt Platz frei, kommt beim nächsten Scan aber wieder'),
+      gefahr: true,
+      aktion: async () => {
+        if (!confirm(t('Alle unbenannten Erkennungen werden samt ihrer Ausschnitte gelöscht – auch die bereits ignorierten. Benannte Personen bleiben unberührt.\n\nDas ist nicht dauerhaft: Der nächste Gesichts-Scan findet dieselben Stellen wieder. Wenn du sie dauerhaft loswerden willst, nimm stattdessen „Alle unbenannten Gesichter ignorieren“ – das überlebt auch einen erneuten Scan.'))) return;
+        const n = await alleUnbenannten('loeschen');
+        meldung(n === 1 ? t('Eine Erkennung gelöscht.') : t('{n} Erkennungen gelöscht.', { n }));
+        zeigePersonen();
+      },
+    },
+    {
+      text: t('Ignoriert'),
+      hinweis: t('{n} Gesichter', { n: d.ignoriert || 0 }),
+      an: (d.ignoriert || 0) > 0,
+      aktion: () => { location.hash = '#/ignoriert'; },
+    },
+  ]);
+}
+
+// Die beiseitegelegten Gesichter, wie der Reiter „Ignoriert“ am Rechner:
+// antippen wählt aus, „Zurückholen“ stellt sie wieder zu „Ohne Namen“.
+async function zeigeIgnoriert() {
+  markiereNav('personen');
+  zeigeBereich(['karten']);
+  $('karten-titel').textContent = t('Ignoriert');
+  const box = $('karten');
+  box.replaceChildren(el('p', 'neben', t('Lade …')));
+  const d = await api('/api/v1/gesichter/ignoriert');
+  const gewaehlt = new Set();
+  const kopf = el('div', 'ignoriert-kopf');
+  const text = el('span', 'leise');
+  const alle = el('button', null, t('Alle wählen'));
+  alle.type = 'button';
+  const zurueck = el('button', 'primaer');
+  zurueck.type = 'button';
+  const raster = el('div', 'ignoriert-raster');
+  const neu = () => {
+    text.textContent = d.gesichter.length < d.gesamt
+      ? t('Die ersten {n} von {gesamt} ignorierten Gesichtern', { n: d.gesichter.length, gesamt: d.gesamt })
+      : t('{n} Gesichter', { n: d.gesamt });
+    zurueck.textContent = gewaehlt.size ? t('{n} zurückholen', { n: gewaehlt.size }) : t('Zurückholen');
+    zurueck.disabled = !gewaehlt.size;
+    alle.textContent = gewaehlt.size === d.gesichter.length && gewaehlt.size ? t('Auswahl aufheben') : t('Alle wählen');
+    alle.disabled = !d.gesichter.length;
+  };
+  for (const g of d.gesichter) {
+    raster.append(gesichtszelle(g, (b) => {
+      if (gewaehlt.has(g.id)) gewaehlt.delete(g.id); else gewaehlt.add(g.id);
+      b.classList.toggle('gewaehlt', gewaehlt.has(g.id));
+      neu();
+    }));
+  }
+  alle.addEventListener('click', () => {
+    const an = gewaehlt.size !== d.gesichter.length;
+    for (const g of d.gesichter) if (an) gewaehlt.add(g.id); else gewaehlt.delete(g.id);
+    for (const b of raster.querySelectorAll('.gesicht')) b.classList.toggle('gewaehlt', an);
+    neu();
+  });
+  zurueck.addEventListener('click', async () => {
+    const ids = [...gewaehlt];
+    try {
+      await befehl('gesichterBeiseitelegen', { gesichtIds: ids, beiseite: false });
+      meldung(t('{n} zurückgeholt', { n: ids.length }));
+      await zeigeIgnoriert();
+    } catch (x) {
+      meldung(x.message);
+    }
+  });
+  kopf.append(text, alle, zurueck);
+  box.replaceChildren(kopf, d.gesichter.length ? raster : el('p', 'leise abschnitt', t('Keine ignorierten Gesichter.')));
+  neu();
 }
 
 let gesichtFall = null;
@@ -2790,7 +2913,7 @@ function oeffne(i) {
   $('gesichter-knopf').hidden = a.art === 'video';
   setzeAufziehen(false);
   $('aufziehen-knopf').hidden = a.art === 'video' || !gesichterAn;
-  $('ausnehmen-knopf').hidden = a.art === 'video' || !gesichterAn;
+  $('gesichtsmenue-knopf').hidden = a.art === 'video' || !gesichterAn;
   zeigeRahmen();
   const korb = !!liste.papierkorb;
   $('favorit').hidden = korb;
@@ -2847,12 +2970,13 @@ new MutationObserver(() => {
 
 async function zeigeRahmen() {
   rahmenflaeche.querySelectorAll('.rahmen').forEach((r) => r.remove());
+  rahmenDaten = null;
   const a = liste && liste.aufnahmen[offen];
   if (!gesichterAn || !a || a.art === 'video') { legeRahmenflaeche(); return; }
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (_) { return; }
   if (!liste || liste.aufnahmen[offen] !== a) return;
-  setzeAusnehmen(!!d.gesichtssucheAus);
+  rahmenDaten = { id: a.id, gesichter: d.gesichter || [], aus: !!d.gesichtssucheAus };
   for (const g of d.gesichter || []) {
     if (!g.kasten) continue;
     const [x, y, w, h] = g.kasten;
@@ -2888,35 +3012,58 @@ function setzeAufziehen(an) {
   rahmenflaeche.classList.toggle('ziehen', an);
 }
 
-// Ein Foto, auf dem jeder Durchlauf neue „Gesichter“ findet – eine
-// Gemäldewand, ein Plakat –, nimmt man von der Suche aus. Was schon
-// erkannt ist, bleibt; die Ausnahme gilt dem Suchen (wie am Rechner).
-function setzeAusnehmen(aus) {
-  const k = $('ausnehmen-knopf');
-  const titel = aus ? t('Wieder nach Gesichtern durchsuchen') : t('Nicht mehr nach Gesichtern durchsuchen');
-  k.setAttribute('aria-pressed', String(aus));
-  k.title = titel;
-  k.setAttribute('aria-label', titel);
-}
+// Was sich mit den Gesichtern dieses Fotos auf einmal tun lässt – wie das
+// Menü der Gesichtsansicht am Rechner (#191, #192): die unbenannten
+// ignorieren oder löschen, und das Foto von der Suche ausnehmen. Ein
+// Foto, auf dem jeder Durchlauf neue „Gesichter“ findet – eine
+// Gemäldewand, ein Plakat –, nimmt man aus; was erkannt ist, bleibt.
+let rahmenDaten = null;
 
-$('ausnehmen-knopf').addEventListener('click', async () => {
+$('gesichtsmenue-knopf').addEventListener('click', () => {
   const a = liste && liste.aufnahmen[offen];
-  if (!a) return;
-  const aus = $('ausnehmen-knopf').getAttribute('aria-pressed') !== 'true';
-  try {
-    await befehl('gesichtssucheAusnehmen', { id: a.id, ausgenommen: aus });
-    setzeAusnehmen(aus);
-    meldung(aus ? t('Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.') : t('Dieses Foto wird wieder mitdurchsucht.'));
-  } catch (x) {
-    meldung(x.message);
-  }
+  const d = rahmenDaten;
+  if (!a || !d || d.id !== a.id) return;
+  const offene = d.gesichter.filter((g) => !g.person && !g.beiseite).map((g) => g.id);
+  // Löschen trifft auch die beiseitegelegten, wie bei „Ohne Namen“.
+  const unbenannte = d.gesichter.filter((g) => !g.person).map((g) => g.id);
+  const fertig = () => { zeigeRahmen(); if (angabenOffen) zeigeAngaben(); };
+  waehle(t('Gesichter auf diesem Foto'), [
+    {
+      text: offene.length === 0 ? t('Keine unbenannten Gesichter') : offene.length === 1 ? t('Unbenanntes Gesicht ignorieren') : t('{n} unbenannte Gesichter ignorieren', { n: offene.length }),
+      an: offene.length > 0,
+      aktion: async () => {
+        await befehl('gesichterBeiseitelegen', { gesichtIds: offene, beiseite: true });
+        fertig();
+      },
+    },
+    {
+      text: unbenannte.length === 0 ? t('Keine unbenannten Erkennungen') : unbenannte.length === 1 ? t('Unbenannte Erkennung löschen') : t('{n} unbenannte Erkennungen löschen', { n: unbenannte.length }),
+      gefahr: true,
+      an: unbenannte.length > 0,
+      aktion: async () => {
+        if (!confirm(unbenannte.length === 1 ? t('Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.') : t('Die {n} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.', { n: unbenannte.length }))) return;
+        await befehl('gesichterLoeschen', { gesichtIds: unbenannte });
+        fertig();
+      },
+    },
+    {
+      text: d.aus ? t('Wieder nach Gesichtern durchsuchen') : t('Nicht mehr nach Gesichtern durchsuchen'),
+      hinweis: d.aus ? null : t('Für Bilder, auf denen jeder Durchlauf neue „Gesichter“ findet. Erkannte bleiben.'),
+      aktion: async () => {
+        const aus = !d.aus;
+        await befehl('gesichtssucheAusnehmen', { id: a.id, ausgenommen: aus });
+        d.aus = aus;
+        meldung(aus ? t('Dieses Foto wird beim erneuten Durchsuchen übersprungen. Erkannte Gesichter bleiben.') : t('Dieses Foto wird wieder mitdurchsucht.'));
+      },
+    },
+  ]);
 });
 
 $('gesichter-knopf').addEventListener('click', () => {
   gesichterAn = !gesichterAn;
   $('gesichter-knopf').setAttribute('aria-pressed', String(gesichterAn));
   $('aufziehen-knopf').hidden = !gesichterAn;
-  $('ausnehmen-knopf').hidden = !gesichterAn;
+  $('gesichtsmenue-knopf').hidden = !gesichterAn;
   if (!gesichterAn) setzeAufziehen(false);
   ordneKnoepfe();
   zeigeRahmen();
@@ -3191,7 +3338,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'ausnehmen-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
+  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'gesichtsmenue-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }
@@ -3748,6 +3895,7 @@ async function zeigeWeg() {
       case 'suche': zeigeSuche(); break;
       case 'alben': await (teile[1] === 'klug' ? zeigeIntelligentesAlbum(teile[2]) : teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
+      case 'ignoriert': await zeigeIgnoriert(); break;
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;
       case 'aktivitaeten': await zeigeAktivitaet(teile[1]); break;

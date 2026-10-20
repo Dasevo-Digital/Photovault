@@ -328,6 +328,11 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     final unbenannte = _faces
         .where((f) => f.personId == null && !f.isIgnored)
         .length;
+    // Löschen trifft auch die beiseitegelegten – wie „Alle unbenannten
+    // Erkennungen löschen“ bei den Personen.
+    final unbenannteMitIgnorierten = _faces
+        .where((f) => f.personId == null)
+        .length;
     Widget punkt(String wahl, IconData symbol, String text, {bool an = true}) =>
         MenuItemButton(
           leadingIcon: Icon(symbol, size: 20),
@@ -373,6 +378,12 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         Icons.visibility_off_outlined,
         t.gesichtAlleUnbenanntenIgnorieren(unbenannte),
         an: unbenannte > 0,
+      ),
+      punkt(
+        'alleLoeschen',
+        Icons.delete_sweep_outlined,
+        t.gesichtAlleUnbenanntenLoeschen(unbenannteMitIgnorierten),
+        an: unbenannteMitIgnorierten > 0,
       ),
       const Divider(height: 1),
       punkt('info', Icons.info_outline, t.viewerInfo),
@@ -429,6 +440,8 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
           ], true),
         );
         _load();
+      case 'alleLoeschen':
+        await _loescheUnbenannte();
       case 'info':
         setState(() => _infoSichtbar = true);
       case 'nichtMehrSuchen':
@@ -520,6 +533,36 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
           ? AppTexte.of(context).gesichtNichtMehrDurchsuchtHinweis
           : AppTexte.of(context).gesichtWiederDurchsuchtHinweis,
     );
+  }
+
+  /// Die unbenannten Erkennungen dieses Fotos auf einmal löschen (#192) –
+  /// für ein Bild, auf dem die Erkennung lauter Fehlgriffe gefunden hat.
+  Future<void> _loescheUnbenannte() async {
+    final t = AppTexte.of(context);
+    final ids = [
+      for (final f in _faces)
+        if (f.personId == null) f.id,
+    ];
+    if (ids.isEmpty) return;
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        content: Text(t.gesichtUnbenannteLoeschenFrage(ids.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog, false),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialog, true),
+            child: Text(t.allgLoeschen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    await widget.library.loescheGesichter(ids);
+    if (mounted) _load();
   }
 
   Future<void> _loescheFoto() async {

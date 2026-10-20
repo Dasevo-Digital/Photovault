@@ -407,6 +407,13 @@
 </dialog>
 
 <!-- Ein Gesicht im ganzen Foto, wenn der Ausschnitt nicht genügt (#189). -->
+<!-- Eine kleine Auswahl wie die Menüs am Rechner (#192). -->
+<dialog id="wahl-dialog">
+  <h3 id="wahl-titel"></h3>
+  <div id="wahl-liste"></div>
+  <menu><button type="button" id="wahl-zu">Abbrechen</button></menu>
+</dialog>
+
 <dialog id="imfoto-dialog">
   <figure id="imfoto-bild"></figure>
   <p id="imfoto-text" class="leise klein"></p>
@@ -463,7 +470,7 @@
   <button id="info" class="oben-links" type="button" aria-label="Angaben" aria-pressed="false">i</button>
   <button id="gesichter-knopf" class="oben-links" type="button" aria-label="Gesichter zeigen" title="Gesichter zeigen" aria-pressed="false">☺&#xFE0E;</button>
   <button id="aufziehen-knopf" class="oben-links" type="button" aria-label="Gesicht aufziehen" title="Gesicht aufziehen – einen Rahmen um ein Gesicht ziehen" aria-pressed="false" hidden>⬚&#xFE0E;</button>
-  <button id="ausnehmen-knopf" class="oben-links" type="button" aria-label="Nicht mehr nach Gesichtern durchsuchen" title="Nicht mehr nach Gesichtern durchsuchen" aria-pressed="false" hidden>⊘&#xFE0E;</button>
+  <button id="gesichtsmenue-knopf" class="oben-links" type="button" aria-label="Gesichter auf diesem Foto" title="Gesichter auf diesem Foto" hidden>⋯</button>
   <button id="bearbeiten" class="oben-links" type="button" aria-label="Entwickeln" title="Entwickeln">✎</button>
   <button id="weg" class="oben-links" type="button" aria-label="In den Papierkorb" title="In den Papierkorb">🗑&#xFE0E;</button>
   <button id="holen" class="oben-links" type="button" aria-label="Zurückholen" title="Zurückholen" hidden>↺</button>

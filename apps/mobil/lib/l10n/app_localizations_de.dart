@@ -1990,4 +1990,125 @@ class AppTexteDe extends AppTexte {
   @override
   String get gesichterRahmenLoeschenFrage =>
       'Diesen Rahmen löschen? Die Erkennung verschwindet überall.';
+
+  @override
+  String get gesichterAlleIgnorieren => 'Alle unbenannten Gesichter ignorieren';
+
+  @override
+  String gesichterAlleIgnorierenHinweis(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Gesichter wandern nach „Ignoriert“',
+      one: 'Ein Gesicht wandert nach „Ignoriert“',
+      zero: 'Nichts mehr offen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterAlleIgnoriertMeldung(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl Gesichter ignoriert. Unter „Ignoriert“ holst du einzelne zurück.',
+      one: 'Ein Gesicht ignoriert. Unter „Ignoriert“ holst du einzelne zurück.',
+      zero: 'Es war nichts zu ignorieren.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesichterAlleLoeschen => 'Alle unbenannten Erkennungen löschen';
+
+  @override
+  String get gesichterAlleLoeschenHinweis =>
+      'Gibt Platz frei, kommt beim nächsten Scan aber wieder';
+
+  @override
+  String get gesichterAlleLoeschenTitel => 'Erkennungen wirklich löschen?';
+
+  @override
+  String get gesichterAlleLoeschenText =>
+      'Alle unbenannten Erkennungen werden samt ihrer Ausschnitte gelöscht – auch die bereits ignorierten. Benannte Personen bleiben unberührt.\n\nDas ist nicht dauerhaft: Der nächste Gesichts-Scan findet dieselben Stellen wieder. Wenn du sie dauerhaft loswerden willst, nimm stattdessen „Alle unbenannten Gesichter ignorieren“ – das überlebt auch einen erneuten Scan.';
+
+  @override
+  String get gesichterLoeschen => 'Löschen';
+
+  @override
+  String gesichterGeloeschtMeldung(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Erkennungen gelöscht.',
+      one: 'Eine Erkennung gelöscht.',
+      zero: 'Es gab keine Erkennungen zum Löschen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesichterIgnoriert => 'Ignoriert';
+
+  @override
+  String gesichterIgnoriertErste(int n, int gesamt) {
+    return 'Die ersten $n von $gesamt ignorierten Gesichtern';
+  }
+
+  @override
+  String get gesichterKeineIgnorierten => 'Keine ignorierten Gesichter.';
+
+  @override
+  String gesichterZurueckholen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl zurückholen',
+      zero: 'Zurückholen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterZurueckgeholt(int anzahl) {
+    return '$anzahl zurückgeholt';
+  }
+
+  @override
+  String betrachterUnbenannteIgnorieren(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl unbenannte Gesichter ignorieren',
+      one: 'Unbenanntes Gesicht ignorieren',
+      zero: 'Keine unbenannten Gesichter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String betrachterUnbenannteLoeschen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl unbenannte Erkennungen löschen',
+      one: 'Unbenannte Erkennung löschen',
+      zero: 'Keine unbenannten Erkennungen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String betrachterUnbenannteLoeschenFrage(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          'Die $anzahl unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.',
+      one:
+          'Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.',
+    );
+    return '$_temp0';
+  }
 }

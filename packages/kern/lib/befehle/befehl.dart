@@ -115,6 +115,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'vorschlaegeVerwerfen': VorschlaegeVerwerfen.aus,
   'gesichtssucheAusnehmen': GesichtssucheAusnehmen.aus,
   'gesichtLoeschen': GesichtLoeschen.aus,
+  'gesichterLoeschen': GesichterLoeschen.aus,
   'beziehungHinzufuegen': BeziehungHinzufuegen.aus,
   'beziehungenHinzufuegen': BeziehungenHinzufuegen.aus,
   'beziehungEntfernen': BeziehungEntfernen.aus,

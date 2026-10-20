@@ -21,6 +21,17 @@ void main() {
   late AppDatabase db;
 
   setUp(() => db = AppDatabase(NativeDatabase.memory()));
+
+  // Wie „Alle unbenannten Erkennungen löschen“ am Rechner: erst die
+  // Kennungen, dann der Befehl, der sie beim Namen nennt.
+  Future<({int anzahl, List<String> pfade})> loescheAlleUnbenannten() async {
+    final ids = await db.unbenannteErkennungen();
+    return (
+      anzahl: ids.length,
+      pfade: await db.fuehreAus(GesichterLoeschen(ids)),
+    );
+  }
+
   tearDown(() => db.close());
 
   Future<void> asset(
@@ -301,11 +312,35 @@ void main() {
       await gesicht('f2', 'a1');
       await db.setFacesIgnored(['f1'], true);
 
-      final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
+      final ergebnis = await loescheAlleUnbenannten();
 
       expect(ergebnis.anzahl, 2);
       expect(await db.facesForAsset('a1'), isEmpty);
     });
+
+    test(
+      'ein Profilbild aus einem gelöschten Ausschnitt bekommt Ersatz',
+      () async {
+        // Sonst zeigte das Bild der Person ins Leere (#191/#192).
+        await asset('a1');
+        await db.createPerson(PeopleCompanion.insert(id: 'p1', name: 'Anna'));
+        await db.createPerson(PeopleCompanion.insert(id: 'p2', name: 'Ben'));
+        await gesicht('f1', 'a1', person: 'p1');
+        await gesicht('f2', 'a1', person: 'p1');
+        await gesicht('f3', 'a1', person: 'p2');
+        await db.setPersonCover('p1', 'faces/f1.jpg');
+        await db.setPersonCover('p2', 'faces/f3.jpg');
+
+        final pfade = await db.fuehreAus(const GesichterLoeschen(['f1', 'f3']));
+
+        expect(pfade.toSet(), {'faces/f1.jpg', 'faces/f3.jpg'});
+        final bilder = {
+          for (final p in await db.select(db.people).get())
+            p.id: p.coverFaceCropPath,
+        };
+        expect(bilder, {'p1': 'faces/f2.jpg', 'p2': null});
+      },
+    );
 
     test('Erkennungen löschen lässt benannte Gesichter stehen', () async {
       await asset('a1');
@@ -313,7 +348,7 @@ void main() {
       await gesicht('f1', 'a1', person: 'p1');
       await gesicht('f2', 'a1');
 
-      final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
+      final ergebnis = await loescheAlleUnbenannten();
 
       expect(ergebnis.anzahl, 1);
       expect((await db.facesForAsset('a1')).map((f) => f.id), ['f1']);
@@ -338,7 +373,7 @@ void main() {
           ),
         );
 
-        final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
+        final ergebnis = await loescheAlleUnbenannten();
 
         expect(ergebnis.anzahl, 2);
         expect(ergebnis.pfade, hasLength(1));
@@ -356,7 +391,7 @@ void main() {
         await gesicht('f2', 'a2');
 
         expect(await db.ignoriereAlleUnbenannten(), 0);
-        expect((await db.loescheAlleUnbenanntenErkennungen()).anzahl, 0);
+        expect((await loescheAlleUnbenannten()).anzahl, 0);
         expect(await db.facesForAsset('a1'), hasLength(1));
         expect(await db.facesForAsset('a2'), hasLength(1));
       },

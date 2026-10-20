@@ -125,46 +125,48 @@ extension PersonenAbfragen on AppDatabase {
     return row.read(anzahl) ?? 0;
   }
 
-  /// Löscht eine einzelne Erkennung und liefert den Pfad ihres
-  /// Ausschnitts, damit der Aufrufer die Datei mit wegräumen kann.
+  /// Löscht mehrere Erkennungen auf einmal und liefert die Pfade ihrer
+  /// Ausschnitte – für „Alle unbenannten Erkennungen löschen“ und die
+  /// unbenannten eines Fotos (Issue #192).
   ///
-  /// Für den offensichtlichen Fehlgriff der Erkennung, den man direkt im
-  /// Foto sieht. Wie jedes Löschen ist auch das nicht dauerhaft – der
-  /// nächste Scan findet die Stelle wieder. Wer sie loswerden will, legt
-  /// sie beiseite (siehe [Faces.isIgnored]) oder nimmt das Foto von der
-  /// Gesichtssuche aus (siehe [Assets.faceScanExcluded]).
-  Future<String?> loescheGesicht(String faceId) => transaction(() async {
-    final vorher = await (select(
-      faces,
-    )..where((t) => t.id.equals(faceId))).getSingleOrNull();
-    if (vorher == null) return null;
-    await (delete(faces)..where((t) => t.id.equals(faceId))).go();
-    final pfad = vorher.cropRelativePath;
-    // Ein Profilbild aus diesem Ausschnitt zeigte danach ins Leere: Ein
-    // anderes Gesicht der Person übernimmt, sonst keins. Fest geordnet,
-    // damit jedes Gerät, das den Befehl anwendet, dasselbe wählt.
-    if (pfad != null) {
-      final betroffen = await (select(
-        people,
-      )..where((t) => t.coverFaceCropPath.equals(pfad))).get();
-      for (final p in betroffen) {
-        final ersatz =
-            await (select(faces)
-                  ..where(
-                    (t) =>
-                        t.personId.equals(p.id) &
-                        t.cropRelativePath.isNotNull(),
-                  )
-                  ..orderBy([(t) => OrderingTerm.asc(t.id)])
-                  ..limit(1))
-                .getSingleOrNull();
-        await (update(people)..where((t) => t.id.equals(p.id))).write(
-          PeopleCompanion(coverFaceCropPath: Value(ersatz?.cropRelativePath)),
-        );
-      }
-    }
-    return pfad;
-  });
+  /// Ein Profilbild aus einem der Ausschnitte zeigte danach ins Leere: Ein
+  /// anderes Gesicht der Person übernimmt, sonst keins. Fest geordnet,
+  /// damit jedes Gerät, das den Befehl anwendet, dasselbe wählt.
+  Future<List<String>> loescheGesichter(List<String> faceIds) =>
+      transaction(() async {
+        final pfade = <String>[];
+        // In Stücken: SQLite nimmt nicht beliebig viele Platzhalter.
+        for (var i = 0; i < faceIds.length; i += 500) {
+          final ende = i + 500 < faceIds.length ? i + 500 : faceIds.length;
+          final stueck = faceIds.sublist(i, ende);
+          final vorher = await (select(
+            faces,
+          )..where((t) => t.id.isIn(stueck))).get();
+          await (delete(faces)..where((t) => t.id.isIn(stueck))).go();
+          for (final f in vorher) {
+            if (f.cropRelativePath != null) pfade.add(f.cropRelativePath!);
+          }
+        }
+        if (pfade.isEmpty) return pfade;
+        final weg = pfade.toSet();
+        for (final p in await select(people).get()) {
+          if (!weg.contains(p.coverFaceCropPath)) continue;
+          final ersatz =
+              await (select(faces)
+                    ..where(
+                      (t) =>
+                          t.personId.equals(p.id) &
+                          t.cropRelativePath.isNotNull(),
+                    )
+                    ..orderBy([(t) => OrderingTerm.asc(t.id)])
+                    ..limit(1))
+                  .getSingleOrNull();
+          await (update(people)..where((t) => t.id.equals(p.id))).write(
+            PeopleCompanion(coverFaceCropPath: Value(ersatz?.cropRelativePath)),
+          );
+        }
+        return pfade;
+      });
 
   /// Nimmt einem Gesicht seine Person, ohne es zu löschen – es landet
   /// wieder unter „Unbenannte Gesichter".
@@ -194,47 +196,30 @@ extension PersonenAbfragen on AppDatabase {
     return betroffen.length;
   }
 
-  /// Löscht alle unbenannten Erkennungen und liefert ihre Zahl sowie die
-  /// Pfade ihrer Ausschnitte, damit der Aufrufer auch die Dateien wegräumen
-  /// kann.
+  /// Die Kennungen aller unbenannten Erkennungen, auch der
+  /// beiseitegelegten – was „Alle unbenannten Erkennungen löschen“ trifft.
+  /// Ohne Papierkorb und gesperrten Ordner, wie überall bei den Gesichtern.
   ///
-  /// Beides getrennt, weil es nicht dasselbe ist: Ein Gesicht ohne
-  /// Embedding-Modell bekommt zwar eine Zeile, aber nicht zwangsläufig
-  /// einen Ausschnitt. Die Pfade zu zählen und das Ergebnis als Zahl der
-  /// gelöschten Erkennungen zu melden, ergäbe eine zu kleine Zahl.
+  /// Für den Befehl [GesichterLoeschen]: Er nennt die Gesichter beim
+  /// Namen, damit er auf jeder Kopie dasselbe löscht.
   ///
-  /// Anders als das Beiseitelegen ist das **nicht dauerhaft**: Der nächste
-  /// Gesichts-Scan findet dieselben Stellen wieder und legt sie neu an.
-  /// Dafür wird der Platz auf der Platte frei. Wer die Erkennungen
-  /// endgültig loswerden will, legt sie beiseite – siehe
-  /// [ignoriereAlleUnbenannten].
-  ///
-  /// Beiseitegelegte werden mitgelöscht: Wer „alle Erkennungen löschen"
-  /// wählt, meint auch die, die schon aussortiert waren.
-  Future<({int anzahl, List<String> pfade})>
-  loescheAlleUnbenanntenErkennungen() async {
+  /// Anders als das Beiseitelegen ist das Löschen **nicht dauerhaft**: Der
+  /// nächste Gesichts-Scan findet dieselben Stellen wieder und legt sie neu
+  /// an. Dafür wird der Platz auf der Platte frei. Beiseitegelegte gehören
+  /// dazu: Wer „alle Erkennungen löschen“ wählt, meint auch die, die schon
+  /// aussortiert waren.
+  Future<List<String>> unbenannteErkennungen() async {
     final query =
-        select(
-          faces,
-        ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])..where(
-          faces.personId.isNull() &
-              assets.isTrashed.equals(false) &
-              assets.isLocked.equals(false),
-        );
-    final betroffen = (await query.get())
-        .map((r) => r.readTable(faces))
-        .toList();
-    if (betroffen.isEmpty) return (anzahl: 0, pfade: const <String>[]);
-    await (delete(
-      faces,
-    )..where((t) => t.id.isIn([for (final f in betroffen) f.id]))).go();
-    return (
-      anzahl: betroffen.length,
-      pfade: [
-        for (final f in betroffen)
-          if (f.cropRelativePath != null) f.cropRelativePath!,
-      ],
-    );
+        selectOnly(
+            faces,
+          ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])
+          ..addColumns([faces.id])
+          ..where(
+            faces.personId.isNull() &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false),
+          );
+    return [for (final r in await query.get()) r.read(faces.id)!];
   }
 
   /// Wie viele unbenannte Erkennungen es insgesamt gibt – für die Zahlen in

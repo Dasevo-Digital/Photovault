@@ -79,7 +79,33 @@ class _BetrachterState extends State<Betrachter> {
   var _aufziehen = false;
   var _gesichtsstand = 0;
 
+  // Die Gesichter des gezeigten Fotos – für die Zahlen im Menü (#192).
+  List<FaceData> _hier = const [];
+  String? _hierVon;
+
   AppDatabase get _db => widget.sitzung.db;
+
+  Future<void> _zaehle() async {
+    final id = _aktuell;
+    final f = await _db.facesForAsset(id);
+    if (!mounted || id != _aktuell) return;
+    setState(() {
+      _hier = f;
+      _hierVon = id;
+    });
+  }
+
+  /// Nach einer Änderung an den Gesichtern: Rahmen und Zahlen neu.
+  void _gesichterNeu() {
+    setState(() => _gesichtsstand++);
+    _zaehle();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _zaehle();
+  }
 
   Future<AssetData?> _lade(String id) async {
     final schon = _daten[id];
@@ -159,6 +185,48 @@ class _BetrachterState extends State<Betrachter> {
 
   Future<void> _angaben() => zeigeAngaben(context, widget.sitzung, _aktuell);
 
+  /// Die unbenannten Gesichter dieses Fotos auf einmal ignorieren – wie
+  /// im Menü der Gesichtsansicht am Rechner (#192).
+  Future<void> _unbenannteIgnorieren() async {
+    final ids = [
+      for (final f in _hier)
+        if (f.personId == null && !f.isIgnored) f.id,
+    ];
+    if (ids.isEmpty) return;
+    await _db.fuehreAus(GesichterBeiseitelegen(ids, true));
+    if (mounted) _gesichterNeu();
+  }
+
+  /// … oder löschen, auch die beiseitegelegten – für ein Bild, auf dem die
+  /// Erkennung lauter Fehlgriffe gefunden hat.
+  Future<void> _unbenannteLoeschen() async {
+    final t = AppTexte.of(context);
+    final ids = [
+      for (final f in _hier)
+        if (f.personId == null) f.id,
+    ];
+    if (ids.isEmpty) return;
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(t.betrachterUnbenannteLoeschenFrage(ids.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.abbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.gesichterLoeschen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true) return;
+    await _db.fuehreAus(GesichterLoeschen(ids));
+    if (mounted) _gesichterNeu();
+  }
+
   /// Ein Foto, auf dem jeder Durchlauf neue „Gesichter" findet – eine
   /// Gemäldewand, ein Plakat –, von der Suche ausnehmen oder zurückholen
   /// (wie am Rechner und im Browser). Was schon erkannt ist, bleibt; die
@@ -196,7 +264,7 @@ class _BetrachterState extends State<Betrachter> {
       gesichter: [g.gesicht],
       person: g.person,
     );
-    if (mounted) setState(() => _gesichtsstand++);
+    if (mounted) _gesichterNeu();
   }
 
   Future<void> _rahmenGezogen(Rect kasten) async {
@@ -216,7 +284,7 @@ class _BetrachterState extends State<Betrachter> {
       neu = null;
     }
     if (!mounted) return;
-    setState(() => _gesichtsstand++);
+    _gesichterNeu();
     if (neu == null) {
       bote
         ..hideCurrentSnackBar()
@@ -230,7 +298,7 @@ class _BetrachterState extends State<Betrachter> {
       titel: t.gesichterWerIstDas,
       gesichter: [neu],
     );
-    if (mounted) setState(() => _gesichtsstand++);
+    if (mounted) _gesichterNeu();
   }
 
   void _zugWeiter(DragUpdateDetails d) => setState(() {
@@ -258,6 +326,9 @@ class _BetrachterState extends State<Betrachter> {
     final t = AppTexte.of(context);
     final zeile = widget.zeilen[_index];
     final favorit = _daten[zeile.id]?.isFavorite ?? zeile.isFavorite;
+    final hier = _hierVon == zeile.id ? _hier : const <FaceData>[];
+    final offene = hier.where((f) => f.personId == null && !f.isIgnored).length;
+    final unbenannte = hier.where((f) => f.personId == null).length;
     // Nach unten folgt das Bild dem Finger und wird kleiner; nach oben nur
     // ein Stück, als Andeutung, dass dort etwas kommt.
     final verschiebung = _zug > 0 ? _zug : _zug * 0.25;
@@ -321,6 +392,7 @@ class _BetrachterState extends State<Betrachter> {
                           _gesichter = !_gesichter;
                           if (!_gesichter) _aufziehen = false;
                         });
+                        if (_gesichter) _zaehle();
                       case 'aufziehen':
                         setState(() {
                           _gesichter = true;
@@ -329,6 +401,10 @@ class _BetrachterState extends State<Betrachter> {
                         });
                       case 'ausnehmen':
                         await _gesichtssucheUmschalten();
+                      case 'unbenannteIgnorieren':
+                        await _unbenannteIgnorieren();
+                      case 'unbenannteLoeschen':
+                        await _unbenannteLoeschen();
                       case 'diashow':
                         final i = await zeigeDiashow(
                           context,
@@ -375,7 +451,27 @@ class _BetrachterState extends State<Betrachter> {
                         ),
                       // Wie im Browser nur bei eingeblendeten Rahmen: Dort
                       // sieht man, was die Erkennung gefunden hat.
-                      if (_gesichter && !widget.imPapierkorb)
+                      if (_gesichter && !widget.imPapierkorb) ...[
+                        PopupMenuItem(
+                          value: 'unbenannteIgnorieren',
+                          enabled: offene > 0,
+                          child: ListTile(
+                            leading: const Icon(Icons.visibility_off_outlined),
+                            title: Text(
+                              t.betrachterUnbenannteIgnorieren(offene),
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'unbenannteLoeschen',
+                          enabled: unbenannte > 0,
+                          child: ListTile(
+                            leading: const Icon(Icons.delete_sweep_outlined),
+                            title: Text(
+                              t.betrachterUnbenannteLoeschen(unbenannte),
+                            ),
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'ausnehmen',
                           child: ListTile(
@@ -391,6 +487,7 @@ class _BetrachterState extends State<Betrachter> {
                             ),
                           ),
                         ),
+                      ],
                     ],
                     if (!widget.imPapierkorb && zeile.type != 'VIDEO')
                       PopupMenuItem(
@@ -465,10 +562,13 @@ class _BetrachterState extends State<Betrachter> {
             scaleStateChangedCallback: (zustand) => setState(
               () => _gezoomt = zustand != PhotoViewScaleState.initial,
             ),
-            onPageChanged: (i) => setState(() {
-              _index = i;
-              _gezoomt = false;
-            }),
+            onPageChanged: (i) {
+              setState(() {
+                _index = i;
+                _gezoomt = false;
+              });
+              _zaehle();
+            },
             loadingBuilder: (_, _) => const Center(
               child: CircularProgressIndicator(color: Colors.white54),
             ),

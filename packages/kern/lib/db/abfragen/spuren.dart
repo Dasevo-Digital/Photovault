@@ -528,8 +528,7 @@ extension SpurenAbfragen on AppDatabase {
   /// Ignorieren beim ersten „alle Fotos erneut scannen" stillschweigend
   /// wieder weg – und genau davor soll es schützen (siehe [Faces.isIgnored]).
   /// Gibt die Ausschnitts-Pfade der gelöschten Zeilen zurück, damit der
-  /// Aufrufer die Dateien mit wegräumt – wie [loescheGesicht] und
-  /// [loescheAlleUnbenanntenErkennungen].
+  /// Aufrufer die Dateien mit wegräumt – wie [loescheGesichter].
   ///
   /// Diese Rückgabe fehlte hier als einziger der drei Löschwege, und
   /// ausgerechnet dieser läuft nicht auf Knopfdruck, sondern bei jedem

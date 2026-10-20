@@ -2782,6 +2782,18 @@
       }
     }
   },
+  "gesichtAlleUnbenanntenLoeschen": "{anzahl, plural, =0{Keine unbenannten Erkennungen} =1{Unbenannte Erkennung löschen} other{{anzahl} unbenannte Erkennungen löschen}}",
+  "@gesichtAlleUnbenanntenLoeschen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
+  "gesichtUnbenannteLoeschenFrage": "{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}",
+  "@gesichtUnbenannteLoeschenFrage": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "personWeitereFotosSuchen": "Weitere Fotos suchen",
   "vorschlagTitel": "Vorschläge für {name}",
   "@vorschlagTitel": {

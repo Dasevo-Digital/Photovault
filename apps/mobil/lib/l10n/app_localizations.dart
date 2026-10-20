@@ -3162,6 +3162,108 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Diesen Rahmen löschen? Die Erkennung verschwindet überall.'**
   String get gesichterRahmenLoeschenFrage;
+
+  /// No description provided for @gesichterAlleIgnorieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle unbenannten Gesichter ignorieren'**
+  String get gesichterAlleIgnorieren;
+
+  /// No description provided for @gesichterAlleIgnorierenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Nichts mehr offen} =1{Ein Gesicht wandert nach „Ignoriert“} other{{anzahl} Gesichter wandern nach „Ignoriert“}}'**
+  String gesichterAlleIgnorierenHinweis(int anzahl);
+
+  /// No description provided for @gesichterAlleIgnoriertMeldung.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Es war nichts zu ignorieren.} =1{Ein Gesicht ignoriert. Unter „Ignoriert“ holst du einzelne zurück.} other{{anzahl} Gesichter ignoriert. Unter „Ignoriert“ holst du einzelne zurück.}}'**
+  String gesichterAlleIgnoriertMeldung(int anzahl);
+
+  /// No description provided for @gesichterAlleLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle unbenannten Erkennungen löschen'**
+  String get gesichterAlleLoeschen;
+
+  /// No description provided for @gesichterAlleLoeschenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Gibt Platz frei, kommt beim nächsten Scan aber wieder'**
+  String get gesichterAlleLoeschenHinweis;
+
+  /// No description provided for @gesichterAlleLoeschenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erkennungen wirklich löschen?'**
+  String get gesichterAlleLoeschenTitel;
+
+  /// No description provided for @gesichterAlleLoeschenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle unbenannten Erkennungen werden samt ihrer Ausschnitte gelöscht – auch die bereits ignorierten. Benannte Personen bleiben unberührt.\n\nDas ist nicht dauerhaft: Der nächste Gesichts-Scan findet dieselben Stellen wieder. Wenn du sie dauerhaft loswerden willst, nimm stattdessen „Alle unbenannten Gesichter ignorieren“ – das überlebt auch einen erneuten Scan.'**
+  String get gesichterAlleLoeschenText;
+
+  /// No description provided for @gesichterLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Löschen'**
+  String get gesichterLoeschen;
+
+  /// No description provided for @gesichterGeloeschtMeldung.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Es gab keine Erkennungen zum Löschen.} =1{Eine Erkennung gelöscht.} other{{anzahl} Erkennungen gelöscht.}}'**
+  String gesichterGeloeschtMeldung(int anzahl);
+
+  /// No description provided for @gesichterIgnoriert.
+  ///
+  /// In de, this message translates to:
+  /// **'Ignoriert'**
+  String get gesichterIgnoriert;
+
+  /// No description provided for @gesichterIgnoriertErste.
+  ///
+  /// In de, this message translates to:
+  /// **'Die ersten {n} von {gesamt} ignorierten Gesichtern'**
+  String gesichterIgnoriertErste(int n, int gesamt);
+
+  /// No description provided for @gesichterKeineIgnorierten.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine ignorierten Gesichter.'**
+  String get gesichterKeineIgnorierten;
+
+  /// No description provided for @gesichterZurueckholen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Zurückholen} other{{anzahl} zurückholen}}'**
+  String gesichterZurueckholen(int anzahl);
+
+  /// No description provided for @gesichterZurueckgeholt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} zurückgeholt'**
+  String gesichterZurueckgeholt(int anzahl);
+
+  /// No description provided for @betrachterUnbenannteIgnorieren.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine unbenannten Gesichter} =1{Unbenanntes Gesicht ignorieren} other{{anzahl} unbenannte Gesichter ignorieren}}'**
+  String betrachterUnbenannteIgnorieren(int anzahl);
+
+  /// No description provided for @betrachterUnbenannteLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine unbenannten Erkennungen} =1{Unbenannte Erkennung löschen} other{{anzahl} unbenannte Erkennungen löschen}}'**
+  String betrachterUnbenannteLoeschen(int anzahl);
+
+  /// No description provided for @betrachterUnbenannteLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}'**
+  String betrachterUnbenannteLoeschenFrage(int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

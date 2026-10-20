@@ -35,8 +35,13 @@ class Bibliothek {
     // Gelöschte Erkennungen: Die Zeile nimmt der Befehl, den Ausschnitt
     // räumt der Server hier auf – Geräte schicken nur den Befehl (#191).
     db.befehlsbeobachter.add((befehl) {
-      if (befehl is GesichtLoeschen) {
-        final datei = pfade.absolute(pfade.faceRelativePath(befehl.gesichtId));
+      final weg = switch (befehl) {
+        GesichtLoeschen(:final gesichtId) => [gesichtId],
+        GesichterLoeschen(:final gesichtIds) => gesichtIds,
+        _ => const <String>[],
+      };
+      for (final id in weg) {
+        final datei = pfade.absolute(pfade.faceRelativePath(id));
         datei.delete().catchError((Object _) => datei);
       }
     });

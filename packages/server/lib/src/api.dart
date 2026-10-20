@@ -274,6 +274,8 @@ Handler baueApi({
     ..get('/api/v1/personen/<id>', api.person)
     ..get('/api/v1/personen/<id>/vorschlaege', api.personVorschlaege)
     ..get('/api/v1/gesichter/ohne-namen', api.gesichterOhneNamen)
+    ..get('/api/v1/gesichter/ignoriert', api.gesichterIgnoriert)
+    ..post('/api/v1/gesichter/unbenannte', api.unbenannteGesichter)
     // Teilen nach aussen (Issue #106): verwalten mit Anmeldung, ansehen ohne.
     ..post('/api/v1/freigaben', freigabe.anlegen)
     ..get('/api/v1/freigaben', freigabe.liste)
@@ -1437,19 +1439,11 @@ class _Api {
   Future<Response> gesichterOhneNamen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final o = await gesichtsuebersicht.gesichterOhneNamen(db);
-    Map<String, Object?> gesicht(FaceData f) => {
-      'id': f.id,
-      'ausschnitt': f.cropRelativePath,
-      // Für „Im Foto zeigen“ (Issue #189): der Ausschnitt allein sagt oft
-      // nicht genug.
-      'aufnahme': f.assetId,
-      'kasten': gesichtskasten(f),
-    };
     return _json({
       'gruppen': [
         for (final g in o.gruppen)
           {
-            'gesichter': [for (final f in g.gesichter) gesicht(f)],
+            'gesichter': [for (final f in g.gesichter) _gesicht(f)],
             'vorschlag': g.vorschlag == null
                 ? null
                 : {
@@ -1464,7 +1458,58 @@ class _Api {
       'einzeln': o.einzeln,
       'angesehen': o.angesehen,
       'gesamt': o.gesamt,
+      // Auch wenn nichts mehr offen ist: Über „Ignoriert“ holt man
+      // einzelne zurück (#192).
+      'ignoriert': await db.ignoredFacesCount(),
     });
+  }
+
+  static Map<String, Object?> _gesicht(FaceData f) => {
+    'id': f.id,
+    'ausschnitt': f.cropRelativePath,
+    // Für „Im Foto zeigen“ (Issue #189): der Ausschnitt allein sagt oft
+    // nicht genug.
+    'aufnahme': f.assetId,
+    'kasten': gesichtskasten(f),
+  };
+
+  /// Die beiseitegelegten Gesichter, wie der Reiter „Ignoriert“ am
+  /// Rechner: die ersten 200 und wie viele es insgesamt sind (#192).
+  Future<Response> gesichterIgnoriert(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    return _json({
+      'gesichter': [for (final f in await db.ignoredFaces()) _gesicht(f)],
+      'gesamt': await db.ignoredFacesCount(),
+    });
+  }
+
+  /// Alle unbenannten Gesichter auf einmal ignorieren oder löschen – wie
+  /// das Menü über „Ohne Namen“ am Rechner (#192). Die Kennungen sucht der
+  /// Server heraus, weil der Browser keine Kopie hat; ausgeführt wird der
+  /// Befehl, der sie beim Namen nennt, wie von jedem anderen Gerät.
+  Future<Response> unbenannteGesichter(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final aktion = k is Map ? k['aktion'] : null;
+    final List<String> ids;
+    switch (aktion) {
+      case 'ignorieren':
+        ids = [for (final f in await db.allUnassignedFaces()) f.id];
+        if (ids.isNotEmpty) {
+          await db.fuehreAus(GesichterBeiseitelegen(ids, true));
+        }
+      case 'loeschen':
+        ids = await db.unbenannteErkennungen();
+        if (ids.isNotEmpty) await db.fuehreAus(GesichterLoeschen(ids));
+      default:
+        return _json({'fehler': 'aktion fehlt'}, status: 400);
+    }
+    return _json({'anzahl': ids.length});
   }
 
   /// Weitere Fotos einer Person zum Bestätigen – wie „Vorschläge suchen“

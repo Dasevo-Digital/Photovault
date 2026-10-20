@@ -1981,4 +1981,124 @@ class AppTexteEn extends AppTexte {
   @override
   String get gesichterRahmenLoeschenFrage =>
       'Delete this frame? The detection disappears everywhere.';
+
+  @override
+  String get gesichterAlleIgnorieren => 'Ignore all unnamed faces';
+
+  @override
+  String gesichterAlleIgnorierenHinweis(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl faces move to “Ignored”',
+      one: 'One face moves to “Ignored”',
+      zero: 'Nothing left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterAlleIgnoriertMeldung(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl faces ignored. Bring individual ones back under “Ignored”.',
+      one: 'One face ignored. Bring individual ones back under “Ignored”.',
+      zero: 'There was nothing to ignore.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesichterAlleLoeschen => 'Delete all unnamed detections';
+
+  @override
+  String get gesichterAlleLoeschenHinweis =>
+      'Frees space, but comes back on the next scan';
+
+  @override
+  String get gesichterAlleLoeschenTitel => 'Really delete the detections?';
+
+  @override
+  String get gesichterAlleLoeschenText =>
+      'All unnamed detections and their crops are deleted – including the ones already ignored. Named people are left untouched.\n\nThis is not permanent: the next face scan finds the same spots again. To be rid of them for good, use “Ignore all unnamed faces” instead – that survives another scan.';
+
+  @override
+  String get gesichterLoeschen => 'Delete';
+
+  @override
+  String gesichterGeloeschtMeldung(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl detections deleted.',
+      one: 'One detection deleted.',
+      zero: 'There were no detections to delete.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get gesichterIgnoriert => 'Ignored';
+
+  @override
+  String gesichterIgnoriertErste(int n, int gesamt) {
+    return 'The first $n of $gesamt ignored faces';
+  }
+
+  @override
+  String get gesichterKeineIgnorierten => 'No ignored faces.';
+
+  @override
+  String gesichterZurueckholen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Restore $anzahl',
+      zero: 'Restore',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichterZurueckgeholt(int anzahl) {
+    return '$anzahl restored';
+  }
+
+  @override
+  String betrachterUnbenannteIgnorieren(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Ignore $anzahl unnamed faces',
+      one: 'Ignore unnamed face',
+      zero: 'No unnamed faces',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String betrachterUnbenannteLoeschen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Delete $anzahl unnamed detections',
+      one: 'Delete unnamed detection',
+      zero: 'No unnamed detections',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String betrachterUnbenannteLoeschenFrage(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          'Delete the $anzahl unnamed detections on this photo? Named faces remain.',
+      one: 'Delete the unnamed detection on this photo? Named faces remain.',
+    );
+    return '$_temp0';
+  }
 }

@@ -1781,6 +1781,18 @@
       }
     }
   },
+  "gesichtAlleUnbenanntenLoeschen": "{anzahl, plural, =0{No unnamed detections} =1{Delete unnamed detection} other{Delete {anzahl} unnamed detections}}",
+  "@gesichtAlleUnbenanntenLoeschen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
+  "gesichtUnbenannteLoeschenFrage": "{anzahl, plural, =1{Delete the unnamed detection on this photo? Named faces remain.} other{Delete the {anzahl} unnamed detections on this photo? Named faces remain.}}",
+  "@gesichtUnbenannteLoeschenFrage": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "personWeitereFotosSuchen": "Find more photos",
   "vorschlagTitel": "Suggestions for {name}",
   "@vorschlagTitel": {

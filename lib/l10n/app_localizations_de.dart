@@ -4720,6 +4720,31 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String gesichtAlleUnbenanntenLoeschen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl unbenannte Erkennungen löschen',
+      one: 'Unbenannte Erkennung löschen',
+      zero: 'Keine unbenannten Erkennungen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String gesichtUnbenannteLoeschenFrage(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          'Die $anzahl unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.',
+      one:
+          'Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get personWeitereFotosSuchen => 'Weitere Fotos suchen';
 
   @override

@@ -171,7 +171,34 @@ final class GesichtLoeschen extends Befehl<String?> {
   Map<String, Object?> get werte => {'gesichtId': gesichtId};
 
   @override
-  Future<String?> anwenden(AppDatabase db) => db.loescheGesicht(gesichtId);
+  Future<String?> anwenden(AppDatabase db) async =>
+      (await db.loescheGesichter([gesichtId])).firstOrNull;
+}
+
+/// Löscht mehrere Erkennungen auf einmal (Issue #192): alle unbenannten
+/// der Bibliothek oder die eines Fotos. Liefert die Pfade der Ausschnitte,
+/// die der Aufrufer von der Platte räumt.
+///
+/// Die Gesichter beim Namen, nicht „alle unbenannten“: Ein Befehl soll auf
+/// jeder Kopie dasselbe tun, auch wenn dort inzwischen weitere erkannt
+/// wurden.
+final class GesichterLoeschen extends Befehl<List<String>> {
+  const GesichterLoeschen(this.gesichtIds);
+
+  static GesichterLoeschen aus(Map<String, Object?> w) =>
+      GesichterLoeschen(_kennungen(w['gesichtIds']));
+
+  final List<String> gesichtIds;
+
+  @override
+  String get art => 'gesichterLoeschen';
+
+  @override
+  Map<String, Object?> get werte => {'gesichtIds': gesichtIds};
+
+  @override
+  Future<List<String>> anwenden(AppDatabase db) =>
+      db.loescheGesichter(gesichtIds);
 }
 
 /// Das Rückgängig einer Zuordnung: jedes Gesicht zurück in seinen Stand,

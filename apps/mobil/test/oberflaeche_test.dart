@@ -1076,6 +1076,195 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Ohne Namen: alle ignorieren, zurückholen, alle löschen (#192)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['g1', 'g2', 'g3']);
+    Uint8List vektor(double x) {
+      final v = Float32List(128);
+      final laenge = math.sqrt(x * x + 1);
+      v[0] = x / laenge;
+      v[1] = 1 / laenge;
+      return Uint8List.view(v.buffer);
+    }
+
+    await tester.runAsync(() async {
+      await db.fuehreAus(const PersonAnlegen('anna', 'Anna'));
+      for (final (id, aufnahme, person) in [
+        ('fa', 'g1', 'anna'),
+        ('f1', 'g2', null),
+        ('f2', 'g3', null),
+      ]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: aufnahme,
+                personId: Value(person),
+                boxX: 0.1,
+                boxY: 0.1,
+                boxW: 0.2,
+                boxH: 0.2,
+                embedding: Value(vektor(0.01)),
+              ),
+            );
+      }
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Personen(sitzung: sitzung)),
+      ),
+    );
+    Future<void> warte(bool Function() bis) async {
+      for (var i = 0; i < 30 && !bis(); i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    Future<List<FaceData>> gesichter() async =>
+        (await tester.runAsync(() => db.select(db.faces).get()))!;
+
+    // Die Gruppierung läuft in einem eigenen Isolate.
+    await warte(() => find.byTooltip('Mehr').evaluate().isNotEmpty);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 Gesichter wandern nach „Ignoriert“'), findsOneWidget);
+    await tester.tap(find.text('Alle unbenannten Gesichter ignorieren'));
+    await warte(() => find.textContaining('ignoriert.').evaluate().isNotEmpty);
+    expect(find.textContaining('2 Gesichter ignoriert'), findsOneWidget);
+    expect(
+      {for (final f in await gesichter()) f.id: f.isIgnored},
+      {'fa': false, 'f1': true, 'f2': true},
+    );
+
+    // Nichts mehr offen – der Abschnitt bleibt, über ihn geht es zurück.
+    await warte(() => find.byTooltip('Mehr').evaluate().isNotEmpty);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ignoriert'));
+    await warte(
+      () =>
+          find.byType(IgnorierteGesichter).evaluate().isNotEmpty &&
+          find.text('2 Gesichter').evaluate().isNotEmpty,
+    );
+    expect(find.text('2 Gesichter'), findsOneWidget);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(IgnorierteGesichter),
+            matching: find.byType(Personenbild),
+          )
+          .first,
+    );
+    await tester.pump();
+    await tester.tap(find.text('1 zurückholen'));
+    await warte(() => find.text('1 zurückgeholt').evaluate().isNotEmpty);
+    expect((await gesichter()).where((f) => f.isIgnored), hasLength(1));
+    Navigator.of(tester.element(find.byType(IgnorierteGesichter))).pop();
+    await tester.pumpAndSettle();
+
+    // Löschen trifft alle unbenannten, auch die ignorierten – nach
+    // Rückfrage. Anna bleibt.
+    await warte(() => find.byTooltip('Mehr').evaluate().isNotEmpty);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Alle unbenannten Erkennungen löschen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Erkennungen wirklich löschen?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Löschen'));
+    await warte(() => find.textContaining('gelöscht').evaluate().isNotEmpty);
+    expect((await gesichter()).map((f) => f.id), ['fa']);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Betrachter: unbenannte eines Fotos ignorieren, löschen (#192)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['g1']);
+    await tester.runAsync(() async {
+      await db.fuehreAus(const PersonAnlegen('ina', 'Ina'));
+      for (final (id, x, person, beiseite) in [
+        ('fa', 0.1, 'ina', false),
+        ('fb', 0.4, null, false),
+        ('fc', 0.7, null, true),
+      ]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: 'g1',
+                personId: Value(person),
+                isIgnored: Value(beiseite),
+                boxX: x,
+                boxY: 0.2,
+                boxW: 0.2,
+                boxH: 0.3,
+              ),
+            );
+      }
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Betrachter(
+          sitzung: sitzung,
+          zeilen: [_zeile('g1', 0, 0)],
+          start: 0,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Future<void> ruhe() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<Map<String, bool>> stand() async => {
+      for (final f in (await tester.runAsync(() => db.facesForAsset('g1')))!)
+        f.id: f.isIgnored,
+    };
+
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gesichter zeigen'));
+    await ruhe();
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    // Ignorieren zählt nur die offenen, Löschen auch das beiseitegelegte.
+    expect(find.text('2 unbenannte Erkennungen löschen'), findsOneWidget);
+    await tester.tap(find.text('Unbenanntes Gesicht ignorieren'));
+    await ruhe();
+    expect(await stand(), {'fa': false, 'fb': true, 'fc': true});
+
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    expect(find.text('Keine unbenannten Gesichter'), findsOneWidget);
+    await tester.tap(find.text('2 unbenannte Erkennungen löschen'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Benannte Gesichter bleiben'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Löschen'));
+    await ruhe();
+    expect(await stand(), {'fa': false});
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Weitere Fotos finden: abwählen lehnt ab und lernt', (
     tester,
   ) async {

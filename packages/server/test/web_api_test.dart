@@ -1568,6 +1568,87 @@ void main() {
     },
   );
 
+  test(
+    'Alle unbenannten ignorieren oder löschen, „Ignoriert“ (#192)',
+    () async {
+      final a = await ladeHoch(erikaToken, 'a.jpg', 30);
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      final db = b.db;
+      await db
+          .into(db.people)
+          .insert(PeopleCompanion.insert(id: 'p1', name: 'Ida'));
+      for (final (id, person, beiseite) in [
+        ('u1', null, false),
+        ('u2', null, false),
+        ('i1', null, true),
+        ('n1', 'p1', false),
+      ]) {
+        await db
+            .into(db.faces)
+            .insert(
+              FacesCompanion.insert(
+                id: id,
+                assetId: a,
+                personId: Value(person),
+                isIgnored: Value(beiseite),
+                boxX: 0.1,
+                boxY: 0.1,
+                boxW: 0.2,
+                boxH: 0.2,
+                cropRelativePath: Value(b.pfade.faceRelativePath(id)),
+              ),
+            );
+        final datei = b.pfade.absolute(b.pfade.faceRelativePath(id));
+        await datei.parent.create(recursive: true);
+        await datei.writeAsBytes([1, 2, 3]);
+      }
+      Future<Map<String, Object?>> hol(String pfad) async =>
+          jsonAus(await frag('GET', pfad, token: erikaToken));
+      Future<Response> alle(Object werte) => frag(
+        'POST',
+        '/api/v1/gesichter/unbenannte',
+        token: erikaToken,
+        kopf: {'content-type': 'application/json'},
+        inhalt: jsonEncode(werte),
+      );
+
+      expect((await hol('/api/v1/gesichter/ohne-namen'))['ignoriert'], 1);
+      final ignoriert = await hol('/api/v1/gesichter/ignoriert');
+      expect(ignoriert['gesamt'], 1);
+      expect(((ignoriert['gesichter']! as List).single as Map)['id'], 'i1');
+
+      // Ignorieren trifft nur die offenen, nicht die benannten.
+      final r = await alle({'aktion': 'ignorieren'});
+      expect(r.statusCode, 200);
+      expect((await jsonAus(r))['anzahl'], 2);
+      expect((await hol('/api/v1/gesichter/ignoriert'))['gesamt'], 3);
+
+      // Löschen trifft alle unbenannten, auch die ignorierten – samt
+      // Ausschnitten. Die benannte Ida bleibt.
+      expect((await jsonAus(await alle({'aktion': 'loeschen'})))['anzahl'], 3);
+      expect((await db.facesForAsset(a)).map((f) => f.id), ['n1']);
+      for (var i = 0; i < 20; i++) {
+        if (!b.pfade.absolute(b.pfade.faceRelativePath('u1')).existsSync()) {
+          break;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      for (final id in ['u1', 'u2', 'i1']) {
+        expect(
+          b.pfade.absolute(b.pfade.faceRelativePath(id)).existsSync(),
+          isFalse,
+          reason: id,
+        );
+      }
+      expect(
+        b.pfade.absolute(b.pfade.faceRelativePath('n1')).existsSync(),
+        isTrue,
+      );
+
+      expect((await alle({'aktion': 'weg'})).statusCode, 400);
+    },
+  );
+
   test('Rückblick und Kalender wie am Rechner (#185)', () async {
     final a = await ladeHoch(erikaToken, 'a.jpg', 30);
     final b = await ladeHoch(erikaToken, 'b.jpg', 60);

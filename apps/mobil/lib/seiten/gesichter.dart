@@ -381,23 +381,82 @@ class OhneNamenAbschnitt extends StatefulWidget {
 }
 
 class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
-  late Future<GesichterOhneNamen> _daten = gesichterOhneNamen(
-    widget.sitzung.db,
-  );
+  late Future<(GesichterOhneNamen, int)> _daten = _lade();
+
+  AppDatabase get _db => widget.sitzung.db;
+
+  Future<(GesichterOhneNamen, int)> _lade() async =>
+      (await gesichterOhneNamen(_db), await _db.ignoredFacesCount());
 
   void _neu() => setState(() {
-    _daten = gesichterOhneNamen(widget.sitzung.db);
+    _daten = _lade();
   });
+
+  void _melde(String text) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+
+  /// Wie das Menü über „Ohne Namen“ am Rechner und im Browser (#192).
+  Future<void> _waehle(String wahl) async {
+    final t = AppTexte.of(context);
+    switch (wahl) {
+      case 'ignorieren':
+        // Die Gesichter beim Namen, nicht „alle unbenannten“: Der Befehl
+        // soll auf jeder Kopie dasselbe tun.
+        final ids = [for (final f in await _db.allUnassignedFaces()) f.id];
+        if (ids.isNotEmpty) {
+          await _db.fuehreAus(GesichterBeiseitelegen(ids, true));
+        }
+        if (!mounted) return;
+        _melde(t.gesichterAlleIgnoriertMeldung(ids.length));
+      case 'loeschen':
+        final ja = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(t.gesichterAlleLoeschenTitel),
+            content: Text(t.gesichterAlleLoeschenText),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(t.abbrechen),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(t.gesichterLoeschen),
+              ),
+            ],
+          ),
+        );
+        if (ja != true) return;
+        final ids = await _db.unbenannteErkennungen();
+        if (ids.isNotEmpty) await _db.fuehreAus(GesichterLoeschen(ids));
+        if (!mounted) return;
+        _melde(t.gesichterGeloeschtMeldung(ids.length));
+      case 'ignoriert':
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => IgnorierteGesichter(sitzung: widget.sitzung),
+          ),
+        );
+    }
+    if (mounted) _neu();
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
-    return FutureBuilder<GesichterOhneNamen>(
+    return FutureBuilder<(GesichterOhneNamen, int)>(
       future: _daten,
       builder: (context, snap) {
-        final d = snap.data;
-        if (d == null || d.gruppen.isEmpty) return const SizedBox.shrink();
+        final daten = snap.data;
+        if (daten == null) return const SizedBox.shrink();
+        final (d, ignoriert) = daten;
+        // Auch wenn nichts mehr offen ist, solange es Ignorierte gibt:
+        // Über das Menü holt man sie zurück.
+        if (d.gruppen.isEmpty && ignoriert == 0) {
+          return const SizedBox.shrink();
+        }
         return Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
           child: Column(
@@ -415,46 +474,85 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
                     t.gesichterAnzahl(d.gesamt),
                     style: TextStyle(color: farben.onSurfaceVariant),
                   ),
+                  PopupMenuButton<String>(
+                    tooltip: t.betrachterMehr,
+                    icon: const Icon(Icons.more_horiz),
+                    onSelected: _waehle,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'ignorieren',
+                        enabled: d.gesamt > 0,
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.visibility_off_outlined),
+                          title: Text(t.gesichterAlleIgnorieren),
+                          subtitle: Text(
+                            t.gesichterAlleIgnorierenHinweis(d.gesamt),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'loeschen',
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.delete_outline),
+                          title: Text(t.gesichterAlleLoeschen),
+                          subtitle: Text(t.gesichterAlleLoeschenHinweis),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'ignoriert',
+                        enabled: ignoriert > 0,
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.restore_outlined),
+                          title: Text(t.gesichterIgnoriert),
+                          subtitle: Text(t.gesichterAnzahl(ignoriert)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                // Bild, zwei Zeilen Text und Rand – mit Luft für grössere
-                // Schrift.
-                height:
-                    108 +
-                    16 +
-                    6 +
-                    2 * 22 * MediaQuery.textScalerOf(context).scale(1),
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: d.gruppen.length.clamp(0, 60),
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, i) {
-                    final g = d.gruppen[i];
-                    final vorschlag = g.vorschlag;
-                    return _Gruppenkarte(
-                      sitzung: widget.sitzung,
-                      gruppe: g,
-                      text: vorschlag == null
-                          ? t.gesichterWerIstDas
-                          : t.gesichterVorschlagFrage(vorschlag.name),
-                      anzahl: t.gesichterAnzahl(g.gesichter.length),
-                      onTap: () async {
-                        final geaendert = await benenneGesichter(
-                          context,
-                          widget.sitzung,
-                          titel: t.gesichterAehnliche(g.gesichter.length),
-                          gesichter: g.gesichter,
-                          vorschlag: vorschlag,
-                          aehnlichkeit: g.aehnlichkeit,
-                        );
-                        if (geaendert) _neu();
-                      },
-                    );
-                  },
+              if (d.gruppen.isNotEmpty)
+                SizedBox(
+                  // Bild, zwei Zeilen Text und Rand – mit Luft für grössere
+                  // Schrift.
+                  height:
+                      108 +
+                      16 +
+                      6 +
+                      2 * 22 * MediaQuery.textScalerOf(context).scale(1),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: d.gruppen.length.clamp(0, 60),
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) {
+                      final g = d.gruppen[i];
+                      final vorschlag = g.vorschlag;
+                      return _Gruppenkarte(
+                        sitzung: widget.sitzung,
+                        gruppe: g,
+                        text: vorschlag == null
+                            ? t.gesichterWerIstDas
+                            : t.gesichterVorschlagFrage(vorschlag.name),
+                        anzahl: t.gesichterAnzahl(g.gesichter.length),
+                        onTap: () async {
+                          final geaendert = await benenneGesichter(
+                            context,
+                            widget.sitzung,
+                            titel: t.gesichterAehnliche(g.gesichter.length),
+                            gesichter: g.gesichter,
+                            vorschlag: vorschlag,
+                            aehnlichkeit: g.aehnlichkeit,
+                          );
+                          if (geaendert) _neu();
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         );
@@ -893,6 +991,173 @@ class _WeitereFotosState extends State<WeitereFotos> {
               ],
             ),
           },
+        );
+      },
+    );
+  }
+}
+
+/// Die beiseitegelegten Gesichter, wie der Reiter „Ignoriert“ am Rechner
+/// und im Browser (#192): antippen wählt aus, „Zurückholen“ stellt sie
+/// wieder zu „Ohne Namen“.
+class IgnorierteGesichter extends StatefulWidget {
+  const IgnorierteGesichter({super.key, required this.sitzung});
+
+  final Sitzung sitzung;
+
+  @override
+  State<IgnorierteGesichter> createState() => _IgnorierteGesichterState();
+}
+
+class _IgnorierteGesichterState extends State<IgnorierteGesichter> {
+  late Future<(List<FaceData>, int)> _daten = _lade();
+  final _gewaehlt = <String>{};
+
+  AppDatabase get _db => widget.sitzung.db;
+
+  Future<(List<FaceData>, int)> _lade() async =>
+      (await _db.ignoredFaces(), await _db.ignoredFacesCount());
+
+  Future<void> _zurueckholen() async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final ids = _gewaehlt.toList();
+    await _db.fuehreAus(GesichterBeiseitelegen(ids, false));
+    if (!mounted) return;
+    bote
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(t.gesichterZurueckgeholt(ids.length))),
+      );
+    setState(() {
+      _gewaehlt.clear();
+      _daten = _lade();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    return FutureBuilder<(List<FaceData>, int)>(
+      future: _daten,
+      builder: (context, snap) {
+        final daten = snap.data;
+        final gesichter = daten?.$1 ?? const <FaceData>[];
+        final gesamt = daten?.$2 ?? 0;
+        final alle =
+            gesichter.isNotEmpty && _gewaehlt.length == gesichter.length;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(t.gesichterIgnoriert),
+            actions: [
+              if (gesichter.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(() {
+                    if (alle) {
+                      _gewaehlt.clear();
+                    } else {
+                      _gewaehlt.addAll([for (final g in gesichter) g.id]);
+                    }
+                  }),
+                  child: Text(
+                    alle ? t.auswahlAufheben : t.gesichterAlleWaehlen,
+                  ),
+                ),
+            ],
+          ),
+          bottomNavigationBar: gesichter.isEmpty
+              ? null
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: FilledButton(
+                      onPressed: _gewaehlt.isEmpty ? null : _zurueckholen,
+                      child: Text(t.gesichterZurueckholen(_gewaehlt.length)),
+                    ),
+                  ),
+                ),
+          body: daten == null
+              ? const Center(child: CircularProgressIndicator())
+              : gesichter.isEmpty
+              ? Center(child: Text(t.gesichterKeineIgnorierten))
+              : CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          gesichter.length < gesamt
+                              ? t.gesichterIgnoriertErste(
+                                  gesichter.length,
+                                  gesamt,
+                                )
+                              : t.gesichterAnzahl(gesamt),
+                          style: TextStyle(color: farben.onSurfaceVariant),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.all(12),
+                      sliver: SliverGrid.builder(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 84,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                            ),
+                        itemCount: gesichter.length,
+                        itemBuilder: (context, i) {
+                          final g = gesichter[i];
+                          final an = _gewaehlt.contains(g.id);
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              if (!_gewaehlt.remove(g.id)) _gewaehlt.add(g.id);
+                            }),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned.fill(
+                                  child: DecoratedBox(
+                                    position: DecorationPosition.foreground,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: an
+                                          ? Border.all(
+                                              color: farben.primary,
+                                              width: 3,
+                                            )
+                                          : null,
+                                    ),
+                                    child: Opacity(
+                                      opacity: an ? 1 : 0.6,
+                                      child: Personenbild(
+                                        paths: widget.sitzung.paths,
+                                        name: '?',
+                                        relativ: g.cropRelativePath,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: -4,
+                                  bottom: -4,
+                                  child: ImFotoKnopf(
+                                    beiTipp: () => zeigeGesichtImFoto(
+                                      context,
+                                      widget.sitzung,
+                                      g,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
         );
       },
     );

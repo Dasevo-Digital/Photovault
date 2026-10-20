@@ -3082,13 +3082,20 @@ class LibraryState extends ChangeNotifier {
   /// steht und nicht in der Datenbankschicht: Blieben die Ausschnitte
   /// liegen, wäre der Platz nicht frei – und genau der ist der einzige
   /// Vorteil des Löschens gegenüber dem Beiseitelegen.
-  Future<int> loescheAlleUnbenanntenErkennungen() async {
-    _nurOhneServer();
-    final ergebnis = await db.loescheAlleUnbenanntenErkennungen();
-    for (final pfad in ergebnis.pfade) {
+  ///
+  /// Über den Befehl [GesichterLoeschen] – so geht es auch verbunden (#192).
+  Future<int> loescheAlleUnbenanntenErkennungen() async =>
+      loescheGesichter(await db.unbenannteErkennungen());
+
+  /// Löscht die genannten Erkennungen samt Ausschnitten und liefert, wie
+  /// viele es waren – für alle unbenannten und die eines Fotos.
+  Future<int> loescheGesichter(List<String> faceIds) async {
+    if (faceIds.isEmpty) return 0;
+    final pfade = await db.fuehreAus(GesichterLoeschen(faceIds));
+    for (final pfad in pfade) {
       await paths.deletePermanently(pfad);
     }
-    return ergebnis.anzahl;
+    return faceIds.length;
   }
 
   /// Löscht `library.sqlite` (+ WAL/SHM-Nebendateien) und den `library/`-

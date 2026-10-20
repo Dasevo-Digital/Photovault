@@ -197,6 +197,28 @@ void main() {
     expect(ausschnitt.existsSync(), isFalse);
   });
 
+  testWidgets('„Unbenannte Erkennung löschen" fragt und räumt das Foto ab', (
+    tester,
+  ) async {
+    // Für ein Bild voller Fehlgriffe (#192): alle unbenannten auf einmal,
+    // samt Ausschnitten – über den Befehl, also auch verbunden.
+    final ausschnitt = library.paths.absolute('faces/f1.jpg');
+    ausschnitt.parent.createSync(recursive: true);
+    ausschnitt.writeAsStringSync('x');
+
+    await zeige(tester);
+    await rechtsklick(tester, const Offset(700, 500));
+    await tester.tap(find.text('Unbenannte Erkennung löschen'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Benannte Gesichter bleiben'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Löschen'));
+    await tester.pumpAndSettle();
+
+    await warteAufEchteArbeit(tester, () => !ausschnitt.existsSync());
+    expect(await db.facesForAsset('a1'), isEmpty);
+    expect(ausschnitt.existsSync(), isFalse);
+  });
+
   testWidgets('„Zuordnung lösen" gibt es nur bei benannten Gesichtern', (
     tester,
   ) async {

@@ -7747,6 +7747,18 @@ abstract class AppTexte {
   /// **'{anzahl, plural, =0{Keine unbenannten Gesichter} =1{Unbenanntes Gesicht ignorieren} other{{anzahl} unbenannte Gesichter ignorieren}}'**
   String gesichtAlleUnbenanntenIgnorieren(int anzahl);
 
+  /// No description provided for @gesichtAlleUnbenanntenLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Keine unbenannten Erkennungen} =1{Unbenannte Erkennung löschen} other{{anzahl} unbenannte Erkennungen löschen}}'**
+  String gesichtAlleUnbenanntenLoeschen(int anzahl);
+
+  /// No description provided for @gesichtUnbenannteLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}'**
+  String gesichtUnbenannteLoeschenFrage(int anzahl);
+
   /// No description provided for @personWeitereFotosSuchen.
   ///
   /// In de, this message translates to:
