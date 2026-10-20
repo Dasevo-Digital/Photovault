@@ -3342,6 +3342,144 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Grössere Kacheln'**
   String get ansichtGroesser;
+
+  /// No description provided for @ansichtRaster.
+  ///
+  /// In de, this message translates to:
+  /// **'Raster'**
+  String get ansichtRaster;
+
+  /// No description provided for @ansichtListe.
+  ///
+  /// In de, this message translates to:
+  /// **'Liste'**
+  String get ansichtListe;
+
+  /// No description provided for @ansichtGliederung.
+  ///
+  /// In de, this message translates to:
+  /// **'Gliederung'**
+  String get ansichtGliederung;
+
+  /// No description provided for @gruppeMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Monat'**
+  String get gruppeMonat;
+
+  /// No description provided for @gruppeTag.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Tag'**
+  String get gruppeTag;
+
+  /// No description provided for @gruppeKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach Kamera'**
+  String get gruppeKamera;
+
+  /// No description provided for @gruppeKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Gliederung'**
+  String get gruppeKeine;
+
+  /// No description provided for @listeSpalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Spalten'**
+  String get listeSpalten;
+
+  /// No description provided for @listeSpalteDateiname.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiname'**
+  String get listeSpalteDateiname;
+
+  /// No description provided for @listeSpalteDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufgenommen'**
+  String get listeSpalteDatum;
+
+  /// No description provided for @listeSpalteKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Kamera'**
+  String get listeSpalteKamera;
+
+  /// No description provided for @listeSpalteObjektiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Objektiv'**
+  String get listeSpalteObjektiv;
+
+  /// No description provided for @listeSpalteBelichtung.
+  ///
+  /// In de, this message translates to:
+  /// **'Belichtung'**
+  String get listeSpalteBelichtung;
+
+  /// No description provided for @listeSpalteBewertung.
+  ///
+  /// In de, this message translates to:
+  /// **'Bewertung'**
+  String get listeSpalteBewertung;
+
+  /// No description provided for @listeSpalteFarbe.
+  ///
+  /// In de, this message translates to:
+  /// **'Farbe'**
+  String get listeSpalteFarbe;
+
+  /// No description provided for @listeSpalteMasse.
+  ///
+  /// In de, this message translates to:
+  /// **'Masse'**
+  String get listeSpalteMasse;
+
+  /// No description provided for @listeSpalteGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateigrösse'**
+  String get listeSpalteGroesse;
+
+  /// No description provided for @listeSpalteArt.
+  ///
+  /// In de, this message translates to:
+  /// **'Art'**
+  String get listeSpalteArt;
+
+  /// No description provided for @listeSpalteOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get listeSpalteOrt;
+
+  /// No description provided for @listeOhneKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Kameraangabe'**
+  String get listeOhneKamera;
+
+  /// No description provided for @listeGeschaetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'geschätzt'**
+  String get listeGeschaetzt;
+
+  /// No description provided for @listeFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto'**
+  String get listeFoto;
+
+  /// No description provided for @listeVideo.
+  ///
+  /// In de, this message translates to:
+  /// **'Video'**
+  String get listeVideo;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

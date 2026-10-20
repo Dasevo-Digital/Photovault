@@ -6,24 +6,9 @@
 library;
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/listengliederung.dart';
 
-/// Wonach die Liste gegliedert wird.
-enum ListenGruppierung {
-  /// Wie das Raster: ein Abschnitt je Monat, neueste zuerst.
-  monat,
-
-  /// Ein Abschnitt je Tag – die Liste kennt keine Monatsüberschrift
-  /// darüber, der Abschnitt nennt deshalb das volle Datum.
-  tag,
-
-  /// Ein Abschnitt je Kameramodell – die Arbeitsweise, wenn man eine
-  /// Reihe mit zwei Gehäusen fotografiert hat und beide getrennt
-  /// durchsehen will.
-  kamera,
-
-  /// Keine Gliederung, eine durchgehende Liste.
-  keine,
-}
+export 'package:kern/services/listengliederung.dart' show ListenGruppierung;
 
 /// Ein Abschnitt der Liste.
 class Assetgruppe {
@@ -44,15 +29,8 @@ class Assetgruppe {
 /// Hersteller und Modell werden nicht doppelt geschrieben – Canon steht in
 /// beiden EXIF-Feldern („Canon" und „Canon EOS R10"). Dieselbe Regel wie
 /// beim Namensmuster im Export.
-String? kamerabezeichnung(AssetData asset) {
-  final hersteller = asset.cameraMake?.trim() ?? '';
-  final modell = asset.cameraModel?.trim() ?? '';
-  if (modell.isEmpty && hersteller.isEmpty) return null;
-  if (modell.isEmpty) return hersteller;
-  if (hersteller.isEmpty) return modell;
-  if (modell.toLowerCase().startsWith(hersteller.toLowerCase())) return modell;
-  return '$hersteller $modell';
-}
+String? kamerabezeichnung(AssetData asset) =>
+    kamerabezeichnungAus(asset.cameraMake, asset.cameraModel);
 
 int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 

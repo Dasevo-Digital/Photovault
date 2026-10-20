@@ -1,5 +1,21 @@
 import 'package:kern/db/database.dart' show FaceData;
+import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
+
+/// Was die Liste über die Kachel hinaus zeigt (Issue #195) – nur, wenn
+/// der Browser die Liste zeigt (`voll=1`).
+Map<String, Object?> listenangabenAlsJson(Listenangaben l) => {
+  'modell': ?l.kameramodell,
+  'objektiv': ?l.objektiv,
+  'brennweite': ?l.brennweite,
+  'blende': ?l.blende,
+  'zeit': ?l.zeit,
+  'iso': ?l.iso,
+  if (l.bytes > 0) 'bytes': l.bytes,
+  'stadt': ?l.stadt,
+  'land': ?l.land,
+  if (l.geschaetzt) 'geschaetzt': true,
+};
 
 /// Eine Zeile des Rasters, wie die Schnittstelle sie ausgibt – für die
 /// Zeitleiste, Alben, Personen und die Suche dieselbe Form.

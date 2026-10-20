@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
 import 'package:kern/auswertung/gesicht_von_hand.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
@@ -576,6 +577,21 @@ class _Api {
     final q = anfrage.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
     final nurFavoriten = q['favoriten'] == '1';
+    // Für die Liste (#195) die Angaben, die die Kachel nicht braucht.
+    final voll = q['voll'] == '1';
+    Future<List<Map<String, Object?>>> alsJson(List<Rasterzeile> zeilen) async {
+      final mehr = voll
+          ? await db.listenangaben([for (final z in zeilen) z.id])
+          : const <String, Listenangaben>{};
+      return [
+        for (final z in zeilen)
+          {
+            ...zeileAlsJson(z),
+            if (mehr[z.id] case final l?) ...listenangabenAlsJson(l),
+          },
+      ];
+    }
+
     // Andere Reihenfolgen wie am Rechner (#194). Die Vorgabe blättert wie
     // bisher über ein Lesezeichen aus Zeit und Kennung; die übrigen über
     // die Stelle – für sie gibt es keinen Schlüssel, der überall passt.
@@ -594,9 +610,9 @@ class _Api {
           )
           .get();
       return _json({
-        'aufnahmen': [
-          for (final z in zeilen) zeileAlsJson(Rasterzeile.ausZeile(z)),
-        ],
+        'aufnahmen': await alsJson([
+          for (final z in zeilen) Rasterzeile.ausZeile(z),
+        ]),
         'weiter': zeilen.length < anzahl ? null : 'o:${ab + zeilen.length}',
       });
     }
@@ -620,7 +636,7 @@ class _Api {
         .get();
     final liste = [for (final z in zeilen) Rasterzeile.ausZeile(z)];
     return _json({
-      'aufnahmen': [for (final r in liste) zeileAlsJson(r)],
+      'aufnahmen': await alsJson(liste),
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,

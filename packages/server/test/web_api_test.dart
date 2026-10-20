@@ -1688,6 +1688,39 @@ void main() {
     expect(await alle('name'), [b, c, a], reason: 'ohne Gross/klein');
     expect(await alle('bewertung'), [b, a, c]);
     expect(await alle('unbekannt'), [c, a, b], reason: 'die Vorgabe');
+
+    // Für die Liste (#195): mit voll=1 die Angaben, die die Kachel nicht
+    // braucht – ohne bleibt die Zeile schmal.
+    await (db.update(db.assets)..where((t) => t.id.equals(a))).write(
+      const AssetsCompanion(
+        lensModel: Value('RF 24-105'),
+        fNumber: Value(4.0),
+        exposureTimeSeconds: Value(0.004),
+        iso: Value(200),
+        locationCity: Value('Bonn'),
+      ),
+    );
+    Future<Map> zeileVon(String abfrage) async {
+      final d = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen$abfrage', token: erikaToken),
+      );
+      return (d['aufnahmen']! as List).cast<Map>().firstWhere(
+        (x) => x['id'] == a,
+      );
+    }
+
+    final voll = await zeileVon('?voll=1');
+    expect(voll['objektiv'], 'RF 24-105');
+    expect(voll['blende'], 4.0);
+    expect(voll['zeit'], 0.004);
+    expect(voll['iso'], 200);
+    expect(voll['stadt'], 'Bonn');
+    expect(voll['bytes'], greaterThan(0));
+    expect(
+      (await zeileVon('?voll=1&sortierung=name'))['objektiv'],
+      'RF 24-105',
+    );
+    expect((await zeileVon('')).containsKey('objektiv'), isFalse);
   });
 
   test('Rückblick und Kalender wie am Rechner (#185)', () async {

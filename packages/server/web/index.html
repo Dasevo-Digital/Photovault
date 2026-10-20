@@ -59,6 +59,8 @@
   <symbol id="i-reihen" viewBox="0 0 24 24"><rect x="3.5" y="5" width="10" height="6" rx="1"/><rect x="15.5" y="5" width="5" height="6" rx="1"/><rect x="3.5" y="13" width="5" height="6" rx="1"/><rect x="10.5" y="13" width="10" height="6" rx="1"/></symbol>
   <symbol id="i-tage" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 14.5h9"/></symbol>
   <symbol id="i-kleiner" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6"/></symbol>
+  <symbol id="i-liste" viewBox="0 0 24 24"><rect x="3.5" y="5" width="4" height="3.5" rx=".8"/><rect x="3.5" y="10.25" width="4" height="3.5" rx=".8"/><rect x="3.5" y="15.5" width="4" height="3.5" rx=".8"/><path d="M10 6.75h10.5M10 12h10.5M10 17.25h10.5"/></symbol>
+  <symbol id="i-spalten" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15M14.5 4.5v15"/></symbol>
   <symbol id="i-groesser" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6M10.5 7.5v6"/></symbol>
 </svg>
 
@@ -288,6 +290,10 @@
     <h2 id="raster-titel" hidden></h2>
     <div id="raster-kopf" hidden></div>
     <div id="ansichtsleiste" hidden>
+      <span class="ansicht-art" role="group" aria-label="Ansicht">
+        <button id="ansicht-raster" type="button" aria-pressed="true" aria-label="Raster" title="Raster"><svg class="symbol" aria-hidden="true"><use href="#i-quadrate"/></svg></button>
+        <button id="ansicht-liste" type="button" aria-pressed="false" aria-label="Liste" title="Liste"><svg class="symbol" aria-hidden="true"><use href="#i-liste"/></svg></button>
+      </span>
       <select id="ansicht-sortierung" aria-label="Reihenfolge" title="Reihenfolge">
         <option value="aufnahmeNeu">Aufnahmedatum, neueste zuerst</option>
         <option value="aufnahmeAlt">Aufnahmedatum, älteste zuerst</option>
@@ -296,6 +302,13 @@
         <option value="bewertung">Bewertung, beste zuerst</option>
         <option value="groesse">Dateigrösse, grösste zuerst</option>
       </select>
+      <select id="ansicht-gliederung" aria-label="Gliederung" title="Gliederung" hidden>
+        <option value="monat">Nach Monat</option>
+        <option value="tag">Nach Tag</option>
+        <option value="kamera">Nach Kamera</option>
+        <option value="keine">Ohne Gliederung</option>
+      </select>
+      <button id="ansicht-spalten" type="button" aria-label="Spalten" title="Spalten" hidden><svg class="symbol" aria-hidden="true"><use href="#i-spalten"/></svg></button>
       <button id="ansicht-tage" type="button" aria-pressed="true"><svg class="symbol" aria-hidden="true"><use href="#i-tage"/></svg></button>
       <button id="ansicht-form" type="button"><svg class="symbol" aria-hidden="true"><use href="#i-reihen"/></svg></button>
       <button id="ansicht-kleiner" type="button" aria-label="Kleinere Kacheln – mehr Monate auf einmal" title="Kleinere Kacheln – mehr Monate auf einmal"><svg class="symbol" aria-hidden="true"><use href="#i-kleiner"/></svg></button>
@@ -427,6 +440,13 @@
 </dialog>
 
 <!-- Ein Gesicht im ganzen Foto, wenn der Ausschnitt nicht genügt (#189). -->
+<!-- Welche Spalten die Liste zeigt (#195). -->
+<dialog id="spalten-dialog">
+  <h3>Spalten</h3>
+  <div id="spalten-liste"></div>
+  <menu><button type="button" id="spalten-zu">Fertig</button></menu>
+</dialog>
+
 <!-- Eine kleine Auswahl wie die Menüs am Rechner (#192). -->
 <dialog id="wahl-dialog">
   <h3 id="wahl-titel"></h3>

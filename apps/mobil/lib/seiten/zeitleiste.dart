@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/listengliederung.dart';
 import 'package:kern/services/sortierung.dart';
 
 import '../l10n/app_localizations.dart';
@@ -33,13 +35,75 @@ class _ZeitleisteState extends State<Zeitleiste> {
   Stream<List<Rasterzeile>> _neuerStrom() =>
       sitzung.db.watchRasterzeilen(sortierung: _sortierung);
 
+  // Die Liste (Issue #195): Ansicht, Gliederung und Spalten, wie zuletzt
+  // gebaut – ein Neubau nur, wenn sich eins davon ändert.
+  late var _alsListe = sitzung.alsListe;
+  late var _gliederung = sitzung.gliederung;
+  late var _spalten = sitzung.listenspalten.alsText();
+
+  // Die Angaben, die die Liste über die Rasterzeile hinaus zeigt – für
+  // genau die Liste, für die sie geholt wurden.
+  Map<String, Listenangaben> _angaben = const {};
+  List<Rasterzeile>? _angabenFuer;
+  List<Rasterzeile>? _angabenHolt;
+
   void _sitzungGeaendert() {
-    if (sitzung.sortierung == _sortierung) return;
+    final s = sitzung;
+    final spalten = s.listenspalten.alsText();
+    final sortierung = s.sortierung != _sortierung;
+    if (!sortierung &&
+        s.alsListe == _alsListe &&
+        s.gliederung == _gliederung &&
+        spalten == _spalten) {
+      return;
+    }
     setState(() {
-      _sortierung = sitzung.sortierung;
-      _strom = _neuerStrom();
+      _alsListe = s.alsListe;
+      _gliederung = s.gliederung;
+      _spalten = spalten;
+      if (sortierung) {
+        _sortierung = s.sortierung;
+        _strom = _neuerStrom();
+      }
     });
   }
+
+  void _holeAngaben(List<Rasterzeile> zeilen) {
+    if (identical(zeilen, _angabenFuer) || identical(zeilen, _angabenHolt)) {
+      return;
+    }
+    _angabenHolt = zeilen;
+    sitzung.db.listenangaben([for (final z in zeilen) z.id]).then((a) {
+      if (!mounted || !identical(_angabenHolt, zeilen)) return;
+      setState(() {
+        _angaben = a;
+        _angabenFuer = zeilen;
+      });
+    });
+  }
+
+  /// Nach Kamera: die Gruppen alphabetisch, ohne Angabe am Ende, darin die
+  /// Reihenfolge wie geholt – dieselbe Regel wie am Rechner.
+  List<Rasterzeile> _nachKamera(List<Rasterzeile> zeilen) {
+    final gruppen = <String, List<Rasterzeile>>{};
+    for (final z in zeilen) {
+      final k =
+          kamerabezeichnungAus(z.cameraMake, _angaben[z.id]?.kameramodell) ??
+          '';
+      gruppen.putIfAbsent(k, () => []).add(z);
+    }
+    final schluessel = gruppen.keys.toList()
+      ..sort((a, b) {
+        if (a.isEmpty) return 1;
+        if (b.isEmpty) return -1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
+    return [for (final k in schluessel) ...gruppen[k]!];
+  }
+
+  List<Rasterzeile>? _kameraVon;
+  Map<String, Listenangaben>? _kameraMit;
+  List<Rasterzeile> _kameraListe = const [];
 
   @override
   void initState() {
@@ -73,7 +137,21 @@ class _ZeitleisteState extends State<Zeitleiste> {
               ? d?.ungesichert ?? const <LokaleAufnahme>[]
               : const <LokaleAufnahme>[];
           final gemischt = mischeMitServer(server, lokal);
-          final zeilen = gemischt.zeilen;
+          var zeilen = gemischt.zeilen;
+          final nachDatum = nachAufnahmedatum(_sortierung);
+          final gliederung = nachDatum ? _gliederung : ListenGruppierung.keine;
+          if (_alsListe) {
+            _holeAngaben(server);
+            if (gliederung == ListenGruppierung.kamera) {
+              if (!identical(_kameraVon, zeilen) ||
+                  !identical(_kameraMit, _angaben)) {
+                _kameraListe = _nachKamera(zeilen);
+                _kameraVon = zeilen;
+                _kameraMit = _angaben;
+              }
+              zeilen = _kameraListe;
+            }
+          }
           return RefreshIndicator(
             onRefresh: () async {
               await sitzung.gleicheAb();
@@ -95,7 +173,14 @@ class _ZeitleisteState extends State<Zeitleiste> {
                     sitzung: sitzung,
                     zeilen: zeilen,
                     lokal: gemischt.lokal,
-                    nachTagen: nachAufnahmedatum(_sortierung),
+                    nachTagen: nachDatum,
+                    liste: _alsListe
+                        ? Listenansicht(
+                            angaben: _angaben,
+                            gliederung: gliederung,
+                            spalten: sitzung.listenspalten,
+                          )
+                        : null,
                     kopf: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

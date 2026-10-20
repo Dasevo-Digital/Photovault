@@ -393,8 +393,15 @@ function kachel(a, index) {
   img.draggable = false;
   img.src = miniaturUrl(a.id);
   k.append(img);
-  k.style.setProperty('--v', seitenverhaeltnis(a).toFixed(4));
-  marken(k, a);
+  if (liste && liste.alsListe) {
+    // In der Liste trägt die Zeile die Angaben statt der Marken – Auswahl,
+    // Ziehen, Pfeiltasten und Betrachter bleiben dieselben wie bei Kacheln.
+    k.classList.add('zeile');
+    zeilenzellen(k, a);
+  } else {
+    k.style.setProperty('--v', seitenverhaeltnis(a).toFixed(4));
+    marken(k, a);
+  }
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
   if (schwebeVideoId(a)) {
     k.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') schwebeBeginn(k, a); });
@@ -410,6 +417,122 @@ function kachel(a, index) {
     if (auswahlModus || auswahl.size) schalteAuswahl(a.id, k); else oeffne(index);
   });
   return k;
+}
+
+// --- Die Liste (#195) ---------------------------------------------------------
+//
+// Wie die Listenansicht am Rechner: die Aufnahmen untereinander mit den
+// Angaben in Spalten, die sich wählen und in der Breite ziehen lassen.
+// Geschrieben wird wie dort (listengliederung.dart): „Canon EOS R10“,
+// „24 mm · f/4.0 · 1/250 · ISO 200“.
+
+function kamerabezeichnung(hersteller, modell) {
+  const h = (hersteller || '').trim();
+  const m = (modell || '').trim();
+  if (!h && !m) return '';
+  if (!m) return h;
+  if (!h) return m;
+  return m.toLowerCase().startsWith(h.toLowerCase()) ? m : `${h} ${m}`;
+}
+
+function belichtungstext(a) {
+  const teile = [];
+  if (a.brennweite != null) teile.push(`${Math.round(a.brennweite)} mm`);
+  if (a.blende != null) teile.push(`f/${Number(a.blende).toFixed(1)}`);
+  if (a.zeit != null && a.zeit > 0) teile.push(a.zeit >= 1 ? `${Number(a.zeit).toFixed(1)} s` : `1/${Math.round(1 / a.zeit)}`);
+  if (a.iso != null) teile.push(`ISO ${a.iso}`);
+  return teile.join(' · ');
+}
+
+const FARBPUNKTE = { red: '#e53935', yellow: '#fdd835', green: '#43a047', blue: '#1e88e5', purple: '#8e24aa' };
+const listenDatum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'short' });
+const listenDatumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'short', timeStyle: 'short' });
+
+function zelleVon(s, a) {
+  const z = el('span', `zelle ${s}`);
+  let text = '';
+  switch (s) {
+    case 'dateiname': text = a.name || ''; break;
+    // Die Uhrzeit weicht dem Vermerk, wenn das Datum geschätzt ist – sie
+    // wäre die genaueste Angabe und zugleich die, die sicher nicht stimmt.
+    case 'datum': text = a.geschaetzt ? `${listenDatum.format(new Date(a.aufgenommen))} (${t('geschätzt')})` : listenDatumZeit.format(new Date(a.aufgenommen)); break;
+    case 'kamera': text = kamerabezeichnung(a.kamera, a.modell); break;
+    case 'objektiv': text = a.objektiv || ''; break;
+    case 'belichtung': text = belichtungstext(a); break;
+    case 'bewertung':
+      if (a.bewertung) { z.append(el('span', 'sterne-klein', '★'.repeat(a.bewertung))); z.title = t('{i} von 5', { i: a.bewertung }); return z; }
+      break;
+    case 'farbe':
+      if (a.farbe) { const p = el('span', 'farbpunkt'); p.style.background = FARBPUNKTE[a.farbe] || 'var(--rand)'; z.append(p); return z; }
+      break;
+    case 'masse': text = a.breite && a.hoehe ? `${a.breite} × ${a.hoehe}` : ''; break;
+    case 'groesse': text = a.bytes ? groesse(a.bytes) : ''; break;
+    case 'art': text = a.art === 'video' ? t('Video') : t('Foto'); break;
+    case 'ort': text = [a.stadt, a.land ? land(a.land) : ''].filter(Boolean).join(', '); break;
+    default: break;
+  }
+  if (!text) { z.classList.add('leer'); z.textContent = '—'; } else { z.textContent = text; z.title = text; }
+  return z;
+}
+
+// Der Name steht für sich; die übrigen Spalten in einem Behälter, der in
+// der breiten Liste verschwindet (display: contents) und in der schmalen
+// zur zweiten Zeile wird.
+function zeilenzellen(k, a) {
+  const spalten = ansicht.spalten;
+  const mitName = spalten.includes('dateiname');
+  if (mitName) k.append(zelleVon('dateiname', a));
+  const weitere = el('span', 'weitere');
+  for (const s of spalten) if (s !== 'dateiname') weitere.append(zelleVon(s, a));
+  k.append(weitere);
+}
+
+function legeListenspalten() {
+  $('raster').style.setProperty('--listen-spalten', ansicht.spalten.map((s) => `${spaltenbreite(s)}px`).join(' '));
+}
+
+// Die Kopfzeile mit den Spaltennamen; am rechten Rand jeder Zelle ein
+// Griff, der die Breite zieht (60 bis 600 Punkte, wie am Rechner).
+function listenkopf() {
+  const kopf = el('div', 'listenkopf');
+  kopf.append(el('span'));
+  for (const s of ansicht.spalten) {
+    const zelle = el('span', 'kopfzelle', t(LISTENTITEL[s]));
+    const griff = el('span', 'griff');
+    griff.title = t('Breite ändern');
+    griff.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      griff.setPointerCapture(e.pointerId);
+      const start = e.clientX, von = spaltenbreite(s);
+      const zieh = (m) => { ansicht.breiten[s] = Math.min(600, Math.max(60, Math.round(von + m.clientX - start))); legeListenspalten(); };
+      const los = () => { griff.removeEventListener('pointermove', zieh); merkeAnsicht(); };
+      griff.addEventListener('pointermove', zieh);
+      griff.addEventListener('pointerup', los, { once: true });
+      griff.addEventListener('pointercancel', los, { once: true });
+    });
+    zelle.append(griff);
+    kopf.append(zelle);
+  }
+  return kopf;
+}
+
+// Wonach die Liste ihre Köpfe setzt. Nur nach dem Datum geordnet gibt es
+// Monate, Tage und Kameras – sonst eine durchgehende Liste.
+function listenGliederung() {
+  return liste && liste.alsListe && nachDatum() ? ansicht.gliederung : 'keine';
+}
+
+// Nach Kamera: Die Gruppen stehen alphabetisch, ohne Angabe am Ende – und
+// das über alles Geladene. Jede neue Seite ordnet deshalb neu.
+function nachKameraOrdnen() {
+  const gruppen = new Map();
+  for (const a of liste.roh) {
+    const k = kamerabezeichnung(a.kamera, a.modell);
+    if (!gruppen.has(k)) gruppen.set(k, []);
+    gruppen.get(k).push(a);
+  }
+  return [...gruppen.keys()].sort((x, y) => (!x ? 1 : !y ? -1 : x.toLowerCase().localeCompare(y.toLowerCase()))).map((k) => ({ k, aufnahmen: gruppen.get(k) }));
 }
 
 // --- Vorschau beim Darüberfahren (#193) -------------------------------------
@@ -514,10 +637,38 @@ function haengeAn(aufnahmen) {
     if (liste.kacheln.length) raster.append(el('span', 'fueller'));
     raster.append(kopf);
   };
-  const mitTagen = ansicht.tage;
+  const gliederung = listenGliederung();
+  if (gliederung === 'kamera') {
+    // Neu ordnen und ganz neu zeichnen; die Auswahl hängt an Kennungen.
+    liste.roh.push(...aufnahmen);
+    liste.aufnahmen = [];
+    liste.kacheln = [];
+    liste.tage = new Map();
+    const r = $('raster');
+    r.replaceChildren(listenkopf());
+    for (const g of nachKameraOrdnen()) {
+      raster.append(el('h2', 'monat', g.k || t('Ohne Kameraangabe')));
+      for (const a of g.aufnahmen) {
+        const k = kachel(a, liste.aufnahmen.length);
+        liste.kacheln.push(k);
+        raster.append(k);
+        liste.aufnahmen.push(a);
+      }
+    }
+    r.append(raster);
+    return;
+  }
+  const mitTagen = liste.alsListe ? gliederung === 'tag' : ansicht.tage;
+  const mitMonaten = liste.alsListe ? gliederung === 'monat' : true;
   for (const a of aufnahmen) {
     const tag = tagVon(a);
-    if (liste.nachTagen) {
+    if (liste.alsListe && gliederung === 'tag') {
+      // Die Liste kennt keine Monatsköpfe darüber; der Tag nennt das ganze Datum.
+      if (tag !== letzterTag) {
+        letzterTag = tag;
+        raster.append(el('h2', 'monat', datum.format(new Date(a.aufgenommen))));
+      }
+    } else if (liste.nachTagen && mitMonaten) {
       const d = new Date(a.aufgenommen);
       const monat = `${d.getFullYear()}-${d.getMonth()}`;
       if (monat !== letzterMonat) {
@@ -557,6 +708,9 @@ function zeigeListe(neu, titel) {
   $('raster-kopf').replaceChildren(...(liste.kopf ? [liste.kopf] : []));
   $('raster-kopf').hidden = !liste.kopf;
   $('ansichtsleiste').hidden = !liste.zeitleiste;
+  liste.roh = [];
+  $('raster').classList.toggle('liste', !!liste.alsListe);
+  if (liste.alsListe) { legeListenspalten(); $('raster').append(listenkopf()); }
   legeForm();
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
@@ -592,14 +746,28 @@ waechter.observe($('ende'));
 
 const ANSICHT_MERKER = 'pv-ansicht';
 const SORTIERUNGEN = ['aufnahmeNeu', 'aufnahmeAlt', 'importNeu', 'name', 'bewertung', 'groesse'];
+// Die Spalten der Liste wie am Rechner (listenspalten.dart): Vorgabe die
+// fünf von früher, jede mit ihrer Breite.
+const LISTENSPALTEN = ['dateiname', 'datum', 'kamera', 'objektiv', 'belichtung', 'bewertung', 'farbe', 'masse', 'groesse', 'art', 'ort'];
+const LISTENSPALTEN_VORGABE = ['dateiname', 'datum', 'kamera', 'belichtung', 'bewertung'];
+const LISTENBREITEN = { dateiname: 260, datum: 150, kamera: 180, objektiv: 200, belichtung: 190, bewertung: 116, farbe: 70, masse: 120, groesse: 100, art: 90, ort: 180 };
+const LISTENTITEL = { dateiname: 'Dateiname', datum: 'Aufgenommen', kamera: 'Kamera', objektiv: 'Objektiv', belichtung: 'Belichtung', bewertung: 'Bewertung', farbe: 'Farbe', masse: 'Masse', groesse: 'Dateigrösse', art: 'Art', ort: 'Ort' };
+const GLIEDERUNGEN = ['monat', 'tag', 'kamera', 'keine'];
 const ansicht = (() => {
-  const v = { sortierung: 'aufnahmeNeu', tage: true, form: 'quadrate' };
+  const v = { sortierung: 'aufnahmeNeu', tage: true, form: 'quadrate', liste: false, gliederung: 'monat', spalten: LISTENSPALTEN_VORGABE, breiten: {} };
   try { Object.assign(v, JSON.parse(localStorage.getItem(ANSICHT_MERKER) || '{}')); } catch (_) { /* privat */ }
   if (!SORTIERUNGEN.includes(v.sortierung)) v.sortierung = 'aufnahmeNeu';
   if (v.form !== 'reihen') v.form = 'quadrate';
   v.tage = v.tage !== false;
+  v.liste = v.liste === true;
+  if (!GLIEDERUNGEN.includes(v.gliederung)) v.gliederung = 'monat';
+  // Namen, die es nicht mehr gibt, fallen still weg – wie am Rechner.
+  v.spalten = Array.isArray(v.spalten) ? LISTENSPALTEN.filter((s) => v.spalten.includes(s)) : [];
+  if (!v.spalten.length) v.spalten = [...LISTENSPALTEN_VORGABE];
+  if (!v.breiten || typeof v.breiten !== 'object') v.breiten = {};
   return v;
 })();
+const spaltenbreite = (s) => Math.min(600, Math.max(60, Number(ansicht.breiten[s]) || LISTENBREITEN[s]));
 function merkeAnsicht() {
   try { localStorage.setItem(ANSICHT_MERKER, JSON.stringify(ansicht)); } catch (_) { /* privat */ }
 }
@@ -625,6 +793,7 @@ const zeitleiste = {
     const q = new URLSearchParams({ anzahl: '200' });
     if (this.weiter) q.set('nach', this.weiter);
     if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
+    if (ansicht.liste) q.set('voll', '1');
     const d = await api(`/api/v1/aufnahmen?${q}`);
     this.weiter = d.weiter;
     this.geladen.push(...d.aufnahmen);
@@ -637,7 +806,7 @@ const zeitleiste = {
 async function zeigeFotos() {
   markiereNav('fotos');
   zeigeBereich(['raster']);
-  zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
+  zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, alsListe: ansicht.liste, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
 }
@@ -2685,7 +2854,8 @@ const spaltenJetzt = () => spalten || (ansicht.form === 'reihen'
 // Kachel breit wäre – Grösser und Kleiner wirken in beiden Formen gleich.
 function legeForm() {
   const r = $('raster');
-  const reihen = ansicht.form === 'reihen';
+  // In der Liste gibt es keine Form – sie gilt fürs Raster.
+  const reihen = ansicht.form === 'reihen' && !(liste && liste.alsListe);
   r.classList.toggle('reihen', reihen);
   if (reihen) {
     const n = spaltenJetzt();
@@ -2699,8 +2869,18 @@ window.addEventListener('resize', () => { if (ansicht.form === 'reihen') legeFor
 function zeigeAnsichtsleiste() {
   if ($('ansichtsleiste').hidden) return;
   $('ansicht-sortierung').value = ansicht.sortierung;
+  const alsListe = ansicht.liste;
+  $('ansicht-raster').setAttribute('aria-pressed', String(!alsListe));
+  $('ansicht-liste').setAttribute('aria-pressed', String(alsListe));
+  // Wie am Rechner: Gliederung und Spalten nur bei der Liste, Tage, Form
+  // und Grösse nur beim Raster – ein Knopf, der nichts bewirkt, wäre
+  // irreführend.
+  $('ansicht-gliederung').hidden = !alsListe || !nachDatum();
+  $('ansicht-gliederung').value = ansicht.gliederung;
+  $('ansicht-spalten').hidden = !alsListe;
+  for (const id of ['ansicht-form', 'ansicht-kleiner', 'ansicht-groesser']) $(id).hidden = alsListe;
   const tage = $('ansicht-tage');
-  tage.hidden = !nachDatum();
+  tage.hidden = alsListe || !nachDatum();
   tage.setAttribute('aria-pressed', String(ansicht.tage));
   const tageText = ansicht.tage ? t('Nur nach Monaten gliedern') : t('Nach Tagen gliedern');
   tage.title = tageText;
@@ -2722,6 +2902,46 @@ $('ansicht-sortierung').addEventListener('change', (e) => {
   window.scrollTo(0, 0);
   zeigeFotos();
 });
+function wechsleAnsicht(alsListe) {
+  if (ansicht.liste === alsListe) return;
+  ansicht.liste = alsListe;
+  merkeAnsicht();
+  // Die Liste braucht mehr Angaben je Zeile – neu laden.
+  zeitleiste.leeren();
+  window.scrollTo(0, 0);
+  zeigeFotos();
+}
+$('ansicht-raster').addEventListener('click', () => wechsleAnsicht(false));
+$('ansicht-liste').addEventListener('click', () => wechsleAnsicht(true));
+$('ansicht-gliederung').addEventListener('change', (e) => {
+  ansicht.gliederung = GLIEDERUNGEN.includes(e.target.value) ? e.target.value : 'monat';
+  merkeAnsicht();
+  zeigeFotos();
+});
+// Die Spalten an- und abschalten; die letzte bleibt, sonst wäre die Liste
+// eine leere Fläche ohne Weg zurück (wie am Rechner).
+$('ansicht-spalten').addEventListener('click', () => {
+  const box = $('spalten-liste');
+  box.replaceChildren();
+  for (const s of LISTENSPALTEN) {
+    const z = el('label');
+    const k = el('input');
+    k.type = 'checkbox';
+    k.checked = ansicht.spalten.includes(s);
+    k.addEventListener('change', () => {
+      const an = k.checked;
+      if (!an && ansicht.spalten.length <= 1) { k.checked = true; return; }
+      // Beim Einschalten an ihren Platz, nicht ans Ende.
+      ansicht.spalten = LISTENSPALTEN.filter((x) => (x === s ? an : ansicht.spalten.includes(x)));
+      merkeAnsicht();
+      zeigeFotos();
+    });
+    z.append(k, el('span', null, t(LISTENTITEL[s])));
+    box.append(z);
+  }
+  $('spalten-dialog').showModal();
+});
+$('spalten-zu').addEventListener('click', () => $('spalten-dialog').close());
 $('ansicht-tage').addEventListener('click', () => {
   ansicht.tage = !ansicht.tage;
   merkeAnsicht();
@@ -3909,6 +4129,11 @@ function tastenziele() {
 function erneuereMarken(i) {
   const k = liste && liste.kacheln && liste.kacheln[i];
   if (!k) return;
+  if (k.classList.contains('zeile')) {
+    k.querySelectorAll(':scope > .zelle, :scope > .weitere').forEach((x) => x.remove());
+    zeilenzellen(k, liste.aufnahmen[i]);
+    return;
+  }
   k.querySelectorAll(':scope > .zeichen, :scope > .schild, :scope > .unten-rechts').forEach((x) => x.remove());
   marken(k, liste.aufnahmen[i]);
 }

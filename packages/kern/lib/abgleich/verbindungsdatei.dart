@@ -42,6 +42,9 @@ class Verbindungsdatei {
     this.sortierung,
     this.form,
     this.nurMonate = false,
+    this.liste = false,
+    this.gliederung,
+    this.listenspalten,
     this.sprache,
     this.tokenkennung,
   });
@@ -75,6 +78,13 @@ class Verbindungsdatei {
   final int? form;
   final bool nurMonate;
 
+  /// Liste statt Raster (Issue #195), wonach sie gegliedert ist (Index in
+  /// `ListenGruppierung`) und welche Spalten sie zeigt
+  /// (`Listenspaltenwahl.alsText`).
+  final bool liste;
+  final int? gliederung;
+  final String? listenspalten;
+
   /// Die Sprache der Handy-App (`de`, `en`), wie in den Einstellungen
   /// gewählt; `null` heisst: die des Telefons. Gilt nur für dieses Gerät –
   /// wie die Sprachwahl im Browser.
@@ -87,6 +97,9 @@ class Verbindungsdatei {
     int? Function()? sortierung,
     int? Function()? form,
     bool? nurMonate,
+    bool? liste,
+    int? Function()? gliederung,
+    String? Function()? listenspalten,
     String? Function()? sprache,
   }) => Verbindungsdatei(
     server: server,
@@ -101,6 +114,9 @@ class Verbindungsdatei {
     sortierung: sortierung == null ? this.sortierung : sortierung(),
     form: form == null ? this.form : form(),
     nurMonate: nurMonate ?? this.nurMonate,
+    liste: liste ?? this.liste,
+    gliederung: gliederung == null ? this.gliederung : gliederung(),
+    listenspalten: listenspalten == null ? this.listenspalten : listenspalten(),
     sprache: sprache == null ? this.sprache : sprache(),
     tokenkennung: tokenkennung,
   );
@@ -112,12 +128,21 @@ class Verbindungsdatei {
 
   Verbindungsdatei mitRasterspalten(int? n) => _mit(rasterspalten: () => n);
 
-  Verbindungsdatei mitAnsicht({int? sortierung, int? form, bool? nurMonate}) =>
-      _mit(
-        sortierung: sortierung == null ? null : () => sortierung,
-        form: form == null ? null : () => form,
-        nurMonate: nurMonate,
-      );
+  Verbindungsdatei mitAnsicht({
+    int? sortierung,
+    int? form,
+    bool? nurMonate,
+    bool? liste,
+    int? gliederung,
+    String? listenspalten,
+  }) => _mit(
+    sortierung: sortierung == null ? null : () => sortierung,
+    form: form == null ? null : () => form,
+    nurMonate: nurMonate,
+    liste: liste,
+    gliederung: gliederung == null ? null : () => gliederung,
+    listenspalten: listenspalten == null ? null : () => listenspalten,
+  );
 
   Verbindungsdatei mitSprache(String? s) => _mit(sprache: () => s);
 
@@ -150,6 +175,9 @@ class Verbindungsdatei {
       sortierung: (j['sortierung'] as num?)?.toInt(),
       form: (j['form'] as num?)?.toInt(),
       nurMonate: j['nurMonate'] == true,
+      liste: j['liste'] == true,
+      gliederung: (j['gliederung'] as num?)?.toInt(),
+      listenspalten: j['listenspalten'] as String?,
       sprache: j['sprache'] as String?,
       tokenkennung: kennung,
     );
@@ -199,6 +227,9 @@ class Verbindungsdatei {
         if (sortierung != null) 'sortierung': sortierung,
         if (form != null) 'form': form,
         if (nurMonate) 'nurMonate': true,
+        if (liste) 'liste': true,
+        if (gliederung != null) 'gliederung': gliederung,
+        if (listenspalten != null) 'listenspalten': listenspalten,
         if (sprache != null) 'sprache': sprache,
       }),
       flush: true,
@@ -215,6 +246,9 @@ class Verbindungsdatei {
       sortierung: sortierung,
       form: form,
       nurMonate: nurMonate,
+      liste: liste,
+      gliederung: gliederung,
+      listenspalten: listenspalten,
       sprache: sprache,
       tokenkennung: kennung,
     );

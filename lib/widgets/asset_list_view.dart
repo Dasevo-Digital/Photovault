@@ -7,6 +7,7 @@ import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/asset_grouping.dart';
 import '../services/groessentext.dart';
+import 'package:kern/services/listengliederung.dart';
 import 'package:kern/services/listenspalten.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
@@ -452,37 +453,14 @@ class _Zeile extends StatelessWidget {
     required this.onLongPress,
   });
 
-  /// Belichtungsangaben in der Schreibweise, die auf jedem Gehäuse steht.
-  ///
-  /// Die Verschlusszeit als Bruch, sobald sie kürzer als eine Sekunde ist –
-  /// „0,004 s" liest niemand, „1/250" jeder.
-  String _belichtung() {
-    final teile = <String>[];
-    if (asset.focalLengthMm != null) {
-      teile.add('${asset.focalLengthMm!.round()} mm');
-    }
-    if (asset.fNumber != null) {
-      teile.add('f/${asset.fNumber!.toStringAsFixed(1)}');
-    }
-    final zeit = asset.exposureTimeSeconds;
-    if (zeit != null && zeit > 0) {
-      teile.add(
-        zeit >= 1 ? '${zeit.toStringAsFixed(1)} s' : '1/${(1 / zeit).round()}',
-      );
-    }
-    if (asset.iso != null) teile.add('ISO ${asset.iso}');
-    return teile.join(' · ');
-  }
+  String _belichtung() => belichtungstext(
+    brennweite: asset.focalLengthMm,
+    blende: asset.fNumber,
+    zeit: asset.exposureTimeSeconds,
+    iso: asset.iso,
+  );
 
-  String _ort() {
-    final teile = [
-      if (asset.locationCity != null && asset.locationCity!.isNotEmpty)
-        asset.locationCity!,
-      if (asset.locationCountry != null && asset.locationCountry!.isNotEmpty)
-        asset.locationCountry!,
-    ];
-    return teile.join(', ');
-  }
+  String _ort() => ortstext(asset.locationCity, asset.locationCountry);
 
   @override
   Widget build(BuildContext context) {

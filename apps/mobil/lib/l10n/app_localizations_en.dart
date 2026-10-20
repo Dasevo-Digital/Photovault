@@ -2140,4 +2140,73 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get ansichtGroesser => 'Larger tiles';
+
+  @override
+  String get ansichtRaster => 'Grid';
+
+  @override
+  String get ansichtListe => 'List';
+
+  @override
+  String get ansichtGliederung => 'Grouping';
+
+  @override
+  String get gruppeMonat => 'By month';
+
+  @override
+  String get gruppeTag => 'By day';
+
+  @override
+  String get gruppeKamera => 'By camera';
+
+  @override
+  String get gruppeKeine => 'Ungrouped';
+
+  @override
+  String get listeSpalten => 'Columns';
+
+  @override
+  String get listeSpalteDateiname => 'File name';
+
+  @override
+  String get listeSpalteDatum => 'Taken';
+
+  @override
+  String get listeSpalteKamera => 'Camera';
+
+  @override
+  String get listeSpalteObjektiv => 'Lens';
+
+  @override
+  String get listeSpalteBelichtung => 'Exposure';
+
+  @override
+  String get listeSpalteBewertung => 'Rating';
+
+  @override
+  String get listeSpalteFarbe => 'Colour';
+
+  @override
+  String get listeSpalteMasse => 'Dimensions';
+
+  @override
+  String get listeSpalteGroesse => 'File size';
+
+  @override
+  String get listeSpalteArt => 'Type';
+
+  @override
+  String get listeSpalteOrt => 'Place';
+
+  @override
+  String get listeOhneKamera => 'No camera information';
+
+  @override
+  String get listeGeschaetzt => 'estimated';
+
+  @override
+  String get listeFoto => 'Photo';
+
+  @override
+  String get listeVideo => 'Video';
 }

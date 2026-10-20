@@ -550,6 +550,98 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Zeitleiste: Liste mit Spalten und Gliederung (#195)', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_liste_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    for (final (id, tag, hersteller, modell, objektiv) in [
+      ('r10', 3, 'Canon', 'Canon EOS R10', 'RF 24-105'),
+      ('ohne', 2, null, null, null),
+      ('a7', 1, 'SONY', 'ILCE-7M4', 'FE 35'),
+    ]) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: id,
+          originalFileName: '$id.jpg',
+          relativePath: 'originals/$id.jpg',
+          checksum: 'pruef-$id',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025, 6, tag, 12, 30),
+          importedAt: DateTime(2026),
+          cameraMake: Value(hersteller),
+          cameraModel: Value(modell),
+          lensModel: Value(objektiv),
+          fNumber: const Value(4.0),
+          exposureTimeSeconds: const Value(0.004),
+        ),
+      );
+    }
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Zeitleiste(sitzung: sitzung)),
+      ),
+    );
+    Future<void> ruhe() async {
+      for (var i = 0; i < 3; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 120)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    await ruhe();
+    await tester.tap(find.byTooltip('Liste'));
+    await ruhe();
+    expect(sitzung.alsListe, isTrue);
+    expect(find.text('r10.jpg'), findsOneWidget);
+    // Kamera ohne doppelten Hersteller, Belichtung wie auf dem Gehäuse.
+    expect(find.textContaining('Canon EOS R10'), findsOneWidget);
+    expect(find.textContaining('f/4.0 · 1/250'), findsNWidgets(3));
+    expect(find.textContaining('RF 24-105'), findsNothing, reason: 'Vorgabe');
+
+    // Das Objektiv dazuschalten.
+    await tester.tap(find.byTooltip('Spalten'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Objektiv'));
+    await ruhe();
+    Navigator.of(tester.element(find.text('Spalten').last)).pop();
+    await ruhe();
+    expect(find.textContaining('RF 24-105'), findsOneWidget);
+
+    // Nach Kamera: alphabetisch, ohne Angabe am Ende.
+    await tester.tap(find.byTooltip('Gliederung'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nach Kamera'));
+    await ruhe();
+    final canon = tester.getTopLeft(find.text('r10.jpg')).dy;
+    final sony = tester.getTopLeft(find.text('a7.jpg')).dy;
+    final ohne = tester.getTopLeft(find.text('ohne.jpg')).dy;
+    expect(canon < sony && sony < ohne, isTrue);
+    expect(find.text('Ohne Kameraangabe'), findsOneWidget);
+
+    // Zurück zum Raster.
+    await tester.tap(find.byTooltip('Raster'));
+    await ruhe();
+    expect(find.text('r10.jpg'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Tipp auf das Datum wählt den ganzen Tag, ein zweiter hebt auf', (
     tester,
   ) async {

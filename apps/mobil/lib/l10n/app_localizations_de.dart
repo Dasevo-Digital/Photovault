@@ -2150,4 +2150,73 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get ansichtGroesser => 'Grössere Kacheln';
+
+  @override
+  String get ansichtRaster => 'Raster';
+
+  @override
+  String get ansichtListe => 'Liste';
+
+  @override
+  String get ansichtGliederung => 'Gliederung';
+
+  @override
+  String get gruppeMonat => 'Nach Monat';
+
+  @override
+  String get gruppeTag => 'Nach Tag';
+
+  @override
+  String get gruppeKamera => 'Nach Kamera';
+
+  @override
+  String get gruppeKeine => 'Ohne Gliederung';
+
+  @override
+  String get listeSpalten => 'Spalten';
+
+  @override
+  String get listeSpalteDateiname => 'Dateiname';
+
+  @override
+  String get listeSpalteDatum => 'Aufgenommen';
+
+  @override
+  String get listeSpalteKamera => 'Kamera';
+
+  @override
+  String get listeSpalteObjektiv => 'Objektiv';
+
+  @override
+  String get listeSpalteBelichtung => 'Belichtung';
+
+  @override
+  String get listeSpalteBewertung => 'Bewertung';
+
+  @override
+  String get listeSpalteFarbe => 'Farbe';
+
+  @override
+  String get listeSpalteMasse => 'Masse';
+
+  @override
+  String get listeSpalteGroesse => 'Dateigrösse';
+
+  @override
+  String get listeSpalteArt => 'Art';
+
+  @override
+  String get listeSpalteOrt => 'Ort';
+
+  @override
+  String get listeOhneKamera => 'Ohne Kameraangabe';
+
+  @override
+  String get listeGeschaetzt => 'geschätzt';
+
+  @override
+  String get listeFoto => 'Foto';
+
+  @override
+  String get listeVideo => 'Video';
 }

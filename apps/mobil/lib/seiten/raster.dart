@@ -5,8 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/bildreihen.dart';
+import 'package:kern/services/groessentext.dart';
+import 'package:kern/services/listengliederung.dart';
+import 'package:kern/services/listenspalten.dart';
 import 'package:kern/services/rasterstufen.dart';
 
 import '../bilder.dart';
@@ -26,6 +30,20 @@ import 'betrachter.dart';
 /// Tipp auf das Datum wählt den ganzen Tag. Solange etwas gewählt ist,
 /// sammelt jeder Tipp weitere ein, und unten erscheint das Blatt mit den
 /// Aktionen (Issue #128).
+/// Was die Liste statt der Kacheln zeigt (Issue #195): die Angaben je
+/// Aufnahme, wonach gegliedert und welche Spalten.
+class Listenansicht {
+  const Listenansicht({
+    required this.angaben,
+    required this.gliederung,
+    required this.spalten,
+  });
+
+  final Map<String, Listenangaben> angaben;
+  final ListenGruppierung gliederung;
+  final Listenspaltenwahl spalten;
+}
+
 class AufnahmenRaster extends StatefulWidget {
   const AufnahmenRaster({
     super.key,
@@ -35,7 +53,12 @@ class AufnahmenRaster extends StatefulWidget {
     this.kopf,
     this.lokal = const {},
     this.papierkorb = false,
+    this.liste,
   });
+
+  /// Statt Kacheln eine Liste (Issue #195) – wie am Rechner und im
+  /// Browser. Auswahl, Ziehen und Betrachter bleiben dieselben.
+  final Listenansicht? liste;
 
   /// Die Aufnahmen liegen im Papierkorb: Das Blatt holt zurück, statt
   /// wegzuwerfen, und der Betrachter ebenso.
@@ -768,6 +791,186 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     ),
   );
 
+  // --- Liste (Issue #195) --------------------------------------------------
+
+  static const _farbpunkte = {
+    'red': Color(0xFFE53935),
+    'yellow': Color(0xFFFDD835),
+    'green': Color(0xFF43A047),
+    'blue': Color(0xFF1E88E5),
+    'purple': Color(0xFF8E24AA),
+  };
+
+  /// Die Köpfe und Zeilen der Liste. Nach Kamera kommen die Zeilen schon
+  /// geordnet an (siehe Zeitleiste); hier wird nur abgeteilt.
+  List<({String? kopf, int index})> _listenEintraege(
+    Listenansicht l,
+    String Function(Rasterzeile z) gruppe,
+  ) {
+    final aus = <({String? kopf, int index})>[];
+    String? letzte;
+    for (var i = 0; i < widget.zeilen.length; i++) {
+      if (l.gliederung != ListenGruppierung.keine) {
+        final g = gruppe(widget.zeilen[i]);
+        if (g != letzte) {
+          letzte = g;
+          aus.add((kopf: g, index: i));
+        }
+      }
+      aus.add((kopf: null, index: i));
+    }
+    return aus;
+  }
+
+  /// Eine Zeile der Liste: das Bild, der Name und darunter die übrigen
+  /// gewählten Spalten – schmal wie im Browser auf dem Telefon.
+  Widget _listenzeile(int i, Listenansicht l, double hoehe) {
+    final z = widget.zeilen[i];
+    final lok = widget.lokal[z.id];
+    final a = l.angaben[z.id] ?? const Listenangaben();
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    final sprache = Localizations.localeOf(context).toLanguageTag();
+    final leise = TextStyle(color: farben.onSurfaceVariant);
+    final teile = <InlineSpan>[];
+    void dazu(InlineSpan s) {
+      if (teile.isNotEmpty) teile.add(const TextSpan(text: ' · '));
+      teile.add(s);
+    }
+
+    for (final s in l.spalten.spalten) {
+      final text = switch (s) {
+        Listenspalte.dateiname => '',
+        // Die Uhrzeit weicht dem Vermerk, wenn das Datum geschätzt ist.
+        Listenspalte.datum =>
+          a.geschaetzt
+              ? '${DateFormat.yMd(sprache).format(z.fileCreatedAt.toLocal())} '
+                    '(${t.listeGeschaetzt})'
+              : DateFormat.yMd(
+                  sprache,
+                ).add_Hm().format(z.fileCreatedAt.toLocal()),
+        Listenspalte.kamera =>
+          kamerabezeichnungAus(z.cameraMake, a.kameramodell) ?? '',
+        Listenspalte.objektiv => a.objektiv ?? '',
+        Listenspalte.belichtung => belichtungstext(
+          brennweite: a.brennweite,
+          blende: a.blende,
+          zeit: a.zeit,
+          iso: a.iso,
+        ),
+        Listenspalte.bewertung => z.rating > 0 ? '★' * z.rating : '',
+        Listenspalte.farbe => '',
+        Listenspalte.masse =>
+          z.widthPx == null || z.heightPx == null
+              ? ''
+              : '${z.widthPx} × ${z.heightPx}',
+        Listenspalte.groesse => a.bytes > 0 ? groessentext(a.bytes) : '',
+        Listenspalte.art => z.type == 'VIDEO' ? t.listeVideo : t.listeFoto,
+        Listenspalte.ort => ortstext(a.stadt, a.land),
+      };
+      if (s == Listenspalte.farbe && z.colorLabel != null) {
+        dazu(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _farbpunkte[z.colorLabel] ?? farben.outlineVariant,
+              ),
+            ),
+          ),
+        );
+      } else if (text.isNotEmpty) {
+        dazu(
+          TextSpan(
+            text: text,
+            style: s == Listenspalte.bewertung
+                ? TextStyle(color: farben.primary)
+                : null,
+          ),
+        );
+      }
+    }
+    final mitName = l.spalten.zeigt(Listenspalte.dateiname);
+    return MetaData(
+      metaData: _Kachelmarke(i),
+      behavior: HitTestBehavior.opaque,
+      child: GestureDetector(
+        onTap: () => _waehlt && lok == null ? _schalte(z.id) : _oeffne(i),
+        onLongPressStart: (_) => _ziehBeginn(i),
+        onLongPressMoveUpdate: (d) => _ziehWeiter(d.globalPosition),
+        onLongPressEnd: (_) => _ziehEnde(),
+        child: ListenableBuilder(
+          listenable: _auswahlStand,
+          builder: (context, _) {
+            final gewaehlt = _auswahl.contains(z.id);
+            return ColoredBox(
+              color: gewaehlt ? farben.primaryContainer : Colors.transparent,
+              child: SizedBox(
+                height: hoehe,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 52,
+                        height: hoehe - 12,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Miniatur(
+                            paths: widget.sitzung.paths,
+                            relativ: z.thumbnailRelativePath,
+                            bild: lok?.bild,
+                            zeile: z,
+                            format: false,
+                            herz: false,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (mitName)
+                              Text(
+                                z.originalFileName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            if (teile.isNotEmpty)
+                              Text.rich(
+                                TextSpan(children: teile),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.merge(leise),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (_waehlt && lok == null)
+                        Icon(
+                          gewaehlt ? Icons.check_circle : Icons.circle_outlined,
+                          color: gewaehlt
+                              ? farben.primary
+                              : farben.onSurfaceVariant,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   /// Eine bündige Reihe: jedes Foto in seinem Format, alle gleich hoch.
   /// [basis] ist der erste Index der Gruppe; die Plätze zählen ab ihm.
   Widget _buendig(int basis, Bildreihe r, bool letzte) => Padding(
@@ -804,7 +1007,75 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     final slivers = <Widget>[
       if (widget.kopf != null) SliverToBoxAdapter(child: widget.kopf),
     ];
-    if (!widget.nachTagen && !_reihen) {
+    final l = widget.liste;
+    if (l != null) {
+      final sprache = Localizations.localeOf(context).toLanguageTag();
+      final t = AppTexte.of(context);
+      final themen = Theme.of(context).textTheme;
+      final skala = MediaQuery.textScalerOf(context);
+      double zeile(TextStyle? stil) {
+        final maler = TextPainter(
+          text: TextSpan(text: 'Ág', style: stil),
+          textDirection: TextDirection.ltr,
+          textScaler: skala,
+        )..layout();
+        final h = maler.height;
+        maler.dispose();
+        return h;
+      }
+
+      final monat = DateFormat.yMMMM(sprache);
+      final tag = DateFormat.yMMMMEEEEd(sprache);
+      final eintraege = _listenEintraege(l, switch (l.gliederung) {
+        ListenGruppierung.monat => (z) => monat.format(
+          z.fileCreatedAt.toLocal(),
+        ),
+        // Die Liste kennt keine Monatsköpfe darüber; der Tag nennt das
+        // ganze Datum (wie am Rechner).
+        ListenGruppierung.tag => (z) => tag.format(z.fileCreatedAt.toLocal()),
+        ListenGruppierung.kamera =>
+          (z) =>
+              kamerabezeichnungAus(
+                z.cameraMake,
+                l.angaben[z.id]?.kameramodell,
+              ) ??
+              t.listeOhneKamera,
+        ListenGruppierung.keine => (_) => '',
+      });
+      final kopfStil = themen.titleMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      );
+      final kopfHoehe = 22 + zeile(kopfStil);
+      final zeilenHoehe = math.max(
+        56.0,
+        16 + zeile(themen.bodyMedium) + zeile(themen.bodySmall),
+      );
+      slivers.add(
+        SliverVariedExtentList.builder(
+          itemCount: eintraege.length,
+          itemExtentBuilder: (i, _) => i >= eintraege.length
+              ? null
+              : eintraege[i].kopf != null
+              ? kopfHoehe
+              : zeilenHoehe,
+          itemBuilder: (context, i) {
+            final e = eintraege[i];
+            final k = e.kopf;
+            return k != null
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                    child: Text(
+                      k,
+                      style: kopfStil,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                : _listenzeile(e.index, l, zeilenHoehe);
+          },
+        ),
+      );
+    } else if (!widget.nachTagen && !_reihen) {
       slivers.add(_gitter(0, zeilen.length));
     } else {
       // **Eine einzige Liste, gebaut wird nur, was zu sehen ist.** Vorher

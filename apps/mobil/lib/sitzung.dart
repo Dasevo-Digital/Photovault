@@ -10,6 +10,8 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/abgleich/zwischenspeicher.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/listengliederung.dart';
+import 'package:kern/services/listenspalten.dart';
 import 'package:kern/services/rasterstufen.dart';
 import 'package:kern/services/sortierung.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -171,6 +173,9 @@ class Sitzung extends ChangeNotifier {
   int? _sortierungHier;
   int? _formHier;
   bool _nurMonateHier = false;
+  bool _listeHier = false;
+  int? _gliederungHier;
+  String? _spaltenwahlHier;
 
   Future<void> setzeRasterspalten(int n) async {
     if (n == rasterspalten) return;
@@ -196,16 +201,34 @@ class Sitzung extends ChangeNotifier {
   );
   bool get nurMonate => verbindung?.nurMonate ?? _nurMonateHier;
 
+  /// Liste statt Raster (Issue #195), wie am Rechner und im Browser.
+  bool get alsListe => verbindung?.liste ?? _listeHier;
+  ListenGruppierung get gliederung {
+    final i = verbindung?.gliederung ?? _gliederungHier ?? 0;
+    return i >= 0 && i < ListenGruppierung.values.length
+        ? ListenGruppierung.values[i]
+        : ListenGruppierung.monat;
+  }
+
+  Listenspaltenwahl get listenspalten =>
+      Listenspaltenwahl.ausText(verbindung?.listenspalten ?? _spaltenwahlHier);
+
   Future<void> setzeAnsicht({
     Rastersortierung? sortierung,
     Zeitleistenform? form,
     bool? nurMonate,
+    bool? alsListe,
+    ListenGruppierung? gliederung,
+    Listenspaltenwahl? listenspalten,
   }) async {
     final v = verbindung;
     if (v == null) {
       _sortierungHier = sortierung?.index ?? _sortierungHier;
       _formHier = form?.index ?? _formHier;
       _nurMonateHier = nurMonate ?? _nurMonateHier;
+      _listeHier = alsListe ?? _listeHier;
+      _gliederungHier = gliederung?.index ?? _gliederungHier;
+      _spaltenwahlHier = listenspalten?.alsText() ?? _spaltenwahlHier;
       notifyListeners();
       return;
     }
@@ -213,6 +236,9 @@ class Sitzung extends ChangeNotifier {
       sortierung: sortierung?.index,
       form: form?.index,
       nurMonate: nurMonate,
+      liste: alsListe,
+      gliederung: gliederung?.index,
+      listenspalten: listenspalten?.alsText(),
     );
     notifyListeners();
     await verbindung!.schreibe(await _ordner());
