@@ -395,6 +395,10 @@ function kachel(a, index) {
   k.append(img);
   marken(k, a);
   if (auswahl.has(a.id)) k.classList.add('gewaehlt');
+  if (schwebeVideoId(a)) {
+    k.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') schwebeBeginn(k, a); });
+    k.addEventListener('pointerleave', () => { if (schwebe.kachel === k) schwebeEnde(); });
+  }
   k.addEventListener('click', (e) => {
     // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.
     if (zieh.schlucke) { zieh.schlucke = false; return; }
@@ -405,6 +409,88 @@ function kachel(a, index) {
     if (auswahlModus || auswahl.size) schalteAuswahl(a.id, k); else oeffne(index);
   });
   return k;
+}
+
+// --- Vorschau beim Darüberfahren (#193) -------------------------------------
+//
+// Wie die Schwebevorschau am Rechner: Ein Video und ein Live Photo sind in
+// der Kachelwand nicht voneinander zu unterscheiden. Bleibt die Maus einen
+// Augenblick darauf stehen, läuft es in der Kachel an – ohne Ton und in
+// Dauerschleife, bis der Zeiger weiterwandert. Es läuft immer nur eines.
+// Die Wartezeit hält einen Zeiger, der quer über die Wand fährt, davon
+// ab, eine Spur anlaufender Videos hinter sich herzuziehen.
+
+const SCHWEBE_MERKER = 'pv-schwebevorschau';
+const SCHWEBE_WARTEN = 300;
+let schwebeAn = (() => { try { return localStorage.getItem(SCHWEBE_MERKER) !== '0'; } catch (_) { return true; } })();
+const schwebe = { kachel: null, uhr: 0, video: null, lauf: 0 };
+
+// Welche Aufnahme das Video trägt: ein Video sich selbst, ein Live Photo
+// seinen Bewegungsteil, alles andere keins.
+function schwebeVideoId(a) {
+  if (a.art === 'video') return a.id;
+  return a.partner || null;
+}
+
+function schwebeBeginn(k, a) {
+  if (!schwebeAn) return;
+  schwebeEnde();
+  schwebe.kachel = k;
+  schwebe.uhr = setTimeout(() => schwebeStart(k, a), SCHWEBE_WARTEN);
+}
+
+function schwebeEnde() {
+  clearTimeout(schwebe.uhr);
+  schwebe.lauf++;
+  const v = schwebe.video;
+  if (v) {
+    v.pause();
+    v.removeAttribute('src');
+    v.load();
+    v.remove();
+  }
+  if (schwebe.kachel) schwebe.kachel.classList.remove('schwebt');
+  schwebe.video = null;
+  schwebe.kachel = null;
+}
+
+async function schwebeStart(k, a) {
+  const id = schwebeVideoId(a);
+  if (!id || schwebe.kachel !== k) return;
+  const lauf = schwebe.lauf;
+  const v = el('video', 'schwebe');
+  v.muted = true;
+  v.defaultMuted = true;
+  v.loop = true;
+  v.playsInline = true;
+  v.disablePictureInPicture = true;
+  v.setAttribute('aria-hidden', 'true');
+  schwebe.video = v;
+  // Sichtbar erst mit dem ersten Bild – bis dahin bleibt das Standbild.
+  v.addEventListener('playing', () => { if (lauf === schwebe.lauf) k.classList.add('schwebt'); });
+  const original = `/api/v1/aufnahmen/${encodeURIComponent(id)}/wiedergabe`;
+  // Wie im Betrachter: Kann der Browser kein HEVC, die H.264-Fassung des
+  // Servers. Ein Bewegungsteil vom iPhone ist immer HEVC, da gleich.
+  const fassung = async () => {
+    for (let i = 0; i < 120 && lauf === schwebe.lauf; i++) {
+      let r;
+      try { r = await fetch(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { return; }
+      if (r.status === 200) {
+        if (lauf === schwebe.lauf) { v.src = fassungUrl(id, false); v.play().catch(() => {}); }
+        return;
+      }
+      if (r.status !== 202) return;
+      await new Promise((fertig) => setTimeout(fertig, 1000));
+    }
+  };
+  let gewechselt = false;
+  const wechsle = () => { if (!gewechselt && lauf === schwebe.lauf) { gewechselt = true; fassung(); } };
+  v.onerror = () => { if (v.getAttribute('src') === original) wechsle(); };
+  v.onloadedmetadata = () => { if (v.getAttribute('src') === original && v.videoWidth === 0) wechsle(); };
+  k.append(v);
+  if (a.partner && a.art !== 'video' && !kannHevc) { wechsle(); return; }
+  v.src = original;
+  v.play().catch(() => {});
 }
 
 function tageskopf(a, tag) {
@@ -456,6 +542,7 @@ function zeigeListe(neu, titel) {
   $('auswahl-zurueck').hidden = !liste.papierkorb;
   letzterTag = null;
   letzterMonat = null;
+  schwebeEnde();
   $('raster').replaceChildren();
   $('raster-titel').hidden = !titel;
   $('raster-titel').textContent = titel || '';
@@ -1545,6 +1632,13 @@ async function zeigeEinstellungen() {
   sInhalt.append(el('div', 'titel', t('Schwelle der Gesichtserkennung')), el('div', 'text', t('Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.')), regler(0.2, 0.8, 0.01, e.gesichtsschwelle, (v) => Number(v).toFixed(2), (v) => sende('gesichtsschwelleSetzen', { schwelle: v })));
   schwelle.append(el('span'), sInhalt);
   ziel.append(schwelle);
+  // Gilt nur für diesen Browser, wie am Rechner für das Gerät.
+  ziel.append(zeile('Videos beim Schweben abspielen', 'Bleibt die Maus einen Augenblick über einem Video oder einem Live Photo stehen, läuft es in der Kachel an – ohne Ton und in Dauerschleife, bis der Zeiger weiterwandert. Es läuft immer nur eines. Gilt für diesen Browser.', schwebeAn, (an) => {
+    schwebeAn = an;
+    if (!an) schwebeEnde();
+    try { localStorage.setItem(SCHWEBE_MERKER, an ? '1' : '0'); } catch (_) { /* privat */ }
+    melde(t('Gespeichert.'));
+  }));
   melde('');
 }
 
@@ -2888,6 +2982,7 @@ let offen = -1;
 
 function oeffne(i) {
   if (!liste || i < 0 || i >= liste.aufnahmen.length) return;
+  schwebeEnde();
   offen = i;
   const a = liste.aufnahmen[i];
   const bild = $('bild'), video = $('video');

@@ -110,6 +110,8 @@ const EN = {
   'Einen Rahmen um das Gesicht ziehen.': 'Drag a frame around the face.',
   'Der Rahmen ist zu klein – bitte um das ganze Gesicht ziehen.': 'The frame is too small – please drag around the whole face.',
   'Rahmen löschen': 'Delete frame',
+  'Videos beim Schweben abspielen': 'Play videos on hover',
+  'Bleibt die Maus einen Augenblick über einem Video oder einem Live Photo stehen, läuft es in der Kachel an – ohne Ton und in Dauerschleife, bis der Zeiger weiterwandert. Es läuft immer nur eines. Gilt für diesen Browser.': 'When the mouse rests on a video or Live Photo for a moment, it starts playing in the tile – muted and looping until the pointer moves on. Only one plays at a time. Applies to this browser.',
   'Mehr': 'More',
   'Ignoriert': 'Ignored',
   'Alle unbenannten Gesichter ignorieren': 'Ignore all unnamed faces',

@@ -146,6 +146,10 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 .kachel .schild { position: absolute; right: 5px; top: 5px; display: flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .02em; line-height: 15px; pointer-events: none; z-index: 1; }
 .kachel .schild .zeichen { width: 11px; height: 11px; filter: none; }
 /* Der Rahmen der Tastatur – wie am Rechner. */
+/* Vorschau beim Darüberfahren (#193): über dem Standbild, sichtbar erst
+   mit dem ersten Bild. */
+#raster .kachel video.schwebe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; opacity: 0; transition: opacity .12s ease-out; }
+#raster .kachel.schwebt video.schwebe { opacity: 1; }
 #raster .kachel.rahmen { outline: 3px solid var(--akzent); outline-offset: -3px; z-index: 1; }
 #kuerzel-dialog { max-width: 34em; width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; }
 #kuerzel-dialog h4 { margin: 14px 0 6px; font-size: .9em; color: var(--leise); }
