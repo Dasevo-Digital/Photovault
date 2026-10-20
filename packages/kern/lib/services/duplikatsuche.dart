@@ -27,7 +27,7 @@ typedef Duplikatergebnis = ({
 /// Telefon dieselbe: Bildeinbettungen ab [schwelle] Ähnlichkeit, ohne die
 /// als „keine Duplikate“ markierten Paare, in einem eigenen Isolate.
 Future<Duplikatergebnis> sucheDuplikate(AppDatabase db, double schwelle) async {
-  final einbettungen = await db.allEmbeddings();
+  final einbettungen = await db.einbettungenImSpeicher();
   final ausnahmen = await db.duplikatAusnahmeSchluessel();
   final ids = einbettungen.length < 2
       ? const <List<String>>[]

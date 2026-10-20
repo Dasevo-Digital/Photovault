@@ -264,6 +264,87 @@ class AppDatabase extends _$AppDatabase {
   int _embeddingsGeneration = 0;
   int get embeddingsGeneration => _embeddingsGeneration;
 
+  /// Für Änderungen, die an den Abfragen vorbei geschrieben werden: Der
+  /// Abgleich übernimmt die Zeilen des Servers als fertige Zeilen
+  /// (`Protokoll.wendeAn`), auch neue Einbettungen und Aufnahmen, die ein
+  /// anderes Gerät in den Papierkorb gelegt oder gesperrt hat.
+  void einbettungenVeraendert() => _embeddingsGeneration++;
+
+  // ---------------------------------------------------------------------
+  // Einbettungsvorrat
+  // ---------------------------------------------------------------------
+
+  /// Wie lange die Einbettungen nach der letzten Nutzung im Speicher
+  /// bleiben. Jede Nutzung schiebt die Freigabe hinaus.
+  static const einbettungsvorratRuhe = Duration(minutes: 3);
+
+  Map<String, Float32List>? _vorratBild;
+  int? _vorratBildStand;
+  Map<String, List<Float32List>>? _vorratVideo;
+  int? _vorratVideoStand;
+  Timer? _vorratUhr;
+
+  /// [allEmbeddings], aber einmal geladen und danach aus dem Speicher –
+  /// für die Inhaltssuche, „Ähnliche Fotos“ und die Duplikatsuche.
+  ///
+  /// Am Rechner gab es das schon lange (in der `LibraryState`); Server und
+  /// Telefon luden dagegen bei **jeder** Suche alle Einbettungen neu aus
+  /// der Datenbank: an 45.000 künstlichen Aufnahmen 116 von 250 ms je
+  /// Inhaltssuche. Jetzt haben alle drei denselben Vorrat.
+  ///
+  /// Ob er noch stimmt, sagt [embeddingsGeneration]: Jede Änderung, die
+  /// das Ergebnis verschieben kann, zählt den Stand hoch – eine neue
+  /// Einbettung, Papierkorb, Sperren, endgültiges Löschen und die Zeilen
+  /// aus dem Abgleich ([einbettungenVeraendert]). Ein Stern dagegen nicht.
+  ///
+  /// Die Karte gehört allen Aufrufern zusammen – nicht verändern.
+  Future<Map<String, Float32List>> einbettungenImSpeicher() async {
+    _planeVorratsfreigabe();
+    final stand = _embeddingsGeneration;
+    final vorrat = _vorratBild;
+    if (vorrat != null && _vorratBildStand == stand) return vorrat;
+    final neu = await allEmbeddings();
+    _vorratBild = neu;
+    _vorratBildStand = stand;
+    return neu;
+  }
+
+  /// [alleVideoeinbettungen] mit demselben Vorrat und derselben
+  /// Gültigkeitsprüfung wie [einbettungenImSpeicher].
+  Future<Map<String, List<Float32List>>> videoeinbettungenImSpeicher() async {
+    _planeVorratsfreigabe();
+    final stand = _embeddingsGeneration;
+    final vorrat = _vorratVideo;
+    if (vorrat != null && _vorratVideoStand == stand) return vorrat;
+    final neu = await alleVideoeinbettungen();
+    _vorratVideo = neu;
+    _vorratVideoStand = stand;
+    return neu;
+  }
+
+  /// Gibt den Vorrat sofort frei und hält seine Uhr an.
+  void einbettungsvorratLeeren() {
+    _vorratUhr?.cancel();
+    _vorratUhr = null;
+    _vorratBild = null;
+    _vorratBildStand = null;
+    _vorratVideo = null;
+    _vorratVideoStand = null;
+  }
+
+  void _planeVorratsfreigabe() {
+    _vorratUhr?.cancel();
+    _vorratUhr = Timer(einbettungsvorratRuhe, einbettungsvorratLeeren);
+  }
+
+  @override
+  Future<void> close() {
+    // Die Uhr hielte sonst über ihren Abschluss die geschlossene Datenbank
+    // samt Vorrat noch drei Minuten fest.
+    einbettungsvorratLeeren();
+    return super.close();
+  }
+
   @override
   int get schemaVersion => 94;
 

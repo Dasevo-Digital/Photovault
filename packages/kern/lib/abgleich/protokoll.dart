@@ -345,8 +345,24 @@ class Protokoll {
         [for (final s in spalten) werte[s]],
       );
     }
+    // Diese Zeilen gehen an den Abfragen vorbei, die den Stand der
+    // Einbettungen sonst selbst hochzählen. Ohne diese Zeile fand die
+    // Inhaltssuche eines verbundenen Rechners die Fotos nicht, deren
+    // Einbettung der Server inzwischen geliefert hatte – solange der
+    // Vorrat warm blieb, und jede Suche hielt ihn warm.
+    if (tabellen.any(_beruehrtEinbettungen.contains)) {
+      db.einbettungenVeraendert();
+    }
     return tabellen;
   }
+
+  /// Tabellen, deren Zeilen das Ergebnis von `allEmbeddings` verschieben:
+  /// die Einbettungen selbst und die Aufnahmen (Papierkorb, Sperre).
+  static const _beruehrtEinbettungen = {
+    'assets',
+    'image_embeddings',
+    'videoeinbettungen',
+  };
 
   static Variable _variable(Object? w) => switch (w) {
     null => const Variable(null),

@@ -118,8 +118,8 @@ Future<List<AssetData>> suchlauf(
   final rangfolge = rangfolgeDerBildsuche(
     vektor,
     suchkandidatenAus(
-      await db.allEmbeddings(),
-      await db.alleVideoeinbettungen(),
+      await db.einbettungenImSpeicher(),
+      await db.videoeinbettungenImSpeicher(),
     ),
     erlaubt,
   );

@@ -314,54 +314,20 @@ class LibraryState extends ChangeNotifier {
   String? _belegterOrt;
   String? get belegterOrt => _belegterOrt;
 
-  // Cache für AppDatabase.allEmbeddings() (KI-Suche, Ähnliche Fotos,
-  // Duplikatsuche) – bei einer großen Bibliothek ein potenziell sehr großes
-  // Ergebnis (mehrere hundert MB an CLIP-Vektoren), das bisher bei JEDEM
-  // Öffnen einer dieser drei Ansichten neu aus der DB geladen wurde. Statt
-  // eines aktiv nachgeführten (Timer/Stream-basierten) Caches – der auch bei
-  // völlig unrelated Mutationen wie einem einzelnen Favoriten-Toggle ständig
-  // im Hintergrund neu laden würde – wird hier nur EINMALIG geladen und beim
-  // nächsten Zugriff über AppDatabase.embeddingsGeneration (siehe dort)
-  // günstig geprüft, ob sich seitdem überhaupt etwas Relevantes geändert hat.
-  Map<String, Float32List>? _embeddingsCache;
-  int? _embeddingsCacheGeneration;
-  Timer? _embeddingCacheTimer;
-
-  // Exakte Suche darf große Bibliotheken vollständig im Speicher halten,
-  // aber nicht bis zum Programmende, wenn die betreffenden Ansichten längst
-  // geschlossen sind. Jede Nutzung verschiebt die Freigabe.
-  static const _embeddingCacheIdleTime = Duration(minutes: 3);
-
-  void _planeEmbeddingCacheFreigabe() {
-    _embeddingCacheTimer?.cancel();
-    _embeddingCacheTimer = Timer(_embeddingCacheIdleTime, () {
-      _embeddingsCache = null;
-      _embeddingsCacheGeneration = null;
-      _videoEinbettungenCache = null;
-      _videoEinbettungenGeneration = null;
-    });
-  }
+  // Die Einbettungen für KI-Suche, „Ähnliche Fotos“ und Duplikatsuche
+  // liegen im Vorrat der Datenbank (AppDatabase.einbettungenImSpeicher):
+  // einmal geladen, über den Stand der Einbettungen geprüft und nach drei
+  // Minuten Ruhe freigegeben – derselbe Vorrat wie an Server und Telefon.
 
   @visibleForTesting
-  void clearEmbeddingCaches() {
-    _embeddingCacheTimer?.cancel();
-    _embeddingsCache = null;
-    _embeddingsCacheGeneration = null;
-    _videoEinbettungenCache = null;
-    _videoEinbettungenGeneration = null;
-  }
+  void clearEmbeddingCaches() => db.einbettungsvorratLeeren();
 
-  Future<Map<String, Float32List>> cachedEmbeddings() async {
-    _planeEmbeddingCacheFreigabe();
-    if (_embeddingsCache != null &&
-        _embeddingsCacheGeneration == db.embeddingsGeneration) {
-      return _embeddingsCache!;
-    }
-    final result = await db.allEmbeddings();
-    _embeddingsCache = result;
-    _embeddingsCacheGeneration = db.embeddingsGeneration;
-    return result;
-  }
+  /// Die Datenbank, deren Vorrat diese Sitzung benutzt hat – damit der
+  /// Abbau dessen Uhr anhalten kann, auch wenn [db] nie gesetzt wurde.
+  AppDatabase? _vorratsDb;
+
+  Future<Map<String, Float32List>> cachedEmbeddings() =>
+      (_vorratsDb = db).einbettungenImSpeicher();
 
   /// Einmal je Bibliothek: echte Bildgrössen statt der Grösse der Vorschau,
   /// und unter Linux und Windows neue Vorschauen für ProRAW, die LibRaw zu
@@ -436,24 +402,10 @@ class LibraryState extends ChangeNotifier {
   /// der ganze Vorteil, den es hier zu holen gibt.
 
   /// Die zusätzlichen Einbettungen der Video-Standbilder – **nur für die
-  /// Suche** (siehe [Videoeinbettungen]).
-  ///
-  /// Derselbe Zwischenspeicher wie bei [cachedEmbeddings] und dieselbe
-  /// Gültigkeitsprüfung: Beide ändern sich aus denselben Gründen.
-  Map<String, List<Float32List>>? _videoEinbettungenCache;
-  int? _videoEinbettungenGeneration;
-
-  Future<Map<String, List<Float32List>>> cachedVideoEinbettungen() async {
-    _planeEmbeddingCacheFreigabe();
-    if (_videoEinbettungenCache != null &&
-        _videoEinbettungenGeneration == db.embeddingsGeneration) {
-      return _videoEinbettungenCache!;
-    }
-    final ergebnis = await db.alleVideoeinbettungen();
-    _videoEinbettungenCache = ergebnis;
-    _videoEinbettungenGeneration = db.embeddingsGeneration;
-    return ergebnis;
-  }
+  /// Suche** (siehe [Videoeinbettungen]), aus demselben Vorrat wie
+  /// [cachedEmbeddings].
+  Future<Map<String, List<Float32List>>> cachedVideoEinbettungen() =>
+      (_vorratsDb = db).videoeinbettungenImSpeicher();
 
   /// Die Kandidaten der Textsuche aus den Zwischenspeichern (siehe
   /// `suchkandidatenAus` im Kern).
@@ -783,7 +735,7 @@ class LibraryState extends ChangeNotifier {
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();
-    _embeddingCacheTimer?.cancel();
+    _vorratsDb?.einbettungsvorratLeeren();
     _autoBackupTimer = null;
     _trashPurgeTimer = null;
     _ordnerTimer = null;
@@ -4046,7 +3998,7 @@ class LibraryState extends ChangeNotifier {
     // Einbettungsspeicher am Leben, den sie freigeben soll. In der
     // Pruefung fiel es als „A Timer is still pending even after the
     // widget tree was disposed" auf (drei Tests).
-    _embeddingCacheTimer?.cancel();
+    _vorratsDb?.einbettungsvorratLeeren();
     _speicherUhr?.cancel();
     unawaited(_abgleichsAbo?.cancel());
     unawaited(abgleich?.beende());
