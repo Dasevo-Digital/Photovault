@@ -13075,6 +13075,30 @@ abstract class AppTexte {
   /// **'z.B. \"Geburtstag\", \"Kuchen\" …'**
   String get suchoptHintTranskript;
 
+  /// No description provided for @suchePlatzhalterUeberall.
+  ///
+  /// In de, this message translates to:
+  /// **'Name, Ort, Person, Schlagwort …'**
+  String get suchePlatzhalterUeberall;
+
+  /// No description provided for @suchoptTypUeberall.
+  ///
+  /// In de, this message translates to:
+  /// **'Überall'**
+  String get suchoptTypUeberall;
+
+  /// No description provided for @suchoptNachUeberall.
+  ///
+  /// In de, this message translates to:
+  /// **'Suche überall – Namen, Beschreibungen, Text im Foto, Schlagwörter, Orte und Personen'**
+  String get suchoptNachUeberall;
+
+  /// No description provided for @suchoptHintUeberall.
+  ///
+  /// In de, this message translates to:
+  /// **'z.B. „Anna Rom“ …'**
+  String get suchoptHintUeberall;
+
   /// No description provided for @suchoptTranskriptFehlt.
   ///
   /// In de, this message translates to:

@@ -662,5 +662,13 @@
   "jrAuswahl": "The best photos",
   "jrPersonen": "Seen most often",
   "jrReisen": "Trips",
-  "kalLeer": "No photos or videos yet."
+  "kalLeer": "No photos or videos yet.",
+  "sucheAlsAlbum": "Save as smart album",
+  "sucheAlsAlbumGemerkt": "“{name}” is now under Albums.",
+  "albenIntelligent": "Smart albums",
+  "albenIntelligentHinweis": "The album always shows what the search finds right now – including photos added later.",
+  "albenName": "Name",
+  "albenMerken": "Save",
+  "albenLoeschen": "Delete album",
+  "albenIntelligentLoeschen": "Delete “{name}”? The photos stay; only the saved search goes."
 }

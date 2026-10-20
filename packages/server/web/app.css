@@ -507,6 +507,12 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .rb-jahrkopf h3 { margin: 0; flex: 1; text-align: center; font-size: 1.3em; }
 .rb-jahrkopf .rb-knopf { text-decoration: none; min-width: 40px; font-size: 1.2em; }
 .rb-jahrkopf .rb-knopf.aus { pointer-events: none; opacity: .35; }
+/* Intelligente Alben (#187) */
+.karten-abschnitt { grid-column: 1 / -1; margin: 12px 0 0; }
+.albumkarte.intelligent .albumbild { display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, var(--akzent), #6e56cf); }
+.albumkarte.intelligent .albumbild .symbol { width: 42%; height: 42%; stroke-width: 1.6; }
+.suche-merken { margin: 0 16px 8px; padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); font: inherit; cursor: pointer; }
+.suche-merken:hover { border-color: var(--akzent); }
 .rb-jahrkarte { grid-column: 1 / -1; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, #d6409f 12%, transparent); }
 #vorschlag-dialog { width: min(560px, calc(100vw - 32px)); }
 #gesicht-ja { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--akzent); color: #fff; font-weight: 600; }

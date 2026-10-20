@@ -1911,4 +1911,33 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kalLeer => 'No photos or videos yet.';
+
+  @override
+  String get sucheAlsAlbum => 'Save as smart album';
+
+  @override
+  String sucheAlsAlbumGemerkt(String name) {
+    return '“$name” is now under Albums.';
+  }
+
+  @override
+  String get albenIntelligent => 'Smart albums';
+
+  @override
+  String get albenIntelligentHinweis =>
+      'The album always shows what the search finds right now – including photos added later.';
+
+  @override
+  String get albenName => 'Name';
+
+  @override
+  String get albenMerken => 'Save';
+
+  @override
+  String get albenLoeschen => 'Delete album';
+
+  @override
+  String albenIntelligentLoeschen(String name) {
+    return 'Delete “$name”? The photos stay; only the saved search goes.';
+  }
 }

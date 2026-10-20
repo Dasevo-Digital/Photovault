@@ -3,8 +3,19 @@
 /// bewusst: passt nicht zu PhotoVaults Datenmodell (die App organisiert die
 /// Bibliothek selbst, es gibt keine vom Nutzer sichtbaren Ordner).
 /// Wo ein Suchbegriff gesucht wird. [transkript] ist das in Videos
-/// Gesprochene (siehe WhisperService).
-enum SearchTextMode { context, filename, description, ocr, caption, transkript }
+/// Gesprochene (siehe WhisperService). [ueberall] ist die Textsuche von
+/// Browser und Handy: jedes Wort als Wortanfang in Namen, Beschreibungen,
+/// erkanntem Text, Schlagwörtern, Orten und Personen (siehe
+/// `textfundstellen`) – seit #187 auch am Rechner.
+enum SearchTextMode {
+  context,
+  filename,
+  description,
+  ocr,
+  caption,
+  transkript,
+  ueberall,
+}
 
 enum MediaTypeFilter { all, image, video }
 

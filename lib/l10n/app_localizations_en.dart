@@ -8378,6 +8378,19 @@ class AppTexteEn extends AppTexte {
   String get suchoptHintTranskript => 'e.g. \"birthday\", \"cake\" …';
 
   @override
+  String get suchePlatzhalterUeberall => 'Name, place, person, tag …';
+
+  @override
+  String get suchoptTypUeberall => 'Everywhere';
+
+  @override
+  String get suchoptNachUeberall =>
+      'Search everywhere – names, descriptions, text in the photo, tags, places and people';
+
+  @override
+  String get suchoptHintUeberall => 'e.g. “Anna Rome” …';
+
+  @override
   String get suchoptTranskriptFehlt =>
       'Speech recognition is unavailable – the model is missing (see Settings → AI models).';
 

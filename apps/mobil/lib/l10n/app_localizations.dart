@@ -3042,6 +3042,54 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Noch keine Fotos oder Videos.'**
   String get kalLeer;
+
+  /// No description provided for @sucheAlsAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'Als intelligentes Album merken'**
+  String get sucheAlsAlbum;
+
+  /// No description provided for @sucheAlsAlbumGemerkt.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ steht jetzt unter Alben.'**
+  String sucheAlsAlbumGemerkt(String name);
+
+  /// No description provided for @albenIntelligent.
+  ///
+  /// In de, this message translates to:
+  /// **'Intelligente Alben'**
+  String get albenIntelligent;
+
+  /// No description provided for @albenIntelligentHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Album zeigt immer, was die Suche gerade findet – auch Fotos, die erst später dazukommen.'**
+  String get albenIntelligentHinweis;
+
+  /// No description provided for @albenName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get albenName;
+
+  /// No description provided for @albenMerken.
+  ///
+  /// In de, this message translates to:
+  /// **'Merken'**
+  String get albenMerken;
+
+  /// No description provided for @albenLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Album löschen'**
+  String get albenLoeschen;
+
+  /// No description provided for @albenIntelligentLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.'**
+  String albenIntelligentLoeschen(String name);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

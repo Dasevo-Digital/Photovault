@@ -8428,6 +8428,19 @@ class AppTexteDe extends AppTexte {
   String get suchoptHintTranskript => 'z.B. \"Geburtstag\", \"Kuchen\" …';
 
   @override
+  String get suchePlatzhalterUeberall => 'Name, Ort, Person, Schlagwort …';
+
+  @override
+  String get suchoptTypUeberall => 'Überall';
+
+  @override
+  String get suchoptNachUeberall =>
+      'Suche überall – Namen, Beschreibungen, Text im Foto, Schlagwörter, Orte und Personen';
+
+  @override
+  String get suchoptHintUeberall => 'z.B. „Anna Rom“ …';
+
+  @override
   String get suchoptTranskriptFehlt =>
       'Spracherkennung nicht verfügbar – Modell fehlt (siehe Einstellungen → KI-Modelle).';
 

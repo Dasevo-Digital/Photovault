@@ -43,6 +43,7 @@ import 'package:photo_vault_mobil/seiten/entwickeln.dart';
 import 'package:photo_vault_mobil/seiten/erinnerungen.dart';
 import 'package:photo_vault_mobil/seiten/freigaben.dart';
 import 'package:photo_vault_mobil/seiten/gesichter.dart';
+import 'package:photo_vault_mobil/seiten/alben.dart';
 import 'package:photo_vault_mobil/seiten/gesicht_im_foto.dart';
 import 'package:photo_vault_mobil/seiten/rueckblick.dart';
 import 'package:photo_vault_mobil/seiten/konten.dart';
@@ -1110,6 +1111,57 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('Filter: Favoriten'), findsOneWidget);
+    final raster = tester.widget<AufnahmenRaster>(find.byType(AufnahmenRaster));
+    expect([for (final z in raster.zeilen) z.id], ['s2']);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('Intelligente Alben: Suche merken, im Album öffnen (#187)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['s1', 's2']);
+    await tester.runAsync(
+      () => db.fuehreAus(const FavoritSetzen(['s2'], true)),
+    );
+    Widget app(Widget inhalt) => MaterialApp(
+      locale: const Locale('de'),
+      localizationsDelegates: AppTexte.localizationsDelegates,
+      supportedLocales: AppTexte.supportedLocales,
+      home: Scaffold(body: inhalt),
+    );
+    Future<void> ruhe() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await tester.pumpWidget(app(Suche(sitzung: sitzung)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter'));
+    await ruhe();
+    await tester.tap(find.text('Nur Favoriten'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anwenden'));
+    await ruhe();
+    await tester.tap(find.text('Als intelligentes Album merken'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Lieblinge');
+    await tester.tap(find.text('Merken'));
+    await ruhe();
+    final gemerkt = await tester.runAsync(() => db.gespeicherteSuchen());
+    expect(gemerkt!.single.name, 'Lieblinge');
+    expect(
+      db.decodeSavedSearchFilters(gemerkt.single.filtersJson).favoritesOnly,
+      isTrue,
+    );
+
+    await tester.pumpWidget(app(Alben(sitzung: sitzung)));
+    await ruhe();
+    expect(find.text('Intelligente Alben'), findsOneWidget);
+    await tester.tap(find.text('Lieblinge'));
+    await ruhe();
     final raster = tester.widget<AufnahmenRaster>(find.byType(AufnahmenRaster));
     expect([for (final z in raster.zeilen) z.id], ['s2']);
     await tester.pumpWidget(const SizedBox());

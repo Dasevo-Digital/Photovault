@@ -694,6 +694,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     SearchTextMode.ocr => AppTexte.of(context).suchoptNachOcr,
     SearchTextMode.caption => AppTexte.of(context).suchoptNachCaption,
     SearchTextMode.transkript => AppTexte.of(context).suchoptNachTranskript,
+    SearchTextMode.ueberall => AppTexte.of(context).suchoptNachUeberall,
   };
 
   Widget _buildTextModeSection() {
@@ -743,6 +744,13 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               label: AppTexte.of(context).suchoptTypTranskript,
               onChanged: (v) => setState(() => _textMode = v),
             ),
+            // Wie die Textsuche in Browser und Handy (#187).
+            _InlineRadio(
+              value: SearchTextMode.ueberall,
+              groupValue: _textMode,
+              label: AppTexte.of(context).suchoptTypUeberall,
+              onChanged: (v) => setState(() => _textMode = v),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -770,6 +778,9 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
               SearchTextMode.transkript => AppTexte.of(
                 context,
               ).suchoptHintTranskript,
+              SearchTextMode.ueberall => AppTexte.of(
+                context,
+              ).suchoptHintUeberall,
             },
           ),
         ),

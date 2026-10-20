@@ -586,6 +586,42 @@ async function zeigeAlben() {
   for (const a of d.alben) {
     $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`));
   }
+  // Die gemerkten Suchen – wie am Rechner (#187).
+  const k = await api('/api/v1/intelligente-alben').catch(() => ({ alben: [] }));
+  if (k.alben.length) {
+    $('karten').append(el('h3', 'karten-abschnitt', t('Intelligente Alben')));
+    for (const a of k.alben) {
+      const karteKlug = karte(null, a.name, a.inhalt ? t('Sucht nach Bildinhalt') : t('Gemerkte Suche'), `#/alben/klug/${encodeURIComponent(a.id)}`);
+      karteKlug.classList.add('intelligent');
+      karteKlug.querySelector('.albumbild').append(symbol('intelligent'));
+      $('karten').append(karteKlug);
+    }
+  }
+}
+
+// Ein intelligentes Album: die gemerkte Suche, frisch ausgeführt.
+async function zeigeIntelligentesAlbum(id) {
+  markiereNav('alben');
+  zeigeBereich(['raster']);
+  let d;
+  try {
+    d = await api(`/api/v1/intelligente-alben/${encodeURIComponent(id)}`);
+  } catch (x) {
+    if (x.status === 404) { meldung(t('Der Server hat kein Modell für die Bildsuche – suche nach Text.')); location.hash = '#/alben'; return; }
+    throw x;
+  }
+  const kopf = el('div', 'reisekopf');
+  const diashow = el('button', 'knopf', t('Diashow'));
+  diashow.type = 'button';
+  diashow.addEventListener('click', () => starteDiashow(liste.aufnahmen, 0));
+  const weg = el('button', 'knopf', t('Album löschen'));
+  weg.type = 'button';
+  weg.addEventListener('click', async () => {
+    if (!confirm(t('„{name}“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.', { name: d.name }))) return;
+    try { await befehl('sucheVergessen', { sucheId: id }); location.hash = '#/alben'; } catch (x) { meldung(x.message); }
+  });
+  kopf.append(diashow, weg);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.name);
 }
 
 // --- Orte (Issue #173) --------------------------------------------------------
@@ -1961,6 +1997,28 @@ $('filter-leeren').addEventListener('click', () => {
   zeigeFilterzeile();
 });
 
+// Die zuletzt gelaufene Suche – zum Merken als intelligentes Album (#187).
+let letzteSuche = null;
+$('suche-merken').addEventListener('click', () => {
+  if (!letzteSuche) return;
+  const f = $('form-merken');
+  f.name.value = letzteSuche.text || '';
+  $('merken-meldung').textContent = '';
+  $('merken-dialog').showModal();
+  f.name.focus();
+});
+$('merken-abbrechen').addEventListener('click', () => $('merken-dialog').close());
+$('form-merken').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = e.target.name.value.trim();
+  if (!name || !letzteSuche) return;
+  try {
+    await api(`/api/v1/intelligente-alben?${letzteSuche.q}`, { methode: 'POST', json: { sucheId: neueKennung(), name } });
+    $('merken-dialog').close();
+    meldung(t('„{name}“ steht jetzt unter Alben.', { name }));
+  } catch (x) { $('merken-meldung').textContent = x.message; }
+});
+
 $('form-suche').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target;
@@ -1973,6 +2031,8 @@ $('form-suche').addEventListener('submit', async (e) => {
     const d = await api(`/api/v1/suche?${q}`);
     zeigeListe({ aufnahmen: d.aufnahmen, suche: true });
     $('suche-hinweis').textContent = d.aufnahmen.length ? '' : t('Nichts gefunden.');
+    letzteSuche = { q: q.toString(), text };
+    $('suche-merken').hidden = false;
   } catch (x) {
     $('suche-hinweis').textContent = x.status === 404
       ? t('Der Server hat kein Modell für die Bildsuche – suche nach Text.')
@@ -3506,7 +3566,7 @@ async function zeigeWeg() {
   try {
     switch (teile[0]) {
       case 'suche': zeigeSuche(); break;
-      case 'alben': await (teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
+      case 'alben': await (teile[1] === 'klug' ? zeigeIntelligentesAlbum(teile[2]) : teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'konto': await zeigeKonto(); break;
       case 'reisen': await (teile[1] ? zeigeReise(teile[1]) : zeigeReisen()); break;

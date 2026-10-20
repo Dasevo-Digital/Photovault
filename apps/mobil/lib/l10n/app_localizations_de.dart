@@ -1917,4 +1917,33 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kalLeer => 'Noch keine Fotos oder Videos.';
+
+  @override
+  String get sucheAlsAlbum => 'Als intelligentes Album merken';
+
+  @override
+  String sucheAlsAlbumGemerkt(String name) {
+    return '„$name“ steht jetzt unter Alben.';
+  }
+
+  @override
+  String get albenIntelligent => 'Intelligente Alben';
+
+  @override
+  String get albenIntelligentHinweis =>
+      'Das Album zeigt immer, was die Suche gerade findet – auch Fotos, die erst später dazukommen.';
+
+  @override
+  String get albenName => 'Name';
+
+  @override
+  String get albenMerken => 'Merken';
+
+  @override
+  String get albenLoeschen => 'Album löschen';
+
+  @override
+  String albenIntelligentLoeschen(String name) {
+    return '„$name“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.';
+  }
 }

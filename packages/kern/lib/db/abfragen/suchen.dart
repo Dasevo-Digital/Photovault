@@ -23,6 +23,11 @@ extension SuchenAbfragen on AppDatabase {
     savedSearches,
   )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).watch();
 
+  /// Die gespeicherten Suchen, neueste zuerst – einmalig.
+  Future<List<SavedSearchData>> gespeicherteSuchen() => (select(
+    savedSearches,
+  )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+
   Future<void> deleteSavedSearch(String id) =>
       (delete(savedSearches)..where((t) => t.id.equals(id))).go();
 

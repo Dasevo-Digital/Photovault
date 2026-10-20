@@ -1009,5 +1009,15 @@
   "jrAuswahl": "Die besten Fotos",
   "jrPersonen": "Am häufigsten dabei",
   "jrReisen": "Reisen",
-  "kalLeer": "Noch keine Fotos oder Videos."
+  "kalLeer": "Noch keine Fotos oder Videos.",
+  "sucheAlsAlbum": "Als intelligentes Album merken",
+  "sucheAlsAlbumGemerkt": "„{name}“ steht jetzt unter Alben.",
+  "@sucheAlsAlbumGemerkt": {"placeholders": {"name": {"type": "String"}}},
+  "albenIntelligent": "Intelligente Alben",
+  "albenIntelligentHinweis": "Das Album zeigt immer, was die Suche gerade findet – auch Fotos, die erst später dazukommen.",
+  "albenName": "Name",
+  "albenMerken": "Merken",
+  "albenLoeschen": "Album löschen",
+  "albenIntelligentLoeschen": "„{name}“ löschen? Die Fotos bleiben, nur die gemerkte Suche geht.",
+  "@albenIntelligentLoeschen": {"placeholders": {"name": {"type": "String"}}}
 }

@@ -282,6 +282,9 @@ extension VokabularAbfragen on AppDatabase {
   Future<List<String>?> _ftsAssetIds(SearchFilters filters) async {
     final text = filters.query.trim();
     if (text.isEmpty) return null;
+    if (filters.textMode == SearchTextMode.ueberall) {
+      return textfundstellen(text);
+    }
     final columns = switch (filters.textMode) {
       SearchTextMode.filename => ['original_file_name'],
       SearchTextMode.description => ['description'],

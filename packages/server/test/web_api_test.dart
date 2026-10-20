@@ -1560,6 +1560,86 @@ void main() {
     );
   });
 
+  test('Intelligente Alben: gemerkte Suchen als Album (#187)', () async {
+    final strand = await ladeHoch(erikaToken, 'strand.jpg', 30);
+    final berg = await ladeHoch(erikaToken, 'berg.jpg', 90);
+    expect(
+      (await befehl(erikaToken, 'favoritSetzen', {
+        'ids': [berg],
+        'favorit': true,
+      })).statusCode,
+      200,
+    );
+    // So schicken Browser und Handy eine Suche: nur, was gesetzt ist.
+    for (final (id, name, filter) in [
+      ('s1', 'Strand', {'query': 'stra', 'textMode': 'ueberall'}),
+      ('s2', 'Lieblinge', {'favoritesOnly': true}),
+      ('s3', 'Meer', {'query': 'meer', 'textMode': 'context'}),
+    ]) {
+      expect(
+        (await befehl(erikaToken, 'sucheMerken', {
+          'sucheId': id,
+          'name': name,
+          'filter': filter,
+        })).statusCode,
+        200,
+        reason: name,
+      );
+    }
+    final liste = await jsonAus(
+      await frag('GET', '/api/v1/intelligente-alben', token: erikaToken),
+    );
+    final alben = (liste['alben']! as List).cast<Map>();
+    expect(
+      {for (final a in alben) a['id']: a['inhalt']},
+      {'s1': false, 's2': false, 's3': true},
+    );
+    Future<List<Object?>> inhalt(String id) async => [
+      for (final a
+          in ((await jsonAus(
+                    await frag(
+                      'GET',
+                      '/api/v1/intelligente-alben/$id',
+                      token: erikaToken,
+                    ),
+                  ))['aufnahmen']!
+                  as List)
+              .cast<Map>())
+        a['id'],
+    ];
+    expect(await inhalt('s1'), [strand]);
+    expect(await inhalt('s2'), [berg]);
+    // Bildinhalt braucht das Textmodell – das hat dieser Server nicht.
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/intelligente-alben/s3',
+        token: erikaToken,
+      )).statusCode,
+      404,
+    );
+    expect(
+      (await jsonAus(
+        await frag('GET', '/api/v1/intelligente-alben', token: maxToken),
+      ))['alben'],
+      isEmpty,
+    );
+    expect(
+      (await befehl(erikaToken, 'sucheVergessen', {
+        'sucheId': 's2',
+      })).statusCode,
+      200,
+    );
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/intelligente-alben/s2',
+        token: erikaToken,
+      )).statusCode,
+      404,
+    );
+  });
+
   test('Favoriten: nur, was so markiert ist, seitenweise', () async {
     final a = await ladeHoch(erikaToken, 'lieblings.jpg', 20);
     await ladeHoch(erikaToken, 'sonst.jpg', 70);

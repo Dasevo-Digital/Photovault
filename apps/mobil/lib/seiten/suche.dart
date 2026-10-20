@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'alben.dart';
+import 'package:uuid/uuid.dart';
+import 'package:kern/services/intelligente_alben.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -79,6 +82,30 @@ class _SucheState extends State<Suche> {
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }
+  }
+
+  /// Die Suche als intelligentes Album merken – über den Befehl, damit es
+  /// auch am Rechner und im Browser steht.
+  Future<void> _merken() async {
+    final t = AppTexte.of(context);
+    final text = _feld.text.trim();
+    final name = await frageAlbumname(context, vorgabe: text);
+    if (name == null || !mounted) return;
+    await _db.fuehreAus(
+      SucheMerken(
+        const Uuid().v4(),
+        name,
+        alsGespeicherteSuche(
+          _filter,
+          text: text,
+          art: _art == _Art.inhalt ? Suchart.inhalt : Suchart.text,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(t.sucheAlsAlbumGemerkt(name))));
   }
 
   Future<void> _filtern() async {
@@ -206,6 +233,16 @@ class _SucheState extends State<Suche> {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Text(t.sucheNichts, textAlign: TextAlign.center),
+            ),
+          // Wie im Browser (#187): die Suche als intelligentes Album.
+          if (_treffer != null && !_laeuft)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _merken,
+                icon: const Icon(Icons.saved_search_rounded),
+                label: Text(t.sucheAlsAlbum),
+              ),
             ),
         ],
       ),
