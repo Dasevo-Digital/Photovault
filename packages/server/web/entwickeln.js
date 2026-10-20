@@ -220,8 +220,8 @@ function entwKontext() {
 }
 
 function entwTextur(gl, breite, hoehe, daten, { linear = true, mipmap = false } = {}) {
-  const t = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, t);
+  const textur = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, textur);
   if (daten instanceof ImageBitmap) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, daten);
   } else {
@@ -233,7 +233,7 @@ function entwTextur(gl, breite, hoehe, daten, { linear = true, mipmap = false } 
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   if (mipmap) gl.generateMipmap(gl.TEXTURE_2D);
-  return t;
+  return textur;
 }
 
 // Eine Zielfläche (Textur samt Framebuffer) in der Arbeitsgrösse.
@@ -397,7 +397,7 @@ async function zeigeEntwickeln(id) {
   $('entw-meldung').textContent = '';
   if (entw && entw.k) {
     const { gl } = entw.k;
-    for (const t of [entw.quellTextur, entw.kurve, entw.wuerfel, entw.leer]) if (t) gl.deleteTexture(t);
+    for (const x of [entw.quellTextur, entw.kurve, entw.wuerfel, entw.leer]) if (x) gl.deleteTexture(x);
   }
   entw = null;
   const d = await api(`/api/v1/entwickeln/${encodeURIComponent(id)}`);

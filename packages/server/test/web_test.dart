@@ -46,6 +46,34 @@ List<int> _ausBase32(String s) {
 String _ip(List<int> teile) => teile.join('.');
 
 void main() {
+  test('kein Skript verdeckt die Übersetzung t()', () {
+    // In der Duplikatsuche hiess eine Kachel „t“ – und schon „Behalten“
+    // brach mit „t is not a function“ ab, seit die Oberfläche übersetzt
+    // wird. Alle Skripte rufen t() auf; keine Variable und kein Parameter
+    // darf deshalb so heissen.
+    final verdeckt = [
+      RegExp(r'\b(const|let|var)\s+t\s*[=;,]'),
+      RegExp(r'\bfor\s*\(\s*(const|let|var)\s+t\s+(of|in)\b'),
+      RegExp(r'(^|[^\w.$])t\s*=>'),
+      RegExp(r'\(\s*t\s*(,[^()]*)?\)\s*=>'),
+      RegExp(r'\bfunction\s*[\w$]*\s*\(\s*t\s*[,)]'),
+      RegExp(r'\bfunction\s*[\w$]*\s*\([^)]*,\s*t\s*[,)]'),
+      RegExp(r'\bcatch\s*\(\s*t\s*\)'),
+    ];
+    final funde = <String>[];
+    for (final f in Directory('web').listSync().whereType<File>()) {
+      final name = f.uri.pathSegments.last;
+      if (!name.endsWith('.js') || name == 'texte.js') continue;
+      final zeilen = f.readAsLinesSync();
+      for (var i = 0; i < zeilen.length; i++) {
+        if (verdeckt.any((m) => m.hasMatch(zeilen[i]))) {
+          funde.add('$name:${i + 1}: ${zeilen[i].trim()}');
+        }
+      }
+    }
+    expect(funde, isEmpty);
+  });
+
   test('installierbar: Manifest mit Symbolen, die es gibt', () {
     // Die echte Oberfläche, nicht die des Prüfstands.
     final web = Directory('web');

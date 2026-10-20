@@ -356,18 +356,18 @@ function kastenmittel(werte, halb) {
   return aus;
 }
 
-function abschnittBei(t) {
+function abschnittBei(u) {
   const b = 1 - ABSPANN;
   return {
-    einflug: t < EINFLUG ? Math.min(Math.max(t / EINFLUG, 0), 1) : 1,
-    flug: Math.min(Math.max((t - EINFLUG) / (b - EINFLUG), 0), 1),
-    abspann: t <= b ? 0 : Math.min(Math.max((t - b) / (1 - b), 0), 1),
+    einflug: u < EINFLUG ? Math.min(Math.max(u / EINFLUG, 0), 1) : 1,
+    flug: Math.min(Math.max((u - EINFLUG) / (b - EINFLUG), 0), 1),
+    abspann: u <= b ? 0 : Math.min(Math.max((u - b) / (1 - b), 0), 1),
   };
 }
 
-const sanft = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
-const einblenden = (t) => 1 - (1 - t) * (1 - t);
-const ausblenden = (t) => t * t;
+const sanft = (u) => (u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2);
+const einblenden = (u) => 1 - (1 - u) * (1 - u);
+const ausblenden = (u) => u * u;
 
 // Die Zoomstufe, bei der die Kamera [meter] vom Blickpunkt entfernt ist.
 function zoomFuerAbstand(meter, breite, hoeheBild, fovGrad = 36.87) {
@@ -377,8 +377,8 @@ function zoomFuerAbstand(meter, breite, hoeheBild, fovGrad = 36.87) {
 
 // Zwischen zwei Kameras mischen – die Drehung auf dem kürzeren Weg, sonst
 // dreht sich die Landschaft beim Einflug einmal ganz herum.
-function mischeKamera(a, b, t) {
-  const m = (x, y) => x + (y - x) * t;
+function mischeKamera(a, b, u) {
+  const m = (x, y) => x + (y - x) * u;
   let dd = b.bearing - a.bearing;
   while (dd > 180) dd -= 360;
   while (dd < -180) dd += 360;
@@ -386,7 +386,7 @@ function mischeKamera(a, b, t) {
     center: [m(a.center[0], b.center[0]), m(a.center[1], b.center[1])],
     zoom: m(a.zoom, b.zoom),
     pitch: m(a.pitch, b.pitch),
-    bearing: a.bearing + dd * t,
+    bearing: a.bearing + dd * u,
   };
 }
 
@@ -461,8 +461,8 @@ function hoehenlinien(gitter, kasten, maschen = 160) {
   const z = 16;
   const xW = kachelX(kasten.west, z), xO = kachelX(kasten.ost, z);
   const yN = kachelY(kasten.nord, z), yS = kachelY(kasten.sued, z);
-  const laengeBei = (t) => laengeAus(xW + (xO - xW) * t, z);
-  const breiteBei = (t) => breiteAus(yN + (yS - yN) * t, z);
+  const laengeBei = (u) => laengeAus(xW + (xO - xW) * u, z);
+  const breiteBei = (u) => breiteAus(yN + (yS - yN) * u, z);
   for (let j = 0; j < n; j++) {
     const b = breiteBei(j / maschen);
     for (let i = 0; i < n; i++) {
@@ -847,8 +847,8 @@ function flugKamera(z, stand) {
   return { center: ort, zoom, bearing: stand.drehung * 180 / Math.PI, pitch: z.neigung };
 }
 
-function kameraBei(z, t) {
-  const a = abschnittBei(t);
+function kameraBei(z, u) {
+  const a = abschnittBei(u);
   const stand = z.flug.bei(a.flug);
   const uebersicht = { ...z.uebersicht, pitch: z.neigung };
   if (a.einflug < 1) return { stand, abschnitt: a, kamera: mischeKamera(uebersicht, flugKamera(z, z.flug.bei(0)), sanft(a.einflug)) };
@@ -856,9 +856,9 @@ function kameraBei(z, t) {
   return { stand, abschnitt: a, kamera: flugKamera(z, stand) };
 }
 
-function zeigeBild(z, t) {
+function zeigeBild(z, u) {
   if (!z.karte || !z.uebersicht) return;
-  const { stand, abschnitt, kamera } = kameraBei(z, t);
+  const { stand, abschnitt, kamera } = kameraBei(z, u);
   z.automatisch = kamera;
   const nutzer = { ...kamera, bearing: kamera.bearing + z.versatz, zoom: kamera.zoom + z.zoomVersatz };
   z.karte.jumpTo(nutzer);

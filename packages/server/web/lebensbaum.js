@@ -110,45 +110,45 @@ const lbG = (geschlecht) => (geschlecht === 'w' ? 'w' : geschlecht === 'm' ? 'm'
 
 // lib/widgets/verwandtschaft_text.dart
 function lbGradText(grad, geschlecht) {
-  const t = LB_GRAD[lbSprache()] || LB_GRAD.de;
+  const wort = LB_GRAD[lbSprache()] || LB_GRAD.de;
   const g = lbG(geschlecht);
   const w = (tabelle) => tabelle[g];
   const auf = grad.aufwaerts || 0, ab = grad.abwaerts || 0;
   switch (grad.art) {
-    case 'selbst': return t.selbst();
+    case 'selbst': return wort.selbst();
     case 'vorfahre':
-      if (grad.elternArt === 'adoptivelternteil') return w(t.adoptiveltern);
-      if (grad.elternArt === 'pflegeelternteil') return w(t.pflegeeltern);
-      return [null, t.eltern, t.grosseltern, t.urgrosseltern, t.ururgrosseltern][auf] ? w([null, t.eltern, t.grosseltern, t.urgrosseltern, t.ururgrosseltern][auf]) : t.vorfahreN(auf);
+      if (grad.elternArt === 'adoptivelternteil') return w(wort.adoptiveltern);
+      if (grad.elternArt === 'pflegeelternteil') return w(wort.pflegeeltern);
+      return [null, wort.eltern, wort.grosseltern, wort.urgrosseltern, wort.ururgrosseltern][auf] ? w([null, wort.eltern, wort.grosseltern, wort.urgrosseltern, wort.ururgrosseltern][auf]) : wort.vorfahreN(auf);
     case 'nachkomme':
-      if (grad.elternArt === 'adoptivelternteil') return w(t.adoptivkind);
-      if (grad.elternArt === 'pflegeelternteil') return w(t.pflegekind);
-      return [null, t.kind, t.enkel, t.urenkel, t.ururenkel][ab] ? w([null, t.kind, t.enkel, t.urenkel, t.ururenkel][ab]) : t.nachkommeN(ab);
-    case 'geschwister': return w(grad.halb ? t.halbgeschwister : t.geschwister);
-    case 'geschwisterkind': return ab === 2 ? w(t.neffeNichte) : ab === 3 ? w(t.grossneffeNichte) : t.geschwisterNachkommeN(ab);
-    case 'vorfahrengeschwister': return auf === 2 ? w(t.onkelTante) : auf === 3 ? w(t.grossonkelTante) : t.vorfahrengeschwisterN(auf);
+      if (grad.elternArt === 'adoptivelternteil') return w(wort.adoptivkind);
+      if (grad.elternArt === 'pflegeelternteil') return w(wort.pflegekind);
+      return [null, wort.kind, wort.enkel, wort.urenkel, wort.ururenkel][ab] ? w([null, wort.kind, wort.enkel, wort.urenkel, wort.ururenkel][ab]) : wort.nachkommeN(ab);
+    case 'geschwister': return w(grad.halb ? wort.halbgeschwister : wort.geschwister);
+    case 'geschwisterkind': return ab === 2 ? w(wort.neffeNichte) : ab === 3 ? w(wort.grossneffeNichte) : wort.geschwisterNachkommeN(ab);
+    case 'vorfahrengeschwister': return auf === 2 ? w(wort.onkelTante) : auf === 3 ? w(wort.grossonkelTante) : wort.vorfahrengeschwisterN(auf);
     case 'cousin': {
-      const grund = t.cousin(g, Math.min(auf, ab) - 1);
+      const grund = wort.cousin(g, Math.min(auf, ab) - 1);
       const entfernung = Math.abs(auf - ab);
-      return entfernung === 0 ? grund : t.entfernt(grund, entfernung);
+      return entfernung === 0 ? grund : wort.entfernt(grund, entfernung);
     }
-    case 'partner': return w(t.partner);
-    case 'schwager': return w(t.schwager);
-    case 'schwiegerelternteil': return w(t.schwiegereltern);
-    case 'schwiegerkind': return w(t.schwiegerkind);
-    case 'stiefelternteil': return w(t.stiefeltern);
-    case 'stiefkind': return w(t.stiefkind);
-    case 'stiefgeschwister': return w(t.stiefgeschwister);
-    case 'angeheiratet': return t.angeheiratet();
-    default: return t.keine();
+    case 'partner': return w(wort.partner);
+    case 'schwager': return w(wort.schwager);
+    case 'schwiegerelternteil': return w(wort.schwiegereltern);
+    case 'schwiegerkind': return w(wort.schwiegerkind);
+    case 'stiefelternteil': return w(wort.stiefeltern);
+    case 'stiefkind': return w(wort.stiefkind);
+    case 'stiefgeschwister': return w(wort.stiefgeschwister);
+    case 'angeheiratet': return wort.angeheiratet();
+    default: return wort.keine();
   }
 }
 
 function lbBezeichnung(person) {
   if (!person.grad) return null;
-  const t = LB_GRAD[lbSprache()] || LB_GRAD.de;
+  const wort = LB_GRAD[lbSprache()] || LB_GRAD.de;
   if (person.umweg) {
-    return t.ueberWeg(
+    return wort.ueberWeg(
       lbGradText(person.umweg.schritt, person.geschlecht),
       lbGradText(person.umweg.ueberGrad, person.umweg.geschlecht),
       person.umweg.name,
@@ -295,8 +295,8 @@ function lbBeschrifte(ctx, r, leute, amStamm, v) {
 
 function lbTitel(ctx, d) {
   const v = d.vorlage;
-  const t = LB_GRAD[lbSprache()] || LB_GRAD.de;
-  const titel = d.nachname ? (v.untertitel ? t.titelKurz(d.nachname) : t.titel(d.nachname)) : t.titelOhneName;
+  const wort = LB_GRAD[lbSprache()] || LB_GRAD.de;
+  const titel = d.nachname ? (v.untertitel ? wort.titelKurz(d.nachname) : wort.titel(d.nachname)) : wort.titelOhneName;
   const [l, o, r, u] = v.titel;
   let g = (u - o) * 0.8;
   ctx.textAlign = 'center';
@@ -310,7 +310,7 @@ function lbTitel(ctx, d) {
   ctx.fillText(titel, (l + r) / 2, (o + u) / 2);
   if (!v.untertitel) return;
   const [ul, uo, ur, uu] = v.untertitel;
-  const text = t.untertitel[d.optionen.richtung](d.fokusName);
+  const text = wort.untertitel[d.optionen.richtung](d.fokusName);
   ctx.font = lbSchrift(Math.min((uu - uo) * 0.6, g * 0.42), { kursiv: true });
   ctx.fillStyle = v.nebenschrift;
   ctx.textBaseline = 'top';

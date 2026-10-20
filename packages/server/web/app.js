@@ -1631,8 +1631,10 @@ function duplikatgruppe(g) {
   box.append(kopf);
   const reihe = el('div', 'reihe');
   g.aufnahmen.forEach((a, i) => {
-    const t = el('div', 'dupl');
-    if (a.id === g.behalten) t.classList.add('beste');
+    // Nicht „t“: Das verdeckte die Übersetzung, und schon „Behalten“
+    // brach mit „t is not a function“ ab.
+    const zelle = el('div', 'dupl');
+    if (a.id === g.behalten) zelle.classList.add('beste');
     const img = el('img');
     img.loading = 'lazy';
     img.alt = '';
@@ -1651,8 +1653,8 @@ function duplikatgruppe(g) {
     const angaben = [a.breite && a.hoehe ? `${a.breite} × ${a.hoehe}` : '', datumZeit.format(new Date(a.aufgenommen)), a.favorit ? '♥' : '', a.bewertung ? '★'.repeat(a.bewertung) : ''].filter(Boolean).join(' · ');
     const name = el('div', 'name', a.name);
     name.title = a.name;
-    t.append(img, name, el('div', 'angaben', angaben), knopf);
-    reihe.append(t);
+    zelle.append(img, name, el('div', 'angaben', angaben), knopf);
+    reihe.append(zelle);
   });
   box.append(reihe);
   return box;
@@ -1797,7 +1799,7 @@ async function zeigeEinstellungen() {
   $('einst-sprache').value = gewaehlt;
   const e = await api('/api/v1/einstellungen');
   const ziel = $('einst-liste');
-  const melde = (t) => { $('einst-meldung').textContent = t; };
+  const melde = (text) => { $('einst-meldung').textContent = text; };
   const sende = async (art, werte) => {
     try { await befehl(art, werte); melde(t('Gespeichert.')); } catch (x) { melde(x.message); }
   };
@@ -2597,7 +2599,7 @@ const gb = (b) => `${(b / 1073741824).toFixed(1)} GB`;
 async function zeigeVerwaltung() {
   const ul = $('server-stand');
   ul.replaceChildren();
-  const zeile = (t) => { const li = el('li'); li.append(el('span', null, t)); ul.append(li); };
+  const zeile = (text) => { const li = el('li'); li.append(el('span', null, text)); ul.append(li); };
   try {
     const sp = await api('/api/v1/speicher');
     zeile(t('Speicher: {frei} frei von {gesamt}', { frei: gb(sp.frei), gesamt: gb(sp.gesamt) }) + (sp.stufe !== 'ok' ? ' – ' + t(sp.stufe) : ''));
@@ -3768,7 +3770,7 @@ $('live').addEventListener('click', (e) => e.stopPropagation());
 let angabenOffen = false;
 const landname = (() => { try { return new Intl.DisplayNames(GEBIET, { type: 'region' }); } catch (_) { return null; } })();
 const land = (code) => (code && /^[A-Z]{2}$/.test(code) && landname ? landname.of(code) : code);
-const belichtung = (t) => (t >= 1 ? `${t} s` : `1/${Math.round(1 / t)} s`);
+const belichtung = (s) => (s >= 1 ? `${s} s` : `1/${Math.round(1 / s)} s`);
 
 function reihe(zeichen, haupt, neben) {
   const r = el('div', 'reihe');
@@ -3815,7 +3817,7 @@ async function zeigeAngaben() {
   }
   if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
   if (d.gesichter && d.gesichter.length) teile.push(reihe('🙂', gesichterReihe(d.gesichter), t('Antippen, um zu benennen oder zu ändern')));
-  if (d.schlagwoerter.length) { const box = el('div'); for (const t of d.schlagwoerter) box.append(el('span', 'marke', t.name)); teile.push(reihe('🏷', box)); }
+  if (d.schlagwoerter.length) { const box = el('div'); for (const w of d.schlagwoerter) box.append(el('span', 'marke', w.name)); teile.push(reihe('🏷', box)); }
   if (d.alben.length) teile.push(reihe('📚', verweise(d.alben, '#/alben')));
   // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
   const text = el('textarea');
