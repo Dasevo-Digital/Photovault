@@ -26,6 +26,7 @@ import 'gpx_verortung_screen.dart';
 import 'statistics_screen.dart';
 import 'xmp_import_screen.dart';
 import 'datierung_screen.dart';
+import 'aufnahmedaten_screen.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/pin_dialogs.dart';
 
@@ -526,6 +527,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => DatierungScreen(library: widget.library),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.event_available_outlined),
+                  title: Text(t.aufnahmedatenTitel),
+                  subtitle: Text(t.werkzAufnahmedatenText),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          AufnahmedatenScreen(library: widget.library),
                     ),
                   ),
                 ),

@@ -511,6 +511,75 @@ extension NachtragsAbfragen on AppDatabase {
     ),
   );
 
+  /// Was die Prüfung „Aufnahmedaten“ (#203, `datumsvorschlaege`) über jede
+  /// Aufnahme braucht – sechs Spalten statt der ganzen Zeile mit Texten
+  /// und Beschreibungen. Ohne Papierkorb und gesperrten Ordner: Die
+  /// tauchen nirgends auf, wo ein Datum stört. [nur] beschränkt auf eine
+  /// Aufnahme (die Info-Ansicht).
+  Future<
+    List<
+      ({
+        String id,
+        String name,
+        DateTime zeitpunkt,
+        bool geschaetzt,
+        bool geprueft,
+        String pfad,
+      })
+    >
+  >
+  aufnahmenFuerNamensdatum({String? nur}) async {
+    final q = selectOnly(assets)
+      ..addColumns([
+        assets.id,
+        assets.originalFileName,
+        assets.fileCreatedAt,
+        assets.datumGeschaetzt,
+        assets.datumGeprueft,
+        assets.relativePath,
+      ])
+      ..where(
+        assets.isTrashed.equals(false) &
+            assets.isLocked.equals(false) &
+            (nur == null ? const Constant(true) : assets.id.equals(nur)),
+      );
+    return [
+      for (final z in await q.get())
+        (
+          id: z.read(assets.id)!,
+          name: z.read(assets.originalFileName)!,
+          zeitpunkt: z.read(assets.fileCreatedAt)!,
+          geschaetzt: z.read(assets.datumGeschaetzt)!,
+          geprueft: z.read(assets.datumGeprueft)!,
+          pfad: z.read(assets.relativePath)!,
+        ),
+    ];
+  }
+
+  /// Setzt die Aufnahmedaten aus der Prüfung (#203, Befehl
+  /// [AufnahmedatenSetzen]) und vermerkt sie als nachgesehen.
+  ///
+  /// **Nur die Zeilen, nicht die Ablage.** Der Ordner unter `originals/`
+  /// folgt dem Datum, aber verbundene Geräte holen ihre Dateien über eben
+  /// diesen Pfad und halten sie darunter vor: Ein Umzug auf dem Server
+  /// hiesse, dass jedes Gerät jedes Original noch einmal lädt und die
+  /// alte Kopie liegen lässt. Wie beim geschätzten Jahr
+  /// ([setzeGeschaetztesJahr]) bleibt die Datei deshalb, wo sie ist; ohne
+  /// Server zieht [LibraryState] sie selbst nach.
+  Future<void> setzeAufnahmedaten(
+    List<({String id, DateTime zeitpunkt, bool geschaetzt})> daten,
+  ) => transaction(() async {
+    for (final d in daten) {
+      await (update(assets)..where((t) => t.id.equals(d.id))).write(
+        AssetsCompanion(
+          fileCreatedAt: Value(d.zeitpunkt),
+          datumGeschaetzt: Value(d.geschaetzt),
+          datumGeprueft: const Value(true),
+        ),
+      );
+    }
+  });
+
   /// RAW-Fotos, deren Aufnahmedatum aus dem Dateizeitstempel stammen
   /// könnte – Kandidaten für die Datumskorrektur.
   ///

@@ -431,6 +431,16 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #bereich-duplikate .zeile h2 { margin: 0; flex: 1; }
 #bereich-duplikate .zeile label { display: flex; align-items: center; gap: 8px; color: var(--leise); }
 #dupl-alle { background: var(--fehler); }
+#bereich-aufnahmedaten .zeile { padding: 12px 0; }
+#bereich-aufnahmedaten .zeile h2 { margin: 0; flex: 1; }
+#daten-uebernehmen { background: var(--akzent); color: #fff; }
+.datumszeile { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--rand); cursor: pointer; }
+.datumszeile img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; cursor: zoom-in; background: var(--rand); }
+.datumszeile .inhalt { min-width: 0; }
+.datumszeile .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.datumszeile .neben { color: var(--leise); font-size: 0.85em; }
+.datumsvorschlag { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; color: var(--leise); font-size: 0.9em; }
+.datumsvorschlag button { padding: 3px 10px; border: 1px solid var(--akzent); border-radius: 8px; background: none; color: var(--akzent); }
 .gruppe { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
 .gruppenkopf { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--leise); }
 .gruppenkopf button, .dupl button { padding: 4px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }

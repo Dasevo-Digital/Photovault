@@ -6122,5 +6122,46 @@
   "serverOidcAbgelehnt": "Nicht verknüpft – im Browser abgebrochen oder abgelehnt.",
   "serverOidcZeitUm": "Nicht verknüpft – aus dem Browser kam keine Antwort.",
   "serverOidcVergeben": "Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.",
-  "serverOidcSeite": "Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren."
+  "serverOidcSeite": "Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren.",
+  "aufnahmedatenTitel": "Aufnahmedaten aus dem Dateinamen",
+  "werkzAufnahmedatenText": "Findet Fotos, deren Dateiname ein anderes Datum nennt als die Bibliothek – etwa „24-11-13 10-48-28.jpg“ mit dem Datum des Kopierens.",
+  "aufnahmedatenEinleitung": "Bei diesen Aufnahmen nennt der Dateiname ein anderes Datum. Die Datei geht dem Namen vor: Trägt sie selbst ein Datum, gibt es nur dann einen Vorschlag, wenn sie dasselbe nennt. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.",
+  "aufnahmedatenKeine": "Alle Aufnahmedaten passen zu ihren Dateinamen.",
+  "aufnahmedatenUebernehmen": "{n} übernehmen",
+  "@aufnahmedatenUebernehmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "aufnahmedatenUebernommen": "{n, plural, =1{Ein Aufnahmedatum übernommen} other{{n} Aufnahmedaten übernommen}}",
+  "@aufnahmedatenUebernommen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "aufnahmedatenLautName": "laut Dateiname",
+  "aufnahmedatenLautDatei": "laut Datei und Dateiname",
+  "aufnahmedatenNurTag": "nur der Tag, bleibt geschätzt",
+  "aufnahmedatenGeschaetzt": "geschätzt",
+  "infoNameNennt": "Der Dateiname nennt {datum}",
+  "@infoNameNennt": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "infoDateiNennt": "Datei und Dateiname nennen {datum}",
+  "@infoDateiNennt": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "infoDatumUebernehmen": "Übernehmen"
 }

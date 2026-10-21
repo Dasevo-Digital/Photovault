@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/zeitversatz.dart';
+import 'package:kern/services/datumsvorschlag.dart';
+import 'package:kern/services/namensdatum.dart';
+import '../screens/aufnahmedaten_screen.dart' show vorschlagsdatumText;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -77,6 +80,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   List<TagData> _tags = [];
   List<_AssetFace> _peopleFaces = [];
 
+  /// Was der Dateiname als Datum nennt, wenn es gelten sollte (#203).
+  Datumsvorschlag? _datumsvorschlag;
+
   /// Welche Fassung der KI-Bildunterschrift gerade bearbeitet wird.
   ///
   /// Anfangs die, die auch angezeigt würde: bei deutscher Oberfläche die
@@ -100,6 +106,35 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     super.initState();
     _loadTags();
     _loadPeople();
+    _ladeDatumsvorschlag();
+  }
+
+  /// Nur wenn der Name überhaupt ein anderes Datum nennt, wird geprüft –
+  /// nach denselben Regeln wie unter „Aufnahmedaten aus dem Dateinamen“.
+  Future<void> _ladeDatumsvorschlag() async {
+    final name = namensdatumAus(_asset.originalFileName);
+    Datumsvorschlag? v;
+    if (name != null && !name.passtZu(_asset.fileCreatedAt)) {
+      try {
+        v = (await context.read<LibraryState>().pruefeAufnahmedaten(
+          nur: _asset.id,
+        )).firstOrNull;
+      } catch (e) {
+        debugPrint('Aufnahmedatum nicht geprüft: $e');
+      }
+    }
+    if (mounted && v?.id != _datumsvorschlag?.id) {
+      setState(() => _datumsvorschlag = v);
+    }
+  }
+
+  Future<void> _datumsvorschlagUebernehmen() async {
+    final v = _datumsvorschlag;
+    if (v == null) return;
+    await widget.db.fuehreAus(AufnahmedatenSetzen([v.alsEintrag]));
+    if (!mounted) return;
+    setState(() => _datumsvorschlag = null);
+    await _refresh();
   }
 
   @override
@@ -785,6 +820,30 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                               ].join(' · '),
                         onEdit: _pickDate,
                       ),
+                      if (_datumsvorschlag case final v?)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 40),
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: AppSpacing.sm,
+                            children: [
+                              Text(
+                                (v.quelle == Datumsquelle.dateiUndName
+                                    ? AppTexte.of(context).infoDateiNennt
+                                    : AppTexte.of(context).infoNameNennt)(
+                                  vorschlagsdatumText(sprache, v),
+                                ),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              TextButton(
+                                onPressed: _datumsvorschlagUebernehmen,
+                                child: Text(
+                                  AppTexte.of(context).infoDatumUebernehmen,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       _IconDetailRow(
                         icon: asset.type == 'VIDEO'
                             ? Icons.videocam_outlined

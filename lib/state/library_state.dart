@@ -21,6 +21,7 @@ import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
 import 'package:kern/services/cube_lut.dart';
+import 'package:kern/services/datumsvorschlag.dart' as datumsvorschlag;
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/speicher_rueckgabe.dart';
 import 'package:kern/services/translation_service.dart';
@@ -457,6 +458,26 @@ class LibraryState extends ChangeNotifier {
     _serienCacheGeneration = db.embeddingsGeneration;
     notifyListeners();
   }
+
+  /// Die Prüfung „Aufnahmedaten“ (#203): wo der Dateiname ein anderes
+  /// Datum nennt als die Bibliothek, und was gelten sollte – dieselben
+  /// Regeln wie auf dem Server (`GET /api/v1/aufnahmedaten`). [nur]
+  /// beschränkt auf eine Aufnahme (Infoblatt).
+  ///
+  /// Gelesen wird die Datei nur, wo der Name widerspricht und das Datum
+  /// nicht geschätzt ist (an der Prüfbibliothek 25 Dateien); in einer
+  /// verbundenen Kopie kommt sie dafür vom Server.
+  Future<List<datumsvorschlag.Datumsvorschlag>> pruefeAufnahmedaten({
+    String? nur,
+  }) => datumsvorschlag.datumsvorschlaege(
+    db,
+    nur: nur,
+    leseDatei: (pfad) async {
+      final datei = await paths.bereit(pfad);
+      if (!await datei.exists()) return null;
+      return importService.pruefeAufnahmedatum(datei);
+    },
+  );
 
   /// Die Ortsvorschläge – was unverortete Aufnahmen von ihren zeitlichen
   /// Nachbarn erben könnten (siehe `services/ortsvorschlag.dart`).
@@ -2563,7 +2584,19 @@ class LibraryState extends ChangeNotifier {
     List<String> assetIds,
     DateTime neu,
   ) async {
-    _nurOhneServer();
+    // Verbunden über den Befehl (#203): Die Bibliothek liegt auf dem
+    // Server, und die Ablage dort bleibt, wo sie ist (siehe
+    // [AppDatabase.setzeAufnahmedaten]).
+    if (verbunden) {
+      await db.fuehreAus(
+        AufnahmedatenSetzen([
+          for (final id in assetIds)
+            (id: id, zeitpunkt: neu, geschaetzt: false),
+        ]),
+      );
+      notifyListeners();
+      return;
+    }
     for (final id in assetIds) {
       final asset = await db.assetById(id);
       if (asset == null) continue;

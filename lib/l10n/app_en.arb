@@ -4765,5 +4765,18 @@
   "serverOidcAbgelehnt": "Not linked – cancelled or declined in the browser.",
   "serverOidcZeitUm": "Not linked – no answer came back from the browser.",
   "serverOidcVergeben": "This provider account already belongs to another account.",
-  "serverOidcSeite": "Done – you can close this window and return to Photo Vault."
+  "serverOidcSeite": "Done – you can close this window and return to Photo Vault.",
+  "aufnahmedatenTitel": "Capture dates from file names",
+  "werkzAufnahmedatenText": "Finds photos whose file name gives a different date than the library – such as “24-11-13 10-48-28.jpg” dated to the day it was copied.",
+  "aufnahmedatenEinleitung": "For these items the file name gives a different date. The file takes precedence over the name: if it carries a date itself, there is only a suggestion when it says the same. Applying changes only the date in the library; the files stay as they are.",
+  "aufnahmedatenKeine": "All capture dates match their file names.",
+  "aufnahmedatenUebernehmen": "Apply {n}",
+  "aufnahmedatenUebernommen": "{n, plural, =1{One capture date applied} other{{n} capture dates applied}}",
+  "aufnahmedatenLautName": "from the file name",
+  "aufnahmedatenLautDatei": "from the file and its name",
+  "aufnahmedatenNurTag": "day only, stays estimated",
+  "aufnahmedatenGeschaetzt": "estimated",
+  "infoNameNennt": "The file name gives {datum}",
+  "infoDateiNennt": "File and file name give {datum}",
+  "infoDatumUebernehmen": "Apply"
 }

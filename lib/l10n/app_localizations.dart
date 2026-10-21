@@ -14778,6 +14778,84 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Fertig – du kannst dieses Fenster schliessen und zu Photo Vault zurückkehren.'**
   String get serverOidcSeite;
+
+  /// No description provided for @aufnahmedatenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmedaten aus dem Dateinamen'**
+  String get aufnahmedatenTitel;
+
+  /// No description provided for @werkzAufnahmedatenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Findet Fotos, deren Dateiname ein anderes Datum nennt als die Bibliothek – etwa „24-11-13 10-48-28.jpg“ mit dem Datum des Kopierens.'**
+  String get werkzAufnahmedatenText;
+
+  /// No description provided for @aufnahmedatenEinleitung.
+  ///
+  /// In de, this message translates to:
+  /// **'Bei diesen Aufnahmen nennt der Dateiname ein anderes Datum. Die Datei geht dem Namen vor: Trägt sie selbst ein Datum, gibt es nur dann einen Vorschlag, wenn sie dasselbe nennt. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.'**
+  String get aufnahmedatenEinleitung;
+
+  /// No description provided for @aufnahmedatenKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmedaten passen zu ihren Dateinamen.'**
+  String get aufnahmedatenKeine;
+
+  /// No description provided for @aufnahmedatenUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} übernehmen'**
+  String aufnahmedatenUebernehmen(int n);
+
+  /// No description provided for @aufnahmedatenUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Ein Aufnahmedatum übernommen} other{{n} Aufnahmedaten übernommen}}'**
+  String aufnahmedatenUebernommen(int n);
+
+  /// No description provided for @aufnahmedatenLautName.
+  ///
+  /// In de, this message translates to:
+  /// **'laut Dateiname'**
+  String get aufnahmedatenLautName;
+
+  /// No description provided for @aufnahmedatenLautDatei.
+  ///
+  /// In de, this message translates to:
+  /// **'laut Datei und Dateiname'**
+  String get aufnahmedatenLautDatei;
+
+  /// No description provided for @aufnahmedatenNurTag.
+  ///
+  /// In de, this message translates to:
+  /// **'nur der Tag, bleibt geschätzt'**
+  String get aufnahmedatenNurTag;
+
+  /// No description provided for @aufnahmedatenGeschaetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'geschätzt'**
+  String get aufnahmedatenGeschaetzt;
+
+  /// No description provided for @infoNameNennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Dateiname nennt {datum}'**
+  String infoNameNennt(String datum);
+
+  /// No description provided for @infoDateiNennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei und Dateiname nennen {datum}'**
+  String infoDateiNennt(String datum);
+
+  /// No description provided for @infoDatumUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernehmen'**
+  String get infoDatumUebernehmen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

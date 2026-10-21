@@ -1107,5 +1107,55 @@
   "eigenCodesNeu": "Neue Codes erzeugen",
   "eigenCodesHinweis": "Mit einem Code aus der Authenticator-App bestätigen. Die bisherigen Wiederherstellungscodes gelten danach nicht mehr.",
   "eigenCodesFertig": "Jeder Code gilt einmal, wenn die Authenticator-App fehlt. Bitte sicher aufbewahren, etwa im Passwortmanager – die bisherigen gelten nicht mehr.",
-  "eigenCodesKopiert": "Kopiert"
+  "eigenCodesKopiert": "Kopiert",
+  "bibAufnahmedaten": "Aufnahmedaten",
+  "datenPruefen": "Neu prüfen",
+  "datenPrueft": "Prüfe …",
+  "datenKeine": "Alle Aufnahmedaten passen zu ihren Dateinamen.",
+  "datenHinweis": "{n, plural, =1{Bei einer Aufnahme nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Datei bleibt unverändert.} other{Bei {n} Aufnahmen nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.}}",
+  "@datenHinweis": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "datenUebernehmen": "{n} übernehmen",
+  "@datenUebernehmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "datenFrage": "{n, plural, =1{Das Datum dieser Aufnahme übernehmen?} other{Das Datum von {n} Aufnahmen übernehmen?}}",
+  "@datenFrage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "datenLautName": "laut Dateiname",
+  "datenLautDatei": "laut Datei und Dateiname",
+  "datenNurTag": "nur der Tag, bleibt geschätzt",
+  "datenGeschaetzt": "geschätzt",
+  "datenOhneServer": "Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.",
+  "angabenNameNennt": "Der Dateiname nennt {d}",
+  "@angabenNameNennt": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "angabenDateiNennt": "Datei und Dateiname nennen {d}",
+  "@angabenDateiNennt": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "angabenUebernehmen": "Übernehmen"
 }

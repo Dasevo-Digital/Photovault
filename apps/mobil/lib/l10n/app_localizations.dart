@@ -3558,6 +3558,96 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Kopiert'**
   String get eigenCodesKopiert;
+
+  /// No description provided for @bibAufnahmedaten.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmedaten'**
+  String get bibAufnahmedaten;
+
+  /// No description provided for @datenPruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu prüfen'**
+  String get datenPruefen;
+
+  /// No description provided for @datenPrueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfe …'**
+  String get datenPrueft;
+
+  /// No description provided for @datenKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle Aufnahmedaten passen zu ihren Dateinamen.'**
+  String get datenKeine;
+
+  /// No description provided for @datenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Bei einer Aufnahme nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Datei bleibt unverändert.} other{Bei {n} Aufnahmen nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.}}'**
+  String datenHinweis(int n);
+
+  /// No description provided for @datenUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} übernehmen'**
+  String datenUebernehmen(int n);
+
+  /// No description provided for @datenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Das Datum dieser Aufnahme übernehmen?} other{Das Datum von {n} Aufnahmen übernehmen?}}'**
+  String datenFrage(int n);
+
+  /// No description provided for @datenLautName.
+  ///
+  /// In de, this message translates to:
+  /// **'laut Dateiname'**
+  String get datenLautName;
+
+  /// No description provided for @datenLautDatei.
+  ///
+  /// In de, this message translates to:
+  /// **'laut Datei und Dateiname'**
+  String get datenLautDatei;
+
+  /// No description provided for @datenNurTag.
+  ///
+  /// In de, this message translates to:
+  /// **'nur der Tag, bleibt geschätzt'**
+  String get datenNurTag;
+
+  /// No description provided for @datenGeschaetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'geschätzt'**
+  String get datenGeschaetzt;
+
+  /// No description provided for @datenOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.'**
+  String get datenOhneServer;
+
+  /// No description provided for @angabenNameNennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Dateiname nennt {d}'**
+  String angabenNameNennt(String d);
+
+  /// No description provided for @angabenDateiNennt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei und Dateiname nennen {d}'**
+  String angabenDateiNennt(String d);
+
+  /// No description provided for @angabenUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernehmen'**
+  String get angabenUebernehmen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

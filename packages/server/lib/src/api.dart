@@ -12,10 +12,12 @@ import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
 import 'package:kern/services/cube_lut.dart';
+import 'package:kern/services/datumsvorschlag.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplikatsuche.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
+import 'package:kern/services/import_service.dart' show Datumsbefund;
 import 'package:kern/services/gesichtsuebersicht.dart' as gesichtsuebersicht;
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/laendernamen.dart';
@@ -262,6 +264,7 @@ Handler baueApi({
     ..get('/api/v1/stammbaum', api.stammbaum)
     ..get('/api/v1/lebensbaum', api.lebensbaum)
     ..get('/api/v1/duplikate', api.duplikate)
+    ..get('/api/v1/aufnahmedaten', api.aufnahmedaten)
     ..post('/api/v1/aufnahmen/liste', api.liste)
     ..get('/api/v1/erinnerungen', api.erinnerungen)
     ..get('/api/v1/rueckblick', rueckblick.rueckblick)
@@ -894,15 +897,70 @@ class _Api {
     });
   }
 
+  /// Liest das Aufnahmedatum aus einer Datei der Bibliothek, für die
+  /// Prüfung „Aufnahmedaten“ (#203). `null`, wenn die Datei fehlt.
+  Future<Datumsbefund?> Function(String) _datumsleser(Bibliothek b) =>
+      (pfad) async {
+        final datei = b.pfade.absolute(pfad);
+        if (!await datei.exists()) return null;
+        return b.importe.pruefeAufnahmedatum(datei);
+      };
+
+  static Map<String, Object?> _vorschlagAlsJson(Datumsvorschlag v) => {
+    'bisher': v.bisher.toIso8601String(),
+    'bisherGeschaetzt': v.bisherGeschaetzt,
+    'neu': v.neu.toUtc().toIso8601String(),
+    'geschaetzt': v.geschaetzt,
+    'quelle': v.quelle.name,
+  };
+
+  /// Die Aufnahmen, deren Dateiname ein anderes Datum nennt als die Zeile
+  /// (#203), mit dem, was gelten sollte. Übernommen wird über den Befehl
+  /// `aufnahmedatenSetzen`, wie am Rechner.
+  Future<Response> aufnahmedaten(Request anfrage) async {
+    final b = (await _bereich(anfrage)).bibliothek;
+    final vorschlaege = await datumsvorschlaege(
+      b.db,
+      leseDatei: _datumsleser(b),
+    );
+    final ids = [for (final v in vorschlaege) v.id];
+    final zeilen = <String, AssetData>{};
+    for (var i = 0; i < ids.length; i += 500) {
+      final stueck = ids.sublist(i, (i + 500).clamp(0, ids.length));
+      for (final a in await (b.db.select(
+        b.db.assets,
+      )..where((t) => t.id.isIn(stueck))).get()) {
+        zeilen[a.id] = a;
+      }
+    }
+    return _json({
+      'vorschlaege': [
+        for (final v in vorschlaege)
+          if (zeilen[v.id] case final a?)
+            {
+              'aufnahme': zeileAlsJson(Rasterzeile.aus(a)),
+              ..._vorschlagAlsJson(v),
+            },
+      ],
+    });
+  }
+
   /// Alles, was die Info-Ansicht des Rechners zu einer Aufnahme zeigt:
   /// Datei, Kamera, Ort, Personen, Schlagwörter, Alben, Beschreibung, Serie.
   /// Die Rasterzeile liegt darunter, damit der Browser dieselben Schlüssel
   /// wie in den Listen sieht; `ort` und `kamera` werden hier ausführlicher.
   Future<Response> angaben(Request anfrage, String id) async {
-    final db = (await _bereich(anfrage)).bibliothek.db;
+    final b = (await _bereich(anfrage)).bibliothek;
+    final db = b.db;
     final angaben = await aufnahmeangaben(db, id);
     if (angaben == null) return _json({'fehler': 'unbekannt'}, status: 404);
     final a = angaben.aufnahme;
+    // Nennt der Dateiname ein anderes Datum, das gelten sollte (#203)?
+    final datumsvorschlag = await datumsvorschlagFuer(
+      db,
+      id,
+      leseDatei: _datumsleser(b),
+    );
     return _json({
       ...zeileAlsJson(Rasterzeile.aus(a)),
       'importiert': a.importedAt.toIso8601String(),
@@ -916,6 +974,8 @@ class _Api {
       'text': a.ocrText,
       'transkript': a.transkript,
       'datumGeschaetzt': a.datumGeschaetzt,
+      if (datumsvorschlag != null)
+        'datumsvorschlag': _vorschlagAlsJson(datumsvorschlag),
       'bearbeitet': angaben.bearbeitet,
       // Von der Gesichtssuche ausgenommen (#191) – für den Schalter im
       // Betrachter.

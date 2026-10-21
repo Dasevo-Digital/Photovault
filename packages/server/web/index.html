@@ -33,6 +33,7 @@
   <symbol id="i-stammbaum" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.3"/><circle cx="5.5" cy="19" r="2.3"/><circle cx="18.5" cy="19" r="2.3"/><path d="M12 7.3V12M5.5 16.7v-2.2A2.5 2.5 0 0 1 8 12h8a2.5 2.5 0 0 1 2.5 2.5v2.2"/></symbol>
   <symbol id="i-statistik" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.4" height="6.5" rx="1.2"/><rect x="10.3" y="5" width="3.4" height="12.5" rx="1.2"/><rect x="15.6" y="13.5" width="3.4" height="4" rx="1.2"/></symbol>
   <symbol id="i-duplikate" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="11.5" height="11.5" rx="2.5"/><rect x="9" y="9" width="11.5" height="11.5" rx="2.5"/></symbol>
+  <symbol id="i-aufnahmedaten" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8.5 15l2.5 2.5 4.5-5"/></symbol>
   <symbol id="i-papierkorb" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6 6.5l.9 12.2A2 2 0 0 0 8.9 20.5h6.2a2 2 0 0 0 2-1.8L18 6.5M10 10.5v6M14 10.5v6"/></symbol>
   <symbol id="i-einstellungen" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="9.5" cy="17" r="2.5"/></symbol>
   <symbol id="i-hochladen" viewBox="0 0 24 24"><path d="M12 15.5V4M7 8.5l5-5 5 5M4.5 20h15"/></symbol>
@@ -164,6 +165,15 @@
     </div>
     <p id="dupl-hinweis" class="leise"></p>
     <div id="dupl-gruppen"></div>
+  </section>
+  <section id="bereich-aufnahmedaten" hidden>
+    <div class="zeile">
+      <h2>Aufnahmedaten</h2>
+      <button id="daten-pruefen" type="button">Neu prüfen</button>
+      <button id="daten-uebernehmen" type="button" hidden></button>
+    </div>
+    <p id="daten-hinweis" class="leise"></p>
+    <div id="daten-liste"></div>
   </section>
   <section id="bereich-stammbaum" hidden>
     <div class="zeile">

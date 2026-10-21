@@ -758,5 +758,20 @@
   "eigenCodesNeu": "Generate new codes",
   "eigenCodesHinweis": "Confirm with a code from your authenticator app. Your previous recovery codes stop working.",
   "eigenCodesFertig": "Each code works once when the authenticator app is missing. Keep them safe, for example in a password manager – the previous ones no longer work.",
-  "eigenCodesKopiert": "Copied"
+  "eigenCodesKopiert": "Copied",
+  "bibAufnahmedaten": "Capture dates",
+  "datenPruefen": "Check again",
+  "datenPrueft": "Checking …",
+  "datenKeine": "All capture dates match their file names.",
+  "datenHinweis": "{n, plural, =1{For one item the file name gives a different date. Applying changes only the date in the library; the file stays as it is.} other{For {n} items the file name gives a different date. Applying changes only the date in the library; the files stay as they are.}}",
+  "datenUebernehmen": "Apply {n}",
+  "datenFrage": "{n, plural, =1{Apply the date to this item?} other{Apply the date to {n} items?}}",
+  "datenLautName": "from the file name",
+  "datenLautDatei": "from the file and its name",
+  "datenNurTag": "day only, stays estimated",
+  "datenGeschaetzt": "estimated",
+  "datenOhneServer": "The check runs on the server and needs a connection.",
+  "angabenNameNennt": "The file name gives {d}",
+  "angabenDateiNennt": "File and file name give {d}",
+  "angabenUebernehmen": "Apply"
 }

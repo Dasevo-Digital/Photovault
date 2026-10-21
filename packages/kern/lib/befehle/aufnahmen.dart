@@ -257,6 +257,47 @@ final class JahrSchaetzen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.setzeGeschaetztesJahr(id, jahr);
 }
 
+/// Aufnahmedaten aus der Prüfung übernehmen (#203): je Aufnahme ein eigener
+/// Zeitpunkt, aus dem Dateinamen oder aus der Datei selbst (siehe
+/// [datumsvorschlaege]).
+///
+/// [geschaetzt] bleibt gesetzt, wenn der Name nur den Tag nennt: Dann
+/// stimmt der Tag, die Uhrzeit aber nicht, und Serien und Erinnerungen
+/// sollen sich weiter nicht darauf stützen.
+final class AufnahmedatenSetzen extends Befehl<void> {
+  const AufnahmedatenSetzen(this.daten);
+
+  static AufnahmedatenSetzen aus(Map<String, Object?> w) =>
+      AufnahmedatenSetzen([
+        for (final e in (w['daten']! as List).cast<Map>())
+          (
+            id: e['id']! as String,
+            zeitpunkt: DateTime.parse(e['zeitpunkt']! as String),
+            geschaetzt: e['geschaetzt'] as bool? ?? false,
+          ),
+      ]);
+
+  final List<({String id, DateTime zeitpunkt, bool geschaetzt})> daten;
+
+  @override
+  String get art => 'aufnahmedatenSetzen';
+
+  @override
+  Map<String, Object?> get werte => {
+    'daten': [
+      for (final d in daten)
+        {
+          'id': d.id,
+          'zeitpunkt': d.zeitpunkt.toUtc().toIso8601String(),
+          'geschaetzt': d.geschaetzt,
+        },
+    ],
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setzeAufnahmedaten(daten);
+}
+
 /// Der Dateiname, unter dem eine Aufnahme geführt wird.
 final class DateinameSetzen extends Befehl<void> {
   const DateinameSetzen(this.id, this.name);

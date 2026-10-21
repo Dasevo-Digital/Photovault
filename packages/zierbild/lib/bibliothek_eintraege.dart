@@ -17,6 +17,7 @@ abstract final class Bibliotheksfarben {
   static const stammbaum = Color(0xFFA18072);
   static const statistik = Color(0xFF0090FF);
   static const duplikate = Color(0xFF3E63DD);
+  static const aufnahmedaten = Color(0xFFFFA01C);
   static const papierkorb = Color(0xFF8B8D98);
   static const einstellungen = Color(0xFF12A594);
 
@@ -44,6 +45,7 @@ abstract final class Bibliothekssymbole {
   static const stammbaum = Icons.account_tree_outlined;
   static const statistik = Icons.bar_chart_rounded;
   static const duplikate = Icons.filter_none_rounded;
+  static const aufnahmedaten = Icons.event_available_outlined;
   static const papierkorb = Icons.delete_outline_rounded;
   static const einstellungen = Icons.tune_rounded;
 

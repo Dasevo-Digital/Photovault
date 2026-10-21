@@ -34,6 +34,7 @@ import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
 import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
+import 'package:photo_vault_mobil/seiten/aufnahmedaten.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
 import 'package:photo_vault_mobil/seiten/duplikate.dart';
@@ -840,6 +841,85 @@ void main() {
       db,
     );
   }
+
+  testWidgets('Aufnahmedaten wie im Browser: wählen und übernehmen (#203)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['a1', 'a2']);
+    final client = MockClient((r) async {
+      if (r.url.path != '/api/v1/aufnahmedaten') {
+        return http.Response('{}', 404);
+      }
+      return http.Response(
+        jsonEncode({
+          'vorschlaege': [
+            {
+              'aufnahme': {'id': 'a1'},
+              'bisher': '2025-01-01T00:00:00.000',
+              'bisherGeschaetzt': true,
+              'neu': DateTime(
+                2024,
+                11,
+                13,
+                10,
+                48,
+                28,
+              ).toUtc().toIso8601String(),
+              'geschaetzt': false,
+              'quelle': 'dateiname',
+            },
+            {
+              'aufnahme': {'id': 'a2'},
+              'bisher': '2025-01-01T00:00:00.000',
+              'bisherGeschaetzt': false,
+              'neu': DateTime(2018, 5, 17, 12).toUtc().toIso8601String(),
+              'geschaetzt': true,
+              'quelle': 'dateiUndName',
+            },
+          ],
+        }),
+        200,
+      );
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Aufnahmedaten(
+            sitzung: sitzung,
+            verbindung: Serververbindung(
+              Uri.parse('https://fotos.example/'),
+              't',
+              client: client,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Aufnahmedaten)));
+    expect(find.text(t.datenHinweis(2)), findsOneWidget);
+    expect(find.textContaining(t.datenLautDatei), findsOneWidget);
+    expect(find.textContaining(t.datenNurTag), findsOneWidget);
+    // Das zweite abwählen, das erste übernehmen.
+    await tester.tap(find.byType(Checkbox).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.datenUebernehmen(1)));
+    await tester.pumpAndSettle();
+    expect(find.text(t.datenFrage(1)), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    final a1 = await tester.runAsync(() => db.assetById('a1'));
+    expect(a1!.fileCreatedAt, DateTime(2024, 11, 13, 10, 48, 28));
+    expect(a1.datumGeschaetzt, isFalse);
+    final a2 = await tester.runAsync(() => db.assetById('a2'));
+    expect(a2!.fileCreatedAt, DateTime(2025), reason: 'abgewählt');
+    expect(find.text(t.datenHinweis(1)), findsOneWidget);
+  });
 
   testWidgets('Zwei Fotos vergleichen: gekoppelt, entkoppelt (#197)', (
     tester,

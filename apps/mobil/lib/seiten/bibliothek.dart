@@ -6,6 +6,7 @@ import 'package:zierbild/bibliothek_eintraege.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'aufnahmedaten.dart';
 import 'duplikate.dart';
 import 'einstellungen.dart';
 import 'karte.dart';
@@ -115,6 +116,16 @@ class Bibliothek extends StatelessWidget {
         farbe: Bibliotheksfarben.duplikate,
         onTap: () =>
             _oeffne(context, t.bibDuplikate, Duplikate(sitzung: sitzung)),
+      ),
+      (
+        icon: Bibliothekssymbole.aufnahmedaten,
+        text: t.bibAufnahmedaten,
+        farbe: Bibliotheksfarben.aufnahmedaten,
+        onTap: () => _oeffne(
+          context,
+          t.bibAufnahmedaten,
+          Aufnahmedaten(sitzung: sitzung),
+        ),
       ),
       (
         icon: Bibliothekssymbole.papierkorb,

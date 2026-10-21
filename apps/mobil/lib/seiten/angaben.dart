@@ -3,12 +3,14 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'package:kern/services/namensdatum.dart';
 
 import '../einfuegbares_menue.dart';
 import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'alben.dart';
+import 'aufnahmedaten.dart';
 import 'gesichter.dart';
 import 'personen.dart';
 import 'raster.dart';
@@ -63,8 +65,52 @@ class _AngabenlisteState extends State<Angabenliste> {
   late int _bewertung = widget.angaben.aufnahme.rating;
   var _gespeichert = false;
 
+  /// Was der Server aus dem Dateinamen vorschlägt (#203), und ob es
+  /// übernommen ist.
+  ({DateTime neu, bool geschaetzt, String quelle})? _vorschlag;
+  ({DateTime neu, bool geschaetzt})? _uebernommen;
+
   AssetData get _a => widget.angaben.aufnahme;
   AppDatabase get _db => widget.sitzung.db;
+
+  @override
+  void initState() {
+    super.initState();
+    _holeVorschlag();
+  }
+
+  /// Nur wenn der Name überhaupt ein anderes Datum nennt, wird gefragt –
+  /// geprüft wird auf dem Server, weil dafür manchmal das Original gelesen
+  /// werden muss (siehe Aufnahmedaten).
+  Future<void> _holeVorschlag() async {
+    final name = namensdatumAus(_a.originalFileName);
+    final verbindung = widget.sitzung.abgleich?.verbindung;
+    if (name == null || name.passtZu(_a.fileCreatedAt) || verbindung == null) {
+      return;
+    }
+    try {
+      final d = await verbindung.hole(
+        'api/v1/aufnahmen/${Uri.encodeComponent(_a.id)}/angaben',
+      );
+      if (d['datumsvorschlag'] case final Map v when mounted) {
+        setState(() => _vorschlag = vorschlagAus(v));
+      }
+    } catch (_) {
+      // Ohne Verbindung eben ohne Vorschlag.
+    }
+  }
+
+  Future<void> _datumUebernehmen() async {
+    final v = _vorschlag!;
+    await _db.fuehreAus(
+      AufnahmedatenSetzen([
+        (id: _a.id, zeitpunkt: v.neu, geschaetzt: v.geschaetzt),
+      ]),
+    );
+    if (mounted) {
+      setState(() => _uebernommen = (neu: v.neu, geschaetzt: v.geschaetzt));
+    }
+  }
 
   @override
   void dispose() {
@@ -135,8 +181,33 @@ class _AngabenlisteState extends State<Angabenliste> {
         Text(t.angabenTitel, style: Theme.of(context).textTheme.titleMedium),
         _Reihe(
           symbol: Icons.event_outlined,
-          haupt: Text(datumZeit.format(a.fileCreatedAt.toLocal())),
-          neben: a.datumGeschaetzt ? t.angabenDatumGeschaetzt : null,
+          haupt: Text(
+            datumZeit.format((_uebernommen?.neu ?? a.fileCreatedAt).toLocal()),
+          ),
+          neben: (_uebernommen?.geschaetzt ?? a.datumGeschaetzt)
+              ? t.angabenDatumGeschaetzt
+              : null,
+          unten: switch (_vorschlag) {
+            final v? when _uebernommen == null => Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Text(
+                  (v.quelle == 'dateiUndName'
+                      ? t.angabenDateiNennt
+                      : t.angabenNameNennt)(
+                    vorschlagsdatum(sprache, v.neu, v.geschaetzt),
+                  ),
+                  style: leise,
+                ),
+                TextButton(
+                  onPressed: _datumUebernehmen,
+                  child: Text(t.angabenUebernehmen),
+                ),
+              ],
+            ),
+            _ => null,
+          },
         ),
         _Reihe(
           symbol: Icons.image_outlined,
@@ -326,11 +397,19 @@ String groesseText(int b) => b >= 1073741824
 /// Eine Zeile: Zeichen, darin der Inhalt und darunter, leiser, die
 /// Einzelheiten.
 class _Reihe extends StatelessWidget {
-  const _Reihe({required this.symbol, required this.haupt, this.neben});
+  const _Reihe({
+    required this.symbol,
+    required this.haupt,
+    this.neben,
+    this.unten,
+  });
 
   final IconData symbol;
   final Widget haupt;
   final String? neben;
+
+  /// Unter allem, etwa der Vorschlag aus dem Dateinamen (#203).
+  final Widget? unten;
 
   @override
   Widget build(BuildContext context) {
@@ -364,6 +443,7 @@ class _Reihe extends StatelessWidget {
                       style: TextStyle(color: farben.onSurfaceVariant),
                     ),
                   ),
+                ?unten,
               ],
             ),
           ),

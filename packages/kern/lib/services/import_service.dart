@@ -14,6 +14,7 @@ import 'cr3_gps.dart';
 import 'dateikennung.dart';
 import 'exif_camera.dart';
 import 'exif_gps.dart';
+import 'namensdatum.dart';
 import 'bildwerkzeuge.dart';
 import 'dateikopf.dart';
 import 'raw_formats.dart';
@@ -265,7 +266,20 @@ class ImportService {
       // und die Zeitleiste, die Erinnerungen und die Serienerkennung
       // glaubten ihm (siehe [Assets.datumGeschaetzt]).
       final gemessenesDatum = exifMeta.date ?? videoMeta.zeit?.zeitpunkt;
-      final fileCreatedAt = gemessenesDatum ?? await sourceFile.lastModified();
+      // Dazwischen der Name: Telefone, Messenger und Ausfuhrprogramme
+      // schreiben den Zeitpunkt oft hinein, auch wenn die EXIF-Angaben
+      // unterwegs verloren gingen (siehe [namensdatumAus]). Nennt er die
+      // Uhrzeit, ist das Datum belegt; nennt er nur den Tag, bleibt es
+      // geschätzt.
+      final ausDemNamen = gemessenesDatum == null
+          ? namensdatumAus(p.basename(filePath))
+          : null;
+      final fileCreatedAt =
+          gemessenesDatum ??
+          ausDemNamen?.zeitpunkt ??
+          await sourceFile.lastModified();
+      final geschaetzt =
+          gemessenesDatum == null && !(ausDemNamen?.mitUhrzeit ?? false);
 
       final relativePath = _paths.originalRelativePath(
         fileCreatedAt,
@@ -295,7 +309,7 @@ class ImportService {
           // und dann stuende bei jedem Foto dasselbe Format.
           dateiformat: Value(dateiformatAus(p.basename(filePath))),
           fileCreatedAt: fileCreatedAt,
-          datumGeschaetzt: Value(gemessenesDatum == null),
+          datumGeschaetzt: Value(geschaetzt),
           zeitversatzMinuten: Value(exifMeta.versatzMinuten),
           // Nachgesehen wurde gerade eben – der Nachtrag braucht diese
           // Datei nie wieder anzufassen.

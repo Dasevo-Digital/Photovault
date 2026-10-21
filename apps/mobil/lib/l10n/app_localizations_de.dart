@@ -2269,4 +2269,74 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get eigenCodesKopiert => 'Kopiert';
+
+  @override
+  String get bibAufnahmedaten => 'Aufnahmedaten';
+
+  @override
+  String get datenPruefen => 'Neu prüfen';
+
+  @override
+  String get datenPrueft => 'Prüfe …';
+
+  @override
+  String get datenKeine => 'Alle Aufnahmedaten passen zu ihren Dateinamen.';
+
+  @override
+  String datenHinweis(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Bei $n Aufnahmen nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.',
+      one:
+          'Bei einer Aufnahme nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Datei bleibt unverändert.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String datenUebernehmen(int n) {
+    return '$n übernehmen';
+  }
+
+  @override
+  String datenFrage(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Das Datum von $n Aufnahmen übernehmen?',
+      one: 'Das Datum dieser Aufnahme übernehmen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get datenLautName => 'laut Dateiname';
+
+  @override
+  String get datenLautDatei => 'laut Datei und Dateiname';
+
+  @override
+  String get datenNurTag => 'nur der Tag, bleibt geschätzt';
+
+  @override
+  String get datenGeschaetzt => 'geschätzt';
+
+  @override
+  String get datenOhneServer =>
+      'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.';
+
+  @override
+  String angabenNameNennt(String d) {
+    return 'Der Dateiname nennt $d';
+  }
+
+  @override
+  String angabenDateiNennt(String d) {
+    return 'Datei und Dateiname nennen $d';
+  }
+
+  @override
+  String get angabenUebernehmen => 'Übernehmen';
 }

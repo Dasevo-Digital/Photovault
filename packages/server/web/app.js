@@ -99,6 +99,7 @@ const BIBLIOTHEK = [
     titel: 'Verwalten',
     eintraege: [
       { bereich: 'duplikate', weg: '#/duplikate', text: 'Duplikate', symbol: 'duplikate', farbe: '#3e63dd' },
+      { bereich: 'aufnahmedaten', weg: '#/aufnahmedaten', text: 'Aufnahmedaten', symbol: 'aufnahmedaten', farbe: '#ffa01c' },
       { bereich: 'papierkorb', weg: '#/papierkorb', text: 'Papierkorb', symbol: 'papierkorb', farbe: '#8b8d98' },
       { bereich: 'einstellungen', weg: '#/einstellungen', text: 'Einstellungen', symbol: 'einstellungen', farbe: '#12a594' },
     ],
@@ -1727,6 +1728,118 @@ $('dupl-alle').addEventListener('click', async () => {
     await sucheDuplikate();
   } catch (x) { $('dupl-hinweis').textContent = x.message; }
 });
+
+// --- Aufnahmedaten (#203) --------------------------------------------------
+// Der Server vergleicht das Datum jeder Aufnahme mit dem, was ihr
+// Dateiname nennt, und liest die Datei, wo das nötig ist (dieselbe Prüfung
+// wie am Rechner). Hier wird nur gezeigt und übernommen, über den Befehl.
+
+let datumsvorschlaege = null;
+const gewaehlteDaten = new Set();
+const QUELLEN = { dateiname: 'laut Dateiname', dateiUndName: 'laut Datei und Dateiname' };
+$('daten-pruefen').addEventListener('click', () => pruefeAufnahmedaten().catch((x) => { $('daten-hinweis').textContent = x.message; }));
+
+async function zeigeAufnahmedaten() {
+  markiereNav('aufnahmedaten');
+  zeigeBereich(['aufnahmedaten']);
+  if (datumsvorschlaege) zeichneAufnahmedaten(); else await pruefeAufnahmedaten();
+}
+
+async function pruefeAufnahmedaten() {
+  $('daten-hinweis').textContent = t('Prüfe …');
+  $('daten-liste').replaceChildren();
+  $('daten-uebernehmen').hidden = true;
+  const d = await api('/api/v1/aufnahmedaten');
+  datumsvorschlaege = d.vorschlaege;
+  gewaehlteDaten.clear();
+  for (const v of datumsvorschlaege) gewaehlteDaten.add(v.aufnahme.id);
+  zeichneAufnahmedaten();
+}
+
+// Ein Datum ohne Uhrzeit (der Name nennt nur den Tag) ohne Uhrzeit zeigen.
+const vorschlagsdatum = (v) => (v.geschaetzt ? zeitraum : datumZeit).format(new Date(v.neu));
+
+function zeichneAufnahmedaten() {
+  const ziel = $('daten-liste');
+  ziel.replaceChildren();
+  const n = datumsvorschlaege.length;
+  $('daten-hinweis').textContent = n === 0
+    ? t('Alle Aufnahmedaten passen zu ihren Dateinamen.')
+    : n === 1
+      ? t('Bei einer Aufnahme nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Datei bleibt unverändert.')
+      : t('Bei {n} Aufnahmen nennt der Dateiname ein anderes Datum. Übernommen wird nur das Datum in der Bibliothek; die Dateien bleiben unverändert.', { n });
+  aktualisiereDatenknopf();
+  datumsvorschlaege.forEach((v, i) => ziel.append(datumszeile(v, i)));
+}
+
+function aktualisiereDatenknopf() {
+  const knopf = $('daten-uebernehmen');
+  knopf.hidden = gewaehlteDaten.size === 0;
+  knopf.textContent = t('{n} übernehmen', { n: gewaehlteDaten.size });
+}
+
+function datumszeile(v, i) {
+  const a = v.aufnahme;
+  const zeile = el('label', 'datumszeile');
+  const wahl = el('input');
+  wahl.type = 'checkbox';
+  wahl.checked = gewaehlteDaten.has(a.id);
+  wahl.addEventListener('change', () => {
+    if (wahl.checked) gewaehlteDaten.add(a.id); else gewaehlteDaten.delete(a.id);
+    aktualisiereDatenknopf();
+  });
+  const img = el('img');
+  img.loading = 'lazy';
+  img.alt = '';
+  img.src = miniaturUrl(a.id);
+  img.addEventListener('click', (e) => {
+    e.preventDefault(); // nicht zugleich das Häkchen umschalten
+    liste = { aufnahmen: datumsvorschlaege.map((x) => x.aufnahme), nachTagen: false, mehr: null };
+    oeffne(i);
+  });
+  const inhalt = el('div', 'inhalt');
+  const name = el('div', 'name', a.name);
+  name.title = a.name;
+  const bisher = datumZeit.format(new Date(v.bisher)) + (v.bisherGeschaetzt ? ` (${t('geschätzt')})` : '');
+  inhalt.append(
+    name,
+    el('div', 'wechsel', `${bisher} → ${vorschlagsdatum(v)}`),
+    el('div', 'neben', t(QUELLEN[v.quelle]) + (v.geschaetzt ? ` · ${t('nur der Tag, bleibt geschätzt')}` : '')),
+  );
+  zeile.append(wahl, img, inhalt);
+  return zeile;
+}
+
+$('daten-uebernehmen').addEventListener('click', async () => {
+  const daten = datumsvorschlaege
+    .filter((v) => gewaehlteDaten.has(v.aufnahme.id))
+    .map((v) => ({ id: v.aufnahme.id, zeitpunkt: v.neu, geschaetzt: v.geschaetzt }));
+  if (!daten.length || !confirm(daten.length === 1 ? t('Das Datum dieser Aufnahme übernehmen?') : t('Das Datum von {n} Aufnahmen übernehmen?', { n: daten.length }))) return;
+  try {
+    // In Stücken, damit kein Befehl tausende Zeilen auf einmal trägt.
+    for (let i = 0; i < daten.length; i += 200) await befehl('aufnahmedatenSetzen', { daten: daten.slice(i, i + 200) });
+    await pruefeAufnahmedaten();
+  } catch (x) { $('daten-hinweis').textContent = x.message; }
+});
+
+// Im Infobereich: was der Dateiname nennt, mit „Übernehmen“.
+function datumsvorschlagHinweis(a, v) {
+  const box = el('div', 'datumsvorschlag');
+  const text = v.quelle === 'dateiUndName' ? 'Datei und Dateiname nennen {d}' : 'Der Dateiname nennt {d}';
+  box.append(el('span', null, t(text, { d: vorschlagsdatum(v) })));
+  const knopf = el('button', null, t('Übernehmen'));
+  knopf.type = 'button';
+  knopf.addEventListener('click', async () => {
+    try {
+      await befehl('aufnahmedatenSetzen', { daten: [{ id: a.id, zeitpunkt: v.neu, geschaetzt: v.geschaetzt }] });
+      a.aufgenommen = v.neu;
+      datumsvorschlaege = null; // die Liste unter „Aufnahmedaten“ neu holen
+      await zeigeAngaben();
+    } catch (x) { knopf.textContent = x.message; }
+  });
+  box.append(knopf);
+  return box;
+}
 
 async function zeigeSerie(id) {
   zeigeBereich(['raster']);
@@ -3879,7 +3992,9 @@ async function zeigeAngaben() {
   if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
   const teile = [];
   teile.push(el('h3', null, t('Angaben')));
-  teile.push(reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? t('Datum geschätzt') : null));
+  const datumsreihe = reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? t('Datum geschätzt') : null);
+  if (d.datumsvorschlag) datumsreihe.querySelector('.inhalt').append(datumsvorschlagHinweis(a, d.datumsvorschlag));
+  teile.push(datumsreihe);
   const datei = [d.breite && d.hoehe ? `${d.breite} × ${d.hoehe}` : '', d.bytes ? groesse(d.bytes) : '', d.format ? d.format.toUpperCase() : '', d.dauer ? `${Math.round(d.dauer)} s` : '', d.bearbeitet ? t('bearbeitet') : ''].filter(Boolean).join(' · ');
   teile.push(reihe('🖼', d.name, datei));
   const k = d.kamera;
@@ -4541,6 +4656,7 @@ async function zeigeWeg() {
       case 'stammbaum': await zeigeStammbaum(teile[1]); break;
       case 'lebensbaum': await ladeSkript('lebensbaum.js'); await zeigeLebensbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
+      case 'aufnahmedaten': await zeigeAufnahmedaten(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
       case 'entwickeln': await ladeSkript('entwickeln.js'); await zeigeEntwickeln(teile[1]); break;
       case 'karte':

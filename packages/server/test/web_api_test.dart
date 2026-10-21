@@ -1649,6 +1649,88 @@ void main() {
     },
   );
 
+  test(
+    'Aufnahmedaten: Datum aus dem Dateinamen, prüfen und übernehmen (#203)',
+    () async {
+      final mitZeit = await ladeHoch(
+        erikaToken,
+        '24-11-13 10-48-28 1234.jpg',
+        10,
+      );
+      final nurTag = await ladeHoch(erikaToken, 'IMG-20180517-WA0003.jpg', 40);
+      final alt = await ladeHoch(
+        erikaToken,
+        'PHOTO-2026-03-14-17-05-09.jpg',
+        70,
+      );
+      final ohne = await ladeHoch(erikaToken, 'IMG_1234.jpg', 100);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      Future<AssetData> zeile(String id) =>
+          (db.select(db.assets)..where((t) => t.id.equals(id))).getSingle();
+
+      // Beim Einlesen gilt der Name vor dem Zeitstempel der Datei; nennt er
+      // nur den Tag, bleibt das Datum geschätzt.
+      expect(
+        (await zeile(mitZeit)).fileCreatedAt,
+        DateTime(2024, 11, 13, 10, 48, 28),
+      );
+      expect((await zeile(mitZeit)).datumGeschaetzt, isFalse);
+      expect((await zeile(nurTag)).fileCreatedAt, DateTime(2018, 5, 17, 12));
+      expect((await zeile(nurTag)).datumGeschaetzt, isTrue);
+      expect((await zeile(ohne)).datumGeschaetzt, isTrue);
+
+      // Wie vor #203 eingelesen: das Kopierdatum, als geschätzt vermerkt.
+      await (db.update(db.assets)..where((t) => t.id.equals(alt))).write(
+        AssetsCompanion(
+          fileCreatedAt: Value(DateTime(2025, 8, 1, 9, 0, 20)),
+          datumGeschaetzt: const Value(true),
+        ),
+      );
+      Future<List<Map>> vorschlaege(String token) async =>
+          ((await jsonAus(
+                    await frag('GET', '/api/v1/aufnahmedaten', token: token),
+                  ))['vorschlaege']!
+                  as List)
+              .cast<Map>();
+      final v = await vorschlaege(erikaToken);
+      expect(v.map((x) => (x['aufnahme']! as Map)['id']), [alt]);
+      expect(
+        DateTime.parse(v.single['neu']! as String).toLocal(),
+        DateTime(2026, 3, 14, 17, 5, 9),
+      );
+      expect(v.single['quelle'], 'dateiname');
+      expect(v.single['geschaetzt'], isFalse);
+      expect(v.single['bisherGeschaetzt'], isTrue);
+      expect(await vorschlaege(maxToken), isEmpty, reason: 'fremde Bibliothek');
+
+      // Die Info-Ansicht nennt denselben Vorschlag – und nur dort, wo einer
+      // ist.
+      Future<Map<String, Object?>> angaben(String id) async => jsonAus(
+        await frag('GET', '/api/v1/aufnahmen/$id/angaben', token: erikaToken),
+      );
+      expect((await angaben(alt))['datumsvorschlag'], {
+        'bisher': isA<String>(),
+        'bisherGeschaetzt': true,
+        'neu': v.single['neu'],
+        'geschaetzt': false,
+        'quelle': 'dateiname',
+      });
+      expect((await angaben(mitZeit)).containsKey('datumsvorschlag'), isFalse);
+
+      // Übernehmen über den Befehl, wie am Rechner.
+      final r = await befehl(erikaToken, 'aufnahmedatenSetzen', {
+        'daten': [
+          {'id': alt, 'zeitpunkt': v.single['neu'], 'geschaetzt': false},
+        ],
+      });
+      expect(r.statusCode, lessThan(300));
+      expect((await zeile(alt)).fileCreatedAt, DateTime(2026, 3, 14, 17, 5, 9));
+      expect((await zeile(alt)).datumGeschaetzt, isFalse);
+      expect((await zeile(alt)).datumGeprueft, isTrue);
+      expect(await vorschlaege(erikaToken), isEmpty);
+    },
+  );
+
   test('Zeitleiste in anderer Reihenfolge, seitenweise (#194)', () async {
     final a = await ladeHoch(erikaToken, 'c-mitte.jpg', 30);
     final b = await ladeHoch(erikaToken, 'a-alt.jpg', 60);

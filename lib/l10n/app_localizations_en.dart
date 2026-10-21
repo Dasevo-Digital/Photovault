@@ -9601,4 +9601,59 @@ class AppTexteEn extends AppTexte {
   @override
   String get serverOidcSeite =>
       'Done – you can close this window and return to Photo Vault.';
+
+  @override
+  String get aufnahmedatenTitel => 'Capture dates from file names';
+
+  @override
+  String get werkzAufnahmedatenText =>
+      'Finds photos whose file name gives a different date than the library – such as “24-11-13 10-48-28.jpg” dated to the day it was copied.';
+
+  @override
+  String get aufnahmedatenEinleitung =>
+      'For these items the file name gives a different date. The file takes precedence over the name: if it carries a date itself, there is only a suggestion when it says the same. Applying changes only the date in the library; the files stay as they are.';
+
+  @override
+  String get aufnahmedatenKeine => 'All capture dates match their file names.';
+
+  @override
+  String aufnahmedatenUebernehmen(int n) {
+    return 'Apply $n';
+  }
+
+  @override
+  String aufnahmedatenUebernommen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n capture dates applied',
+      one: 'One capture date applied',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aufnahmedatenLautName => 'from the file name';
+
+  @override
+  String get aufnahmedatenLautDatei => 'from the file and its name';
+
+  @override
+  String get aufnahmedatenNurTag => 'day only, stays estimated';
+
+  @override
+  String get aufnahmedatenGeschaetzt => 'estimated';
+
+  @override
+  String infoNameNennt(String datum) {
+    return 'The file name gives $datum';
+  }
+
+  @override
+  String infoDateiNennt(String datum) {
+    return 'File and file name give $datum';
+  }
+
+  @override
+  String get infoDatumUebernehmen => 'Apply';
 }

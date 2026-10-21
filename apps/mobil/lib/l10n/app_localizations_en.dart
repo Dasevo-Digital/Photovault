@@ -2259,4 +2259,74 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get eigenCodesKopiert => 'Copied';
+
+  @override
+  String get bibAufnahmedaten => 'Capture dates';
+
+  @override
+  String get datenPruefen => 'Check again';
+
+  @override
+  String get datenPrueft => 'Checking …';
+
+  @override
+  String get datenKeine => 'All capture dates match their file names.';
+
+  @override
+  String datenHinweis(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'For $n items the file name gives a different date. Applying changes only the date in the library; the files stay as they are.',
+      one:
+          'For one item the file name gives a different date. Applying changes only the date in the library; the file stays as it is.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String datenUebernehmen(int n) {
+    return 'Apply $n';
+  }
+
+  @override
+  String datenFrage(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Apply the date to $n items?',
+      one: 'Apply the date to this item?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get datenLautName => 'from the file name';
+
+  @override
+  String get datenLautDatei => 'from the file and its name';
+
+  @override
+  String get datenNurTag => 'day only, stays estimated';
+
+  @override
+  String get datenGeschaetzt => 'estimated';
+
+  @override
+  String get datenOhneServer =>
+      'The check runs on the server and needs a connection.';
+
+  @override
+  String angabenNameNennt(String d) {
+    return 'The file name gives $d';
+  }
+
+  @override
+  String angabenDateiNennt(String d) {
+    return 'File and file name give $d';
+  }
+
+  @override
+  String get angabenUebernehmen => 'Apply';
 }
