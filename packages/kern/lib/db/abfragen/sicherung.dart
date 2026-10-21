@@ -46,6 +46,7 @@ extension SicherungsAbfragen on AppDatabase {
     }
     return da;
   }
+
   /// Welche von [ids] in der Kopie stehen und im Papierkorb liegen – für
   /// „Gelöschtes auch vom Telefon entfernen“ (#205). Was ganz fehlt, zählt
   /// nicht: Es kann auch eine Aufnahme sein, die der Abgleich noch nicht
@@ -69,7 +70,6 @@ extension SicherungsAbfragen on AppDatabase {
     }
     return drin;
   }
-
 
   Future<List<AssetData>> assetsNotBackedUp() =>
       (select(assets)..where(
