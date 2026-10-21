@@ -4,7 +4,7 @@ description: >-
   Zeitleiste, Betrachter, Suche, Alben, Personen, Karte, Teilen
   (Issue #86, Stufe 3).
 publish_to: none
-version: 0.5.2+16
+version: 0.5.3+17
 
 environment:
   sdk: '>=3.12.0 <4.0.0'
