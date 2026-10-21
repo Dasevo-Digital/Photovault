@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.45.1" date="2026-10-21">
+      <description>
+        <p>In the browser, recovery codes can now be copied and saved as a file, new recovery codes can be generated on the account page, and the sign-out button sits at the top of the account page.</p>
+      </description>
+    </release>
     <release version="3.45.0" date="2026-10-20">
       <description>
         <p>A connected desktop no longer shows “server unreachable” for a few seconds at start or after waking up; it asks the server again right away. In the browser, clicking Photos scrolls the timeline back to the newest photos.</p>
