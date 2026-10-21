@@ -650,6 +650,65 @@ void main() {
     anmeldung.schliesse();
   });
 
+  test('neue Wiederherstellungscodes: nur mit TOTP-Code, die alten gelten '
+      'danach nicht mehr', () async {
+    final pflicht = Kontodienst(
+      sdb,
+      Tresorschluessel(List.filled(32, 1)),
+      passwort: const Passwort(speicher: 64, durchgaenge: 1),
+    );
+    await server.close(force: true);
+    api = baueApi(konten: pflicht, bibliotheken: bibliotheken);
+    await starteServer();
+    await pflicht.legeAn('max', 'noch ein passwort');
+    final anmeldung = Anmeldung(Uri.parse('http://127.0.0.1:$port'));
+    final einrichten =
+        await anmeldung.anmelden('max', 'noch ein passwort', geraet: 'Telefon')
+            as AnmeldungTotpEinrichten;
+    final geheimnis = base32Zurueck(einrichten.geheimnis);
+    final schritt = Totp.schritt(DateTime.now());
+    final fertig =
+        await anmeldung.bestaetige(
+              einrichten.vorgang,
+              Totp.code(geheimnis, schritt),
+            )
+            as AnmeldungFertig;
+    final alt = fertig.wiederherstellungscodes!;
+    final v = Serververbindung(
+      Uri.parse('http://127.0.0.1:$port/'),
+      fertig.token,
+    );
+    await expectLater(
+      v.schicke('api/v1/konto/wiederherstellungscodes', {'code': '000000'}),
+      throwsA(isA<Serverfehler>().having((f) => f.status, 'status', 403)),
+    );
+    final neu =
+        (await v.schicke('api/v1/konto/wiederherstellungscodes', {
+              'code': Totp.code(geheimnis, schritt + 1),
+            }))['wiederherstellungscodes']!
+            as List;
+    expect(neu, hasLength(10));
+    expect(neu.toSet().intersection(alt.toSet()), isEmpty);
+    expect((await v.hole('api/v1/konto'))['wiederherstellungscodes'], 10);
+    // Ein alter Code meldet nicht mehr an, ein neuer schon.
+    final s1 =
+        await anmeldung.anmelden('max', 'noch ein passwort', geraet: 'Rechner')
+            as AnmeldungCode;
+    expect(
+      await anmeldung.bestaetige(s1.vorgang, alt.first),
+      isA<AnmeldungAbgewiesen>(),
+    );
+    final s2 =
+        await anmeldung.anmelden('max', 'noch ein passwort', geraet: 'Rechner')
+            as AnmeldungCode;
+    expect(
+      await anmeldung.bestaetige(s2.vorgang, '${neu.first}'),
+      isA<AnmeldungFertig>(),
+    );
+    v.schliesse();
+    anmeldung.schliesse();
+  });
+
   test('Ersteinrichtung und Konten als Client', () async {
     final leer = Serverdatenbank.imSpeicher();
     addTearDown(leer.schliesse);

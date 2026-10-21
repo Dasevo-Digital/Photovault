@@ -1101,5 +1101,11 @@
   "vergleichUebereinander": "Übereinander",
   "vergleichKoppeln": "Ansichten koppeln",
   "vergleichEntkoppeln": "Ansichten entkoppeln",
-  "vergleichZuruecksetzen": "Zoom zurücksetzen"
+  "vergleichZuruecksetzen": "Zoom zurücksetzen",
+  "eigenCodesUebrig": "{n, plural, =0{Keine Codes mehr übrig} =1{Noch ein Code übrig} other{Noch {n} Codes übrig}}",
+  "@eigenCodesUebrig": {"placeholders": {"n": {"type": "int"}}},
+  "eigenCodesNeu": "Neue Codes erzeugen",
+  "eigenCodesHinweis": "Mit einem Code aus der Authenticator-App bestätigen. Die bisherigen Wiederherstellungscodes gelten danach nicht mehr.",
+  "eigenCodesFertig": "Jeder Code gilt einmal, wenn die Authenticator-App fehlt. Bitte sicher aufbewahren, etwa im Passwortmanager – die bisherigen gelten nicht mehr.",
+  "eigenCodesKopiert": "Kopiert"
 }

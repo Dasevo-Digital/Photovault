@@ -3528,6 +3528,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Zoom zurücksetzen'**
   String get vergleichZuruecksetzen;
+
+  /// No description provided for @eigenCodesUebrig.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Keine Codes mehr übrig} =1{Noch ein Code übrig} other{Noch {n} Codes übrig}}'**
+  String eigenCodesUebrig(int n);
+
+  /// No description provided for @eigenCodesNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Codes erzeugen'**
+  String get eigenCodesNeu;
+
+  /// No description provided for @eigenCodesHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit einem Code aus der Authenticator-App bestätigen. Die bisherigen Wiederherstellungscodes gelten danach nicht mehr.'**
+  String get eigenCodesHinweis;
+
+  /// No description provided for @eigenCodesFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Jeder Code gilt einmal, wenn die Authenticator-App fehlt. Bitte sicher aufbewahren, etwa im Passwortmanager – die bisherigen gelten nicht mehr.'**
+  String get eigenCodesFertig;
+
+  /// No description provided for @eigenCodesKopiert.
+  ///
+  /// In de, this message translates to:
+  /// **'Kopiert'**
+  String get eigenCodesKopiert;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

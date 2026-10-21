@@ -752,5 +752,11 @@
   "vergleichUebereinander": "Stacked",
   "vergleichKoppeln": "Link views",
   "vergleichEntkoppeln": "Unlink views",
-  "vergleichZuruecksetzen": "Reset zoom"
+  "vergleichZuruecksetzen": "Reset zoom",
+  "eigenCodesUebrig": "{n, plural, =0{No codes left} =1{One code left} other{{n} codes left}}",
+  "@eigenCodesUebrig": {"placeholders": {"n": {"type": "int"}}},
+  "eigenCodesNeu": "Generate new codes",
+  "eigenCodesHinweis": "Confirm with a code from your authenticator app. Your previous recovery codes stop working.",
+  "eigenCodesFertig": "Each code works once when the authenticator app is missing. Keep them safe, for example in a password manager – the previous ones no longer work.",
+  "eigenCodesKopiert": "Copied"
 }

@@ -269,12 +269,52 @@ async function zeigeBibliothek() {
 let vorgang = null;
 function fehler(text) { $('fehler').textContent = text || ''; }
 
+// Die Wiederherstellungscodes in einem eigenen Fenster: markierbar, mit
+// „Kopieren“ und „Als Datei sichern“. Vorher standen sie in alert(), aus
+// dem sich im Browser nichts kopieren liess. Kehrt zurück, wenn es
+// geschlossen ist.
+function zeigeCodes(codes) {
+  const text = codes.join('\n');
+  $('codes-liste').textContent = text;
+  $('codes-meldung').textContent = '';
+  const d = $('codes-dialog');
+  d.showModal();
+  return new Promise((fertig) => d.addEventListener('close', fertig, { once: true }));
+}
+
+$('codes-kopieren').addEventListener('click', async () => {
+  const text = $('codes-liste').textContent;
+  let ok = false;
+  // Über http im Heimnetz gibt es navigator.clipboard nicht – dann über die
+  // Markierung.
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (_) { /* weiter unten */ }
+  if (!ok) {
+    const r = document.createRange();
+    r.selectNodeContents($('codes-liste'));
+    const s = getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+    try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+  }
+  $('codes-meldung').textContent = ok ? t('Kopiert.') : t('Bitte markieren und mit Strg+C bzw. ⌘C kopieren.');
+});
+
+$('codes-sichern').addEventListener('click', () => {
+  const inhalt = `${t('Photo Vault – Wiederherstellungscodes')}\n${location.host}\n\n${$('codes-liste').textContent}\n`;
+  const a = el('a');
+  a.href = URL.createObjectURL(new Blob([inhalt], { type: 'text/plain;charset=utf-8' }));
+  a.download = 'photo-vault-wiederherstellungscodes.txt';
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  $('codes-meldung').textContent = t('Gesichert.');
+});
+
 async function nachAnmeldung(d) {
   if (d.angemeldet) {
     fehler('');
-    if (d.wiederherstellungscodes) {
-      alert(`${t('Deine Wiederherstellungscodes – bitte sicher aufbewahren:')}\n\n${d.wiederherstellungscodes.join('\n')}`);
-    }
+    if (d.wiederherstellungscodes) await zeigeCodes(d.wiederherstellungscodes);
     await starte();
     return;
   }
@@ -2511,6 +2551,13 @@ async function zeigeKonto() {
   const k = await api('/api/v1/konto');
   $('konto-wer').textContent = `${k.name}${k.verwalter ? ` · ${t('Verwalter')}` : ''}${k.totp ? ` · ${t('TOTP eingerichtet')}` : ''}`;
   $('passwort-code-feld').hidden = !k.totp;
+  // Neue Wiederherstellungscodes – etwa wenn die alten irgendwo offen
+  // lagen. Bestätigt mit einem Code aus der Authenticator-App.
+  $('codes-feld').hidden = !k.totp;
+  $('codes-stand').textContent = k.wiederherstellungscodes === 1
+    ? t('Noch ein Code übrig.')
+    : t('Noch {n} Codes übrig.', { n: k.wiederherstellungscodes ?? 0 });
+  $('codes-fehler').textContent = '';
   zeigeFassung($('konto-fassung'));
   $('verwaltung').hidden = !k.verwalter;
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
@@ -2534,6 +2581,20 @@ async function zeigeKonto() {
     ul.append(li);
   }
 }
+
+$('form-codes').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  $('codes-fehler').textContent = '';
+  try {
+    const d = await api('/api/v1/konto/wiederherstellungscodes', { methode: 'POST', json: { code: f.code.value.trim() } });
+    f.reset();
+    await zeigeCodes(d.wiederherstellungscodes);
+    zeigeKonto();
+  } catch (x) {
+    $('codes-fehler').textContent = x.message;
+  }
+});
 
 $('form-passwort').addEventListener('submit', async (e) => {
   e.preventDefault();

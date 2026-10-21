@@ -2243,4 +2243,30 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get vergleichZuruecksetzen => 'Zoom zurücksetzen';
+
+  @override
+  String eigenCodesUebrig(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Noch $n Codes übrig',
+      one: 'Noch ein Code übrig',
+      zero: 'Keine Codes mehr übrig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eigenCodesNeu => 'Neue Codes erzeugen';
+
+  @override
+  String get eigenCodesHinweis =>
+      'Mit einem Code aus der Authenticator-App bestätigen. Die bisherigen Wiederherstellungscodes gelten danach nicht mehr.';
+
+  @override
+  String get eigenCodesFertig =>
+      'Jeder Code gilt einmal, wenn die Authenticator-App fehlt. Bitte sicher aufbewahren, etwa im Passwortmanager – die bisherigen gelten nicht mehr.';
+
+  @override
+  String get eigenCodesKopiert => 'Kopiert';
 }

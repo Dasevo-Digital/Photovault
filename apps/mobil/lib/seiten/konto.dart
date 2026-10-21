@@ -70,7 +70,7 @@ class Konto extends StatelessWidget {
                         : Icons.cloud_off_outlined,
                   ),
                   title: Text(
-                    z == null
+                    z == null || z.ungeklaert
                         ? t.kontoVerbindet
                         : z.schemaAnders
                         ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)

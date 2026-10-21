@@ -1898,6 +1898,66 @@ void main() {
     expect(angenommen, ['b1']);
   });
 
+  testWidgets('Neue Wiederherstellungscodes: Code bestätigen, markierbar', (
+    tester,
+  ) async {
+    Map<String, Object?>? gesendet;
+    final client = MockClient((r) async {
+      if (r.method == 'POST' &&
+          r.url.path == '/api/v1/konto/wiederherstellungscodes') {
+        gesendet = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        if (gesendet!['code'] != '123456') {
+          return http.Response(
+            jsonEncode({'fehler': 'Code stimmt nicht'}),
+            403,
+          );
+        }
+        return http.Response(
+          jsonEncode({
+            'wiederherstellungscodes': ['test-aaaa-1111', 'test-bbbb-2222'],
+          }),
+          200,
+        );
+      }
+      return http.Response('{}', 404);
+    });
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      'token',
+      client: client,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: NeueCodes(verbindung: verbindung),
+      ),
+    );
+    Future<void> ruhe() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await tester.enterText(find.byType(TextField), '000000');
+    await tester.tap(find.text('Neue Codes erzeugen'));
+    await ruhe();
+    expect(find.text('Code stimmt nicht'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.tap(find.text('Neue Codes erzeugen'));
+    await ruhe();
+    expect(gesendet, {'code': '123456'});
+    // Markierbar, nicht nur gezeigt – und mit „Kopieren“.
+    expect(
+      find.widgetWithText(SelectableText, 'test-aaaa-1111\ntest-bbbb-2222'),
+      findsOneWidget,
+    );
+    expect(find.text('Kopieren'), findsOneWidget);
+  });
+
   testWidgets('Als Link teilen: Auswahl an den Server, Link mit Kopieren', (
     tester,
   ) async {

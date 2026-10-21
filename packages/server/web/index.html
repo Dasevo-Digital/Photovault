@@ -244,7 +244,11 @@
   </section>
   <section id="bereich-konto" hidden>
     <h2>Konto</h2>
-    <p id="konto-wer"></p>
+    <!-- Abmelden oben, wo man es sucht – vorher stand es ganz unten. -->
+    <div class="konto-kopf">
+      <p id="konto-wer"></p>
+      <button id="abmelden" type="button">Abmelden</button>
+    </div>
     <p id="konto-fassung" class="leise"></p>
     <!-- Dieselbe Adresse wie in den Apps (packages/kern/lib/unterstuetzen.dart). -->
     <p id="konto-unterstuetzen"><a href="https://ko-fi.com/superkuh86" target="_blank" rel="noopener noreferrer">☕ Photo Vault unterstützen</a> <span class="leise klein">Kostenlos und ohne Werbung – wer mag, spendiert auf Ko-fi einen Kaffee.</span></p>
@@ -284,7 +288,15 @@
       <button type="submit">Ändern</button>
       <p id="passwort-meldung" class="leise"></p>
     </form>
-    <button id="abmelden" type="button">Abmelden</button>
+    <div id="codes-feld" hidden>
+      <h3>Wiederherstellungscodes</h3>
+      <p id="codes-stand" class="leise"></p>
+      <form id="form-codes" class="zeile">
+        <input name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="TOTP-Code" required>
+        <button type="submit">Neue Codes erzeugen</button>
+      </form>
+      <p id="codes-fehler" class="fehler"></p>
+    </div>
   </section>
   <section id="bereich-raster" hidden>
     <div id="erinnerungen" hidden><h2>Erinnerungen</h2><div id="erinnerungen-karten"></div></div>
@@ -443,6 +455,22 @@
 </dialog>
 
 <!-- Ein Gesicht im ganzen Foto, wenn der Ausschnitt nicht genügt (#189). -->
+<!-- Die Wiederherstellungscodes: markierbar, zum Kopieren und Sichern –
+     im Fenster des Browsers (alert) liess sich nichts kopieren. -->
+<dialog id="codes-dialog">
+  <form method="dialog">
+    <h3>Wiederherstellungscodes</h3>
+    <p class="leise klein">Jeder Code gilt einmal – für die Anmeldung, wenn die Authenticator-App fehlt. Bitte sicher aufbewahren, etwa im Passwortmanager. Frühere Codes gelten nicht mehr.</p>
+    <pre id="codes-liste"></pre>
+    <p id="codes-meldung" class="leise klein" role="status"></p>
+    <menu>
+      <button type="button" id="codes-kopieren">Kopieren</button>
+      <button type="button" id="codes-sichern">Als Datei sichern</button>
+      <button type="submit">Fertig</button>
+    </menu>
+  </form>
+</dialog>
+
 <!-- Zwei Fotos vergleichen (#197), wie am Rechner. -->
 <div id="vergleich" hidden>
   <div class="vergleich-leiste">

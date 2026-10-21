@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kern/abgleich/verbindung.dart';
 
 import '../einfuegbares_menue.dart';
@@ -135,6 +138,27 @@ class _EigenesKontoState extends State<EigenesKonto> {
               ),
             ),
           ),
+        // Neue Wiederherstellungscodes – etwa wenn die alten irgendwo offen
+        // lagen. Wie im Browser nur mit eingerichtetem zweiten Faktor.
+        if (k['totp'] == true)
+          ListTile(
+            leading: const Icon(Icons.key_outlined),
+            title: Text(t.anmeldenCodesTitel),
+            subtitle: Text(
+              t.eigenCodesUebrig(
+                (k['wiederherstellungscodes'] as num?)?.toInt() ?? 0,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => NeueCodes(verbindung: widget.verbindung),
+                ),
+              );
+              if (mounted) _lade();
+            },
+          ),
         ListTile(
           leading: const Icon(Icons.password_outlined),
           title: Text(t.eigenPasswortAendern),
@@ -209,7 +233,7 @@ class _PasswortAendernState extends State<PasswortAendern> {
       }
       setState(() => _meldung = t.eigenPasswortGeaendert);
     } on Serverfehler catch (f) {
-      setState(() => _meldung = f.text.isEmpty ? '${f.status}' : f.text);
+      setState(() => _meldung = _fehlertext(f));
     } catch (x) {
       setState(() => _meldung = '$x');
     } finally {
@@ -280,4 +304,135 @@ class _PasswortAendernState extends State<PasswortAendern> {
       ),
     );
   }
+}
+
+/// Neue Wiederherstellungscodes, bestätigt mit einem Code aus der
+/// Authenticator-App – wie auf der Kontoseite im Browser. Die neuen stehen
+/// danach markierbar da, mit „Kopieren“.
+class NeueCodes extends StatefulWidget {
+  const NeueCodes({super.key, required this.verbindung});
+
+  final Serververbindung verbindung;
+
+  @override
+  State<NeueCodes> createState() => _NeueCodesState();
+}
+
+class _NeueCodesState extends State<NeueCodes> {
+  final _code = TextEditingController();
+  List<String>? _codes;
+  String? _meldung;
+  var _laeuft = false;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  Future<void> _erzeugen() async {
+    setState(() {
+      _laeuft = true;
+      _meldung = null;
+    });
+    try {
+      final d = await widget.verbindung.schicke(
+        'api/v1/konto/wiederherstellungscodes',
+        {'code': _code.text.trim()},
+      );
+      _code.clear();
+      setState(() {
+        _codes = [
+          for (final c in (d['wiederherstellungscodes'] as List? ?? const []))
+            '$c',
+        ];
+      });
+    } on Serverfehler catch (f) {
+      setState(() => _meldung = _fehlertext(f));
+    } catch (x) {
+      setState(() => _meldung = '$x');
+    } finally {
+      if (mounted) setState(() => _laeuft = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final codes = _codes;
+    return Scaffold(
+      appBar: AppBar(title: Text(t.anmeldenCodesTitel)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (codes == null) ...[
+            Text(t.eigenCodesHinweis),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _code,
+              autofillHints: const [AutofillHints.oneTimeCode],
+              contextMenuBuilder: einfuegbaresMenue,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t.eigenTotpCode,
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _laeuft ? null : _erzeugen(),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _laeuft ? null : _erzeugen,
+              child: Text(t.eigenCodesNeu),
+            ),
+          ] else ...[
+            Text(t.eigenCodesFertig),
+            const SizedBox(height: 12),
+            SelectableText(
+              codes.join('\n'),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                icon: const Icon(Icons.copy_outlined),
+                label: Text(t.kopieren),
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: codes.join('\n')),
+                  );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(content: Text(t.eigenCodesKopiert)),
+                    );
+                },
+              ),
+            ),
+          ],
+          if (_meldung != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _meldung!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Was der Server zu einem Fehler sagt: das Feld `fehler` seiner Antwort,
+/// nicht die rohe Antwort samt Klammern.
+String _fehlertext(Serverfehler f) {
+  try {
+    final j = jsonDecode(f.text);
+    if (j is Map && j['fehler'] is String) return j['fehler'] as String;
+  } on FormatException {
+    // kein JSON – dann der Text, wie er ist
+  }
+  return f.text.isEmpty ? '${f.status}' : f.text;
 }
