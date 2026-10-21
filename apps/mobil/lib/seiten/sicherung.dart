@@ -55,6 +55,45 @@ class Sicherungsseite extends StatelessWidget {
     bote.showSnackBar(SnackBar(content: Text(t.sicherungFreigegeben(n))));
   }
 
+  /// Was in Photo Vault im Papierkorb liegt, auch vom Telefon löschen –
+  /// für Fotos, die auf einem anderen Gerät gelöscht wurden (#205).
+  Future<void> _papierkorbVomTelefon(
+    BuildContext context,
+    AppDatabase db,
+  ) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final l = dienst.loeschung(db);
+    final ids = await l.ausDemPapierkorb();
+    if (!context.mounted) return;
+    if (ids.isEmpty) {
+      bote.showSnackBar(
+        SnackBar(content: Text(t.sicherungPapierkorbTelefonNichts)),
+      );
+      return;
+    }
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.sicherungFreigebenTitel(ids.length)),
+        content: Text(t.sicherungPapierkorbTelefonText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.abbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.sicherungFreigebenLoeschen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true) return;
+    final n = await l.loesche(ids);
+    bote.showSnackBar(SnackBar(content: Text(t.vomTelefonGeloescht(n))));
+  }
+
   Future<void> _einschalten(BuildContext context, bool an) async {
     if (!an) return dienst.schalteAus();
     await dienst.schalteEin();
@@ -86,6 +125,21 @@ class Sicherungsseite extends StatelessWidget {
                   title: Text(t.sicherungFreigeben),
                   subtitle: Text(t.sicherungFreigebenHinweis),
                   onTap: () => _freigeben(context, db!),
+                ),
+              if (e.an && db != null)
+                ListTile(
+                  leading: const Icon(Icons.auto_delete_outlined),
+                  title: Text(t.sicherungPapierkorbTelefon),
+                  subtitle: Text(t.sicherungPapierkorbTelefonHinweis),
+                  onTap: () => _papierkorbVomTelefon(context, db!),
+                ),
+              if (e.an)
+                SwitchListTile(
+                  secondary: const Icon(Icons.phonelink_erase_outlined),
+                  title: Text(t.sicherungVomTelefon),
+                  subtitle: Text(t.sicherungVomTelefonHinweis),
+                  value: e.vomTelefon,
+                  onChanged: (v) => dienst.setze(e.mit(vomTelefon: v)),
                 ),
               const Divider(),
               SwitchListTile(

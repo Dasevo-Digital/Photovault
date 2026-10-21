@@ -1184,5 +1184,30 @@
   },
   "jetztAllesSicher": "Alles ist gesichert.",
   "einstSicherung": "Automatisch hochladen",
-  "einstSicherungText": "Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon."
+  "einstSicherungText": "Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon.",
+  "loeschenAuchTelefon": "{n, plural, =1{Auch aus der Fotomediathek dieses Telefons löschen} other{{n} davon auch aus der Fotomediathek dieses Telefons löschen}}",
+  "@loeschenAuchTelefon": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "loeschenAuchTelefonHinweis": "Das Telefon fragt gleich selbst noch einmal nach.",
+  "loeschenAuchTelefonHinweisIos": "Das iPhone fragt gleich selbst noch einmal nach. In Fotos liegen sie danach 30 Tage unter „Zuletzt gelöscht“.",
+  "vomTelefonGeloescht": "{n, plural, =0{Vom Telefon nichts gelöscht} =1{1 Aufnahme auch vom Telefon gelöscht} other{{n} Aufnahmen auch vom Telefon gelöscht}}",
+  "@vomTelefonGeloescht": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "sicherungVomTelefon": "Beim Löschen auch vom Telefon löschen",
+  "sicherungVomTelefonHinweis": "Für Fotos, die dieses Telefon gesichert hat. Die Rückfrage beim Löschen zeigt das Häkchen so voreingestellt.",
+  "sicherungPapierkorbTelefon": "Gelöschtes auch vom Telefon entfernen",
+  "sicherungPapierkorbTelefonHinweis": "Was in Photo Vault im Papierkorb liegt – auch auf einem anderen Gerät gelöscht – aus der Fotomediathek dieses Telefons löschen.",
+  "sicherungPapierkorbTelefonNichts": "Nichts zu entfernen: Kein Foto aus dem Papierkorb liegt noch auf dem Telefon.",
+  "sicherungPapierkorbTelefonText": "Diese Aufnahmen liegen in Photo Vault im Papierkorb. Das Telefon fragt gleich noch einmal nach.",
+  "lokalVomTelefonLoeschen": "Vom Telefon löschen"
 }

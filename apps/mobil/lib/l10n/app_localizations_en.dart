@@ -2376,4 +2376,60 @@ class AppTexteEn extends AppTexte {
   @override
   String get einstSicherungText =>
       'New photos and videos on this phone go to the server by themselves. Applies to this phone only.';
+
+  @override
+  String loeschenAuchTelefon(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Also delete $n of them from this phone\'s photo library',
+      one: 'Also delete from this phone\'s photo library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get loeschenAuchTelefonHinweis => 'The phone will ask once more.';
+
+  @override
+  String get loeschenAuchTelefonHinweisIos =>
+      'The iPhone will ask once more. In Photos they stay under “Recently Deleted” for 30 days.';
+
+  @override
+  String vomTelefonGeloescht(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items also deleted from the phone',
+      one: '1 item also deleted from the phone',
+      zero: 'Nothing deleted from the phone',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungVomTelefon => 'Also delete from the phone when deleting';
+
+  @override
+  String get sicherungVomTelefonHinweis =>
+      'For photos this phone backed up. Sets the default of the checkbox when deleting.';
+
+  @override
+  String get sicherungPapierkorbTelefon =>
+      'Remove deleted items from the phone';
+
+  @override
+  String get sicherungPapierkorbTelefonHinweis =>
+      'Delete what is in the Photo Vault trash – even if deleted on another device – from this phone\'s photo library.';
+
+  @override
+  String get sicherungPapierkorbTelefonNichts =>
+      'Nothing to remove: no photo from the trash is still on the phone.';
+
+  @override
+  String get sicherungPapierkorbTelefonText =>
+      'These items are in the Photo Vault trash. The phone will ask once more.';
+
+  @override
+  String get lokalVomTelefonLoeschen => 'Delete from the phone';
 }

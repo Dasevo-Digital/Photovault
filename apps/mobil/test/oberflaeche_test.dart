@@ -36,6 +36,7 @@ import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/aufnahmedaten.dart';
 import 'package:photo_vault_mobil/seiten/auswahl.dart';
+import 'package:photo_vault_mobil/seiten/loeschen.dart';
 import 'package:photo_vault_mobil/seiten/betrachter.dart';
 import 'package:photo_vault_mobil/seiten/duplikate.dart';
 import 'package:photo_vault_mobil/seiten/eigenes_konto.dart';
@@ -288,6 +289,14 @@ void main() {
     expect(find.text(t.sicherungProbleme(1)), findsOneWidget);
     expect(find.text('Datei nicht verfügbar'), findsOneWidget);
     expect(find.text(t.sicherungJetzt), findsOneWidget);
+    // Neu dabei: auch vom Telefon löschen (#205).
+    await tester.scrollUntilVisible(find.text(t.sicherungVomTelefon), 200);
+    expect(
+      find.text(t.sicherungPapierkorbTelefon),
+      findsNothing,
+      reason: 'ohne Kopie der Bibliothek kein Papierkorb zum Vergleichen',
+    );
+    await tester.scrollUntilVisible(find.text(t.sicherungAlleFotos), 200);
     expect(find.text(t.sicherungAlleFotos), findsOneWidget);
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
   });
@@ -343,6 +352,82 @@ void main() {
     expect(find.text(t.jetztWartetWlan), findsOneWidget);
     expect(find.text(t.jetztMobil), findsOneWidget, reason: 'einmal mobil');
     expect(an.wartet, Wartegrund.wlan);
+  });
+
+  testWidgets('Papierkorb: „Auch vom Telefon löschen“, gemerkt (#205)', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_vomtelefon_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    Sicherungsstand.oeffne(ordner)
+      ..einstellungen = const Sicherungseinstellungen(an: true)
+      ..schliesse();
+    final dienst = Sicherungsdienst(
+      ordner: ordner,
+      server: Uri.parse('http://localhost:1/'),
+      token: 'pv1_test',
+    );
+    addTearDown(dienst.dispose);
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final sitzung = Sitzung()
+      ..db = db
+      ..sicherung = dienst;
+    final telefon = (loeschung: dienst.loeschung(db), lokal: ['p1', 'p2']);
+
+    late BuildContext innen;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (c) {
+              innen = c;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+    final t = AppTexte.of(innen);
+    Future<bool?> frage({Telefonteil? mit}) => fragePapierkorb(
+      innen,
+      sitzung: sitzung,
+      titel: 'In den Papierkorb?',
+      text: 'Text',
+      knopf: 'Papierkorb',
+      telefon: mit,
+    );
+
+    // Nichts davon auf dem Telefon: die Rückfrage wie bisher.
+    var antwort = frage();
+    await tester.pumpAndSettle();
+    expect(find.byType(Checkbox), findsNothing);
+    await tester.tap(find.text('Papierkorb'));
+    await tester.pumpAndSettle();
+    expect(await antwort, isFalse);
+
+    // Zwei davon auf dem Telefon: vorgewählt.
+    antwort = frage(mit: telefon);
+    await tester.pumpAndSettle();
+    expect(find.text(t.loeschenAuchTelefon(2)), findsOneWidget);
+    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Papierkorb'));
+    await tester.pumpAndSettle();
+    expect(await antwort, isFalse);
+    expect(dienst.einstellungen.vomTelefon, isFalse, reason: 'gemerkt');
+
+    // Beim nächsten Mal so voreingestellt; Abbrechen löscht nichts.
+    antwort = frage(mit: telefon);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+    await tester.tap(find.text(t.abbrechen));
+    await tester.pumpAndSettle();
+    expect(await antwort, isNull);
   });
 
   testWidgets('Auswahl im Raster: Favorit, Album, Papierkorb', (tester) async {

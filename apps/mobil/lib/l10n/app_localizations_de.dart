@@ -2386,4 +2386,61 @@ class AppTexteDe extends AppTexte {
   @override
   String get einstSicherungText =>
       'Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon.';
+
+  @override
+  String loeschenAuchTelefon(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n davon auch aus der Fotomediathek dieses Telefons löschen',
+      one: 'Auch aus der Fotomediathek dieses Telefons löschen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get loeschenAuchTelefonHinweis =>
+      'Das Telefon fragt gleich selbst noch einmal nach.';
+
+  @override
+  String get loeschenAuchTelefonHinweisIos =>
+      'Das iPhone fragt gleich selbst noch einmal nach. In Fotos liegen sie danach 30 Tage unter „Zuletzt gelöscht“.';
+
+  @override
+  String vomTelefonGeloescht(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen auch vom Telefon gelöscht',
+      one: '1 Aufnahme auch vom Telefon gelöscht',
+      zero: 'Vom Telefon nichts gelöscht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get sicherungVomTelefon => 'Beim Löschen auch vom Telefon löschen';
+
+  @override
+  String get sicherungVomTelefonHinweis =>
+      'Für Fotos, die dieses Telefon gesichert hat. Die Rückfrage beim Löschen zeigt das Häkchen so voreingestellt.';
+
+  @override
+  String get sicherungPapierkorbTelefon =>
+      'Gelöschtes auch vom Telefon entfernen';
+
+  @override
+  String get sicherungPapierkorbTelefonHinweis =>
+      'Was in Photo Vault im Papierkorb liegt – auch auf einem anderen Gerät gelöscht – aus der Fotomediathek dieses Telefons löschen.';
+
+  @override
+  String get sicherungPapierkorbTelefonNichts =>
+      'Nichts zu entfernen: Kein Foto aus dem Papierkorb liegt noch auf dem Telefon.';
+
+  @override
+  String get sicherungPapierkorbTelefonText =>
+      'Diese Aufnahmen liegen in Photo Vault im Papierkorb. Das Telefon fragt gleich noch einmal nach.';
+
+  @override
+  String get lokalVomTelefonLoeschen => 'Vom Telefon löschen';
 }

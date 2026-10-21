@@ -783,5 +783,16 @@
   "jetztGesichert": "{n, plural, =1{1 item backed up} other{{n} items backed up}}",
   "jetztAllesSicher": "Everything is backed up.",
   "einstSicherung": "Upload automatically",
-  "einstSicherungText": "New photos and videos on this phone go to the server by themselves. Applies to this phone only."
+  "einstSicherungText": "New photos and videos on this phone go to the server by themselves. Applies to this phone only.",
+  "loeschenAuchTelefon": "{n, plural, =1{Also delete from this phone's photo library} other{Also delete {n} of them from this phone's photo library}}",
+  "loeschenAuchTelefonHinweis": "The phone will ask once more.",
+  "loeschenAuchTelefonHinweisIos": "The iPhone will ask once more. In Photos they stay under “Recently Deleted” for 30 days.",
+  "vomTelefonGeloescht": "{n, plural, =0{Nothing deleted from the phone} =1{1 item also deleted from the phone} other{{n} items also deleted from the phone}}",
+  "sicherungVomTelefon": "Also delete from the phone when deleting",
+  "sicherungVomTelefonHinweis": "For photos this phone backed up. Sets the default of the checkbox when deleting.",
+  "sicherungPapierkorbTelefon": "Remove deleted items from the phone",
+  "sicherungPapierkorbTelefonHinweis": "Delete what is in the Photo Vault trash – even if deleted on another device – from this phone's photo library.",
+  "sicherungPapierkorbTelefonNichts": "Nothing to remove: no photo from the trash is still on the phone.",
+  "sicherungPapierkorbTelefonText": "These items are in the Photo Vault trash. The phone will ask once more.",
+  "lokalVomTelefonLoeschen": "Delete from the phone"
 }

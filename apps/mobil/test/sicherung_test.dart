@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_vault_mobil/sicherung/kamerarolle.dart';
 import 'package:photo_vault_mobil/sicherung/lauf.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
+import 'package:photo_vault_mobil/sicherung/telefonloeschung.dart';
 
 import 'hilfen/testserver.dart';
 
@@ -74,6 +75,12 @@ class _Rolle implements Kamerarolle {
 
   @override
   Future<void> aufraeumen() async => aufgeraeumt++;
+
+  @override
+  Future<List<String>> vorhanden(List<String> ids) async => [
+    for (final id in ids)
+      if (eintraege_.any((x) => x.id == id)) id,
+  ];
 
   @override
   Future<int> loesche(List<String> ids) async {
@@ -267,6 +274,51 @@ void main() {
         isNot(contains('f2')),
       );
       expect(await f.kandidaten(), isEmpty);
+    },
+  );
+
+  test(
+    'auch vom Telefon löschen: was dazu gehört, und was im Papierkorb liegt (#205)',
+    () async {
+      rolle.foto('t1', server.jpeg('IMG_0601.JPG', 61));
+      rolle.foto('t2', server.jpeg('IMG_0602.JPG', 62));
+      rolle.foto('t3', server.jpeg('IMG_0603.JPG', 63));
+      await lauf().laufe();
+      final amServer = {for (final a in await aufServer()) a['name']: a['id']};
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      // t3 hat der Abgleich noch nicht gebracht.
+      for (final name in ['IMG_0601.JPG', 'IMG_0602.JPG']) {
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: amServer[name]! as String,
+            originalFileName: name,
+            relativePath: 'originals/$name',
+            checksum: 'pruef-$name',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2025),
+            importedAt: DateTime(2026),
+          ),
+        );
+      }
+      final l = Telefonloeschung(stand: stand, rolle: rolle, db: db);
+      final eins = amServer['IMG_0601.JPG']! as String;
+      expect(await l.zu([eins]), ['t1']);
+      expect(await l.zu(['gibt-es-nicht']), isEmpty);
+
+      // Auf einem anderen Gerät gelöscht: liegt im Papierkorb der Kopie.
+      expect(await l.ausDemPapierkorb(), isEmpty);
+      await db.moveToTrash([eins]);
+      expect(await l.ausDemPapierkorb(), ['t1']);
+
+      // Was ganz fehlt, kann auch nur noch nicht abgeglichen sein: bleibt.
+      expect(await l.loesche(await l.ausDemPapierkorb()), 1);
+      expect(
+        (await rolle.eintraege(videos: true)).map((x) => x.id),
+        unorderedEquals(['t2', 't3']),
+      );
+      expect(await l.ausDemPapierkorb(), isEmpty, reason: 'schon weg');
+      expect(await l.zu([eins]), isEmpty);
     },
   );
 

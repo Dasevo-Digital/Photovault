@@ -17,6 +17,7 @@ import 'diashow.dart';
 import 'entwickeln.dart';
 import 'gesichter.dart';
 import 'gesichtsebene.dart';
+import 'loeschen.dart';
 import 'videospieler.dart';
 
 /// Der Weg in den Betrachter: durchsichtig, damit beim Wischen nach unten
@@ -156,25 +157,25 @@ class _BetrachterState extends State<Betrachter> {
 
   Future<void> _papierkorb() async {
     final t = AppTexte.of(context);
-    final ja = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.betrachterPapierkorbTitel),
-        content: Text(t.betrachterPapierkorbText),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t.abbrechen),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t.betrachterPapierkorb),
-          ),
-        ],
-      ),
+    final bote = ScaffoldMessenger.of(context);
+    final id = _aktuell;
+    // Liegt das Foto auch in Apple Fotos / der Galerie, darf es dort mit
+    // gehen (#205).
+    final telefon = await aufDemTelefon(widget.sitzung, [id]);
+    if (!mounted) return;
+    final auchTelefon = await fragePapierkorb(
+      context,
+      sitzung: widget.sitzung,
+      titel: t.betrachterPapierkorbTitel,
+      text: t.betrachterPapierkorbText,
+      knopf: t.betrachterPapierkorb,
+      telefon: telefon,
     );
-    if (ja != true) return;
-    await _db.fuehreAus(InDenPapierkorb([_aktuell]));
+    if (auchTelefon == null) return;
+    await _db.fuehreAus(InDenPapierkorb([id]));
+    if (telefon != null && auchTelefon) {
+      await loescheVomTelefon(bote, t, widget.sitzung, telefon);
+    }
     if (mounted) Navigator.of(context).pop();
   }
 

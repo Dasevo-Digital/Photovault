@@ -3708,6 +3708,72 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon.'**
   String get einstSicherungText;
+
+  /// No description provided for @loeschenAuchTelefon.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Auch aus der Fotomediathek dieses Telefons löschen} other{{n} davon auch aus der Fotomediathek dieses Telefons löschen}}'**
+  String loeschenAuchTelefon(int n);
+
+  /// No description provided for @loeschenAuchTelefonHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Telefon fragt gleich selbst noch einmal nach.'**
+  String get loeschenAuchTelefonHinweis;
+
+  /// No description provided for @loeschenAuchTelefonHinweisIos.
+  ///
+  /// In de, this message translates to:
+  /// **'Das iPhone fragt gleich selbst noch einmal nach. In Fotos liegen sie danach 30 Tage unter „Zuletzt gelöscht“.'**
+  String get loeschenAuchTelefonHinweisIos;
+
+  /// No description provided for @vomTelefonGeloescht.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Vom Telefon nichts gelöscht} =1{1 Aufnahme auch vom Telefon gelöscht} other{{n} Aufnahmen auch vom Telefon gelöscht}}'**
+  String vomTelefonGeloescht(int n);
+
+  /// No description provided for @sicherungVomTelefon.
+  ///
+  /// In de, this message translates to:
+  /// **'Beim Löschen auch vom Telefon löschen'**
+  String get sicherungVomTelefon;
+
+  /// No description provided for @sicherungVomTelefonHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Für Fotos, die dieses Telefon gesichert hat. Die Rückfrage beim Löschen zeigt das Häkchen so voreingestellt.'**
+  String get sicherungVomTelefonHinweis;
+
+  /// No description provided for @sicherungPapierkorbTelefon.
+  ///
+  /// In de, this message translates to:
+  /// **'Gelöschtes auch vom Telefon entfernen'**
+  String get sicherungPapierkorbTelefon;
+
+  /// No description provided for @sicherungPapierkorbTelefonHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Was in Photo Vault im Papierkorb liegt – auch auf einem anderen Gerät gelöscht – aus der Fotomediathek dieses Telefons löschen.'**
+  String get sicherungPapierkorbTelefonHinweis;
+
+  /// No description provided for @sicherungPapierkorbTelefonNichts.
+  ///
+  /// In de, this message translates to:
+  /// **'Nichts zu entfernen: Kein Foto aus dem Papierkorb liegt noch auf dem Telefon.'**
+  String get sicherungPapierkorbTelefonNichts;
+
+  /// No description provided for @sicherungPapierkorbTelefonText.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Aufnahmen liegen in Photo Vault im Papierkorb. Das Telefon fragt gleich noch einmal nach.'**
+  String get sicherungPapierkorbTelefonText;
+
+  /// No description provided for @lokalVomTelefonLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vom Telefon löschen'**
+  String get lokalVomTelefonLoeschen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

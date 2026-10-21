@@ -204,6 +204,28 @@ class Sicherungsstand {
       ),
   };
 
+  /// Die Kennungen auf dem Telefon, die als [aufnahmen] (Kennungen auf dem
+  /// Server) gesichert sind – hochgeladen oder dort schon vorhanden.
+  List<String> lokaleZu(Iterable<String> aufnahmen) {
+    final liste = aufnahmen.toSet().toList();
+    final lokal = <String>[];
+    for (var i = 0; i < liste.length; i += 500) {
+      final teil = liste.sublist(
+        i,
+        i + 500 > liste.length ? liste.length : i + 500,
+      );
+      lokal.addAll([
+        for (final z in _db.select(
+          "SELECT lokal FROM erledigt WHERE ausgang IN ('hochgeladen', 'vorhanden') "
+          'AND aufnahme IN (${List.filled(teil.length, '?').join(', ')})',
+          teil,
+        ))
+          z['lokal'] as String,
+      ]);
+    }
+    return lokal;
+  }
+
   Map<String, String> get fehler => {
     for (final z in _db.select('SELECT lokal, text FROM fehler'))
       z['lokal'] as String: z['text'] as String,
@@ -275,6 +297,7 @@ class Sicherungseinstellungen {
     this.nurWlan = true,
     this.nurBeimLaden = false,
     this.alben = const [],
+    this.vomTelefon = true,
   });
 
   factory Sicherungseinstellungen.ausJson(Map<String, Object?> j) =>
@@ -284,6 +307,7 @@ class Sicherungseinstellungen {
         nurWlan: j['nurWlan'] != false,
         nurBeimLaden: j['nurBeimLaden'] == true,
         alben: [...?(j['alben'] as List?)?.cast<String>()],
+        vomTelefon: j['vomTelefon'] != false,
       );
 
   final bool an;
@@ -296,12 +320,17 @@ class Sicherungseinstellungen {
   /// Die Kennungen der Alben; leer heisst alle Fotos.
   final List<String> alben;
 
+  /// Ob „In den Papierkorb“ das Häkchen „Auch vom Telefon löschen“ schon
+  /// gesetzt hat (#205) – die zuletzt getroffene Wahl.
+  final bool vomTelefon;
+
   Map<String, Object?> alsJson() => {
     'an': an,
     'videos': videos,
     'nurWlan': nurWlan,
     'nurBeimLaden': nurBeimLaden,
     'alben': alben,
+    'vomTelefon': vomTelefon,
   };
 
   Sicherungseinstellungen mit({
@@ -310,12 +339,14 @@ class Sicherungseinstellungen {
     bool? nurWlan,
     bool? nurBeimLaden,
     List<String>? alben,
+    bool? vomTelefon,
   }) => Sicherungseinstellungen(
     an: an ?? this.an,
     videos: videos ?? this.videos,
     nurWlan: nurWlan ?? this.nurWlan,
     nurBeimLaden: nurBeimLaden ?? this.nurBeimLaden,
     alben: alben ?? this.alben,
+    vomTelefon: vomTelefon ?? this.vomTelefon,
   );
 }
 

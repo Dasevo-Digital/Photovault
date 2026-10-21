@@ -52,6 +52,12 @@ class PhotoManagerRolle implements Kamerarolle {
   Future<int> loesche(List<String> ids) async =>
       (await PhotoManager.editor.deleteWithIds(ids)).length;
 
+  @override
+  Future<List<String>> vorhanden(List<String> ids) async => [
+    for (final id in ids)
+      if (await AssetEntity.fromId(id) != null) id,
+  ];
+
   static Rolleneintrag _eintrag(AssetEntity a) => Rolleneintrag(
     id: a.id,
     geaendert: a.modifiedDateTime,

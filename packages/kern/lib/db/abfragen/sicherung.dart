@@ -46,6 +46,30 @@ extension SicherungsAbfragen on AppDatabase {
     }
     return da;
   }
+  /// Welche von [ids] in der Kopie stehen und im Papierkorb liegen – für
+  /// „Gelöschtes auch vom Telefon entfernen“ (#205). Was ganz fehlt, zählt
+  /// nicht: Es kann auch eine Aufnahme sein, die der Abgleich noch nicht
+  /// gebracht hat.
+  Future<Set<String>> aufnahmenImPapierkorb(Iterable<String> ids) async {
+    final liste = ids.toSet().toList();
+    final drin = <String>{};
+    for (var i = 0; i < liste.length; i += 500) {
+      final teil = liste.sublist(
+        i,
+        i + 500 > liste.length ? liste.length : i + 500,
+      );
+      final zeilen =
+          await (selectOnly(assets)
+                ..addColumns([assets.id])
+                ..where(assets.id.isIn(teil) & assets.isTrashed.equals(true)))
+              .get();
+      for (final z in zeilen) {
+        drin.add(z.read(assets.id)!);
+      }
+    }
+    return drin;
+  }
+
 
   Future<List<AssetData>> assetsNotBackedUp() =>
       (select(assets)..where(

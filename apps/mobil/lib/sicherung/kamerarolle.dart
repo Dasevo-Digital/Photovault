@@ -17,6 +17,9 @@ abstract class Kamerarolle {
   /// Löscht Einträge vom Telefon (siehe `Speicherfreigabe`); das System
   /// fragt den Nutzer dabei selbst. Gibt zurück, wie viele gingen.
   Future<int> loesche(List<String> ids);
+
+  /// Welche von [ids] noch auf dem Telefon liegen (und die App sehen darf).
+  Future<List<String>> vorhanden(List<String> ids);
 }
 
 /// Ein Eintrag der Kamerarolle: ein Foto, ein Video oder ein Live Photo.

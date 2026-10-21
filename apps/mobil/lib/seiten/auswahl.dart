@@ -12,6 +12,7 @@ import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'diashow.dart';
+import 'loeschen.dart';
 import 'vergleich.dart';
 import 'freigaben.dart';
 
@@ -147,26 +148,26 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
 
   Future<void> _papierkorb(BuildContext context) async {
     final t = AppTexte.of(context);
-    final ja = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.auswahlPapierkorbTitel(zeilen.length)),
-        content: Text(t.auswahlPapierkorbText),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(t.abbrechen),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(t.betrachterPapierkorb),
-          ),
-        ],
-      ),
+    final bote = ScaffoldMessenger.of(context);
+    final ids = _ids;
+    // Was davon auch in Apple Fotos / der Galerie liegt, darf dort mit
+    // gehen (#205).
+    final telefon = await aufDemTelefon(widget.sitzung, ids);
+    if (!context.mounted) return;
+    final auchTelefon = await fragePapierkorb(
+      context,
+      sitzung: widget.sitzung,
+      titel: t.auswahlPapierkorbTitel(zeilen.length),
+      text: t.auswahlPapierkorbText,
+      knopf: t.betrachterPapierkorb,
+      telefon: telefon,
     );
-    if (ja != true) return;
-    await _db.fuehreAus(InDenPapierkorb(_ids));
+    if (auchTelefon == null) return;
+    await _db.fuehreAus(InDenPapierkorb(ids));
     aufheben();
+    if (telefon != null && auchTelefon) {
+      await loescheVomTelefon(bote, t, widget.sitzung, telefon);
+    }
   }
 
   Future<void> _zurueckholen() async {

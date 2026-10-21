@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 
 import '../l10n/app_localizations.dart';
 import '../seiten/sicherung.dart';
+import '../sicherung/photo_manager_rolle.dart';
 import '../sitzung.dart';
 import 'ungesichert.dart';
 
@@ -37,6 +38,18 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
     super.dispose();
   }
 
+  /// Nur auf dem Telefon, also nur dort zu löschen (#205); das System
+  /// fragt selbst noch einmal.
+  Future<void> _vomTelefonLoeschen(LokaleAufnahme a) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final n = await PhotoManagerRolle().loesche([a.id]);
+    bote.showSnackBar(SnackBar(content: Text(t.vomTelefonGeloescht(n))));
+    if (n == 0) return;
+    await widget.sitzung.sicherung?.zaehleUngesicherte();
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
@@ -65,6 +78,11 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: t.lokalVomTelefonLoeschen,
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _vomTelefonLoeschen(a),
+          ),
           if (widget.sitzung.sicherung case final d?)
             TextButton.icon(
               style: TextButton.styleFrom(foregroundColor: Colors.white),

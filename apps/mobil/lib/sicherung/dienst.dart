@@ -14,6 +14,7 @@ import 'hintergrund.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
 import 'stand.dart';
+import 'telefonloeschung.dart';
 
 /// Ob die App die Fotos lesen darf.
 enum Zugriff { unbekannt, erlaubt, teilweise, verweigert }
@@ -157,6 +158,11 @@ class Sicherungsdienst extends ChangeNotifier {
     rolle: PhotoManagerRolle(alben: einstellungen.alben),
     db: db,
   );
+
+  /// Aufnahmen auch aus der Fotomediathek löschen (#205) – über alle
+  /// Alben, nicht nur die gesicherten.
+  Telefonloeschung loeschung(AppDatabase db) =>
+      Telefonloeschung(stand: _stand, rolle: PhotoManagerRolle(), db: db);
 
   /// Was scheiterte, noch einmal versuchen.
   void versucheFehlerErneut() {
