@@ -333,7 +333,9 @@ def entwurf(args):
         gitea(z, f'/releases/{rel["id"]}', json.dumps({'body': text}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     rid = rel['id']
     vorhanden = {x['name']: x['id'] for x in rel.get('assets', [])}
-    for name in dateien(fassung) + ['SHA256SUMS.txt']:
+    # Nur, was gebaut wurde: 3.41 bis 3.44.1 gingen nur an Mac und Server.
+    vorhanden_hier = [n for n in dateien(fassung) if (u / n).exists()]
+    for name in vorhanden_hier + ['SHA256SUMS.txt']:
         if name in vorhanden:
             if name != 'SHA256SUMS.txt':
                 continue
