@@ -6,6 +6,7 @@ import 'package:kern/services/bibliothekseinstellungen.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'sicherung.dart';
 
 /// Die Einstellungen der Bibliothek – dieselben Zeilen wie im Browser
 /// (web/app.js, zeigeEinstellungen): oben die Sprache dieser App, darunter
@@ -96,6 +97,27 @@ class _EinstellungenState extends State<Einstellungen> {
             ),
           ),
         ),
+        // Gilt wie die Sprache nur für dieses Telefon – darum über den
+        // Einstellungen der Bibliothek. Dieselbe Seite wie unter „Konto“
+        // (#204: dort fand man sie nicht).
+        if (widget.sitzung.sicherung case final d?)
+          ListenableBuilder(
+            listenable: d,
+            builder: (context, _) => ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              leading: const Icon(Icons.backup_outlined),
+              title: Text(t.einstSicherung),
+              subtitle: Text('${t.einstSicherungText}\n${sicherungKurz(t, d)}'),
+              isThreeLine: true,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      Sicherungsseite(dienst: d, db: widget.sitzung.db),
+                ),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
           child: Text(

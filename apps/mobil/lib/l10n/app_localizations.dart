@@ -3648,6 +3648,66 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Übernehmen'**
   String get angabenUebernehmen;
+
+  /// No description provided for @jetztAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Die automatische Sicherung ist ausgeschaltet.'**
+  String get jetztAus;
+
+  /// No description provided for @jetztEinrichten.
+  ///
+  /// In de, this message translates to:
+  /// **'Einrichten'**
+  String get jetztEinrichten;
+
+  /// No description provided for @jetztWartetWlan.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein WLAN – eingestellt ist „Nur im WLAN“.'**
+  String get jetztWartetWlan;
+
+  /// No description provided for @jetztMobil.
+  ///
+  /// In de, this message translates to:
+  /// **'Mobil sichern'**
+  String get jetztMobil;
+
+  /// No description provided for @jetztTeils.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme gesichert} other{{n} Aufnahmen gesichert}}, {f} nicht'**
+  String jetztTeils(int n, int f);
+
+  /// No description provided for @jetztDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Details'**
+  String get jetztDetails;
+
+  /// No description provided for @jetztGesichert.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme gesichert} other{{n} Aufnahmen gesichert}}'**
+  String jetztGesichert(int n);
+
+  /// No description provided for @jetztAllesSicher.
+  ///
+  /// In de, this message translates to:
+  /// **'Alles ist gesichert.'**
+  String get jetztAllesSicher;
+
+  /// No description provided for @einstSicherung.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch hochladen'**
+  String get einstSicherung;
+
+  /// No description provided for @einstSicherungText.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon.'**
+  String get einstSicherungText;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

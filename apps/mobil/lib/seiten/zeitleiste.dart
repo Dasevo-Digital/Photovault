@@ -7,10 +7,12 @@ import 'package:kern/services/sortierung.dart';
 
 import '../l10n/app_localizations.dart';
 import '../lokal/ungesichert.dart';
+import '../sicherung/dienst.dart';
 import '../sitzung.dart';
 import 'ansichtsleiste.dart';
 import 'erinnerungen.dart';
 import 'raster.dart';
+import 'sicherung.dart';
 
 /// Alle Aufnahmen, neueste zuerst, nach Tagen – die vom Server und
 /// dazwischen die, die nur auf dem Telefon liegen (Issue #127). Darüber
@@ -193,8 +195,43 @@ class _ZeitleisteState extends State<Zeitleiste> {
                             dense: true,
                             leading: const Icon(Icons.cloud_off_outlined),
                             title: Text(t.lokalAnzahl(lokal.length)),
+                            // Was gerade geschieht oder worauf es wartet –
+                            // sonst sah ein Tipp auf „Jetzt sichern“ aus,
+                            // als täte er nichts (#204).
+                            subtitle: switch ((d.laeuft, d.wartet)) {
+                              (true, _) => Text(
+                                switch (d.fortschritt?.datei) {
+                                  final f? => t.sicherungLaedt(f),
+                                  null => t.sicherungLaeuft,
+                                },
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              (_, Wartegrund.wlan) => Text(
+                                t.sicherungWartetWlan,
+                              ),
+                              (_, Wartegrund.netz) => Text(
+                                t.sicherungWartetNetz,
+                              ),
+                              (_, Wartegrund.hintergrund) => Text(
+                                t.sicherungImHintergrund,
+                              ),
+                              _ => null,
+                            },
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    Sicherungsseite(dienst: d, db: sitzung.db),
+                              ),
+                            ),
                             trailing: TextButton(
-                              onPressed: d.laeuft ? null : d.sichere,
+                              onPressed: d.laeuft
+                                  ? null
+                                  : () => jetztSichern(
+                                      context,
+                                      d,
+                                      db: sitzung.db,
+                                    ),
                               child: Text(t.lokalJetztSichern),
                             ),
                           ),

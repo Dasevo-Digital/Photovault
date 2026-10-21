@@ -292,6 +292,59 @@ void main() {
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
   });
 
+  testWidgets('Jetzt sichern sagt, woran es hängt (#204)', (tester) async {
+    // Unterwegs mit mobilen Daten – bei „Nur im WLAN“ (der Vorgabe) tat
+    // ein Tipp auf „Jetzt sichern“ bisher sichtbar nichts.
+    const netz = MethodChannel('dev.fluttercommunity.plus/connectivity');
+    final boten = tester.binding.defaultBinaryMessenger;
+    boten.setMockMethodCallHandler(netz, (_) async => ['mobile']);
+    addTearDown(() => boten.setMockMethodCallHandler(netz, null));
+    Sicherungsdienst dienst({required bool an}) {
+      final ordner = Directory.systemTemp.createTempSync('pv_jetzt_');
+      addTearDown(() => ordner.deleteSync(recursive: true));
+      Sicherungsstand.oeffne(ordner)
+        ..einstellungen = Sicherungseinstellungen(an: an)
+        ..schliesse();
+      final d = Sicherungsdienst(
+        ordner: ordner,
+        server: Uri.parse('http://localhost:1/'),
+        token: 'pv1_test',
+      );
+      addTearDown(d.dispose);
+      return d;
+    }
+
+    late BuildContext innen;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (c) {
+              innen = c;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+    final t = AppTexte.of(innen);
+
+    await tester.runAsync(() => jetztSichern(innen, dienst(an: false)));
+    await tester.pump();
+    expect(find.text(t.jetztAus), findsOneWidget);
+    expect(find.text(t.jetztEinrichten), findsOneWidget);
+
+    final an = dienst(an: true)..zugriff = Zugriff.erlaubt;
+    await tester.runAsync(() => jetztSichern(innen, an));
+    await tester.pump();
+    expect(find.text(t.jetztWartetWlan), findsOneWidget);
+    expect(find.text(t.jetztMobil), findsOneWidget, reason: 'einmal mobil');
+    expect(an.wartet, Wartegrund.wlan);
+  });
+
   testWidgets('Auswahl im Raster: Favorit, Album, Papierkorb', (tester) async {
     final ordner = Directory.systemTemp.createTempSync('pv_auswahl_');
     addTearDown(() => ordner.deleteSync(recursive: true));

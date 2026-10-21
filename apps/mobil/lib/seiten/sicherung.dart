@@ -246,7 +246,9 @@ class Sicherungsseite extends StatelessWidget {
         child: FilledButton.tonalIcon(
           icon: const Icon(Icons.sync),
           label: Text(t.sicherungJetzt),
-          onPressed: dienst.laeuft ? null : dienst.sichere,
+          onPressed: dienst.laeuft
+              ? null
+              : () => jetztSichern(context, dienst, db: db),
         ),
       ),
     ];
@@ -330,4 +332,78 @@ String sicherungKurz(AppTexte t, Sicherungsdienst d) {
   if (d.laeuft) return t.sicherungLaeuft;
   if (b == null) return t.sicherungNochNicht;
   return t.sicherungStand(b.gesamt - b.offen - b.fehlgeschlagen, b.gesamt);
+}
+
+/// „Jetzt sichern“ von Hand – überall gleich (Zeitleiste, Betrachter,
+/// Sicherungsseite): sichern und **sagen, wie es ausging** (#204). Vorher
+/// tat ein Tipp oft sichtbar nichts, siehe [Sicherungsdienst.sichereJetzt].
+Future<void> jetztSichern(
+  BuildContext context,
+  Sicherungsdienst d, {
+  AppDatabase? db,
+  bool mobil = false,
+}) async {
+  final t = AppTexte.of(context);
+  final bote = ScaffoldMessenger.of(context);
+  final navigator = Navigator.of(context);
+  void seite() => navigator.push(
+    MaterialPageRoute<void>(
+      builder: (_) => Sicherungsseite(dienst: d, db: db),
+    ),
+  );
+  void sag(String text, [SnackBarAction? aktion]) => bote
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text), action: aktion));
+
+  final antwort = await d.sichereJetzt(mobil: mobil);
+  final b = d.letzterLauf;
+  switch (antwort) {
+    case Sicherungsantwort.aus:
+      sag(
+        t.jetztAus,
+        SnackBarAction(label: t.jetztEinrichten, onPressed: seite),
+      );
+    case Sicherungsantwort.keinZugriff:
+      sag(
+        t.sicherungKeinZugriff,
+        SnackBarAction(
+          label: t.sicherungEinstellungenOeffnen,
+          onPressed: d.oeffneEinstellungen,
+        ),
+      );
+    case Sicherungsantwort.wartetWlan:
+      sag(
+        t.jetztWartetWlan,
+        SnackBarAction(
+          label: t.jetztMobil,
+          onPressed: () {
+            if (context.mounted) {
+              jetztSichern(context, d, db: db, mobil: true);
+            }
+          },
+        ),
+      );
+    case Sicherungsantwort.wartetNetz:
+      sag(t.sicherungWartetNetz);
+    case Sicherungsantwort.imHintergrund:
+      sag(t.sicherungImHintergrund);
+    case Sicherungsantwort.laeuft:
+      sag(t.sicherungLaeuft);
+    case Sicherungsantwort.fehler:
+      final f = d.fehler;
+      sag(
+        f is Serverfehler && f.abgemeldet
+            ? t.abgemeldetHinweis
+            : t.sicherungFehler,
+      );
+    case Sicherungsantwort.fertig when b != null && b.fehlgeschlagen > 0:
+      sag(
+        t.jetztTeils(b.hochgeladen + b.vorhanden, b.fehlgeschlagen),
+        SnackBarAction(label: t.jetztDetails, onPressed: seite),
+      );
+    case Sicherungsantwort.fertig when b != null && b.hochgeladen > 0:
+      sag(t.jetztGesichert(b.hochgeladen));
+    case Sicherungsantwort.fertig:
+      sag(t.jetztAllesSicher);
+  }
 }

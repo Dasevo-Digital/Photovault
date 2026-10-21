@@ -4,6 +4,7 @@ import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'package:video_player/video_player.dart';
 
 import '../l10n/app_localizations.dart';
+import '../seiten/sicherung.dart';
 import '../sitzung.dart';
 import 'ungesichert.dart';
 
@@ -69,7 +70,9 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
               style: TextButton.styleFrom(foregroundColor: Colors.white),
               icon: const Icon(Icons.cloud_upload_outlined),
               label: Text(t.lokalJetztSichern),
-              onPressed: d.laeuft ? null : d.sichere,
+              onPressed: d.laeuft
+                  ? null
+                  : () => jetztSichern(context, d, db: widget.sitzung.db),
             ),
         ],
       ),

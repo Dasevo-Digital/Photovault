@@ -773,5 +773,15 @@
   "datenOhneServer": "The check runs on the server and needs a connection.",
   "angabenNameNennt": "The file name gives {d}",
   "angabenDateiNennt": "File and file name give {d}",
-  "angabenUebernehmen": "Apply"
+  "angabenUebernehmen": "Apply",
+  "jetztAus": "Automatic backup is turned off.",
+  "jetztEinrichten": "Set up",
+  "jetztWartetWlan": "No Wi-Fi – “Wi-Fi only” is set.",
+  "jetztMobil": "Use mobile data",
+  "jetztTeils": "{n, plural, =1{1 item backed up} other{{n} items backed up}}, {f} not",
+  "jetztDetails": "Details",
+  "jetztGesichert": "{n, plural, =1{1 item backed up} other{{n} items backed up}}",
+  "jetztAllesSicher": "Everything is backed up.",
+  "einstSicherung": "Upload automatically",
+  "einstSicherungText": "New photos and videos on this phone go to the server by themselves. Applies to this phone only."
 }

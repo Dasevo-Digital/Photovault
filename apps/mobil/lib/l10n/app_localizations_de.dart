@@ -2339,4 +2339,51 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get angabenUebernehmen => 'Übernehmen';
+
+  @override
+  String get jetztAus => 'Die automatische Sicherung ist ausgeschaltet.';
+
+  @override
+  String get jetztEinrichten => 'Einrichten';
+
+  @override
+  String get jetztWartetWlan => 'Kein WLAN – eingestellt ist „Nur im WLAN“.';
+
+  @override
+  String get jetztMobil => 'Mobil sichern';
+
+  @override
+  String jetztTeils(int n, int f) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen gesichert',
+      one: '1 Aufnahme gesichert',
+    );
+    return '$_temp0, $f nicht';
+  }
+
+  @override
+  String get jetztDetails => 'Details';
+
+  @override
+  String jetztGesichert(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen gesichert',
+      one: '1 Aufnahme gesichert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get jetztAllesSicher => 'Alles ist gesichert.';
+
+  @override
+  String get einstSicherung => 'Automatisch hochladen';
+
+  @override
+  String get einstSicherungText =>
+      'Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon.';
 }

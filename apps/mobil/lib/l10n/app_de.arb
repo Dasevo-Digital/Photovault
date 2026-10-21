@@ -1157,5 +1157,32 @@
       }
     }
   },
-  "angabenUebernehmen": "Übernehmen"
+  "angabenUebernehmen": "Übernehmen",
+  "jetztAus": "Die automatische Sicherung ist ausgeschaltet.",
+  "jetztEinrichten": "Einrichten",
+  "jetztWartetWlan": "Kein WLAN – eingestellt ist „Nur im WLAN“.",
+  "jetztMobil": "Mobil sichern",
+  "jetztTeils": "{n, plural, =1{1 Aufnahme gesichert} other{{n} Aufnahmen gesichert}}, {f} nicht",
+  "@jetztTeils": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "f": {
+        "type": "int"
+      }
+    }
+  },
+  "jetztDetails": "Details",
+  "jetztGesichert": "{n, plural, =1{1 Aufnahme gesichert} other{{n} Aufnahmen gesichert}}",
+  "@jetztGesichert": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "jetztAllesSicher": "Alles ist gesichert.",
+  "einstSicherung": "Automatisch hochladen",
+  "einstSicherungText": "Neue Fotos und Videos dieses Telefons gehen von selbst zum Server. Gilt nur für dieses Telefon."
 }

@@ -165,13 +165,54 @@ class Sicherungsdienst extends ChangeNotifier {
     unawaited(sichere());
   }
 
+  /// „Jetzt sichern“ von Hand (#204): anders als [sichere] still nie.
+  ///
+  /// Der Knopf stand in der Zeitleiste neben „N Aufnahmen nur auf dem
+  /// Telefon“, und ein Tipp darauf tat oft sichtbar nichts. [sichere]
+  /// kehrt aus gutem Grund wortlos zurück, wenn es von selbst läuft –
+  /// ohne Zugriff, ohne WLAN bei „Nur im WLAN“ (die Vorgabe), während
+  /// eines Laufs im Hintergrund –, und überspringt, was dreimal scheiterte
+  /// (zwölf Stunden Pause) oder was der Server abgelehnt hat. Gezählt
+  /// wurden beide in der Zeitleiste trotzdem. Wer von Hand tippt, will
+  /// es jetzt: Darum hier noch einmal alles versuchen, nach dem Zugriff
+  /// fragen und sagen, wie es ausging.
+  ///
+  /// [mobil] sichert dieses eine Mal auch ohne WLAN.
+  Future<Sicherungsantwort> sichereJetzt({bool mobil = false}) async {
+    if (!einstellungen.an) return Sicherungsantwort.aus;
+    if (_laeuft) return Sicherungsantwort.laeuft;
+    if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) {
+      zugriff = _zugriffAus(
+        await PhotoManager.requestPermissionExtend(requestOption: _option),
+      );
+      notifyListeners();
+      if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) {
+        return Sicherungsantwort.keinZugriff;
+      }
+      _beobachte();
+    }
+    _stand.vergissFehler();
+    final vorher = _stand.letzterLauf?.ende;
+    await sichere(mobil: mobil);
+    return switch (wartet) {
+      Wartegrund.wlan => Sicherungsantwort.wartetWlan,
+      Wartegrund.netz => Sicherungsantwort.wartetNetz,
+      Wartegrund.hintergrund => Sicherungsantwort.imHintergrund,
+      null when fehler != null => Sicherungsantwort.fehler,
+      // Kein neuer Bericht: Es lief schon einer, der den Tipp mitnimmt.
+      null when _stand.letzterLauf?.ende == vorher => Sicherungsantwort.laeuft,
+      null => Sicherungsantwort.fertig,
+    };
+  }
+
   /// Ein Lauf, wenn die Sicherung an ist, der Zugriff erlaubt ist, das Netz
-  /// passt und nicht schon einer läuft.
-  Future<void> sichere() async {
+  /// passt und nicht schon einer läuft. [mobil] lässt „Nur im WLAN“ dieses
+  /// eine Mal aus (siehe [sichereJetzt]).
+  Future<void> sichere({bool mobil = false}) async {
     final e = einstellungen;
     if (_laeuft || _beendet || !e.an) return;
     if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) return;
-    if (!await netzPasst(e)) {
+    if (!await netzPasst(mobil ? e.mit(nurWlan: false) : e)) {
       wartet = e.nurWlan ? Wartegrund.wlan : Wartegrund.netz;
       notifyListeners();
       return;
@@ -275,3 +316,30 @@ class Sicherungsdienst extends ChangeNotifier {
 }
 
 enum Wartegrund { wlan, netz, hintergrund }
+
+/// Wie „Jetzt sichern“ ausging (siehe [Sicherungsdienst.sichereJetzt]).
+enum Sicherungsantwort {
+  /// Gelaufen – wie weit, steht in [Sicherungsdienst.letzterLauf].
+  fertig,
+
+  /// Die Sicherung ist ausgeschaltet.
+  aus,
+
+  /// Die App darf die Fotos nicht lesen.
+  keinZugriff,
+
+  /// „Nur im WLAN“, und es gibt keines.
+  wartetWlan,
+
+  /// Gar kein Netz.
+  wartetNetz,
+
+  /// Ein Lauf im Hintergrund hält gerade die Sperre.
+  imHintergrund,
+
+  /// Es lief schon einer.
+  laeuft,
+
+  /// Der Server hat abgebrochen (siehe [Sicherungsdienst.fehler]).
+  fehler,
+}

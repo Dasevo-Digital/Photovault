@@ -2329,4 +2329,51 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get angabenUebernehmen => 'Apply';
+
+  @override
+  String get jetztAus => 'Automatic backup is turned off.';
+
+  @override
+  String get jetztEinrichten => 'Set up';
+
+  @override
+  String get jetztWartetWlan => 'No Wi-Fi – “Wi-Fi only” is set.';
+
+  @override
+  String get jetztMobil => 'Use mobile data';
+
+  @override
+  String jetztTeils(int n, int f) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items backed up',
+      one: '1 item backed up',
+    );
+    return '$_temp0, $f not';
+  }
+
+  @override
+  String get jetztDetails => 'Details';
+
+  @override
+  String jetztGesichert(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items backed up',
+      one: '1 item backed up',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get jetztAllesSicher => 'Everything is backed up.';
+
+  @override
+  String get einstSicherung => 'Upload automatically';
+
+  @override
+  String get einstSicherungText =>
+      'New photos and videos on this phone go to the server by themselves. Applies to this phone only.';
 }
