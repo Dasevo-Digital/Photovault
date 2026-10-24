@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.0" date="2026-10-24">
+      <description>
+        <p>A desktop connected to a server backs up again, by hand and automatically; missing originals are fetched from the server. When the automatic backup is due but waiting for the passphrase, or fails, a notice says so. Duplicates on the desktop look like in the browser: one card per group, with Keep for each photo.</p>
+      </description>
+    </release>
     <release version="3.46.0" date="2026-10-21">
       <description>
         <p>Capture dates from file names: when a file carries no date, the date in its name is used on import, and a new check lists photos whose file name gives a different date than the library, to apply with one click. A date can now also be set by hand on a connected desktop.</p>
