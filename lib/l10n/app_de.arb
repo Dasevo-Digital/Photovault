@@ -6163,5 +6163,32 @@
       }
     }
   },
-  "infoDatumUebernehmen": "Übernehmen"
+  "infoDatumUebernehmen": "Übernehmen",
+  "backupWartetPassphrase": "{tage, plural, =0{Das automatische Backup ist fällig und wartet auf die Passphrase.} =1{Das automatische Backup wartet auf die Passphrase – das letzte ist einen Tag alt.} other{Das automatische Backup wartet auf die Passphrase – das letzte ist {tage} Tage alt.}}",
+  "@backupWartetPassphrase": {
+    "placeholders": {
+      "tage": {
+        "type": "int"
+      }
+    }
+  },
+  "backupWartetPassphraseNie": "Das automatische Backup wartet auf die Passphrase und ist noch nie gelaufen.",
+  "backupPassphraseEingeben": "Passphrase eingeben",
+  "backupFehlgeschlagenMeldung": "Das automatische Backup ist fehlgeschlagen: {fehler}",
+  "@backupFehlgeschlagenMeldung": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "backupErledigt": "Automatisches Backup erledigt.",
+  "backupDateienFehlen": "{n, plural, =1{Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.} other{Das automatische Backup ist gelaufen, aber {n} Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.}}",
+  "@backupDateienFehlen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

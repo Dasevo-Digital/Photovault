@@ -14856,6 +14856,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Übernehmen'**
   String get infoDatumUebernehmen;
+
+  /// No description provided for @backupWartetPassphrase.
+  ///
+  /// In de, this message translates to:
+  /// **'{tage, plural, =0{Das automatische Backup ist fällig und wartet auf die Passphrase.} =1{Das automatische Backup wartet auf die Passphrase – das letzte ist einen Tag alt.} other{Das automatische Backup wartet auf die Passphrase – das letzte ist {tage} Tage alt.}}'**
+  String backupWartetPassphrase(int tage);
+
+  /// No description provided for @backupWartetPassphraseNie.
+  ///
+  /// In de, this message translates to:
+  /// **'Das automatische Backup wartet auf die Passphrase und ist noch nie gelaufen.'**
+  String get backupWartetPassphraseNie;
+
+  /// No description provided for @backupPassphraseEingeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Passphrase eingeben'**
+  String get backupPassphraseEingeben;
+
+  /// No description provided for @backupFehlgeschlagenMeldung.
+  ///
+  /// In de, this message translates to:
+  /// **'Das automatische Backup ist fehlgeschlagen: {fehler}'**
+  String backupFehlgeschlagenMeldung(String fehler);
+
+  /// No description provided for @backupErledigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisches Backup erledigt.'**
+  String get backupErledigt;
+
+  /// No description provided for @backupDateienFehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.} other{Das automatische Backup ist gelaufen, aber {n} Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.}}'**
+  String backupDateienFehlen(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

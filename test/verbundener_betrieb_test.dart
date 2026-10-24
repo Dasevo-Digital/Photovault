@@ -283,6 +283,41 @@ void main() {
     }
   });
 
+  test(
+    'Sicherung verbunden: Originale vom Server, keine Markierung (#206)',
+    () async {
+      // Vorher brach sie am Schutz ab (`pv_nur_ueber_server`): von Hand
+      // gesperrt, automatisch erst beim Markieren, nach dem Kopieren.
+      final ziel = Directory(p.join(ordner.path, 'sicherung'))..createSync();
+      final a = (await bib.db.select(bib.db.assets).get()).firstWhere(
+        (x) => x.originalFileName == 'strand.jpg',
+      );
+      // Das Original liegt hier nicht: Es kommt erst mit der Sicherung.
+      final lokal = bib.paths.absolute(a.relativePath);
+      if (await lokal.exists()) await lokal.delete();
+
+      await bib.runManualBackup(ziel.path, encrypt: false).drain<void>();
+      final gesichert = File(
+        p.join(
+          ziel.path,
+          'PhotoVault-Backup',
+          'originals',
+          a.relativePath.replaceFirst('originals/', ''),
+        ),
+      );
+      expect(await gesichert.exists(), isTrue);
+      expect(await gesichert.length(), greaterThan(0));
+      final zeile = await bib.db.assetById(a.id);
+      expect(zeile!.backedUp, isFalse, reason: 'abgeglichene Spalte unberührt');
+
+      // Ein zweiter Lauf schreibt nichts neu: Das Ziel kennt die Datei.
+      final vorher = await gesichert.lastModified();
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      await bib.runManualBackup(ziel.path, encrypt: false).drain<void>();
+      expect(await gesichert.lastModified(), vorher);
+    },
+  );
+
   test('der Schalter steht in verbindung.json', () async {
     final wurzel = await LibraryLocation.currentRoot();
     await bib.setzeRechenhilfe(true);

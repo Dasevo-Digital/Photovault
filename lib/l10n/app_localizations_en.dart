@@ -9656,4 +9656,46 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get infoDatumUebernehmen => 'Apply';
+
+  @override
+  String backupWartetPassphrase(int tage) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tage,
+      locale: localeName,
+      other:
+          'The automatic backup is waiting for the passphrase – the last one is $tage days old.',
+      one:
+          'The automatic backup is waiting for the passphrase – the last one is a day old.',
+      zero: 'The automatic backup is due and waiting for the passphrase.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupWartetPassphraseNie =>
+      'The automatic backup is waiting for the passphrase and has never run.';
+
+  @override
+  String get backupPassphraseEingeben => 'Enter passphrase';
+
+  @override
+  String backupFehlgeschlagenMeldung(String fehler) {
+    return 'The automatic backup failed: $fehler';
+  }
+
+  @override
+  String get backupErledigt => 'Automatic backup done.';
+
+  @override
+  String backupDateienFehlen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'The automatic backup ran, but $n files could not be backed up; they will be retried next time.',
+      one:
+          'The automatic backup ran, but 1 file could not be backed up; it will be retried next time.',
+    );
+    return '$_temp0';
+  }
 }

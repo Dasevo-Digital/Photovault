@@ -233,10 +233,15 @@ class BackupService {
   /// Grenze landen bei der ersten Sicherung zigtausend Dateien auf einmal
   /// im Sync-Ordner und der Upload läuft tagelang. Was nicht mehr
   /// hineinpasst, bleibt unmarkiert und kommt beim nächsten Lauf dran.
+  ///
+  /// [amZielPruefen] wie bei [performAutoBackup]: Das Ziel entscheidet, was
+  /// fehlt, und [Assets.backedUp] bleibt unberührt – für den verbundenen
+  /// Rechner, dessen Kopie diese Spalte nicht schreiben darf (#206).
   Stream<BackupProgress> performBackup(
     String destinationRootPath, {
     SecretKey? encryptionKey,
     int maxBytesPerRun = 0,
+    bool amZielPruefen = false,
   }) async* {
     final backupRoot = Directory(
       p.join(destinationRootPath, _backupFolderName),
@@ -267,7 +272,9 @@ class BackupService {
         _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_backup_stage_');
 
-    final pending = await _db.assetsNotBackedUp();
+    final pending = amZielPruefen
+        ? await _db.assetsFuerSicherung()
+        : await _db.assetsNotBackedUp();
     var done = 0;
     var totalBytes = 0;
     var geschriebeneBytes = 0;
@@ -297,38 +304,48 @@ class BackupService {
           break;
         }
 
-        final source = _paths.absolute(asset.relativePath);
         // Je Datei abgesichert: Vorher stand die ganze Schleife in einem
         // try/finally ohne catch – eine einzige Datei, die sich nicht
         // schreiben liess, brach den kompletten Lauf ab, und alles
         // dahinter wurde nie gesichert. Genau das passierte unter Flatpak
         // beim ersten Video über 789 MB.
         try {
-          if (await source.exists()) {
-            // Verschlüsselt: flach unter data/ mit abgeleitetem Namen, damit
-            // weder Aufnahmezeitraum noch Dateiformat sichtbar bleiben.
-            // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
-            // sich so ein Backup auch ohne die App durchsehen lässt.
-            final target = encryptionKey != null
-                ? File(
-                    p.join(
-                      backupRoot.path,
-                      VerschluesselteNamen.ordner,
-                      await VerschluesselteNamen.fuerPruefsumme(
-                        asset.checksum,
-                        encryptionKey,
-                      ),
+          // Verschlüsselt: flach unter data/ mit abgeleitetem Namen, damit
+          // weder Aufnahmezeitraum noch Dateiformat sichtbar bleiben.
+          // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
+          // sich so ein Backup auch ohne die App durchsehen lässt.
+          final target = encryptionKey != null
+              ? File(
+                  p.join(
+                    backupRoot.path,
+                    VerschluesselteNamen.ordner,
+                    await VerschluesselteNamen.fuerPruefsumme(
+                      asset.checksum,
+                      encryptionKey,
                     ),
-                  )
-                : File(
-                    p.join(
-                      originalsOut.path,
-                      asset.relativePath.replaceFirst(
-                        'originals${Platform.pathSeparator}',
-                        '',
-                      ),
+                  ),
+                )
+              : File(
+                  p.join(
+                    originalsOut.path,
+                    asset.relativePath.replaceFirst(
+                      'originals${Platform.pathSeparator}',
+                      '',
                     ),
-                  );
+                  ),
+                );
+          final schonDa =
+              amZielPruefen &&
+              await target.exists() &&
+              await target.length() > 0;
+          // Erst nach der Frage ans Ziel geholt: In einer verbundenen Kopie
+          // lädt [StoragePaths.bereit] ein fehlendes Original vom Server –
+          // für jede Aufnahme, die schon gesichert ist, wäre das ein
+          // Download für nichts.
+          final source = schonDa
+              ? null
+              : await _paths.bereit(asset.relativePath);
+          if (source != null && await source.exists()) {
             await target.parent.create(recursive: true);
 
             final quellGroesse = await source.length();
@@ -398,7 +415,7 @@ class BackupService {
       }
     }
 
-    if (backedUpIds.isNotEmpty) {
+    if (backedUpIds.isNotEmpty && !amZielPruefen) {
       await _db.markBackedUp(backedUpIds);
     }
 
@@ -1357,7 +1374,8 @@ class BackupService {
   /// das automatische Backup typischerweise auf einen Cloud-Sync-Ordner
   /// zeigt und ungefragt im Hintergrund läuft.
   ///
-  /// Mit [amZielPruefen] (der Server) entscheidet nicht die Markierung
+  /// Mit [amZielPruefen] (der Server und ein verbundener Rechner, #206)
+  /// entscheidet nicht die Markierung
   /// [Assets.autoBackedUp], was noch fehlt, sondern das Ziel selbst: Liegt
   /// die verschlüsselte Datei dort schon (ihr Name folgt fest aus der
   /// Prüfsumme), wird sie übersprungen. Die Markierung wird dabei weder
@@ -1401,40 +1419,41 @@ class BackupService {
           abgebrochenWegenLimit = true;
           break;
         }
-        final source = _paths.absolute(asset.relativePath);
         // Je Datei abgesichert – hier wiegt es schwerer als beim manuellen
         // Lauf: Dieser läuft ungefragt im Hintergrund, ein Abbruch fiele
         // also niemandem auf.
         try {
-          if (await source.exists()) {
-            // Automatische Backups sind immer verschlüsselt – daher stets die
-            // flache, namenlose Ablage (siehe VerschluesselteNamen).
-            final target = File(
-              p.join(
-                backupRoot.path,
-                VerschluesselteNamen.ordner,
-                await VerschluesselteNamen.fuerPruefsumme(
-                  asset.checksum,
-                  encryptionKey,
-                ),
+          // Automatische Backups sind immer verschlüsselt – daher stets die
+          // flache, namenlose Ablage (siehe VerschluesselteNamen).
+          final target = File(
+            p.join(
+              backupRoot.path,
+              VerschluesselteNamen.ordner,
+              await VerschluesselteNamen.fuerPruefsumme(
+                asset.checksum,
+                encryptionKey,
               ),
+            ),
+          );
+          final schonDa =
+              amZielPruefen &&
+              await target.exists() &&
+              await target.length() > 0;
+          // Wie in [performBackup]: erst fragen, dann (verbunden) holen.
+          final source = schonDa
+              ? null
+              : await _paths.bereit(asset.relativePath);
+          if (source != null && await source.exists()) {
+            await target.parent.create(recursive: true);
+            await _ueberZwischendatei(
+              zwischenlager: staging,
+              ziel: target,
+              quellGroesse: await source.length(),
+              schreibe: (zwischen) =>
+                  VaultCrypto.encryptFile(source, zwischen, encryptionKey),
             );
-            if (amZielPruefen &&
-                await target.exists() &&
-                await target.length() > 0) {
-              // Schon gesichert (ein früherer Lauf).
-            } else {
-              await target.parent.create(recursive: true);
-              await _ueberZwischendatei(
-                zwischenlager: staging,
-                ziel: target,
-                quellGroesse: await source.length(),
-                schreibe: (zwischen) =>
-                    VaultCrypto.encryptFile(source, zwischen, encryptionKey),
-              );
-              geschriebeneBytes += await target.length();
-              neu++;
-            }
+            geschriebeneBytes += await target.length();
+            neu++;
           }
           autoBackedUpIds.add(asset.id);
         } catch (e) {

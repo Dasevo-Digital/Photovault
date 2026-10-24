@@ -4778,5 +4778,11 @@
   "aufnahmedatenGeschaetzt": "estimated",
   "infoNameNennt": "The file name gives {datum}",
   "infoDateiNennt": "File and file name give {datum}",
-  "infoDatumUebernehmen": "Apply"
+  "infoDatumUebernehmen": "Apply",
+  "backupWartetPassphrase": "{tage, plural, =0{The automatic backup is due and waiting for the passphrase.} =1{The automatic backup is waiting for the passphrase – the last one is a day old.} other{The automatic backup is waiting for the passphrase – the last one is {tage} days old.}}",
+  "backupWartetPassphraseNie": "The automatic backup is waiting for the passphrase and has never run.",
+  "backupPassphraseEingeben": "Enter passphrase",
+  "backupFehlgeschlagenMeldung": "The automatic backup failed: {fehler}",
+  "backupErledigt": "Automatic backup done.",
+  "backupDateienFehlen": "{n, plural, =1{The automatic backup ran, but 1 file could not be backed up; it will be retried next time.} other{The automatic backup ran, but {n} files could not be backed up; they will be retried next time.}}"
 }

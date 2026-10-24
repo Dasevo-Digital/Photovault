@@ -9711,4 +9711,46 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get infoDatumUebernehmen => 'Übernehmen';
+
+  @override
+  String backupWartetPassphrase(int tage) {
+    String _temp0 = intl.Intl.pluralLogic(
+      tage,
+      locale: localeName,
+      other:
+          'Das automatische Backup wartet auf die Passphrase – das letzte ist $tage Tage alt.',
+      one:
+          'Das automatische Backup wartet auf die Passphrase – das letzte ist einen Tag alt.',
+      zero: 'Das automatische Backup ist fällig und wartet auf die Passphrase.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupWartetPassphraseNie =>
+      'Das automatische Backup wartet auf die Passphrase und ist noch nie gelaufen.';
+
+  @override
+  String get backupPassphraseEingeben => 'Passphrase eingeben';
+
+  @override
+  String backupFehlgeschlagenMeldung(String fehler) {
+    return 'Das automatische Backup ist fehlgeschlagen: $fehler';
+  }
+
+  @override
+  String get backupErledigt => 'Automatisches Backup erledigt.';
+
+  @override
+  String backupDateienFehlen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other:
+          'Das automatische Backup ist gelaufen, aber $n Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.',
+      one:
+          'Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.',
+    );
+    return '$_temp0';
+  }
 }

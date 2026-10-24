@@ -13,6 +13,7 @@ import '../utils/dauertext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/arbeitsbereich.dart';
+import '../widgets/pin_dialogs.dart';
 import '../widgets/seitenleiste.dart';
 import '../widgets/tastenkuerzel.dart';
 import 'albums_screen.dart';
@@ -23,6 +24,7 @@ import 'import_progress_sheet.dart';
 import 'laenderliste_screen.dart';
 import 'map_screen.dart';
 import 'people_screen.dart';
+import '../services/meldungsdienst.dart';
 import '../services/restore_queue_service.dart';
 import '../services/tresor_waechter.dart';
 import 'restore_queue_screen.dart';
@@ -364,6 +366,54 @@ class _HomeShellState extends State<HomeShell> {
     Leistenmerker.lies().then((f) {
       if (mounted && f != _fixiert) setState(() => _fixiert = f);
     });
+    widget.library.backupwarnung.addListener(_backupGeaendert);
+    // Der erste Lauf beim Start kann schon vor diesem Bildschirm fertig sein.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _backupGeaendert());
+  }
+
+  /// Was zuletzt zum automatischen Backup gemeldet wurde (#207) – je
+  /// Sitzung einmal je Grund, nicht bei jedem Halbstundentakt.
+  String? _backupGemeldet;
+
+  /// Meldet, wenn das automatische Backup fällig ist und nicht läuft. Bis
+  /// #207 blieb es wortlos aus, solange niemand die Passphrase eingab – in
+  /// den Einstellungen stand dann „Letzter Lauf“ von vor Wochen.
+  void _backupGeaendert() {
+    final w = widget.library.backupwarnung.value;
+    if (w == null) {
+      _backupGemeldet = null;
+      return;
+    }
+    final schluessel = '${w.grund.name}|${w.fehler}';
+    if (!mounted || schluessel == _backupGemeldet) return;
+    _backupGemeldet = schluessel;
+    final t = AppTexte.of(context);
+    final letzter = w.letzterLauf;
+    switch (w.grund) {
+      case Backuphindernis.passphrase:
+        melde.warnung(
+          letzter == null
+              ? t.backupWartetPassphraseNie
+              : t.backupWartetPassphrase(
+                  DateTime.now().difference(letzter).inDays,
+                ),
+          aktion: (
+            beschriftung: t.backupPassphraseEingeben,
+            beiDruck: _backupEntsperren,
+          ),
+        );
+      case Backuphindernis.fehlgeschlagen:
+        melde.fehler(t.backupFehlgeschlagenMeldung(w.fehler ?? ''));
+      case Backuphindernis.dateienFehlen:
+        melde.warnung(t.backupDateienFehlen(int.tryParse(w.fehler ?? '') ?? 0));
+    }
+  }
+
+  Future<void> _backupEntsperren() async {
+    if (!await ensureBackupKeyAvailable(context, widget.library)) return;
+    await widget.library.runAutoBackupIfDue();
+    if (!mounted || widget.library.backupwarnung.value != null) return;
+    melde.erfolg(AppTexte.of(context).backupErledigt);
   }
 
   void _fixieren(bool fixiert) {
@@ -602,6 +652,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void dispose() {
+    widget.library.backupwarnung.removeListener(_backupGeaendert);
     _tresor.schweige();
     _lebenslauf.dispose();
     _seite.dispose();

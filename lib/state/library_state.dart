@@ -753,6 +753,7 @@ class LibraryState extends ChangeNotifier {
 
   Future<void> _raeumeFehlgeschlagenenStartAuf() async {
     _autoBackupTimer?.cancel();
+    backupwarnung.value = null;
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();
@@ -885,13 +886,14 @@ class LibraryState extends ChangeNotifier {
     // Intervall während der App war geschlossen abgelaufen ist) und danach
     // regelmäßig, damit es auch bei einer lange offenen Sitzung nicht erst
     // beim nächsten Neustart nachgeholt wird.
-    if (!verbunden) {
-      unawaited(runAutoBackupIfDue());
-      _autoBackupTimer = Timer.periodic(
-        const Duration(minutes: 30),
-        (_) => runAutoBackupIfDue(),
-      );
-    }
+    //
+    // Auch verbunden (#206): Bis 3.46 startete der Zeitgeber dort gar nicht
+    // erst, weil die Sicherung an der abgeglichenen Markierung scheiterte.
+    unawaited(runAutoBackupIfDue());
+    _autoBackupTimer = Timer.periodic(
+      const Duration(minutes: 30),
+      (_) => runAutoBackupIfDue(),
+    );
 
     // Automatischer Papierkorb-Ablauf – aus demselben Grund (kein
     // Hintergrunddienst) ebenfalls einmal direkt beim Start geprüft und
@@ -3896,16 +3898,24 @@ class LibraryState extends ChangeNotifier {
   /// Führt ein manuelles Backup aus – bei [encrypt] mit dem für diese
   /// Sitzung entsperrten Backup-Schlüssel (siehe [ensureBackupKeyAvailable]
   /// in pin_dialogs.dart, das der Aufrufer vorher ausgeführt haben muss).
+  ///
+  /// **Verbunden** (#206) sichert der Rechner die Bibliothek des Servers:
+  /// Das Ziel entscheidet, was fehlt, und fehlende Originale kommen vom
+  /// Server. Die Markierungen „gesichert“ stehen in `assets` und damit in
+  /// einer abgeglichenen Tabelle – sie zu setzen bricht am Schutz
+  /// `pv_nur_ueber_server` ab. Darum war die Sicherung hier vorher ganz
+  /// gesperrt („Bad state: pv_nur_ueber_server“), und das automatische
+  /// Backup lief verbunden gar nicht erst an.
   Stream<BackupProgress> runManualBackup(
     String destination, {
     required bool encrypt,
   }) async* {
-    _nurOhneServer();
     final grenze = await _backupGrenzeBytes();
     yield* backupService.performBackup(
       destination,
       encryptionKey: encrypt ? _backupKey : null,
       maxBytesPerRun: grenze,
+      amZielPruefen: verbunden,
     );
   }
 
@@ -3922,17 +3932,19 @@ class LibraryState extends ChangeNotifier {
   /// Setzt voraus, dass die Backup-Passphrase für diese Sitzung bereits
   /// entsperrt ist.
   Stream<BackupProgress> runAutoBackupNow(String destination) async* {
-    _nurOhneServer();
     final key = _backupKey;
     if (key == null) {
       throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
     }
+    // Verbunden: siehe [runManualBackup].
     yield* backupService.performAutoBackup(
       destination,
       key,
       maxBytesPerRun: await _backupGrenzeBytes(),
+      amZielPruefen: verbunden,
     );
     await db.setLastAutoBackupAt(DateTime.now());
+    backupwarnung.value = null;
   }
 
   /// Prüft, ob das automatische Backup fällig ist (aktiviert, Ziel gesetzt,
@@ -3958,27 +3970,58 @@ class LibraryState extends ChangeNotifier {
 
     final key = _backupKey;
     if (key == null) {
-      return; // Passphrase muss erst wieder manuell entsperrt werden.
+      // Passphrase muss erst wieder manuell entsperrt werden. Bis #207
+      // geschah das wortlos: Das Backup blieb wochenlang aus, und nur die
+      // Einstellungen hätten es gezeigt.
+      backupwarnung.value = (
+        grund: Backuphindernis.passphrase,
+        letzterLauf: lastRun,
+        fehler: null,
+      );
+      return;
     }
 
     _autoBackupRunning = true;
     try {
-      await backupService
-          .performAutoBackup(
-            destination,
-            key,
-            maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
-                ? config.autoBackupMaxMbPerRun * 1024 * 1024
-                : 0,
-          )
-          .drain<void>();
+      var ausfaelle = 0;
+      await for (final f in backupService.performAutoBackup(
+        destination,
+        key,
+        maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
+            ? config.autoBackupMaxMbPerRun * 1024 * 1024
+            : 0,
+        // Verbunden: siehe [runManualBackup].
+        amZielPruefen: verbunden,
+      )) {
+        ausfaelle = f.fehlgeschlagen ?? ausfaelle;
+      }
       await db.setLastAutoBackupAt(DateTime.now());
+      // Einzelne Dateien, die nicht gingen (verbunden etwa: Server kurz
+      // weg), kommen beim nächsten Lauf wieder dran – gesagt wird es
+      // trotzdem.
+      backupwarnung.value = ausfaelle == 0
+          ? null
+          : (
+              grund: Backuphindernis.dateienFehlen,
+              letzterLauf: DateTime.now(),
+              fehler: '$ausfaelle',
+            );
     } catch (e) {
       debugPrint('Automatisches Backup fehlgeschlagen: $e');
+      backupwarnung.value = (
+        grund: Backuphindernis.fehlgeschlagen,
+        letzterLauf: lastRun,
+        fehler: '$e',
+      );
     } finally {
       _autoBackupRunning = false;
     }
   }
+
+  /// Warum das automatische Backup gerade nicht läuft, obwohl es fällig ist
+  /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
+  /// oder nicht fällig ist.
+  final backupwarnung = ValueNotifier<Backupwarnung?>(null);
 
   /// Löscht alle zu einem Asset gehörenden Dateien von der Platte (Original,
   /// Thumbnail, Vorschau, entwickeltes Bild, Video-Zuschnitt, KI-Objekt-
@@ -4033,6 +4076,7 @@ class LibraryState extends ChangeNotifier {
   @override
   void dispose() {
     _autoBackupTimer?.cancel();
+    backupwarnung.dispose();
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();
@@ -4050,6 +4094,26 @@ class LibraryState extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// Warum das automatische Backup ausbleibt (siehe
+/// [LibraryState.backupwarnung]).
+enum Backuphindernis {
+  /// Fällig, aber die Passphrase wurde in dieser Sitzung nicht eingegeben.
+  passphrase,
+
+  /// Gelaufen und gescheitert.
+  fehlgeschlagen,
+
+  /// Gelaufen, aber einzelne Dateien gingen nicht ([Backupwarnung.fehler]
+  /// trägt ihre Zahl).
+  dateienFehlen,
+}
+
+typedef Backupwarnung = ({
+  Backuphindernis grund,
+  DateTime? letzterLauf,
+  String? fehler,
+});
 
 /// Was aus [LibraryState.sichereVideobild] wurde.
 enum Videobildergebnis { gesichert, schonDa, fehlgeschlagen }
