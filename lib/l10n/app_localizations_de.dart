@@ -3084,9 +3084,6 @@ class AppTexteDe extends AppTexte {
   String get duplZweiteBibliothek => 'Zweite Bibliothek';
 
   @override
-  String get duplAlleKopienLoeschen => 'Alle Kopien löschen';
-
-  @override
   String get duplAehnlichkeit => 'Ähnlichkeit:';
 
   @override
@@ -3095,32 +3092,6 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get duplKeineGruppen => 'Keine ähnlichen Fotogruppen gefunden.';
-
-  @override
-  String get duplVerschiebenTooltip => 'In den Papierkorb verschieben';
-
-  @override
-  String get duplZusammenfuehren => 'Zusammenführen';
-
-  @override
-  String get duplZusammenfuehrenTitel => 'Ähnliche Fotos zusammenführen';
-
-  @override
-  String duplZusammenfuehrenText(int anzahl) {
-    return 'Metadaten aller $anzahl Fotos werden auf die gewählte Aufnahme übertragen. Die übrigen Fotos landen im Papierkorb und können dort wiederhergestellt werden.';
-  }
-
-  @override
-  String get duplBehaltenAuswahl => 'Diese Aufnahme behalten';
-
-  @override
-  String duplBehaltenDetails(int sterne, int favorit) {
-    return '$sterne Sterne · $favorit Favorit(en)';
-  }
-
-  @override
-  String get duplBeschreibungenVerbinden =>
-      'Unterschiedliche Beschreibungen verbinden';
 
   @override
   String duplZusammengefuehrt(int anzahl) {
@@ -6641,7 +6612,7 @@ class AppTexteDe extends AppTexte {
   String get duplNichtsGefunden => 'Keine Gruppen gefunden';
 
   @override
-  String get duplGruppeIgnorieren => 'Übergehen';
+  String get duplGruppeIgnorieren => 'Keine Duplikate';
 
   @override
   String duplGruppeIgnoriert(int anzahl) {
@@ -9750,6 +9721,44 @@ class AppTexteDe extends AppTexte {
           'Das automatische Backup ist gelaufen, aber $n Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.',
       one:
           'Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get duplBehalten => 'Behalten';
+
+  @override
+  String duplBehaltenEine(String name) {
+    return '„$name“ behalten und die andere Aufnahme in den Papierkorb legen?';
+  }
+
+  @override
+  String duplBehaltenMehrere(String name, int n) {
+    return '„$name“ behalten und die $n anderen in den Papierkorb legen?';
+  }
+
+  @override
+  String duplAufnahmen(int n) {
+    return '$n Aufnahmen';
+  }
+
+  @override
+  String duplNurVonHand(int n) {
+    return '$n Aufnahmen · mehrere ausgezeichnet, nur von Hand';
+  }
+
+  @override
+  String get duplRegelHinweis =>
+      'Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet. Schlagwörter, Alben und Sterne der Kopien gehen auf das behaltene über.';
+
+  @override
+  String duplKopienInPapierkorb(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Kopien in den Papierkorb',
+      one: '1 Kopie in den Papierkorb',
     );
     return '$_temp0';
   }

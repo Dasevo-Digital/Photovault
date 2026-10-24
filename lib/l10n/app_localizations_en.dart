@@ -3060,9 +3060,6 @@ class AppTexteEn extends AppTexte {
   String get duplZweiteBibliothek => 'Second library';
 
   @override
-  String get duplAlleKopienLoeschen => 'Delete all copies';
-
-  @override
   String get duplAehnlichkeit => 'Similarity:';
 
   @override
@@ -3071,31 +3068,6 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get duplKeineGruppen => 'No groups of similar photos found.';
-
-  @override
-  String get duplVerschiebenTooltip => 'Move to the trash';
-
-  @override
-  String get duplZusammenfuehren => 'Merge';
-
-  @override
-  String get duplZusammenfuehrenTitel => 'Merge similar photos';
-
-  @override
-  String duplZusammenfuehrenText(int anzahl) {
-    return 'Metadata from all $anzahl photos is transferred to the selected photo. The remaining photos go to the trash and can be restored there.';
-  }
-
-  @override
-  String get duplBehaltenAuswahl => 'Keep this photo';
-
-  @override
-  String duplBehaltenDetails(int sterne, int favorit) {
-    return '$sterne stars · $favorit favourite(s)';
-  }
-
-  @override
-  String get duplBeschreibungenVerbinden => 'Combine distinct descriptions';
 
   @override
   String duplZusammengefuehrt(int anzahl) {
@@ -6603,7 +6575,7 @@ class AppTexteEn extends AppTexte {
   String get duplNichtsGefunden => 'No groups found';
 
   @override
-  String get duplGruppeIgnorieren => 'Skip';
+  String get duplGruppeIgnorieren => 'Not duplicates';
 
   @override
   String duplGruppeIgnoriert(int anzahl) {
@@ -9695,6 +9667,44 @@ class AppTexteEn extends AppTexte {
           'The automatic backup ran, but $n files could not be backed up; they will be retried next time.',
       one:
           'The automatic backup ran, but 1 file could not be backed up; it will be retried next time.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get duplBehalten => 'Keep';
+
+  @override
+  String duplBehaltenEine(String name) {
+    return 'Keep “$name” and move the other item to the trash?';
+  }
+
+  @override
+  String duplBehaltenMehrere(String name, int n) {
+    return 'Keep “$name” and move the $n others to the trash?';
+  }
+
+  @override
+  String duplAufnahmen(int n) {
+    return '$n items';
+  }
+
+  @override
+  String duplNurVonHand(int n) {
+    return '$n items · several marked, by hand only';
+  }
+
+  @override
+  String get duplRegelHinweis =>
+      'The outlined photo would be kept when tidying up; groups with several favourites or ratings stay untouched. Tags, albums and stars of the copies move to the one kept.';
+
+  @override
+  String duplKopienInPapierkorb(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Move $n copies to the trash',
+      one: 'Move 1 copy to the trash',
     );
     return '$_temp0';
   }

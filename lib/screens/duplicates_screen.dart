@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -168,9 +169,20 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     );
     if (bestaetigt != true) return;
 
-    await widget.library.db.fuehreAus(
-      InDenPapierkorb(vorschau.zuLoeschen.map((a) => a.id).toList()),
-    );
+    // Wie im Browser: je Gruppe zusammenführen statt nur wegwerfen –
+    // Schlagwörter, Alben, Favorit und Sterne der Kopien gehen auf das
+    // behaltene Foto über (#208).
+    for (final gruppe in _groups) {
+      final weg = zuLoeschendeDerGruppe(gruppe);
+      if (weg.isEmpty) continue;
+      await widget.library.db.fuehreAus(
+        DuplikateZusammenfuehren(
+          behaltenId: besterDerGruppe(gruppe).id,
+          duplikatIds: [for (final a in weg) a.id],
+          beschreibungenVerbinden: true,
+        ),
+      );
+    }
     if (!mounted) return;
     melde.erfolg(
       AppTexte.of(context).duplVerschoben(vorschau.zuLoeschen.length),
@@ -249,105 +261,61 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
     });
   }
 
-  /// Übernimmt die hilfreichen Metadaten aller Kopien auf eine bewusst
-  /// gewählte Aufnahme. Anders als „Löschen" geht dabei kein Tag, Album,
-  /// Favorit oder Stern verloren; die Quellbilder bleiben im Papierkorb und
-  /// können dort weiterhin zurückgeholt werden.
-  Future<void> _gruppeZusammenfuehren(List<AssetData> gruppe) async {
-    var behalten = besterDerGruppe(gruppe);
-    var beschreibungenVerbinden = true;
+  /// „Behalten“ wie im Browser: Dieses Foto bleibt, die übrigen der Gruppe
+  /// gehen in den Papierkorb – zusammengeführt, also mit ihren
+  /// Schlagwörtern, Alben, Favoriten und Sternen auf diesem Foto.
+  Future<void> _behalten(List<AssetData> gruppe, AssetData asset) async {
     final t = AppTexte.of(context);
+    final andere = [
+      for (final a in gruppe)
+        if (a.id != asset.id) a.id,
+    ];
     final bestaetigt = await showDialog<bool>(
       context: context,
-      builder: (dialog) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(t.duplZusammenfuehrenTitel),
-          content: SizedBox(
-            width: 440,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(t.duplZusammenfuehrenText(gruppe.length)),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  t.duplBehaltenAuswahl,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                RadioGroup<String>(
-                  groupValue: behalten.id,
-                  onChanged: (id) {
-                    if (id == null) return;
-                    setDialogState(
-                      () => behalten = gruppe.firstWhere(
-                        (asset) => asset.id == id,
-                      ),
-                    );
-                  },
-                  child: Column(
-                    children: [
-                      for (final asset in gruppe)
-                        RadioListTile<String>(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          value: asset.id,
-                          title: Text(
-                            asset.originalFileName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            t.duplBehaltenDetails(
-                              asset.rating,
-                              asset.isFavorite ? 1 : 0,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: beschreibungenVerbinden,
-                  onChanged: (value) => setDialogState(
-                    () => beschreibungenVerbinden = value ?? true,
-                  ),
-                  title: Text(t.duplBeschreibungenVerbinden),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialog, false),
-              child: Text(t.allgAbbrechen),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialog, true),
-              child: Text(t.duplZusammenfuehren),
-            ),
-          ],
+      builder: (context) => AlertDialog(
+        content: Text(
+          andere.length == 1
+              ? t.duplBehaltenEine(asset.originalFileName)
+              : t.duplBehaltenMehrere(asset.originalFileName, andere.length),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.duplBehalten),
+          ),
+        ],
       ),
     );
     if (bestaetigt != true) return;
     await widget.library.db.fuehreAus(
       DuplikateZusammenfuehren(
-        behaltenId: behalten.id,
-        duplikatIds: gruppe.map((asset) => asset.id).toList(),
-        beschreibungenVerbinden: beschreibungenVerbinden,
+        behaltenId: asset.id,
+        duplikatIds: andere,
+        beschreibungenVerbinden: true,
       ),
     );
     if (!mounted) return;
     setState(() => _groups.remove(gruppe));
-    melde.erfolg(t.duplZusammengefuehrt(gruppe.length - 1));
+    melde.erfolg(t.duplZusammengefuehrt(andere.length));
   }
+
+  static String _prozent(double w) => '${(w * 100).round()} %';
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    final loeschbar = _groups.fold(
+      0,
+      (n, g) => n + zuLoeschendeDerGruppe(g).length,
+    );
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppTexte.of(context).duplTitel),
+        title: Text(t.duplTitel),
         actions: [
           TextButton.icon(
             onPressed: () => Navigator.of(context).push(
@@ -357,18 +325,16 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               ),
             ),
             icon: const Icon(Icons.folder_copy_outlined),
-            label: Text(AppTexte.of(context).duplZweiteBibliothek),
+            label: Text(t.duplZweiteBibliothek),
           ),
-          if (_groups.isNotEmpty)
-            TextButton.icon(
-              onPressed: _alleKopienLoeschen,
-              icon: const Icon(Icons.auto_delete_outlined),
-              label: Text(AppTexte.of(context).duplAlleKopienLoeschen),
-            ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Wie im Browser (web/app.js, zeigeDuplikate, #208): oben
+          // Ähnlichkeit und „Kopien in den Papierkorb“, darunter der
+          // Hinweis, dann je Gruppe eine Karte.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -378,30 +344,31 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
             ),
             child: Row(
               children: [
-                Text(AppTexte.of(context).duplAehnlichkeit),
+                Text(t.duplAehnlichkeit),
                 Expanded(
                   child: Slider(
                     value: _threshold,
                     min: 0.80,
                     max: 0.99,
                     divisions: 19,
-                    label: _threshold.toStringAsFixed(2),
+                    label: _prozent(_threshold),
                     onChanged: (v) => setState(() => _threshold = v),
                     onChangeEnd: (_) => _load(),
                   ),
                 ),
-                Text(_threshold.toStringAsFixed(2)),
+                Text(_prozent(_threshold)),
+                if (!_loading && loeschbar > 0) ...[
+                  const SizedBox(width: AppSpacing.md),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: farben.error,
+                      foregroundColor: farben.onError,
+                    ),
+                    onPressed: _alleKopienLoeschen,
+                    child: Text(t.duplKopienInPapierkorb(loeschbar)),
+                  ),
+                ],
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              AppTexte.of(context).duplSchwelleHinweis,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
             ),
           ),
           if (!_loading && _error == null)
@@ -415,27 +382,37 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      _groups.isEmpty
-                          ? AppTexte.of(context).duplNichtsGefunden
-                          : AppTexte.of(
-                              context,
-                            ).duplGefunden(_groups.length, _fotosInGruppen),
-                      style: Theme.of(context).textTheme.titleSmall,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _groups.isEmpty
+                              ? t.duplNichtsGefunden
+                              : t.duplGefunden(_groups.length, _fotosInGruppen),
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        Text(
+                          _groups.isEmpty
+                              ? t.duplSchwelleHinweis
+                              : t.duplRegelHinweis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: farben.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   if (_ausnahmen > 0)
                     TextButton.icon(
                       onPressed: _ausnahmenZuruecknehmen,
                       icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                      label: Text(
-                        AppTexte.of(context).duplAusnahmenZahl(_ausnahmen),
-                      ),
+                      label: Text(t.duplAusnahmenZahl(_ausnahmen)),
                     ),
                 ],
               ),
             ),
-          const Divider(height: 16),
+          const SizedBox(height: AppSpacing.sm),
           Expanded(child: _buildBody()),
         ],
       ),
@@ -467,110 +444,146 @@ class _DuplicatesScreenState extends State<DuplicatesScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       itemCount: _groups.length,
-      itemBuilder: (context, groupIndex) {
-        final group = _groups[groupIndex];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppTexte.of(
-                        context,
-                      ).duplGruppe(groupIndex + 1, group.length),
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+      itemBuilder: (context, i) => _gruppenkarte(context, _groups[i]),
+    );
+  }
+
+  /// Eine Gruppe als Karte wie im Browser: Kopf mit Zahl und „Keine
+  /// Duplikate“, darunter jedes Foto mit Grösse, Datum, Favorit, Sternen
+  /// und „Behalten“. Umrandet ist das, was das Aufräumen behielte.
+  Widget _gruppenkarte(BuildContext context, List<AssetData> gruppe) {
+    final t = AppTexte.of(context);
+    final farben = Theme.of(context).colorScheme;
+    final sprache = Localizations.localeOf(context).toLanguageTag();
+    final datumZeit = DateFormat.yMMMd(sprache).add_Hm();
+    final beste = besterDerGruppe(gruppe);
+    final vonHand = zuLoeschendeDerGruppe(gruppe).isEmpty;
+    void oeffne(int index) => Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => AssetViewerScreen(
+          assets: gruppe,
+          initialIndex: index,
+          paths: widget.library.paths,
+          db: widget.library.db,
+          library: widget.library,
+          onToggleFavorite: (a) =>
+              widget.library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
+          onDelete: (a) => _moveToTrash(a, gruppe),
+          onLock: (a) => _moveToLocked(a, gruppe),
+        ),
+      ),
+    );
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    vonHand
+                        ? t.duplNurVonHand(gruppe.length)
+                        : t.duplAufnahmen(gruppe.length),
+                    style: TextStyle(color: farben.onSurfaceVariant),
                   ),
-                  TextButton.icon(
-                    onPressed: () => _gruppeIgnorieren(group),
-                    icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                    label: Text(AppTexte.of(context).duplGruppeIgnorieren),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _gruppeZusammenfuehren(group),
-                    icon: const Icon(Icons.merge_type_outlined, size: 18),
-                    label: Text(AppTexte.of(context).duplZusammenfuehren),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 160,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: group.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final asset = group[index];
-                    return SizedBox(
-                      width: 140,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            child: AssetThumbnailTile(
-                              asset: Rasterzeile.aus(asset),
-                              paths: widget.library.paths,
-                              onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => AssetViewerScreen(
-                                        assets: group,
-                                        initialIndex: index,
-                                        paths: widget.library.paths,
-                                        db: widget.library.db,
-                                        library: widget.library,
-                                        onToggleFavorite: (a) =>
-                                            widget.library.db.fuehreAus(
-                                              FavoritSetzen([
-                                                a.id,
-                                              ], !a.isFavorite),
-                                            ),
-                                        onDelete: (a) => _moveToTrash(a, group),
-                                        onLock: (a) => _moveToLocked(a, group),
-                                      ),
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 4,
-                            top: 4,
-                            child: Material(
-                              color: Colors.black54,
-                              shape: const CircleBorder(),
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                tooltip: AppTexte.of(
-                                  context,
-                                ).duplVerschiebenTooltip,
-                                onPressed: () => _moveToTrash(asset, group),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
                 ),
+                OutlinedButton(
+                  onPressed: () => _gruppeIgnorieren(gruppe),
+                  child: Text(t.duplGruppeIgnorieren),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              height: 262,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: gruppe.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final a = gruppe[index];
+                  final behalten = a.id == beste.id;
+                  final angaben = [
+                    if (a.widthPx != null && a.heightPx != null)
+                      '${a.widthPx} × ${a.heightPx}',
+                    datumZeit.format(a.fileCreatedAt.toLocal()),
+                    if (a.isFavorite) '♥',
+                    if (a.rating > 0) '★' * a.rating,
+                  ].join(' · ');
+                  return SizedBox(
+                    width: 150,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            border: behalten
+                                ? Border.all(color: farben.primary, width: 3)
+                                : null,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: AssetThumbnailTile(
+                            asset: Rasterzeile.aus(a),
+                            paths: widget.library.paths,
+                            onTap: () => oeffne(index),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Tooltip(
+                          message: a.originalFileName,
+                          child: Text(
+                            a.originalFileName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Text(
+                          angaben,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: farben.onSurfaceVariant,
+                          ),
+                        ),
+                        const Spacer(),
+                        behalten
+                            ? FilledButton(
+                                onPressed: () => _behalten(gruppe, a),
+                                child: Text(t.duplBehalten),
+                              )
+                            : OutlinedButton(
+                                onPressed: () => _behalten(gruppe, a),
+                                child: Text(t.duplBehalten),
+                              ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

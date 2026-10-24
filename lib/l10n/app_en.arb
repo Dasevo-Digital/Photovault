@@ -1012,34 +1012,9 @@
   "duplVerschoben": "{anzahl} photo(s) moved to the trash.",
   "duplTitel": "Duplicates & similar photos",
   "duplZweiteBibliothek": "Second library",
-  "duplAlleKopienLoeschen": "Delete all copies",
   "duplAehnlichkeit": "Similarity:",
   "duplSchwelleHinweis": "Higher values mean only very similar photos are recognised as a group. Lower values find more, but less certain, matches.",
   "duplKeineGruppen": "No groups of similar photos found.",
-  "duplVerschiebenTooltip": "Move to the trash",
-  "duplZusammenfuehren": "Merge",
-  "duplZusammenfuehrenTitel": "Merge similar photos",
-  "duplZusammenfuehrenText": "Metadata from all {anzahl} photos is transferred to the selected photo. The remaining photos go to the trash and can be restored there.",
-  "@duplZusammenfuehrenText": {
-    "placeholders": {
-      "anzahl": {
-        "type": "int"
-      }
-    }
-  },
-  "duplBehaltenAuswahl": "Keep this photo",
-  "duplBehaltenDetails": "{sterne} stars · {favorit} favourite(s)",
-  "@duplBehaltenDetails": {
-    "placeholders": {
-      "sterne": {
-        "type": "int"
-      },
-      "favorit": {
-        "type": "int"
-      }
-    }
-  },
-  "duplBeschreibungenVerbinden": "Combine distinct descriptions",
   "duplZusammengefuehrt": "Merged {anzahl} photo(s) and moved them to trash.",
   "@duplZusammengefuehrt": {
     "placeholders": {
@@ -3046,7 +3021,7 @@
   "infoKiPlatzhalterEn": "Write the English version",
   "duplGefunden": "{gruppen} groups with {fotos} photos",
   "duplNichtsGefunden": "No groups found",
-  "duplGruppeIgnorieren": "Skip",
+  "duplGruppeIgnorieren": "Not duplicates",
   "duplGruppeIgnoriert": "{anzahl} photos will be skipped by the duplicate search from now on.",
   "duplAusnahmenZahl": "{anzahl} skipped",
   "duplAusnahmenTitel": "Show skipped ones again",
@@ -4784,5 +4759,12 @@
   "backupPassphraseEingeben": "Enter passphrase",
   "backupFehlgeschlagenMeldung": "The automatic backup failed: {fehler}",
   "backupErledigt": "Automatic backup done.",
-  "backupDateienFehlen": "{n, plural, =1{The automatic backup ran, but 1 file could not be backed up; it will be retried next time.} other{The automatic backup ran, but {n} files could not be backed up; they will be retried next time.}}"
+  "backupDateienFehlen": "{n, plural, =1{The automatic backup ran, but 1 file could not be backed up; it will be retried next time.} other{The automatic backup ran, but {n} files could not be backed up; they will be retried next time.}}",
+  "duplBehalten": "Keep",
+  "duplBehaltenEine": "Keep “{name}” and move the other item to the trash?",
+  "duplBehaltenMehrere": "Keep “{name}” and move the {n} others to the trash?",
+  "duplAufnahmen": "{n} items",
+  "duplNurVonHand": "{n} items · several marked, by hand only",
+  "duplRegelHinweis": "The outlined photo would be kept when tidying up; groups with several favourites or ratings stay untouched. Tags, albums and stars of the copies move to the one kept.",
+  "duplKopienInPapierkorb": "{n, plural, =1{Move 1 copy to the trash} other{Move {n} copies to the trash}}"
 }

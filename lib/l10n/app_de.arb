@@ -1613,34 +1613,9 @@
   },
   "duplTitel": "Duplikate & ähnliche Fotos",
   "duplZweiteBibliothek": "Zweite Bibliothek",
-  "duplAlleKopienLoeschen": "Alle Kopien löschen",
   "duplAehnlichkeit": "Ähnlichkeit:",
   "duplSchwelleHinweis": "Höhere Werte = nur sehr ähnliche Fotos werden als Gruppe erkannt. Niedrigere Werte finden mehr, aber auch weniger sichere Treffer.",
   "duplKeineGruppen": "Keine ähnlichen Fotogruppen gefunden.",
-  "duplVerschiebenTooltip": "In den Papierkorb verschieben",
-  "duplZusammenfuehren": "Zusammenführen",
-  "duplZusammenfuehrenTitel": "Ähnliche Fotos zusammenführen",
-  "duplZusammenfuehrenText": "Metadaten aller {anzahl} Fotos werden auf die gewählte Aufnahme übertragen. Die übrigen Fotos landen im Papierkorb und können dort wiederhergestellt werden.",
-  "@duplZusammenfuehrenText": {
-    "placeholders": {
-      "anzahl": {
-        "type": "int"
-      }
-    }
-  },
-  "duplBehaltenAuswahl": "Diese Aufnahme behalten",
-  "duplBehaltenDetails": "{sterne} Sterne · {favorit} Favorit(en)",
-  "@duplBehaltenDetails": {
-    "placeholders": {
-      "sterne": {
-        "type": "int"
-      },
-      "favorit": {
-        "type": "int"
-      }
-    }
-  },
-  "duplBeschreibungenVerbinden": "Unterschiedliche Beschreibungen verbinden",
   "duplZusammengefuehrt": "{anzahl} Foto(s) zusammengeführt und in den Papierkorb verschoben.",
   "@duplZusammengefuehrt": {
     "placeholders": {
@@ -4074,7 +4049,7 @@
     }
   },
   "duplNichtsGefunden": "Keine Gruppen gefunden",
-  "duplGruppeIgnorieren": "Übergehen",
+  "duplGruppeIgnorieren": "Keine Duplikate",
   "duplGruppeIgnoriert": "{anzahl} Fotos werden bei der Duplikatsuche künftig übergangen.",
   "@duplGruppeIgnoriert": {
     "placeholders": {
@@ -6185,6 +6160,51 @@
   "backupErledigt": "Automatisches Backup erledigt.",
   "backupDateienFehlen": "{n, plural, =1{Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.} other{Das automatische Backup ist gelaufen, aber {n} Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.}}",
   "@backupDateienFehlen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplBehalten": "Behalten",
+  "duplBehaltenEine": "„{name}“ behalten und die andere Aufnahme in den Papierkorb legen?",
+  "@duplBehaltenEine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "duplBehaltenMehrere": "„{name}“ behalten und die {n} anderen in den Papierkorb legen?",
+  "@duplBehaltenMehrere": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplAufnahmen": "{n} Aufnahmen",
+  "@duplAufnahmen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplNurVonHand": "{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand",
+  "@duplNurVonHand": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "duplRegelHinweis": "Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet. Schlagwörter, Alben und Sterne der Kopien gehen auf das behaltene über.",
+  "duplKopienInPapierkorb": "{n, plural, =1{1 Kopie in den Papierkorb} other{{n} Kopien in den Papierkorb}}",
+  "@duplKopienInPapierkorb": {
     "placeholders": {
       "n": {
         "type": "int"

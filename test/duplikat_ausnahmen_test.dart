@@ -238,7 +238,7 @@ void main() {
       library.clearEmbeddingCaches();
     });
 
-    testWidgets('„Übergehen" blendet die Gruppe aus und merkt sich das', (
+    testWidgets('„Keine Duplikate" blendet die Gruppe aus und merkt sich das', (
       tester,
     ) async {
       await lege('a', vektor(0.01));
@@ -247,7 +247,7 @@ void main() {
       await zeige(tester);
       expect(find.text('1 Gruppen mit 2 Fotos'), findsOneWidget);
 
-      await tester.tap(find.text('Übergehen'));
+      await tester.tap(find.text('Keine Duplikate'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
@@ -279,7 +279,7 @@ void main() {
       await lege('b', vektor(0.02));
       await zeige(tester);
 
-      await tester.tap(find.text('Übergehen'));
+      await tester.tap(find.text('Keine Duplikate'));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );

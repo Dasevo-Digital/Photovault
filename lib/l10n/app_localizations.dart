@@ -5309,12 +5309,6 @@ abstract class AppTexte {
   /// **'Zweite Bibliothek'**
   String get duplZweiteBibliothek;
 
-  /// No description provided for @duplAlleKopienLoeschen.
-  ///
-  /// In de, this message translates to:
-  /// **'Alle Kopien löschen'**
-  String get duplAlleKopienLoeschen;
-
   /// No description provided for @duplAehnlichkeit.
   ///
   /// In de, this message translates to:
@@ -5332,48 +5326,6 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Keine ähnlichen Fotogruppen gefunden.'**
   String get duplKeineGruppen;
-
-  /// No description provided for @duplVerschiebenTooltip.
-  ///
-  /// In de, this message translates to:
-  /// **'In den Papierkorb verschieben'**
-  String get duplVerschiebenTooltip;
-
-  /// No description provided for @duplZusammenfuehren.
-  ///
-  /// In de, this message translates to:
-  /// **'Zusammenführen'**
-  String get duplZusammenfuehren;
-
-  /// No description provided for @duplZusammenfuehrenTitel.
-  ///
-  /// In de, this message translates to:
-  /// **'Ähnliche Fotos zusammenführen'**
-  String get duplZusammenfuehrenTitel;
-
-  /// No description provided for @duplZusammenfuehrenText.
-  ///
-  /// In de, this message translates to:
-  /// **'Metadaten aller {anzahl} Fotos werden auf die gewählte Aufnahme übertragen. Die übrigen Fotos landen im Papierkorb und können dort wiederhergestellt werden.'**
-  String duplZusammenfuehrenText(int anzahl);
-
-  /// No description provided for @duplBehaltenAuswahl.
-  ///
-  /// In de, this message translates to:
-  /// **'Diese Aufnahme behalten'**
-  String get duplBehaltenAuswahl;
-
-  /// No description provided for @duplBehaltenDetails.
-  ///
-  /// In de, this message translates to:
-  /// **'{sterne} Sterne · {favorit} Favorit(en)'**
-  String duplBehaltenDetails(int sterne, int favorit);
-
-  /// No description provided for @duplBeschreibungenVerbinden.
-  ///
-  /// In de, this message translates to:
-  /// **'Unterschiedliche Beschreibungen verbinden'**
-  String get duplBeschreibungenVerbinden;
 
   /// No description provided for @duplZusammengefuehrt.
   ///
@@ -10342,7 +10294,7 @@ abstract class AppTexte {
   /// No description provided for @duplGruppeIgnorieren.
   ///
   /// In de, this message translates to:
-  /// **'Übergehen'**
+  /// **'Keine Duplikate'**
   String get duplGruppeIgnorieren;
 
   /// No description provided for @duplGruppeIgnoriert.
@@ -14892,6 +14844,48 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n, plural, =1{Das automatische Backup ist gelaufen, aber 1 Datei ließ sich nicht sichern; sie kommt beim nächsten Lauf wieder dran.} other{Das automatische Backup ist gelaufen, aber {n} Dateien ließen sich nicht sichern; sie kommen beim nächsten Lauf wieder dran.}}'**
   String backupDateienFehlen(int n);
+
+  /// No description provided for @duplBehalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Behalten'**
+  String get duplBehalten;
+
+  /// No description provided for @duplBehaltenEine.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ behalten und die andere Aufnahme in den Papierkorb legen?'**
+  String duplBehaltenEine(String name);
+
+  /// No description provided for @duplBehaltenMehrere.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ behalten und die {n} anderen in den Papierkorb legen?'**
+  String duplBehaltenMehrere(String name, int n);
+
+  /// No description provided for @duplAufnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Aufnahmen'**
+  String duplAufnahmen(int n);
+
+  /// No description provided for @duplNurVonHand.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Aufnahmen · mehrere ausgezeichnet, nur von Hand'**
+  String duplNurVonHand(int n);
+
+  /// No description provided for @duplRegelHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Das umrandete Foto würde beim Aufräumen behalten; Gruppen mit mehreren Favoriten oder Bewertungen bleiben unangetastet. Schlagwörter, Alben und Sterne der Kopien gehen auf das behaltene über.'**
+  String get duplRegelHinweis;
+
+  /// No description provided for @duplKopienInPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Kopie in den Papierkorb} other{{n} Kopien in den Papierkorb}}'**
+  String duplKopienInPapierkorb(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
