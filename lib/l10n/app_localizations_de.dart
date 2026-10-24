@@ -9762,4 +9762,11 @@ class AppTexteDe extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get backupZielGesperrt =>
+      'macOS lässt das automatische Backup nicht in den Zielordner schreiben. Bitte den Zielordner in den Einstellungen einmal neu wählen – danach bleibt der Zugriff auch nach einem Neustart erhalten.';
+
+  @override
+  String get backupZurEinstellung => 'Zu den Einstellungen';
 }

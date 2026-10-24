@@ -9708,4 +9708,11 @@ class AppTexteEn extends AppTexte {
     );
     return '$_temp0';
   }
+
+  @override
+  String get backupZielGesperrt =>
+      'macOS does not let the automatic backup write to its destination folder. Please choose the destination folder again once in the settings – after that, access is kept across restarts.';
+
+  @override
+  String get backupZurEinstellung => 'Open settings';
 }

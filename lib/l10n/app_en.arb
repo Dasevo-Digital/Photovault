@@ -4766,5 +4766,7 @@
   "duplAufnahmen": "{n} items",
   "duplNurVonHand": "{n} items · several marked, by hand only",
   "duplRegelHinweis": "The outlined photo would be kept when tidying up; groups with several favourites or ratings stay untouched. Tags, albums and stars of the copies move to the one kept.",
-  "duplKopienInPapierkorb": "{n, plural, =1{Move 1 copy to the trash} other{Move {n} copies to the trash}}"
+  "duplKopienInPapierkorb": "{n, plural, =1{Move 1 copy to the trash} other{Move {n} copies to the trash}}",
+  "backupZielGesperrt": "macOS does not let the automatic backup write to its destination folder. Please choose the destination folder again once in the settings – after that, access is kept across restarts.",
+  "backupZurEinstellung": "Open settings"
 }

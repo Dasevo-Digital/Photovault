@@ -47,6 +47,7 @@ import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
 import 'package:kern/services/reverse_geocoder.dart';
+import '../services/sicherungsziel.dart';
 import '../widgets/mini_location_map.dart'
     show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
@@ -3936,13 +3937,25 @@ class LibraryState extends ChangeNotifier {
     if (key == null) {
       throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
     }
-    // Verbunden: siehe [runManualBackup].
-    yield* backupService.performAutoBackup(
-      destination,
-      key,
-      maxBytesPerRun: await _backupGrenzeBytes(),
-      amZielPruefen: verbunden,
-    );
+    // Unter macOS den Zugriff aus dem gemerkten Merkmal (#211). Nicht
+    // `yield*`: Dessen Fehler gingen am `catch` vorbei.
+    final ziel = await Sicherungsziel.oeffne(destination);
+    try {
+      // Verbunden: siehe [runManualBackup].
+      await for (final f in backupService.performAutoBackup(
+        ziel,
+        key,
+        maxBytesPerRun: await _backupGrenzeBytes(),
+        amZielPruefen: verbunden,
+      )) {
+        yield f;
+      }
+    } on FileSystemException catch (e) {
+      if (Sicherungsziel.zugriffVerweigert(e)) {
+        throw BackupZielGesperrt(destination);
+      }
+      rethrow;
+    }
     await db.setLastAutoBackupAt(DateTime.now());
     backupwarnung.value = null;
   }
@@ -3985,7 +3998,8 @@ class LibraryState extends ChangeNotifier {
     try {
       var ausfaelle = 0;
       await for (final f in backupService.performAutoBackup(
-        destination,
+        // Unter macOS über das gemerkte Merkmal (#211).
+        await Sicherungsziel.oeffne(destination),
         key,
         maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
             ? config.autoBackupMaxMbPerRun * 1024 * 1024
@@ -4009,7 +4023,9 @@ class LibraryState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Automatisches Backup fehlgeschlagen: $e');
       backupwarnung.value = (
-        grund: Backuphindernis.fehlgeschlagen,
+        grund: Sicherungsziel.zugriffVerweigert(e)
+            ? Backuphindernis.zielGesperrt
+            : Backuphindernis.fehlgeschlagen,
         letzterLauf: lastRun,
         fehler: '$e',
       );
@@ -4107,6 +4123,10 @@ enum Backuphindernis {
   /// Gelaufen, aber einzelne Dateien gingen nicht ([Backupwarnung.fehler]
   /// trägt ihre Zahl).
   dateienFehlen,
+
+  /// Das Betriebssystem lässt nicht ins Ziel schreiben – unter macOS fehlt
+  /// das Merkmal für den Ordner, er muss einmal neu gewählt werden (#211).
+  zielGesperrt,
 }
 
 typedef Backupwarnung = ({

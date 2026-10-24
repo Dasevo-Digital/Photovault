@@ -10,6 +10,8 @@ import '../../l10n/app_localizations.dart';
 import '../../services/backup_service.dart';
 import '../../services/backup_verification_service.dart';
 import '../../services/meldungsdienst.dart';
+import '../../services/platform/folder_access.dart';
+import '../../services/sicherungsziel.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_dialogs.dart';
@@ -266,15 +268,20 @@ class AutomatischeSicherungGruppe extends StatelessWidget {
                   ),
                   trailing: OutlinedButton(
                     onPressed: () async {
-                      final picked = await FilePicker.getDirectoryPath(
-                        dialogTitle: AppTexte.of(
-                          context,
-                        ).einstBackupAutoZielWaehlen,
-                      );
+                      // Mit Merkmal: Unter macOS hielt der Zugriff auf
+                      // einen nur per Pfad gemerkten Ordner bis zum
+                      // nächsten Start (#211, siehe Sicherungsziel).
+                      final picked = await FolderAccess.forCurrentPlatform()
+                          .pickFolder(
+                            message: AppTexte.of(
+                              context,
+                            ).einstBackupAutoZielWaehlen,
+                          );
                       if (picked == null) return;
+                      await Sicherungsziel.merke(picked.path, picked.token);
                       await stand.library.db.setAutoBackupConfig(
                         enabled: enabled,
-                        destination: picked,
+                        destination: picked.path,
                       );
                       if (stand.aktiv) stand.reloadBackupSettings();
                     },
@@ -686,7 +693,12 @@ Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
       title: AppTexte.of(context).einstBackupLaeuft,
       stream: stand.library
           .runAutoBackupNow(destination)
-          .map((p) => p.total == 0 ? keineNeuen : _backupZeile(t, p)),
+          .map((p) => p.total == 0 ? keineNeuen : _backupZeile(t, p))
+          // Lesbar statt „PathAccessException … errno = 1“ (#211).
+          .handleError(
+            (Object _) => throw t.backupZielGesperrt,
+            test: (e) => e is BackupZielGesperrt,
+          ),
     ),
   );
   if (context.mounted) stand.reloadBackupSettings();

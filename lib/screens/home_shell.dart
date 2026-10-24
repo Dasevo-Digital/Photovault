@@ -404,6 +404,15 @@ class _HomeShellState extends State<HomeShell> {
         );
       case Backuphindernis.fehlgeschlagen:
         melde.fehler(t.backupFehlgeschlagenMeldung(w.fehler ?? ''));
+      case Backuphindernis.zielGesperrt:
+        melde.warnung(
+          t.backupZielGesperrt,
+          aktion: (
+            beschriftung: t.backupZurEinstellung,
+            beiDruck: () =>
+                widget.library.zeigeBereich(Hauptbereich.einstellungen),
+          ),
+        );
       case Backuphindernis.dateienFehlen:
         melde.warnung(t.backupDateienFehlen(int.tryParse(w.fehler ?? '') ?? 0));
     }

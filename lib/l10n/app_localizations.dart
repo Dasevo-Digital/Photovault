@@ -14886,6 +14886,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n, plural, =1{1 Kopie in den Papierkorb} other{{n} Kopien in den Papierkorb}}'**
   String duplKopienInPapierkorb(int n);
+
+  /// No description provided for @backupZielGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'macOS lässt das automatische Backup nicht in den Zielordner schreiben. Bitte den Zielordner in den Einstellungen einmal neu wählen – danach bleibt der Zugriff auch nach einem Neustart erhalten.'**
+  String get backupZielGesperrt;
+
+  /// No description provided for @backupZurEinstellung.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu den Einstellungen'**
+  String get backupZurEinstellung;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

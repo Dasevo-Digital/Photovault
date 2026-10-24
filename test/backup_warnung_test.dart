@@ -6,6 +6,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/backup_service.dart';
+import 'package:photo_vault/services/sicherungsziel.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// Das automatische Backup bleibt nicht mehr wortlos aus (#207): Fällig,
@@ -65,6 +66,31 @@ void main() {
       expect(
         (await db.backupSettingsRow())!.lastAutoBackupAt!.isAfter(vorWochen),
         isTrue,
+      );
+    },
+  );
+
+  test(
+    'Ziel ohne Schreibrecht: „Ziel gesperrt“, nicht der rohe Fehler (#211)',
+    () async {
+      // Unter macOS verweigert der Sandkasten nach einem Neustart das
+      // Schreiben (EPERM); hier dieselbe Lage über fehlende Rechte (EACCES).
+      final ziel = Directory(p.join(temp.path, 'gesperrt'))..createSync();
+      await Process.run('chmod', ['500', ziel.path]);
+      addTearDown(() => Process.runSync('chmod', ['700', ziel.path]));
+      await db.setAutoBackupConfig(
+        enabled: true,
+        destination: ziel.path,
+        intervalHours: 24,
+      );
+      await bib.setupBackupPassphrase('eine lange passphrase');
+      await bib.runAutoBackupIfDue();
+      expect(bib.backupwarnung.value?.grund, Backuphindernis.zielGesperrt);
+
+      // „Jetzt synchronisieren“ meldet es als eigenen Fehler.
+      await expectLater(
+        bib.runAutoBackupNow(ziel.path).drain<void>(),
+        throwsA(isA<BackupZielGesperrt>()),
       );
     },
   );
