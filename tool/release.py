@@ -20,7 +20,9 @@ bauen         Linux (Flatpak) und Windows (Zip) auf den Testrechnern, macOS
               entfernt, damit Spotlight sie nicht findet.
 entwurf       Gitea-Freigabe als Entwurf mit RELEASE-TEXT-v<x>.md aus dem
               Ordner und allen Dateien. Ein vorhandener Entwurf wird
-              ergänzt, nicht verdoppelt.
+              ergänzt, nicht verdoppelt; ein schon veröffentlichtes
+              Release ebenso (Text neu, fehlende Pakete nachgetragen,
+              SHA256SUMS.txt ersetzt).
 einspielen    Auf den Testrechnern installieren; am Mac wartet ein Wächter,
               bis die App beendet ist, und tauscht sie dann. Der Server nur
               mit --server und nach ausdrücklichem „ja“ – er ist produktiv.
@@ -285,7 +287,10 @@ def bauen(args):
     if 'linux' in nur:
         flatpak = f'Desktop/PhotoVault-{fassung}-x86_64.flatpak'
         for _ in range(180):
-            r = subprocess.run(['ssh', '-o', 'BatchMode=yes', z['linux_ssh'], 'pgrep -f flatpak_bauen.sh >/dev/null && echo laeuft || echo fertig'],
+            # „[f]latpak“: Sonst findet pgrep die Kommandozeile dieser
+            # Abfrage selbst und meldet immer „läuft“ – bei 3.47.0 wartete das
+            # Skript so die vollen 60 Minuten auf ein längst fertiges Flatpak.
+            r = subprocess.run(['ssh', '-o', 'BatchMode=yes', z['linux_ssh'], 'pgrep -f "[f]latpak_bauen.sh" >/dev/null && echo laeuft || echo fertig'],
                                text=True, capture_output=True)
             if 'fertig' in r.stdout:
                 break
@@ -320,9 +325,14 @@ def entwurf(args):
     u = upload_ordner(z, fassung)
     text = (u / f'RELEASE-TEXT-v{fassung}.md').read_text(encoding='utf-8')
     tok = token(z)
-    # Entwürfe findet /releases/tags/<marke> nicht – in der Liste suchen.
-    _, alle = gitea(z, '/releases?draft=true&limit=30', tok=tok)
-    rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
+    # Ein veröffentlichtes Release findet /releases/tags/<marke> – so lassen
+    # sich Pakete nachtragen, etwa Linux und Windows zu einer Fassung, die
+    # zuerst nur für Mac und Server erschien (3.47.0). Entwürfe findet es
+    # nicht – die stehen nur in der Liste.
+    st, rel = gitea(z, f'/releases/tags/v{fassung}', tok=tok)
+    if st != 200 or not isinstance(rel, dict):
+        _, alle = gitea(z, '/releases?draft=true&limit=30', tok=tok)
+        rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
     if rel is None:
         st, rel = gitea(z, '/releases', json.dumps({'tag_name': f'v{fassung}', 'name': f'Photo Vault {fassung}', 'body': text,
                                                      'draft': True, 'prerelease': False}).encode(), 'POST',
