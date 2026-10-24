@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.2" date="2026-10-24">
+      <description>
+        <p>On macOS, the automatic backup keeps permission to write to its destination folder after a restart; choose the folder once again after updating.</p>
+      </description>
+    </release>
     <release version="3.47.1" date="2026-10-24">
       <description>
         <p>In the browser and the phone app, a photo can be downloaded or shared as JPEG in full size or 4096, 2048 or 1024 pixels; the server converts DNG, CR3 and HEIC and keeps edits, date and camera.</p>
