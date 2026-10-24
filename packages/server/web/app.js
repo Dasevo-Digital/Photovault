@@ -3528,21 +3528,64 @@ $('auswahl-link').addEventListener('click', () => {
   oeffneLinkDialog({ ids: g.map((a) => a.id) }, g.length === 1 ? t('1 Aufnahme') : t('{n} Aufnahmen', { n: g.length }));
 });
 
-$('auswahl-laden').addEventListener('click', () => {
-  // Nacheinander, damit der Browser jedes als Datei anbietet.
+// --- Herunterladen: Original oder als JPEG (#210) ---------------------------
+// Ein DNG, CR3 oder HEIC wandelt der Browser nicht – das tut der Server, aus
+// dem, was man sieht (restauriert, entwickelt, sonst das Original).
+
+const JPEG_GROESSEN = [
+  { kante: 0, text: 'JPEG – volle Grösse' },
+  { kante: 4096, text: 'JPEG – 4096 px' },
+  { kante: 2048, text: 'JPEG – 2048 px' },
+  { kante: 1024, text: 'JPEG – 1024 px' },
+];
+const originalUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/original`;
+const jpegUrl = (id, kante) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/jpeg${kante ? `?kante=${kante}` : ''}`;
+const jpegName = (a) => `${(a.name || 'Foto').replace(/\.[^.]+$/, '')}.jpg`;
+
+// Nacheinander, damit der Browser jede als eigene Datei anbietet.
+function ladeDateien(aufnahmen, url, name) {
   let i = 0;
   const naechste = () => {
-    const a = gewaehlte()[i++];
+    const a = aufnahmen[i++];
     if (!a) return;
     const l = el('a');
-    l.href = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
-    l.download = a.name || '';
+    l.href = url(a);
+    l.download = name(a);
     document.body.append(l);
     l.click();
     l.remove();
     setTimeout(naechste, 400);
   };
   naechste();
+}
+
+function herunterladenWaehlen(aufnahmen) {
+  if (!aufnahmen.length) return;
+  const fotos = aufnahmen.filter((a) => a.art !== 'video');
+  const ohneVideos = fotos.length < aufnahmen.length ? ` ${t('Videos bleiben aussen vor.')}` : '';
+  waehle(aufnahmen.length === 1 ? t('Herunterladen') : t('{n} Aufnahmen herunterladen', { n: aufnahmen.length }), [
+    {
+      text: t('Original'),
+      hinweis: t('Die Datei, wie sie aufgenommen wurde – auch RAW und Video.'),
+      aktion: () => ladeDateien(aufnahmen, (a) => originalUrl(a.id), (a) => a.name || ''),
+    },
+    ...JPEG_GROESSEN.map((g, i) => ({
+      text: t(g.text),
+      hinweis: i === 0 ? t('Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.') + ohneVideos : null,
+      an: fotos.length > 0,
+      aktion: () => ladeDateien(fotos, (a) => jpegUrl(a.id, g.kante), jpegName),
+    })),
+  ]);
+}
+
+$('auswahl-laden').addEventListener('click', () => herunterladenWaehlen(gewaehlte()));
+
+// Im Betrachter: Fotos fragen, Videos laden gleich das Original.
+$('laden').addEventListener('click', (e) => {
+  const a = liste && liste.aufnahmen[offen];
+  if (!a || a.art === 'video') return;
+  e.preventDefault();
+  herunterladenWaehlen([a]);
 });
 
 $('auswahl-papierkorb').addEventListener('click', async () => {

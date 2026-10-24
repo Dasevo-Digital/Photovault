@@ -11,6 +11,7 @@ import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'als_jpeg.dart';
 import 'diashow.dart';
 import 'loeschen.dart';
 import 'vergleich.dart';
@@ -65,6 +66,29 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
   Future<void> _teile(BuildContext context) async {
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
+    // Original oder als JPEG – wie „Herunterladen“ im Browser (#210).
+    final art = await frageTeilart(
+      context,
+      mitFotos: zeilen.any((z) => z.type != 'VIDEO'),
+      mitVideos: zeilen.any((z) => z.type == 'VIDEO'),
+    );
+    if (art == null) return;
+    if (!art.original) {
+      bote.showSnackBar(SnackBar(content: Text(t.teilenWandelt)));
+      try {
+        await teileAlsJpeg(sitzung, [
+          for (final z in zeilen)
+            (id: z.id, name: z.originalFileName, video: z.type == 'VIDEO'),
+        ], art.kante);
+        bote.hideCurrentSnackBar();
+        aufheben();
+      } catch (_) {
+        bote
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(t.betrachterNichtGeladen)));
+      }
+      return;
+    }
     bote.showSnackBar(SnackBar(content: Text(t.auswahlLaedt)));
     try {
       final dateien = <XFile>[];

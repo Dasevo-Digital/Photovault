@@ -794,5 +794,12 @@
   "sicherungPapierkorbTelefonHinweis": "Delete what is in the Photo Vault trash – even if deleted on another device – from this phone's photo library.",
   "sicherungPapierkorbTelefonNichts": "Nothing to remove: no photo from the trash is still on the phone.",
   "sicherungPapierkorbTelefonText": "These items are in the Photo Vault trash. The phone will ask once more.",
-  "lokalVomTelefonLoeschen": "Delete from the phone"
+  "lokalVomTelefonLoeschen": "Delete from the phone",
+  "teilenOriginal": "Original",
+  "teilenOriginalHinweis": "The file as it was taken – RAW and video too.",
+  "jpegVolleGroesse": "JPEG – full size",
+  "jpegKante": "JPEG – {kante} px",
+  "teilenJpegHinweis": "With the edits. Date and camera come along, the location does not.",
+  "teilenOhneVideos": "Videos are left out.",
+  "teilenWandelt": "Fetching the photos as JPEG …"
 }

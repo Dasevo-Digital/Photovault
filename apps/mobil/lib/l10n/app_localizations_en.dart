@@ -2432,4 +2432,29 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get lokalVomTelefonLoeschen => 'Delete from the phone';
+
+  @override
+  String get teilenOriginal => 'Original';
+
+  @override
+  String get teilenOriginalHinweis =>
+      'The file as it was taken – RAW and video too.';
+
+  @override
+  String get jpegVolleGroesse => 'JPEG – full size';
+
+  @override
+  String jpegKante(int kante) {
+    return 'JPEG – $kante px';
+  }
+
+  @override
+  String get teilenJpegHinweis =>
+      'With the edits. Date and camera come along, the location does not.';
+
+  @override
+  String get teilenOhneVideos => 'Videos are left out.';
+
+  @override
+  String get teilenWandelt => 'Fetching the photos as JPEG …';
 }

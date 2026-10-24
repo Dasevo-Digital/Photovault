@@ -1731,6 +1731,71 @@ void main() {
     },
   );
 
+  test('Als JPEG herunterladen: Grösse, Name, Datum ohne Ort (#210)', () async {
+    final id = await ladeHoch(erikaToken, 'Hafen am Abend.jpg', 90);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+      AssetsCompanion(
+        fileCreatedAt: Value(DateTime(2024, 11, 13, 10, 48, 28)),
+        cameraMake: const Value('Canon'),
+        cameraModel: const Value('EOS R10'),
+        latitude: const Value(54.32),
+        longitude: const Value(10.13),
+      ),
+    );
+
+    final r = await frag(
+      'GET',
+      '/api/v1/aufnahmen/$id/jpeg?kante=16&qualitaet=80',
+      token: erikaToken,
+    );
+    expect(r.statusCode, 200);
+    expect(r.headers['content-type'], 'image/jpeg');
+    expect(
+      r.headers['content-disposition'],
+      contains("filename*=UTF-8''Hafen%20am%20Abend.jpg"),
+    );
+    final bytes = Uint8List.fromList(await r.read().expand((x) => x).toList());
+    final bild = img.decodeJpg(bytes)!;
+    expect(bild.width, 16, reason: 'längere Seite auf 16 px');
+    expect(
+      bild.exif.exifIfd['DateTimeOriginal']?.toString(),
+      '2024:11:13 10:48:28',
+    );
+    expect(bild.exif.imageIfd['Model']?.toString(), 'EOS R10');
+    expect(bild.exif.gpsIfd.isEmpty, isTrue, reason: 'ohne Ort');
+
+    // Volle Grösse ohne `kante`.
+    final voll = img.decodeJpg(
+      Uint8List.fromList(
+        await (await frag(
+          'GET',
+          '/api/v1/aufnahmen/$id/jpeg',
+          token: erikaToken,
+        )).read().expand((x) => x).toList(),
+      ),
+    )!;
+    expect(voll.width, 48);
+
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/aufnahmen/$id/jpeg?kante=-1',
+        token: erikaToken,
+      )).statusCode,
+      400,
+    );
+    expect(
+      (await frag(
+        'GET',
+        '/api/v1/aufnahmen/$id/jpeg',
+        token: maxToken,
+      )).statusCode,
+      404,
+      reason: 'fremde Bibliothek',
+    );
+  });
+
   test('Zeitleiste in anderer Reihenfolge, seitenweise (#194)', () async {
     final a = await ladeHoch(erikaToken, 'c-mitte.jpg', 30);
     final b = await ladeHoch(erikaToken, 'a-alt.jpg', 60);

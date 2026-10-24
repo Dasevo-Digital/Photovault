@@ -13,6 +13,7 @@ import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
+import 'als_jpeg.dart';
 import 'diashow.dart';
 import 'entwickeln.dart';
 import 'gesichter.dart';
@@ -138,6 +139,27 @@ class _BetrachterState extends State<Betrachter> {
     final bote = ScaffoldMessenger.of(context);
     final a = await _lade(_aktuell);
     if (a == null) return;
+    // Ein Foto: Original oder als JPEG – wie „Herunterladen“ im Browser
+    // (#210). Ein Video geht gleich als Original.
+    if (a.type != 'VIDEO') {
+      if (!mounted) return;
+      final art = await frageTeilart(context, mitFotos: true, mitVideos: false);
+      if (art == null) return;
+      if (!art.original) {
+        bote.showSnackBar(SnackBar(content: Text(t.teilenWandelt)));
+        try {
+          await teileAlsJpeg(widget.sitzung, [
+            (id: a.id, name: a.originalFileName, video: false),
+          ], art.kante);
+          bote.hideCurrentSnackBar();
+        } catch (_) {
+          bote
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(t.betrachterNichtGeladen)));
+        }
+        return;
+      }
+    }
     bote.showSnackBar(SnackBar(content: Text(t.betrachterLaedtOriginal)));
     try {
       final datei = await widget.sitzung.paths.bereit(a.relativePath);

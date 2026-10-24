@@ -1209,5 +1209,19 @@
   "sicherungPapierkorbTelefonHinweis": "Was in Photo Vault im Papierkorb liegt – auch auf einem anderen Gerät gelöscht – aus der Fotomediathek dieses Telefons löschen.",
   "sicherungPapierkorbTelefonNichts": "Nichts zu entfernen: Kein Foto aus dem Papierkorb liegt noch auf dem Telefon.",
   "sicherungPapierkorbTelefonText": "Diese Aufnahmen liegen in Photo Vault im Papierkorb. Das Telefon fragt gleich noch einmal nach.",
-  "lokalVomTelefonLoeschen": "Vom Telefon löschen"
+  "lokalVomTelefonLoeschen": "Vom Telefon löschen",
+  "teilenOriginal": "Original",
+  "teilenOriginalHinweis": "Die Datei, wie sie aufgenommen wurde – auch RAW und Video.",
+  "jpegVolleGroesse": "JPEG – volle Grösse",
+  "jpegKante": "JPEG – {kante} px",
+  "@jpegKante": {
+    "placeholders": {
+      "kante": {
+        "type": "int"
+      }
+    }
+  },
+  "teilenJpegHinweis": "Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.",
+  "teilenOhneVideos": "Videos bleiben aussen vor.",
+  "teilenWandelt": "Die Fotos werden als JPEG geholt …"
 }

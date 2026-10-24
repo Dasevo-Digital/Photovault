@@ -32,6 +32,7 @@ import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
 import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
+import 'package:photo_vault_mobil/seiten/als_jpeg.dart';
 import 'package:photo_vault_mobil/seiten/angaben.dart';
 import 'package:photo_vault_mobil/seiten/anmelden.dart';
 import 'package:photo_vault_mobil/seiten/aufnahmedaten.dart';
@@ -428,6 +429,51 @@ void main() {
     await tester.tap(find.text(t.abbrechen));
     await tester.pumpAndSettle();
     expect(await antwort, isNull);
+  });
+
+  testWidgets('Teilen: Original oder JPEG in vier Grössen (#210)', (
+    tester,
+  ) async {
+    late BuildContext innen;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (c) {
+              innen = c;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+    final t = AppTexte.of(innen);
+
+    var antwort = frageTeilart(innen, mitFotos: true, mitVideos: true);
+    await tester.pumpAndSettle();
+    expect(find.text(t.teilenOriginal), findsOneWidget);
+    expect(find.text(t.jpegVolleGroesse), findsOneWidget);
+    for (final k in [4096, 2048, 1024]) {
+      expect(find.text(t.jpegKante(k)), findsOneWidget);
+    }
+    expect(find.textContaining(t.teilenOhneVideos), findsOneWidget);
+    await tester.tap(find.text(t.jpegKante(2048)));
+    await tester.pumpAndSettle();
+    expect(await antwort, (original: false, kante: 2048));
+
+    // Nur Videos: die JPEG-Zeilen lassen sich nicht wählen.
+    antwort = frageTeilart(innen, mitFotos: false, mitVideos: true);
+    await tester.pumpAndSettle();
+    final zeile = tester.widget<ListTile>(
+      find.widgetWithText(ListTile, t.jpegVolleGroesse),
+    );
+    expect(zeile.enabled, isFalse);
+    await tester.tap(find.text(t.teilenOriginal));
+    await tester.pumpAndSettle();
+    expect(await antwort, (original: true, kante: 0));
   });
 
   testWidgets('Auswahl im Raster: Favorit, Album, Papierkorb', (tester) async {

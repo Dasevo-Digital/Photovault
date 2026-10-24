@@ -27,7 +27,7 @@ class Bibliothek {
     this.pfade,
     this.importe,
     this.modelle,
-    Bildwerkzeuge bildwerkzeuge,
+    this.bildwerkzeuge,
     ReverseGeocoder? ortsverzeichnis,
     this.protokoll,
     Vergabe? vergabe,
@@ -138,6 +138,10 @@ class Bibliothek {
   final StoragePaths pfade;
   final ImportService importe;
   final Modelle modelle;
+
+  /// Wandelt Bilder – für Vorschauen, die Auswertungen und das Herunterladen
+  /// als JPEG (#210).
+  final Bildwerkzeuge bildwerkzeuge;
   final Protokoll protokoll;
   late final Auswertungen auswertungen;
   late final Nachbearbeitung nachbearbeitung;

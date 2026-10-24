@@ -18,6 +18,7 @@ import 'package:kern/services/duplikatsuche.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
 import 'package:kern/services/import_service.dart' show Datumsbefund;
+import 'package:kern/services/jpeg_angaben.dart';
 import 'package:kern/services/gesichtsuebersicht.dart' as gesichtsuebersicht;
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/laendernamen.dart';
@@ -1701,6 +1702,7 @@ class _Api {
     final a = await b.db.assetById(id);
     if (a == null || a.isLocked) return Response.notFound(null);
     if (art == 'abspielbar') return _abspielbar(anfrage, b, a);
+    if (art == 'jpeg') return _alsJpeg(anfrage, b, a);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
       // Was der Betrachter zeigt – wie in den Apps: restauriert,
@@ -1727,6 +1729,60 @@ class _Api {
       return Response.notFound(null);
     }
     return dateiAntwort(anfrage, datei);
+  }
+
+  /// Das Foto als JPEG zum Herunterladen und Teilen (#210) – für Browser und
+  /// Telefon, die ein DNG, CR3 oder HEIC nicht selbst wandeln können.
+  ///
+  /// Gewandelt wird, was man sieht: restauriert, sonst entwickelt, sonst das
+  /// Original – nie die verkleinerte Vorschau. Die entwickelte Fassung liegt
+  /// höchstens 4096 px gross vor; mehr gibt es von ihr nicht.
+  ///
+  /// `kante` begrenzt die längere Seite in Pixeln (fehlt sie oder ist sie 0:
+  /// volle Grösse), `qualitaet` liegt zwischen 1 und 100 (Vorgabe 90).
+  /// Aufnahmezeitpunkt und Kamera kommen mit, der Ort nicht (siehe
+  /// [mitAufnahmeangaben]).
+  Future<Response> _alsJpeg(Request anfrage, Bibliothek b, AssetData a) async {
+    if (a.type != 'IMAGE') return Response.notFound(null);
+    final q = anfrage.url.queryParameters;
+    final kante = int.tryParse(q['kante'] ?? '0');
+    final qualitaet = int.tryParse(q['qualitaet'] ?? '90');
+    if (kante == null ||
+        kante < 0 ||
+        kante > 65536 ||
+        qualitaet == null ||
+        qualitaet < 1 ||
+        qualitaet > 100) {
+      return _json({'fehler': 'kante oder qualitaet'}, status: 400);
+    }
+    final datei = b.pfade.absolute(
+      a.restoredRelativePath ?? a.developedRelativePath ?? a.relativePath,
+    );
+    if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
+      return Response.notFound(null);
+    }
+    final bytes = await b.bildwerkzeuge.convertToJpegBytes(
+      datei,
+      maxDimension: kante == 0 ? null : kante,
+      quality: qualitaet / 100,
+    );
+    if (bytes == null) {
+      return _json({'fehler': 'nicht umwandelbar'}, status: 422);
+    }
+    final fertig = mitAufnahmeangaben(bytes, a);
+    final name = '${p.basenameWithoutExtension(a.originalFileName)}.jpg';
+    final einfach = name.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_');
+    return Response.ok(
+      fertig,
+      headers: {
+        'content-type': 'image/jpeg',
+        'content-length': '${fertig.length}',
+        'content-disposition':
+            'attachment; filename="$einfach"; '
+            "filename*=UTF-8''${Uri.encodeComponent(name)}",
+        'cache-control': 'private, no-store',
+      },
+    );
   }
 
   /// Ein Video als H.264 (siehe [Videofassungen]): die fertige Fassung

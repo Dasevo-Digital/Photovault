@@ -3774,6 +3774,48 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Vom Telefon löschen'**
   String get lokalVomTelefonLoeschen;
+
+  /// No description provided for @teilenOriginal.
+  ///
+  /// In de, this message translates to:
+  /// **'Original'**
+  String get teilenOriginal;
+
+  /// No description provided for @teilenOriginalHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datei, wie sie aufgenommen wurde – auch RAW und Video.'**
+  String get teilenOriginalHinweis;
+
+  /// No description provided for @jpegVolleGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'JPEG – volle Grösse'**
+  String get jpegVolleGroesse;
+
+  /// No description provided for @jpegKante.
+  ///
+  /// In de, this message translates to:
+  /// **'JPEG – {kante} px'**
+  String jpegKante(int kante);
+
+  /// No description provided for @teilenJpegHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.'**
+  String get teilenJpegHinweis;
+
+  /// No description provided for @teilenOhneVideos.
+  ///
+  /// In de, this message translates to:
+  /// **'Videos bleiben aussen vor.'**
+  String get teilenOhneVideos;
+
+  /// No description provided for @teilenWandelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotos werden als JPEG geholt …'**
+  String get teilenWandelt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
