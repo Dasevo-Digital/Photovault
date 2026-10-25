@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.5" date="2026-10-25">
+      <description>
+        <p>Live Photos are now paired by file name and capture time; a video is no longer attached to a photo with the same name from another year, and wrong pairs are separated once on the server.</p>
+      </description>
+    </release>
     <release version="3.47.4" date="2026-10-25">
       <description>
         <p>macOS no longer reports that Photo Vault quit unexpectedly when it is closed; the library database is closed cleanly before quitting.</p>
