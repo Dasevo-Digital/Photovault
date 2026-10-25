@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.0" date="2026-10-25">
+      <description>
+        <p>Several versions of the same photo can be stacked as variants with one main version. A new scan workspace detects several paper photos in a flatbed scan and imports them losslessly as separate photos.</p>
+        <p>The compute helper for the server pauses on battery by default and can be limited to idle times. The server account can be linked with the sign-in provider from the browser and the phone as well.</p>
+      </description>
+    </release>
     <release version="3.47.6" date="2026-10-25">
       <description>
         <p>A photo that arrived under a video file name (for example a JPEG named .MOV) now shows its real format on the tile instead of "MOV"; two photos wrongly linked as a Live Photo are no longer marked as one.</p>
