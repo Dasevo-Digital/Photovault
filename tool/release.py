@@ -249,11 +249,16 @@ def bauen(args):
     marke = f'v{fassung}'
     # Mac und Server bauen aus diesem Verzeichnis, Linux und Windows holen
     # sich die Marke selbst.
-    if {'mac', 'server'} & nur:
-        if lauf(['git', 'describe', '--exact-match', 'HEAD'], ausgabe=True, pruefen=False).strip() != marke:
-            sys.exit(f'HEAD steht nicht auf {marke} – erst vorbereiten.')
-    elif not lauf(['git', 'tag', '-l', marke], ausgabe=True).strip():
+    if not lauf(['git', 'tag', '-l', marke], ausgabe=True).strip():
         sys.exit(f'Die Marke {marke} gibt es nicht – erst vorbereiten.')
+    # HEAD darf hinter der Marke weiter sein, solange seither nur tool/
+    # dazukam – etwa eine Berichtigung an diesem Skript, wie bei 3.48.0.
+    # Der Code der Apps und des Servers ist dann derselbe wie in der Marke.
+    if {'mac', 'server'} & nur:
+        anders = lauf(['git', 'diff', '--name-only', marke, 'HEAD', '--', '.', ':(exclude)tool'],
+                      ausgabe=True).strip()
+        if anders:
+            sys.exit(f'HEAD weicht ausserhalb von tool/ von {marke} ab – erst vorbereiten:\n{anders}')
     a = arbeitsordner(fassung)
     u = upload_ordner(z, fassung)
 
@@ -300,7 +305,7 @@ def bauen(args):
             lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
 
     if 'server' in nur:
-        commit = lauf(['git', 'rev-parse', '--short', 'HEAD'], ausgabe=True).strip()
+        commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
         for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
             lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
                   '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
