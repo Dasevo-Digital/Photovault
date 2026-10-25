@@ -9715,4 +9715,8 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get backupZurEinstellung => 'Open settings';
+
+  @override
+  String get serverTokenSpeichernFehler =>
+      'The server token could not be stored securely. The connection was not changed.';
 }

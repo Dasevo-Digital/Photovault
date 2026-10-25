@@ -384,6 +384,67 @@ void main() {
     },
   );
 
+  test('Long-Poll endet beim Schließen ohne Datenbankfehler', () async {
+    final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+    final stand = await b.protokoll.stand();
+    final antwort = http.get(
+      Uri.parse(
+        'http://127.0.0.1:$port/api/v1/abgleich/aenderungen'
+        '?nach=$stand&warten=20',
+      ),
+      headers: {'authorization': 'Bearer $token'},
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await bibliotheken.schliesseAlle();
+    expect((await antwort).statusCode, 503);
+  });
+
+  test(
+    'ungültige Zeilenschlüssel werden als Anfragefehler abgewiesen',
+    () async {
+      final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+      final adresse = Uri.parse(
+        'http://127.0.0.1:$port/api/v1/abgleich/zeilen',
+      );
+      for (final koerper in <Object?>[
+        {
+          'schluessel': ['kein Objekt'],
+        },
+        {
+          'schluessel': [
+            {'t': 'assets', 's': 'keine Liste'},
+          ],
+        },
+        {
+          'schluessel': [
+            {'t': 'assets', 's': <Object?>[]},
+          ],
+        },
+        {
+          'schluessel': [
+            {
+              't': 'assets',
+              's': [
+                {'b': 42},
+              ],
+            },
+          ],
+        },
+      ]) {
+        final antwort = await http.post(
+          adresse,
+          headers: {
+            'authorization': 'Bearer $token',
+            'content-type': 'application/json',
+          },
+          body: jsonEncode(koerper),
+        );
+        expect(antwort.statusCode, 400, reason: '$koerper');
+      }
+    },
+  );
+
   test('derselbe Befehl zweimal geschickt wirkt einmal', () async {
     final s = await serverDb();
     await s.fuehreAus(const PersonAnlegen('p1', 'Anna'));

@@ -5,6 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:photo_vault/services/tokenablage.dart';
 
+class _KaputteAblage implements Tokenablage {
+  @override
+  Future<void> loesche(String kennung) async {}
+
+  @override
+  Future<String?> lies(String kennung) async => null;
+
+  @override
+  Future<bool> schreibe(String kennung, String token) async => false;
+}
+
 /// Das Server-Token im Datenordner der App statt neben der Bibliothek
 /// (Issue #111).
 void main() {
@@ -111,4 +122,35 @@ void main() {
     expect(await ablage.lies('../verbindung'), isNull);
     expect(tokendateien(), isEmpty);
   });
+
+  test(
+    'ein Fehler der Ablage schreibt das Token nicht in die Bibliothek',
+    () async {
+      Verbindungsdatei.tokenablage = _KaputteAblage();
+      await expectLater(
+        verbindung('geheim-8').schreibe(bibliothek),
+        throwsA(isA<TokenablageFehler>()),
+      );
+      expect(File('${bibliothek.path}/verbindung.json').existsSync(), isFalse);
+    },
+  );
+
+  test(
+    'ein Fehler der Ablage lässt eine vorhandene Verbindung unverändert',
+    () async {
+      await verbindung('altes-token').schreibe(bibliothek);
+      final vorher = File(
+        '${bibliothek.path}/verbindung.json',
+      ).readAsStringSync();
+      Verbindungsdatei.tokenablage = _KaputteAblage();
+      await expectLater(
+        verbindung('neues-token').schreibe(bibliothek),
+        throwsA(isA<TokenablageFehler>()),
+      );
+      expect(
+        File('${bibliothek.path}/verbindung.json').readAsStringSync(),
+        vorher,
+      );
+    },
+  );
 }

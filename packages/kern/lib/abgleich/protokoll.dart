@@ -308,6 +308,11 @@ class Protokoll {
     );
   }
 
+  /// Wie viele Werte der Primärschlüssel von [tabelle] hat. Der Server
+  /// prüft damit fremde Abgleichsanfragen, bevor er Werte an SQLite bindet.
+  Future<int> schluessellaenge(String tabelle) async =>
+      (await _bauVon(tabelle)).schluessel.length;
+
   /// Schreibt [zeilen] in die Datenbank – ohne mitzuschreiben – und
   /// meldet drift, welche Tabellen sich geändert haben. Gibt die Tabellen
   /// zurück.

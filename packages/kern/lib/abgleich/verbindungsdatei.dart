@@ -10,7 +10,9 @@ import 'package:path/path.dart' as p;
 ///
 /// Das Token steht mit darin, nur für den Besitzer lesbar – es sei denn,
 /// die App hat eine [Tokenablage] eingetragen (Issue #111). Dann steht in
-/// der Datei nur noch eine Kennung, und das Token liegt dort. Der Grund:
+/// der Datei nur noch eine Kennung, und das Token liegt dort. Lässt es sich
+/// dort nicht sicher ablegen, scheitert das Schreiben; es fällt nicht auf
+/// Klartext neben einer womöglich externen Bibliothek zurück. Der Grund:
 /// Am Rechner liegt die Bibliothek oft auf einer externen Platte, und wer
 /// die an einen anderen Rechner steckt, hätte sonst das Token mit. Wer es
 /// hat, kann sich als dieses Gerät anmelden, bis es abgemeldet wird (auf
@@ -20,10 +22,20 @@ import 'package:path/path.dart' as p;
 abstract interface class Tokenablage {
   Future<String?> lies(String kennung);
 
-  /// `false`, wenn es nicht ging – dann bleibt das Token in der Datei.
+  /// `false`, wenn es nicht ging. Die Verbindungsdatei darf das Token dann
+  /// nicht ersatzweise selbst speichern.
   Future<bool> schreibe(String kennung, String token);
 
   Future<void> loesche(String kennung);
+}
+
+/// Die getrennte Ablage konnte ein Server-Token nicht sicher übernehmen.
+/// Der sichtbare Text entsteht erst in der Oberfläche, in ihrer Sprache.
+class TokenablageFehler implements Exception {
+  const TokenablageFehler();
+
+  @override
+  String toString() => 'pv_tokenablage_schreiben';
 }
 
 class Verbindungsdatei {
@@ -200,7 +212,10 @@ class Verbindungsdatei {
       // statt es verwaist in der Ablage zu lassen.
       kennung ??= await _kennungIn(f);
       final neu = kennung ?? _neueKennung();
-      kennung = await ablage.schreibe(neu, token) ? neu : null;
+      if (!await ablage.schreibe(neu, token)) {
+        throw const TokenablageFehler();
+      }
+      kennung = neu;
     }
     await f.parent.create(recursive: true);
     final teil = File('${f.path}.neu');

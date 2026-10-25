@@ -9,6 +9,7 @@ import 'package:kern/auswertung/rechenhilfe.dart' show Rechenfaehigkeit;
 import '../../l10n/app_localizations.dart';
 import '../../services/groessentext.dart';
 import '../../services/library_location.dart';
+import '../../services/meldungsdienst.dart';
 import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
 import '../server_eigenes_konto_screen.dart';
@@ -191,7 +192,13 @@ class _Rechenhilfe extends StatelessWidget {
           title: Text(t.serverRechenhilfe),
           subtitle: Text(t.serverRechenhilfeText),
           value: an,
-          onChanged: library.setzeRechenhilfe,
+          onChanged: (an) async {
+            try {
+              await library.setzeRechenhilfe(an);
+            } catch (e) {
+              if (context.mounted) melde.fehler(fehlertext(context, e));
+            }
+          },
         ),
         if (an)
           ValueListenableBuilder(

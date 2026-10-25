@@ -1,27 +1,49 @@
 # Photo Vault
 
-**Deine Fotobibliothek bleibt auf deinem Rechner.** Eine eigenständige
+**Deine Fotobibliothek bleibt unter deiner Kontrolle.** Eine eigenständige
 Foto- und Videoverwaltung für **macOS, Linux und Windows** – mit
-Gesichtserkennung, Bildsuche in natürlicher Sprache und RAW-Entwicklung,
-aber **ohne Server, ohne Konto und ohne Cloud-Dienst**.
+Gesichtserkennung, Bildsuche in natürlicher Sprache und RAW-Entwicklung.
+Ohne weitere Einrichtung arbeitet sie vollständig mit einer lokalen
+Bibliothek; wahlweise lässt sie sich mit einem selbst betriebenen Photo Vault
+Server verbinden.
 
-Inspiriert von Immich, digiKam und Lightroom. Der Unterschied: Es gibt
-nichts, wo deine Fotos hochgeladen werden könnten. Die Datenbank ist eine
-SQLite-Datei, die Fotos liegen als normale Dateien daneben, und sämtliche
-KI-Funktionen laufen lokal über quelloffene Modelle, die du bei Bedarf in
-der App herunterlädst. Ausgeliefert wird kein einziges Modell mit.
+Inspiriert von Immich, digiKam und Lightroom. Im lokalen Betrieb ist kein
+Konto nötig: Die Datenbank ist eine SQLite-Datei, die Fotos liegen als normale
+Dateien daneben, und sämtliche KI-Funktionen laufen über quelloffene Modelle
+auf dem eigenen Rechner. Ausgeliefert wird kein einziges Modell mit. Nur wer
+den optionalen eigenen Server einrichtet und eine Bibliothek damit verbindet,
+überträgt deren Inhalte dorthin.
 
 ```
-Keine Cloud · Keine Telemetrie · Keine Registrierung · Alles offline
+Lokal ohne Konto · Keine Telemetrie · Eigener Server nur auf Wunsch
 ```
 
-Netzwerkaufrufe entstehen beim ausdrücklich angestoßenen Download von
-KI-Modellen und Geodaten, beim Laden von Karten- und Geländedaten, bei der
-Abfrage von Wanderobjekten sowie bei einer manuell gestarteten
-Aktualisierungsprüfung. Nichts davon überträgt ein Foto, ein Konto oder eine
-eigene Gerätekennung. Welche Anbieter dabei IP-Adresse und räumliche
-Anfrageparameter erhalten, steht in den Datenschutzinformationen auf
-[Deutsch](docs/datenschutz.md) und [Englisch](docs/privacy.md).
+Im lokalen Betrieb entstehen Netzwerkaufrufe beim ausdrücklich angestoßenen
+Download von KI-Modellen und Geodaten, beim Laden von Karten- und
+Geländedaten, bei der Abfrage von Wanderobjekten sowie bei einer manuell
+gestarteten Aktualisierungsprüfung. Diese Abrufe übertragen keine Fotos oder
+Kontodaten. Im optionalen Serverbetrieb werden dagegen Bibliotheksinhalte,
+Änderungen und Kontodaten an den selbst gewählten Server übertragen. Alle
+Fälle und die dabei beteiligten Stellen beschreiben die
+Datenschutzinformationen auf [Deutsch](docs/datenschutz.md) und
+[Englisch](docs/privacy.md).
+
+## Optionaler eigener Server
+
+Der mitgelieferte [Photo Vault Server](packages/server/README.md) ist kein
+Dienst des Herausgebers. Wer ihn selbst betreibt, kann eine Bibliothek dorthin
+umziehen und sie zwischen Desktop, Handy und Browser abgleichen. Der Server
+speichert dann die Originale und die Datenbank, führt auf Wunsch die
+Bildauswertung aus und verwaltet Konten, Geräte, Freigaben und Sicherungen.
+Ein verbundener Rechner kann dem Server ausdrücklich als Rechenhilfe dienen;
+dabei lädt er die zu bearbeitenden Aufnahmen und sendet die Ergebnisse zurück.
+
+Die [Handy-App](apps/mobil/README.md) setzt einen solchen Server voraus. Sie
+hält eine lokale Kopie der Datenbank und ausgewählter Medien, lädt benötigte
+Dateien nach und kann die Kamerarolle auf den Server sichern. Der Server stellt
+ausserdem eine Browseroberfläche und freiwillige Gastfreigaben bereit. Für den
+Zugang stehen Passwort und TOTP sowie optional ein eigener OIDC-Anbieter zur
+Verfügung.
 
 ## Bildschirmfotos
 
@@ -859,9 +881,12 @@ komplett über ONNX Runtime (statt über Apples Vision-Framework).
 
 ### macOS-Entitlements (Datei-/Ordnerzugriff)
 
-Die Netzwerkaufrufe der App sind die drei oben genannten – der
-Modell-/GeoNames-Download, Kartenkacheln und die Abfrage der
-Wanderobjekte für den Überflug. Alles andere ist rein lokal.
+Im lokalen Betrieb braucht die App das Netz nur für die oben beschriebenen
+Downloads, Karten- und Geländedaten, Wanderobjekte, Standortbestimmung und die
+manuelle Aktualisierungsprüfung. Eine verbundene Bibliothek tauscht zusätzlich
+Konten-, Bibliotheks- und Mediendaten mit dem vom Nutzer gewählten Photo Vault
+Server aus. Die Einzelheiten stehen in den
+[Datenschutzinformationen](docs/datenschutz.md).
 
 Damit die (sandboxte) macOS-App Ordner importieren und Backups an frei
 gewählte Orte schreiben darf, müssen in

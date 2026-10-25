@@ -58,7 +58,8 @@ class AppTokenablage implements Tokenablage {
       await teil.rename(f.path);
       return true;
     } catch (_) {
-      // Dann bleibt das Token, wo es war – in der Verbindungsdatei.
+      // Die Verbindungsdatei bricht dann ab, statt das Token neben einer
+      // womöglich externen Bibliothek abzulegen.
       return false;
     }
   }

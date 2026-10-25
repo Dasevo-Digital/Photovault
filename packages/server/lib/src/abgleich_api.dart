@@ -67,16 +67,31 @@ class Abgleichsapi {
     final warten = Duration(
       seconds: (int.tryParse(q['warten'] ?? '') ?? 0).clamp(0, 30),
     );
-    final ende = DateTime.now().add(warten);
-    while (await b.protokoll.stand() <= nach && DateTime.now().isBefore(ende)) {
-      await Future<void>.delayed(takt);
+    try {
+      final ende = DateTime.now().add(warten);
+      while (!b.wirdGeschlossen &&
+          await b.protokoll.stand() <= nach &&
+          DateTime.now().isBefore(ende)) {
+        await Future<void>.delayed(takt);
+      }
+      if (b.wirdGeschlossen) {
+        return _json({'fehler': 'Server wird beendet.'}, status: 503);
+      }
+      final s = await b.protokoll.seit(nach, anzahl: anzahl);
+      return _json({
+        'bis': s.bis,
+        'mehr': s.mehr,
+        'zeilen': [for (final z in s.zeilen) z.alsJson()],
+      });
+    } catch (_) {
+      // Beim Beenden kann die Datenbank genau zwischen der Schleifenprüfung
+      // und einer Abfrage geschlossen werden. Das ist kein Serverfehler und
+      // darf nicht als unbehandelte Ausnahme im Protokoll landen.
+      if (b.wirdGeschlossen) {
+        return _json({'fehler': 'Server wird beendet.'}, status: 503);
+      }
+      rethrow;
     }
-    final s = await b.protokoll.seit(nach, anzahl: anzahl);
-    return _json({
-      'bis': s.bis,
-      'mehr': s.mehr,
-      'zeilen': [for (final z in s.zeilen) z.alsJson()],
-    });
   }
 
   /// `{schluessel: [{t, s}]}` → `{zeilen}`: der jetzige Stand einzelner
@@ -84,19 +99,45 @@ class Abgleichsapi {
   /// Änderungen so auch auf dem Server stehen.
   Future<Response> zeilen(Request anfrage) async {
     final b = await _bib(anfrage);
-    final k = jsonDecode(await anfrage.readAsString());
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'ungültiges JSON'}, status: 400);
+    }
     final liste = k is Map ? k['schluessel'] : null;
     if (liste is! List || liste.length > 5000) {
       return _json({'fehler': 'schluessel fehlt'}, status: 400);
     }
     final tabellen = (await b.protokoll.abgeglicheneTabellen()).toSet();
     final aus = <Map<String, Object?>>[];
-    for (final e in liste.cast<Map>()) {
+    for (final e in liste) {
+      if (e is! Map) {
+        return _json({'fehler': 'schluessel ungültig'}, status: 400);
+      }
       final t = e['t'];
-      if (t is! String || !tabellen.contains(t)) continue;
-      final z = await b.protokoll.lies(t, [
-        for (final w in (e['s']! as List)) wertAusJson(w),
-      ]);
+      final roh = e['s'];
+      if (t is! String || roh is! List || roh.length > 16) {
+        return _json({'fehler': 'schluessel ungültig'}, status: 400);
+      }
+      if (!tabellen.contains(t)) continue;
+      if (roh.length != await b.protokoll.schluessellaenge(t)) {
+        return _json({'fehler': 'schluessel ungültig'}, status: 400);
+      }
+      final werte = <Object?>[];
+      try {
+        for (final w in roh) {
+          if (w is bool || w is List || (w is Map && w['b'] is! String)) {
+            throw const FormatException('kein SQLite-Wert');
+          }
+          werte.add(wertAusJson(w));
+        }
+      } on FormatException {
+        return _json({'fehler': 'schluessel ungültig'}, status: 400);
+      } on TypeError {
+        return _json({'fehler': 'schluessel ungültig'}, status: 400);
+      }
+      final z = await b.protokoll.lies(t, werte);
       aus.add(z.alsJson());
     }
     return _json({'zeilen': aus});

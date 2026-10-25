@@ -1,23 +1,28 @@
 # Datenschutzerklärung
 
-Stand: 30. September 2026 · Photo Vault 3.18.1
+Stand: 25. Oktober 2026 · Photo Vault 3.47.6
 
 ## Kurz
 
-Photo Vault ist eine Fotoverwaltung, die **auf dem eigenen Rechner**
-arbeitet. Es gibt kein Benutzerkonto, keine Anmeldung und keinen Server
-des Anbieters. Fotos, Videos, Gesichtserkennung, Schlagwörter, Orte und
-der Stammbaum liegen ausschliesslich lokal. Es findet **keine
-Nutzungsmessung, keine Analyse und keine Werbung** statt.
+Photo Vault ist eine Fotoverwaltung, die ohne weitere Einrichtung **auf dem
+eigenen Rechner** arbeitet. Für diese lokale Betriebsart gibt es kein
+Benutzerkonto und keine Anmeldung. Freiwillig kann die nutzende Person einen
+eigenen Photo Vault Server betreiben oder einen von ihr gewählten Server
+verwenden. Eine damit verbundene Bibliothek überträgt ihre Inhalte an diesen
+Server; Handy-App und Browseroberfläche arbeiten nur mit einem solchen Server.
+Der Herausgeber betreibt keinen zentralen Photo-Vault-Dienst. Es findet
+**keine Nutzungsmessung, keine Analyse des Nutzungsverhaltens und keine
+Werbung** statt.
 
-Verbindungen ins Netz entstehen nur an den unten genannten Stellen. Karten-
-und Geländedaten werden beim Öffnen der jeweiligen Ansicht geladen; alle
-anderen Abrufe benötigen eine ausdrückliche Handlung.
+Verbindungen ins Netz entstehen an den unten genannten Stellen. Karten- und
+Geländedaten werden beim Öffnen der jeweiligen Ansicht geladen. Downloads,
+Standortbestimmung, Aktualisierungsprüfung und das Verbinden mit einem Server
+benötigen eine ausdrückliche Handlung oder eine zuvor gewählte Einstellung.
 
 ## Was wo liegt
 
-**Die Bibliothek** – Fotos, Videos, Datenbank, Sicherungen – liegt in dem
-Ordner, den Sie selbst wählen. Ohne eigene Wahl liegt sie im Datenordner
+**Eine lokale Bibliothek** – Fotos, Videos, Datenbank, Sicherungen – liegt in
+dem Ordner, den Sie selbst wählen. Ohne eigene Wahl liegt sie im Datenordner
 der App:
 
 - Windows (ausgepackte Fassung): `%APPDATA%\de.dasevo\photovault\`
@@ -25,10 +30,18 @@ der App:
 - macOS: `~/Library/Containers/…/PhotoVault/`
 - Linux: `~/.var/app/…/PhotoVault/`
 
-**Gesperrte Fotos** werden mit AES-256-GCM verschlüsselt; der Schlüssel
-wird aus Ihrem Kennwort abgeleitet (Argon2id) und verlässt den Rechner
-nicht. Wer das Kennwort verliert, verliert den Zugriff – es gibt keine
-Hintertür und keine Wiederherstellung durch den Anbieter.
+**Eine verbundene Bibliothek** liegt vollständig auf dem gewählten Photo Vault
+Server. Desktop und Handy halten eine lokale Kopie der Datenbank und laden
+Vorschauen oder Originale bei Bedarf. Änderungen werden mit dem Server
+abgeglichen. Die Person oder Organisation, die den Server betreibt, bestimmt
+Speicherort, Sicherung, Protokollierung und Zugriffsregeln.
+
+**Gesperrte Fotos** werden mit AES-256-GCM verschlüsselt. Ein zufälliger
+Master-Schlüssel wird durch einen mit Argon2id aus dem Kennwort abgeleiteten
+Schlüssel geschützt. Bei einer lokalen Bibliothek verlässt er den Rechner
+nicht; bei einer verbundenen Bibliothek liegen die verschlüsselten Dateien
+auf dem gewählten Server. Wer das Kennwort verliert, verliert den Zugriff –
+es gibt keine Hintertür und keine Wiederherstellung durch den Herausgeber.
 
 ## Wann die App ins Netz geht
 
@@ -71,32 +84,89 @@ Kennungen der WLANs in Ihrer Umgebung. Es gilt dann die
 Datenschutzerklärung des jeweiligen Betriebssystemherstellers. Unter
 Linux gibt es diese Funktion nicht.
 
+**Eigener Photo Vault Server.** Erst wenn Sie in den Einstellungen eine
+Serveradresse angeben und sich anmelden, überträgt die Desktop-App die
+Serveradresse, Kontoname, Gerätebezeichnung und Anmeldedaten an diesen Server.
+Beim Umzug oder Abgleich einer Bibliothek werden deren Datenbank, Metadaten,
+Originale, Vorschaubilder und spätere Änderungen übertragen. Der Server kann
+die Bildauswertung übernehmen, Sicherungen erstellen und Dateien an
+angemeldete Desktop-, Handy- und Browsergeräte ausliefern. Ein als Rechenhilfe
+eingerichteter Rechner erhält zu bearbeitende Aufnahmen vom Server und sendet
+die Ergebnisse zurück. Betreiber und Standort dieses Servers werden von der
+nutzenden Person gewählt; dessen Datenschutz- und Protokollierungsregeln
+gelten zusätzlich.
+
+**Handy-App.** Die Handy-App benötigt einen Photo Vault Server. Sie lädt die
+Bibliotheksdatenbank sowie benötigte Vorschauen und Originale, sendet
+Änderungen zurück und kann auf ausdrücklichen Wunsch die Kamerarolle samt
+Metadaten und Originaldateien sichern. Zwischengespeicherte Daten liegen im
+geschützten App-Bereich des Telefons.
+
+**Konten und Anmeldung.** Der selbst betriebene Server speichert Kontonamen,
+Passwort-Prüfwerte, TOTP-Einstellungen, Prüfwerte der Wiederherstellungscodes,
+Gerätebezeichnungen und gehashte Gerätetokens. Optional kann ein eigener
+OIDC-Anbieter verwendet werden. Dieser erhält dann die übliche
+Anmeldeanforderung; der Photo Vault Server speichert die Zuordnung aus
+Aussteller und dortigem Benutzerkennzeichen. Passwörter und TOTP-Geheimnisse
+werden nicht an den Herausgeber übertragen.
+
+Nach einer Anmeldung speichert das Gerät sein Bearer-Token im eigenen
+App-Datenbereich, damit es die Verbindung wieder aufnehmen kann. Auf Desktop-
+Systemen liegt es getrennt von der Bibliothek und unter macOS/Linux nur für
+das Benutzerkonto lesbar; auf dem Telefon liegt es im geschützten App-Bereich.
+Das Token ist dort nicht zusätzlich verschlüsselt. Es kann am Server durch
+Abmelden des Geräts ungültig gemacht werden.
+
+**Browser, Freigaben und Gastbeiträge.** Die Browseroberfläche lädt
+Bibliotheksdaten und Medien vom gewählten Server. Freigabelinks machen die
+ausgewählten Inhalte für Personen mit dem Link und gegebenenfalls dem
+Passwort erreichbar. Erlaubt der Besitzer Gastbeiträge, werden hochgeladene
+Dateien zunächst auf dem Server verarbeitet und als bereinigte Fassung ohne
+eingebettete Metadaten gespeichert. Server und vorgeschalteter Proxy können
+hierbei technisch notwendige Verbindungsdaten wie IP-Adresse und Zeitpunkt
+verarbeiten.
+
+**Unterstützungslink.** Nur wenn Sie den Ko-fi-Link öffnen, wechselt der
+Browser zu `ko-fi.com`; dabei gelten dessen Datenschutzbedingungen. Fassungen
+für App-Stores zeigen diesen Link nicht.
+
 **Keine Telemetrie.** Die App meldet keine Abstürze, führt keine
 Nutzungsmessung durch und sendet keine eigenen Geräte- oder Benutzerkennungen.
 
 ## Verarbeitung durch künstliche Intelligenz
 
-Gesichtserkennung, Schlagwörter, Bildbeschreibungen, Texterkennung und
-die Suche nach Bildinhalt laufen **vollständig auf Ihrem Rechner**. Es
-wird kein Bild und kein Ausschnitt an einen Dienst übertragen. Die
-Modelle werden einmal heruntergeladen und danach lokal ausgeführt.
+Bei einer lokalen Bibliothek laufen Gesichtserkennung, Schlagwörter,
+Bildbeschreibungen, Texterkennung und die Suche nach Bildinhalt
+**vollständig auf Ihrem Rechner**. Es wird dafür kein Bild an einen fremden
+Dienst übertragen. Die Modelle werden einmal heruntergeladen und danach
+lokal ausgeführt.
+
+Bei einer verbundenen Bibliothek führt der gewählte Photo Vault Server diese
+Arbeiten aus. Freiwillig eingerichtete Rechenhilfen laden einzelne Aufnahmen
+vom Server und senden berechnete Merkmale und Beschreibungen zurück. Weder der
+lokale noch der Serverbetrieb sendet Bilder zur Auswertung an einen vom
+Herausgeber betriebenen KI-Dienst.
 
 ## Ihre Rechte
 
-Da der Anbieter keinerlei personenbezogene Daten erhebt, speichert oder
-verarbeitet, gibt es beim Anbieter auch nichts, worüber Auskunft erteilt
-oder was gelöscht werden könnte. Ihre Daten liegen bei Ihnen. Die
-Bibliothek lässt sich jederzeit löschen, indem Sie den Ordner löschen;
-die App selbst lässt sich über die üblichen Wege des Betriebssystems
+Der Herausgeber erhebt, speichert oder verarbeitet durch Photo Vault keine
+Bibliotheks- oder Kontodaten. Eine lokale Bibliothek lässt sich durch Löschen
+ihres Ordners entfernen. Bei einer verbundenen Bibliothek richten sich
+Auskunft, Berichtigung und Löschung zusätzlich an die Person oder Organisation,
+die den gewählten Server betreibt. Konten, Geräte und Freigaben lassen sich
+dort verwalten; Serverdateien und Sicherungen müssen vom Betreiber gelöscht
+werden. Die App selbst lässt sich über die üblichen Wege des Betriebssystems
 entfernen.
 
 ## Verantwortlichkeit und Kontakt
 
-Photo Vault betreibt kein Konto und keinen eigenen Verarbeitungsserver. Für
-die ausschließlich lokale Bibliothek bestimmt die nutzende Person selbst über
-Zweck, Inhalt und Löschung. Bei den oben aufgeführten Abrufen verarbeiten die
-jeweiligen Drittanbieter die technisch notwendigen Verbindungsdaten nach ihren
-eigenen Datenschutzbestimmungen.
+Der Herausgeber betreibt kein zentrales Konto und keinen Photo Vault Server
+für die Nutzenden. Für eine lokale Bibliothek bestimmt die nutzende Person
+selbst über Zweck, Inhalt und Löschung. Bei einem selbst betriebenen oder von
+ihr ausgewählten Server ist dessen Betreiber für die dortige Verarbeitung
+verantwortlich. Bei den oben aufgeführten Abrufen verarbeiten die jeweiligen
+Drittanbieter technisch notwendige Verbindungsdaten nach ihren eigenen
+Datenschutzbestimmungen.
 
 Fragen und Datenschutzmeldungen können ohne Veröffentlichung persönlicher
 Kontaktdaten über das Issue-System des offiziellen Projekt-Repositorys gestellt

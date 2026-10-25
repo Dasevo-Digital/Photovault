@@ -9769,4 +9769,8 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get backupZurEinstellung => 'Zu den Einstellungen';
+
+  @override
+  String get serverTokenSpeichernFehler =>
+      'Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.';
 }

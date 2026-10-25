@@ -150,6 +150,11 @@ class Bibliothek {
   /// aufhören soll (siehe Auswertungsdienst).
   bool auswertungAbbrechen = false;
 
+  /// Ab diesem Moment darf eine noch wartende Anfrage keinen weiteren
+  /// Datenbankzugriff beginnen. Das ist insbesondere beim Long-Poll wichtig:
+  /// der HTTP-Client kann schon fort sein, während dessen Handler noch lebt.
+  bool wirdGeschlossen = false;
+
   /// Die Kennung der Aufnahme mit dieser Prüfsumme – für Dubletten, bei
   /// denen der Import nur „schon da“ meldet.
   Future<String?> kennungFuer(String pruefsumme) async =>
@@ -159,5 +164,8 @@ class Bibliothek {
               .getSingleOrNull())
           ?.id;
 
-  Future<void> schliesse() => db.close();
+  Future<void> schliesse() async {
+    wirdGeschlossen = true;
+    await db.close();
+  }
 }

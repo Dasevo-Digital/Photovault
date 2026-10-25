@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/aktualisierungspruefung.dart';
@@ -67,6 +68,7 @@ String fehlertext(BuildContext context, Object fehler) {
       datei,
       ursache ?? '',
     ),
+    TokenablageFehler() => t.serverTokenSpeichernFehler,
     _ => '$fehler',
   };
 }
@@ -165,7 +167,7 @@ Future<void> verlegeBibliothek(
   } catch (e) {
     if (context.mounted) {
       Navigator.of(context).pop(); // Ladeanzeige schließen
-      melde.fehler('$errorPrefix: $e');
+      melde.fehler('$errorPrefix: ${fehlertext(context, e)}');
     }
   }
 }

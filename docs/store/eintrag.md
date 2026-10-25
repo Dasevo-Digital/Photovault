@@ -35,8 +35,9 @@ Das Zip zum Auspacken bleibt daneben bestehen.
    sie damit öffentlich werden. Danach brauchen sie eine erreichbare
    URL (der öffentliche Spiegel genügt).
 4. **Altersfreigabe.** Der IARC-Fragebogen im Partner Center. Die App
-   zeigt eigene Fotos und hat keine Käufe, keine Werbung und keinen
-   Austausch mit anderen Nutzern.
+   zeigt eigene Fotos und hat keine Käufe und keine Werbung. Der optionale
+   eigene Server erlaubt Freigabelinks und Gastbeiträge; das muss im
+   Fragebogen wahrheitsgemäß berücksichtigt werden.
 5. **Sichtbarkeit wählen.** Für ein privates Werkzeug passt „verfügbar,
    aber nicht auffindbar" (Installation nur über den Direktlink). Die
    Zertifizierung läuft trotzdem vollständig.
@@ -66,22 +67,24 @@ Bibliothek darf nichts in den Store.
 ### Kurzbeschreibung (deutsch)
 
 > Fotoverwaltung für den eigenen Rechner: Gesichter, Orte, Suche nach
-> Bildinhalt, RAW-Entwicklung und Stammbaum — ohne Konto, ohne Cloud,
-> ohne Nutzungsmessung.
+> Bildinhalt, RAW-Entwicklung und Stammbaum — lokal ohne Konto, auf Wunsch
+> mit eigenem Server, ohne Nutzungsmessung.
 
 ### Short description (English)
 
 > A photo manager for your own computer: faces, places, search by image
-> content, RAW development and a family tree — no account, no cloud, no
-> telemetry.
+> content, RAW development and a family tree — local without an account,
+> optionally with your own server, and no telemetry.
 
 ### Beschreibung (deutsch)
 
-> Photo Vault verwaltet Ihre Fotos und Videos dort, wo sie hingehören:
-> auf Ihrem Rechner. Es gibt kein Benutzerkonto, keinen Serverdienst und
-> keine Nutzungsmessung.
+> Photo Vault verwaltet Ihre Fotos und Videos dort, wo Sie es bestimmen:
+> standardmäßig auf Ihrem Rechner, ohne Konto und ohne Nutzungsmessung.
+> Optional können Sie einen eigenen Photo Vault Server verbinden und die
+> Bibliothek darüber auf Ihren Geräten nutzen.
 >
-> Die Bilderkennung läuft vollständig lokal. Gesichter werden erkannt
+> Bei einer lokalen Bibliothek läuft die Bilderkennung vollständig auf dem
+> Rechner. Gesichter werden erkannt
 > und zu Personen gruppiert, Schlagwörter und Bildbeschreibungen
 > entstehen auf dem eigenen Gerät, und die Suche versteht, was auf einem
 > Bild zu sehen ist — „Sonnenuntergang am Meer" findet den Sonnenuntergang
@@ -92,21 +95,26 @@ Bibliothek darf nichts in den Store.
 > Stammbaum verbindet die Personen aus Ihren Fotos zu Haushalten und
 > Generationen und lässt sich als Zierbaum drucken. RAW-Dateien lassen
 > sich entwickeln — Belichtung, Kurven, Farbmischer, Masken —, und jeder
-> Schritt bleibt umkehrbar.
+> Schritt bleibt umkehrbar. Im optionalen Serverbetrieb verarbeitet der
+> eigene Server die Bibliothek und gleicht sie mit Desktop, Handy und Browser
+> ab.
 >
 > Einzelne Fotos lassen sich sperren. Sie werden dann mit AES-256-GCM
-> verschlüsselt; der Schlüssel entsteht aus Ihrem Kennwort und verlässt
-> den Rechner nicht.
+> verschlüsselt; ein zufälliger Schlüssel wird durch Ihr Kennwort geschützt.
+> Bei einer verbundenen Bibliothek liegen nur die verschlüsselten Dateien auf
+> dem eigenen Server.
 >
 > Photo Vault gibt es ebenso für macOS und Linux. Die Bibliothek ist auf
 > allen drei Systemen dieselbe.
 
 ### Description (English)
 
-> Photo Vault keeps your photos and videos where they belong: on your
-> own computer. No account, no server, no telemetry.
+> Photo Vault keeps your photos and videos where you decide: by default on
+> your own computer, with no account and no telemetry. You can optionally
+> connect your own Photo Vault Server and use the library across your devices.
 >
-> Image recognition runs entirely on your machine. Faces are detected
+> For a local library, image recognition runs entirely on your machine. Faces
+> are detected
 > and grouped into people, tags and captions are produced on the device,
 > and search understands what a picture shows — "sunset at the sea"
 > finds the sunset at the sea even though nobody labelled it. No image
@@ -116,24 +124,25 @@ Bibliothek darf nichts in den Store.
 > connects the people from your photos into households and generations
 > and prints as an ornamental chart. RAW files can be developed —
 > exposure, curves, colour mixer, masks — and every step stays
-> reversible.
+> reversible. In optional server mode, your own server processes the library
+> and synchronises it with desktop, mobile and browser devices.
 >
 > Individual photos can be locked. They are then encrypted with
-> AES-256-GCM; the key is derived from your password and never leaves
-> the machine.
+> AES-256-GCM; a random key is protected by your password. For a connected
+> library, only the encrypted files are stored on your own server.
 >
 > Photo Vault is also available for macOS and Linux, with the same
 > library on all three.
 
 ### Merkmale / Features
 
-- Gesichtserkennung und Personen, vollständig lokal — Face recognition and people, entirely local
+- Gesichtserkennung und Personen, lokal oder auf dem eigenen Server — Face recognition and people, locally or on your own server
 - Suche nach Bildinhalt statt nach Dateinamen — Search by image content, not by file name
 - Karten, Reisen und Aktivitäten aus den Aufnahmeorten — Maps, trips and activities from capture locations
 - Stammbaum mit Zierbaum-Druck — Family tree with an ornamental printed chart
 - RAW entwickeln, jeder Schritt umkehrbar — Develop RAW, every step reversible
 - Einzelne Fotos mit AES-256-GCM sperren — Lock individual photos with AES-256-GCM
-- Kein Konto, keine Cloud, keine Nutzungsmessung — No account, no cloud, no telemetry
+- Lokal ohne Konto, eigener Server auf Wunsch, keine Nutzungsmessung — Local without an account, own server optional, no telemetry
 
 ### Suchbegriffe
 

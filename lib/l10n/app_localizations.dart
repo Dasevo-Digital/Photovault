@@ -14898,6 +14898,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Zu den Einstellungen'**
   String get backupZurEinstellung;
+
+  /// No description provided for @serverTokenSpeichernFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.'**
+  String get serverTokenSpeichernFehler;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
