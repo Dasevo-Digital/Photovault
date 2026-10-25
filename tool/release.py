@@ -53,6 +53,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -161,12 +162,40 @@ def gitea(z, pfad, daten=None, methode=None, kopf=None, tok=None):
 
 # --- vorbereiten ----------------------------------------------------------------
 
+DATENSCHUTZTEXTE = ['docs/datenschutz.md', 'docs/privacy.md']
+_MONATE = {
+    'de': ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September',
+           'Oktober', 'November', 'Dezember'],
+    'en': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+           'October', 'November', 'December'],
+}
+
+
+def stand_und_fassung(fassung):
+    """Setzt die Kopfzeile der Datenschutztexte auf heute und [fassung].
+
+    Sie nennen, für welche Fassung sie gelten, und
+    test/datenschutz_betriebsarten_test.dart verlangt die aktuelle – ohne
+    das scheiterte der Push von 3.48.0 an genau dieser Zeile."""
+    h = time.localtime()
+    for datei, sprache, vorne in [('docs/datenschutz.md', 'de', 'Stand: {t}. {m} {j}'),
+                                  ('docs/privacy.md', 'en', 'As of {t} {m} {j}')]:
+        d = REPO / datei
+        zeile = vorne.format(t=h.tm_mday, m=_MONATE[sprache][h.tm_mon - 1], j=h.tm_year)
+        neu, n = re.subn(r'^(Stand: |As of ).*· Photo Vault [0-9.]+$', f'{zeile} · Photo Vault {fassung}',
+                         d.read_text(encoding='utf-8'), count=1, flags=re.M)
+        if n != 1:
+            sys.exit(f'{datei}: Zeile mit Stand und Fassung fehlt.')
+        d.write_text(neu, encoding='utf-8')
+
+
 def vorbereiten(args):
     fassung = args.fassung
     if f'v{fassung}' in marken():
         sys.exit(f'Die Marke v{fassung} gibt es schon.')
-    if lauf(['git', 'status', '--porcelain', '--', 'pubspec.yaml', 'packaging'], ausgabe=True).strip():
-        sys.exit('pubspec.yaml oder packaging/ haben offene Änderungen.')
+    if lauf(['git', 'status', '--porcelain', '--', 'pubspec.yaml', 'packaging', *DATENSCHUTZTEXTE],
+            ausgabe=True).strip():
+        sys.exit('pubspec.yaml, packaging/ oder die Datenschutztexte haben offene Änderungen.')
     metainfo = Path(args.metainfo).read_text().strip()
     p = REPO / 'pubspec.yaml'
     s = p.read_text()
@@ -183,7 +212,8 @@ def vorbereiten(args):
                + '      </description>\n    </release>\n')
     m.write_text(s.replace(anker, anker + eintrag, 1))
     lauf(['xmllint', '--noout', str(m)])
-    lauf(['git', 'add', 'pubspec.yaml', str(m.relative_to(REPO))])
+    stand_und_fassung(fassung)
+    lauf(['git', 'add', 'pubspec.yaml', str(m.relative_to(REPO)), *DATENSCHUTZTEXTE])
     lauf(['git', 'commit', '-q', '-m', f'Version {fassung}'])
     lauf(['git', 'tag', '-a', f'v{fassung}', '-m', f'Photo Vault {fassung}'])
     lauf(['bash', 'tool/pruefe_repository_datenschutz.sh'])
