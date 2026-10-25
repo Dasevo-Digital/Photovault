@@ -49,6 +49,20 @@ void main() {
         ),
       );
 
+  // Der Bildschirm sieht auf der Platte nach, ob die Dateien das Datum
+  // nennen. Ein einziger echter Takt reichte dafür einzeln, unter der Last
+  // der ganzen Suite aber nicht immer: Gewartet wird auf das Ergebnis.
+  Future<void> warteBis(WidgetTester tester, int kacheln) async {
+    for (var i = 0; i < 200; i++) {
+      if (find.byType(CheckboxListTile).evaluate().length == kacheln) break;
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('wählen und übernehmen', (tester) async {
     await tester.runAsync(() async {
       await aufnahme('mit', '22-06-18 16-20-30 c3d4.jpg');
@@ -65,8 +79,7 @@ void main() {
         home: AufnahmedatenScreen(library: library),
       ),
     );
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-    await tester.pumpAndSettle();
+    await warteBis(tester, 2);
     final t = AppTexte.of(tester.element(find.byType(AufnahmedatenScreen)));
     expect(find.byType(CheckboxListTile), findsNWidgets(2));
     expect(find.textContaining(t.aufnahmedatenNurTag), findsOneWidget);
@@ -75,8 +88,7 @@ void main() {
     await tester.tap(find.byType(Checkbox).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.aufnahmedatenUebernehmen(1)));
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-    await tester.pumpAndSettle();
+    await warteBis(tester, 1);
 
     final mit = await tester.runAsync(() => db.assetById('mit'));
     expect(mit!.fileCreatedAt, DateTime(2022, 6, 18, 16, 20, 30));
