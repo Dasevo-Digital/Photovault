@@ -163,16 +163,17 @@ class Konto extends StatelessWidget {
                   ),
                 ),
               ),
-              ListTile(
-                leading: const Icon(Icons.coffee_outlined),
-                title: Text(t.kontoUnterstuetzen),
-                subtitle: Text(t.kontoUnterstuetzenText),
-                trailing: const Icon(Icons.open_in_new),
-                onTap: () => launchUrl(
-                  Uri.parse(unterstuetzenAdresse),
-                  mode: LaunchMode.externalApplication,
-                ).then((_) {}, onError: (_) {}),
-              ),
+              if (!fuerAppStore)
+                ListTile(
+                  leading: const Icon(Icons.coffee_outlined),
+                  title: Text(t.kontoUnterstuetzen),
+                  subtitle: Text(t.kontoUnterstuetzenText),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => launchUrl(
+                    Uri.parse(unterstuetzenAdresse),
+                    mode: LaunchMode.externalApplication,
+                  ).then((_) {}, onError: (_) {}),
+                ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout),

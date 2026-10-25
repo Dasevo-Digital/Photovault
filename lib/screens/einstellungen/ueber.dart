@@ -173,13 +173,14 @@ class UeberGruppe extends StatelessWidget {
                     applicationVersion: version,
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.coffee_outlined),
-                  title: Text(AppTexte.of(context).einstUnterstuetzen),
-                  subtitle: Text(AppTexte.of(context).einstUnterstuetzenText),
-                  trailing: const Icon(Icons.open_in_new),
-                  onTap: () => oeffneWebseite(unterstuetzenAdresse),
-                ),
+                if (!fuerAppStore)
+                  ListTile(
+                    leading: const Icon(Icons.coffee_outlined),
+                    title: Text(AppTexte.of(context).einstUnterstuetzen),
+                    subtitle: Text(AppTexte.of(context).einstUnterstuetzenText),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => oeffneWebseite(unterstuetzenAdresse),
+                  ),
               ],
             );
           },

@@ -13,6 +13,7 @@ import 'package:kern/services/model_catalog.dart';
 import 'package:photo_vault/services/modelltexte.dart';
 import 'package:kern/services/model_download_service.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/unterstuetzen.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart'
@@ -462,6 +463,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(de.einstNachAktualisierungSuchen), findsOneWidget);
+      // Der Ko-fi-Link fehlt nur in einer Fassung für einen App-Store
+      // (`--dart-define=PV_STORE=true`).
+      expect(
+        find.text(de.einstUnterstuetzen),
+        fuerAppStore ? findsNothing : findsOneWidget,
+      );
       await raeumeAb(tester);
     });
   });

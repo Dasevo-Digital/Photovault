@@ -784,6 +784,9 @@ flutter pub get
 flutter run -d macos
 ```
 
+Eine Fassung für einen App-Store wird mit `--dart-define=PV_STORE=true`
+gebaut; sie zeigt den Ko-fi-Link nicht (siehe „Unterstützen“).
+
 ### Linux
 
 Vorher prüfen, ob die Maschine alles hat – das Skript nennt für jedes
@@ -1208,6 +1211,15 @@ Tests, die Dateien aus dem Netz holen, tragen die Marke `netz` und laufen
 ```bash
 flutter test --tags netz --run-skipped test/modell_download_probe_test.dart
 ```
+
+## Unterstützen
+
+Photo Vault ist kostenlos und ohne Werbung. Wer die Arbeit daran
+unterstützen möchte, kann auf [Ko-fi](https://ko-fi.com/superkuh86) einen
+Kaffee spendieren. Derselbe Link steht in der App unter Einstellungen →
+Über, auf dem Telefon und im Browser unter Konto. Fassungen für einen
+App-Store zeigen ihn nicht: Apple und Google lassen Trinkgeld nur über ihre
+eigene Bezahlung zu.
 
 ## Lizenz
 
