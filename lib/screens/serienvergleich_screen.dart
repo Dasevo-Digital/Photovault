@@ -34,11 +34,13 @@ class SerienvergleichScreen extends StatefulWidget {
 
   /// Die Aufnahmen der Serie, in Aufnahmereihenfolge.
   final List<AssetData> serie;
+  final bool varianten;
 
   const SerienvergleichScreen({
     super.key,
     required this.library,
     required this.serie,
+    this.varianten = false,
   });
 
   @override
@@ -55,7 +57,13 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
   }
 
   Future<void> _laden() async {
-    final spalten = await serienspalten(widget.library.db, widget.serie);
+    var aufnahmen = widget.serie;
+    final gruppenId = widget.serie.isEmpty ? null : widget.serie.first.stackId;
+    if (widget.varianten && gruppenId != null) {
+      aufnahmen = await widget.library.db.assetsInStack(gruppenId);
+      aufnahmen.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
+    }
+    final spalten = await serienspalten(widget.library.db, aufnahmen);
     if (mounted) setState(() => _spalten = spalten);
   }
 
@@ -64,12 +72,25 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
     await _laden();
   }
 
+  Future<void> _hauptversion(AssetData asset) async {
+    final stackId = asset.stackId;
+    if (stackId == null) return;
+    await widget.library.db.fuehreAus(
+      VariantenHauptbildSetzen(stackId, asset.id),
+    );
+    await _laden();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final spalten = _spalten;
     return Scaffold(
-      appBar: AppBar(title: Text(t.serienvergleichTitel)),
+      appBar: AppBar(
+        title: Text(
+          widget.varianten ? t.variantenvergleichTitel : t.serienvergleichTitel,
+        ),
+      ),
       body: spalten == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -83,7 +104,9 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
                     0,
                   ),
                   child: Text(
-                    spalten.any((s) => s.gesichter.isNotEmpty)
+                    widget.varianten
+                        ? t.variantenvergleichErklaerung
+                        : spalten.any((s) => s.gesichter.isNotEmpty)
                         ? t.serienvergleichErklaerung
                         : t.serienvergleichOhneGesichter,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -102,8 +125,12 @@ class _SerienvergleichScreenState extends State<SerienvergleichScreen> {
                             spalte: spalte,
                             library: widget.library,
                             bestesGesicht:
+                                !widget.varianten &&
                                 spalte.schaerfsteId ==
-                                _besteSpalte(spalten)?.schaerfsteId,
+                                    _besteSpalte(spalten)?.schaerfsteId,
+                            varianten: widget.varianten,
+                            istHauptversion: spalte.asset.isStackCover,
+                            beiHauptversion: () => _hauptversion(spalte.asset),
                             beiBewertung: (n) => _bewerte(spalte.asset, n),
                           ),
                       ],
@@ -134,12 +161,18 @@ class _Spalte extends StatelessWidget {
   final Serienspalte spalte;
   final LibraryState library;
   final bool bestesGesicht;
+  final bool varianten;
+  final bool istHauptversion;
+  final VoidCallback beiHauptversion;
   final void Function(int sterne) beiBewertung;
 
   const _Spalte({
     required this.spalte,
     required this.library,
     required this.bestesGesicht,
+    required this.varianten,
+    required this.istHauptversion,
+    required this.beiHauptversion,
     required this.beiBewertung,
   });
 
@@ -154,8 +187,10 @@ class _Spalte extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: bestesGesicht ? farben.primary : farben.outlineVariant,
-          width: bestesGesicht ? 2 : 1,
+          color: bestesGesicht || istHauptversion
+              ? farben.primary
+              : farben.outlineVariant,
+          width: bestesGesicht || istHauptversion ? 2 : 1,
         ),
       ),
       child: Column(
@@ -183,6 +218,28 @@ class _Spalte extends StatelessWidget {
                 ),
               ),
             ),
+          if (varianten) ...[
+            SizedBox(
+              width: double.infinity,
+              child: istHauptversion
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: Text(
+                        t.variantenvergleichHaupt,
+                        style: TextStyle(
+                          color: farben.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    )
+                  : OutlinedButton(
+                      onPressed: beiHauptversion,
+                      child: Text(t.variantenvergleichAlsHaupt),
+                    ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+          ],
           // Die Gesichter – der eigentliche Grund für diesen Bildschirm.
           for (final g in spalte.gesichter) ...[
             Row(

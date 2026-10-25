@@ -727,6 +727,16 @@ class _TimelineScreenState extends State<TimelineScreen>
                     widget.library,
                     _selected.toList(),
                   ),
+                  onCreateVariants: _selected.length >= 2
+                      ? () async {
+                          final erstellt = await runBatchCreateVariantsDialog(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          );
+                          if (mounted && erstellt) setState(_selected.clear);
+                        }
+                      : null,
                   // Nur sichtbar, wenn tatsächlich Einstellungen kopiert
                   // wurden – ein Knopf, der meistens nichts tun kann, wäre
                   // in einer Leiste mit neun Symbolen nur Rauschen.

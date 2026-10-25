@@ -3557,6 +3557,22 @@ class AppTexteDe extends AppTexte {
       'Zum Vergleichen braucht es mindestens zwei Aufnahmen.';
 
   @override
+  String get variantenvergleichTitel => 'Varianten vergleichen';
+
+  @override
+  String get variantenvergleichErklaerung =>
+      'Fassungen derselben Aufnahme nebeneinander. Die Hauptversion ist in den Übersichten sichtbar; alle Varianten bleiben als eigenständige Dateien erhalten.';
+
+  @override
+  String get variantenvergleichOeffnen => 'Varianten vergleichen';
+
+  @override
+  String get variantenvergleichHaupt => 'Hauptversion';
+
+  @override
+  String get variantenvergleichAlsHaupt => 'Als Hauptversion verwenden';
+
+  @override
   String get stapelKeine => 'Keine Serienbilder gefunden.';
 
   @override
@@ -3816,6 +3832,14 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get infoSerieAufloesen => 'Serie auflösen';
+
+  @override
+  String infoVarianten(int anzahl) {
+    return 'Varianten: $anzahl Fassungen';
+  }
+
+  @override
+  String get infoVariantenAufloesen => 'Varianten einzeln zeigen';
 
   @override
   String get infoTagHinzufuegenPlatzhalter => 'Tag hinzufügen …';
@@ -4873,6 +4897,31 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get auswVergleichen => 'Die zwei ausgewählten Fotos vergleichen';
+
+  @override
+  String get auswVariantenBilden => 'Auswahl als Varianten stapeln';
+
+  @override
+  String get variantenDialogTitel => 'Hauptversion wählen';
+
+  @override
+  String get variantenDialogText =>
+      'Die Hauptversion bleibt in Übersichten sichtbar. Alle ausgewählten Fassungen bleiben vollständig erhalten.';
+
+  @override
+  String get variantenSchonGestapelt =>
+      'Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.';
+
+  @override
+  String variantenGebildet(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fassungen als Varianten gestapelt',
+      two: '2 Fassungen als Varianten gestapelt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listeOhneKamera => 'Ohne Kameraangabe';
@@ -9773,4 +9822,93 @@ class AppTexteDe extends AppTexte {
   @override
   String get serverTokenSpeichernFehler =>
       'Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.';
+
+  @override
+  String get scanTitel => 'Scan-Arbeitsbereich';
+
+  @override
+  String get scanWerkzeugText =>
+      'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.';
+
+  @override
+  String get scanText =>
+      'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.';
+
+  @override
+  String get scanDateienWaehlen => 'Scans auswählen';
+
+  @override
+  String get scanNochKeine => 'Noch keine Scans ausgewählt.';
+
+  @override
+  String get scanGanzesBild => 'Ganzen Scan verwenden';
+
+  @override
+  String scanErkannt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos erkannt',
+      one: '1 Foto erkannt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scanFotoNummer(int nummer) {
+    return 'Foto $nummer';
+  }
+
+  @override
+  String get scanLinksDrehen => 'Nach links drehen';
+
+  @override
+  String get scanRechtsDrehen => 'Nach rechts drehen';
+
+  @override
+  String get scanBeschreibung => 'Gemeinsame Beschreibung (optional)';
+
+  @override
+  String get scanDatumKeins => 'Aufnahmedatum festlegen (optional)';
+
+  @override
+  String get scanPaarweise => 'Vorder- und Rückseiten paarweise stapeln';
+
+  @override
+  String get scanPaarweiseText =>
+      'Je zwei ausgewählte Ausschnitte werden als Varianten zusammengehalten; die Vorderseite bleibt sichtbar.';
+
+  @override
+  String get scanRestaurieren => 'Nach dem Import restaurieren';
+
+  @override
+  String get scanRestaurierenText =>
+      'Reiht die neuen Fotos in die vorhandene lokale Restaurierungs-Warteschlange ein.';
+
+  @override
+  String scanImportieren(int anzahl) {
+    return '$anzahl Ausschnitte importieren';
+  }
+
+  @override
+  String get scanKeineAuswahl =>
+      'Wähle mindestens einen erkannten Ausschnitt aus.';
+
+  @override
+  String get scanUngerade =>
+      'Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.';
+
+  @override
+  String get scanPaarNichtGestapelt =>
+      'Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.';
+
+  @override
+  String scanFertig(int neu, int duplikate, int fehler) {
+    return 'Scan-Import: $neu neu, $duplikate Duplikate, $fehler Fehler.';
+  }
+
+  @override
+  String scanFehler(String fehler) {
+    return 'Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: $fehler';
+  }
 }

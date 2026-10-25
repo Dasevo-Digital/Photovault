@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -900,6 +899,11 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String angabenVarianten(Object n) {
+    return '$n Varianten dieser Aufnahme';
+  }
+
+  @override
   String get angabenText => 'Erkannter Text';
 
   @override
@@ -913,6 +917,11 @@ class AppTexteDe extends AppTexte {
   @override
   String angabenSerieTitel(int n) {
     return 'Serie · $n Aufnahmen';
+  }
+
+  @override
+  String angabenVariantenTitel(Object n) {
+    return 'Varianten · $n Fassungen';
   }
 
   @override
@@ -2469,6 +2478,31 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get teilenWandelt => 'Die Fotos werden als JPEG geholt …';
+
+  @override
+  String get albumOfflineSpeichern => 'Auf diesem Telefon offline behalten';
+
+  @override
+  String get albumOfflineAufheben => 'Nicht mehr offline behalten';
+
+  @override
+  String albumOfflineFertig(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen sind offline verfügbar.',
+      one: '1 Aufnahme ist offline verfügbar.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumOfflineEntfernt =>
+      'Das Album wird nicht mehr dauerhaft auf diesem Telefon behalten.';
+
+  @override
+  String get albumOfflineFehler =>
+      'Noch nicht vollständig geladen. Das Telefon setzt den Download fort, sobald der Server erreichbar ist.';
 
   @override
   String get eigenOidcTitel => 'Anmeldung über den Anbieter';

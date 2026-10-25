@@ -3206,6 +3206,13 @@ void main() {
           );
         case 'GET /api/v1/geraete':
           return http.Response(jsonEncode({'geraete': geraete}), 200);
+        case 'GET /api/v1/zustand':
+          return http.Response(
+            jsonEncode({
+              'anmeldung': {'totp': true, 'oidc': false},
+            }),
+            200,
+          );
         case 'DELETE /api/v1/geraete/g2':
           geraete = [geraete.first];
           return http.Response('{}', 200);

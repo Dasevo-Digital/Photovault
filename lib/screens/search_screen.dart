@@ -692,6 +692,19 @@ class _SearchScreenState extends State<SearchScreen>
                             widget.library,
                             _selected.toList(),
                           ),
+                          onCreateVariants: _selected.length >= 2
+                              ? () async {
+                                  final erstellt =
+                                      await runBatchCreateVariantsDialog(
+                                        context,
+                                        widget.library,
+                                        _selected.toList(),
+                                      );
+                                  if (mounted && erstellt) {
+                                    setState(_selected.clear);
+                                  }
+                                }
+                              : null,
                           onPasteDevelop: widget.library.hatKopierteEntwicklung
                               ? () async {
                                   await runBatchPasteDevelop(

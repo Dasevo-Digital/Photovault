@@ -1943,6 +1943,11 @@
   "serienvergleichOhneWert": "Schärfe noch nicht gemessen",
   "serienvergleichOeffnen": "Gesichter vergleichen",
   "serienvergleichZuKurz": "Zum Vergleichen braucht es mindestens zwei Aufnahmen.",
+  "variantenvergleichTitel": "Varianten vergleichen",
+  "variantenvergleichErklaerung": "Fassungen derselben Aufnahme nebeneinander. Die Hauptversion ist in den Übersichten sichtbar; alle Varianten bleiben als eigenständige Dateien erhalten.",
+  "variantenvergleichOeffnen": "Varianten vergleichen",
+  "variantenvergleichHaupt": "Hauptversion",
+  "variantenvergleichAlsHaupt": "Als Hauptversion verwenden",
   "stapelKeine": "Keine Serienbilder gefunden.",
   "allgVerwerfen": "Verwerfen",
   "statTitel": "Statistik",
@@ -2094,6 +2099,15 @@
   },
   "infoNurTitelbild": "Nur das Titelbild ist in der Übersicht sichtbar",
   "infoSerieAufloesen": "Serie auflösen",
+  "infoVarianten": "Varianten: {anzahl} Fassungen",
+  "@infoVarianten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "infoVariantenAufloesen": "Varianten einzeln zeigen",
   "infoTagHinzufuegenPlatzhalter": "Tag hinzufügen …",
   "stufeBildanalyse": "Bildanalyse",
   "stufeTexterkennung": "Texterkennung",
@@ -2878,6 +2892,18 @@
   "vergleichEntkoppeln": "Ansichten entkoppeln",
   "vergleichZuruecksetzen": "Zoom zurücksetzen",
   "auswVergleichen": "Die zwei ausgewählten Fotos vergleichen",
+  "auswVariantenBilden": "Auswahl als Varianten stapeln",
+  "variantenDialogTitel": "Hauptversion wählen",
+  "variantenDialogText": "Die Hauptversion bleibt in Übersichten sichtbar. Alle ausgewählten Fassungen bleiben vollständig erhalten.",
+  "variantenSchonGestapelt": "Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.",
+  "variantenGebildet": "{anzahl, plural, =2{2 Fassungen als Varianten gestapelt} other{{anzahl} Fassungen als Varianten gestapelt}}",
+  "@variantenGebildet": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "listeOhneKamera": "Ohne Kameraangabe",
   "zeitleisteGroesser": "Grössere Kacheln",
   "zeitleisteKleiner": "Kleinere Kacheln – mehr Monate auf einmal",
@@ -6213,5 +6239,54 @@
   },
   "backupZielGesperrt": "macOS lässt das automatische Backup nicht in den Zielordner schreiben. Bitte den Zielordner in den Einstellungen einmal neu wählen – danach bleibt der Zugriff auch nach einem Neustart erhalten.",
   "backupZurEinstellung": "Zu den Einstellungen",
-  "serverTokenSpeichernFehler": "Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert."
+  "serverTokenSpeichernFehler": "Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.",
+  "scanTitel": "Scan-Arbeitsbereich",
+  "scanWerkzeugText": "Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.",
+  "scanText": "Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.",
+  "scanDateienWaehlen": "Scans auswählen",
+  "scanNochKeine": "Noch keine Scans ausgewählt.",
+  "scanGanzesBild": "Ganzen Scan verwenden",
+  "scanErkannt": "{anzahl, plural, =1{1 Foto erkannt} other{{anzahl} Fotos erkannt}}",
+  "@scanErkannt": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
+  "scanFotoNummer": "Foto {nummer}",
+  "@scanFotoNummer": {
+    "placeholders": {
+      "nummer": {"type": "int"}
+    }
+  },
+  "scanLinksDrehen": "Nach links drehen",
+  "scanRechtsDrehen": "Nach rechts drehen",
+  "scanBeschreibung": "Gemeinsame Beschreibung (optional)",
+  "scanDatumKeins": "Aufnahmedatum festlegen (optional)",
+  "scanPaarweise": "Vorder- und Rückseiten paarweise stapeln",
+  "scanPaarweiseText": "Je zwei ausgewählte Ausschnitte werden als Varianten zusammengehalten; die Vorderseite bleibt sichtbar.",
+  "scanRestaurieren": "Nach dem Import restaurieren",
+  "scanRestaurierenText": "Reiht die neuen Fotos in die vorhandene lokale Restaurierungs-Warteschlange ein.",
+  "scanImportieren": "{anzahl} Ausschnitte importieren",
+  "@scanImportieren": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
+  "scanKeineAuswahl": "Wähle mindestens einen erkannten Ausschnitt aus.",
+  "scanUngerade": "Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.",
+  "scanPaarNichtGestapelt": "Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.",
+  "scanFertig": "Scan-Import: {neu} neu, {duplikate} Duplikate, {fehler} Fehler.",
+  "@scanFertig": {
+    "placeholders": {
+      "neu": {"type": "int"},
+      "duplikate": {"type": "int"},
+      "fehler": {"type": "int"}
+    }
+  },
+  "scanFehler": "Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: {fehler}",
+  "@scanFehler": {
+    "placeholders": {
+      "fehler": {"type": "String"}
+    }
+  }
 }

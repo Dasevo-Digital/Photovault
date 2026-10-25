@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import '../services/storage_paths.dart';
 
 /// Was eine verbundene Bibliothek nach Bedarf vom Server holt – Vorschauen
@@ -41,7 +43,10 @@ class Zwischenspeicher {
   /// Zugriff setzt), fliegt zuerst – bis nur noch vier Fünftel belegt
   /// sind, damit nicht jeder nächste Abruf wieder aufräumt. Gibt zurück,
   /// wie viele Bytes frei wurden.
-  Future<int> begrenze(int hoechstens) async {
+  Future<int> begrenze(
+    int hoechstens, {
+    Set<String> behalten = const <String>{},
+  }) async {
     final dateien = <(File, int, DateTime)>[];
     var summe = 0;
     for (final f in await _dateien()) {
@@ -59,6 +64,8 @@ class Zwischenspeicher {
     var frei = 0;
     for (final (f, bytes, _) in dateien) {
       if (summe - frei <= ziel) break;
+      final relativ = p.normalize(p.relative(f.path, from: paths.root.path));
+      if (behalten.contains(relativ)) continue;
       try {
         await f.delete();
         frei += bytes;
@@ -71,5 +78,6 @@ class Zwischenspeicher {
 
   /// Löscht alle Vorschauen und Originale; was jemand wieder öffnet, kommt
   /// erneut vom Server. Gibt zurück, wie viele Bytes frei wurden.
-  Future<int> leere() => begrenze(0);
+  Future<int> leere({Set<String> behalten = const <String>{}}) =>
+      begrenze(0, behalten: behalten);
 }

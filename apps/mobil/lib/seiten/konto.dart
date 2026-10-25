@@ -319,7 +319,7 @@ class _ZwischenspeicherzeileState extends State<_Zwischenspeicherzeile> {
       });
 
   Future<void> _leeren() async {
-    await widget.sitzung.zwischenspeicher.leere();
+    await widget.sitzung.leereZwischenspeicher();
     if (mounted) _neuMessen();
   }
 

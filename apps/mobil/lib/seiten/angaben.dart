@@ -338,7 +338,9 @@ class _AngabenlisteState extends State<Angabenliste> {
                 SerieSeite(sitzung: widget.sitzung, stackId: a.stackId!),
               ),
               child: Text(
-                t.angabenSerie(serie),
+                istVariantenstapel(a.stackId)
+                    ? t.angabenVarianten(serie)
+                    : t.angabenSerie(serie),
                 style: TextStyle(color: farben.primary),
               ),
             ),
@@ -469,7 +471,11 @@ class SerieSeite extends StatelessWidget {
         appBar: AppBar(
           title: a == null
               ? null
-              : Text(AppTexte.of(context).angabenSerieTitel(a.length)),
+              : Text(
+                  istVariantenstapel(stackId)
+                      ? AppTexte.of(context).angabenVariantenTitel(a.length)
+                      : AppTexte.of(context).angabenSerieTitel(a.length),
+                ),
         ),
         body: a == null
             ? const Center(child: CircularProgressIndicator())

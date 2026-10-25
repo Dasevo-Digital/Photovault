@@ -479,14 +479,18 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     await _refresh();
   }
 
-  /// Löst eine Serien-Gruppierung wieder auf (siehe StackReviewScreen) – nur
+  /// Löst eine Serien- oder Varianten-Gruppierung wieder auf – nur
   /// vom Titelbild aus erreichbar, da nur dessen Info-Panel überhaupt
   /// sichtbar ist (die übrigen Mitglieder sind aus der Rasteransicht
   /// ausgeblendet).
   Future<void> _unstack() async {
     final stackId = _asset.stackId;
     if (stackId == null) return;
-    await widget.db.fuehreAus(SerieAufloesen(stackId));
+    await widget.db.fuehreAus(
+      istVariantenstapel(stackId)
+          ? VariantenAufloesen(stackId)
+          : SerieAufloesen(stackId),
+    );
     await _refresh();
   }
 
@@ -504,7 +508,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     serie.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (_) => SerienvergleichScreen(library: library, serie: serie),
+        builder: (_) => SerienvergleichScreen(
+          library: library,
+          serie: serie,
+          varianten: istVariantenstapel(stackId),
+        ),
       ),
     );
   }
@@ -905,13 +913,19 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                       if (asset.isStackCover && asset.stackSize != null) ...[
                         _IconDetailRow(
                           icon: Icons.filter_none_outlined,
-                          title: AppTexte.of(
-                            context,
-                          ).infoSerie(asset.stackSize!),
+                          title: istVariantenstapel(asset.stackId)
+                              ? AppTexte.of(
+                                  context,
+                                ).infoVarianten(asset.stackSize!)
+                              : AppTexte.of(
+                                  context,
+                                ).infoSerie(asset.stackSize!),
                           subtitle: AppTexte.of(context).infoNurTitelbild,
                           onEdit: _unstack,
                           editIcon: Icons.close,
-                          editTooltip: AppTexte.of(context).infoSerieAufloesen,
+                          editTooltip: istVariantenstapel(asset.stackId)
+                              ? AppTexte.of(context).infoVariantenAufloesen
+                              : AppTexte.of(context).infoSerieAufloesen,
                         ),
                         // Der zweite Weg in den Vergleich – der erste liegt
                         // beim Zusammenfassen. Danach kommt man dort nicht
@@ -925,11 +939,17 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             child: TextButton.icon(
                               onPressed: _serieVergleichen,
                               icon: const Icon(
-                                Icons.face_retouching_natural,
+                                Icons.compare_outlined,
                                 size: 18,
                               ),
                               label: Text(
-                                AppTexte.of(context).serienvergleichOeffnen,
+                                istVariantenstapel(asset.stackId)
+                                    ? AppTexte.of(
+                                        context,
+                                      ).variantenvergleichOeffnen
+                                    : AppTexte.of(
+                                        context,
+                                      ).serienvergleichOeffnen,
                               ),
                             ),
                           ),

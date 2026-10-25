@@ -61,6 +61,10 @@ class SelectionActionBar extends StatelessWidget {
   /// gesetzt – bei drei wäre nicht zu erraten, welche zwei gemeint sind.
   final VoidCallback? onCompare;
 
+  /// Fasst mindestens zwei ausgewählte Fassungen derselben Aufnahme unter
+  /// einer frei gewählten Hauptversion zusammen.
+  final VoidCallback? onCreateVariants;
+
   const SelectionActionBar({
     super.key,
     required this.count,
@@ -74,6 +78,7 @@ class SelectionActionBar extends StatelessWidget {
     required this.onExport,
     required this.onDelete,
     this.onCompare,
+    this.onCreateVariants,
     this.onPasteDevelop,
     this.onApplyPreset,
   });
@@ -148,6 +153,12 @@ class SelectionActionBar extends StatelessWidget {
                     icon: const Icon(Icons.compare_outlined),
                     tooltip: t.auswVergleichen,
                     onPressed: onCompare,
+                  ),
+                if (onCreateVariants != null)
+                  IconButton(
+                    icon: const Icon(Icons.photo_library_outlined),
+                    tooltip: t.auswVariantenBilden,
+                    onPressed: onCreateVariants,
                   ),
                 IconButton(
                   icon: const Icon(Icons.ios_share),
@@ -253,6 +264,84 @@ VoidCallback? vergleichsAktion(
       ),
     );
   };
+}
+
+/// Lässt aus einer Auswahl einen Variantenstapel entstehen. Bereits
+/// gestapelte Aufnahmen werden abgewiesen: Ein Foto darf nicht zugleich
+/// Mitglied einer Serie und einer Variantenfamilie sein.
+Future<bool> runBatchCreateVariantsDialog(
+  BuildContext context,
+  LibraryState library,
+  List<String> assetIds,
+) async {
+  if (assetIds.length < 2) return false;
+  final assets = await library.db.assetsByIds(assetIds);
+  if (!context.mounted || assets.length < 2) return false;
+  final t = AppTexte.of(context);
+  if (assets.any((a) => a.stackId != null)) {
+    melde.warnung(t.variantenSchonGestapelt);
+    return false;
+  }
+
+  var hauptId = assets.first.id;
+  final gewaehlt = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: Text(t.variantenDialogTitel),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(t.variantenDialogText),
+              const SizedBox(height: AppSpacing.sm),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final asset in assets)
+                      ListTile(
+                        leading: Icon(
+                          asset.id == hauptId
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_unchecked,
+                        ),
+                        title: Text(asset.originalFileName),
+                        selected: asset.id == hauptId,
+                        onTap: () => setDialogState(() => hauptId = asset.id),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, hauptId),
+            child: Text(t.allgSpeichern),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (gewaehlt == null || !context.mounted) return false;
+
+  final variantenId = const Uuid().v4();
+  final stackId = variantenstapelId(variantenId);
+  await library.db.fuehreAus(VariantenBilden(variantenId, assetIds, gewaehlt));
+  _rueckgaengigAnbieten(
+    t,
+    t.variantenGebildet(assetIds.length),
+    () => library.db.fuehreAus(VariantenAufloesen(stackId)),
+  );
+  return true;
 }
 
 /// Bietet nach einer Stapelaktion an, sie zurückzunehmen.

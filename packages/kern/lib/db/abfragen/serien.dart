@@ -1,5 +1,16 @@
 part of '../database.dart';
 
+const variantenstapelPraefix = 'variante:';
+
+/// Varianten sind bewusst normale Stapel mit einer kenntlichen Kennung.
+/// Dadurch bleiben Raster, Suche, Synchronisation und Sicherungen ohne
+/// zweite Gruppierungslogik kompatibel; nur die Oberfläche benennt den
+/// Zweck anders und lässt die Hauptversion wechseln.
+bool istVariantenstapel(String? stackId) =>
+    stackId?.startsWith(variantenstapelPraefix) ?? false;
+
+String variantenstapelId(String kennung) => '$variantenstapelPraefix$kennung';
+
 /// Live Photos und Serien.
 extension SerienAbfragen on AppDatabase {
   // ---------------------------------------------------------------------
@@ -180,6 +191,29 @@ extension SerienAbfragen on AppDatabase {
 
   Future<List<AssetData>> assetsInStack(String stackId) =>
       (select(assets)..where((t) => t.stackId.equals(stackId))).get();
+
+  /// Macht ein anderes Mitglied zum sichtbaren Titelbild eines Stapels.
+  /// Der Vorgang ist atomar: Es gibt zu keinem Zeitpunkt zwei Titelbilder
+  /// oder einen Stapel ohne sichtbares Mitglied.
+  Future<void> setStackCover(String stackId, String coverAssetId) async {
+    final mitglieder = await assetsInStack(stackId);
+    if (!mitglieder.any((a) => a.id == coverAssetId)) {
+      throw ArgumentError.value(coverAssetId, 'coverAssetId');
+    }
+    await batch((b) {
+      for (final asset in mitglieder) {
+        final istTitel = asset.id == coverAssetId;
+        b.update(
+          assets,
+          AssetsCompanion(
+            isStackCover: Value(istTitel),
+            stackSize: istTitel ? Value(mitglieder.length) : const Value(null),
+          ),
+          where: (t) => t.stackId.equals(stackId) & t.id.equals(asset.id),
+        );
+      }
+    });
+  }
 
   /// Alle Assets (Fotos und Videos), die für eine (erneute) Thumbnail-/
   /// Vorschau-Erzeugung infrage kommen. Bei [onlyMissing] nur Assets ohne

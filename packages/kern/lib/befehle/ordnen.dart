@@ -141,6 +141,77 @@ final class SerieAufloesen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.unstackAssets(serieId);
 }
 
+/// Mehrere Fassungen derselben Aufnahme unter einer Hauptversion stapeln.
+final class VariantenBilden extends Befehl<void> {
+  const VariantenBilden(this.variantenId, this.ids, this.hauptId);
+
+  static VariantenBilden aus(Map<String, Object?> w) => VariantenBilden(
+    w['variantenId']! as String,
+    _kennungen(w['ids']),
+    w['hauptId']! as String,
+  );
+
+  final String variantenId;
+  final List<String> ids;
+  final String hauptId;
+
+  @override
+  String get art => 'variantenBilden';
+
+  @override
+  Map<String, Object?> get werte => {
+    'variantenId': variantenId,
+    'ids': ids,
+    'hauptId': hauptId,
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) =>
+      db.createStack(variantenstapelId(variantenId), ids, hauptId);
+}
+
+/// Einen Variantenstapel wieder in einzelne Aufnahmen zerlegen.
+final class VariantenAufloesen extends Befehl<void> {
+  const VariantenAufloesen(this.stackId);
+
+  static VariantenAufloesen aus(Map<String, Object?> w) =>
+      VariantenAufloesen(w['stackId']! as String);
+
+  final String stackId;
+
+  @override
+  String get art => 'variantenAufloesen';
+
+  @override
+  Map<String, Object?> get werte => {'stackId': stackId};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.unstackAssets(stackId);
+}
+
+/// Die im Raster sichtbare Hauptversion eines Variantenstapels wechseln.
+final class VariantenHauptbildSetzen extends Befehl<void> {
+  const VariantenHauptbildSetzen(this.stackId, this.assetId);
+
+  static VariantenHauptbildSetzen aus(Map<String, Object?> w) =>
+      VariantenHauptbildSetzen(
+        w['stackId']! as String,
+        w['assetId']! as String,
+      );
+
+  final String stackId;
+  final String assetId;
+
+  @override
+  String get art => 'variantenHauptbildSetzen';
+
+  @override
+  Map<String, Object?> get werte => {'stackId': stackId, 'assetId': assetId};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setStackCover(stackId, assetId);
+}
+
 /// Einen Serienvorschlag nicht mehr zeigen.
 final class SerienvorschlagVerwerfen extends Befehl<void> {
   const SerienvorschlagVerwerfen(this.schluessel);

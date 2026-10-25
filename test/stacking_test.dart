@@ -137,4 +137,49 @@ void main() {
       expect(timeline.map((t) => t.id).toSet(), {a.id, b.id});
     },
   );
+
+  test('Variantenstapel wechselt die Hauptversion atomar', () async {
+    final a = await importPhoto('original.jpg');
+    final b = await importPhoto('bearbeitet.jpg');
+    final stackId = variantenstapelId('gruppe-1');
+
+    await db.fuehreAus(VariantenBilden('gruppe-1', [a.id, b.id], a.id));
+    expect(istVariantenstapel(stackId), isTrue);
+    expect((await db.assetById(a.id))!.isStackCover, isTrue);
+
+    await db.fuehreAus(VariantenHauptbildSetzen(stackId, b.id));
+
+    final neuA = (await db.assetById(a.id))!;
+    final neuB = (await db.assetById(b.id))!;
+    expect(neuA.isStackCover, isFalse);
+    expect(neuA.stackSize, isNull);
+    expect(neuB.isStackCover, isTrue);
+    expect(neuB.stackSize, 2);
+  });
+
+  test('Hauptversion muss zum Stapel gehören', () async {
+    final a = await importPhoto('a.jpg');
+    final b = await importPhoto('b.jpg');
+    final fremd = await importPhoto('fremd.jpg');
+    final stackId = variantenstapelId('gruppe-2');
+    await db.fuehreAus(VariantenBilden('gruppe-2', [a.id, b.id], a.id));
+
+    await expectLater(
+      db.fuehreAus(VariantenHauptbildSetzen(stackId, fremd.id)),
+      throwsArgumentError,
+    );
+    expect((await db.assetById(a.id))!.isStackCover, isTrue);
+  });
+
+  test('Variantenstapel lässt sich wieder auflösen', () async {
+    final a = await importPhoto('a.jpg');
+    final b = await importPhoto('b.jpg');
+    final stackId = variantenstapelId('gruppe-3');
+    await db.fuehreAus(VariantenBilden('gruppe-3', [a.id, b.id], a.id));
+
+    await db.fuehreAus(VariantenAufloesen(stackId));
+
+    expect((await db.assetById(a.id))!.stackId, isNull);
+    expect((await db.assetById(b.id))!.stackId, isNull);
+  });
 }

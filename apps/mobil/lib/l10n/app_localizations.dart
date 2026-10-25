@@ -1405,6 +1405,12 @@ abstract class AppTexte {
   /// **'Serie mit {n} Aufnahmen'**
   String angabenSerie(int n);
 
+  /// No description provided for @angabenVarianten.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Varianten dieser Aufnahme'**
+  String angabenVarianten(Object n);
+
   /// No description provided for @angabenText.
   ///
   /// In de, this message translates to:
@@ -1428,6 +1434,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Serie · {n} Aufnahmen'**
   String angabenSerieTitel(int n);
+
+  /// No description provided for @angabenVariantenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten · {n} Fassungen'**
+  String angabenVariantenTitel(Object n);
 
   /// No description provided for @bibStatistik.
   ///
@@ -3816,6 +3828,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Fotos werden als JPEG geholt …'**
   String get teilenWandelt;
+
+  /// No description provided for @albumOfflineSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Telefon offline behalten'**
+  String get albumOfflineSpeichern;
+
+  /// No description provided for @albumOfflineAufheben.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr offline behalten'**
+  String get albumOfflineAufheben;
+
+  /// No description provided for @albumOfflineFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme ist offline verfügbar.} other{{n} Aufnahmen sind offline verfügbar.}}'**
+  String albumOfflineFertig(int n);
+
+  /// No description provided for @albumOfflineEntfernt.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Album wird nicht mehr dauerhaft auf diesem Telefon behalten.'**
+  String get albumOfflineEntfernt;
+
+  /// No description provided for @albumOfflineFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nicht vollständig geladen. Das Telefon setzt den Download fort, sobald der Server erreichbar ist.'**
+  String get albumOfflineFehler;
 
   /// No description provided for @eigenOidcTitel.
   ///

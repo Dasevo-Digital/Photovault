@@ -24,6 +24,7 @@ import 'ortsvorschlaege_screen.dart';
 import 'stack_review_screen.dart';
 import 'gpx_verortung_screen.dart';
 import 'statistics_screen.dart';
+import 'scan_workspace_screen.dart';
 import 'xmp_import_screen.dart';
 import 'datierung_screen.dart';
 import 'aufnahmedaten_screen.dart';
@@ -196,6 +197,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 MaterialPageRoute(
                   builder: (_) =>
                       BackgroundTasksScreen(library: widget.library),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.document_scanner_outlined),
+              title: Text(t.scanTitel),
+              subtitle: Text(t.scanWerkzeugText),
+              isThreeLine: true,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ScanWorkspaceScreen(library: widget.library),
                 ),
               ),
             ),

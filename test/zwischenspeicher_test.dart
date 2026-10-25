@@ -64,6 +64,18 @@ void main() {
     );
   });
 
+  test('angeheftete Dateien überstehen Begrenzen und Leeren', () async {
+    final z = Zwischenspeicher(paths);
+    final alt = datei(paths.previewsDir, 'a.jpg', 400, DateTime(2026, 1, 1));
+    final neu = datei(paths.previewsDir, 'b.jpg', 400, DateTime(2026, 2, 1));
+
+    expect(await z.begrenze(300, behalten: {'previews/a.jpg'}), 400);
+    expect(alt.existsSync(), isTrue, reason: 'offline angeheftet');
+    expect(neu.existsSync(), isFalse);
+    expect(await z.leere(behalten: {'previews/a.jpg'}), 0);
+    expect(alt.existsSync(), isTrue);
+  });
+
   test('die Grenze steht in der Verbindungsdatei', () async {
     final v = Verbindungsdatei(
       server: Uri.parse('https://fotos.example.de/'),

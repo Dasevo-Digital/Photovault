@@ -367,6 +367,7 @@ class AlbumSeite extends StatelessWidget {
             titel: album.name,
           ),
         ),
+        _OfflineAlbumKnopf(sitzung: sitzung, albumId: album.id),
       ],
     ),
     body: StreamBuilder<List<AssetData>>(
@@ -381,4 +382,57 @@ class AlbumSeite extends StatelessWidget {
       },
     ),
   );
+}
+
+class _OfflineAlbumKnopf extends StatefulWidget {
+  const _OfflineAlbumKnopf({required this.sitzung, required this.albumId});
+
+  final Sitzung sitzung;
+  final String albumId;
+
+  @override
+  State<_OfflineAlbumKnopf> createState() => _OfflineAlbumKnopfState();
+}
+
+class _OfflineAlbumKnopfState extends State<_OfflineAlbumKnopf> {
+  bool _laedt = false;
+
+  Future<void> _umschalten() async {
+    if (_laedt) return;
+    final t = AppTexte.of(context);
+    final neu = !widget.sitzung.istAlbumOffline(widget.albumId);
+    setState(() => _laedt = true);
+    try {
+      final n = await widget.sitzung.setzeAlbumOffline(widget.albumId, neu);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(neu ? t.albumOfflineFertig(n) : t.albumOfflineEntfernt),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.albumOfflineFehler)));
+    } finally {
+      if (mounted) setState(() => _laedt = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final offline = widget.sitzung.istAlbumOffline(widget.albumId);
+    final t = AppTexte.of(context);
+    return IconButton(
+      tooltip: offline ? t.albumOfflineAufheben : t.albumOfflineSpeichern,
+      onPressed: _laedt ? null : _umschalten,
+      icon: _laedt
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(offline ? Icons.offline_pin : Icons.offline_pin_outlined),
+    );
+  }
 }

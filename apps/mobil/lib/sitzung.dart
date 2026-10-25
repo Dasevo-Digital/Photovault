@@ -19,6 +19,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'gemeinsam.dart';
+import 'offline_alben.dart';
 import 'sicherung/dienst.dart';
 
 enum Sitzungszustand { laedt, abgemeldet, bereit }
@@ -50,6 +51,7 @@ class Sitzung extends ChangeNotifier {
   Verbindungsdatei? verbindung;
   late AppDatabase db;
   late StoragePaths paths;
+  OfflineAlben? offlineAlben;
   Abgleich? abgleich;
   Abgleichszustand? abgleichszustand;
 
@@ -100,6 +102,9 @@ class Sitzung extends ChangeNotifier {
     paths = await StoragePaths.oeffne(
       Directory(p.join(ordner.path, 'library')),
     );
+    offlineAlben = await OfflineAlben.oeffne(
+      File(p.join(ordner.path, 'offline_alben.json')),
+    );
     final s = Serververbindung(v.server, v.token);
     final a = Abgleich(db, s);
     await a.richteEin();
@@ -134,9 +139,9 @@ class Sitzung extends ChangeNotifier {
     _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
       pruefeServerspeicher();
       pruefeServersicherung();
-      pflegeZwischenspeicher();
+      pflegeOfflineUndZwischenspeicher();
     });
-    unawaited(pflegeZwischenspeicher());
+    unawaited(pflegeOfflineUndZwischenspeicher());
   }
 
   /// Vorschauen und Originale, die das Telefon vom Server geholt hat.
@@ -150,8 +155,57 @@ class Sitzung extends ChangeNotifier {
   Future<void> pflegeZwischenspeicher() async {
     final mb = zwischenspeicherGrenzeMb;
     if (mb <= 0 || abgleich == null) return;
-    await zwischenspeicher.begrenze(mb * 1024 * 1024);
+    final behalten = await offlineAlben?.geschuetztePfade(db) ?? <String>{};
+    await zwischenspeicher.begrenze(mb * 1024 * 1024, behalten: behalten);
   }
+
+  Future<void>? _offlinePflege;
+
+  /// Hält neue Aufnahmen angehefteter Alben nach und räumt erst danach den
+  /// übrigen Cache auf. Ein zweiter Zeitgeber startet keinen parallelen Lauf.
+  Future<void> pflegeOfflineUndZwischenspeicher() {
+    final laufend = _offlinePflege;
+    if (laufend != null) return laufend;
+    final lauf = () async {
+      try {
+        await offlineAlben?.aktualisiere(db, paths);
+      } catch (_) {
+        // Ohne Server bleibt der bisherige Offline-Stand erhalten. Der
+        // nächste Pflegegang versucht nur die noch fehlenden Dateien erneut.
+      }
+      await pflegeZwischenspeicher();
+    }();
+    _offlinePflege = lauf;
+    return lauf.whenComplete(() {
+      if (identical(_offlinePflege, lauf)) _offlinePflege = null;
+    });
+  }
+
+  bool istAlbumOffline(String albumId) =>
+      offlineAlben?.enthaelt(albumId) ?? false;
+
+  /// Ändert die gerätebezogene Offline-Auswahl. Beim Anheften bleibt die
+  /// Absicht auch bei einem Verbindungsabbruch gespeichert; der nächste
+  /// Pflegegang setzt das unvollständige Herunterladen fort.
+  Future<int> setzeAlbumOffline(String albumId, bool offline) async {
+    final alben = offlineAlben;
+    if (alben == null) throw StateError('pv_offline_alben_nicht_bereit');
+    await alben.setze(albumId, offline);
+    notifyListeners();
+    if (!offline) {
+      await pflegeZwischenspeicher();
+      return 0;
+    }
+    final anzahl = await alben.holeAlbum(db, paths, albumId);
+    await pflegeZwischenspeicher();
+    return anzahl;
+  }
+
+  /// Leert nur den entbehrlichen Cache; ausdrücklich angeheftete Alben
+  /// bleiben auch bei diesem manuellen Schritt offline verfügbar.
+  Future<int> leereZwischenspeicher() async => zwischenspeicher.leere(
+    behalten: await offlineAlben?.geschuetztePfade(db) ?? <String>{},
+  );
 
   /// Setzt die Grenze (0 = ohne) und räumt gleich auf.
   Future<void> setzeZwischenspeicherGrenze(int mb) async {

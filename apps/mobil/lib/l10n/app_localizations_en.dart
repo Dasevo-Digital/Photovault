@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -898,6 +897,11 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String angabenVarianten(Object n) {
+    return '$n versions of this photo';
+  }
+
+  @override
   String get angabenText => 'Recognized text';
 
   @override
@@ -911,6 +915,11 @@ class AppTexteEn extends AppTexte {
   @override
   String angabenSerieTitel(int n) {
     return 'Stack · $n items';
+  }
+
+  @override
+  String angabenVariantenTitel(Object n) {
+    return 'Versions · $n files';
   }
 
   @override
@@ -2458,6 +2467,31 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get teilenWandelt => 'Fetching the photos as JPEG …';
+
+  @override
+  String get albumOfflineSpeichern => 'Keep offline on this phone';
+
+  @override
+  String get albumOfflineAufheben => 'Stop keeping offline';
+
+  @override
+  String albumOfflineFertig(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n items are available offline.',
+      one: '1 item is available offline.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumOfflineEntfernt =>
+      'The album is no longer kept permanently on this phone.';
+
+  @override
+  String get albumOfflineFehler =>
+      'Not fully downloaded yet. The phone will continue when the server is reachable.';
 
   @override
   String get eigenOidcTitel => 'Sign-in through the provider';

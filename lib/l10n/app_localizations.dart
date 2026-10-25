@@ -5999,6 +5999,36 @@ abstract class AppTexte {
   /// **'Zum Vergleichen braucht es mindestens zwei Aufnahmen.'**
   String get serienvergleichZuKurz;
 
+  /// No description provided for @variantenvergleichTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten vergleichen'**
+  String get variantenvergleichTitel;
+
+  /// No description provided for @variantenvergleichErklaerung.
+  ///
+  /// In de, this message translates to:
+  /// **'Fassungen derselben Aufnahme nebeneinander. Die Hauptversion ist in den Übersichten sichtbar; alle Varianten bleiben als eigenständige Dateien erhalten.'**
+  String get variantenvergleichErklaerung;
+
+  /// No description provided for @variantenvergleichOeffnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten vergleichen'**
+  String get variantenvergleichOeffnen;
+
+  /// No description provided for @variantenvergleichHaupt.
+  ///
+  /// In de, this message translates to:
+  /// **'Hauptversion'**
+  String get variantenvergleichHaupt;
+
+  /// No description provided for @variantenvergleichAlsHaupt.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Hauptversion verwenden'**
+  String get variantenvergleichAlsHaupt;
+
   /// No description provided for @stapelKeine.
   ///
   /// In de, this message translates to:
@@ -6392,6 +6422,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Serie auflösen'**
   String get infoSerieAufloesen;
+
+  /// No description provided for @infoVarianten.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten: {anzahl} Fassungen'**
+  String infoVarianten(int anzahl);
+
+  /// No description provided for @infoVariantenAufloesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten einzeln zeigen'**
+  String get infoVariantenAufloesen;
 
   /// No description provided for @infoTagHinzufuegenPlatzhalter.
   ///
@@ -7950,6 +7992,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die zwei ausgewählten Fotos vergleichen'**
   String get auswVergleichen;
+
+  /// No description provided for @auswVariantenBilden.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl als Varianten stapeln'**
+  String get auswVariantenBilden;
+
+  /// No description provided for @variantenDialogTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Hauptversion wählen'**
+  String get variantenDialogTitel;
+
+  /// No description provided for @variantenDialogText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Hauptversion bleibt in Übersichten sichtbar. Alle ausgewählten Fassungen bleiben vollständig erhalten.'**
+  String get variantenDialogText;
+
+  /// No description provided for @variantenSchonGestapelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.'**
+  String get variantenSchonGestapelt;
+
+  /// No description provided for @variantenGebildet.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =2{2 Fassungen als Varianten gestapelt} other{{anzahl} Fassungen als Varianten gestapelt}}'**
+  String variantenGebildet(int anzahl);
 
   /// No description provided for @listeOhneKamera.
   ///
@@ -14904,6 +14976,138 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.'**
   String get serverTokenSpeichernFehler;
+
+  /// No description provided for @scanTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan-Arbeitsbereich'**
+  String get scanTitel;
+
+  /// No description provided for @scanWerkzeugText.
+  ///
+  /// In de, this message translates to:
+  /// **'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.'**
+  String get scanWerkzeugText;
+
+  /// No description provided for @scanText.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.'**
+  String get scanText;
+
+  /// No description provided for @scanDateienWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Scans auswählen'**
+  String get scanDateienWaehlen;
+
+  /// No description provided for @scanNochKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Scans ausgewählt.'**
+  String get scanNochKeine;
+
+  /// No description provided for @scanGanzesBild.
+  ///
+  /// In de, this message translates to:
+  /// **'Ganzen Scan verwenden'**
+  String get scanGanzesBild;
+
+  /// No description provided for @scanErkannt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto erkannt} other{{anzahl} Fotos erkannt}}'**
+  String scanErkannt(int anzahl);
+
+  /// No description provided for @scanFotoNummer.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto {nummer}'**
+  String scanFotoNummer(int nummer);
+
+  /// No description provided for @scanLinksDrehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach links drehen'**
+  String get scanLinksDrehen;
+
+  /// No description provided for @scanRechtsDrehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach rechts drehen'**
+  String get scanRechtsDrehen;
+
+  /// No description provided for @scanBeschreibung.
+  ///
+  /// In de, this message translates to:
+  /// **'Gemeinsame Beschreibung (optional)'**
+  String get scanBeschreibung;
+
+  /// No description provided for @scanDatumKeins.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmedatum festlegen (optional)'**
+  String get scanDatumKeins;
+
+  /// No description provided for @scanPaarweise.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorder- und Rückseiten paarweise stapeln'**
+  String get scanPaarweise;
+
+  /// No description provided for @scanPaarweiseText.
+  ///
+  /// In de, this message translates to:
+  /// **'Je zwei ausgewählte Ausschnitte werden als Varianten zusammengehalten; die Vorderseite bleibt sichtbar.'**
+  String get scanPaarweiseText;
+
+  /// No description provided for @scanRestaurieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach dem Import restaurieren'**
+  String get scanRestaurieren;
+
+  /// No description provided for @scanRestaurierenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Reiht die neuen Fotos in die vorhandene lokale Restaurierungs-Warteschlange ein.'**
+  String get scanRestaurierenText;
+
+  /// No description provided for @scanImportieren.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Ausschnitte importieren'**
+  String scanImportieren(int anzahl);
+
+  /// No description provided for @scanKeineAuswahl.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle mindestens einen erkannten Ausschnitt aus.'**
+  String get scanKeineAuswahl;
+
+  /// No description provided for @scanUngerade.
+  ///
+  /// In de, this message translates to:
+  /// **'Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.'**
+  String get scanUngerade;
+
+  /// No description provided for @scanPaarNichtGestapelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.'**
+  String get scanPaarNichtGestapelt;
+
+  /// No description provided for @scanFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan-Import: {neu} neu, {duplikate} Duplikate, {fehler} Fehler.'**
+  String scanFertig(int neu, int duplikate, int fehler);
+
+  /// No description provided for @scanFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: {fehler}'**
+  String scanFehler(String fehler);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

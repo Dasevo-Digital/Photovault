@@ -3530,6 +3530,22 @@ class AppTexteEn extends AppTexte {
   String get serienvergleichZuKurz => 'Comparing needs at least two shots.';
 
   @override
+  String get variantenvergleichTitel => 'Compare versions';
+
+  @override
+  String get variantenvergleichErklaerung =>
+      'Versions of the same photo side by side. The primary version is visible in overviews; every version remains a separate file.';
+
+  @override
+  String get variantenvergleichOeffnen => 'Compare versions';
+
+  @override
+  String get variantenvergleichHaupt => 'Primary version';
+
+  @override
+  String get variantenvergleichAlsHaupt => 'Use as primary version';
+
+  @override
   String get stapelKeine => 'No burst series found.';
 
   @override
@@ -3789,6 +3805,14 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get infoSerieAufloesen => 'Break up the series';
+
+  @override
+  String infoVarianten(int anzahl) {
+    return 'Versions: $anzahl';
+  }
+
+  @override
+  String get infoVariantenAufloesen => 'Show versions separately';
 
   @override
   String get infoTagHinzufuegenPlatzhalter => 'Add a tag …';
@@ -4836,6 +4860,31 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get auswVergleichen => 'Compare the two selected photos';
+
+  @override
+  String get auswVariantenBilden => 'Stack selection as versions';
+
+  @override
+  String get variantenDialogTitel => 'Choose primary version';
+
+  @override
+  String get variantenDialogText =>
+      'The primary version remains visible in overviews. Every selected version is preserved in full.';
+
+  @override
+  String get variantenSchonGestapelt =>
+      'At least one photo already belongs to a stack. Break it up first.';
+
+  @override
+  String variantenGebildet(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl versions stacked',
+      two: '2 versions stacked',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get listeOhneKamera => 'No camera information';
@@ -9719,4 +9768,92 @@ class AppTexteEn extends AppTexte {
   @override
   String get serverTokenSpeichernFehler =>
       'The server token could not be stored securely. The connection was not changed.';
+
+  @override
+  String get scanTitel => 'Scan workspace';
+
+  @override
+  String get scanWerkzeugText =>
+      'Detect several paper photos in scans, review and rotate them, then import each one without changing the scan.';
+
+  @override
+  String get scanText =>
+      'Choose flatbed scans. Detected photos are imported only after your review; the source files remain unchanged.';
+
+  @override
+  String get scanDateienWaehlen => 'Choose scans';
+
+  @override
+  String get scanNochKeine => 'No scans selected yet.';
+
+  @override
+  String get scanGanzesBild => 'Use the entire scan';
+
+  @override
+  String scanErkannt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos detected',
+      one: '1 photo detected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String scanFotoNummer(int nummer) {
+    return 'Photo $nummer';
+  }
+
+  @override
+  String get scanLinksDrehen => 'Rotate left';
+
+  @override
+  String get scanRechtsDrehen => 'Rotate right';
+
+  @override
+  String get scanBeschreibung => 'Shared description (optional)';
+
+  @override
+  String get scanDatumKeins => 'Set date taken (optional)';
+
+  @override
+  String get scanPaarweise => 'Stack fronts and backs in pairs';
+
+  @override
+  String get scanPaarweiseText =>
+      'Each pair of selected crops is kept as versions; the front remains visible.';
+
+  @override
+  String get scanRestaurieren => 'Restore after import';
+
+  @override
+  String get scanRestaurierenText =>
+      'Adds the new photos to the existing local restoration queue.';
+
+  @override
+  String scanImportieren(int anzahl) {
+    return 'Import $anzahl crops';
+  }
+
+  @override
+  String get scanKeineAuswahl => 'Select at least one detected crop.';
+
+  @override
+  String get scanUngerade =>
+      'An even number must be selected for fronts and backs.';
+
+  @override
+  String get scanPaarNichtGestapelt =>
+      'Skipped duplicates left an incomplete pair; the new photos were imported but not stacked in pairs.';
+
+  @override
+  String scanFertig(int neu, int duplikate, int fehler) {
+    return 'Scan import: $neu new, $duplikate duplicates, $fehler errors.';
+  }
+
+  @override
+  String scanFehler(String fehler) {
+    return 'The scan workspace could not complete the operation: $fehler';
+  }
 }

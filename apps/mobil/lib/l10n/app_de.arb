@@ -522,6 +522,7 @@
     }
   },
   "angabenSerie": "Serie mit {n} Aufnahmen",
+  "angabenVarianten": "{n} Varianten dieser Aufnahme",
   "@angabenSerie": {
     "placeholders": {
       "n": {
@@ -540,6 +541,7 @@
     }
   },
   "angabenSerieTitel": "Serie · {n} Aufnahmen",
+  "angabenVariantenTitel": "Varianten · {n} Fassungen",
   "@angabenSerieTitel": {
     "placeholders": {
       "n": {
@@ -1224,6 +1226,12 @@
   "teilenJpegHinweis": "Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.",
   "teilenOhneVideos": "Videos bleiben aussen vor.",
   "teilenWandelt": "Die Fotos werden als JPEG geholt …",
+  "albumOfflineSpeichern": "Auf diesem Telefon offline behalten",
+  "albumOfflineAufheben": "Nicht mehr offline behalten",
+  "albumOfflineFertig": "{n, plural, =1{1 Aufnahme ist offline verfügbar.} other{{n} Aufnahmen sind offline verfügbar.}}",
+  "@albumOfflineFertig": {"placeholders": {"n": {"type": "int"}}},
+  "albumOfflineEntfernt": "Das Album wird nicht mehr dauerhaft auf diesem Telefon behalten.",
+  "albumOfflineFehler": "Noch nicht vollständig geladen. Das Telefon setzt den Download fort, sobald der Server erreichbar ist.",
   "eigenOidcTitel": "Anmeldung über den Anbieter",
   "eigenOidcVerknuepft": "Verknüpft mit {anbieter}",
   "@eigenOidcVerknuepft": {"placeholders": {"anbieter": {"type": "String"}}},
