@@ -28,9 +28,21 @@ import 'stand.dart';
 /// arbeiten und wird abgebrochen, wenn das Telefon gebraucht wird. Danach
 /// plant sie sich neu.
 ///
+/// Dazu kurze Auffrischungen (`BGAppRefreshTask`, [kurzaufgabe], #214):
+/// Tagsüber lief die Sicherung sonst nur, solange die App offen war – neue
+/// Fotos blieben bis zur Nacht oder zum nächsten Öffnen nur auf dem
+/// Telefon. Eine Auffrischung darf rund 30 Sekunden arbeiten; iOS startet
+/// sie über den Tag verteilt, frühestens alle 15 Minuten und umso öfter, je
+/// öfter die App benutzt wird. Ein Lauf sichert, was in die Zeit passt; der
+/// nächste macht dort weiter. Mit „Im Hintergrund nur beim Laden“ gibt es
+/// sie nicht: Eine Auffrischung kennt keine Bedingung fürs Laden.
+///
 /// Angefangene Uploads gehen beim nächsten Lauf an derselben Stelle weiter.
 const sicherungsaufgabe = 'de.dasevo.photovault.sicherung';
 const _uebergabe = 'de.dasevo.photovault.sicherung.weiter';
+
+/// Die kurze Auffrischung unter iOS (siehe oben).
+const kurzaufgabe = 'de.dasevo.photovault.sicherung.kurz';
 
 var _gestoppt = false;
 
@@ -46,6 +58,10 @@ void sicherungImHintergrund() {
     final frist = DateTime.now().add(
       Platform.isAndroid
           ? const Duration(minutes: 9)
+          // Eine Auffrischung hat rund 30 Sekunden; vorher aufhören, damit
+          // der Stand geschrieben ist und iOS die App nicht drosselt.
+          : aufgabe == kurzaufgabe
+          ? const Duration(seconds: 25)
           : const Duration(minutes: 30),
     );
     try {
@@ -114,6 +130,7 @@ Future<void> planeSicherung(Sicherungseinstellungen e) async {
   if (!e.an) {
     await Workmanager().cancelByUniqueName(sicherungsaufgabe);
     await Workmanager().cancelByUniqueName(_uebergabe);
+    if (Platform.isIOS) await Workmanager().cancelByUniqueName(kurzaufgabe);
     return;
   }
   if (Platform.isAndroid) {
@@ -146,6 +163,16 @@ Future<void> _planeIos([Sicherungseinstellungen? e]) async {
       requiresCharging: e.nurBeimLaden,
     ),
   );
+  if (e.nurBeimLaden) {
+    await Workmanager().cancelByUniqueName(kurzaufgabe);
+  } else {
+    await Workmanager().registerPeriodicTask(
+      kurzaufgabe,
+      kurzaufgabe,
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+    );
+  }
 }
 
 Future<Sicherungseinstellungen?> _einstellungen() async {

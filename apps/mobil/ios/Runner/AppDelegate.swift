@@ -17,6 +17,12 @@ import workmanager_apple
       GeneratedPluginRegistrant.register(with: registry)
     }
     WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "de.dasevo.photovault.sicherung")
+    // Kurze Auffrischungen über den Tag (BGAppRefreshTask, rund 30 s je
+    // Lauf): Die Verarbeitungsaufgabe allein lässt iOS meist nur nachts am
+    // Ladekabel laufen (#214).
+    WorkmanagerPlugin.registerPeriodicTask(
+      withIdentifier: "de.dasevo.photovault.sicherung.kurz",
+      earliestBeginInSeconds: NSNumber(value: 15 * 60))
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
