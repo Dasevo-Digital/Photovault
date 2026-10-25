@@ -530,7 +530,12 @@ class _Api {
         'protokoll': protokollFassung,
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
-        'anmeldung': {'totp': konten.totpPflicht, 'oidc': oidc != null},
+        'anmeldung': {
+          'totp': konten.totpPflicht,
+          'oidc': oidc != null,
+          // Nur von dort kann die Weboberfläche verknüpfen (#182).
+          if (oidc case final o?) 'weboberflaeche': '${o.e.weboberflaeche}',
+        },
         if (einrichten) 'einrichten': true,
       });
 

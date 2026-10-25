@@ -2676,6 +2676,7 @@ async function zeigeKonto() {
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
   zeigeBeitraege().catch(() => {});
+  zeigeOidc(k).catch(() => {});
   const g = await api('/api/v1/geraete');
   const ul = $('geraete');
   ul.replaceChildren();
@@ -2727,6 +2728,91 @@ $('form-passwort').addEventListener('submit', async (e) => {
     m.textContent = t('Passwort geändert.');
   } catch (x) { m.textContent = x.message; }
 });
+
+// --- Anmeldung über den Anbieter (OIDC, #182) ----------------------------
+//
+// Wie am Rechner und auf dem Telefon (kern/abgleich/oidc_verknuepfung.dart):
+// Der Server nennt die Adresse beim Anbieter, der Browser geht hin und kommt
+// über den Server auf diese Seite zurück. Den Prüfer (PKCE) kennt nur diese
+// Seite – er liegt bis zur Rückkehr im sessionStorage dieses Tabs. Der
+// Server nimmt als Rückweg ins Netz nur seine eigene Weboberfläche unter der
+// Adresse von aussen an; über eine andere Adresse geht es deshalb nicht.
+
+const OIDC_MERKER = 'pv-oidc';
+let oidcSeite = null;
+let oidcErgebnis = null;
+
+const zufallsText = (n) => {
+  const zeichen = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  const b = crypto.getRandomValues(new Uint8Array(n));
+  return Array.from(b, (x) => zeichen[x & 63]).join('');
+};
+const base64url = (puffer) => btoa(String.fromCharCode(...new Uint8Array(puffer)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+async function zeigeOidc(k) {
+  const a = (await api('/api/v1/zustand')).anmeldung || {};
+  $('oidc-feld').hidden = !a.oidc;
+  if (!a.oidc) return;
+  oidcSeite = a.weboberflaeche || null;
+  const anbieter = k.oidc || [];
+  $('oidc-stand').textContent = anbieter.length
+    ? t('Verknüpft mit {anbieter}', { anbieter: anbieter.join(', ') })
+    : t('Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.');
+  // Nur unter der Adresse, die der Anbieter kennt – und nur dort, wo der
+  // Browser rechnen darf (crypto.subtle gibt es nur über HTTPS).
+  const hier = oidcSeite && new URL(oidcSeite).origin === location.origin && window.crypto && crypto.subtle;
+  $('oidc-verknuepfen').disabled = !hier;
+  const anderswo = $('oidc-anderswo');
+  anderswo.hidden = !!hier;
+  if (!hier && oidcSeite) {
+    const link = el('a', null, oidcSeite);
+    link.href = oidcSeite;
+    anderswo.replaceChildren(t('Verknüpfen geht nur über die Adresse, die der Anbieter kennt:') + ' ', link);
+  }
+  $('oidc-meldung').textContent = oidcErgebnis || '';
+  oidcErgebnis = null;
+}
+
+$('oidc-verknuepfen').addEventListener('click', async () => {
+  const m = $('oidc-meldung');
+  m.textContent = '';
+  try {
+    const pruefer = zufallsText(64);
+    const zustand = zufallsText(24);
+    const pruefwert = base64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pruefer)));
+    const d = await api('/api/v1/konto/oidc', { methode: 'POST', json: { rueckweg: oidcSeite, pruefwert, zustand } });
+    sessionStorage.setItem(OIDC_MERKER, JSON.stringify({ pruefer, zustand }));
+    location.assign(d.adresse);
+  } catch (x) { m.textContent = x.message; }
+});
+
+// Zurück vom Anbieter: `?code=…&zustand=…` (oder `fehler=…`). Die Angaben
+// verschwinden sofort aus der Adresszeile – sie gehören weder in den
+// Verlauf noch in ein Lesezeichen.
+async function oidcZurueck() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('zustand') || !(q.has('code') || q.has('fehler'))) return;
+  history.replaceState(null, '', `${location.pathname}#/konto`);
+  let gemerkt = null;
+  try {
+    gemerkt = JSON.parse(sessionStorage.getItem(OIDC_MERKER) || 'null');
+    sessionStorage.removeItem(OIDC_MERKER);
+  } catch (_) { /* privat */ }
+  const code = q.get('code');
+  if (!gemerkt || gemerkt.zustand !== q.get('zustand') || !code) {
+    oidcErgebnis = t('Nicht verknüpft – im Browser abgebrochen oder abgelehnt.');
+    return;
+  }
+  try {
+    const e = await api('/api/v1/anmelden/oidc/einloesen', { methode: 'POST', json: { code, pruefer: gemerkt.pruefer } });
+    oidcErgebnis = e.verknuepft
+      ? t('Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.')
+      : t('Nicht verknüpft – im Browser abgebrochen oder abgelehnt.');
+  } catch (x) {
+    oidcErgebnis = x.status === 409 ? t('Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.') : x.message;
+  }
+}
 
 async function zeigeFassung(ziel) {
   try {
@@ -4733,6 +4819,7 @@ async function starte() {
   // dem Telefon.
   $('konto-knopf').textContent = (sitzung.name || '?').trim().charAt(0).toUpperCase();
   $('konto-knopf').title = `${t('Konto')}: ${sitzung.name}`;
+  await oidcZurueck();
   await zeigeWeg();
 }
 

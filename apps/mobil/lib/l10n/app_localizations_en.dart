@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2457,4 +2458,41 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get teilenWandelt => 'Fetching the photos as JPEG …';
+
+  @override
+  String get eigenOidcTitel => 'Sign-in through the provider';
+
+  @override
+  String eigenOidcVerknuepft(String anbieter) {
+    return 'Linked with $anbieter';
+  }
+
+  @override
+  String get eigenOidcNicht =>
+      'Not linked – signing in then works with the password only.';
+
+  @override
+  String get eigenOidcVerknuepfen => 'Link';
+
+  @override
+  String get eigenOidcLaeuft =>
+      'Sign in with the provider – Photo Vault is waiting …';
+
+  @override
+  String get eigenOidcFertig =>
+      'Linked. From now on you can also sign in through the provider.';
+
+  @override
+  String get eigenOidcAbgelehnt => 'Not linked – cancelled or declined.';
+
+  @override
+  String get eigenOidcZeitUm =>
+      'Not linked – no answer came back from the provider.';
+
+  @override
+  String get eigenOidcVergeben =>
+      'This provider account already belongs to another account.';
+
+  @override
+  String get eigenOidcSeite => 'Done – back to Photo Vault.';
 }

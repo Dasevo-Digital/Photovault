@@ -3816,6 +3816,66 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Fotos werden als JPEG geholt …'**
   String get teilenWandelt;
+
+  /// No description provided for @eigenOidcTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Anmeldung über den Anbieter'**
+  String get eigenOidcTitel;
+
+  /// No description provided for @eigenOidcVerknuepft.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpft mit {anbieter}'**
+  String eigenOidcVerknuepft(String anbieter);
+
+  /// No description provided for @eigenOidcNicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.'**
+  String get eigenOidcNicht;
+
+  /// No description provided for @eigenOidcVerknuepfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpfen'**
+  String get eigenOidcVerknuepfen;
+
+  /// No description provided for @eigenOidcLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Beim Anbieter anmelden – Photo Vault wartet …'**
+  String get eigenOidcLaeuft;
+
+  /// No description provided for @eigenOidcFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.'**
+  String get eigenOidcFertig;
+
+  /// No description provided for @eigenOidcAbgelehnt.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – abgebrochen oder abgelehnt.'**
+  String get eigenOidcAbgelehnt;
+
+  /// No description provided for @eigenOidcZeitUm.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verknüpft – vom Anbieter kam keine Antwort.'**
+  String get eigenOidcZeitUm;
+
+  /// No description provided for @eigenOidcVergeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.'**
+  String get eigenOidcVergeben;
+
+  /// No description provided for @eigenOidcSeite.
+  ///
+  /// In de, this message translates to:
+  /// **'Fertig – zurück zu Photo Vault.'**
+  String get eigenOidcSeite;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

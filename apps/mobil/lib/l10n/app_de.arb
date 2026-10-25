@@ -1223,5 +1223,16 @@
   },
   "teilenJpegHinweis": "Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.",
   "teilenOhneVideos": "Videos bleiben aussen vor.",
-  "teilenWandelt": "Die Fotos werden als JPEG geholt …"
+  "teilenWandelt": "Die Fotos werden als JPEG geholt …",
+  "eigenOidcTitel": "Anmeldung über den Anbieter",
+  "eigenOidcVerknuepft": "Verknüpft mit {anbieter}",
+  "@eigenOidcVerknuepft": {"placeholders": {"anbieter": {"type": "String"}}},
+  "eigenOidcNicht": "Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.",
+  "eigenOidcVerknuepfen": "Verknüpfen",
+  "eigenOidcLaeuft": "Beim Anbieter anmelden – Photo Vault wartet …",
+  "eigenOidcFertig": "Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.",
+  "eigenOidcAbgelehnt": "Nicht verknüpft – abgebrochen oder abgelehnt.",
+  "eigenOidcZeitUm": "Nicht verknüpft – vom Anbieter kam keine Antwort.",
+  "eigenOidcVergeben": "Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.",
+  "eigenOidcSeite": "Fertig – zurück zu Photo Vault."
 }

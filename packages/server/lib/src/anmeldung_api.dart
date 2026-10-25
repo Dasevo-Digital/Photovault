@@ -424,11 +424,15 @@ class Anmeldungsapi {
         return _ergebnis(konten.meldeAn(konto.id, e.geraet, adresse));
       case OidcAbsicht.verknuepfen:
         // Die Verknüpfung gilt nur für das Konto, das sie begonnen hat,
-        // und nur, wenn es sie selbst einlöst.
+        // und nur, wenn es sie selbst einlöst – mit dem Token des Geräts
+        // oder, aus der Weboberfläche, mit deren Sitzung (#182).
         final kopf = anfrage.headers['authorization'];
-        final wer = kopf != null && kopf.startsWith('Bearer ')
-            ? konten.pruefeToken(kopf.substring(7).trim(), adresse)
+        final token = kopf != null && kopf.startsWith('Bearer ')
+            ? kopf.substring(7).trim()
+            : anfrageAusDerOberflaeche(anfrage)
+            ? cookieWert(anfrage, webCookie)
             : null;
+        final wer = token == null ? null : konten.pruefeToken(token, adresse);
         if (wer == null || wer.konto.id != e.kontoId) {
           return _json({'fehler': 'nicht angemeldet'}, status: 401);
         }

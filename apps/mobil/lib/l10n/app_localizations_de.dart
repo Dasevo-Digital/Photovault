@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2468,4 +2469,41 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get teilenWandelt => 'Die Fotos werden als JPEG geholt …';
+
+  @override
+  String get eigenOidcTitel => 'Anmeldung über den Anbieter';
+
+  @override
+  String eigenOidcVerknuepft(String anbieter) {
+    return 'Verknüpft mit $anbieter';
+  }
+
+  @override
+  String get eigenOidcNicht =>
+      'Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.';
+
+  @override
+  String get eigenOidcVerknuepfen => 'Verknüpfen';
+
+  @override
+  String get eigenOidcLaeuft => 'Beim Anbieter anmelden – Photo Vault wartet …';
+
+  @override
+  String get eigenOidcFertig =>
+      'Verknüpft. Künftig geht die Anmeldung auch über den Anbieter.';
+
+  @override
+  String get eigenOidcAbgelehnt =>
+      'Nicht verknüpft – abgebrochen oder abgelehnt.';
+
+  @override
+  String get eigenOidcZeitUm =>
+      'Nicht verknüpft – vom Anbieter kam keine Antwort.';
+
+  @override
+  String get eigenOidcVergeben =>
+      'Dieses Konto beim Anbieter gehört schon zu einem anderen Konto.';
+
+  @override
+  String get eigenOidcSeite => 'Fertig – zurück zu Photo Vault.';
 }

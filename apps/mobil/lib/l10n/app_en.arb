@@ -801,5 +801,15 @@
   "jpegKante": "JPEG – {kante} px",
   "teilenJpegHinweis": "With the edits. Date and camera come along, the location does not.",
   "teilenOhneVideos": "Videos are left out.",
-  "teilenWandelt": "Fetching the photos as JPEG …"
+  "teilenWandelt": "Fetching the photos as JPEG …",
+  "eigenOidcTitel": "Sign-in through the provider",
+  "eigenOidcVerknuepft": "Linked with {anbieter}",
+  "eigenOidcNicht": "Not linked – signing in then works with the password only.",
+  "eigenOidcVerknuepfen": "Link",
+  "eigenOidcLaeuft": "Sign in with the provider – Photo Vault is waiting …",
+  "eigenOidcFertig": "Linked. From now on you can also sign in through the provider.",
+  "eigenOidcAbgelehnt": "Not linked – cancelled or declined.",
+  "eigenOidcZeitUm": "Not linked – no answer came back from the provider.",
+  "eigenOidcVergeben": "This provider account already belongs to another account.",
+  "eigenOidcSeite": "Done – back to Photo Vault."
 }

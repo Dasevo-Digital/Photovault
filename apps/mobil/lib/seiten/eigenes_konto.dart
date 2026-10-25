@@ -2,22 +2,35 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kern/abgleich/oidc_verknuepfung.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../einfuegbares_menue.dart';
 import '../formate.dart';
 import '../l10n/app_localizations.dart';
 
 /// Das eigene Konto wie im Browser (web/app.js, zeigeKonto): wer man ist,
-/// die Geräte des Kontos zum Abmelden und „Passwort ändern“.
+/// die Geräte des Kontos zum Abmelden, „Passwort ändern“ und – kennt der
+/// Server einen Anbieter – die Verknüpfung mit der Anmeldung dort.
 class EigenesKonto extends StatefulWidget {
   const EigenesKonto({
     super.key,
     required this.verbindung,
     required this.abmelden,
+    this.oeffne = _imBrowserDerApp,
   });
 
   final Serververbindung verbindung;
+
+  /// Öffnet die Adresse beim Anbieter – im Browser innerhalb der App, damit
+  /// sie im Vordergrund bleibt und ihr Rückweg auf diesem Telefon
+  /// (kern/abgleich/oidc_verknuepfung.dart) die Antwort annehmen kann.
+  final Future<void> Function(Uri adresse) oeffne;
+
+  static Future<void> _imBrowserDerApp(Uri adresse) async {
+    await launchUrl(adresse, mode: LaunchMode.inAppBrowserView);
+  }
 
   /// Dieses Telefon abmelden – wie der Knopf unten auf der Kontoseite.
   final VoidCallback abmelden;
@@ -29,6 +42,8 @@ class EigenesKonto extends StatefulWidget {
 class _EigenesKontoState extends State<EigenesKonto> {
   Map<String, Object?>? _konto;
   List<Map<String, Object?>> _geraete = const [];
+  bool _oidcMoeglich = false;
+  bool _verknuepft = false;
 
   @override
   void initState() {
@@ -40,9 +55,16 @@ class _EigenesKontoState extends State<EigenesKonto> {
     try {
       final k = await widget.verbindung.hole('api/v1/konto');
       final g = await widget.verbindung.hole('api/v1/geraete');
+      // Ein älterer Server kennt die Frage nicht – dann eben ohne.
+      var oidc = false;
+      try {
+        final z = await widget.verbindung.hole('api/v1/zustand');
+        oidc = (z['anmeldung'] as Map?)?['oidc'] == true;
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _konto = k;
+        _oidcMoeglich = oidc;
         _geraete = [
           for (final x in (g['geraete'] as List? ?? const []))
             (x as Map).cast<String, Object?>(),
@@ -86,11 +108,48 @@ class _EigenesKontoState extends State<EigenesKonto> {
     }
   }
 
+  /// Wie am Rechner (server_eigenes_konto_screen.dart): der Browser geht
+  /// zum Anbieter und kehrt über den Server auf einen Port nur auf diesem
+  /// Telefon zurück (#182).
+  Future<void> _verknuepfen() async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    setState(() => _verknuepft = true);
+    bote.showSnackBar(SnackBar(content: Text(t.eigenOidcLaeuft)));
+    try {
+      final ausgang = await OidcVerknuepfung(
+        widget.verbindung,
+      ).verknuepfe(antwort: t.eigenOidcSeite, oeffne: widget.oeffne);
+      // Die Antwortseite hat ihren Dienst getan; zurück in die App.
+      await closeInAppWebView().catchError((_) {});
+      bote
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(switch (ausgang) {
+              Oidcausgang.verknuepft => t.eigenOidcFertig,
+              Oidcausgang.abgelehnt => t.eigenOidcAbgelehnt,
+              Oidcausgang.zeitUm => t.eigenOidcZeitUm,
+              Oidcausgang.vergeben => t.eigenOidcVergeben,
+            }),
+          ),
+        );
+      await _lade();
+    } catch (x) {
+      bote
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('$x')));
+    } finally {
+      if (mounted) setState(() => _verknuepft = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     final k = _konto;
     if (k == null) return const SizedBox.shrink();
+    final anbieter = [for (final a in (k['oidc'] as List? ?? const [])) '$a'];
     final sprache = Localizations.localeOf(context).toLanguageTag();
     final zeit = datumZeitMittel(sprache);
     final farben = Theme.of(context).colorScheme;
@@ -172,6 +231,21 @@ class _EigenesKontoState extends State<EigenesKonto> {
             ),
           ),
         ),
+        if (_oidcMoeglich)
+          ListTile(
+            leading: const Icon(Icons.badge_outlined),
+            title: Text(t.eigenOidcTitel),
+            subtitle: Text(
+              anbieter.isEmpty
+                  ? t.eigenOidcNicht
+                  : t.eigenOidcVerknuepft(anbieter.join(', ')),
+              style: TextStyle(color: farben.onSurfaceVariant),
+            ),
+            trailing: OutlinedButton(
+              onPressed: _verknuepft ? null : _verknuepfen,
+              child: Text(t.eigenOidcVerknuepfen),
+            ),
+          ),
       ],
     );
   }

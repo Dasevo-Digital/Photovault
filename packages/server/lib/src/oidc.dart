@@ -28,13 +28,16 @@ class OidcEinstellungen {
   final Uri oeffentlich;
   final String bereiche;
 
+  Uri get _basis => oeffentlich.path.endsWith('/')
+      ? oeffentlich
+      : oeffentlich.replace(path: '${oeffentlich.path}/');
+
   /// Die Adresse, die beim Anbieter als Weiterleitung eingetragen wird.
-  Uri get rueckruf {
-    final basis = oeffentlich.path.endsWith('/')
-        ? oeffentlich
-        : oeffentlich.replace(path: '${oeffentlich.path}/');
-    return basis.resolve('api/v1/anmelden/oidc/zurueck');
-  }
+  Uri get rueckruf => _basis.resolve('api/v1/anmelden/oidc/zurueck');
+
+  /// Die Weboberfläche unter der Adresse von aussen – der einzige Rückweg
+  /// ins Netz, den der Server annimmt, und nur zum Verknüpfen (#182).
+  Uri get weboberflaeche => _basis.resolve('app/');
 }
 
 /// Wofür eine Anmeldung beim Anbieter gedacht ist.
@@ -143,6 +146,24 @@ class Oidc {
   /// Die eigenen Schemata der App, über die ein Rückweg führen darf.
   static const schemata = {'photovault', 'de.dasevo.photovault'};
 
+  /// Ob [rueckweg] genau die eigene Weboberfläche ist (siehe
+  /// [OidcEinstellungen.weboberflaeche]).
+  ///
+  /// **Warum das sicher bleibt.** Der Code taugt nur mit dem Prüfer, und
+  /// den kennt allein die Seite, die die Verknüpfung begonnen hat; beim
+  /// Einlösen muss zudem dasselbe Konto angemeldet sein. Ein Rückweg auf
+  /// diese Seite führt also zu niemand anderem. Zum Anmelden gilt er
+  /// nicht – dort gibt der Code ein Token heraus.
+  bool zurWeboberflaeche(Uri rueckweg) {
+    final w = e.weboberflaeche;
+    return rueckweg.scheme == w.scheme &&
+        rueckweg.authority == w.authority &&
+        rueckweg.path == w.path &&
+        rueckweg.userInfo.isEmpty &&
+        !rueckweg.hasQuery &&
+        !rueckweg.hasFragment;
+  }
+
   /// Ob [rueckweg] zur App auf diesem Gerät führt – und nirgends sonst.
   static bool rueckwegErlaubt(Uri rueckweg) {
     if (schemata.contains(rueckweg.scheme)) return true;
@@ -165,7 +186,8 @@ class Oidc {
     String? appZustand,
     String? kontoId,
   }) async {
-    if (!rueckwegErlaubt(rueckweg)) {
+    if (!rueckwegErlaubt(rueckweg) &&
+        !(absicht == OidcAbsicht.verknuepfen && zurWeboberflaeche(rueckweg))) {
       throw OidcFehler('rueckweg', 'Dieser Rückweg ist nicht erlaubt.');
     }
     if (!RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(appPruefwert)) {

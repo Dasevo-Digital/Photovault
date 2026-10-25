@@ -152,12 +152,15 @@ void main() {
     String pfad, {
     Object? json,
     String? token,
+    String? sitzung,
   }) async => api(
     Request(
       methode,
       Uri.parse('http://server$pfad'),
       headers: {
         if (token != null) 'authorization': 'Bearer $token',
+        // So schickt die Weboberfläche: Sitzung im Cookie, dazu ihr Kopf.
+        if (sitzung != null) ...{'cookie': 'pv_web=$sitzung', 'x-pv-web': '1'},
         if (json != null) 'content-type': 'application/json',
       },
       body: json == null ? null : jsonEncode(json),
@@ -301,6 +304,110 @@ void main() {
       json: {'code': zurApp.queryParameters['code'], 'pruefer': pruefer},
     );
     expect(r.statusCode, 403);
+  });
+
+  group('aus der Weboberfläche (#182)', () {
+    final web = Uri.parse('https://fotos.example.org/app/');
+
+    test('der Zustand nennt ihre Adresse von aussen', () async {
+      final z = await jsonAus(await frag('GET', '/api/v1/zustand'));
+      expect((z['anmeldung']! as Map)['weboberflaeche'], '$web');
+    });
+
+    test('verknüpft über ihre Seite und mit ihrer Sitzung', () async {
+      final start = await jsonAus(
+        await frag(
+          'POST',
+          '/api/v1/konto/oidc',
+          sitzung: tokenErika,
+          json: {
+            'rueckweg': '$web',
+            'pruefwert': Oidc.s256(pruefer),
+            'zustand': 'w1',
+          },
+        ),
+      );
+      final zurSeite = await zurueck(
+        Uri.parse(start['adresse']! as String),
+        'nutzer-web',
+      );
+      expect(zurSeite.replace(queryParameters: {}).toString(), '$web?');
+      expect(zurSeite.queryParameters['zustand'], 'w1');
+      final r = await frag(
+        'POST',
+        '/api/v1/anmelden/oidc/einloesen',
+        sitzung: tokenErika,
+        json: {'code': zurSeite.queryParameters['code'], 'pruefer': pruefer},
+      );
+      expect(await jsonAus(r), {'verknuepft': true});
+      expect(konten.oidcAussteller(erika.id), [anbieter.aussteller]);
+    });
+
+    test('ohne ihren Kopf zählt das Cookie nicht', () async {
+      final start = await jsonAus(
+        await frag(
+          'POST',
+          '/api/v1/konto/oidc',
+          token: tokenErika,
+          json: {'rueckweg': '$web', 'pruefwert': Oidc.s256(pruefer)},
+        ),
+      );
+      final zurSeite = await zurueck(
+        Uri.parse(start['adresse']! as String),
+        'nutzer-web',
+      );
+      // Eine fremde Seite könnte das Cookie mitschicken lassen, aber nicht
+      // den Kopf der Weboberfläche.
+      final r = await api(
+        Request(
+          'POST',
+          Uri.parse('http://server/api/v1/anmelden/oidc/einloesen'),
+          headers: {
+            'cookie': 'pv_web=$tokenErika',
+            'content-type': 'application/json',
+          },
+          body: jsonEncode({
+            'code': zurSeite.queryParameters['code'],
+            'pruefer': pruefer,
+          }),
+        ),
+      );
+      expect(r.statusCode, 401);
+      expect(konten.oidcAussteller(erika.id), isEmpty);
+    });
+
+    test('nur ihre Seite, und nicht zum Anmelden', () async {
+      Future<int> verknuepfen(String rueckweg) async => (await frag(
+        'POST',
+        '/api/v1/konto/oidc',
+        token: tokenErika,
+        json: {'rueckweg': rueckweg, 'pruefwert': Oidc.s256(pruefer)},
+      )).statusCode;
+      expect(await verknuepfen('https://fotos.example.org/app/'), 200);
+      for (final falsch in [
+        'https://fotos.example.org/andere/',
+        'https://fotos.example.org/app/?weiter=https://angreifer.example/',
+        'http://fotos.example.org/app/',
+        'https://fotos.example.org.angreifer.example/app/',
+        // Mit Benutzerangabe vor dem Host – zusammengesetzt, damit die
+        // Datenschutzprüfung darin keine E-Mail-Adresse sieht.
+        Uri(
+          scheme: 'https',
+          userInfo: 'jemand',
+          host: 'fotos.example.org',
+          path: '/app/',
+        ).toString(),
+      ]) {
+        expect(await verknuepfen(falsch), 400, reason: falsch);
+      }
+      final anmelden = await frag(
+        'GET',
+        '/api/v1/anmelden/oidc?geraet=x'
+            '&rueckweg=${Uri.encodeComponent('$web')}'
+            '&pruefwert=${Oidc.s256(pruefer)}',
+      );
+      expect(anmelden.statusCode, 400);
+    });
   });
 
   test('ein Rückweg ins Netz wird nicht angenommen', () async {

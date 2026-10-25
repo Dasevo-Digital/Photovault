@@ -298,6 +298,16 @@
       <button type="submit">Ändern</button>
       <p id="passwort-meldung" class="leise"></p>
     </form>
+    <!-- Nur, wenn der Server einen Anbieter kennt (#182). -->
+    <div id="oidc-feld" hidden>
+      <h3>Anmeldung über den Anbieter</h3>
+      <div class="karte schmal">
+        <p id="oidc-stand"></p>
+        <p id="oidc-anderswo" class="leise klein" hidden></p>
+        <p><button id="oidc-verknuepfen" type="button">Verknüpfen …</button></p>
+        <p id="oidc-meldung" class="leise"></p>
+      </div>
+    </div>
     <div id="codes-feld" hidden>
       <h3>Wiederherstellungscodes</h3>
       <p id="codes-stand" class="leise"></p>
