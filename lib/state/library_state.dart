@@ -344,6 +344,11 @@ class LibraryState extends ChangeNotifier {
           () => erneuereRohvorschauen(db, paths, importService),
         ),
       (nachlaufOriginalmasse, () => berichtigeOriginalmasse(db, paths)),
+      // Falsch verknüpfte Live Photos lösen und neu zuordnen (#213).
+      (
+        Nachbearbeitung.nachlaufLivePhotoPaare,
+        nachbearbeitung.repariereLivePhotoPaare,
+      ),
     ];
     for (final (schluessel, lauf) in laeufe) {
       try {

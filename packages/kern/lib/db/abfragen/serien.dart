@@ -55,6 +55,28 @@ extension SerienAbfragen on AppDatabase {
           )..where((t) => t.schluessel.equals(schluessel))).getSingleOrNull())
           ?.fertigAm;
 
+  /// Die verknüpften Live-Photo-Paare: Video und Foto (#213).
+  Future<List<(AssetData video, AssetData foto)>> livePhotoPaare() async {
+    final foto = alias(assets, 'foto');
+    final zeilen =
+        await (select(assets).join([
+              innerJoin(foto, foto.id.equalsExp(assets.linkedAssetId)),
+            ])..where(
+              assets.type.equals('VIDEO') &
+                  foto.type.equals('IMAGE') &
+                  assets.isTrashed.equals(false),
+            ))
+            .get();
+    return [for (final z in zeilen) (z.readTable(assets), z.readTable(foto))];
+  }
+
+  /// Löst ein Live-Photo-Paar wieder (siehe [linkAssets]).
+  Future<void> trenneAssets(String idA, String idB) async {
+    await (update(assets)..where((t) => t.id.isIn([idA, idB]))).write(
+      const AssetsCompanion(linkedAssetId: Value(null)),
+    );
+  }
+
   Future<void> linkAssets(String idA, String idB) async {
     await (update(assets)..where((t) => t.id.equals(idA))).write(
       AssetsCompanion(linkedAssetId: Value(idB)),

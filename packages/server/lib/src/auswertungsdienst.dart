@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:kern/auswertung/auswertungen.dart';
+import 'package:kern/auswertung/nachbearbeitung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/protokoll.dart';
@@ -193,6 +194,11 @@ class Auswertungsdienst {
           bibliothek.pfade,
           abbrechen: () => _beendet,
         ),
+      ),
+      // Falsch verknüpfte Live Photos lösen und neu zuordnen (#213).
+      (
+        Nachbearbeitung.nachlaufLivePhotoPaare,
+        () => bibliothek.nachbearbeitung.repariereLivePhotoPaare(),
       ),
     ];
     for (final (schluessel, lauf) in laeufe) {

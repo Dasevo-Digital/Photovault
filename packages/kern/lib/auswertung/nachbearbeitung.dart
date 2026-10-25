@@ -94,10 +94,30 @@ class Nachbearbeitung {
     }
   }
 
+  /// Höchstens so weit liegen Foto und Video eines Live Photos zeitlich
+  /// auseinander (#213). Gemessen an der Prüfbibliothek: 154 von 158
+  /// Paaren innerhalb von 3 Sekunden – die übrigen vier waren falsch
+  /// verknüpft und lagen Jahre auseinander.
+  static const livePhotoAbstand = Duration(seconds: 10);
+
+  /// Der einmalige Nachlauf, der falsch verknüpfte Paare löst (siehe
+  /// [repariereLivePhotoPaare]).
+  static const nachlaufLivePhotoPaare = 'nachlauf-livephoto-paare-1';
+
   /// Prüft, ob es zu diesem frisch importierten Asset schon einen
   /// unverknüpften Partner mit demselben Dateinamen (ohne Endung) gibt –
   /// z.B. das HEIC-Standbild zu einem bereits importierten MOV oder
   /// umgekehrt – und verknüpft die beiden als Live Photo.
+  ///
+  /// **Name und Zeit** (#213). Bis 3.47 entschied der Name allein. Das
+  /// iPhone zählt aber `IMG_0001` bis `IMG_9999` und fängt dann von vorn
+  /// an; in einer gewachsenen Bibliothek gibt es dieselben Namen aus
+  /// verschiedenen Jahren, und das erste unverknüpfte Foto gewann. So hing
+  /// ein Video von 2023 an einem Foto von 2013 und verschwand dort aus der
+  /// Zeitleiste, während sein eigenes Foto ohne Video blieb. Jetzt muss der
+  /// Partner auch zeitlich passen ([livePhotoAbstand]), und von mehreren
+  /// gewinnt der nächste. Ist eines der Daten nur geschätzt (etwa der
+  /// Zeitpunkt des Kopierens), zählt die Zeit nicht – sie sagt dann nichts.
   Future<void> verknuepfeLivePhoto(AssetData asset) async {
     final ext = p.extension(asset.originalFileName).toLowerCase();
     final isImage = asset.type == 'IMAGE';
@@ -110,6 +130,8 @@ class Nachbearbeitung {
     final candidates = await db.unlinkedAssetsOfType(
       isImage ? 'VIDEO' : 'IMAGE',
     );
+    AssetData? partner;
+    Duration? naechster;
     for (final candidate in candidates) {
       if (candidate.id == asset.id) continue;
       final candidateExt = p
@@ -120,14 +142,46 @@ class Nachbearbeitung {
       final candidateStem = p
           .basenameWithoutExtension(candidate.originalFileName)
           .toLowerCase();
-      if (candidateStem == stem) {
-        await db.linkAssets(asset.id, candidate.id);
-        return;
+      if (candidateStem != stem) continue;
+      final abstand = candidate.fileCreatedAt
+          .difference(asset.fileCreatedAt)
+          .abs();
+      final zeitZaehlt = !candidate.datumGeschaetzt && !asset.datumGeschaetzt;
+      if (zeitZaehlt && abstand > livePhotoAbstand) continue;
+      if (naechster == null || abstand < naechster) {
+        partner = candidate;
+        naechster = abstand;
       }
+    }
+    if (partner != null) {
+      await db.linkAssets(asset.id, partner.id);
+      return;
     }
     if (isImage && (ext == '.jpg' || ext == '.jpeg')) {
       await motionPhotoAbtrennen(asset);
     }
+  }
+
+  /// Löst Live-Photo-Paare, deren Hälften zeitlich nicht zusammengehören,
+  /// und verknüpft alle unverknüpften Videos neu – nach den Regeln von
+  /// [verknuepfeLivePhoto] (#213). Gibt zurück, wie viele Paare gelöst
+  /// wurden.
+  ///
+  /// Gelöst wird nur, wo beide Daten echt sind: Ein geschätztes Datum
+  /// widerlegt ein Paar nicht.
+  Future<int> repariereLivePhotoPaare() async {
+    var geloest = 0;
+    for (final (video, foto) in await db.livePhotoPaare()) {
+      if (video.datumGeschaetzt || foto.datumGeschaetzt) continue;
+      final abstand = video.fileCreatedAt.difference(foto.fileCreatedAt).abs();
+      if (abstand <= livePhotoAbstand) continue;
+      await db.trenneAssets(video.id, foto.id);
+      geloest++;
+    }
+    for (final video in await db.unlinkedAssetsOfType('VIDEO')) {
+      await verknuepfeLivePhoto(video);
+    }
+    return geloest;
   }
 
   /// Holt das Video aus einem Motion Photo (siehe

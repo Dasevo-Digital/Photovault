@@ -1019,6 +1019,7 @@ const _einordnung = <String, _Art>{
   'deleteUnassignedFacesForAsset': _Art.ergebnis,
   'markFacesScanned': _Art.ergebnis,
   'linkAssets': _Art.ergebnis,
+  'trenneAssets': _Art.ergebnis,
   'setzeDateiart': _Art.ergebnis,
   'updateThumbnailInfo': _Art.ergebnis,
   'clearDerivedContentData': _Art.ergebnis,
