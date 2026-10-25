@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.6" date="2026-10-25">
+      <description>
+        <p>A photo that arrived under a video file name (for example a JPEG named .MOV) now shows its real format on the tile instead of "MOV"; two photos wrongly linked as a Live Photo are no longer marked as one.</p>
+      </description>
+    </release>
     <release version="3.47.5" date="2026-10-25">
       <description>
         <p>Live Photos are now paired by file name and capture time; a video is no longer attached to a photo with the same name from another year, and wrong pairs are separated once on the server.</p>
