@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/asset_format.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
@@ -140,6 +142,10 @@ void main() {
       );
       // Und weil es als Bild durchlief, entstand auch eine Miniatur.
       expect(asset.thumbnailRelativePath, isNotNull);
+      // Das Format nennt der Inhalt, nicht der Name – sonst stünde „MOV“
+      // auf der Kachel eines Fotos.
+      expect(asset.dateiformat, 'jpg');
+      expect(assetFormatLabel(asset), 'JPG');
     });
 
     test('ein echtes Video bleibt ein Video', () async {
@@ -196,6 +202,11 @@ void main() {
         final berichtigt = (await db.assetById('alt'))!;
         expect(berichtigt.type, 'IMAGE');
         expect(berichtigt.dateiformat, 'jpg');
+        // Die Datei behält ihren Namen und ihren Platz; die Marke folgt
+        // trotzdem dem Inhalt, im Raster wie in der vollen Zeile.
+        expect(berichtigt.relativePath, endsWith('.mov'));
+        expect(assetFormatLabel(berichtigt), 'JPG');
+        expect(Rasterzeile.aus(berichtigt).kuerzel, 'JPG');
         // Die Laufzeit eines Standbildes ist keine Zahl, sondern keine.
         expect(berichtigt.durationSeconds, isNull);
         expect((await db.assetById('echt'))!.type, 'VIDEO');

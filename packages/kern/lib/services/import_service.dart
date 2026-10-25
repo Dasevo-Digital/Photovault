@@ -223,8 +223,10 @@ class ImportService {
       // Name, der ein Bild behauptet, bleibt deshalb unangetastet – dort
       // gäbe es kein Signal, das widerspräche.
       final istBildNachName = _imageExtensions.contains(ext);
-      final isImage =
-          istBildNachName || (await inhaltskennung(sourceFile, null)) != null;
+      final bildformatDesInhalts = istBildNachName
+          ? null
+          : await inhaltskennung(sourceFile, null);
+      final isImage = istBildNachName || bildformatDesInhalts != null;
 
       // Prüfsumme immer streamend. Auch ein Foto kann ein 300-MB-TIFF oder
       // Panorama sein; es für den Hash komplett im Dart-Heap zu halten ist
@@ -306,8 +308,13 @@ class ImportService {
           type: isImage ? 'IMAGE' : 'VIDEO',
           // Aus DEM Namen, unter dem die Datei kam - nicht aus dem
           // Ablagepfad. Der Ablagepfad traegt eine vereinheitlichte Endung,
-          // und dann stuende bei jedem Foto dasselbe Format.
-          dateiformat: Value(dateiformatAus(p.basename(filePath))),
+          // und dann stuende bei jedem Foto dasselbe Format. Ein Standbild
+          // unter einem Videonamen bekommt das Format seines Inhalts, wie
+          // bei LibraryState.repariereDateiarten – „mov“ waere falsch.
+          dateiformat: Value(
+            bildformatDesInhalts?.substring(1) ??
+                dateiformatAus(p.basename(filePath)),
+          ),
           fileCreatedAt: fileCreatedAt,
           datumGeschaetzt: Value(geschaetzt),
           zeitversatzMinuten: Value(exifMeta.versatzMinuten),

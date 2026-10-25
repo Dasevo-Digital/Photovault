@@ -11,15 +11,34 @@ import '../db/database.dart';
 /// Antwort auf "welches RAW-Format" – der generische Fallback unten deckt
 /// sie automatisch ab, ohne dass hier ein eigener `case` nötig wäre.
 String assetFormatLabel(AssetData asset) =>
-    formatKuerzel(asset.type, asset.relativePath);
+    formatKuerzel(asset.type, asset.relativePath, asset.dateiformat);
 
-/// Dasselbe aus den beiden Angaben, die es wirklich braucht.
+/// Endungen, unter denen ein Standbild ankommen kann, ohne dass sie sein
+/// Format nennen (siehe [formatKuerzel]).
+const _videoEndungen = {'.mov', '.mp4', '.m4v', '.avi', '.mkv'};
+
+/// Dasselbe aus den Angaben, die es wirklich braucht.
 ///
 /// Getrennt, seit es neben `AssetData` auch die schmale [Rasterzeile]
 /// gibt: Die Rechnung soll einmal dastehen und nicht zweimal.
-String formatKuerzel(String type, String relativePath) {
+///
+/// **Die Ablage nennt das Format – ausser bei einem Standbild unter
+/// einem Videonamen.** In der Bibliothek trugen 33 Fotos eine Videoendung,
+/// fast alle JPEG oder HEIC, die als `.MOV` ankamen; die Ablage behält die
+/// Endung des Namens, und die Kachel zeigte „MOV“ auf einem Foto. Ihr Format steht in [dateiformat], das der
+/// Inhalt bestimmt hat (`LibraryState.repariereDateiarten`, beim Import
+/// `ImportService.importFile`). Sonst bleibt die Ablage maßgeblich: Nach
+/// einer Wandlung oder einem ersetzten Original nennt sie, was wirklich
+/// dort liegt, [dateiformat] dagegen das Format beim Import.
+String formatKuerzel(String type, String relativePath, [String? dateiformat]) {
   if (type != 'IMAGE') return '';
-  final ext = p.extension(relativePath).toLowerCase();
+  var ext = p.extension(relativePath).toLowerCase();
+  if (_videoEndungen.contains(ext) &&
+      dateiformat != null &&
+      dateiformat.isNotEmpty &&
+      !_videoEndungen.contains('.$dateiformat')) {
+    ext = '.$dateiformat';
+  }
   switch (ext) {
     case '.jpg':
     case '.jpeg':

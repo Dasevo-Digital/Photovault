@@ -102,7 +102,10 @@ class Nachbearbeitung {
 
   /// Der einmalige Nachlauf, der falsch verknüpfte Paare löst (siehe
   /// [repariereLivePhotoPaare]).
-  static const nachlaufLivePhotoPaare = 'nachlauf-livephoto-paare-1';
+  ///
+  /// `-2` seit 3.47.6: Der erste Lauf liess Paare aus zwei Fotos stehen
+  /// (siehe `bildpaare`).
+  static const nachlaufLivePhotoPaare = 'nachlauf-livephoto-paare-2';
 
   /// Prüft, ob es zu diesem frisch importierten Asset schon einen
   /// unverknüpften Partner mit demselben Dateinamen (ohne Endung) gibt –
@@ -168,9 +171,14 @@ class Nachbearbeitung {
   /// wurden.
   ///
   /// Gelöst wird nur, wo beide Daten echt sind: Ein geschätztes Datum
-  /// widerlegt ein Paar nicht.
+  /// widerlegt ein Paar nicht. Paare aus zwei Fotos löst es immer – sie
+  /// sind gar kein Live Photo (siehe `bildpaare`).
   Future<int> repariereLivePhotoPaare() async {
     var geloest = 0;
+    for (final (a, b) in await db.bildpaare()) {
+      await db.trenneAssets(a, b);
+      geloest++;
+    }
     for (final (video, foto) in await db.livePhotoPaare()) {
       if (video.datumGeschaetzt || foto.datumGeschaetzt) continue;
       final abstand = video.fileCreatedAt.difference(foto.fileCreatedAt).abs();

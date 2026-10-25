@@ -70,6 +70,27 @@ extension SerienAbfragen on AppDatabase {
     return [for (final z in zeilen) (z.readTable(assets), z.readTable(foto))];
   }
 
+  /// Verknüpfte Paare, deren beide Hälften Fotos sind – je Paar einmal.
+  ///
+  /// Kein Live Photo, sondern ein Rest: Ein Standbild, das unter einem
+  /// `.MOV`-Namen ankam, galt bis zur Umstellung auf den Inhalt als Video
+  /// und wurde als solches an das gleichnamige Foto gehängt. Seit es als
+  /// Foto geführt wird, zeigt das Raster beide Hälften (siehe
+  /// `rasterSichtbar`), jede mit dem Live-Zeichen.
+  Future<List<(String, String)>> bildpaare() async {
+    final partner = alias(assets, 'partner');
+    final zeilen = await (select(assets).join(
+      [innerJoin(partner, partner.id.equalsExp(assets.linkedAssetId))],
+    )..where(assets.type.equals('IMAGE') & partner.type.equals('IMAGE'))).get();
+    final gesehen = <String>{};
+    return [
+      for (final z in zeilen)
+        if (gesehen.add(z.readTable(assets).id) &&
+            gesehen.add(z.readTable(partner).id))
+          (z.readTable(assets).id, z.readTable(partner).id),
+    ];
+  }
+
   /// Löst ein Live-Photo-Paar wieder (siehe [linkAssets]).
   Future<void> trenneAssets(String idA, String idB) async {
     await (update(assets)..where((t) => t.id.isIn([idA, idB]))).write(
@@ -266,19 +287,30 @@ extension SerienAbfragen on AppDatabase {
   /// Miniatur und Dauer werden ausdrücklich geleert: Die Miniatur kam vom
   /// Videowandler und ist bei diesen Dateien nie entstanden, und eine
   /// Laufzeit hat ein Standbild nicht.
+  /// Ein Video, das sich als Foto erweist, verliert dabei seine
+  /// Live-Photo-Verknüpfung: Zwei Fotos sind kein Live Photo (siehe
+  /// [bildpaare]).
   Future<void> setzeDateiart(
     String assetId,
     String art, {
     required String dateiformat,
-  }) => (update(assets)..where((t) => t.id.equals(assetId))).write(
-    AssetsCompanion(
-      type: Value(art),
-      dateiformat: Value(dateiformat),
-      thumbnailRelativePath: const Value(null),
-      previewRelativePath: const Value(null),
-      durationSeconds: const Value(null),
-    ),
-  );
+  }) => transaction(() async {
+    final vorher = await (select(
+      assets,
+    )..where((t) => t.id.equals(assetId))).getSingleOrNull();
+    await (update(assets)..where((t) => t.id.equals(assetId))).write(
+      AssetsCompanion(
+        type: Value(art),
+        dateiformat: Value(dateiformat),
+        thumbnailRelativePath: const Value(null),
+        previewRelativePath: const Value(null),
+        durationSeconds: const Value(null),
+      ),
+    );
+    if (vorher?.linkedAssetId case final partner? when art == 'IMAGE') {
+      await trenneAssets(assetId, partner);
+    }
+  });
 
   Future<void> updateThumbnailInfo(
     String assetId, {

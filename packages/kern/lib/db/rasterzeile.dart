@@ -42,7 +42,7 @@ const String rasterSpalten =
     'thumbnail_relative_path, file_created_at, duration_seconds, '
     'is_favorite, is_stack_cover, stack_id, stack_size, linked_asset_id, '
     'rating, color_label, width_px, height_px, latitude, longitude, '
-    'camera_make, is_locked';
+    'camera_make, is_locked, dateiformat';
 
 /// Wer im Raster eigenständig sichtbar ist – als SQL-Bedingung.
 ///
@@ -83,6 +83,7 @@ class Rasterzeile {
     required this.longitude,
     required this.cameraMake,
     required this.isLocked,
+    this.dateiformat,
   });
 
   final String id;
@@ -105,6 +106,10 @@ class Rasterzeile {
   final double? longitude;
   final String? cameraMake;
   final bool isLocked;
+
+  /// `Assets.dateiformat` – bei einem Standbild unter einem Videonamen das
+  /// Format des Inhalts (siehe [formatKuerzel]).
+  final String? dateiformat;
 
   /// Aus einer vollen Zeile – für die Bildschirme, die ohnehin schon
   /// `AssetData` in der Hand halten (Alben, Suche, Personen und die
@@ -131,6 +136,7 @@ class Rasterzeile {
     longitude: a.longitude,
     cameraMake: a.cameraMake,
     isLocked: a.isLocked,
+    dateiformat: a.dateiformat,
   );
 
   /// Aus einer rohen Abfragezeile – der Weg, um dessentwillen es diese
@@ -163,11 +169,12 @@ class Rasterzeile {
     longitude: r.readNullable<double>('longitude'),
     cameraMake: r.readNullable<String>('camera_make'),
     isLocked: r.read<int>('is_locked') != 0,
+    dateiformat: r.readNullable<String>('dateiformat'),
   );
 
   /// Das Format-Kürzel für die Kachel – dieselbe Rechnung wie für eine
   /// volle Zeile, siehe [formatKuerzel].
-  String get kuerzel => formatKuerzel(type, relativePath);
+  String get kuerzel => formatKuerzel(type, relativePath, dateiformat);
 
   /// Ob ein Ort hinterlegt ist.
   bool get verortet => hatOrt(latitude, longitude);

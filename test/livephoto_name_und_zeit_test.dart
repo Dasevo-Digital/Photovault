@@ -123,4 +123,34 @@ void main() {
     expect(await partner('foto-2013'), isNull);
     expect(await partner('ok-video'), 'ok-foto');
   });
+
+  // Ein Standbild unter einem `.MOV`-Namen galt früher als Video und hing
+  // am gleichnamigen Foto. Seit es als Foto geführt wird, zeigte das
+  // Raster beide – zwei Kacheln mit Live-Zeichen.
+  test('zwei Fotos sind kein Live Photo: die Reparatur löst sie', () async {
+    await lege('jpg', 'IMG_1712.JPG', 'IMAGE', neu, verknuepft: 'heic');
+    await lege('heic', 'IMG_1712.MOV', 'IMAGE', neu, verknuepft: 'jpg');
+    await lege(
+      'ok-foto',
+      'IMG_0100.HEIC',
+      'IMAGE',
+      neu,
+      verknuepft: 'ok-video',
+    );
+    await lege('ok-video', 'IMG_0100.MOV', 'VIDEO', neu, verknuepft: 'ok-foto');
+
+    expect(await nb.repariereLivePhotoPaare(), 1);
+    expect(await partner('jpg'), isNull);
+    expect(await partner('heic'), isNull);
+    expect(await partner('ok-foto'), 'ok-video');
+  });
+
+  test('wer zum Foto wird, verliert seine Live-Photo-Verknüpfung', () async {
+    await lege('foto', 'IMG_0042.JPG', 'IMAGE', neu, verknuepft: 'mov');
+    await lege('mov', 'IMG_0042.MOV', 'VIDEO', neu, verknuepft: 'foto');
+
+    await db.setzeDateiart('mov', 'IMAGE', dateiformat: 'heic');
+    expect(await partner('mov'), isNull);
+    expect(await partner('foto'), isNull);
+  });
 }
