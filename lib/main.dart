@@ -112,12 +112,18 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
   /// Beantwortet die Frage der nativen Seite. Läuft nichts, wird ohne
   /// Rückfrage beendet – eine Bestätigung, die immer erscheint, lernt man
   /// wegzuklicken.
+  ///
+  /// Darf beendet werden, schliesst die Bibliothek vorher ihre Datenbank
+  /// (siehe [LibraryState.vorDemBeenden], #215). Danach endet die App:
+  /// Fenster und Programm fragen nur ein einziges Mal (BeendenChannel).
   Future<bool> _darfBeenden() async {
     final kontext = _navigator.currentContext;
     if (kontext == null || !kontext.mounted) return true;
     final library = Provider.of<LibraryState>(kontext, listen: false);
-    if (!library.etwasLaeuft) return true;
-    return zeigeBeendenFrage(kontext, library);
+    final darf =
+        !library.etwasLaeuft || await zeigeBeendenFrage(kontext, library);
+    if (darf) await library.vorDemBeenden();
+    return darf;
   }
 
   /// Was zuletzt an die Kartenschicht und die Kachelwand ging – damit ein

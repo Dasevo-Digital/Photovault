@@ -752,6 +752,51 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
+  /// Vor dem Beenden der App (#215): Abgleich anhalten, Rechenhilfe
+  /// beenden und die Datenbank schliessen – solange alle Isolate noch
+  /// leben.
+  ///
+  /// **Warum.** Bisher endete die App, ohne irgendetwas zu schliessen. Die
+  /// Verbindung im Hintergrund-Isolat räumte die Dart-Laufzeit erst beim
+  /// Herunterfahren ab, über Finalizer und in beliebiger Reihenfolge. Am
+  /// verbundenen Rechner stürzte die App dabei in `sqlite3_finalize` ab
+  /// („Photo Vault wurde unerwartet beendet“, 3.46.0 und 3.47.2). Ein
+  /// geschlossenes drift gibt seine Anweisungen und die Verbindung selbst
+  /// frei; für die Finalizer bleibt nichts übrig.
+  ///
+  /// Jeder Schritt mit Frist: Hängt ein Schreibvorgang oder der Server,
+  /// soll das Beenden nicht hängen.
+  Future<void> vorDemBeenden() async {
+    if (_beendet) return;
+    _beendet = true;
+    _autoBackupTimer?.cancel();
+    _trashPurgeTimer?.cancel();
+    _ordnerTimer?.cancel();
+    _modellFreigabeTimer?.cancel();
+    _speicherUhr?.cancel();
+    Future<void> mitFrist(String was, Future<void> Function() schritt) async {
+      try {
+        await schritt().timeout(const Duration(seconds: 3));
+      } catch (e) {
+        debugPrint('Beenden: $was – $e');
+      }
+    }
+
+    await mitFrist('Abgleich', () async => abgleich?.beende());
+    await mitFrist('Rechenhilfe', beendeRechenhilfe);
+    if (_datenbankGeoeffnet) {
+      await mitFrist('Datenbank', () => db.close());
+      _datenbankGeoeffnet = false;
+    }
+  }
+
+  var _beendet = false;
+
+  /// Für Prüfstände, die [db] selbst setzen: Die Datenbank gilt dann als
+  /// geöffnet, und [vorDemBeenden] schliesst sie.
+  @visibleForTesting
+  void datenbankAlsGeoeffnet() => _datenbankGeoeffnet = true;
+
   Future<void> _raeumeFehlgeschlagenenStartAuf() async {
     _autoBackupTimer?.cancel();
     backupwarnung.value = null;
