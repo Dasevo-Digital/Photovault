@@ -99,6 +99,7 @@ class Sicherungslauf {
           while (i < offen.length &&
               bereit.length + ergebnis.length < gruppe &&
               bytes < gruppeBytes) {
+            _halteSperre();
             final x = offen[i++];
             final d = await _bereitstellen(x, ergebnis);
             if (d == null) continue;
@@ -122,12 +123,16 @@ class Sicherungslauf {
           }
           melde();
         } finally {
-          await rolle.aufraeumen();
+          // Nur mit der Sperre: Der Zwischenspeicher gehört allen Läufen,
+          // und wer sie übernommen hat, lädt gerade aus ihm hoch.
+          if (stand.sperre(wer)) await rolle.aufraeumen();
         }
       }
       vollstaendig = sicher + fehlgeschlagen >= gesamt;
     } on Abgebrochen {
       // Die Zeit ist um; der Upload geht beim nächsten Mal weiter.
+    } on _SperreVerloren {
+      // Ein anderer Lauf arbeitet jetzt; was offen ist, sichert er.
     } on KeineVerbindung {
       // Ohne Netz geht es beim nächsten Lauf weiter.
     } finally {
@@ -146,6 +151,21 @@ class Sicherungslauf {
     return bericht;
   }
 
+  /// Verlängert die Sperre – oder hört auf, wenn ein anderer Lauf sie
+  /// inzwischen hält.
+  ///
+  /// **Warum vor jedem Eintrag und nicht je Gruppe.** Die Sperre gilt zwei
+  /// Minuten. Eine Gruppe darf bis zu 256 MB umfassen und braucht im
+  /// Mobilfunknetz leicht länger; dann nahm der andere Lauf (App oder
+  /// Hintergrund) die abgelaufene Sperre, leerte am Ende seiner Gruppe den
+  /// gemeinsamen Zwischenspeicher von photo_manager – und dem ersten
+  /// fehlten mitten im Hochladen die Dateien. Auf dem Telefon scheiterten
+  /// so 19 Einträge in derselben Millisekunde mit „Cannot retrieve length
+  /// of file“, und jeder Fehlschlag zählte zur Pause nach dreien.
+  void _halteSperre() {
+    if (!stand.sperre(wer)) throw const _SperreVerloren();
+  }
+
   /// Die Dateien eines Eintrags samt Prüfsummen; `null` (und ein
   /// vermerkter Fehlschlag), wenn sie sich nicht bereitstellen lassen.
   Future<List<(Rollendatei, String)>?> _bereitstellen(
@@ -160,6 +180,7 @@ class Sicherungslauf {
       }
       return [for (final f in d) (f, await _pruefsumme(f.datei.path))];
     } on FileSystemException catch (f) {
+      _halteSperre();
       _scheitert(x, f.message, aus);
       return null;
     }
@@ -193,6 +214,7 @@ class Sicherungslauf {
 
     // Der Rest geht hoch.
     for (final MapEntry(key: x, value: liste) in bereit.entries) {
+      _halteSperre();
       var hoch = false;
       var endgueltig = false;
       String? aufnahme;
@@ -216,8 +238,11 @@ class Sicherungslauf {
             fortsetzen: stand.ort(x.id, f.teil, summe),
             angelegt: (ort) => stand.merkeOrt(x.id, f.teil, summe, ort),
             abbrechen: abbrechen,
-            fortschritt: (bytes, von) =>
-                melde(datei: f.name, bytes: bytes, von: von),
+            fortschritt: (bytes, von) {
+              // Ein grosses Video braucht länger als die Sperre gilt.
+              stand.sperre(wer);
+              melde(datei: f.name, bytes: bytes, von: von);
+            },
           );
         } on Serverfehler catch (s) {
           if (s.abgemeldet) rethrow;
@@ -233,6 +258,9 @@ class Sicherungslauf {
           }
           break;
         } on FileSystemException catch (s) {
+          // Fehlt die Datei, weil ein anderer Lauf übernommen und den
+          // Zwischenspeicher geleert hat, ist das kein Fehlschlag.
+          _halteSperre();
           abgelehnt = s.message;
           break;
         }
@@ -292,6 +320,12 @@ enum _Erfolg { hochgeladen, vorhanden, fehlgeschlagen }
 /// Ein anderer Lauf (App oder Hintergrund) arbeitet gerade.
 class Gesperrt implements Exception {
   const Gesperrt();
+}
+
+/// Ein anderer Lauf hat die Sperre unterwegs übernommen (siehe
+/// [Sicherungslauf._halteSperre]).
+class _SperreVerloren implements Exception {
+  const _SperreVerloren();
 }
 
 /// Wie weit ein Lauf ist.

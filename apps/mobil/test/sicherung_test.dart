@@ -22,6 +22,9 @@ class _Rolle implements Kamerarolle {
   final eintraege_ = <Rolleneintrag>[];
   var aufgeraeumt = 0;
 
+  /// Läuft, wenn der Lauf die Dateien eines Eintrags anfordert.
+  void Function(String id)? beimBereitstellen;
+
   void foto(String id, File datei, {DateTime? geaendert}) =>
       eintraege_.insert(0, _eintrag(id, [('bild', datei)], geaendert));
 
@@ -53,7 +56,7 @@ class _Rolle implements Kamerarolle {
     );
   }
 
-  static Rolleneintrag _eintrag(
+  Rolleneintrag _eintrag(
     String id,
     List<(String, File)> teile,
     DateTime? geaendert,
@@ -62,10 +65,13 @@ class _Rolle implements Kamerarolle {
     geaendert: geaendert ?? DateTime(2025, 6, 1),
     aufgenommen: DateTime(2025, 6, 1, 12),
     video: false,
-    dateien: () async => [
-      for (final (teil, datei) in teile)
-        Rollendatei(teil: teil, name: p.basename(datei.path), datei: datei),
-    ],
+    dateien: () async {
+      beimBereitstellen?.call(id);
+      return [
+        for (final (teil, datei) in teile)
+          Rollendatei(teil: teil, name: p.basename(datei.path), datei: datei),
+      ];
+    },
   );
 
   @override
@@ -353,6 +359,48 @@ void main() {
     await expectLater(lauf().laufe(), throwsA(isA<Gesperrt>()));
     stand.gibFrei('hintergrund');
     expect((await lauf().laufe()).hochgeladen, 1);
+  });
+
+  test('wer die Sperre verliert, hört auf und räumt nichts weg', () async {
+    rolle
+      ..foto('m1', server.jpeg('IMG_0411.JPG', 141))
+      ..foto('m2', server.jpeg('IMG_0412.JPG', 142))
+      ..foto('m3', server.jpeg('IMG_0413.JPG', 143));
+    // Während der Lauf bereitstellt, läuft seine Sperre ab und der Lauf im
+    // Hintergrund nimmt sie – so, wie es eine lange Gruppe erlaubte.
+    rolle.beimBereitstellen = (_) {
+      stand.gibFrei('app');
+      stand.sperre('hintergrund');
+      rolle.beimBereitstellen = null;
+    };
+    final r = await lauf().laufe();
+    expect(r.hochgeladen, 0);
+    expect(r.fehlgeschlagen, 0, reason: 'kein Fehlschlag zählt zur Pause');
+    expect(stand.fehler, isEmpty);
+    expect(
+      rolle.aufgeraeumt,
+      0,
+      reason: 'die Dateien im Zwischenspeicher braucht jetzt der andere',
+    );
+    expect(stand.sperre('app'), isFalse, reason: 'die Sperre bleibt drüben');
+
+    stand.gibFrei('hintergrund');
+    expect((await lauf().laufe()).hochgeladen, 3);
+  });
+
+  test('fehlt eine Datei, weil der andere übernahm, zählt das nicht', () async {
+    final datei = server.jpeg('IMG_0421.JPG', 144);
+    rolle.foto('n1', datei);
+    // Angehalten, übernommen, Zwischenspeicher geleert: Beim Weiterlaufen
+    // ist die Datei weg und die Sperre beim anderen.
+    rolle.beimBereitstellen = (_) {
+      stand.gibFrei('app');
+      stand.sperre('hintergrund');
+      datei.deleteSync();
+    };
+    final r = await lauf().laufe();
+    expect(r.fehlgeschlagen, 0);
+    expect(stand.fehler, isEmpty);
   });
 
   test(
