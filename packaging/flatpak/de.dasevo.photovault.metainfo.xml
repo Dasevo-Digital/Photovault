@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.3" date="2026-10-25">
+      <description>
+        <p>Exporting as JPEG on the desktop now includes the edits (developed or restored version), like downloading as JPEG in the browser and the phone app; Original still copies the unchanged file.</p>
+      </description>
+    </release>
     <release version="3.47.2" date="2026-10-24">
       <description>
         <p>On macOS, the automatic backup keeps permission to write to its destination folder after a restart; choose the folder once again after updating.</p>
