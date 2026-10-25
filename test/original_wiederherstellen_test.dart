@@ -200,18 +200,23 @@ void main() {
     await tester.runAsync(() async {
       await aufnahme('a1');
 
-      Future<void> takte() async {
-        for (var i = 0; i < 6; i++) {
+      // Sechs Takte genügten einzeln; unter der Last der ganzen Suite
+      // nicht immer. Mit [bis] wird weiter getaktet, bis es zutrifft.
+      Future<void> takte([bool Function()? bis]) async {
+        for (var i = 0; i < 200; i++) {
           await tester.pump(const Duration(milliseconds: 50));
           await Future<void>.delayed(const Duration(milliseconds: 20));
+          if (i >= 5 && (bis == null || bis())) break;
         }
       }
+
+      bool sichtbar(Finder f) => f.evaluate().isNotEmpty;
 
       // Mit Schluessel, wie in der Vollbildansicht: Ohne ihn behielte
       // Flutter beim zweiten Aufbau denselben State, und der merkt sich
       // seine Aufnahme beim ersten Mal.
       var lauf = 0;
-      Future<void> zeige(AssetData a) async {
+      Future<void> zeige(AssetData a, {bool Function()? bis}) async {
         lauf++;
         await tester.pumpWidget(
           MaterialApp(
@@ -230,7 +235,7 @@ void main() {
             ),
           ),
         );
-        await takte();
+        await takte(bis);
       }
 
       // Unbearbeitet: kein Wort davon. Eine Zeile "Bearbeitet: nichts"
@@ -239,7 +244,10 @@ void main() {
       expect(find.text('Bearbeitet'), findsNothing);
 
       await entwickle('a1');
-      await zeige(await hole('a1'));
+      await zeige(
+        await hole('a1'),
+        bis: () => sichtbar(find.text('Bearbeitet')),
+      );
       expect(find.text('Bearbeitet'), findsOneWidget);
       expect(find.textContaining('entwickelt'), findsOneWidget);
 
@@ -247,7 +255,11 @@ void main() {
       await tester.tapAt(
         tester.getCenter(find.byTooltip('Original wiederherstellen')),
       );
-      await takte();
+      await takte(
+        () => sichtbar(
+          find.widgetWithText(FilledButton, 'Original wiederherstellen'),
+        ),
+      );
       // Der Ja-Knopf traegt den Namen der Handlung. Stuende dort wie
       // ueberall sonst "Löschen", laese es sich, als werde das Original
       // geloescht.
@@ -256,7 +268,7 @@ void main() {
           find.widgetWithText(FilledButton, 'Original wiederherstellen'),
         ),
       );
-      await takte();
+      await takte(() => !sichtbar(find.text('Bearbeitet')));
 
       expect((await hole('a1')).developedRelativePath, isNull);
       expect(find.text('Bearbeitet'), findsNothing);
