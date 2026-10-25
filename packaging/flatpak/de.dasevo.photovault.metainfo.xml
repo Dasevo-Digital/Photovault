@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.47.4" date="2026-10-25">
+      <description>
+        <p>macOS no longer reports that Photo Vault quit unexpectedly when it is closed; the library database is closed cleanly before quitting.</p>
+      </description>
+    </release>
     <release version="3.47.3" date="2026-10-25">
       <description>
         <p>Exporting as JPEG on the desktop now includes the edits (developed or restored version), like downloading as JPEG in the browser and the phone app; Original still copies the unchanged file.</p>
