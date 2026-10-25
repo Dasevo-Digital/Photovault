@@ -10,6 +10,7 @@ import '../state/library_state.dart';
 import 'export_naming.dart';
 import 'native_image_converter.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/services/jpeg_angaben.dart';
 import 'package:kern/services/textstellen.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/xmp_regionen.dart';
@@ -160,10 +161,13 @@ class ExportService {
   /// Sitzung bereits entsperrt sein). Gemeinsam genutzt von [exportAsset]
   /// (Kopie in einen Ordner) und dem nativen Teilen-Dialog in
   /// AssetViewerScreen (Kopie an eine andere App wie Mail/AirDrop).
-  Future<File> resolveSourceFile(AssetData asset) async {
+  Future<File> resolveSourceFile(AssetData asset) =>
+      _dateiZu(asset, asset.relativePath);
+
+  Future<File> _dateiZu(AssetData asset, String relativ) async {
     return asset.isLocked && _library != null
-        ? await _library.decryptForViewing(asset.relativePath)
-        : await _paths.bereit(asset.relativePath);
+        ? await _library.decryptForViewing(relativ)
+        : await _paths.bereit(relativ);
   }
 
   /// Exportiert die Originaldatei eines Assets in [destinationDir] und gibt
@@ -195,11 +199,29 @@ class ExportService {
     // rendern, was mit der alten Aufzählung nicht ging.
     Uint8List? gerendert;
     if ((v.nachJpeg || v.metadatenEntfernen) && asset.type == 'IMAGE') {
+      // **Gerendert wird, was man sieht** (#212): restauriert, sonst
+      // entwickelt, sonst das Original – wie beim Herunterladen als JPEG
+      // im Browser und auf dem Telefon. Kopiert wird weiterhin das
+      // Original. Die entwickelte Fassung liegt höchstens 4096 px gross
+      // vor; grösser wird ein bearbeitetes Foto deshalb nicht.
+      final bearbeitet =
+          asset.restoredRelativePath ?? asset.developedRelativePath;
+      final renderQuelle = bearbeitet == null
+          ? sourceFile
+          : await _dateiZu(asset, bearbeitet);
       gerendert = await NativeImageConverter.convertToJpegBytes(
-        sourceFile,
+        renderQuelle,
         maxDimension: v.maxKante,
         quality: v.qualitaet,
+        // Die bearbeitete Fassung ist schon entzerrt.
+        objektivkorrektur: bearbeitet == null,
       );
+      // Die bearbeitete Fassung trägt keine Aufnahmeangaben; ohne sie
+      // stünde das Foto im nächsten Programm am Tag des Exports. Der Ort
+      // kommt – wie beim Server – nicht mit.
+      if (gerendert != null && bearbeitet != null && !v.metadatenEntfernen) {
+        gerendert = mitAufnahmeangaben(gerendert, asset);
+      }
       if (gerendert != null && v.gesichterVerdecken && _library != null) {
         final faces = await _library.db.facesForAsset(asset.id);
         final plateBoxes = kennzeichenBoxen(asset.ocrBoxen);
