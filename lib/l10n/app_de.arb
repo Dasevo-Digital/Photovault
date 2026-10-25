@@ -6288,5 +6288,14 @@
     "placeholders": {
       "fehler": {"type": "String"}
     }
-  }
+  },
+  "serverRechenzeit": "Wann rechnen",
+  "serverRechenzeitImmer": "Immer",
+  "serverRechenzeitAmNetz": "Am Netzteil",
+  "serverRechenzeitUnbenutzt": "Unbenutzt",
+  "serverRechenzeitImmerText": "Auch auf Akku.",
+  "serverRechenzeitAmNetzText": "Nicht auf Akku – ein Rechner ohne Akku rechnet immer.",
+  "serverRechenzeitUnbenutztText": "Am Netzteil und erst, wenn 5 Minuten niemand Maus oder Tastatur benutzt hat.",
+  "serverRechenhilfePausiertAkku": "Pausiert – der Rechner läuft auf Akku.",
+  "serverRechenhilfePausiertBenutzt": "Pausiert – der Rechner wird gerade benutzt."
 }

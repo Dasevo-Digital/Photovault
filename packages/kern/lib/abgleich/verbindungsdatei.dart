@@ -4,6 +4,8 @@ import 'dart:math' show Random;
 
 import 'package:path/path.dart' as p;
 
+import 'rechenzeit.dart';
+
 /// Womit eine Bibliothek verbunden ist – `verbindung.json` neben ihrer
 /// `library.sqlite`. Gibt es die Datei, ist die Bibliothek die Kopie einer
 /// Bibliothek auf dem Server.
@@ -49,6 +51,7 @@ class Verbindungsdatei {
     required this.geraet,
     required this.token,
     this.rechenhilfe = false,
+    this.rechenzeit = Rechenzeit.amNetz,
     this.zwischenspeicherMb,
     this.rasterspalten,
     this.sortierung,
@@ -73,6 +76,9 @@ class Verbindungsdatei {
 
   /// Rechnet dieser Rechner für den Server mit (siehe `Rechenhilfe`)?
   final bool rechenhilfe;
+
+  /// Wann er dafür rechnen darf (#120).
+  final Rechenzeit rechenzeit;
 
   /// Wie viele MB Vorschauen und Originale hier liegen dürfen (siehe
   /// `Zwischenspeicher`); `null` heisst Vorgabe, 0 heisst ohne Grenze.
@@ -104,6 +110,7 @@ class Verbindungsdatei {
 
   Verbindungsdatei _mit({
     bool? rechenhilfe,
+    Rechenzeit? rechenzeit,
     int? Function()? zwischenspeicherMb,
     int? Function()? rasterspalten,
     int? Function()? sortierung,
@@ -119,6 +126,7 @@ class Verbindungsdatei {
     geraet: geraet,
     token: token,
     rechenhilfe: rechenhilfe ?? this.rechenhilfe,
+    rechenzeit: rechenzeit ?? this.rechenzeit,
     zwischenspeicherMb: zwischenspeicherMb == null
         ? this.zwischenspeicherMb
         : zwischenspeicherMb(),
@@ -134,6 +142,8 @@ class Verbindungsdatei {
   );
 
   Verbindungsdatei mitRechenhilfe(bool an) => _mit(rechenhilfe: an);
+
+  Verbindungsdatei mitRechenzeit(Rechenzeit z) => _mit(rechenzeit: z);
 
   Verbindungsdatei mitZwischenspeicher(int? mb) =>
       _mit(zwischenspeicherMb: () => mb);
@@ -182,6 +192,8 @@ class Verbindungsdatei {
       geraet: j['geraet'] as String,
       token: token,
       rechenhilfe: j['rechenhilfe'] == true,
+      rechenzeit:
+          Rechenzeit.values.asNameMap()[j['rechenzeit']] ?? Rechenzeit.amNetz,
       zwischenspeicherMb: (j['zwischenspeicherMb'] as num?)?.toInt(),
       rasterspalten: (j['rasterspalten'] as num?)?.toInt(),
       sortierung: (j['sortierung'] as num?)?.toInt(),
@@ -236,6 +248,7 @@ class Verbindungsdatei {
         'token': kennung == null ? token : '',
         'tokenkennung': ?kennung,
         if (rechenhilfe) 'rechenhilfe': true,
+        if (rechenzeit != Rechenzeit.amNetz) 'rechenzeit': rechenzeit.name,
         if (zwischenspeicherMb != null)
           'zwischenspeicherMb': zwischenspeicherMb,
         if (rasterspalten != null) 'rasterspalten': rasterspalten,
@@ -256,6 +269,7 @@ class Verbindungsdatei {
       geraet: geraet,
       token: token,
       rechenhilfe: rechenhilfe,
+      rechenzeit: rechenzeit,
       zwischenspeicherMb: zwischenspeicherMb,
       rasterspalten: rasterspalten,
       sortierung: sortierung,

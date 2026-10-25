@@ -8,7 +8,10 @@ import '../auswertung/rechenhilfe.dart';
 import '../protokoll.dart';
 import '../services/storage_paths.dart';
 import 'dateibeschaffung.dart';
+import 'rechenzeit.dart';
 import 'verbindung.dart';
+
+export 'rechenzeit.dart';
 
 /// Wie es um die [Rechenhilfe] steht.
 enum Rechenhilfelage {
@@ -18,6 +21,9 @@ enum Rechenhilfelage {
 
   /// Der Server hat gerade nichts, oder hier fehlt jedes Modell.
   wartet,
+
+  /// Nach der [Rechenzeit] gerade nicht (siehe [Rechenhilfestand.pause]).
+  pausiert,
   offline,
 
   /// Der Server kennt `api/v1/rechnen` noch nicht.
@@ -26,9 +32,17 @@ enum Rechenhilfelage {
 }
 
 class Rechenhilfestand {
-  const Rechenhilfestand(this.lage, {this.geliefert = 0, this.ausgelassen = 0});
+  const Rechenhilfestand(
+    this.lage, {
+    this.geliefert = 0,
+    this.ausgelassen = 0,
+    this.pause,
+  });
 
   final Rechenhilfelage lage;
+
+  /// Warum sie pausiert – nur bei [Rechenhilfelage.pausiert].
+  final Rechenpause? pause;
 
   /// Seit dem Start geliefert bzw. zurückgegeben, weil es hier nicht ging.
   final int geliefert;
@@ -55,6 +69,7 @@ class Rechenhilfe {
     required this.teile,
     required this.rechne,
     this.darf,
+    this.pausiert,
     this.anzahl = 5,
     this.ruhe = const Duration(minutes: 1),
     Directory? zwischenablage,
@@ -74,6 +89,10 @@ class Rechenhilfe {
 
   /// Ob gerade gerechnet werden darf (z. B. nicht bei anderem Schema).
   final bool Function()? darf;
+
+  /// Ob sie gerade pausiert und warum (siehe [rechenpause]) – vor jeder
+  /// Runde und vor jedem Auftrag gefragt.
+  final Rechenpause? Function()? pausiert;
   final int anzahl;
 
   /// So lange wartet sie, wenn es nichts zu tun gibt.
@@ -127,6 +146,11 @@ class Rechenhilfe {
           await _schlafe(ruhe);
           continue;
         }
+        if (pausiert?.call() case final grund?) {
+          _melde(Rechenhilfelage.pausiert, pause: grund);
+          await _schlafe(ruhe);
+          continue;
+        }
         final antwort = await verbindung.schicke('api/v1/rechnen/auftraege', {
           'arten': [for (final x in a) x.name],
           'teile': teile().toList(),
@@ -144,7 +168,9 @@ class Rechenhilfe {
         }
         _melde(Rechenhilfelage.rechnet);
         for (final auftrag in auftraege) {
-          if (!_laeuft) {
+          // Abgezogen oder unterwegs auf Akku gewechselt: Was noch nicht
+          // gerechnet ist, geht an den Server zurück, statt hier zu warten.
+          if (!_laeuft || pausiert?.call() != null) {
             await _zurueck(auftrag);
             continue;
           }
@@ -249,14 +275,16 @@ class Rechenhilfe {
     _wecker = null;
   }
 
-  void _melde(Rechenhilfelage lage) {
+  void _melde(Rechenhilfelage lage, {Rechenpause? pause}) {
     if (_stand.isClosed) return;
     final neu = Rechenhilfestand(
       lage,
       geliefert: _geliefert,
       ausgelassen: _ausgelassen,
+      pause: pause,
     );
     if (neu.lage == _letzter.lage &&
+        neu.pause == _letzter.pause &&
         neu.geliefert == _letzter.geliefert &&
         neu.ausgelassen == _letzter.ausgelassen) {
       return;

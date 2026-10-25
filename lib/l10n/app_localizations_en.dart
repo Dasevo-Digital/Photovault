@@ -9856,4 +9856,35 @@ class AppTexteEn extends AppTexte {
   String scanFehler(String fehler) {
     return 'The scan workspace could not complete the operation: $fehler';
   }
+
+  @override
+  String get serverRechenzeit => 'When to compute';
+
+  @override
+  String get serverRechenzeitImmer => 'Always';
+
+  @override
+  String get serverRechenzeitAmNetz => 'On power';
+
+  @override
+  String get serverRechenzeitUnbenutzt => 'When idle';
+
+  @override
+  String get serverRechenzeitImmerText => 'Also on battery.';
+
+  @override
+  String get serverRechenzeitAmNetzText =>
+      'Not on battery – a computer without a battery always computes.';
+
+  @override
+  String get serverRechenzeitUnbenutztText =>
+      'On power, and only after nobody has used mouse or keyboard for 5 minutes.';
+
+  @override
+  String get serverRechenhilfePausiertAkku =>
+      'Paused – the computer is on battery.';
+
+  @override
+  String get serverRechenhilfePausiertBenutzt =>
+      'Paused – the computer is in use.';
 }

@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/groessentext.dart';
 import '../../services/library_location.dart';
 import '../../services/meldungsdienst.dart';
+import '../../services/rechnerzustand.dart';
 import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
 import '../server_eigenes_konto_screen.dart';
@@ -200,6 +201,7 @@ class _Rechenhilfe extends StatelessWidget {
             }
           },
         ),
+        if (an) _Rechenzeitwahl(library),
         if (an)
           ValueListenableBuilder(
             valueListenable: library.rechenhilfestand,
@@ -211,6 +213,12 @@ class _Rechenhilfe extends StatelessWidget {
                       null || Rechenhilfelage.aus => null,
                       Rechenhilfelage.rechnet => t.serverRechenhilfeRechnet(n),
                       Rechenhilfelage.wartet => t.serverRechenhilfeWartet(n),
+                      Rechenhilfelage.pausiert => switch (s?.pause) {
+                        Rechenpause.akku => t.serverRechenhilfePausiertAkku,
+                        Rechenpause.inBenutzung =>
+                          t.serverRechenhilfePausiertBenutzt,
+                        null => t.serverRechenhilfeWartet(n),
+                      },
                       Rechenhilfelage.offline => t.serverRechenhilfeOffline,
                       Rechenhilfelage.serverZuAlt =>
                         t.serverRechenhilfeServerZuAlt,
@@ -228,6 +236,67 @@ class _Rechenhilfe extends StatelessWidget {
             },
           ),
       ],
+    );
+  }
+}
+
+/// Wann die Rechenhilfe rechnen darf (#120): immer, nur am Netzteil (die
+/// Vorgabe) oder am Netzteil und nur, wenn niemand den Rechner benutzt.
+/// „Unbenutzt“ fehlt, wo sich der Leerlauf nicht messen lässt (Linux).
+class _Rechenzeitwahl extends StatelessWidget {
+  const _Rechenzeitwahl(this.library);
+
+  final LibraryState library;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final jetzt = library.rechenzeit;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.power_outlined),
+      title: Text(t.serverRechenzeit),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<Rechenzeit>(
+              segments: [
+                ButtonSegment(
+                  value: Rechenzeit.immer,
+                  label: Text(t.serverRechenzeitImmer),
+                ),
+                ButtonSegment(
+                  value: Rechenzeit.amNetz,
+                  label: Text(t.serverRechenzeitAmNetz),
+                ),
+                if (Rechnerzustand.leerlaufMessbar ||
+                    jetzt == Rechenzeit.unbenutzt)
+                  ButtonSegment(
+                    value: Rechenzeit.unbenutzt,
+                    label: Text(t.serverRechenzeitUnbenutzt),
+                  ),
+              ],
+              selected: {jetzt},
+              onSelectionChanged: (wahl) async {
+                try {
+                  await library.setzeRechenzeit(wahl.single);
+                } catch (e) {
+                  if (context.mounted) melde.fehler(fehlertext(context, e));
+                }
+              },
+            ),
+            const SizedBox(height: 6),
+            Text(switch (jetzt) {
+              Rechenzeit.immer => t.serverRechenzeitImmerText,
+              Rechenzeit.amNetz => t.serverRechenzeitAmNetzText,
+              Rechenzeit.unbenutzt => t.serverRechenzeitUnbenutztText,
+            }),
+          ],
+        ),
+      ),
     );
   }
 }

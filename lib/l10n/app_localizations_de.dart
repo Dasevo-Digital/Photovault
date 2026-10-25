@@ -9911,4 +9911,35 @@ class AppTexteDe extends AppTexte {
   String scanFehler(String fehler) {
     return 'Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: $fehler';
   }
+
+  @override
+  String get serverRechenzeit => 'Wann rechnen';
+
+  @override
+  String get serverRechenzeitImmer => 'Immer';
+
+  @override
+  String get serverRechenzeitAmNetz => 'Am Netzteil';
+
+  @override
+  String get serverRechenzeitUnbenutzt => 'Unbenutzt';
+
+  @override
+  String get serverRechenzeitImmerText => 'Auch auf Akku.';
+
+  @override
+  String get serverRechenzeitAmNetzText =>
+      'Nicht auf Akku – ein Rechner ohne Akku rechnet immer.';
+
+  @override
+  String get serverRechenzeitUnbenutztText =>
+      'Am Netzteil und erst, wenn 5 Minuten niemand Maus oder Tastatur benutzt hat.';
+
+  @override
+  String get serverRechenhilfePausiertAkku =>
+      'Pausiert – der Rechner läuft auf Akku.';
+
+  @override
+  String get serverRechenhilfePausiertBenutzt =>
+      'Pausiert – der Rechner wird gerade benutzt.';
 }

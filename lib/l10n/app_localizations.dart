@@ -15108,6 +15108,60 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: {fehler}'**
   String scanFehler(String fehler);
+
+  /// No description provided for @serverRechenzeit.
+  ///
+  /// In de, this message translates to:
+  /// **'Wann rechnen'**
+  String get serverRechenzeit;
+
+  /// No description provided for @serverRechenzeitImmer.
+  ///
+  /// In de, this message translates to:
+  /// **'Immer'**
+  String get serverRechenzeitImmer;
+
+  /// No description provided for @serverRechenzeitAmNetz.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Netzteil'**
+  String get serverRechenzeitAmNetz;
+
+  /// No description provided for @serverRechenzeitUnbenutzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbenutzt'**
+  String get serverRechenzeitUnbenutzt;
+
+  /// No description provided for @serverRechenzeitImmerText.
+  ///
+  /// In de, this message translates to:
+  /// **'Auch auf Akku.'**
+  String get serverRechenzeitImmerText;
+
+  /// No description provided for @serverRechenzeitAmNetzText.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht auf Akku – ein Rechner ohne Akku rechnet immer.'**
+  String get serverRechenzeitAmNetzText;
+
+  /// No description provided for @serverRechenzeitUnbenutztText.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Netzteil und erst, wenn 5 Minuten niemand Maus oder Tastatur benutzt hat.'**
+  String get serverRechenzeitUnbenutztText;
+
+  /// No description provided for @serverRechenhilfePausiertAkku.
+  ///
+  /// In de, this message translates to:
+  /// **'Pausiert – der Rechner läuft auf Akku.'**
+  String get serverRechenhilfePausiertAkku;
+
+  /// No description provided for @serverRechenhilfePausiertBenutzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Pausiert – der Rechner wird gerade benutzt.'**
+  String get serverRechenhilfePausiertBenutzt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -32,6 +32,7 @@ import '../services/geo_data_download_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
+import '../services/rechnerzustand.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/model_download_service.dart';
 import 'package:kern/services/model_processing_state.dart';
@@ -1137,6 +1138,21 @@ class LibraryState extends ChangeNotifier {
 
   bool get rechenhilfeAn => verbindung?.rechenhilfe ?? false;
 
+  /// Wann die Rechenhilfe rechnen darf (#120).
+  Rechenzeit get rechenzeit => verbindung?.rechenzeit ?? Rechenzeit.amNetz;
+
+  /// Merkt sich [z] in `verbindung.json`; die Rechenhilfe fragt gleich neu,
+  /// statt ihre Ruhe abzuwarten.
+  Future<void> setzeRechenzeit(Rechenzeit z) async {
+    final v = verbindung;
+    if (v == null || v.rechenzeit == z) return;
+    final neu = v.mitRechenzeit(z);
+    await neu.schreibe(await LibraryLocation.currentRoot());
+    verbindung = neu;
+    _rechenhilfe?.wecke();
+    notifyListeners();
+  }
+
   void _starteRechenhilfe() {
     final a = abgleich;
     if (a == null || _rechenhilfe != null) return;
@@ -1149,6 +1165,11 @@ class LibraryState extends ChangeNotifier {
       // Bei anderem Schema rechnete sie für einen Server, mit dem die
       // Kopie gar nicht abgleicht.
       darf: () => !(_abgleichszustand?.schemaAnders ?? false),
+      pausiert: () => rechenpause(
+        rechenzeit,
+        amNetz: Rechnerzustand.amNetzteil(),
+        ohneEingabe: Rechnerzustand.ohneEingabe(),
+      ),
     );
     _rechenhilfeAbo = r.stand.listen((z) => _rechenhilfestand.value = z);
     _rechenhilfestand.value = r.standJetzt;

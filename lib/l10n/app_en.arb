@@ -4803,5 +4803,14 @@
   "scanUngerade": "An even number must be selected for fronts and backs.",
   "scanPaarNichtGestapelt": "Skipped duplicates left an incomplete pair; the new photos were imported but not stacked in pairs.",
   "scanFertig": "Scan import: {neu} new, {duplikate} duplicates, {fehler} errors.",
-  "scanFehler": "The scan workspace could not complete the operation: {fehler}"
+  "scanFehler": "The scan workspace could not complete the operation: {fehler}",
+  "serverRechenzeit": "When to compute",
+  "serverRechenzeitImmer": "Always",
+  "serverRechenzeitAmNetz": "On power",
+  "serverRechenzeitUnbenutzt": "When idle",
+  "serverRechenzeitImmerText": "Also on battery.",
+  "serverRechenzeitAmNetzText": "Not on battery – a computer without a battery always computes.",
+  "serverRechenzeitUnbenutztText": "On power, and only after nobody has used mouse or keyboard for 5 minutes.",
+  "serverRechenhilfePausiertAkku": "Paused – the computer is on battery.",
+  "serverRechenhilfePausiertBenutzt": "Paused – the computer is in use."
 }
