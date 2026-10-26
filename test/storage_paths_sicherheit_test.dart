@@ -61,4 +61,19 @@ void main() {
       expect(original.existsSync(), isTrue);
     },
   );
+
+  // Am Server löschte ein Nachlauf (#226) die Ausschnitte, die der Befehl
+  // GesichterLoeschen nebenher ebenfalls wegräumt. Zwischen „gibt es sie?“
+  // und „löschen“ war die Datei schon weg – der Nachlauf brach ab.
+  test('wer zugleich dieselbe Datei löscht, scheitert nicht daran', () async {
+    final relativ = paths.faceRelativePath('doppelt');
+    final datei = paths.absolute(relativ);
+    await datei.create(recursive: true);
+    await Future.wait([
+      paths.deletePermanently(relativ),
+      paths.deletePermanently(relativ),
+    ]);
+    expect(datei.existsSync(), isFalse);
+    await paths.deletePermanently(relativ);
+  });
 }

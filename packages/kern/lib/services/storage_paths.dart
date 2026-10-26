@@ -232,7 +232,15 @@ class StoragePaths {
 
   Future<void> deletePermanently(String relativePath) async {
     final file = absolute(relativePath);
-    if (await file.exists()) await file.delete();
+    // Kein „gibt es sie?“ vorab: Zwischen Prüfen und Löschen kann ein
+    // anderer dieselbe Datei wegräumen. Am Server tat das der Befehl
+    // GesichterLoeschen, während ein Nachlauf (#226) dieselben Ausschnitte
+    // löschte – der Nachlauf brach daran ab. Was schon weg ist, ist weg.
+    try {
+      await file.delete();
+    } on PathNotFoundException {
+      return;
+    }
   }
 
   /// Gesamtgröße aller Originaldateien in Bytes.
