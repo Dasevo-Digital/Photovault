@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.3" date="2026-10-26">
+      <description>
+        <p>In the full-screen viewer, clicks on face frames and text boxes and drawing a missed face now work across the whole photo; on large photos they only reached a small area around the centre.</p>
+      </description>
+    </release>
     <release version="3.48.2" date="2026-10-26">
       <description>
         <p>In the full-screen viewer, Live Photos now show face frames, text boxes, focus peaking and the rule-of-thirds grid, and a missed face can be drawn on them like on any other photo.</p>
