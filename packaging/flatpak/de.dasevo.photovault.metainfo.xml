@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.6" date="2026-10-26">
+      <description>
+        <p>Face detection no longer scans the video half of Live Photos, and a one-time cleanup removes the duplicate faces found there. A failed move of the server token into the key store no longer blocks the start.</p>
+      </description>
+    </release>
     <release version="3.48.5" date="2026-10-26">
       <description>
         <p>When adding an uncle or aunt in the family tree, the app now always asks which side, and a parent without entered parents is shown with a hint instead of being left out. Connections of an aunt, a grandparent or a cousin can now be removed from their own card.</p>
