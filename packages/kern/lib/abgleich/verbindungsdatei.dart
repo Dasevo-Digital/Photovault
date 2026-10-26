@@ -206,8 +206,18 @@ class Verbindungsdatei {
       tokenkennung: kennung,
     );
     // Eine Datei von früher, mit dem Token darin: Es zieht in die Ablage.
+    //
+    // **Scheitert der Umzug, gilt die Datei wie bisher** (#222). Ohne diesen
+    // Fang hielt ein Fehler der Ablage – ein gesperrter Schlüsselbund, ein
+    // voller Datenträger – den Start an: Die Verbindung liess sich gar
+    // nicht mehr lesen, obwohl das Token in der Datei stand. So bleibt es
+    // dort, bis der nächste Start es erneut versucht.
     if (kennung == null && ablage != null && token.isNotEmpty) {
-      return v.schreibe(bibliothek);
+      try {
+        return await v.schreibe(bibliothek);
+      } catch (_) {
+        return v;
+      }
     }
     return v;
   }

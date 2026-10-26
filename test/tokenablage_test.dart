@@ -5,6 +5,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:photo_vault/services/tokenablage.dart';
 
+/// Eine Ablage, die nicht antwortet, sondern wirft – etwa ein gesperrter
+/// Schlüsselbund.
+class _WerfendeAblage implements Tokenablage {
+  @override
+  Future<void> loesche(String kennung) async {}
+
+  @override
+  Future<String?> lies(String kennung) async => null;
+
+  @override
+  Future<bool> schreibe(String kennung, String token) async =>
+      throw const FileSystemException('Schlüsselbund gesperrt');
+}
+
 class _KaputteAblage implements Tokenablage {
   @override
   Future<void> loesche(String kennung) async {}
@@ -87,6 +101,33 @@ void main() {
       expect(await ablage.lies(datei()['tokenkennung']! as String), 'geheim-3');
     },
   );
+
+  // Issue #222: Beim Umzug einer alten Datei scheiterte die Ablage, und
+  // der Start blieb hängen – die Verbindung liess sich nicht mehr lesen.
+  for (final (name, kaputt) in [
+    ('einen Fehler meldet', _KaputteAblage() as Tokenablage),
+    ('wirft', _WerfendeAblage()),
+  ]) {
+    test(
+      'eine Datei von früher bleibt lesbar, wenn die Ablage $name',
+      () async {
+        await verbindung('geheim-9').schreibe(bibliothek);
+        final vorher = File(
+          '${bibliothek.path}/verbindung.json',
+        ).readAsStringSync();
+        Verbindungsdatei.tokenablage = kaputt;
+        final v = await Verbindungsdatei.lies(bibliothek);
+        expect(v, isNotNull);
+        expect(v!.token, 'geheim-9');
+        expect(v.tokenkennung, isNull, reason: 'es steht weiter in der Datei');
+        expect(
+          File('${bibliothek.path}/verbindung.json').readAsStringSync(),
+          vorher,
+          reason: 'unverändert, der nächste Start versucht es erneut',
+        );
+      },
+    );
+  }
 
   test('fehlt das Token in der Ablage, bleibt es leer – die Kopie bleibt '
       'eine Kopie und fragt nach einer Anmeldung', () async {
