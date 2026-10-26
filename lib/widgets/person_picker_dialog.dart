@@ -7,6 +7,7 @@ import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import 'profilbild.dart';
 import 'einfuegbares_menue.dart';
+import 'gebremstes_rollen.dart';
 
 /// Was der Nutzer im Zuordnungs-Dialog entschieden hat.
 class PersonChoice {
@@ -97,6 +98,10 @@ class _PersonPickerDialog extends StatefulWidget {
 class _PersonPickerDialogState extends State<_PersonPickerDialog> {
   final _suchfeld = TextEditingController();
   final _fokus = FocusNode();
+
+  /// Siehe [GebremsteRollsteuerung]: In dieser kurzen Liste übersprang ein
+  /// schnell gedrehtes Mausrad ganze Bildschirme voll Personen.
+  final _rolle = GebremsteRollsteuerung();
   late PersonData? _gewaehlt = widget.suggestedPerson;
 
   @override
@@ -112,6 +117,7 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
   void dispose() {
     _suchfeld.dispose();
     _fokus.dispose();
+    _rolle.dispose();
     super.dispose();
   }
 
@@ -275,13 +281,21 @@ class _PersonPickerDialogState extends State<_PersonPickerDialog> {
                 ),
               )
             else
-              // Fest begrenzt statt mitwachsend: Ein Dialog, der bei
-              // vierzig Personen bis an den Bildschirmrand reicht, schiebt
-              // seine eigenen Knöpfe hinaus.
+              // Begrenzt statt mitwachsend: Ein Dialog, der bei vierzig
+              // Personen bis an den Bildschirmrand reicht, schiebt seine
+              // eigenen Knöpfe hinaus. Auf einem grossen Bildschirm darf die
+              // Liste aber mehr als fünf Zeilen zeigen.
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 260),
+                constraints: BoxConstraints(
+                  maxHeight: (MediaQuery.sizeOf(context).height * 0.4).clamp(
+                    260.0,
+                    420.0,
+                  ),
+                ),
                 child: Scrollbar(
+                  controller: _rolle,
                   child: ListView.builder(
+                    controller: _rolle,
                     shrinkWrap: true,
                     itemCount: gezeigt.length,
                     itemBuilder: (_, i) => _zeile(

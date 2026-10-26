@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -299,6 +300,82 @@ void main() {
     await tester.tap(find.text('Zuordnen'));
     await tester.pumpAndSettle();
     expect(ergebnis!.existingPersonId, 'p9');
+  });
+
+  group('Rollen mit der Maus', () {
+    // Die Liste ist kurz, und ein schnell gedrehtes Mausrad am Mac oder eine
+    // Maus über die Fernsteuerung springt mehrere hundert Punkte auf einmal.
+    // Was dazwischen lag, kam nie ins Bild und liess sich nicht anklicken.
+    final leute = [
+      for (var i = 1; i <= 40; i++)
+        person('p$i', 'Person ${i.toString().padLeft(2, '0')}'),
+    ];
+
+    /// Die Namen, deren Zeile ganz in der Liste steht.
+    Set<String> sichtbar(WidgetTester tester) {
+      final liste = tester.getRect(find.byType(ListView));
+      return {
+        for (final e in find.byType(ListTile).evaluate())
+          if (liste.contains(tester.getRect(find.byWidget(e.widget)).topLeft) &&
+              liste.contains(
+                tester.getRect(find.byWidget(e.widget)).bottomRight -
+                    const Offset(1, 1),
+              ))
+            ((e.widget as ListTile).title! as Text).data!,
+      };
+    }
+
+    /// Ob jede Zeile von der ersten bis zur letzten gesehenen im Bild war.
+    void lueckenlos(Set<String> gesehen) {
+      final nummern = [
+        for (final n in gesehen) int.parse(n.substring('Person '.length)),
+      ]..sort();
+      expect(nummern.first, 1);
+      expect(nummern, [
+        for (var i = 1; i <= nummern.last; i++) i,
+      ], reason: 'keine Zeile darf übersprungen werden');
+    }
+
+    testWidgets('ein grosser Radschritt überspringt keine Zeile', (
+      tester,
+    ) async {
+      await zeige(tester, leute);
+      final gesehen = {...sichtbar(tester)};
+      final maus = TestPointer(1, PointerDeviceKind.mouse);
+      await tester.sendEventToBinding(
+        maus.hover(tester.getCenter(find.byType(ListView))),
+      );
+      for (var i = 0; i < 40; i++) {
+        await tester.sendEventToBinding(maus.scroll(const Offset(0, 600)));
+        await tester.pump();
+        gesehen.addAll(sichtbar(tester));
+      }
+      lueckenlos(gesehen);
+      expect(gesehen, hasLength(40), reason: 'bis ans Ende gekommen');
+    });
+
+    testWidgets('ein schneller Wisch mit der Magic Mouse überspringt keine', (
+      tester,
+    ) async {
+      await zeige(tester, leute);
+      final gesehen = {...sichtbar(tester)};
+      final mitte = tester.getCenter(find.byType(ListView));
+      final wisch = await tester.startGesture(
+        mitte,
+        kind: PointerDeviceKind.trackpad,
+      );
+      for (var i = 1; i <= 5; i++) {
+        await wisch.panZoomUpdate(mitte, pan: Offset(0, -300.0 * i));
+        await tester.pump(const Duration(milliseconds: 8));
+        gesehen.addAll(sichtbar(tester));
+      }
+      await wisch.panZoomEnd();
+      for (var i = 0; i < 200; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        gesehen.addAll(sichtbar(tester));
+      }
+      lueckenlos(gesehen);
+    });
   });
 
   testWidgets('„Ignorieren" erscheint nur, wenn es angeboten wird', (
