@@ -2529,4 +2529,34 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get eigenOidcSeite => 'Done – back to Photo Vault.';
+
+  @override
+  String get variantenBilden => 'Stack as variants';
+
+  @override
+  String get variantenHauptWaehlen => 'Choose main version';
+
+  @override
+  String get variantenHauptText =>
+      'The main version stays visible in overviews. All versions are kept in full.';
+
+  @override
+  String get variantenSchonGestapelt =>
+      'At least one photo already belongs to a stack. Dissolve it first.';
+
+  @override
+  String variantenGebildet(int anzahl) {
+    return '$anzahl versions stacked as variants';
+  }
+
+  @override
+  String get variantenRueckgaengig => 'Undo';
+
+  @override
+  String get variantenEinzeln => 'Show variants separately';
+
+  @override
+  String variantenEinzelnFrage(int anzahl) {
+    return 'Show the $anzahl versions separately again? No file is deleted.';
+  }
 }

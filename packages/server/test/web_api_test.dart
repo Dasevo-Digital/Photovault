@@ -140,6 +140,63 @@ void main() {
         inhalt: jsonEncode({'art': art, 'werte': w}),
       );
 
+  test(
+    'Varianten wie am Rechner: bilden, ansehen, Hauptversion, einzeln (#219)',
+    () async {
+      final roh = await ladeHoch(erikaToken, 'IMG_0300.JPG', 30);
+      final bearb = await ladeHoch(erikaToken, 'IMG_0300 bearbeitet.JPG', 90);
+      final r = await befehl(erikaToken, 'variantenBilden', {
+        'variantenId': 'v-1',
+        'ids': [roh, bearb],
+        'hauptId': bearb,
+      });
+      expect(r.statusCode, 200);
+
+      // Die Kachel trägt den Stapel mit der Kennung, an der die
+      // Weboberfläche Varianten erkennt (istVarianten in web/app.js).
+      final zeit = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen', token: erikaToken),
+      );
+      final kachel = (zeit['aufnahmen']! as List).cast<Map>().singleWhere(
+        (a) => a['id'] == bearb,
+      );
+      expect((kachel['serie'] as Map)['id'], 'variante:v-1');
+      expect((kachel['serie'] as Map)['titel'], isTrue);
+
+      Future<List<Map>> mitglieder() async =>
+          ((await jsonAus(
+                    await frag(
+                      'GET',
+                      '/api/v1/serien/variante%3Av-1', // kodiert wie im Browser
+                      token: erikaToken,
+                    ),
+                  ))['aufnahmen']!
+                  as List)
+              .cast<Map>();
+      expect((await mitglieder()).map((a) => a['id']), [bearb, roh]);
+
+      await befehl(erikaToken, 'variantenHauptbildSetzen', {
+        'stackId': 'variante:v-1',
+        'assetId': roh,
+      });
+      expect(
+        (await mitglieder()).first['id'],
+        roh,
+        reason: 'Hauptversion zuerst',
+      );
+
+      await befehl(erikaToken, 'variantenAufloesen', {
+        'stackId': 'variante:v-1',
+      });
+      final danach = await frag(
+        'GET',
+        '/api/v1/serien/variante:v-1',
+        token: erikaToken,
+      );
+      expect(danach.statusCode, 404);
+    },
+  );
+
   test('Videos als H.264: erst 202, dann die abspielbare Fassung', () async {
     // Ein kurzes Video, wie es ein Browser nicht abspielt (HEVC, wo
     // ffmpeg es kann, sonst MPEG-4 Part 2 – auch das spielt kein Browser).

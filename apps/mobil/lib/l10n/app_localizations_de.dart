@@ -2540,4 +2540,34 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get eigenOidcSeite => 'Fertig – zurück zu Photo Vault.';
+
+  @override
+  String get variantenBilden => 'Als Varianten stapeln';
+
+  @override
+  String get variantenHauptWaehlen => 'Hauptversion wählen';
+
+  @override
+  String get variantenHauptText =>
+      'Die Hauptversion bleibt in Übersichten sichtbar. Alle Fassungen bleiben vollständig erhalten.';
+
+  @override
+  String get variantenSchonGestapelt =>
+      'Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.';
+
+  @override
+  String variantenGebildet(int anzahl) {
+    return '$anzahl Fassungen als Varianten gestapelt';
+  }
+
+  @override
+  String get variantenRueckgaengig => 'Rückgängig';
+
+  @override
+  String get variantenEinzeln => 'Varianten einzeln zeigen';
+
+  @override
+  String variantenEinzelnFrage(int anzahl) {
+    return 'Die $anzahl Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.';
+  }
 }

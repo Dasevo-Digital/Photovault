@@ -3918,6 +3918,54 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Fertig – zurück zu Photo Vault.'**
   String get eigenOidcSeite;
+
+  /// No description provided for @variantenBilden.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Varianten stapeln'**
+  String get variantenBilden;
+
+  /// No description provided for @variantenHauptWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Hauptversion wählen'**
+  String get variantenHauptWaehlen;
+
+  /// No description provided for @variantenHauptText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Hauptversion bleibt in Übersichten sichtbar. Alle Fassungen bleiben vollständig erhalten.'**
+  String get variantenHauptText;
+
+  /// No description provided for @variantenSchonGestapelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.'**
+  String get variantenSchonGestapelt;
+
+  /// No description provided for @variantenGebildet.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Fassungen als Varianten gestapelt'**
+  String variantenGebildet(int anzahl);
+
+  /// No description provided for @variantenRueckgaengig.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückgängig'**
+  String get variantenRueckgaengig;
+
+  /// No description provided for @variantenEinzeln.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten einzeln zeigen'**
+  String get variantenEinzeln;
+
+  /// No description provided for @variantenEinzelnFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die {anzahl} Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.'**
+  String variantenEinzelnFrage(int anzahl);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

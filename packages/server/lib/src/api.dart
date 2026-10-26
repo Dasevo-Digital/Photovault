@@ -1036,7 +1036,9 @@ class _Api {
   /// Raster steht nur das Titelbild, der Rest öffnet sich hierüber.
   Future<Response> serie(Request anfrage, String id) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final sichtbar = await serieZumAnsehen(db, id);
+    // Varianten heissen `variante:…`; der Browser schickt den Doppelpunkt
+    // als %3A, und der Router reicht ihn so weiter (#219).
+    final sichtbar = await serieZumAnsehen(db, Uri.decodeComponent(id));
     if (sichtbar.isEmpty) return _json({'fehler': 'unbekannt'}, status: 404);
     return _json({
       'aufnahmen': [for (final a in sichtbar) zeileAlsJson(Rasterzeile.aus(a))],

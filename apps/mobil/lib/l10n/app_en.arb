@@ -819,5 +819,13 @@
   "eigenOidcAbgelehnt": "Not linked – cancelled or declined.",
   "eigenOidcZeitUm": "Not linked – no answer came back from the provider.",
   "eigenOidcVergeben": "This provider account already belongs to another account.",
-  "eigenOidcSeite": "Done – back to Photo Vault."
+  "eigenOidcSeite": "Done – back to Photo Vault.",
+  "variantenBilden": "Stack as variants",
+  "variantenHauptWaehlen": "Choose main version",
+  "variantenHauptText": "The main version stays visible in overviews. All versions are kept in full.",
+  "variantenSchonGestapelt": "At least one photo already belongs to a stack. Dissolve it first.",
+  "variantenGebildet": "{anzahl} versions stacked as variants",
+  "variantenRueckgaengig": "Undo",
+  "variantenEinzeln": "Show variants separately",
+  "variantenEinzelnFrage": "Show the {anzahl} versions separately again? No file is deleted."
 }

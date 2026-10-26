@@ -14,6 +14,7 @@ import '../sitzung.dart';
 import 'als_jpeg.dart';
 import 'diashow.dart';
 import 'loeschen.dart';
+import 'varianten.dart';
 import 'vergleich.dart';
 import 'freigaben.dart';
 
@@ -276,6 +277,18 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                           ),
                         ),
                       ),
+                    ),
+                  // Fassungen derselben Aufnahme stapeln – wie am Rechner
+                  // und im Browser (#219).
+                  if (zeilen.length >= 2)
+                    _Aktion(
+                      icon: Icons.burst_mode_outlined,
+                      text: t.variantenBilden,
+                      onPressed: () async {
+                        if (await variantenBilden(context, sitzung, zeilen)) {
+                          aufheben();
+                        }
+                      },
                     ),
                   _Aktion(
                     icon: Icons.slideshow_outlined,

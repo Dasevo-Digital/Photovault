@@ -14,6 +14,7 @@ import 'aufnahmedaten.dart';
 import 'gesichter.dart';
 import 'personen.dart';
 import 'raster.dart';
+import 'varianten.dart';
 
 /// Die Angaben zu einer Aufnahme – dieselben Zeilen wie im Browser
 /// (web/app.js, zeigeAngaben) und wie die Info-Ansicht des Rechners:
@@ -455,32 +456,80 @@ class _Reihe extends StatelessWidget {
   }
 }
 
-/// Die Aufnahmen einer Serie, Titelbild zuerst – wie im Browser.
-class SerieSeite extends StatelessWidget {
+/// Die Aufnahmen einer Serie, Titelbild zuerst – wie im Browser. Bei
+/// Varianten (#219) lässt sich oben die Hauptversion wechseln oder der
+/// Stapel auflösen, wie am Rechner.
+class SerieSeite extends StatefulWidget {
   const SerieSeite({super.key, required this.sitzung, required this.stackId});
 
   final Sitzung sitzung;
   final String stackId;
 
   @override
+  State<SerieSeite> createState() => _SerieSeiteState();
+}
+
+class _SerieSeiteState extends State<SerieSeite> {
+  late Future<List<AssetData>> _mitglieder = _lade();
+
+  Future<List<AssetData>> _lade() =>
+      serieZumAnsehen(widget.sitzung.db, widget.stackId);
+
+  @override
   Widget build(BuildContext context) => FutureBuilder<List<AssetData>>(
-    future: serieZumAnsehen(sitzung.db, stackId),
+    future: _mitglieder,
     builder: (context, snap) {
       final a = snap.data;
+      final t = AppTexte.of(context);
+      final varianten = istVariantenstapel(widget.stackId);
       return Scaffold(
         appBar: AppBar(
           title: a == null
               ? null
               : Text(
-                  istVariantenstapel(stackId)
-                      ? AppTexte.of(context).angabenVariantenTitel(a.length)
-                      : AppTexte.of(context).angabenSerieTitel(a.length),
+                  varianten
+                      ? t.angabenVariantenTitel(a.length)
+                      : t.angabenSerieTitel(a.length),
                 ),
+          actions: [
+            if (varianten && a != null && a.length > 1) ...[
+              IconButton(
+                tooltip: t.variantenHauptWaehlen,
+                icon: const Icon(Icons.star_outline),
+                onPressed: () async {
+                  if (await hauptversionWechseln(
+                        context,
+                        widget.sitzung,
+                        widget.stackId,
+                        a,
+                      ) &&
+                      mounted) {
+                    setState(() => _mitglieder = _lade());
+                  }
+                },
+              ),
+              IconButton(
+                tooltip: t.variantenEinzeln,
+                icon: const Icon(Icons.layers_clear_outlined),
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  if (await variantenAufloesen(
+                    context,
+                    widget.sitzung,
+                    widget.stackId,
+                    a.length,
+                  )) {
+                    navigator.pop();
+                  }
+                },
+              ),
+            ],
+          ],
         ),
         body: a == null
             ? const Center(child: CircularProgressIndicator())
             : AufnahmenRaster(
-                sitzung: sitzung,
+                sitzung: widget.sitzung,
                 zeilen: [for (final x in a) Rasterzeile.aus(x)],
               ),
       );

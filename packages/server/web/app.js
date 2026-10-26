@@ -1844,7 +1844,60 @@ function datumsvorschlagHinweis(a, v) {
 async function zeigeSerie(id) {
   zeigeBereich(['raster']);
   const d = await api(`/api/v1/serien/${encodeURIComponent(id)}`);
-  zeigeListe({ aufnahmen: d.aufnahmen }, t('Serie · {n} Aufnahmen', { n: d.aufnahmen.length }));
+  if (!istVarianten(id)) {
+    zeigeListe({ aufnahmen: d.aufnahmen }, t('Serie · {n} Aufnahmen', { n: d.aufnahmen.length }));
+    return;
+  }
+  // Varianten wie am Rechner (Varianten vergleichen): die Hauptversion
+  // wechseln oder alle wieder einzeln zeigen (#219).
+  const kopf = el('div', 'zeile');
+  const haupt = el('button', null, t('Hauptversion wählen'));
+  haupt.type = 'button';
+  haupt.addEventListener('click', () => waehle(t('Hauptversion wählen'), d.aufnahmen.map((a) => ({
+    text: a.name,
+    hinweis: a.serie && a.serie.titel ? t('Hauptversion') : '',
+    an: !(a.serie && a.serie.titel),
+    aktion: async () => { await befehl('variantenHauptbildSetzen', { stackId: id, assetId: a.id }); zeitleiste.leeren(); await zeigeSerie(id); },
+  }))));
+  const einzeln = el('button', null, t('Varianten einzeln zeigen'));
+  einzeln.type = 'button';
+  einzeln.addEventListener('click', async () => {
+    if (!confirm(t('Die {n} Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.', { n: d.aufnahmen.length }))) return;
+    try { await befehl('variantenAufloesen', { stackId: id }); zeitleiste.leeren(); history.back(); } catch (x) { meldung(x.message); }
+  });
+  kopf.append(haupt, einzeln);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, t('Varianten · {n} Fassungen', { n: d.aufnahmen.length }));
+}
+
+// --- Varianten (#219) ---------------------------------------------------------
+//
+// Mehrere Fassungen derselben Aufnahme unter einer Hauptversion, wie am
+// Rechner: ein gewöhnlicher Stapel, dessen Kennung mit `variante:` beginnt
+// (kern/db/abfragen/serien.dart). Die Befehle sind dieselben.
+
+const istVarianten = (stackId) => typeof stackId === 'string' && stackId.startsWith('variante:');
+
+function variantenBilden(aufnahmen) {
+  if (aufnahmen.length < 2) return;
+  // Ein Foto gehört höchstens zu einem Stapel – Serie oder Varianten.
+  if (aufnahmen.some((a) => a.serie)) { meldung(t('Mindestens eine Aufnahme gehört bereits zu einem Stapel. Löse diesen zuerst auf.')); return; }
+  waehle(t('Hauptversion wählen'), aufnahmen.map((a) => ({
+    text: a.name,
+    hinweis: t('Bleibt in Übersichten sichtbar; alle Fassungen bleiben erhalten.'),
+    aktion: async () => {
+      const variantenId = neueKennung();
+      await befehl('variantenBilden', { variantenId, ids: aufnahmen.map((x) => x.id), hauptId: a.id });
+      // Wie beim Papierkorb: Die übrigen Fassungen verschwinden aus der
+      // Übersicht, die Hauptversion trägt den Stapel.
+      const weg = new Set(aufnahmen.filter((x) => x.id !== a.id).map((x) => x.id));
+      a.serie = { id: `variante:${variantenId}`, titel: true, groesse: aufnahmen.length };
+      liste.aufnahmen = liste.aufnahmen.filter((x) => !weg.has(x.id));
+      zeitleiste.geladen = zeitleiste.geladen.filter((x) => !weg.has(x.id));
+      meldung(t('{n} Fassungen als Varianten gestapelt', { n: aufnahmen.length }));
+      auswahlAufheben();
+      neuZeichnen();
+    },
+  })));
 }
 
 // --- Stammbaum -------------------------------------------------------------
@@ -2972,6 +3025,7 @@ function zeigeAuswahl() {
   const n = auswahl.size;
   // Vergleichen gibt es für genau zwei – wie am Rechner.
   $('auswahl-vergleichen').hidden = n !== 2;
+  $('auswahl-varianten').hidden = n < 2 || !!liste.papierkorb;
   const war = !$('auswahlleiste').hidden;
   $('auswahlleiste').hidden = n === 0;
   if (n > 0 && !war) ladeAlbenstreifen();
@@ -3596,6 +3650,7 @@ $('vergleich-koppeln').addEventListener('click', () => {
 $('vergleich-zurueck').addEventListener('click', vergleichZurueck);
 $('vergleich-zu').addEventListener('click', schliesseVergleich);
 $('auswahl-vergleichen').addEventListener('click', () => oeffneVergleich(gewaehlte()));
+$('auswahl-varianten').addEventListener('click', () => variantenBilden(gewaehlte()));
 
 $('auswahl-favorit').addEventListener('click', async () => {
   const g = gewaehlte();
@@ -4169,7 +4224,9 @@ async function zeigeAngaben() {
   male(d.bewertung || 0);
   teile.push(reihe('☆', sterne));
   if (d.serie && d.serie.groesse > 1) {
-    const v = el('a', null, t('Serie mit {n} Aufnahmen', { n: d.serie.groesse }));
+    const v = el('a', null, istVarianten(d.serie.id)
+      ? t('{n} Varianten dieser Aufnahme', { n: d.serie.groesse })
+      : t('Serie mit {n} Aufnahmen', { n: d.serie.groesse }));
     v.href = `#/serie/${encodeURIComponent(d.serie.id)}`;
     v.addEventListener('click', schliesse);
     teile.push(reihe('⧉', v));
