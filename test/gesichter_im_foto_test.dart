@@ -25,6 +25,14 @@ import 'package:provider/provider.dart';
 /// verschweigt sie ganz. Die Rahmen gab es nur in der
 /// Gesichts-Bearbeitung, und die erreichte man ausschliesslich über ein
 /// Rechtsklick-Menü in der Vollbildansicht.
+/// Der Rahmen, der gerade aufgezogen wird – an seiner Füllung erkannt.
+/// Die Randbreite folgt dem Zoom und taugt nicht als Merkmal.
+bool istZugrahmen(Widget w) =>
+    w is DecoratedBox &&
+    w.decoration is BoxDecoration &&
+    (w.decoration as BoxDecoration).color ==
+        Colors.orangeAccent.withValues(alpha: 0.15);
+
 void main() {
   late Directory wurzel;
   late AppDatabase db;
@@ -269,6 +277,60 @@ void main() {
     expect(find.text('Gesicht benennen'), findsOneWidget);
   });
 
+  group('grosses Foto (#225)', () {
+    // PhotoView legt das Foto in voller Grösse in eine Box von der Grösse
+    // des Fensters und verkleinert beides. Getroffen wird aber gegen die
+    // unverkleinerte Box: Bei einem Foto von 4284 × 5712 Punkten nahm nur
+    // ein Fleck um die Mitte Klicks an. Ein Gesicht weiter oben liess sich
+    // nicht anklicken, und der Zug zum Nachtragen kam nicht an.
+    testWidgets('ein Klick auf ein Gesicht abseits der Mitte benennt', (
+      tester,
+    ) async {
+      final a = await foto(breite: 4284, hoehe: 5712);
+      await gesicht('g1', x: 0.05);
+      await zeige(tester, a);
+      await tester.tap(find.byTooltip('Gesichter zeigen'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byType(Gesichtsrahmen),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(find.text('Gesicht benennen'), findsOneWidget);
+    });
+
+    testWidgets('der Zug abseits der Mitte zeichnet', (tester) async {
+      final a = await foto(breite: 4284, hoehe: 5712);
+      await zeige(tester, a);
+      await tester.tap(find.byTooltip('Gesichter zeigen'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byTooltip('Gesicht nachtragen – Rahmen aufziehen'));
+      await tester.pump(const Duration(milliseconds: 300));
+      // Die Fahne stand bisher in einem Zweig, den der Malmodus nie
+      // erreichte.
+      expect(
+        find.text('Ziehe einen Rahmen um das fehlende Gesicht.'),
+        findsOneWidget,
+      );
+
+      final bild = tester.getRect(find.byType(Image));
+      final zug = await tester.startGesture(
+        bild.topLeft + Offset(bild.width * 0.1, bild.height * 0.1),
+        kind: PointerDeviceKind.mouse,
+      );
+      for (var i = 0; i < 5; i++) {
+        await zug.moveBy(const Offset(8, 8));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(find.byWidgetPredicate((w) => istZugrahmen(w)), findsOneWidget);
+      await zug.up();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Nachgetragenes Gesicht benennen'), findsOneWidget);
+    });
+  });
+
   group('Live Photo (#225)', () {
     // Ein Live Photo zeigte das Standbild in einer eigenen Seite ohne
     // jede Ebene: keine Rahmen, kein Aufziehen, keine Textkästen. Vom
@@ -302,12 +364,7 @@ void main() {
       await tester.tap(find.byTooltip('Gesicht nachtragen – Rahmen aufziehen'));
       await tester.pump(const Duration(milliseconds: 300));
 
-      final orange = find.byWidgetPredicate(
-        (w) =>
-            w is DecoratedBox &&
-            (w.decoration as BoxDecoration).border ==
-                Border.all(color: Colors.orangeAccent, width: 2),
-      );
+      final orange = find.byWidgetPredicate((w) => istZugrahmen(w));
       final mitte = tester.getCenter(find.byType(PageView));
       final zug = await tester.startGesture(
         mitte - const Offset(80, 60),
@@ -403,12 +460,7 @@ void main() {
       Rect laufenderRahmen() {
         final w = tester.widget<Positioned>(
           find.ancestor(
-            of: find.byWidgetPredicate(
-              (w) =>
-                  w is DecoratedBox &&
-                  (w.decoration as BoxDecoration).border ==
-                      Border.all(color: Colors.orangeAccent, width: 2),
-            ),
+            of: find.byWidgetPredicate((w) => istZugrahmen(w)),
             matching: find.byType(Positioned),
           ),
         );

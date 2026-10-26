@@ -1875,21 +1875,9 @@ class _AssetPageState extends State<_AssetPage> {
                       : null,
                 ),
               ),
-              // Im Malmodus sagt die Fahne, was zu tun ist. Sie ersetzt die
-              // Auskunft „hier ist kein Gesicht" – die ist dann gerade der
-              // Anlass und nicht mehr die Nachricht.
-              if (malen)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: AppSpacing.md,
-                  child: Center(
-                    child: _Hinweisfahne(
-                      text: AppTexte.of(context).viewerAufziehenHinweis,
-                    ),
-                  ),
-                )
-              else if (widget.gesichterZeigen && _gesichter.isEmpty)
+              // Im Malmodus steht stattdessen die Fahne zum Aufziehen – der
+              // Malmodus ist eine Überlagerung und landet im Zweig unten.
+              if (widget.gesichterZeigen && _gesichter.isEmpty)
                 Positioned(
                   left: 0,
                   right: 0,
@@ -1932,127 +1920,224 @@ class _AssetPageState extends State<_AssetPage> {
             ],
           );
         }
-        return BildZoomGesten(
-          steuerung: _zoomsteuerung,
-          child: PhotoView.customChild(
-            controller: _zoomsteuerung,
-            backgroundDecoration: const BoxDecoration(color: Colors.black),
+        return LayoutBuilder(
+          builder: (context, aussen) {
             // Mit Rahmen ist das Kind genau das Bild – nur dann liegt ein
             // Kasten bei 0,3 auch auf drei Zehnteln des Fotos und nicht auf
             // drei Zehnteln des Fensters samt seiner schwarzen Ränder.
-            childSize: ueberlagert ? masse : null,
-            // Ohne das verschöbe der Zug das Bild, statt einen Rahmen zu
-            // malen: PhotoView greift dieselbe Geste ab.
-            disableGestures: malen,
-            initialScale: isPanorama(asset)
-                ? PhotoViewComputedScale.covered
-                : null,
-            minScale: isPanorama(asset) ? PhotoViewComputedScale.covered : null,
-            child: GestureDetector(
-              // `opaque` nur im Malmodus: Sonst schluckte diese Fläche die
-              // Tipps auf die Gesichtsrahmen darunter.
-              behavior: malen
-                  ? HitTestBehavior.opaque
-                  : HitTestBehavior.deferToChild,
-              // Der Rahmen beginnt dort, wo die Maus gedrückt wurde – nicht
-              // dort, wo der Zug als Zug erkannt war. Sonst setzte die
-              // Ecke ein paar Punkte neben dem Klick an.
-              dragStartBehavior: DragStartBehavior.down,
-              // Nur Maus, Stift und Finger – nicht das Wischen auf Trackpad
-              // oder Magic Mouse (Issue #17). Ein Finger, der beim Ziehen
-              // über die Magic Mouse streicht, kam sonst als zweiter Zeiger
-              // in denselben Zug, und seit Flutter 3.22 lenkt der jüngste
-              // Zeiger: Die Ecke sprang mitten im Ziehen an seine Stelle.
-              supportedDevices: const {
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.stylus,
-                PointerDeviceKind.invertedStylus,
-                PointerDeviceKind.touch,
-              },
-              onPanStart: malen
-                  ? (d) => setState(() {
-                      _zugAnfang = d.localPosition;
-                      _zugJetzt = d.localPosition;
-                    })
-                  : null,
-              onPanUpdate: malen
-                  ? (d) => setState(() => _zugJetzt = d.localPosition)
-                  : null,
-              onPanEnd: malen
-                  ? (_) {
-                      final a = _zugAnfang, b = _zugJetzt;
-                      if (a == null || b == null) return;
-                      // Die Umrechnung steht in [kastenAusZug] und nicht
-                      // hier: Sie ist die Umkehrung dessen, was
-                      // [Gesichtsrahmen] rechnet, und das gehört geprüft.
-                      unawaited(_rahmenFertig(kastenAusZug(a, b, masse)));
-                    }
-                  : null,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Derselbe Deckel wie im Zweig ohne Überlagerung. Er
-                  // fehlte hier: Die Fokus-Hervorhebung einzuschalten hob
-                  // dasselbe Foto von 4096 Punkten auf seine volle Grösse –
-                  // bei der breitesten Aufnahme der Prüfbibliothek von 64 MB
-                  // auf 317 MB. Das Overlay selbst ist ohnehin begrenzt
-                  // (siehe computeFocusPeakingOverlay).
-                  Image(image: begrenztesBild(file), fit: BoxFit.contain),
-                  if (overlay != null)
-                    Image.memory(overlay, fit: BoxFit.contain),
-                  if (raster)
-                    const IgnorePointer(
-                      child: CustomPaint(painter: Drittelraster()),
+            //
+            // **So gross, wie es im Fenster steht, nicht in Fotopunkten**
+            // (#225). PhotoView legt das Kind in eine Box von der Grösse
+            // des Fensters und verkleinert beides; getroffen wird aber gegen
+            // die unverkleinerte Box. Ein Foto von 4284 × 5712 Punkten nahm
+            // so nur in einem Fleck um die Mitte Klicks an – kein Gesicht
+            // weiter oben liess sich benennen, und der Zug zum Nachtragen
+            // kam nicht an. Innen bleibt es bei Fotopunkten
+            // ([_InFotopunkten]), damit alle Rechnungen in Anteilen gleich
+            // bleiben.
+            final gezeigt = ueberlagert
+                ? applyBoxFit(BoxFit.contain, masse, aussen.biggest).destination
+                : null;
+            // Von Fotopunkten zum Kind: Der Zoom von PhotoView zählt jetzt
+            // ab dieser Grösse, Schrift und Grenzen rechnen in Fotopunkten.
+            final verkleinerung = gezeigt == null
+                ? 1.0
+                : gezeigt.width / masse!.width;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                BildZoomGesten(
+                  steuerung: _zoomsteuerung,
+                  kleinster: 0.1 / verkleinerung,
+                  groesster: 8.0 / verkleinerung,
+                  child: PhotoView.customChild(
+                    controller: _zoomsteuerung,
+                    backgroundDecoration: const BoxDecoration(
+                      color: Colors.black,
                     ),
-                  if (rahmen)
-                    for (final gesicht in _gesichter)
-                      if (!gesicht.isIgnored)
-                        // Der Massstab folgt dem Zoom: Die Namen bleiben
-                        // auf dem Schirm gleich gross (Issue #16).
-                        StreamBuilder<PhotoViewControllerValue>(
-                          stream: _zoomsteuerung.outputStateStream,
-                          builder: (context, zustand) => Gesichtsrahmen(
-                            gesicht: gesicht,
-                            personName: _gesichtsnamen[gesicht.personId],
-                            flaeche: masse,
-                            massstab:
-                                zustand.data?.scale ??
-                                _zoomsteuerung.scale ??
-                                1,
-                            beiTipp: () => _gesichtAngetippt(gesicht),
-                          ),
-                        ),
-                  if (textkaesten)
-                    for (final stelle in _stellen)
-                      Textrahmen(
-                        stelle: stelle,
-                        flaeche: masse,
-                        beiTipp: _zeileKopieren,
-                      ),
-                  // Der Rahmen, der gerade gezogen wird. Ohne ihn zöge man
-                  // blind und sähe erst nach dem Loslassen, was man getroffen
-                  // hat.
-                  if (malen && _zugAnfang != null && _zugJetzt != null)
-                    Positioned.fromRect(
-                      rect: begrenzterZug(_zugAnfang!, _zugJetzt!, masse),
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.orangeAccent,
-                              width: 2,
+                    childSize: gezeigt,
+                    // Ohne das verschöbe der Zug das Bild, statt einen Rahmen zu
+                    // malen: PhotoView greift dieselbe Geste ab.
+                    disableGestures: malen,
+                    initialScale: isPanorama(asset)
+                        ? PhotoViewComputedScale.covered
+                        : null,
+                    minScale: isPanorama(asset)
+                        ? PhotoViewComputedScale.covered
+                        : null,
+                    child: _InFotopunkten(
+                      masse: gezeigt == null ? null : masse,
+                      child: GestureDetector(
+                        // `opaque` nur im Malmodus: Sonst schluckte diese Fläche die
+                        // Tipps auf die Gesichtsrahmen darunter.
+                        behavior: malen
+                            ? HitTestBehavior.opaque
+                            : HitTestBehavior.deferToChild,
+                        // Der Rahmen beginnt dort, wo die Maus gedrückt wurde – nicht
+                        // dort, wo der Zug als Zug erkannt war. Sonst setzte die
+                        // Ecke ein paar Punkte neben dem Klick an.
+                        dragStartBehavior: DragStartBehavior.down,
+                        // Nur Maus, Stift und Finger – nicht das Wischen auf Trackpad
+                        // oder Magic Mouse (Issue #17). Ein Finger, der beim Ziehen
+                        // über die Magic Mouse streicht, kam sonst als zweiter Zeiger
+                        // in denselben Zug, und seit Flutter 3.22 lenkt der jüngste
+                        // Zeiger: Die Ecke sprang mitten im Ziehen an seine Stelle.
+                        supportedDevices: const {
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.stylus,
+                          PointerDeviceKind.invertedStylus,
+                          PointerDeviceKind.touch,
+                        },
+                        onPanStart: malen
+                            ? (d) => setState(() {
+                                _zugAnfang = d.localPosition;
+                                _zugJetzt = d.localPosition;
+                              })
+                            : null,
+                        onPanUpdate: malen
+                            ? (d) => setState(() => _zugJetzt = d.localPosition)
+                            : null,
+                        onPanEnd: malen
+                            ? (_) {
+                                final a = _zugAnfang, b = _zugJetzt;
+                                if (a == null || b == null) return;
+                                // Die Umrechnung steht in [kastenAusZug] und nicht
+                                // hier: Sie ist die Umkehrung dessen, was
+                                // [Gesichtsrahmen] rechnet, und das gehört geprüft.
+                                unawaited(
+                                  _rahmenFertig(kastenAusZug(a, b, masse)),
+                                );
+                              }
+                            : null,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Derselbe Deckel wie im Zweig ohne Überlagerung. Er
+                            // fehlte hier: Die Fokus-Hervorhebung einzuschalten hob
+                            // dasselbe Foto von 4096 Punkten auf seine volle Grösse –
+                            // bei der breitesten Aufnahme der Prüfbibliothek von 64 MB
+                            // auf 317 MB. Das Overlay selbst ist ohnehin begrenzt
+                            // (siehe computeFocusPeakingOverlay).
+                            Image(
+                              image: begrenztesBild(file),
+                              fit: BoxFit.contain,
                             ),
-                            color: Colors.orangeAccent.withValues(alpha: 0.15),
-                          ),
+                            if (overlay != null)
+                              Image.memory(overlay, fit: BoxFit.contain),
+                            if (raster)
+                              const IgnorePointer(
+                                child: CustomPaint(painter: Drittelraster()),
+                              ),
+                            if (rahmen)
+                              for (final gesicht in _gesichter)
+                                if (!gesicht.isIgnored)
+                                  // Der Massstab folgt dem Zoom: Die Namen bleiben
+                                  // auf dem Schirm gleich gross (Issue #16).
+                                  StreamBuilder<PhotoViewControllerValue>(
+                                    stream: _zoomsteuerung.outputStateStream,
+                                    builder: (context, zustand) =>
+                                        Gesichtsrahmen(
+                                          gesicht: gesicht,
+                                          personName:
+                                              _gesichtsnamen[gesicht.personId],
+                                          flaeche: masse,
+                                          massstab:
+                                              (zustand.data?.scale ??
+                                                  _zoomsteuerung.scale ??
+                                                  1) *
+                                              verkleinerung,
+                                          beiTipp: () =>
+                                              _gesichtAngetippt(gesicht),
+                                        ),
+                                  ),
+                            if (textkaesten)
+                              for (final stelle in _stellen)
+                                Textrahmen(
+                                  stelle: stelle,
+                                  flaeche: masse,
+                                  beiTipp: _zeileKopieren,
+                                ),
+                            // Der Rahmen, der gerade gezogen wird. Ohne ihn zöge man
+                            // blind und sähe erst nach dem Loslassen, was man getroffen
+                            // hat.
+                            if (malen &&
+                                _zugAnfang != null &&
+                                _zugJetzt != null)
+                              Positioned.fromRect(
+                                rect: begrenzterZug(
+                                  _zugAnfang!,
+                                  _zugJetzt!,
+                                  masse,
+                                ),
+                                child: IgnorePointer(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      // Auf dem Schirm zwei Punkte breit:
+                                      // In Fotopunkten wären es bei einem
+                                      // grossen Foto nur Bruchteile davon.
+                                      border: Border.all(
+                                        color: Colors.orangeAccent,
+                                        width:
+                                            2 /
+                                            ((_zoomsteuerung.scale ?? 1) *
+                                                verkleinerung),
+                                      ),
+                                      color: Colors.orangeAccent.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
+                  ),
+                ),
+                // Im Malmodus sagt die Fahne, was zu tun ist. Sie stand
+                // bisher nur im Zweig ohne Überlagerung – den der Malmodus
+                // nie erreicht.
+                if (malen)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: AppSpacing.md,
+                    child: IgnorePointer(
+                      child: Center(
+                        child: _Hinweisfahne(
+                          text: AppTexte.of(context).viewerAufziehenHinweis,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+}
+
+/// Legt [child] in Fotopunkten an ([masse]) und zeigt es so gross, wie
+/// PhotoView es vorgibt. Ohne [masse] bleibt [child] unverändert.
+///
+/// Die Rahmen, der Zug zum Nachtragen und die Textkästen rechnen in
+/// Fotopunkten – siehe [Gesichtsrahmen] und [kastenAusZug]. Die
+/// Verkleinerung auf die Fenstergrösse nimmt [FittedBox] vor, und die
+/// rechnet auch beim Treffen um.
+class _InFotopunkten extends StatelessWidget {
+  final Size? masse;
+  final Widget child;
+  const _InFotopunkten({required this.masse, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final m = masse;
+    if (m == null) return child;
+    return FittedBox(
+      child: SizedBox.fromSize(size: m, child: child),
     );
   }
 }
