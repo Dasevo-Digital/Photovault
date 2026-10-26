@@ -2570,4 +2570,9 @@ class AppTexteDe extends AppTexte {
   String variantenEinzelnFrage(int anzahl) {
     return 'Die $anzahl Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.';
   }
+
+  @override
+  String albumOfflineBelegt(String groesse) {
+    return 'Offline auf diesem Telefon · $groesse · Neues kommt nur im WLAN nach';
+  }
 }

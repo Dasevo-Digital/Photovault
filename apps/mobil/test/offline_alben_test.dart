@@ -7,6 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_mobil/offline_alben.dart';
+import 'package:photo_vault_mobil/sitzung.dart';
 
 void main() {
   late Directory ordner;
@@ -91,6 +92,36 @@ void main() {
 
     final neu = await OfflineAlben.oeffne(merkdatei);
     expect(neu.enthaelt('urlaub'), isTrue);
+
+    // Was das Album hier belegt: die geholten Dateien, sonst nichts (#220).
+    var bytes = 0;
+    for (final r in geholt) {
+      bytes += await paths.absolute(r).length();
+    }
+    expect(await offline.belegt(db, paths, 'urlaub'), bytes);
+  });
+
+  test('die Pflege lädt angeheftete Alben nur im WLAN nach (#220)', () async {
+    final offline = await OfflineAlben.oeffne(merkdatei);
+    var wlan = false;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = paths
+      ..offlineAlben = offline
+      ..imWlan = () async => wlan;
+    expect(
+      await sitzung.darfOfflineNachladen(),
+      isFalse,
+      reason: 'nichts angeheftet',
+    );
+    await offline.setze('urlaub', true);
+    expect(
+      await sitzung.darfOfflineNachladen(),
+      isFalse,
+      reason: 'über Mobilfunk nicht von selbst',
+    );
+    wlan = true;
+    expect(await sitzung.darfOfflineNachladen(), isTrue);
   });
 
   test(

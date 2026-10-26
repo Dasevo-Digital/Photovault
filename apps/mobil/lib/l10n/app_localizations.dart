@@ -3966,6 +3966,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die {anzahl} Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.'**
   String variantenEinzelnFrage(int anzahl);
+
+  /// No description provided for @albumOfflineBelegt.
+  ///
+  /// In de, this message translates to:
+  /// **'Offline auf diesem Telefon · {groesse} · Neues kommt nur im WLAN nach'**
+  String albumOfflineBelegt(String groesse);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

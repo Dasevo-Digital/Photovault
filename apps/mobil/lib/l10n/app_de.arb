@@ -1252,5 +1252,7 @@
   "variantenRueckgaengig": "Rückgängig",
   "variantenEinzeln": "Varianten einzeln zeigen",
   "variantenEinzelnFrage": "Die {anzahl} Fassungen wieder einzeln zeigen? Keine Datei wird gelöscht.",
-  "@variantenEinzelnFrage": {"placeholders": {"anzahl": {"type": "int"}}}
+  "@variantenEinzelnFrage": {"placeholders": {"anzahl": {"type": "int"}}},
+  "albumOfflineBelegt": "Offline auf diesem Telefon · {groesse} · Neues kommt nur im WLAN nach",
+  "@albumOfflineBelegt": {"placeholders": {"groesse": {"type": "String"}}}
 }

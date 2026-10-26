@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
@@ -161,6 +162,24 @@ class Sitzung extends ChangeNotifier {
 
   Future<void>? _offlinePflege;
 
+  /// Ob das Telefon gerade im WLAN (oder über Ethernet) hängt – für Tests
+  /// ersetzbar.
+  Future<bool> Function() imWlan = _imWlan;
+
+  static Future<bool> _imWlan() async {
+    final art = await Connectivity().checkConnectivity();
+    return art.contains(ConnectivityResult.wifi) ||
+        art.contains(ConnectivityResult.ethernet);
+  }
+
+  /// Ob die Pflege angeheftete Alben jetzt nachladen darf: nur im WLAN
+  /// (#220). Die Pflege läuft alle 15 Minuten von selbst, und neue
+  /// Aufnahmen eines Albums können Originale und Videos von Gigabytes sein –
+  /// über Mobilfunk käme das ungefragt aufs Datenvolumen. Wer ein Album
+  /// ausdrücklich anheftet, bekommt es sofort, auch unterwegs.
+  Future<bool> darfOfflineNachladen() async =>
+      (offlineAlben?.albumIds.isNotEmpty ?? false) && await imWlan();
+
   /// Hält neue Aufnahmen angehefteter Alben nach und räumt erst danach den
   /// übrigen Cache auf. Ein zweiter Zeitgeber startet keinen parallelen Lauf.
   Future<void> pflegeOfflineUndZwischenspeicher() {
@@ -168,7 +187,9 @@ class Sitzung extends ChangeNotifier {
     if (laufend != null) return laufend;
     final lauf = () async {
       try {
-        await offlineAlben?.aktualisiere(db, paths);
+        if (await darfOfflineNachladen()) {
+          await offlineAlben?.aktualisiere(db, paths);
+        }
       } catch (_) {
         // Ohne Server bleibt der bisherige Offline-Stand erhalten. Der
         // nächste Pflegegang versucht nur die noch fehlenden Dateien erneut.
@@ -197,6 +218,8 @@ class Sitzung extends ChangeNotifier {
       return 0;
     }
     final anzahl = await alben.holeAlbum(db, paths, albumId);
+    // Die Anzeige des belegten Platzes (AlbumSeite) rechnet neu.
+    notifyListeners();
     await pflegeZwischenspeicher();
     return anzahl;
   }

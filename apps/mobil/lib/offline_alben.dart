@@ -79,12 +79,16 @@ class OfflineAlben {
     int gleichzeitig = 3,
   }) async {
     final aufnahmen = await _aufnahmenDesAlbums(db, albumId);
-    final pfade = <String>{for (final a in aufnahmen) ..._medienpfade(a)};
+    // Eine Liste, kein Set: `elementAt` ginge bei jedem Schritt von vorn
+    // durch die Menge – bei grossen Alben quadratisch (#220).
+    final pfade = <String>{
+      for (final a in aufnahmen) ..._medienpfade(a),
+    }.toList();
     var index = 0;
 
     Future<void> arbeiter() async {
       while (index < pfade.length) {
-        final relativ = pfade.elementAt(index++);
+        final relativ = pfade[index++];
         await paths.bereit(relativ);
       }
     }
@@ -93,6 +97,17 @@ class OfflineAlben {
       for (var i = 0; i < gleichzeitig.clamp(1, 8); i++) arbeiter(),
     ]);
     return aufnahmen.length;
+  }
+
+  /// Wie viel Platz [albumId] auf diesem Telefon belegt – was schon da
+  /// ist, nicht was noch fehlt (#220).
+  Future<int> belegt(AppDatabase db, StoragePaths paths, String albumId) async {
+    var summe = 0;
+    for (final relativ in await _pfadeDesAlbums(db, albumId)) {
+      final f = paths.absolute(relativ);
+      if (await f.exists()) summe += await f.length();
+    }
+    return summe;
   }
 
   /// Holt alle angehefteten Alben nach. Neue Aufnahmen in einem Album werden

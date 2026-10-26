@@ -7,6 +7,7 @@ import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'angaben.dart' show groesseText;
 import 'raster.dart';
 import 'diashow.dart';
 import 'freigaben.dart';
@@ -370,17 +371,58 @@ class AlbumSeite extends StatelessWidget {
         _OfflineAlbumKnopf(sitzung: sitzung, albumId: album.id),
       ],
     ),
-    body: StreamBuilder<List<AssetData>>(
-      stream: sitzung.db.watchAlbumAssets(album.id),
-      builder: (context, snap) {
-        final a = snap.data;
-        if (a == null) return const Center(child: CircularProgressIndicator());
-        return AufnahmenRaster(
-          sitzung: sitzung,
-          zeilen: [for (final x in a) Rasterzeile.aus(x)],
-        );
-      },
+    body: Column(
+      children: [
+        _OfflineStand(sitzung: sitzung, albumId: album.id),
+        Expanded(
+          child: StreamBuilder<List<AssetData>>(
+            stream: sitzung.db.watchAlbumAssets(album.id),
+            builder: (context, snap) {
+              final a = snap.data;
+              if (a == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return AufnahmenRaster(
+                sitzung: sitzung,
+                zeilen: [for (final x in a) Rasterzeile.aus(x)],
+              );
+            },
+          ),
+        ),
+      ],
     ),
+  );
+}
+
+/// Über einem angehefteten Album: wie viel Platz es hier belegt, und dass
+/// Neues nur im WLAN nachkommt (#220).
+class _OfflineStand extends StatelessWidget {
+  const _OfflineStand({required this.sitzung, required this.albumId});
+
+  final Sitzung sitzung;
+  final String albumId;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: sitzung,
+    builder: (context, _) {
+      final alben = sitzung.offlineAlben;
+      if (alben == null || !alben.enthaelt(albumId)) {
+        return const SizedBox.shrink();
+      }
+      return FutureBuilder<int>(
+        future: alben.belegt(sitzung.db, sitzung.paths, albumId),
+        builder: (context, snap) => ListTile(
+          dense: true,
+          leading: const Icon(Icons.offline_pin),
+          title: Text(
+            AppTexte.of(
+              context,
+            ).albumOfflineBelegt(groesseText(snap.data ?? 0)),
+          ),
+        ),
+      );
+    },
   );
 }
 

@@ -827,5 +827,6 @@
   "variantenGebildet": "{anzahl} versions stacked as variants",
   "variantenRueckgaengig": "Undo",
   "variantenEinzeln": "Show variants separately",
-  "variantenEinzelnFrage": "Show the {anzahl} versions separately again? No file is deleted."
+  "variantenEinzelnFrage": "Show the {anzahl} versions separately again? No file is deleted.",
+  "albumOfflineBelegt": "Offline on this phone · {groesse} · new photos follow only over Wi-Fi"
 }
