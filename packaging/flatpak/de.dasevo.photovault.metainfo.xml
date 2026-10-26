@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.4" date="2026-10-26">
+      <description>
+        <p>Scrolling the person list with a mouse wheel or a Magic Mouse no longer skips entries, and the list shows more people on large screens.</p>
+      </description>
+    </release>
     <release version="3.48.3" date="2026-10-26">
       <description>
         <p>In the full-screen viewer, clicks on face frames and text boxes and drawing a missed face now work across the whole photo; on large photos they only reached a small area around the centre.</p>
