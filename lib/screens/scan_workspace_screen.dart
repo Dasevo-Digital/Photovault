@@ -135,32 +135,60 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
     });
     final temp = await Directory.systemTemp.createTemp('photo_vault_scan_');
     var duplikate = 0, fehler = 0;
-    final importiert = <String>[];
+    // Je ausgewähltem Ausschnitt seine neue Aufnahme – an seiner Stelle,
+    // damit Vorder- und Rückseite auch nach übersprungenen Duplikaten
+    // zusammenfinden (siehe [scanPaare]).
+    final kennungen = List<String?>.filled(auswahl.length, null);
     try {
-      final dateipfade = <String>[];
+      final dateipfade = List<String>.filled(auswahl.length, '');
+      // Ein Scan wird einmal dekodiert, für alle seine Ausschnitte.
+      final jeQuelle = <_ScanQuelle, List<int>>{};
       for (var i = 0; i < auswahl.length; i++) {
-        final (quelle, kandidat) = auswahl[i];
-        final bytes = await Isolate.run(
-          () => erzeugeScanJpeg(
-            quelle.bytes,
-            kandidat.bereich,
-            vierteldrehungen: kandidat.drehungen,
+        jeQuelle.putIfAbsent(auswahl[i].$1, () => []).add(i);
+      }
+      for (final MapEntry(key: quelle, value: stellen) in jeQuelle.entries) {
+        final auftraege = [
+          for (final i in stellen)
+            (
+              bereich: auswahl[i].$2.bereich,
+              drehungen: auswahl[i].$2.drehungen,
+            ),
+        ];
+        final bytes = quelle.bytes;
+        final verlustfrei = scanVerlustfrei(quelle.pfad);
+        final ausschnitte = await Isolate.run(
+          () => erzeugeScanAusschnitte(
+            bytes,
+            auftraege,
+            verlustfrei: verlustfrei,
           ),
         );
         final basis = p.basenameWithoutExtension(quelle.pfad);
-        final ziel = File(
-          p.join(
-            temp.path,
-            '${basis}_${(i + 1).toString().padLeft(3, '0')}.jpg',
-          ),
-        );
-        await ziel.writeAsBytes(bytes, flush: true);
-        dateipfade.add(ziel.path);
-        if (mounted) setState(() => _fortschritt++);
+        for (var j = 0; j < stellen.length; j++) {
+          final i = stellen[j];
+          final ziel = File(
+            p.join(
+              temp.path,
+              '${basis}_${(i + 1).toString().padLeft(3, '0')}'
+              '${ausschnitte[j].endung}',
+            ),
+          );
+          await ziel.writeAsBytes(ausschnitte[j].bytes, flush: true);
+          dateipfade[i] = ziel.path;
+        }
+        if (mounted) setState(() => _fortschritt += stellen.length);
       }
 
+      final stelle = {
+        for (var i = 0; i < dateipfade.length; i++)
+          p.basename(dateipfade[i]): i,
+      };
+      final importiert = <String>[];
       await for (final stand in widget.library.importFiles(dateipfade)) {
-        if (stand.assetId != null) importiert.add(stand.assetId!);
+        if (stand.assetId case final id?) {
+          importiert.add(id);
+          if (stelle[stand.currentFile] case final i?) kennungen[i] = id;
+        }
         if (stand.duplikat) duplikate++;
         if (stand.gescheitert) fehler++;
         if (mounted) setState(() => _fortschritt++);
@@ -171,19 +199,28 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
       }
       if (_datum != null && importiert.isNotEmpty) {
         await widget.library.setzeAufnahmedatumVonHand(importiert, _datum!);
+      } else if (importiert.isNotEmpty) {
+        // Ein Ausschnitt trägt keine Aufnahmeangaben; der Import fände
+        // sonst das Datum im Namen des Scans – den Tag des Scannens – und
+        // hielte es mit Uhrzeit für sicher (#218). So steht der Zeitpunkt
+        // des Imports da, ausdrücklich geschätzt.
+        final jetzt = DateTime.now();
+        await widget.library.db.fuehreAus(
+          AufnahmedatenSetzen([
+            for (final id in importiert)
+              (id: id, zeitpunkt: jetzt, geschaetzt: true),
+          ]),
+        );
       }
       if (_paarweise) {
-        if (importiert.length.isEven) {
-          for (var i = 0; i < importiert.length; i += 2) {
-            await widget.library.db.fuehreAus(
-              VariantenBilden(const Uuid().v4(), [
-                importiert[i],
-                importiert[i + 1],
-              ], importiert[i]),
-            );
-          }
-        } else if (mounted) {
-          melde.warnung(t.scanPaarNichtGestapelt);
+        final (:paare, :unvollstaendig) = scanPaare(kennungen);
+        for (final (vorne, hinten) in paare) {
+          await widget.library.db.fuehreAus(
+            VariantenBilden(const Uuid().v4(), [vorne, hinten], vorne),
+          );
+        }
+        if (unvollstaendig > 0 && mounted) {
+          melde.warnung(t.scanPaarNichtGestapelt(unvollstaendig));
         }
       }
       if (_restaurieren) {

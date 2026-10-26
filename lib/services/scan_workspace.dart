@@ -1,12 +1,14 @@
-/// Erkennen und verlustfreies Ausschneiden mehrerer Papierfotos aus einem
-/// Flachbettscan. Die Quelldatei wird nie verändert; importiert werden erst
-/// die ausdrücklich bestätigten JPEG-Ausschnitte.
+/// Erkennen und Ausschneiden mehrerer Papierfotos aus einem Flachbettscan.
+/// Die Quelldatei wird nie verändert; importiert werden erst die
+/// ausdrücklich bestätigten Ausschnitte – aus PNG, TIFF und BMP verlustfrei
+/// als PNG, aus JPEG als JPEG in hoher Qualität (siehe [scanVerlustfrei]).
 library;
 
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 
 class ScanBereich {
   const ScanBereich({
@@ -163,19 +165,74 @@ img.Image rendereScanBereich(
   return ausschnitt;
 }
 
-Uint8List erzeugeScanJpeg(
+/// Ein fertiger Ausschnitt und die Endung, unter der er importiert wird.
+class ScanAusschnitt {
+  const ScanAusschnitt(this.bytes, this.endung);
+
+  final Uint8List bytes;
+  final String endung;
+}
+
+/// Ob aus dem Scan [pfad] verlustfrei geschnitten wird.
+///
+/// **Nur ein JPEG nicht.** Ein Ausschnitt muss neu kodiert werden; aus PNG,
+/// TIFF und BMP wird er deshalb ein PNG – ohne Verlust, in der Bittiefe des
+/// Scans. Ein JPEG neu als PNG zu speichern, machte die Datei vielfach
+/// grösser, ohne einen Bildpunkt zu retten; es bleibt ein JPEG in
+/// Qualität 94. Bis 3.48.0 hiess beides „verlustfrei“ und war beides ein
+/// JPEG (#218).
+bool scanVerlustfrei(String pfad) =>
+    !const {'.jpg', '.jpeg'}.contains(p.extension(pfad).toLowerCase());
+
+/// Schneidet alle [auftraege] aus einem Scan, der dafür **einmal**
+/// dekodiert wird – vorher dekodierte jeder Ausschnitt den ganzen Scan neu
+/// (#218). Das Farbprofil des Scans geht mit.
+List<ScanAusschnitt> erzeugeScanAusschnitte(
   Uint8List bytes,
-  ScanBereich bereich, {
-  int vierteldrehungen = 0,
+  List<({ScanBereich bereich, int drehungen})> auftraege, {
+  required bool verlustfrei,
 }) {
   final quelle = img.decodeImage(bytes);
   if (quelle == null) throw const FormatException('Bild nicht lesbar');
-  return Uint8List.fromList(
-    img.encodeJpg(
-      rendereScanBereich(quelle, bereich, vierteldrehungen: vierteldrehungen),
-      quality: 94,
-    ),
-  );
+  return [
+    for (final a in auftraege)
+      _kodiere(
+        rendereScanBereich(quelle, a.bereich, vierteldrehungen: a.drehungen)
+          ..iccProfile = quelle.iccProfile,
+        verlustfrei: verlustfrei,
+      ),
+  ];
+}
+
+ScanAusschnitt _kodiere(img.Image bild, {required bool verlustfrei}) =>
+    verlustfrei
+    ? ScanAusschnitt(img.encodePng(bild), '.png')
+    : ScanAusschnitt(
+        Uint8List.fromList(img.encodeJpg(bild, quality: 94)),
+        '.jpg',
+      );
+
+/// Vorder- und Rückseiten in der Reihenfolge der Auswahl (#218):
+/// [kennungen] hat je ausgewähltem Ausschnitt einen Eintrag – die neue
+/// Aufnahme oder `null`, wenn er nicht neu importiert wurde (Duplikat,
+/// Fehler). Ein Paar entsteht nur aus den Ausschnitten 1+2, 3+4 …, wenn
+/// beide neu sind. Vorher wurden die neuen Kennungen der Reihe nach
+/// gepaart: Fielen zwei Duplikate heraus, rückte alles nach, und es
+/// entstanden falsche Paare.
+({List<(String, String)> paare, int unvollstaendig}) scanPaare(
+  List<String?> kennungen,
+) {
+  final paare = <(String, String)>[];
+  var unvollstaendig = 0;
+  for (var i = 0; i + 1 < kennungen.length; i += 2) {
+    final (vorne, hinten) = (kennungen[i], kennungen[i + 1]);
+    if (vorne != null && hinten != null) {
+      paare.add((vorne, hinten));
+    } else if (vorne != null || hinten != null) {
+      unvollstaendig++;
+    }
+  }
+  return (paare: paare, unvollstaendig: unvollstaendig);
 }
 
 Uint8List erzeugeScanVorschau(Uint8List bytes, ScanBereich bereich) {

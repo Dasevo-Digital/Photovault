@@ -6241,8 +6241,8 @@
   "backupZurEinstellung": "Zu den Einstellungen",
   "serverTokenSpeichernFehler": "Das Server-Token konnte nicht geschützt gespeichert werden. Die Verbindung wurde nicht geändert.",
   "scanTitel": "Scan-Arbeitsbereich",
-  "scanWerkzeugText": "Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.",
-  "scanText": "Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.",
+  "scanWerkzeugText": "Mehrere Papierfotos in Scans erkennen, prüfen, drehen und als einzelne Aufnahmen importieren – aus PNG und TIFF verlustfrei.",
+  "scanText": "Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert. Aus PNG, TIFF und BMP entsteht je Foto ein verlustfreies PNG, aus JPEG ein JPEG in hoher Qualität.",
   "scanDateienWaehlen": "Scans auswählen",
   "scanNochKeine": "Noch keine Scans ausgewählt.",
   "scanGanzesBild": "Ganzen Scan verwenden",
@@ -6274,7 +6274,8 @@
   },
   "scanKeineAuswahl": "Wähle mindestens einen erkannten Ausschnitt aus.",
   "scanUngerade": "Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.",
-  "scanPaarNichtGestapelt": "Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.",
+  "scanPaarNichtGestapelt": "{anzahl, plural, =1{Bei einem Paar fehlte eine Seite (Duplikat oder Fehler); das andere Foto wurde importiert, aber nicht gestapelt.} other{Bei {anzahl} Paaren fehlte eine Seite (Duplikat oder Fehler); die übrigen Fotos wurden importiert, aber nicht gestapelt.}}",
+  "@scanPaarNichtGestapelt": {"placeholders": {"anzahl": {"type": "int"}}},
   "scanFertig": "Scan-Import: {neu} neu, {duplikate} Duplikate, {fehler} Fehler.",
   "@scanFertig": {
     "placeholders": {

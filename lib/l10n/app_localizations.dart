@@ -14986,13 +14986,13 @@ abstract class AppTexte {
   /// No description provided for @scanWerkzeugText.
   ///
   /// In de, this message translates to:
-  /// **'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.'**
+  /// **'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und als einzelne Aufnahmen importieren – aus PNG und TIFF verlustfrei.'**
   String get scanWerkzeugText;
 
   /// No description provided for @scanText.
   ///
   /// In de, this message translates to:
-  /// **'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.'**
+  /// **'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert. Aus PNG, TIFF und BMP entsteht je Foto ein verlustfreies PNG, aus JPEG ein JPEG in hoher Qualität.'**
   String get scanText;
 
   /// No description provided for @scanDateienWaehlen.
@@ -15094,8 +15094,8 @@ abstract class AppTexte {
   /// No description provided for @scanPaarNichtGestapelt.
   ///
   /// In de, this message translates to:
-  /// **'Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.'**
-  String get scanPaarNichtGestapelt;
+  /// **'{anzahl, plural, =1{Bei einem Paar fehlte eine Seite (Duplikat oder Fehler); das andere Foto wurde importiert, aber nicht gestapelt.} other{Bei {anzahl} Paaren fehlte eine Seite (Duplikat oder Fehler); die übrigen Fotos wurden importiert, aber nicht gestapelt.}}'**
+  String scanPaarNichtGestapelt(int anzahl);
 
   /// No description provided for @scanFertig.
   ///

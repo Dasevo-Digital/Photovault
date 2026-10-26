@@ -9774,11 +9774,11 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get scanWerkzeugText =>
-      'Detect several paper photos in scans, review and rotate them, then import each one without changing the scan.';
+      'Detect several paper photos in scans, review and rotate them, then import each one without changing the scan – losslessly from PNG and TIFF.';
 
   @override
   String get scanText =>
-      'Choose flatbed scans. Detected photos are imported only after your review; the source files remain unchanged.';
+      'Choose flatbed scans. Detected photos are imported only after your review; the source files remain unchanged. PNG, TIFF and BMP scans give a lossless PNG per photo, JPEG scans a high-quality JPEG.';
 
   @override
   String get scanDateienWaehlen => 'Choose scans';
@@ -9844,8 +9844,17 @@ class AppTexteEn extends AppTexte {
       'An even number must be selected for fronts and backs.';
 
   @override
-  String get scanPaarNichtGestapelt =>
-      'Skipped duplicates left an incomplete pair; the new photos were imported but not stacked in pairs.';
+  String scanPaarNichtGestapelt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl pairs were missing a side (duplicate or error); the remaining photos were imported but not stacked.',
+      one:
+          'One pair was missing a side (duplicate or error); the other photo was imported but not stacked.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String scanFertig(int neu, int duplikate, int fehler) {

@@ -9828,11 +9828,11 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get scanWerkzeugText =>
-      'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und verlustfrei als einzelne Aufnahmen importieren.';
+      'Mehrere Papierfotos in Scans erkennen, prüfen, drehen und als einzelne Aufnahmen importieren – aus PNG und TIFF verlustfrei.';
 
   @override
   String get scanText =>
-      'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert.';
+      'Wähle Flachbettscans aus. Erkannte Einzelfotos werden erst nach deiner Sichtprüfung importiert; die Quelldateien bleiben unverändert. Aus PNG, TIFF und BMP entsteht je Foto ein verlustfreies PNG, aus JPEG ein JPEG in hoher Qualität.';
 
   @override
   String get scanDateienWaehlen => 'Scans auswählen';
@@ -9899,8 +9899,17 @@ class AppTexteDe extends AppTexte {
       'Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.';
 
   @override
-  String get scanPaarNichtGestapelt =>
-      'Durch übersprungene Duplikate blieb ein unvollständiges Paar; die neuen Fotos wurden importiert, aber nicht paarweise gestapelt.';
+  String scanPaarNichtGestapelt(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          'Bei $anzahl Paaren fehlte eine Seite (Duplikat oder Fehler); die übrigen Fotos wurden importiert, aber nicht gestapelt.',
+      one:
+          'Bei einem Paar fehlte eine Seite (Duplikat oder Fehler); das andere Foto wurde importiert, aber nicht gestapelt.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String scanFertig(int neu, int duplikate, int fehler) {
