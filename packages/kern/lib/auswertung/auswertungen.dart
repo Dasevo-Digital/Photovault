@@ -239,6 +239,16 @@ class Auswertungen {
     // Kein Foto war als gescannt vermerkt, ohne dass Unschärfe und
     // Einbettung – die dasselbe dekodierte Bild brauchen – dastanden.)
     //
+    // Die Videohälfte eines Live Photos zeigt dieselben Gesichter wie ihr
+    // Standbild (#226). Vor der Prüfung auf das Bild: Als durchsucht
+    // vermerkt wird sie auch dann, wenn sich ihr Vorschaubild nicht lesen
+    // lässt – sonst bliebe sie als offene Arbeit stehen, die nie erledigt
+    // wird. Gefunden wird ohnehin nichts.
+    if (istLivePhotoVideo(asset)) {
+      await db.markFacesScanned([asset.id]);
+      return;
+    }
+
     // Ein früher Ausstieg und keine Bedingung um den Vermerk herum, damit
     // die Regel baulich gilt und nicht an einer Stelle hängt, die beim
     // nächsten Umbau mitwandern muss.

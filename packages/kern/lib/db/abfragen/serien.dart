@@ -11,6 +11,15 @@ bool istVariantenstapel(String? stackId) =>
 
 String variantenstapelId(String kennung) => '$variantenstapelPraefix$kennung';
 
+/// Ob [asset] die Videohälfte eines Live Photos ist.
+///
+/// Sie zeigt drei Sekunden um denselben Augenblick wie ihr Standbild und
+/// erscheint neben ihm nicht als eigene Aufnahme. Die Gesichtserkennung
+/// lässt sie deshalb aus (#226): Sie fand dort dieselben Gesichter ein
+/// zweites Mal – bei 77 von 79 solchen Videos in der Prüfbibliothek.
+bool istLivePhotoVideo(AssetData asset) =>
+    asset.type == 'VIDEO' && asset.linkedAssetId != null;
+
 /// Live Photos und Serien.
 extension SerienAbfragen on AppDatabase {
   // ---------------------------------------------------------------------
@@ -80,6 +89,39 @@ extension SerienAbfragen on AppDatabase {
             .get();
     return [for (final z in zeilen) (z.readTable(assets), z.readTable(foto))];
   }
+
+  /// Gesichter auf Videohälften von Live Photos, die nichts verlieren,
+  /// wenn sie gehen (#226): unbenannte und beiseitegelegte, und benannte,
+  /// deren Person auch im Standbild steht.
+  ///
+  /// Stehen bleibt ein benanntes Gesicht, dessen Person das Standbild
+  /// nicht trägt – dort hat die Erkennung sie übersehen oder jemand sie
+  /// anders benannt. Das zu entscheiden ist Sache des Nutzers.
+  Future<List<String>> doppelteLivePhotoGesichter() async {
+    final zeilen = await customSelect(
+      'SELECT f.id AS id FROM faces f '
+      'JOIN assets v ON v.id = f.asset_id '
+      "WHERE v.type = 'VIDEO' AND v.linked_asset_id IS NOT NULL "
+      'AND (f.person_id IS NULL OR EXISTS ('
+      '  SELECT 1 FROM faces g '
+      '  WHERE g.asset_id = v.linked_asset_id AND g.person_id = f.person_id'
+      '))',
+      readsFrom: {faces, assets},
+    ).get();
+    return [for (final z in zeilen) z.read<String>('id')];
+  }
+
+  /// Vermerkt alle Videohälften von Live Photos als nach Gesichtern
+  /// durchsucht – sie werden es nicht mehr (siehe [istLivePhotoVideo]).
+  /// Sonst stünden sie als offene Arbeit da, die nie erledigt wird.
+  Future<int> livePhotoVideosAlsDurchsucht() =>
+      (update(assets)..where(
+            (t) =>
+                t.type.equals('VIDEO') &
+                t.linkedAssetId.isNotNull() &
+                t.facesScanned.equals(false),
+          ))
+          .write(const AssetsCompanion(facesScanned: Value(true)));
 
   /// Verknüpfte Paare, deren beide Hälften Fotos sind – je Paar einmal.
   ///

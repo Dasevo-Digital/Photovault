@@ -107,6 +107,11 @@ class Nachbearbeitung {
   /// (siehe `bildpaare`).
   static const nachlaufLivePhotoPaare = 'nachlauf-livephoto-paare-2';
 
+  /// Der einmalige Nachlauf, der die doppelten Gesichter auf den
+  /// Videohälften von Live Photos entfernt (siehe
+  /// [entferneLivePhotoVideoGesichter]).
+  static const nachlaufLivePhotoGesichter = 'nachlauf-livephoto-gesichter';
+
   /// Prüft, ob es zu diesem frisch importierten Asset schon einen
   /// unverknüpften Partner mit demselben Dateinamen (ohne Endung) gibt –
   /// z.B. das HEIC-Standbild zu einem bereits importierten MOV oder
@@ -190,6 +195,28 @@ class Nachbearbeitung {
       await verknuepfeLivePhoto(video);
     }
     return geloest;
+  }
+
+  /// Entfernt die Gesichter auf Videohälften von Live Photos, die nur das
+  /// Standbild wiederholen, samt ihren Ausschnitten (#226). Gibt zurück,
+  /// wie viele es waren.
+  ///
+  /// Bis 3.48 wertete die Gesichtserkennung jedes Video mit Vorschaubild
+  /// aus, auch die Hälften von Live Photos. Jede Person stand so für einen
+  /// Augenblick zweimal in der Bibliothek, und unter „Unbenannte
+  /// Gesichter" erschienen Doppel zu Aufnahmen, die es in der Zeitleiste
+  /// gar nicht eigens gibt. Was gelöscht wird, sagt
+  /// [SerienAbfragen.doppelteLivePhotoGesichter].
+  Future<int> entferneLivePhotoVideoGesichter() async {
+    final ids = await db.doppelteLivePhotoGesichter();
+    // Als Befehl wie das Löschen durch den Nutzer: Am Server erfahren so
+    // die verbundenen Geräte davon, und ein Profilbild aus einem der
+    // Ausschnitte wird ersetzt.
+    for (final pfad in await db.fuehreAus(GesichterLoeschen(ids))) {
+      await paths.deletePermanently(pfad);
+    }
+    await db.livePhotoVideosAlsDurchsucht();
+    return ids.length;
   }
 
   /// Holt das Video aus einem Motion Photo (siehe

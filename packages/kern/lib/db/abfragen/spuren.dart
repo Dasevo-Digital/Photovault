@@ -490,13 +490,19 @@ extension SpurenAbfragen on AppDatabase {
             t.isLocked.equals(false) &
             // Gilt auch fuer "alle erneut durchsuchen" - sonst waere die
             // Ausnahme wertlos, denn nur dort greift sie ueberhaupt.
-            t.faceScanExcluded.equals(false),
+            t.faceScanExcluded.equals(false) &
+            _keineLivePhotoVideohaelfte(t),
       );
     if (onlyNew) {
       query.where((t) => t.facesScanned.equals(false));
     }
     return query.get();
   }
+
+  /// Siehe [istLivePhotoVideo]: Die Videohaelfte eines Live Photos wird
+  /// nicht nach Gesichtern durchsucht (#226).
+  Expression<bool> _keineLivePhotoVideohaelfte($AssetsTable t) =>
+      (t.type.equals('VIDEO') & t.linkedAssetId.isNotNull()).not();
 
   /// Nimmt ein Foto von der Gesichtssuche aus oder holt es zurueck.
   Future<void> setzeGesichtssucheAusgenommen(String assetId, bool wert) =>
@@ -510,7 +516,8 @@ extension SpurenAbfragen on AppDatabase {
         _auswertbar(assets) &
         assets.isTrashed.equals(false) &
         assets.isLocked.equals(false) &
-        assets.faceScanExcluded.equals(false);
+        assets.faceScanExcluded.equals(false) &
+        _keineLivePhotoVideohaelfte(assets);
     if (onlyNew) predicate = predicate & assets.facesScanned.equals(false);
     return _countWhere(predicate);
   }

@@ -350,6 +350,13 @@ class LibraryState extends ChangeNotifier {
         Nachbearbeitung.nachlaufLivePhotoPaare,
         nachbearbeitung.repariereLivePhotoPaare,
       ),
+      // Doppelte Gesichter auf den Videohälften von Live Photos (#226).
+      // Nach den Paaren: Erst danach steht fest, welches Video eine
+      // Videohälfte ist.
+      (
+        Nachbearbeitung.nachlaufLivePhotoGesichter,
+        nachbearbeitung.entferneLivePhotoVideoGesichter,
+      ),
     ];
     for (final (schluessel, lauf) in laeufe) {
       try {

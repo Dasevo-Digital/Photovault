@@ -1025,6 +1025,7 @@ const _einordnung = <String, _Art>{
   'setzeGesichtsausschnitt': _Art.ergebnis,
   'deleteUnassignedFacesForAsset': _Art.ergebnis,
   'markFacesScanned': _Art.ergebnis,
+  'livePhotoVideosAlsDurchsucht': _Art.ergebnis,
   'linkAssets': _Art.ergebnis,
   'trenneAssets': _Art.ergebnis,
   'setzeDateiart': _Art.ergebnis,

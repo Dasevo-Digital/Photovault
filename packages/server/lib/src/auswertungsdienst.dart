@@ -200,6 +200,13 @@ class Auswertungsdienst {
         Nachbearbeitung.nachlaufLivePhotoPaare,
         () => bibliothek.nachbearbeitung.repariereLivePhotoPaare(),
       ),
+      // Doppelte Gesichter auf den Videohälften von Live Photos (#226).
+      // Nach den Paaren: Erst danach steht fest, welches Video eine
+      // Videohälfte ist.
+      (
+        Nachbearbeitung.nachlaufLivePhotoGesichter,
+        () => bibliothek.nachbearbeitung.entferneLivePhotoVideoGesichter(),
+      ),
     ];
     for (final (schluessel, lauf) in laeufe) {
       if (_beendet) return;

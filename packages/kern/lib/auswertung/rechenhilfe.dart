@@ -471,6 +471,12 @@ extension GesichterSpeichern on Auswertungen {
     AssetData asset,
     List<Gesichtsfund> funde,
   ) async {
+    // Auch was ein anderer Rechner fand: Die Videohälfte eines Live Photos
+    // bekommt keine eigenen Gesichter (#226).
+    if (istLivePhotoVideo(asset)) {
+      await db.markFacesScanned([asset.id]);
+      return;
+    }
     final ignoriert = [
       for (final f in await db.facesForAsset(asset.id))
         if (f.isIgnored) DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),

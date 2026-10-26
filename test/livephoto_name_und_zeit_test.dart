@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
+import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -19,18 +21,19 @@ void main() {
   late Directory temp;
   late AppDatabase db;
   late Nachbearbeitung nb;
+  late StoragePaths paths;
+  late Auswertungen auswertungen;
 
   setUp(() async {
     temp = Directory.systemTemp.createTempSync('pv_livephoto_zeit_');
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(
-      Directory(p.join(temp.path, 'lib')),
-    );
+    paths = await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib')));
+    auswertungen = Auswertungen(db: db, paths: paths, modelle: Modelle());
     nb = Nachbearbeitung(
       db: db,
       paths: paths,
       importe: () => ImportService(db, paths),
-      auswertungen: Auswertungen(db: db, paths: paths, modelle: Modelle()),
+      auswertungen: auswertungen,
     );
   });
 
@@ -152,5 +155,99 @@ void main() {
     await db.setzeDateiart('mov', 'IMAGE', dateiformat: 'heic');
     expect(await partner('mov'), isNull);
     expect(await partner('foto'), isNull);
+  });
+
+  group('Gesichter auf der Videohälfte (#226)', () {
+    /// Ein Gesicht mit Ausschnitt auf der Platte.
+    Future<File> gesicht(
+      String id,
+      String asset, {
+      String? person,
+      bool ignoriert = false,
+    }) async {
+      final relativ = paths.faceRelativePath(id);
+      final datei = paths.absolute(relativ);
+      await datei.create(recursive: true);
+      await datei.writeAsBytes([1, 2, 3]);
+      await db.insertFace(
+        FacesCompanion.insert(
+          id: id,
+          assetId: asset,
+          personId: Value(person),
+          boxX: 0.4,
+          boxY: 0.2,
+          boxW: 0.2,
+          boxH: 0.25,
+          cropRelativePath: Value(relativ),
+          isIgnored: Value(ignoriert),
+        ),
+      );
+      return datei;
+    }
+
+    Future<void> paar() async {
+      await lege('foto', 'IMG_5032.HEIC', 'IMAGE', neu, verknuepft: 'video');
+      await lege('video', 'IMG_5032.MOV', 'VIDEO', neu, verknuepft: 'foto');
+    }
+
+    test('Doppel gehen, eine eigene Person bleibt', () async {
+      await paar();
+      for (final (id, name) in [('anna', 'Anna'), ('ben', 'Ben')]) {
+        await db.createPerson(PeopleCompanion.insert(id: id, name: name));
+      }
+      final imFoto = await gesicht('f1', 'foto', person: 'anna');
+      final doppel = await gesicht('v1', 'video', person: 'anna');
+      final unbenannt = await gesicht('v2', 'video');
+      final ignoriert = await gesicht('v3', 'video', ignoriert: true);
+      // Ben steht nur im Video – das Standbild hat ihn übersehen.
+      final eigen = await gesicht('v4', 'video', person: 'ben');
+      await db.setPersonCoverIfUnset('anna', paths.faceRelativePath('v1'));
+
+      expect(await nb.entferneLivePhotoVideoGesichter(), 3);
+
+      final uebrig = {for (final f in await db.facesForAsset('video')) f.id};
+      expect(uebrig, {'v4'});
+      expect(await db.facesForAsset('foto'), hasLength(1));
+      for (final weg in [doppel, unbenannt, ignoriert]) {
+        expect(weg.existsSync(), isFalse, reason: 'Ausschnitt ohne Zeile');
+      }
+      expect(imFoto.existsSync(), isTrue);
+      expect(eigen.existsSync(), isTrue);
+      final anna = await (db.select(
+        db.people,
+      )..where((t) => t.id.equals('anna'))).getSingle();
+      expect(
+        anna.coverFaceCropPath,
+        paths.faceRelativePath('f1'),
+        reason: 'das Profilbild kommt aus dem Standbild',
+      );
+      expect((await db.assetById('video'))!.facesScanned, isTrue);
+    });
+
+    test('die Videohälfte bekommt keine neuen Gesichter', () async {
+      await paar();
+      expect(
+        (await db.assetsForFaceScan(onlyNew: false)).map((a) => a.id),
+        isNot(contains('video')),
+      );
+      expect(
+        (await db.assetsForFaceScan(onlyNew: false)).map((a) => a.id),
+        contains('foto'),
+      );
+
+      // Auch nicht, was ein anderer Rechner für sie gefunden hat.
+      await auswertungen.speichereGesichter((await db.assetById('video'))!, [
+        Gesichtsfund(
+          x: 0.4,
+          y: 0.2,
+          breite: 0.2,
+          hoehe: 0.25,
+          schaerfe: 1,
+          ausschnitt: Uint8List.fromList([1, 2, 3]),
+        ),
+      ]);
+      expect(await db.facesForAsset('video'), isEmpty);
+      expect((await db.assetById('video'))!.facesScanned, isTrue);
+    });
   });
 }
