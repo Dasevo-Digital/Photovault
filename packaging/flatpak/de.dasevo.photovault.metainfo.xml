@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.1" date="2026-10-26">
+      <description>
+        <p>The scan workspace pairs front and back sides by selection, marks the date of scanned photos as estimated and cuts PNG and TIFF scans losslessly. Variants can now also be created and managed in the browser and the phone app.</p>
+      </description>
+    </release>
     <release version="3.48.0" date="2026-10-25">
       <description>
         <p>Several versions of the same photo can be stacked as variants with one main version. A new scan workspace detects several paper photos in a flatbed scan and imports them losslessly as separate photos.</p>
