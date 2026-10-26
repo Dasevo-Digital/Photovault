@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.5" date="2026-10-26">
+      <description>
+        <p>When adding an uncle or aunt in the family tree, the app now always asks which side, and a parent without entered parents is shown with a hint instead of being left out. Connections of an aunt, a grandparent or a cousin can now be removed from their own card.</p>
+      </description>
+    </release>
     <release version="3.48.4" date="2026-10-26">
       <description>
         <p>Scrolling the person list with a mouse wheel or a Magic Mouse no longer skips entries, and the list shows more people on large screens.</p>
