@@ -490,15 +490,27 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       grad,
       reihenfolge: (id) => rang[id] ?? 1 << 30,
     );
-    if (wege.isEmpty) {
+    final gesperrt = gesperrteBezugspersonen(
+      _netz,
+      fokusId,
+      grad,
+      reihenfolge: (id) => rang[id] ?? 1 << 30,
+    );
+    if (wege.isEmpty && gesperrt.isEmpty) {
       _kurzerHinweis(_fehltText(t, fehlendeVoraussetzung(grad), fokus.name));
       return;
     }
 
-    // Bei genau einem Weg gibt es nichts zu fragen.
-    final weg = wege.length == 1
+    // Bei genau einem Weg gibt es nichts zu fragen – aber nur, wenn es auch
+    // keinen gesperrten gibt. Sonst landete eine Tante ungefragt auf der
+    // Seite der Mutter, weil der Vater noch keine Eltern hat.
+    final weg = wege.length == 1 && gesperrt.isEmpty
         ? wege.first
-        : await _wegWaehlen(wege, t.stammbaumUeberWen(_gradName(t, grad)));
+        : await _wegWaehlen(
+            wege,
+            t.stammbaumUeberWen(_gradName(t, grad)),
+            gesperrt: gesperrt,
+          );
     if (weg == null || !mounted) return;
 
     final wahl = await showPersonPickerDialog(
@@ -703,10 +715,35 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Jede Zeile nennt neben dem Namen die Bezeichnung dieser Person – bei
   /// „Schwager" stehen Geschwister und Partner nebeneinander in der Liste,
   /// und erst die Bezeichnung macht die beiden Lesarten unterscheidbar.
+  /// Fragt, über wen ein Verwandter eingehängt wird.
+  ///
+  /// [gesperrt] sind Bezugspersonen, über die es erst ginge, wenn ihre
+  /// Eltern eingetragen sind (siehe [gesperrteBezugspersonen]). Sie stehen
+  /// grau dabei, mit dem Grund – wer seinen Vater vermisst, erfährt so,
+  /// was fehlt, statt die Tante bei der Mutter einzutragen.
   Future<Einhaengeweg?> _wegWaehlen(
     List<Einhaengeweg> wege,
-    String titel,
-  ) async {
+    String titel, {
+    List<String> gesperrt = const [],
+  }) async {
+    final t = AppTexte.of(context);
+    Widget zeile(PersonData p, {String? grund}) => ListTile(
+      contentPadding: EdgeInsets.zero,
+      enabled: grund == null,
+      leading: Profilbild(
+        datei: p.coverFaceCropPath == null
+            ? null
+            : widget.library.paths.absolute(p.coverFaceCropPath!),
+        radius: 18,
+        symbolgroesse: 18,
+      ),
+      title: Text(p.name),
+      subtitle: grund != null
+          ? Text(grund)
+          : _bezeichnung(p) == null
+          ? null
+          : Text(_bezeichnung(p)!),
+    );
     return showDialog<Einhaengeweg>(
       context: context,
       builder: (dialog) => SimpleDialog(
@@ -716,19 +753,16 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             if (_nachId[weg.bezugsperson] case final p?)
               SimpleDialogOption(
                 onPressed: () => Navigator.pop(dialog, weg),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Profilbild(
-                    datei: p.coverFaceCropPath == null
-                        ? null
-                        : widget.library.paths.absolute(p.coverFaceCropPath!),
-                    radius: 18,
-                    symbolgroesse: 18,
-                  ),
-                  title: Text(p.name),
-                  subtitle: _bezeichnung(p) == null
-                      ? null
-                      : Text(_bezeichnung(p)!),
+                child: zeile(p),
+              ),
+          for (final id in gesperrt)
+            if (_nachId[id] case final p?)
+              SimpleDialogOption(
+                child: zeile(
+                  p,
+                  grund:
+                      '${_bezeichnung(p) ?? p.name} · '
+                      '${t.stammbaumErstElternVon(p.name)}',
                 ),
               ),
         ],
@@ -797,6 +831,21 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
             value: 'loesen',
             child: _zeile(Icons.link_off, t.stammbaumVerbindungEntfernen),
           ),
+        ] else if (person.id != _fokusId &&
+            _eigeneVerbindungen(person.id).isNotEmpty) ...[
+          // Eine Tante, ein Großelternteil, ein Cousin: keine Kante zur
+          // Mitte, aber eigene zu ihren Eltern, Kindern und Partnern.
+          // Bisher musste man sie erst in die Mitte rücken, um eine davon
+          // zu lösen – wer eine falsch eingehängte Tante loswerden wollte,
+          // fand den Weg nicht.
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'verbindungen',
+            child: _zeile(
+              Icons.link_off,
+              t.stammbaumVerbindungenVon(person.name),
+            ),
+          ),
         ],
       ],
     );
@@ -825,7 +874,97 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         await _verbindungsartAendern(person, art!, umgekehrt);
       case 'loesen':
         await _verbindungLoesen(person, art!, umgekehrt);
+      case 'verbindungen':
+        await _verbindungenVonLoesen(person);
     }
+  }
+
+  /// Die gespeicherten Verbindungen von [personId]: zu ihren Eltern, ihren
+  /// Kindern und ihren Partnern – jeweils als Kante, wie sie in der
+  /// Datenbank steht (Kind zeigt auf Elternteil).
+  List<({String kindOderPerson, String andere, Verwandtschaft art})>
+  _eigeneVerbindungen(String personId) => [
+    for (final e in _netz.eltern(personId))
+      (
+        kindOderPerson: personId,
+        andere: e,
+        art: _netz.elternArt(personId, e) ?? Verwandtschaft.elternteil,
+      ),
+    for (final k in _netz.kinder(personId))
+      (
+        kindOderPerson: k,
+        andere: personId,
+        art: _netz.elternArt(k, personId) ?? Verwandtschaft.elternteil,
+      ),
+    for (final p in _netz.partner(personId))
+      (kindOderPerson: personId, andere: p, art: Verwandtschaft.partner),
+  ];
+
+  /// Lässt eine der eigenen Verbindungen von [person] wählen und löst sie.
+  ///
+  /// Für Personen, die nicht unmittelbar an der Mitte hängen – siehe den
+  /// Menüpunkt in [_karteMenue].
+  Future<void> _verbindungenVonLoesen(PersonData person) async {
+    final t = AppTexte.of(context);
+    final kanten = _eigeneVerbindungen(person.id);
+    String artName(Verwandtschaft art) => switch (art) {
+      Verwandtschaft.adoptivelternteil => t.stammbaumAdoptiv,
+      Verwandtschaft.pflegeelternteil => t.stammbaumPflege,
+      _ => t.stammbaumLeiblich,
+    };
+    final kante =
+        await showDialog<
+          ({String kindOderPerson, String andere, Verwandtschaft art})
+        >(
+          context: context,
+          builder: (dialog) => SimpleDialog(
+            title: Text(t.stammbaumVerbindungenVonTitel(person.name)),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, AppSpacing.sm),
+                child: Text(
+                  t.stammbaumVerbindungenHinweis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(dialog).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              for (final k in kanten)
+                if (_nachId[k.kindOderPerson == person.id
+                        ? k.andere
+                        : k.kindOderPerson]
+                    case final andere?)
+                  SimpleDialogOption(
+                    onPressed: () => Navigator.pop(dialog, k),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.link_off),
+                      title: Text(andere.name),
+                      // Was die andere Person für [person] ist.
+                      subtitle: Text(
+                        k.art == Verwandtschaft.partner
+                            ? t.stammbaumKantePartner
+                            : k.kindOderPerson == person.id
+                            ? t.stammbaumKanteElternteil(artName(k.art))
+                            : t.stammbaumKanteKind,
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        );
+    if (kante == null || !mounted) return;
+    final andereId = kante.kindOderPerson == person.id
+        ? kante.andere
+        : kante.kindOderPerson;
+    await _loese(
+      kante.kindOderPerson,
+      kante.andere,
+      kante.art,
+      nameEins: person.name,
+      nameZwei: _nachId[andereId]?.name ?? '',
+    );
   }
 
   /// Ändert eine bestehende Elternverbindung zwischen „leiblich",
@@ -919,17 +1058,31 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     Verwandtschaft art,
     bool umgekehrt,
   ) async {
+    final fokusId = _fokusId!;
+    await _loese(
+      umgekehrt ? person.id : fokusId,
+      umgekehrt ? fokusId : person.id,
+      art,
+      nameEins: person.name,
+      nameZwei: _nachId[fokusId]?.name ?? '',
+    );
+  }
+
+  /// Löst nach Rückfrage die Kante von [personId] zu [andereId] – so, wie
+  /// sie gespeichert ist: bei Eltern zeigt das Kind auf den Elternteil.
+  Future<void> _loese(
+    String personId,
+    String andereId,
+    Verwandtschaft art, {
+    required String nameEins,
+    required String nameZwei,
+  }) async {
     final t = AppTexte.of(context);
     final ja = await showDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(t.stammbaumVerbindungEntfernen),
-        content: Text(
-          t.stammbaumVerbindungEntfernenFrage(
-            person.name,
-            _nachId[_fokusId]?.name ?? '',
-          ),
-        ),
+        content: Text(t.stammbaumVerbindungEntfernenFrage(nameEins, nameZwei)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialog, false),
@@ -943,14 +1096,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       ),
     );
     if (ja != true) return;
-    final fokusId = _fokusId!;
-    final entfernt = umgekehrt
-        ? await widget.library.db.fuehreAus(
-            BeziehungEntfernen(person.id, fokusId, art),
-          )
-        : await widget.library.db.fuehreAus(
-            BeziehungEntfernen(fokusId, person.id, art),
-          );
+    final entfernt = await widget.library.db.fuehreAus(
+      BeziehungEntfernen(personId, andereId, art),
+    );
     await _laden();
     // Ein Griff ins Leere soll nicht als Erfolg aussehen. Genau das war
     // der Fehler bei Adoptiv- und Pflegeeltern: Es passierte nichts, und

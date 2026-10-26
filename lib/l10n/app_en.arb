@@ -2981,6 +2981,41 @@
       }
     }
   },
+  "stammbaumErstElternVon": "Enter the parents of {name} first",
+  "@stammbaumErstElternVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenVon": "Connections of {name} …",
+  "@stammbaumVerbindungenVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenVonTitel": "Connections of {name}",
+  "@stammbaumVerbindungenVonTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenHinweis": "Which connection should be removed? Both people and their photos stay.",
+  "stammbaumKanteElternteil": "Parent · {art}",
+  "@stammbaumKanteElternteil": {
+    "placeholders": {
+      "art": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumKanteKind": "Child",
+  "stammbaumKantePartner": "Partner",
   "stammbaumVerwandterEingetragen": "{name} has been added – {bezeichnung}.",
   "@stammbaumVerwandterEingetragen": {
     "placeholders": {

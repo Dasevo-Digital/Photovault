@@ -3996,6 +3996,41 @@
       }
     }
   },
+  "stammbaumErstElternVon": "Erst die Eltern von {name} eintragen",
+  "@stammbaumErstElternVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenVon": "Verbindungen von {name} …",
+  "@stammbaumVerbindungenVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenVonTitel": "Verbindungen von {name}",
+  "@stammbaumVerbindungenVonTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumVerbindungenHinweis": "Welche Verbindung soll gelöst werden? Beide Personen und ihre Fotos bleiben erhalten.",
+  "stammbaumKanteElternteil": "Elternteil · {art}",
+  "@stammbaumKanteElternteil": {
+    "placeholders": {
+      "art": {
+        "type": "String"
+      }
+    }
+  },
+  "stammbaumKanteKind": "Kind",
+  "stammbaumKantePartner": "Partner",
   "stammbaumVerwandterEingetragen": "{name} ist eingetragen – {bezeichnung}.",
   "@stammbaumVerwandterEingetragen": {
     "placeholders": {

@@ -222,6 +222,43 @@ List<Einhaengeweg> wegeFuer(
   }
 }
 
+/// Bezugspersonen, über die sich [grad] erst eintragen lässt, wenn ihre
+/// Eltern eingetragen sind.
+///
+/// Ein Onkel hängt an den Eltern eines Elternteils. Fehlen sie, fiel
+/// dieser Elternteil bisher wortlos aus der Auswahl. Wer einen Adoptiv-
+/// und einen leiblichen Vater ohne eingetragene Eltern hatte, bekam beim
+/// Onkel nur noch die Mutter angeboten – und bei nur einem Weg wurde gar
+/// nicht gefragt. Die Tante landete so ungefragt auf der Seite der Mutter.
+/// Jetzt stehen solche Bezugspersonen mit in der Auswahl, gesperrt und
+/// mit dem Grund.
+///
+/// Dasselbe beim Schwager in der Lesart „Geschwister des Partners“.
+List<String> gesperrteBezugspersonen(
+  Verwandtschaftsnetz netz,
+  String fokus,
+  Zusatzgrad grad, {
+  int Function(String id)? reihenfolge,
+}) {
+  final ohneEltern = switch (grad) {
+    Zusatzgrad.onkelTante => [
+      for (final e in netz.eltern(fokus))
+        if (netz.eltern(e).isEmpty) e,
+    ],
+    Zusatzgrad.schwager => [
+      for (final p in netz.partner(fokus))
+        if (netz.eltern(p).isEmpty) p,
+    ],
+    _ => <String>[],
+  };
+  if (reihenfolge != null) {
+    ohneEltern.sort((a, b) => reihenfolge(a).compareTo(reihenfolge(b)));
+  } else {
+    ohneEltern.sort();
+  }
+  return ohneEltern;
+}
+
 /// Was fehlt, wenn [wegeFuer] leer bleibt.
 ///
 /// Eigene Funktion statt eines zweiten Rückgabewerts: Der Normalfall ist,

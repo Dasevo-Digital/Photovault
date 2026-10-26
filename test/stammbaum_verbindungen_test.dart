@@ -367,6 +367,111 @@ void main() {
       },
     );
 
+    testWidgets('beim Onkel fragt es auch nach dem Vater ohne Eltern', (
+      tester,
+    ) async {
+      // Mit leiblichem Vater und Adoptivvater: Nur der leibliche hat Eltern
+      // eingetragen. Bisher fiel der Adoptivvater wortlos weg, und bei nur
+      // einem übrigen Weg wurde gar nicht gefragt – eine Tante landete so
+      // auf der Seite, die man nicht gemeint hatte.
+      await db.createPerson(
+        PeopleCompanion.insert(
+          id: 'oma',
+          name: 'Oma',
+          geschlecht: const Value('w'),
+        ),
+      );
+      await db.fuegeBeziehungHinzu('vater', 'oma', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu('kind', 'vater', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu(
+        'kind',
+        'ziehvater',
+        Verwandtschaft.adoptivelternteil,
+      );
+      await zeige(tester, 'kind');
+
+      await waehleGrad(tester, 'Onkel oder Tante');
+      expect(find.text('Onkel oder Tante – über wen?'), findsOneWidget);
+      expect(
+        find.textContaining('Erst die Eltern von Ziehvater eintragen'),
+        findsOneWidget,
+      );
+      final imDialog = find.byType(SimpleDialog);
+      // Der gesperrte Eintrag tut nichts.
+      await tester.tap(
+        find.descendant(of: imDialog, matching: find.text('Ziehvater')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Onkel oder Tante – über wen?'), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(of: imDialog, matching: find.text('Vater')).first,
+      );
+      await tester.pumpAndSettle();
+      await waehlePerson(tester, 'Fremd');
+      final neu = (await db.alleBeziehungen())
+          .where((k) => k.personId == 'fremd')
+          .toList();
+      expect(neu.single.andereId, 'oma', reason: 'die Schwester des Vaters');
+    });
+
+    testWidgets('eine Tante löst man an ihrer eigenen Karte', (tester) async {
+      // Keine Kante zur Mitte, aber eine eigene zu ihrer Mutter. Bisher
+      // musste man sie erst in die Mitte rücken, um sie zu lösen.
+      await db.createPerson(
+        PeopleCompanion.insert(
+          id: 'oma',
+          name: 'Oma',
+          geschlecht: const Value('w'),
+        ),
+      );
+      await db.fuegeBeziehungHinzu('vater', 'oma', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu('kind', 'vater', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu('fremd', 'oma', Verwandtschaft.elternteil);
+      await zeige(tester, 'kind');
+      await tester.tap(find.text('Verwandte'));
+      await tester.pumpAndSettle();
+
+      final zeile = find.ancestor(
+        of: find.text('Fremd'),
+        matching: find.byType(ListTile),
+      );
+      await tester.tap(
+        find.descendant(
+          of: zeile,
+          matching: find.byTooltip('Mehr zu dieser Person'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Verbindung entfernen'),
+        findsNothing,
+        reason: 'zur Mitte gibt es keine Kante',
+      );
+      await tester.tap(find.text('Verbindungen von Fremd …'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Verbindungen von Fremd'), findsOneWidget);
+      expect(find.text('Elternteil · Leiblich'), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SimpleDialog),
+          matching: find.text('Oma'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Entfernen'));
+      await tester.pumpAndSettle();
+
+      final kanten = await db.alleBeziehungen();
+      expect(kanten.where((k) => k.personId == 'fremd'), isEmpty);
+      expect(
+        kanten.where((k) => k.personId == 'vater' && k.andereId == 'oma'),
+        hasLength(1),
+        reason: 'nur die gewählte Kante ist weg',
+      );
+    });
+
     testWidgets('ein nicht eintragbarer Grad steht grau da und erklärt sich', (
       tester,
     ) async {

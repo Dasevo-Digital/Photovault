@@ -10195,6 +10195,48 @@ abstract class AppTexte {
   /// **'{grad} – über wen?'**
   String stammbaumUeberWen(String grad);
 
+  /// No description provided for @stammbaumErstElternVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Erst die Eltern von {name} eintragen'**
+  String stammbaumErstElternVon(String name);
+
+  /// No description provided for @stammbaumVerbindungenVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindungen von {name} …'**
+  String stammbaumVerbindungenVon(String name);
+
+  /// No description provided for @stammbaumVerbindungenVonTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Verbindungen von {name}'**
+  String stammbaumVerbindungenVonTitel(String name);
+
+  /// No description provided for @stammbaumVerbindungenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Welche Verbindung soll gelöst werden? Beide Personen und ihre Fotos bleiben erhalten.'**
+  String get stammbaumVerbindungenHinweis;
+
+  /// No description provided for @stammbaumKanteElternteil.
+  ///
+  /// In de, this message translates to:
+  /// **'Elternteil · {art}'**
+  String stammbaumKanteElternteil(String art);
+
+  /// No description provided for @stammbaumKanteKind.
+  ///
+  /// In de, this message translates to:
+  /// **'Kind'**
+  String get stammbaumKanteKind;
+
+  /// No description provided for @stammbaumKantePartner.
+  ///
+  /// In de, this message translates to:
+  /// **'Partner'**
+  String get stammbaumKantePartner;
+
   /// No description provided for @stammbaumVerwandterEingetragen.
   ///
   /// In de, this message translates to:

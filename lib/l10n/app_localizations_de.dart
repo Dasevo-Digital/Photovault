@@ -6560,6 +6560,36 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String stammbaumErstElternVon(String name) {
+    return 'Erst die Eltern von $name eintragen';
+  }
+
+  @override
+  String stammbaumVerbindungenVon(String name) {
+    return 'Verbindungen von $name …';
+  }
+
+  @override
+  String stammbaumVerbindungenVonTitel(String name) {
+    return 'Verbindungen von $name';
+  }
+
+  @override
+  String get stammbaumVerbindungenHinweis =>
+      'Welche Verbindung soll gelöst werden? Beide Personen und ihre Fotos bleiben erhalten.';
+
+  @override
+  String stammbaumKanteElternteil(String art) {
+    return 'Elternteil · $art';
+  }
+
+  @override
+  String get stammbaumKanteKind => 'Kind';
+
+  @override
+  String get stammbaumKantePartner => 'Partner';
+
+  @override
   String stammbaumVerwandterEingetragen(String name, String bezeichnung) {
     return '$name ist eingetragen – $bezeichnung.';
   }
