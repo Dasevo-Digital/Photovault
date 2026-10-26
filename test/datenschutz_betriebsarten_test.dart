@@ -42,6 +42,9 @@ void main() {
       'Konten und Anmeldung',
       'OIDC-Anbieter',
       'Browser, Freigaben und Gastbeiträge',
+      // Browser und Handy holen Kacheln selbst, nicht über den Server (#221).
+      'Karten in Browser und Handy-App',
+      'tile.openstreetmap.org',
       'Unterstützungslink',
       'Rechenhilfen',
       'Bearer-Token',
@@ -58,6 +61,8 @@ void main() {
       'Accounts and sign-in',
       'OIDC provider',
       'Browser, shares and guest contributions',
+      'Maps in the browser and the mobile app',
+      'tile.openstreetmap.org',
       'Support link',
       'Compute helpers',
       'bearer token',

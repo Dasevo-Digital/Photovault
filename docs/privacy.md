@@ -48,8 +48,11 @@ which area you are looking at – and therefore, indirectly, where your
 photos were taken. Depending on your setting the service is
 OpenStreetMap, OpenTopoMap, CyclOSM, Esri/ArcGIS, CARTO, MapTiler,
 Thunderforest, Mapbox or Google Maps. Several commercial providers need an
-access key you supply yourself. Tiles are cached locally; an area once loaded
-is not requested again.
+access key you supply yourself. Tiles are cached locally and requested again
+only once the validity stated by the service has expired (seven days if it
+states none). On explicit request, Settings → Map preloads the tiles around
+all photo locations; the map service then learns all areas where photos were
+taken at once.
 
 **Terrain and hiking information.** Opening the corresponding views loads
 elevation data from AWS Open Data and hiking routes from Waymarked Trails.
@@ -110,6 +113,15 @@ password. If the owner accepts guest contributions, uploaded files are first
 processed on the server and stored as a sanitised copy without embedded
 metadata. The server and its reverse proxy may process technically necessary
 connection data such as IP address and time.
+
+**Maps in the browser and the mobile app.** Even with your own server, the
+browser interface and the mobile app fetch map tiles **directly** from the
+services, not through the Photo Vault Server: the map from OpenStreetMap
+(`tile.openstreetmap.org`), the terrain view and the 3D flight elevation data
+from AWS Open Data, aerial imagery from Esri/ArcGIS and hiking trails from
+Waymarked Trails. These services receive the device's IP address and the
+requested tile coordinates, from which the area being viewed can be inferred.
+Hiking objects, by contrast, are queried by the server from the Overpass API.
 
 **Support link.** Only when you open the Ko-fi link does the browser navigate
 to `ko-fi.com`; its privacy terms then apply. App-store builds do not show this

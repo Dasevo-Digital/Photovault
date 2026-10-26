@@ -54,8 +54,11 @@ aufgenommen wurden. Je nach Einstellung sind das:
 OpenStreetMap, OpenTopoMap, CyclOSM, Esri/ArcGIS, CARTO, MapTiler,
 Thunderforest, Mapbox oder Google Maps. Für mehrere kommerzielle Anbieter ist
 ein eigener Zugangsschlüssel nötig, den Sie selbst eintragen. Geladene Kacheln
-werden lokal zwischengespeichert; ein einmal geladener Bereich wird
-nicht erneut angefragt.
+werden lokal zwischengespeichert und erst neu angefragt, wenn ihre vom Dienst
+genannte Gültigkeit abgelaufen ist (ohne Angabe nach sieben Tagen). Auf
+ausdrücklichen Wunsch lädt die App unter Einstellungen → Karte die Kacheln
+rund um alle Aufnahmeorte vor; der Kartendienst erfährt dann auf einmal alle
+Gegenden, in denen Fotos entstanden sind.
 
 **Gelände- und Wanderinformationen.** Beim Öffnen entsprechender Ansichten
 lädt die App Höhendaten von AWS Open Data, Wanderwege von Waymarked Trails
@@ -125,6 +128,15 @@ Dateien zunächst auf dem Server verarbeitet und als bereinigte Fassung ohne
 eingebettete Metadaten gespeichert. Server und vorgeschalteter Proxy können
 hierbei technisch notwendige Verbindungsdaten wie IP-Adresse und Zeitpunkt
 verarbeiten.
+
+**Karten in Browser und Handy-App.** Auch mit eigenem Server holen
+Browseroberfläche und Handy-App Kartenkacheln **direkt** bei den Diensten,
+nicht über den Photo Vault Server: die Karte bei OpenStreetMap
+(`tile.openstreetmap.org`), Geländeansicht und 3D-Flug Höhendaten bei AWS
+Open Data, Luftbilder bei Esri/ArcGIS und Wanderwege bei Waymarked Trails.
+Diese Dienste erhalten dabei die IP-Adresse des Geräts und die angefragten
+Kachelkoordinaten; daraus lässt sich ableiten, welche Gegend betrachtet wird.
+Wanderobjekte fragt dagegen der Server bei der Overpass API ab.
 
 **Unterstützungslink.** Nur wenn Sie den Ko-fi-Link öffnen, wechselt der
 Browser zu `ko-fi.com`; dabei gelten dessen Datenschutzbedingungen. Fassungen
