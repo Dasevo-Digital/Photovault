@@ -11,6 +11,7 @@ import 'package:kern/db/database.dart';
 import '../lokal/ungesichert.dart';
 import 'freigabe.dart';
 import 'hintergrund.dart';
+import 'kamerarolle.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
 import 'stand.dart';
@@ -30,11 +31,17 @@ class Sicherungsdienst extends ChangeNotifier {
     required Directory ordner,
     required Uri server,
     required String token,
+    @visibleForTesting Kamerarolle Function(List<String> alben)? rolle,
+    @visibleForTesting Future<bool> Function(Sicherungseinstellungen e)? netz,
   }) : _stand = Sicherungsstand.oeffne(ordner),
-       _verbindung = Serververbindung(server, token);
+       _verbindung = Serververbindung(server, token),
+       _rolle = rolle ?? ((alben) => PhotoManagerRolle(alben: alben)),
+       _netzPasst = netz ?? netzPasst;
 
   final Sicherungsstand _stand;
   final Serververbindung _verbindung;
+  final Kamerarolle Function(List<String> alben) _rolle;
+  final Future<bool> Function(Sicherungseinstellungen e) _netzPasst;
 
   Sicherungseinstellungen get einstellungen => _stand.einstellungen;
 
@@ -59,7 +66,7 @@ class Sicherungsdienst extends ChangeNotifier {
       ungesichert = const [];
     } else {
       try {
-        final alle = await PhotoManagerRolle().eintraege(videos: true);
+        final alle = await _rolle(const []).eintraege(videos: true);
         ungesichert = nochNichtGesichert(alle, _stand.bekannt().erledigt);
       } on MissingPluginException {
         return; // in Tests ohne Telefon
@@ -214,11 +221,22 @@ class Sicherungsdienst extends ChangeNotifier {
   /// Ein Lauf, wenn die Sicherung an ist, der Zugriff erlaubt ist, das Netz
   /// passt und nicht schon einer läuft. [mobil] lässt „Nur im WLAN“ dieses
   /// eine Mal aus (siehe [sichereJetzt]).
+  ///
+  /// **Kommt ein Anstoss, während schon einer läuft** – eine neue Meldung
+  /// der Fotomediathek, die Rückkehr in die App –, folgt danach gleich ein
+  /// weiterer Lauf. Vorher fiel er weg: Der laufende kannte nur die Fotos
+  /// von seinem Beginn, und wer drei Fotos nacheinander aus Nachrichten
+  /// speicherte, fand das zweite und dritte erst nach dem nächsten Öffnen
+  /// der App oder in der Nacht auf dem Server.
   Future<void> sichere({bool mobil = false}) async {
     final e = einstellungen;
-    if (_laeuft || _beendet || !e.an) return;
+    if (_beendet || !e.an) return;
+    if (_laeuft) {
+      _nochmal = true;
+      return;
+    }
     if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) return;
-    if (!await netzPasst(mobil ? e.mit(nurWlan: false) : e)) {
+    if (!await _netzPasst(mobil ? e.mit(nurWlan: false) : e)) {
       wartet = e.nurWlan ? Wartegrund.wlan : Wartegrund.netz;
       notifyListeners();
       return;
@@ -230,13 +248,18 @@ class Sicherungsdienst extends ChangeNotifier {
     notifyListeners();
     try {
       await Sicherungslauf(
-        rolle: PhotoManagerRolle(alben: e.alben),
+        rolle: _rolle(e.alben),
         verbindung: _verbindung,
         stand: _stand,
         wer: 'app',
       ).laufe(abbrechen: () => _abbruch || _beendet, meldung: _melde);
     } on Gesperrt {
       wartet = Wartegrund.hintergrund;
+      // Der Lauf im Hintergrund kennt nur die Fotos von seinem Beginn;
+      // ist er fertig, nimmt dieser die übrigen mit.
+      _nochmal = true;
+      _nachAenderung?.cancel();
+      _nachAenderung = Timer(const Duration(minutes: 1), sichere);
     } on Serverfehler catch (f) {
       fehler = f;
     } finally {
@@ -247,9 +270,16 @@ class Sicherungsdienst extends ChangeNotifier {
       } else {
         notifyListeners();
         unawaited(zaehleUngesicherte());
+        if (_nochmal && wartet != Wartegrund.hintergrund) {
+          _nochmal = false;
+          unawaited(sichere());
+        }
       }
     }
   }
+
+  /// Ein Anstoss kam, während ein Lauf arbeitete (siehe [sichere]).
+  var _nochmal = false;
 
   void _melde(Fortschritt f) {
     fortschritt = f;
