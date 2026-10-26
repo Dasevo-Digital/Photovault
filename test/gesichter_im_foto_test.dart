@@ -48,11 +48,30 @@ void main() {
     wurzel.deleteSync(recursive: true);
   });
 
+  /// [livePhoto]: das Standbild eines Live Photos, mit seiner Videohälfte
+  /// `v1` verknüpft.
   Future<AssetData> foto({
     bool masse = true,
     int breite = 1000,
     int hoehe = 800,
+    bool livePhoto = false,
   }) async {
+    if (livePhoto) {
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'v1',
+              originalFileName: 'f1.mov',
+              relativePath: 'originals/f1.mov',
+              checksum: 'pruef-v1',
+              type: 'VIDEO',
+              fileCreatedAt: DateTime(2026, 6, 14),
+              importedAt: DateTime(2026),
+              linkedAssetId: const Value('f1'),
+            ),
+          );
+    }
     await db
         .into(db.assets)
         .insert(
@@ -66,6 +85,7 @@ void main() {
             importedAt: DateTime(2026),
             widthPx: masse ? Value(breite) : const Value.absent(),
             heightPx: masse ? Value(hoehe) : const Value.absent(),
+            linkedAssetId: livePhoto ? const Value('v1') : const Value.absent(),
           ),
         );
     return (await db.assetById('f1'))!;
@@ -229,6 +249,79 @@ void main() {
     await tester.tap(find.byType(Gesichtsrahmen));
     await tester.pumpAndSettle();
     expect(find.text('Gesicht benennen'), findsOneWidget);
+  });
+
+  testWidgets('ein Mausklick benennt auch im Aufziehmodus', (tester) async {
+    final a = await foto();
+    await gesicht('g1');
+    await zeige(tester, a);
+    await tester.tap(find.byTooltip('Gesichter zeigen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Gesicht nachtragen – Rahmen aufziehen'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byType(Gesichtsrahmen),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('Gesicht benennen'), findsOneWidget);
+  });
+
+  group('Live Photo (#225)', () {
+    // Ein Live Photo zeigte das Standbild in einer eigenen Seite ohne
+    // jede Ebene: keine Rahmen, kein Aufziehen, keine Textkästen. Vom
+    // iPhone ist fast jedes Foto eines.
+    testWidgets('die Rahmen stehen im Bild, und ein Klick benennt', (
+      tester,
+    ) async {
+      final a = await foto(livePhoto: true);
+      await gesicht('g1');
+      await zeige(tester, a);
+      await tester.tap(find.byTooltip('Gesichter zeigen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Unbenannt'), findsOneWidget);
+
+      await tester.tap(
+        find.byType(Gesichtsrahmen),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(find.text('Gesicht benennen'), findsOneWidget);
+    });
+
+    testWidgets('der Zug zeichnet den Rahmen', (tester) async {
+      final a = await foto(livePhoto: true);
+      await zeige(tester, a);
+      // Ohne Gesicht dreht der Ladekreisel des Bildes ewig – kein
+      // pumpAndSettle.
+      await tester.tap(find.byTooltip('Gesichter zeigen'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byTooltip('Gesicht nachtragen – Rahmen aufziehen'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final orange = find.byWidgetPredicate(
+        (w) =>
+            w is DecoratedBox &&
+            (w.decoration as BoxDecoration).border ==
+                Border.all(color: Colors.orangeAccent, width: 2),
+      );
+      final mitte = tester.getCenter(find.byType(PageView));
+      final zug = await tester.startGesture(
+        mitte - const Offset(80, 60),
+        kind: PointerDeviceKind.mouse,
+      );
+      for (var i = 0; i < 5; i++) {
+        await zug.moveBy(const Offset(30, 24));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(orange, findsOneWidget, reason: 'man sieht, was man zieht');
+      await zug.up();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Nachgetragenes Gesicht benennen'), findsOneWidget);
+    });
   });
 
   testWidgets('das Drittel-Raster liegt auf dem Foto, per Knopf und Taste R', (

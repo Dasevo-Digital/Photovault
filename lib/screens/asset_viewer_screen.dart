@@ -1555,6 +1555,15 @@ class _AssetPageState extends State<_AssetPage> {
     super.dispose();
   }
 
+  /// Ob über dem Foto etwas liegen soll: Gesichtsrahmen, der Rahmen zum
+  /// Nachtragen, Textkästen, Fokus-Hervorhebung oder Drittel-Raster.
+  bool get _mitEbenen =>
+      widget.gesichterZeigen ||
+      widget.gesichtAufziehen ||
+      widget.textZeigen ||
+      widget.focusPeakingEnabled ||
+      widget.drittelRaster;
+
   /// Holt die Gesichter dieses Fotos und die Masse des Bildes.
   ///
   /// **Die Masse zuerst aus der Datenbank.** Dort stehen sie beim Import
@@ -1722,16 +1731,15 @@ class _AssetPageState extends State<_AssetPage> {
     await _gesichterLaden();
   }
 
-  /// Nur für einfache Fotos (kein Video, kein Live-Photo-Standbild – dessen
-  /// eigener Anzeige-/Wiedergabepfad in _LivePhotoPage liegt und hier nicht
-  /// mitbehandelt wird). Mit kurzer Verzögerung (Muster: Filmstrip-Debounce),
+  /// Nur für Fotos, nicht für Videos. Ein Live Photo zeigt mit
+  /// eingeschalteter Hervorhebung sein Standbild wie jedes Foto (siehe
+  /// [_mitEbenen]). Mit kurzer Verzögerung (Muster: Filmstrip-Debounce),
   /// damit schnelles Durchblättern per Pfeiltasten nicht bei jedem
   /// Zwischenstopp eine Berechnung anstößt, die sofort wieder verworfen wird.
   void _maybeScheduleFocusPeaking() {
     if (!widget.focusPeakingEnabled ||
         !widget.isCurrent ||
-        widget.asset.type != 'IMAGE' ||
-        widget.asset.linkedAssetId != null) {
+        widget.asset.type != 'IMAGE') {
       return;
     }
     _focusPeakingDebounce?.cancel();
@@ -1769,7 +1777,15 @@ class _AssetPageState extends State<_AssetPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final file = snapshot.data!;
-        if (asset.type == 'IMAGE' && asset.linkedAssetId != null) {
+        // Ein Live Photo spielt auf seiner eigenen Seite sein Video ab –
+        // die kennt aber keine der Ebenen über dem Foto. Ist eine davon
+        // eingeschaltet, zeigt es das Standbild wie jedes Foto (#225):
+        // Vorher erschien beim Nachtragen eines Gesichts kein Rahmen, und
+        // die Rahmen der erkannten Gesichter fehlten ebenso – bei fast
+        // jedem iPhone-Foto.
+        if (asset.type == 'IMAGE' &&
+            asset.linkedAssetId != null &&
+            !_mitEbenen) {
           return _LivePhotoPage(
             db: widget.db,
             paths: widget.paths,
