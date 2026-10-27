@@ -1140,6 +1140,61 @@ void main() {
     },
   );
 
+  test('Stammbaum: Schilder und Maße wie am Rechner (#234)', () async {
+    for (final (id, name) in [
+      ('opa', 'Hans Muster'),
+      ('oma', 'Erika Muster'),
+      ('kind', 'Kai Muster'),
+      ('schwiegertochter', 'Lea Berg'),
+    ]) {
+      await befehl(erikaToken, 'personAnlegen', {'personId': id, 'name': name});
+    }
+    await befehl(erikaToken, 'geschlechtSetzen', {
+      'personId': 'oma',
+      'geschlecht': 'w',
+    });
+    for (final e in ['opa', 'oma']) {
+      await befehl(erikaToken, 'beziehungHinzufuegen', {
+        'personId': 'kind',
+        'andereId': e,
+        'verwandtschaft': 'elternteil',
+      });
+    }
+    await befehl(erikaToken, 'beziehungHinzufuegen', {
+      'personId': 'kind',
+      'andereId': 'schwiegertochter',
+      'verwandtschaft': 'partner',
+    });
+    await befehl(erikaToken, 'lebensdatenSetzen', {
+      'personId': 'oma',
+      'geburt': DateTime(1950, 3, 1).toIso8601String(),
+      'tod': DateTime(2020, 1, 1).toIso8601String(),
+    });
+    final d = await jsonAus(
+      await frag('GET', '/api/v1/stammbaum?fokus=kind', token: erikaToken),
+    );
+    final personen = {
+      for (final p in (d['personen']! as List).cast<Map>()) p['id']: p,
+    };
+    expect(personen['oma']!['grad'], containsPair('art', 'vorfahre'));
+    expect(personen['oma']!['grad'], containsPair('aufwaerts', 1));
+    expect(personen['oma']!['lebensspanne'], '1950–2020');
+    expect(personen['schwiegertochter']!['grad'], {'art': 'partner'});
+    // Die Mitte trägt keine Bezeichnung, wie am Rechner.
+    expect(personen['kind']!.containsKey('grad'), isFalse);
+    // Drei „Muster": der Name unten am Stamm.
+    expect(d['familienname'], 'Muster');
+    final plan = d['plan']! as Map;
+    expect((plan['schild'] as Map)['portraitRadius'], 19);
+    expect(plan['stammX'], isA<num>());
+    final schild = (plan['schilder'] as List).cast<Map>().first;
+    expect(schild['b'], 132, reason: 'die Masse des Rechners');
+    expect(schild['h'], 108);
+    for (final a in (plan['aeste'] as List).cast<Map>()) {
+      expect(a['ranke'], anyOf(0, inInclusiveRange(14, 23)));
+    }
+  });
+
   test('Stammbaum: wie weit er reicht, steht in der Adresse (#233)', () async {
     for (final (id, name) in [
       ('opa', 'Opa'),
@@ -1275,7 +1330,7 @@ void main() {
       final plan = d['plan']! as Map;
       final mitte = {
         for (final s in (plan['schilder']! as List).cast<Map>())
-          s['id'] as String: (s['x'] as num) + 59,
+          s['id'] as String: (s['x'] as num) + (s['b'] as num) / 2,
       };
       double haus(String a, String b) => (mitte[a]! + mitte[b]!) / 2;
       final bruderHaus = haus('bruder', 'partnerin');

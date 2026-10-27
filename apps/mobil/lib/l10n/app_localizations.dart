@@ -1939,6 +1939,24 @@ abstract class AppTexte {
   /// **'Mit Cousins 2. Grades'**
   String get baumKreisCousinsZweitenGrades;
 
+  /// No description provided for @baumVergroessern.
+  ///
+  /// In de, this message translates to:
+  /// **'Vergrössern'**
+  String get baumVergroessern;
+
+  /// No description provided for @baumVerkleinern.
+  ///
+  /// In de, this message translates to:
+  /// **'Verkleinern'**
+  String get baumVerkleinern;
+
+  /// No description provided for @baumGanzZeigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ganz zeigen'**
+  String get baumGanzZeigen;
+
   /// No description provided for @lbPortraits.
   ///
   /// In de, this message translates to:

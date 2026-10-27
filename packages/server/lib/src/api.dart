@@ -32,6 +32,7 @@ import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/sortierung.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
+import 'package:kern/services/zierbaum.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -1091,8 +1092,22 @@ class _Api {
             'bild': p.coverFaceCropPath,
             'geschlecht': p.geschlecht,
             'verwandt': s.verwandt.contains(p.id),
+            // Was auf dem Schild steht, für alle im Bild – wie am Rechner
+            // (#234). Die Bezeichnung setzt der Browser in seiner Sprache.
+            if (s.schilder[p.id] case final x?) ...{
+              'lebensspanne': x.lebensspanne,
+              if (x.grad != null) 'grad': _gradJson(x.grad!),
+              if (x.umweg case final u?)
+                'umweg': {
+                  'name': u.ueber.name,
+                  'geschlecht': u.ueber.geschlecht,
+                  'schritt': _gradJson(u.schritt),
+                  'ueberGrad': _gradJson(u.ueberGrad),
+                },
+            },
           },
       ],
+      'familienname': s.familienname,
       'haushalte': [
         for (final h in g.haushalte)
           {'id': h.id, 'personen': h.personen, 'band': g.band[h.id]},
@@ -1112,9 +1127,19 @@ class _Api {
         'plan': {
           'breite': plan.breite,
           'hoehe': plan.hoehe,
+          'stammX': plan.stammX,
+          // Die Zahlen, aus denen der Rechner das Schild baut – der
+          // Browser malt danach dasselbe Schild (#234).
+          'schild': _schildmasseJson,
           'schilder': [
             for (final x in plan.schilder)
-              {'id': x.personId, 'x': x.links, 'y': x.oben},
+              {
+                'id': x.personId,
+                'x': x.links,
+                'y': x.oben,
+                'b': x.breite,
+                'h': x.hoehe,
+              },
           ],
           'aeste': [
             for (final a in plan.aeste)
@@ -1124,6 +1149,7 @@ class _Api {
                 'y1': a.vonY,
                 'x2': a.nachX,
                 'y2': a.nachY,
+                'ranke': rankenGroesse(a),
               },
           ],
           'paare': [
@@ -1133,6 +1159,32 @@ class _Api {
         },
     });
   }
+
+  /// Ein Verwandtschaftsgrad, wie ihn der Browser in Worte fasst –
+  /// dieselbe Form wie beim Lebensbaum.
+  static Map<String, Object?> _gradJson(Grad x) => {
+    'art': x.art.name,
+    if (x.aufwaerts != 0) 'aufwaerts': x.aufwaerts,
+    if (x.abwaerts != 0) 'abwaerts': x.abwaerts,
+    if (x.halb) 'halb': true,
+    if (x.elternArt != null) 'elternArt': x.elternArt!.name,
+  };
+
+  static final Map<String, double> _schildmasseJson = () {
+    const m = Schildmasse();
+    return {
+      'rundung': m.rundung,
+      'randStark': m.randStark,
+      'randSchwach': m.randSchwach,
+      'polsterX': m.polsterX,
+      'polsterY': m.polsterY,
+      'schriftName': m.schriftName,
+      'schriftNeben': m.schriftNeben,
+      'portraitRadius': m.portraitRadius,
+      'portraitAbstand': m.portraitAbstand,
+      'zeichenGroesse': m.zeichenGroesse,
+    };
+  }();
 
   /// Die Einstellungen, die in der Bibliothek stehen und damit für jedes
   /// verbundene Gerät gelten – geändert wird über die Befehle.

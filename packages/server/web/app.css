@@ -486,18 +486,18 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #bereich-stammbaum .zeile h2 { margin: 0; flex: 1; }
 #bereich-stammbaum .zeile label { display: flex; align-items: center; gap: 8px; color: var(--leise); }
 #baum-person { font: inherit; padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); max-width: 16em; }
-#baum-flaeche { overflow: auto; max-height: calc(100vh - 160px - var(--unten)); background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; }
-#baum-flaeche svg { display: block; margin: 0 auto; }
-.baum-karte { cursor: pointer; }
-.baum-karte rect { fill: var(--grund); stroke: var(--rand); }
-.baum-karte.fokus rect { stroke: var(--akzent); stroke-width: 3; }
-.baum-karte text { fill: var(--text); font-size: 12px; text-anchor: middle; }
-.baum-karte text.jahre { fill: var(--leise); font-size: 11px; }
-.baum-karte circle.rahmen { fill: var(--rand); stroke: var(--karte); stroke-width: 2; }
-.baum-karte text.initiale { fill: var(--leise); font-size: 22px; font-weight: 600; }
-.baum-kante { fill: none; stroke: var(--leise); stroke-width: 1.5; }
-.baum-paar { stroke: var(--akzent); stroke-width: 2; }
-.baum-pfeil { fill: var(--leise); font-size: 14px; text-anchor: middle; }
+/* Der Zierbaum wie am Rechner (#234): Grund still dahinter, der Baum auf
+   einer Bühne, die man zieht und zoomt (stammbaum.js). */
+#baum-flaeche { position: relative; overflow: hidden; height: 480px; min-height: 320px; border: 1px solid var(--rand); border-radius: 12px; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+#baum-flaeche.zieht { cursor: grabbing; }
+#baum-grund { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#baum-buehne { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+#baum-buehne svg { display: block; overflow: visible; }
+.zb-schild { cursor: pointer; }
+.zb-schild.mitte { cursor: inherit; }
+.baum-knoepfe { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 14px; background: rgba(18, 16, 14, 0.62); }
+.baum-knoepfe button { width: 34px; height: 34px; border: 0; border-radius: 9px; background: transparent; color: #f3e6c8; font-size: 19px; line-height: 1; cursor: pointer; }
+.baum-knoepfe button:hover { background: rgba(255, 255, 255, 0.12); }
 
 /* --- Einstellungen --------------------------------------------------------- */
 #bereich-einstellungen { padding: 0 12px 24px; max-width: 44em; }

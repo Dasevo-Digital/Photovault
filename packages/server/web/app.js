@@ -1901,147 +1901,8 @@ function variantenBilden(aufnahmen) {
 }
 
 // --- Stammbaum -------------------------------------------------------------
-// Der Server liefert das Geflecht aus dem Kern (Haushalte je Band, die
-// Elternhäuser jeder Person); hier wird es als SVG gesetzt: ein Band je
-// Generation, Haushalte nebeneinander, Äste von den Elternhäusern zu den
-// Kindern. Ein Klick auf eine Person rückt sie in die Mitte.
-
-const svgNs = 'http://www.w3.org/2000/svg';
-const svgEl = (tag, attrs = {}, text) => {
-  const e = document.createElementNS(svgNs, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  if (text !== undefined) e.textContent = text;
-  return e;
-};
-const jahr = (iso) => (iso ? String(new Date(iso).getFullYear()) : '');
-const lebensjahre = (p) => (p.geburt || p.tod ? `${jahr(p.geburt) || '?'} – ${p.tod ? jahr(p.tod) : ''}`.replace(/ – $/, p.tod ? '' : ' –') : '');
-
-let baumZoomWert = 1;
-$('baum-zoom').addEventListener('input', () => { baumZoomWert = Number($('baum-zoom').value); const svg = $('baum-flaeche').querySelector('svg'); if (svg) { svg.setAttribute('width', svg.dataset.breite * baumZoomWert); svg.setAttribute('height', svg.dataset.hoehe * baumZoomWert); } });
-$('baum-person').addEventListener('change', () => { location.hash = `#/stammbaum/${encodeURIComponent($('baum-person').value)}`; });
-
-$('baum-zum-lebensbaum').addEventListener('click', () => { location.hash = `#/lebensbaum/${encodeURIComponent($('baum-person').value || '')}`; });
-
-// Wie weit der Baum reicht (#233): Generationen darüber, darunter und der
-// Kreis bis zu den Cousins zweiten Grades. Ohne Wahl gilt, was am Rechner
-// zuletzt eingestellt war; was gilt, meldet der Server in `optionen`.
-const baumGewaehlt = {};
-for (const [id, name] of [['baum-oben', 'oben'], ['baum-unten', 'unten'], ['baum-kreis', 'kreis']]) {
-  $(id).addEventListener('change', () => {
-    baumGewaehlt[name] = $(id).value;
-    zeigeStammbaum($('baum-person').value || null).catch((x) => { $('baum-hinweis').textContent = x.message; });
-  });
-}
-
-function baumUmfangZeigen(o) {
-  if (!o) return;
-  const zahlen = (id, von, wert) => {
-    const s = $(id);
-    s.replaceChildren();
-    for (let n = von; n <= o.maxGenerationen; n++) {
-      const opt = el('option', null, String(n));
-      opt.value = String(n);
-      s.append(opt);
-    }
-    s.value = String(wert);
-  };
-  zahlen('baum-oben', 1, o.oben);
-  zahlen('baum-unten', 0, o.unten);
-  $('baum-kreis').value = o.kreis;
-}
-
-async function zeigeStammbaum(fokus) {
-  markiereNav('stammbaum');
-  zeigeBereich(['stammbaum']);
-  $('baum-hinweis').textContent = '';
-  const q = new URLSearchParams();
-  if (fokus) q.set('fokus', fokus);
-  for (const [name, wert] of Object.entries(baumGewaehlt)) q.set(name, wert);
-  const abfrage = q.toString();
-  const d = await api(`/api/v1/stammbaum${abfrage ? `?${abfrage}` : ''}`);
-  baumUmfangZeigen(d.optionen);
-  const wahl = $('baum-person');
-  wahl.replaceChildren();
-  for (const p of [...d.personen].sort((a, b) => a.name.localeCompare(b.name))) {
-    const o = el('option', null, p.verwandt ? p.name : t('{name} (ohne Verwandtschaft)', { name: p.name }));
-    o.value = p.id;
-    wahl.append(o);
-  }
-  wahl.value = d.fokus || '';
-  $('baum-flaeche').replaceChildren();
-  if (!d.fokus) { $('baum-hinweis').textContent = t('Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'); return; }
-  const hinweise = [];
-  const fokusVerwandt = d.personen.some((p) => p.id === d.fokus && p.verwandt);
-  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1 && !fokusVerwandt) hinweise.push(t('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.'));
-  if (d.verschwiegen) hinweise.push(t('{n} Haushalte passen nicht mehr ins Bild.', { n: d.verschwiegen }));
-  $('baum-hinweis').textContent = hinweise.join(' ');
-  $('baum-flaeche').append(baumSvg(d));
-}
-
-function baumSvg(d) {
-  const nachId = Object.fromEntries(d.personen.map((p) => [p.id, p]));
-  const kB = 118, kH = 140;
-  // Die Plätze rechnet der Server wie der Rechner (zierbaumplan): Kinder
-  // unter ihren Elternhäusern. Vorher wurden die Haushalte eines Bandes
-  // nur der Reihe nach gesetzt, und ein Kind konnte unter dem falschen
-  // Paar stehen.
-  const plan = d.plan;
-  const gesamt = plan.breite, hoehe = plan.hoehe;
-  const svg = svgEl('svg', { viewBox: `0 0 ${gesamt} ${hoehe}`, width: gesamt * baumZoomWert, height: hoehe * baumZoomWert });
-  svg.dataset.breite = gesamt;
-  svg.dataset.hoehe = hoehe;
-  const defs = svgEl('defs');
-  svg.append(defs);
-  const lage = {}; // personId -> {x, y}
-  for (const s of plan.schilder) lage[s.id] = { x: s.x, y: s.y };
-  // Äste: vom Schild (oben) in einer Kurve zur Mitte des Elternhauses.
-  for (const a of plan.aeste) {
-    const m = (a.y1 + a.y2) / 2;
-    svg.append(svgEl('path', { class: 'baum-kante', d: `M${a.x1},${a.y1} C${a.x1},${m} ${a.x2},${m} ${a.x2},${a.y2}` }));
-  }
-  // Partner: auf Höhe der Bilder verbunden.
-  for (const p of plan.paare) {
-    const y = p.y - kH / 2 + 46;
-    svg.append(svgEl('line', { class: 'baum-paar', x1: p.x1, y1: y, x2: p.x2, y2: y }));
-  }
-  // Schilder.
-  let n = 0;
-  for (const [id, l] of Object.entries(lage)) {
-    const p = nachId[id] || { name: '?' };
-    const g = svgEl('g', { class: `baum-karte${id === d.fokus ? ' fokus' : ''}`, transform: `translate(${l.x},${l.y})` });
-    g.append(svgEl('rect', { width: kB, height: kH, rx: 12 }));
-    g.append(svgEl('circle', { class: 'rahmen', cx: kB / 2, cy: 46, r: 32 }));
-    if (p.bild) {
-      const cid = `k${n++}`;
-      const clip = svgEl('clipPath', { id: cid });
-      clip.append(svgEl('circle', { cx: kB / 2, cy: 46, r: 30 }));
-      defs.append(clip);
-      g.append(svgEl('image', { href: `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}`, x: kB / 2 - 30, y: 16, width: 60, height: 60, preserveAspectRatio: 'xMidYMid slice', 'clip-path': `url(#${cid})` }));
-    } else {
-      g.append(svgEl('text', { class: 'initiale', x: kB / 2, y: 54 }, (p.name || '?').trim().charAt(0).toUpperCase()));
-    }
-    // Lange Namen auf zwei Zeilen, am letzten Leerzeichen vor der Grenze.
-    const zeilen = [];
-    let rest = p.name.trim();
-    while (rest && zeilen.length < 2) {
-      if (rest.length <= 16 || zeilen.length === 1) { zeilen.push(rest.length > 16 ? `${rest.slice(0, 15)}…` : rest); break; }
-      const schnitt = rest.lastIndexOf(' ', 16);
-      if (schnitt < 4) { zeilen.push(`${rest.slice(0, 15)}…`); break; }
-      zeilen.push(rest.slice(0, schnitt));
-      rest = rest.slice(schnitt + 1);
-    }
-    const titel = svgEl('title');
-    titel.textContent = p.name;
-    g.append(titel);
-    zeilen.forEach((z, i) => g.append(svgEl('text', { x: kB / 2, y: 98 + i * 14 }, z)));
-    g.append(svgEl('text', { class: 'jahre', x: kB / 2, y: 98 + zeilen.length * 14 }, lebensjahre(p)));
-    if (d.weitereOben.includes(id)) g.append(svgEl('text', { class: 'baum-pfeil', x: kB / 2, y: -6 }, '▲'));
-    if (d.weitereUnten.includes(id)) g.append(svgEl('text', { class: 'baum-pfeil', x: kB / 2, y: kH + 14 }, '▼'));
-    g.addEventListener('click', () => { location.hash = `#/stammbaum/${encodeURIComponent(id)}`; });
-    svg.append(g);
-  }
-  return svg;
-}
+// Steht in stammbaum.js und wird erst geladen, wenn er gebraucht wird – wie
+// der Lebensbaum, dessen Bezeichnungen er mitbenutzt.
 
 // --- Einstellungen der Bibliothek ------------------------------------------
 
@@ -4873,7 +4734,7 @@ async function zeigeWeg() {
       case 'jahresrueckblick': await ladeSkript('rueckblick.js'); await zeigeJahresrueckblick(teile[1]); break;
       case 'kalender': await ladeSkript('rueckblick.js'); await zeigeKalender(teile[1], teile[2]); break;
       case 'einstellungen': await zeigeEinstellungen(); break;
-      case 'stammbaum': await zeigeStammbaum(teile[1]); break;
+      case 'stammbaum': await ladeSkript('lebensbaum.js'); await ladeSkript('stammbaum.js'); await zeigeStammbaum(teile[1]); break;
       case 'lebensbaum': await ladeSkript('lebensbaum.js'); await zeigeLebensbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
       case 'aufnahmedaten': await zeigeAufnahmedaten(); break;

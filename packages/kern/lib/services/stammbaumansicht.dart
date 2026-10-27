@@ -1,23 +1,17 @@
 import '../db/database.dart';
+import 'lebensbaumansicht.dart' show Lebensbaumperson, schildpersonen;
 import 'stammbaum.dart';
 import 'zierbaum.dart';
-
-/// Die Masse von Browser und Telefon: Schild 118 × 140, darüber und
-/// darunter Platz für die Pfeile auf weitere Verwandte.
-const stammbaumMasse = Zierbaummasse(
-  schildBreite: 118,
-  schildHoehe: 140,
-  partnerLuecke: 10,
-  haushaltLuecke: 36,
-  bandLuecke: 60,
-  rand: 24,
-  randUnten: 24,
-);
 
 /// Der Stammbaum um eine Person, wie Browser (über den Server) und Telefon
 /// ihn zeigen: dasselbe Geflecht wie am Rechner ([geflechtUm]) – Haushalte
 /// je Generationsband und die Elternhäuser jeder Person – und dieselbe
 /// Anordnung ([zierbaumplan]).
+///
+/// **Dieselben Masse wie am Rechner** ([Zierbaummasse], [Schildmasse]):
+/// Browser und Telefon malen den Zierbaum wie der Rechner – Schild mit
+/// Porträt darüber, Stamm, Äste und Ranken (#234). Vorher hatten sie eigene,
+/// höhere Karten und einen schlichten Strichbaum.
 ///
 /// **Die Anordnung kommt mit.** Vorher setzten Browser und Telefon die
 /// Haushalte eines Bandes einfach in der Reihenfolge des Geflechts von
@@ -38,8 +32,17 @@ typedef Stammbaumansicht = ({
   Set<String> verwandt,
   Stammbaumgeflecht? geflecht,
 
-  /// Wo jedes Schild steht und wohin die Äste laufen, in [stammbaumMasse].
+  /// Wo jedes Schild steht und wohin die Äste laufen, in den Massen des
+  /// Rechners.
   Zierbaumplan? plan,
+
+  /// Was auf den Schildern steht: Lebensdaten und Verwandtschaft zur
+  /// Mitte, bei Angeheirateten über wen – wie am Rechner.
+  Map<String, Lebensbaumperson> schilder,
+
+  /// Der Name unten am Stamm – der häufigste Nachname im Bild, `null`,
+  /// wenn keiner zweimal vorkommt (siehe [haeufigsterNachname]).
+  String? familienname,
 
   /// Wie weit der Baum reicht – das Verlangte oder, ohne Angabe, was am
   /// Rechner zuletzt eingestellt war.
@@ -71,6 +74,8 @@ Future<Stammbaumansicht> stammbaumansicht(
       verwandt: const <String>{},
       geflecht: null,
       plan: null,
+      schilder: const <String, Lebensbaumperson>{},
+      familienname: null,
       umfang: umfang,
     );
   }
@@ -96,10 +101,13 @@ Future<Stammbaumansicht> stammbaumansicht(
         )
         .id;
   }
+  final reihenfolge = [for (final p in personen) p.id];
+  final nachId = {for (final p in personen) p.id: p};
+  final rang = {for (var i = 0; i < reihenfolge.length; i++) reihenfolge[i]: i};
   final geflecht = geflechtUm(
     netz,
     f,
-    [for (final p in personen) p.id],
+    reihenfolge,
     oben: umfang.oben,
     unten: umfang.unten,
     kreis: umfang.kreis,
@@ -109,7 +117,17 @@ Future<Stammbaumansicht> stammbaumansicht(
     personen: personen,
     verwandt: verwandt,
     geflecht: geflecht,
-    plan: zierbaumplan(geflecht, masse: stammbaumMasse),
+    plan: zierbaumplan(geflecht),
+    schilder: schildpersonen(
+      netz,
+      f,
+      geflecht.personen,
+      nachId,
+      (id) => rang[id] ?? 1 << 30,
+    ),
+    familienname: haeufigsterNachname([
+      for (final id in geflecht.personen) nachId[id]!.name,
+    ]),
     umfang: umfang,
   );
 }

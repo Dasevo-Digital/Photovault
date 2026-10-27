@@ -130,6 +130,26 @@ class Ast {
   int get hashCode => Object.hash(personId, vonX, vonY, nachX, nachY);
 }
 
+/// Wie gross die Ranke an [ast] wird: 14 bis 23 Punkte, oder 0, wenn der
+/// Ast für eine zu kurz ist.
+///
+/// Die Grösse hängt an der Kennung der Person **und am Ziel des Astes**:
+/// gleich bleibende Vielfalt, ohne einen Würfel, der beim nächsten Aufbau
+/// anders fiele – und ohne dass die zwei Äste eines Kindes getrennt
+/// lebender Eltern zwei gleiche Ranken bekommen.
+///
+/// **Mit einer eigenen Prüfsumme (FNV-1a) statt `String.hashCode`.** Den
+/// kennt nur Dart; der Browser bekommt die Grösse vom Server mit, und das
+/// Telefon rechnet sie selbst. Alle drei sollen dieselbe Ranke malen.
+double rankenGroesse(Ast ast) {
+  if ((ast.vonY - ast.nachY).abs() < 40) return 0;
+  var summe = 0x811c9dc5;
+  for (final zeichen in '${ast.personId}|${ast.nachX.round()}'.codeUnits) {
+    summe = ((summe ^ zeichen) * 0x01000193) & 0xffffffff;
+  }
+  return 14 + (summe % 10).toDouble();
+}
+
 /// Der Verbinder zwischen zwei Partnern eines Haushalts.
 @immutable
 class Partnerband {

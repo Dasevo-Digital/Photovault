@@ -179,7 +179,6 @@
     <div class="zeile">
       <h2>Stammbaum</h2>
       <label>Person <select id="baum-person"></select></label>
-      <label>Zoom <input id="baum-zoom" type="range" min="0.4" max="1.6" step="0.1" value="1"></label>
       <label>Nach oben <select id="baum-oben"></select></label>
       <label>Nach unten <select id="baum-unten"></select></label>
       <label>Kreis <select id="baum-kreis">
@@ -192,7 +191,15 @@
       <button id="baum-zum-lebensbaum" type="button">Lebensbaum</button>
     </div>
     <p id="baum-hinweis" class="leise"></p>
-    <div id="baum-flaeche"></div>
+    <div id="baum-flaeche">
+      <canvas id="baum-grund"></canvas>
+      <div id="baum-buehne"></div>
+      <div class="baum-knoepfe">
+        <button id="baum-hinein" type="button" title="Vergrössern" aria-label="Vergrössern">+</button>
+        <button id="baum-hinaus" type="button" title="Verkleinern" aria-label="Verkleinern">−</button>
+        <button id="baum-ganz" type="button" title="Ganz zeigen" aria-label="Ganz zeigen">⤢</button>
+      </div>
+    </div>
   </section>
   <section id="bereich-einstellungen" hidden>
     <h2>Einstellungen der Bibliothek</h2>
@@ -609,7 +616,7 @@
 
 <script src="texte.js"></script>
 <script src="app.js"></script>
-<!-- entwickeln.js und lebensbaum.js lädt app.js erst, wenn sie gebraucht werden. -->
+<!-- entwickeln.js, lebensbaum.js und stammbaum.js lädt app.js erst, wenn sie gebraucht werden. -->
 <script src="hochladen.js"></script>
 </body>
 </html>

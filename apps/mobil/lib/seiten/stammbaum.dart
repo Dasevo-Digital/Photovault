@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
+import 'package:kern/services/verwandtschaftstext.dart';
 import 'package:kern/services/zierbaum.dart';
+import 'package:zierbild/zierbaum_farben.dart';
+import 'package:zierbild/zierbaum_maler.dart';
+import 'package:zierbild/zierbaum_schild.dart';
 
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
@@ -90,12 +94,17 @@ class _StammbaumState extends State<Stammbaum> {
         DropdownButton<T> wahl<T>(
           T wert,
           List<(T, String)> werte,
-          void Function(T) gewaehlt,
-        ) => DropdownButton<T>(
+          void Function(T) gewaehlt, {
+          bool breit = false,
+        }) => DropdownButton<T>(
           value: wert,
+          isExpanded: breit,
           items: [
             for (final (w, text) in werte)
-              DropdownMenuItem(value: w, child: Text(text)),
+              DropdownMenuItem(
+                value: w,
+                child: Text(text, overflow: TextOverflow.ellipsis),
+              ),
           ],
           onChanged: (w) {
             if (w != null) gewaehlt(w);
@@ -104,6 +113,14 @@ class _StammbaumState extends State<Stammbaum> {
         Widget feld(String name, Widget kind) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [Text(name), const SizedBox(width: 6), kind],
+        );
+        Widget breitesFeld(String name, Widget kind) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(name),
+            const SizedBox(width: 6),
+            Flexible(child: kind),
+          ],
         );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -168,9 +185,12 @@ class _StammbaumState extends State<Stammbaum> {
                           (n, '$n'),
                       ], (w) => _neu(() => _unten = w)),
                     ),
-                    feld(
+                    // Die längste Wahl darf schrumpfen: „Mit angeheirateten
+                    // Familien" passt auf ein schmales Telefon nicht neben
+                    // „Kreis" und lief rechts über den Rand.
+                    breitesFeld(
                       t.lbKreis,
-                      wahl(u.kreis, [
+                      wahl(breit: true, u.kreis, [
                         (Verwandtenkreis.linie, t.lbDirekteLinie),
                         (Verwandtenkreis.geschwister, t.lbMitGeschwistern),
                         (Verwandtenkreis.alle, t.baumKreisAngeheiratet),
@@ -229,9 +249,18 @@ class _Baum extends StatefulWidget {
   State<_Baum> createState() => _BaumState();
 }
 
+/// Wie weit der Baum sich wegzoomen lässt und wie nah heran – dieselben
+/// Grenzen wie am Rechner und im Browser.
+const _kleinsterZoom = 0.25;
+const _groessterZoom = 3.0;
+const _zoomschritt = 1.25;
+
+/// Der Zierbaum wie am Rechner (#234): Grund, Stamm, Äste und Ranken aus
+/// [ZierbaumMaler], darüber die Schilder aus [Zierbaumschild] – derselbe
+/// Code wie dort, nur das Porträt kommt vom Server.
 class _BaumState extends State<_Baum> {
   final _steuerung = TransformationController();
-  var _eingepasst = false;
+  Size? _eingepasstFuer;
 
   @override
   void dispose() {
@@ -241,212 +270,251 @@ class _BaumState extends State<_Baum> {
 
   Sitzung get sitzung => widget.sitzung;
   Stammbaumansicht get ansicht => widget.ansicht;
-  void waehle(String id) => widget.waehle(id);
+
+  /// Erst den ganzen Baum einmitten; fällt das Schild der Mitte dabei aus
+  /// dem Bild, auf dieses Schild rücken – wie am Rechner und im Browser.
+  void _ersterBlick(Zierbaumplan plan, Size fenster) {
+    var x = fenster.width / 2 - plan.breite / 2;
+    var y = fenster.height / 2 - plan.hoehe / 2;
+    final s = plan.schilder.where((k) => k.personId == ansicht.fokus);
+    if (s.isNotEmpty) {
+      final k = s.first;
+      final drin =
+          x + k.links >= 0 &&
+          y + k.oben >= 0 &&
+          x + k.rechts <= fenster.width &&
+          y + k.unten <= fenster.height;
+      if (!drin) {
+        x = fenster.width / 2 - k.mitteX;
+        y = fenster.height / 2 - k.mitteY;
+      }
+    }
+    _steuerung.value = Matrix4.translationValues(x, y, 0);
+  }
+
+  void _zoomen(double faktor, Size fenster) {
+    final alt = _steuerung.value.getMaxScaleOnAxis();
+    final neu = (alt * faktor).clamp(_kleinsterZoom, _groessterZoom);
+    final k = neu / alt;
+    final mx = fenster.width / 2, my = fenster.height / 2;
+    _steuerung.value = Matrix4.identity()
+      ..translateByDouble(mx, my, 0, 1)
+      ..scaleByDouble(k, k, k, 1)
+      ..translateByDouble(-mx, -my, 0, 1)
+      ..multiply(_steuerung.value);
+  }
+
+  /// „Ganz zeigen": eingepasst, aber nie über die eigene Grösse hinaus.
+  void _ganz(Zierbaumplan plan, Size fenster) {
+    final s = math
+        .min(fenster.width / plan.breite, fenster.height / plan.hoehe)
+        .clamp(_kleinsterZoom, 1.0);
+    _steuerung.value = Matrix4.identity()
+      ..translateByDouble(
+        (fenster.width - plan.breite * s) / 2,
+        (fenster.height - plan.hoehe * s) / 2,
+        0,
+        1,
+      )
+      ..scaleByDouble(s, s, s, 1);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
     final g = widget.geflecht;
     final nachId = {for (final p in ansicht.personen) p.id: p};
-    // Die Plätze rechnet der Kern wie für den Rechner (zierbaumplan):
-    // Kinder unter ihren Elternhäusern statt der Reihe nach.
     final plan = ansicht.plan!;
-    final gesamt = plan.breite;
-    final hoehe = plan.hoehe;
-    final farben = Theme.of(context).colorScheme;
+    final farben = Zierbaumfarben.fuer(Theme.of(context).brightness);
+    final texte = Verwandtschaftstexte.fuer(
+      Localizations.localeOf(context).languageCode,
+    );
+    const masse = Schildmasse();
+
+    String? bezeichnung(String id) {
+      final x = ansicht.schilder[id];
+      if (x == null || id == ansicht.fokus) return null;
+      final u = x.umweg;
+      final grad = x.grad;
+      if (u != null) {
+        return texte.ueberWeg(
+          texte.grad(u.schritt, x.person.geschlecht),
+          texte.grad(u.ueberGrad, u.ueber.geschlecht),
+          u.ueber.name,
+        );
+      }
+      return grad == null ? null : texte.grad(grad, x.person.geschlecht);
+    }
+
     return LayoutBuilder(
       builder: (context, c) {
-        // Zu Beginn der ganze Baum in der Breite – heranzoomen geht mit
-        // zwei Fingern.
-        if (!_eingepasst) {
-          _eingepasst = true;
-          final massstab = math.min(1.0, c.maxWidth / gesamt);
-          _steuerung.value = Matrix4.diagonal3Values(massstab, massstab, 1);
+        final fenster = Size(c.maxWidth, c.maxHeight);
+        if (_eingepasstFuer != fenster) {
+          _eingepasstFuer = fenster;
+          _ersterBlick(plan, fenster);
         }
-        return InteractiveViewer(
-          transformationController: _steuerung,
-          constrained: false,
-          minScale: 0.2,
-          maxScale: 2.5,
-          boundaryMargin: const EdgeInsets.all(200),
-          child: SizedBox(
-            width: gesamt,
-            height: hoehe,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _Aeste(
-                      plan: plan,
-                      linie: farben.onSurfaceVariant,
-                      paar: farben.primary,
+        return Stack(
+          children: [
+            // Der Grund steht still hinter dem Baum und füllt die Fläche.
+            Positioned.fill(
+              child: CustomPaint(painter: Zierbaumgrund(farben: farben)),
+            ),
+            Positioned.fill(
+              child: InteractiveViewer(
+                transformationController: _steuerung,
+                constrained: false,
+                minScale: _kleinsterZoom,
+                maxScale: _groessterZoom,
+                boundaryMargin: EdgeInsets.symmetric(
+                  horizontal: fenster.width,
+                  vertical: fenster.height,
+                ),
+                child: MediaQuery.withNoTextScaling(
+                  child: SizedBox(
+                    width: plan.breite,
+                    height: plan.hoehe,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: ZierbaumMaler(
+                              plan: plan,
+                              farben: farben,
+                              malGrund: false,
+                              fokusId: ansicht.fokus,
+                            ),
+                          ),
+                        ),
+                        if (ansicht.familienname case final name?)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 28,
+                            child: Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: farben.familienname,
+                                fontSize: 46,
+                                letterSpacing: 2,
+                                fontFamily: zierschriftGross,
+                              ),
+                            ),
+                          ),
+                        for (final schild in plan.schilder)
+                          Positioned(
+                            left: schild.links,
+                            top: schild.oben,
+                            width: schild.breite,
+                            height: schild.hoehe,
+                            child: _schild(
+                              schild.personId,
+                              nachId[schild.personId],
+                              bezeichnung(schild.personId),
+                              farben,
+                              masse,
+                              g,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
-                for (final schild in plan.schilder)
-                  Positioned(
-                    left: schild.links,
-                    top: schild.oben - 20,
-                    width: schild.breite,
-                    height: schild.hoehe + 40,
-                    child: _Karte(
-                      sitzung: sitzung,
-                      person: nachId[schild.personId],
-                      fokus: schild.personId == ansicht.fokus,
-                      oben: g.weitereOben[schild.personId] ?? false,
-                      unten: g.weitereUnten[schild.personId] ?? false,
-                      onTap: () => waehle(schild.personId),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _Aeste extends CustomPainter {
-  _Aeste({required this.plan, required this.linie, required this.paar});
-
-  final Zierbaumplan plan;
-  final Color linie;
-  final Color paar;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final ast = Paint()
-      ..color = linie
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    // Vom Schild oben in einer Kurve zur Mitte des Elternhauses – wie im
-    // Browser und am Rechner.
-    for (final a in plan.aeste) {
-      canvas.drawPath(
-        Path()
-          ..moveTo(a.vonX, a.vonY)
-          ..cubicTo(a.vonX, a.steuer1Y, a.nachX, a.steuer2Y, a.nachX, a.nachY),
-        ast,
-      );
-    }
-    // Partner: auf Höhe der Bilder verbunden.
-    final p = Paint()
-      ..color = paar
-      ..strokeWidth = 2;
-    for (final b in plan.baender) {
-      final y = b.y - stammbaumMasse.schildHoehe / 2 + 46;
-      canvas.drawLine(Offset(b.vonX, y), Offset(b.nachX, y), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_Aeste alt) =>
-      alt.plan != plan || alt.linie != linie || alt.paar != paar;
-}
-
-/// Lange Namen auf zwei Zeilen, am letzten Leerzeichen vor der Grenze –
-/// wie im Browser.
-List<String> namenszeilen(String name) {
-  final zeilen = <String>[];
-  var rest = name.trim();
-  while (rest.isNotEmpty && zeilen.length < 2) {
-    if (rest.length <= 16 || zeilen.length == 1) {
-      zeilen.add(rest.length > 16 ? '${rest.substring(0, 15)}…' : rest);
-      break;
-    }
-    final schnitt = rest.lastIndexOf(' ', 16);
-    if (schnitt < 4) {
-      zeilen.add('${rest.substring(0, 15)}…');
-      break;
-    }
-    zeilen.add(rest.substring(0, schnitt));
-    rest = rest.substring(schnitt + 1);
-  }
-  return zeilen;
-}
-
-/// „1950 – 2001“, „1950 –“, „? – 2001“ – wie im Browser.
-String lebensjahre(PersonData p) {
-  final g = p.geburtsdatum, t = p.sterbedatum;
-  if (g == null && t == null) return '';
-  return '${g?.year ?? '?'} –${t == null ? '' : ' ${t.year}'}';
-}
-
-class _Karte extends StatelessWidget {
-  const _Karte({
-    required this.sitzung,
-    required this.person,
-    required this.fokus,
-    required this.oben,
-    required this.unten,
-    required this.onTap,
-  });
-
-  final Sitzung sitzung;
-  final PersonData? person;
-  final bool fokus;
-  final bool oben;
-  final bool unten;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final farben = Theme.of(context).colorScheme;
-    final p = person;
-    final name = p?.name ?? '?';
-    final pfeil = TextStyle(color: farben.onSurfaceVariant, fontSize: 12);
-    return Column(
-      children: [
-        SizedBox(height: 20, child: oben ? Text('▲', style: pfeil) : null),
-        Expanded(
-          child: Material(
-            color: farben.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: fokus ? farben.primary : farben.outlineVariant,
-                width: fokus ? 3 : 1,
               ),
             ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(4, 14, 4, 4),
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0x9E12100E),
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox.square(
-                      dimension: 64,
-                      child: Personenbild(
-                        paths: sitzung.paths,
-                        name: name,
-                        relativ: p?.coverFaceCropPath,
+                    for (final (symbol, hinweis, tun) in [
+                      (
+                        Icons.add,
+                        t.baumVergroessern,
+                        () => _zoomen(_zoomschritt, fenster),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    for (final z in namenszeilen(name))
-                      Text(
-                        z,
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        style: const TextStyle(fontSize: 12, height: 1.15),
+                      (
+                        Icons.remove,
+                        t.baumVerkleinern,
+                        () => _zoomen(1 / _zoomschritt, fenster),
                       ),
-                    if (p != null && lebensjahre(p).isNotEmpty)
-                      Text(
-                        lebensjahre(p),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: farben.onSurfaceVariant,
-                        ),
+                      (
+                        Icons.fit_screen,
+                        t.baumGanzZeigen,
+                        () => _ganz(plan, fenster),
+                      ),
+                    ])
+                      IconButton(
+                        tooltip: hinweis,
+                        color: const Color(0xFFF3E6C8),
+                        icon: Icon(symbol),
+                        onPressed: tun,
                       ),
                   ],
                 ),
               ),
             ),
-          ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _schild(
+    String id,
+    PersonData? person,
+    String? bezug,
+    Zierbaumfarben farben,
+    Schildmasse masse,
+    Stammbaumgeflecht g,
+  ) {
+    final name = person?.name ?? '?';
+    final bild = person?.coverFaceCropPath;
+    return Semantics(
+      button: true,
+      label: [name, ?bezug, ?ansicht.schilder[id]?.lebensspanne].join(', '),
+      child: Zierbaumschild(
+        text: Schildtext(
+          name: name,
+          verwandtschaft: bezug,
+          lebensspanne: ansicht.schilder[id]?.lebensspanne,
         ),
-        SizedBox(height: 20, child: unten ? Text('▼', style: pfeil) : null),
-      ],
+        farben: farben,
+        masse: masse,
+        istMitte: id == ansicht.fokus,
+        weitereOben: g.weitereOben[id] ?? false,
+        weitereUnten: g.weitereUnten[id] ?? false,
+        onTap: () => widget.waehle(id),
+        portrait: SizedBox.square(
+          dimension: masse.portraitRadius * 2,
+          child: bild == null
+              ? CircleAvatar(
+                  backgroundColor: farben.schildUnten,
+                  child: Icon(
+                    Icons.person_outline,
+                    size: masse.portraitRadius + 1,
+                    color: farben.schildRand,
+                  ),
+                )
+              : DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: farben.schildUnten,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Personenbild(
+                    paths: sitzung.paths,
+                    name: name,
+                    relativ: bild,
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }

@@ -27,6 +27,7 @@ import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/stammbaum.dart' show Verwandtenkreis;
 import 'package:kern/services/storage_paths.dart';
 import 'package:zierbild/lebensbaum_flaeche.dart';
+import 'package:zierbild/zierbaum_schild.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
@@ -3025,12 +3026,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Oma Erika'), findsWidgets);
     expect(find.text('Opa Hans'), findsWidgets);
-    expect(find.text('1950 –'), findsOneWidget);
-    // Die Eltern stehen ein Band über dem Kind.
-    final kind = find.descendant(
-      of: find.byType(InteractiveViewer),
-      matching: find.text('Kind'),
+    // Der Zierbaum wie am Rechner (#234): goldene Schilder mit
+    // Lebensdaten und der Verwandtschaft zur Mitte.
+    expect(find.byType(Zierbaumschild), findsNWidgets(3));
+    expect(find.text('*1950'), findsOneWidget);
+    // Ohne Fokus steht die Älteste in der Mitte: Oma Erika, ohne
+    // Bezeichnung; die anderen heissen nach ihrem Verhältnis zu ihr.
+    expect(
+      tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(Zierbaumschild),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((x) => x.data),
+      ['Opa Hans', 'Partner', 'Oma Erika', '*1950', 'Kind', 'Kind'],
     );
+    // Die Eltern stehen ein Band über dem Kind.
+    // Der Name, nicht die gleichlautende Bezeichnung darunter.
+    final kind = find
+        .descendant(
+          of: find.byType(InteractiveViewer),
+          matching: find.text('Kind'),
+        )
+        .first;
     final oma = find.descendant(
       of: find.byType(InteractiveViewer),
       matching: find.text('Oma Erika'),
@@ -3159,17 +3179,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(schild('Erika Muster'), findsOneWidget);
     expect(schild('Kai Muster'), findsNothing);
-  });
-
-  test('Namen im Stammbaum brechen wie im Browser um', () {
-    expect(namenszeilen('Kurz'), ['Kurz']);
-    expect(namenszeilen('Maria Magdalena Musterfrau'), [
-      'Maria Magdalena',
-      'Musterfrau',
-    ]);
-    expect(namenszeilen('Donaudampfschifffahrtsgesellschaft'), [
-      'Donaudampfschif…',
-    ]);
   });
 
   testWidgets('Entwickeln wie im Browser: Regler, Vorschau, Speichern', (

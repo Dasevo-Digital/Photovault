@@ -6,26 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:kern/services/zierbaum.dart';
 import '../theme/zierbaum_farben.dart';
 import 'profilbild.dart';
+import 'package:zierbild/zierbaum_schild.dart';
 import 'zierbaum_maler.dart';
 
-/// Was auf einem Schild steht.
+/// Was auf einem Schild steht – dazu, was nur der Rechner kennt: den
+/// Gesichtsausschnitt als Datei und die Mehrzeichen.
 @immutable
-class Schildinhalt {
-  final String name;
-
-  /// Wie diese Person zur Mitte steht – bei der Mitte selbst `null`.
-  final String? verwandtschaft;
-
+class Schildinhalt extends Schildtext {
   /// Der Gesichtsausschnitt, falls es einen gibt.
   final File? bild;
-
-  /// „1874–1955", „*1972" – oder `null`, wenn nichts bekannt ist.
-  ///
-  /// Steht auf dem Schild, weil sie auf der alten Karte stand: Ein
-  /// Stammbaum ohne Jahreszahlen beantwortet die halben Fragen nicht,
-  /// die man an ihn stellt. Sie beim Umbau stillschweigend wegzulassen
-  /// wäre ein Verlust gewesen, den niemand bestellt hat.
-  final String? lebensspanne;
 
   /// Ob über bzw. unter der Person noch etwas steht, das dieses Bild
   /// nicht zeigt.
@@ -33,10 +22,10 @@ class Schildinhalt {
   final bool weitereUnten;
 
   const Schildinhalt({
-    required this.name,
-    this.verwandtschaft,
+    required super.name,
+    super.verwandtschaft,
     this.bild,
-    this.lebensspanne,
+    super.lebensspanne,
     this.weitereOben = false,
     this.weitereUnten = false,
   });
@@ -210,165 +199,46 @@ class _Schild extends StatelessWidget {
       child: GestureDetector(
         onSecondaryTapDown: (d) => onMenue(d.globalPosition),
         onLongPressStart: (d) => onMenue(d.globalPosition),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            InkWell(
-              onTap: istMitte ? null : onTap,
-              borderRadius: BorderRadius.circular(10),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Das Porträt sitzt ÜBER dem Schild und ragt darüber
-                  // hinaus, wie ein Bildnis über einer Tafel. Innerhalb
-                  // des Schildes bliebe für den Namen nichts übrig.
-                  Profilbild(
-                    datei: inhalt.bild,
-                    radius: masse.portraitRadius,
-                    hintergrund: farben.schildUnten,
-                    symbolgroesse: masse.portraitRadius + 1,
-                    symbolfarbe: farben.schildRand,
-                  ),
-                  SizedBox(height: masse.portraitAbstand),
-                  Expanded(child: _tafel(context)),
-                ],
-              ),
+        child: Zierbaumschild(
+          text: inhalt,
+          farben: farben,
+          masse: masse,
+          istMitte: istMitte,
+          weitereOben: inhalt.weitereOben,
+          weitereUnten: inhalt.weitereUnten,
+          onTap: onTap,
+          portrait: Profilbild(
+            datei: inhalt.bild,
+            radius: masse.portraitRadius,
+            hintergrund: farben.schildUnten,
+            symbolgroesse: masse.portraitRadius + 1,
+            symbolfarbe: farben.schildRand,
+          ),
+          // **Ein sichtbarer Weg ins Menü.** Rechtsklick und langes
+          // Drücken tun dasselbe, aber beide muss man kennen. Auf der
+          // alten Karte stand dieser Knopf, und ihn beim Umbau
+          // wegzulassen hiesse, eine Tür zuzumauern – derselbe Fehler
+          // wie beim Papierkorb, der eine Prüfrunde lang keinen
+          // Eingang hatte.
+          ecke: Builder(
+            builder: (knopfKontext) => IconButton(
+              iconSize: 15,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(),
+              tooltip: menueHinweis,
+              color: farben.schildRand,
+              icon: const Icon(Icons.more_vert),
+              onPressed: () {
+                final kasten = knopfKontext.findRenderObject() as RenderBox;
+                onMenue(
+                  kasten.localToGlobal(kasten.size.bottomLeft(Offset.zero)),
+                );
+              },
             ),
-            // **Die Mehrzeichen liegen AUF der Tafel, nicht in ihr.**
-            // In der Reihe standen sie als vierte und fünfte Zeile in
-            // einem Schild, das für drei gebaut ist: 56,6 Punkte
-            // brauchen die Zeilen, 67 hat die Tafel – mit zwei Zeichen
-            // zu je dreizehn werden daraus 82,6. Ein `Flexible` lässt
-            // Zeilen dann nicht überlappen, es QUETSCHT sie, und der
-            // Text malt über seinen eigenen Rand hinaus. Genau so lag im
-            // gemeldeten Bild „Sohn" halb über „Martin".
-            //
-            // Als Marke am Rand sagen sie dasselbe und kosten keine
-            // Zeile. Und sie liegen im SELBEN Stack wie der Menüknopf:
-            // Ein zweiter Stack darunter machte den Sucher der Tests
-            // blind, der über dem Namen den nächsten Stack sucht.
-            if (inhalt.weitereOben)
-              Positioned(
-                top: masse.portraitRadius * 2 + masse.portraitAbstand - 1,
-                left: 0,
-                right: 0,
-                child: _mehr(),
-              ),
-            if (inhalt.weitereUnten)
-              Positioned(bottom: -1, left: 0, right: 0, child: _mehr()),
-            // **Ein sichtbarer Weg ins Menü.** Rechtsklick und langes
-            // Drücken tun dasselbe, aber beide muss man kennen. Auf der
-            // alten Karte stand dieser Knopf, und ihn beim Umbau
-            // wegzulassen hiesse, eine Tür zuzumauern – derselbe Fehler
-            // wie beim Papierkorb, der eine Prüfrunde lang keinen
-            // Eingang hatte.
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Builder(
-                builder: (knopfKontext) => IconButton(
-                  iconSize: 15,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(2),
-                  constraints: const BoxConstraints(),
-                  tooltip: menueHinweis,
-                  color: farben.schildRand,
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    final kasten = knopfKontext.findRenderObject() as RenderBox;
-                    onMenue(
-                      kasten.localToGlobal(kasten.size.bottomLeft(Offset.zero)),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  Widget _tafel(BuildContext context) => Container(
-    width: double.infinity,
-    padding: EdgeInsets.symmetric(
-      horizontal: masse.polsterX,
-      vertical: masse.polsterY,
-    ),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [farben.schildOben, farben.schildUnten],
-      ),
-      borderRadius: BorderRadius.circular(masse.rundung),
-      border: Border.all(
-        color: istMitte ? farben.mitteRand : farben.schildRand,
-        width: istMitte ? masse.randStark : masse.randSchwach,
-      ),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Flexible(
-          child: Text(
-            inhalt.name,
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: farben.schrift,
-              fontSize: masse.schriftName,
-              height: 1.1,
-              fontFamily: zierschrift,
-              fontVariations: zierGewicht(istMitte ? 700 : 600),
-            ),
-          ),
-        ),
-        if (inhalt.verwandtschaft != null)
-          Flexible(
-            child: Text(
-              inhalt.verwandtschaft!,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              // Kein Kursiv: Die kursive Fassung waere eine zweite
-              // Datei von 754 kB, und ein kuenstlich geneigtes
-              // Garamond sieht schlechter aus als ein aufrechtes.
-              // Unterschieden wird ueber Groesse und Farbe.
-              style: TextStyle(
-                color: farben.nebenschrift,
-                fontSize: masse.schriftNeben,
-                fontFamily: zierschrift,
-              ),
-            ),
-          ),
-        if (inhalt.lebensspanne != null)
-          Flexible(
-            child: Text(
-              inhalt.lebensspanne!,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: farben.nebenschrift,
-                fontSize: masse.schriftNeben,
-                fontFamily: zierschrift,
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-
-  /// Das Zeichen „hier geht es weiter, aber nicht in diesem Bild".
-  ///
-  /// Oben und unten dasselbe Zeichen: Die Richtung sagt schon, wohin es
-  /// weitergeht, und zwei verschiedene Symbole wären zwei Dinge zu
-  /// lernen für eine Aussage.
-  Widget _mehr() => Icon(
-    Icons.more_horiz,
-    size: masse.zeichenGroesse,
-    color: farben.schildRand,
-  );
 }

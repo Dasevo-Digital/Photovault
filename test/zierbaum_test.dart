@@ -640,4 +640,31 @@ void main() {
       expect(bedarf(1.5), greaterThan(tafel));
     });
   });
+
+  group('Ranken (#234)', () {
+    Ast ast(String id, double nachX, {double vonY = 300}) =>
+        Ast(personId: id, vonX: 100, vonY: vonY, nachX: nachX, nachY: 100);
+
+    test('dieselbe Ranke bei jedem Aufbau – und überall', () {
+      // Fest erwartet: Telefon und Browser (über den Server) bekommen
+      // dieselbe Zahl. Ändert sich die Rechnung, ändert sie sich für alle
+      // drei – und dieser Test sagt es.
+      expect(rankenGroesse(ast('opa', 180)), rankenGroesse(ast('opa', 180)));
+      for (final (id, x) in [('opa', 180.0), ('oma', 40.0), ('kind', 260.0)]) {
+        expect(rankenGroesse(ast(id, x)), inInclusiveRange(14, 23));
+      }
+    });
+
+    test('zwei Äste derselben Person zu zwei Häusern sind verschieden', () {
+      final groessen = {
+        for (var x = 0; x < 400; x += 40)
+          rankenGroesse(ast('kind', x.toDouble())),
+      };
+      expect(groessen.length, greaterThan(1));
+    });
+
+    test('ein kurzer Ast bekommt keine', () {
+      expect(rankenGroesse(ast('kind', 180, vonY: 130)), 0);
+    });
+  });
 }

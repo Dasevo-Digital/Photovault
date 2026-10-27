@@ -1212,6 +1212,15 @@ class AppTexteDe extends AppTexte {
   String get baumKreisCousinsZweitenGrades => 'Mit Cousins 2. Grades';
 
   @override
+  String get baumVergroessern => 'Vergrössern';
+
+  @override
+  String get baumVerkleinern => 'Verkleinern';
+
+  @override
+  String get baumGanzZeigen => 'Ganz zeigen';
+
+  @override
   String get lbPortraits => 'Porträts';
 
   @override

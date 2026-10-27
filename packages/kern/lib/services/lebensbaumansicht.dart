@@ -157,21 +157,39 @@ Future<Lebensbaumansicht> lebensbaumansicht(
     bild = bildAusBelegung(vorlage, belegung);
   }
   final imBild = bild.personen.toSet();
-  final grade = alleGrade(netz, f, imBild);
-  final fokusId = f;
   return (
-    fokus: fokusId,
+    fokus: f,
     optionen: optionen,
     alle: personen,
     verwandt: verwandt,
     bild: bild,
-    personen: {
-      for (final id in imBild)
+    personen: schildpersonen(netz, f, imBild, nachId, ordnung),
+    nachname: haeufigsterNachname([for (final id in imBild) nachId[id]!.name]),
+  );
+}
+
+/// Lebensdaten und Verwandtschaft zur Mitte für jede Person in [imBild].
+///
+/// Für den Lebensbaum und den Stammbaum dieselbe Rechnung, damit beide
+/// dieselben Bezeichnungen tragen – wie am Rechner, wo der Zierbaum sie
+/// ebenso aus [alleGrade] und [umwegZu] nimmt. [ordnung] entscheidet
+/// zwischen zwei gleich guten Umwegen, damit eine Person nicht bei jedem
+/// Aufbau anders heisst.
+Map<String, Lebensbaumperson> schildpersonen(
+  Verwandtschaftsnetz netz,
+  String fokus,
+  Set<String> imBild,
+  Map<String, PersonData> nachId,
+  int Function(String) ordnung,
+) {
+  final grade = alleGrade(netz, fokus, imBild);
+  return {
+    for (final id in imBild)
+      if (nachId[id] case final person?)
         id: () {
-          final person = nachId[id]!;
           final gr = grade[id];
           final umweg = gr?.art == Gradart.angeheiratet
-              ? umwegZu(netz, fokusId, id, reihenfolge: ordnung)
+              ? umwegZu(netz, fokus, id, reihenfolge: ordnung)
               : null;
           final zwischen = umweg == null ? null : nachId[umweg.ueber];
           return (
@@ -187,7 +205,5 @@ Future<Lebensbaumansicht> lebensbaumansicht(
                   ),
           );
         }(),
-    },
-    nachname: haeufigsterNachname([for (final id in imBild) nachId[id]!.name]),
-  );
+  };
 }
