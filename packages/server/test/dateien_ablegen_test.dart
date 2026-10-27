@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -177,4 +178,52 @@ void main() {
       expect(cookie.statusCode, 403, reason: 'Cookie ohne X-PV-Web');
     },
   );
+
+  for (final zweiterVollstaendig in [false, true]) {
+    test(
+      'parallele Schreiber sind getrennt, zweiter vollständig: $zweiterVollstaendig',
+      () async {
+        final a = StreamController<List<int>>(),
+            b = StreamController<List<int>>();
+        final liestA = Completer<void>(), liestB = Completer<void>();
+        a.onListen = () => liestA.complete();
+        b.onListen = () => liestB.complete();
+        Future<Response> sende(Stream<List<int>> inhalt) async => api(
+          Request(
+            'PUT',
+            Uri.parse('http://server/api/v1/dateien/developed/parallel.jpg'),
+            headers: {'authorization': 'Bearer $token', 'content-length': '4'},
+            body: inhalt,
+          ),
+        );
+        final laufA = sende(a.stream);
+        await liestA.future;
+        a.add([1, 1]);
+        final laufB = sende(b.stream);
+        await liestB.future;
+        b.add([2, 2]);
+        final ziel = File('${(await wurzel()).path}/developed/parallel.jpg');
+        if (!zweiterVollstaendig) {
+          await b.close();
+          expect((await laufB).statusCode, 400);
+        }
+        a.add([1, 1]);
+        await a.close();
+        expect((await laufA).statusCode, 204);
+        expect(await ziel.readAsBytes(), [1, 1, 1, 1]);
+        if (zweiterVollstaendig) {
+          b.add([2, 2]);
+          await b.close();
+          expect((await laufB).statusCode, 204);
+          expect(await ziel.readAsBytes(), [2, 2, 2, 2]);
+        }
+        expect(
+          ziel.parent.listSync().whereType<File>().where(
+            (f) => f.path.endsWith('.teil'),
+          ),
+          isEmpty,
+        );
+      },
+    );
+  }
 }

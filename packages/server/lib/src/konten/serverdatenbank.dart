@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 3;
+  static const schema = 4;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -139,6 +139,14 @@ class Serverdatenbank {
         CREATE INDEX gastbeitraege_konto ON gastbeitraege(konto);
         CREATE INDEX gastbeitraege_freigabe ON gastbeitraege(freigabe);
         PRAGMA user_version = 3;
+        COMMIT;
+      ''');
+    }
+    if (stand < 4) {
+      db.execute('''
+        BEGIN;
+        ALTER TABLE konten ADD COLUMN anmelde_stand INTEGER NOT NULL DEFAULT 0;
+        PRAGMA user_version = 4;
         COMMIT;
       ''');
     }

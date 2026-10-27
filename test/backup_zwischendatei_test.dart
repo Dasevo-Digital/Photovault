@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cryptography/cryptography.dart';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -127,6 +129,36 @@ void main() {
     final offen = await db.assetsNotBackedUp();
     expect(offen.map((a) => a.id), [opfer.id]);
   });
+
+  for (final automatisch in [false, true]) {
+    test(
+      'fehlendes Original bleibt offen, automatisch: $automatisch',
+      () async {
+        await importiere(2);
+        final alle = await db.assetsNotBackedUp();
+        final opfer = alle.first;
+        final quelle = paths.absolute(opfer.relativePath);
+        final bytes = await quelle.readAsBytes();
+        await quelle.delete();
+        final dienst = BackupService(db, paths);
+        final ziel = zielOrdner();
+        final key = SecretKey(List.filled(32, 7));
+        Future<List<BackupProgress>> laufe() => automatisch
+            ? dienst.performAutoBackup(ziel.path, key).toList()
+            : dienst.performBackup(ziel.path).toList();
+        final meldungen = await laufe();
+        expect(meldungen.last.fehlgeschlagen, 1);
+        final danach = (await db.assetById(opfer.id))!;
+        expect(automatisch ? danach.autoBackedUp : danach.backedUp, isFalse);
+        if (!automatisch) expect((await db.lastBackupRecord())!.fileCount, 1);
+        await quelle.writeAsBytes(bytes);
+        final wiederholung = await laufe();
+        expect(wiederholung.any((m) => (m.fehlgeschlagen ?? 0) > 0), isFalse);
+        final fertig = (await db.assetById(opfer.id))!;
+        expect(automatisch ? fertig.autoBackedUp : fertig.backedUp, isTrue);
+      },
+    );
+  }
 
   test('ein untaugliches Ziel eicht NICHT das Zwischenlager', () async {
     // Der Unterschied, an dem der erste Entwurf scheiterte: Scheitert das

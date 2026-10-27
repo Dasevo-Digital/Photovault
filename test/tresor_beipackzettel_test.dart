@@ -83,7 +83,7 @@ void main() {
     final roh = zettel.readAsBytesSync();
     expect(
       String.fromCharCodes(roh.take(4)),
-      'PVE2',
+      'PVE3',
       reason: 'die Kennung des Tresorformats',
     );
     expect(

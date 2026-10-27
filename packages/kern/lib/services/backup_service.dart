@@ -345,7 +345,13 @@ class BackupService {
           final source = schonDa
               ? null
               : await _paths.bereit(asset.relativePath);
-          if (source != null && await source.exists()) {
+          if (!schonDa && (source == null || !await source.exists())) {
+            throw FileSystemException(
+              'pv_backup_quelle_fehlt',
+              asset.relativePath,
+            );
+          }
+          if (source != null) {
             await target.parent.create(recursive: true);
 
             final quellGroesse = await source.length();
@@ -1443,7 +1449,13 @@ class BackupService {
           final source = schonDa
               ? null
               : await _paths.bereit(asset.relativePath);
-          if (source != null && await source.exists()) {
+          if (!schonDa && (source == null || !await source.exists())) {
+            throw FileSystemException(
+              'pv_backup_quelle_fehlt',
+              asset.relativePath,
+            );
+          }
+          if (source != null) {
             await target.parent.create(recursive: true);
             await _ueberZwischendatei(
               zwischenlager: staging,

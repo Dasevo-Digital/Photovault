@@ -23,6 +23,7 @@ void main() {
   const mac = 16;
   const blockGroesse = 1 << 20;
   const proBlock = kopf + nonce + blockGroesse + mac;
+  const dateikopf = 4 + 32; // PVE3 und zufällige Dateikennung.
 
   setUp(() async {
     tmp = Directory.systemTemp.createTempSync('pv_crypto_test_');
@@ -56,8 +57,7 @@ void main() {
       final zurueck = datei('leer_zurueck.bin');
       await VaultCrypto.decryptFile(ver, zurueck, key);
       expect(zurueck.lengthSync(), 0);
-      // 4 Bytes Magic plus genau ein (leerer) Abschlussblock.
-      expect(ver.lengthSync(), 4 + kopf + nonce + mac);
+      expect(ver.lengthSync(), dateikopf + kopf + nonce + mac);
     },
   );
 
@@ -91,13 +91,13 @@ void main() {
   test('vertauschte Blöcke fallen auf', () async {
     final ver = await verschluesselt(List.generate(2 << 20, (i) => i % 7));
     final roh = ver.readAsBytesSync();
-    final a = roh.sublist(4, 4 + proBlock);
-    final b = roh.sublist(4 + proBlock, 4 + 2 * proBlock);
+    final a = roh.sublist(dateikopf, dateikopf + proBlock);
+    final b = roh.sublist(dateikopf + proBlock, dateikopf + 2 * proBlock);
     final getauscht = datei('tausch.bin', [
-      ...roh.sublist(0, 4),
+      ...roh.sublist(0, dateikopf),
       ...b,
       ...a,
-      ...roh.sublist(4 + 2 * proBlock),
+      ...roh.sublist(dateikopf + 2 * proBlock),
     ]);
 
     await expectLater(
@@ -113,7 +113,7 @@ void main() {
       final roh = ver.readAsBytesSync();
       // Die Länge steht unverschlüsselt in der Datei – ohne Schranke ginge sie
       // ungeprüft an read().
-      roh.setRange(4, 8, [0xFF, 0xFF, 0xFF, 0xFF]);
+      roh.setRange(dateikopf, dateikopf + 4, [0xFF, 0xFF, 0xFF, 0xFF]);
 
       await expectLater(
         VaultCrypto.decryptFile(datei('gross.bin', roh), datei('z4.bin'), key),
@@ -125,7 +125,7 @@ void main() {
   test('ein veränderter Block fällt weiterhin auf', () async {
     final ver = await verschluesselt(List.filled(1024, 9));
     final roh = ver.readAsBytesSync();
-    roh[4 + kopf + nonce] ^= 0xFF; // ein Bit im Chiffretext
+    roh[dateikopf + kopf + nonce] ^= 0xFF;
 
     await expectLater(
       VaultCrypto.decryptFile(datei('kaputt.bin', roh), datei('z5.bin'), key),
@@ -163,7 +163,7 @@ void main() {
     expect(zurueck.readAsBytesSync(), inhalt);
   });
 
-  test('der Kopf-Schnelltest kennt beide Fassungen', () async {
+  test('der Kopf-Schnelltest kennt alle Fassungen', () async {
     expect(
       await VaultCrypto.hasValidEncryptedHeader(
         await verschluesselt(const [1, 2, 3]),
@@ -178,9 +178,99 @@ void main() {
     );
     expect(
       await VaultCrypto.hasValidEncryptedHeader(
+        datei('alt3.bin', [0x50, 0x56, 0x45, 0x32, 0, 0]),
+      ),
+      isTrue,
+    );
+    expect(
+      await VaultCrypto.hasValidEncryptedHeader(
         datei('fremd.bin', [1, 2, 3, 4]),
       ),
       isFalse,
     );
+  });
+
+  test('gültige Blöcke einer anderen Datei passen nicht hinein', () async {
+    final a = await verschluesselt(
+      List.filled(blockGroesse + 8, 11),
+      name: 'a',
+    );
+    final b = await verschluesselt(
+      List.filled(blockGroesse + 8, 22),
+      name: 'b',
+    );
+    final bytesA = a.readAsBytesSync(), bytesB = b.readAsBytesSync();
+    expect(String.fromCharCodes(bytesA.take(4)), 'PVE3');
+    bytesA.setRange(dateikopf, dateikopf + proBlock, bytesB, dateikopf);
+    final ziel = datei('gemischt_klar');
+    await expectLater(
+      VaultCrypto.decryptFile(datei('gemischt', bytesA), ziel, key),
+      throwsA(isA<SecretBoxAuthenticationError>()),
+    );
+    expect(ziel.existsSync(), isFalse);
+  });
+
+  test(
+    'auch fremde Abschlussblöcke und veränderte Dateikennungen fallen auf',
+    () async {
+      final a = await verschluesselt([1, 2, 3], name: 'a');
+      final b = await verschluesselt([4, 5, 6], name: 'b');
+      final bytesA = a.readAsBytesSync(), bytesB = b.readAsBytesSync();
+      const abschluss = kopf + nonce + mac;
+      bytesA.setRange(
+        bytesA.length - abschluss,
+        bytesA.length,
+        bytesB,
+        bytesB.length - abschluss,
+      );
+      await expectLater(
+        VaultCrypto.decryptFile(datei('abschluss', bytesA), datei('z6'), key),
+        throwsA(isA<SecretBoxAuthenticationError>()),
+      );
+      final kopfGeaendert = a.readAsBytesSync()..[4] ^= 1;
+      await expectLater(
+        VaultCrypto.decryptFile(
+          datei('kennung', kopfGeaendert),
+          datei('z7'),
+          key,
+        ),
+        throwsA(isA<SecretBoxAuthenticationError>()),
+      );
+    },
+  );
+
+  test('PVE2 bleibt mit Blocknummer und Abschluss lesbar', () async {
+    final cipher = AesGcm.with256bits();
+    final aus = <int>[0x50, 0x56, 0x45, 0x32];
+    final inhalt = List<int>.generate(blockGroesse + 7, (i) => i % 251);
+    var nummer = 0;
+    Future<void> block(List<int> klar) async {
+      final n = cipher.newNonce();
+      final aad = (ByteData(
+        8,
+      )..setUint64(0, nummer++, Endian.big)).buffer.asUint8List();
+      final box = await cipher.encrypt(
+        klar,
+        secretKey: key,
+        nonce: n,
+        aad: aad,
+      );
+      aus
+        ..addAll(
+          (ByteData(
+            4,
+          )..setUint32(0, klar.length, Endian.big)).buffer.asUint8List(),
+        )
+        ..addAll(n)
+        ..addAll(box.cipherText)
+        ..addAll(box.mac.bytes);
+    }
+
+    await block(inhalt.sublist(0, blockGroesse));
+    await block(inhalt.sublist(blockGroesse));
+    await block([]);
+    final ziel = datei('pve2_klar');
+    await VaultCrypto.decryptFile(datei('pve2', aus), ziel, key);
+    expect(ziel.readAsBytesSync(), inhalt);
   });
 }

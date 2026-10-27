@@ -54,6 +54,7 @@ import '../widgets/mini_location_map.dart'
 import '../services/segmentation_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
+import '../services/tresor_dateiwechsel.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/spuren_nachreichen.dart';
@@ -862,6 +863,7 @@ class LibraryState extends ChangeNotifier {
     paths = await StoragePaths.oeffne(
       Directory(p.join(bibliothek.path, 'library')),
     );
+    await erholeTresorDateiwechsel();
     // Die Kopie einer Bibliothek auf dem Server? Dann gleich hier den
     // Abgleich einrichten – vor allem anderen, das schreiben könnte.
     verbindung = await Verbindungsdatei.lies(bibliothek);
@@ -3321,9 +3323,7 @@ class LibraryState extends ChangeNotifier {
     }
     final locked = await db.watchLockedAssets().first;
     for (final asset in locked) {
-      await _decryptAssetFiles(asset, key);
-      await _restorePrivateMetadata(asset.id, key);
-      await db.setAssetsLocked([asset.id], false);
+      await unlockAsset(asset);
     }
     await db.clearVaultKey();
     _vaultKey = null;
@@ -3351,30 +3351,6 @@ class LibraryState extends ChangeNotifier {
   Future<void> sperreTresor() async {
     lockVaultSession();
     await clearDecryptCache();
-  }
-
-  Future<void> _cryptFileInPlace(
-    String relativePath,
-    SecretKey key, {
-    required bool encrypt,
-  }) async {
-    final file = paths.absolute(relativePath);
-    if (!await file.exists()) return;
-    final tmp = File('${file.path}.vaulttmp');
-    try {
-      if (encrypt) {
-        await VaultCrypto.encryptFile(file, tmp, key);
-      } else {
-        await VaultCrypto.decryptFile(file, tmp, key);
-      }
-      await tmp.rename(file.path);
-    } finally {
-      // Scheitert der Durchgang, bleibt sonst ein Rumpf neben dem Original
-      // liegen: beim Entsperren Klartext einer gesperrten Datei, beim
-      // Sperren Chiffretext, den niemand mehr zuordnen kann. Das Original
-      // ist in beiden Fällen unangetastet – nur der Rumpf muss weg.
-      if (await tmp.exists()) await tmp.delete();
-    }
   }
 
   /// Verschlüsselt Original, Thumbnail, Vorschau, ein evtl. entwickeltes
@@ -3414,28 +3390,17 @@ class LibraryState extends ChangeNotifier {
     for (final mask in await db.masksForAsset(asset.id)) mask.maskRelativePath,
   ];
 
-  Future<void> _encryptAssetFiles(AssetData asset, SecretKey key) async {
-    for (final relPath in await dateienVon(asset)) {
-      await _cryptFileInPlace(relPath, key, encrypt: true);
-    }
-  }
-
-  Future<void> _decryptAssetFiles(AssetData asset, SecretKey key) async {
-    for (final relPath in await dateienVon(asset)) {
-      await _cryptFileInPlace(relPath, key, encrypt: false);
-    }
-  }
-
   static const _privateMetadataMagic = <int>[0x50, 0x56, 0x4d, 0x31];
 
   /// Schreibt die privaten, in SQLite sonst direkt lesbaren Angaben als
   /// authentifiziert verschlüsselten Datensatz. Die Asset-ID wird als AAD
   /// gebunden, damit zwei gültige Metadatendateien nicht vertauscht werden
   /// können. Klartext entsteht dabei nur im Arbeitsspeicher.
-  Future<void> _protectPrivateMetadata(AssetData asset, SecretKey key) async {
-    final setting = await db.privacySettingsRow();
-    if (!(setting?.protectMetadata ?? true)) return;
-
+  Future<void> _bereitePrivateMetadataVor(
+    AssetData asset,
+    SecretKey key,
+    File target,
+  ) async {
     final relations = await db.privateRelationsForAsset(asset.id);
     final metadata = <String, Object?>{
       'originalFileName': asset.originalFileName,
@@ -3490,21 +3455,12 @@ class LibraryState extends ChangeNotifier {
       nonce: nonce,
       aad: utf8.encode(asset.id),
     );
-    final target = paths.absolute(paths.vaultMetadataRelativePath(asset.id));
-    final part = File('${target.path}.part');
-    try {
-      await part.writeAsBytes([
-        ..._privateMetadataMagic,
-        ...nonce,
-        ...box.cipherText,
-        ...box.mac.bytes,
-      ], flush: true);
-      if (await target.exists()) await target.delete();
-      await part.rename(target.path);
-    } finally {
-      if (await part.exists()) await part.delete();
-    }
-    await db.hidePrivateMetadata(asset.id);
+    await target.writeAsBytes([
+      ..._privateMetadataMagic,
+      ...nonce,
+      ...box.cipherText,
+      ...box.mac.bytes,
+    ], flush: true);
   }
 
   Future<void> _restorePrivateMetadata(String assetId, SecretKey key) async {
@@ -3581,8 +3537,128 @@ class LibraryState extends ChangeNotifier {
         for (final id in json['albums'] as List? ?? const []) id as String,
       ],
     );
-    await target.delete();
+    // Erst nach erfolgreicher Datenbanktransaktion entfernt der Dateiwechsel
+    // die verschlüsselte Beilage; ein Rollback braucht sie weiterhin.
   }
+
+  Future<void> _tresorWarteschlange = Future<void>.value();
+
+  Future<void> _mitTresorWarteschlange(Future<void> Function() arbeit) {
+    final lauf = _tresorWarteschlange.then((_) => arbeit());
+    _tresorWarteschlange = lauf.catchError((Object _) {});
+    return lauf;
+  }
+
+  /// Vor jedem anderen Bibliothekszugriff: Ein unterbrochenes Sperren
+  /// fertigstellen oder ein nicht bestätigtes Entsperren zurücknehmen.
+  Future<void> erholeTresorDateiwechsel() =>
+      _mitTresorWarteschlange(_erholeTresorDateiwechsel);
+
+  Future<void> _erholeTresorDateiwechsel() => TresorDateiwechsel(paths).erhole(
+    abgeschlossen: (ids, sperren) async {
+      for (final id in ids) {
+        if ((await db.assetById(id))?.isLocked != sperren) return false;
+      }
+      return true;
+    },
+    datenbank: (ids, sperren) => _tresorDatenbank(ids, sperren, null),
+  );
+
+  Future<void> _tresorDatenbank(
+    List<String> ids,
+    bool sperren,
+    SecretKey? key,
+  ) => db.transaction(() async {
+    if (sperren) {
+      for (final id in ids) {
+        if (await paths
+            .absolute(paths.vaultMetadataRelativePath(id))
+            .exists()) {
+          await db.hidePrivateMetadata(id);
+        }
+      }
+      await db.setAssetsLocked(ids, true);
+      await db.clearDerivedContentData(ids);
+      await db.verlegeProfilbilderVon(ids);
+    } else {
+      for (final id in ids) {
+        await _restorePrivateMetadata(id, key!);
+      }
+      await db.setAssetsLocked(ids, false);
+    }
+  });
+
+  Future<void> _wechsleTresor(
+    AssetData asset,
+    bool sperren,
+  ) => _mitTresorWarteschlange(() async {
+    _nurOhneServer();
+    final key = _vaultKey;
+    if (key == null) throw StateError('pv_vault_gesperrt');
+    await _erholeTresorDateiwechsel();
+    final frisch = await db.assetById(asset.id);
+    if (frisch == null || frisch.isLocked == sperren) return;
+    final aufnahmen = <AssetData>[frisch];
+    final partnerId = frisch.linkedAssetId;
+    if (partnerId != null) {
+      final partner = await db.assetById(partnerId);
+      if (partner != null && partner.isLocked != sperren) {
+        aufnahmen.add(partner);
+      }
+    }
+    final wechsel = TresorDateiwechsel(paths);
+    final dateien = <String>{};
+    for (final a in aufnahmen) {
+      if (!await paths.absolute(a.relativePath).exists()) {
+        throw FileSystemException('pv_vault_original_fehlt', a.relativePath);
+      }
+      for (final pfad in await dateienVon(a)) {
+        if (await paths.absolute(pfad).exists()) dateien.add(pfad);
+      }
+    }
+    final schuetzen =
+        sperren && ((await db.privacySettingsRow())?.protectMetadata ?? true);
+    final metadaten = [
+      for (final a in aufnahmen) paths.vaultMetadataRelativePath(a.id),
+    ];
+    final medien = dateien.toList();
+    if (schuetzen) dateien.addAll(metadaten);
+    await wechsel.fuehreAus(
+      ids: [for (final a in aufnahmen) a.id],
+      sperren: sperren,
+      dateien: dateien.toList(),
+      entfernen: sperren ? const [] : metadaten,
+      vorbereiten: () async {
+        for (final pfad in medien) {
+          if (sperren) {
+            await VaultCrypto.encryptFile(
+              paths.absolute(pfad),
+              wechsel.zwischen(pfad),
+              key,
+            );
+          } else {
+            await VaultCrypto.decryptFile(
+              paths.absolute(pfad),
+              wechsel.zwischen(pfad),
+              key,
+            );
+          }
+        }
+        if (schuetzen) {
+          for (final a in aufnahmen) {
+            await _bereitePrivateMetadataVor(
+              a,
+              key,
+              wechsel.zwischen(paths.vaultMetadataRelativePath(a.id)),
+            );
+          }
+        }
+      },
+      datenbank: () =>
+          _tresorDatenbank([for (final a in aufnahmen) a.id], sperren, key),
+    );
+    vergissAlleBilder();
+  });
 
   /// Verschlüsselt ein Foto/Video und verschiebt es in den gesperrten
   /// Ordner. Setzt voraus, dass der gesperrte Ordner für diese Sitzung
@@ -3590,63 +3666,11 @@ class LibraryState extends ChangeNotifier {
   /// pin_dialogs.dart) – wirft sonst. Ein verknüpfter Live-Photo-Partner
   /// (Foto<->Video) wird automatisch mitgesperrt, damit nie nur eine Hälfte
   /// eines Live Photos verschlüsselt ist.
-  Future<void> lockAsset(AssetData asset) async {
-    _nurOhneServer();
-    final key = _vaultKey;
-    if (key == null) {
-      throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
-    }
-    await _encryptAssetFiles(asset, key);
-    await _protectPrivateMetadata(asset, key);
-    await db.setAssetsLocked([asset.id], true);
-    // Auch die aus dem Bildinhalt abgeleiteten Daten müssen weg, sonst
-    // bliebe der Inhalt in der unverschlüsselten Datenbank lesbar – siehe
-    // [AppDatabase.clearDerivedContentData].
-    await db.clearDerivedContentData([asset.id]);
-    // Der Ausschnitt ist jetzt Chiffrat – ein Profilbild, das darauf
-    // zeigt, bliebe leer.
-    await db.verlegeProfilbilderVon([asset.id]);
-    if (asset.linkedAssetId != null) {
-      final partner = await db.assetById(asset.linkedAssetId!);
-      if (partner != null && !partner.isLocked) {
-        await _encryptAssetFiles(partner, key);
-        await _protectPrivateMetadata(partner, key);
-        await db.setAssetsLocked([partner.id], true);
-        await db.clearDerivedContentData([partner.id]);
-        await db.verlegeProfilbilderVon([partner.id]);
-      }
-    }
-    // **Auf der Platte steht jetzt Chiffrat – im Bildspeicher der
-    // Klartext.** Flutter merkt sich dekodierte Bilder nach Pfad und
-    // Zielgrösse, nicht nach Inhalt (siehe [vergissAlleBilder]). Die
-    // Vorschau, die der Anwender eine Sekunde vor dem Sperren noch
-    // angesehen hat, liegt also unverändert im Arbeitsspeicher und würde
-    // von dort weiter ausgeliefert, ohne dass je wieder eine Datei
-    // gelesen oder ein Schlüssel gebraucht würde. Das Versprechen des
-    // gesperrten Ordners ist aber, dass der Inhalt ohne PIN weg ist.
-    vergissAlleBilder();
-  }
+  Future<void> lockAsset(AssetData asset) => _wechsleTresor(asset, true);
 
   /// Kehrt [lockAsset] um: entschlüsselt die Dateien wieder in Klartext und
   /// entfernt das Foto (samt Live-Photo-Partner) aus dem gesperrten Ordner.
-  Future<void> unlockAsset(AssetData asset) async {
-    _nurOhneServer();
-    final key = _vaultKey;
-    if (key == null) {
-      throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
-    }
-    await _decryptAssetFiles(asset, key);
-    await _restorePrivateMetadata(asset.id, key);
-    await db.setAssetsLocked([asset.id], false);
-    if (asset.linkedAssetId != null) {
-      final partner = await db.assetById(asset.linkedAssetId!);
-      if (partner != null && partner.isLocked) {
-        await _decryptAssetFiles(partner, key);
-        await _restorePrivateMetadata(partner.id, key);
-        await db.setAssetsLocked([partner.id], false);
-      }
-    }
-  }
+  Future<void> unlockAsset(AssetData asset) => _wechsleTresor(asset, false);
 
   /// Wo rein zur Anzeige entschlüsselte Dateien liegen (Vollbild und
   /// Vorschau im gesperrten Ordner). Die Originaldatei auf der Platte

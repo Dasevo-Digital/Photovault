@@ -131,12 +131,20 @@ final class Abgewiesen extends Anmeldeergebnis {
 
 /// Eine angefangene Anmeldung zwischen Passwort und Code.
 class _Vorgang {
-  _Vorgang(this.konto, this.geraet, this.ablauf, {this.neuesGeheimnis});
+  _Vorgang(
+    this.konto,
+    this.geraet,
+    this.ablauf,
+    this.stand, {
+    this.neuesGeheimnis,
+  });
   final String konto;
   final String geraet;
   final DateTime ablauf;
+  final int stand;
   final List<int>? neuesGeheimnis;
   var fehlversuche = 0;
+  var inPruefung = false;
 }
 
 /// Konten, Anmeldung und Geräte.
@@ -274,12 +282,16 @@ class Kontodienst {
   Future<void> setzePasswort(String kontoId, String neu) async {
     pruefeNeuesPasswort(neu);
     final pruefwert = await _ampel.mit(() => passwort.pruefwertFuer(neu));
-    _db.execute(
-      'UPDATE konten SET passwort = ?, fehlversuche = 0, gesperrt_bis = NULL '
-      'WHERE id = ?',
-      [pruefwert, kontoId],
-    );
-    alleAbmelden(kontoId);
+    _transaktion(() {
+      _db.execute(
+        'UPDATE konten SET passwort = ?, fehlversuche = 0, gesperrt_bis = NULL, '
+        'anmelde_stand = anmelde_stand + 1 '
+        'WHERE id = ?',
+        [pruefwert, kontoId],
+      );
+      alleAbmelden(kontoId);
+      _verwirfVorgaenge(kontoId);
+    });
   }
 
   /// Ändert das Passwort auf Wunsch des Nutzers: mit dem alten und, wenn
@@ -297,6 +309,7 @@ class Kontodienst {
     final z = _zeile(kontoId);
     if (z == null) return false;
     final bisher = z['passwort'] as String?;
+    final stand = z['anmelde_stand'] as int;
     if (bisher == null ||
         !await _ampel.mit(() => passwort.stimmt(alt, bisher))) {
       _fehlschlag(kontoId);
@@ -309,17 +322,22 @@ class Kontodienst {
       }
     }
     final pruefwert = await _ampel.mit(() => passwort.pruefwertFuer(neu));
-    _db.execute('UPDATE konten SET passwort = ? WHERE id = ?', [
-      pruefwert,
-      kontoId,
-    ]);
-    if (andereAbmelden) {
-      _db.execute('DELETE FROM geraete WHERE konto = ? AND id IS NOT ?', [
-        kontoId,
-        behalteGeraet,
-      ]);
-    }
-    return true;
+    return _transaktion(() {
+      _db.execute(
+        'UPDATE konten SET passwort = ?, anmelde_stand = anmelde_stand + 1 '
+        'WHERE id = ? AND anmelde_stand = ? AND passwort = ?',
+        [pruefwert, kontoId, stand, bisher],
+      );
+      if (_db.updatedRows != 1) return false;
+      _verwirfVorgaenge(kontoId);
+      if (andereAbmelden) {
+        _db.execute('DELETE FROM geraete WHERE konto = ? AND id IS NOT ?', [
+          kontoId,
+          behalteGeraet,
+        ]);
+      }
+      return true;
+    });
   }
 
   /// Entfernt das Konto samt Geräten, Codes und Verknüpfungen. Seine
@@ -338,11 +356,15 @@ class Kontodienst {
   /// Löscht TOTP und Wiederherstellungscodes. Die nächste Anmeldung
   /// richtet es neu ein, wenn es Pflicht ist.
   void totpZuruecksetzen(String kontoId) {
-    _db.execute(
-      'UPDATE konten SET totp = NULL, totp_letzter_schritt = 0 WHERE id = ?',
-      [kontoId],
-    );
-    _db.execute('DELETE FROM wiederherstellung WHERE konto = ?', [kontoId]);
+    _transaktion(() {
+      _db.execute(
+        'UPDATE konten SET totp = NULL, totp_letzter_schritt = 0, '
+        'anmelde_stand = anmelde_stand + 1 WHERE id = ?',
+        [kontoId],
+      );
+      _db.execute('DELETE FROM wiederherstellung WHERE konto = ?', [kontoId]);
+      _verwirfVorgaenge(kontoId);
+    });
   }
 
   /// Richtet TOTP für [kontoId] mit [geheimnis] ein, wenn [code] dazu
@@ -351,15 +373,25 @@ class Kontodienst {
   Future<List<String>?> richteTotpEin(
     String kontoId,
     List<int> geheimnis,
-    String code,
-  ) async {
+    String code, {
+    int? erwarteterStand,
+  }) async {
+    final stand = erwarteterStand ?? _zeile(kontoId)?['anmelde_stand'] as int?;
+    if (stand == null) return null;
     final schritt = Totp.pruefe(geheimnis, code, _uhr());
     if (schritt == null) return null;
-    _db.execute(
-      'UPDATE konten SET totp = ?, totp_letzter_schritt = ? WHERE id = ?',
-      [await _tresor.verschluessele(geheimnis), schritt, kontoId],
-    );
-    return neueWiederherstellungscodes(kontoId);
+    final verschluesselt = await _tresor.verschluessele(geheimnis);
+    return _transaktion(() {
+      _db.execute(
+        'UPDATE konten SET totp = ?, totp_letzter_schritt = ?, '
+        'anmelde_stand = anmelde_stand + 1 '
+        'WHERE id = ? AND totp IS NULL AND anmelde_stand = ?',
+        [verschluesselt, schritt, kontoId, stand],
+      );
+      if (_db.updatedRows != 1) return null;
+      _verwirfVorgaenge(kontoId);
+      return _neueWiederherstellungscodes(kontoId);
+    });
   }
 
   // --- Anmeldung ---------------------------------------------------------
@@ -385,6 +417,7 @@ class Kontodienst {
     }
     final zeile = z.first;
     final kontoId = zeile['id'] as String;
+    final stand = zeile['anmelde_stand'] as int;
     final gesperrt = zeile['gesperrt_bis'] as int?;
     if (gesperrt != null && gesperrt > _uhr().millisecondsSinceEpoch) {
       return Abgewiesen(
@@ -398,6 +431,7 @@ class Kontodienst {
             return false;
           })
         : await _ampel.mit(() => passwort.stimmt(passwortKlartext, pruefwert));
+    if (!_standStimmt(kontoId, stand)) return const Abgewiesen();
     if (!stimmt) {
       _fehlschlag(kontoId);
       bremse.fehlschlag(adresse);
@@ -407,19 +441,26 @@ class Kontodienst {
       final neu = await _ampel.mit(
         () => passwort.pruefwertFuer(passwortKlartext),
       );
-      _db.execute('UPDATE konten SET passwort = ? WHERE id = ?', [
-        neu,
-        kontoId,
-      ]);
+      _db.execute(
+        'UPDATE konten SET passwort = ? WHERE id = ? AND anmelde_stand = ?',
+        [neu, kontoId, stand],
+      );
+      if (_db.updatedRows != 1) return const Abgewiesen();
+    }
+
+    final aktuell = _zeile(kontoId);
+    if (aktuell == null || aktuell['anmelde_stand'] != stand) {
+      return const Abgewiesen();
     }
 
     _raeumeVorgaengeAuf();
     final vorgang = _zufallstext(24);
-    if (zeile['totp'] != null) {
+    if (aktuell['totp'] != null) {
       _vorgaenge[vorgang] = _Vorgang(
         kontoId,
         geraet,
         _uhr().add(_vorgangDauer),
+        stand,
       );
       return TotpNoetig(vorgang);
     }
@@ -429,6 +470,7 @@ class Kontodienst {
         kontoId,
         geraet,
         _uhr().add(_vorgangDauer),
+        stand,
         neuesGeheimnis: geheimnis,
       );
       return TotpEinrichten(
@@ -437,8 +479,7 @@ class Kontodienst {
         Totp.adresse(geheimnis, zeile['name'] as String),
       );
     }
-    _erfolg(kontoId);
-    return meldeAn(kontoId, geraet, adresse);
+    return _meldeNachPruefungAn(kontoId, stand, geraet, adresse);
   }
 
   /// Zweiter Schritt: der Code – oder ein Wiederherstellungscode.
@@ -451,28 +492,43 @@ class Kontodienst {
     if (warte != null) return Abgewiesen(warte: warte);
     _raeumeVorgaengeAuf();
     final v = _vorgaenge[vorgang];
-    if (v == null) {
+    if (v == null || v.inPruefung || !_standStimmt(v.konto, v.stand)) {
       bremse.fehlschlag(adresse);
       return const Abgewiesen();
     }
-    final neu = v.neuesGeheimnis;
-    if (neu != null) {
-      final codes = await richteTotpEin(v.konto, neu, code);
-      if (codes == null) return _codeFalsch(vorgang, v, adresse);
+    // Vor dem ersten await beanspruchen: Auch derselbe Vorgang darf nur
+    // eine laufende Prüfung haben. Nach einem falschen Code bleibt er nutzbar.
+    v.inPruefung = true;
+    try {
+      final neu = v.neuesGeheimnis;
+      if (neu != null) {
+        final codes = await richteTotpEin(
+          v.konto,
+          neu,
+          code,
+          erwarteterStand: v.stand,
+        );
+        if (codes == null) return _codeFalsch(vorgang, v, adresse);
+        return _meldeNachPruefungAn(
+          v.konto,
+          v.stand + 1,
+          v.geraet,
+          adresse,
+          codes: codes,
+        );
+      }
+      if (!await _pruefeZweitenFaktor(v.konto, code)) {
+        return _codeFalsch(vorgang, v, adresse);
+      }
       _vorgaenge.remove(vorgang);
-      _erfolg(v.konto);
-      final a = meldeAn(v.konto, v.geraet, adresse);
-      return Angemeldet(a.token, a.geraet, wiederherstellungscodes: codes);
+      return _meldeNachPruefungAn(v.konto, v.stand, v.geraet, adresse);
+    } finally {
+      v.inPruefung = false;
     }
-    if (!await _pruefeZweitenFaktor(v.konto, code)) {
-      return _codeFalsch(vorgang, v, adresse);
-    }
-    _vorgaenge.remove(vorgang);
-    _erfolg(v.konto);
-    return meldeAn(v.konto, v.geraet, adresse);
   }
 
   Abgewiesen _codeFalsch(String vorgang, _Vorgang v, String adresse) {
+    if (!_standStimmt(v.konto, v.stand)) return const Abgewiesen();
     _fehlschlag(v.konto);
     bremse.fehlschlag(adresse);
     if (++v.fehlversuche >= _vorgangVersuche) _vorgaenge.remove(vorgang);
@@ -493,11 +549,13 @@ class Kontodienst {
         letzterSchritt: z['totp_letzter_schritt'] as int,
       );
       if (schritt == null) return false;
-      _db.execute('UPDATE konten SET totp_letzter_schritt = ? WHERE id = ?', [
-        schritt,
-        kontoId,
-      ]);
-      return true;
+      _db.execute(
+        'UPDATE konten SET totp_letzter_schritt = ? '
+        'WHERE id = ? AND totp = ? AND anmelde_stand = ? '
+        'AND totp_letzter_schritt < ?',
+        [schritt, kontoId, verschluesselt, z['anmelde_stand'], schritt],
+      );
+      return _db.updatedRows == 1;
     }
     _db.execute(
       'DELETE FROM wiederherstellung WHERE konto = ? AND pruefwert = ?',
@@ -605,7 +663,10 @@ class Kontodienst {
   // --- Wiederherstellungscodes -------------------------------------------
 
   /// Zehn neue Codes; die alten gelten nicht mehr.
-  List<String> neueWiederherstellungscodes(String kontoId) {
+  List<String> neueWiederherstellungscodes(String kontoId) =>
+      _transaktion(() => _neueWiederherstellungscodes(kontoId));
+
+  List<String> _neueWiederherstellungscodes(String kontoId) {
     const zeichen = '23456789abcdefghjkmnpqrstuvwxyz';
     final zufall = Random.secure();
     final codes = [
@@ -618,19 +679,12 @@ class Kontodienst {
             ]),
         ].join('-'),
     ];
-    _db.execute('BEGIN');
-    try {
-      _db.execute('DELETE FROM wiederherstellung WHERE konto = ?', [kontoId]);
-      for (final c in codes) {
-        _db.execute(
-          'INSERT INTO wiederherstellung (konto, pruefwert) VALUES (?, ?)',
-          [kontoId, _hash(_normalisiereCode(c))],
-        );
-      }
-      _db.execute('COMMIT');
-    } catch (_) {
-      _db.execute('ROLLBACK');
-      rethrow;
+    _db.execute('DELETE FROM wiederherstellung WHERE konto = ?', [kontoId]);
+    for (final c in codes) {
+      _db.execute(
+        'INSERT INTO wiederherstellung (konto, pruefwert) VALUES (?, ?)',
+        [kontoId, _hash(_normalisiereCode(c))],
+      );
     }
     return codes;
   }
@@ -696,6 +750,37 @@ class Kontodienst {
   Row? _zeile(String kontoId) {
     final z = _db.select('SELECT * FROM konten WHERE id = ?', [kontoId]);
     return z.isEmpty ? null : z.first;
+  }
+
+  bool _standStimmt(String kontoId, int stand) =>
+      _zeile(kontoId)?['anmelde_stand'] == stand;
+
+  Anmeldeergebnis _meldeNachPruefungAn(
+    String kontoId,
+    int stand,
+    String geraet,
+    String adresse, {
+    List<String>? codes,
+  }) => _transaktion(() {
+    if (!_standStimmt(kontoId, stand)) return const Abgewiesen();
+    _erfolg(kontoId);
+    final a = meldeAn(kontoId, geraet, adresse);
+    return Angemeldet(a.token, a.geraet, wiederherstellungscodes: codes);
+  });
+
+  void _verwirfVorgaenge(String kontoId) =>
+      _vorgaenge.removeWhere((_, v) => v.konto == kontoId);
+
+  T _transaktion<T>(T Function() arbeit) {
+    _db.execute('BEGIN IMMEDIATE');
+    try {
+      final ergebnis = arbeit();
+      _db.execute('COMMIT');
+      return ergebnis;
+    } catch (_) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
   }
 
   static String _hash(String s) => sha256.convert(utf8.encode(s)).toString();

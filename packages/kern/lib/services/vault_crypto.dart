@@ -21,6 +21,11 @@ const List<int> _magicV1 = [0x50, 0x56, 0x45, 0x31]; // "PVE1"
 /// viele es waren.
 const List<int> _magicV2 = [0x50, 0x56, 0x45, 0x32]; // "PVE2"
 
+/// Dritte Fassung: 32 zufällige Bytes binden alle Blöcke an genau diese
+/// Datei. Selbst gültige Blöcke einer anderen Datei passen nicht hinein.
+const List<int> _magicV3 = [0x50, 0x56, 0x45, 0x33]; // "PVE3"
+const int _dateikennungLaenge = 32;
+
 /// Ergebnis von [VaultCrypto.createMasterKey]/[VaultCrypto.wrapMasterKey]:
 /// alles, was zusätzlich zum Master-Key selbst in [PrivacySettings]
 /// gespeichert werden muss, um ihn später mit demselben PIN wieder
@@ -179,16 +184,23 @@ class VaultCrypto {
   static Uint8List _blockNummer(int nummer) =>
       (ByteData(8)..setUint64(0, nummer, Endian.big)).buffer.asUint8List();
 
+  static List<int> _dateiBlock(List<int> kennung, int nummer) => [
+    ..._magicV3,
+    ...kennung,
+    ..._blockNummer(nummer),
+  ];
+
   /// Verschlüsselt [source] blockweise nach [destination].
   ///
-  /// Dateiformat: 4 Bytes Magic ("PVE2"), danach Blöcke aus je
+  /// Dateiformat: 4 Bytes Magic ("PVE3"), 32 Bytes Dateikennung, danach
+  /// Blöcke aus je
   /// [4 Bytes Klartextlänge][12 Bytes Nonce][Chiffretext][16 Bytes GCM-Tag].
-  /// Jeder Block ist für sich authentifiziert UND an seine laufende Nummer
-  /// gebunden; den Schluss bildet ein leerer Abschlussblock, dessen Nummer
-  /// die Anzahl der Datenblöcke ist.
+  /// Jeder Block ist an Format, zufällige Dateikennung und laufende Nummer
+  /// gebunden; den Schluss bildet ein ebenso gebundener leerer Abschlussblock.
+  /// PVE1 und PVE2 bleiben ausschliesslich zum Lesen unterstützt.
   ///
-  /// Der Abschlussblock ist der Grund für das neue Format: Ohne ihn liess
-  /// sich eine Datei am Ende kürzen, ohne dass es beim Entschlüsseln
+  /// Der Abschlussblock verhindert wie bei PVE2, dass sich eine Datei am
+  /// Ende kürzen lässt, ohne dass es beim Entschlüsseln
   /// auffiel – jeder verbliebene Block war ja gültig. Er wird auch für eine
   /// leere Quelldatei geschrieben, damit „gar keine Blöcke" nie ein
   /// gültiger Zustand ist.
@@ -203,7 +215,8 @@ class VaultCrypto {
       // Eine Datei mit Schreibzugriff statt eines IOSink, siehe
       // [decryptFile].
       ausgabe = await destination.open(mode: FileMode.write);
-      await ausgabe.writeFrom(_magicV2);
+      final kennung = _randomBytes(_dateikennungLaenge);
+      await ausgabe.writeFrom([..._magicV3, ...kennung]);
 
       Future<void> schreibe(List<int> klartext, int nummer) async {
         final nonce = _cipher.newNonce();
@@ -211,7 +224,7 @@ class VaultCrypto {
           klartext,
           secretKey: masterKey,
           nonce: nonce,
-          aad: _blockNummer(nummer),
+          aad: _dateiBlock(kennung, nummer),
         );
         final header = ByteData(4)..setUint32(0, klartext.length, Endian.big);
         await ausgabe!.writeFrom(
@@ -260,12 +273,19 @@ class VaultCrypto {
       // Hier kommt jeder Fehler beim Aufrufer an.
       ausgabe = await destination.open(mode: FileMode.write);
       final magic = await input.read(4);
+      final istV3 = magic.length == 4 && _bytesEqual(magic, _magicV3);
       final istV2 = magic.length == 4 && _bytesEqual(magic, _magicV2);
       final istV1 = magic.length == 4 && _bytesEqual(magic, _magicV1);
-      if (!istV1 && !istV2) {
+      if (!istV1 && !istV2 && !istV3) {
         throw const FormatException(
           'Keine gültige verschlüsselte Vault-Datei.',
         );
+      }
+      final kennung = istV3
+          ? await input.read(_dateikennungLaenge)
+          : const <int>[];
+      if (istV3 && kennung.length != _dateikennungLaenge) {
+        throw const FormatException('pv_vault_dateikennung_unvollstaendig');
       }
 
       var nummer = 0;
@@ -273,7 +293,7 @@ class VaultCrypto {
         final header = await input.read(4);
         if (header.isEmpty) {
           // Vor der Umstellung gab es keinen Abschlussblock; dort ist das
-          // Dateiende das Ende. Bei PVE2 fehlt hier etwas.
+          // Dateiende das Ende. Bei PVE2 und PVE3 fehlt hier etwas.
           if (istV1) break;
           throw const FormatException(
             'Die Datei endet vor dem Abschlussblock – sie wurde abgeschnitten.',
@@ -304,10 +324,14 @@ class VaultCrypto {
         final plain = await _cipher.decrypt(
           box,
           secretKey: masterKey,
-          aad: istV2 ? _blockNummer(nummer) : const <int>[],
+          aad: istV3
+              ? _dateiBlock(kennung, nummer)
+              : istV2
+              ? _blockNummer(nummer)
+              : const <int>[],
         );
 
-        if (istV2 && plainLength == 0) {
+        if (!istV1 && plainLength == 0) {
           // Abschlussblock: Seine Nummer ist die Anzahl der Datenblöcke,
           // und sie ist mitauthentifiziert – ein Kürzen fällt damit auf.
           if ((await input.read(1)).isNotEmpty) {
@@ -354,7 +378,9 @@ class VaultCrypto {
     try {
       final magic = await raf.read(4);
       if (magic.length != 4) return false;
-      return _bytesEqual(magic, _magicV2) || _bytesEqual(magic, _magicV1);
+      return _bytesEqual(magic, _magicV3) ||
+          _bytesEqual(magic, _magicV2) ||
+          _bytesEqual(magic, _magicV1);
     } finally {
       await raf.close();
     }

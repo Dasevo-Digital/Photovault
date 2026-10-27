@@ -7,6 +7,7 @@ import 'package:kern/abgleich/protokoll.dart';
 import 'package:kern/db/database.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
+import 'package:uuid/uuid.dart';
 
 import 'anmeldung_api.dart';
 import 'bibliothek.dart';
@@ -40,6 +41,25 @@ class Abgleichsapi {
 
   /// Wie oft eine wartende Abfrage nachsieht, ob sich etwas getan hat.
   final Duration takt;
+
+  final _dateiwechsel = <String, Future<void>>{};
+
+  Future<void> _uebernehme(File teil, File ziel) {
+    final pfad = ziel.path;
+    final vorher = _dateiwechsel[pfad] ?? Future<void>.value();
+    final fertig = Completer<void>();
+    _dateiwechsel[pfad] = fertig.future;
+    return vorher
+        .then((_) async {
+          await teil.rename(pfad);
+        })
+        .whenComplete(() {
+          fertig.complete();
+          if (identical(_dateiwechsel[pfad], fertig.future)) {
+            _dateiwechsel.remove(pfad);
+          }
+        });
+  }
 
   Future<Bibliothek> _bib(Request r) async =>
       (await bibliotheken.fuer(kontoVon(r).id)).bibliothek;
@@ -299,7 +319,10 @@ class Abgleichsapi {
       return _json({'fehler': 'zu gross'}, status: 413);
     }
     await ziel.parent.create(recursive: true);
-    final teil = File('${ziel.path}.teil');
+    // Jede Anfrage besitzt ihren eigenen Schreiber. Das Umbenennen eines
+    // gemeinsamen .teil-Pfads liesse andere offene Schreiber das fertige
+    // Ziel nachträglich verändern.
+    final teil = File('${ziel.path}.${const Uuid().v4()}.teil');
     final aus = teil.openWrite();
     var bytes = 0;
     try {
@@ -314,7 +337,7 @@ class Abgleichsapi {
       if (bytes != laenge) {
         throw const FormatException('weniger als angekündigt');
       }
-      await teil.rename(ziel.path);
+      await _uebernehme(teil, ziel);
     } catch (e) {
       await aus.close().catchError((_) {});
       if (await teil.exists()) await teil.delete();
