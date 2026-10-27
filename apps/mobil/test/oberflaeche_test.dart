@@ -1964,6 +1964,55 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Suche: ein gelöschter Treffer fällt aus der Liste (#235)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['s1', 's2', 's3']);
+    await tester.runAsync(
+      () => db.fuehreAus(const FavoritSetzen(['s1', 's2', 's3'], true)),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Suche(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nur Favoriten'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anwenden'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    List<String> treffer() => [
+      for (final z
+          in tester
+              .widget<AufnahmenRaster>(find.byType(AufnahmenRaster))
+              .zeilen)
+        z.id,
+    ];
+    expect(treffer().toSet(), {'s1', 's2', 's3'});
+
+    // Gelöscht wie aus dem Betrachter oder am Rechner.
+    await tester.runAsync(() => db.fuehreAus(const InDenPapierkorb(['s2'])));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(treffer().toSet(), {'s1', 's3'});
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Intelligente Alben: Suche merken, im Album öffnen (#187)', (
     tester,
   ) async {

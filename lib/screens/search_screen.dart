@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -132,10 +133,46 @@ class _SearchScreenState extends State<SearchScreen>
 
   @override
   Future<void> rasterAktualisieren() async {
-    final frisch = await widget.library.db.assetsByIds([
-      for (final a in _funde) a.id,
-    ]);
+    final db = widget.library.db;
+    // Über die Kennungen geholt, kämen gelöschte und gesperrte Treffer
+    // mit zurück – genau die, die nicht mehr hierher gehören (#235).
+    final frisch = await db.assetsByIds(
+      await db.nochSuchbar([for (final a in _funde) a.id]),
+    );
     if (mounted) setState(() => _zeigeFunde(frisch));
+  }
+
+  /// Hört, ob sich Aufnahmen ändern, solange Treffer da sind.
+  ///
+  /// **Die Treffer sind eine gehaltene Liste.** Wurde eines davon
+  /// gelöscht oder gesperrt – über die Auswahl, im Betrachter oder auf
+  /// einem anderen Gerät –, stand es weiter hier, bis man neu suchte
+  /// (#235). Die Zeitleiste und die Alben hören ohnehin mit; jetzt auch
+  /// die Suche. Kurz gewartet, weil ein Löschen mehrere Zeilen auf einmal
+  /// ändert und eine Auswertung im Hintergrund viele hintereinander.
+  StreamSubscription<Set<TableUpdate>>? _aenderungen;
+  Timer? _nachzuegler;
+
+  void _beiAenderung() {
+    _nachzuegler?.cancel();
+    _nachzuegler = Timer(const Duration(milliseconds: 400), () {
+      unawaited(_ohneGeloeschte());
+    });
+  }
+
+  Future<void> _ohneGeloeschte() async {
+    if (_funde.isEmpty) return;
+    final bleiben = (await widget.library.db.nochSuchbar([
+      for (final a in _funde) a.id,
+    ])).toSet();
+    if (!mounted || bleiben.length == _funde.length) return;
+    setState(() {
+      _zeigeFunde([
+        for (final a in _funde)
+          if (bleiben.contains(a.id)) a,
+      ]);
+      _selected.removeWhere((id) => !bleiben.contains(id));
+    });
   }
 
   /// Übernimmt eine Trefferliste und ordnet sie nach [_sortierung].
@@ -472,6 +509,10 @@ class _SearchScreenState extends State<SearchScreen>
   @override
   void initState() {
     super.initState();
+    final db = widget.library.db;
+    _aenderungen = db
+        .tableUpdates(TableUpdateQuery.onTable(db.assets))
+        .listen((_) => _beiAenderung());
     final start = widget.startFilter;
     if (start == null) return;
     _filters = start;
@@ -485,6 +526,8 @@ class _SearchScreenState extends State<SearchScreen>
 
   @override
   void dispose() {
+    _nachzuegler?.cancel();
+    unawaited(_aenderungen?.cancel());
     _queryCtrl.dispose();
     super.dispose();
   }

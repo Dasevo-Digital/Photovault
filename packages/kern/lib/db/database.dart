@@ -433,6 +433,37 @@ class AppDatabase extends _$AppDatabase {
     return ids.map((id) => byId[id]).whereType<AssetData>().toList();
   }
 
+  /// Welche von [ids] noch in eine Trefferliste gehören – weder im
+  /// Papierkorb noch gesperrt –, in der übergebenen Reihenfolge.
+  ///
+  /// Für Listen, die einmal gesucht und dann gehalten werden: die Suche am
+  /// Rechner und auf dem Telefon. Wer dort ein Foto löschte, sah es
+  /// weiter in den Treffern, bis er neu suchte (#235) – die Suche selbst
+  /// lässt den Papierkorb aus, die gehaltene Liste wusste davon nichts.
+  Future<List<String>> nochSuchbar(List<String> ids) async {
+    final bleiben = <String>{};
+    for (var i = 0; i < ids.length; i += 5000) {
+      final stueck = ids.sublist(
+        i,
+        i + 5000 < ids.length ? i + 5000 : ids.length,
+      );
+      final abfrage = selectOnly(assets)
+        ..addColumns([assets.id])
+        ..where(
+          assets.id.isIn(stueck) &
+              assets.isTrashed.equals(false) &
+              assets.isLocked.equals(false),
+        );
+      for (final z in await abfrage.get()) {
+        bleiben.add(z.read(assets.id)!);
+      }
+    }
+    return [
+      for (final id in ids)
+        if (bleiben.contains(id)) id,
+    ];
+  }
+
   // ---------------------------------------------------------------------
   // Datenströme, die einen Schwall aushalten
   // ---------------------------------------------------------------------

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
 import 'package:flutter/material.dart';
 import 'alben.dart';
 import 'package:uuid/uuid.dart';
@@ -44,8 +47,45 @@ class _SucheState extends State<Suche> {
 
   AppDatabase get _db => widget.sitzung.db;
 
+  /// Hört, ob sich Aufnahmen ändern, solange Treffer da sind – wie am
+  /// Rechner: Die Treffer sind eine gehaltene Liste, und ein gelöschtes
+  /// Foto stand darin weiter, bis man neu suchte (#235).
+  StreamSubscription<Set<TableUpdate>>? _aenderungen;
+  Timer? _nachzuegler;
+
+  @override
+  void initState() {
+    super.initState();
+    _aenderungen = _db
+        .tableUpdates(TableUpdateQuery.onTable(_db.assets))
+        .listen((_) {
+          _nachzuegler?.cancel();
+          _nachzuegler = Timer(
+            const Duration(milliseconds: 400),
+            () => unawaited(_ohneGeloeschte()),
+          );
+        });
+  }
+
+  Future<void> _ohneGeloeschte() async {
+    final treffer = _treffer;
+    if (treffer == null || treffer.isEmpty) return;
+    final bleiben = (await _db.nochSuchbar([
+      for (final z in treffer) z.id,
+    ])).toSet();
+    if (!mounted || bleiben.length == treffer.length) return;
+    setState(() {
+      _treffer = [
+        for (final z in treffer)
+          if (bleiben.contains(z.id)) z,
+      ];
+    });
+  }
+
   @override
   void dispose() {
+    _nachzuegler?.cancel();
+    unawaited(_aenderungen?.cancel());
     _feld.dispose();
     super.dispose();
   }
