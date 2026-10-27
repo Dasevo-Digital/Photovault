@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.0" date="2026-10-27">
+      <description>
+        <p>The family tree lets you choose how far it reaches: one to five generations up, up to five down, and sideways from the direct line to first and second cousins.</p>
+        <p>In the browser and on the phone the family tree now looks like the desktop app, with golden name plates, tapering branches and the family name at the trunk. In the browser it can be dragged with the mouse and zoomed with the wheel, the trackpad or two fingers.</p>
+      </description>
+    </release>
     <release version="3.48.7" date="2026-10-27">
       <description>
         <p>Videos from camcorders and old phones (MTS, M2TS, MPG, MOD, TOD, 3GP, WMV, ASF, WebM, FLV) can now be imported; browser and phone play them through the server's H.264 version.</p>
