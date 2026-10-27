@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.48.7" date="2026-10-27">
+      <description>
+        <p>Videos from camcorders and old phones (MTS, M2TS, MPG, MOD, TOD, 3GP, WMV, ASF, WebM, FLV) can now be imported; browser and phone play them through the server's H.264 version.</p>
+      </description>
+    </release>
     <release version="3.48.6" date="2026-10-26">
       <description>
         <p>Face detection no longer scans the video half of Live Photos, and a one-time cleanup removes the duplicate faces found there. A failed move of the server token into the key store no longer blocks the start.</p>
