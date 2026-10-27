@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
-import 'package:kern/services/raw_formats.dart';
+import 'package:kern/services/import_service.dart' show unterstuetzteEndungen;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/camera_source_picker_dialog.dart';
@@ -45,24 +45,10 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
   if (mode == _ImportMode.files) {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
+      // Dieselbe Liste wie der Import selbst: Hier fehlten Photoshop und
+      // alle Videoformate ausser den fünf ältesten (#232).
       allowedExtensions: [
-        'jpg',
-        'jpeg',
-        'png',
-        'heic',
-        'heif',
-        'avif',
-        'avifs',
-        'webp',
-        'gif',
-        'bmp',
-        'tiff',
-        for (final ext in rawImageExtensions) ext.substring(1),
-        'mp4',
-        'mov',
-        'avi',
-        'mkv',
-        'm4v',
+        for (final ext in unterstuetzteEndungen) ext.substring(1),
       ],
     );
     paths = result.map((f) => f.path).whereType<String>().toList();

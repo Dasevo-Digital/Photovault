@@ -1,6 +1,7 @@
 import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
+import 'videoformate.dart';
 
 /// Kurzes, für Menschen lesbares Format-Kürzel eines Assets (z.B. "JPG",
 /// "DNG", "CR3", "HEIC") – für kleine Format-Hinweise in Timeline/
@@ -15,7 +16,7 @@ String assetFormatLabel(AssetData asset) =>
 
 /// Endungen, unter denen ein Standbild ankommen kann, ohne dass sie sein
 /// Format nennen (siehe [formatKuerzel]).
-const _videoEndungen = {'.mov', '.mp4', '.m4v', '.avi', '.mkv'};
+final _videoEndungen = videoEndungen;
 
 /// Dasselbe aus den Angaben, die es wirklich braucht.
 ///

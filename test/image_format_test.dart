@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -182,6 +183,44 @@ void main() {
       expect(importService.isSupported('foto.HEIF'), isTrue);
     },
   );
+
+  // #232: Bis 3.48 nahm der Import nur fünf Videoformate an; die
+  // Camcorder-Aufnahmen (AVCHD .MTS, MPEG-2 .MPG) gingen still vorbei.
+  test('Videos aus Camcordern und alten Telefonen werden angenommen', () async {
+    for (final name in [
+      'AN225_Start_MeS.MTS',
+      'clip.m2ts',
+      'MOV06950.MPG',
+      'film.mpeg',
+      'MOV001.MOD',
+      'MOV001.TOD',
+      'handy.3gp',
+      'handy.3g2',
+      'alt.wmv',
+      'alt.asf',
+      'netz.webm',
+      'netz.flv',
+    ]) {
+      expect(unterstuetztesFormat(name), isTrue, reason: name);
+    }
+    expect(unterstuetzteEndungen, containsAll(['.mts', '.mpg', '.psd']));
+
+    // Ein Transportstrom beginnt mit dem Sync-Byte 0x47 je 188 Bytes – kein
+    // Bild, also geht er als Video durch. Ohne ffmpeg im Prüflauf gibt es
+    // kein Vorschaubild; eingelesen wird er trotzdem.
+    final strom = Uint8List(188 * 8);
+    for (var i = 0; i < strom.length; i += 188) {
+      strom[i] = 0x47;
+    }
+    final datei = File(p.join(sourceDir.path, 'AN225_Start_MeS.MTS'))
+      ..writeAsBytesSync(strom);
+    final ergebnis = await importService.importFile(datei.path);
+    expect(ergebnis.outcome, ImportOutcome.imported, reason: ergebnis.error);
+    final asset = (await db.select(db.assets).get()).single;
+    expect(asset.type, 'VIDEO');
+    expect(asset.dateiformat, 'mts');
+    expect(asset.relativePath.toLowerCase(), endsWith('.mts'));
+  });
 
   test('fremde Dateitypen werden abgelehnt', () {
     for (final name in [

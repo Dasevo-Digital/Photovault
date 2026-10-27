@@ -21,6 +21,7 @@ import 'raw_formats.dart';
 import 'raw_identify_parser.dart';
 import 'storage_paths.dart';
 import 'video_gps.dart';
+import 'videoformate.dart';
 import 'video_metadaten.dart';
 import 'zeitversatz.dart';
 
@@ -39,7 +40,13 @@ const _imageExtensions = {
   '.psd',
   ...rawImageExtensions,
 };
-const _videoExtensions = {'.mp4', '.mov', '.avi', '.mkv', '.m4v'};
+
+/// Siehe videoformate.dart (#232).
+final _videoExtensions = videoEndungen;
+
+/// Alle Endungen, die der Import annimmt (klein, mit Punkt) – für
+/// Dateiauswahl-Dialoge, damit dort dieselbe Liste gilt wie hier.
+final unterstuetzteEndungen = {..._imageExtensions, ...videoEndungen};
 
 /// Formate, die `package:image` liest, Flutter aber nicht anzeigt: Sie
 /// bekommen beim Import immer eine JPEG-Vorschau, so wie HEIC und RAW.

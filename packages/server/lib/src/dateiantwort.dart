@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:kern/services/videoformate.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
@@ -15,9 +16,10 @@ const _typen = {
   '.gif': 'image/gif',
   '.tif': 'image/tiff',
   '.tiff': 'image/tiff',
-  '.mov': 'video/quicktime',
-  '.mp4': 'video/mp4',
-  '.m4v': 'video/x-m4v',
+  // Alle Videoformate des Imports (#232): Ohne den passenden Typ meldete
+  // der Browser bei MTS oder MPG keinen Fehler, sondern lud die Datei
+  // herunter – und holte nie die abspielbare Fassung.
+  ...videoMedientypen,
 };
 
 /// Antwortet mit [datei], auf Wunsch einem Teil davon (`Range`) – damit
