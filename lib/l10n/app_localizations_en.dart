@@ -8315,6 +8315,21 @@ class AppTexteEn extends AppTexte {
   String get lebensbaumKreisAlle => 'With in-law families';
 
   @override
+  String get stammbaumKreisCousins => 'With cousins';
+
+  @override
+  String get stammbaumKreisCousinsZweitenGrades => 'With second cousins';
+
+  @override
+  String get stammbaumNachOben => 'Upwards';
+
+  @override
+  String get stammbaumNachUnten => 'Downwards';
+
+  @override
+  String get stammbaumKreis => 'Circle';
+
+  @override
   String get lebensbaumFamilieNichtsImAusschnitt =>
       'This selection shows no one but the person in the middle. Choose more generations or a wider circle.';
 

@@ -334,4 +334,155 @@ void main() {
       expect(g.weitereUnten['enkel'], isFalse);
     });
   });
+
+  group('weiter gestellt: Generationen und Seitenlinien (#233)', () {
+    ///   ururur
+    ///     |
+    ///   urur
+    ///     |
+    ///   urgross ─────────────┐
+    ///     |                  |
+    ///   opa == oma       grossonkel
+    ///     |                  |
+    ///   vater == mutter   onkel == tante   vatersCousin
+    ///     |                  |                  |
+    ///    ich             cousine            cousin2
+    ///                        |
+    ///                  cousinenKind
+    Verwandtschaftsnetz weit() => Verwandtschaftsnetz([
+      kante('urur', 'ururur', Verwandtschaft.elternteil),
+      kante('urgross', 'urur', Verwandtschaft.elternteil),
+      kante('opa', 'urgross', Verwandtschaft.elternteil),
+      kante('grossonkel', 'urgross', Verwandtschaft.elternteil),
+      partnerKanteFuer('opa', 'oma'),
+      kante('vater', 'opa', Verwandtschaft.elternteil),
+      kante('vater', 'oma', Verwandtschaft.elternteil),
+      kante('onkel', 'opa', Verwandtschaft.elternteil),
+      kante('onkel', 'oma', Verwandtschaft.elternteil),
+      partnerKanteFuer('onkel', 'tante'),
+      partnerKanteFuer('vater', 'mutter'),
+      kante('ich', 'vater', Verwandtschaft.elternteil),
+      kante('ich', 'mutter', Verwandtschaft.elternteil),
+      kante('cousine', 'onkel', Verwandtschaft.elternteil),
+      kante('cousine', 'tante', Verwandtschaft.elternteil),
+      kante('cousinenKind', 'cousine', Verwandtschaft.elternteil),
+      kante('vatersCousin', 'grossonkel', Verwandtschaft.elternteil),
+      kante('cousin2', 'vatersCousin', Verwandtschaft.elternteil),
+    ]);
+    const ids = [
+      'ururur',
+      'urur',
+      'urgross',
+      'opa',
+      'oma',
+      'grossonkel',
+      'vater',
+      'mutter',
+      'onkel',
+      'tante',
+      'vatersCousin',
+      'ich',
+      'cousine',
+      'cousin2',
+      'cousinenKind',
+    ];
+    int? bandVon(Stammbaumgeflecht g, String p) => g.band[g.haushaltVon(p)?.id];
+
+    test('die Vorgabe bleibt: Onkel ja, Cousine nein', () {
+      final g = geflechtUm(weit(), 'ich', ids);
+      expect(g.personen, containsAll(['onkel', 'tante', 'urgross']));
+      expect(
+        g.personen.intersection({'cousine', 'grossonkel', 'cousin2', 'urur'}),
+        isEmpty,
+      );
+      expect(g.weitereUnten['onkel'], isTrue, reason: 'da wäre die Cousine');
+    });
+
+    test('mit Cousins: die Cousine unter ihren Eltern, ihr Kind darunter', () {
+      final g = geflechtUm(weit(), 'ich', ids, kreis: Verwandtenkreis.cousins);
+      expect(bandVon(g, 'cousine'), 0);
+      expect(bandVon(g, 'cousinenKind'), 1);
+      expect(g.elternhaeuserVon['cousine'], [g.haushaltVon('onkel')!.id]);
+      expect(g.weitereUnten['onkel'], isFalse);
+      // Die zweite Stufe kommt erst mit der eigenen Wahl.
+      expect(g.personen, isNot(contains('grossonkel')));
+      expect(g.personen, isNot(contains('cousin2')));
+    });
+
+    test('mit Cousins zweiten Grades: Grossonkel, sein Kind und Enkel', () {
+      final g = geflechtUm(
+        weit(),
+        'ich',
+        ids,
+        kreis: Verwandtenkreis.cousinsZweitenGrades,
+      );
+      expect(bandVon(g, 'grossonkel'), -2);
+      expect(bandVon(g, 'vatersCousin'), -1);
+      expect(bandVon(g, 'cousin2'), 0);
+      expect(g.elternhaeuserVon['grossonkel'], [g.haushaltVon('urgross')!.id]);
+      expect(bandVon(g, 'cousine'), 0, reason: 'jede Stufe enthält die vorige');
+    });
+
+    test('ohne die Grosseltern hängt keine Seitenlinie in der Luft', () {
+      final g = geflechtUm(
+        weit(),
+        'ich',
+        ids,
+        oben: 1,
+        kreis: Verwandtenkreis.cousinsZweitenGrades,
+      );
+      expect(
+        g.personen.intersection({'grossonkel', 'vatersCousin', 'cousin2'}),
+        isEmpty,
+      );
+      // Onkel und Cousine stehen dagegen auf Bändern, die im Bild sind.
+      expect(g.personen, containsAll(['onkel', 'cousine']));
+    });
+
+    test('fünf Generationen hinauf', () {
+      final drei = geflechtUm(weit(), 'ich', ids);
+      expect(drei.personen, isNot(contains('urur')));
+      expect(drei.weitereOben['urgross'], isTrue);
+
+      final fuenf = geflechtUm(weit(), 'ich', ids, oben: 5);
+      expect(bandVon(fuenf, 'urur'), -4);
+      expect(bandVon(fuenf, 'ururur'), -5);
+      expect(fuenf.weitereOben['urgross'], isFalse);
+    });
+
+    test('wer mehr verlangt, bekommt mehr Platz je Band', () {
+      final kanten = <Kante>[
+        kante('ich', 'vater', Verwandtschaft.elternteil),
+        kante('vater', 'opa', Verwandtschaft.elternteil),
+        kante('onkel', 'opa', Verwandtschaft.elternteil),
+      ];
+      final alleIds = <String>['opa', 'vater', 'onkel', 'ich'];
+      for (var i = 0; i < 20; i++) {
+        kanten.add(kante('c$i', 'onkel', Verwandtschaft.elternteil));
+        alleIds.add('c$i');
+      }
+      final g = geflechtUm(
+        Verwandtschaftsnetz(kanten),
+        'ich',
+        alleIds,
+        kreis: Verwandtenkreis.cousins,
+      );
+      expect(g.imBand(0).length, 21, reason: 'ich und zwanzig Cousins');
+      expect(g.verschwiegen, 0);
+
+      expect(
+        haushalteJeBand(
+          oben: geflechtGenerationen,
+          unten: geflechtGenerationen,
+          kreis: Verwandtenkreis.alle,
+        ),
+        maxHaushalteJeBand,
+        reason: 'die Vorgabe bleibt, wie sie war',
+      );
+      expect(
+        haushalteJeBand(oben: 4, unten: 0, kreis: Verwandtenkreis.linie),
+        maxHaushalteJeBandWeit,
+      );
+    });
+  });
 }

@@ -460,29 +460,97 @@ class Haushalt {
 /// wäre das Schlimmste von beidem.
 const maxHaushalteJeBand = 12;
 
-/// Wie viele Generationen das Geflecht höchstens nach oben und nach unten
-/// reicht: bis zu den Urgrosseltern und bis zu den Urenkeln.
+/// Die Grenze je Band, wenn der Baum weiter gestellt ist als die Vorgabe.
+///
+/// Wer ausdrücklich die Cousins oder fünf Generationen verlangt, will sie
+/// auch sehen: Bei vier Onkeln mit je drei Kindern stehen allein die
+/// Cousins zwölffach in einem Band, und fünf Generationen hinauf sind 16
+/// Paare Vorfahren – mit den zwölf der Vorgabe würde genau das
+/// verschwiegen, wonach gefragt war. Verschieben und Zoomen tragen auch
+/// ein breites Bild.
+const maxHaushalteJeBandWeit = 40;
+
+/// Wie viele Generationen das Geflecht als Vorgabe nach oben und nach
+/// unten reicht: bis zu den Urgrosseltern und bis zu den Urenkeln. Für
+/// den Lebensbaum „Familie" ist es zugleich die Grenze – ein gemalter
+/// Baum hat für mehr keine Äste.
 const geflechtGenerationen = 3;
+
+/// Wie weit der Zierbaum auf dem Bildschirm höchstens reicht, wenn man
+/// ihn weiter stellt: fünf Generationen hinauf (Ur-Ur-Urgrosseltern) und
+/// fünf hinab.
+const geflechtMaxGenerationen = 5;
 
 /// Welcher Kreis der Verwandtschaft im Geflecht steht.
 ///
 /// Für den Lebensbaum „Familie": Ein gemalter Baum fasst weniger Schilder
 /// als der Zierbaum auf dem Bildschirm, und wer ihn an die Wand hängt,
 /// will oft nur die eigene Linie oder die Geschwister dazu – nicht die
-/// Eltern des Schwagers.
+/// Eltern des Schwagers. Der Zierbaum geht darüber hinaus bis zu den
+/// Cousins zweiten Grades.
+///
+/// Jede Stufe enthält die vorige. Die Reihenfolge ist deshalb Teil der
+/// Bedeutung: neue Stufen kommen ans Ende, und die Namen bleiben, wie sie
+/// sind – sie stehen in der Datenbank und in den Adressen des Servers.
 enum Verwandtenkreis {
   /// Die gerade Linie: Vorfahren der Person in der Mitte und ihres
   /// Partners, die eigenen Nachkommen, jeweils mit Partnern.
   linie,
 
   /// Dazu die Geschwister – der Person, ihres Partners und ihrer Eltern –
-  /// mit Partnern, Kindern und Enkeln.
+  /// mit Partnern und Nachkommen.
   geschwister,
 
   /// Dazu die Familien, in die die Geschwister geheiratet haben: Eltern
-  /// und Geschwister der Schwäger. So weit reicht der Zierbaum.
+  /// und Geschwister der Schwäger. So weit reicht der Zierbaum als
+  /// Vorgabe; „alle" heisst es aus der Zeit, als es nicht weiter ging.
   alle,
+
+  /// Dazu die Cousins und Cousinen – die Kinder der Onkel und Tanten –
+  /// mit Partnern und Nachkommen.
+  cousins,
+
+  /// Dazu die Grossonkel und Grosstanten, ihre Kinder (die Cousins der
+  /// Eltern) und deren Kinder, die Cousins zweiten Grades.
+  cousinsZweitenGrades,
 }
+
+/// Wie viele Haushalte ein Band höchstens trägt, wenn der Baum [oben] und
+/// [unten] Generationen reicht und [kreis] breit ist – siehe
+/// [maxHaushalteJeBandWeit].
+int haushalteJeBand({
+  required int oben,
+  required int unten,
+  required Verwandtenkreis kreis,
+}) =>
+    oben > geflechtGenerationen ||
+        unten > geflechtGenerationen ||
+        kreis.index > Verwandtenkreis.alle.index
+    ? maxHaushalteJeBandWeit
+    : maxHaushalteJeBand;
+
+/// Wie weit der Stammbaum reicht – die drei Wahlen über dem Baum (#233).
+typedef Stammbaumumfang = ({int oben, int unten, Verwandtenkreis kreis});
+
+/// Liest einen Umfang aus Zahlen und einem Namen, wie sie in der
+/// Datenbank oder in einer Adresse stehen.
+///
+/// Was fehlt, ausserhalb der Grenzen liegt oder als Name nicht (mehr)
+/// vorkommt, fällt auf die Vorgabe zurück: drei Generationen in jede
+/// Richtung, mit den angeheirateten Familien – der Baum, wie er vor der
+/// Wahl aussah.
+Stammbaumumfang stammbaumumfangAus({int? oben, int? unten, String? kreis}) => (
+  oben: oben != null && oben >= 1 && oben <= geflechtMaxGenerationen
+      ? oben
+      : geflechtGenerationen,
+  unten: unten != null && unten >= 0 && unten <= geflechtMaxGenerationen
+      ? unten
+      : geflechtGenerationen,
+  kreis: Verwandtenkreis.values.firstWhere(
+    (k) => k.name == kreis,
+    orElse: () => Verwandtenkreis.alle,
+  ),
+);
 
 /// Das Geflecht um eine Person: wer mit wem lebt, wer von wem abstammt.
 @immutable
@@ -552,21 +620,28 @@ class Stammbaumgeflecht {
 /// Geburtsdatum und Name. Ohne sie sprängen die Haushalte bei jedem
 /// Aufbau umher.
 ///
-/// Der Baum reicht in beide Richtungen gleich weit: drei Generationen
-/// hinauf (Urgrosseltern) und drei hinab (Urenkel). Die erste Fassung
-/// ging nur eine hinab – ein Fehler, der beim ersten Blick auf eine
-/// echte Familie auffiel und den die App sogar selbst zugab, indem sie
-/// unter den Kindern ein Mehrzeichen setzte.
+/// Als Vorgabe reicht der Baum in beide Richtungen gleich weit: drei
+/// Generationen hinauf (Urgrosseltern) und drei hinab (Urenkel). Die
+/// erste Fassung ging nur eine hinab – ein Fehler, der beim ersten Blick
+/// auf eine echte Familie auffiel und den die App sogar selbst zugab,
+/// indem sie unter den Kindern ein Mehrzeichen setzte.
 ///
-/// **Die Ringe sind aufgezählt, nicht gerechnet.** Ein Suchlauf mit
+/// **Die Zweige sind aufgezählt, nicht gesucht.** Ein Suchlauf mit
 /// Schrittbudget wäre kürzer und brächte lauter Verwandte mit, nach denen
 /// niemand gefragt hat – Cousins ersten Grades allein sind bei vier
 /// Onkeln mit je drei Kindern zwölf zusätzliche Schilder in derselben
-/// Reihe wie die Geschwister. Was hier steht, steht hier absichtlich.
+/// Reihe wie die Geschwister. Deshalb kommen sie nur, wenn [kreis] sie
+/// verlangt; was hier steht, steht hier absichtlich.
+///
+/// **Die Ringe ordnen, wer zuerst wohnt.** Ein Zweig gehört zum Ring
+/// seiner Entfernung von der Mitte (Eltern 1, Grosseltern und Onkel 2,
+/// Cousins 3 …), und die Ringe werden von innen nach aussen besetzt. Wer
+/// auf zwei Wegen erreichbar ist, steht deshalb am näheren – und wenn ein
+/// Band voll ist, fallen die entfernteren weg, nicht die Eltern.
 ///
 /// [oben] und [unten] begrenzen die Generationen (höchstens
-/// [geflechtGenerationen]), [kreis] die Verwandtschaft in der Breite. Die
-/// Vorgaben ergeben den ganzen Baum.
+/// [geflechtMaxGenerationen]), [kreis] die Verwandtschaft in der Breite.
+/// Die Vorgaben ergeben den Baum, wie er ohne Wahl aussieht.
 Stammbaumgeflecht geflechtUm(
   Verwandtschaftsnetz netz,
   String fokus,
@@ -580,6 +655,7 @@ Stammbaumgeflecht geflechtUm(
   List<String> sortiert(Iterable<String> ids) =>
       ids.toSet().toList()..sort((a, b) => platz(a).compareTo(platz(b)));
 
+  final grenze = haushalteJeBand(oben: oben, unten: unten, kreis: kreis);
   final vergeben = <String>{};
   final haushalte = <Haushalt>[];
   final band = <String, int>{};
@@ -591,11 +667,7 @@ Stammbaumgeflecht geflechtUm(
   /// erreichbar ist – der Cousin, der zugleich ein Halbgeschwister ist –,
   /// stünde sonst zweimal im Bild. Zwei Schilder für einen Menschen sind
   /// kein Baum, sondern ein Fehler.
-  void hausen(
-    Iterable<String> anker,
-    int nummer, {
-    Verwandtenkreis ab = Verwandtenkreis.linie,
-  }) {
+  void hausen(Iterable<String> anker, int nummer, Verwandtenkreis ab) {
     // Ausserhalb der gewählten Tiefe oder Breite: nicht verschwiegen,
     // sondern nicht verlangt – deshalb auch nicht gezählt.
     if (nummer < -oben || nummer > unten) return;
@@ -603,7 +675,7 @@ Stammbaumgeflecht geflechtUm(
     var imBand = band.values.where((b) => b == nummer).length;
     for (final a in sortiert(anker)) {
       if (vergeben.contains(a)) continue;
-      if (imBand >= maxHaushalteJeBand) {
+      if (imBand >= grenze) {
         verschwiegen++;
         continue;
       }
@@ -618,76 +690,113 @@ Stammbaumgeflecht geflechtUm(
     }
   }
 
+  /// Die Generationen von [start] aus, einen [schritt] je Stufe: Stufe 0
+  /// ist [start] selbst.
+  List<List<String>> stufen(
+    List<String> start,
+    Iterable<String> Function(String) schritt,
+    int tiefe,
+  ) {
+    final ergebnis = [start];
+    for (var i = 1; i <= tiefe; i++) {
+      ergebnis.add(sortiert([for (final x in ergebnis.last) ...schritt(x)]));
+    }
+    return ergebnis;
+  }
+
   // Ring 0 – die Mitte. Zuerst, damit ihr Partner nirgends sonst landet.
-  hausen([fokus], 0);
-  final eigenePartner = netz.partner(fokus);
+  hausen([fokus], 0, Verwandtenkreis.linie);
+  final eigenePartner = sortiert(netz.partner(fokus));
 
-  // Ring 1 – Eltern, Geschwister, Kinder.
-  hausen(netz.eltern(fokus), -1);
-  hausen(netz.geschwister(fokus), 0, ab: Verwandtenkreis.geschwister);
-  hausen(netz.kinder(fokus), 1);
+  final zweige =
+      <({int ring, int band, Verwandtenkreis ab, List<String> anker})>[];
+  void zweig(int ring, int nummer, Verwandtenkreis ab, List<String> anker) =>
+      zweige.add((ring: ring, band: nummer, ab: ab, anker: anker));
 
-  // Ring 2. Die Schwäger stehen hier NICHT als eigener Punkt: Der Partner
-  // eines Geschwisters wohnt längst in dessen Haushalt, und genau das war
-  // der Sinn der Übung.
-  final eltern = sortiert(netz.eltern(fokus));
-  final geschwister = sortiert(netz.geschwister(fokus));
-  hausen([for (final e in eltern) ...netz.eltern(e)], -2);
-  hausen(
-    [for (final e in eltern) ...netz.geschwister(e)],
-    -1,
-    ab: Verwandtenkreis.geschwister,
-  );
-  hausen([for (final p in eigenePartner) ...netz.eltern(p)], -1);
-  hausen(
-    [for (final p in eigenePartner) ...netz.geschwister(p)],
-    0,
-    ab: Verwandtenkreis.geschwister,
-  );
-  hausen(
-    [for (final g in geschwister) ...netz.kinder(g)],
-    1,
-    ab: Verwandtenkreis.geschwister,
-  );
-  // Enkel. **Sie fehlten bis zur Meldung ganz**: Der Baum reichte drei
-  // Generationen hinauf und eine hinab. Eine Ahnentafel darf das, ein
-  // Familienbaum nicht – zumal die App mit ihrem Mehrzeichen selbst
-  // sagte, dass da unten noch etwas ist.
-  final kinder = sortiert(netz.kinder(fokus));
-  hausen([for (final k in kinder) ...netz.kinder(k)], 2);
+  // Die gerade Linie hinauf: Eltern, Grosseltern, Urgrosseltern …
+  final ahnen = stufen([fokus], netz.eltern, oben);
+  for (var k = 1; k <= oben; k++) {
+    zweig(k, -k, Verwandtenkreis.linie, ahnen[k]);
+  }
 
-  // Ring 3 – eine Stufe weiter, wie besprochen. Die Schwäger sind hier
-  // die Partner der Geschwister; ihre Eltern und Geschwister sind das,
-  // wonach ausdrücklich gefragt war.
-  final schwaeger = sortiert([for (final g in geschwister) ...netz.partner(g)]);
-  final grosseltern = sortiert([for (final e in eltern) ...netz.eltern(e)]);
-  hausen([for (final g in grosseltern) ...netz.eltern(g)], -3);
-  hausen(
-    [for (final s in schwaeger) ...netz.eltern(s)],
-    -1,
-    ab: Verwandtenkreis.alle,
-  );
-  hausen(
-    [for (final s in schwaeger) ...netz.geschwister(s)],
-    0,
-    ab: Verwandtenkreis.alle,
-  );
-  hausen([
-    for (final p in eigenePartner)
-      for (final se in netz.eltern(p)) ...netz.eltern(se),
-  ], -2);
-  // Und ebenso weit hinab: Urenkel, und die Kinder der Neffen und
-  // Nichten. Damit reicht der Baum in beide Richtungen gleich weit.
-  final enkel = sortiert([for (final k in kinder) ...netz.kinder(k)]);
-  final neffenNichten = sortiert([
-    for (final g in geschwister) ...netz.kinder(g),
+  // Die Seitenlinien: die Geschwister der Ahnen einer Generation und
+  // deren Nachkommen. Generation 1 sind die eigenen Geschwister (Neffen,
+  // Grossneffen darunter), 2 die Onkel und Tanten (mit den Cousins), 3 die
+  // Grossonkel und Grosstanten (mit den Cousins der Eltern und denen
+  // zweiten Grades). Die Onkel und Tanten selbst gehörten schon immer zu
+  // den Geschwistern, ihre Kinder erst jetzt und nur auf Wunsch.
+  final seitenlinien = <(int, Verwandtenkreis, Verwandtenkreis)>[
+    (1, Verwandtenkreis.geschwister, Verwandtenkreis.geschwister),
+    (2, Verwandtenkreis.geschwister, Verwandtenkreis.cousins),
+    (
+      3,
+      Verwandtenkreis.cousinsZweitenGrades,
+      Verwandtenkreis.cousinsZweitenGrades,
+    ),
+  ];
+  final seitenNachkommen = <(int, List<List<String>>, Verwandtenkreis)>[];
+  for (final (g, abWurzel, abNachkommen) in seitenlinien) {
+    // Ohne die Ahnen im Bild hinge die Seitenlinie in der Luft.
+    if (g - 1 > oben) continue;
+    final wurzel = sortiert([
+      for (final a in ahnen[g - 1]) ...netz.geschwister(a),
+    ]);
+    zweig(g, -(g - 1), abWurzel, wurzel);
+    seitenNachkommen.add((
+      g,
+      stufen(wurzel, netz.kinder, unten + g - 1),
+      abNachkommen,
+    ));
+  }
+
+  // Die Linie des Partners: seine Vorfahren, einen Ring weiter aussen als
+  // die eigenen. Seine Geschwister stehen neben ihm.
+  final partnerAhnen = stufen(eigenePartner, netz.eltern, oben);
+  for (var k = 1; k <= oben; k++) {
+    zweig(k + 1, -k, Verwandtenkreis.linie, partnerAhnen[k]);
+  }
+  zweig(2, 0, Verwandtenkreis.geschwister, [
+    for (final p in eigenePartner) ...netz.geschwister(p),
   ]);
-  hausen([for (final e in enkel) ...netz.kinder(e)], 3);
-  hausen(
-    [for (final n in neffenNichten) ...netz.kinder(n)],
-    2,
-    ab: Verwandtenkreis.geschwister,
-  );
+
+  // Die Schwäger stehen NICHT als eigener Zweig: Der Partner eines
+  // Geschwisters wohnt längst in dessen Haushalt, und genau das war der
+  // Sinn der Übung. Ihre Eltern und Geschwister sind das, wonach
+  // ausdrücklich gefragt war.
+  final schwaeger = sortiert([
+    for (final g in netz.geschwister(fokus)) ...netz.partner(g),
+  ]);
+  zweig(3, -1, Verwandtenkreis.alle, [
+    for (final s in schwaeger) ...netz.eltern(s),
+  ]);
+  zweig(3, 0, Verwandtenkreis.alle, [
+    for (final s in schwaeger) ...netz.geschwister(s),
+  ]);
+
+  // Die gerade Linie hinab: Kinder, Enkel, Urenkel …
+  final nachkommen = stufen([fokus], netz.kinder, unten);
+  for (var k = 1; k <= unten; k++) {
+    zweig(k, k, Verwandtenkreis.linie, nachkommen[k]);
+  }
+
+  // Und unter jeder Seitenlinie ihre Nachkommen, so weit hinab wie die
+  // eigenen.
+  for (final (g, linie, ab) in seitenNachkommen) {
+    for (var j = 1; j < linie.length; j++) {
+      zweig(g + j, -(g - 1) + j, ab, linie[j]);
+    }
+  }
+
+  // Von innen nach aussen; innerhalb eines Rings in der Reihenfolge oben.
+  // `sort` allein ist nicht stabil, deshalb der Platz in der Liste dazu.
+  final geordnet = [for (var i = 0; i < zweige.length; i++) (i, zweige[i])]
+    ..sort((a, b) {
+      final r = a.$2.ring.compareTo(b.$2.ring);
+      return r != 0 ? r : a.$1.compareTo(b.$1);
+    });
+  for (final (_, z) in geordnet) {
+    hausen(z.anker, z.band, z.ab);
+  }
 
   // Die Elternkante je Person – nur dorthin, wo das Elternhaus im Bild
   // steht. Ein Ast ins Leere wäre eine Behauptung über etwas, das man

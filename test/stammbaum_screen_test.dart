@@ -1480,4 +1480,83 @@ void main() {
       expect(find.text('Stammbaum: '), findsNothing);
     });
   });
+
+  group('wie weit der Baum reicht (#233)', () {
+    Future<void> mitCousine() async {
+      for (final (id, name, jahr) in [
+        ('onkel', 'Onkel', 1933),
+        ('cousine', 'Cousine', 1960),
+      ]) {
+        await db.createPerson(
+          PeopleCompanion.insert(
+            id: id,
+            name: name,
+            geburtsdatum: Value(DateTime(jahr)),
+          ),
+        );
+      }
+      await db.fuegeBeziehungHinzu('onkel', 'opa', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu('onkel', 'oma', Verwandtschaft.elternteil);
+      await db.fuegeBeziehungHinzu(
+        'cousine',
+        'onkel',
+        Verwandtschaft.elternteil,
+      );
+    }
+
+    Future<void> waehle(
+      WidgetTester tester,
+      String schluessel,
+      String text,
+    ) async {
+      await tester.tap(find.byKey(ValueKey(schluessel)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(text).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('die Cousine kommt erst auf Wunsch dazu – und bleibt', (
+      tester,
+    ) async {
+      await mitCousine();
+      await zeige(tester, 'kind');
+      expect(find.text('Onkel'), findsOneWidget);
+      expect(find.text('Cousine'), findsNothing);
+
+      await waehle(tester, 'baumKreis', 'Mit Cousins und Cousinen');
+      expect(find.text('Cousine'), findsOneWidget);
+      expect(await db.stammbaumUmfang(), (
+        oben: geflechtGenerationen,
+        unten: geflechtGenerationen,
+        kreis: 'cousins',
+      ));
+
+      // Beim nächsten Öffnen steht die Wahl noch.
+      await zeige(tester, 'schwester');
+      expect(find.text('Cousine'), findsOneWidget);
+    });
+
+    testWidgets('weniger Generationen darüber lassen die Grosseltern weg', (
+      tester,
+    ) async {
+      await zeige(tester, 'kind');
+      expect(find.text('Opa'), findsOneWidget);
+      await waehle(tester, 'baumOben', '1');
+      expect(find.text('Opa'), findsNothing);
+      expect(find.text('Vater'), findsWidgets, reason: 'Name und Verhältnis');
+      expect((await db.stammbaumUmfang()).oben, 1);
+    });
+
+    testWidgets('steht nur die Mitte da, bleibt die Wahl zu sehen', (
+      tester,
+    ) async {
+      // Uropa hat nur Nachkommen: Ohne Generation darunter steht er
+      // allein – und muss die Wahl wieder weiter stellen können.
+      await db.setzeStammbaumUmfang(oben: 1, unten: 0, kreis: 'linie');
+      await zeige(tester, 'uropa');
+      expect(find.byKey(const ValueKey('baumUnten')), findsOneWidget);
+      await waehle(tester, 'baumUnten', '3');
+      expect(find.text('Opa'), findsOneWidget);
+    });
+  });
 }

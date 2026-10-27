@@ -1050,19 +1050,37 @@ class _Api {
   /// und die Elternhäuser jeder Person. Gezeichnet wird im Browser.
   ///
   /// Ohne `fokus` die zuletzt am Rechner gewählte Person, sonst die erste
-  /// mit Verwandtschaft; alle Personen kommen für die Auswahl mit.
+  /// mit Verwandtschaft; alle Personen kommen für die Auswahl mit. Ebenso
+  /// `oben`, `unten` und `kreis` – wie weit der Baum reicht (#233); was
+  /// gilt, steht in `optionen`.
   Future<Response> stammbaum(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
+    final q = anfrage.url.queryParameters;
     final s = await stammbaumansicht(
       db,
-      fokus: anfrage.url.queryParameters['fokus'],
+      fokus: q['fokus'],
+      oben: int.tryParse(q['oben'] ?? ''),
+      unten: int.tryParse(q['unten'] ?? ''),
+      kreis: q['kreis'],
     );
+    final optionen = {
+      'oben': s.umfang.oben,
+      'unten': s.umfang.unten,
+      'kreis': s.umfang.kreis.name,
+      'maxGenerationen': geflechtMaxGenerationen,
+    };
     final g = s.geflecht;
     if (g == null) {
-      return _json({'fokus': null, 'personen': [], 'haushalte': []});
+      return _json({
+        'fokus': null,
+        'personen': [],
+        'haushalte': [],
+        'optionen': optionen,
+      });
     }
     return _json({
       'fokus': s.fokus,
+      'optionen': optionen,
       'personen': [
         for (final p in s.personen)
           {

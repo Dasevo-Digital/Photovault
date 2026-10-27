@@ -1922,11 +1922,44 @@ $('baum-person').addEventListener('change', () => { location.hash = `#/stammbaum
 
 $('baum-zum-lebensbaum').addEventListener('click', () => { location.hash = `#/lebensbaum/${encodeURIComponent($('baum-person').value || '')}`; });
 
+// Wie weit der Baum reicht (#233): Generationen darüber, darunter und der
+// Kreis bis zu den Cousins zweiten Grades. Ohne Wahl gilt, was am Rechner
+// zuletzt eingestellt war; was gilt, meldet der Server in `optionen`.
+const baumGewaehlt = {};
+for (const [id, name] of [['baum-oben', 'oben'], ['baum-unten', 'unten'], ['baum-kreis', 'kreis']]) {
+  $(id).addEventListener('change', () => {
+    baumGewaehlt[name] = $(id).value;
+    zeigeStammbaum($('baum-person').value || null).catch((x) => { $('baum-hinweis').textContent = x.message; });
+  });
+}
+
+function baumUmfangZeigen(o) {
+  if (!o) return;
+  const zahlen = (id, von, wert) => {
+    const s = $(id);
+    s.replaceChildren();
+    for (let n = von; n <= o.maxGenerationen; n++) {
+      const opt = el('option', null, String(n));
+      opt.value = String(n);
+      s.append(opt);
+    }
+    s.value = String(wert);
+  };
+  zahlen('baum-oben', 1, o.oben);
+  zahlen('baum-unten', 0, o.unten);
+  $('baum-kreis').value = o.kreis;
+}
+
 async function zeigeStammbaum(fokus) {
   markiereNav('stammbaum');
   zeigeBereich(['stammbaum']);
   $('baum-hinweis').textContent = '';
-  const d = await api(`/api/v1/stammbaum${fokus ? `?fokus=${encodeURIComponent(fokus)}` : ''}`);
+  const q = new URLSearchParams();
+  if (fokus) q.set('fokus', fokus);
+  for (const [name, wert] of Object.entries(baumGewaehlt)) q.set(name, wert);
+  const abfrage = q.toString();
+  const d = await api(`/api/v1/stammbaum${abfrage ? `?${abfrage}` : ''}`);
+  baumUmfangZeigen(d.optionen);
   const wahl = $('baum-person');
   wahl.replaceChildren();
   for (const p of [...d.personen].sort((a, b) => a.name.localeCompare(b.name))) {
@@ -1938,7 +1971,8 @@ async function zeigeStammbaum(fokus) {
   $('baum-flaeche').replaceChildren();
   if (!d.fokus) { $('baum-hinweis').textContent = t('Noch keine Personen. Lege sie am Rechner unter Personen und Stammbaum an.'); return; }
   const hinweise = [];
-  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1) hinweise.push(t('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.'));
+  const fokusVerwandt = d.personen.some((p) => p.id === d.fokus && p.verwandt);
+  if (d.haushalte.length === 1 && d.haushalte[0].personen.length === 1 && !fokusVerwandt) hinweise.push(t('Zu dieser Person ist noch keine Verwandtschaft eingetragen – das geht am Rechner im Stammbaum.'));
   if (d.verschwiegen) hinweise.push(t('{n} Haushalte passen nicht mehr ins Bild.', { n: d.verschwiegen }));
   $('baum-hinweis').textContent = hinweise.join(' ');
   $('baum-flaeche').append(baumSvg(d));

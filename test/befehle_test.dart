@@ -1044,6 +1044,7 @@ const _einordnung = <String, _Art>{
   'setzeKartenansicht': _Art.lokal,
   'setzeLebensbaum': _Art.lokal,
   'setzeStammbaumZuletzt': _Art.lokal,
+  'setzeStammbaumUmfang': _Art.lokal,
   'setzeListenspalten': _Art.lokal,
   'setzeZeitleisteForm': _Art.lokal,
   'setzeZeitleisteKachelstufe': _Art.lokal,

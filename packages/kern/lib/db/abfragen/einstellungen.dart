@@ -494,6 +494,32 @@ extension EinstellungsAbfragen on AppDatabase {
     ),
   );
 
+  /// Wie weit der Stammbaum zuletzt reichte – siehe die Spalten. Alles
+  /// `null`, solange niemand etwas umgestellt hat.
+  Future<({int? oben, int? unten, String? kreis})> stammbaumUmfang() async {
+    final row = await (select(
+      appSettings,
+    )..where((t) => t.id.equals(0))).getSingleOrNull();
+    return (
+      oben: row?.stammbaumOben,
+      unten: row?.stammbaumUnten,
+      kreis: row?.stammbaumKreis,
+    );
+  }
+
+  Future<void> setzeStammbaumUmfang({
+    required int oben,
+    required int unten,
+    required String kreis,
+  }) => into(appSettings).insertOnConflictUpdate(
+    AppSettingsCompanion.insert(
+      id: const Value(0),
+      stammbaumOben: Value(oben),
+      stammbaumUnten: Value(unten),
+      stammbaumKreis: Value(kreis),
+    ),
+  );
+
   /// Wie der Lebensbaum zuletzt aussah – siehe die Spalten. Alles `null`,
   /// solange niemand etwas umgestellt hat.
   Future<

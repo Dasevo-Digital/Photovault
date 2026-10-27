@@ -39,15 +39,27 @@ class Stammbaum extends StatefulWidget {
 
 class _StammbaumState extends State<Stammbaum> {
   late String? _fokus = widget.fokus;
+
+  /// Wie weit der Baum reicht (#233) – `null`, solange hier nichts
+  /// gewählt ist: dann gilt, was am Rechner zuletzt eingestellt war.
+  int? _oben, _unten;
+  String? _kreis;
   late Future<Stammbaumansicht> _daten = _lade();
 
-  Future<Stammbaumansicht> _lade() =>
-      stammbaumansicht(widget.sitzung.db, fokus: _fokus);
+  Future<Stammbaumansicht> _lade() => stammbaumansicht(
+    widget.sitzung.db,
+    fokus: _fokus,
+    oben: _oben,
+    unten: _unten,
+    kreis: _kreis,
+  );
 
-  void _waehle(String id) => setState(() {
-    _fokus = id;
+  void _neu(void Function() aenderung) => setState(() {
+    aenderung();
     _daten = _lade();
   });
+
+  void _waehle(String id) => _neu(() => _fokus = id);
 
   @override
   Widget build(BuildContext context) {
@@ -61,9 +73,12 @@ class _StammbaumState extends State<Stammbaum> {
         final farben = Theme.of(context).colorScheme;
         final hinweise = [
           if (g == null) t.baumKeinePersonen,
+          // Nur wenn wirklich nichts eingetragen ist – eine enge Wahl
+          // lässt die Mitte auch allein stehen.
           if (g != null &&
               g.haushalte.length == 1 &&
-              g.haushalte.single.personen.length == 1)
+              g.haushalte.single.personen.length == 1 &&
+              !s.verwandt.contains(s.fokus))
             t.baumKeineVerwandtschaft,
           if (g != null && g.verschwiegen > 0)
             t.baumVerschwiegen(g.verschwiegen),
@@ -71,6 +86,25 @@ class _StammbaumState extends State<Stammbaum> {
         final sortiert = [
           ...s.personen,
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        final u = s.umfang;
+        DropdownButton<T> wahl<T>(
+          T wert,
+          List<(T, String)> werte,
+          void Function(T) gewaehlt,
+        ) => DropdownButton<T>(
+          value: wert,
+          items: [
+            for (final (w, text) in werte)
+              DropdownMenuItem(value: w, child: Text(text)),
+          ],
+          onChanged: (w) {
+            if (w != null) gewaehlt(w);
+          },
+        );
+        Widget feld(String name, Widget kind) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [Text(name), const SizedBox(width: 6), kind],
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -113,6 +147,43 @@ class _StammbaumState extends State<Stammbaum> {
                 ],
               ),
             ),
+            if (s.fokus != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                child: Wrap(
+                  spacing: 14,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    feld(
+                      t.lbNachOben,
+                      wahl(u.oben, [
+                        for (var n = 1; n <= geflechtMaxGenerationen; n++)
+                          (n, '$n'),
+                      ], (w) => _neu(() => _oben = w)),
+                    ),
+                    feld(
+                      t.lbNachUnten,
+                      wahl(u.unten, [
+                        for (var n = 0; n <= geflechtMaxGenerationen; n++)
+                          (n, '$n'),
+                      ], (w) => _neu(() => _unten = w)),
+                    ),
+                    feld(
+                      t.lbKreis,
+                      wahl(u.kreis, [
+                        (Verwandtenkreis.linie, t.lbDirekteLinie),
+                        (Verwandtenkreis.geschwister, t.lbMitGeschwistern),
+                        (Verwandtenkreis.alle, t.baumKreisAngeheiratet),
+                        (Verwandtenkreis.cousins, t.baumKreisCousins),
+                        (
+                          Verwandtenkreis.cousinsZweitenGrades,
+                          t.baumKreisCousinsZweitenGrades,
+                        ),
+                      ], (w) => _neu(() => _kreis = w.name)),
+                    ),
+                  ],
+                ),
+              ),
             if (hinweise.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
@@ -124,8 +195,9 @@ class _StammbaumState extends State<Stammbaum> {
             if (g != null)
               Expanded(
                 child: _Baum(
-                  // Eine andere Person in der Mitte: neu einpassen.
-                  key: ValueKey(s.fokus),
+                  // Eine andere Person in der Mitte oder ein anderer
+                  // Umfang: neu einpassen.
+                  key: ValueKey((s.fokus, u)),
                   sitzung: widget.sitzung,
                   ansicht: s,
                   geflecht: g,

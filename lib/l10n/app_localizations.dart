@@ -12955,6 +12955,36 @@ abstract class AppTexte {
   /// **'Mit angeheirateten Familien'**
   String get lebensbaumKreisAlle;
 
+  /// No description provided for @stammbaumKreisCousins.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Cousins und Cousinen'**
+  String get stammbaumKreisCousins;
+
+  /// No description provided for @stammbaumKreisCousinsZweitenGrades.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Cousins 2. Grades'**
+  String get stammbaumKreisCousinsZweitenGrades;
+
+  /// No description provided for @stammbaumNachOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach oben'**
+  String get stammbaumNachOben;
+
+  /// No description provided for @stammbaumNachUnten.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach unten'**
+  String get stammbaumNachUnten;
+
+  /// No description provided for @stammbaumKreis.
+  ///
+  /// In de, this message translates to:
+  /// **'Kreis'**
+  String get stammbaumKreis;
+
   /// No description provided for @lebensbaumFamilieNichtsImAusschnitt.
   ///
   /// In de, this message translates to:

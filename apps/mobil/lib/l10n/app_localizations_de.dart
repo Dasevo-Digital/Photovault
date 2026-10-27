@@ -1203,6 +1203,15 @@ class AppTexteDe extends AppTexte {
   String get lbAlle => 'Alle';
 
   @override
+  String get baumKreisAngeheiratet => 'Mit angeheirateten Familien';
+
+  @override
+  String get baumKreisCousins => 'Mit Cousins und Cousinen';
+
+  @override
+  String get baumKreisCousinsZweitenGrades => 'Mit Cousins 2. Grades';
+
+  @override
   String get lbPortraits => 'Porträts';
 
   @override

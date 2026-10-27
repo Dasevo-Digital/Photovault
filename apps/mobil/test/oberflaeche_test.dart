@@ -24,6 +24,7 @@ import 'package:drift/native.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/kartengruppen.dart';
+import 'package:kern/services/stammbaum.dart' show Verwandtenkreis;
 import 'package:kern/services/storage_paths.dart';
 import 'package:zierbild/lebensbaum_flaeche.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
@@ -3047,6 +3048,59 @@ void main() {
           .value,
       'oma',
     );
+  });
+
+  testWidgets('Stammbaum: Generationen und Cousins wählbar wie im Browser '
+      '(#233)', (tester) async {
+    final (sitzung, db) = await sitzungMit(tester, ['w1']);
+    Future<void> b(String art, Map<String, Object?> werte) =>
+        db.fuehreAus(Befehl.ausJson({'art': art, 'werte': werte}));
+    for (final id in ['Opa', 'Vater', 'Onkel', 'Ich', 'Cousine']) {
+      await b('personAnlegen', {'personId': id, 'name': id});
+    }
+    for (final (kind, elternteil) in [
+      ('Vater', 'Opa'),
+      ('Onkel', 'Opa'),
+      ('Ich', 'Vater'),
+      ('Cousine', 'Onkel'),
+    ]) {
+      await b('beziehungHinzufuegen', {
+        'personId': kind,
+        'andereId': elternteil,
+        'verwandtschaft': 'elternteil',
+      });
+    }
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Stammbaum(sitzung: sitzung, fokus: 'Ich'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Finder imBaum(String name) => find.descendant(
+      of: find.byType(InteractiveViewer),
+      matching: find.text(name),
+    );
+    expect(imBaum('Onkel'), findsOneWidget);
+    expect(imBaum('Cousine'), findsNothing);
+
+    await tester.tap(find.byType(DropdownButton<Verwandtenkreis>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mit Cousins und Cousinen').last);
+    await tester.pumpAndSettle();
+    expect(imBaum('Cousine'), findsOneWidget);
+
+    // Eine Generation nach oben: der Opa fällt weg, der Vater bleibt.
+    await tester.tap(find.byType(DropdownButton<int>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1').last);
+    await tester.pumpAndSettle();
+    expect(imBaum('Opa'), findsNothing);
+    expect(imBaum('Vater'), findsOneWidget);
   });
 
   testWidgets('Lebensbaum wie im Browser: Vorlage, Bezeichnungen, Tipp', (

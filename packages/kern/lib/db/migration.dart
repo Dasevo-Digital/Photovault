@@ -1374,5 +1374,15 @@ extension Migrationsschritte on AppDatabase {
         'automatisch_zugeordnet',
       );
     }
+    if (from < 95) {
+      // Alle drei leer = der Baum wie bisher.
+      for (final (spalte, name) in [
+        (appSettings.stammbaumOben, 'stammbaum_oben'),
+        (appSettings.stammbaumUnten, 'stammbaum_unten'),
+        (appSettings.stammbaumKreis, 'stammbaum_kreis'),
+      ]) {
+        await _addColumnIfMissing(m, appSettings, spalte, 'app_settings', name);
+      }
+    }
   }
 }

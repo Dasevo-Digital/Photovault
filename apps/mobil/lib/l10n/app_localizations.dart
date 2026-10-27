@@ -1921,6 +1921,24 @@ abstract class AppTexte {
   /// **'Alle'**
   String get lbAlle;
 
+  /// No description provided for @baumKreisAngeheiratet.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit angeheirateten Familien'**
+  String get baumKreisAngeheiratet;
+
+  /// No description provided for @baumKreisCousins.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Cousins und Cousinen'**
+  String get baumKreisCousins;
+
+  /// No description provided for @baumKreisCousinsZweitenGrades.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Cousins 2. Grades'**
+  String get baumKreisCousinsZweitenGrades;
+
   /// No description provided for @lbPortraits.
   ///
   /// In de, this message translates to:

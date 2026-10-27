@@ -1200,6 +1200,15 @@ class AppTexteEn extends AppTexte {
   String get lbAlle => 'All';
 
   @override
+  String get baumKreisAngeheiratet => 'With in-law families';
+
+  @override
+  String get baumKreisCousins => 'With cousins';
+
+  @override
+  String get baumKreisCousinsZweitenGrades => 'With second cousins';
+
+  @override
   String get lbPortraits => 'Portraits';
 
   @override

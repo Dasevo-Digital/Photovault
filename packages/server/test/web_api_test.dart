@@ -1140,6 +1140,77 @@ void main() {
     },
   );
 
+  test('Stammbaum: wie weit er reicht, steht in der Adresse (#233)', () async {
+    for (final (id, name) in [
+      ('opa', 'Opa'),
+      ('vater', 'Vater'),
+      ('onkel', 'Onkel'),
+      ('ich', 'Ich'),
+      ('cousine', 'Cousine'),
+    ]) {
+      await befehl(erikaToken, 'personAnlegen', {'personId': id, 'name': name});
+    }
+    for (final (kind, elternteil) in [
+      ('vater', 'opa'),
+      ('onkel', 'opa'),
+      ('ich', 'vater'),
+      ('cousine', 'onkel'),
+    ]) {
+      await befehl(erikaToken, 'beziehungHinzufuegen', {
+        'personId': kind,
+        'andereId': elternteil,
+        'verwandtschaft': 'elternteil',
+      });
+    }
+    Set<String> personen(Map d) => {
+      for (final h in (d['haushalte']! as List).cast<Map>())
+        ...(h['personen'] as List).cast<String>(),
+    };
+
+    // Ohne Angabe die Vorgabe – und die meldet der Server mit.
+    final vorgabe = await jsonAus(
+      await frag('GET', '/api/v1/stammbaum?fokus=ich', token: erikaToken),
+    );
+    expect(vorgabe['optionen'], {
+      'oben': 3,
+      'unten': 3,
+      'kreis': 'alle',
+      'maxGenerationen': 5,
+    });
+    expect(personen(vorgabe), contains('onkel'));
+    expect(personen(vorgabe), isNot(contains('cousine')));
+
+    final cousins = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/stammbaum?fokus=ich&kreis=cousins',
+        token: erikaToken,
+      ),
+    );
+    expect((cousins['optionen'] as Map)['kreis'], 'cousins');
+    expect(personen(cousins), contains('cousine'));
+
+    final eng = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/stammbaum?fokus=ich&oben=1&kreis=linie',
+        token: erikaToken,
+      ),
+    );
+    expect(personen(eng), {'ich', 'vater'});
+
+    // Was es nicht gibt, fällt auf die Vorgabe zurück.
+    final unsinn = await jsonAus(
+      await frag(
+        'GET',
+        '/api/v1/stammbaum?fokus=ich&oben=9&kreis=alleswas',
+        token: erikaToken,
+      ),
+    );
+    expect((unsinn['optionen'] as Map)['oben'], 3);
+    expect((unsinn['optionen'] as Map)['kreis'], 'alle');
+  });
+
   test(
     'Stammbaum: jedes Kind steht unter seinem Elternhaus, nicht der Reihe nach',
     () async {

@@ -8365,6 +8365,21 @@ class AppTexteDe extends AppTexte {
   String get lebensbaumKreisAlle => 'Mit angeheirateten Familien';
 
   @override
+  String get stammbaumKreisCousins => 'Mit Cousins und Cousinen';
+
+  @override
+  String get stammbaumKreisCousinsZweitenGrades => 'Mit Cousins 2. Grades';
+
+  @override
+  String get stammbaumNachOben => 'Nach oben';
+
+  @override
+  String get stammbaumNachUnten => 'Nach unten';
+
+  @override
+  String get stammbaumKreis => 'Kreis';
+
+  @override
   String get lebensbaumFamilieNichtsImAusschnitt =>
       'In dieser Auswahl steht niemand außer der Person in der Mitte. Wähle mehr Generationen oder einen weiteren Kreis.';
 

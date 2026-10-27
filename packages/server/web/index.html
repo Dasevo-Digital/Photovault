@@ -180,6 +180,15 @@
       <h2>Stammbaum</h2>
       <label>Person <select id="baum-person"></select></label>
       <label>Zoom <input id="baum-zoom" type="range" min="0.4" max="1.6" step="0.1" value="1"></label>
+      <label>Nach oben <select id="baum-oben"></select></label>
+      <label>Nach unten <select id="baum-unten"></select></label>
+      <label>Kreis <select id="baum-kreis">
+        <option value="linie">Direkte Linie</option>
+        <option value="geschwister">Mit Geschwistern</option>
+        <option value="alle">Mit angeheirateten Familien</option>
+        <option value="cousins">Mit Cousins und Cousinen</option>
+        <option value="cousinsZweitenGrades">Mit Cousins 2. Grades</option>
+      </select></label>
       <button id="baum-zum-lebensbaum" type="button">Lebensbaum</button>
     </div>
     <p id="baum-hinweis" class="leise"></p>

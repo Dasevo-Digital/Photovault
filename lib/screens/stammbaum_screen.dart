@@ -145,12 +145,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// und die angeheirateten daneben.
   bool _seitenlinien = true;
 
-  /// Ob der Baum die Seitenäste mitzeigt.
-  ///
-  /// Aus als Vorgabe, anders als bei der Sanduhr: Der Baum ist die
-  /// Ansicht, die man aufschlägt, um die gerade Linie zu sehen. Wer die
-  /// Verwandtschaft in der Breite sucht, schaltet sie dazu – und dann
-  /// wird es merklich breiter.
+  /// Wie weit der Baum reicht (#233): Generationen darüber und darunter
+  /// und wie weit zur Seite – bis zu den Cousins zweiten Grades. Die
+  /// Vorgabe ist der Baum, wie er vor der Wahl aussah.
+  Stammbaumumfang _baumUmfang = stammbaumumfangAus();
 
   List<PersonData> _personen = [];
   Map<String, PersonData> _nachId = {};
@@ -221,6 +219,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final ereignisse = await widget.library.db.alleEreignisse();
     final zuletzt = await widget.library.db.stammbaumZuletzt();
     final lebens = await widget.library.db.lebensbaumZuletzt();
+    final umfang = await widget.library.db.stammbaumUmfang();
     if (!mounted) return;
     final nachPerson = <String, List<LebensereignisseData>>{};
     for (final e in ereignisse) {
@@ -267,6 +266,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         for (final k in Verwandtenkreis.values) {
           if (k.name == lebens.familieKreis) _familieKreis = k;
         }
+        _baumUmfang = stammbaumumfangAus(
+          oben: umfang.oben,
+          unten: umfang.unten,
+          kreis: umfang.kreis,
+        );
         final person = zuletzt.person;
         _fokusId ??=
             widget.startPersonId ??
@@ -308,6 +312,97 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
         familieOben: _familieOben,
         familieUnten: _familieUnten,
         familieKreis: _familieKreis.name,
+      ),
+    );
+  }
+
+  /// Stellt den Baum weiter oder enger und hält das fest – wie [_merken]
+  /// ohne `await`. Danach wird neu eingepasst: Wer die Cousins dazunimmt,
+  /// will den breiteren Baum sehen und nicht den alten Ausschnitt.
+  void _baumUmfangSetzen(Stammbaumumfang umfang) {
+    setState(() {
+      _baumUmfang = umfang;
+      _eingepasstAuf = null;
+    });
+    if (!_standGelesen) return;
+    unawaited(
+      widget.library.db.setzeStammbaumUmfang(
+        oben: umfang.oben,
+        unten: umfang.unten,
+        kreis: umfang.kreis.name,
+      ),
+    );
+  }
+
+  /// Das Geflecht des Baums um [fokus], so weit wie eingestellt.
+  Stammbaumgeflecht _baumGeflecht(String fokus) => geflechtUm(
+    _netz,
+    fokus,
+    [for (final p in _personen) p.id],
+    oben: _baumUmfang.oben,
+    unten: _baumUmfang.unten,
+    kreis: _baumUmfang.kreis,
+  );
+
+  /// Die Wahl über dem Baum: Generationen darüber, darunter und wie weit
+  /// zur Seite – mit denselben Wörtern wie im Browser und auf dem Telefon.
+  ///
+  /// **Eine Zeile, die sich verschieben lässt, statt einer, die umbricht.**
+  /// Umgebrochen nahm sie dem Baum in einem schmalen Fenster zwei Zeilen
+  /// Höhe, und der erste Blick auf die Mitte schob die Eltern unter die
+  /// Wahl.
+  Widget _baumUmfangWahl(AppTexte t) {
+    final u = _baumUmfang;
+    final leise = TextStyle(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    DropdownButton<T> wahl<T>(
+      String schluessel,
+      T wert,
+      List<(T, String)> werte,
+      Stammbaumumfang Function(T) neu,
+    ) => DropdownButton<T>(
+      key: ValueKey(schluessel),
+      value: wert,
+      isDense: true,
+      underline: const SizedBox.shrink(),
+      items: [
+        for (final (w, text) in werte)
+          DropdownMenuItem(value: w, child: Text(text)),
+      ],
+      onChanged: (w) {
+        if (w != null) _baumUmfangSetzen(neu(w));
+      },
+    );
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          Text(t.stammbaumNachOben, style: leise),
+          const SizedBox(width: AppSpacing.sm),
+          wahl('baumOben', u.oben, [
+            for (var g = 1; g <= geflechtMaxGenerationen; g++) (g, '$g'),
+          ], (w) => (oben: w, unten: u.unten, kreis: u.kreis)),
+          const SizedBox(width: AppSpacing.lg),
+          Text(t.stammbaumNachUnten, style: leise),
+          const SizedBox(width: AppSpacing.sm),
+          wahl('baumUnten', u.unten, [
+            for (var g = 0; g <= geflechtMaxGenerationen; g++) (g, '$g'),
+          ], (w) => (oben: u.oben, unten: w, kreis: u.kreis)),
+          const SizedBox(width: AppSpacing.lg),
+          Text(t.stammbaumKreis, style: leise),
+          const SizedBox(width: AppSpacing.sm),
+          wahl('baumKreis', u.kreis, [
+            (Verwandtenkreis.linie, t.lebensbaumKreisLinie),
+            (Verwandtenkreis.geschwister, t.lebensbaumKreisGeschwister),
+            (Verwandtenkreis.alle, t.lebensbaumKreisAlle),
+            (Verwandtenkreis.cousins, t.stammbaumKreisCousins),
+            (
+              Verwandtenkreis.cousinsZweitenGrades,
+              t.stammbaumKreisCousinsZweitenGrades,
+            ),
+          ], (w) => (oben: u.oben, unten: u.unten, kreis: w)),
+        ],
       ),
     );
   }
@@ -1319,9 +1414,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final fokus = _fokusId;
     if (fokus == null) return;
     final t = AppTexte.of(context);
-    final geflecht = geflechtUm(_netz, fokus, [
-      for (final p in _personen) p.id,
-    ]);
+    final geflecht = _baumGeflecht(fokus);
     final farben = Zierbaumfarben.fuer(Theme.of(context).brightness);
     final richtung = Directionality.of(context);
     final name = haeufigsterNachname([
@@ -2609,9 +2702,7 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   /// Aufgabenverwaltung gerade abgelegt hat.
   Widget _baum(BuildContext context, PersonData fokus) {
     final t = AppTexte.of(context);
-    final geflecht = geflechtUm(_netz, fokus.id, [
-      for (final p in _personen) p.id,
-    ]);
+    final geflecht = _baumGeflecht(fokus.id);
     // **Der Baum wächst mit der Systemschrift.** Ein Schild ist 132 auf
     // 108 Punkte gross, und in seine Tafel passen genau drei Zeilen:
     // 56,6 von 67 Punkten. Wer die Schrift des Systems auf 120 Prozent
@@ -2628,8 +2719,21 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     );
     final farben = Zierbaumfarben.fuer(Theme.of(context).brightness);
 
+    final wahl = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
+      ),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: _baumUmfangWahl(t),
+      ),
+    );
+
     if (plan.schilder.length <= 1) {
-      return Center(
+      final leer = Center(
         child: SizedBox(
           width: 420,
           child: Text(
@@ -2641,10 +2745,21 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
           ),
         ),
       );
+      // Steht nur die Mitte da, weil die Wahl zu eng ist, muss sie zu
+      // sehen bleiben – sonst käme man aus der engen Wahl nicht heraus.
+      final eingeschraenkt = _baumUmfang != stammbaumumfangAus();
+      if (!eingeschraenkt) return leer;
+      return Column(
+        children: [
+          wahl,
+          Expanded(child: leer),
+        ],
+      );
     }
 
     return Column(
       children: [
+        wahl,
         if (geflecht.verschwiegen > 0)
           Padding(
             padding: const EdgeInsets.symmetric(

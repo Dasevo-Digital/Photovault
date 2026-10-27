@@ -40,14 +40,29 @@ typedef Stammbaumansicht = ({
 
   /// Wo jedes Schild steht und wohin die Äste laufen, in [stammbaumMasse].
   Zierbaumplan? plan,
+
+  /// Wie weit der Baum reicht – das Verlangte oder, ohne Angabe, was am
+  /// Rechner zuletzt eingestellt war.
+  Stammbaumumfang umfang,
 });
 
 /// Ohne [fokus] die zuletzt am Rechner gewählte Person, sonst die erste
-/// mit Verwandtschaft.
+/// mit Verwandtschaft. Für [oben], [unten] und [kreis] gilt dasselbe:
+/// ohne Angabe, was am Rechner zuletzt eingestellt war (siehe
+/// [stammbaumumfangAus]).
 Future<Stammbaumansicht> stammbaumansicht(
   AppDatabase db, {
   String? fokus,
+  int? oben,
+  int? unten,
+  String? kreis,
 }) async {
+  final gemerkt = await db.stammbaumUmfang();
+  final umfang = stammbaumumfangAus(
+    oben: oben ?? gemerkt.oben,
+    unten: unten ?? gemerkt.unten,
+    kreis: kreis ?? gemerkt.kreis,
+  );
   final personen = db.nachAlterSortiert(await db.select(db.people).get());
   if (personen.isEmpty) {
     return (
@@ -56,6 +71,7 @@ Future<Stammbaumansicht> stammbaumansicht(
       verwandt: const <String>{},
       geflecht: null,
       plan: null,
+      umfang: umfang,
     );
   }
   final netz = Verwandtschaftsnetz([
@@ -80,12 +96,20 @@ Future<Stammbaumansicht> stammbaumansicht(
         )
         .id;
   }
-  final geflecht = geflechtUm(netz, f, [for (final p in personen) p.id]);
+  final geflecht = geflechtUm(
+    netz,
+    f,
+    [for (final p in personen) p.id],
+    oben: umfang.oben,
+    unten: umfang.unten,
+    kreis: umfang.kreis,
+  );
   return (
     fokus: f,
     personen: personen,
     verwandt: verwandt,
     geflecht: geflecht,
     plan: zierbaumplan(geflecht, masse: stammbaumMasse),
+    umfang: umfang,
   );
 }

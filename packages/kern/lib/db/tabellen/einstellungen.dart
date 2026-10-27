@@ -369,6 +369,14 @@ class AppSettings extends Table {
   IntColumn get lebensbaumFamilieUnten => integer().nullable()();
   TextColumn get lebensbaumFamilieKreis => text().nullable()();
 
+  /// Wie weit der Stammbaum reicht (#233): Generationen darüber und
+  /// darunter und der Kreis der Verwandtschaft als Name aus
+  /// `Verwandtenkreis`. `null` heisst Vorgabe – drei Generationen in jede
+  /// Richtung, mit den angeheirateten Familien, ohne Cousins.
+  IntColumn get stammbaumOben => integer().nullable()();
+  IntColumn get stammbaumUnten => integer().nullable()();
+  TextColumn get stammbaumKreis => text().nullable()();
+
   /// Wie gross die Kacheln der Zeitleiste sind – als Stufe, siehe
   /// [zeitleisteKachelstufen].
   ///
