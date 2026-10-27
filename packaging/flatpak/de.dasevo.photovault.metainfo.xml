@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.2" date="2026-10-27">
+      <description>
+        <p>Tresor-Dateiwechsel werden nach Abbruch wieder aufgenommen oder zurückgenommen. Fehlende Originale zählen nicht mehr als erfolgreiche Sicherung.</p>
+        <p>Neue verschlüsselte Dateien binden jeden Block an eine zufällige Dateikennung. PVE1 und PVE2 bleiben lesbar; PVE3 benötigt eine aktualisierte App.</p>
+        <p>Der Server verhindert parallele Wiederverwendung von Anmeldevorgängen und Einmalcodes, widerruft alte Vorgänge nach Rücksetzungen und trennt gleichzeitige Uploads.</p>
+      </description>
+    </release>
     <release version="3.49.1" date="2026-10-27">
       <description>
         <p>Photos deleted from the search results now disappear from the list right away, on the desktop and on the phone. The search never included the trash, but the list of results kept showing them until the next search.</p>
