@@ -759,7 +759,16 @@ void main() {
     // Nach Dateiname: ohne Monat, a vor b vor c.
     await tester.tap(find.byTooltip('Reihenfolge'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Dateiname, A–Z').last);
+    // Auf den Menüeintrag, nicht auf seinen Text: Der Text selbst nimmt
+    // keinen Tipp an, und der Test lief nur, weil der Eintrag darunter lag.
+    await tester.tap(
+      find
+          .ancestor(
+            of: find.text('Dateiname, A–Z').last,
+            matching: find.byWidgetPredicate((w) => w is PopupMenuEntry),
+          )
+          .first,
+    );
     await ruhe();
     expect(sitzung.sortierung, Rastersortierung.name);
     expect(find.text(juni), findsNothing);
@@ -860,7 +869,16 @@ void main() {
     // Nach Kamera: alphabetisch, ohne Angabe am Ende.
     await tester.tap(find.byTooltip('Gliederung'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nach Kamera'));
+    // Auf den Menüeintrag, nicht auf seinen Text: Der Text selbst nimmt
+    // keinen Tipp an, und der Test lief nur, weil der Eintrag darunter lag.
+    await tester.tap(
+      find
+          .ancestor(
+            of: find.text('Nach Kamera'),
+            matching: find.byWidgetPredicate((w) => w is PopupMenuEntry),
+          )
+          .first,
+    );
     await ruhe();
     final canon = tester.getTopLeft(find.text('r10.jpg')).dy;
     final sony = tester.getTopLeft(find.text('a7.jpg')).dy;

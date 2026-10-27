@@ -20,6 +20,14 @@ class Testserver {
   final Process _prozess;
   final Uri adresse;
 
+  /// Startet einen Server – **einen nach dem anderen**.
+  ///
+  /// Die Testdateien laufen gleichzeitig, und mehrere von ihnen starten
+  /// einen Server. Zwei `dart run` im selben Paket übersetzen zugleich in
+  /// dessen `.dart_tool`, und ab und zu scheiterte dann das Anlegen des
+  /// Kontos – etwa jeder fünfte Lauf, auch im pre-push-Hook und in der CI
+  /// (#238). Eine Dateisperre reiht die Starts auf; laufen dürfen die
+  /// Server danach nebeneinander.
   static Future<Testserver> starte(String praefix) async {
     final ordner = Directory.systemTemp.createTempSync(praefix);
     final umgebung = {
@@ -27,43 +35,61 @@ class Testserver {
       'PV_PORT': '0',
       'PV_TOTP': 'frei',
     };
-    final anlegen = await Process.start(
-      'dart',
-      [
-        'run',
-        'bin/photo_vault_server.dart',
-        'konto',
-        'anlegen',
-        'erika',
-        '--totp-spaeter',
-      ],
-      workingDirectory: _serverOrdner,
-      environment: umgebung,
-    );
-    anlegen.stdin.writeln(passwort);
-    await anlegen.stdin.close();
-    if (await anlegen.exitCode != 0) {
-      throw StateError('Konto ließ sich nicht anlegen');
+    final sperre = await File(
+      p.join(_serverOrdner, '.dart_tool', 'pv_testserver.sperre'),
+    ).open(mode: FileMode.append);
+    await sperre.lock(FileLock.blockingExclusive);
+    try {
+      final anlegen = await Process.start(
+        'dart',
+        [
+          'run',
+          'bin/photo_vault_server.dart',
+          'konto',
+          'anlegen',
+          'erika',
+          '--totp-spaeter',
+        ],
+        workingDirectory: _serverOrdner,
+        environment: umgebung,
+      );
+      final ausgabe = StringBuffer();
+      final mitlesen = [
+        anlegen.stdout.transform(utf8.decoder).forEach(ausgabe.write),
+        anlegen.stderr.transform(utf8.decoder).forEach(ausgabe.write),
+      ];
+      anlegen.stdin.writeln(passwort);
+      await anlegen.stdin.close();
+      final ende = await anlegen.exitCode;
+      await Future.wait(mitlesen);
+      if (ende != 0) {
+        // Mit der Ausgabe – vorher stand hier nur der Satz, und warum es
+        // scheiterte, war nicht mehr zu erfahren.
+        throw StateError('Konto ließ sich nicht anlegen ($ende):\n$ausgabe');
+      }
+      final prozess = await Process.start(
+        'dart',
+        ['run', 'bin/photo_vault_server.dart'],
+        workingDirectory: _serverOrdner,
+        environment: umgebung,
+      );
+      final bereit = Completer<Uri>();
+      prozess.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((z) {
+            final m = RegExp(r'auf (http://127\.0\.0\.1:\d+)').firstMatch(z);
+            if (m != null && !bereit.isCompleted) {
+              bereit.complete(Uri.parse('${m.group(1)}/'));
+            }
+          });
+      prozess.stderr.drain<void>();
+      final adresse = await bereit.future.timeout(const Duration(seconds: 60));
+      return Testserver._(ordner, prozess, adresse);
+    } finally {
+      await sperre.unlock();
+      await sperre.close();
     }
-    final prozess = await Process.start(
-      'dart',
-      ['run', 'bin/photo_vault_server.dart'],
-      workingDirectory: _serverOrdner,
-      environment: umgebung,
-    );
-    final bereit = Completer<Uri>();
-    prozess.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((z) {
-          final m = RegExp(r'auf (http://127\.0\.0\.1:\d+)').firstMatch(z);
-          if (m != null && !bereit.isCompleted) {
-            bereit.complete(Uri.parse('${m.group(1)}/'));
-          }
-        });
-    prozess.stderr.drain<void>();
-    final adresse = await bereit.future.timeout(const Duration(seconds: 60));
-    return Testserver._(ordner, prozess, adresse);
   }
 
   Future<String> anmelden(String geraet) async {
