@@ -335,12 +335,15 @@ const baum = { bild: null, groesse: null, daten: null, eingepasst: false, s: 1, 
 // Die Fläche reicht bis knapp über den unteren Rand – auf dem Telefon bis
 // über die Reiterleiste. Eine feste Höhe in CSS passte nicht: Dort bricht
 // die Leiste über dem Baum in drei Zeilen um, und die Fläche rutschte mit
-// ihren Knöpfen unter die Reiter.
+// ihren Knöpfen unter die Reiter. Am breiten Bildschirm steht die
+// Seitenleiste ebenso fest, aber links und über die ganze Höhe: Sie zählte
+// erst als Reiterleiste, und die Fläche fiel immer auf ihr Mindestmass.
 function baumHoeheSetzen() {
   const f = $('baum-flaeche');
-  const nav = $('nav');
-  const unten = nav && getComputedStyle(nav).position === 'fixed' ? nav.getBoundingClientRect().height : 0;
-  const h = window.innerHeight - f.getBoundingClientRect().top - unten - 16;
+  // Unten bleibt der Innenrand des Bereichs frei, sonst rollt die Seite um
+  // dessen Rest.
+  const rand = parseFloat(getComputedStyle($('bereich-stammbaum')).paddingBottom) || 0;
+  const h = window.innerHeight - f.getBoundingClientRect().top - untenBelegt() - rand;
   f.style.height = `${Math.max(320, Math.round(h))}px`;
 }
 
