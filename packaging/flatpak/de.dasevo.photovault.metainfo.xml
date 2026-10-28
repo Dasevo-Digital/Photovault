@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.3" date="2026-10-28">
+      <description>
+        <p>Web interface: the family tree now fills the window height on wide screens. The fixed sidebar was taken for the phone tab bar, so the tree area always fell back to its minimum height of 320 pixels.</p>
+      </description>
+    </release>
     <release version="3.49.2" date="2026-10-27">
       <description>
         <p>Tresor-Dateiwechsel werden nach Abbruch wieder aufgenommen oder zurückgenommen. Fehlende Originale zählen nicht mehr als erfolgreiche Sicherung.</p>
