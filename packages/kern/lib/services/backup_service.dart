@@ -1335,23 +1335,31 @@ class BackupService {
               FarbmarkeSetzen([assetId], entry['colorLabel'] as String),
             );
           }
-          // Beides zusammen oder gar nicht: Eine Koordinate ohne die andere
-          // ist kein Ort, sondern eine halbe Zahl.
-          if (entry['latitude'] is num && entry['longitude'] is num) {
+          // Explizit leere Koordinaten sind ebenfalls gesicherte Handarbeit:
+          // Sonst käme beim Reimport der zuvor entfernte EXIF-Ort zurück.
+          if (entry.containsKey('latitude') && entry.containsKey('longitude')) {
+            final lat = entry['latitude'], lon = entry['longitude'];
+            if (!((lat == null && lon == null) || (lat is num && lon is num))) {
+              throw const FormatException('pv_restore_koordinaten');
+            }
             await _db.fuehreAus(
               OrtSetzen(
                 [assetId],
-                (entry['latitude'] as num).toDouble(),
-                (entry['longitude'] as num).toDouble(),
+                (lat as num?)?.toDouble(),
+                (lon as num?)?.toDouble(),
               ),
             );
           }
-          if (entry['locationCity'] is String) {
+          if ([
+            'locationCountry',
+            'locationState',
+            'locationCity',
+          ].any(entry.containsKey)) {
             await _db.setLocationNames(
               assetId,
               country: entry['locationCountry'] as String?,
               state: entry['locationState'] as String?,
-              city: entry['locationCity'] as String,
+              city: entry['locationCity'] as String?,
             );
           }
           // Fehlt 'kiTags' (Sicherung vor Fassung 56), bleibt die Menge

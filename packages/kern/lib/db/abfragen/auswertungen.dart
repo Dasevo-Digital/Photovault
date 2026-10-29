@@ -254,7 +254,7 @@ extension AuswertungsAbfragen on AppDatabase {
     String assetId, {
     String? country,
     String? state,
-    required String city,
+    required String? city,
   }) => (update(assets)..where((t) => t.id.equals(assetId))).write(
     AssetsCompanion(
       locationCountry: Value(country),

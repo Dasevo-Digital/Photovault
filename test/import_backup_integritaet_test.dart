@@ -258,6 +258,70 @@ void main() {
     },
   );
   test(
+    'Restore erhält entfernte EXIF-Koordinaten und Ortsnamen ohne Stadt',
+    () async {
+      final bild = img.Image(width: 40, height: 30)
+        ..clear(img.ColorRgb8(70, 90, 110));
+      bild.exif.gpsIfd[1] = img.IfdValueAscii('N');
+      bild.exif.gpsIfd[2] = img.IfdValueRational(10, 1)
+        ..value.addAll(img.IfdValueRational(0, 1).value)
+        ..value.addAll(img.IfdValueRational(0, 1).value);
+      bild.exif.gpsIfd[3] = img.IfdValueAscii('E');
+      bild.exif.gpsIfd[4] = img.IfdValueRational(20, 1)
+        ..value.addAll(img.IfdValueRational(0, 1).value)
+        ..value.addAll(img.IfdValueRational(0, 1).value);
+      final mitGps = File('${temp.path}/mit-gps.jpg')
+        ..writeAsBytesSync(img.encodeJpg(bild));
+      final id = (await imp.importFile(mitGps.path)).assetId!;
+      expect((await db.assetById(id))!.latitude, 10);
+      await db.fuehreAus(OrtSetzen([id], null, null));
+      final ohneStadt = (await imp.importFile((await quelle()).path)).assetId!;
+      await db.setLocationNames(
+        ohneStadt,
+        country: 'Land',
+        state: 'Region',
+        city: null,
+      );
+      final w = await VaultCrypto.createMasterKey('synthetische-passphrase');
+      await db.saveBackupKey(
+        kdfSalt: w.kdfSalt,
+        nonce: w.nonce,
+        wrapped: w.wrapped,
+      );
+      final backup = BackupService(db, paths);
+      final ziel = '${temp.path}/orte';
+      await backup.performAutoBackup(ziel, w.masterKey).drain<void>();
+      final wurzel = '$ziel/${BackupService.autoBackupFolderName}';
+      expect((await backup.letzteProbe(wurzel))!.erfolgreich, isTrue);
+      final zielDb = _ZielDb(NativeDatabase.memory());
+      final zielPaths = await StoragePaths.forTesting(
+        Directory('${temp.path}/orte-ziel'),
+      );
+      try {
+        await BackupService(zielDb, zielPaths)
+            .restoreFromBackup(
+              wurzel,
+              ImportService(zielDb, zielPaths),
+              entschluesselungsschluessel: w.masterKey,
+              streng: true,
+            )
+            .drain<void>();
+        final fotos = await zielDb.select(zielDb.assets).get();
+        final geloescht = fotos.singleWhere(
+          (a) => a.originalFileName == 'mit-gps.jpg',
+        );
+        expect(geloescht.latitude, isNull);
+        expect(geloescht.longitude, isNull);
+        final ort = fotos.singleWhere((a) => a.originalFileName == 'probe.jpg');
+        expect(ort.locationCountry, 'Land');
+        expect(ort.locationState, 'Region');
+        expect(ort.locationCity, isNull);
+      } finally {
+        await zielDb.close();
+      }
+    },
+  );
+  test(
     'Regeländerung vor Commit verwirft Original, Vorschau und DB-Zeile',
     () async {
       final f = await quelle();
