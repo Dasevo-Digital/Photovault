@@ -2585,4 +2585,21 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get syncUebersicht => 'Changes and conflicts';
+
+  @override
+  String get startfehlerTitel => 'The library could not be opened';
+
+  @override
+  String get startfehlerText =>
+      'The app encountered an error during startup. The technical details can help diagnose it.';
+
+  @override
+  String get startfehlerNeuerTitel => 'This library is newer than this version';
+
+  @override
+  String get startfehlerNeuerText =>
+      'A newer version of the app last upgraded the copy of the library. This version will not open it, so nothing is downgraded. Please update the app.';
+
+  @override
+  String get startfehlerErneut => 'Try again';
 }

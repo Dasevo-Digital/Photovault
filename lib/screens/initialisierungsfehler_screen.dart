@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kern/db/database.dart' show NeuereBibliothek;
 
 import '../l10n/app_localizations.dart';
 import '../theme/app_spacing.dart';
@@ -35,6 +36,8 @@ class _InitialisierungsfehlerScreenState
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
+    // Aus dem Hintergrund-Isolat kommt die Ausnahme nur als Text an.
+    final neuer = widget.fehler.contains(NeuereBibliothek.kennung);
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -51,12 +54,15 @@ class _InitialisierungsfehlerScreenState
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  t.startFehlerTitel,
+                  neuer ? t.startFehlerNeuerTitel : t.startFehlerTitel,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                Text(t.startFehlerText, textAlign: TextAlign.center),
+                Text(
+                  neuer ? t.startFehlerNeuerText : t.startFehlerText,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 SelectableText(
                   widget.fehler,

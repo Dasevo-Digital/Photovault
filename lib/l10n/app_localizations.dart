@@ -15467,6 +15467,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Änderung ist zu groß für einen einzelnen Abgleich. Bitte verkleinere die Auswahl oder den Inhalt und versuche es erneut.'**
   String get syncAuswahlZuGross;
+
+  /// No description provided for @startFehlerNeuerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist neuer als diese Fassung'**
+  String get startFehlerNeuerTitel;
+
+  /// No description provided for @startFehlerNeuerText.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine neuere Fassung von Photo Vault hat die Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird und keine Daten verloren gehen. Bitte die aktuelle Fassung von Photo Vault installieren.'**
+  String get startFehlerNeuerText;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

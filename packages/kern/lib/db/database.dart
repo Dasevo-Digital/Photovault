@@ -179,6 +179,29 @@ String _textSpalte(Insertable<Object?> zeile, String spalte) =>
 String schlagwortKennung(String name) =>
     const Uuid().v5(Namespace.url.value, 'photovault:schlagwort:$name');
 
+/// Die Bibliothek hat zuletzt eine neuere Fassung von Photo Vault
+/// aufgestuft, als die, die sie gerade öffnet.
+///
+/// Der Text beginnt mit [kennung], damit die Oberfläche den Fall auch
+/// dann erkennt, wenn die Ausnahme das Hintergrund-Isolat nur als Text
+/// verlässt.
+class NeuereBibliothek implements Exception {
+  const NeuereBibliothek({required this.bibliothek, required this.programm});
+
+  static const kennung = 'pv_neuere_bibliothek';
+
+  /// Schema der Bibliothek.
+  final int bibliothek;
+
+  /// Schema, das diese Fassung kennt.
+  final int programm;
+
+  /// Technisch wie die anderen Kennungen; die Erklärung kommt aus den
+  /// Übersetzungen der Oberfläche.
+  @override
+  String toString() => '$kennung: schema $bibliothek > $programm';
+}
+
 @DriftDatabase(
   tables: [
     Assets,
@@ -362,7 +385,18 @@ class AppDatabase extends _$AppDatabase {
       await _seedAiTagVocabulary();
     },
     // Die Schritte stehen in [Migrationsschritte.stufeAuf].
-    onUpgrade: (m, from, to) => stufeAuf(m, from, to),
+    onUpgrade: (m, from, to) async {
+      // drift ruft onUpgrade bei jeder abweichenden Nummer auf, auch wenn
+      // die Bibliothek neuer ist, und schreibt danach still die kleinere
+      // zurück. Die nächste neuere Fassung hielte die Bibliothek dann für
+      // alt und liefe Schritte noch einmal, die schon gelaufen sind – wer
+      // nicht wiederholbar ist (etwa 80, 88, 89, 90, 93), bricht ab oder
+      // verdoppelt. Ohne Rücksprung bleibt die Nummer stehen.
+      if (from > to) {
+        throw NeuereBibliothek(bibliothek: from, programm: to);
+      }
+      await stufeAuf(m, from, to);
+    },
   );
 
   /// Öffnet (bzw. legt beim ersten Start an) die SQLite-Datei der
@@ -373,11 +407,21 @@ class AppDatabase extends _$AppDatabase {
   static Future<AppDatabase> open(Directory libraryRoot) async {
     await libraryRoot.create(recursive: true);
     final dbFile = File(p.join(libraryRoot.path, 'library.sqlite'));
-    return AppDatabase(
+    final db = AppDatabase(
       mitSperrwartezeit(
         NativeDatabase.createInBackground(dbFile, setup: bereiteVerbindungVor),
       ),
     );
+    // Gleich öffnen statt bei der ersten Abfrage: Scheitert die Migration
+    // (etwa an [NeuereBibliothek]), soll das vor allem anderen auffallen,
+    // was danach Dateien der Bibliothek anfasst.
+    try {
+      await db.customSelect('SELECT 1').get();
+    } catch (_) {
+      await db.close();
+      rethrow;
+    }
+    return db;
   }
 
   /// Ergänzt SQLites native Wartezeit um Wiederholungen für Plattformen, auf

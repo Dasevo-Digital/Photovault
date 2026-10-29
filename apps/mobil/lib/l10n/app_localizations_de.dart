@@ -2596,4 +2596,22 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get syncUebersicht => 'Änderungen und Konflikte';
+
+  @override
+  String get startfehlerTitel => 'Die Bibliothek konnte nicht geöffnet werden';
+
+  @override
+  String get startfehlerText =>
+      'Die App ist beim Start auf einen Fehler gestoßen. Die technischen Einzelheiten helfen bei der Fehlersuche.';
+
+  @override
+  String get startfehlerNeuerTitel =>
+      'Diese Bibliothek ist neuer als diese Fassung';
+
+  @override
+  String get startfehlerNeuerText =>
+      'Eine neuere Fassung der App hat die Kopie der Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird. Bitte die App aktualisieren.';
+
+  @override
+  String get startfehlerErneut => 'Erneut versuchen';
 }

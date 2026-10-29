@@ -1261,5 +1261,10 @@
   "@variantenEinzelnFrage": {"placeholders": {"anzahl": {"type": "int"}}},
   "albumOfflineBelegt": "Offline auf diesem Telefon · {groesse} · Neues kommt nur im WLAN nach",
   "@albumOfflineBelegt": {"placeholders": {"groesse": {"type": "String"}}},
-  "syncUebersicht": "Änderungen und Konflikte"
+  "syncUebersicht": "Änderungen und Konflikte",
+  "startfehlerTitel": "Die Bibliothek konnte nicht geöffnet werden",
+  "startfehlerText": "Die App ist beim Start auf einen Fehler gestoßen. Die technischen Einzelheiten helfen bei der Fehlersuche.",
+  "startfehlerNeuerTitel": "Diese Bibliothek ist neuer als diese Fassung",
+  "startfehlerNeuerText": "Eine neuere Fassung der App hat die Kopie der Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird. Bitte die App aktualisieren.",
+  "startfehlerErneut": "Erneut versuchen"
 }

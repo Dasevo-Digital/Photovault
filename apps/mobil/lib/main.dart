@@ -9,6 +9,7 @@ import 'package:workmanager/workmanager.dart';
 import 'l10n/app_localizations.dart';
 import 'seiten/anmelden.dart';
 import 'seiten/start.dart';
+import 'seiten/startfehler.dart';
 import 'sicherung/hintergrund.dart';
 import 'sitzung.dart';
 
@@ -61,6 +62,7 @@ class PhotoVaultMobil extends StatelessWidget {
         ),
         Sitzungszustand.abgemeldet => Anmelden(sitzung: sitzung),
         Sitzungszustand.bereit => Start(sitzung: sitzung),
+        Sitzungszustand.fehler => Startfehler(sitzung: sitzung),
       },
     ),
   );

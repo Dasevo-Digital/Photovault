@@ -4014,6 +4014,36 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
+
+  /// No description provided for @startfehlerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek konnte nicht geöffnet werden'**
+  String get startfehlerTitel;
+
+  /// No description provided for @startfehlerText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die App ist beim Start auf einen Fehler gestoßen. Die technischen Einzelheiten helfen bei der Fehlersuche.'**
+  String get startfehlerText;
+
+  /// No description provided for @startfehlerNeuerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist neuer als diese Fassung'**
+  String get startfehlerNeuerTitel;
+
+  /// No description provided for @startfehlerNeuerText.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine neuere Fassung der App hat die Kopie der Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird. Bitte die App aktualisieren.'**
+  String get startfehlerNeuerText;
+
+  /// No description provided for @startfehlerErneut.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut versuchen'**
+  String get startfehlerErneut;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

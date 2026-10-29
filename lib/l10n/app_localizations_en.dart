@@ -10097,4 +10097,11 @@ class AppTexteEn extends AppTexte {
   @override
   String get syncAuswahlZuGross =>
       'This change is too large for a single sync command. Reduce the selection or content and try again.';
+
+  @override
+  String get startFehlerNeuerTitel => 'This library is newer than this version';
+
+  @override
+  String get startFehlerNeuerText =>
+      'A newer version of Photo Vault last upgraded this library. This version will not open it, so nothing is downgraded and no data is lost. Please install the current version of Photo Vault.';
 }

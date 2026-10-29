@@ -25,7 +25,7 @@ import 'gemeinsam.dart';
 import 'offline_alben.dart';
 import 'sicherung/dienst.dart';
 
-enum Sitzungszustand { laedt, abgemeldet, bereit }
+enum Sitzungszustand { laedt, abgemeldet, bereit, fehler }
 
 /// Die Verbindung des Telefons mit seinem Server und die Kopie der
 /// Bibliothek darauf.
@@ -62,6 +62,9 @@ class Sitzung extends ChangeNotifier {
   Sicherungsdienst? sicherung;
   StreamSubscription<Abgleichszustand>? _abo;
 
+  /// Warum die Kopie nicht aufging ([Sitzungszustand.fehler]).
+  String? startfehler;
+
   /// Öffnet die Kopie, wenn es eine gibt; sonst geht es zur Anmeldung.
   Future<void> starte() async {
     final ordner = await _ordner();
@@ -71,7 +74,22 @@ class Sitzung extends ChangeNotifier {
       _setze(Sitzungszustand.abgemeldet);
       return;
     }
-    await _oeffne(ordner, v);
+    try {
+      await _oeffne(ordner, v);
+    } catch (e) {
+      // `main` ruft starte ohne `await` auf: Ohne diesen Zustand bliebe
+      // der Ladekreis stehen, etwa vor einer Kopie, die eine neuere
+      // Fassung der App schon aufgestuft hat (NeuereBibliothek).
+      startfehler = '$e';
+      _setze(Sitzungszustand.fehler);
+    }
+  }
+
+  /// Nach einem [startfehler] noch einmal versuchen.
+  Future<void> erneutStarten() async {
+    startfehler = null;
+    _setze(Sitzungszustand.laedt);
+    await starte();
   }
 
   /// Nach der Anmeldung: holt die Bibliothek vom Server und öffnet sie.
