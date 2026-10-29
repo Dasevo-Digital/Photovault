@@ -485,7 +485,8 @@ Containern müssen außerdem die private `/proc`-Einbindung und die zugehörigen
 Syscalls erlaubt sein. Das Standardprofil von Docker reicht dafür nicht immer
 aus; ohne passende Laufzeitkonfiguration bleiben Gastbeiträge gesperrt.
 Die systemd-Einheit
-führt die dafür erlaubten Namensräume auf. Die Gastprüfung im Entwicklungsbetrieb
+führt die dafür erlaubten Namensräume auf; in einem LXC-Container braucht sie
+die Ergänzung `lxc.conf` (siehe „Einzeldatei mit systemd“). Die Gastprüfung im Entwicklungsbetrieb
 benötigt ein übersetztes Programm: Ein Dart-Skript würde zusätzliche Quell- und
 Paketverzeichnisse lesbar machen und wird deshalb abgewiesen.
 
@@ -569,7 +570,8 @@ docker buildx build -f packages/server/Dockerfile --target paket \
 Auf dem Server (Debian 12 und neuer, Ubuntu 22.04 und neuer):
 
 ```sh
-sudo apt install ffmpeg libheif-examples libheif-plugin-libde265 libraw-bin
+sudo apt install ffmpeg libheif-examples libheif-plugin-libde265 libraw-bin \
+  bubblewrap procps
 sudo tar -xzf photo-vault-server-linux-amd64.tar.gz -C /opt
 sudo useradd --system --user-group --home-dir /var/lib/photo-vault-server \
   --shell /usr/sbin/nologin photovault
@@ -585,6 +587,29 @@ gehören nach `/etc/photo-vault-server.env` (eine `NAME=wert`-Zeile je
 Variable). Gibt es `libheif-plugin-libde265` auf einer älteren Fassung
 nicht, steckt der HEVC-Dekoder noch in `libheif1` selbst; das Programm
 heisst dort `heif-convert` statt `heif-dec`, der Server kennt beide Namen.
+
+Beim Aktualisieren das Bündel tauschen und die Einheit aus `systemd/` neu
+kopieren, wenn sie sich geändert hat (danach `daemon-reload`). Seit 3.49.4
+erlaubt sie bubblewrap mehr Namensräume; mit der älteren Einheit weist der
+Server Beiträge von Gästen ab. Ob die Gastprüfung bereit ist, steht beim
+Start im Protokoll („Dateien von Gästen: isolierte Prüfung bereit“).
+
+**In einem LXC-Container** (etwa unter Proxmox) braucht die Einheit eine
+Ergänzung. Dort überdeckt lxcfs Teile von `/proc`, vollständig sichtbar ist
+es nur unter `/dev/.lxc/proc`. `PrivateDevices=yes` ersetzt `/dev` und
+blendet es aus, und der Kernel verweigert bubblewrap ein eigenes `/proc`:
+
+```sh
+sudo mkdir -p /etc/systemd/system/photo-vault-server.service.d
+sudo cp /opt/photo-vault-server/systemd/lxc.conf \
+  /etc/systemd/system/photo-vault-server.service.d/
+sudo systemctl daemon-reload
+sudo systemctl restart photo-vault-server
+```
+
+Mit `intel-grafik.conf` (siehe „Beschleuniger“) ist sie unnötig – die
+schaltet `PrivateDevices` schon ab – und darf nicht zusätzlich liegen, weil
+sie die Grafik wieder verbirgt.
 
 ## Von Hand
 

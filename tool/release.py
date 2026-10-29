@@ -481,9 +481,18 @@ def einspielen(args):
         o = ['-i', os.path.expanduser(z['server_schluessel']), '-o', f'UserKnownHostsFile={os.path.expanduser(z["server_known_hosts"])}',
              '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10']
         lauf(['scp', '-q', *o, str(paket), f'{z["server_ssh"]}:/root/pv-neu.tar.gz'])
+        # Getauscht wird nur das Bündel, nicht die Einheit unter /etc. Hat
+        # sie sich geändert, läuft das neue Programm sonst mit der alten –
+        # bei 3.49.4 hätte die Gastprüfung so die nötigen Namensräume nicht
+        # bekommen. Dann vor dem Anhalten abbrechen.
         lauf(['ssh', *o, z['server_ssh'],
               'set -e; cd /opt; rm -rf photo-vault-server.neu && mkdir photo-vault-server.neu && '
               'tar -xzf /root/pv-neu.tar.gz -C photo-vault-server.neu --strip-components=1; '
+              'if ! cmp -s photo-vault-server.neu/systemd/photo-vault-server.service '
+              '/etc/systemd/system/photo-vault-server.service; then '
+              'echo "Die Einheit im Bündel weicht von /etc/systemd/system ab – erst übernehmen '
+              '(README, Einzeldatei mit systemd). Der Dienst läuft unverändert."; '
+              'rm -rf photo-vault-server.neu /root/pv-neu.tar.gz; exit 3; fi; '
               'systemctl stop photo-vault-server; rm -rf photo-vault-server.old; '
               'mv photo-vault-server photo-vault-server.old; mv photo-vault-server.neu photo-vault-server; '
               'systemctl start photo-vault-server; sleep 12; systemctl is-active photo-vault-server; rm /root/pv-neu.tar.gz'])
