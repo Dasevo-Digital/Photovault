@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.4" date="2026-10-29">
+      <description>
+        <p>Wiederherstellungsproben prüfen Sicherungen in getrennten Bibliotheken. Manuelle Aufnahmedaten, entfernte Koordinaten und Ortsnamen bleiben beim Restore erhalten.</p>
+        <p>Die neue Konfliktübersicht schützt gespeicherte Änderungen. Zusammengesetzte Befehle erkennen gleichzeitig geänderte Angaben; große Aktionen werden gebündelt vorbereitet und vor Übergröße geschützt.</p>
+        <p>Die Importvorschau bindet Inhalt, Dateizeit und Regelaktionen bis zur Übernahme. Der Server begrenzt JSON-Anfragen und trennt Gastdecoder vom Datenverzeichnis.</p>
+      </description>
+    </release>
     <release version="3.49.3" date="2026-10-28">
       <description>
         <p>Web interface: the family tree now fills the window height on wide screens. The fixed sidebar was taken for the phone tab bar, so the tree area always fell back to its minimum height of 320 pixels.</p>
