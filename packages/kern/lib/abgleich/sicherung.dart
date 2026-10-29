@@ -1,3 +1,4 @@
+import '../services/backup_service.dart' show BackupProbeErgebnis;
 import 'verbindung.dart';
 
 /// Wie die Sicherung des Servers steht (siehe dort `Serversicherung`) –
@@ -12,11 +13,17 @@ class Serversicherungsstand {
     this.fehler,
     this.naechster,
     this.neu = 0,
+    this.proben = const [],
   });
 
   factory Serversicherungsstand.ausJson(Map<String, Object?> j) =>
       Serversicherungsstand(
         stufe: '${j['stufe'] ?? 'aus'}',
+        proben: [
+          for (final k in (j['konten'] as List?) ?? const [])
+            if ((k as Map)['wiederherstellungsprobe'] case final Map p)
+              BackupProbeErgebnis.ausJson(p.cast<String, dynamic>()),
+        ],
         ziel: j['ziel'] as String?,
         laeuft: j['laeuft'] == true,
         letzterErfolg: DateTime.tryParse('${j['letzterErfolg']}')?.toLocal(),
@@ -42,6 +49,7 @@ class Serversicherungsstand {
 
   /// Neue Dateien im letzten Lauf, über alle Konten.
   final int neu;
+  final List<BackupProbeErgebnis> proben;
 
   /// Ob ein Verwalter hinsehen sollte.
   bool get warnt => const {'zielFehlt', 'fehler', 'veraltet'}.contains(stufe);

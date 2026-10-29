@@ -1113,6 +1113,62 @@ bewusst nicht mitgesichert – nach einer Wiederherstellung müssten Gesichter
 erneut zugeordnet werden (die Erkennung selbst läuft aber automatisch
 erneut, sobald das YuNet-Modell installiert ist).
 
+## Wiederherstellungsprobe, Importvorschau und Konflikte
+
+Nach einer vollständigen Sicherung stellt Photo Vault automatisch bis zu drei
+rotierend ausgewählte Originale in einer getrennten temporären Bibliothek
+wieder her. Geprüft werden Prüfsummen, Metadaten, Tags und Albumzuordnungen;
+ein vorhandener Datenbankschnappschuss zusätzlich auf Integrität und
+Fremdschlüssel. Die temporären Dateien werden anschließend entfernt. Unter
+**Einstellungen → Wiederherstellung erproben** lässt sich die Probe auch
+manuell auslösen. Der Nachweis am Sicherungsziel nennt Zeitpunkt und Umfang;
+ein früherer Erfolg bleibt bei einem Fehler als historischer Stand sichtbar.
+Eine Stichprobe bestätigt nicht die gesamte Sammlung. Die automatische Probe
+verwendet den bereits verfügbaren Schlüssel und prüft den mitgesicherten
+Schlüsselumschlag auf Struktur. Ob die Passphrase den Schlüssel tatsächlich
+öffnet, prüft der manuell ausgelöste Lauf. Das Originalbudget
+beträgt 128 MiB, das Datenbankbudget 512 MiB; passt kein Original hinein,
+wird kein Erfolg gemeldet. Die vollständige Dateiprüfung bleibt separat
+verfügbar. Bei begrenzten oder unvollständigen Sicherungsläufen entsteht
+kein neuer erfolgreicher Nachweis. Auch der Server führt diese Probe aus
+und meldet Fehler an die verbundenen Apps.
+
+Der Datei-, Ordner- und Kameraimport am Rechner zeigt vor der Übernahme eine
+**Importvorschau**: vorhandene und ausgewählte Dubletten, nicht unterstützte
+oder unlesbare Dateien, geschätzte Aufnahmedaten, Platzbedarf der Originale
+sowie geplante Alben, Tags und Favoriten. Die Auswahl lässt sich ändern;
+Regeln können vor dem Import bearbeitet und neu geprüft werden. Neue Regeln
+reagieren auf Text im Dateinamen oder auf Dateiendungen. Regeln zur
+Bilderkennung werden ausdrücklich erst nach der Analyse ausgewertet.
+Die Vorschau schreibt keine Fotos oder Metadaten in die Bibliothek. Vor der
+Übernahme werden Regelstand und Dateiinhalt erneut geprüft, bei Uploads
+auch auf dem Server. Ein geänderter Stand erfordert eine neue Vorschau.
+Vorschaubilder und Datenbank benötigen zusätzlichen Speicher.
+
+**Einstellungen → Server → Änderungen und Konflikte** (am Telefon unter
+**Konto**) zeigt wartende und dauerhaft abgelehnte Änderungen. Ändern zwei
+Geräte dieselben Angaben unterschiedlich, bleibt die eigene Absicht erhalten,
+während der aktuelle Serverstand in die Bibliothek kommt. Unabhängige Felder
+können weiter zusammengeführt werden. Die Entscheidung lautet „Serverstand
+behalten“ oder „Eigene Änderung erneut anwenden“ und gilt für die gesamte
+ursprüngliche Aktion. Ändert sich der Serverstand während der Entscheidung,
+muss der neue Vergleich bestätigt werden. Gesperrte oder entfernte Aufnahmen
+können darüber nicht erneut verändert werden. Gespeicherte Absichten liegen
+verschlüsselt vor; der getrennte Geräteschlüssel bleibt bei einer erneuerten Sitzung derselben
+lokalen Bibliothek erhalten. Bewusstes Abmelden am Telefon löscht dessen
+Bibliothekskopie einschließlich offener Änderungen und Konflikte; der
+Bestätigungsdialog weist darauf hin. Fehlt dieser Schlüssel, werden Daten nicht durch einen
+neuen Schlüssel überschrieben.
+
+Für geprüfte Uploads und Konfliktschutz müssen Server und Apps diese
+Funktionen unterstützen. Neue Apps halten geschützte Änderungen bei einem
+älteren Server zurück. Ältere Apps bleiben mit dem neuen Server kompatibel,
+senden aber weiterhin ohne Konfliktbasis; für durchgängigen Schutz müssen
+alle schreibenden Geräte aktualisiert sein. Bereits vor der Aktualisierung
+gespeicherte Befehle erhalten nachträglich eine Verschlüsselung, können
+aber keine rückwirkende Konfliktbasis erhalten; diese Altaufträge werden
+weiterhin nach dem bisherigen Verfahren abgearbeitet.
+
 ## Architektur
 
 ```

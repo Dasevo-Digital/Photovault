@@ -10,6 +10,7 @@ import '../../state/library_state.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/einfuegbares_menue.dart';
 import 'gemeinsam.dart';
+import 'backup_probe_status.dart';
 
 /// Die Sicherung des Servers (Issue #125), für Verwalter: wie sie steht,
 /// einrichten, ein neues Ziel annehmen, jetzt sichern.
@@ -80,6 +81,13 @@ class ServerSicherungAbschnitt extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(text, style: warnt ? fehlerfarbe : null),
+        for (final probe in s.proben)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.fact_check_outlined),
+            title: Text(t.backupProbeTitel),
+            subtitle: Text(backupProbeText(context, probe)),
+          ),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,

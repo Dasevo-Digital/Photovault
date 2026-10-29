@@ -240,6 +240,7 @@ class Serversicherung {
         await _verpackterSchluesselIn(b.db, verpackt);
         final dienst = BackupService(b.db, b.pfade);
         var gesamt = 0, fehlgeschlagen = 0;
+        BackupProbeErgebnis? probe;
         await for (final f in dienst.performAutoBackup(
           p.join(ziel!.path, ordnerFuer(k)),
           schluessel,
@@ -247,6 +248,7 @@ class Serversicherung {
         )) {
           gesamt = f.total;
           fehlgeschlagen += f.fehlgeschlagen ?? 0;
+          probe = f.wiederherstellungsprobe ?? probe;
         }
         await b.db.setLastAutoBackupAt(_uhr());
         ergebnis.add({
@@ -254,7 +256,11 @@ class Serversicherung {
           'dateien': gesamt,
           'neu': dienst.letzterLaufNeu,
           'fehlgeschlagen': fehlgeschlagen,
+          'wiederherstellungsprobe': probe?.alsJson(),
         });
+        if (probe != null && !probe.erfolgreich) {
+          fehler ??= 'pv_probe_unlesbar';
+        }
         if (fehlgeschlagen > 0) {
           fehler ??= '$fehlgeschlagen Dateien von „${k.name}“ nicht gesichert';
         }

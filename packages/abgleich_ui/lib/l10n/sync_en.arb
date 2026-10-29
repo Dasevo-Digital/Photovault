@@ -1,0 +1,69 @@
+{
+  "@@locale": "en",
+  "titel": "Changes and conflicts",
+  "aktualisieren": "Retry sync",
+  "wartet": "Waiting to be sent",
+  "konflikt": "Changed concurrently",
+  "abgelehnt": "Rejected by the server",
+  "unlesbar": "Can no longer be decrypted on this device",
+  "leer": "No pending changes or conflicts.",
+  "mehr": "Load more",
+  "fehler": "Could not refresh the overview. Saved changes are retained.",
+  "alt": "The server must be updated before guarded changes can be sent.",
+  "geschuetzt": "At least one affected photo is locked. Contents and reapplying remain locked.",
+  "entfernt": "An affected photo has been removed or trashed. The old change cannot be reapplied.",
+  "behalten": "Keep server version",
+  "anwenden": "Reapply my change",
+  "entscheidung": "This decision applies to the entire original action, including all affected photos. Other pending changes are retained.",
+  "wartetText": "This is the saved local intent. The server version will be checked when connected.",
+  "geaendert": "The server version has changed again. Review the new comparison before deciding.",
+  "server": "Server",
+  "eigen": "My intent",
+  "unbekannt": "Library change",
+  "favorit": "Change favorite",
+  "bewertung": "Change rating",
+  "farbe": "Change color label",
+  "beschreibung": "Change description",
+  "album": "Change album",
+  "tag": "Change tags",
+  "person": "Change people",
+  "wertFavorit": "Favorite",
+  "wertBewertung": "Rating",
+  "wertFarbe": "Color label",
+  "wertBeschreibung": "Description",
+  "wertName": "Name",
+  "wertDatum": "Capture date",
+  "wertAlbum": "Album",
+  "wertTag": "Tag",
+  "wertPerson": "Person",
+  "wertOrt": "Location",
+  "ja": "Yes",
+  "nein": "No",
+  "kein": "No value / removed",
+  "komplex": "Further details of this action are saved; the decision also applies to them.",
+  "abbrechen": "Cancel",
+  "bestaetigen": "Confirm",
+  "grundKonflikt": "Another device changed the same fields.",
+  "grundAbgelehnt": "The server could not perform the action, for example due to missing permissions or invalid data.",
+  "anzahl": "{offen} pending · {faelle} to resolve",
+  "@anzahl": {
+    "placeholders": {
+      "offen": {
+        "type": "int"
+      },
+      "faelle": {
+        "type": "int"
+      }
+    }
+  },
+  "fotos": "{anzahl} affected photos",
+  "@fotos": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "wertBreite": "Latitude",
+  "wertLaenge": "Longitude"
+}

@@ -79,7 +79,7 @@
   "kontoAbmelden": "Sign out",
   "kontoAbmeldenHinweis": "Deletes the copy on this phone; everything stays on the server.",
   "kontoAbmeldenTitel": "Sign out?",
-  "kontoAbmeldenText": "The phone signs out of the server and deletes its copy of the library with all downloaded images. Changes still waiting are lost.",
+  "kontoAbmeldenText": "The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost.",
   "geraetVorgabe": "Phone",
   "anmeldenTitel": "Connect to server",
   "anmeldenErklaerung": "Photo Vault on the phone shows the library of your Photo Vault server – with timeline, search, albums, people and map, even offline.",
@@ -834,5 +834,6 @@
   "variantenRueckgaengig": "Undo",
   "variantenEinzeln": "Show variants separately",
   "variantenEinzelnFrage": "Show the {anzahl} versions separately again? No file is deleted.",
-  "albumOfflineBelegt": "Offline on this phone · {groesse} · new photos follow only over Wi-Fi"
+  "albumOfflineBelegt": "Offline on this phone · {groesse} · new photos follow only over Wi-Fi",
+  "syncUebersicht": "Changes and conflicts"
 }

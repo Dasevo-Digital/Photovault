@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:kern/abgleich/befehlsbasis.dart';
 
 import 'package:drift/drift.dart' show Variable;
 import 'package:kern/abgleich/protokoll.dart';
@@ -233,49 +234,70 @@ class Abgleichsapi {
           'fehler': 'jeder Befehl braucht eine kennung',
         }, status: 400);
       }
-      if (await _erledigt(b, kennung)) {
-        ergebnisse.add({'kennung': kennung, 'ok': true, 'schon': true});
-        continue;
-      }
-      try {
-        final befehl = Befehl.ausJson(eintrag);
-        final ergebnis = await b.db.transaction(() async {
-          final r = await b.db.fuehreAus(befehl);
-          await _merke(b, kennung);
-          return r;
-        });
-        ergebnisse.add({
-          'kennung': kennung,
-          'ok': true,
-          'ergebnis': ergebnisAlsJson(ergebnis),
-        });
-      } on Object catch (fehler) {
-        // Auch ein gescheiterter Befehl ist erledigt: Ihn noch einmal zu
-        // schicken, änderte nichts daran.
-        await _merke(b, kennung);
-        ergebnisse.add({'kennung': kennung, 'ok': false, 'fehler': '$fehler'});
-      }
+      final ergebnis = await b.db.transaction(() async {
+        final gespeichert = await b.db
+            .customSelect(
+              'SELECT antwort FROM pv_erledigt WHERE kennung = ?',
+              variables: [Variable<String>(kennung)],
+            )
+            .getSingleOrNull();
+        if (gespeichert != null) {
+          final antwort = gespeichert.readNullable<String>('antwort');
+          return antwort == null
+              ? <String, Object?>{'kennung': kennung, 'ok': true, 'schon': true}
+              : <String, Object?>{
+                  ...(jsonDecode(antwort) as Map).cast<String, Object?>(),
+                  'schon': true,
+                };
+        }
+        Map<String, Object?> antwort;
+        try {
+          antwort = await b.db.transaction(() async {
+            final befehl = Befehl.ausJson(eintrag);
+            final roh = eintrag['basis'];
+            if (roh != null && (roh is! List || roh.length > 50000)) {
+              throw const FormatException('pv_sync_basis');
+            }
+            final basis = [
+              for (final r in roh as List? ?? const [])
+                Befehlsbasis.ausJson((r as Map).cast<String, Object?>()),
+            ];
+            if (!await Befehlsbasis.passt(b.protokoll, basis)) {
+              return <String, Object?>{
+                'kennung': kennung,
+                'ok': false,
+                'fehler': 'pv_sync_konflikt',
+                'konflikt': true,
+              };
+            }
+            final r = await b.db.fuehreAus(befehl);
+            return <String, Object?>{
+              'kennung': kennung,
+              'ok': true,
+              'ergebnis': ergebnisAlsJson(r),
+            };
+          }, requireNew: true);
+        } on Object {
+          antwort = {
+            'kennung': kennung,
+            'ok': false,
+            'fehler': 'pv_befehl_abgelehnt',
+          };
+        }
+        await b.db.customStatement(
+          'INSERT INTO pv_erledigt (kennung, stand, am, antwort) VALUES (?, '
+          '(SELECT coalesce(max(seq), 0) FROM pv_aenderungen), ?, ?)',
+          [kennung, DateTime.now().millisecondsSinceEpoch, jsonEncode(antwort)],
+        );
+        return antwort;
+      });
+      ergebnisse.add(ergebnis);
     }
     return _json({
       'ergebnisse': ergebnisse,
       'stand': await b.protokoll.stand(),
     });
   }
-
-  Future<bool> _erledigt(Bibliothek b, String kennung) async =>
-      (await b.db
-          .customSelect(
-            'SELECT 1 FROM pv_erledigt WHERE kennung = ?',
-            variables: [Variable<String>(kennung)],
-          )
-          .getSingleOrNull()) !=
-      null;
-
-  Future<void> _merke(Bibliothek b, String kennung) => b.db.customStatement(
-    'INSERT OR IGNORE INTO pv_erledigt (kennung, stand, am) '
-    'VALUES (?, (SELECT coalesce(max(seq), 0) FROM pv_aenderungen), ?)',
-    [kennung, DateTime.now().millisecondsSinceEpoch],
-  );
 
   /// Eine Datei der Bibliothek nach ihrem Pfad (wie in der Datenbank):
   /// Miniaturen, Vorschauen, Originale, Gesichter, Masken … Mit `Range`.

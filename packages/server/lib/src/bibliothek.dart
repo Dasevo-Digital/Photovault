@@ -120,6 +120,14 @@ class Bibliothek {
       'CREATE TABLE IF NOT EXISTS pv_erledigt ('
       'kennung TEXT PRIMARY KEY, stand INTEGER NOT NULL, am INTEGER NOT NULL)',
     );
+    final erledigtSpalten = await db
+        .customSelect('PRAGMA table_info(pv_erledigt)')
+        .get();
+    if (!erledigtSpalten.any((r) => r.read<String>('name') == 'antwort')) {
+      await db.customStatement(
+        'ALTER TABLE pv_erledigt ADD COLUMN antwort TEXT',
+      );
+    }
     return Bibliothek._(
       ordner,
       db,

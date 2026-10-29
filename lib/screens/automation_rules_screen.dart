@@ -9,12 +9,15 @@ import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/einfuegbares_menue.dart';
+import '../services/meldungsdienst.dart';
 
 /// Der Name eines Auslösers in der Oberflächensprache.
 String _ausloeserName(AppTexte t, String art) => switch (art) {
   'location' => t.regelAusloeserOrt,
   'aiTag' => t.regelAusloeserTag,
   'dateRange' => t.regelAusloeserDatum,
+  'dateiname' => t.regelAusloeserDateiname,
+  'dateiendung' => t.regelAusloeserDateiendung,
   _ => art,
 };
 
@@ -63,6 +66,21 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
       ),
     );
     if (result == null) return;
+    if (const {'dateiname', 'dateiendung'}.contains(result.triggerType) &&
+        widget.library.abgleich != null) {
+      try {
+        final z = await widget.library.abgleich!.verbindung.hole(
+          'api/v1/zustand',
+        );
+        if ((z['funktionen'] as Map?)?['importplan'] != 1) {
+          if (mounted) melde.warnung(AppTexte.of(context).importPlanServerAlt);
+          return;
+        }
+      } on Object {
+        if (mounted) melde.warnung(AppTexte.of(context).importPlanServerAlt);
+        return;
+      }
+    }
 
     var albumId = result.existingAlbumId;
     if (result.newAlbumName != null) {
@@ -131,6 +149,9 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
           rule.regionCenterLat!.toStringAsFixed(2),
           rule.regionCenterLon!.toStringAsFixed(2),
         );
+      case 'dateiname':
+      case 'dateiendung':
+        return rule.aiTagTerm ?? '–';
       case 'aiTag':
         return AppTexte.of(context).regelTagWert(rule.aiTagTerm ?? '–');
       case 'dateRange':
@@ -327,6 +348,9 @@ class _AutomationRuleEditorDialogState
   late final _newAlbumCtrl = TextEditingController();
   late String _triggerType = widget.existing?.triggerType ?? 'location';
   String? _aiTagTerm;
+  late final _dateiCtrl = TextEditingController(
+    text: widget.existing?.aiTagTerm ?? '',
+  );
   DateTime? _dateFrom;
   DateTime? _dateTo;
   AlbumData? _selectedAlbum;
@@ -351,6 +375,7 @@ class _AutomationRuleEditorDialogState
 
   @override
   void dispose() {
+    _dateiCtrl.dispose();
     _nameCtrl.dispose();
     _latCtrl.dispose();
     _lonCtrl.dispose();
@@ -403,6 +428,20 @@ class _AutomationRuleEditorDialogState
           return;
         }
         radius = _radiusKm;
+      case 'dateiname':
+      case 'dateiendung':
+        aiTagTerm = _dateiCtrl.text.trim();
+        if (aiTagTerm.isEmpty ||
+            (_triggerType == 'dateiendung' &&
+                !aiTagTerm
+                    .split(',')
+                    .every(
+                      (s) =>
+                          RegExp(r'^\.?[a-zA-Z0-9]{1,10}$').hasMatch(s.trim()),
+                    ))) {
+          setState(() => _error = AppTexte.of(context).regelDateiUngueltig);
+          return;
+        }
       case 'aiTag':
         if (_aiTagTerm == null) {
           setState(() => _error = AppTexte.of(context).regelTagWaehlen);
@@ -493,6 +532,17 @@ class _AutomationRuleEditorDialogState
             ),
           ],
         );
+      case 'dateiname':
+      case 'dateiendung':
+        return TextField(
+          controller: _dateiCtrl,
+          contextMenuBuilder: einfuegbaresMenue,
+          decoration: InputDecoration(
+            labelText: _triggerType == 'dateiname'
+                ? AppTexte.of(context).regelDateinameWert
+                : AppTexte.of(context).regelDateiendungWert,
+          ),
+        );
       case 'aiTag':
         return widget.vocabulary.isEmpty
             ? Text(AppTexte.of(context).regelKeinVokabular)
@@ -576,7 +626,13 @@ class _AutomationRuleEditorDialogState
                   labelText: AppTexte.of(context).regelBedingung,
                 ),
                 items: [
-                  for (final art in const ['location', 'aiTag', 'dateRange'])
+                  for (final art in const [
+                    'location',
+                    'aiTag',
+                    'dateRange',
+                    'dateiname',
+                    'dateiendung',
+                  ])
                     DropdownMenuItem(
                       value: art,
                       child: Text(_ausloeserName(AppTexte.of(context), art)),

@@ -1,0 +1,69 @@
+{
+  "@@locale": "de",
+  "titel": "Änderungen und Konflikte",
+  "aktualisieren": "Abgleich erneut versuchen",
+  "wartet": "Wartet auf Übertragung",
+  "konflikt": "Gleichzeitig geändert",
+  "abgelehnt": "Vom Server abgelehnt",
+  "unlesbar": "Auf diesem Gerät nicht mehr entschlüsselbar",
+  "leer": "Keine offenen Änderungen oder Konflikte.",
+  "mehr": "Weitere laden",
+  "fehler": "Die Übersicht konnte nicht aktualisiert werden. Gespeicherte Änderungen bleiben erhalten.",
+  "alt": "Der Server muss aktualisiert werden, bevor geschützte Änderungen übertragen werden können.",
+  "geschuetzt": "Mindestens eine betroffene Aufnahme ist gesperrt. Inhalte und erneutes Anwenden bleiben gesperrt.",
+  "entfernt": "Eine betroffene Aufnahme wurde entfernt oder liegt im Papierkorb. Die alte Änderung kann nicht erneut angewandt werden.",
+  "behalten": "Serverstand behalten",
+  "anwenden": "Eigene Änderung erneut anwenden",
+  "entscheidung": "Die Entscheidung gilt für die gesamte ursprüngliche Aktion einschließlich aller betroffenen Aufnahmen. Andere offene Änderungen bleiben erhalten.",
+  "wartetText": "Dies ist die gespeicherte lokale Absicht. Der Serverstand wird erst bei einer Verbindung geprüft.",
+  "geaendert": "Der Serverstand hat sich inzwischen geändert. Bitte den neuen Vergleich prüfen und erneut entscheiden.",
+  "server": "Server",
+  "eigen": "Eigene Absicht",
+  "unbekannt": "Bibliotheksänderung",
+  "favorit": "Favorit ändern",
+  "bewertung": "Bewertung ändern",
+  "farbe": "Farbmarke ändern",
+  "beschreibung": "Beschreibung ändern",
+  "album": "Album ändern",
+  "tag": "Tags ändern",
+  "person": "Personen ändern",
+  "wertFavorit": "Favorit",
+  "wertBewertung": "Bewertung",
+  "wertFarbe": "Farbmarke",
+  "wertBeschreibung": "Beschreibung",
+  "wertName": "Name",
+  "wertDatum": "Aufnahmedatum",
+  "wertAlbum": "Album",
+  "wertTag": "Tag",
+  "wertPerson": "Person",
+  "wertOrt": "Ort",
+  "ja": "Ja",
+  "nein": "Nein",
+  "kein": "Kein Wert / entfernt",
+  "komplex": "Weitere Angaben dieser Aktion sind gespeichert; die Entscheidung gilt auch für sie.",
+  "abbrechen": "Abbrechen",
+  "bestaetigen": "Bestätigen",
+  "grundKonflikt": "Ein anderes Gerät hat dieselben Angaben verändert.",
+  "grundAbgelehnt": "Der Server konnte die Aktion nicht ausführen, etwa wegen fehlender Rechte oder ungültiger Daten.",
+  "anzahl": "{offen} wartend · {faelle} zu entscheiden",
+  "@anzahl": {
+    "placeholders": {
+      "offen": {
+        "type": "int"
+      },
+      "faelle": {
+        "type": "int"
+      }
+    }
+  },
+  "fotos": "{anzahl} betroffene Aufnahmen",
+  "@fotos": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "wertBreite": "Breitengrad",
+  "wertLaenge": "Längengrad"
+}

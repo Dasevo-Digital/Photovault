@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -18,6 +19,7 @@ import '../../widgets/pin_dialogs.dart';
 import '../../widgets/progress_dialog.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
+import 'backup_probe_status.dart';
 
 /// Die Passphrase, mit der Sicherungen verschlüsselt werden.
 class SicherungsschluesselGruppe extends StatelessWidget {
@@ -186,6 +188,11 @@ class SicherungVonHandGruppe extends StatelessWidget {
                   label: Text(AppTexte.of(context).einstBackupPruefen),
                 ),
               ),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _pruefeWiederherstellung(stand),
+              icon: const Icon(Icons.restore_outlined),
+              label: Text(AppTexte.of(context).backupProbeStarten),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -376,6 +383,12 @@ class AutomatischeSicherungGruppe extends StatelessWidget {
                         : datumZeitText(context, lastRun),
                   ),
                 ),
+                if (destination != null)
+                  BackupProbeStatus(
+                    dienst: stand.library.backupService,
+                    ziel: destination,
+                    letzterLauf: lastRun,
+                  ),
                 if (enabled && !keyReady)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -439,6 +452,13 @@ String _wiederherstellZeile(AppTexte t, BackupProgress p) {
 /// gegriffen hat, steht als Zahl in [BackupProgress.grenzeOffen] und wird
 /// erst hier zu einem Satz.
 String _backupZeile(AppTexte t, BackupProgress p) {
+  if (p.wiederherstellungsprobe case final probe?) {
+    return backupProbeTextMit(
+      t,
+      probe,
+      (d) => DateFormat.yMd().add_Hm().format(d),
+    );
+  }
   if (p.fehlgeschlagen != null) {
     return t.backupNichtGesichert(p.fehlgeschlagen!);
   }
@@ -693,7 +713,11 @@ Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
       title: AppTexte.of(context).einstBackupLaeuft,
       stream: stand.library
           .runAutoBackupNow(destination)
-          .map((p) => p.total == 0 ? keineNeuen : _backupZeile(t, p))
+          .map(
+            (p) => p.total == 0 && p.wiederherstellungsprobe == null
+                ? keineNeuen
+                : _backupZeile(t, p),
+          )
           // Lesbar statt „PathAccessException … errno = 1“ (#211).
           .handleError(
             (Object _) => throw t.backupZielGesperrt,
@@ -702,4 +726,54 @@ Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
     ),
   );
   if (context.mounted) stand.reloadBackupSettings();
+}
+
+Future<void> _pruefeWiederherstellung(Einstellungsstand stand) async {
+  final context = stand.kontext;
+  final t = AppTexte.of(context);
+  final source = await FilePicker.getDirectoryPath(
+    dialogTitle: t.einstBackupOrdnerWaehlen,
+  );
+  if (source == null || !context.mounted) return;
+  final wurzel = await BackupPruefdienst.findeBackupWurzel(source);
+  String? passphrase;
+  if (await File(p.join(wurzel, 'vault.key')).exists()) {
+    if (!context.mounted) return;
+    passphrase = await showEnterPassphraseDialog(
+      context,
+      title: t.einstBackupPassphraseEingeben,
+    );
+    if (passphrase == null) return;
+  }
+  if (!context.mounted) return;
+  BackupProbeErgebnis? ergebnis;
+  final format = DateFormat.yMd(
+    Localizations.localeOf(context).toString(),
+  ).add_Hm();
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialog) => ProgressDialog(
+      title: t.backupProbeTitel,
+      fehlerText: (e) => fehlertext(dialog, e),
+      stream:
+          Stream.fromFuture(
+            stand.library.backupService.pruefeWiederherstellung(
+              wurzel,
+              passphrase: passphrase,
+            ),
+          ).map((r) {
+            ergebnis = r;
+            return backupProbeTextMit(t, r, format.format);
+          }),
+    ),
+  );
+  if (context.mounted && ergebnis != null) {
+    final text = backupProbeText(context, ergebnis!);
+    if (ergebnis!.erfolgreich) {
+      melde.erfolg(text);
+    } else {
+      melde.warnung(text);
+    }
+  }
 }

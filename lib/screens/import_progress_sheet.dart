@@ -9,6 +9,8 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/camera_source_picker_dialog.dart';
 import 'asset_viewer_screen.dart';
+import 'import_plan_screen.dart';
+import 'package:kern/services/import_plan.dart';
 import '../services/meldungsdienst.dart';
 
 /// Fragt zunächst, ob einzelne Dateien, ein ganzer Ordner oder direkt eine
@@ -59,7 +61,7 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     );
     if (folder == null) return;
     if (!context.mounted) return;
-    paths = await library.importService.collectSupportedFilesInFolder(folder);
+    paths = await ImportPlanDienst.dateienImOrdner(folder);
     if (paths.isEmpty) {
       if (context.mounted) {
         melde.hinweis(AppTexte.of(context).importNichtsImOrdner);
@@ -70,7 +72,7 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     final dcimPath = await showCameraSourcePickerDialog(context);
     if (dcimPath == null) return;
     if (!context.mounted) return;
-    paths = await library.importService.collectSupportedFilesInFolder(dcimPath);
+    paths = await ImportPlanDienst.dateienImOrdner(dcimPath);
     if (paths.isEmpty) {
       if (context.mounted) {
         melde.hinweis(AppTexte.of(context).importNichtsAufDatentraeger);
@@ -81,12 +83,20 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
 
   if (paths.isEmpty || !context.mounted) return;
 
+  final plan = await Navigator.of(context).push<ImportPlan>(
+    MaterialPageRoute(
+      builder: (_) => ImportPlanScreen(library: library, dateien: paths),
+    ),
+  );
+  if (plan == null || !context.mounted || plan.eintraege.isEmpty) return;
+  paths = plan.eintraege.map((e) => e.pfad).toList();
+
   await showModalBottomSheet(
     context: context,
     isDismissible: false,
     enableDrag: false,
     builder: (context) =>
-        _ImportProgressSheet(library: library, filePaths: paths),
+        _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
   );
 }
 
@@ -119,7 +129,12 @@ String? importBilanz(
 class _ImportProgressSheet extends StatefulWidget {
   final LibraryState library;
   final List<String> filePaths;
-  const _ImportProgressSheet({required this.library, required this.filePaths});
+  final ImportPlan plan;
+  const _ImportProgressSheet({
+    required this.library,
+    required this.filePaths,
+    required this.plan,
+  });
 
   @override
   State<_ImportProgressSheet> createState() => _ImportProgressSheetState();
@@ -151,18 +166,31 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
   }
 
   Future<void> _run() async {
-    await for (final progress in widget.library.importFiles(widget.filePaths)) {
-      if (!mounted) return;
-      setState(() {
-        _done = progress.done;
-        _total = progress.total;
-        _currentFile = progress.currentFile;
-        if (progress.assetId != null) _importedAssetIds.add(progress.assetId!);
-        if (progress.duplikat) _duplikate++;
-        if (progress.gescheitert) _fehler++;
-      });
+    try {
+      await for (final progress in widget.library.importFiles(
+        widget.filePaths,
+        plan: widget.plan,
+      )) {
+        if (!mounted) return;
+        setState(() {
+          _done = progress.done;
+          _total = progress.total;
+          _currentFile = progress.currentFile;
+          if (progress.assetId != null) {
+            _importedAssetIds.add(progress.assetId!);
+          }
+          if (progress.duplikat) _duplikate++;
+          if (progress.gescheitert) _fehler++;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _fehler++);
+        melde.warnung(AppTexte.of(context).importPlanGeaendert);
+      }
+    } finally {
+      if (mounted) setState(() => _finished = true);
     }
-    if (mounted) setState(() => _finished = true);
   }
 
   Future<void> _reviewImported() async {

@@ -4852,5 +4852,140 @@
   "serverRechenzeitAmNetzText": "Not on battery – a computer without a battery always computes.",
   "serverRechenzeitUnbenutztText": "On power, and only after nobody has used mouse or keyboard for 5 minutes.",
   "serverRechenhilfePausiertAkku": "Paused – the computer is on battery.",
-  "serverRechenhilfePausiertBenutzt": "Paused – the computer is in use."
+  "serverRechenhilfePausiertBenutzt": "Paused – the computer is in use.",
+  "backupProbeTitel": "Recovery drill",
+  "backupProbeNochNie": "No recovery drill yet. A sample is restored automatically after complete backups.",
+  "backupProbeStarten": "Run recovery drill",
+  "backupProbeMitDatenbank": "Database checked",
+  "backupProbeMitMetadaten": "Metadata checked",
+  "backupProbeErfolg": "{wann}: restored a sample of {originale} out of {gesamt} originals; {datenbank}. The active library was not changed.",
+  "@backupProbeErfolg": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      },
+      "originale": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      },
+      "datenbank": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbeFehler": "{wann}: the recovery drill failed. Check the backup files, passphrase and available space. An earlier success applies only to that earlier backup.",
+  "@backupProbeFehler": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbeZuGross": "{wann}: no original fits within the 128 MB sampling budget. A full file verification can still be run.",
+  "@backupProbeZuGross": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTitel": "Review import",
+  "importPlanRegeln": "Edit rules",
+  "importPlanHinweis": "Review the selection before importing. The displayed size covers originals; previews and the database need additional space. Rule actions reflect the current settings.",
+  "importPlanBilanz": "{neu} selected · {bytes} of originals · {duplikate} duplicates · {fehler} unavailable",
+  "@importPlanBilanz": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "duplikate": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanSpaeter": "{anzahl} rules based on detected image content are evaluated after image analysis.",
+  "@importPlanSpaeter": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanServerAlt": "The connected server does not support verified importing yet. Update the server first.",
+  "importPlanGeaendert": "Files or rules could not be checked reliably or have changed. Please run the review again.",
+  "importPlanErneut": "Review again",
+  "importPlanFortschritt": "Reviewed {fertig} of {gesamt} files",
+  "@importPlanFortschritt": {
+    "placeholders": {
+      "fertig": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanNeu": "New",
+  "importPlanVorhanden": "Already in the library",
+  "importPlanDoppelt": "Identical content already in this selection",
+  "importPlanFormat": "Unsupported format",
+  "importPlanFehler": "File missing, unreadable or changed during review",
+  "importPlanDatumGeschaetzt": "Estimated date",
+  "importPlanAlben": "Albums: {namen}",
+  "@importPlanAlben": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTags": "Tags: {namen}",
+  "@importPlanTags": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTreffer": "Matching rules: {namen}",
+  "@importPlanTreffer": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanFavorit": "Mark as favorite",
+  "importPlanUngueltigeZiele": "A rule references a missing album or tag. Correct the rule before importing.",
+  "importPlanStarten": "{anzahl, plural, =1{Import 1 file} other{Import {anzahl} files}}",
+  "@importPlanStarten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "regelAusloeserDateiname": "Filename contains",
+  "regelAusloeserDateiendung": "File extension",
+  "regelDateinameWert": "Text in filename",
+  "regelDateiendungWert": "Extensions, e.g. jpg, heic",
+  "regelDateiUngueltig": "Enter search text or valid comma-separated file extensions.",
+  "syncUebersicht": "Changes and conflicts",
+  "backupProbeLetzterErfolg": "Last successful drill: {wann} (at that time).",
+  "@backupProbeLetzterErfolg": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbePassphraseOffen": "This drill uses the already available key. The passphrase is checked by the manual recovery drill."
 }

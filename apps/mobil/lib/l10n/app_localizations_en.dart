@@ -219,7 +219,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kontoAbmeldenText =>
-      'The phone signs out of the server and deletes its copy of the library with all downloaded images. Changes still waiting are lost.';
+      'The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost.';
 
   @override
   String get geraetVorgabe => 'Phone';
@@ -2582,4 +2582,7 @@ class AppTexteEn extends AppTexte {
   String albumOfflineBelegt(String groesse) {
     return 'Offline on this phone · $groesse · new photos follow only over Wi-Fi';
   }
+
+  @override
+  String get syncUebersicht => 'Changes and conflicts';
 }

@@ -10,7 +10,16 @@ import '../db/database.dart';
 import '../protokoll.dart' as meldung;
 import 'abgleichsplan.dart';
 import 'protokoll.dart';
+import 'befehlsbasis.dart';
+import 'abgleichsfall.dart';
+import 'package:cryptography/cryptography.dart';
+
+export 'abgleichsfall.dart';
+
 import 'verbindung.dart';
+import 'verbindungsdatei.dart';
+
+part 'abgleichsfaelle.dart';
 
 /// Wie es um den Abgleich steht – für die Anzeige.
 class Abgleichszustand {
@@ -22,6 +31,8 @@ class Abgleichszustand {
     this.serverSchema,
     this.hierSchema,
     this.ungeklaert = false,
+    this.faelle = 0,
+    this.serverOhneKonfliktpruefung = false,
   });
 
   /// Ob der Server zuletzt geantwortet hat.
@@ -36,6 +47,8 @@ class Abgleichszustand {
 
   /// Befehle, die der Server noch nicht bestätigt hat.
   final int ausstehend;
+  final int faelle;
+  final bool serverOhneKonfliktpruefung;
 
   /// Befehle, die der Server abgelehnt hat (Art und Grund) – ihre Wirkung
   /// ist zurückgenommen.
@@ -85,11 +98,16 @@ class Abgleichszustand {
 /// Vorwegnahme. Die offenen Befehle werden deshalb danach noch einmal
 /// angewandt – dieselbe Reihenfolge wie später auf dem Server.
 class Abgleich {
-  Abgleich(this.db, this.verbindung) : protokoll = Protokoll(db);
+  Abgleich(this.db, this.verbindung, {SecretKey? fallschluessel})
+    : protokoll = Protokoll(db),
+      _festerFallschluessel = fallschluessel;
+
+  final SecretKey? _festerFallschluessel;
 
   final AppDatabase db;
   final Serververbindung verbindung;
   final Protokoll protokoll;
+  final Zone _betriebszone = Zone.current;
 
   final _zustand = StreamController<Abgleichszustand>.broadcast();
   Abgleichszustand _letzter = const Abgleichszustand(
@@ -105,6 +123,8 @@ class Abgleich {
   bool _laeuft = false;
   Future<void>? _schleife;
   Future<void>? _senden;
+  Future<void>? _sendelauf;
+  bool _serverOhneKonfliktpruefung = false;
   Completer<void>? _wecker;
 
   /// Tritt mit [beende] ein und bricht die wartende Abfrage ab – sonst
@@ -209,6 +229,42 @@ class Abgleich {
       'kennung TEXT NOT NULL UNIQUE, befehl TEXT NOT NULL, '
       'bestaetigt INTEGER, ok INTEGER, fehler TEXT)',
     );
+    final spalten = {
+      for (final r
+          in await db.customSelect('PRAGMA table_info(pv_ausgang)').get())
+        r.read<String>('name'),
+    };
+    for (final e in {
+      'basis': "TEXT NOT NULL DEFAULT '[]'",
+      'angelegt': 'INTEGER NOT NULL DEFAULT 0',
+    }.entries) {
+      if (!spalten.contains(e.key)) {
+        await db.customStatement(
+          'ALTER TABLE pv_ausgang ADD COLUMN ${e.key} ${e.value}',
+        );
+      }
+    }
+    await db.customStatement(
+      'CREATE TABLE IF NOT EXISTS pv_abgleichsfaelle ('
+      'kennung TEXT PRIMARY KEY, am INTEGER NOT NULL, grund TEXT NOT NULL, inhalt TEXT NOT NULL)',
+    );
+    // Ältere Warteschlangen trugen den Befehl im Klartext. Deren
+    // ursprüngliche Konfliktbasis lässt sich nachträglich nicht ableiten,
+    // der gespeicherte Inhalt wird dennoch mit dem Geräteschlüssel geschützt.
+    await db.transaction(() async {
+      for (final r
+          in await db.customSelect('SELECT nr, befehl FROM pv_ausgang').get()) {
+        final j = (jsonDecode(r.read<String>('befehl')) as Map)
+            .cast<String, Object?>();
+        if (j['art'] is String) {
+          final inhalt = await _verpackeFall({'befehl': j, 'basis': const []});
+          await db.customStatement(
+            'UPDATE pv_ausgang SET befehl = ? WHERE nr = ?',
+            [inhalt, r.read<int>('nr')],
+          );
+        }
+      }
+    });
     db.umleitung = vorwegnehmen;
     await _melde();
   }
@@ -226,6 +282,7 @@ class Abgleich {
     if (!_halt.isCompleted) _halt.complete();
     await _schleife;
     await _senden;
+    await _sendelauf;
     db.umleitung = null;
     await _zustand.close();
   }
@@ -233,18 +290,27 @@ class Abgleich {
   // --- Schreiben ---------------------------------------------------------
 
   /// Wendet [befehl] hier an und stellt ihn in die Warteschlange.
-  Future<T> vorwegnehmen<T>(Befehl<T> befehl) async {
-    final ergebnis = await db.transaction(() async {
-      final nr = await db.customInsert(
-        'INSERT INTO pv_ausgang (kennung, befehl) VALUES (?, ?)',
-        variables: [
-          Variable<String>(_neueKennung()),
-          Variable<String>(jsonEncode(befehl.alsJson())),
-        ],
-      );
-      return _mitSchalter(nr, () => befehl.anwenden(db));
+  Future<T> _stelleEin<T>(Befehl<T> befehl) => db.transaction(() async {
+    final basis = await Befehlsbasis.ermittle(protokoll, befehl);
+    final vorschau = await _verpackeFall({
+      'befehl': befehl.alsJson(),
+      'basis': [for (final b in basis) b.vorschauJson()],
     });
-    unawaited(_melde());
+    final nr = await db.customInsert(
+      'INSERT INTO pv_ausgang (kennung, befehl, basis, angelegt) VALUES (?, ?, ?, ?)',
+      variables: [
+        Variable<String>(_neueKennung()),
+        Variable<String>(vorschau),
+        Variable<String>(jsonEncode([for (final b in basis) b.alsJson()])),
+        Variable<int>(DateTime.now().millisecondsSinceEpoch),
+      ],
+    );
+    return _mitSchalter(nr, () => befehl.anwenden(db));
+  });
+
+  Future<T> vorwegnehmen<T>(Befehl<T> befehl) async {
+    final ergebnis = await _stelleEin(befehl);
+    await _melde();
     sendeBald();
     return ergebnis;
   }
@@ -261,40 +327,83 @@ class Abgleich {
   /// Schickt die Warteschlange bald – einmal, auch wenn mehrere fragen.
   void sendeBald() {
     if (!_laeuft || _senden != null) return;
-    _senden = sende()
+    _senden = _betriebszone
+        .run(sende)
         .catchError((Object _) {})
         .whenComplete(() => _senden = null);
   }
 
   /// Schickt alle unbestätigten Befehle im Stapel.
-  Future<void> sende() async {
+  Future<void> sende() =>
+      _sendelauf ??= _sende().whenComplete(() => _sendelauf = null);
+
+  Future<void> _sende() async {
     while (true) {
       final offen = await db
           .customSelect(
-            'SELECT kennung, befehl FROM pv_ausgang '
+            'SELECT kennung, befehl, basis, angelegt FROM pv_ausgang '
             'WHERE bestaetigt IS NULL ORDER BY nr LIMIT 100',
           )
           .get();
       if (offen.isEmpty) return;
+      if (offen.any((r) => r.read<String>('basis') != '[]')) {
+        final z = await verbindung.hole('api/v1/zustand');
+        _serverOhneKonfliktpruefung =
+            (z['funktionen'] as Map?)?['konfliktpruefung'] != 1;
+        if (_serverOhneKonfliktpruefung) {
+          await _melde(erreichbar: true);
+          return;
+        }
+      }
       final antwort = await verbindung.schicke('api/v1/befehle', {
         'befehle': [
           for (final z in offen)
             {
               'kennung': z.read<String>('kennung'),
-              ...(jsonDecode(z.read<String>('befehl')) as Map),
+              ...((await _leseAuftrag(z.read<String>('befehl')))['befehl']
+                  as Map),
+              'basis': jsonDecode(z.read<String>('basis')),
             },
         ],
       });
+      final ergebnisse = (antwort['ergebnisse']! as List).cast<Map>();
+      final gesendet = offen.map((z) => z.read<String>('kennung')).toSet();
+      final erhalten = ergebnisse.map((z) => z['kennung']).toSet();
+      if (ergebnisse.length != gesendet.length ||
+          erhalten.length != gesendet.length ||
+          !erhalten.containsAll(gesendet)) {
+        throw Serverfehler(502, 'pv_sync_antwort');
+      }
       final stand = antwort['stand']! as int;
       await db.transaction(() async {
-        for (final e in (antwort['ergebnisse']! as List).cast<Map>()) {
+        for (final e in ergebnisse) {
           final ok = e['ok'] == true;
           await db.customStatement(
             'UPDATE pv_ausgang SET bestaetigt = ?, ok = ?, fehler = ? '
             'WHERE kennung = ?',
             [stand, ok ? 1 : 0, e['fehler'], e['kennung']],
           );
-          if (!ok) _abgelehnt.add('${e['fehler']}');
+          if (!ok) {
+            _abgelehnt.add('${e['fehler']}');
+            final quelle = offen
+                .where((r) => r.read<String>('kennung') == e['kennung'])
+                .firstOrNull;
+            if (quelle != null) {
+              await db.customStatement(
+                'INSERT OR IGNORE INTO pv_abgleichsfaelle (kennung, am, grund, inhalt) VALUES (?, ?, ?, ?)',
+                [
+                  e['kennung'],
+                  quelle.read<int>('angelegt'),
+                  e['konflikt'] == true
+                      ? 'pv_sync_konflikt'
+                      : 'pv_befehl_abgelehnt',
+                  await _verpackeFall(
+                    await _leseAuftrag(quelle.read<String>('befehl')),
+                  ),
+                ],
+              );
+            }
+          }
         }
       });
       await _melde(erreichbar: true);
@@ -336,6 +445,7 @@ class Abgleich {
       final bis = a['bis']! as int;
       if (zeilen.isNotEmpty || bis != stand) {
         final tabellen = await db.transaction(() async {
+          if (bis <= await _stand()) return <String>{};
           final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
           await db.customStatement(
             'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
@@ -379,7 +489,8 @@ class Abgleich {
             )
             .get()) {
       final befehl = Befehl.ausJson(
-        (jsonDecode(z.read<String>('befehl')) as Map).cast<String, Object?>(),
+        ((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
+            .cast<String, Object?>(),
       );
       try {
         await _mitSchalter(z.read<int>('nr'), () => befehl.anwenden(db));
@@ -558,6 +669,12 @@ class Abgleich {
     _letzter = Abgleichszustand(
       erreichbar: erreichbar ?? _letzter.erreichbar,
       ausstehend: n,
+      faelle:
+          (await db
+                  .customSelect('SELECT count(*) AS n FROM pv_abgleichsfaelle')
+                  .getSingle())
+              .read<int>('n'),
+      serverOhneKonfliktpruefung: _serverOhneKonfliktpruefung,
       abgelehnt: List.unmodifiable(_abgelehnt),
       abgemeldet: abgemeldet,
       serverSchema: serverSchema,

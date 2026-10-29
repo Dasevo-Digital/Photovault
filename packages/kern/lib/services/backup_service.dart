@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:drift/drift.dart' show Variable;
+import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -20,6 +22,8 @@ import 'vault_crypto.dart';
 import 'xmp_writer.dart';
 
 import 'package:image/image.dart' as img;
+
+part 'backup_probe.dart';
 
 /// Geworfen, wenn ein verschlüsseltes Backup ohne Passphrase geöffnet werden
 /// soll – der Aufrufer zeigt seinen eigenen, übersetzten Hinweis.
@@ -77,6 +81,8 @@ class BackupProgress {
   /// Hinweis sähe es aus, als finge der Lauf von vorne an.
   final bool ausschnitteNeu;
 
+  final BackupProbeErgebnis? wiederherstellungsprobe;
+
   BackupProgress(
     this.done,
     this.total, {
@@ -85,6 +91,7 @@ class BackupProgress {
     this.fehlgeschlagen,
     this.uebernommeneZeilen,
     this.ausschnitteNeu = false,
+    this.wiederherstellungsprobe,
   });
 }
 
@@ -445,6 +452,20 @@ class BackupService {
 
     // Abschließende Meldung macht sichtbar, dass noch etwas aussteht –
     // sonst wirkt ein begrenzter Lauf wie ein vollständiges Backup.
+    // Eine begrenzte oder unvollständige Sicherung ist noch keine
+    // vollständig wiederherstellbare Generation.
+    if (!abgebrochenWegenLimit && fehlgeschlagen == 0) {
+      final probe = await pruefeWiederherstellung(
+        backupRoot.path,
+        schluessel: encryptionKey,
+      );
+      yield BackupProgress(
+        done,
+        pending.length,
+        wiederherstellungsprobe: probe,
+      );
+    }
+
     if (abgebrochenWegenLimit) {
       yield BackupProgress(
         done,
@@ -633,10 +654,14 @@ class BackupService {
     ImportService importService, {
     String? passphrase,
     String? generationSnapshotPath,
+    SecretKey? entschluesselungsschluessel,
+    Set<String>? auswahlPruefsummen,
+    bool streng = false,
+    Directory? zwischenlager,
   }) async* {
     final keyFile = File(p.join(backupRootPath, 'vault.key'));
-    SecretKey? decryptionKey;
-    if (await keyFile.exists()) {
+    SecretKey? decryptionKey = entschluesselungsschluessel;
+    if (decryptionKey == null && await keyFile.exists()) {
       if (passphrase == null) {
         throw const BackupBrauchtPassphrase();
       }
@@ -672,7 +697,7 @@ class BackupService {
         if (decryptionKey != null) {
           entschluesselteMetadaten = File(
             p.join(
-              Directory.systemTemp.path,
+              (zwischenlager ?? Directory.systemTemp).path,
               'photovault_restore_${_uuid.v4()}.json',
             ),
           );
@@ -689,6 +714,7 @@ class BackupService {
           metaAssets = (inhalt['assets'] as List<dynamic>? ?? [])
               .cast<Map<String, dynamic>>();
         } catch (e) {
+          if (streng) rethrow;
           // Beschädigte Metadaten dürfen den Restore NICHT abbrechen: Beim
           // alten Format werden die Dateien ohnehin über ihre Endung
           // gefunden, die Fotos kommen also trotzdem zurück (nur ohne
@@ -716,7 +742,7 @@ class BackupService {
           await schnappschuss.exists()) {
         entschluesselterSchnappschuss = File(
           p.join(
-            Directory.systemTemp.path,
+            (zwischenlager ?? Directory.systemTemp).path,
             'photovault_restore_${_uuid.v4()}.sqlite',
           ),
         );
@@ -747,12 +773,19 @@ class BackupService {
         // nicht möglich, genau das ist der Zweck.
         for (final eintrag in metaAssets) {
           final pruefsumme = eintrag['checksum'] as String?;
-          if (pruefsumme == null) continue;
+          if (pruefsumme == null ||
+              (auswahlPruefsummen != null &&
+                  !auswahlPruefsummen.contains(pruefsumme))) {
+            continue;
+          }
           final name = await VerschluesselteNamen.fuerPruefsumme(
             pruefsumme,
             decryptionKey,
           );
           final datei = File(p.join(datenOrdner.path, name));
+          if (!await datei.exists() && streng) {
+            throw const FormatException('pv_probe_original_fehlt');
+          }
           if (await datei.exists()) {
             files.add((
               pfad: datei.path,
@@ -761,6 +794,28 @@ class BackupService {
               ),
             ));
           }
+        }
+      } else if (auswahlPruefsummen != null) {
+        for (final eintrag in metaAssets) {
+          if (!auswahlPruefsummen.contains(eintrag['checksum'])) continue;
+          final relativ = eintrag['backupRelativePath'];
+          if (relativ is! String ||
+              p.isAbsolute(relativ) ||
+              !p.isWithin(
+                backupRootPath,
+                p.normalize(p.join(backupRootPath, relativ)),
+              )) {
+            throw const FormatException('pv_probe_pfad');
+          }
+          final quelle = File(p.join(backupRootPath, relativ));
+          final aufgeloest = await quelle.resolveSymbolicLinks();
+          if (!p.isWithin(
+            await Directory(backupRootPath).resolveSymbolicLinks(),
+            aufgeloest,
+          )) {
+            throw const FormatException('pv_probe_pfad');
+          }
+          files.add((pfad: quelle.path, endung: p.extension(quelle.path)));
         }
       } else if (await originalsIn.exists()) {
         // Altes Format: nach Endung durchsuchen. Bei verschlüsselten Backups
@@ -788,7 +843,10 @@ class BackupService {
       for (final eintrag in files) {
         final filePath = eintrag.pfad;
         if (decryptionKey == null) {
-          await importService.importFile(filePath);
+          final r = await importService.importFile(filePath);
+          if (streng && r.outcome != ImportOutcome.imported) {
+            throw const FormatException('pv_probe_import');
+          }
         } else {
           // In eine temporäre Datei mit derselben Endung entschlüsseln (für
           // Bild-/Videotyp-Erkennung beim Import), dann importieren und die
@@ -799,7 +857,7 @@ class BackupService {
           // Zwischenkopie.
           final tempFile = File(
             p.join(
-              Directory.systemTemp.path,
+              (zwischenlager ?? Directory.systemTemp).path,
               'photovault_restore_${_uuid.v4()}${eintrag.endung}',
             ),
           );
@@ -809,7 +867,10 @@ class BackupService {
               tempFile,
               decryptionKey,
             );
-            await importService.importFile(tempFile.path);
+            final r = await importService.importFile(tempFile.path);
+            if (streng && r.outcome != ImportOutcome.imported) {
+              throw const FormatException('pv_probe_import');
+            }
           } finally {
             if (await tempFile.exists()) await tempFile.delete();
           }
@@ -840,14 +901,14 @@ class BackupService {
         try {
           final klar = entschluesselterSchnappschuss ??= File(
             p.join(
-              Directory.systemTemp.path,
+              (zwischenlager ?? Directory.systemTemp).path,
               'photovault_restore_${_uuid.v4()}.sqlite',
             ),
           );
           if (!await klar.exists()) {
             await VaultCrypto.decryptFile(schnappschuss, klar, decryptionKey);
           }
-          final zeilen = await uebernimmAusSchnappschuss(klar);
+          final zeilen = await uebernimmAusSchnappschuss(klar, streng: streng);
           yield BackupProgress(
             files.length,
             files.length,
@@ -857,6 +918,7 @@ class BackupService {
           // zeichnen – sonst stünden alle Namen da und kein Bild dazu.
           yield* _zeichneAusschnitteNach();
         } catch (e) {
+          if (streng) rethrow;
           // Ein unlesbarer Schnappschuss darf die Wiederherstellung nicht
           // entwerten – die Fotos und ihre Beilagen sind zu diesem
           // Zeitpunkt längst zurück.
@@ -960,7 +1022,10 @@ class BackupService {
   }
 
   @visibleForTesting
-  Future<int> uebernimmAusSchnappschuss(File schnappschuss) async {
+  Future<int> uebernimmAusSchnappschuss(
+    File schnappschuss, {
+    bool streng = false,
+  }) async {
     final quelle = sqlite3.open(schnappschuss.path, mode: OpenMode.readOnly);
     try {
       final zielSpalten = <String, Set<String>>{};
@@ -1034,6 +1099,7 @@ class BackupService {
               );
               uebernommen++;
             } catch (e) {
+              if (streng) rethrow;
               // Je Zeile abgesichert – eine Zeile, die hier nicht hineinpasst
               // (ein Fremdschlüssel auf eine ausgelassene Aufnahme etwa), darf
               // die Wiederherstellung nicht abbrechen.
@@ -1284,7 +1350,7 @@ class BackupService {
   // Automatisches Backup
   // -----------------------------------------------------------------------
 
-  static const _autoBackupFolderName = 'PhotoVault-AutoBackup';
+  static const autoBackupFolderName = 'PhotoVault-AutoBackup';
   static const _autoBackupGenerationsFolder = 'generations';
 
   /// Liest die vollständigen, intakten Wiederherstellungspunkte eines
@@ -1396,7 +1462,7 @@ class BackupService {
     bool amZielPruefen = false,
   }) async* {
     final backupRoot = Directory(
-      p.join(destinationRootPath, _autoBackupFolderName),
+      p.join(destinationRootPath, autoBackupFolderName),
     );
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
@@ -1508,6 +1574,18 @@ class BackupService {
     // automatische Sicherung brachte Namen und Stammbaum zurück, aber kein
     // einziges Foto.
     await _writeMetadataExport(backupRoot, encryptionKey: encryptionKey);
+
+    if (!abgebrochenWegenLimit && fehlgeschlagen == 0) {
+      final probe = await pruefeWiederherstellung(
+        backupRoot.path,
+        schluessel: encryptionKey,
+      );
+      yield BackupProgress(
+        done,
+        pending.length,
+        wiederherstellungsprobe: probe,
+      );
+    }
 
     if (abgebrochenWegenLimit) {
       yield BackupProgress(

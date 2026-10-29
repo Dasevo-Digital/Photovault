@@ -10,6 +10,7 @@ import 'package:shelf/shelf.dart';
 import 'package:uuid/uuid.dart';
 
 import 'bibliothek.dart';
+import 'package:kern/services/import_plan.dart';
 
 /// Hochladen in Stücken, die sich nach einem Abbruch fortsetzen lassen –
 /// nach dem tus-Protokoll 1.0.0 (Kern und „creation“, „termination“).
@@ -109,6 +110,10 @@ class Hochladen {
     if (laenge > hoechstens) return Response(413, headers: _tus);
     final meta = _metadaten(anfrage.headers['upload-metadata']);
     final zielpfad = meta['pfad'];
+    if (meta['sha256'] != null &&
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(meta['sha256']!)) {
+      return Response(400, body: 'sha256', headers: _tus);
+    }
     if (abschluss != null &&
         (zielpfad == null ||
             zielpfad.isEmpty ||
@@ -140,6 +145,7 @@ class Hochladen {
       'pfad': ?zielpfad,
       'sha256': ?meta['sha256'],
       'art': ?meta['art'],
+      'regelstand': ?meta['regelstand'],
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
@@ -271,7 +277,15 @@ class Hochladen {
         );
       }
       final b = bibliothek!;
-      final r = await b.importe.importFile(datei.path);
+      if (a['regelstand'] != null &&
+          a['regelstand'] !=
+              await ImportPlanDienst(b.db, b.importe).aktuellerRegelstand()) {
+        return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
+      }
+      final r = await b.importe.importFile(
+        datei.path,
+        erwartetePruefsumme: a['sha256'] as String?,
+      );
       var aufnahme = r.assetId;
       if (r.outcome == ImportOutcome.imported && aufnahme != null) {
         // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei

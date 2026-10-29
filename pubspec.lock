@@ -9,6 +9,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "100.0.0"
+  abgleich_ui:
+    dependency: "direct main"
+    description:
+      path: "packages/abgleich_ui"
+      relative: true
+    source: path
+    version: "1.0.0"
   analyzer:
     dependency: transitive
     description:

@@ -15234,6 +15234,233 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Pausiert – der Rechner wird gerade benutzt.'**
   String get serverRechenhilfePausiertBenutzt;
+
+  /// No description provided for @backupProbeTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellungsprobe'**
+  String get backupProbeTitel;
+
+  /// No description provided for @backupProbeNochNie.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Wiederherstellungsprobe. Nach vollständigen Sicherungen wird automatisch eine Stichprobe wiederhergestellt.'**
+  String get backupProbeNochNie;
+
+  /// No description provided for @backupProbeStarten.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellung erproben'**
+  String get backupProbeStarten;
+
+  /// No description provided for @backupProbeMitDatenbank.
+  ///
+  /// In de, this message translates to:
+  /// **'Datenbank geprüft'**
+  String get backupProbeMitDatenbank;
+
+  /// No description provided for @backupProbeMitMetadaten.
+  ///
+  /// In de, this message translates to:
+  /// **'Metadaten geprüft'**
+  String get backupProbeMitMetadaten;
+
+  /// No description provided for @backupProbeErfolg.
+  ///
+  /// In de, this message translates to:
+  /// **'{wann}: {originale} von {gesamt} Originalen probeweise wiederhergestellt; {datenbank}. Die aktive Bibliothek wurde nicht verändert.'**
+  String backupProbeErfolg(
+    String wann,
+    int originale,
+    int gesamt,
+    String datenbank,
+  );
+
+  /// No description provided for @backupProbeFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'{wann}: Die Wiederherstellungsprobe war nicht erfolgreich. Sicherungsdateien, Passphrase und verfügbaren Platz prüfen. Ein früherer Erfolg gilt nur für den damaligen Stand.'**
+  String backupProbeFehler(String wann);
+
+  /// No description provided for @backupProbeZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'{wann}: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.'**
+  String backupProbeZuGross(String wann);
+
+  /// No description provided for @importPlanTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Import prüfen'**
+  String get importPlanTitel;
+
+  /// No description provided for @importPlanRegeln.
+  ///
+  /// In de, this message translates to:
+  /// **'Regeln bearbeiten'**
+  String get importPlanRegeln;
+
+  /// No description provided for @importPlanHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfe die Auswahl vor dem Import. Der angezeigte Platzbedarf umfasst die Originale; Vorschauen und Datenbank benötigen zusätzlichen Platz. Regelaktionen sind eine Momentaufnahme.'**
+  String get importPlanHinweis;
+
+  /// No description provided for @importPlanBilanz.
+  ///
+  /// In de, this message translates to:
+  /// **'{neu} ausgewählt · {bytes} Originale · {duplikate} Dubletten · {fehler} nicht übernehmbar'**
+  String importPlanBilanz(int neu, String bytes, int duplikate, int fehler);
+
+  /// No description provided for @importPlanSpaeter.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Regeln für erkannte Bildinhalte werden erst nach der Bildanalyse ausgewertet.'**
+  String importPlanSpaeter(int anzahl);
+
+  /// No description provided for @importPlanServerAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der verbundene Server unterstützt die geprüfte Übernahme noch nicht. Bitte zuerst den Server aktualisieren.'**
+  String get importPlanServerAlt;
+
+  /// No description provided for @importPlanGeaendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateien oder Regeln konnten nicht zuverlässig geprüft werden oder haben sich geändert. Bitte erneut prüfen.'**
+  String get importPlanGeaendert;
+
+  /// No description provided for @importPlanErneut.
+  ///
+  /// In de, this message translates to:
+  /// **'Erneut prüfen'**
+  String get importPlanErneut;
+
+  /// No description provided for @importPlanFortschritt.
+  ///
+  /// In de, this message translates to:
+  /// **'{fertig} von {gesamt} Dateien geprüft'**
+  String importPlanFortschritt(int fertig, int gesamt);
+
+  /// No description provided for @importPlanNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu'**
+  String get importPlanNeu;
+
+  /// No description provided for @importPlanVorhanden.
+  ///
+  /// In de, this message translates to:
+  /// **'Bereits in der Bibliothek'**
+  String get importPlanVorhanden;
+
+  /// No description provided for @importPlanDoppelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Identischer Inhalt bereits in dieser Auswahl'**
+  String get importPlanDoppelt;
+
+  /// No description provided for @importPlanFormat.
+  ///
+  /// In de, this message translates to:
+  /// **'Format wird nicht unterstützt'**
+  String get importPlanFormat;
+
+  /// No description provided for @importPlanFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei fehlt, ist nicht lesbar oder wurde während der Prüfung geändert'**
+  String get importPlanFehler;
+
+  /// No description provided for @importPlanDatumGeschaetzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum geschätzt'**
+  String get importPlanDatumGeschaetzt;
+
+  /// No description provided for @importPlanAlben.
+  ///
+  /// In de, this message translates to:
+  /// **'Alben: {namen}'**
+  String importPlanAlben(String namen);
+
+  /// No description provided for @importPlanTags.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlagwörter: {namen}'**
+  String importPlanTags(String namen);
+
+  /// No description provided for @importPlanTreffer.
+  ///
+  /// In de, this message translates to:
+  /// **'Passende Regeln: {namen}'**
+  String importPlanTreffer(String namen);
+
+  /// No description provided for @importPlanFavorit.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Favorit markieren'**
+  String get importPlanFavorit;
+
+  /// No description provided for @importPlanUngueltigeZiele.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.'**
+  String get importPlanUngueltigeZiele;
+
+  /// No description provided for @importPlanStarten.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Datei importieren} other{{anzahl} Dateien importieren}}'**
+  String importPlanStarten(int anzahl);
+
+  /// No description provided for @regelAusloeserDateiname.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiname enthält'**
+  String get regelAusloeserDateiname;
+
+  /// No description provided for @regelAusloeserDateiendung.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiendung'**
+  String get regelAusloeserDateiendung;
+
+  /// No description provided for @regelDateinameWert.
+  ///
+  /// In de, this message translates to:
+  /// **'Text im Dateinamen'**
+  String get regelDateinameWert;
+
+  /// No description provided for @regelDateiendungWert.
+  ///
+  /// In de, this message translates to:
+  /// **'Endungen, z. B. jpg, heic'**
+  String get regelDateiendungWert;
+
+  /// No description provided for @regelDateiUngueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Suchtext angeben oder gültige Dateiendungen durch Kommas trennen.'**
+  String get regelDateiUngueltig;
+
+  /// No description provided for @syncUebersicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Änderungen und Konflikte'**
+  String get syncUebersicht;
+
+  /// No description provided for @backupProbeLetzterErfolg.
+  ///
+  /// In de, this message translates to:
+  /// **'Letzte erfolgreiche Probe: {wann} (damaliger Stand).'**
+  String backupProbeLetzterErfolg(String wann);
+
+  /// No description provided for @backupProbePassphraseOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft.'**
+  String get backupProbePassphraseOffen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

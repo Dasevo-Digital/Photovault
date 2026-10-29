@@ -17,10 +17,10 @@ import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/florence_captioning_service.dart';
 import '../services/import_service.dart';
+import '../services/regelpruefung.dart';
 import '../services/modell_halter.dart';
 import '../services/ocr_service.dart';
 import '../services/personenvorschlag.dart';
-import '../services/reverse_geocoder.dart';
 import '../services/storage_paths.dart';
 import '../services/textstellen.dart';
 import '../services/translation_service.dart';
@@ -1317,39 +1317,24 @@ class Auswertungen {
     List<String>? aiTags,
     List<AutomationRuleData>? rules,
   }) async {
-    for (final rule in rules ?? await db.allAutomationRules()) {
-      final bool matches;
-      switch (rule.triggerType) {
-        case 'location':
-          matches =
-              latitude != null &&
-              longitude != null &&
-              rule.regionCenterLat != null &&
-              rule.regionCenterLon != null &&
-              rule.regionRadiusKm != null &&
-              ReverseGeocoder.haversineKm(
-                    latitude,
-                    longitude,
-                    rule.regionCenterLat!,
-                    rule.regionCenterLon!,
-                  ) <=
-                  rule.regionRadiusKm!;
-        case 'dateRange':
-          matches =
-              fileCreatedAt != null &&
-              rule.dateFrom != null &&
-              rule.dateTo != null &&
-              !fileCreatedAt.isBefore(rule.dateFrom!) &&
-              !fileCreatedAt.isAfter(rule.dateTo!);
-        case 'aiTag':
-          matches =
-              aiTags != null &&
-              rule.aiTagTerm != null &&
-              aiTags.contains(rule.aiTagTerm);
-        default:
-          matches = false;
+    final alle = rules ?? await db.allAutomationRules();
+    final brauchtDateiname = alle.any(
+      (r) => const {'dateiname', 'dateiendung'}.contains(r.triggerType),
+    );
+    final dateiname = brauchtDateiname
+        ? (await db.assetById(assetId))?.originalFileName
+        : null;
+    for (final rule in alle) {
+      if (!regelTrifftZu(
+        rule,
+        breite: latitude,
+        laenge: longitude,
+        datum: fileCreatedAt,
+        kiTags: aiTags,
+        dateiname: dateiname,
+      )) {
+        continue;
       }
-      if (!matches) continue;
 
       if (rule.targetAlbumId != null) {
         await db.fuehreAus(AlbumFuellen(rule.targetAlbumId!, [assetId]));

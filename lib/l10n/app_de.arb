@@ -6338,5 +6338,140 @@
   "serverRechenzeitAmNetzText": "Nicht auf Akku – ein Rechner ohne Akku rechnet immer.",
   "serverRechenzeitUnbenutztText": "Am Netzteil und erst, wenn 5 Minuten niemand Maus oder Tastatur benutzt hat.",
   "serverRechenhilfePausiertAkku": "Pausiert – der Rechner läuft auf Akku.",
-  "serverRechenhilfePausiertBenutzt": "Pausiert – der Rechner wird gerade benutzt."
+  "serverRechenhilfePausiertBenutzt": "Pausiert – der Rechner wird gerade benutzt.",
+  "backupProbeTitel": "Wiederherstellungsprobe",
+  "backupProbeNochNie": "Noch keine Wiederherstellungsprobe. Nach vollständigen Sicherungen wird automatisch eine Stichprobe wiederhergestellt.",
+  "backupProbeStarten": "Wiederherstellung erproben",
+  "backupProbeMitDatenbank": "Datenbank geprüft",
+  "backupProbeMitMetadaten": "Metadaten geprüft",
+  "backupProbeErfolg": "{wann}: {originale} von {gesamt} Originalen probeweise wiederhergestellt; {datenbank}. Die aktive Bibliothek wurde nicht verändert.",
+  "@backupProbeErfolg": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      },
+      "originale": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      },
+      "datenbank": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbeFehler": "{wann}: Die Wiederherstellungsprobe war nicht erfolgreich. Sicherungsdateien, Passphrase und verfügbaren Platz prüfen. Ein früherer Erfolg gilt nur für den damaligen Stand.",
+  "@backupProbeFehler": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbeZuGross": "{wann}: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.",
+  "@backupProbeZuGross": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTitel": "Import prüfen",
+  "importPlanRegeln": "Regeln bearbeiten",
+  "importPlanHinweis": "Prüfe die Auswahl vor dem Import. Der angezeigte Platzbedarf umfasst die Originale; Vorschauen und Datenbank benötigen zusätzlichen Platz. Regelaktionen sind eine Momentaufnahme.",
+  "importPlanBilanz": "{neu} ausgewählt · {bytes} Originale · {duplikate} Dubletten · {fehler} nicht übernehmbar",
+  "@importPlanBilanz": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      },
+      "duplikate": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanSpaeter": "{anzahl} Regeln für erkannte Bildinhalte werden erst nach der Bildanalyse ausgewertet.",
+  "@importPlanSpaeter": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanServerAlt": "Der verbundene Server unterstützt die geprüfte Übernahme noch nicht. Bitte zuerst den Server aktualisieren.",
+  "importPlanGeaendert": "Dateien oder Regeln konnten nicht zuverlässig geprüft werden oder haben sich geändert. Bitte erneut prüfen.",
+  "importPlanErneut": "Erneut prüfen",
+  "importPlanFortschritt": "{fertig} von {gesamt} Dateien geprüft",
+  "@importPlanFortschritt": {
+    "placeholders": {
+      "fertig": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "importPlanNeu": "Neu",
+  "importPlanVorhanden": "Bereits in der Bibliothek",
+  "importPlanDoppelt": "Identischer Inhalt bereits in dieser Auswahl",
+  "importPlanFormat": "Format wird nicht unterstützt",
+  "importPlanFehler": "Datei fehlt, ist nicht lesbar oder wurde während der Prüfung geändert",
+  "importPlanDatumGeschaetzt": "Datum geschätzt",
+  "importPlanAlben": "Alben: {namen}",
+  "@importPlanAlben": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTags": "Schlagwörter: {namen}",
+  "@importPlanTags": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanTreffer": "Passende Regeln: {namen}",
+  "@importPlanTreffer": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "importPlanFavorit": "Als Favorit markieren",
+  "importPlanUngueltigeZiele": "Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.",
+  "importPlanStarten": "{anzahl, plural, =1{1 Datei importieren} other{{anzahl} Dateien importieren}}",
+  "@importPlanStarten": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "regelAusloeserDateiname": "Dateiname enthält",
+  "regelAusloeserDateiendung": "Dateiendung",
+  "regelDateinameWert": "Text im Dateinamen",
+  "regelDateiendungWert": "Endungen, z. B. jpg, heic",
+  "regelDateiUngueltig": "Suchtext angeben oder gültige Dateiendungen durch Kommas trennen.",
+  "syncUebersicht": "Änderungen und Konflikte",
+  "backupProbeLetzterErfolg": "Letzte erfolgreiche Probe: {wann} (damaliger Stand).",
+  "@backupProbeLetzterErfolg": {
+    "placeholders": {
+      "wann": {
+        "type": "String"
+      }
+    }
+  },
+  "backupProbePassphraseOffen": "Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft."
 }

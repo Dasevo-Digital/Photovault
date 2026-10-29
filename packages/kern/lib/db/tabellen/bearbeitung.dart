@@ -141,8 +141,9 @@ class AutomationRules extends Table {
   RealColumn get regionCenterLon => real().nullable()();
   RealColumn get regionRadiusKm => real().nullable()();
 
-  // triggerType == 'aiTag': muss exakt einem Begriff aus dem KI-Tag-
-  // Vokabular entsprechen (siehe AiTagVocabulary).
+  // Für aiTag der Vokabularbegriff; für dateiname der Suchtext und für
+  // dateiendung eine kommaseparierte Liste. Der historische Spaltenname
+  // bleibt für bestehende Datenbanken und ältere Clients unverändert.
   TextColumn get aiTagTerm => text().nullable()();
 
   // triggerType == 'dateRange': volles Datum statt wiederkehrend

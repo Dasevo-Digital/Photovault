@@ -9941,4 +9941,156 @@ class AppTexteEn extends AppTexte {
   @override
   String get serverRechenhilfePausiertBenutzt =>
       'Paused – the computer is in use.';
+
+  @override
+  String get backupProbeTitel => 'Recovery drill';
+
+  @override
+  String get backupProbeNochNie =>
+      'No recovery drill yet. A sample is restored automatically after complete backups.';
+
+  @override
+  String get backupProbeStarten => 'Run recovery drill';
+
+  @override
+  String get backupProbeMitDatenbank => 'Database checked';
+
+  @override
+  String get backupProbeMitMetadaten => 'Metadata checked';
+
+  @override
+  String backupProbeErfolg(
+    String wann,
+    int originale,
+    int gesamt,
+    String datenbank,
+  ) {
+    return '$wann: restored a sample of $originale out of $gesamt originals; $datenbank. The active library was not changed.';
+  }
+
+  @override
+  String backupProbeFehler(String wann) {
+    return '$wann: the recovery drill failed. Check the backup files, passphrase and available space. An earlier success applies only to that earlier backup.';
+  }
+
+  @override
+  String backupProbeZuGross(String wann) {
+    return '$wann: no original fits within the 128 MB sampling budget. A full file verification can still be run.';
+  }
+
+  @override
+  String get importPlanTitel => 'Review import';
+
+  @override
+  String get importPlanRegeln => 'Edit rules';
+
+  @override
+  String get importPlanHinweis =>
+      'Review the selection before importing. The displayed size covers originals; previews and the database need additional space. Rule actions reflect the current settings.';
+
+  @override
+  String importPlanBilanz(int neu, String bytes, int duplikate, int fehler) {
+    return '$neu selected · $bytes of originals · $duplikate duplicates · $fehler unavailable';
+  }
+
+  @override
+  String importPlanSpaeter(int anzahl) {
+    return '$anzahl rules based on detected image content are evaluated after image analysis.';
+  }
+
+  @override
+  String get importPlanServerAlt =>
+      'The connected server does not support verified importing yet. Update the server first.';
+
+  @override
+  String get importPlanGeaendert =>
+      'Files or rules could not be checked reliably or have changed. Please run the review again.';
+
+  @override
+  String get importPlanErneut => 'Review again';
+
+  @override
+  String importPlanFortschritt(int fertig, int gesamt) {
+    return 'Reviewed $fertig of $gesamt files';
+  }
+
+  @override
+  String get importPlanNeu => 'New';
+
+  @override
+  String get importPlanVorhanden => 'Already in the library';
+
+  @override
+  String get importPlanDoppelt => 'Identical content already in this selection';
+
+  @override
+  String get importPlanFormat => 'Unsupported format';
+
+  @override
+  String get importPlanFehler =>
+      'File missing, unreadable or changed during review';
+
+  @override
+  String get importPlanDatumGeschaetzt => 'Estimated date';
+
+  @override
+  String importPlanAlben(String namen) {
+    return 'Albums: $namen';
+  }
+
+  @override
+  String importPlanTags(String namen) {
+    return 'Tags: $namen';
+  }
+
+  @override
+  String importPlanTreffer(String namen) {
+    return 'Matching rules: $namen';
+  }
+
+  @override
+  String get importPlanFavorit => 'Mark as favorite';
+
+  @override
+  String get importPlanUngueltigeZiele =>
+      'A rule references a missing album or tag. Correct the rule before importing.';
+
+  @override
+  String importPlanStarten(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Import $anzahl files',
+      one: 'Import 1 file',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regelAusloeserDateiname => 'Filename contains';
+
+  @override
+  String get regelAusloeserDateiendung => 'File extension';
+
+  @override
+  String get regelDateinameWert => 'Text in filename';
+
+  @override
+  String get regelDateiendungWert => 'Extensions, e.g. jpg, heic';
+
+  @override
+  String get regelDateiUngueltig =>
+      'Enter search text or valid comma-separated file extensions.';
+
+  @override
+  String get syncUebersicht => 'Changes and conflicts';
+
+  @override
+  String backupProbeLetzterErfolg(String wann) {
+    return 'Last successful drill: $wann (at that time).';
+  }
+
+  @override
+  String get backupProbePassphraseOffen =>
+      'This drill uses the already available key. The passphrase is checked by the manual recovery drill.';
 }

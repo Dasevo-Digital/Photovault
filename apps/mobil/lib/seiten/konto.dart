@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/konten.dart';
@@ -74,6 +75,8 @@ class Konto extends StatelessWidget {
                         ? t.kontoVerbindet
                         : z.schemaAnders
                         ? (z.appZuAlt ? t.appZuAlt : t.serverZuAlt)
+                        : z.serverOhneKonfliktpruefung
+                        ? t.serverZuAlt
                         : z.abgemeldet
                         ? t.abgemeldetHinweis
                         : !z.erreichbar
@@ -141,6 +144,19 @@ class Konto extends StatelessWidget {
                   ),
                 ),
               if (sitzung.abgleich case final a?) ...[
+                ListTile(
+                  leading: const Icon(Icons.sync_problem_outlined),
+                  title: Text(t.syncUebersicht),
+                  subtitle: z == null
+                      ? null
+                      : Text('${z.ausstehend} / ${z.faelle}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Abgleichsuebersicht(abgleich: a),
+                    ),
+                  ),
+                ),
                 EigenesKonto(
                   verbindung: a.verbindung,
                   abmelden: () => _abmelden(context),

@@ -529,6 +529,7 @@ class _Api {
       _json({
         'dienst': 'photo-vault',
         'protokoll': protokollFassung,
+        'funktionen': {'konfliktpruefung': 1, 'importplan': 1},
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
         'anmeldung': {

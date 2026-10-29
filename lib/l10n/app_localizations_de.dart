@@ -9996,4 +9996,157 @@ class AppTexteDe extends AppTexte {
   @override
   String get serverRechenhilfePausiertBenutzt =>
       'Pausiert – der Rechner wird gerade benutzt.';
+
+  @override
+  String get backupProbeTitel => 'Wiederherstellungsprobe';
+
+  @override
+  String get backupProbeNochNie =>
+      'Noch keine Wiederherstellungsprobe. Nach vollständigen Sicherungen wird automatisch eine Stichprobe wiederhergestellt.';
+
+  @override
+  String get backupProbeStarten => 'Wiederherstellung erproben';
+
+  @override
+  String get backupProbeMitDatenbank => 'Datenbank geprüft';
+
+  @override
+  String get backupProbeMitMetadaten => 'Metadaten geprüft';
+
+  @override
+  String backupProbeErfolg(
+    String wann,
+    int originale,
+    int gesamt,
+    String datenbank,
+  ) {
+    return '$wann: $originale von $gesamt Originalen probeweise wiederhergestellt; $datenbank. Die aktive Bibliothek wurde nicht verändert.';
+  }
+
+  @override
+  String backupProbeFehler(String wann) {
+    return '$wann: Die Wiederherstellungsprobe war nicht erfolgreich. Sicherungsdateien, Passphrase und verfügbaren Platz prüfen. Ein früherer Erfolg gilt nur für den damaligen Stand.';
+  }
+
+  @override
+  String backupProbeZuGross(String wann) {
+    return '$wann: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.';
+  }
+
+  @override
+  String get importPlanTitel => 'Import prüfen';
+
+  @override
+  String get importPlanRegeln => 'Regeln bearbeiten';
+
+  @override
+  String get importPlanHinweis =>
+      'Prüfe die Auswahl vor dem Import. Der angezeigte Platzbedarf umfasst die Originale; Vorschauen und Datenbank benötigen zusätzlichen Platz. Regelaktionen sind eine Momentaufnahme.';
+
+  @override
+  String importPlanBilanz(int neu, String bytes, int duplikate, int fehler) {
+    return '$neu ausgewählt · $bytes Originale · $duplikate Dubletten · $fehler nicht übernehmbar';
+  }
+
+  @override
+  String importPlanSpaeter(int anzahl) {
+    return '$anzahl Regeln für erkannte Bildinhalte werden erst nach der Bildanalyse ausgewertet.';
+  }
+
+  @override
+  String get importPlanServerAlt =>
+      'Der verbundene Server unterstützt die geprüfte Übernahme noch nicht. Bitte zuerst den Server aktualisieren.';
+
+  @override
+  String get importPlanGeaendert =>
+      'Dateien oder Regeln konnten nicht zuverlässig geprüft werden oder haben sich geändert. Bitte erneut prüfen.';
+
+  @override
+  String get importPlanErneut => 'Erneut prüfen';
+
+  @override
+  String importPlanFortschritt(int fertig, int gesamt) {
+    return '$fertig von $gesamt Dateien geprüft';
+  }
+
+  @override
+  String get importPlanNeu => 'Neu';
+
+  @override
+  String get importPlanVorhanden => 'Bereits in der Bibliothek';
+
+  @override
+  String get importPlanDoppelt =>
+      'Identischer Inhalt bereits in dieser Auswahl';
+
+  @override
+  String get importPlanFormat => 'Format wird nicht unterstützt';
+
+  @override
+  String get importPlanFehler =>
+      'Datei fehlt, ist nicht lesbar oder wurde während der Prüfung geändert';
+
+  @override
+  String get importPlanDatumGeschaetzt => 'Datum geschätzt';
+
+  @override
+  String importPlanAlben(String namen) {
+    return 'Alben: $namen';
+  }
+
+  @override
+  String importPlanTags(String namen) {
+    return 'Schlagwörter: $namen';
+  }
+
+  @override
+  String importPlanTreffer(String namen) {
+    return 'Passende Regeln: $namen';
+  }
+
+  @override
+  String get importPlanFavorit => 'Als Favorit markieren';
+
+  @override
+  String get importPlanUngueltigeZiele =>
+      'Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.';
+
+  @override
+  String importPlanStarten(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Dateien importieren',
+      one: '1 Datei importieren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regelAusloeserDateiname => 'Dateiname enthält';
+
+  @override
+  String get regelAusloeserDateiendung => 'Dateiendung';
+
+  @override
+  String get regelDateinameWert => 'Text im Dateinamen';
+
+  @override
+  String get regelDateiendungWert => 'Endungen, z. B. jpg, heic';
+
+  @override
+  String get regelDateiUngueltig =>
+      'Suchtext angeben oder gültige Dateiendungen durch Kommas trennen.';
+
+  @override
+  String get syncUebersicht => 'Änderungen und Konflikte';
+
+  @override
+  String backupProbeLetzterErfolg(String wann) {
+    return 'Letzte erfolgreiche Probe: $wann (damaliger Stand).';
+  }
+
+  @override
+  String get backupProbePassphraseOffen =>
+      'Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft.';
 }

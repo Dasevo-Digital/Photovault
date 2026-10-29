@@ -1,3 +1,5 @@
+import 'package:kern/abgleich/fallschluessel.dart';
+import 'package:kern/services/import_plan.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -1041,7 +1043,14 @@ class LibraryState extends ChangeNotifier {
   Future<void> _verbinde() async {
     final v = verbindung!;
     final s = Serververbindung(v.server, v.token);
-    final a = Abgleich(db, s);
+    final ablage = Verbindungsdatei.tokenablage;
+    final a = Abgleich(
+      db,
+      s,
+      fallschluessel: ablage == null
+          ? null
+          : await Fallschluessel.lade(db, ablage),
+    );
     await a.richteEin();
     final beschaffung = Dateibeschaffung(paths, s)..binde();
     _vorrat = Vorrat(db, beschaffung);
@@ -1067,6 +1076,8 @@ class LibraryState extends ChangeNotifier {
           vorher.erreichbar != z.erreichbar ||
           vorher.ungeklaert != z.ungeklaert ||
           vorher.ausstehend != z.ausstehend ||
+          vorher.faelle != z.faelle ||
+          vorher.serverOhneKonfliktpruefung != z.serverOhneKonfliktpruefung ||
           vorher.abgemeldet != z.abgemeldet ||
           vorher.serverSchema != z.serverSchema ||
           vorher.abgelehnt.length != z.abgelehnt.length) {
@@ -1215,9 +1226,19 @@ class LibraryState extends ChangeNotifier {
   /// Lädt [filePaths] zum Server hoch – der importiert sie wie die App
   /// (siehe dort `Hochladen`), und die neuen Aufnahmen kommen über den
   /// Abgleich zurück.
-  Stream<ImportProgress> _ladeHoch(List<String> filePaths) async* {
+  Stream<ImportProgress> _ladeHoch(
+    List<String> filePaths, {
+    ImportPlan? plan,
+  }) async* {
     final a = abgleich!;
+    if (plan != null) {
+      final zustand = await a.verbindung.hole('api/v1/zustand');
+      if ((zustand['funktionen'] as Map?)?['importplan'] != 1) {
+        throw const FormatException('pv_import_server_zu_alt');
+      }
+    }
     final tus = TusHochladen(a.verbindung);
+    final pruefsummen = plan?.pruefsummen;
     var done = 0;
     yield ImportProgress(0, filePaths.length);
     for (final filePath in filePaths) {
@@ -1226,6 +1247,8 @@ class LibraryState extends ChangeNotifier {
       try {
         final kopf = await tus.lade(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
+          if (plan != null) 'sha256': pruefsummen![filePath]!,
+          if (plan != null) 'regelstand': plan.regelstand,
           'geaendert': '${(await datei.lastModified()).millisecondsSinceEpoch}',
         });
         ausgang = kopf['pv-ausgang'];
@@ -1430,15 +1453,31 @@ class LibraryState extends ChangeNotifier {
   /// Fortschritts-Updates. Führt pro Bild zusätzlich Gesichtserkennung
   /// (falls Modell vorhanden), CLIP-Embedding (falls Modell vorhanden) und
   /// den Live-Photo-Abgleich (Foto <-> Video mit gleichem Dateinamen) aus.
-  Stream<ImportProgress> importFiles(List<String> filePaths) async* {
+  Stream<ImportProgress> importFiles(
+    List<String> filePaths, {
+    ImportPlan? plan,
+  }) async* {
     if (verbunden) {
-      yield* _ladeHoch(filePaths);
+      yield* _ladeHoch(filePaths, plan: plan);
       return;
+    }
+    final pruefung = ImportPlanDienst(db, importService);
+    final pruefsummen = plan?.pruefsummen;
+    if (pruefsummen != null &&
+        filePaths.any((p) => !pruefsummen.containsKey(p))) {
+      throw const FormatException('pv_import_auswahl');
     }
     var done = 0;
     yield ImportProgress(0, filePaths.length);
     for (final filePath in filePaths) {
-      final result = await importService.importFile(filePath);
+      if (plan != null &&
+          plan.regelstand != await pruefung.aktuellerRegelstand()) {
+        throw const FormatException('pv_import_regeln_geaendert');
+      }
+      final result = await importService.importFile(
+        filePath,
+        erwartetePruefsumme: pruefsummen?[filePath],
+      );
       if (result.outcome == ImportOutcome.imported && result.assetId != null) {
         await _postProcessNewAsset(result.assetId!);
       }
@@ -4050,6 +4089,17 @@ class LibraryState extends ChangeNotifier {
         maxBytesPerRun: await _backupGrenzeBytes(),
         amZielPruefen: verbunden,
       )) {
+        if (f.wiederherstellungsprobe case final probe?) {
+          wiederherstellungsprobe.value = probe;
+          if (!probe.erfolgreich) {
+            backupwarnung.value = (
+              grund: Backuphindernis.fehlgeschlagen,
+              letzterLauf: null,
+              fehler: probe.fehler,
+            );
+            throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
+          }
+        }
         yield f;
       }
     } on FileSystemException catch (e) {
@@ -4110,6 +4160,12 @@ class LibraryState extends ChangeNotifier {
         amZielPruefen: verbunden,
       )) {
         ausfaelle = f.fehlgeschlagen ?? ausfaelle;
+        if (f.wiederherstellungsprobe case final probe?) {
+          wiederherstellungsprobe.value = probe;
+          if (!probe.erfolgreich) {
+            throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
+          }
+        }
       }
       await db.setLastAutoBackupAt(DateTime.now());
       // Einzelne Dateien, die nicht gingen (verbunden etwa: Server kurz
@@ -4140,6 +4196,8 @@ class LibraryState extends ChangeNotifier {
   /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
   /// oder nicht fällig ist.
   final backupwarnung = ValueNotifier<Backupwarnung?>(null);
+
+  final wiederherstellungsprobe = ValueNotifier<BackupProbeErgebnis?>(null);
 
   /// Löscht alle zu einem Asset gehörenden Dateien von der Platte (Original,
   /// Thumbnail, Vorschau, entwickeltes Bild, Video-Zuschnitt, KI-Objekt-
@@ -4195,6 +4253,7 @@ class LibraryState extends ChangeNotifier {
   void dispose() {
     _autoBackupTimer?.cancel();
     backupwarnung.dispose();
+    wiederherstellungsprobe.dispose();
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
     _modellFreigabeTimer?.cancel();

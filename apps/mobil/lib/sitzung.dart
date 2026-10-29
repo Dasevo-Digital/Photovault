@@ -1,3 +1,5 @@
+import 'package:kern/abgleich/fallschluessel.dart';
+import 'lokal/fallschluesselablage.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -107,7 +109,16 @@ class Sitzung extends ChangeNotifier {
       File(p.join(ordner.path, 'offline_alben.json')),
     );
     final s = Serververbindung(v.server, v.token);
-    final a = Abgleich(db, s);
+    final a = Abgleich(
+      db,
+      s,
+      fallschluessel: await Fallschluessel.lade(
+        db,
+        Fallschluesselablage(
+          Directory(p.join(ordner.path, 'private_schluessel')),
+        ),
+      ),
+    );
     await a.richteEin();
     Dateibeschaffung(paths, s).binde();
     _abo = a.zustand.listen((z) {
@@ -117,6 +128,8 @@ class Sitzung extends ChangeNotifier {
           vorher.erreichbar != z.erreichbar ||
           vorher.ungeklaert != z.ungeklaert ||
           vorher.ausstehend != z.ausstehend ||
+          vorher.faelle != z.faelle ||
+          vorher.serverOhneKonfliktpruefung != z.serverOhneKonfliktpruefung ||
           vorher.abgemeldet != z.abgemeldet ||
           vorher.serverSchema != z.serverSchema) {
         notifyListeners();

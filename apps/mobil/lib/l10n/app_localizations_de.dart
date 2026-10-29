@@ -220,7 +220,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kontoAbmeldenText =>
-      'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Änderungen, die noch warten, gehen verloren.';
+      'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren.';
 
   @override
   String get geraetVorgabe => 'Telefon';
@@ -2593,4 +2593,7 @@ class AppTexteDe extends AppTexte {
   String albumOfflineBelegt(String groesse) {
     return 'Offline auf diesem Telefon · $groesse · Neues kommt nur im WLAN nach';
   }
+
+  @override
+  String get syncUebersicht => 'Änderungen und Konflikte';
 }

@@ -121,6 +121,35 @@ void main() {
     );
   });
 
+  test(
+    'automatische Wiederherstellungsprobe meldet beschädigte Sicherung als Fehler und bewahrt den letzten Erfolg',
+    () async {
+      await sicherung.einrichten(passphrase);
+      await sicherung.jetzt();
+      final vorher = await sicherung.stand();
+      final probe =
+          ((vorher['konten'] as List).single as Map)['wiederherstellungsprobe']
+              as Map;
+      expect(probe['erfolgreich'], isTrue);
+      expect(probe['originale'], 2);
+      expect(probe['datenbank'], isTrue);
+      final datei = Directory(
+        '${sicherungVon(erika).path}/data',
+      ).listSync().whereType<File>().first;
+      datei.writeAsBytesSync([8, 8, 8]);
+      jetzt = jetzt.add(const Duration(days: 1));
+      await sicherung.jetzt();
+      final nachher = await sicherung.stand();
+      expect(nachher['ok'], isFalse);
+      expect(nachher['letzterErfolg'], vorher['letzterErfolg']);
+      final neu =
+          ((nachher['konten'] as List).single as Map)['wiederherstellungsprobe']
+              as Map;
+      expect(neu['erfolgreich'], isFalse);
+      expect(neu['letzterErfolg'], probe['letzterErfolg']);
+    },
+  );
+
   test('ohne Kennmarke kein Byte, ein neues Ziel füllt sich wieder', () async {
     await sicherung.einrichten(passphrase);
     await sicherung.jetzt();

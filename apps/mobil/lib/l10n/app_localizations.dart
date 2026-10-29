@@ -430,7 +430,7 @@ abstract class AppTexte {
   /// No description provided for @kontoAbmeldenText.
   ///
   /// In de, this message translates to:
-  /// **'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Änderungen, die noch warten, gehen verloren.'**
+  /// **'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren.'**
   String get kontoAbmeldenText;
 
   /// No description provided for @geraetVorgabe.
@@ -4008,6 +4008,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Offline auf diesem Telefon · {groesse} · Neues kommt nur im WLAN nach'**
   String albumOfflineBelegt(String groesse);
+
+  /// No description provided for @syncUebersicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Änderungen und Konflikte'**
+  String get syncUebersicht;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

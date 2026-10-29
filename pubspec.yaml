@@ -73,6 +73,8 @@ dependencies:
   # (packages/kern/README.md).
   kern:
     path: packages/kern
+  abgleich_ui:
+    path: packages/abgleich_ui
   zierbild:
     path: packages/zierbild
   # Die Landschaft unter einer Spur und der Flug darüber – mit der

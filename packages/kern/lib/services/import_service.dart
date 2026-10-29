@@ -190,6 +190,27 @@ class ThumbnailResult {
   return passt ? (kopf.breite, kopf.hoehe) : (breite, hoehe);
 }
 
+class ImportDateiangaben {
+  const ImportDateiangaben({
+    required this.pfad,
+    required this.pruefsumme,
+    required this.bytes,
+    required this.datum,
+    required this.datumGeschaetzt,
+    required this.istBild,
+    this.breite,
+    this.laenge,
+    this.kamera,
+    this.modell,
+  });
+  final String pfad, pruefsumme;
+  final int bytes;
+  final DateTime datum;
+  final bool datumGeschaetzt, istBild;
+  final double? breite, laenge;
+  final String? kamera, modell;
+}
+
 class ImportService {
   /// [bildwerkzeuge] ist der Weg der Plattform zu Pixeln und
   /// Aufnahmewerten; ohne Angabe gilt [Bildwerkzeuge.standard].
@@ -203,7 +224,10 @@ class ImportService {
 
   bool isSupported(String filePath) => unterstuetztesFormat(filePath);
 
-  Future<ImportResult> importFile(String filePath) async {
+  Future<ImportResult> importFile(
+    String filePath, {
+    String? erwartetePruefsumme,
+  }) async {
     String? unvollstaendigeAssetId;
     File? unvollstaendigesOriginal;
     var datenbankEintragGespeichert = false;
@@ -242,53 +266,21 @@ class ImportService {
       final checksum = (await sha256.bind(sourceFile.openRead()).first)
           .toString();
 
+      if (erwartetePruefsumme != null && checksum != erwartetePruefsumme) {
+        throw const FormatException('pv_import_quelle_geaendert');
+      }
       if (await _db.checksumExists(checksum)) {
         return ImportResult(filePath, ImportOutcome.duplicateSkipped);
       }
 
       final assetId = _uuid.v4();
       unvollstaendigeAssetId = assetId;
-      final exifMeta = isImage
-          ? await _readExifMetadata(sourceFile, ext)
-          : const _ExifMetadata(null, null, CameraInfo());
-      // Videos haben keine EXIF-Daten, aber sehr wohl einen Ort, einen
-      // Aufnahmezeitpunkt und eine Kamera – alles drei steht im
-      // `moov`-Kasten und kostet ein paar Sprünge, keinen Durchlauf durch
-      // die Datei (siehe [leseVideoMetadaten]). In EINEM Lesevorgang, weil
-      // `moov` bei Videos oft hinter den Rohdaten steht: dreimal einzeln
-      // hiesse dreimal durch die Kastenkette einer Gigabyte-Datei.
-      //
-      // Ohne das käme nichts davon je an. In der Prüfbibliothek: 216 Orte
-      // und 309 Aufnahmezeitpunkte, die in der Datei standen und nie in
-      // der Datenbank ankamen – kein einziges der 440 Videos war richtig
-      // datiert.
-      final videoMeta = isImage
-          ? leereVideometadaten
-          : await leseVideoMetadaten(sourceFile);
+      final angaben = await _leseImportAngaben(sourceFile, ext, isImage);
+      final exifMeta = angaben.exif;
+      final videoMeta = angaben.video;
       final videoOrt = _alsGps(videoMeta.ort);
-      // Der Zeitstempel der Datei ist der letzte Ausweg, nicht der zweite:
-      // Er ist nach jedem Kopieren, Sichern und Zurückholen der Zeitpunkt
-      // eben dieses Vorgangs.
-      //
-      // Und genau deshalb wird der Rückfall **vermerkt**: Ohne die Marke
-      // sähe der geratene Wert in der Datenbank aus wie ein gemessener,
-      // und die Zeitleiste, die Erinnerungen und die Serienerkennung
-      // glaubten ihm (siehe [Assets.datumGeschaetzt]).
-      final gemessenesDatum = exifMeta.date ?? videoMeta.zeit?.zeitpunkt;
-      // Dazwischen der Name: Telefone, Messenger und Ausfuhrprogramme
-      // schreiben den Zeitpunkt oft hinein, auch wenn die EXIF-Angaben
-      // unterwegs verloren gingen (siehe [namensdatumAus]). Nennt er die
-      // Uhrzeit, ist das Datum belegt; nennt er nur den Tag, bleibt es
-      // geschätzt.
-      final ausDemNamen = gemessenesDatum == null
-          ? namensdatumAus(p.basename(filePath))
-          : null;
-      final fileCreatedAt =
-          gemessenesDatum ??
-          ausDemNamen?.zeitpunkt ??
-          await sourceFile.lastModified();
-      final geschaetzt =
-          gemessenesDatum == null && !(ausDemNamen?.mitUhrzeit ?? false);
+      final fileCreatedAt = angaben.datum;
+      final geschaetzt = angaben.geschaetzt;
 
       final relativePath = _paths.originalRelativePath(
         fileCreatedAt,
@@ -301,6 +293,11 @@ class ImportService {
       final int fileSizeBytes;
       await sourceFile.copy(targetFile.path);
       fileSizeBytes = await targetFile.length();
+      if (erwartetePruefsumme != null &&
+          (await sha256.bind(targetFile.openRead()).first).toString() !=
+              checksum) {
+        throw const FormatException('pv_import_quelle_geaendert');
+      }
 
       final thumbResult = isImage
           ? await generateThumbnailAndPreview(targetFile, assetId, ext)
@@ -360,6 +357,99 @@ class ImportService {
       }
       return ImportResult(filePath, ImportOutcome.failed, error: e.toString());
     }
+  }
+
+  Future<
+    ({
+      _ExifMetadata exif,
+      Videometadaten video,
+      DateTime datum,
+      bool geschaetzt,
+    })
+  >
+  _leseImportAngaben(File sourceFile, String ext, bool isImage) async {
+    final exifMeta = isImage
+        ? await _readExifMetadata(sourceFile, ext)
+        : const _ExifMetadata(null, null, CameraInfo());
+    // Videos haben keine EXIF-Daten, aber sehr wohl einen Ort, einen
+    // Aufnahmezeitpunkt und eine Kamera – alles drei steht im
+    // `moov`-Kasten und kostet ein paar Sprünge, keinen Durchlauf durch
+    // die Datei (siehe [leseVideoMetadaten]). In EINEM Lesevorgang, weil
+    // `moov` bei Videos oft hinter den Rohdaten steht: dreimal einzeln
+    // hiesse dreimal durch die Kastenkette einer Gigabyte-Datei.
+    //
+    // Ohne das käme nichts davon je an. In der Prüfbibliothek: 216 Orte
+    // und 309 Aufnahmezeitpunkte, die in der Datei standen und nie in
+    // der Datenbank ankamen – kein einziges der 440 Videos war richtig
+    // datiert.
+    final videoMeta = isImage
+        ? leereVideometadaten
+        : await leseVideoMetadaten(sourceFile);
+    // Der Zeitstempel der Datei ist der letzte Ausweg, nicht der zweite:
+    // Er ist nach jedem Kopieren, Sichern und Zurückholen der Zeitpunkt
+    // eben dieses Vorgangs.
+    //
+    // Und genau deshalb wird der Rückfall **vermerkt**: Ohne die Marke
+    // sähe der geratene Wert in der Datenbank aus wie ein gemessener,
+    // und die Zeitleiste, die Erinnerungen und die Serienerkennung
+    // glaubten ihm (siehe [Assets.datumGeschaetzt]).
+    final gemessenesDatum = exifMeta.date ?? videoMeta.zeit?.zeitpunkt;
+    // Dazwischen der Name: Telefone, Messenger und Ausfuhrprogramme
+    // schreiben den Zeitpunkt oft hinein, auch wenn die EXIF-Angaben
+    // unterwegs verloren gingen (siehe [namensdatumAus]). Nennt er die
+    // Uhrzeit, ist das Datum belegt; nennt er nur den Tag, bleibt es
+    // geschätzt.
+    final ausDemNamen = gemessenesDatum == null
+        ? namensdatumAus(p.basename(sourceFile.path))
+        : null;
+    final fileCreatedAt =
+        gemessenesDatum ??
+        ausDemNamen?.zeitpunkt ??
+        await sourceFile.lastModified();
+    final geschaetzt =
+        gemessenesDatum == null && !(ausDemNamen?.mitUhrzeit ?? false);
+
+    return (
+      exif: exifMeta,
+      video: videoMeta,
+      datum: fileCreatedAt,
+      geschaetzt: geschaetzt,
+    );
+  }
+
+  /// Liest eine Quelle ohne Kopie, Datenbankeintrag oder Nachbearbeitung.
+  Future<ImportDateiangaben> untersucheDatei(String filePath) async {
+    if (!isSupported(filePath)) throw const FormatException('pv_import_format');
+    final datei = File(filePath);
+    final vor = await datei.stat();
+    if (vor.type != FileSystemEntityType.file) {
+      throw const FormatException('pv_import_datei');
+    }
+    final ext = p.extension(filePath).toLowerCase();
+    final istBild =
+        _imageExtensions.contains(ext) ||
+        await inhaltskennung(datei, null) != null;
+    final checksum = (await sha256.bind(datei.openRead()).first).toString();
+    final a = await _leseImportAngaben(datei, ext, istBild);
+    final nach = await datei.stat();
+    if (vor.size != nach.size ||
+        vor.modified != nach.modified ||
+        vor.changed != nach.changed) {
+      throw const FormatException('pv_import_quelle_geaendert');
+    }
+    final videoOrt = _alsGps(a.video.ort);
+    return ImportDateiangaben(
+      pfad: filePath,
+      pruefsumme: checksum,
+      bytes: vor.size,
+      datum: a.datum,
+      datumGeschaetzt: a.geschaetzt,
+      breite: a.exif.gps?.latitude ?? videoOrt?.latitude,
+      laenge: a.exif.gps?.longitude ?? videoOrt?.longitude,
+      kamera: a.exif.camera.make ?? a.video.hersteller,
+      modell: a.exif.camera.model ?? a.video.geraet,
+      istBild: istBild,
+    );
   }
 
   Future<void> _raeumeImportresteAuf(String assetId, File? original) async {

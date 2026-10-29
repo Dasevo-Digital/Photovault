@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
@@ -56,6 +57,8 @@ class ServerGruppe extends StatelessWidget {
         ? null
         : z.schemaAnders
         ? (z.appZuAlt ? t.serverAppZuAlt : t.serverZuAlt)
+        : z.serverOhneKonfliktpruefung
+        ? t.serverZuAlt
         : z.abgemeldet
         ? t.serverAbgemeldet
         : z.ungeklaert
@@ -96,14 +99,23 @@ class ServerGruppe extends StatelessWidget {
                   : null,
             ),
           ),
-        if (z != null && z.abgelehnt.isNotEmpty) ...[
+        if (z != null && z.faelle > 0) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
-            t.serverAbgelehnt(z.abgelehnt.length),
+            t.serverAbgelehnt(z.faelle),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         if (library.abgleich case final a?) ...[
+          OutlinedButton.icon(
+            icon: const Icon(Icons.sync_problem_outlined),
+            label: Text(t.syncUebersicht),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => Abgleichsuebersicht(abgleich: a),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.md),
             child: OutlinedButton.icon(

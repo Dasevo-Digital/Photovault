@@ -75,6 +75,8 @@ class BackupPruefdienst {
     }
     final darunter = Directory(p.join(direkt.path, _backupOrdner));
     if (await darunter.exists()) return darunter.path;
+    final auto = Directory(p.join(direkt.path, 'PhotoVault-AutoBackup'));
+    if (await auto.exists()) return auto.path;
     return direkt.path;
   }
 
