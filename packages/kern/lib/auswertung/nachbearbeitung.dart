@@ -54,23 +54,27 @@ class Nachbearbeitung {
   /// [Analysestufe]. Vorher lief es hier inline und machte den
   /// Import bei mehreren tausend Fotos unzumutbar langsam: fünf schwere
   /// Durchläufe je Foto, nacheinander.
-  Future<void> neueAufnahme(String assetId) async {
+  Future<void> neueAufnahme(
+    String assetId, {
+    bool regelnAnwenden = true,
+  }) async {
     final asset = await db.assetById(assetId);
     if (asset == null) return;
 
     await verknuepfeLivePhoto(asset);
-    await applyCameraPreset(
-      asset.id,
-      cameraMake: asset.cameraMake,
-      cameraModel: asset.cameraModel,
-    );
-    await auswertungen.applyAutomationRules(
-      asset.id,
-      latitude: asset.latitude,
-      longitude: asset.longitude,
-      fileCreatedAt: asset.fileCreatedAt,
-    );
-
+    if (regelnAnwenden) {
+      await applyCameraPreset(
+        asset.id,
+        cameraMake: asset.cameraMake,
+        cameraModel: asset.cameraModel,
+      );
+      await auswertungen.applyAutomationRules(
+        asset.id,
+        latitude: asset.latitude,
+        longitude: asset.longitude,
+        fileCreatedAt: asset.fileCreatedAt,
+      );
+    }
     if (asset.type != 'IMAGE') return;
 
     // Ortsauflösung bleibt hier: reines Nachschlagen im bereits im

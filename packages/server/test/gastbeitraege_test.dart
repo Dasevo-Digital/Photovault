@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -42,14 +43,25 @@ bool _hatFfmpeg() {
   }
 }
 
-/// Der Server als Prüfprozess, wie unter `dart run`.
-final _aufruf = [
-  Platform.resolvedExecutable,
-  File('bin/photo_vault_server.dart').absolute.path,
-];
+late List<String> _aufruf;
+late Directory _prueferBuild;
 
 void main() {
   late Directory ordner;
+  setUpAll(() async {
+    _prueferBuild = await Directory.systemTemp.createTemp('pv_gast_binary_');
+    final r = await Process.run(Platform.resolvedExecutable, [
+      'build',
+      'cli',
+      '-t',
+      'test/fixtures/gast_pruefer.dart',
+      '-o',
+      _prueferBuild.path,
+    ]);
+    expect(r.exitCode, 0, reason: '${r.stderr}');
+    _aufruf = ['${_prueferBuild.path}/bundle/bin/gast_pruefer'];
+  });
+  tearDownAll(() => _prueferBuild.delete(recursive: true));
 
   setUp(() async {
     ordner = await Directory.systemTemp.createTemp('pv_gast_');
@@ -277,6 +289,10 @@ void main() {
     }
 
     test('Gast lädt hoch, Besitzer nimmt an: Foto im Album', () async {
+      if (!(await Abschottung.erkenne()).ohneNetz) {
+        markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+        return;
+      }
       expect(
         (await befehl('albumAnlegen', {
           'albumId': 'feier',
@@ -412,5 +428,108 @@ void main() {
       // Und der Link nimmt nichts mehr an.
       expect((await schicke(link, _fotoVomGast())).statusCode, 404);
     });
+  });
+  test(
+    'isolierter Decoder verarbeitet gültiges JPEG und hält Dateien außerhalb unerreichbar',
+    () async {
+      final a = await Abschottung.erkenne();
+      if (!a.ohneNetz) {
+        markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+        return;
+      }
+      final ein = File('${ordner.path}/eingang.jpg')
+        ..writeAsBytesSync(_fotoVomGast());
+      final ziel = Directory('${ordner.path}/isoliert');
+      final r = await Gastpruefung(aufruf: _aufruf).pruefe(ein, ziel);
+      expect(r.ok, isTrue, reason: '${r.befund}');
+      expect(File('${ziel.path}/sauber.jpg').existsSync(), isTrue);
+      final canary = File('${ordner.path}/synthetische_serverdaten')
+        ..writeAsStringSync('unveraendert');
+      final skript = File('${ordner.path}/arbeiter.sh');
+      skript.writeAsStringSync(
+        '/bin/cat "${canary.path}" > "\$3/sauber.jpg"\n'
+        '/bin/echo veraendert > "${canary.path}"\n'
+        """/bin/echo '{"art":"bild"}' > "\$3/befund.json"\n""",
+      );
+      final aus = Directory('${ordner.path}/canary');
+      final test = await Gastpruefung(
+        aufruf: ['/bin/sh', skript.path],
+      ).pruefe(ein, aus);
+      expect(test.ok, isTrue);
+      expect(await canary.readAsString(), 'unveraendert');
+      expect(await File('${aus.path}/sauber.jpg').length(), 0);
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+  test('ohne vollständige Isolation wird kein Prüfprozess gestartet', () async {
+    final ein = File('${ordner.path}/eingang.jpg')
+      ..writeAsBytesSync(_fotoVomGast());
+    final r = await Gastpruefung(
+      aufruf: ['/bin/false'],
+      abschottung: Future.value(const Abschottung([], ohneNetz: false)),
+    ).pruefe(ein, Directory('${ordner.path}/aus'));
+    expect(r.ok, isFalse);
+  });
+  test('Zeitgrenze beendet auch gestartete Decoder-Kinder', () async {
+    if (!(await Abschottung.erkenne()).ohneNetz) {
+      markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+      return;
+    }
+    final ein = File('${ordner.path}/baum')..writeAsStringSync('prozessbaum');
+    final start = Completer<int>();
+    final lauf = Gastpruefung(
+      aufruf: _aufruf,
+      fristBild: const Duration(seconds: 2),
+      beimStart: start.complete,
+    ).pruefe(ein, Directory('${ordner.path}/aus'));
+    final pid = await start.future;
+    int? kind;
+    for (var i = 0; i < 30; i++) {
+      final r = await Process.run('/bin/ps', ['-axo', 'pid=,ppid=,comm=']);
+      final zeilen = [
+        for (final line in '${r.stdout}'.split('\n'))
+          line.trim().split(RegExp(r'\s+')),
+      ];
+      final baum = <int>{pid};
+      var mehr = true;
+      while (mehr) {
+        mehr = false;
+        for (final z in zeilen) {
+          if (z.length >= 3 &&
+              baum.contains(int.tryParse(z[1])) &&
+              baum.add(int.parse(z[0]))) {
+            mehr = true;
+          }
+        }
+      }
+      for (final z in zeilen) {
+        if (z.length >= 3 &&
+            baum.contains(int.tryParse(z[0])) &&
+            z.skip(2).join(' ').split('/').last == 'sleep') {
+          kind = int.parse(z[0]);
+        }
+      }
+      if (kind != null) break;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect((await lauf).ok, isFalse);
+    expect(kind, isNotNull);
+    final r = await Process.run('/bin/ps', ['-p', '$kind', '-o', 'stat=']);
+    expect('${r.stdout}'.trim(), anyOf(isEmpty, startsWith('Z')));
+  });
+  test('Speicheraufsicht bricht den gesamten Prüfprozess ab', () async {
+    if (!(await Abschottung.erkenne()).ohneNetz) {
+      markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+      return;
+    }
+    final ein = File('${ordner.path}/speicher')
+      ..writeAsStringSync('prozessbaum');
+    final r = await Gastpruefung(
+      aufruf: _aufruf,
+      maxSpeicherBytes: 1,
+      fristBild: const Duration(seconds: 5),
+    ).pruefe(ein, Directory('${ordner.path}/aus'));
+    expect(r.ok, isFalse);
+    expect(r.befund['grund'], 'Ressourcen- oder Zeitgrenze erreicht');
   });
 }

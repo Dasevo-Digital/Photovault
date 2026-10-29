@@ -254,9 +254,33 @@ extension BackupWiederherstellungsprobe on BackupService {
             (a.description ?? '') != (foto['description'] ?? '') ||
             a.isFavorite != (foto['isFavorite'] ?? false) ||
             a.rating != (foto['rating'] ?? 0) ||
+            (foto['fileCreatedAt'] is String &&
+                !a.fileCreatedAt.isAtSameMomentAs(
+                  DateTime.parse(foto['fileCreatedAt'] as String),
+                )) ||
+            (foto['datumGeschaetzt'] is bool &&
+                a.datumGeschaetzt != foto['datumGeschaetzt']) ||
+            (foto.containsKey('colorLabel') &&
+                a.colorLabel != foto['colorLabel']) ||
+            (foto.containsKey('latitude') &&
+                a.latitude != (foto['latitude'] as num?)?.toDouble()) ||
+            (foto.containsKey('longitude') &&
+                a.longitude != (foto['longitude'] as num?)?.toDouble()) ||
+            (foto.containsKey('locationCity') &&
+                a.locationCity != foto['locationCity']) ||
+            (foto.containsKey('locationState') &&
+                a.locationState != foto['locationState']) ||
+            (foto.containsKey('locationCountry') &&
+                a.locationCountry != foto['locationCountry']) ||
             tags.length != erwartet.length ||
             !tags.containsAll(erwartet)) {
           throw const FormatException('pv_probe_metadaten');
+        }
+        if (foto['kiTags'] case final List ki) {
+          final ist = (await probeDb.kiTagNamesByAssetId())[a.id] ?? <String>{};
+          if (ist.length != ki.length || !ist.containsAll(ki.cast<String>())) {
+            throw const FormatException('pv_probe_tagherkunft');
+          }
         }
         erledigt++;
       }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 import 'dart:typed_data';
 
 import 'package:exif/exif.dart';
@@ -11,6 +13,8 @@ import 'package:kern/services/exif_gps.dart';
 import 'package:kern/services/isobmff.dart';
 import 'package:kern/services/video_metadaten.dart';
 import 'package:path/path.dart' as p;
+
+part 'gast_abschottung.dart';
 
 /// Fremde Dateien, die Gäste über einen Link hochladen (Issue #106), laufen
 /// in einem eigenen Prozess ohne Netz durch die Decoder – und kommen
@@ -402,48 +406,6 @@ Future<(Map<String, Object?>?, double?)> _ffprobe(File datei) async {
 
 // --- Im Server ----------------------------------------------------------------
 
-/// Wie der Prüfprozess abgeschottet wird – das Beste, was das System
-/// hergibt.
-class Abschottung {
-  const Abschottung(this.vorsatz, {required this.ohneNetz});
-
-  /// Was vor den Aufruf gesetzt wird.
-  final List<String> vorsatz;
-
-  /// Ob der Prozess wirklich kein Netz hat.
-  final bool ohneNetz;
-
-  static const _mac = '(version 1)(allow default)(deny network*)';
-
-  /// Linux: ein eigener Netz-Namensraum (`unshare -rn`), in dem es nur
-  /// ein abgeschaltetes Loopback gibt. macOS: `sandbox-exec` mit einem
-  /// Profil, das jedes Netz verbietet. Geht beides nicht – etwa in einem
-  /// Container ohne Benutzer-Namensräume –, bleibt der eigene Prozess
-  /// ohne die Umgebung des Servers; das meldet der Server beim Start.
-  static Future<Abschottung> erkenne() async {
-    Future<bool> geht(String befehl, List<String> argumente) async {
-      try {
-        return (await Process.run(befehl, argumente)).exitCode == 0;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    if (Platform.isLinux && await geht('unshare', ['-rn', 'true'])) {
-      return const Abschottung(['unshare', '-rn', '--'], ohneNetz: true);
-    }
-    if (Platform.isMacOS &&
-        await geht('/usr/bin/sandbox-exec', ['-p', _mac, '/usr/bin/true'])) {
-      return const Abschottung([
-        '/usr/bin/sandbox-exec',
-        '-p',
-        _mac,
-      ], ohneNetz: true);
-    }
-    return const Abschottung([], ohneNetz: false);
-  }
-}
-
 /// Was der Prüfprozess über eine Datei sagt.
 typedef Pruefergebnis = ({bool ok, Map<String, Object?> befund});
 
@@ -452,6 +414,9 @@ class Gastpruefung {
   Gastpruefung({
     List<String>? aufruf,
     Future<Abschottung>? abschottung,
+    this.beimStart,
+    this.verbotenePfade = const [],
+    this.maxSpeicherBytes = 1536 * 1024 * 1024,
     this.fristBild = const Duration(minutes: 3),
     this.fristVideo = const Duration(minutes: 60),
   }) : aufruf = aufruf ?? eigenerAufruf(),
@@ -459,6 +424,9 @@ class Gastpruefung {
 
   /// Wie der Server sich selbst aufruft (siehe [eigenerAufruf]).
   final List<String> aufruf;
+  final void Function(int pid)? beimStart;
+  final List<String> verbotenePfade;
+  final int maxSpeicherBytes;
   final Future<Abschottung> abschottung;
   final Duration fristBild;
   final Duration fristVideo;
@@ -485,62 +453,146 @@ class Gastpruefung {
 
   Future<Pruefergebnis> _pruefe(File ein, Directory ziel, bool video) async {
     final a = await abschottung;
-    await ziel.create(recursive: true);
-    final befehl = [
-      ...a.vorsatz,
-      ...aufruf,
-      'gast-pruefen',
-      ein.path,
-      ziel.path,
-    ];
-    final Process prozess;
+    if (!a.ohneNetz || aufruf.any((s) => s.endsWith('.dart'))) {
+      return (
+        ok: false,
+        befund: {'grund': 'Isolierte Prüfung nicht verfügbar'},
+      );
+    }
+    final temp = await Directory.systemTemp.createTemp('pv_gast_isoliert_');
+    Process? prozess;
+    Timer? waechter;
     try {
+      if ((await Process.run('chmod', ['700', temp.path])).exitCode != 0) {
+        throw const FileSystemException('pv_gast_rechte');
+      }
+      final wurzel = await temp.resolveSymbolicLinks();
+      final quelle = await ein.copy(p.join(wurzel, 'eingang'));
+      final aus = Directory(p.join(wurzel, 'aus'));
+      await aus.create();
+      final command = [for (final f in aufruf) await _programmPfad(f)];
+      final vorsatz = await a.fuer(quelle, aus, command, verbotenePfade);
+      // Hart begrenzte CPU-Zeit, Dateigröße und offene Dateien werden an
+      // alle Decoder-Kinder vererbt; die Wandzeit gilt für den ganzen Baum.
+      final frist = video ? fristVideo : fristBild;
+      final befehl = [
+        ...vorsatz,
+        '/bin/sh',
+        '-c',
+        'set -e; ulimit -t ${frist.inSeconds + 1}; ulimit -f 4194304; ulimit -n 128; exec "\$@"',
+        'pruefung',
+        ...command,
+        'gast-pruefen',
+        quelle.path,
+        aus.path,
+      ];
       prozess = await Process.start(
         befehl.first,
         befehl.sublist(1),
-        workingDirectory: ziel.path,
-        // Nichts vom Server: keine Schlüssel, keine Tokens, keine Pfade.
+        workingDirectory: aus.path,
         includeParentEnvironment: false,
         environment: {
-          'PATH': Platform.environment['PATH'] ?? '/usr/bin:/bin',
+          'PATH': '/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin',
           'LANG': 'C.UTF-8',
-          'HOME': ziel.path,
+          'HOME': aus.path,
+          'TMPDIR': aus.path,
         },
       );
-    } on ProcessException catch (e) {
-      protokoll('Gastprüfung liess sich nicht starten: $e');
-      return (ok: false, befund: {'grund': 'Prüfung nicht möglich'});
-    }
-    final fehler = StringBuffer();
-    prozess.stderr.transform(utf8.decoder).listen(fehler.write);
-    prozess.stdout.drain<void>();
-    final frist = video ? fristVideo : fristBild;
-    final code = await prozess.exitCode.timeout(
-      frist,
-      onTimeout: () {
-        prozess.kill(ProcessSignal.sigkill);
-        return -1;
-      },
-    );
-    if (code == -1) {
-      return (ok: false, befund: {'grund': 'Prüfung dauerte zu lange'});
-    }
-    Map<String, Object?> befund = const {};
-    try {
-      final j = jsonDecode(
-        await File(p.join(ziel.path, 'befund.json')).readAsString(),
+      beimStart?.call(prozess.pid);
+      final fehler = BytesBuilder(copy: false);
+      final stderrFertig = prozess.stderr.listen((b) {
+        if (fehler.length < 16384) {
+          fehler.add(b.take(16384 - fehler.length).toList());
+        }
+      }).asFuture<void>();
+      unawaited(prozess.stdout.drain<void>());
+      final kind = prozess;
+      var beendet = false, prueft = false, ressourcen = false;
+      Future<void> begrenze() async {
+        if (prueft || beendet) return;
+        prueft = true;
+        try {
+          final baum = await _prozessbaum(kind.pid);
+          var dateiBytes = 0;
+          await for (final f in aus.list(followLinks: false)) {
+            if (f is File) dateiBytes += await f.length();
+          }
+          if (baum.values.fold<int>(0, (n, r) => n + r) > maxSpeicherBytes ||
+              dateiBytes > 2 * 1024 * 1024 * 1024) {
+            ressourcen = true;
+            await _beendeBaum(kind);
+          }
+        } catch (_) {
+          // Ohne Ressourcenaufsicht wird nicht weiter dekodiert.
+          ressourcen = true;
+          await _beendeBaum(kind);
+        } finally {
+          prueft = false;
+        }
+      }
+
+      waechter = Timer.periodic(
+        const Duration(milliseconds: 200),
+        (_) => unawaited(begrenze()),
       );
-      if (j is Map) befund = j.cast<String, Object?>();
-    } catch (_) {
-      // Unten als Fehler gemeldet.
+      final code = await prozess.exitCode.timeout(
+        frist,
+        onTimeout: () async {
+          await _beendeBaum(kind);
+          return -1;
+        },
+      );
+      beendet = true;
+      waechter.cancel();
+      // Auch ein früh beendeter Elternprozess darf keine Decoder zurücklassen.
+      _toeteGruppe(kind.pid);
+      await stderrFertig.timeout(const Duration(seconds: 2), onTimeout: () {});
+      if (code == -1 || ressourcen) {
+        return (
+          ok: false,
+          befund: {'grund': 'Ressourcen- oder Zeitgrenze erreicht'},
+        );
+      }
+      final manifest = File(p.join(aus.path, 'befund.json'));
+      if (await FileSystemEntity.type(manifest.path, followLinks: false) !=
+              FileSystemEntityType.file ||
+          await manifest.length() > 65536) {
+        protokoll(
+          'Gastprüfung mit $code beendet: ${utf8.decode(fehler.takeBytes(), allowMalformed: true)}',
+        );
+        return (ok: false, befund: {'grund': 'Prüfung nicht möglich'});
+      }
+      final befund = (jsonDecode(await manifest.readAsString()) as Map)
+          .cast<String, Object?>();
+      if (code != 0 || befund['art'] == null) {
+        return (
+          ok: false,
+          befund: {'grund': befund['grund'] ?? 'Datei nicht lesbar'},
+        );
+      }
+      await ziel.create(recursive: true);
+      for (final name in [
+        'befund.json',
+        'sauber.jpg',
+        'sauber.mp4',
+        'vorschau.jpg',
+      ]) {
+        final f = File(p.join(aus.path, name));
+        if (await FileSystemEntity.type(f.path, followLinks: false) ==
+            FileSystemEntityType.file) {
+          await f.copy(p.join(ziel.path, name));
+        }
+      }
+      return (ok: true, befund: befund);
+    } on Object {
+      if (prozess != null) await _beendeBaum(prozess);
+      return (
+        ok: false,
+        befund: {'grund': 'Isolierte Prüfung nicht verfügbar'},
+      );
+    } finally {
+      waechter?.cancel();
+      await temp.delete(recursive: true);
     }
-    if (code == 0 && befund['art'] != null) return (ok: true, befund: befund);
-    if (code != 2 && fehler.isNotEmpty) {
-      protokoll('Gastprüfung mit $code beendet: ${fehler.toString().trim()}');
-    }
-    return (
-      ok: false,
-      befund: {'grund': befund['grund'] ?? 'Datei nicht lesbar'},
-    );
   }
 }

@@ -390,6 +390,12 @@ abstract class SyncTexte {
   /// In de, this message translates to:
   /// **'Längengrad'**
   String get wertLaenge;
+
+  /// No description provided for @zuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern.'**
+  String get zuGross;
 }
 
 class _SyncTexteDelegate extends LocalizationsDelegate<SyncTexte> {

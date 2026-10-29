@@ -198,11 +198,13 @@ class ImportDateiangaben {
     required this.datum,
     required this.datumGeschaetzt,
     required this.istBild,
+    this.geaendert,
     this.breite,
     this.laenge,
     this.kamera,
     this.modell,
   });
+  final DateTime? geaendert;
   final String pfad, pruefsumme;
   final int bytes;
   final DateTime datum;
@@ -227,6 +229,8 @@ class ImportService {
   Future<ImportResult> importFile(
     String filePath, {
     String? erwartetePruefsumme,
+    ImportDateiangaben? erwarteteAngaben,
+    Future<void> Function(String assetId)? beiEintrag,
   }) async {
     String? unvollstaendigeAssetId;
     File? unvollstaendigesOriginal;
@@ -240,7 +244,20 @@ class ImportService {
           error: 'Nicht unterstütztes Format',
         );
       }
+      erwartetePruefsumme ??= erwarteteAngaben?.pruefsumme;
       final sourceFile = File(filePath);
+      Future<void> pruefeQuelle() async {
+        if (erwarteteAngaben == null) return;
+        final stat = await sourceFile.stat();
+        if (stat.type != FileSystemEntityType.file ||
+            stat.size != erwarteteAngaben.bytes ||
+            (erwarteteAngaben.geaendert != null &&
+                stat.modified != erwarteteAngaben.geaendert)) {
+          throw const FormatException('pv_import_quelle_geaendert');
+        }
+      }
+
+      await pruefeQuelle();
       // **Die Bytes schlagen den Namen.** In der Prüfbibliothek trugen 31
       // von 440 als Video geführten Aufnahmen in Wahrheit ein JPEG oder
       // HEIC – Standbilder, die unter einem `.mov`-Namen ankamen. Als
@@ -254,10 +271,12 @@ class ImportService {
       // Name, der ein Bild behauptet, bleibt deshalb unangetastet – dort
       // gäbe es kein Signal, das widerspräche.
       final istBildNachName = _imageExtensions.contains(ext);
-      final bildformatDesInhalts = istBildNachName
+      var bildformatDesInhalts = istBildNachName
           ? null
           : await inhaltskennung(sourceFile, null);
-      final isImage = istBildNachName || bildformatDesInhalts != null;
+      final isImage =
+          erwarteteAngaben?.istBild ??
+          (istBildNachName || bildformatDesInhalts != null);
 
       // Prüfsumme immer streamend. Auch ein Foto kann ein 300-MB-TIFF oder
       // Panorama sein; es für den Hash komplett im Dart-Heap zu halten ist
@@ -275,12 +294,11 @@ class ImportService {
 
       final assetId = _uuid.v4();
       unvollstaendigeAssetId = assetId;
-      final angaben = await _leseImportAngaben(sourceFile, ext, isImage);
-      final exifMeta = angaben.exif;
-      final videoMeta = angaben.video;
-      final videoOrt = _alsGps(videoMeta.ort);
-      final fileCreatedAt = angaben.datum;
-      final geschaetzt = angaben.geschaetzt;
+      final vorab = erwarteteAngaben == null
+          ? await _leseImportAngaben(sourceFile, ext, isImage)
+          : null;
+      final fileCreatedAt = erwarteteAngaben?.datum ?? vorab!.datum;
+      final geschaetzt = erwarteteAngaben?.datumGeschaetzt ?? vorab!.geschaetzt;
 
       final relativePath = _paths.originalRelativePath(
         fileCreatedAt,
@@ -299,50 +317,65 @@ class ImportService {
         throw const FormatException('pv_import_quelle_geaendert');
       }
 
+      // Bestätigte Importe lesen Metadaten nur aus der bereits kopierten,
+      // gehashten Datei. Eine zwischenzeitlich ausgetauschte Quelle darf
+      // keine anderen Kamera- oder Ortsangaben einschleusen.
+      final angaben =
+          vorab ?? await _leseImportAngaben(targetFile, ext, isImage);
+      final exifMeta = angaben.exif;
+      final videoMeta = angaben.video;
+      final videoOrt = _alsGps(videoMeta.ort);
+      if (erwarteteAngaben != null && !istBildNachName) {
+        bildformatDesInhalts = await inhaltskennung(targetFile, null);
+      }
       final thumbResult = isImage
           ? await generateThumbnailAndPreview(targetFile, assetId, ext)
           : await generateVideoThumbnail(targetFile, assetId);
 
-      await _db.insertAsset(
-        AssetsCompanion.insert(
-          id: assetId,
-          originalFileName: p.basename(filePath),
-          relativePath: relativePath,
-          checksum: checksum,
-          type: isImage ? 'IMAGE' : 'VIDEO',
-          // Aus DEM Namen, unter dem die Datei kam - nicht aus dem
-          // Ablagepfad. Der Ablagepfad traegt eine vereinheitlichte Endung,
-          // und dann stuende bei jedem Foto dasselbe Format. Ein Standbild
-          // unter einem Videonamen bekommt das Format seines Inhalts, wie
-          // bei LibraryState.repariereDateiarten – „mov“ waere falsch.
-          dateiformat: Value(
-            bildformatDesInhalts?.substring(1) ??
-                dateiformatAus(p.basename(filePath)),
+      await pruefeQuelle();
+      await _db.transaction(() async {
+        await _db.insertAsset(
+          AssetsCompanion.insert(
+            id: assetId,
+            originalFileName: p.basename(filePath),
+            relativePath: relativePath,
+            checksum: checksum,
+            type: isImage ? 'IMAGE' : 'VIDEO',
+            // Aus DEM Namen, unter dem die Datei kam - nicht aus dem
+            // Ablagepfad. Der Ablagepfad traegt eine vereinheitlichte Endung,
+            // und dann stuende bei jedem Foto dasselbe Format. Ein Standbild
+            // unter einem Videonamen bekommt das Format seines Inhalts, wie
+            // bei LibraryState.repariereDateiarten – „mov“ waere falsch.
+            dateiformat: Value(
+              bildformatDesInhalts?.substring(1) ??
+                  dateiformatAus(p.basename(filePath)),
+            ),
+            fileCreatedAt: fileCreatedAt,
+            datumGeschaetzt: Value(geschaetzt),
+            zeitversatzMinuten: Value(exifMeta.versatzMinuten),
+            // Nachgesehen wurde gerade eben – der Nachtrag braucht diese
+            // Datei nie wieder anzufassen.
+            datumGeprueft: const Value(true),
+            importedAt: DateTime.now(),
+            thumbnailRelativePath: Value(thumbResult.thumbnailRelativePath),
+            previewRelativePath: Value(thumbResult.previewRelativePath),
+            widthPx: Value(thumbResult.width),
+            heightPx: Value(thumbResult.height),
+            durationSeconds: Value(thumbResult.durationSeconds),
+            fileSizeBytes: Value(fileSizeBytes),
+            latitude: Value(exifMeta.gps?.latitude ?? videoOrt?.latitude),
+            longitude: Value(exifMeta.gps?.longitude ?? videoOrt?.longitude),
+            cameraMake: Value(exifMeta.camera.make ?? videoMeta.hersteller),
+            cameraModel: Value(exifMeta.camera.model ?? videoMeta.geraet),
+            lensModel: Value(exifMeta.camera.lensModel),
+            focalLengthMm: Value(exifMeta.camera.focalLengthMm),
+            fNumber: Value(exifMeta.camera.fNumber),
+            iso: Value(exifMeta.camera.iso),
+            exposureTimeSeconds: Value(exifMeta.camera.exposureTimeSeconds),
           ),
-          fileCreatedAt: fileCreatedAt,
-          datumGeschaetzt: Value(geschaetzt),
-          zeitversatzMinuten: Value(exifMeta.versatzMinuten),
-          // Nachgesehen wurde gerade eben – der Nachtrag braucht diese
-          // Datei nie wieder anzufassen.
-          datumGeprueft: const Value(true),
-          importedAt: DateTime.now(),
-          thumbnailRelativePath: Value(thumbResult.thumbnailRelativePath),
-          previewRelativePath: Value(thumbResult.previewRelativePath),
-          widthPx: Value(thumbResult.width),
-          heightPx: Value(thumbResult.height),
-          durationSeconds: Value(thumbResult.durationSeconds),
-          fileSizeBytes: Value(fileSizeBytes),
-          latitude: Value(exifMeta.gps?.latitude ?? videoOrt?.latitude),
-          longitude: Value(exifMeta.gps?.longitude ?? videoOrt?.longitude),
-          cameraMake: Value(exifMeta.camera.make ?? videoMeta.hersteller),
-          cameraModel: Value(exifMeta.camera.model ?? videoMeta.geraet),
-          lensModel: Value(exifMeta.camera.lensModel),
-          focalLengthMm: Value(exifMeta.camera.focalLengthMm),
-          fNumber: Value(exifMeta.camera.fNumber),
-          iso: Value(exifMeta.camera.iso),
-          exposureTimeSeconds: Value(exifMeta.camera.exposureTimeSeconds),
-        ),
-      );
+        );
+        if (beiEintrag != null) await beiEintrag(assetId);
+      });
       datenbankEintragGespeichert = true;
 
       return ImportResult(filePath, ImportOutcome.imported, assetId: assetId);
@@ -442,6 +475,7 @@ class ImportService {
       pfad: filePath,
       pruefsumme: checksum,
       bytes: vor.size,
+      geaendert: vor.modified,
       datum: a.datum,
       datumGeschaetzt: a.geschaetzt,
       breite: a.exif.gps?.latitude ?? videoOrt?.latitude,

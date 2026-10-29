@@ -138,11 +138,15 @@ extension Abgleichsfaelle on Abgleich {
     final geschuetzt = fotos.any((a) => a['is_locked'] == 1);
     final werte = <Map<String, Object?>?>[];
     final hashes = <String>[];
-    var entfernt = fotos.any((a) => a['is_trashed'] == 1);
+    var entfernt =
+        fotos.length != ids.length || fotos.any((a) => a['is_trashed'] == 1);
     for (final basis in fall.basis) {
       final row = gelesen[zeilenschluessel(basis.tabelle, basis.schluessel)];
       if (row == null) throw const FormatException('pv_sync_zeile_fehlt');
-      if (row.werte == null && basis.gewollt != null) entfernt = true;
+      if (row.werte == null &&
+          basis.vorher != Befehlsbasis.hash(null, basis.spalten)) {
+        entfernt = true;
+      }
       hashes.add(Befehlsbasis.hash(row.werte, basis.spalten));
       werte.add(
         geschuetzt

@@ -65,5 +65,6 @@
     }
   },
   "wertBreite": "Breitengrad",
-  "wertLaenge": "Längengrad"
+  "wertLaenge": "Längengrad",
+  "zuGross": "Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern."
 }

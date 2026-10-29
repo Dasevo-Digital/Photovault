@@ -1,3 +1,4 @@
+import 'package:shelf/shelf.dart';
 import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:kern/abgleich/tus.dart';
@@ -558,6 +559,117 @@ void main() {
         'Alte Offlineabsicht',
       );
       expect(await a.faelle(), isEmpty);
+    },
+  );
+  test(
+    'zusammengesetzte Markierung schützt unverändert gesetzte Bewertung',
+    () async {
+      await db.fuehreAus(
+        const MarkierungenSetzen({
+          'foto': (favorit: true, bewertung: 0, farbe: null),
+        }),
+      );
+      await quelle.fuehreAus(const BewertungSetzen(['foto'], 5));
+      await a.sende();
+      await a.empfange();
+      final foto = (await quelle.assetById('foto'))!;
+      expect(foto.rating, 5);
+      expect(a.zustandJetzt.faelle, 1);
+    },
+  );
+
+  test('Ortsänderung schützt das gesamte Koordinatenpaar', () async {
+    await quelle.fuehreAus(const OrtSetzen(['foto'], 10, 20));
+    await a.empfange();
+    await db.fuehreAus(const OrtSetzen(['foto'], 10, 21));
+    await quelle.fuehreAus(const OrtSetzen(['foto'], 11, 20));
+    await a.sende();
+    await a.empfange();
+    final foto = (await quelle.assetById('foto'))!;
+    expect(foto.latitude, 11);
+    expect(foto.longitude, 20);
+    expect(a.zustandJetzt.faelle, 1);
+  });
+
+  test(
+    'neue Tagzeile bleibt nach aufgehobener Sperre erneut anwendbar',
+    () async {
+      await db.fuehreAus(
+        const SchlagwortAnheften(['foto'], 'synthetischer-neuer-tag'),
+      );
+      await quelle.customStatement(
+        "UPDATE assets SET is_locked = 1 WHERE id = 'foto'",
+      );
+      await a.sende();
+      await a.empfange();
+      await quelle.customStatement(
+        "UPDATE assets SET is_locked = 0 WHERE id = 'foto'",
+      );
+      await a.empfange();
+      final fall = (await a.faelle()).single;
+      final vergleich = await a.vergleiche(fall);
+      expect(vergleich.geschuetzt, isFalse);
+      expect(vergleich.entfernt, isFalse);
+      await a.erneutAnwenden(vergleich);
+      await a.sende();
+      await a.empfange();
+      expect(
+        (await quelle.tagsForAsset('foto')).map((t) => t.name),
+        contains('synthetischer-neuer-tag'),
+      );
+      expect(await a.faelle(), isEmpty);
+    },
+  );
+  test(
+    'öffentliche Anmeldung weist übergroßen Chunked-Körper vor Authentifizierung ab',
+    () async {
+      var teile = 0;
+      Stream<List<int>> quelle() async* {
+        for (var i = 0; i < 128; i++) {
+          teile++;
+          yield List.filled(8192, 32);
+        }
+      }
+
+      final r = await baueApi(konten: konten, bibliotheken: bibliotheken)(
+        Request(
+          'POST',
+          Uri.parse('http://localhost/api/v1/anmelden'),
+          body: quelle(),
+        ),
+      );
+      expect(r.statusCode, 413);
+      expect(teile, lessThan(5));
+    },
+  );
+  test(
+    'alte übergroße Warteschlange bleibt als Fall erhalten und blockiert Folgebefehle nicht',
+    () async {
+      final alt = BeschreibungSetzen(['foto'], 'x' * (6 * 1024 * 1024 + 1));
+      await a.beende();
+      await db.customStatement(
+        'INSERT INTO pv_ausgang (kennung,befehl,basis,angelegt) VALUES (?,?,?,?)',
+        [
+          'altgross',
+          jsonEncode(alt.alsJson()),
+          '[]',
+          DateTime.now().millisecondsSinceEpoch,
+        ],
+      );
+      a = Abgleich(
+        db,
+        v,
+        fallschluessel: await Fallschluessel.lade(db, ablage),
+      );
+      await a.richteEin();
+      await db.fuehreAus(const FavoritSetzen(['foto'], true));
+      await a.sende();
+      await a.empfange();
+      expect((await quelle.assetById('foto'))!.isFavorite, isTrue);
+      final fall = (await a.faelle()).single;
+      expect(fall.grund, 'pv_sync_auswahl');
+      expect(fall.lesbar, isTrue);
+      expect(fall.befehl['art'], 'beschreibungSetzen');
     },
   );
 }

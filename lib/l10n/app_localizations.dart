@@ -15461,6 +15461,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft.'**
   String get backupProbePassphraseOffen;
+
+  /// No description provided for @syncAuswahlZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Änderung ist zu groß für einen einzelnen Abgleich. Bitte verkleinere die Auswahl oder den Inhalt und versuche es erneut.'**
+  String get syncAuswahlZuGross;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

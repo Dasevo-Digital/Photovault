@@ -471,14 +471,39 @@ Dateien gehen nicht in die Bibliothek, sondern werden zum Beitrag:
 3. Der Besitzer sieht die Beiträge unter Konto und nimmt sie an (dann
    kommen sie in Bibliothek und Album) oder lehnt sie ab.
 
-Ohne Netz läuft der Prüfprozess unter Linux in einem eigenen
-Netz-Namensraum (`unshare -rn`, util-linux), unter macOS in
-`sandbox-exec`. Die systemd-Einheit erlaubt dafür Benutzer- und
-Netz-Namensräume (`RestrictNamespaces=user net`); der Kernel muss
-Benutzer-Namensräume erlauben, in einem LXC-Container auch der Wirt.
-Docker erlaubt `unshare` nur mit zusätzlichen Rechten – dann prüft der
-Server weiter in einem eigenen Prozess, aber mit Netz, und sagt das beim
-Start und unter Konto.
+Gastdecoder benötigen vollständige Betriebssystem-Isolation. Linux verwendet
+`bubblewrap` mit eigenem Dateisystem, Prozess-, Benutzer-, Netz- und IPC-Namensraum.
+Das Laufzeitsystem und die private Eingangskopie sind nur lesbar; geschrieben
+wird ausschließlich in einen privaten Ausgabeordner. Serverdaten werden nicht
+eingebunden. Unter macOS gilt ein verweigerndes `sandbox-exec`-Profil mit
+gezielten Lese- und Schreibfreigaben. Nicht verfügbare Isolation führt zur
+Abweisung des Beitrags. Es gibt keinen ungeschützten Ersatzweg.
+
+Benötigt werden `bubblewrap` und `procps` unter Linux. Die Container enthalten
+beide Pakete; der Wirt muss die Namensräume erlauben. Bei verschachtelten
+Containern müssen außerdem die private `/proc`-Einbindung und die zugehörigen
+Syscalls erlaubt sein. Das Standardprofil von Docker reicht dafür nicht immer
+aus; ohne passende Laufzeitkonfiguration bleiben Gastbeiträge gesperrt.
+Die systemd-Einheit
+führt die dafür erlaubten Namensräume auf. Die Gastprüfung im Entwicklungsbetrieb
+benötigt ein übersetztes Programm: Ein Dart-Skript würde zusätzliche Quell- und
+Paketverzeichnisse lesbar machen und wird deshalb abgewiesen.
+
+CPU-Zeit, Dateigröße, offene Dateien und Wandzeit sind begrenzt. Unter Linux
+begrenzt zusätzlich `RLIMIT_AS` den virtuellen Adressraum auf 8 GiB. Auf beiden
+Systemen überwacht der Elternprozess alle 200 ms den gesamten Prozessbaum
+(höchstens 1,5 GiB RSS) und den Ausgabeumfang (2 GiB). Diese Aufsicht lässt ein
+kurzes Überschreiten zwischen zwei Messungen zu; für eine harte gemeinsame
+Speichergrenze sollte der Server zusätzlich in einer begrenzten cgroup laufen.
+Ein Timeout beendet auch die Decoder-Kinder. Die Fehlerausgabe wird auf 16 KiB
+begrenzt. Zurückkopiert werden nur reguläre Ergebnisdateien, keine Verweise.
+
+JSON-Anfragen werden bereits vor der Anmeldung begrenzt: Anmeldungen auf
+16 KiB, sonstige JSON-Körper auf 8 MiB, insgesamt höchstens 16 gleichzeitig
+und 20 Sekunden Lesezeit. Binäre Datei- und tus-Ströme behalten ihre eigenen
+Uploadgrenzen. Sync-Befehle sind einzeln auf 6 MiB und 50.000 Vergleichszeilen
+begrenzt; der Client bildet daraus Stapel bis 8 MiB. Eine atomare Änderung
+wird bei Übergröße vollständig abgewiesen.
 
 ## Sicherung aufs NAS
 

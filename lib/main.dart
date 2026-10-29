@@ -193,6 +193,8 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 // verschwände, wäre keine – und ein Blatt, das sie
                 // verdeckte, auch nicht.
                 builder: (context, kind) {
+                  meldeAbgleichsgrenze = () =>
+                      melde.hinweis(AppTexte.of(context).syncAuswahlZuGross);
                   meldeServersperre = () =>
                       melde.hinweis(AppTexte.of(context).nurOhneServer);
                   return Listener(

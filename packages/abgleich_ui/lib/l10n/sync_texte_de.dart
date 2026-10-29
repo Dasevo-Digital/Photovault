@@ -168,4 +168,8 @@ class SyncTexteDe extends SyncTexte {
 
   @override
   String get wertLaenge => 'Längengrad';
+
+  @override
+  String get zuGross =>
+      'Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern.';
 }

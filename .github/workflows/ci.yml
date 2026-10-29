@@ -38,6 +38,8 @@ jobs:
       - run: flutter pub get && (cd packages/kern && dart pub get) && (cd packages/server && dart pub get) && (cd apps/mobil && flutter pub get)
       - name: Formatierung
         run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages apps
+      - name: Werkzeuge für Gastprozess-Isolation
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap procps
       # Die Tests der Handy-App starten einen Server aus packages/server.
       - name: Analyse und Tests
         run: flutter analyze && flutter test && (cd packages/server && dart test) && (cd apps/mobil && flutter test)

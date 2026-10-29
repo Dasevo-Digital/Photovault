@@ -1,3 +1,4 @@
+import 'anfragegrenzen.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -437,6 +438,7 @@ Handler baueApi({
   return const Pipeline()
       .addMiddleware(packen)
       .addMiddleware(_sicherheitskoepfe)
+      .addMiddleware(anfragegrenzen())
       .addMiddleware(
         anmeldungNoetig(
           konten,
@@ -529,7 +531,7 @@ class _Api {
       _json({
         'dienst': 'photo-vault',
         'protokoll': protokollFassung,
-        'funktionen': {'konfliktpruefung': 1, 'importplan': 1},
+        'funktionen': {'konfliktpruefung': 1, 'importplan': 2},
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
         'anmeldung': {

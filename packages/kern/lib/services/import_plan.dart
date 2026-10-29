@@ -15,6 +15,8 @@ class ImportPlanEintrag {
     required this.pfad,
     required this.art,
     this.angaben,
+    this.albumIds = const [],
+    this.tagIds = const [],
     this.alben = const [],
     this.tags = const [],
     this.regeln = const [],
@@ -25,6 +27,7 @@ class ImportPlanEintrag {
   final ImportPlanArt art;
   final ImportDateiangaben? angaben;
   final List<String> alben, tags, regeln;
+  final List<String> albumIds, tagIds;
   final bool favorit, ungueltigeZiele;
 }
 
@@ -125,6 +128,24 @@ class ImportPlanDienst {
     return sha256.convert(utf8.encode(jsonEncode(daten))).toString();
   }
 
+  Future<void> uebernehme(
+    ImportPlan plan,
+    ImportPlanEintrag eintrag,
+    String id,
+  ) async {
+    if (eintrag.ungueltigeZiele ||
+        plan.regelstand != await aktuellerRegelstand()) {
+      throw const FormatException('pv_import_regeln_geaendert');
+    }
+    for (final album in eintrag.albumIds) {
+      await db.fuehreAus(AlbumFuellen(album, [id]));
+    }
+    for (final tag in eintrag.tagIds) {
+      await db.fuehreAus(SchlagwortAnheftenPerKennung(id, tag));
+    }
+    if (eintrag.favorit) await db.fuehreAus(FavoritSetzen([id], true));
+  }
+
   Future<ImportPlan> erstelle(
     List<String> dateien, {
     bool Function()? abgebrochen,
@@ -204,6 +225,8 @@ class ImportPlanDienst {
               art: art,
               angaben: a,
               favorit: favorit,
+              albumIds: List.unmodifiable(zielAlben),
+              tagIds: List.unmodifiable(zielTags),
               regeln: treffen,
               alben: [
                 for (final id in zielAlben)

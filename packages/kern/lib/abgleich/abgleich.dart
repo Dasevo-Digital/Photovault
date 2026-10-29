@@ -1,3 +1,4 @@
+import 'grenzen.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -292,6 +293,14 @@ class Abgleich {
   /// Wendet [befehl] hier an und stellt ihn in die Warteschlange.
   Future<T> _stelleEin<T>(Befehl<T> befehl) => db.transaction(() async {
     final basis = await Befehlsbasis.ermittle(protokoll, befehl);
+    final draht = {
+      'kennung': '0' * 32,
+      ...befehl.alsJson(),
+      'basis': [for (final b in basis) b.alsJson()],
+    };
+    if (utf8.encode(jsonEncode(draht)).length > Abgleichsgrenzen.befehlBytes) {
+      throw const FormatException('pv_sync_auswahl');
+    }
     final vorschau = await _verpackeFall({
       'befehl': befehl.alsJson(),
       'basis': [for (final b in basis) b.vorschauJson()],
@@ -355,19 +364,51 @@ class Abgleich {
           return;
         }
       }
+      final stapel = <Map<String, Object?>>[];
+      var bytes = utf8.encode('{"befehle":[]}').length;
+      for (final z in offen) {
+        final eintrag = <String, Object?>{
+          'kennung': z.read<String>('kennung'),
+          ...((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
+              .cast<String, Object?>(),
+          'basis': jsonDecode(z.read<String>('basis')),
+        };
+        final groesse = utf8.encode(jsonEncode(eintrag)).length;
+        if (groesse > Abgleichsgrenzen.befehlBytes) {
+          // Altbestand kann vor Einführung des Budgets entstanden sein.
+          // Er bleibt als Fall erhalten und blockiert spätere Befehle nicht.
+          await db.transaction(() async {
+            await db.customStatement(
+              'UPDATE pv_ausgang SET bestaetigt = ?, ok = 0, fehler = ? WHERE kennung = ?',
+              [await _stand(), 'pv_sync_auswahl', z.read<String>('kennung')],
+            );
+            await db.customStatement(
+              'INSERT OR IGNORE INTO pv_abgleichsfaelle (kennung, am, grund, inhalt) VALUES (?, ?, ?, ?)',
+              [
+                z.read<String>('kennung'),
+                z.read<int>('angelegt'),
+                'pv_sync_auswahl',
+                await _verpackeFall(
+                  await _leseAuftrag(z.read<String>('befehl')),
+                ),
+              ],
+            );
+          });
+          continue;
+        }
+        if (bytes + groesse + 1 > Abgleichsgrenzen.stapelBytes) break;
+        stapel.add(eintrag);
+        bytes += groesse + 1;
+      }
+      if (stapel.isEmpty) {
+        await _melde();
+        continue;
+      }
       final antwort = await verbindung.schicke('api/v1/befehle', {
-        'befehle': [
-          for (final z in offen)
-            {
-              'kennung': z.read<String>('kennung'),
-              ...((await _leseAuftrag(z.read<String>('befehl')))['befehl']
-                  as Map),
-              'basis': jsonDecode(z.read<String>('basis')),
-            },
-        ],
+        'befehle': stapel,
       });
       final ergebnisse = (antwort['ergebnisse']! as List).cast<Map>();
-      final gesendet = offen.map((z) => z.read<String>('kennung')).toSet();
+      final gesendet = stapel.map((z) => z['kennung']).toSet();
       final erhalten = ergebnisse.map((z) => z['kennung']).toSet();
       if (ergebnisse.length != gesendet.length ||
           erhalten.length != gesendet.length ||

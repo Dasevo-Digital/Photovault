@@ -1,3 +1,4 @@
+import 'grenzen.dart';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -91,21 +92,19 @@ class Befehlsbasis {
       await p.db.transaction<void>(() async {
         await p.db.customStatement('UPDATE pv_schalter SET mitschreiben = -2');
         await befehl.anwenden(p.db);
-        final zeilen = <Zeilenstand>[];
-        for (final r
-            in await p.db
-                .customSelect(
-                  'SELECT DISTINCT tabelle, schluessel FROM pv_aenderungen WHERE ausgang = -2',
-                )
-                .get()) {
-          zeilen.add(
-            await p.lies(
+        final geaendert = await p.db
+            .customSelect(
+              'SELECT DISTINCT tabelle, schluessel FROM pv_aenderungen WHERE ausgang = -2',
+            )
+            .get();
+        final zeilen = await p.liesViele([
+          for (final r in geaendert)
+            (
               r.read<String>('tabelle'),
               (jsonDecode(r.read<String>('schluessel')) as List)
                   .cast<Object?>(),
             ),
-          );
-        }
+        ]);
         // INSERT OR IGNORE und ein Löschen einer bereits fehlenden
         // Zuordnung erzeugen keinen Trigger. Auch diese ausdrückliche
         // Absicht muss einen später abweichenden Serverstand erkennen.
@@ -131,25 +130,32 @@ class Befehlsbasis {
             }
           }
         }
-        for (final (t, key) in ziele) {
-          if (!zeilen.any(
-            (z) =>
-                z.tabelle == t && jsonEncode(z.schluessel) == jsonEncode(key),
-          )) {
-            zeilen.add(await p.lies(t, key));
-          }
-        }
+        String kennung(String t, List<Object?> k) => '$t\u0000${jsonEncode(k)}';
+        final gesehen = {
+          for (final z in zeilen) kennung(z.tabelle, z.schluessel),
+        };
+        zeilen.addAll(
+          await p.liesViele([
+            for (final (t, key) in ziele)
+              if (gesehen.add(kennung(t, key))) (t, key),
+          ]),
+        );
         throw _ProbeFertig(zeilen);
       }, requireNew: true);
       throw StateError('pv_sync_probe');
     } on _ProbeFertig catch (e) {
       neu = e.zeilen;
     }
-    if (neu.length > 50000) throw const FormatException('pv_sync_auswahl');
+    if (neu.length > Abgleichsgrenzen.basisZeilen) {
+      throw const FormatException('pv_sync_auswahl');
+    }
     final result = <Befehlsbasis>[];
     final weitereFotos = <String>{};
-    for (final n in neu) {
-      final alt = await p.lies(n.tabelle, n.schluessel);
+    final alte = await p.liesViele([
+      for (final n in neu) (n.tabelle, n.schluessel),
+    ]);
+    for (var index = 0; index < neu.length; index++) {
+      final n = neu[index], alt = alte[index];
       final zeile = n.werte ?? alt.werte;
       if (zeile?['face_id'] case final String id) {
         final gesicht = await p.lies('faces', [id]);
@@ -179,15 +185,29 @@ class Befehlsbasis {
                       jsonEncode(wertAlsJson(n.werte?[s])),
                 )
                 .toList();
-      // Auch ein bewusst erneut gesetzter gleicher Wert ist eine Absicht.
+      // Deklarierte Schreibmenge enthält auch unverändert gesetzte Werte.
+      // Ohne explizite Feldklassifikation gilt konservativ die ganze Zeile.
       if (n.tabelle == 'assets') {
-        spalten.addAll(switch (befehl.art) {
+        final absicht = switch (befehl.art) {
           'favoritSetzen' => ['is_favorite'],
           'bewertungSetzen' => ['rating'],
           'farbmarkeSetzen' => ['color_label'],
           'beschreibungSetzen' => ['description'],
-          _ => <String>[],
-        });
+          'markierungenSetzen' => ['is_favorite', 'rating', 'color_label'],
+          'ortSetzen' => [
+            'latitude',
+            'longitude',
+            'location_country',
+            'location_state',
+            'location_city',
+            'ort_geerbt',
+          ],
+          'dateinameSetzen' => ['original_file_name', 'dateiformat'],
+          _ => alle.toList(),
+        };
+        spalten.addAll(absicht.where(alle.contains));
+      } else {
+        spalten.addAll(alle);
       }
       if (spalten.isEmpty) spalten.addAll(alle);
       if (n.tabelle == 'assets') spalten.addAll(['is_locked', 'is_trashed']);
@@ -226,11 +246,14 @@ class Befehlsbasis {
         .where((b) => b.tabelle == 'assets')
         .map((b) => b.schluessel.single)
         .toSet();
-    for (final id in {
+    final guards = {
       ...weitereFotos,
       ...result.expand((b) => b.fotos),
-    }.difference(vorhanden)) {
-      final row = await p.lies('assets', [id]);
+    }.difference(vorhanden);
+    for (final row in await p.liesViele([
+      for (final id in guards) ('assets', [id]),
+    ])) {
+      final id = row.schluessel.single as String;
       const felder = ['is_locked', 'is_trashed'];
       final h = hash(row.werte, felder);
       result.add(
@@ -246,6 +269,9 @@ class Befehlsbasis {
           fotos: [id],
         ),
       );
+    }
+    if (result.length > Abgleichsgrenzen.basisZeilen) {
+      throw const FormatException('pv_sync_auswahl');
     }
     return result;
   }

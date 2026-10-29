@@ -6473,5 +6473,6 @@
       }
     }
   },
-  "backupProbePassphraseOffen": "Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft."
+  "backupProbePassphraseOffen": "Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft.",
+  "syncAuswahlZuGross": "Die Änderung ist zu groß für einen einzelnen Abgleich. Bitte verkleinere die Auswahl oder den Inhalt und versuche es erneut."
 }

@@ -180,6 +180,8 @@ String _status(SyncTexte t, Abgleichsfall f) => !f.lesbar
     ? t.unlesbar
     : f.ausstehend
     ? t.wartet
+    : f.grund == 'pv_sync_auswahl'
+    ? t.zuGross
     : f.grund == 'pv_sync_konflikt'
     ? t.konflikt
     : t.abgelehnt;

@@ -346,7 +346,13 @@ void main() {
       );
       expect(a['facesScanned'], isFalse, reason: 'ohne Modell kein Vermerk');
 
-      final stand = await jsonAus(await frag('GET', '/api/v1/auswertung'));
+      var stand = await jsonAus(await frag('GET', '/api/v1/auswertung'));
+      // Ein Upload kann während eines bereits gestarteten Laufs einen
+      // Folgelauf anmelden. Auch diesen abwarten, bevor Leerlauf verlangt wird.
+      for (var i = 0; i < 20 && stand['laeuft'] == true; i++) {
+        await (await bereich()).auswertung.jetzt();
+        stand = await jsonAus(await frag('GET', '/api/v1/auswertung'));
+      }
       expect(stand['laeuft'], isFalse);
       final angestossen = await frag('POST', '/api/v1/auswertung');
       expect(angestossen.statusCode, 202);

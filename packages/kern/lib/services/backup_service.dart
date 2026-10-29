@@ -1,3 +1,4 @@
+import 'aufnahmedatum.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -552,7 +553,8 @@ class BackupService {
         'backupRelativePath': a.relativePath,
         'isFavorite': a.isFavorite,
         'description': a.description,
-        'fileCreatedAt': a.fileCreatedAt.toIso8601String(),
+        'fileCreatedAt': a.fileCreatedAt.toUtc().toIso8601String(),
+        'datumGeschaetzt': a.datumGeschaetzt,
         // Sterne und Farbmarke sind Handarbeit und standen bis hierher
         // nicht in der Sicherung — die Anleitung nannte „Bewertungen"
         // trotzdem. Wer nach einem Plattenschaden zurückspielte, fand
@@ -886,7 +888,10 @@ class BackupService {
       // Metadaten anwenden – die Datei wurde oben bereits (ggf. entschlüsselt)
       // eingelesen, deshalb hier keine zweite Entschlüsselung.
       if (await metadataFile.exists()) {
-        await _applyMetadataExport(entschluesselteMetadaten ?? metadataFile);
+        await _applyMetadataExport(
+          entschluesselteMetadaten ?? metadataFile,
+          streng: streng,
+        );
       }
 
       // Und zuletzt alles, was in keiner Beilage steht: Namen an
@@ -1046,6 +1051,30 @@ class BackupService {
         if (neu != null) assetZuordnung[z['id'] as String] = neu;
       }
 
+      final quellSpalten = {
+        for (final z in quelle.select('PRAGMA table_info(assets)')) z['name'],
+      };
+      if (quellSpalten.contains('file_created_at')) {
+        for (final z in quelle.select('SELECT * FROM assets')) {
+          final id = assetZuordnung[z['id']];
+          if (id == null ||
+              z['file_created_at'] is! int ||
+              z['is_locked'] == 1) {
+            continue;
+          }
+          if ((await _db.assetById(id))!.isLocked) continue;
+          await AufnahmedatumDienst(_db, _paths).setze(
+            (await _db.assetById(id))!,
+            DateTime.fromMillisecondsSinceEpoch(
+              (z['file_created_at'] as int) * 1000,
+            ),
+            geschaetzt:
+                quellSpalten.contains('datum_geschaetzt') &&
+                z['datum_geschaetzt'] == 1,
+            streng: true,
+          );
+        }
+      }
       var uebernommen = 0;
       // **Eine Klammer um alles**, und das ist keine Feinheit: Ohne sie
       // ist jede der Zehntausenden Zeilen eine eigene Transaktion mit
@@ -1212,12 +1241,16 @@ class BackupService {
   /// Eintrag (z.B. aus einem von Hand bearbeiteten oder von einer älteren
   /// App-Version stammenden Backup) bricht damit nicht den gesamten Restore
   /// ab, sondern wird übersprungen.
-  Future<void> _applyMetadataExport(File metadataFile) async {
+  Future<void> _applyMetadataExport(
+    File metadataFile, {
+    bool streng = false,
+  }) async {
     final Map<String, dynamic> content;
     try {
       content =
           jsonDecode(await metadataFile.readAsString()) as Map<String, dynamic>;
     } catch (e) {
+      if (streng) rethrow;
       protokoll(
         'metadata.json konnte nicht gelesen werden, überspringe Metadaten-Import: $e',
       );
@@ -1232,15 +1265,39 @@ class BackupService {
       byChecksum[row.checksum] = row.id;
     }
 
-    // Auch hier eine Klammer: je Eintrag bis zu sieben Anweisungen und
-    // je Schlagwort zwei weitere. An 1000 Aufnahmen gemessen: 4,1 s
-    // ohne, 0,4 s mit.
+    // Dateiumzüge haben eigene kurze Transaktionen. Eine spätere fehlerhafte
+    // Metadatenzeile darf nicht nur die Datenbank zurückrollen und bereits
+    // verschobene Originale am falschen Pfad zurücklassen.
+    final fehlgeschlagen = <String>{};
+    for (final entry in assetsJson) {
+      final assetId = byChecksum[entry['checksum']];
+      if (assetId == null) continue;
+      final asset = (await _db.assetById(assetId))!;
+      if (asset.isLocked) {
+        fehlgeschlagen.add(assetId);
+        continue;
+      }
+      try {
+        if (entry['fileCreatedAt'] case final String text) {
+          await AufnahmedatumDienst(_db, _paths).setze(
+            asset,
+            DateTime.parse(text),
+            geschaetzt: entry['datumGeschaetzt'] as bool? ?? false,
+            streng: true,
+          );
+        }
+      } catch (e) {
+        if (streng) rethrow;
+        fehlgeschlagen.add(assetId);
+        protokoll('Aufnahmedatum konnte nicht wiederhergestellt werden: $e');
+      }
+    }
+    // Die verbleibende reine Datenbankarbeit bleibt gebündelt.
     await _db.transaction(() async {
       for (final entry in assetsJson) {
         try {
-          final checksum = entry['checksum'] as String?;
-          final assetId = checksum != null ? byChecksum[checksum] : null;
-          if (assetId == null) continue;
+          final assetId = byChecksum[entry['checksum']];
+          if (assetId == null || fehlgeschlagen.contains(assetId)) continue;
           // Der Reimport aus dem Backup-Ordner kennt nur den Pfad
           // originals/{yyyy}/{mm}/{assetId}.ext und übernimmt dessen Basename
           // (also die Asset-UUID) als originalFileName – hier den echten,
@@ -1315,6 +1372,7 @@ class BackupService {
             );
           }
         } catch (e) {
+          if (streng) rethrow;
           protokoll(
             'Metadaten-Eintrag konnte nicht angewendet werden, überspringe: $e',
           );
@@ -1339,6 +1397,7 @@ class BackupService {
         await _db.fuehreAus(AlbumAnlegen(albumId, name, DateTime.now()));
         await _db.fuehreAus(AlbumFuellen(albumId, assetIds));
       } catch (e) {
+        if (streng) rethrow;
         protokoll(
           'Album-Eintrag konnte nicht wiederhergestellt werden, überspringe: $e',
         );

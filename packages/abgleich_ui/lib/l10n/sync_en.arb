@@ -65,5 +65,6 @@
     }
   },
   "wertBreite": "Latitude",
-  "wertLaenge": "Longitude"
+  "wertLaenge": "Longitude",
+  "zuGross": "Too large for a single sync command. Reduce the selection or content."
 }

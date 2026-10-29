@@ -128,7 +128,7 @@ COPY --from=buendel-openvino /photo-vault-server-linux-amd64-openvino.tar.gz /
 FROM ubuntu:${UBUNTU} AS openvino
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ffmpeg \
+      ffmpeg bubblewrap procps \
       libheif-examples libheif-plugin-libde265 libheif-plugin-dav1d \
       libraw-bin \
       tzdata \
@@ -168,7 +168,7 @@ ARG ORT_FASSUNG
 # LibRaw für RAW.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      ffmpeg \
+      ffmpeg bubblewrap procps \
       libheif-examples libheif-plugin-libde265 libheif-plugin-dav1d \
       libraw-bin \
       tzdata \

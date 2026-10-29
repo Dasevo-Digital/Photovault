@@ -10093,4 +10093,8 @@ class AppTexteEn extends AppTexte {
   @override
   String get backupProbePassphraseOffen =>
       'This drill uses the already available key. The passphrase is checked by the manual recovery drill.';
+
+  @override
+  String get syncAuswahlZuGross =>
+      'This change is too large for a single sync command. Reduce the selection or content and try again.';
 }

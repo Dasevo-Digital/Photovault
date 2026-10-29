@@ -167,4 +167,8 @@ class SyncTexteEn extends SyncTexte {
 
   @override
   String get wertLaenge => 'Longitude';
+
+  @override
+  String get zuGross =>
+      'Too large for a single sync command. Reduce the selection or content.';
 }

@@ -10,6 +10,8 @@ bool istServersperre(Object fehler) =>
 /// Zeigt die Meldung dazu in der Oberflächensprache; gesetzt von der
 /// Oberfläche, die die Texte kennt (main.dart).
 void Function()? meldeServersperre;
+void Function()? meldeAbgleichsgrenze;
+bool istAbgleichsgrenze(Object fehler) => '$fehler'.contains('pv_sync_auswahl');
 
 /// Fängt die Sperre überall ab, wo ein Fehler sonst ungefangen ankäme –
 /// in Rückrufen der Oberfläche wie in Futures, auf die niemand wartet.
@@ -20,12 +22,20 @@ void richteServersperreEin() {
       meldeServersperre?.call();
       return;
     }
+    if (istAbgleichsgrenze(details.exception)) {
+      meldeAbgleichsgrenze?.call();
+      return;
+    }
     vorherFlutter?.call(details);
   };
   final vorherPlattform = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (fehler, spur) {
     if (istServersperre(fehler)) {
       meldeServersperre?.call();
+      return true;
+    }
+    if (istAbgleichsgrenze(fehler)) {
+      meldeAbgleichsgrenze?.call();
       return true;
     }
     return vorherPlattform?.call(fehler, spur) ?? false;

@@ -308,6 +308,47 @@ class Protokoll {
     );
   }
 
+  /// Liest Schlüssel gebündelt; auch fehlende Zeilen behalten ihre Position.
+  Future<List<Zeilenstand>> liesViele(
+    List<(String, List<Object?>)> ziele,
+  ) async {
+    final gruppen = <String, List<List<Object?>>>{};
+    for (final (t, k) in ziele) {
+      gruppen.putIfAbsent(t, () => []).add(k);
+    }
+    final ergebnis = <String, Map<String, Object?>>{};
+    for (final e in gruppen.entries) {
+      final b = await _bauVon(e.key);
+      for (var i = 0; i < e.value.length; i += 100) {
+        final keys = e.value.skip(i).take(100).toList();
+        if (keys.any((k) => k.length != b.schluessel.length)) {
+          throw const FormatException('pv_sync_basis');
+        }
+        final where = b.schluessel.map((s) => '"$s" = ?').join(' AND ');
+        final rows = await db
+            .customSelect(
+              'SELECT ${b.spalten.map((s) => '"$s"').join(', ')} FROM "${e.key}" WHERE '
+              '${List.filled(keys.length, '($where)').join(' OR ')}',
+              variables: [
+                for (final k in keys)
+                  for (final w in k) _variable(w),
+              ],
+            )
+            .get();
+        for (final row in rows) {
+          final key = [for (final k in b.schluessel) row.data[k]];
+          ergebnis['${e.key}\u0000${jsonEncode(key)}'] = {
+            for (final s in b.spalten) s: row.data[s],
+          };
+        }
+      }
+    }
+    return [
+      for (final (t, k) in ziele)
+        Zeilenstand(t, k, ergebnis['$t\u0000${jsonEncode(k)}']),
+    ];
+  }
+
   /// Wie viele Werte der Primärschlüssel von [tabelle] hat. Der Server
   /// prüft damit fremde Abgleichsanfragen, bevor er Werte an SQLite bindet.
   Future<int> schluessellaenge(String tabelle) async =>

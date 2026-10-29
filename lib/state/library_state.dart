@@ -1,3 +1,4 @@
+import 'package:kern/services/aufnahmedatum.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
 import 'package:kern/services/import_plan.dart';
 import 'dart:async';
@@ -1233,7 +1234,7 @@ class LibraryState extends ChangeNotifier {
     final a = abgleich!;
     if (plan != null) {
       final zustand = await a.verbindung.hole('api/v1/zustand');
-      if ((zustand['funktionen'] as Map?)?['importplan'] != 1) {
+      if (((zustand['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2) {
         throw const FormatException('pv_import_server_zu_alt');
       }
     }
@@ -1245,11 +1246,18 @@ class LibraryState extends ChangeNotifier {
       final datei = File(filePath);
       String? ausgang, aufnahme;
       try {
+        final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == filePath);
+        if (eintrag != null &&
+            ((await datei.stat()).size != eintrag.angaben!.bytes ||
+                await datei.lastModified() != eintrag.angaben!.geaendert)) {
+          throw const FormatException('pv_import_quelle_geaendert');
+        }
         final kopf = await tus.lade(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
           if (plan != null) 'sha256': pruefsummen![filePath]!,
           if (plan != null) 'regelstand': plan.regelstand,
-          'geaendert': '${(await datei.lastModified()).millisecondsSinceEpoch}',
+          'geaendert':
+              '${(eintrag?.angaben?.geaendert ?? await datei.lastModified()).millisecondsSinceEpoch}',
         });
         ausgang = kopf['pv-ausgang'];
         aufnahme = kopf['pv-aufnahme'];
@@ -1474,12 +1482,20 @@ class LibraryState extends ChangeNotifier {
           plan.regelstand != await pruefung.aktuellerRegelstand()) {
         throw const FormatException('pv_import_regeln_geaendert');
       }
+      final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == filePath);
       final result = await importService.importFile(
         filePath,
         erwartetePruefsumme: pruefsummen?[filePath],
+        erwarteteAngaben: eintrag?.angaben,
+        beiEintrag: plan == null
+            ? null
+            : (id) => pruefung.uebernehme(plan, eintrag!, id),
       );
       if (result.outcome == ImportOutcome.imported && result.assetId != null) {
-        await _postProcessNewAsset(result.assetId!);
+        await nachbearbeitung.neueAufnahme(
+          result.assetId!,
+          regelnAnwenden: plan == null,
+        );
       }
       done++;
       yield ImportProgress(
@@ -2727,70 +2743,8 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _datumUmschreiben(AssetData asset, DateTime neu) async {
-    final alterPfad = asset.relativePath;
-    final neuerPfad = paths.originalRelativePath(
-      neu,
-      asset.id,
-      p.extension(alterPfad).toLowerCase(),
-    );
-    if (neuerPfad == alterPfad) {
-      await db.setAufnahmezeitpunkt(asset.id, neu);
-      return;
-    }
-    final quelle = paths.absolute(alterPfad);
-    final ziel = paths.absolute(neuerPfad);
-    try {
-      await ziel.parent.create(recursive: true);
-      await quelle.rename(ziel.path);
-      // Der Beipackzettel liegt als einzige abgeleitete Datei NEBEN dem
-      // Original – alle anderen (Miniatur, Vorschau, Entwickeltes,
-      // Gesichtsausschnitte) stehen in eigenen Ordnern unter ihrer
-      // Kennung und sind von einem Umzug gar nicht betroffen. Bleibt er
-      // liegen, ist er ein Metadatensatz ohne Foto: Beschreibung,
-      // Schlagwörter, Personennamen und Ort im Klartext an einer Stelle,
-      // die niemand mehr aufräumt – und die beim Sperren nicht
-      // mitverschlüsselt wird, weil [dateienVon] den NEUEN Pfad nennt.
-      await _beipackzettelMitnehmen(alterPfad, neuerPfad);
-    } on FileSystemException catch (e) {
-      debugPrint('Ablage: ${asset.id} nicht verschiebbar: $e');
-      // Das Datum trotzdem richtigstellen – ein falsch einsortierter
-      // Ordner ist das kleinere Übel gegenüber einem falschen Datum in
-      // Zeitleiste, Kalender und Suche.
-      await db.setAufnahmezeitpunkt(asset.id, neu);
-      return;
-    }
-    try {
-      await db.setAufnahmezeitpunkt(asset.id, neu, neuerPfad: neuerPfad);
-    } catch (e) {
-      // Zurücklegen, sonst zeigt die Datenbank auf eine Datei, die dort
-      // nicht mehr liegt.
-      try {
-        await ziel.rename(quelle.path);
-      } catch (_) {}
-      rethrow;
-    }
-  }
-
-  /// Legt den `.xmp`-Beipackzettel neben die Datei, die gerade umgezogen
-  /// ist. Fehlt er, ist nichts zu tun – nicht jede Aufnahme hat einen.
-  ///
-  /// Scheitert bewusst still: Ein liegengebliebener Beipackzettel ist
-  /// ärgerlich, aber er darf keinen Umzug rückgängig machen, der sonst
-  /// geklappt hat. Er wird beim nächsten Lauf von
-  /// [verirrteBeipackzettel] ohnehin eingesammelt.
-  Future<void> _beipackzettelMitnehmen(
-    String alterPfad,
-    String neuerPfad,
-  ) async {
-    final alt = paths.absolute(paths.xmpSidecarPath(alterPfad));
-    if (!await alt.exists()) return;
-    try {
-      await alt.rename(paths.absolute(paths.xmpSidecarPath(neuerPfad)).path);
-    } on FileSystemException catch (e) {
-      debugPrint('Beipackzettel blieb liegen: ${alt.path}: $e');
-    }
-  }
+  Future<void> _datumUmschreiben(AssetData asset, DateTime neu) =>
+      AufnahmedatumDienst(db, paths).setze(asset, neu);
 
   /// **Beipackzettel, die ihr Foto verloren haben.**
   ///

@@ -10149,4 +10149,8 @@ class AppTexteDe extends AppTexte {
   @override
   String get backupProbePassphraseOffen =>
       'Diese Probe nutzt den bereits verfügbaren Schlüssel. Die Passphrase wird bei der manuellen Wiederherstellungsprobe geprüft.';
+
+  @override
+  String get syncAuswahlZuGross =>
+      'Die Änderung ist zu groß für einen einzelnen Abgleich. Bitte verkleinere die Auswahl oder den Inhalt und versuche es erneut.';
 }

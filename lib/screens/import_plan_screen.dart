@@ -56,7 +56,8 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
     try {
       if (widget.library.abgleich case final a?) {
         final z = await a.verbindung.hole('api/v1/zustand');
-        _serverAlt = (z['funktionen'] as Map?)?['importplan'] != 1;
+        _serverAlt =
+            ((z['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2;
       }
       final plan = await _dienst.erstelle(
         widget.dateien,

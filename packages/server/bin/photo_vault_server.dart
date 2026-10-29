@@ -16,6 +16,7 @@ Future<void> main(List<String> argumente) async {
   // Der abgeschottete Prüfprozess für Dateien von Gästen – ohne die
   // Einstellungen des Servers, die er nicht braucht und nicht sehen soll.
   if (argumente.isNotEmpty && argumente.first == 'gast-pruefen') {
+    gastProzessEinrichten();
     exit(await gastPruefen(argumente.sublist(1)));
   }
   if (argumente.contains('--lebenszeichen')) {
@@ -98,15 +99,15 @@ Future<void> main(List<String> argumente) async {
   }
 
   // Dateien von Gästen: in einem eigenen Prozess, wenn möglich ohne Netz.
-  final gastpruefung = Gastpruefung();
+  final gastpruefung = Gastpruefung(
+    verbotenePfade: [await e.daten.resolveSymbolicLinks()],
+  );
   unawaited(
     gastpruefung.abschottung.then(
       (a) => protokoll(
         a.ohneNetz
-            ? 'Dateien von Gästen: geprüft in einem eigenen Prozess ohne Netz'
-            : 'Dateien von Gästen: geprüft in einem eigenen Prozess, aber MIT '
-                  'Netz – das System erlaubt keinen eigenen Netz-Namensraum '
-                  '(unshare -rn)',
+            ? 'Dateien von Gästen: isolierte Prüfung bereit'
+            : 'Dateien von Gästen: isolierte Prüfung nicht verfügbar; Uploads werden abgewiesen',
       ),
     ),
   );

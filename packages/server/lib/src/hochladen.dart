@@ -282,9 +282,21 @@ class Hochladen {
               await ImportPlanDienst(b.db, b.importe).aktuellerRegelstand()) {
         return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
       }
+      final dienst = ImportPlanDienst(b.db, b.importe);
+      final plan = a['regelstand'] == null
+          ? null
+          : await dienst.erstelle([datei.path]);
+      if (plan != null && plan.regelstand != a['regelstand']) {
+        return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
+      }
+      final eintrag = plan?.eintraege.single;
       final r = await b.importe.importFile(
         datei.path,
         erwartetePruefsumme: a['sha256'] as String?,
+        erwarteteAngaben: eintrag?.angaben,
+        beiEintrag: plan == null
+            ? null
+            : (id) => dienst.uebernehme(plan, eintrag!, id),
       );
       var aufnahme = r.assetId;
       if (r.outcome == ImportOutcome.imported && aufnahme != null) {
@@ -292,7 +304,10 @@ class Hochladen {
         // trotzdem aufgenommen – das darf dem Client nicht als Fehler
         // erscheinen, sonst lädt er sie noch einmal hoch.
         try {
-          await b.nachbearbeitung.neueAufnahme(aufnahme);
+          await b.nachbearbeitung.neueAufnahme(
+            aufnahme,
+            regelnAnwenden: plan == null,
+          );
         } catch (e) {
           protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
         }

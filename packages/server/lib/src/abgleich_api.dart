@@ -1,3 +1,4 @@
+import 'package:kern/abgleich/grenzen.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -228,6 +229,9 @@ class Abgleichsapi {
     final ergebnisse = <Map<String, Object?>>[];
     for (final e in stapel) {
       final eintrag = e is Map ? e.cast<String, Object?>() : null;
+      if (utf8.encode(jsonEncode(e)).length > Abgleichsgrenzen.befehlBytes) {
+        return _json({'fehler': 'pv_sync_auswahl'}, status: 413);
+      }
       final kennung = eintrag?['kennung'];
       if (eintrag == null || kennung is! String || kennung.isEmpty) {
         return _json({
@@ -255,7 +259,8 @@ class Abgleichsapi {
           antwort = await b.db.transaction(() async {
             final befehl = Befehl.ausJson(eintrag);
             final roh = eintrag['basis'];
-            if (roh != null && (roh is! List || roh.length > 50000)) {
+            if (roh != null &&
+                (roh is! List || roh.length > Abgleichsgrenzen.basisZeilen)) {
               throw const FormatException('pv_sync_basis');
             }
             final basis = [

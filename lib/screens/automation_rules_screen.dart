@@ -72,7 +72,7 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
         final z = await widget.library.abgleich!.verbindung.hole(
           'api/v1/zustand',
         );
-        if ((z['funktionen'] as Map?)?['importplan'] != 1) {
+        if (((z['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2) {
           if (mounted) melde.warnung(AppTexte.of(context).importPlanServerAlt);
           return;
         }
