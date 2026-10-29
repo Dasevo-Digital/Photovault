@@ -1,59 +1,5 @@
 part of 'backup_service.dart';
 
-/// Der Nachweis gehört zum Sicherungsziel. Er enthält weder Dateinamen
-/// noch Prüfsummen einzelner Fotos oder Schlüsselmaterial.
-class BackupProbeErgebnis {
-  const BackupProbeErgebnis({
-    required this.am,
-    required this.erfolgreich,
-    required this.originale,
-    required this.gesamt,
-    required this.datenbank,
-    this.letzterErfolg,
-    this.fehler,
-    this.position = 0,
-    this.passphraseGeprueft,
-  });
-
-  final DateTime am;
-  final bool erfolgreich;
-  final int originale;
-  final int gesamt;
-  final bool datenbank;
-  final DateTime? letzterErfolg;
-  final String? fehler;
-  final int position;
-  final bool? passphraseGeprueft;
-
-  Map<String, Object?> alsJson() => {
-    'format': 1,
-    'am': am.toUtc().toIso8601String(),
-    'erfolgreich': erfolgreich,
-    'originale': originale,
-    'gesamt': gesamt,
-    'datenbank': datenbank,
-    'letzterErfolg': letzterErfolg?.toUtc().toIso8601String(),
-    'fehler': fehler,
-    'position': position,
-    'passphraseGeprueft': passphraseGeprueft,
-  };
-
-  static BackupProbeErgebnis ausJson(Map<String, dynamic> j) {
-    if (j['format'] != 1) throw const FormatException('pv_probe_format');
-    return BackupProbeErgebnis(
-      am: DateTime.parse(j['am'] as String),
-      erfolgreich: j['erfolgreich'] as bool,
-      originale: j['originale'] as int,
-      gesamt: j['gesamt'] as int,
-      datenbank: j['datenbank'] as bool,
-      letzterErfolg: DateTime.tryParse('${j['letzterErfolg']}'),
-      fehler: j['fehler'] as String?,
-      position: j['position'] as int? ?? 0,
-      passphraseGeprueft: j['passphraseGeprueft'] as bool?,
-    );
-  }
-}
-
 class _ProbeDatenbank extends AppDatabase {
   _ProbeDatenbank(super.executor);
 }

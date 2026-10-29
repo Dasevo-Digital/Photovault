@@ -25,6 +25,8 @@ jobs:
           # Echtnamen und eigene Hostnamen, ein Begriff je Zeile. Steht
           # nicht im Repo; fehlt das Secret, prüft das Skript ohne Liste.
           DATENSCHUTZ_SPERRLISTE: ${{ secrets.DATENSCHUTZ_SPERRLISTE }}
+      - name: Installationsabläufe
+        run: python3 -B -m unittest discover -s tool/tests -p 'test_*.py'
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: "3.47.6"
@@ -80,6 +82,9 @@ jobs:
           distribution: temurin
           java-version: "17"
       - run: flutter pub get
+      - name: Installationsabläufe unter Windows
+        if: matrix.target == 'windows'
+        run: python -B -m unittest discover -s tool/tests -p 'test_*.py'
       # Die Protokolle eines Laufs sieht nur, wer bei GitHub angemeldet ist,
       # Anmerkungen dagegen jeder. Scheitert ein Bau, steht das Ende seiner
       # Ausgabe deshalb zusätzlich als Anmerkung am Lauf.

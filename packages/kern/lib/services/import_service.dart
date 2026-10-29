@@ -311,9 +311,8 @@ class ImportService {
       final int fileSizeBytes;
       await sourceFile.copy(targetFile.path);
       fileSizeBytes = await targetFile.length();
-      if (erwartetePruefsumme != null &&
-          (await sha256.bind(targetFile.openRead()).first).toString() !=
-              checksum) {
+      if ((await sha256.bind(targetFile.openRead()).first).toString() !=
+          checksum) {
         throw const FormatException('pv_import_quelle_geaendert');
       }
 

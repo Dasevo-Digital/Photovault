@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
+import '../../services/backup_koordinator.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -42,6 +43,14 @@ String fehlertext(BuildContext context, Object fehler) {
   final t = AppTexte.of(context);
   return switch (fehler) {
     BackupBrauchtPassphrase() => t.backupPassphraseNoetig,
+    BackupLaeuftBereits() => t.backupLaeuftBereits,
+    WiederherstellungUnvollstaendig(:final ergebnis) =>
+      t.backupRestoreUnvollstaendig(
+        ergebnis.importiert,
+        ergebnis.vorhanden,
+        ergebnis.fehlend,
+        ergebnis.gescheitert + ergebnis.probleme.length,
+      ),
     BackupPruefungBrauchtPassphrase() => t.backupPassphraseNoetig,
     BackupOrdnerFehlt() => t.backupOrdnerFehlt,
     AktualisierungsFehler(

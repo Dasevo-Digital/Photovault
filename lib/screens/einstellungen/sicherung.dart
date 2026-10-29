@@ -436,6 +436,17 @@ class AutomatischeSicherungGruppe extends StatelessWidget {
 /// ist zurück", und ohne ein Wort dazu bemerkt man erst Tage später, dass
 /// die Namen an den Gesichtern fehlen.
 String _wiederherstellZeile(AppTexte t, BackupProgress p) {
+  if (p.wiederherstellung case final ergebnis?) {
+    if (ergebnis.abgeschlossen) {
+      if (!ergebnis.erfolgreich) {
+        throw WiederherstellungUnvollstaendig(ergebnis);
+      }
+      return t.backupRestoreZusammenfassung(
+        ergebnis.importiert,
+        ergebnis.vorhanden,
+      );
+    }
+  }
   if (p.uebernommeneZeilen != null) {
     return t.backupUebernommen(p.uebernommeneZeilen!);
   }
@@ -523,8 +534,9 @@ Future<void> _runRestore(Einstellungsstand stand) async {
     wurzel,
   );
   if (!context.mounted) return;
-  final generation = await _waehleWiederherstellungspunkt(stand, generationen);
-  if (!context.mounted) return;
+  final auswahl = await _waehleWiederherstellungspunkt(stand, generationen);
+  if (auswahl == null || !context.mounted) return;
+  final generation = auswahl.generation;
 
   await showDialog<void>(
     context: context,
@@ -551,17 +563,16 @@ Future<void> _runRestore(Einstellungsstand stand) async {
   stand.refresh();
 }
 
-/// Gibt `null` für den aktuellen Datenbankstand zurück. Bei manuellen
-/// Backups existieren keine Generationen; dann bleibt der zusätzliche
-/// Dialog bewusst aus dem Weg.
-Future<BackupGeneration?> _waehleWiederherstellungspunkt(
+/// `null` bedeutet ausschließlich Abbruch. Ohne Generationen wird der
+/// aktuelle Stand direkt gewählt; sonst ist jede Wahl ausdrücklich.
+Future<Wiederherstellungsauswahl?> _waehleWiederherstellungspunkt(
   Einstellungsstand stand,
   List<BackupGeneration> generationen,
 ) async {
   final context = stand.kontext;
-  if (generationen.isEmpty) return null;
+  if (generationen.isEmpty) return const Wiederherstellungsauswahl.aktuell();
   final t = AppTexte.of(context);
-  return showModalBottomSheet<BackupGeneration?>(
+  return showModalBottomSheet<Wiederherstellungsauswahl>(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) => SafeArea(
@@ -584,7 +595,10 @@ Future<BackupGeneration?> _waehleWiederherstellungspunkt(
             leading: const Icon(Icons.restore),
             title: Text(t.einstBackupAktuellerStand),
             subtitle: Text(t.einstBackupAktuellerStandText),
-            onTap: () => Navigator.pop(sheetContext),
+            onTap: () => Navigator.pop(
+              sheetContext,
+              const Wiederherstellungsauswahl.aktuell(),
+            ),
           ),
           const Divider(),
           for (final generation in generationen)
@@ -596,7 +610,10 @@ Future<BackupGeneration?> _waehleWiederherstellungspunkt(
                 ),
               ),
               subtitle: Text(t.einstBackupGenerationText),
-              onTap: () => Navigator.pop(sheetContext, generation),
+              onTap: () => Navigator.pop(
+                sheetContext,
+                Wiederherstellungsauswahl.generation(generation),
+              ),
             ),
         ],
       ),

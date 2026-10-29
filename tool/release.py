@@ -23,8 +23,10 @@ entwurf       Gitea-Freigabe als Entwurf mit RELEASE-TEXT-v<x>.md aus dem
               ergänzt, nicht verdoppelt; ein schon veröffentlichtes
               Release ebenso (Text neu, fehlende Pakete nachgetragen,
               SHA256SUMS.txt ersetzt).
-einspielen    Auf den Testrechnern installieren; am Mac wartet ein Wächter,
-              bis die App beendet ist, und tauscht sie dann. Der Server nur
+einspielen    Desktop-Apps installieren; laufende Apps zuvor geordnet beenden.
+              Vorprüfung, Vorbereitung, Austausch und Nachprüfung werden
+              getrennt ausgeführt, bei Fehlern wird die Vorversion geprüft
+              zurückgesetzt. Der Server nur
               mit --server und nach ausdrücklichem „ja“ – er ist produktiv.
 veroeffentlichen  Entwurf freigeben und sync.py für GitHub laufen lassen.
 
@@ -397,82 +399,23 @@ def entwurf(args):
 
 # --- einspielen -------------------------------------------------------------------
 
-WINDOWS_TAUSCH = r'''$log = Join-Path $env:USERPROFILE 'pv_update.log'
-function L($t) {{ Add-Content -Path $log -Value ((Get-Date -Format 'HH:mm:ss') + ' ' + $t) }}
-Set-Content -Path $log -Value 'Start'
-try {{
-  $desk = [Environment]::GetFolderPath('Desktop')
-  $d = Join-Path $env:LOCALAPPDATA 'de.dasevo\photovault\PhotoVault'
-  if (Get-Process photo_vault -ErrorAction SilentlyContinue) {{
-    taskkill /IM photo_vault.exe | Out-Null
-    for ($i = 0; $i -lt 30 -and (Get-Process photo_vault -ErrorAction SilentlyContinue); $i++) {{ Start-Sleep 1 }}
-  }}
-  if (Get-Process photo_vault -ErrorAction SilentlyContinue) {{ L 'FEHLER: App laeuft noch'; exit 1 }}
-  $alt = (Get-Item "$desk\PhotoVault\photo_vault.exe").VersionInfo.ProductVersion
-  $ablage = "$desk\PhotoVault-$alt-alt"
-  if (Test-Path $ablage) {{ L "FEHLER: $ablage gibt es schon"; exit 1 }}
-  Move-Item "$desk\PhotoVault" $ablage
-  Expand-Archive -Path "$desk\PhotoVault-{fassung}-windows-x64.zip" -DestinationPath $desk
-  if (-not (Test-Path "$desk\PhotoVault\photo_vault.exe")) {{ L 'FEHLER: keine photo_vault.exe'; exit 1 }}
-  L ('ausgepackt: ' + (Get-Item "$desk\PhotoVault\photo_vault.exe").VersionInfo.ProductVersion)
-  Start-Process "$desk\PhotoVault\photo_vault.exe" -WorkingDirectory "$desk\PhotoVault"
-  Start-Sleep 25
-  $p = Get-Process photo_vault -ErrorAction SilentlyContinue
-  if (-not $p) {{ L 'FEHLER: neue App laeuft nicht'; exit 1 }}
-  L ('laeuft: reagiert ' + $p.Responding)
-  L ('ONNX Runtime geladen: ' + [bool]($p.Modules | Where-Object ModuleName -eq 'onnxruntime.dll'))
-  $f = New-Object System.IO.FileStream((Join-Path $d 'library.sqlite'), 'Open', 'Read', 'ReadWrite')
-  $h = New-Object byte[] 64; [void]$f.Read($h, 0, 64); $f.Close()
-  L ('Schema: ' + ($h[60]*16777216 + $h[61]*65536 + $h[62]*256 + $h[63]))
-  L 'FERTIG'
-}} catch {{ L ('FEHLER: ' + $_) }}
-'''
-
-MAC_TAUSCH = '''#!/bin/bash
-# Tauscht /Applications/Photo Vault.app gegen {fassung}, sobald die App nicht mehr läuft.
-LOG="$(dirname "$0")/mac_tausch.log"; LOCK="$(dirname "$0")/mac_tausch.lock"
-NEU={neu}
-ALT="/Applications/Photo Vault.app"
-ABLAGE="$HOME/Desktop/PhotoVault-Vorversionen.noindex"
-exec >>"$LOG" 2>&1
-if ! mkdir "$LOCK" 2>/dev/null; then echo "$(date '+%F %T') läuft schon"; exit 0; fi
-trap 'rmdir "$LOCK"' EXIT
-echo "$(date '+%F %T') warte, bis Photo Vault beendet ist"
-while pgrep -f "/Applications/Photo Vault.app/Contents/MacOS/Photo Vault" >/dev/null; do sleep 10; done
-alt_version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$ALT/Contents/Info.plist" 2>/dev/null || echo unbekannt)
-mkdir -p "$ABLAGE"
-if [ -e "$ABLAGE/Photo Vault $alt_version.app" ]; then echo "FEHLER: Vorversion $alt_version liegt schon in der Ablage"; exit 1; fi
-mv "$ALT" "$ABLAGE/Photo Vault $alt_version.app" || {{ echo "FEHLER beim Wegräumen"; exit 1; }}
-ditto "$NEU" "$ALT" || {{ echo "FEHLER beim Kopieren – stelle zurück"; mv "$ABLAGE/Photo Vault $alt_version.app" "$ALT"; exit 1; }}
-echo "$(date '+%F %T') FERTIG: $(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$ALT/Contents/Info.plist") in /Applications, $alt_version in der Ablage"
-'''
-
 
 def einspielen(args):
     z = ziele()
     fassung = args.fassung
     a = arbeitsordner(fassung)
     u = upload_ordner(z, fassung)
-    if args.linux:
-        lauf(['ssh', z['linux_ssh'],
-              f'pkill -x photo_vault; sleep 2; flatpak install --user --reinstall -y --bundle ~/Desktop/PhotoVault-{fassung}-x86_64.flatpak 2>&1 | tail -1; '
-              'flatpak info de.dasevo.photovault | grep -iE "^ *Version"'])
-    if args.windows:
-        ps1 = a / 'windows_tausch.ps1'
-        ps1.write_text(WINDOWS_TAUSCH.format(fassung=fassung))
-        lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:pv_windows_tausch.ps1'])
-        # Über die Aufgabenplanung, damit die App in der Sitzung des Nutzers
-        # startet und nicht in der unsichtbaren der SSH-Verbindung.
-        aufgabe = f'pvtausch{fassung.replace(".", "")}'
-        lauf(['ssh', z['windows_ssh'],
-              f'schtasks /Create /F /SC ONCE /ST 00:00 /TN {aufgabe} /TR "powershell -NoProfile -ExecutionPolicy Bypass -File %USERPROFILE%\\pv_windows_tausch.ps1" /IT /RL HIGHEST >nul && schtasks /Run /TN {aufgabe} && ping -n 50 127.0.0.1 >nul && type %USERPROFILE%\\pv_update.log'])
-    if args.mac:
-        skript = a / 'mac_tausch.sh'
-        skript.write_text(MAC_TAUSCH.format(fassung=fassung, neu=shlex.quote(str(u / 'Photo Vault.app'))))
-        skript.chmod(0o755)
-        subprocess.Popen(['nohup', str(skript)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        time.sleep(2)
-        print((a / 'mac_tausch.log').read_text() if (a / 'mac_tausch.log').exists() else 'Wächter gestartet.')
+    from installation import FernInstallation, MacInstallation, Installationsfehler
+    try:
+        if args.linux:
+            print(json.dumps(FernInstallation('linux', z['linux_ssh'], fassung).ausfuehren(), ensure_ascii=False))
+        if args.windows:
+            print(json.dumps(FernInstallation('windows', z['windows_ssh'], fassung).ausfuehren(), ensure_ascii=False))
+        if args.mac:
+            print(json.dumps(MacInstallation(fassung, u / 'Photo Vault.app', Path('/Applications/Photo Vault.app'),
+                  Path.home() / 'Desktop/PhotoVault-Vorversionen.noindex').ausfuehren(), ensure_ascii=False))
+    except Installationsfehler as e:
+        sys.exit(str(e))
     if args.server:
         antwort = input(f'Produktivserver auf {fassung} bringen? Zum Bestätigen „ja“ eingeben: ').strip().lower()
         if antwort != 'ja':

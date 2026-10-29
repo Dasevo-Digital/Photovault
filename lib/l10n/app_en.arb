@@ -4990,5 +4990,34 @@
   "backupProbePassphraseOffen": "This drill uses the already available key. The passphrase is checked by the manual recovery drill.",
   "syncAuswahlZuGross": "This change is too large for a single sync command. Reduce the selection or content and try again.",
   "startFehlerNeuerTitel": "This library is newer than this version",
-  "startFehlerNeuerText": "A newer version of Photo Vault last upgraded this library. This version will not open it, so nothing is downgraded and no data is lost. Please install the current version of Photo Vault."
+  "startFehlerNeuerText": "A newer version of Photo Vault last upgraded this library. This version will not open it, so nothing is downgraded and no data is lost. Please install the current version of Photo Vault.",
+  "backupRestoreZusammenfassung": "Restored: {importiert} imported, {vorhanden} already present.",
+  "@backupRestoreZusammenfassung": {
+    "placeholders": {
+      "importiert": {
+        "type": "int"
+      },
+      "vorhanden": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestoreUnvollstaendig": "Restore incomplete: {importiert} imported, {vorhanden} already present, {fehlend} missing files, {fehler} other errors.",
+  "@backupRestoreUnvollstaendig": {
+    "placeholders": {
+      "importiert": {
+        "type": "int"
+      },
+      "vorhanden": {
+        "type": "int"
+      },
+      "fehlend": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLaeuftBereits": "An automatic backup is already running."
 }

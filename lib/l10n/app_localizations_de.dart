@@ -10161,4 +10161,23 @@ class AppTexteDe extends AppTexte {
   @override
   String get startFehlerNeuerText =>
       'Eine neuere Fassung von Photo Vault hat die Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird und keine Daten verloren gehen. Bitte die aktuelle Fassung von Photo Vault installieren.';
+
+  @override
+  String backupRestoreZusammenfassung(int importiert, int vorhanden) {
+    return 'Wiederhergestellt: $importiert importiert, $vorhanden bereits vorhanden.';
+  }
+
+  @override
+  String backupRestoreUnvollstaendig(
+    int importiert,
+    int vorhanden,
+    int fehlend,
+    int fehler,
+  ) {
+    return 'Wiederherstellung unvollständig: $importiert importiert, $vorhanden bereits vorhanden, $fehlend Dateien fehlen, $fehler weitere Fehler.';
+  }
+
+  @override
+  String get backupLaeuftBereits =>
+      'Eine automatische Sicherung läuft bereits.';
 }

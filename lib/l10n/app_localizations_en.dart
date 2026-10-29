@@ -10104,4 +10104,22 @@ class AppTexteEn extends AppTexte {
   @override
   String get startFehlerNeuerText =>
       'A newer version of Photo Vault last upgraded this library. This version will not open it, so nothing is downgraded and no data is lost. Please install the current version of Photo Vault.';
+
+  @override
+  String backupRestoreZusammenfassung(int importiert, int vorhanden) {
+    return 'Restored: $importiert imported, $vorhanden already present.';
+  }
+
+  @override
+  String backupRestoreUnvollstaendig(
+    int importiert,
+    int vorhanden,
+    int fehlend,
+    int fehler,
+  ) {
+    return 'Restore incomplete: $importiert imported, $vorhanden already present, $fehlend missing files, $fehler other errors.';
+  }
+
+  @override
+  String get backupLaeuftBereits => 'An automatic backup is already running.';
 }

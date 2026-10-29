@@ -15479,6 +15479,29 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Eine neuere Fassung von Photo Vault hat die Bibliothek zuletzt aufgestuft. Diese Fassung öffnet sie nicht, damit nichts zurückgestuft wird und keine Daten verloren gehen. Bitte die aktuelle Fassung von Photo Vault installieren.'**
   String get startFehlerNeuerText;
+
+  /// No description provided for @backupRestoreZusammenfassung.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederhergestellt: {importiert} importiert, {vorhanden} bereits vorhanden.'**
+  String backupRestoreZusammenfassung(int importiert, int vorhanden);
+
+  /// No description provided for @backupRestoreUnvollstaendig.
+  ///
+  /// In de, this message translates to:
+  /// **'Wiederherstellung unvollständig: {importiert} importiert, {vorhanden} bereits vorhanden, {fehlend} Dateien fehlen, {fehler} weitere Fehler.'**
+  String backupRestoreUnvollstaendig(
+    int importiert,
+    int vorhanden,
+    int fehlend,
+    int fehler,
+  );
+
+  /// No description provided for @backupLaeuftBereits.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine automatische Sicherung läuft bereits.'**
+  String get backupLaeuftBereits;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -18,6 +18,9 @@ import 'package:kern/services/ai_tagging_service.dart';
 import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/services/bildsuche.dart';
 import '../services/backup_service.dart';
+import '../services/backup_koordinator.dart';
+export '../services/backup_koordinator.dart'
+    show Backuphindernis, Backupwarnung;
 import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
 import 'package:kern/services/florence_captioning_service.dart';
@@ -33,6 +36,7 @@ import 'package:kern/services/eye_state_service.dart';
 import 'package:kern/services/face_engine_service.dart';
 import '../services/geo_data_download_service.dart';
 import 'package:kern/services/import_service.dart';
+import 'package:kern/services/import_koordinator.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
 import '../services/rechnerzustand.dart';
@@ -51,7 +55,6 @@ import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
 import 'package:kern/services/reverse_geocoder.dart';
-import '../services/sicherungsziel.dart';
 import '../widgets/mini_location_map.dart'
     show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
@@ -545,7 +548,6 @@ class LibraryState extends ChangeNotifier {
   }
 
   Timer? _autoBackupTimer;
-  bool _autoBackupRunning = false;
   Timer? _trashPurgeTimer;
   bool _trashPurgeRunning = false;
 
@@ -786,6 +788,7 @@ class LibraryState extends ChangeNotifier {
   Future<void> vorDemBeenden() async {
     if (_beendet) return;
     _beendet = true;
+    _backupKoordinator?.sperre();
     _autoBackupTimer?.cancel();
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
@@ -837,6 +840,8 @@ class LibraryState extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    _backupKoordinator?.sperre();
+    _backupKoordinator = null;
     // ERST die Bibliothek beanspruchen, DANN die Datenbank öffnen. Zwei
     // Instanzen auf derselben Datei zeigen verschiedene Stände, lassen
     // Hintergrundaufgaben doppelt laufen und schreiben abwechselnd
@@ -1469,54 +1474,12 @@ class LibraryState extends ChangeNotifier {
       yield* _ladeHoch(filePaths, plan: plan);
       return;
     }
-    final pruefung = ImportPlanDienst(db, importService);
-    final pruefsummen = plan?.pruefsummen;
-    if (pruefsummen != null &&
-        filePaths.any((p) => !pruefsummen.containsKey(p))) {
-      throw const FormatException('pv_import_auswahl');
-    }
-    var done = 0;
-    yield ImportProgress(0, filePaths.length);
-    for (final filePath in filePaths) {
-      if (plan != null &&
-          plan.regelstand != await pruefung.aktuellerRegelstand()) {
-        throw const FormatException('pv_import_regeln_geaendert');
-      }
-      final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == filePath);
-      final result = await importService.importFile(
-        filePath,
-        erwartetePruefsumme: pruefsummen?[filePath],
-        erwarteteAngaben: eintrag?.angaben,
-        beiEintrag: plan == null
-            ? null
-            : (id) => pruefung.uebernehme(plan, eintrag!, id),
-      );
-      if (result.outcome == ImportOutcome.imported && result.assetId != null) {
-        await nachbearbeitung.neueAufnahme(
-          result.assetId!,
-          regelnAnwenden: plan == null,
-        );
-      }
-      done++;
-      yield ImportProgress(
-        done,
-        filePaths.length,
-        currentFile: p.basename(filePath),
-        assetId: result.outcome == ImportOutcome.imported
-            ? result.assetId
-            : null,
-        duplikat: result.outcome == ImportOutcome.duplicateSkipped,
-        gescheitert: result.outcome == ImportOutcome.failed,
-      );
-    }
-
-    // Erst NACH dem Import: die rechenintensiven Auswertungen laufen im
-    // Hintergrund nach, statt jeden einzelnen Import auszubremsen. Bewusst
-    // nicht abgewartet – der Import gilt als fertig, sobald die Dateien in
-    // der Bibliothek sind.
-    if (await db.autoAnalyzeAfterImportEnabled()) {
-      unawaited(starteHintergrundanalyse());
-    }
+    yield* ImportKoordinator(
+      db: db,
+      importe: importService,
+      nachbearbeiten: nachbearbeitung.neueAufnahme,
+      starteAnalyse: starteHintergrundanalyse,
+    ).importiere(filePaths, plan: plan);
   }
 
   Future<void> _tryLinkLivePhoto(AssetData asset) =>
@@ -3939,212 +3902,45 @@ class LibraryState extends ChangeNotifier {
   // getrennt vom PIN des gesperrten Ordners, siehe BackupSettings)
   // -----------------------------------------------------------------------
 
-  SecretKey? _backupKey;
-  bool get backupKeyAvailableThisSession => _backupKey != null;
-
-  Future<void> setupBackupPassphrase(String passphrase) async {
-    final wrapped = await VaultCrypto.createMasterKey(passphrase);
-    await db.saveBackupKey(
-      kdfSalt: wrapped.kdfSalt,
-      nonce: wrapped.nonce,
-      wrapped: wrapped.wrapped,
-    );
-    _backupKey = wrapped.masterKey;
-  }
-
-  Future<void> unlockBackupKeyWithPassphrase(String passphrase) async {
-    final row = await db.backupSettingsRow();
-    final kdfSalt = row?.kdfSalt;
-    final nonce = row?.wrappedMasterKeyNonce;
-    final wrapped = row?.wrappedMasterKey;
-    if (kdfSalt == null || nonce == null || wrapped == null) {
-      throw StateError('Keine Backup-Passphrase eingerichtet.');
+  BackupKoordinator? _backupKoordinator;
+  BackupKoordinator get _sicherung {
+    final vorhanden = _backupKoordinator;
+    if (vorhanden != null &&
+        identical(vorhanden.db, db) &&
+        identical(vorhanden.backupService, backupService)) {
+      return vorhanden;
     }
-    _backupKey = await VaultCrypto.unwrapMasterKey(
-      passphrase,
-      kdfSalt: kdfSalt,
-      nonce: nonce,
-      wrapped: wrapped,
+    return _backupKoordinator = BackupKoordinator(
+      db: db,
+      backupService: backupService,
+      istVerbunden: () => verbunden,
+      meldeWarnung: (warnung) => backupwarnung.value = warnung,
+      meldeProbe: (probe) => wiederherstellungsprobe.value = probe,
     );
   }
 
-  Future<void> changeBackupPassphrase(String newPassphrase) async {
-    final key = _backupKey;
-    if (key == null) {
-      throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
-    }
-    final wrapped = await VaultCrypto.wrapMasterKey(key, newPassphrase);
-    await db.saveBackupKey(
-      kdfSalt: wrapped.kdfSalt,
-      nonce: wrapped.nonce,
-      wrapped: wrapped.wrapped,
-    );
+  bool get backupKeyAvailableThisSession {
+    final k = _backupKoordinator;
+    return k != null &&
+        identical(k.db, db) &&
+        identical(k.backupService, backupService) &&
+        k.backupKeyAvailableThisSession;
   }
 
-  /// Entfernt nur die lokale Backup-Verschlüsselungs-Einrichtung – bereits
-  /// bestehende verschlüsselte Backups am Zielort bleiben unangetastet
-  /// (anders als beim gesperrten Ordner gibt es hier nichts "zu
-  /// entschlüsseln", die Originaldateien in der Bibliothek selbst waren nie
-  /// verschlüsselt).
-  Future<void> removeBackupEncryption() async {
-    await db.clearBackupKey();
-    _backupKey = null;
-  }
-
-  /// Führt ein manuelles Backup aus – bei [encrypt] mit dem für diese
-  /// Sitzung entsperrten Backup-Schlüssel (siehe [ensureBackupKeyAvailable]
-  /// in pin_dialogs.dart, das der Aufrufer vorher ausgeführt haben muss).
-  ///
-  /// **Verbunden** (#206) sichert der Rechner die Bibliothek des Servers:
-  /// Das Ziel entscheidet, was fehlt, und fehlende Originale kommen vom
-  /// Server. Die Markierungen „gesichert“ stehen in `assets` und damit in
-  /// einer abgeglichenen Tabelle – sie zu setzen bricht am Schutz
-  /// `pv_nur_ueber_server` ab. Darum war die Sicherung hier vorher ganz
-  /// gesperrt („Bad state: pv_nur_ueber_server“), und das automatische
-  /// Backup lief verbunden gar nicht erst an.
+  Future<void> setupBackupPassphrase(String text) =>
+      _sicherung.setupBackupPassphrase(text);
+  Future<void> unlockBackupKeyWithPassphrase(String text) =>
+      _sicherung.unlockBackupKeyWithPassphrase(text);
+  Future<void> changeBackupPassphrase(String text) =>
+      _sicherung.changeBackupPassphrase(text);
+  Future<void> removeBackupEncryption() => _sicherung.removeBackupEncryption();
   Stream<BackupProgress> runManualBackup(
-    String destination, {
+    String ziel, {
     required bool encrypt,
-  }) async* {
-    final grenze = await _backupGrenzeBytes();
-    yield* backupService.performBackup(
-      destination,
-      encryptionKey: encrypt ? _backupKey : null,
-      maxBytesPerRun: grenze,
-      amZielPruefen: verbunden,
-    );
-  }
-
-  /// Portionsgrenze je Sicherungslauf in Bytes, 0 = unbegrenzt (siehe
-  /// BackupSettings.autoBackupMaxMbPerRun).
-  Future<int> _backupGrenzeBytes() async {
-    final config = await db.backupSettingsRow();
-    final mb = config?.autoBackupMaxMbPerRun ?? 0;
-    return mb > 0 ? mb * 1024 * 1024 : 0;
-  }
-
-  /// Löst das automatische Backup unabhängig vom Intervall manuell aus
-  /// (z.B. über den "Jetzt synchronisieren"-Button in den Einstellungen).
-  /// Setzt voraus, dass die Backup-Passphrase für diese Sitzung bereits
-  /// entsperrt ist.
-  Stream<BackupProgress> runAutoBackupNow(String destination) async* {
-    final key = _backupKey;
-    if (key == null) {
-      throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
-    }
-    // Unter macOS den Zugriff aus dem gemerkten Merkmal (#211). Nicht
-    // `yield*`: Dessen Fehler gingen am `catch` vorbei.
-    final ziel = await Sicherungsziel.oeffne(destination);
-    try {
-      // Verbunden: siehe [runManualBackup].
-      await for (final f in backupService.performAutoBackup(
-        ziel,
-        key,
-        maxBytesPerRun: await _backupGrenzeBytes(),
-        amZielPruefen: verbunden,
-      )) {
-        if (f.wiederherstellungsprobe case final probe?) {
-          wiederherstellungsprobe.value = probe;
-          if (!probe.erfolgreich) {
-            backupwarnung.value = (
-              grund: Backuphindernis.fehlgeschlagen,
-              letzterLauf: null,
-              fehler: probe.fehler,
-            );
-            throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
-          }
-        }
-        yield f;
-      }
-    } on FileSystemException catch (e) {
-      if (Sicherungsziel.zugriffVerweigert(e)) {
-        throw BackupZielGesperrt(destination);
-      }
-      rethrow;
-    }
-    await db.setLastAutoBackupAt(DateTime.now());
-    backupwarnung.value = null;
-  }
-
-  /// Prüft, ob das automatische Backup fällig ist (aktiviert, Ziel gesetzt,
-  /// Intervall abgelaufen) und der Backup-Schlüssel für diese Sitzung
-  /// bereits vorliegt – wenn nicht, wird NICHT nach der Passphrase gefragt
-  /// (das würde unerwartet mitten in der Nutzung passieren), sondern der
-  /// Lauf einfach übersprungen; die Einstellungen zeigen dann an, dass eine
-  /// erneute Passphrase-Eingabe nötig ist. Läuft nur, solange die App offen
-  /// ist – kein Hintergrunddienst, siehe Klassenkommentar in
-  /// [BackupService.performAutoBackup].
-  Future<void> runAutoBackupIfDue() async {
-    if (_autoBackupRunning) return;
-    final config = await db.backupSettingsRow();
-    if (config == null || !config.autoBackupEnabled) return;
-    final destination = config.autoBackupDestination;
-    if (destination == null || destination.isEmpty) return;
-
-    final lastRun = config.lastAutoBackupAt;
-    if (lastRun != null) {
-      final due = lastRun.add(Duration(hours: config.autoBackupIntervalHours));
-      if (DateTime.now().isBefore(due)) return;
-    }
-
-    final key = _backupKey;
-    if (key == null) {
-      // Passphrase muss erst wieder manuell entsperrt werden. Bis #207
-      // geschah das wortlos: Das Backup blieb wochenlang aus, und nur die
-      // Einstellungen hätten es gezeigt.
-      backupwarnung.value = (
-        grund: Backuphindernis.passphrase,
-        letzterLauf: lastRun,
-        fehler: null,
-      );
-      return;
-    }
-
-    _autoBackupRunning = true;
-    try {
-      var ausfaelle = 0;
-      await for (final f in backupService.performAutoBackup(
-        // Unter macOS über das gemerkte Merkmal (#211).
-        await Sicherungsziel.oeffne(destination),
-        key,
-        maxBytesPerRun: (config.autoBackupMaxMbPerRun > 0)
-            ? config.autoBackupMaxMbPerRun * 1024 * 1024
-            : 0,
-        // Verbunden: siehe [runManualBackup].
-        amZielPruefen: verbunden,
-      )) {
-        ausfaelle = f.fehlgeschlagen ?? ausfaelle;
-        if (f.wiederherstellungsprobe case final probe?) {
-          wiederherstellungsprobe.value = probe;
-          if (!probe.erfolgreich) {
-            throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
-          }
-        }
-      }
-      await db.setLastAutoBackupAt(DateTime.now());
-      // Einzelne Dateien, die nicht gingen (verbunden etwa: Server kurz
-      // weg), kommen beim nächsten Lauf wieder dran – gesagt wird es
-      // trotzdem.
-      backupwarnung.value = ausfaelle == 0
-          ? null
-          : (
-              grund: Backuphindernis.dateienFehlen,
-              letzterLauf: DateTime.now(),
-              fehler: '$ausfaelle',
-            );
-    } catch (e) {
-      debugPrint('Automatisches Backup fehlgeschlagen: $e');
-      backupwarnung.value = (
-        grund: Sicherungsziel.zugriffVerweigert(e)
-            ? Backuphindernis.zielGesperrt
-            : Backuphindernis.fehlgeschlagen,
-        letzterLauf: lastRun,
-        fehler: '$e',
-      );
-    } finally {
-      _autoBackupRunning = false;
-    }
-  }
+  }) => _sicherung.runManualBackup(ziel, encrypt: encrypt);
+  Stream<BackupProgress> runAutoBackupNow(String ziel) =>
+      _sicherung.runAutoBackupNow(ziel);
+  Future<void> runAutoBackupIfDue() => _sicherung.runAutoBackupIfDue();
 
   /// Warum das automatische Backup gerade nicht läuft, obwohl es fällig ist
   /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
@@ -4225,30 +4021,6 @@ class LibraryState extends ChangeNotifier {
     super.dispose();
   }
 }
-
-/// Warum das automatische Backup ausbleibt (siehe
-/// [LibraryState.backupwarnung]).
-enum Backuphindernis {
-  /// Fällig, aber die Passphrase wurde in dieser Sitzung nicht eingegeben.
-  passphrase,
-
-  /// Gelaufen und gescheitert.
-  fehlgeschlagen,
-
-  /// Gelaufen, aber einzelne Dateien gingen nicht ([Backupwarnung.fehler]
-  /// trägt ihre Zahl).
-  dateienFehlen,
-
-  /// Das Betriebssystem lässt nicht ins Ziel schreiben – unter macOS fehlt
-  /// das Merkmal für den Ordner, er muss einmal neu gewählt werden (#211).
-  zielGesperrt,
-}
-
-typedef Backupwarnung = ({
-  Backuphindernis grund,
-  DateTime? letzterLauf,
-  String? fehler,
-});
 
 /// Was aus [LibraryState.sichereVideobild] wurde.
 enum Videobildergebnis { gesichert, schonDa, fehlgeschlagen }
