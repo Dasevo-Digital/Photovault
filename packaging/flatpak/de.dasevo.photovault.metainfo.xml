@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.6" date="2026-10-30">
+      <description>
+        <p>Backups now check the destination for what is missing instead of trusting a "backed up" mark on each photo. A second drive, a new cloud folder or an emptied folder used to receive no older originals at all, only the list describing them.</p>
+        <p>Backups also keep series and variant stacks with their cover, captions written by hand and the exclusion from face search. A single original that cannot be moved no longer drops people, faces, family tree and trips from a restore.</p>
+        <p>Restoring is refused with an explanation in a library connected to a server; it used to import nothing. The settings show the last backup and the library size again after a second manual backup.</p>
+      </description>
+    </release>
     <release version="3.49.5" date="2026-10-30">
       <description>
         <p>Restore points consistently use their own photo list and metadata. Partial restores report errors, and cancelling the restore-point selection leaves the library unchanged.</p>
