@@ -181,23 +181,17 @@ void main() {
         ..writeAsStringSync('darf nicht gelöscht werden');
 
       // Zweiter Lauf ohne neue Fotos: nichts wird erneut kopiert.
-      var secondRunFileCount = 0;
-      await for (final p in library.runAutoBackupNow(destination.path)) {
-        secondRunFileCount = p.total;
-      }
-      expect(secondRunFileCount, 0);
+      await library.runAutoBackupNow(destination.path).drain<void>();
+      expect(library.backupService.letzterLaufNeu, 0);
       expect(await canary.exists(), isTrue);
 
       // Ein neu importiertes Foto wird beim nächsten Lauf ergänzt, das erste
-      // wird nicht erneut kopiert (eigenes Tracking-Flag: autoBackedUp).
+      // wird nicht erneut kopiert – es liegt schon im Ziel (#242).
       final photo2 = File(p.join(incoming.path, 'b.jpg'))
         ..writeAsBytesSync([4, 5, 6]);
       await importService.importFile(photo2.path);
-      var thirdRunTotal = 0;
-      await for (final p in library.runAutoBackupNow(destination.path)) {
-        thirdRunTotal = p.total;
-      }
-      expect(thirdRunTotal, 1);
+      await library.runAutoBackupNow(destination.path).drain<void>();
+      expect(library.backupService.letzterLaufNeu, 1);
       expect(await canary.exists(), isTrue);
 
       final generations = Directory(p.join(backupRoot.path, 'generations'));

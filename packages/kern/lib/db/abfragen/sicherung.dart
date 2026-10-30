@@ -19,7 +19,8 @@ extension SicherungsAbfragen on AppDatabase {
   ///
   /// Papierkorb-Einträge bleiben **drin**: Ihre Dateien liegen aus
   /// früheren Läufen im Sicherungsziel, und wer sie später
-  /// wiederherstellt, will seine Schlagwörter zurück.
+  /// wiederherstellt, will seine Schlagwörter zurück. Ohne Datei im Ziel
+  /// lässt die Sicherung sie aus (`BackupService._writeMetadataExport`).
   Future<List<AssetData>> assetsFuerMetadatenexport() =>
       (select(assets)..where((t) => t.isLocked.equals(false))).get();
 
@@ -88,9 +89,14 @@ extension SicherungsAbfragen on AppDatabase {
   Future<void> insertBackupRecord(BackupRecordsCompanion record) =>
       into(backupRecords).insert(record);
 
-  Future<BackupRecordData?> lastBackupRecord() => (select(
-    backupRecords,
-  )..orderBy([(t) => OrderingTerm.desc(t.performedAt)])).getSingleOrNull();
+  /// Ohne `limit(1)` warf das ab dem zweiten Bericht „Too many elements“ –
+  /// die Einstellungen zeigten danach weder die letzte Sicherung noch die
+  /// Belegung der Bibliothek.
+  Future<BackupRecordData?> lastBackupRecord() =>
+      (select(backupRecords)
+            ..orderBy([(t) => OrderingTerm.desc(t.performedAt)])
+            ..limit(1))
+          .getSingleOrNull();
 
   /// Schnelle SQLite-Eigenprüfung für die Zustandsübersicht. Anders als die
   /// vollständige Integritätsprüfung liest sie keine Mediendateien.
@@ -205,8 +211,9 @@ extension SicherungsAbfragen on AppDatabase {
           .get();
 
   /// Alles, was eine Sicherung enthalten soll – ohne Rücksicht auf
-  /// [Assets.autoBackedUp]. Für den Server, der am Ziel nachsieht, was schon
-  /// da ist (siehe `BackupService.performAutoBackup`, `amZielPruefen`).
+  /// [Assets.backedUp] und [Assets.autoBackedUp]. Was davon schon da ist,
+  /// sieht die Sicherung am Ziel nach (siehe `BackupService.performBackup`,
+  /// #242).
   Future<List<AssetData>> assetsFuerSicherung() => (select(
     assets,
   )..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))).get();

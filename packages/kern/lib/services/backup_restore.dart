@@ -218,8 +218,6 @@ class BackupWiederhersteller {
   /// Eine ältere Sicherung kennt weniger Spalten als die laufende Fassung,
   /// und eine von Hand gepflegte Aufzählung wäre die naheliegendste Art,
   /// dass eine neue Spalte still verlorengeht.
-  /// Die gesicherten Fotos laut Schnappschuss – Prüfsumme und Dateiname,
-  /// in der Form der Einträge von `metadata.json`.
   Future<int> uebernimmAusSchnappschuss(
     File schnappschuss, {
     bool streng = false,
@@ -255,17 +253,28 @@ class BackupWiederhersteller {
               z['is_locked'] == 1) {
             continue;
           }
-          if ((await _db.assetById(id))!.isLocked) continue;
-          await AufnahmedatumDienst(_db, _paths).setze(
-            (await _db.assetById(id))!,
-            DateTime.fromMillisecondsSinceEpoch(
-              (z['file_created_at'] as int) * 1000,
-            ),
-            geschaetzt:
-                quellSpalten.contains('datum_geschaetzt') &&
-                z['datum_geschaetzt'] == 1,
-            streng: true,
-          );
+          final asset = (await _db.assetById(id))!;
+          if (asset.isLocked) continue;
+          // Je Aufnahme abgesichert wie in [_applyMetadataExport] (#243):
+          // Hier lief der Fehler eines einzigen Umbenennens (Original
+          // fehlt, Ziel belegt, keine Rechte) bis aus der Methode hinaus,
+          // und mit ihm blieben Personen, Gesichter, Stammbaum und Reisen
+          // aus – übrig blieb nur „pv_restore_schnappschuss“.
+          try {
+            await AufnahmedatumDienst(_db, _paths).setze(
+              asset,
+              DateTime.fromMillisecondsSinceEpoch(
+                (z['file_created_at'] as int) * 1000,
+              ),
+              geschaetzt:
+                  quellSpalten.contains('datum_geschaetzt') &&
+                  z['datum_geschaetzt'] == 1,
+              streng: true,
+            );
+          } catch (e) {
+            if (streng) rethrow;
+            _problem('pv_restore_aufnahmedatum', e);
+          }
         }
       }
       var uebernommen = 0;

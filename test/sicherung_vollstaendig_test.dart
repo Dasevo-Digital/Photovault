@@ -107,8 +107,17 @@ void main() {
       // Seine Datei liegt aus früheren Läufen im Ziel, und wer es
       // wiederherstellt, will seine Schlagwörter zurück.
       final weg = await aufnahme('geloescht.jpg', [1, 2, 3]);
+      await sichereUndLies();
       await db.moveToTrash([weg]);
       expect(namen(await sichereUndLies()), contains('geloescht.jpg'));
+    });
+
+    test('ohne Datei im Ziel nicht (#242)', () async {
+      // Vor dem ersten Lauf verworfen: Die Datei kommt nie an. Stünde sie
+      // trotzdem in der Beilage, scheiterte jede Wiederherstellungsprobe.
+      final weg = await aufnahme('geloescht.jpg', [1, 2, 3]);
+      await db.moveToTrash([weg]);
+      expect(namen(await sichereUndLies()), isNot(contains('geloescht.jpg')));
     });
   });
 

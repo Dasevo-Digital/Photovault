@@ -16,17 +16,17 @@ class _Sicherung extends BackupService {
   int aufrufe = 0;
   final gestartet = Completer<void>();
   Completer<void>? freigabe;
-  bool? amZiel;
+  bool? markiert;
   int? budget;
   @override
   Stream<BackupProgress> performAutoBackup(
     String ziel,
     SecretKey key, {
     int maxBytesPerRun = 0,
-    bool amZielPruefen = false,
+    bool markieren = true,
   }) async* {
     aufrufe++;
-    amZiel = amZielPruefen;
+    markiert = markieren;
     budget = maxBytesPerRun;
     if (!gestartet.isCompleted) gestartet.complete();
     await freigabe?.future;
@@ -130,7 +130,7 @@ void main() {
       await db.setAutoBackupMaxMbPerRun(7);
       await backup.setupBackupPassphrase('synthetische-koordinator-passphrase');
       await backup.runAutoBackupNow('${temp.path}/ziel').drain<void>();
-      expect(service.amZiel, isTrue);
+      expect(service.markiert, isFalse);
       expect(service.budget, 7 * 1024 * 1024);
       expect(warnungen.last, isNull);
     },

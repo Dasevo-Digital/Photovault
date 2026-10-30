@@ -102,7 +102,7 @@ class BackupKoordinator {
       destination,
       encryptionKey: encrypt ? _backupKey : null,
       maxBytesPerRun: grenze,
-      amZielPruefen: verbunden,
+      markieren: !verbunden,
     );
   }
 
@@ -135,7 +135,7 @@ class BackupKoordinator {
           ziel,
           key,
           maxBytesPerRun: await _backupGrenzeBytes(),
-          amZielPruefen: verbunden,
+          markieren: !verbunden,
         )) {
           if (f.wiederherstellungsprobe case final probe?) {
             meldeProbe(probe);
@@ -216,7 +216,7 @@ class BackupKoordinator {
             ? config.autoBackupMaxMbPerRun * 1024 * 1024
             : 0,
         // Verbunden: siehe [runManualBackup].
-        amZielPruefen: verbunden,
+        markieren: !verbunden,
       )) {
         ausfaelle = f.fehlgeschlagen ?? ausfaelle;
         if (f.wiederherstellungsprobe case final probe?) {

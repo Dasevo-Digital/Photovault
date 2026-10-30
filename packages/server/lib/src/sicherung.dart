@@ -38,8 +38,8 @@ enum Sicherungsstufe {
 /// Sichert jede Nacht jede Bibliothek des Servers in [ziel] (Issue #125) –
 /// verschlüsselt und im Format der App, also mit ihr wiederherstellbar.
 ///
-/// **Nur, was am Ziel fehlt:** siehe `BackupService.performAutoBackup` mit
-/// `amZielPruefen`. Ein neues, leeres Ziel füllt sich von selbst.
+/// **Nur, was am Ziel fehlt:** siehe `BackupService.performAutoBackup`.
+/// Ein neues, leeres Ziel füllt sich von selbst.
 ///
 /// **Nie auf die eigene Platte:** Ist das NAS nicht eingehängt, ist [ziel]
 /// ein leerer Ordner auf dem Server – eine Sicherung dorthin füllte still
@@ -244,7 +244,7 @@ class Serversicherung {
         await for (final f in dienst.performAutoBackup(
           p.join(ziel!.path, ordnerFuer(k)),
           schluessel,
-          amZielPruefen: true,
+          markieren: false,
         )) {
           gesamt = f.total;
           fehlgeschlagen += f.fehlgeschlagen ?? 0;

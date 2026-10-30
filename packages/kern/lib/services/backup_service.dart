@@ -75,8 +75,15 @@ class BackupService {
   int? get zwischenlagerGrenze => _zwischenlagerGrenze;
 
   /// Wie viele Dateien der letzte automatische Lauf tatsächlich geschrieben
-  /// hat – mit `amZielPruefen` die neuen, ohne alle markierten.
+  /// hat – nur die, die im Ziel noch fehlten.
   int letzterLaufNeu = 0;
+
+  /// Was im Ziel schon liegt, wird übersprungen (siehe [performBackup]).
+  ///
+  /// Nicht leer genügt: Geschrieben wird über eine Zwischendatei, die erst
+  /// fertig unter diesem Namen ankommt (siehe [_ueberZwischendatei]).
+  static Future<bool> _liegtImZiel(File ziel) async =>
+      await ziel.exists() && await ziel.length() > 0;
 
   /// Schreibt eine Datei über eine Zwischenablage und legt sie erst
   /// fertig ins Ziel.
@@ -161,25 +168,34 @@ class BackupService {
     }
   }
 
-  /// Führt ein inkrementelles Backup durch: nur Originaldateien, die noch
-  /// nicht als gesichert markiert sind, werden kopiert. Die Metadaten
+  /// Führt ein inkrementelles Backup durch: nur Originaldateien, die im
+  /// Ziel noch fehlen, werden kopiert. Die Metadaten
   /// (Favoriten, Beschreibung, Tags, Alben) werden bei jedem Lauf komplett
   /// neu als `metadata.json` exportiert, damit der Cloud-Ordner immer den
   /// aktuellen Stand widerspiegelt.
+  ///
+  /// **Das Ziel entscheidet, nicht [Assets.backedUp]** (#242). Die
+  /// Markierung sagt nur, dass eine Aufnahme irgendwann irgendwohin
+  /// gesichert wurde. Solange sie die Auswahl traf, bekam ein zweiter
+  /// Ordner – ein zweiter Stick, ein neues Cloud-Ziel, ein geleerter
+  /// Ordner – kein einziges älteres Original, nur die `metadata.json`, die
+  /// sie alle aufzählte. Nachgestellt: vier Fotos nach A, danach nach B
+  /// gesichert, in B lag keines.
+  ///
   /// [maxBytesPerRun] begrenzt, wie viel je Lauf ins Ziel geschrieben wird
   /// (0 oder negativ = unbegrenzt). Gedacht für Cloud-Sync-Ordner: Ohne
   /// Grenze landen bei der ersten Sicherung zigtausend Dateien auf einmal
   /// im Sync-Ordner und der Upload läuft tagelang. Was nicht mehr
-  /// hineinpasst, bleibt unmarkiert und kommt beim nächsten Lauf dran.
+  /// hineinpasst, fehlt weiter im Ziel und kommt beim nächsten Lauf dran.
   ///
-  /// [amZielPruefen] wie bei [performAutoBackup]: Das Ziel entscheidet, was
-  /// fehlt, und [Assets.backedUp] bleibt unberührt – für den verbundenen
-  /// Rechner, dessen Kopie diese Spalte nicht schreiben darf (#206).
+  /// [markieren] setzt [Assets.backedUp] für die Anzeige. Nicht im
+  /// verbundenen Rechner, dessen Kopie diese Spalte nicht schreiben darf
+  /// (#206).
   Stream<BackupProgress> performBackup(
     String destinationRootPath, {
     SecretKey? encryptionKey,
     int maxBytesPerRun = 0,
-    bool amZielPruefen = false,
+    bool markieren = true,
   }) async* {
     final backupRoot = Directory(
       p.join(destinationRootPath, _backupFolderName),
@@ -214,14 +230,37 @@ class BackupService {
         _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_backup_stage_');
 
-    final pending = amZielPruefen
-        ? await _db.assetsFuerSicherung()
-        : await _db.assetsNotBackedUp();
+    final pending = await _db.assetsFuerSicherung();
+    // Verschlüsselt: flach unter data/ mit abgeleitetem Namen, damit
+    // weder Aufnahmezeitraum noch Dateiformat sichtbar bleiben.
+    // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
+    // sich so ein Backup auch ohne die App durchsehen lässt.
+    Future<File> zielVon(AssetData asset) async => encryptionKey != null
+        ? File(
+            p.join(
+              backupRoot.path,
+              VerschluesselteNamen.ordner,
+              await VerschluesselteNamen.fuerPruefsumme(
+                asset.checksum,
+                encryptionKey,
+              ),
+            ),
+          )
+        : File(
+            p.join(
+              originalsOut.path,
+              asset.relativePath.replaceFirst(
+                'originals${Platform.pathSeparator}',
+                '',
+              ),
+            ),
+          );
     var done = 0;
     var totalBytes = 0;
     var geschriebeneBytes = 0;
     var abgebrochenWegenLimit = false;
     final backedUpIds = <String>[];
+    var neu = 0;
     var fehlgeschlagen = 0;
 
     // XMP-Sidecars nur für unverschlüsselte Backups: bei einem verschlüsselten
@@ -252,34 +291,8 @@ class BackupService {
         // dahinter wurde nie gesichert. Genau das passierte unter Flatpak
         // beim ersten Video über 789 MB.
         try {
-          // Verschlüsselt: flach unter data/ mit abgeleitetem Namen, damit
-          // weder Aufnahmezeitraum noch Dateiformat sichtbar bleiben.
-          // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
-          // sich so ein Backup auch ohne die App durchsehen lässt.
-          final target = encryptionKey != null
-              ? File(
-                  p.join(
-                    backupRoot.path,
-                    VerschluesselteNamen.ordner,
-                    await VerschluesselteNamen.fuerPruefsumme(
-                      asset.checksum,
-                      encryptionKey,
-                    ),
-                  ),
-                )
-              : File(
-                  p.join(
-                    originalsOut.path,
-                    asset.relativePath.replaceFirst(
-                      'originals${Platform.pathSeparator}',
-                      '',
-                    ),
-                  ),
-                );
-          final schonDa =
-              amZielPruefen &&
-              await target.exists() &&
-              await target.length() > 0;
+          final target = await zielVon(asset);
+          final schonDa = await _liegtImZiel(target);
           // Erst nach der Frage ans Ziel geholt: In einer verbundenen Kopie
           // lädt [StoragePaths.bereit] ein fehlendes Original vom Server –
           // für jede Aufnahme, die schon gesichert ist, wäre das ein
@@ -325,10 +338,14 @@ class BackupService {
 
             totalBytes += quellGroesse;
             geschriebeneBytes += await target.length();
+            neu++;
           }
-          backedUpIds.add(asset.id);
+          // Nur, was noch nicht markiert ist: Die Liste geht als eine
+          // einzige Anweisung hinaus, und jetzt kommt jeder Lauf an allen
+          // Aufnahmen vorbei.
+          if (!asset.backedUp) backedUpIds.add(asset.id);
         } catch (e) {
-          // Nicht markieren – die Datei kommt beim nächsten Lauf wieder
+          // Fehlt weiter im Ziel und kommt beim nächsten Lauf wieder
           // dran. Gezählt wird sie trotzdem, sonst sähe ein Lauf mit
           // Ausfällen aus wie ein vollständiger.
           fehlgeschlagen++;
@@ -363,7 +380,12 @@ class BackupService {
       }
     }
 
-    if (backedUpIds.isNotEmpty && !amZielPruefen) {
+    final offen = abgebrochenWegenLimit
+        ? await _fehlenImZiel(pending.skip(done), zielVon)
+        : 0;
+    if (offen == 0) abgebrochenWegenLimit = false;
+
+    if (backedUpIds.isNotEmpty && markieren) {
       await _db.markBackedUp(backedUpIds);
     }
 
@@ -371,6 +393,7 @@ class BackupService {
       backupRoot,
       encryptionKey: encryptionKey,
       stand: manifest,
+      liegtImZiel: (asset) async => _liegtImZiel(await zielVon(asset)),
     );
     if (encryptionKey != null) {
       await _writeKeyEnvelope(backupRoot);
@@ -384,7 +407,7 @@ class BackupService {
         // Nur die tatsächlich gesicherten Dateien zählen, nicht die geplanten –
         // sonst behauptet der Bericht bei einem begrenzten Lauf mehr, als er
         // geschafft hat.
-        fileCount: backedUpIds.length,
+        fileCount: neu,
         totalBytes: totalBytes,
       ),
     );
@@ -406,11 +429,7 @@ class BackupService {
     }
 
     if (abgebrochenWegenLimit) {
-      yield BackupProgress(
-        done,
-        pending.length,
-        grenzeOffen: pending.length - done,
-      );
+      yield BackupProgress(done, pending.length, grenzeOffen: offen);
     }
     // Nach der Mengenmeldung, damit sie das letzte Wort hat: Ausgelassene
     // Dateien sind die wichtigere Nachricht.
@@ -421,6 +440,23 @@ class BackupService {
         fehlgeschlagen: fehlgeschlagen,
       );
     }
+  }
+
+  /// Wie viele von [rest] nach erreichter Portionsgrenze im Ziel fehlen.
+  ///
+  /// Seit jeder Lauf an allen Aufnahmen vorbeikommt (#242), wäre der
+  /// blosse Rest der Liste zu viel: Darin stehen auch die, die längst im
+  /// Ziel liegen. Fehlt keine mehr, ist der Lauf vollständig – die Probe
+  /// und die Generation stehen ihm dann zu.
+  static Future<int> _fehlenImZiel(
+    Iterable<AssetData> rest,
+    Future<File> Function(AssetData) zielVon,
+  ) async {
+    var fehlen = 0;
+    for (final asset in rest) {
+      if (!await _liegtImZiel(await zielVon(asset))) fehlen++;
+    }
+    return fehlen;
   }
 
   /// Verschiebt [von] nach [nach].
@@ -464,10 +500,18 @@ class BackupService {
   /// **Was eine frühere Sicherung enthält, ändert sich dadurch nicht.**
   /// Wer ein Foto sperrt, nachdem es gesichert wurde, findet es weiter im
   /// Sicherungsziel: Dort wird nie gelöscht, und das ist Absicht.
+  ///
+  /// **Papierkorb-Einträge nur mit ihrer Datei** ([liegtImZiel]). Sie
+  /// stehen darin, weil ihre Dateien aus früheren Läufen im Ziel liegen –
+  /// gesichert werden sie aber nicht mehr. Kam ein Foto vor dem ersten
+  /// Lauf in den Papierkorb (oder ist das Ziel neu, #242), zählte die
+  /// Beilage eine Datei auf, die nie ankam, und die
+  /// Wiederherstellungsprobe scheiterte daran bei jedem Lauf.
   Future<void> _writeMetadataExport(
     Directory backupRoot, {
     SecretKey? encryptionKey,
     BackupManifest? stand,
+    Future<bool> Function(AssetData asset)? liegtImZiel,
   }) async {
     if (stand != null) {
       await BackupSchnappschussSpeicher().schreibeManifest(
@@ -477,7 +521,10 @@ class BackupService {
       );
       return;
     }
-    final allAssets = await _db.assetsFuerMetadatenexport();
+    final allAssets = [
+      for (final a in await _db.assetsFuerMetadatenexport())
+        if (!a.isTrashed || liegtImZiel == null || await liegtImZiel(a)) a,
+    ];
     final albums = await _db.select(_db.albums).get();
     // Eine einzige Abfrage für alle Tags statt einer pro Foto (N+1-Problem
     // bei großen Bibliotheken – Backups sollen schnell bleiben).
@@ -635,20 +682,22 @@ class BackupService {
   /// das automatische Backup typischerweise auf einen Cloud-Sync-Ordner
   /// zeigt und ungefragt im Hintergrund läuft.
   ///
-  /// Mit [amZielPruefen] (der Server und ein verbundener Rechner, #206)
-  /// entscheidet nicht die Markierung
-  /// [Assets.autoBackedUp], was noch fehlt, sondern das Ziel selbst: Liegt
-  /// die verschlüsselte Datei dort schon (ihr Name folgt fest aus der
-  /// Prüfsumme), wird sie übersprungen. Die Markierung wird dabei weder
-  /// gelesen noch gesetzt – sie wird mit den Geräten abgeglichen und
-  /// beschreibt die Sicherung eines Rechners, nicht die des Servers; nach
-  /// einem Umzug stünde sie sonst auf Aufnahmen, die dieser Server nie
-  /// gesichert hat. Ein neues, leeres Ziel füllt sich so von selbst.
+  /// Was noch fehlt, entscheidet das Ziel selbst, nicht die Markierung
+  /// [Assets.autoBackedUp]: Liegt die verschlüsselte Datei dort schon (ihr
+  /// Name folgt fest aus der Prüfsumme), wird sie übersprungen. Ein neues,
+  /// leeres Ziel füllt sich so von selbst. Bis #242 galt das nur für den
+  /// Server und einen verbundenen Rechner (#206); jeder andere Rechner
+  /// schrieb nach einem Zielwechsel nur noch Datenbank und Metadaten, und
+  /// die Wiederherstellungsprobe scheiterte daran bei jedem Lauf.
+  ///
+  /// [markieren] setzt die Markierung für die Anzeige. Nicht am Server und
+  /// nicht im verbundenen Rechner: Sie wird mit den Geräten abgeglichen und
+  /// beschreibt die Sicherung eines Rechners, nicht die des Servers.
   Stream<BackupProgress> performAutoBackup(
     String destinationRootPath,
     SecretKey encryptionKey, {
     int maxBytesPerRun = 0,
-    bool amZielPruefen = false,
+    bool markieren = true,
   }) async* {
     final backupRoot = Directory(
       p.join(destinationRootPath, autoBackupFolderName),
@@ -665,9 +714,19 @@ class BackupService {
     final staging =
         _festesZwischenlager ??
         await Directory.systemTemp.createTemp('pv_autobackup_stage_');
-    final pending = amZielPruefen
-        ? await _db.assetsFuerSicherung()
-        : await _db.assetsNotAutoBackedUp();
+    final pending = await _db.assetsFuerSicherung();
+    // Automatische Backups sind immer verschlüsselt – daher stets die
+    // flache, namenlose Ablage (siehe VerschluesselteNamen).
+    Future<File> zielVon(AssetData asset) async => File(
+      p.join(
+        backupRoot.path,
+        VerschluesselteNamen.ordner,
+        await VerschluesselteNamen.fuerPruefsumme(
+          asset.checksum,
+          encryptionKey,
+        ),
+      ),
+    );
     var done = 0;
     var geschriebeneBytes = 0;
     var abgebrochenWegenLimit = false;
@@ -686,22 +745,8 @@ class BackupService {
         // Lauf: Dieser läuft ungefragt im Hintergrund, ein Abbruch fiele
         // also niemandem auf.
         try {
-          // Automatische Backups sind immer verschlüsselt – daher stets die
-          // flache, namenlose Ablage (siehe VerschluesselteNamen).
-          final target = File(
-            p.join(
-              backupRoot.path,
-              VerschluesselteNamen.ordner,
-              await VerschluesselteNamen.fuerPruefsumme(
-                asset.checksum,
-                encryptionKey,
-              ),
-            ),
-          );
-          final schonDa =
-              amZielPruefen &&
-              await target.exists() &&
-              await target.length() > 0;
+          final target = await zielVon(asset);
+          final schonDa = await _liegtImZiel(target);
           // Wie in [performBackup]: erst fragen, dann (verbunden) holen.
           final source = schonDa
               ? null
@@ -724,7 +769,8 @@ class BackupService {
             geschriebeneBytes += await target.length();
             neu++;
           }
-          autoBackedUpIds.add(asset.id);
+          // Wie in [performBackup]: nur, was noch nicht markiert ist.
+          if (!asset.autoBackedUp) autoBackedUpIds.add(asset.id);
         } catch (e) {
           fehlgeschlagen++;
           protokoll(
@@ -756,7 +802,12 @@ class BackupService {
       }
     }
 
-    if (autoBackedUpIds.isNotEmpty && !amZielPruefen) {
+    final offen = abgebrochenWegenLimit
+        ? await _fehlenImZiel(pending.skip(done), zielVon)
+        : 0;
+    if (offen == 0) abgebrochenWegenLimit = false;
+
+    if (autoBackedUpIds.isNotEmpty && markieren) {
       await _db.markAutoBackedUp(autoBackedUpIds);
     }
     letzterLaufNeu = neu;
@@ -784,11 +835,7 @@ class BackupService {
     }
 
     if (abgebrochenWegenLimit) {
-      yield BackupProgress(
-        done,
-        pending.length,
-        grenzeOffen: pending.length - done,
-      );
+      yield BackupProgress(done, pending.length, grenzeOffen: offen);
     }
     if (fehlgeschlagen > 0) {
       yield BackupProgress(
