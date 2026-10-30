@@ -1127,7 +1127,12 @@ Nur sie trägt den verschlüsselten Schnappschuss der Datenbank.
 
 Was eine Sicherung noch schreiben muss, entscheidet das Ziel: Liegt eine
 Datei dort schon, wird sie übersprungen. Ein zweiter Ordner oder ein neues
-Ziel bekommt so alle Originale.
+Ziel bekommt so alle Originale. In einer Sicherung ohne Passphrase liegt
+jedes Foto unter seinem Pfad; dort zählt außerdem, ob die Datei im Ziel
+noch zur Aufnahme passt (Größe und Prüfsumme der letzten Beilage). Ein
+bearbeitetes Foto wird deshalb neu kopiert. Die alte Datei bleibt dabei als
+`….vorher-<Prüfsumme>.jpg` liegen, wenn die Bibliothek ihren Inhalt sonst
+nirgends mehr hat.
 
 ## Wiederherstellungsprobe, Importvorschau und Konflikte
 

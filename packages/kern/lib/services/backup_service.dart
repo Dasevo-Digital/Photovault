@@ -85,6 +85,82 @@ class BackupService {
   static Future<bool> _liegtImZiel(File ziel) async =>
       await ziel.exists() && await ziel.length() > 0;
 
+  /// Ob [ziel] in einer **unverschlüsselten** Sicherung noch [asset] trägt –
+  /// nicht nur, ob dort etwas liegt (#251).
+  ///
+  /// Verschlüsselt heisst jede Datei nach ihrer Prüfsumme, und eine neue
+  /// Fassung bekommt von selbst einen neuen Namen. Unverschlüsselt liegt
+  /// sie unter dem Pfad der Aufnahme. Ein im Editor gedrehtes JPEG behält
+  /// diesen Pfad – und wurde nie neu kopiert: Im Ziel blieb die alte Datei,
+  /// die Beilage nannte die neue Prüfsumme, die Wiederherstellungsprobe
+  /// scheiterte, und eine Wiederherstellung brachte das Foto gar nicht
+  /// zurück.
+  ///
+  /// Veraltet ist die Datei im Ziel, wenn die vorige Beilage für diesen
+  /// Pfad eine andere Prüfsumme nannte ([frueher]) oder wenn ihre Grösse
+  /// nicht zur Aufnahme passt. Die Grösse fängt die Sicherungen, die schon
+  /// falsch stehen: Deren Beilage nennt bereits die neue Prüfsumme. Gemessen
+  /// wird an der Datei der Bibliothek, falls sie hier liegt – verbunden
+  /// fehlt sie oft, und sie zu holen hiesse, jede Aufnahme herunterzuladen;
+  /// dann gilt die Grösse aus der Datenbank.
+  Future<bool> _stimmtImZiel(
+    AssetData asset,
+    File ziel,
+    Map<String, String> frueher,
+  ) async {
+    if (!await _liegtImZiel(ziel)) return false;
+    final genannt = frueher[asset.relativePath];
+    if (genannt != null && genannt != asset.checksum) return false;
+    final hier = _paths.absolute(asset.relativePath);
+    final groesse = await hier.exists()
+        ? await hier.length()
+        : asset.fileSizeBytes;
+    return groesse <= 0 || await ziel.length() == groesse;
+  }
+
+  /// Was die vorige Beilage einer unverschlüsselten Sicherung je Pfad als
+  /// Prüfsumme nannte; leer ohne lesbare Beilage.
+  static Future<Map<String, String>> _fruehereAblage(
+    Directory backupRoot,
+  ) async {
+    final f = File(p.join(backupRoot.path, 'metadata.json'));
+    try {
+      if (!await f.exists()) return const {};
+      final m = BackupManifest.ausText(await f.readAsString());
+      return {for (final a in m.aufnahmen) ?a.ablage: a.pruefsumme};
+    } on Object {
+      return const {};
+    }
+  }
+
+  /// Legt eine veraltete Datei im unverschlüsselten Ziel beiseite, bevor
+  /// die neue Fassung sie ersetzt – falls die Bibliothek ihren Inhalt nicht
+  /// mehr hat.
+  ///
+  /// Wer mit einer Fassung vor 3.49.7 ein JPEG gedreht hat, hat das
+  /// Original nur noch hier: Der Editor ersetzte es am Ort (#248), und die
+  /// Sicherung schrieb danach nie neu. Ein stilles Überschreiben nähme ihm
+  /// die letzte Kopie. Liegen dieselben Bytes dagegen als eigene Aufnahme
+  /// vor (seit 3.49.7 bleibt das Original als Variante), wird nur ersetzt.
+  /// Der neue Name trägt den Anfang der Prüfsumme; eine Wiederherstellung
+  /// nach der Beilage übergeht die Datei, durchsehen lässt sie sich wie
+  /// jede andere.
+  Future<void> _bewahreVeraltete(File ziel) async {
+    if (!await ziel.exists()) return;
+    final summe = (await sha256.bind(ziel.openRead()).first).toString();
+    if (await _db.checksumExists(summe)) return;
+    final beiseite = File(
+      '${p.withoutExtension(ziel.path)}.vorher-${summe.substring(0, 12)}'
+      '${p.extension(ziel.path)}',
+    );
+    if (await beiseite.exists()) return;
+    await ziel.rename(beiseite.path);
+    protokoll(
+      'Sicherung: ${p.basename(ziel.path)} beiseitegelegt als '
+      '${p.basename(beiseite.path)}',
+    );
+  }
+
   /// Schreibt eine Datei über eine Zwischenablage und legt sie erst
   /// fertig ins Ziel.
   ///
@@ -231,6 +307,10 @@ class BackupService {
         await Directory.systemTemp.createTemp('pv_backup_stage_');
 
     final pending = await _db.assetsFuerSicherung();
+    // Vor dem Lauf gelesen: Am Ende wird die Beilage neu geschrieben.
+    final frueher = encryptionKey == null
+        ? await _fruehereAblage(backupRoot)
+        : const <String, String>{};
     // Verschlüsselt: flach unter data/ mit abgeleitetem Namen, damit
     // weder Aufnahmezeitraum noch Dateiformat sichtbar bleiben.
     // Unverschlüsselt: weiterhin die lesbare Ordnerstruktur, damit
@@ -255,6 +335,9 @@ class BackupService {
               ),
             ),
           );
+    Future<bool> aktuell(AssetData asset, File ziel) => encryptionKey == null
+        ? _stimmtImZiel(asset, ziel, frueher)
+        : _liegtImZiel(ziel);
     var done = 0;
     var totalBytes = 0;
     var geschriebeneBytes = 0;
@@ -292,7 +375,7 @@ class BackupService {
         // beim ersten Video über 789 MB.
         try {
           final target = await zielVon(asset);
-          final schonDa = await _liegtImZiel(target);
+          final schonDa = await aktuell(asset, target);
           // Erst nach der Frage ans Ziel geholt: In einer verbundenen Kopie
           // lädt [StoragePaths.bereit] ein fehlendes Original vom Server –
           // für jede Aufnahme, die schon gesichert ist, wäre das ein
@@ -308,6 +391,7 @@ class BackupService {
           }
           if (source != null) {
             await target.parent.create(recursive: true);
+            if (encryptionKey == null) await _bewahreVeraltete(target);
 
             final quellGroesse = await source.length();
             await _ueberZwischendatei(
@@ -381,7 +465,10 @@ class BackupService {
     }
 
     final offen = abgebrochenWegenLimit
-        ? await _fehlenImZiel(pending.skip(done), zielVon)
+        ? await _fehlenImZiel(
+            pending.skip(done),
+            (a) async => aktuell(a, await zielVon(a)),
+          )
         : 0;
     if (offen == 0) abgebrochenWegenLimit = false;
 
@@ -450,11 +537,11 @@ class BackupService {
   /// und die Generation stehen ihm dann zu.
   static Future<int> _fehlenImZiel(
     Iterable<AssetData> rest,
-    Future<File> Function(AssetData) zielVon,
+    Future<bool> Function(AssetData) istDa,
   ) async {
     var fehlen = 0;
     for (final asset in rest) {
-      if (!await _liegtImZiel(await zielVon(asset))) fehlen++;
+      if (!await istDa(asset)) fehlen++;
     }
     return fehlen;
   }
@@ -811,7 +898,10 @@ class BackupService {
     }
 
     final offen = abgebrochenWegenLimit
-        ? await _fehlenImZiel(pending.skip(done), zielVon)
+        ? await _fehlenImZiel(
+            pending.skip(done),
+            (a) async => _liegtImZiel(await zielVon(a)),
+          )
         : 0;
     if (offen == 0) abgebrochenWegenLimit = false;
 
