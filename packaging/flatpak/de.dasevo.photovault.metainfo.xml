@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.5" date="2026-10-30">
+      <description>
+        <p>Restore points consistently use their own photo list and metadata. Partial restores report errors, and cancelling the restore-point selection leaves the library unchanged.</p>
+        <p>Imports always verify copied bytes. Backup coordination prevents overlapping automatic runs, and desktop updates validate packages and restore the previous installation on failure.</p>
+        <p>Older app versions refuse to open newer library schemas. Server guest decoding and service-unit updates are more reliable.</p>
+      </description>
+    </release>
     <release version="3.49.4" date="2026-10-29">
       <description>
         <p>Wiederherstellungsproben prüfen Sicherungen in getrennten Bibliotheken. Manuelle Aufnahmedaten, entfernte Koordinaten und Ortsnamen bleiben beim Restore erhalten.</p>
