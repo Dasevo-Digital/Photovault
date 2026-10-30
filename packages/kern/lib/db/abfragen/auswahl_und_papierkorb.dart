@@ -182,15 +182,178 @@ extension AuswahlAbfragen on AppDatabase {
     ),
   );
 
-  Future<void> moveToTrash(List<String> assetIds) async {
-    await (update(assets)..where((t) => t.id.isIn(assetIds))).write(
+  /// Legt [assetIds] in den Papierkorb – **mit allem, was ohne sie
+  /// unsichtbar würde** (#254, siehe [zugehoerige]).
+  ///
+  /// Bis 3.49.8 ging nur, was übergeben wurde. Das Raster zeigt aber keine
+  /// Videohälften von Live Photos und von einem Stapel nur das Titelbild:
+  /// Lag die Hauptversion im Papierkorb, standen die übrigen Mitglieder
+  /// weder dort noch sonst irgendwo, und nach dem Leeren blieben sie für
+  /// immer verborgen. Seit 3.49.7 betraf das jedes bearbeitete Foto, denn
+  /// dessen Original liegt als Variante dahinter.
+  Future<void> moveToTrash(List<String> assetIds) => transaction(() async {
+    final alle = await zugehoerige(assetIds);
+    // Was schon im Papierkorb liegt, behält seinen Zeitpunkt: Daran
+    // erkennt das Zurückholen, was zusammen ging.
+    await (update(
+      assets,
+    )..where((t) => t.id.isIn(alle) & t.isTrashed.equals(false))).write(
       AssetsCompanion(
         isTrashed: const Value(true),
         trashedAt: Value(DateTime.now()),
       ),
     );
+    await sichtbaresTitelbild(await _stapelVon(alle));
     _embeddingsGeneration++;
+  });
+
+  /// Was mit [assetIds] gehen oder zurückkommen muss (#254): die
+  /// Partner von Live Photos in beiden Richtungen und, wenn die
+  /// Hauptversion eines **Variantenstapels** dabei ist, alle seine
+  /// Varianten – samt deren Live-Photo-Partnern.
+  ///
+  /// Eine **Serie** geht nicht mit: Ihre Bilder sind verschiedene
+  /// Aufnahmen, und wer das beste löscht, will die anderen behalten. Dort
+  /// rückt ein anderes Mitglied als Titelbild nach ([sichtbaresTitelbild]).
+  ///
+  /// Ohne [varianten] nur die Live-Photo-Partner – für das Zurückholen,
+  /// das die Varianten selbst auswählt.
+  Future<Set<String>> zugehoerige(
+    List<String> assetIds, {
+    bool varianten = true,
+  }) async {
+    final ergebnis = {...assetIds};
+    if (ergebnis.isEmpty) return ergebnis;
+    final erst = await (select(
+      assets,
+    )..where((t) => t.id.isIn(ergebnis))).get();
+    final stapel = {
+      if (varianten)
+        for (final a in erst)
+          if (a.isStackCover && istVariantenstapel(a.stackId)) a.stackId!,
+    };
+    if (stapel.isNotEmpty) {
+      final mitglieder = selectOnly(assets)
+        ..addColumns([assets.id])
+        ..where(assets.stackId.isIn(stapel));
+      ergebnis.addAll([
+        for (final z in await mitglieder.get()) z.read(assets.id)!,
+      ]);
+    }
+    final partner = selectOnly(assets)
+      ..addColumns([assets.id, assets.linkedAssetId])
+      ..where(assets.id.isIn(ergebnis) | assets.linkedAssetId.isIn(ergebnis));
+    for (final z in await partner.get()) {
+      ergebnis.add(z.read(assets.id)!);
+      if (z.read(assets.linkedAssetId) case final p?) ergebnis.add(p);
+    }
+    return ergebnis;
   }
+
+  Future<Set<String>> _stapelVon(Set<String> ids) async {
+    final q = selectOnly(assets, distinct: true)
+      ..addColumns([assets.stackId])
+      ..where(assets.id.isIn(ids) & assets.stackId.isNotNull());
+    return {for (final z in await q.get()) z.read(assets.stackId)!};
+  }
+
+  /// Sorgt dafür, dass jeder der [stapel] ein sichtbares Titelbild hat,
+  /// solange er sichtbare Mitglieder hat (#254).
+  ///
+  /// Ein Stapelmitglied erscheint nur über sein Titelbild. Liegt das im
+  /// Papierkorb, ist es gesperrt oder gibt es nicht mehr, rückt das
+  /// früheste sichtbare Mitglied nach. Gibt zurück, wie viele Stapel ein
+  /// neues Titelbild bekamen.
+  Future<int> sichtbaresTitelbild(Iterable<String> stapel) async {
+    var neu = 0;
+    for (final s in stapel) {
+      final mitglieder = await assetsInStack(s);
+      bool sichtbar(AssetData a) => !a.isTrashed && !a.isLocked;
+      if (mitglieder.any((a) => a.isStackCover && sichtbar(a))) continue;
+      final kandidaten = mitglieder.where(sichtbar).toList()
+        ..sort((a, b) {
+          final z = a.fileCreatedAt.compareTo(b.fileCreatedAt);
+          return z != 0 ? z : a.id.compareTo(b.id);
+        });
+      if (kandidaten.isEmpty) continue;
+      await setStackCover(s, kandidaten.first.id);
+      neu++;
+    }
+    return neu;
+  }
+
+  /// Bringt in Ordnung, was vor 3.49.9 unsichtbar zurückblieb (#254):
+  /// Videohälften von Live Photos, deren Foto im Papierkorb liegt oder
+  /// endgültig gelöscht ist, kommen in den Papierkorb; Varianten, deren
+  /// Hauptversion im Papierkorb liegt, ebenso; jeder andere Stapel ohne
+  /// sichtbares Titelbild bekommt eines. Gefahrlos bei jedem Start: Ist
+  /// alles in Ordnung, schreibt es nichts. Gibt zurück, wie viele
+  /// Aufnahmen wieder zu sehen oder im Papierkorb sind.
+  Future<int> repariereVerdeckteZugehoerige() => transaction(() async {
+    var anzahl = 0;
+    // Live Photos: das Video folgt seinem Foto in den Papierkorb.
+    final videos = await customSelect(
+      'SELECT v.id AS id, f.trashed_at AS am, f.id IS NULL AS weg '
+      'FROM assets v LEFT JOIN assets f ON f.id = v.linked_asset_id '
+      "WHERE v.type = 'VIDEO' AND v.linked_asset_id IS NOT NULL "
+      'AND v.is_trashed = 0 AND (f.id IS NULL OR f.is_trashed = 1)',
+      readsFrom: {assets},
+    ).get();
+    for (final z in videos) {
+      final am = z.read<int?>('am');
+      await (update(
+        assets,
+      )..where((t) => t.id.equals(z.read<String>('id')))).write(
+        AssetsCompanion(
+          isTrashed: const Value(true),
+          trashedAt: Value(
+            am == null
+                ? DateTime.now()
+                : DateTime.fromMillisecondsSinceEpoch(am * 1000),
+          ),
+        ),
+      );
+      anzahl++;
+    }
+    // Varianten hinter einer Hauptversion im Papierkorb gehen mit.
+    final varianten = await customSelect(
+      'SELECT m.id AS id, c.trashed_at AS am FROM assets m '
+      'JOIN assets c ON c.stack_id = m.stack_id AND c.is_stack_cover = 1 '
+      "WHERE m.stack_id LIKE 'variante:%' AND m.is_stack_cover = 0 "
+      'AND m.is_trashed = 0 AND c.is_trashed = 1',
+      readsFrom: {assets},
+    ).get();
+    for (final z in varianten) {
+      final am = z.read<int?>('am');
+      await (update(
+        assets,
+      )..where((t) => t.id.equals(z.read<String>('id')))).write(
+        AssetsCompanion(
+          isTrashed: const Value(true),
+          trashedAt: Value(
+            am == null
+                ? DateTime.now()
+                : DateTime.fromMillisecondsSinceEpoch(am * 1000),
+          ),
+        ),
+      );
+      anzahl++;
+    }
+    // Was danach noch ohne sichtbares Titelbild dasteht: Serien, gesperrte
+    // oder gelöschte Hauptversionen.
+    final ohne = await customSelect(
+      'SELECT DISTINCT m.stack_id AS s FROM assets m '
+      'WHERE m.stack_id IS NOT NULL AND m.is_trashed = 0 AND m.is_locked = 0 '
+      'AND NOT EXISTS (SELECT 1 FROM assets c WHERE c.stack_id = m.stack_id '
+      'AND c.is_stack_cover = 1 AND c.is_trashed = 0 AND c.is_locked = 0)',
+      readsFrom: {assets},
+    ).get();
+    anzahl += await sichtbaresTitelbild([
+      for (final z in ohne) z.read<String>('s'),
+    ]);
+    if (anzahl > 0) _embeddingsGeneration++;
+    return anzahl;
+  });
 
   /// Führt die Metadaten ähnlicher Aufnahmen auf [behaltenId] zusammen und
   /// verschiebt die übrigen Dateien anschließend in den Papierkorb.
@@ -290,12 +453,33 @@ extension AuswahlAbfragen on AppDatabase {
     await moveToTrash(ids);
   });
 
-  Future<void> restoreFromTrash(List<String> assetIds) async {
-    await (update(assets)..where((t) => t.id.isIn(assetIds))).write(
+  /// Holt [assetIds] zurück, mit denselben Zugehörigen wie
+  /// [moveToTrash] (#254).
+  ///
+  /// Bei einem Variantenstapel, dessen Hauptversion im Papierkorb liegt,
+  /// kommen Hauptversion und alles mit, was im selben Augenblick mit ihr
+  /// ging – auch wenn nur eine verdeckte Variante angetippt wurde: Ohne
+  /// ihre Hauptversion bliebe sie unsichtbar. Eine Variante, die schon
+  /// vorher für sich gelöscht wurde, bleibt, wo sie ist.
+  Future<void> restoreFromTrash(List<String> assetIds) => transaction(() async {
+    final ids = {...assetIds};
+    for (final s in await _stapelVon(ids)) {
+      if (!istVariantenstapel(s)) continue;
+      final mitglieder = await assetsInStack(s);
+      final titel = mitglieder.where((m) => m.isStackCover).firstOrNull;
+      if (titel == null || !titel.isTrashed) continue;
+      ids.addAll([
+        for (final m in mitglieder)
+          if (m.isTrashed && m.trashedAt == titel.trashedAt) m.id,
+      ]);
+    }
+    final alle = await zugehoerige(ids.toList(), varianten: false);
+    await (update(assets)..where((t) => t.id.isIn(alle))).write(
       const AssetsCompanion(isTrashed: Value(false), trashedAt: Value(null)),
     );
+    await sichtbaresTitelbild(await _stapelVon(alle));
     _embeddingsGeneration++;
-  }
+  });
 
   /// Löscht die Datenbankzeile endgültig. Das eigentliche Löschen der Datei
   /// auf der Festplatte übernimmt StoragePaths.

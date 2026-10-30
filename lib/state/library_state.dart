@@ -940,6 +940,16 @@ class LibraryState extends ChangeNotifier {
     // Restaurierung, Sicherung, Papierkorb-Ablauf und der überwachte
     // Ordner gehören dorthin oder kommen später als eigene Wege.
     if (!verbunden) unawaited(trageEreignisorteNach());
+    // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
+    // einem gelöschten Live-Photo-Foto unsichtbar blieb (#254). Verbunden
+    // erledigt das der Server.
+    if (!verbunden) {
+      unawaited(
+        db.repariereVerdeckteZugehoerige().then((n) {
+          if (n > 0) debugPrint('$n verdeckte Aufnahmen in Ordnung gebracht');
+        }, onError: (Object e) => debugPrint('Verdeckte Aufnahmen: $e')),
+      );
+    }
     if (!verbunden) unawaited(_bildnachlaeufe());
     await clearDecryptCache();
 
@@ -3613,14 +3623,17 @@ class LibraryState extends ChangeNotifier {
     await _erholeTresorDateiwechsel();
     final frisch = await db.assetById(asset.id);
     if (frisch == null || frisch.isLocked == sperren) return;
-    final aufnahmen = <AssetData>[frisch];
-    final partnerId = frisch.linkedAssetId;
-    if (partnerId != null) {
-      final partner = await db.assetById(partnerId);
-      if (partner != null && partner.isLocked != sperren) {
-        aufnahmen.add(partner);
-      }
-    }
+    // Mit allem, was ohne die Aufnahme unsichtbar würde (#254): dem
+    // Live-Photo-Partner und, bei der Hauptversion eines Variantenstapels,
+    // allen Varianten. Eine Serie bleibt offen – ihr rückt unten ein
+    // anderes Titelbild nach.
+    final aufnahmen = <AssetData>[
+      frisch,
+      for (final a in await db.assetsByIds(
+        (await db.zugehoerige([frisch.id])).toList(),
+      ))
+        if (a.id != frisch.id && a.isLocked != sperren && !a.isTrashed) a,
+    ];
     final wechsel = TresorDateiwechsel(paths);
     final dateien = <String>{};
     for (final a in aufnahmen) {
@@ -3672,6 +3685,7 @@ class LibraryState extends ChangeNotifier {
       datenbank: () =>
           _tresorDatenbank([for (final a in aufnahmen) a.id], sperren, key),
     );
+    await db.sichtbaresTitelbild({for (final a in aufnahmen) ?a.stackId});
     vergissAlleBilder();
   });
 

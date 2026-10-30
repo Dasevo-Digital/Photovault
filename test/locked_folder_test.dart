@@ -366,4 +366,57 @@ void main() {
       );
     },
   );
+
+  test('die Hauptversion eines Variantenstapels sperrt ihre Varianten mit '
+      '(#254)', () async {
+    final bytesHaupt = List<int>.generate(3000, (i) => i % 251);
+    final bytesOriginal = List<int>.generate(3000, (i) => (i * 7) % 253);
+    final haupt = await importPhoto('haupt.jpg', bytesHaupt);
+    final original = await importPhoto('original.jpg', bytesOriginal);
+    await db.fuehreAus(
+      VariantenBilden('v1', [haupt.id, original.id], haupt.id),
+    );
+    await library.setupVaultPin('1234');
+
+    await library.lockAsset((await db.assetById(haupt.id))!);
+
+    final o = (await db.assetById(original.id))!;
+    expect(o.isLocked, isTrue, reason: 'sonst stünde sie unsichtbar da');
+    expect(
+      await paths.absolute(o.relativePath).readAsBytes(),
+      isNot(equals(bytesOriginal)),
+    );
+    expect(
+      (await db.watchLockedAssets().first).map((a) => a.id),
+      containsAll([haupt.id, original.id]),
+    );
+
+    await library.unlockAsset((await db.assetById(haupt.id))!);
+    expect((await db.assetById(original.id))!.isLocked, isFalse);
+    expect(
+      await paths.absolute(o.relativePath).readAsBytes(),
+      equals(bytesOriginal),
+    );
+    expect(
+      (await db.watchTimeline().first).map((a) => a.id),
+      contains(haupt.id),
+    );
+  });
+
+  test('sperrt jemand das Titelbild einer Serie, rückt ein anderes nach '
+      '(#254)', () async {
+    final a = await importPhoto('a.jpg', List<int>.filled(3000, 1));
+    final b = await importPhoto('b.jpg', List<int>.filled(3000, 2));
+    await db.fuehreAus(SerieBilden('serie-1', [a.id, b.id], a.id));
+    await library.setupVaultPin('1234');
+
+    await library.lockAsset((await db.assetById(a.id))!);
+
+    expect((await db.assetById(b.id))!.isLocked, isFalse);
+    expect(
+      (await db.watchTimeline().first).map((x) => x.id),
+      contains(b.id),
+      reason: 'die Serie bleibt mit ihrem anderen Bild zu sehen',
+    );
+  });
 }

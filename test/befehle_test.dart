@@ -1026,6 +1026,9 @@ const _einordnung = <String, _Art>{
   'deleteUnassignedFacesForAsset': _Art.ergebnis,
   'markFacesScanned': _Art.ergebnis,
   'livePhotoVideosAlsDurchsucht': _Art.ergebnis,
+  // Bringt Verdecktes ohne sichtbare Hauptversion in Ordnung (#254); am
+  // Server und an einem Rechner ohne Server beim Start.
+  'repariereVerdeckteZugehoerige': _Art.ergebnis,
   'linkAssets': _Art.ergebnis,
   'trenneAssets': _Art.ergebnis,
   'setzeDateiart': _Art.ergebnis,

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 import 'package:kern/auswertung/modelle.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/protokoll.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import 'package:path/path.dart' as p;
@@ -98,6 +100,15 @@ class Bibliotheken {
         nachImport: auswertung.anstossen,
       );
       await hochladen.raeumeAuf();
+      // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
+      // einem gelöschten Live-Photo-Foto unsichtbar zurückblieb (#254).
+      // Am Server, damit es auch verbundene Geräte erreicht.
+      try {
+        final n = await b.db.repariereVerdeckteZugehoerige();
+        if (n > 0) protokoll('$n verdeckte Aufnahmen in Ordnung gebracht');
+      } catch (e) {
+        protokoll('Verdeckte Aufnahmen nicht geprüft: $e');
+      }
       auswertung.anstossen();
       return Kontobereich(b, hochladen, auswertung, vergabe);
     });

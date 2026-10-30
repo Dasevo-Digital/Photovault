@@ -363,7 +363,10 @@ echter Hardware.
   einziges Foto von ihnen in der Bibliothek liegt
 - **Papierkorb** – in den Papierkorb verschieben, ansehen,
   wiederherstellen, endgültig löschen; automatische Leerung nach
-  konfigurierbarer Frist. Zu erreichen über *Einstellungen →
+  konfigurierbarer Frist. Was nur zusammen mit einer Aufnahme zu sehen
+  ist, geht und kommt mit ihr: die Videohälfte eines Live Photos und die
+  Varianten hinter einer Hauptversion. Aus einer Serie geht nur das
+  gewählte Bild; ein anderes rückt als Titelbild nach. Zu erreichen über *Einstellungen →
   Papierkorb*, neben seiner eigenen Einstellung – wie der gesperrte
   Ordner auch. (Bis Fassung 2.2.1 war der Bildschirm dafür zwar
   vollständig gebaut, aber von keiner Stelle aufgerufen: Gelöschte
