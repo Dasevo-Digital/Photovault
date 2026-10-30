@@ -84,9 +84,9 @@
     </release>
     <release version="3.49.4" date="2026-10-29">
       <description>
-        <p>Wiederherstellungsproben prüfen Sicherungen in getrennten Bibliotheken. Manuelle Aufnahmedaten, entfernte Koordinaten und Ortsnamen bleiben beim Restore erhalten.</p>
-        <p>Die neue Konfliktübersicht schützt gespeicherte Änderungen. Zusammengesetzte Befehle erkennen gleichzeitig geänderte Angaben; große Aktionen werden gebündelt vorbereitet und vor Übergröße geschützt.</p>
-        <p>Die Importvorschau bindet Inhalt, Dateizeit und Regelaktionen bis zur Übernahme. Der Server begrenzt JSON-Anfragen und trennt Gastdecoder vom Datenverzeichnis.</p>
+        <p>Restore checks test backups in separate libraries. Capture dates set by hand, removed coordinates and place names survive a restore.</p>
+        <p>The new conflict overview protects saved changes. Combined commands notice details changed at the same time elsewhere; large actions are prepared in batches and guarded against oversize.</p>
+        <p>The import preview keeps content, file time and rule actions fixed until the import. The server limits JSON requests and keeps guest decoders away from the data directory.</p>
       </description>
     </release>
     <release version="3.49.3" date="2026-10-28">
@@ -96,9 +96,9 @@
     </release>
     <release version="3.49.2" date="2026-10-27">
       <description>
-        <p>Tresor-Dateiwechsel werden nach Abbruch wieder aufgenommen oder zurückgenommen. Fehlende Originale zählen nicht mehr als erfolgreiche Sicherung.</p>
-        <p>Neue verschlüsselte Dateien binden jeden Block an eine zufällige Dateikennung. PVE1 und PVE2 bleiben lesbar; PVE3 benötigt eine aktualisierte App.</p>
-        <p>Der Server verhindert parallele Wiederverwendung von Anmeldevorgängen und Einmalcodes, widerruft alte Vorgänge nach Rücksetzungen und trennt gleichzeitige Uploads.</p>
+        <p>Moving files in or out of the vault resumes or rolls back after an interruption. Missing originals no longer count as a successful backup.</p>
+        <p>New encrypted files bind every block to a random file identifier. PVE1 and PVE2 stay readable; PVE3 needs an updated app.</p>
+        <p>The server prevents parallel reuse of sign-in attempts and one-time codes, revokes old attempts after resets and keeps simultaneous uploads apart.</p>
       </description>
     </release>
     <release version="3.49.1" date="2026-10-27">
