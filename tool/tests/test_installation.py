@@ -46,6 +46,23 @@ class Fernlaeufer:
 
 
 class Phasenvertrag(unittest.TestCase):
+    def test_windows_dateiliste_bleibt_aus_der_befehlszeile(self):
+        plan = {'dateien': {'ordner/Beispieldatei-%04d.txt' % i: 'a' * 64 for i in range(1000)}}
+        uebertragen = []
+        def runner(args):
+            if args[0] == 'scp':
+                uebertragen.append(json.loads(Path(args[-2]).read_text(encoding='utf-8')))
+            else:
+                self.assertLess(len(args[-1]), 8192)
+                cmd = base64.b64decode(args[-1].split('EncodedCommand ', 1)[1]).decode('utf-16le')
+                self.assertIn('-PlanDatei ', cmd)
+                self.assertNotIn('-PlanBase64 ', cmd)
+            return antwort(args, text='PV_RESULT {}')
+        installation = FernInstallation('windows', 'testziel', '3.49.5', runner=runner)
+        installation.zustand.update(plan)
+        installation._phase('tauschen')
+        self.assertEqual(uebertragen, [installation.zustand])
+
     def test_alle_plattformen_brechen_vor_dem_austausch_ab(self):
         for platform in ['linux', 'windows']:
             for phase in ['vorpruefen', 'vorbereiten']:

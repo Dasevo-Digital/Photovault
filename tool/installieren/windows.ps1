@@ -1,10 +1,17 @@
+[CmdletBinding(DefaultParameterSetName='Base64')]
 param(
   [Parameter(Mandatory=$true)][ValidateSet('vorpruefen','vorbereiten','tauschen','nachpruefen','zuruecksetzen','aufraeumen','abschliessen')][string]$Phase,
-  [Parameter(Mandatory=$true)][string]$PlanBase64
+  [Parameter(Mandatory=$true,ParameterSetName='Base64')][string]$PlanBase64,
+  [Parameter(Mandatory=$true,ParameterSetName='Datei')][string]$PlanDatei
 )
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=New-Object Text.UTF8Encoding
-$plan=ConvertFrom-Json ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($PlanBase64)))
+$text=if($PSCmdlet.ParameterSetName -eq 'Datei'){
+  Get-Content -LiteralPath $PlanDatei -Raw -Encoding UTF8
+}else{
+  [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($PlanBase64))
+}
+$plan=ConvertFrom-Json $text
 function Set-Wert($name,$wert) { $plan|Add-Member -NotePropertyName $name -NotePropertyValue $wert -Force }
 function Test-Geschlossen {
   $exe=Join-Path $plan.ziel 'photo_vault.exe'

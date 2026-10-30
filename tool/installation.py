@@ -280,13 +280,24 @@ class FernInstallation(Installationsablauf):
         self.plattform, self.host, self.runner = plattform, host, runner
         self.zustand = {'version': version, 'kennung': uuid.uuid4().hex}
         self.skript = 'pv_installation_' + self.zustand['kennung'] + ('.ps1' if plattform == 'windows' else '.py')
+        self.plan_datei = 'pv_installation_' + self.zustand['kennung'] + '.plan.json'
 
     def _phase(self, phase):
-        plan = base64.b64encode(json.dumps(self.zustand).encode()).decode()
         if self.plattform == 'windows':
-            code = '& (Join-Path $env:USERPROFILE \'' + self.skript + "') -Phase '" + phase + "' -PlanBase64 '" + plan + "'"
+            # Dateilisten wachsen mit dem Paket. Windows begrenzt die
+            # Befehlszeile; mehrfaches Base64-Kodieren überschritt sie schon
+            # bei einem vollständigen Desktoppaket. Nur Pfade gehen als
+            # Argumente mit, der Plan selbst als UTF-8-Datei.
+            with tempfile.TemporaryDirectory(prefix='pv_installationsplan_') as temp:
+                datei = Path(temp) / 'plan.json'
+                datei.write_text(json.dumps(self.zustand, ensure_ascii=False), encoding='utf-8')
+                r = self.runner(['scp', '-q', str(datei), self.host + ':' + self.plan_datei])
+                if r.returncode != 0:
+                    raise Installationsfehler('Der Installationsplan konnte nicht übertragen werden.')
+            code = '& (Join-Path $env:USERPROFILE \'' + self.skript + "') -Phase '" + phase + "' -PlanDatei (Join-Path $env:USERPROFILE '" + self.plan_datei + "')"
             command = 'powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + base64.b64encode(code.encode('utf-16le')).decode()
         else:
+            plan = base64.b64encode(json.dumps(self.zustand).encode()).decode()
             command = 'python3 ' + self.skript + ' --phase ' + phase + ' --plan ' + plan
         r = self.runner(['ssh', '-o', 'BatchMode=yes', self.host, command])
         if r.returncode != 0:
@@ -309,7 +320,7 @@ class FernInstallation(Installationsablauf):
 
     def _entferne_modul(self):
         if self.plattform == 'windows':
-            code = 'Remove-Item -LiteralPath (Join-Path $env:USERPROFILE \'' + self.skript + "') -ErrorAction SilentlyContinue"
+            code = 'Remove-Item -LiteralPath @((Join-Path $env:USERPROFILE \'' + self.skript + "'),(Join-Path $env:USERPROFILE '" + self.plan_datei + "')) -ErrorAction SilentlyContinue"
             command = 'powershell -NoProfile -EncodedCommand ' + base64.b64encode(code.encode('utf-16le')).decode()
         else:
             command = 'rm -- ' + self.skript

@@ -17,7 +17,7 @@ MODUL = Path(__file__).resolve().parents[1] / 'installieren/windows.ps1'
 
 def powershell(code):
     encoded = base64.b64encode(code.encode('utf-16le')).decode()
-    return subprocess.run([POWERSHELL, '-NoProfile', '-EncodedCommand', encoded], capture_output=True)
+    return subprocess.run([POWERSHELL, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], capture_output=True)
 
 
 def zitat(path):
@@ -61,9 +61,15 @@ class WindowsDateiphasen(unittest.TestCase):
         self.manifest.write_text(hashlib.sha256(self.paket.read_bytes()).hexdigest() + '  ' + self.paket.name + '\n')
         self.plan = {'version': '3.49.4', 'kennung': uuid.uuid4().hex, 'desktop': str(self.root)}
 
-    def phase(self, name, *, erfolgreich=True):
+    def phase(self, name, *, erfolgreich=True, datei=False):
         encoded = base64.b64encode(json.dumps(self.plan).encode()).decode()
-        r = powershell('& ' + zitat(MODUL) + ' -Phase ' + zitat(name) + ' -PlanBase64 ' + zitat(encoded))
+        if datei:
+            plan = self.root / 'plan.json'
+            plan.write_text(json.dumps(self.plan, ensure_ascii=False), encoding='utf-8')
+            argument = ' -PlanDatei ' + zitat(plan)
+        else:
+            argument = ' -PlanBase64 ' + zitat(encoded)
+        r = powershell('& ' + zitat(MODUL) + ' -Phase ' + zitat(name) + argument)
         self.assertEqual(r.returncode == 0, erfolgreich, r.stdout.decode(errors='replace') + r.stderr.decode(errors='replace'))
         if erfolgreich:
             text = r.stdout.decode('utf-8-sig', errors='replace')
@@ -81,6 +87,16 @@ class WindowsDateiphasen(unittest.TestCase):
         self.assertEqual((self.target / 'photo_vault.exe').read_bytes(), self.binaries['3.49.4'])
         self.assertEqual((Path(self.plan['alt']) / 'photo_vault.exe').read_bytes(), self.binaries['3.49.3'])
         self.assertFalse(Path(self.plan['stage']).exists())
+
+    def test_grosse_dateiliste_mit_unicode_wird_ueber_plan_datei_geprueft(self):
+        with zipfile.ZipFile(self.paket, 'a') as z:
+            for i in range(128):
+                z.writestr('PhotoVault/Beispieldatei-%04d-ä.txt' % i, b'synthetische Daten')
+        self.manifest.write_text(hashlib.sha256(self.paket.read_bytes()).hexdigest() + '  ' + self.paket.name + '\n')
+        for name in ['vorpruefen', 'vorbereiten', 'tauschen', 'nachpruefen', 'abschliessen']:
+            self.phase(name, datei=True)
+        self.assertEqual((self.target / 'photo_vault.exe').read_bytes(), self.binaries['3.49.4'])
+        self.assertEqual(len(list(self.target.glob('*.txt'))), 129)
 
     def test_beschaedigtes_paket_beruehrt_vorversion_nicht(self):
         self.paket.write_bytes(b'b kaputt')
