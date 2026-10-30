@@ -469,7 +469,7 @@
   "einstUeberwachtTitel": "Überwachter Ordner",
   "einstUeberwachtKeiner": "Kein Ordner eingerichtet",
   "einstUeberwachtErklaerung": "Was in einem gewählten Ordner auftaucht, wird von selbst in die Bibliothek aufgenommen – alle fünf Minuten und bei jedem Start.",
-  "einstUeberwachtAktiv": "Wird alle fünf Minuten geprüft. Die Dateien bleiben dort liegen.",
+  "einstUeberwachtAktiv": "Wird alle fünf Minuten geprüft. Eingelesen wird nur, was neu ist oder sich geändert hat; eine Datei, die gerade noch geschrieben wird, kommt beim nächsten Mal. Die Dateien bleiben dort liegen.",
   "einstUeberwachtWaehlen": "Ordner wählen…",
   "einstUeberwachtAndererWaehlen": "Anderen Ordner…",
   "einstUeberwachtBeenden": "Nicht mehr überwachen",

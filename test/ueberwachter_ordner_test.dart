@@ -8,14 +8,17 @@ import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 
-/// Der überwachte Ordner nimmt neue Dateien von selbst auf. Die beiden
-/// Zusagen, auf die es dabei ankommt: Es wird nichts doppelt importiert,
-/// und im fremden Ordner wird nichts verändert oder gelöscht.
+/// Der überwachte Ordner nimmt neue Dateien von selbst auf. Die Zusagen,
+/// auf die es dabei ankommt: Es wird nichts doppelt importiert, im fremden
+/// Ordner wird nichts verändert oder gelöscht, Eingelesenes wird nicht
+/// alle fünf Minuten wieder gelesen, und Halbfertiges kommt nicht an
+/// (#252).
 void main() {
   late Directory tempRoot;
   late Directory beobachtet;
   late AppDatabase db;
   late LibraryState lib;
+  late _Zaehlend importe;
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_watch_');
@@ -24,10 +27,11 @@ void main() {
     final paths = await StoragePaths.forTesting(
       Directory(p.join(tempRoot.path, 'lib')),
     );
+    importe = _Zaehlend(db, paths);
     lib = LibraryState()
       ..db = db
       ..paths = paths
-      ..importService = ImportService(db, paths);
+      ..importService = importe;
   });
 
   tearDown(() async {
@@ -35,9 +39,10 @@ void main() {
     tempRoot.deleteSync(recursive: true);
   });
 
-  File lege(String name, int fuellung) =>
-      File(p.join(beobachtet.path, name))
-        ..writeAsBytesSync(List.filled(64, fuellung));
+  /// Eine Datei, die schon eine Weile unverändert dort liegt.
+  File lege(String name, int fuellung) => File(p.join(beobachtet.path, name))
+    ..writeAsBytesSync(List.filled(64, fuellung))
+    ..setLastModifiedSync(DateTime.now().subtract(const Duration(minutes: 10)));
 
   test('ohne eingerichteten Ordner passiert nichts', () async {
     expect(await lib.pruefeUeberwachtenOrdner(), 0);
@@ -118,4 +123,77 @@ void main() {
       reason: 'eine abgezogene Platte darf den Programmstart nicht stören',
     );
   });
+
+  test('Eingelesenes wird nicht wieder gelesen (#252)', () async {
+    lege('a.jpg', 1);
+    lege('b.jpg', 2);
+    await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
+    await lib.pruefeUeberwachtenOrdner();
+    expect(importe.gelesen, 2);
+
+    await lib.pruefeUeberwachtenOrdner();
+    await lib.pruefeUeberwachtenOrdner();
+    expect(
+      importe.gelesen,
+      2,
+      reason: 'jeder Durchgang las bisher jede Datei ganz für ihre Prüfsumme',
+    );
+
+    // Was sich ändert, kommt wieder dran.
+    lege('a.jpg', 7);
+    expect(await lib.pruefeUeberwachtenOrdner(), 1);
+    expect(importe.gelesen, 3);
+  });
+
+  test('eine eben geschriebene Datei wartet einen Durchgang', () async {
+    await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
+    File(
+      p.join(beobachtet.path, 'frisch.jpg'),
+    ).writeAsBytesSync(List.filled(64, 9));
+
+    expect(await lib.pruefeUeberwachtenOrdner(), 0);
+    expect(importe.gelesen, 0);
+
+    expect(await lib.pruefeUeberwachtenOrdner(), 1);
+    expect(await db.select(db.assets).get(), hasLength(1));
+  });
+
+  test('eine wachsende Datei kommt erst vollständig an', () async {
+    await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
+    final datei = File(p.join(beobachtet.path, 'video.mp4'))
+      ..writeAsBytesSync(List.filled(64, 1));
+    expect(await lib.pruefeUeberwachtenOrdner(), 0);
+
+    // Die Kopie läuft weiter: andere Grösse, also wieder warten.
+    datei.writeAsBytesSync(List.filled(64, 1), mode: FileMode.append);
+    expect(await lib.pruefeUeberwachtenOrdner(), 0);
+
+    expect(await lib.pruefeUeberwachtenOrdner(), 1);
+    final a = (await db.select(db.assets).get()).single;
+    expect(a.fileSizeBytes, 128);
+  });
+}
+
+/// Zählt, wie oft der Import eine Datei anfasst – jedes Mal liest er sie
+/// für die Prüfsumme ganz.
+class _Zaehlend extends ImportService {
+  _Zaehlend(super.db, super.paths);
+
+  int gelesen = 0;
+
+  @override
+  Future<ImportResult> importFile(
+    String filePath, {
+    String? erwartetePruefsumme,
+    ImportDateiangaben? erwarteteAngaben,
+    Future<void> Function(String assetId)? beiEintrag,
+  }) {
+    gelesen++;
+    return super.importFile(
+      filePath,
+      erwartetePruefsumme: erwartetePruefsumme,
+      erwarteteAngaben: erwarteteAngaben,
+      beiEintrag: beiEintrag,
+    );
+  }
 }

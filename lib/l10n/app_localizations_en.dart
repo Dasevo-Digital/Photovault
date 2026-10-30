@@ -847,7 +847,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get einstUeberwachtAktiv =>
-      'Checked every five minutes. The files stay where they are.';
+      'Checked every five minutes. Only new or changed files are read; a file still being written is picked up next time. The files stay where they are.';
 
   @override
   String get einstUeberwachtWaehlen => 'Choose folder…';

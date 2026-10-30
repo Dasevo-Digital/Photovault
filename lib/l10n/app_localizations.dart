@@ -1443,7 +1443,7 @@ abstract class AppTexte {
   /// No description provided for @einstUeberwachtAktiv.
   ///
   /// In de, this message translates to:
-  /// **'Wird alle fünf Minuten geprüft. Die Dateien bleiben dort liegen.'**
+  /// **'Wird alle fünf Minuten geprüft. Eingelesen wird nur, was neu ist oder sich geändert hat; eine Datei, die gerade noch geschrieben wird, kommt beim nächsten Mal. Die Dateien bleiben dort liegen.'**
   String get einstUeberwachtAktiv;
 
   /// No description provided for @einstUeberwachtWaehlen.

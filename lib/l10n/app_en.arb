@@ -295,7 +295,7 @@
   "einstUeberwachtTitel": "Watched folder",
   "einstUeberwachtKeiner": "No folder set up",
   "einstUeberwachtErklaerung": "Anything that turns up in a chosen folder is taken into the library by itself – every five minutes and on every start.",
-  "einstUeberwachtAktiv": "Checked every five minutes. The files stay where they are.",
+  "einstUeberwachtAktiv": "Checked every five minutes. Only new or changed files are read; a file still being written is picked up next time. The files stay where they are.",
   "einstUeberwachtWaehlen": "Choose folder…",
   "einstUeberwachtAndererWaehlen": "Choose another folder…",
   "einstUeberwachtBeenden": "Stop watching",

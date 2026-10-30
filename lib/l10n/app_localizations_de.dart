@@ -857,7 +857,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get einstUeberwachtAktiv =>
-      'Wird alle fünf Minuten geprüft. Die Dateien bleiben dort liegen.';
+      'Wird alle fünf Minuten geprüft. Eingelesen wird nur, was neu ist oder sich geändert hat; eine Datei, die gerade noch geschrieben wird, kommt beim nächsten Mal. Die Dateien bleiben dort liegen.';
 
   @override
   String get einstUeberwachtWaehlen => 'Ordner wählen…';

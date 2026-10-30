@@ -2770,12 +2770,31 @@ class LibraryState extends ChangeNotifier {
   /// Verzögerung ohne Weiteres.
   static const _ordnerIntervall = Duration(minutes: 5);
 
+  /// Wie lange eine Datei unverändert sein muss, damit sie schon beim
+  /// ersten Hinsehen genommen wird. Was jünger ist, wartet einen Durchgang
+  /// und kommt, wenn Grösse und Änderungszeit dann noch stimmen.
+  static const _ordnerRuhe = Duration(minutes: 2);
+
+  /// Was im überwachten Ordner zuletzt lag, mit Grösse und Änderungszeit,
+  /// und ob es seither eingelesen ist (#252). Nur im Speicher: Nach einem
+  /// Start liest der erste Durchgang einmal alles.
+  final _ordnerGesehen =
+      <String, ({int groesse, DateTime geaendert, bool eingelesen})>{};
+
   /// Sieht im überwachten Ordner nach neuen Dateien und importiert sie.
   ///
   /// Gefahrlos wiederholbar: Der Import erkennt bereits vorhandene Dateien
-  /// an ihrer Prüfsumme und legt sie kein zweites Mal an. Deshalb genügt
-  /// hier schlichtes Nachsehen – es braucht keine Liste dessen, was schon
-  /// gesehen wurde, die bei jedem Fehlerfall aus dem Tritt geriete.
+  /// an ihrer Prüfsumme und legt sie kein zweites Mal an.
+  ///
+  /// **Nur, was neu ist oder sich geändert hat (#252).** Bis 3.49.7 ging
+  /// jeder Durchgang mit jeder Datei durch den Import, und der rechnet die
+  /// Prüfsumme über die ganze Datei, bevor er die Dublette erkennt: Ein
+  /// Ordner mit 20 GB wurde alle fünf Minuten vollständig gelesen.
+  ///
+  /// **Nichts Halbfertiges.** Eine Datei, die gerade hineinkopiert wird,
+  /// kam mit dem an, was bis dahin da war, und beim nächsten Durchgang die
+  /// vollständige als zweite Aufnahme. Jetzt nimmt der Ordner nur, was seit
+  /// [_ordnerRuhe] unverändert ist oder über zwei Durchgänge gleich blieb.
   ///
   /// Die Dateien bleiben, wo sie sind. Sie zu verschieben oder zu löschen
   /// wäre ein Eingriff in fremde Ordner, den ein Programm ungefragt nicht
@@ -2808,11 +2827,51 @@ class LibraryState extends ChangeNotifier {
       }
 
       final dateien = await importService.collectSupportedFilesInFolder(pfad);
-      if (dateien.isEmpty) return 0;
+      final jetzt = DateTime.now();
+      final faellig = <String>[];
+      for (final d in dateien) {
+        final FileStat st;
+        try {
+          st = await File(d).stat();
+        } on FileSystemException {
+          continue;
+        }
+        final vorher = _ordnerGesehen[d];
+        final gleich =
+            vorher != null &&
+            vorher.groesse == st.size &&
+            vorher.geaendert == st.modified;
+        if (gleich && vorher.eingelesen) continue;
+        _ordnerGesehen[d] = (
+          groesse: st.size,
+          geaendert: st.modified,
+          eingelesen: false,
+        );
+        if (gleich || jetzt.difference(st.modified) >= _ordnerRuhe) {
+          faellig.add(d);
+        }
+      }
+      // Verschwundenes vergessen – auch alles aus einem früheren Ordner.
+      final da = dateien.toSet();
+      _ordnerGesehen.removeWhere((d, _) => !da.contains(d));
+      if (faellig.isEmpty) return 0;
 
       var neue = 0;
-      await for (final p in importFiles(dateien)) {
+      await for (final p in importFiles(faellig)) {
         if (p.assetId != null) neue++;
+      }
+      // Erst nach dem ganzen Lauf: Bricht er ab, kommt alles noch einmal.
+      // Was als Dublette oder fehlerhaft übergangen wurde, gilt ebenfalls
+      // als gesehen; ändert es sich, kommt es wieder.
+      for (final d in faellig) {
+        final e = _ordnerGesehen[d];
+        if (e != null) {
+          _ordnerGesehen[d] = (
+            groesse: e.groesse,
+            geaendert: e.geaendert,
+            eingelesen: true,
+          );
+        }
       }
       return neue;
     } catch (e) {
