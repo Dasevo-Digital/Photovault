@@ -211,6 +211,20 @@ class BackupSchnappschussSpeicher {
         }
         werte['tags'] = tags[id] ?? const <String>[];
         werte['kiTags'] = ki[id] ?? const <String>[];
+        // Ältere Stände kennen die Spalten nicht – dann bleibt es leer.
+        bool wahr(String spalte) => spalten.contains(spalte) && r[spalte] == 1;
+        String? text(String spalte) =>
+            spalten.contains(spalte) ? r[spalte] as String? : null;
+        werte.addAll(
+          handarbeitAnDerAufnahme(
+            stackId: text('stack_id'),
+            isStackCover: wahr('is_stack_cover'),
+            aiCaptionEdited: wahr('ai_caption_edited'),
+            aiCaption: text('ai_caption'),
+            aiCaptionDe: text('ai_caption_de'),
+            faceScanExcluded: wahr('face_scan_excluded'),
+          ),
+        );
         fotos.add(BackupAufnahme(werte));
       }
       final alben = <BackupAlbum>[];

@@ -2132,7 +2132,7 @@
     }
   },
   "backupAusschnitteNeu": "Gesichtsausschnitte werden neu gezeichnet …",
-  "einstBackupManuellHinweis": "Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben); alles Übrige liesse sich danach nicht wiederherstellen.",
+  "einstBackupManuellHinweis": "Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben, Serien und Varianten, eigene Bildbeschreibungen); alles Übrige liesse sich danach nicht wiederherstellen.",
   "backupNichtGesichert": "{anzahl} Datei(en) konnten nicht gesichert werden – sie werden beim nächsten Lauf erneut versucht",
   "@backupNichtGesichert": {
     "placeholders": {

@@ -1093,9 +1093,12 @@ Dropbox- oder Google-Drive-Sync-Ordner):
 
 ```
 <Zielordner>/PhotoVault-Backup/
-  originals/{yyyy}/{mm}/{assetId}.{ext}   (nur neue/noch nicht gesicherte Dateien)
+  originals/{yyyy}/{mm}/{assetId}.{ext}   (nur, was dort noch fehlt)
   metadata.json                            (Favoriten, Beschreibungen, Tags,
-                                            Alben, Bewertungen, Farbmarken, Orte)
+                                            Alben, Bewertungen, Farbmarken, Orte,
+                                            Serien und Varianten, eigene
+                                            Bildbeschreibungen, Ausschluss von
+                                            der Gesichtssuche)
 ```
 
 **Fotos im gesperrten Ordner stehen dort nicht drin** – weder ihre Datei
@@ -1108,10 +1111,13 @@ Sicherungsziel wird nie gelöscht.
 
 **Einstellungen → Wiederherstellen** → Backup-Ordner wählen: importiert alle
 gefundenen Originaldateien (Duplikate werden über die Prüfsumme
-übersprungen) und wendet `metadata.json` an. Personen/Gesichter werden
-bewusst nicht mitgesichert – nach einer Wiederherstellung müssten Gesichter
-erneut zugeordnet werden (die Erkennung selbst läuft aber automatisch
-erneut, sobald das YuNet-Modell installiert ist).
+übersprungen) und wendet `metadata.json` an. Personen, Gesichter,
+Stammbaum und Reisen kommen nur aus einer Sicherung mit Passphrase zurück:
+Nur sie trägt den verschlüsselten Schnappschuss der Datenbank.
+
+Was eine Sicherung noch schreiben muss, entscheidet das Ziel: Liegt eine
+Datei dort schon, wird sie übersprungen. Ein zweiter Ordner oder ein neues
+Ziel bekommt so alle Originale.
 
 ## Wiederherstellungsprobe, Importvorschau und Konflikte
 

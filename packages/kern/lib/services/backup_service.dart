@@ -568,6 +568,14 @@ class BackupService {
         // die dieses Feld nicht kennt, liest die Sicherung weiterhin – sie
         // bekommt dann alles als Handvergabe, also den sicheren Fall.
         'kiTags': (kiTagsByAssetId[a.id] ?? const <String>{}).toList(),
+        ...handarbeitAnDerAufnahme(
+          stackId: a.stackId,
+          isStackCover: a.isStackCover,
+          aiCaptionEdited: a.aiCaptionEdited,
+          aiCaption: a.aiCaption,
+          aiCaptionDe: a.aiCaptionDe,
+          faceScanExcluded: a.faceScanExcluded,
+        ),
       });
     }
 

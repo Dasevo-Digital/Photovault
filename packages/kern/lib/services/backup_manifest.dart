@@ -15,6 +15,33 @@ class BackupAufnahme {
   String? get ablage => werte['backupRelativePath'] as String?;
 }
 
+/// Was an der Aufnahme selbst von Hand gesetzt wurde und sonst in keiner
+/// Sicherung stand (#244): die Zugehörigkeit zu einer Serie oder einem
+/// Variantenstapel samt Titelbild, eine von Hand geschriebene
+/// Bildbeschreibung und der Ausschluss von der Gesichtssuche. Nach einer
+/// Wiederherstellung waren alle Stapel aufgelöst, und die Bilderkennung
+/// schrieb die korrigierten Beschreibungen neu.
+///
+/// Nur, was gesetzt ist: Eine Beschreibung, die das Modell schrieb,
+/// entsteht von selbst neu, und eine Sicherung ohne diese Schlüssel
+/// (vor #244) bedeutet „nichts dazu“, nicht „zurücksetzen“.
+Map<String, Object?> handarbeitAnDerAufnahme({
+  required String? stackId,
+  required bool isStackCover,
+  required bool aiCaptionEdited,
+  required String? aiCaption,
+  required String? aiCaptionDe,
+  required bool faceScanExcluded,
+}) => {
+  if (stackId != null) ...{'stackId': stackId, 'isStackCover': isStackCover},
+  if (aiCaptionEdited) ...{
+    'aiCaptionEdited': true,
+    'aiCaption': aiCaption,
+    'aiCaptionDe': aiCaptionDe,
+  },
+  if (faceScanExcluded) 'faceScanExcluded': true,
+};
+
 class BackupAlbum {
   BackupAlbum({required this.name, required List<String> aufnahmen})
     : aufnahmen = List.unmodifiable(aufnahmen);

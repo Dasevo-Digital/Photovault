@@ -6498,7 +6498,7 @@ abstract class AppTexte {
   /// No description provided for @einstBackupManuellHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben); alles Übrige liesse sich danach nicht wiederherstellen.'**
+  /// **'Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben, Serien und Varianten, eigene Bildbeschreibungen); alles Übrige liesse sich danach nicht wiederherstellen.'**
   String get einstBackupManuellHinweis;
 
   /// No description provided for @backupNichtGesichert.

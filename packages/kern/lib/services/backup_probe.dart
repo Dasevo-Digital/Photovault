@@ -218,6 +218,14 @@ extension BackupWiederherstellungsprobe on BackupService {
                 a.locationState != foto['locationState']) ||
             (foto.containsKey('locationCountry') &&
                 a.locationCountry != foto['locationCountry']) ||
+            // Handarbeit an der Aufnahme (#244). Stapel nicht: Die
+            // Stichprobe trägt selten mehr als ein Mitglied desselben.
+            (foto['faceScanExcluded'] == true) != a.faceScanExcluded ||
+            (foto['aiCaptionEdited'] == true &&
+                ((a.aiCaption ?? '').trim() !=
+                        ('${foto['aiCaption'] ?? ''}').trim() ||
+                    (a.aiCaptionDe ?? '').trim() !=
+                        ('${foto['aiCaptionDe'] ?? ''}').trim())) ||
             tags.length != erwartet.length ||
             !tags.containsAll(erwartet)) {
           throw const FormatException('pv_probe_metadaten');

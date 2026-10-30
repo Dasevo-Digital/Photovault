@@ -484,6 +484,7 @@ class BackupWiederhersteller {
       }
     }
     // Die verbleibende reine Datenbankarbeit bleibt gebündelt.
+    final stapelMitglieder = <String, List<(String, bool)>>{};
     await _db.transaction(() async {
       for (final entry in assetsJson) {
         try {
@@ -570,9 +571,44 @@ class BackupWiederhersteller {
               ),
             );
           }
+          // Handarbeit an der Aufnahme selbst (#244, siehe
+          // [handarbeitAnDerAufnahme]). Die Beschreibung als Handvergabe:
+          // So schreibt die Bilderkennung sie nicht neu.
+          if (entry['faceScanExcluded'] == true) {
+            await _db.fuehreAus(GesichtssucheAusnehmen(assetId, true));
+          }
+          if (entry['aiCaptionEdited'] == true) {
+            for (final (schluessel, deutsch) in const [
+              ('aiCaption', false),
+              ('aiCaptionDe', true),
+            ]) {
+              if (entry[schluessel] case final String text
+                  when text.trim().isNotEmpty) {
+                await _db.fuehreAus(
+                  BildbeschreibungSetzen(assetId, text, deutsch: deutsch),
+                );
+              }
+            }
+          }
+          if (entry['stackId'] case final String stapel) {
+            (stapelMitglieder[stapel] ??= []).add((
+              assetId,
+              entry['isStackCover'] == true,
+            ));
+          }
         } catch (e) {
           if (streng) rethrow;
           _problem('pv_restore_metadaten', e);
+        }
+      }
+      // Stapel erst, wenn alle Mitglieder da sind.
+      for (final MapEntry(key: stapel, value: mitglieder)
+          in stapelMitglieder.entries) {
+        try {
+          await _stapleWiederAuf(stapel, mitglieder);
+        } catch (e) {
+          if (streng) rethrow;
+          _problem('pv_restore_stapel', e);
         }
       }
     });
@@ -598,6 +634,39 @@ class BackupWiederhersteller {
         _problem('pv_restore_album', e);
       }
     }
+  }
+
+  /// Bildet einen gesicherten Stapel aus [mitglieder] (Kennung hier, ob
+  /// Titelbild) neu – als Serie oder als Variantenstapel, je nach Kennung.
+  ///
+  /// Was im Ziel schon gestapelt ist, bleibt, wie es ist: Wer dieselbe
+  /// Bibliothek zurückspielt, hat den Stapel noch, und eine Aufnahme kann
+  /// nur in einem liegen. Bleibt weniger als ein Paar übrig (etwa weil
+  /// Dateien fehlten), ist es kein Stapel.
+  Future<void> _stapleWiederAuf(
+    String stapel,
+    List<(String, bool)> mitglieder,
+  ) async {
+    final schonDa = await (_db.select(
+      _db.assets,
+    )..where((t) => t.stackId.equals(stapel))).get();
+    if (schonDa.isNotEmpty) return;
+    final frei = [
+      for (final m in mitglieder)
+        if ((await _db.assetById(m.$1))?.stackId == null) m,
+    ];
+    if (frei.length < 2) return;
+    final ids = [for (final m in frei) m.$1];
+    final titel = frei.firstWhere((m) => m.$2, orElse: () => frei.first).$1;
+    await _db.fuehreAus(
+      istVariantenstapel(stapel)
+          ? VariantenBilden(
+              stapel.substring(variantenstapelPraefix.length),
+              ids,
+              titel,
+            )
+          : SerieBilden(stapel, ids, titel),
+    );
   }
 }
 
