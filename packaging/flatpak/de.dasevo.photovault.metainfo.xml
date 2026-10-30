@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.7" date="2026-10-30">
+      <description>
+        <p>The image editor now works on the full-resolution original and keeps it. For HEIC, RAW, PSD and files over 32 MB it used to edit the 2048-pixel preview and replace the original with it, deleting originals other than JPEG for good. Saving now shows the edited version and keeps the previous original as a variant in the same stack.</p>
+        <p>Cleaning up duplicates keeps the full-resolution version: a downscaled copy no longer wins because it measures sharper, a RAW file wins over a JPEG of the same size, and variants of a stack are no longer offered as duplicates. In a library connected to a server the editor is switched off instead of leaving a changed or missing file behind.</p>
+      </description>
+    </release>
     <release version="3.49.6" date="2026-10-30">
       <description>
         <p>Backups now check the destination for what is missing instead of trusting a "backed up" mark on each photo. A second drive, a new cloud folder or an emptied folder used to receive no older originals at all, only the list describing them.</p>
