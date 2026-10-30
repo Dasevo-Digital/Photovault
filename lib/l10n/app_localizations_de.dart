@@ -3145,7 +3145,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get bearbSpeichernText =>
-      'Die Originaldatei wird durch die bearbeitete Version ersetzt. Das lässt sich nicht rückgängig machen.';
+      'Das Foto zeigt danach die bearbeitete Fassung. Das bisherige Original bleibt als Variante im selben Stapel erhalten.';
 
   @override
   String get bearbNichtFinalisiert => 'Bild konnte nicht finalisiert werden.';

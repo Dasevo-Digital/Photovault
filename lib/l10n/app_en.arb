@@ -1036,7 +1036,7 @@
   "bearbBildNichtLesbar": "The image could not be read.",
   "bearbBildNichtLesbarFehler": "The image could not be read: {fehler}",
   "bearbSpeichernTitel": "Save your changes?",
-  "bearbSpeichernText": "The original file is replaced by the edited version. This cannot be undone.",
+  "bearbSpeichernText": "The photo then shows the edited version. The previous original is kept as a variant in the same stack.",
   "bearbNichtFinalisiert": "The image could not be finalised.",
   "bearbZuschneidenAnwenden": "Apply the crop",
   "bearbTitel": "Edit",

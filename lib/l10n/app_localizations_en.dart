@@ -3121,7 +3121,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get bearbSpeichernText =>
-      'The original file is replaced by the edited version. This cannot be undone.';
+      'The photo then shows the edited version. The previous original is kept as a variant in the same stack.';
 
   @override
   String get bearbNichtFinalisiert => 'The image could not be finalised.';

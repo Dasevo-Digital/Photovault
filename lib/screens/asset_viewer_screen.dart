@@ -903,11 +903,18 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                   await _refreshCurrentAsset();
                 },
               ),
+            // Verbunden abgeschaltet (#250): Das Speichern tauscht die Datei
+            // des Originals, und die liegt beim Server.
             if (asset.type == 'IMAGE' && !asset.isLocked)
               IconButton(
                 icon: const Icon(Icons.tune),
-                tooltip: AppTexte.of(context).viewerBearbeiten,
-                onPressed: _editAsset,
+                tooltip: (widget.library?.verbunden ?? false)
+                    ? '${AppTexte.of(context).viewerBearbeiten}: '
+                          '${AppTexte.of(context).nurOhneServer}'
+                    : AppTexte.of(context).viewerBearbeiten,
+                onPressed: (widget.library?.verbunden ?? false)
+                    ? null
+                    : _editAsset,
               ),
             if (asset.type == 'VIDEO' && !asset.isLocked)
               IconButton(

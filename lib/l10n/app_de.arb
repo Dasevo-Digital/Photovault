@@ -1651,7 +1651,7 @@
     }
   },
   "bearbSpeichernTitel": "Änderungen speichern?",
-  "bearbSpeichernText": "Die Originaldatei wird durch die bearbeitete Version ersetzt. Das lässt sich nicht rückgängig machen.",
+  "bearbSpeichernText": "Das Foto zeigt danach die bearbeitete Fassung. Das bisherige Original bleibt als Variante im selben Stapel erhalten.",
   "bearbNichtFinalisiert": "Bild konnte nicht finalisiert werden.",
   "bearbZuschneidenAnwenden": "Zuschneiden anwenden",
   "bearbTitel": "Bearbeiten",

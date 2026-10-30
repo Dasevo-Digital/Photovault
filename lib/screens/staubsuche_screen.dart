@@ -328,16 +328,18 @@ class _Fundliste extends StatelessWidget {
         OutlinedButton.icon(
           icon: const Icon(Icons.healing_outlined),
           label: Text(t.staubImEditorOeffnen),
-          onPressed: () => Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(
-              builder: (_) => ImageEditorScreen(
-                asset: beispiel,
-                db: library.db,
-                paths: library.paths,
-                modelsDir: library.modelsDir,
-              ),
-            ),
-          ),
+          onPressed: library.verbunden
+              ? null
+              : () => Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (_) => ImageEditorScreen(
+                      asset: beispiel,
+                      db: library.db,
+                      paths: library.paths,
+                      modelsDir: library.modelsDir,
+                    ),
+                  ),
+                ),
         ),
       ],
     );

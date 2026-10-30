@@ -5414,7 +5414,7 @@ abstract class AppTexte {
   /// No description provided for @bearbSpeichernText.
   ///
   /// In de, this message translates to:
-  /// **'Die Originaldatei wird durch die bearbeitete Version ersetzt. Das lässt sich nicht rückgängig machen.'**
+  /// **'Das Foto zeigt danach die bearbeitete Fassung. Das bisherige Original bleibt als Variante im selben Stapel erhalten.'**
   String get bearbSpeichernText;
 
   /// No description provided for @bearbNichtFinalisiert.

@@ -611,7 +611,13 @@ echter Hardware.
 - **Histogramm** im Entwickeln-Screen, umschaltbar zwischen **Helligkeit**
   (Luma-gewichtet) und **RGB** (die drei Kanäle additiv überlagert) –
   aktualisiert sich live zu den Reglern
-- **Bildeditor** für nicht-RAW-Fotos
+- **Bildeditor** – Zuschneiden, Drehen, Spiegeln, Geradeziehen,
+  Perspektive und Retusche, immer auf dem Original in voller Auflösung
+  (HEIC und RAW wandelt das System dafür in voller Grösse). Gespeichert
+  wird als JPEG: Das Foto zeigt danach die bearbeitete Fassung, das
+  bisherige Original bleibt als Variante im selben Stapel und ist von der
+  Gesichtssuche ausgenommen. In einer mit dem Server verbundenen
+  Bibliothek ist der Editor noch abgeschaltet.
 - **Einzelbild aus einem Video sichern** – im Vollbild hält ein Knopf
   oben rechts das Video an und legt das gezeigte Bild in voller Auflösung
   als eigenes Foto ab. Das Foto bekommt Aufnahmezeit, Ort und Kamera des

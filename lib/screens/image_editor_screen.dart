@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 
@@ -18,7 +17,10 @@ import 'package:kern/services/kratzersuche.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:kern/db/database.dart';
+import '../services/bearbeitung_speichern.dart';
 import '../services/bilddekodierung.dart';
+import '../services/serversperre.dart';
+import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
@@ -31,8 +33,11 @@ import '../services/meldungsdienst.dart';
 /// selbst über die Isolate-Grenze schicken zu müssen).
 typedef _ImageEditResult = ({Uint8List bytes, int width, int height});
 
+// Zwischenschritte in höchster Qualität: Jedes Werkzeug kodiert neu, und
+// mit 90 verlor ein Foto nach fünf Handgriffen fünfmal (#248). Erst das
+// Speichern kodiert einmal mit der endgültigen Qualität.
 _ImageEditResult? _encodeResult(img.Image image) => (
-  bytes: Uint8List.fromList(img.encodeJpg(image, quality: 90)),
+  bytes: Uint8List.fromList(img.encodeJpg(image, quality: 100)),
   width: image.width,
   height: image.height,
 );
@@ -116,29 +121,26 @@ _ImageEditResult? _cropImageIsolate(_CropArgs args) {
   return _encodeResult(cropped);
 }
 
-/// Finale, etwas höherwertige JPEG-Encodierung beim Speichern (siehe
-/// [_ImageEditorScreenState._save]) – separat von den Zwischenschritten,
-/// die für eine flüssige Vorschau bewusst mit niedrigerer Qualität
-/// encodieren.
 Kratzerfund _kratzerIsolate(Uint8List bytes) {
   final bild = img.decodeImage(bytes);
   if (bild == null) throw StateError('nicht dekodierbar');
   return sucheKratzer(bild);
 }
 
+/// Die endgültige JPEG-Kodierung beim Speichern (siehe
+/// [_ImageEditorScreenState._save]).
 Uint8List? _finalizeImageIsolate(Uint8List bytes) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return null;
-  return Uint8List.fromList(img.encodeJpg(decoded, quality: 92));
+  return Uint8List.fromList(img.encodeJpg(decoded, quality: 95));
 }
 
-/// Grundlegende Bildbearbeitung (Zuschneiden, Spiegeln, Drehen) direkt auf
-/// der Originaldatei. Bewusst destruktiv – ersetzt die Originaldatei ohne
-/// Bearbeitungs-Historie oder "Zurücksetzen auf Original": eine
-/// nicht-destruktive Bearbeitung (mit dauerhaft aufbewahrten Ausgangsdaten)
-/// wäre ein eigenständiges, deutlich größeres Feature. Nur für Fotos, nicht
-/// für gesperrte (verschlüsselte) Assets, um die Wiederverschlüsselung nach
-/// dem Speichern nicht mit abdecken zu müssen.
+/// Grundlegende Bildbearbeitung (Zuschneiden, Spiegeln, Drehen, Retusche)
+/// auf dem Original in voller Auflösung. Gespeichert wird über
+/// [speichereBearbeitung]: Die Aufnahme trägt danach die bearbeitete
+/// Fassung, das bisherige Original bleibt als Variante im Stapel (#248).
+/// Nur für Fotos, nicht für gesperrte (verschlüsselte) Assets, um die
+/// Wiederverschlüsselung nach dem Speichern nicht mit abdecken zu müssen.
 class ImageEditorScreen extends StatefulWidget {
   final AssetData asset;
   final AppDatabase db;
@@ -149,12 +151,17 @@ class ImageEditorScreen extends StatefulWidget {
   /// und sagt im Hinweistext, was fehlt (siehe `_retuscheMoeglich`).
   final String? modelsDir;
 
+  /// Wandelt HEIC, RAW und Co. in voller Grösse; ohne Angabe der Weg der
+  /// App ([Bildwerkzeuge.standard]).
+  final Bildwerkzeuge? bildwerkzeuge;
+
   const ImageEditorScreen({
     super.key,
     required this.asset,
     required this.db,
     required this.paths,
     this.modelsDir,
+    this.bildwerkzeuge,
   });
 
   @override
@@ -173,6 +180,11 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
       false; // Dreh-/Spiegel-/Zuschneide-Operation läuft im Hintergrund-Isolate.
   bool _saving = false;
   String? _error;
+
+  /// Ob schon ein Werkzeug etwas verändert hat. Vorher gibt es nichts zu
+  /// speichern – ein Speichern hätte nur das Original neu kodiert und als
+  /// Variante daneben gelegt.
+  bool _geaendert = false;
 
   bool _cropping = false;
 
@@ -209,18 +221,44 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     _load();
   }
 
+  /// Das Original in voller Auflösung – nie die Vorschau.
+  ///
+  /// Die Vorschau hat höchstens 2048 Pixel (`vorschauKante`) und gibt es
+  /// für HEIC, RAW, PSD und alle Dateien über 32 MB. Bis 3.49.6 las der
+  /// Editor sie statt des Originals, und das Speichern machte aus einem
+  /// 48-MP-DNG ein 3-MP-JPEG (#248). HEIC und RAW wandelt jetzt das System
+  /// in voller Grösse; was `package:image` selbst liest, kommt unverändert.
+  Future<Uint8List?> _vollesBild() async {
+    final datei = widget.paths.absolute(widget.asset.relativePath);
+    final endung = p.extension(datei.path).toLowerCase();
+    final inhalt = await ImportService.inhaltskennung(datei, null);
+    bool gewandelt(String? e) =>
+        e != null &&
+        (heicAndRawExtensions.contains(e) || nurMitVorschau.contains(e));
+    if (gewandelt(endung) || gewandelt(inhalt)) {
+      final werkzeuge = widget.bildwerkzeuge ?? Bildwerkzeuge.standard;
+      final voll = await werkzeuge.convertToJpegBytes(
+        datei,
+        maxDimension: null,
+        quality: 1.0,
+      );
+      if (voll != null) return voll;
+      // PSD liest `package:image` auch selbst; HEIC und RAW nicht – dann
+      // bleibt es bei „nicht lesbar“ statt bei der Vorschau.
+    }
+    return datei.readAsBytes();
+  }
+
   Future<void> _load() async {
     try {
-      final relativePath =
-          widget.asset.previewRelativePath ?? widget.asset.relativePath;
-      final bytes = await widget.paths.absolute(relativePath).readAsBytes();
-      // Nur zum Ermitteln der Abmessungen – läuft einmalig beim Öffnen des
-      // Editors (nicht pro Werkzeug-Klick), ein einmaliger kurzer Ruckler
-      // ist hier anders als bei den Bearbeitungs-Operationen unten
-      // akzeptabel.
-      final decoded = img.decodeImage(bytes);
+      final bytes = await _vollesBild();
+      // Nur zum Ermitteln der Abmessungen, einmal beim Öffnen – im
+      // Hintergrund, denn das volle Original kann 48 MP haben.
+      final decoded = bytes == null
+          ? null
+          : await compute(img.decodeImage, bytes);
       if (!mounted) return;
-      if (decoded == null) {
+      if (bytes == null || decoded == null) {
         setState(() {
           _loading = false;
           _error = AppTexte.of(context).bearbBildNichtLesbar;
@@ -253,6 +291,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         _currentBytes = result.bytes;
         _currentWidth = result.width;
         _currentHeight = result.height;
+        _geaendert = true;
       }
       _cropping = false;
       _cropRect = null;
@@ -497,6 +536,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         _currentBytes = kodiert.bytes;
         _currentWidth = kodiert.width;
         _currentHeight = kodiert.height;
+        _geaendert = true;
         _retuscheBeenden();
         _processing = false;
       });
@@ -583,47 +623,16 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     try {
       final jpegBytes = await compute(_finalizeImageIsolate, currentBytes);
       if (jpegBytes == null) throw Exception(nichtFinalisiert);
-      final checksum = sha256.convert(jpegBytes).toString();
-
-      // Original bereits ein JPEG -> an Ort und Stelle ersetzen. Andere
-      // Formate (HEIC/PNG/RAW & Co.) -> neue .jpg-Datei anlegen und die alte
-      // Originaldatei danach entfernen, damit Dateiendung und tatsächlicher
-      // Inhalt nicht auseinanderlaufen.
-      final ext = p.extension(widget.asset.relativePath).toLowerCase();
-      final keepsSamePath = ext == '.jpg' || ext == '.jpeg';
-      final newRelativePath = keepsSamePath
-          ? widget.asset.relativePath
-          : widget.paths.originalRelativePath(
-              widget.asset.fileCreatedAt,
-              widget.asset.id,
-              '.jpg',
-            );
-
-      final targetFile = widget.paths.absolute(newRelativePath);
-      await targetFile.parent.create(recursive: true);
-      await targetFile.writeAsBytes(jpegBytes);
-      if (!keepsSamePath) {
-        await widget.paths.deletePermanently(widget.asset.relativePath);
-      }
-
-      await widget.db.setEditedAssetFile(
-        widget.asset.id,
-        relativePath: newRelativePath,
-        checksum: checksum,
-      );
-
-      final importService = ImportService(widget.db, widget.paths);
-      final thumbResult = await importService.generateThumbnailAndPreview(
-        targetFile,
-        widget.asset.id,
-        '.jpg',
-        alreadyReadBytes: jpegBytes,
-      );
-      await widget.db.updateThumbnailInfo(
-        widget.asset.id,
-        thumbnailRelativePath: thumbResult.thumbnailRelativePath,
-        widthPx: thumbResult.width,
-        heightPx: thumbResult.height,
+      await speichereBearbeitung(
+        db: widget.db,
+        paths: widget.paths,
+        asset: widget.asset,
+        jpeg: jpegBytes,
+        importe: ImportService(
+          widget.db,
+          widget.paths,
+          bildwerkzeuge: widget.bildwerkzeuge,
+        ),
       );
 
       // Die Datei ist neu, ihr Pfad ist derselbe – und Flutter merkt
@@ -635,7 +644,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        melde.fehler(AppTexte.of(context).bearbSpeichernFehler('$e'));
+        // Verbunden lehnt die Kopie das Speichern ab (#250); gesagt wird
+        // dann, was es heisst, nicht die rohe Datenbankmeldung.
+        melde.fehler(
+          istServersperre(e)
+              ? AppTexte.of(context).nurOhneServer
+              : AppTexte.of(context).bearbSpeichernFehler('$e'),
+        );
       }
     }
   }
@@ -679,6 +694,12 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                   bytes,
                   width: displayW,
                   height: displayH,
+                  // In Anzeigegrösse dekodiert: Das volle Original eines
+                  // 48-MP-Fotos wären knapp 200 MB Bildspeicher.
+                  cacheWidth:
+                      (displayW * MediaQuery.devicePixelRatioOf(context))
+                          .ceil()
+                          .clamp(1, width),
                   fit: BoxFit.fill,
                   gaplessPlayback: true,
                 ),
@@ -995,6 +1016,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         _currentBytes = kodiert.bytes;
         _currentWidth = kodiert.width;
         _currentHeight = kodiert.height;
+        _geaendert = true;
         _processing = false;
       });
     } catch (e) {
@@ -1054,7 +1076,9 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             IconButton(
               icon: const Icon(Icons.check),
               tooltip: AppTexte.of(context).allgSpeichern,
-              onPressed: _currentBytes == null || _processing ? null : _save,
+              onPressed: _currentBytes == null || _processing || !_geaendert
+                  ? null
+                  : _save,
             ),
         ],
       ),

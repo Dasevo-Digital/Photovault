@@ -329,18 +329,25 @@ extension ErinnerungsAbfragen on AppDatabase {
   }
 
   /// Ersetzt Original-Datei (Pfad + Prüfsumme) eines Assets nach einer
-  /// Bildbearbeitung (Zuschneiden/Drehen/Spiegeln, siehe ImageEditorScreen).
-  /// Löscht eine ggf. vorhandene konvertierte Vorschau (HEIC/RAW & Co.):
-  /// nach der Bearbeitung ist die neue Originaldatei selbst bereits ein
-  /// direkt darstellbares JPEG.
+  /// Bildbearbeitung (Zuschneiden/Drehen/Spiegeln, siehe
+  /// `speichereBearbeitung`). Löscht eine ggf. vorhandene konvertierte
+  /// Vorschau (HEIC/RAW & Co.): nach der Bearbeitung ist die neue
+  /// Originaldatei selbst bereits ein direkt darstellbares JPEG.
+  ///
+  /// [fileSizeBytes] ist die Grösse der neuen Datei. Ohne sie führte ein
+  /// 3-MP-JPEG weiter die 68 MB seines DNG.
   Future<void> setEditedAssetFile(
     String assetId, {
     required String relativePath,
     required String checksum,
+    int? fileSizeBytes,
   }) => (update(assets)..where((t) => t.id.equals(assetId))).write(
     AssetsCompanion(
       relativePath: Value(relativePath),
       checksum: Value(checksum),
+      fileSizeBytes: fileSizeBytes == null
+          ? const Value.absent()
+          : Value(fileSizeBytes),
       previewRelativePath: const Value(null),
       // Ein evtl. vorhandenes entwickeltes Bild wurde für die ALTE
       // Pixel-Grundlage berechnet (vor Zuschnitt/Drehung) und würde nach
