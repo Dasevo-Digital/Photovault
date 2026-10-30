@@ -997,7 +997,11 @@ im Hintergrund laufen sollen:
   wäre quadratisch, deshalb läuft eine Vorfilterung über 32 zufällige
   Projektionen (eine Form von Locality-Sensitive Hashing). An einer
   gewachsenen Bibliothek gegen einen vollständigen Lauf gehalten: 41 von
-  42 Gruppen
+  42 Gruppen. Beim Aufräumen bleibt je Gruppe ein Foto: ein Favorit, sonst
+  das am besten bewertete, dann die volle Auflösung (eine Fassung mit
+  weniger als 1/1,2 der Pixel gilt als verkleinerte Kopie), dann ein RAW,
+  dann das schärfere. Varianten eines Stapels suchen nur mit ihrer
+  Hauptversion mit
 - **Serienbilder gruppieren** – gruppiert visuell ähnliche UND zeitlich nah
   beieinander aufgenommene Fotos zur Durchsicht. Hier ist die **Zeit** der
   Vorfilter, nicht die Ähnlichkeit: Eine Serie verlangt ohnehin höchstens

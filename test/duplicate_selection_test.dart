@@ -13,11 +13,12 @@ AssetData foto(
   int breite = 1000,
   int hoehe = 1000,
   int tagImJahr = 1,
+  String endung = '.jpg',
 }) {
   return AssetData(
     id: id,
-    originalFileName: '$id.jpg',
-    relativePath: 'originals/2026/01/$id.jpg',
+    originalFileName: '$id$endung',
+    relativePath: 'originals/2026/01/$id$endung',
     type: 'IMAGE',
     fileSizeBytes: 1000,
     checksum: id,
@@ -88,6 +89,59 @@ void main() {
         foto('gross', schaerfe: 100, breite: 4000, hoehe: 3000),
       ]);
       expect(gewinner.id, 'gross');
+    });
+
+    test('eine verkleinerte Kopie verliert, auch wenn sie schärfer misst '
+        '(#249)', () {
+      // Die Werte aus der Bibliothek, in der es auffiel: 48-MP-DNG gegen
+      // das 3-MP-JPEG, das der Editor aus seiner Vorschau gemacht hatte.
+      final gewinner = besterDerGruppe([
+        foto('jpeg', schaerfe: 133.5, breite: 2048, hoehe: 1536),
+        foto('dng', schaerfe: 89.6, breite: 6048, hoehe: 8064, endung: '.dng'),
+      ]);
+      expect(gewinner.id, 'dng');
+      expect(
+        zuLoeschendeDerGruppe([
+          foto('jpeg', schaerfe: 133.5, breite: 2048, hoehe: 1536),
+          foto(
+            'dng',
+            schaerfe: 89.6,
+            breite: 6048,
+            hoehe: 8064,
+            endung: '.dng',
+          ),
+        ]).map((a) => a.id),
+        ['jpeg'],
+      );
+    });
+
+    test('knapp kleinere Fassung: weiter entscheidet die Schärfe', () {
+      final gewinner = besterDerGruppe([
+        foto('gross', schaerfe: 50, breite: 4000, hoehe: 3000),
+        foto('scharf', schaerfe: 80, breite: 3800, hoehe: 2900),
+      ]);
+      expect(gewinner.id, 'scharf');
+    });
+
+    test('bei gleicher Grösse schlägt das RAW das schärfer messende JPEG', () {
+      final gewinner = besterDerGruppe([
+        foto('jpeg', schaerfe: 80, breite: 6000, hoehe: 4000),
+        foto('raw', schaerfe: 50, breite: 6000, hoehe: 4000, endung: '.CR3'),
+      ]);
+      expect(gewinner.id, 'raw');
+    });
+
+    test('die Grösse zählt gegen die grösste der Gruppe, nicht paarweise', () {
+      // Paarweise mit Schwelle verglichen wäre das nicht eindeutig: a/b und
+      // b/c liegen unter dem 1,2-Fachen, a/c darüber.
+      final gruppe = [
+        foto('a', schaerfe: 90, breite: 1000, hoehe: 1000),
+        foto('b', schaerfe: 60, breite: 1050, hoehe: 1050),
+        foto('c', schaerfe: 30, breite: 1150, hoehe: 1150),
+      ];
+      expect(besterDerGruppe(gruppe).id, 'b');
+      expect(besterDerGruppe(gruppe.reversed.toList()).id, 'b');
+      expect(besterDerGruppe([gruppe[1], gruppe[2], gruppe[0]]).id, 'b');
     });
 
     test('ist bei gleichen Werten reproduzierbar (ältestes gewinnt)', () {
