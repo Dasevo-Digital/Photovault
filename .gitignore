@@ -1,4 +1,7 @@
 # Miscellaneous
+# Git-Bündel für die Testrechner gehören nicht ins Repo (#246); release.py
+# legt seine im Temp-Ordner ab.
+/*.bundle
 *.class
 *.log
 *.pyc
