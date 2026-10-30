@@ -514,6 +514,9 @@ Future<void> _runBackup(Einstellungsstand stand) async {
 
 Future<void> _runRestore(Einstellungsstand stand) async {
   final context = stand.kontext;
+  // Verbunden geht es nicht (#245) – gesagt wird es vor dem Ordnerdialog,
+  // nicht erst, wenn jede Datei gescheitert ist (serversperre.dart).
+  stand.library.pruefeWiederherstellen();
   final source = await FilePicker.getDirectoryPath(
     dialogTitle: AppTexte.of(context).einstBackupOrdnerWaehlen,
   );
@@ -549,10 +552,9 @@ Future<void> _runRestore(Einstellungsstand stand) async {
       return ProgressDialog(
         title: t.einstBackupWiederherstellenLaeuft,
         fehlerText: (e) => fehlertext(dialogContext, e),
-        stream: stand.library.backupService
+        stream: stand.library
             .restoreFromBackup(
               wurzel,
-              stand.library.importService,
               passphrase: passphrase,
               generationSnapshotPath: generation?.snapshotPath,
             )

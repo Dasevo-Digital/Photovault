@@ -14,6 +14,7 @@ import '../../services/geo_data_download_service.dart';
 import '../../services/groessentext.dart';
 import '../../services/library_location.dart';
 import '../../services/meldungsdienst.dart';
+import '../../services/serversperre.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/model_download_service.dart';
 import '../../state/library_state.dart';
@@ -41,6 +42,7 @@ String datumZeitText(BuildContext context, DateTime zeitpunkt) {
 /// stillschweigend zu einer leeren Meldung wird.
 String fehlertext(BuildContext context, Object fehler) {
   final t = AppTexte.of(context);
+  if (istServersperre(fehler)) return t.nurOhneServer;
   return switch (fehler) {
     BackupBrauchtPassphrase() => t.backupPassphraseNoetig,
     BackupLaeuftBereits() => t.backupLaeuftBereits,

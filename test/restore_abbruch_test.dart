@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/native.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/import_service.dart';
@@ -18,6 +20,7 @@ import 'package:photo_vault/theme/app_theme.dart';
 class _Ordnerdialog extends FilePickerPlatform {
   _Ordnerdialog(this.pfad);
   final String pfad;
+  var gefragt = 0;
   @override
   Future<String?> getDirectoryPath({
     String? dialogTitle,
@@ -26,7 +29,10 @@ class _Ordnerdialog extends FilePickerPlatform {
     WindowsOptions windowsOptions = const WindowsOptions(),
     LinuxOptions linuxOptions = const LinuxOptions(),
     WebOptions webOptions = const WebOptions(),
-  }) async => pfad;
+  }) async {
+    gefragt++;
+    return pfad;
+  }
 }
 
 class _BackupZaehler extends BackupService {
@@ -88,6 +94,7 @@ void main() {
   late LibraryState lib;
   late _TestStand stand;
   late FilePickerPlatform vorher;
+  late _Ordnerdialog ordnerdialog;
   setUp(() async {
     temp = await Directory.systemTemp.createTemp('pv_abbruch_probe_');
     db = AppDatabase(NativeDatabase.memory());
@@ -105,7 +112,8 @@ void main() {
     stand = _TestStand(lib);
     vorher = FilePickerPlatform.instance;
     Directory('${temp.path}/backup/originals').createSync(recursive: true);
-    FilePickerPlatform.instance = _Ordnerdialog('${temp.path}/backup');
+    ordnerdialog = _Ordnerdialog('${temp.path}/backup');
+    FilePickerPlatform.instance = ordnerdialog;
   });
   tearDown(() async {
     FilePickerPlatform.instance = vorher;
@@ -114,7 +122,9 @@ void main() {
     await temp.delete(recursive: true);
   });
 
-  Future<void> oeffne(WidgetTester tester) async {
+  /// [fehler] nimmt auf, was der Knopf unbehandelt wirft – in der App
+  /// fängt das `richteServersperreEin` und zeigt den Grund.
+  Future<void> oeffne(WidgetTester tester, {List<Object>? fehler}) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -134,7 +144,15 @@ void main() {
       ),
     );
     await tester.runAsync(() async {
-      await tester.tap(find.byIcon(Icons.settings_backup_restore));
+      final tippen = find.byIcon(Icons.settings_backup_restore);
+      if (fehler == null) {
+        await tester.tap(tippen);
+      } else {
+        await runZonedGuarded(
+          () => tester.tap(tippen),
+          (e, _) => fehler.add(e),
+        );
+      }
       await Future<void>.delayed(const Duration(milliseconds: 80));
     });
     await tester.pumpAndSettle();
@@ -221,6 +239,28 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Verbunden: kein Ordnerdialog, kein Restore, ein Grund (#245)', (
+    tester,
+  ) async {
+    lib.verbindung = Verbindungsdatei(
+      server: Uri.parse('http://127.0.0.1:9'),
+      konto: 'erika',
+      geraet: 'Rechner',
+      token: 'probe',
+    );
+    final fehler = <Object>[];
+    await oeffne(tester, fehler: fehler);
+    expect(fehler.map((e) => '$e'), [contains('pv_nur_ueber_server')]);
+    expect(ordnerdialog.gefragt, 0);
+    // Auch an der Oberfläche vorbei: Der Weg selbst ist gesperrt.
+    await expectLater(
+      lib.restoreFromBackup(temp.path).drain<void>(),
+      throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
+    );
+    expect(backup.aufrufe, 0);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

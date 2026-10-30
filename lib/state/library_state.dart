@@ -3942,6 +3942,31 @@ class LibraryState extends ChangeNotifier {
       _sicherung.runAutoBackupNow(ziel);
   Future<void> runAutoBackupIfDue() => _sicherung.runAutoBackupIfDue();
 
+  /// Bricht ab, wenn die Bibliothek verbunden ist – für die Oberfläche,
+  /// damit sie es vor dem Ordnerdialog sagt (siehe [restoreFromBackup]).
+  void pruefeWiederherstellen() => _nurOhneServer();
+
+  /// Stellt eine Sicherung in dieser Bibliothek wieder her.
+  ///
+  /// **Nicht in einer verbundenen Kopie** (#245). Die Wiederherstellung
+  /// importiert über den Importdienst der Kopie, und dessen Einfügen
+  /// bricht am Schutz der abgeglichenen Tabellen ab. Bis dahin lief sie
+  /// trotzdem durch: Nichts kam an, jede Datei galt als gescheitert, und
+  /// warum, stand nirgends.
+  Stream<BackupProgress> restoreFromBackup(
+    String wurzel, {
+    String? passphrase,
+    String? generationSnapshotPath,
+  }) async* {
+    _nurOhneServer();
+    yield* backupService.restoreFromBackup(
+      wurzel,
+      importService,
+      passphrase: passphrase,
+      generationSnapshotPath: generationSnapshotPath,
+    );
+  }
+
   /// Warum das automatische Backup gerade nicht läuft, obwohl es fällig ist
   /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
   /// oder nicht fällig ist.
