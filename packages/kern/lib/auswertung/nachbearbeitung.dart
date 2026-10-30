@@ -195,10 +195,17 @@ class Nachbearbeitung {
       await db.trenneAssets(video.id, foto.id);
       geloest++;
     }
+    await verknuepfeOffeneLivePhotos();
+    return geloest;
+  }
+
+  /// Sucht für jedes unverknüpfte Video sein Foto – nach den Regeln von
+  /// [verknuepfeLivePhoto]. Nach einer Wiederherstellung aus einer
+  /// Sicherung, die die Paare noch nicht trug (#255).
+  Future<void> verknuepfeOffeneLivePhotos() async {
     for (final video in await db.unlinkedAssetsOfType('VIDEO')) {
       await verknuepfeLivePhoto(video);
     }
-    return geloest;
   }
 
   /// Entfernt die Gesichter auf Videohälften von Live Photos, die nur das

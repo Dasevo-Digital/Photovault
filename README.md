@@ -1109,7 +1109,8 @@ Dropbox- oder Google-Drive-Sync-Ordner):
   originals/{yyyy}/{mm}/{assetId}.{ext}   (nur, was dort noch fehlt)
   metadata.json                            (Favoriten, Beschreibungen, Tags,
                                             Alben, Bewertungen, Farbmarken, Orte,
-                                            Serien und Varianten, eigene
+                                            Serien und Varianten, Paare der
+                                            Live Photos, eigene
                                             Bildbeschreibungen, Ausschluss von
                                             der Gesichtssuche)
 ```

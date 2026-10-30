@@ -13,6 +13,7 @@ import 'aufnahmedatum.dart';
 import 'backup_manifest.dart';
 import 'backup_modelle.dart';
 import 'backup_restore_plan.dart';
+import 'backup_schnappschuss.dart';
 import 'blur_detection.dart';
 import 'face_engine_service.dart';
 import 'import_service.dart';
@@ -140,6 +141,16 @@ class BackupWiederhersteller {
           if (streng) rethrow;
           _problem('pv_restore_schnappschuss', e);
         }
+      }
+      try {
+        await _verknuepfeLivePhotos([
+          ...plan.manifest.livePaare,
+          if (plan.schnappschuss case final snapshot?)
+            ...BackupSchnappschussSpeicher().livePaareAusDatei(snapshot),
+        ]);
+      } on Object catch (e) {
+        if (streng) rethrow;
+        _problem('pv_restore_live_photos', e);
       }
       final ergebnis = bilanz(true);
       yield BackupProgress(
@@ -443,6 +454,33 @@ class BackupWiederhersteller {
   /// Eintrag (z.B. aus einem von Hand bearbeiteten oder von einer älteren
   /// App-Version stammenden Backup) bricht damit nicht den gesamten Restore
   /// ab, sondern wird übersprungen.
+  /// Verknüpft die Paare der Live Photos wieder (#255).
+  ///
+  /// Die Wiederherstellung importiert jede Datei für sich, ohne die
+  /// Nachbearbeitung des Imports. Bis 3.49.8 war danach kein Live Photo
+  /// mehr verknüpft: Jede Videohälfte stand als eigenes Video in der
+  /// Zeitleiste. Die Paare kommen als Prüfsummen aus der Beilage oder dem
+  /// Schnappschuss; verknüpft wird nur, was hier noch frei ist.
+  Future<int> _verknuepfeLivePhotos(Iterable<(String, String)> paare) async {
+    final nachPruefsumme = <String, AssetData>{
+      for (final a in await _db.select(_db.assets).get()) a.checksum: a,
+    };
+    final vergeben = <String>{
+      for (final a in nachPruefsumme.values)
+        if (a.linkedAssetId != null) a.id,
+    };
+    var n = 0;
+    for (final (x, y) in paare) {
+      final a = nachPruefsumme[x], b = nachPruefsumme[y];
+      if (a == null || b == null || a.id == b.id) continue;
+      if (vergeben.contains(a.id) || vergeben.contains(b.id)) continue;
+      await _db.linkAssets(a.id, b.id);
+      vergeben.addAll([a.id, b.id]);
+      n++;
+    }
+    return n;
+  }
+
   Future<void> _applyMetadataExport(
     BackupManifest manifest, {
     bool streng = false,

@@ -147,6 +147,29 @@ class BackupSchnappschussSpeicher {
 
   /// Auch alte Generationen besitzen ihren vollständigen Datenbankstand.
   /// Daraus entsteht dieselbe Metadatenstruktur wie bei neuen Manifesten.
+  /// Die Paare der Live Photos im Schnappschuss als Prüfsummen (#255).
+  ///
+  /// Für Sicherungen vor 3.49.9: Deren Beilage trägt keinen Partner, ihr
+  /// Schnappschuss aber jede Verknüpfung.
+  List<(String, String)> livePaareAusDatei(File datei) {
+    final db = sqlite3.open(datei.path, mode: OpenMode.readOnly);
+    try {
+      final spalten = {
+        for (final r in db.select('PRAGMA table_info(assets)')) r['name'],
+      };
+      if (!spalten.contains('linked_asset_id')) return const [];
+      return [
+        for (final r in db.select(
+          'SELECT a.checksum AS x, b.checksum AS y FROM assets a '
+          'JOIN assets b ON b.id = a.linked_asset_id',
+        ))
+          (r['x'] as String, r['y'] as String),
+      ];
+    } finally {
+      db.close();
+    }
+  }
+
   BackupManifest manifestAusDatei(File datei) {
     final db = sqlite3.open(datei.path, mode: OpenMode.readOnly);
     try {
@@ -160,6 +183,10 @@ class BackupSchnappschussSpeicher {
         for (final r in db.select('PRAGMA table_info(assets)')) r['name'],
       };
       final zeilen = db.select('SELECT * FROM assets');
+      // Der Partner eines Live Photos als Prüfsumme (#255).
+      final pruefsummeVon = {
+        for (final r in zeilen) r['id'] as String: r['checksum'] as String,
+      };
       final fotos = <BackupAufnahme>[];
       final hashes = <String, String>{};
       final tags = <String, List<String>>{}, ki = <String, List<String>>{};
@@ -183,6 +210,8 @@ class BackupSchnappschussSpeicher {
           'checksum': r['checksum'],
           'originalFileName': r['original_file_name'],
           'backupRelativePath': r['relative_path'],
+          if (spalten.contains('linked_asset_id'))
+            'livePartner': ?pruefsummeVon[r['linked_asset_id']],
         };
         const felder = {
           'is_favorite': 'isFavorite',

@@ -65,6 +65,16 @@ class BackupManifest {
   final List<BackupAlbum> alben;
   final List<RestoreProblem> probleme;
 
+  /// Die Paare der Live Photos als Prüfsummen (#255) – leer bei einer
+  /// Beilage vor 3.49.9.
+  Iterable<(String, String)> get livePaare sync* {
+    for (final a in aufnahmen) {
+      if (a.werte['livePartner'] case final String partner) {
+        yield (a.pruefsumme, partner);
+      }
+    }
+  }
+
   factory BackupManifest.ausText(String text, {bool streng = false}) {
     final j = (jsonDecode(text) as Map).cast<String, dynamic>();
     if (j['format'] != null && j['format'] != 1) {

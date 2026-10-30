@@ -620,11 +620,16 @@ class BackupService {
     // einebnet – siehe [AppDatabase.kiTagNamesByAssetId].
     final kiTagsByAssetId = await _db.kiTagNamesByAssetId();
 
+    // Für die Paare der Live Photos (#255): Der Partner steht als
+    // Prüfsumme darin, denn Kennungen vergibt die Wiederherstellung neu.
+    final pruefsummeVon = {for (final a in allAssets) a.id: a.checksum};
+
     final assetsJson = <Map<String, dynamic>>[];
     for (final a in allAssets) {
       assetsJson.add({
         'checksum': a.checksum,
         'originalFileName': a.originalFileName,
+        'livePartner': ?pruefsummeVon[a.linkedAssetId],
         // Die Wiederherstellung braucht diesen Pfad nicht, die
         // Sicherungsprüfung aber schon: Nur so kann sie eine vorhandene,
         // aber veränderte Datei klar von einer fehlenden unterscheiden,

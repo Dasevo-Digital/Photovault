@@ -3850,7 +3850,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get einstBackupManuellHinweis =>
-      'A backup with a passphrase also carries an encrypted snapshot of the database – people, family tree, trips, activities and saved searches come back when you restore. Without a passphrase the backup holds only the originals and the sidecars beside them (description, stars, colour label, location, tags, albums, series and variants, captions written by hand); everything else could not be restored afterwards.';
+      'A backup with a passphrase also carries an encrypted snapshot of the database – people, family tree, trips, activities and saved searches come back when you restore. Without a passphrase the backup holds only the originals and the sidecars beside them (description, stars, colour label, location, tags, albums, series and variants, Live Photo pairs, captions written by hand); everything else could not be restored afterwards.';
 
   @override
   String backupNichtGesichert(int anzahl) {

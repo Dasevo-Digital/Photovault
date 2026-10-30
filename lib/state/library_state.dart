@@ -4038,6 +4038,10 @@ class LibraryState extends ChangeNotifier {
       passphrase: passphrase,
       generationSnapshotPath: generationSnapshotPath,
     );
+    // Die Wiederherstellung verknüpft Live Photos nach den Paaren der
+    // Sicherung (#255). Eine Sicherung ohne Passphrase vor 3.49.9 trug
+    // keine; dann paaren Name und Zeit wie beim Import.
+    await nachbearbeitung.verknuepfeOffeneLivePhotos();
   }
 
   /// Warum das automatische Backup gerade nicht läuft, obwohl es fällig ist
