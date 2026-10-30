@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.49.8" date="2026-10-30">
+      <description>
+        <p>Backups without a passphrase copy photos again after they were edited. They keep each photo under its path, and an edited JPEG keeps that path, so the old file stayed in the backup and the photo could not be restored. A replaced file is kept next to the new one when the library no longer has its content.</p>
+        <p>The watched folder only reads new or changed files instead of reading every file every five minutes, and it waits for a file that is still being copied.</p>
+      </description>
+    </release>
     <release version="3.49.7" date="2026-10-30">
       <description>
         <p>The image editor now works on the full-resolution original and keeps it. For HEIC, RAW, PSD and files over 32 MB it used to edit the 2048-pixel preview and replace the original with it, deleting originals other than JPEG for good. Saving now shows the edited version and keeps the previous original as a variant in the same stack.</p>
