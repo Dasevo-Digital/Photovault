@@ -656,6 +656,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /aufnahmen?anzahl=300&nach=…` | Zeitleiste, neueste zuerst; `weiter` der Antwort ist `nach` der nächsten Seite |
 | `GET /aufnahmen/<id>` | alle Angaben einer Aufnahme |
 | `GET /aufnahmen/<id>/miniatur\|vorschau\|original` | die Datei, mit `Range` |
+| `GET /aufnahmen/<id>/voll` | das Foto in voller Auflösung für den Betrachter: JPEG, PNG, WebP und GIF unverändert, HEIC, RAW und DNG als JPEG in Originalgrösse ohne Angaben, einmal gewandelt und neben der Bibliothek aufgehoben (höchstens 2 GB, `vollbild/`); 422, wenn es sich nicht wandeln lässt (Issue #256) |
 | `POST /pruefsummen` | `{pruefsummen: [SHA-256 …]}` → `{vorhanden: {pruefsumme: kennung}}` – was schon da ist (Sicherung der Kamerarolle) |
 | `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |

@@ -57,6 +57,7 @@ import 'speicher.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 import 'videofassung.dart';
+import 'vollbild.dart';
 import 'web.dart';
 import 'rueckblick_api.dart';
 import 'zeilen_json.dart';
@@ -89,7 +90,13 @@ Handler baueApi({
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final video = Videofassungen();
-  final api = _Api(bibliotheken, beschleunigerZustand, video, netz);
+  final api = _Api(
+    bibliotheken,
+    beschleunigerZustand,
+    video,
+    netz,
+    vollbilder: Vollbilder(),
+  );
   final freigabe = Freigabeapi(
     dienst: konten.freigaben,
     bibliotheken: bibliotheken,
@@ -509,7 +516,13 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 class _Api {
-  _Api(this.bibliotheken, this._beschleuniger, this.videofassungen, this._netz);
+  _Api(
+    this.bibliotheken,
+    this._beschleuniger,
+    this.videofassungen,
+    this._netz, {
+    required this.vollbilder,
+  });
 
   /// Für Overpass – nur in Tests gesetzt, sonst ein eigener je Abruf.
   final http.Client? _netz;
@@ -519,6 +532,9 @@ class _Api {
   /// Für Browser, die ein Video nicht abspielen können – dieselben wie für
   /// geteilte Links.
   final Videofassungen videofassungen;
+
+  /// Fotos in voller Auflösung für den Betrachter (#256).
+  final Vollbilder vollbilder;
   final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
@@ -1775,14 +1791,16 @@ class _Api {
 
   static final _pruefsummeMuster = RegExp(r'^[0-9a-f]{64}$');
 
-  /// `miniatur`, `vorschau` oder `original` – mit Teilabruf (`Range`),
-  /// damit sich ein Video abspielen lässt, ohne es ganz zu laden.
+  /// `miniatur`, `vorschau`, `ansicht`, `voll` oder `original` – mit
+  /// Teilabruf (`Range`), damit sich ein Video abspielen lässt, ohne es
+  /// ganz zu laden.
   Future<Response> datei(Request anfrage, String id, String art) async {
     final b = (await _bereich(anfrage)).bibliothek;
     final a = await b.db.assetById(id);
     if (a == null || a.isLocked) return Response.notFound(null);
     if (art == 'abspielbar') return _abspielbar(anfrage, b, a);
     if (art == 'jpeg') return _alsJpeg(anfrage, b, a);
+    if (art == 'voll') return _voll(anfrage, b, a);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
       // Was der Betrachter zeigt – wie in den Apps: restauriert,
@@ -1809,6 +1827,35 @@ class _Api {
       return Response.notFound(null);
     }
     return dateiAntwort(anfrage, datei);
+  }
+
+  /// Das Foto in voller Auflösung für den Betrachter (#256) – im Browser
+  /// und auf dem Handy, die von HEIC und RAW bis 3.49.9 nur die Vorschau mit
+  /// 2048 Punkten bekamen.
+  ///
+  /// Dasselbe Bild wie `ansicht`, nur nie die verkleinerte Vorschau (siehe
+  /// [vollbildQuelle]). Was Browser und Handy selbst lesen, geht unverändert
+  /// hinaus; alles andere als JPEG in Originalgrösse, ohne Angaben und
+  /// damit ohne Ort (siehe [Vollbilder]). `422`, wenn es sich nicht wandeln
+  /// lässt.
+  Future<Response> _voll(Request anfrage, Bibliothek b, AssetData a) async {
+    if (a.type != 'IMAGE') return Response.notFound(null);
+    final relativ = vollbildQuelle(a);
+    final quelle = b.pfade.absolute(relativ);
+    if (!p.isWithin(b.pfade.root.path, quelle.path) || !await quelle.exists()) {
+      return Response.notFound(null);
+    }
+    if (istDirektAnzeigbar(relativ)) return dateiAntwort(anfrage, quelle);
+    final fertig = await vollbilder.bereit(
+      Directory(p.join(b.ordner.path, 'vollbild')),
+      a.id,
+      quelle,
+      () => b.bildwerkzeuge.convertToJpegBytes(quelle, maxDimension: null),
+    );
+    if (fertig == null) {
+      return _json({'fehler': 'nicht umwandelbar'}, status: 422);
+    }
+    return dateiAntwort(anfrage, fertig);
   }
 
   /// Das Foto als JPEG zum Herunterladen und Teilen (#210) – für Browser und

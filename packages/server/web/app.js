@@ -3701,6 +3701,25 @@ function neuZeichnen() {
 
 let offen = -1;
 
+// Die volle Auflösung (#256): Zeigt die Ansicht nur die Vorschau – bei
+// HEIC, RAW und DNG 2048 Punkte –, kommt das Foto in Originalgrösse nach,
+// sobald es da ist. Ob es mehr gibt, sagen die Masse aus der Liste; ein
+// JPEG ist schon das Original und wird nicht zweimal geladen. Wie auf dem
+// Handy (apps/mobil, vollesBild).
+let vollLauf = 0;
+function holeVoll(a) {
+  const lauf = vollLauf;
+  const bild = $('bild');
+  bild.addEventListener('load', () => {
+    if (lauf !== vollLauf) return;
+    const lang = Math.max(a.breite || 0, a.hoehe || 0);
+    if (Math.max(bild.naturalWidth, bild.naturalHeight) >= lang) return;
+    const voll = new Image();
+    voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
+    voll.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/voll`;
+  }, { once: true });
+}
+
 function oeffne(i) {
   if (!liste || i < 0 || i >= liste.aufnahmen.length) return;
   schwebeEnde();
@@ -3716,6 +3735,7 @@ function oeffne(i) {
   $('video-hinweis').hidden = true;
   video.controls = true;
   video.onended = null;
+  vollLauf++;
   if (a.art === 'video') {
     bild.hidden = true;
     video.hidden = false;
@@ -3723,6 +3743,7 @@ function oeffne(i) {
   } else {
     video.hidden = true;
     bild.hidden = false;
+    holeVoll(a);
     bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
   }
   $('bearbeiten').hidden = a.art === 'video';

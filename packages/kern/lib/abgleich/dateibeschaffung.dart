@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 
 import '../db/database.dart';
 import '../protokoll.dart';
+import '../services/asset_display_path.dart';
 import '../services/storage_paths.dart';
 import 'verbindung.dart';
 
@@ -27,10 +31,27 @@ class Dateibeschaffung {
     }
   });
 
-  /// Wo der Server die Datei [relativ] der Bibliothek ausliefert.
-  static String adresse(String relativ) =>
-      'api/v1/dateien/'
-      '${[for (final t in relativ.split('/')) Uri.encodeComponent(t)].join('/')}';
+  /// Wo der Server die Datei [relativ] der Bibliothek ausliefert – und
+  /// die volle Auflösung eines Fotos (siehe [vollbildPfad]).
+  static String adresse(String relativ) {
+    final teile = relativ.split('/');
+    if (teile.length == 4 && teile[0] == 'previews' && teile[1] == 'voll') {
+      return 'api/v1/aufnahmen/${Uri.encodeComponent(teile[2])}/voll';
+    }
+    return 'api/v1/dateien/'
+        '${[for (final t in teile) Uri.encodeComponent(t)].join('/')}';
+  }
+
+  /// Wo die Kopie die volle Auflösung von [a] ablegt (#256), wenn der
+  /// Server sie erst wandeln muss – HEIC, RAW und DNG liest das Handy nicht
+  /// selbst. Unter den Vorschauen, damit der Zwischenspeicher sie mit
+  /// begrenzt; die Quelle steckt im Namen, damit eine spätere
+  /// Restaurierung nicht hinter einer alten Fassung verschwindet. Geholt
+  /// wird es wie jede andere Datei über [StoragePaths.bereit].
+  static String vollbildPfad(AssetData a) {
+    final quelle = sha1.convert(utf8.encode(vollbildQuelle(a))).toString();
+    return 'previews/voll/${a.id}/${quelle.substring(0, 12)}.jpg';
+  }
 
   /// Bringt eine hier geschriebene abgeleitete Datei zum Server (siehe
   /// [StoragePaths.ablege]).

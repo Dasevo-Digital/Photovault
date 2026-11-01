@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 import '../db/database.dart';
 
 /// Bestes verfügbares Anzeigebild/-video eines Assets, in Prioritätsreihen-
@@ -29,3 +31,30 @@ String displayRelativePath(AssetData asset) =>
     asset.trimmedRelativePath ??
     (asset.type == 'VIDEO' ? null : asset.previewRelativePath) ??
     asset.relativePath;
+
+/// Woraus die volle Auflösung eines Fotos kommt (#256): dasselbe Bild wie
+/// [displayRelativePath], nur nie die verkleinerte Vorschau – restauriert,
+/// entwickelt, sonst das Original.
+///
+/// Bis 3.49.9 zeigte der Betrachter auf dem Handy und im Browser von HEIC,
+/// RAW und DNG nur die Vorschau mit 2048 Punkten an der langen Seite. Ein
+/// iPhone fotografiert in HEIC – beim Zoomen war also fast jedes Foto
+/// unscharf.
+String vollbildQuelle(AssetData asset) =>
+    asset.restoredRelativePath ??
+    asset.developedRelativePath ??
+    asset.relativePath;
+
+/// Ob der Betrachter für die volle Auflösung mehr braucht als
+/// [displayRelativePath] – also gerade die Vorschau zeigt.
+bool zeigtVorschau(AssetData asset) =>
+    asset.type == 'IMAGE' &&
+    displayRelativePath(asset) != vollbildQuelle(asset);
+
+/// Was Browser und Handy selbst lesen. Alles andere wandelt der Server für
+/// die volle Auflösung in ein JPEG (#256).
+const direktAnzeigbareEndungen = {'.jpg', '.jpeg', '.png', '.webp', '.gif'};
+
+/// Ob [relativ] ohne Wandlung angezeigt werden kann.
+bool istDirektAnzeigbar(String relativ) =>
+    direktAnzeigbareEndungen.contains(p.extension(relativ).toLowerCase());

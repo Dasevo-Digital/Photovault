@@ -11,6 +11,13 @@ sie gebraucht werden, und bleiben danach auf dem Telefon. Änderungen
 (Favorit, Papierkorb) gehen als Befehle zum Server; ohne Verbindung warten
 sie und gehen später nach.
 
+Der Betrachter zeigt jedes Foto in voller Auflösung: zuerst die Vorschau,
+darüber das Original, sobald es da ist, beim Zoomen ungekürzt dekodiert.
+HEIC, RAW und DNG liest das Telefon nicht selbst; der Server wandelt sie
+dafür in ein JPEG in Originalgrösse (`GET /api/v1/aufnahmen/<id>/voll`).
+Die Fassung liegt danach im Zwischenspeicher unter `previews/voll/` und
+gehört bei angehefteten Alben zu dem, was offline bereitsteht.
+
 Die Suche nach Bildinhalt bettet den Suchtext auf dem Server ein
 (`POST /api/v1/suche/text`); die Rangfolge rechnet das Telefon mit den
 abgeglichenen Einbettungen, wie der Desktop. Hat der Server kein Modell,

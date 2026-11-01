@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -615,6 +617,7 @@ class _BetrachterState extends State<Betrachter> {
                   sitzung: widget.sitzung,
                   zeile: z,
                   lade: _lade,
+                  gezoomt: _gezoomt && i == _index,
                   ebene: _gesichter
                       ? Gesichtsebene(
                           sitzung: widget.sitzung,
@@ -636,7 +639,8 @@ class _BetrachterState extends State<Betrachter> {
 }
 
 /// Ein Foto: zuerst die Miniatur, dann das Bild, das der Desktop zeigt
-/// (restauriert, entwickelt, Vorschau oder Original).
+/// (restauriert, entwickelt, Vorschau oder Original), und darüber die volle
+/// Auflösung, sobald sie da ist (#256).
 ///
 /// Ein Live Photo trägt unten links „LIVE“: Halten auf dem Bild (oder ein
 /// Tipp auf die Marke) spielt den Bewegungsteil an seiner Stelle, wie im
@@ -646,12 +650,17 @@ class _BildSeite extends StatefulWidget {
     required this.sitzung,
     required this.zeile,
     required this.lade,
+    this.gezoomt = false,
     this.ebene,
   });
 
   final Sitzung sitzung;
   final Rasterzeile zeile;
   final Future<AssetData?> Function(String id) lade;
+
+  /// Ob das Foto gerade vergrössert ist – dann wird es ungekürzt dekodiert,
+  /// sonst auf höchstens 3000 Punkte, mehr zeigt kein Bildschirm.
+  final bool gezoomt;
 
   /// Über dem Bild, mit ihm gezoomt – die Gesichtsrahmen (Issue #190).
   final Widget? ebene;
@@ -664,6 +673,20 @@ class _BildSeiteState extends State<_BildSeite> {
   VideoPlayerController? _live;
   var _laedt = false;
   var _lauf = 0;
+
+  /// Ob die volle Auflösung kommen darf: erst, wenn das Foto einen Moment
+  /// steht. Wer durchwischt, soll den Server nicht jedes Foto wandeln
+  /// lassen, an dem er vorbeikommt.
+  var _vollAn = false;
+  Timer? _vollUhr;
+
+  @override
+  void initState() {
+    super.initState();
+    _vollUhr = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _vollAn = true);
+    });
+  }
 
   Future<void> _liveAn() async {
     final partner = widget.zeile.linkedAssetId;
@@ -705,10 +728,19 @@ class _BildSeiteState extends State<_BildSeite> {
 
   @override
   void dispose() {
+    _vollUhr?.cancel();
     _lauf++;
     _live?.dispose();
     super.dispose();
   }
+
+  ImageProvider _bemessen(ImageProvider bild) => ResizeImage(
+    bild,
+    width: 3000,
+    height: 3000,
+    policy: ResizeImagePolicy.fit,
+    allowUpscaling: false,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -727,19 +759,33 @@ class _BildSeiteState extends State<_BildSeite> {
       builder: (context, snap) {
         final a = snap.data;
         if (a == null) return Center(child: miniatur);
-        return Image(
-          image: ResizeImage(
-            BibliotheksBild(widget.sitzung.paths, displayRelativePath(a)),
-            width: 3000,
-            height: 3000,
-            policy: ResizeImagePolicy.fit,
-            allowUpscaling: false,
-          ),
-          fit: BoxFit.contain,
-          gaplessPlayback: true,
-          frameBuilder: (context, kind, frame, sofort) =>
-              frame == null && !sofort ? Center(child: miniatur) : kind,
-          errorBuilder: (_, _, _) => Center(child: miniatur),
+        final paths = widget.sitzung.paths;
+        final ansicht = BibliotheksBild(paths, displayRelativePath(a));
+        final voll = _vollAn ? vollesBild(paths, a) : null;
+        // Darüber die volle Auflösung, beim Zoomen ungekürzt dekodiert.
+        // Bis sie da ist – und ohne Netz – bleibt die Ansicht darunter
+        // stehen; ein Stapel statt eines Wechsels, damit dabei nichts
+        // aufblitzt.
+        final oben = voll ?? (widget.gezoomt ? ansicht : null);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Image(
+              image: _bemessen(ansicht),
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+              frameBuilder: (context, kind, frame, sofort) =>
+                  frame == null && !sofort ? Center(child: miniatur) : kind,
+              errorBuilder: (_, _, _) => Center(child: miniatur),
+            ),
+            if (oben != null)
+              Image(
+                image: widget.gezoomt ? oben : _bemessen(oben),
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+          ],
         );
       },
     );

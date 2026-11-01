@@ -3,7 +3,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/storage_paths.dart';
 
 /// Ein Bild der Bibliothek, das erst vom Server kommt, wenn es hier noch
@@ -50,6 +53,21 @@ class BibliotheksBild extends ImageProvider<BibliotheksBild> {
 
   @override
   int get hashCode => Object.hash(relativ, identityHashCode(paths));
+}
+
+/// Das Foto [a] in voller Auflösung (#256) – oder `null`, wenn
+/// [displayRelativePath] es schon ist.
+///
+/// Was das Telefon selbst liest, kommt als Datei der Bibliothek; HEIC, RAW
+/// und DNG wandelt der Server dafür in ein JPEG in Originalgrösse (siehe
+/// [Dateibeschaffung.vollbildPfad]).
+ImageProvider? vollesBild(StoragePaths paths, AssetData a) {
+  if (!zeigtVorschau(a)) return null;
+  final quelle = vollbildQuelle(a);
+  return BibliotheksBild(
+    paths,
+    istDirektAnzeigbar(quelle) ? quelle : Dateibeschaffung.vollbildPfad(a),
+  );
 }
 
 /// Eine Miniatur im Raster: auf ihre Grösse dekodiert, mit ruhiger Fläche,

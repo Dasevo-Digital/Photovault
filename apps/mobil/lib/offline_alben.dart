@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 
@@ -154,6 +156,11 @@ class OfflineAlben {
       a.trimmedRelativePath,
     ]) {
       if (relativ != null && relativ.isNotEmpty) yield p.normalize(relativ);
+    }
+    // Die volle Auflösung, die der Betrachter zeigt (#256): Ohne sie
+    // bliebe ein HEIC oder RAW ohne Netz bei der Vorschau.
+    if (zeigtVorschau(a) && !istDirektAnzeigbar(vollbildQuelle(a))) {
+      yield Dateibeschaffung.vollbildPfad(a);
     }
   }
 }
