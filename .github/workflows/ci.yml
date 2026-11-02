@@ -43,8 +43,29 @@ jobs:
       - name: Werkzeuge für Gastprozess-Isolation
         run: sudo apt-get update && sudo apt-get install -y bubblewrap procps
       # Die Tests der Handy-App starten einen Server aus packages/server.
+      # Wie beim Bauen steht das Ende der Ausgabe bei einem Fehlschlag als
+      # Anmerkung am Lauf – mit der Liste der roten Tests, die sonst nur im
+      # Protokoll stand.
       - name: Analyse und Tests
-        run: flutter analyze && flutter test && (cd packages/server && dart test) && (cd apps/mobil && flutter test)
+        shell: bash
+        run: |
+          befehle=("flutter analyze"
+                   "flutter test --reporter expanded"
+                   "cd packages/server && dart test --reporter expanded"
+                   "cd apps/mobil && flutter test --reporter expanded")
+          for befehl in "${befehle[@]}"; do
+            echo "::group::$befehl"
+            set +e
+            bash -c "$befehl" 2>&1 | tee pruefung.log
+            status=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "$status" -ne 0 ]; then
+              ende=$(tail -n 80 pruefung.log | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+              echo "::error title=$befehl::$ende"
+              exit "$status"
+            fi
+          done
 
   # Kompiliert die nativen Teile, damit ein kaputter Plattform-Build vor dem
   # Release auffällt. Unter Windows reicht dafür `flutter build windows`:
