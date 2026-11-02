@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -17,7 +18,14 @@ MODUL = Path(__file__).resolve().parents[1] / 'installieren/windows.ps1'
 
 def powershell(code):
     encoded = base64.b64encode(code.encode('utf-16le')).decode()
-    return subprocess.run([POWERSHELL, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], capture_output=True)
+    # Aus PowerShell 7 gestartet – der Vorgabe für Schritte der GitHub-CI
+    # unter Windows – erbt Windows PowerShell dessen PSModulePath, lädt die
+    # Module von PowerShell 7 nicht und kennt dann nicht einmal
+    # Get-FileHash (#257). Ohne die Variable baut sie ihren eigenen Pfad
+    # auf, wie über SSH auf dem Testrechner.
+    umgebung = {k: v for k, v in os.environ.items() if k.upper() != 'PSMODULEPATH'}
+    return subprocess.run([POWERSHELL, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded],
+                          capture_output=True, env=umgebung)
 
 
 def zitat(path):

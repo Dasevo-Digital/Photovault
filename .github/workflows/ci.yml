@@ -82,9 +82,6 @@ jobs:
           distribution: temurin
           java-version: "17"
       - run: flutter pub get
-      - name: Installationsabläufe unter Windows
-        if: matrix.target == 'windows'
-        run: python -B -m unittest discover -s tool/tests -p 'test_*.py'
       # Die Protokolle eines Laufs sieht nur, wer bei GitHub angemeldet ist,
       # Anmerkungen dagegen jeder. Scheitert ein Bau, steht das Ende seiner
       # Ausgabe deshalb zusätzlich als Anmerkung am Lauf.
@@ -114,6 +111,22 @@ jobs:
               exit "$status"
             fi
           done
+      # Nach dem Bauen: Scheitern die Installationsabläufe, ist der Bau
+      # trotzdem geprüft – vorher übersprang ein roter Test ihn wochenlang
+      # (#257). Ihre Ausgabe steht wie beim Bauen als Anmerkung am Lauf.
+      - name: Installationsabläufe unter Windows
+        if: matrix.target == 'windows'
+        shell: bash
+        run: |
+          set +e
+          python -B -m unittest discover -s tool/tests -p 'test_*.py' 2>&1 | tee installation.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            ende=$(tail -n 80 installation.log | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Installationsabläufe unter Windows::$ende"
+            exit "$status"
+          fi
 
   # Baut das Server-Bild je Plattform auf einem passenden Läufer und prüft,
   # dass es startet und antwortet. Nur gebaut und geprüft, nirgends
