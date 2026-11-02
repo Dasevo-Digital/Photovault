@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.50.0" date="2026-11-02">
+      <description>
+        <p>The browser and the mobile app now show photos in full resolution. Until now they showed only the 2048-pixel preview of HEIC, DNG and RAW photos. The server converts such photos once and keeps the result in a cache limited to 2 GiB.</p>
+        <p>Moving a photo to the trash or locking it now takes along what is only visible through it: the video half of a Live Photo and the variants behind the main version of a stack. Until now they stayed hidden and were not in the trash either. Items that earlier versions left behind this way are put right once.</p>
+        <p>Restoring a backup links Live Photos again. Until now every video half came back as a separate video.</p>
+      </description>
+    </release>
     <release version="3.49.9" date="2026-10-31">
       <description>
         <p>Moving a photo to the trash or locking it now takes along what is only visible through it: the video half of a Live Photo and the variants behind the main version of a stack. Until now they stayed hidden and were not in the trash either. Items that earlier versions left behind this way are put right once.</p>
