@@ -30,6 +30,11 @@ class Vollbilder {
   final _laufend = <String, Future<File?>>{};
   Future<void> _reihe = Future.value();
 
+  /// Was sich nicht wandeln liess: Fassung und Stand der Quelle damals.
+  /// Ohne das rechnete jeder Aufruf dieselbe vergebliche Wandlung neu
+  /// (#265); ändert sich die Quelle, wird es wieder versucht.
+  final _gescheitert = <String, DateTime>{};
+
   /// Wo die Fassung von [id] aus [quelle] liegt (oder liegen wird). Der
   /// Pfad der Quelle steckt im Namen: Wird ein Foto später restauriert,
   /// gilt die alte Fassung nicht mehr.
@@ -50,6 +55,8 @@ class Vollbilder {
   ) async {
     final datei = ziel(speicher, id, quelle.path);
     if (await _aktuell(datei, quelle)) return datei;
+    final damals = _gescheitert[datei.path];
+    if (damals != null && damals == await quelle.lastModified()) return null;
     return _laufend.putIfAbsent(datei.path, () {
       final fertig = Completer<File?>();
       _reihe = _reihe.then((_) async {
@@ -77,8 +84,15 @@ class Vollbilder {
   ) async {
     // Wer hinter einer anderen Anfrage gewartet hat, findet sie fertig.
     if (await _aktuell(datei, quelle)) return datei;
-    final bytes = await wandle();
+    final stand = await quelle.lastModified();
+    Uint8List? bytes;
+    try {
+      bytes = await wandle();
+    } finally {
+      if (bytes == null) _gescheitert[datei.path] = stand;
+    }
     if (bytes == null) return null;
+    _gescheitert.remove(datei.path);
     await speicher.create(recursive: true);
     final teil = File('${datei.path}.teil');
     await teil.writeAsBytes(bytes, flush: true);

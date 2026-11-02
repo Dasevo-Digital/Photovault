@@ -18,6 +18,21 @@ String assetFormatLabel(AssetData asset) =>
 /// Format nennen (siehe [formatKuerzel]).
 final _videoEndungen = videoEndungen;
 
+/// Die Endung, nach der sich ein Foto lesen lässt: die der Ablage –
+/// ausser bei einem Standbild unter einem Videonamen, dort das Format
+/// seines Inhalts (siehe [formatKuerzel]). Wer nach der Endung ein
+/// Werkzeug wählt, braucht genau diese (#265).
+String bildendung(String relativePath, String? dateiformat) {
+  final ext = p.extension(relativePath).toLowerCase();
+  if (_videoEndungen.contains(ext) &&
+      dateiformat != null &&
+      dateiformat.isNotEmpty &&
+      !_videoEndungen.contains('.$dateiformat')) {
+    return '.$dateiformat';
+  }
+  return ext;
+}
+
 /// Dasselbe aus den Angaben, die es wirklich braucht.
 ///
 /// Getrennt, seit es neben `AssetData` auch die schmale [Rasterzeile]
@@ -33,13 +48,7 @@ final _videoEndungen = videoEndungen;
 /// dort liegt, [dateiformat] dagegen das Format beim Import.
 String formatKuerzel(String type, String relativePath, [String? dateiformat]) {
   if (type != 'IMAGE') return '';
-  var ext = p.extension(relativePath).toLowerCase();
-  if (_videoEndungen.contains(ext) &&
-      dateiformat != null &&
-      dateiformat.isNotEmpty &&
-      !_videoEndungen.contains('.$dateiformat')) {
-    ext = '.$dateiformat';
-  }
+  final ext = bildendung(relativePath, dateiformat);
   switch (ext) {
     case '.jpg':
     case '.jpeg':

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
+import 'package:path/path.dart' as p;
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:photo_vault_server/src/vollbild.dart';
 import 'package:shelf/shelf.dart';
@@ -52,13 +53,15 @@ void main() {
     await ordner.delete(recursive: true);
   });
 
-  Future<Response> voll(String id) async => api(
+  Future<Response> abruf(String id, String art) async => api(
     Request(
       'GET',
-      Uri.parse('http://server/api/v1/aufnahmen/$id/voll'),
+      Uri.parse('http://server/api/v1/aufnahmen/$id/$art'),
       headers: {'authorization': 'Bearer $token'},
     ),
   );
+
+  Future<Response> voll(String id) => abruf(id, 'voll');
 
   Future<Uint8List> inhalt(Response r) async =>
       Uint8List.fromList(await r.read().expand((x) => x).toList());
@@ -69,6 +72,7 @@ void main() {
     String endung, {
     String typ = 'IMAGE',
     bool gesperrt = false,
+    String? dateiformat,
   }) async {
     final relativ = 'originals/$id.$endung';
     final datei = b.pfade.absolute(relativ);
@@ -90,6 +94,7 @@ void main() {
             importedAt: DateTime(2026, 10, 1),
             previewRelativePath: Value(vorschau),
             isLocked: Value(gesperrt),
+            dateiformat: Value(dateiformat),
           ),
         );
     return id;
@@ -154,6 +159,46 @@ void main() {
     expect((await voll('gibtesnicht')).statusCode, 404);
   });
 
+  test('ein HEIC unter einem Videonamen geht als .heic ans Werkzeug', () async {
+    // IMG_1711.MOV der Nutzerbibliothek: ein Standbild mit HEIC-Inhalt.
+    // Nach der Endung ging es an dcraw_emu und scheiterte (#265).
+    await aufnahme('m', 'MOV', dateiformat: 'heic');
+
+    expect((await voll('m')).statusCode, 200);
+    expect((await abruf('m', 'jpeg')).statusCode, 200);
+
+    expect(wandler.namen, ['quelle.heic', 'quelle.heic']);
+    expect(
+      b.pfade.absolute('originals/m.MOV').readAsBytesSync(),
+      List.filled(100, 'm'.codeUnitAt(0)),
+      reason: 'das Original bleibt, wie es war',
+    );
+    expect(
+      Directory.systemTemp.listSync().where(
+        (e) => p.basename(e.path).startsWith('pv_wandeln_'),
+      ),
+      isEmpty,
+      reason: 'kein Verweis bleibt liegen',
+    );
+  });
+
+  test('was sich nicht wandeln liess, wird erst nach einer Änderung neu '
+      'versucht', () async {
+    await aufnahme('k', 'cr3');
+    wandler.kaputt.add('k.cr3');
+
+    expect((await voll('k')).statusCode, 422);
+    expect((await voll('k')).statusCode, 422);
+    expect(wandler.versuche, 1, reason: 'nicht jedes Mal neu rechnen');
+
+    await b.pfade
+        .absolute('originals/k.cr3')
+        .setLastModified(DateTime.now().add(const Duration(minutes: 1)));
+    wandler.kaputt.clear();
+    expect((await voll('k')).statusCode, 200);
+    expect(wandler.versuche, 2);
+  });
+
   test('der Zwischenspeicher bleibt unter seiner Grenze', () async {
     final speicher = Directory('${ordner.path}/speicher');
     final vollbilder = Vollbilder(grenze: 250);
@@ -186,6 +231,8 @@ void main() {
 class _Wandler extends KeineBildwerkzeuge {
   final auftraege = <int?>[];
   final kaputt = <String>{};
+  final namen = <String>[];
+  var versuche = 0;
 
   @override
   Future<Uint8List?> convertToJpegBytes(
@@ -194,7 +241,9 @@ class _Wandler extends KeineBildwerkzeuge {
     double quality = 0.9,
     bool objektivkorrektur = true,
   }) async {
+    versuche++;
     if (kaputt.contains(file.uri.pathSegments.last)) return null;
+    namen.add(file.uri.pathSegments.last);
     auftraege.add(maxDimension);
     return Uint8List.fromList(img.encodeJpg(img.Image(width: 40, height: 30)));
   }

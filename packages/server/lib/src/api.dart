@@ -9,6 +9,7 @@ import 'package:kern/auswertung/gesicht_von_hand.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/asset_format.dart' show bildendung;
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
@@ -1850,12 +1851,53 @@ class _Api {
       Directory(p.join(b.ordner.path, 'vollbild')),
       a.id,
       quelle,
-      () => b.bildwerkzeuge.convertToJpegBytes(quelle, maxDimension: null),
+      () => _wandle(b, a, quelle, maxDimension: null),
     );
     if (fertig == null) {
       return _json({'fehler': 'nicht umwandelbar'}, status: 422);
     }
     return dateiAntwort(anfrage, fertig);
+  }
+
+  /// Wandelt [datei] von [a] in ein JPEG. Das Werkzeug richtet sich nach
+  /// der Endung; ein Standbild unter einem Videonamen – `IMG_1711.MOV` mit
+  /// HEIC-Inhalt – ging so an dcraw_emu und scheiterte (#265). Das Original
+  /// bekommt deshalb eine Verknüpfung mit der Endung seines Inhalts (siehe
+  /// [bildendung]); entwickelte und restaurierte Fassungen tragen ihre
+  /// Endung zu Recht.
+  Future<Uint8List?> _wandle(
+    Bibliothek b,
+    AssetData a,
+    File datei, {
+    required int? maxDimension,
+    double quality = 0.9,
+  }) async {
+    final ist = p.extension(datei.path).toLowerCase();
+    final soll = p.equals(datei.path, b.pfade.absolute(a.relativePath).path)
+        ? bildendung(a.relativePath, a.dateiformat)
+        : ist;
+    if (soll == ist) {
+      return b.bildwerkzeuge.convertToJpegBytes(
+        datei,
+        maxDimension: maxDimension,
+        quality: quality,
+      );
+    }
+    final ordner = await Directory.systemTemp.createTemp('pv_wandeln_');
+    final verweis = Link(p.join(ordner.path, 'quelle$soll'));
+    try {
+      await verweis.create(datei.path);
+      return await b.bildwerkzeuge.convertToJpegBytes(
+        File(verweis.path),
+        maxDimension: maxDimension,
+        quality: quality,
+      );
+    } finally {
+      // Erst der Verweis selbst, dann der leere Ordner – nie rekursiv,
+      // damit nichts dem Verweis bis zum Original folgen kann.
+      if (await verweis.exists()) await verweis.delete();
+      await ordner.delete();
+    }
   }
 
   /// Das Foto als JPEG zum Herunterladen und Teilen (#210) – für Browser und
@@ -1888,7 +1930,9 @@ class _Api {
     if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
       return Response.notFound(null);
     }
-    final bytes = await b.bildwerkzeuge.convertToJpegBytes(
+    final bytes = await _wandle(
+      b,
+      a,
       datei,
       maxDimension: kante == 0 ? null : kante,
       quality: qualitaet / 100,
