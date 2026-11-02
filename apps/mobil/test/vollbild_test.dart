@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
@@ -121,5 +122,52 @@ void main() {
       voll,
     ], reason: 'ein JPEG braucht keine Wandlung');
     expect(await offline.geschuetztePfade(db), contains(voll));
+  });
+
+  test('ein nicht wandelbares Foto hält die Offline-Alben nicht auf', () async {
+    // #264: Bis 3.50.1 endete der Lauf beim ersten 422, und aus dem
+    // zweiten Album kam keine einzige Datei an.
+    final kaputt = await aufnahme('kaputt', 'psd');
+    await aufnahme('gut', 'heic');
+    for (var i = 0; i < 4; i++) {
+      await aufnahme('zwei$i', 'jpg', vorschau: false);
+    }
+    await db.fuehreAus(AlbumAnlegen('a1', 'Erstes', DateTime(2026)));
+    await db.fuehreAus(const AlbumFuellen('a1', ['kaputt', 'gut']));
+    await db.fuehreAus(AlbumAnlegen('a2', 'Zweites', DateTime(2026)));
+    await db.fuehreAus(
+      AlbumFuellen('a2', [for (var i = 0; i < 4; i++) 'zwei$i']),
+    );
+    final kaputtVoll = Dateibeschaffung.vollbildPfad(kaputt);
+    final geholt = <String>[];
+    paths.beschaffe = (relativ) async {
+      if (relativ == kaputtVoll) throw Serverfehler(422, 'nicht umwandelbar');
+      geholt.add(relativ);
+      await paths.absolute(relativ).create(recursive: true);
+    };
+    final offline = await OfflineAlben.oeffne(
+      File(p.join(ordner.path, 'offline_alben.json')),
+    );
+    await offline.setze('a1', true);
+    await offline.setze('a2', true);
+
+    await offline.aktualisiere(db, paths);
+
+    expect(geholt, isNot(contains(kaputtVoll)));
+    expect(geholt, contains('originals/kaputt.psd'), reason: 'der Rest kommt');
+    expect(
+      geholt.where((r) => r.startsWith('originals/zwei')),
+      hasLength(4),
+      reason: 'das zweite Album kommt ganz',
+    );
+
+    // Ohne Verbindung hört der Lauf dagegen auf – jede weitere Datei
+    // scheiterte genauso.
+    paths.beschaffe = (_) async => throw KeineVerbindung('weg');
+    await paths.absolute('originals/zwei0.jpg').delete();
+    await expectLater(
+      offline.aktualisiere(db, paths),
+      throwsA(isA<KeineVerbindung>()),
+    );
   });
 }

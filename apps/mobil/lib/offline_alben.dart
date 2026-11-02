@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -74,6 +75,14 @@ class OfflineAlben {
   /// Holt ein Album vollständig. Gibt die Zahl seiner Aufnahmen zurück.
   /// Bereits vorhandene Dateien werden von [StoragePaths.bereit] nur als
   /// zuletzt benutzt markiert und nicht noch einmal übertragen.
+  ///
+  /// **Eine Datei, die der Server nicht hergibt, hält das Album nicht auf
+  /// (#264).** Seit #256 gehört die volle Auflösung dazu, und die kann der
+  /// Server ablehnen (422, nicht wandelbar). Bis 3.50.1 endete der Lauf
+  /// beim ersten solchen Fehler, und alle folgenden Alben blieben stehen.
+  /// Abgebrochen wird nur ohne Verbindung oder nach der Abmeldung – dann
+  /// scheiterte ohnehin jede weitere Datei. Was fehlt, versucht der
+  /// nächste Pflegegang erneut.
   Future<int> holeAlbum(
     AppDatabase db,
     StoragePaths paths,
@@ -91,7 +100,11 @@ class OfflineAlben {
     Future<void> arbeiter() async {
       while (index < pfade.length) {
         final relativ = pfade[index++];
-        await paths.bereit(relativ);
+        try {
+          await paths.bereit(relativ);
+        } on Serverfehler catch (e) {
+          if (e.abgemeldet) rethrow;
+        }
       }
     }
 
