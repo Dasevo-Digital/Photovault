@@ -651,12 +651,12 @@ class AppTexteDe extends AppTexte {
 
   @override
   String kontoZwischenspeicherStand(String belegt, String grenze) {
-    return '$belegt von $grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.';
+    return '$belegt von $grenze – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.';
   }
 
   @override
   String kontoZwischenspeicherOhneGrenzeStand(String belegt) {
-    return '$belegt, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.';
+    return '$belegt, ohne Grenze – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.';
   }
 
   @override

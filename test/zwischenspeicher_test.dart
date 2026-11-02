@@ -53,6 +53,27 @@ void main() {
     expect(mini.existsSync(), isTrue, reason: 'Miniaturen sind Vorrat');
   });
 
+  test(
+    'Entwicklungen, Restaurierungen und Schnitte zählen mit (#258)',
+    () async {
+      // Bis 3.50.0 blieb jede geholte Entwicklung für immer liegen, und
+      // „Zwischenspeicher leeren“ erreichte sie nicht.
+      final z = Zwischenspeicher(paths);
+      final entw = datei(paths.developedDir, 'a-1.jpg', 300, DateTime(2026, 1));
+      final rest = datei(paths.restoredDir, 'b.jpg', 300, DateTime(2026, 2));
+      final schnitt = datei(paths.trimmedDir, 'c.mp4', 300, DateTime(2026, 3));
+      expect(await z.groesse(), 900);
+
+      expect(await z.begrenze(800), 300);
+      expect(entw.existsSync(), isFalse, reason: 'das Älteste geht zuerst');
+      expect(rest.existsSync(), isTrue);
+
+      expect(await z.leere(behalten: {'trimmed/c.mp4'}), 300);
+      expect(rest.existsSync(), isFalse);
+      expect(schnitt.existsSync(), isTrue, reason: 'offline angeheftet');
+    },
+  );
+
   test('ein Zugriff über bereit() macht die Datei wieder jung', () async {
     paths.beschaffe = (_) async => fail('liegt schon da');
     final f = datei(paths.previewsDir, 'a.jpg', 10, DateTime(2026, 1, 1));

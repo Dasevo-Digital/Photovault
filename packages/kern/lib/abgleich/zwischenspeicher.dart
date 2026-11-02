@@ -4,10 +4,17 @@ import 'package:path/path.dart' as p;
 
 import '../services/storage_paths.dart';
 
-/// Was eine verbundene Bibliothek nach Bedarf vom Server holt – Vorschauen
-/// und Originale – sammelt sich an und wird nie von selbst weniger (Issue
-/// #131). Hier wird es gemessen, begrenzt und geleert. Miniaturen und
-/// Gesichter sind der Vorrat fürs Blättern ohne Netz und bleiben.
+/// Was eine verbundene Bibliothek nach Bedarf vom Server holt – Vorschauen,
+/// Originale, Entwicklungen, Restaurierungen und Schnitte – sammelt sich an
+/// und wird nie von selbst weniger (Issue #131). Hier wird es gemessen,
+/// begrenzt und geleert. Miniaturen und Gesichter sind der Vorrat fürs
+/// Blättern ohne Netz und bleiben.
+///
+/// Entwicklungen, Restaurierungen und Schnitte zählen erst seit 3.50.1
+/// mit (#258): Bis dahin blieb jede geholte Fassung für immer liegen, und
+/// „Zwischenspeicher leeren“ erreichte sie nicht. Was ein Gerät selbst
+/// erzeugt, liegt am Server, bevor ein Befehl darauf zeigt – es lässt
+/// sich also wie alles andere wieder holen.
 class Zwischenspeicher {
   const Zwischenspeicher(this.paths);
 
@@ -16,7 +23,13 @@ class Zwischenspeicher {
   /// Die Vorgabe, wenn niemand eine Grenze gesetzt hat.
   static const vorgabeMb = 2048;
 
-  List<Directory> get _ordner => [paths.previewsDir, paths.originalsDir];
+  List<Directory> get _ordner => [
+    paths.previewsDir,
+    paths.originalsDir,
+    paths.developedDir,
+    paths.restoredDir,
+    paths.trimmedDir,
+  ];
 
   Future<List<File>> _dateien() async => [
     for (final o in _ordner)
@@ -25,7 +38,7 @@ class Zwischenspeicher {
           if (e is File) e,
   ];
 
-  /// Wie viele Bytes Vorschauen und Originale gerade belegen.
+  /// Wie viele Bytes das Geholte gerade belegt.
   Future<int> groesse() async {
     var summe = 0;
     for (final f in await _dateien()) {
@@ -76,7 +89,7 @@ class Zwischenspeicher {
     return frei;
   }
 
-  /// Löscht alle Vorschauen und Originale; was jemand wieder öffnet, kommt
+  /// Löscht alles Geholte (siehe oben); was jemand wieder öffnet, kommt
   /// erneut vom Server. Gibt zurück, wie viele Bytes frei wurden.
   Future<int> leere({Set<String> behalten = const <String>{}}) =>
       begrenze(0, behalten: behalten);

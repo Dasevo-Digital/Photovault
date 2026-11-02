@@ -398,34 +398,16 @@ mixin _Verlauf on _EntwickelnBasis {
       return;
     }
 
-    final developedRelativePath = widget.paths.developedRelativePath(
-      widget.asset.id,
-    );
-    final targetFile = widget.paths.absolute(developedRelativePath);
-    await targetFile.parent.create(recursive: true);
-    await targetFile.writeAsBytes(bytes);
     // Erst die Datei zum Server, dann der Befehl, der auf sie zeigt –
-    // nimmt der Server sie nicht, bleibt alles beim Alten.
+    // nimmt der Server sie nicht, bleibt alles beim Alten. Ein neuer Name
+    // je Speichern, damit verbundene Geräte die neue Fassung holen (#258).
     try {
-      await widget.paths.abgelegt(developedRelativePath);
-    } catch (e) {
-      if (await targetFile.exists()) await targetFile.delete();
-      if (mounted) {
-        setState(() => _saving = false);
-        melde.fehler(AppTexte.of(context).entwSpeichernServerFehlt);
-      }
-      return;
-    }
-
-    // Derselbe Pfad wie beim vorigen Entwickeln – Flutter merkt sich
-    // dekodierte Bilder danach. Ohne dieses Vergessen zeigt die
-    // Vollbildansicht das Ergebnis von vorhin.
-    vergissAlleBilder();
-
-    await widget.db.fuehreAus(
-      EntwicklungSpeichern(
-        widget.asset.id,
-        DevelopSettingsCompanion.insert(
+      await legeEntwicklungAb(
+        db: widget.db,
+        paths: widget.paths,
+        assetId: widget.asset.id,
+        jpeg: bytes,
+        einstellungen: DevelopSettingsCompanion.insert(
           assetId: widget.asset.id,
           exposure: Value(adjustments.exposure),
           temperature: Value(adjustments.temperature),
@@ -452,9 +434,14 @@ mixin _Verlauf on _EntwickelnBasis {
           ),
           updatedAt: DateTime.now(),
         ),
-        developedRelativePath,
-      ),
-    );
+      );
+    } on EntwicklungNichtAbgelegt {
+      if (mounted) {
+        setState(() => _saving = false);
+        melde.fehler(AppTexte.of(context).entwSpeichernServerFehlt);
+      }
+      return;
+    }
 
     // Nur die gerade ausgewählte Maske kann seit dem letzten Speichern
     // geänderte Regler-Werte im Speicher haben (siehe _currentMaskLayers) –
@@ -481,11 +468,17 @@ mixin _Verlauf on _EntwickelnBasis {
   }
 
   Future<void> _reset() async {
+    // Der Name wechselt mit jedem Speichern (#258) – also der, auf den die
+    // Aufnahme gerade zeigt.
+    final entwickelt = (await widget.db.assetById(
+      widget.asset.id,
+    ))?.developedRelativePath;
     await widget.db.fuehreAus(EntwicklungZuruecksetzen(widget.asset.id));
-    final developedFile = widget.paths.absolute(
-      widget.paths.developedRelativePath(widget.asset.id),
-    );
-    if (await developedFile.exists()) await developedFile.delete();
+    if (entwickelt != null &&
+        p.isWithin('developed', p.normalize(entwickelt))) {
+      final developedFile = widget.paths.absolute(entwickelt);
+      if (await developedFile.exists()) await developedFile.delete();
+    }
     if (mounted) Navigator.of(context).pop(true);
   }
 

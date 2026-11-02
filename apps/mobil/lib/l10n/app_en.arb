@@ -262,7 +262,7 @@
   },
   "auswahlKeinZugriff": "No access to the photo library – allow it in the phone's settings.",
   "kontoZwischenspeicher": "Cache on this phone",
-  "kontoZwischenspeicherStand": "{belegt} of {grenze} – previews and originals you have viewed. Tap to set the limit.",
+  "kontoZwischenspeicherStand": "{belegt} of {grenze} – photos and videos you have viewed, in every version. Tap to set the limit.",
   "@kontoZwischenspeicherStand": {
     "placeholders": {
       "belegt": {
@@ -273,7 +273,7 @@
       }
     }
   },
-  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, no limit – previews and originals you have viewed. Tap to set the limit.",
+  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, no limit – photos and videos you have viewed, in every version. Tap to set the limit.",
   "@kontoZwischenspeicherOhneGrenzeStand": {
     "placeholders": {
       "belegt": {

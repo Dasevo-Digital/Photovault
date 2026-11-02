@@ -649,12 +649,12 @@ class AppTexteEn extends AppTexte {
 
   @override
   String kontoZwischenspeicherStand(String belegt, String grenze) {
-    return '$belegt of $grenze – previews and originals you have viewed. Tap to set the limit.';
+    return '$belegt of $grenze – photos and videos you have viewed, in every version. Tap to set the limit.';
   }
 
   @override
   String kontoZwischenspeicherOhneGrenzeStand(String belegt) {
-    return '$belegt, no limit – previews and originals you have viewed. Tap to set the limit.';
+    return '$belegt, no limit – photos and videos you have viewed, in every version. Tap to set the limit.';
   }
 
   @override

@@ -338,7 +338,7 @@
   },
   "auswahlKeinZugriff": "Kein Zugriff auf die Fotomediathek – in den Einstellungen des Telefons erlauben.",
   "kontoZwischenspeicher": "Zwischenspeicher auf dem Telefon",
-  "kontoZwischenspeicherStand": "{belegt} von {grenze} – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.",
+  "kontoZwischenspeicherStand": "{belegt} von {grenze} – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.",
   "@kontoZwischenspeicherStand": {
     "placeholders": {
       "belegt": {
@@ -349,7 +349,7 @@
       }
     }
   },
-  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.",
+  "kontoZwischenspeicherOhneGrenzeStand": "{belegt}, ohne Grenze – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.",
   "@kontoZwischenspeicherOhneGrenzeStand": {
     "placeholders": {
       "belegt": {

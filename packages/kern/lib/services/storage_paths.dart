@@ -13,7 +13,8 @@ import 'package:path/path.dart' as p;
 ///     thumbnails/{assetId}.jpg
 ///     previews/{assetId}.jpg          (nur für HEIC/DNG & Co.: von Flutter
 ///                                       nicht direkt darstellbare Formate)
-///     developed/{assetId}.jpg        (nur mit Entwicklungs-Anpassungen, siehe DevelopScreen)
+///     developed/{assetId}-{zeit}.jpg (nur mit Entwicklungs-Anpassungen, siehe DevelopScreen;
+///                                       bis 3.50.0 developed/{assetId}.jpg)
 ///     restored/{assetId}.jpg         (nur mit KI-Restaurierung, siehe RestoreQueueService)
 ///     trimmed/{assetId}.mp4          (nur mit Video-Zuschnitt, siehe VideoTrimScreen)
 ///     masks/{maskId}.png             (KI-Objektmasken, siehe MaskEditor)
@@ -114,6 +115,16 @@ class StoragePaths {
   /// HEIC/RAW-Import, das entwickelte Bild nur bei geänderten Reglern).
   String developedRelativePath(String assetId) =>
       p.join('developed', '$assetId.jpg');
+
+  /// Wohin eine neue Entwicklung von [assetId] kommt: ein neuer Name je
+  /// Speichern (#258). Verbundene Geräte holen eine Datei nur, wenn sie
+  /// unter ihrem Namen fehlt (siehe [bereit]) – eine neue Fassung unter
+  /// [developedRelativePath] erreichte sie nie. Wie in der Handy-App und
+  /// im Browser.
+  String neuerEntwicklungspfad(String assetId) => p.join(
+    'developed',
+    '$assetId-${DateTime.now().microsecondsSinceEpoch}.jpg',
+  );
 
   /// Ergebnis einer KI-Restaurierung (siehe RestoreQueueService,
   /// RestoreJobs) – separat von [developedRelativePath], da beide

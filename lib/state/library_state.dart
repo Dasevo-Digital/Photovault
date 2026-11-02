@@ -23,6 +23,7 @@ export '../services/backup_koordinator.dart'
     show Backuphindernis, Backupwarnung;
 import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
+import '../services/entwicklung_ablegen.dart';
 import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
@@ -2144,28 +2145,23 @@ class LibraryState extends ChangeNotifier {
           quality: 0.92,
         );
         if (bytes != null) {
-          final developedRelativePath = paths.developedRelativePath(asset.id);
-          final targetFile = paths.absolute(developedRelativePath);
-          await targetFile.parent.create(recursive: true);
-          await targetFile.writeAsBytes(bytes);
-          await paths.abgelegt(developedRelativePath);
-          await db.fuehreAus(
-            EntwicklungSpeichern(
-              asset.id,
-              DevelopSettingsCompanion.insert(
-                assetId: asset.id,
-                exposure: Value(settings.exposure),
-                temperature: Value(settings.temperature),
-                tint: Value(settings.tint),
-                contrast: Value(settings.contrast),
-                shadows: Value(settings.shadows),
-                highlights: Value(settings.highlights),
-                sharpness: Value(settings.sharpness),
-                noiseReduction: Value(settings.noiseReduction),
-                lensCorrectionEnabled: Value(settings.lensCorrectionEnabled),
-                updatedAt: DateTime.now(),
-              ),
-              developedRelativePath,
+          await legeEntwicklungAb(
+            db: db,
+            paths: paths,
+            assetId: asset.id,
+            jpeg: bytes,
+            einstellungen: DevelopSettingsCompanion.insert(
+              assetId: asset.id,
+              exposure: Value(settings.exposure),
+              temperature: Value(settings.temperature),
+              tint: Value(settings.tint),
+              contrast: Value(settings.contrast),
+              shadows: Value(settings.shadows),
+              highlights: Value(settings.highlights),
+              sharpness: Value(settings.sharpness),
+              noiseReduction: Value(settings.noiseReduction),
+              lensCorrectionEnabled: Value(settings.lensCorrectionEnabled),
+              updatedAt: DateTime.now(),
             ),
           );
         }
@@ -3072,35 +3068,29 @@ class LibraryState extends ChangeNotifier {
           throw Exception('Bild konnte nicht gerendert werden.');
         }
 
-        final zielPfad = paths.developedRelativePath(asset.id);
-        final datei = paths.absolute(zielPfad);
-        await datei.parent.create(recursive: true);
-        await datei.writeAsBytes(bytes);
-        await paths.abgelegt(zielPfad);
-
-        await db.fuehreAus(
-          EntwicklungSpeichern(
-            asset.id,
-            DevelopSettingsCompanion.insert(
-              assetId: asset.id,
-              exposure: Value(werte.exposure),
-              temperature: Value(werte.temperature),
-              tint: Value(werte.tint),
-              contrast: Value(werte.contrast),
-              shadows: Value(werte.shadows),
-              highlights: Value(werte.highlights),
-              sharpness: Value(werte.sharpness),
-              noiseReduction: Value(werte.noiseReduction),
-              lensCorrectionEnabled: Value(werte.lensCorrectionEnabled),
-              clarity: Value(werte.clarity),
-              vignette: Value(werte.vignette),
-              lutPath: Value(quelle.lutPath),
-              lutStrength: Value(werte.lutStrength),
-              toneCurveJson: Value(quelle.toneCurveJson),
-              colorMixerJson: Value(quelle.colorMixerJson),
-              updatedAt: DateTime.now(),
-            ),
-            zielPfad,
+        await legeEntwicklungAb(
+          db: db,
+          paths: paths,
+          assetId: asset.id,
+          jpeg: bytes,
+          einstellungen: DevelopSettingsCompanion.insert(
+            assetId: asset.id,
+            exposure: Value(werte.exposure),
+            temperature: Value(werte.temperature),
+            tint: Value(werte.tint),
+            contrast: Value(werte.contrast),
+            shadows: Value(werte.shadows),
+            highlights: Value(werte.highlights),
+            sharpness: Value(werte.sharpness),
+            noiseReduction: Value(werte.noiseReduction),
+            lensCorrectionEnabled: Value(werte.lensCorrectionEnabled),
+            clarity: Value(werte.clarity),
+            vignette: Value(werte.vignette),
+            lutPath: Value(quelle.lutPath),
+            lutStrength: Value(werte.lutStrength),
+            toneCurveJson: Value(quelle.toneCurveJson),
+            colorMixerJson: Value(quelle.colorMixerJson),
+            updatedAt: DateTime.now(),
           ),
         );
       } catch (e) {

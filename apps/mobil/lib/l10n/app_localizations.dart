@@ -1090,13 +1090,13 @@ abstract class AppTexte {
   /// No description provided for @kontoZwischenspeicherStand.
   ///
   /// In de, this message translates to:
-  /// **'{belegt} von {grenze} – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.'**
+  /// **'{belegt} von {grenze} – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.'**
   String kontoZwischenspeicherStand(String belegt, String grenze);
 
   /// No description provided for @kontoZwischenspeicherOhneGrenzeStand.
   ///
   /// In de, this message translates to:
-  /// **'{belegt}, ohne Grenze – Vorschauen und Originale, die du angesehen hast. Antippen für die Grenze.'**
+  /// **'{belegt}, ohne Grenze – Fotos und Videos, die du angesehen hast, in jeder Fassung. Antippen für die Grenze.'**
   String kontoZwischenspeicherOhneGrenzeStand(String belegt);
 
   /// No description provided for @kontoZwischenspeicherLeeren.
