@@ -391,4 +391,35 @@ void main() {
       expect(dauer!, closeTo(4.0, 1.2), reason: 'gewünscht waren 4 Sekunden');
     });
   });
+
+  group('libvips (#274)', () {
+    test(
+      'verkleinert, dreht nach EXIF und lässt nur das Profil übrig',
+      () async {
+        if (await hole('vipsthumbnail') == null) return;
+        // Hochkant im Sensor, quer abgelegt: Lage 6 heisst um 90° drehen.
+        final bild = img.Image(width: 300, height: 200);
+        img.fill(bild, color: img.ColorRgb8(200, 30, 30));
+        bild.exif.imageIfd.orientation = 6;
+        bild.exif.imageIfd['Make'] = 'Testkamera';
+        final quelle = File(p.join(temp.path, 'foto.jpg'))
+          ..writeAsBytesSync(img.encodeJpg(bild));
+
+        final r = await DesktopImageTools.convertToJpeg(
+          quelle,
+          maxDimension: 150,
+        );
+
+        final aus = img.decodeJpg(r!)!;
+        expect(
+          (aus.width, aus.height),
+          (100, 150),
+          reason: 'gedreht, verkleinert',
+        );
+        expect(aus.exif.imageIfd['Make'], isNull, reason: 'keine Angaben');
+        final p0 = aus.getPixel(50, 75);
+        expect(p0.r, greaterThan(150), reason: 'dasselbe Bild');
+      },
+    );
+  });
 }

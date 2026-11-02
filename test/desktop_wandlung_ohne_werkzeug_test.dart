@@ -14,8 +14,16 @@ import 'package:kern/services/platform/desktop_image_tools.dart';
 /// Der Weg braucht kein Werkzeug und läuft deshalb auf jeder Plattform.
 void main() {
   late Directory temp;
-  setUp(() => temp = Directory.systemTemp.createTempSync('pv_dartwandlung_'));
-  tearDown(() => temp.deleteSync(recursive: true));
+  setUp(() {
+    temp = Directory.systemTemp.createTempSync('pv_dartwandlung_');
+    // Ohne jedes Werkzeug, auch ohne libvips (#274): Hier geht es um den
+    // Weg über Dart, der überall läuft.
+    DesktopImageTools.stelleWerkzeuge({});
+  });
+  tearDown(() {
+    DesktopImageTools.vergissWerkzeuge();
+    temp.deleteSync(recursive: true);
+  });
 
   /// Gespeichert quer, links rot und rechts blau – laut EXIF um 90° im
   /// Uhrzeigersinn zu drehen, mit Aufnahmeort.

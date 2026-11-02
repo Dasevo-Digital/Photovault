@@ -52,6 +52,18 @@ class DesktopImageTools {
     'ffprobe': 'Videolänge (Teil von ffmpeg)',
   };
 
+  /// Werkzeuge, die es schneller oder besser machen, ohne die nichts fehlt –
+  /// sie stehen deshalb nicht in [werkzeuge] und in keiner Warnung.
+  ///
+  /// `vipsthumbnail` (libvips, #274): Verkleinern im linearen Licht wie
+  /// Immich 3.3, mit einem Bruchteil des Speichers. Gemessen am Server an
+  /// einem Foto mit 24 MP: die volle Auflösung in 0,12 s und 62 MB statt
+  /// Sekunden und bis zu 1,4 GB über Dart. Fehlt es, rechnet Dart wie
+  /// bisher.
+  static const freiwilligeWerkzeuge = <String, String>{
+    'vipsthumbnail': 'Schnelles Verkleinern (Linux: Paket libvips-tools)',
+  };
+
   /// Unter welchen Namen ein Werkzeug auftreten kann, in Suchreihenfolge.
   ///
   /// libheif hat sein Umwandlungsprogramm mit Fassung 1.18 von
@@ -184,7 +196,7 @@ class DesktopImageTools {
   static Future<Map<String, String?>> _suche() async {
     if (_gefunden != null) return _gefunden!;
     final ergebnis = <String, String?>{};
-    for (final werkzeug in werkzeuge.keys) {
+    for (final werkzeug in [...werkzeuge.keys, ...freiwilligeWerkzeuge.keys]) {
       String? pfad;
       for (final name in alternativNamen[werkzeug] ?? [werkzeug]) {
         pfad = await _findePfad(name);
@@ -197,7 +209,8 @@ class DesktopImageTools {
 
   /// Welche Werkzeuge vorhanden sind – für die Anzeige und die Diagnose.
   static Future<Map<String, bool>> pruefeWerkzeuge() async => {
-    for (final e in (await _suche()).entries) e.key: e.value != null,
+    for (final e in (await _suche()).entries)
+      if (werkzeuge.containsKey(e.key)) e.key: e.value != null,
   };
 
   /// Der vollständige Pfad, unter dem [werkzeug] gefunden wurde, oder
@@ -363,6 +376,15 @@ class DesktopImageTools {
     // Original, der Datenschutzexport brach bei jedem gewöhnlichen Foto
     // ab. Steckt hinter der Endung etwas anderes, versuchen es danach die
     // Werkzeuge.
+    if (vipsEndungen.contains(endung)) {
+      final schnell = await _mitVips(
+        datei.path,
+        maxDimension,
+        quality,
+        drehen: true,
+      );
+      if (schnell != null) return schnell;
+    }
     if (dartEndungen.contains(endung)) {
       try {
         final direkt = await berechne(
@@ -470,6 +492,17 @@ class DesktopImageTools {
         if (objektivkorrektur && endung == '.arw') korrekturQuelle = kopie;
       }
 
+      // Schon gedreht (siehe _SkalierAuftrag.drehen); die Sony-Korrektur
+      // kann nur Dart.
+      if (korrekturQuelle == null) {
+        final schnell = await _mitVips(
+          ziel,
+          maxDimension,
+          quality,
+          drehen: false,
+        );
+        if (schnell != null) return schnell;
+      }
       final rohBytes = await File(ziel).readAsBytes();
       // await ist wichtig: ohne würde das Future erst NACH dem catch
       // abgeschlossen und ein Fehler im Isolate entkäme der Fehlerbehandlung.
@@ -486,6 +519,69 @@ class DesktopImageTools {
       return null;
     } finally {
       // Zwischendateien immer aufräumen, auch bei Fehlern.
+      try {
+        await temp?.delete(recursive: true);
+      } catch (_) {}
+    }
+  }
+
+  /// Was libvips für [_mitVips] liest: die Formate aus [dartEndungen], für
+  /// die es einen Lader mitbringt. GIF, BMP und PSD bleiben bei Dart.
+  static const vipsEndungen = {
+    '.jpg',
+    '.jpeg',
+    '.jpe',
+    '.png',
+    '.webp',
+    '.tif',
+    '.tiff',
+  };
+
+  /// Ab dieser Kante wird nicht verkleinert – nur gedreht und kodiert.
+  static const _vipsOhneGrenze = 1 << 16;
+
+  /// Verkleinert und kodiert [quelle] mit `vipsthumbnail` (#274) – im
+  /// linearen Licht, wie Immich 3.3, und mit einem Bruchteil des Speichers
+  /// von Dart. `null`, wenn das Werkzeug fehlt oder scheitert; dann
+  /// rechnet Dart.
+  ///
+  /// Wie [_skaliereUndKodiere]: höchstens [maxDimension] an der langen
+  /// Seite, nie vergrössert, das Farbprofil bleibt, alles andere geht –
+  /// `keep=icc`. heif-dec reicht das EXIF einer HEIC samt Ort weiter;
+  /// wer gewandelte Bytes bekommt, verlässt sich darauf, dass nichts davon
+  /// mitkommt. [drehen] wendet die Lage aus dem EXIF an; die Bilder von
+  /// heif-dec und dcraw_emu liegen schon richtig.
+  static Future<Uint8List?> _mitVips(
+    String quelle,
+    int maxDimension,
+    int quality, {
+    required bool drehen,
+  }) async {
+    final werkzeug = await aufruf('vipsthumbnail');
+    if (werkzeug == null) return null;
+    Directory? temp;
+    try {
+      temp = await Directory.systemTemp.createTemp('pv_vips_');
+      final ziel = p.join(temp.path, 'aus.jpg');
+      final kante = math.min(maxDimension, _vipsOhneGrenze);
+      final r = await Process.run(werkzeug, [
+        quelle,
+        '--size',
+        '${kante}x$kante>',
+        // Lineares Licht kostet nur beim Verkleinern etwas.
+        if (maxDimension < _vipsOhneGrenze) '--linear',
+        if (!drehen) '--no-rotate',
+        '-o',
+        '$ziel[Q=$quality,keep=icc]',
+      ]);
+      if (r.exitCode != 0) return null;
+      final aus = File(ziel);
+      if (!await aus.exists()) return null;
+      final bytes = await aus.readAsBytes();
+      return bytes.isEmpty ? null : bytes;
+    } catch (_) {
+      return null;
+    } finally {
       try {
         await temp?.delete(recursive: true);
       } catch (_) {}

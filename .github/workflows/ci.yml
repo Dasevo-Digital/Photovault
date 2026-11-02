@@ -40,8 +40,9 @@ jobs:
       - run: flutter pub get && (cd packages/kern && dart pub get) && (cd packages/server && dart pub get) && (cd apps/mobil && flutter pub get)
       - name: Formatierung
         run: dart format --output=none --set-exit-if-changed lib test tool integration_test docs packages apps
+      # libvips für die echten Wandlungstests (#274, werkzeuge_echt_test).
       - name: Werkzeuge für Gastprozess-Isolation
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap procps
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap procps libvips-tools
       # Die Tests der Handy-App starten einen Server aus packages/server.
       # Wie beim Bauen steht das Ende der Ausgabe bei einem Fehlschlag als
       # Anmerkung am Lauf – mit der Liste der roten Tests, die sonst nur im
