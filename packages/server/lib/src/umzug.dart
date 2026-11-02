@@ -165,6 +165,9 @@ class Umzugsdienst {
       );
     }
     await zwischen.rename(jetzt.path);
+    // Den Eingang räumt das Öffnen gleich auf (#269); der Hochlader dazu
+    // hat nichts mehr zu tun.
+    _hochladen.remove(id);
     final b = await bibliotheken.fuer(id);
     return _json({
       'stand': await b.bibliothek.protokoll.stand(),

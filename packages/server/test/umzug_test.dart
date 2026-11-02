@@ -135,6 +135,11 @@ void main() {
       isTrue,
       reason: 'die leere Bibliothek ist beiseitegelegt, nicht gelöscht',
     );
+    expect(
+      Directory('${ordner.path}/eingang/${erika.id}.umzug').existsSync(),
+      isFalse,
+      reason: 'die Notizen zum Hochladen gehen nach dem Abschluss weg (#269)',
+    );
 
     // Ein Gerät verbindet sich und liest, was der Rechner hatte.
     final datei = File('${ordner.path}/telefon/library.sqlite');
@@ -190,5 +195,25 @@ void main() {
     expect(kopf['pv-ausgang'], 'failed');
     final stand = await v.hole('api/v1/umzug/stand');
     expect(stand['dateien'], isEmpty);
+  });
+
+  test('ein alter Umzugseingang geht beim Öffnen weg – nur ohne laufenden '
+      'Umzug', () async {
+    // Bis 3.50.2 blieb er für immer liegen (#269).
+    await bibliotheken.schliesseAlle();
+    final rest = Directory('${ordner.path}/eingang/${erika.id}.umzug');
+    File('${rest.path}/a.json')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('{}');
+    final zwischen = Directory('${bibliotheken.wurzel.path}/${erika.id}.umzug')
+      ..createSync(recursive: true);
+
+    await bibliotheken.fuer(erika.id);
+    expect(rest.existsSync(), isTrue, reason: 'ein Umzug läuft noch');
+
+    await bibliotheken.schliesseAlle();
+    zwischen.deleteSync(recursive: true);
+    await bibliotheken.fuer(erika.id);
+    expect(rest.existsSync(), isFalse);
   });
 }

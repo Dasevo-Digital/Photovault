@@ -100,6 +100,7 @@ class Bibliotheken {
         nachImport: auswertung.anstossen,
       );
       await hochladen.raeumeAuf();
+      await _raeumeUmzugsresteAuf(kontoId);
       // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
       // einem gelöschten Live-Photo-Foto unsichtbar zurückblieb (#254).
       // Am Server, damit es auch verbundene Geräte erreicht.
@@ -112,6 +113,27 @@ class Bibliotheken {
       auswertung.anstossen();
       return Kontobereich(b, hochladen, auswertung, vergabe);
     });
+  }
+
+  /// Der Eingang eines Umzugs (`eingang/<Konto>.umzug`) – die Notizen zu
+  /// jeder hochgeladenen Datei. Nach dem Abschluss braucht ihn niemand
+  /// mehr, und bis 3.50.2 blieb er für immer liegen (#269): am Server
+  /// 44 802 Dateien mit 179 MB, in jeder Sicherung des Containers mit.
+  /// Gelöscht wird nur, wenn kein Umzug läuft, also kein Zwischenordner
+  /// `bibliotheken/<Konto>.umzug` besteht. `abschliessen` öffnet die
+  /// Bibliothek danach neu – damit räumt es sich selbst auf.
+  Future<void> _raeumeUmzugsresteAuf(String kontoId) async {
+    final rest = Directory(p.join(eingang.path, '$kontoId.umzug'));
+    if (!await rest.exists()) return;
+    if (await Directory(p.join(wurzel.path, '$kontoId.umzug')).exists()) {
+      return;
+    }
+    try {
+      await rest.delete(recursive: true);
+      protokoll('Eingang eines abgeschlossenen Umzugs aufgeräumt');
+    } on FileSystemException catch (e) {
+      protokoll('Eingang eines Umzugs nicht aufgeräumt: $e');
+    }
   }
 
   /// Übernimmt die Bibliothek aus der Zeit vor den Konten
@@ -138,11 +160,15 @@ class Bibliotheken {
   /// Legt die Bibliothek von [kontoId] beiseite, wenn das Konto entfernt
   /// wird: `bibliotheken/<Konto>.entfernt-<Zeit>`, nicht gelöscht – wie beim
   /// Umzug. Wer sie wirklich los sein will, löscht den Ordner von Hand.
-  /// Halb hochgeladene Dateien im Eingang gehen weg.
+  /// Halb hochgeladene Dateien im Eingang gehen weg, auch die eines Umzugs.
   Future<Directory?> legeBeiseite(String kontoId) async {
     await schliesse(kontoId);
-    final eingangKonto = Directory(p.join(eingang.path, kontoId));
-    if (await eingangKonto.exists()) await eingangKonto.delete(recursive: true);
+    for (final name in [kontoId, '$kontoId.umzug']) {
+      final eingangKonto = Directory(p.join(eingang.path, name));
+      if (await eingangKonto.exists()) {
+        await eingangKonto.delete(recursive: true);
+      }
+    }
     final ordner = Directory(p.join(wurzel.path, kontoId));
     if (!await ordner.exists()) return null;
     final stempel = DateTime.now()
