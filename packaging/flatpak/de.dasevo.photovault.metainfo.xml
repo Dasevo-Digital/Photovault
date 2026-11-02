@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.51.0" date="2026-11-02">
+      <description>
+        <p>Photos edited in the iPhone Photos app are now backed up as well; the server stacks the edit over the original, which stays behind it as a variant.</p>
+        <p>Birthdays in the review show photos taken on the person's earlier birthdays.</p>
+        <p>Tags can be renamed by clicking them in a photo's details; the new name applies to every photo with that tag.</p>
+      </description>
+    </release>
     <release version="3.50.3" date="2026-11-02">
       <description>
         <p>After moving a library from the computer to the server, the server now removes the upload notes the move left behind; a leftover from an earlier move is cleaned up at the next start.</p>
