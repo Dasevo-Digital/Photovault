@@ -28,6 +28,9 @@ sucht die App im Text.
 Unter „Konto → Kamerarolle sichern“. Gesichert wird das Original jedes
 Fotos und Videos (bei Live Photos Bild und Video unter demselben
 Namensstamm, damit der Server sie paart), der neueste Eintrag zuerst.
+Ein in der Fotos-App bearbeitetes Foto (iOS) bringt zusätzlich seine
+bearbeitete Fassung mit; der Server legt sie wie eine Bearbeitung am
+Rechner über das Original, das als Variante dahinter bleibt (#271).
 
 - Vor dem Hochladen fragt die App den Server nach den Prüfsummen
   (`POST /api/v1/pruefsummen`); was er schon hat, etwa nach einem Umzug

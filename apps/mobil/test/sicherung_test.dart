@@ -7,6 +7,7 @@ import 'package:photo_vault_mobil/sicherung/freigabe.dart';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_mobil/sicherung/kamerarolle.dart';
@@ -27,6 +28,24 @@ class _Rolle implements Kamerarolle {
 
   void foto(String id, File datei, {DateTime? geaendert}) =>
       eintraege_.insert(0, _eintrag(id, [('bild', datei)], geaendert));
+
+  /// Ein in der Fotos-App bearbeitetes Foto: Original und Bearbeitung,
+  /// wie [PhotoManagerRolle] sie liefert (#271).
+  void bearbeitetesFoto(
+    String id,
+    File original,
+    File bearbeitung, {
+    DateTime? geaendert,
+  }) {
+    eintraege_.removeWhere((x) => x.id == id);
+    eintraege_.insert(
+      0,
+      _eintrag(id, [
+        ('bild', original),
+        ('bearbeitet', bearbeitung),
+      ], geaendert),
+    );
+  }
 
   void livePhoto(String id, File bild, File film) => eintraege_.insert(
     0,
@@ -439,5 +458,85 @@ void main() {
     final r = await lauf(gruppeBytes: 1).laufe();
     expect(r.hochgeladen, 3);
     expect(rolle.aufgeraeumt, 3, reason: 'nach jedem Eintrag aufgeräumt');
+  });
+
+  group('in der Fotos-App bearbeitete Fotos (#271)', () {
+    Future<List<int>> original(String id) async {
+      final ziel = File(
+        p.join(
+          ordner.path,
+          'geholt-$id-${DateTime.now().microsecondsSinceEpoch}',
+        ),
+      );
+      await telefon.ladeHerunter('api/v1/aufnahmen/$id/original', ziel);
+      return ziel.readAsBytesSync();
+    }
+
+    Future<Map> zeile(String name) async =>
+        (await aufServer()).singleWhere((z) => z['name'] == name);
+
+    test(
+      'die Bearbeitung liegt über dem Original, auch beim zweiten Mal',
+      () async {
+        final roh = server.jpeg('IMG_0701.JPG', 40);
+        rolle.foto('g', roh);
+        await lauf().laufe();
+        final id = (await zeile('IMG_0701.JPG'))['id'] as String;
+        expect(await original(id), roh.readAsBytesSync());
+
+        // In der Fotos-App bearbeitet: Das Original bleibt, die Bearbeitung
+        // kommt dazu.
+        final erste = server.jpeg('IMG_0701_bearbeitet.jpg', 90);
+        rolle.bearbeitetesFoto('g', roh, erste, geaendert: DateTime(2025, 7));
+        final r = await lauf().laufe();
+        expect(r.hochgeladen, 1);
+        final nachher = await zeile('IMG_0701.JPG');
+        expect(nachher['id'], id, reason: 'dieselbe Aufnahme, mit allem daran');
+        expect(await original(id), erste.readAsBytesSync());
+        final serie = nachher['serie'] as Map;
+        expect(serie['id'], startsWith('variante:'));
+        expect(serie['groesse'], 2, reason: 'das Original liegt dahinter');
+        expect(
+          (await aufServer()).where((z) => z['name'] == 'IMG_0701.JPG'),
+          hasLength(1),
+          reason: 'im Raster nur die Bearbeitung',
+        );
+        expect((await lauf().laufe()).hochgeladen, 0, reason: 'nichts doppelt');
+
+        // Noch einmal bearbeitet: wieder auf die Hauptversion.
+        final zweite = server.jpeg('IMG_0701_bearbeitet.jpg', 150);
+        rolle.bearbeitetesFoto('g', roh, zweite, geaendert: DateTime(2025, 8));
+        await lauf().laufe();
+        final zuletzt = await zeile('IMG_0701.JPG');
+        expect(zuletzt['id'], id);
+        expect(await original(id), zweite.readAsBytesSync());
+        expect((zuletzt['serie'] as Map)['groesse'], 3);
+      },
+    );
+
+    test('Original und Bearbeitung im selben Lauf', () async {
+      final roh = server.jpeg('IMG_0702.JPG', 60);
+      final bearbeitung = server.jpeg('IMG_0702_bearbeitet.jpg', 210);
+      rolle.bearbeitetesFoto('h', roh, bearbeitung);
+      final r = await lauf().laufe();
+      expect(r.hochgeladen, 1);
+      final z = await zeile('IMG_0702.JPG');
+      expect(await original(z['id'] as String), bearbeitung.readAsBytesSync());
+      expect((z['serie'] as Map)['groesse'], 2);
+    });
+
+    test(
+      'ohne bekanntes Original wird die Datei gewöhnlich aufgenommen',
+      () async {
+        final datei = server.jpeg('IMG_0703_bearbeitet.jpg', 15);
+        final kopf = await TusHochladen(telefon).lade(
+          datei,
+          'api/v1/hochladen',
+          {'filename': 'IMG_0703_bearbeitet.jpg', 'bearbeitungVon': 'a' * 64},
+        );
+        expect(kopf['pv-ausgang'], 'imported');
+        expect((await zeile('IMG_0703_bearbeitet.jpg'))['serie'], isNull);
+      },
+    );
   });
 }

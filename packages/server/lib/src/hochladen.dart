@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
+import 'package:kern/services/bearbeitung_speichern.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -32,6 +34,11 @@ import 'package:kern/services/import_plan.dart';
 /// dazu, `geaendert` – die Änderungszeit der Datei in Millisekunden. Fehlen
 /// Aufnahmedaten in der Datei, ist das der letzte Anhalt für ihr Datum;
 /// ohne sie wäre es der Zeitpunkt des Hochladens.
+///
+/// `bearbeitungVon` (die SHA-256 eines Originals) kennzeichnet eine in der
+/// Fotos-App des Telefons bearbeitete Fassung (#271): Sie wird nicht als
+/// eigene Aufnahme aufgenommen, sondern über das Original gelegt – siehe
+/// [_bearbeitung].
 class Hochladen {
   Hochladen(
     this.eingang,
@@ -110,9 +117,11 @@ class Hochladen {
     if (laenge > hoechstens) return Response(413, headers: _tus);
     final meta = _metadaten(anfrage.headers['upload-metadata']);
     final zielpfad = meta['pfad'];
-    if (meta['sha256'] != null &&
-        !RegExp(r'^[a-f0-9]{64}$').hasMatch(meta['sha256']!)) {
-      return Response(400, body: 'sha256', headers: _tus);
+    for (final schluessel in ['sha256', 'bearbeitungVon']) {
+      if (meta[schluessel] != null &&
+          !RegExp(r'^[a-f0-9]{64}$').hasMatch(meta[schluessel]!)) {
+        return Response(400, body: schluessel, headers: _tus);
+      }
     }
     if (abschluss != null &&
         (zielpfad == null ||
@@ -144,6 +153,7 @@ class Hochladen {
       'geaendert': int.tryParse(meta['geaendert'] ?? ''),
       'pfad': ?zielpfad,
       'sha256': ?meta['sha256'],
+      'bearbeitungVon': ?meta['bearbeitungVon'],
       'art': ?meta['art'],
       'regelstand': ?meta['regelstand'],
       'angelegt': DateTime.now().toUtc().toIso8601String(),
@@ -277,6 +287,14 @@ class Hochladen {
         );
       }
       final b = bibliothek!;
+      if (a['bearbeitungVon'] case final String von) {
+        final r = await _bearbeitung(b, datei, von);
+        if (r != null) {
+          nachImport?.call();
+          return r;
+        }
+        // Kein Original dazu: wie jede andere Datei aufnehmen.
+      }
       if (a['regelstand'] != null &&
           a['regelstand'] !=
               await ImportPlanDienst(b.db, b.importe).aktuellerRegelstand()) {
@@ -328,6 +346,64 @@ class Hochladen {
     } finally {
       await ordner.delete(recursive: true);
     }
+  }
+
+  /// Legt eine in der Fotos-App des Telefons bearbeitete Fassung über ihr
+  /// Original (#271), wie eine Bearbeitung am Rechner (siehe
+  /// [speichereBearbeitung]): Die Aufnahme behält Kennung, Alben,
+  /// Schlagwörter, Personen und Sterne und zeigt danach die Bearbeitung;
+  /// das bisherige Original liegt als Variante dahinter.
+  ///
+  /// Bis 3.50.3 sicherte das Telefon nur das Original – jede Bearbeitung
+  /// aus der Fotos-App fehlte in Photo Vault.
+  ///
+  /// [vonSumme] ist die Prüfsumme des Originals. Wurde das Foto schon
+  /// einmal bearbeitet, liegt das Original als Variante hinter der ersten
+  /// Bearbeitung; die neue gehört dann auf die Hauptversion, und die erste
+  /// rückt ebenfalls als Variante dahinter. `null`, wenn es kein passendes
+  /// Original gibt oder die Datei kein JPEG ist – dann wird sie gewöhnlich
+  /// aufgenommen.
+  Future<Map<String, Object?>?> _bearbeitung(
+    Bibliothek b,
+    File datei,
+    String vonSumme,
+  ) async {
+    final bytes = await datei.readAsBytes();
+    // Das Telefon liefert die Bearbeitung als JPEG (photo_manager rendert
+    // sie so); speichereBearbeitung legt sie als .jpg ab.
+    if (bytes.length < 3 || bytes[0] != 0xFF || bytes[1] != 0xD8) return null;
+    final summe = sha256.convert(bytes).toString();
+    final schon = await b.kennungFuer(summe);
+    if (schon != null) {
+      return {'ausgang': 'duplicateSkipped', 'aufnahme': schon};
+    }
+    final kennung = await b.kennungFuer(vonSumme);
+    if (kennung == null) return null;
+    var ziel = await b.db.assetById(kennung);
+    final stapel = ziel?.stackId;
+    if (ziel != null &&
+        stapel != null &&
+        istVariantenstapel(stapel) &&
+        !ziel.isStackCover) {
+      for (final m in await b.db.assetsInStack(stapel)) {
+        if (m.isStackCover) ziel = m;
+      }
+    }
+    if (ziel == null ||
+        ziel.type != 'IMAGE' ||
+        ziel.isLocked ||
+        ziel.isTrashed) {
+      return null;
+    }
+    await speichereBearbeitung(
+      db: b.db,
+      paths: b.pfade,
+      asset: ziel,
+      jpeg: bytes,
+      importe: b.importe,
+    );
+    protokoll('Bearbeitung vom Telefon über ${ziel.originalFileName} gelegt');
+    return {'ausgang': 'imported', 'aufnahme': ziel.id};
   }
 
   Future<Response> verwerfen(Request anfrage, String id) async {

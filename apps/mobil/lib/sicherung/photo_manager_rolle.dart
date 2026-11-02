@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart';
 
@@ -12,6 +14,12 @@ import 'kamerarolle.dart';
 /// das nur in iCloud liegt, erst herunter. Ein Live Photo besteht aus Bild
 /// und Video; beide gehen unter demselben Namensstamm zum Server, der sie
 /// daran wieder zusammenfügt.
+///
+/// **Bearbeitete Fotos (#271).** Unter iOS bleibt das Original einer
+/// Bearbeitung in der Fotos-App unverändert; bis 3.50.3 kam die
+/// Bearbeitung deshalb nie auf den Server. Hat ein Foto Anpassungen, geht
+/// die bearbeitete Fassung als dritter Teil mit (`bearbeitet`, ein JPEG –
+/// so rendert photo_manager sie); der Server legt sie über das Original.
 class PhotoManagerRolle implements Kamerarolle {
   PhotoManagerRolle({this.alben = const []});
 
@@ -99,6 +107,23 @@ class PhotoManagerRolle implements Kamerarolle {
             teil: 'video',
             name: name(film.path, sonst: '.MOV'),
             datei: film,
+          ),
+        );
+      }
+    }
+    if (a.type == AssetType.image &&
+        Platform.isIOS &&
+        await a.darwin.hasAdjustments) {
+      final bearbeitet = await a.file;
+      if (bearbeitet != null && bearbeitet.path != original.path) {
+        dateien.add(
+          Rollendatei(
+            teil: 'bearbeitet',
+            // Ein eigener Stamm: Ohne Original auf dem Server wird die
+            // Datei gewöhnlich aufgenommen und soll dann nicht als Hälfte
+            // eines Live Photos gelten.
+            name: '${stamm}_bearbeitet.jpg',
+            datei: bearbeitet,
           ),
         );
       }

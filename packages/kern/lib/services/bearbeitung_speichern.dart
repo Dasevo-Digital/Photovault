@@ -3,11 +3,13 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:kern/db/database.dart';
-import 'package:kern/services/import_service.dart';
-import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+
+import '../db/database.dart';
+import 'bildnachlauf.dart' show naechsterZusatz;
+import 'import_service.dart';
+import 'storage_paths.dart';
 
 /// Was [speichereBearbeitung] getan hat.
 typedef Bearbeitungsergebnis = ({
@@ -43,6 +45,12 @@ typedef Bearbeitungsergebnis = ({
 /// wieder wie vorher. In einer mit dem Server verbundenen Kopie lehnt die
 /// Datenbank den Eintrag ab (`pv_nur_ueber_server`, #250) – auch dann ist
 /// nichts verloren.
+///
+/// **Auch am Server (#271).** Ein in der Fotos-App des Telefons
+/// bearbeitetes Foto kommt als eigene Datei; der Server legt es mit dieser
+/// Funktion über sein Original, wie eine Bearbeitung am Rechner. Deshalb
+/// bekommt die Miniatur einen neuen Namen: Verbundene Geräte halten
+/// Dateien unter ihrem Namen vor und sähen eine neue unter dem alten nie.
 Future<Bearbeitungsergebnis> speichereBearbeitung({
   required AppDatabase db,
   required StoragePaths paths,
@@ -172,12 +180,20 @@ Future<Bearbeitungsergebnis> speichereBearbeitung({
     asset.id,
     '.jpg',
     alreadyReadBytes: jpeg,
+    zusatz: naechsterZusatz(asset.id, asset.thumbnailRelativePath),
   );
   await db.updateThumbnailInfo(
     asset.id,
     thumbnailRelativePath: vorschau.thumbnailRelativePath,
+    // Ein grosses JPEG bekommt wie beim Import eine Vorschau; ohne sie
+    // lud der Betrachter auf dem Handy das ganze Bild.
+    previewRelativePath: vorschau.previewRelativePath,
     widthPx: vorschau.width,
     heightPx: vorschau.height,
   );
+  final alteMiniatur = asset.thumbnailRelativePath;
+  if (alteMiniatur != null && alteMiniatur != vorschau.thumbnailRelativePath) {
+    await paths.deletePermanently(alteMiniatur);
+  }
   return (original: original, vorschau: vorschau);
 }

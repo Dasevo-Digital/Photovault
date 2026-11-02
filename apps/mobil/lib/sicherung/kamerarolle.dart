@@ -61,7 +61,8 @@ class Rollendatei {
   });
 
   /// `bild` oder `video` – unterscheidet die Hälften eines Live Photos im
-  /// Sicherungsstand.
+  /// Sicherungsstand. `bearbeitet` ist die in der Fotos-App bearbeitete
+  /// Fassung des Bildes (#271); der Server legt sie über das Original.
   final String teil;
 
   /// Der Name auf dem Server. Bei einem Live Photo tragen beide Hälften

@@ -219,10 +219,18 @@ class Sicherungslauf {
       var endgueltig = false;
       String? aufnahme;
       String? abgelehnt;
+      // Die Prüfsumme des Originals: Eine bearbeitete Fassung (#271) nennt
+      // sie, damit der Server sie über das Original legt.
+      final original = [
+        for (final (f, s) in liste)
+          if (f.teil == 'bild') s,
+      ].firstOrNull;
       for (final (f, summe) in liste) {
+        // Die Bearbeitung ist, was man sieht – sie nennt die Aufnahme.
+        final bearbeitet = f.teil == 'bearbeitet';
         final da = schonDa[summe];
         if (da != null) {
-          aufnahme ??= da;
+          aufnahme = bearbeitet ? da : aufnahme ?? da;
           continue;
         }
         final Map<String, String> kopf;
@@ -234,6 +242,7 @@ class Sicherungslauf {
               'filename': f.name,
               'geaendert': '${x.aufgenommen.millisecondsSinceEpoch}',
               'sha256': summe,
+              if (bearbeitet && original != null) 'bearbeitungVon': original,
             },
             fortsetzen: stand.ort(x.id, f.teil, summe),
             angelegt: (ort) => stand.merkeOrt(x.id, f.teil, summe, ort),
@@ -277,7 +286,9 @@ class Sicherungslauf {
             endgueltig = true;
         }
         if (abgelehnt != null) break;
-        aufnahme ??= kopf['pv-aufnahme'];
+        aufnahme = bearbeitet
+            ? kopf['pv-aufnahme'] ?? aufnahme
+            : aufnahme ?? kopf['pv-aufnahme'];
       }
       if (abgelehnt != null) {
         if (endgueltig) {

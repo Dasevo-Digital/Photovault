@@ -10,7 +10,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_vault/services/bearbeitung_speichern.dart';
+import 'package:kern/services/bearbeitung_speichern.dart';
 
 /// Speichern aus dem Editor verliert kein Original mehr (#248) und lässt
 /// in einer verbundenen Kopie nichts kaputt zurück (#250).
