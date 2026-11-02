@@ -3818,6 +3818,21 @@ class AppTexteEn extends AppTexte {
   String get infoTagHinzufuegenPlatzhalter => 'Add a tag …';
 
   @override
+  String get infoTagUmbenennen => 'Rename tag';
+
+  @override
+  String get infoTagUmbenennenFeld =>
+      'New name – applies to every photo with this tag';
+
+  @override
+  String get infoTagUmbenennenHinweis => 'Click to rename';
+
+  @override
+  String infoTagVorhanden(String name) {
+    return 'A tag named “$name” already exists.';
+  }
+
+  @override
   String get stufeBildanalyse => 'Image analysis';
 
   @override

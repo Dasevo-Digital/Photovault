@@ -217,7 +217,14 @@ class Abgleichsapi {
       } on Object catch (e) {
         return _json({'fehler': 'Befehl nicht lesbar: $e'}, status: 400);
       }
-      final ergebnis = await b.db.fuehreAus(befehl);
+      final Object? ergebnis;
+      try {
+        ergebnis = await b.db.fuehreAus(befehl);
+      } on StateError catch (e) {
+        // Was die Bibliothek ablehnt – etwa einen schon vergebenen Namen
+        // (#273) –, mit Grund statt als 500.
+        return _json({'fehler': e.message}, status: 409);
+      }
       return _json({
         'ergebnis': ergebnisAlsJson(ergebnis),
         'stand': await b.protokoll.stand(),

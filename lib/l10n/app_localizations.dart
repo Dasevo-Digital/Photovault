@@ -6441,6 +6441,30 @@ abstract class AppTexte {
   /// **'Tag hinzufügen …'**
   String get infoTagHinzufuegenPlatzhalter;
 
+  /// No description provided for @infoTagUmbenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag umbenennen'**
+  String get infoTagUmbenennen;
+
+  /// No description provided for @infoTagUmbenennenFeld.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuer Name – gilt für alle Fotos mit diesem Tag'**
+  String get infoTagUmbenennenFeld;
+
+  /// No description provided for @infoTagUmbenennenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Antippen zum Umbenennen'**
+  String get infoTagUmbenennenHinweis;
+
+  /// No description provided for @infoTagVorhanden.
+  ///
+  /// In de, this message translates to:
+  /// **'Einen Tag „{name}“ gibt es schon.'**
+  String infoTagVorhanden(String name);
+
   /// No description provided for @stufeBildanalyse.
   ///
   /// In de, this message translates to:

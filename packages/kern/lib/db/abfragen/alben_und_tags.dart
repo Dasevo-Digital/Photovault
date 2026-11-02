@@ -175,6 +175,46 @@ extension AlbenAbfragen on AppDatabase {
   /// Begriff, den der Nutzer schon selbst vergeben hat, lässt sie ihn in
   /// Ruhe: Sie darf eine Handvergabe nicht zu ihrer eigenen erklären und
   /// sie damit löschbar machen.
+  /// Benennt das Schlagwort [tagId] um (#273), an allen Aufnahmen
+  /// zugleich. Die Kennung bleibt – Kameravorgaben, Regeln und intelligente
+  /// Alben zeigen über sie auf das Schlagwort.
+  ///
+  /// Trägt schon ein anderes Schlagwort den Namen, wirft es
+  /// `pv_schlagwort_vorhanden`: Zusammenlegen wäre etwas anderes und
+  /// änderte Kennungen. Steht der alte Name im Vokabular der
+  /// Bilderkennung, zieht er mit – sonst brächte ihr nächster Lauf ihn als
+  /// neues Schlagwort zurück.
+  Future<void> renameTag(String tagId, String name) => transaction(() async {
+    final neu = name.trim();
+    if (neu.isEmpty) throw ArgumentError.value(name, 'name');
+    final tag = await (select(
+      tags,
+    )..where((t) => t.id.equals(tagId))).getSingleOrNull();
+    if (tag == null || tag.name == neu) return;
+    final anderes = await (select(
+      tags,
+    )..where((t) => t.name.equals(neu))).getSingleOrNull();
+    if (anderes != null) throw StateError('pv_schlagwort_vorhanden');
+    await (update(
+      tags,
+    )..where((t) => t.id.equals(tagId))).write(TagsCompanion(name: Value(neu)));
+    final begriff = await (select(
+      aiTagVocabulary,
+    )..where((v) => v.term.equals(tag.name))).getSingleOrNull();
+    if (begriff == null) return;
+    final schon = await (select(
+      aiTagVocabulary,
+    )..where((v) => v.term.equals(neu))).getSingleOrNull();
+    if (schon != null) {
+      await (delete(
+        aiTagVocabulary,
+      )..where((v) => v.id.equals(begriff.id))).go();
+    } else {
+      await (update(aiTagVocabulary)..where((v) => v.id.equals(begriff.id)))
+          .write(AiTagVocabularyCompanion(term: Value(neu)));
+    }
+  });
+
   Future<void> tagAsset(
     String assetId,
     String tagName, {

@@ -3845,6 +3845,21 @@ class AppTexteDe extends AppTexte {
   String get infoTagHinzufuegenPlatzhalter => 'Tag hinzufügen …';
 
   @override
+  String get infoTagUmbenennen => 'Tag umbenennen';
+
+  @override
+  String get infoTagUmbenennenFeld =>
+      'Neuer Name – gilt für alle Fotos mit diesem Tag';
+
+  @override
+  String get infoTagUmbenennenHinweis => 'Antippen zum Umbenennen';
+
+  @override
+  String infoTagVorhanden(String name) {
+    return 'Einen Tag „$name“ gibt es schon.';
+  }
+
+  @override
   String get stufeBildanalyse => 'Bildanalyse';
 
   @override

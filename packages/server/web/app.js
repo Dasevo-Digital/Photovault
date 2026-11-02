@@ -4092,6 +4092,21 @@ function verweise(liste, ziel) {
   return box;
 }
 
+// Ein Schlagwort umbenennen (#273) – an allen Fotos zugleich, wie am Rechner
+// und auf dem Handy. Die Kennung bleibt; einen vergebenen Namen lehnt der
+// Server ab (409).
+async function schlagwortUmbenennen(w) {
+  const name = (prompt(t('Neuer Name für „{name}“ – gilt für alle Fotos mit diesem Schlagwort.', { name: w.name }), w.name) || '').trim();
+  if (!name || name === w.name) return;
+  try {
+    await befehl('schlagwortUmbenennen', { schlagwortId: w.id, name });
+  } catch (x) {
+    alert(x.status === 409 ? t('Ein Schlagwort „{name}“ gibt es schon.', { name }) : x.message);
+    return;
+  }
+  zeigeAngaben();
+}
+
 async function zeigeAngaben() {
   const a = liste && liste.aufnahmen[offen];
   const feld = $('angaben-feld');
@@ -4119,7 +4134,17 @@ async function zeigeAngaben() {
   }
   if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
   if (d.gesichter && d.gesichter.length) teile.push(reihe('🙂', gesichterReihe(d.gesichter), t('Antippen, um zu benennen oder zu ändern')));
-  if (d.schlagwoerter.length) { const box = el('div'); for (const w of d.schlagwoerter) box.append(el('span', 'marke', w.name)); teile.push(reihe('🏷', box)); }
+  if (d.schlagwoerter.length) {
+    const box = el('div');
+    for (const w of d.schlagwoerter) {
+      const knopf = el('button', 'marke', w.name);
+      knopf.type = 'button';
+      knopf.title = t('Umbenennen – gilt für alle Fotos mit diesem Schlagwort');
+      knopf.addEventListener('click', () => schlagwortUmbenennen(w));
+      box.append(knopf);
+    }
+    teile.push(reihe('🏷', box));
+  }
   if (d.alben.length) teile.push(reihe('📚', verweise(d.alben, '#/alben')));
   // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
   const text = el('textarea');

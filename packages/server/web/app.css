@@ -467,6 +467,8 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #angaben-feld .reihe .inhalt { flex: 1; min-width: 0; }
 #angaben-feld a { color: var(--akzent); text-decoration: none; }
 #angaben-feld .marke { display: inline-block; padding: 2px 8px; margin: 2px 4px 2px 0; border-radius: 10px; background: var(--grund); border: 1px solid var(--rand); font-size: 0.9em; }
+#angaben-feld button.marke { font: inherit; font-size: 0.9em; color: inherit; cursor: pointer; }
+#angaben-feld button.marke:hover { border-color: var(--akzent, var(--rand)); }
 #angaben-feld .beschreibung { display: grid; gap: 6px; justify-items: start; }
 #angaben-feld textarea { display: block; width: 100%; min-height: 3.5em; padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); font: inherit; resize: vertical; }
 #angaben-feld .sterne button { background: none; border: 0; color: var(--leise); font-size: 20px; padding: 0 2px; line-height: 1; }

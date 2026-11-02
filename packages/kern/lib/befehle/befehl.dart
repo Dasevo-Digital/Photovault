@@ -93,6 +93,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'schlagwortAnheftenPerKennung': SchlagwortAnheftenPerKennung.aus,
   'schlagwortLoesen': SchlagwortLoesen.aus,
   'schlagwortAbnehmen': SchlagwortAbnehmen.aus,
+  'schlagwortUmbenennen': SchlagwortUmbenennen.aus,
   'kiSchlagwoerterZuruecknehmen': KiSchlagwoerterZuruecknehmen.aus,
   'kiBegriffHinzufuegen': KiBegriffHinzufuegen.aus,
   'kiBegriffEntfernen': KiBegriffEntfernen.aus,

@@ -182,3 +182,27 @@ final class VokabularUebersetzen extends Befehl<int> {
   @override
   Future<int> anwenden(AppDatabase db) => db.uebersetzeVokabular(zuordnung);
 }
+
+/// Ein Schlagwort umbenennen – an allen Aufnahmen zugleich (#273). Siehe
+/// [AppDatabase.renameTag].
+final class SchlagwortUmbenennen extends Befehl<void> {
+  const SchlagwortUmbenennen(this.schlagwortId, this.name);
+
+  static SchlagwortUmbenennen aus(Map<String, Object?> w) =>
+      SchlagwortUmbenennen(w['schlagwortId']! as String, w['name']! as String);
+
+  final String schlagwortId;
+  final String name;
+
+  @override
+  String get art => 'schlagwortUmbenennen';
+
+  @override
+  Map<String, Object?> get werte => {
+    'schlagwortId': schlagwortId,
+    'name': name,
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.renameTag(schlagwortId, name);
+}

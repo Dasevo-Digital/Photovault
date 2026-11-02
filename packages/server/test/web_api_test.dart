@@ -197,6 +197,50 @@ void main() {
     },
   );
 
+  test(
+    'Schlagwort umbenennen; ein vergebener Name kommt als 409 (#273)',
+    () async {
+      final id = await ladeHoch(erikaToken, 'IMG_0310.JPG', 33);
+      for (final name in ['Strand', 'Hafen']) {
+        await befehl(erikaToken, 'schlagwortAnheften', {
+          'ids': [id],
+          'name': name,
+          'quelle': 'hand',
+        });
+      }
+      Future<List<Map>> schlagwoerter() async =>
+          ((await jsonAus(
+                    await frag(
+                      'GET',
+                      '/api/v1/aufnahmen/$id/angaben',
+                      token: erikaToken,
+                    ),
+                  ))['schlagwoerter']!
+                  as List)
+              .cast<Map>();
+      final strand = (await schlagwoerter()).singleWhere(
+        (s) => s['name'] == 'Strand',
+      );
+
+      final doppelt = await befehl(erikaToken, 'schlagwortUmbenennen', {
+        'schlagwortId': strand['id'],
+        'name': 'Hafen',
+      });
+      expect(doppelt.statusCode, 409);
+      expect((await jsonAus(doppelt))['fehler'], 'pv_schlagwort_vorhanden');
+
+      final r = await befehl(erikaToken, 'schlagwortUmbenennen', {
+        'schlagwortId': strand['id'],
+        'name': 'Meer',
+      });
+      expect(r.statusCode, 200);
+      expect(
+        (await schlagwoerter()).map((s) => s['name']),
+        unorderedEquals(['Meer', 'Hafen']),
+      );
+    },
+  );
+
   test('Videos als H.264: erst 202, dann die abspielbare Fassung', () async {
     // Ein kurzes Video, wie es ein Browser nicht abspielt (HEVC, wo
     // ffmpeg es kann, sonst MPEG-4 Part 2 – auch das spielt kein Browser).

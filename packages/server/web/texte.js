@@ -36,6 +36,9 @@ function spracheWaehlen(wert) {
 const EN = {
   // Kopf und Wege
   'Fotos': 'Photos',
+  'Umbenennen – gilt für alle Fotos mit diesem Schlagwort': 'Rename – applies to every photo with this tag',
+  'Neuer Name für „{name}“ – gilt für alle Fotos mit diesem Schlagwort.': 'New name for “{name}” – applies to every photo with this tag.',
+  'Ein Schlagwort „{name}“ gibt es schon.': 'A tag named “{name}” already exists.',
   'Suche': 'Search',
   'Alben': 'Albums',
   'Personen': 'People',

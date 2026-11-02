@@ -83,6 +83,32 @@ class _AngabenlisteState extends State<Angabenliste> {
   /// Nur wenn der Name überhaupt ein anderes Datum nennt, wird gefragt –
   /// geprüft wird auf dem Server, weil dafür manchmal das Original gelesen
   /// werden muss (siehe Aufnahmedaten).
+  /// Was hier umbenannt wurde (#273); die Angaben kamen fertig an.
+  final _umbenannt = <String, String>{};
+
+  /// Benennt ein Schlagwort um – an allen Fotos zugleich, wie am Rechner
+  /// und im Browser. Einen vergebenen Namen lehnt die Bibliothek ab.
+  Future<void> _schlagwortUmbenennen(TagData s) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final alt = _umbenannt[s.id] ?? s.name;
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _Umbenennen(vorgabe: alt),
+    );
+    if (name == null || name == alt) return;
+    try {
+      await widget.sitzung.db.fuehreAus(SchlagwortUmbenennen(s.id, name));
+    } on StateError catch (e) {
+      if (e.message != 'pv_schlagwort_vorhanden') rethrow;
+      bote.showSnackBar(
+        SnackBar(content: Text(t.angabenSchlagwortVorhanden(name))),
+      );
+      return;
+    }
+    if (mounted) setState(() => _umbenannt[s.id] = name);
+  }
+
   Future<void> _holeVorschlag() async {
     final name = namensdatumAus(_a.originalFileName);
     final verbindung = widget.sitzung.abgleich?.verbindung;
@@ -262,7 +288,12 @@ class _AngabenlisteState extends State<Angabenliste> {
               spacing: 6,
               runSpacing: 4,
               children: [
-                for (final s in g.schlagwoerter) Chip(label: Text(s.name)),
+                for (final s in g.schlagwoerter)
+                  ActionChip(
+                    label: Text(_umbenannt[s.id] ?? s.name),
+                    tooltip: t.angabenSchlagwortUmbenennen,
+                    onPressed: () => _schlagwortUmbenennen(s),
+                  ),
               ],
             ),
           ),
@@ -399,6 +430,57 @@ String groesseText(int b) => b >= 1073741824
 
 /// Eine Zeile: Zeichen, darin der Inhalt und darunter, leiser, die
 /// Einzelheiten.
+/// Fragt nach dem neuen Namen eines Schlagworts. Eigenes Widget, damit das
+/// Feld erst mit dem Dialog verschwindet (siehe alben.dart).
+class _Umbenennen extends StatefulWidget {
+  const _Umbenennen({required this.vorgabe});
+
+  final String vorgabe;
+
+  @override
+  State<_Umbenennen> createState() => _UmbenennenState();
+}
+
+class _UmbenennenState extends State<_Umbenennen> {
+  late final _feld = TextEditingController(text: widget.vorgabe);
+
+  @override
+  void dispose() {
+    _feld.dispose();
+    super.dispose();
+  }
+
+  void _fertig() {
+    final name = _feld.text.trim();
+    if (name.isNotEmpty) Navigator.pop(context, name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return AlertDialog(
+      title: Text(t.angabenSchlagwortUmbenennen),
+      content: TextField(
+        controller: _feld,
+        autofocus: true,
+        contextMenuBuilder: einfuegbaresMenue,
+        decoration: InputDecoration(
+          labelText: t.angabenSchlagwortUmbenennenFeld,
+          border: const OutlineInputBorder(),
+        ),
+        onSubmitted: (_) => _fertig(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(onPressed: _fertig, child: Text(t.angabenUmbenennen)),
+      ],
+    );
+  }
+}
+
 class _Reihe extends StatelessWidget {
   const _Reihe({
     required this.symbol,

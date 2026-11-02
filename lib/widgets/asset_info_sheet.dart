@@ -26,6 +26,7 @@ import 'person_picker_dialog.dart';
 import 'star_rating.dart';
 import 'selection_action_bar.dart' show confirmDialog;
 import '../services/meldungsdienst.dart';
+import 'namens_dialog.dart' show frageNamen;
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
 import 'einfuegbares_menue.dart';
@@ -219,6 +220,27 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (name.isEmpty) return;
     await widget.db.fuehreAus(SchlagwortAnheften([_asset.id], name));
     _tagController.clear();
+    await _loadTags();
+  }
+
+  /// Benennt [tag] um – an allen Fotos zugleich (#273). Einen schon
+  /// vergebenen Namen lehnt die Bibliothek ab.
+  Future<void> _renameTag(TagData tag) async {
+    final t = AppTexte.of(context);
+    final name = await frageNamen(
+      context,
+      titel: t.infoTagUmbenennen,
+      feldbeschriftung: t.infoTagUmbenennenFeld,
+      vorgabe: tag.name,
+    );
+    if (name == null || name == tag.name || !mounted) return;
+    try {
+      await widget.db.fuehreAus(SchlagwortUmbenennen(tag.id, name));
+    } on StateError catch (e) {
+      if (e.message != 'pv_schlagwort_vorhanden') rethrow;
+      melde.warnung(t.infoTagVorhanden(name));
+      return;
+    }
     await _loadTags();
   }
 
@@ -969,6 +991,10 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                               for (final tag in _tags)
                                 InputChip(
                                   label: Text(tag.name),
+                                  tooltip: AppTexte.of(
+                                    context,
+                                  ).infoTagUmbenennenHinweis,
+                                  onPressed: () => _renameTag(tag),
                                   onDeleted: () => _removeTag(tag),
                                 ),
                             ],

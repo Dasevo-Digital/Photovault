@@ -110,6 +110,21 @@ class AppTexteEn extends AppTexte {
   String get sucheHinweisText => 'Tag, place, person, description, file name …';
 
   @override
+  String get angabenSchlagwortUmbenennen => 'Rename tag';
+
+  @override
+  String get angabenSchlagwortUmbenennenFeld =>
+      'New name – applies to every photo with this tag';
+
+  @override
+  String angabenSchlagwortVorhanden(String name) {
+    return 'A tag named “$name” already exists.';
+  }
+
+  @override
+  String get angabenUmbenennen => 'Rename';
+
+  @override
   String get sucheKeinModell =>
       'The server cannot search by content (no model). Showing the text search instead.';
 

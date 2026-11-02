@@ -259,6 +259,30 @@ abstract class AppTexte {
   /// **'Schlagwort, Ort, Person, Beschreibung, Dateiname …'**
   String get sucheHinweisText;
 
+  /// No description provided for @angabenSchlagwortUmbenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlagwort umbenennen'**
+  String get angabenSchlagwortUmbenennen;
+
+  /// No description provided for @angabenSchlagwortUmbenennenFeld.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuer Name – gilt für alle Fotos mit diesem Schlagwort'**
+  String get angabenSchlagwortUmbenennenFeld;
+
+  /// No description provided for @angabenSchlagwortVorhanden.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Schlagwort „{name}“ gibt es schon.'**
+  String angabenSchlagwortVorhanden(String name);
+
+  /// No description provided for @angabenUmbenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Umbenennen'**
+  String get angabenUmbenennen;
+
   /// No description provided for @sucheKeinModell.
   ///
   /// In de, this message translates to:

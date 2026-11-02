@@ -111,6 +111,21 @@ class AppTexteDe extends AppTexte {
       'Schlagwort, Ort, Person, Beschreibung, Dateiname …';
 
   @override
+  String get angabenSchlagwortUmbenennen => 'Schlagwort umbenennen';
+
+  @override
+  String get angabenSchlagwortUmbenennenFeld =>
+      'Neuer Name – gilt für alle Fotos mit diesem Schlagwort';
+
+  @override
+  String angabenSchlagwortVorhanden(String name) {
+    return 'Ein Schlagwort „$name“ gibt es schon.';
+  }
+
+  @override
+  String get angabenUmbenennen => 'Umbenennen';
+
+  @override
   String get sucheKeinModell =>
       'Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.';
 
