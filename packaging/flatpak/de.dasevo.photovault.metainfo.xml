@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.50.3" date="2026-11-02">
+      <description>
+        <p>After moving a library from the computer to the server, the server now removes the upload notes the move left behind; a leftover from an earlier move is cleaned up at the next start.</p>
+      </description>
+    </release>
     <release version="3.50.2" date="2026-11-02">
       <description>
         <p>Offline albums on the phone no longer stop at a photo the server cannot convert; the other files and albums are still fetched.</p>
