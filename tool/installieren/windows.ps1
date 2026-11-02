@@ -65,9 +65,12 @@ try {
       Expand-Archive -LiteralPath $plan.quelle -DestinationPath $plan.stage
       $neu=Join-Path $plan.stage 'PhotoVault'
       Test-Version $neu $plan.version
+      # GetFiles setzt den uebergebenen Pfad unveraendert vor jeden Namen;
+      # Get-ChildItem konnte bei einem 8.3-Kurznamen im Pfad (RUNNER~1 in
+      # der CI) die lange Form liefern, und der Versatz stimmte nicht (#257).
       $hashes=@{}
-      foreach($f in @(Get-ChildItem -LiteralPath $neu -Recurse -File)){
-        $hashes[$f.FullName.Substring($neu.Length+1)]=(Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash
+      foreach($f in [IO.Directory]::GetFiles($neu,'*',[IO.SearchOption]::AllDirectories)){
+        $hashes[$f.Substring($neu.Length+1)]=(Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash
       }
       Set-Wert 'dateien' $hashes
     }
@@ -80,10 +83,11 @@ try {
     'nachpruefen' {
       Test-Version $plan.ziel $plan.version
       $eigenschaften=@($plan.dateien.PSObject.Properties)
-      if(@(Get-ChildItem -LiteralPath $plan.ziel -Recurse -File).Count -ne $eigenschaften.Count){throw 'Die installierte Dateimenge stimmt nicht.'}
+      if(@([IO.Directory]::GetFiles($plan.ziel,'*',[IO.SearchOption]::AllDirectories)).Count -ne $eigenschaften.Count){throw 'Die installierte Dateimenge stimmt nicht.'}
       foreach($f in $eigenschaften){
         $p=Join-Path $plan.ziel $f.Name
-        if(-not(Test-Path -LiteralPath $p) -or (Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash -ne $f.Value){throw 'Eine installierte Datei stimmt nicht.'}
+        if(-not(Test-Path -LiteralPath $p)){throw ('Eine installierte Datei fehlt: '+$f.Name)}
+        if((Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash -ne $f.Value){throw ('Eine installierte Datei stimmt nicht: '+$f.Name)}
       }
     }
     'zuruecksetzen' {
