@@ -74,6 +74,18 @@ void main() {
     },
   );
 
+  test('ein Ordner, der fehlt oder verschwindet, zählt als leer', () async {
+    final z = Zwischenspeicher(paths);
+    datei(paths.previewsDir, 'a.jpg', 100, DateTime(2026, 1, 1));
+    paths.trimmedDir.deleteSync(recursive: true);
+    expect(await z.groesse(), 100);
+
+    ordner.deleteSync(recursive: true);
+    expect(await z.groesse(), 0);
+    expect(await z.begrenze(0), 0);
+    ordner.createSync();
+  });
+
   test('ein Zugriff über bereit() macht die Datei wieder jung', () async {
     paths.beschaffe = (_) async => fail('liegt schon da');
     final f = datei(paths.previewsDir, 'a.jpg', 10, DateTime(2026, 1, 1));

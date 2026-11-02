@@ -31,12 +31,22 @@ class Zwischenspeicher {
     paths.trimmedDir,
   ];
 
-  Future<List<File>> _dateien() async => [
-    for (final o in _ordner)
-      if (await o.exists())
-        await for (final e in o.list(recursive: true, followLinks: false))
-          if (e is File) e,
-  ];
+  Future<List<File>> _dateien() async {
+    final aus = <File>[];
+    for (final o in _ordner) {
+      try {
+        await for (final e in o.list(recursive: true, followLinks: false)) {
+          if (e is File) aus.add(e);
+        }
+      } on FileSystemException {
+        // Den Ordner gibt es nicht (nie etwas geholt) oder nicht mehr: Die
+        // Pflege läuft im Hintergrund weiter, während die Kopie gelöscht
+        // wird. Zwischen „gibt es“ und dem Auflisten verschwand so in der
+        // CI trimmed/ – dann gibt es darin eben nichts zu zählen.
+      }
+    }
+    return aus;
+  }
 
   /// Wie viele Bytes das Geholte gerade belegt.
   Future<int> groesse() async {
